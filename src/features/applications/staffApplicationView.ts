@@ -28,6 +28,7 @@ import {
   type EditionDescription,
 } from '@/features/building/codeEdition'
 import { type ClockExplanation, explainClock } from '@/features/clocks/explainClock'
+import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import { effectiveBindings } from '@/features/config/bindings'
 import { getVersion } from '@/features/config/store'
 import { computeFees, type FeeComputation } from '@/features/fees/computeFees'
@@ -68,6 +69,8 @@ export interface StaffApplicationView {
   nextTransitions: CoreState[]
   gates: { to: CoreState; results: GateResult[] }[]
   conditions: (typeof applicationConditions.$inferSelect)[]
+  conditionLibrary: { code: string; text: string; blocksIssuance: boolean }[]
+  classification: string | null
   fees: {
     assessments: (typeof feeAssessments.$inferSelect)[]
     overrides: (typeof feeOverrides.$inferSelect)[]
@@ -178,6 +181,8 @@ export async function getStaffApplicationView(
             amountCents: o.amountCents,
           })),
         })
+  const libraryVersion = await getVersion(db, app.pins.conditionLibrary, signal)
+  const library = (libraryVersion?.body as ConditionLibraryBody | undefined)?.conditions ?? []
   const [record] = await db
     .select()
     .from(codeEditionRecords)
@@ -223,6 +228,8 @@ export async function getStaffApplicationView(
     clocks: await clockExplanations(db, applicationId, today),
     nextTransitions,
     gates,
+    conditionLibrary: library,
+    classification: app.typeBody.classification ?? null,
     conditions: await db
       .select()
       .from(applicationConditions)

@@ -2,9 +2,9 @@ import { and, inArray, ne } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { applications } from '@/db/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
-import { type CoreState, STATE_LABELS } from '@/features/applications/states'
+import { stateLabel } from '@/features/applications/stateLabel'
+import type { CoreState } from '@/features/applications/states'
 import { getVersion } from '@/features/config/store'
-import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import {
   type ParcelRecordSummary,
   registerParcelRecordSource,
@@ -26,12 +26,6 @@ const CHIPS: Record<CoreState, Chip> = {
   withdrawn: 'neutral',
   expired: 'failed',
   suspended: 'overdue',
-}
-
-function stateLabel(state: CoreState): string {
-  return state === 'suspended'
-    ? ruleByKey(loadPack(), 'nh.appeal.suspension').label
-    : STATE_LABELS[state]
 }
 
 function seesFullRecord(viewer: Viewer): boolean {

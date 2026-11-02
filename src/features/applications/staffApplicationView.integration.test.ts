@@ -141,6 +141,19 @@ describe('getStaffApplicationView', () => {
     expect(view?.codeEdition?.rows.find((r) => r.field === 'receiptDate')?.value).toBe('2027-03-01')
   })
 
+  it('includes the condition library and classification for the page controls', async () => {
+    const app = await review()
+    const view = await getStaffApplicationView(
+      handle.db,
+      world.staff,
+      app.applicationId,
+      NOW,
+      signal,
+    )
+    expect(view?.conditionLibrary.map((c) => c.code)).toEqual(['SEPTIC'])
+    expect(view?.classification).toBe('nh.building_permit')
+  })
+
   it('reports which controls this viewer may use', async () => {
     const app = await review()
     const staffView = await getStaffApplicationView(

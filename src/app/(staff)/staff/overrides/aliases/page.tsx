@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
+import { OverridesTabs } from '@/components/staff/OverridesTabs'
 import { listAliasOverrides, type OverrideStatus } from '@/features/parcels/aliasOverrides'
 import { createContext } from '@/server/trpc/context'
 import { createAliasOverrideAction } from '../../parcels/[parcelId]/actions'
@@ -21,6 +22,7 @@ export default async function StaffAliasOverridesPage() {
   const rows = await listAliasOverrides(ctx.db, new Date(), ctx.signal)
   return (
     <main>
+      <OverridesTabs current="/staff/overrides/aliases" />
       <h1>Parcel ID overrides</h1>
       <p className="text-muted-foreground">
         An override points a town ID at a parcel. Imports never overwrite an override; they send the

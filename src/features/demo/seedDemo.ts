@@ -6,6 +6,7 @@ import { seedDefaultGrants } from '@/features/authz/defaultGrants'
 
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { seedParcels } from '@/features/demo/seedParcels'
+import { seedPermits } from '@/features/demo/seedPermits'
 
 export { DEMO_DOMAIN }
 
@@ -58,6 +59,7 @@ export interface SeedReport {
   usersCreated: number
   rolesAssigned: number
   parcelsSeeded: boolean
+  permitsSeeded: boolean
 }
 
 export async function seedDemo(db: Db, signal: AbortSignal): Promise<SeedReport> {
@@ -102,5 +104,6 @@ export async function seedDemo(db: Db, signal: AbortSignal): Promise<SeedReport>
     }
   })
   const seeded = await seedParcels(db, signal)
-  return { ...base, parcelsSeeded: seeded.imported }
+  const permitsSeeded = await seedPermits(db, signal)
+  return { ...base, parcelsSeeded: seeded.imported, permitsSeeded }
 }
