@@ -18,6 +18,7 @@ import { handleAnonymousIntake } from '@/features/anonymousIntake/handler'
 import { createSession } from '@/features/auth/session'
 import type { ObjectStore, ObjectStoreConfig } from '@/features/storage/objectStore'
 import { createRateLimiter, type RateLimiter } from '@/server/rateLimiter'
+import { openAnonymousIntake } from '@/test/anonymousFixtures'
 import { databaseContains } from '@/test/databaseSearch'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/minio'
@@ -42,7 +43,7 @@ beforeEach(async () => {
   store = made.store
   storeConfig = made.config
   limiter = createRateLimiter({ max: 5, windowMs: 15 * 60 * 1000, now: () => NOW.getTime() })
-  await handle.db.update(townSettings).set({ anonymousIntakeEnabled: true })
+  await openAnonymousIntake(handle.db)
 })
 afterEach(async () => {
   vi.restoreAllMocks()
@@ -190,6 +191,22 @@ describe('anonymous intake handler', () => {
 
   it('a same-origin post is accepted', async () => {
     expect((await run(post({}, { origin: ORIGIN }))).status).toBe(303)
+  })
+
+  it('route is 404 when the running build has no passing verification', async () => {
+    const response = await handleAnonymousIntake(
+      {
+        db: handle.db,
+        store,
+        now: () => NOW,
+        limiter,
+        imageRef: 'other@sha256:new',
+        appVersion: '0.0.0',
+      },
+      post(),
+      signal,
+    )
+    expect(response.status).toBe(404)
   })
 
   it('route is 404 while intake is disabled', async () => {

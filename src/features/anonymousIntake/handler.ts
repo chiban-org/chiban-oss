@@ -4,6 +4,7 @@ import { ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import { clientKey } from '@/features/anonymousIntake/clientKey'
 import { intakeOpen } from '@/features/anonymousIntake/enablement'
+import { isLiveProbeToken } from '@/features/anonymousIntake/probeToken'
 import { type SanitizedType, sanitizeImage } from '@/features/anonymousIntake/sanitizeImage'
 import { writeAudit } from '@/features/audit/writeAudit'
 import { attachDocument } from '@/features/documents/attach'
@@ -47,9 +48,15 @@ interface Parsed {
   location: string
   description: string
   photos: { bytes: Uint8Array; type: SanitizedType }[]
+  probe: boolean
 }
 
-async function parse(request: Request): Promise<Parsed | null> {
+async function parse(
+  request: Request,
+  db: Db,
+  now: Date,
+  signal: AbortSignal,
+): Promise<Parsed | null> {
   let form: FormData
   try {
     form = await request.formData()
@@ -70,7 +77,8 @@ async function parse(request: Request): Promise<Parsed | null> {
     if (!clean.ok) return null
     photos.push({ bytes: clean.value.bytes, type: clean.value.contentType })
   }
-  return { ...fields.data, photos }
+  const probe = await isLiveProbeToken(db, request.headers.get('x-chiban-probe'), now, signal)
+  return { ...fields.data, photos, probe }
 }
 
 async function storeReport(deps: IntakeDeps, parsed: Parsed, signal: AbortSignal): Promise<string> {
@@ -81,6 +89,7 @@ async function storeReport(deps: IntakeDeps, parsed: Parsed, signal: AbortSignal
         channel: 'anonymous_web',
         locationText: parsed.location,
         description: parsed.description,
+        isProbe: parsed.probe,
       },
       deps.now(),
       signal,
@@ -138,7 +147,7 @@ async function processIntake(
     )
   }
   deps.limiter.recordFailure(key)
-  const parsed = await parse(request)
+  const parsed = await parse(request, deps.db, deps.now(), signal)
   if (parsed === null) {
     return page(
       400,

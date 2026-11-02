@@ -140,7 +140,12 @@ export default tseslint.config(
       'src/app/(anonymous)/**/*.{ts,tsx}',
       'src/app/intake/**/*.{ts,tsx}',
     ],
-    ignores: ['**/*.test.{ts,tsx}', 'src/features/anonymousIntake/retention*.ts'],
+    ignores: [
+      '**/*.test.{ts,tsx}',
+      'src/features/anonymousIntake/retention*.ts',
+      'src/features/anonymousIntake/staffControl.ts',
+      'src/features/anonymousIntake/purgeProbe.ts',
+    ],
     rules: {
       'no-restricted-imports': [
         'error',

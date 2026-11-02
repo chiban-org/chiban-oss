@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url'
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { env } from '@/config/env'
-import { auditLog, complaints, documents, enforcementCases, townSettings } from '@/db/schema'
+import { auditLog, complaints, documents, enforcementCases } from '@/db/schema'
 import { handleAnonymousIntake } from '@/features/anonymousIntake/handler'
 import { getCase } from '@/features/enforcement/access'
 import { openCase, setCaseStatus } from '@/features/enforcement/cases'
@@ -17,6 +17,7 @@ import {
 import { getParcelHistory } from '@/features/parcels/parcelHistory'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { createRateLimiter } from '@/server/rateLimiter'
+import { openAnonymousIntake } from '@/test/anonymousFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/minio'
 import { makeParcel, seedParcelWorld, staffActor } from '@/test/parcels'
@@ -33,7 +34,7 @@ beforeEach(async () => {
   handle = await makeTestDb()
   await seedParcelWorld(handle.db)
   store = (await makeTestStore()).store
-  await handle.db.update(townSettings).set({ anonymousIntakeEnabled: true })
+  await openAnonymousIntake(handle.db, { imageRef: null, appVersion: '0' })
 })
 afterEach(async () => {
   await handle.drop()

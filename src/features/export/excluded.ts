@@ -9,4 +9,5 @@ export const EXCLUDED_TABLES: Record<string, string> = {
   health_alerts: 'operational state',
   alert_tests: 'operational state',
   worker_state: 'operational state',
+  anonymous_intake_probe_tokens: 'short-lived probe secret',
 }

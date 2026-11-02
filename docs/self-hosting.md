@@ -110,6 +110,20 @@ The anonymous complaint form lives at `/report-anonymously` and posts to `/intak
 
 If a load balancer, CDN, or any other proxy sits in front of Caddy, it must skip logging for the same two path prefixes. If it cannot, do not put it in front of this deployment: the retention verification below will pass on Caddy's own logs and still miss a log that Chiban cannot see.
 
+### Verifying anonymous intake
+
+The anonymous complaint route answers 404 until the town has a passing verification for the exact image that is running. A new image closes the route again until it is verified.
+
+Run the verification on the host after every deploy, with the folder that holds the nightly backups:
+
+```
+./verify-anonymous-intake.sh --backup-dir /path/to/backups
+```
+
+The script submits one probe complaint through the public address, as a signed-in visitor with a photo that carries location and author data. It then looks for the probe's address, browser name, file name, photo author, and the visitor's account in the database, the Caddy, app, and worker logs, object storage, and the newest nightly backup. A control request that must appear in the Caddy access log proves logging was on during the run. The probe is deleted afterward. Without `--backup-dir`, or with a folder that holds no backup, the check fails with `backup_missing`.
+
+When it passes, an administrator turns anonymous intake on from the Anonymous intake page under Admin. The switch stays off until then.
+
 ## Exports
 
 Staff with export permission can request a full export of the town's records from the export page at `/staff/admin/export`. An export is a single archive that includes the data, the uploaded documents, and a description of the format, which is also published in `docs/export-format.md`. Downloads are served through the `s3.APP_DOMAIN` name, so that record must resolve for the download link to work.
