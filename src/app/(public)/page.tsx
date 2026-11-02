@@ -1,22 +1,10 @@
-import Link from 'next/link'
+import { HomeContent } from '@/components/public/HomeContent'
+import { getActor } from '@/server/getActor'
 
-export default function HomePage() {
-  return (
-    <main>
-      <h1>Town of Alder Pond</h1>
-      <p>Find a parcel, see its permits and applications, and track what the town has on file.</p>
-      <ul className="mt-4 space-y-2">
-        <li>
-          <Link href="/parcels" className="tap-target inline-flex items-center text-lg underline">
-            Look up a parcel
-          </Link>
-        </li>
-        <li>
-          <Link href="/sign-in" className="tap-target inline-flex items-center text-lg underline">
-            Sign in to see your applications
-          </Link>
-        </li>
-      </ul>
-    </main>
-  )
+const TIMEOUT_MS = 10_000
+
+export default async function HomePage() {
+  const actor = await getActor(AbortSignal.timeout(TIMEOUT_MS))
+  const audience = actor === null ? 'visitor' : actor.kind === 'staff' ? 'staff' : 'resident'
+  return <HomeContent audience={audience} />
 }
