@@ -6,6 +6,10 @@ import { cn } from '@/lib/utils'
 
 export type FieldErrors = Record<string, string>
 
+export function rowKey(prefix: string, index: number): string {
+  return prefix + String(index)
+}
+
 const CONTROL = 'mt-1 block w-full rounded-md border bg-surface px-2 py-1.5 text-sm'
 
 export function FieldError({ errors, name }: { errors: FieldErrors; name: string }) {

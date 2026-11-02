@@ -18,13 +18,22 @@ export async function markComplete(
   signal: AbortSignal,
   now: Date = new Date(),
 ): Promise<
-  Result<void, 'forbidden' | 'not_found' | 'not_submitted' | 'before_receipt' | 'future_date'>
+  Result<
+    void,
+    | 'forbidden'
+    | 'not_found'
+    | 'not_submitted'
+    | 'before_receipt'
+    | 'future_date'
+    | 'already_complete'
+  >
 > {
   signal.throwIfAborted()
   if (!hasFullRecordAccess(actor)) return err('forbidden')
   const app = await loadApplicationContext(db, input.applicationId, signal)
   if (app === null) return err('not_found')
   if (app.state === 'draft' || app.receivedDate === null) return err('not_submitted')
+  if (app.completedDate !== null) return err('already_complete')
   if (input.completedDate < app.receivedDate) return err('before_receipt')
   return await transactionResult(db, async (tx) => {
     const today = await townToday(tx, now, signal)

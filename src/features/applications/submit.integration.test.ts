@@ -1,12 +1,14 @@
 import { createHash } from 'node:crypto'
+import { NH_STARTERS } from '@packs/nh/starters'
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { applications, attestations } from '@/db/schema'
+import { applications, attestations, feeAssessments } from '@/db/schema'
 import {
   amendApplication,
   attestationHash,
   submitApplication,
 } from '@/features/applications/submitApplication'
+import { adoptStarter } from '@/features/config/adoptStarter'
 import {
   type ApplicationPatch,
   makeApplication,
@@ -178,6 +180,28 @@ describe('submitApplication', () => {
   })
 })
 
+describe('submission side effects', () => {
+  it('submitting a trade permit assesses the intake fee', async () => {
+    await adoptStarter(handle.db, world.admin, 'nh.starter.electrical', signal)
+    const app = await makeApplication(handle.db, world, {}, undefined, 'EL')
+    const type = NH_STARTERS.find((s) => s.id === 'nh.starter.electrical')
+    const hash = createHash('sha256')
+      .update(type?.applicationType.attestationText ?? '')
+      .digest('hex')
+    const r = await submit(
+      app.applicationId,
+      { description: 'Panel upgrade', contractor_license_number: 'EL-1' },
+      hash,
+    )
+    expect(r.ok).toBe(true)
+    const fees = await handle.db
+      .select()
+      .from(feeAssessments)
+      .where(eq(feeAssessments.applicationId, app.applicationId))
+    expect(fees).toMatchObject([{ stage: 'at_intake', totalCents: 4500 }])
+  })
+})
+
 describe('amendApplication', () => {
   async function inState(state: ApplicationPatch['state']) {
     return await makeApplication(handle.db, world, {
@@ -231,5 +255,102 @@ describe('amendApplication', () => {
       signal,
     )
     expect(r).toEqual({ ok: false, error: 'not_amendable' })
+  })
+
+  async function formWithStaffOnlyField() {
+    await saveAndPublish(handle.db, world.admin, 'form', 'bp-form', {
+      ...FORM_BODY,
+      fields: [
+        ...FORM_BODY.fields,
+        {
+          key: 'after_the_fact',
+          label: 'After the fact',
+          type: 'checkbox',
+          required: false,
+          fact: 'afterTheFact',
+          staffOnly: true,
+        },
+      ],
+    })
+  }
+
+  it('an applicant amending ordinary fields keeps the staff-only values and facts', async () => {
+    await formWithStaffOnlyField()
+    const app = await makeApplication(handle.db, world, {
+      state: 'submitted',
+      values: { classification: 'residential', after_the_fact: true },
+      facts: { classification: 'residential', dwellingUnits: null, afterTheFact: true },
+    })
+    const r = await amendApplication(
+      handle.db,
+      world.applicant,
+      { applicationId: app.applicationId, values: { classification: 'nonresidential' } },
+      signal,
+    )
+    expect(r.ok).toBe(true)
+    expect(await row(app.applicationId)).toMatchObject({
+      values: { classification: 'nonresidential', after_the_fact: true },
+      facts: { classification: 'nonresidential', afterTheFact: true },
+    })
+  })
+
+  it('staff amending can change the staff-only value', async () => {
+    await formWithStaffOnlyField()
+    const app = await makeApplication(handle.db, world, {
+      state: 'submitted',
+      values: { classification: 'residential', after_the_fact: true },
+      facts: { classification: 'residential', dwellingUnits: null, afterTheFact: true },
+    })
+    await amendApplication(
+      handle.db,
+      world.staff,
+      { applicationId: app.applicationId, values: { classification: 'residential' } },
+      signal,
+    )
+    expect(await row(app.applicationId)).toMatchObject({ facts: { afterTheFact: false } })
+  })
+
+  it('an amendment that waited on the application lock is rechecked after staff start review', async () => {
+    const app = await makeApplication(handle.db, world, {
+      state: 'submitted',
+      values: { classification: 'residential' },
+    })
+    let locked: () => void = () => undefined
+    let release: () => void = () => undefined
+    const lockTaken = new Promise<void>((resolve) => {
+      locked = resolve
+    })
+    const mayCommit = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const staffMove = handle.db.transaction(async (tx) => {
+      await tx
+        .select()
+        .from(applications)
+        .where(eq(applications.id, app.applicationId))
+        .for('update')
+      locked()
+      await mayCommit
+      await tx
+        .update(applications)
+        .set({ state: 'under_review', rowVersion: 2 })
+        .where(eq(applications.id, app.applicationId))
+    })
+    await lockTaken
+    const amend = amendApplication(
+      handle.db,
+      world.applicant,
+      { applicationId: app.applicationId, values: { classification: 'nonresidential' } },
+      signal,
+    )
+    await new Promise((resolve) => setTimeout(resolve, 150))
+    release()
+    await staffMove
+    expect(await amend).toEqual({ ok: false, error: 'forbidden' })
+    expect(await row(app.applicationId)).toMatchObject({
+      state: 'under_review',
+      rowVersion: 2,
+      values: { classification: 'residential' },
+    })
   })
 })

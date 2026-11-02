@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect, useState } from 'react'
 import {
   Area,
   Check,
@@ -29,11 +30,41 @@ interface Props {
   classifications: ClassificationOption[]
 }
 
-const list = (text: string) =>
-  text
-    .split(',')
+function ListInput({
+  label,
+  values,
+  onValues,
+  separator,
+  multiline,
+}: {
+  label: string
+  values: string[]
+  onValues: (next: string[]) => void
+  separator: RegExp
+  multiline?: boolean
+}) {
+  const joined = values.join(multiline === true ? '\n' : ', ')
+  const [raw, setRaw] = useState(joined)
+  useEffect(() => {
+    if (parseWith(raw, separator).join('|') !== values.join('|')) setRaw(joined)
+  }, [joined, raw, separator, values])
+  const change = (text: string) => {
+    setRaw(text)
+    onValues(parseWith(text, separator))
+  }
+  return multiline === true ? (
+    <Area label={label} rows={4} value={raw} onChange={(e) => change(e.target.value)} />
+  ) : (
+    <Input label={label} value={raw} onChange={(e) => change(e.target.value)} />
+  )
+}
+
+function parseWith(text: string, separator: RegExp): string[] {
+  return text
+    .split(separator)
     .map((s) => s.trim())
     .filter((s) => s !== '')
+}
 
 export function ApplicationTypeEditor({
   body,
@@ -73,12 +104,14 @@ export function ApplicationTypeEditor({
             ['', 'Choose one'],
             ...classifications.map((c): [string, string] => [c.key, c.label]),
           ]}
-          onChange={(e) =>
+          onChange={(e) => {
+            const chosen = classifications.find((c) => c.key === e.target.value)
             set({
               classification:
                 e.target.value === '' ? undefined : (e.target.value as 'nh.building_permit'),
+              bindings: [...new Set([...body.bindings, ...(chosen?.mandatoryRuleKeys ?? [])])],
             })
-          }
+          }}
         />
       </FieldGroup>
       <FieldGroup name="references" label="Configuration this type uses" errors={errors}>
@@ -99,15 +132,17 @@ export function ApplicationTypeEditor({
             onChange={(e) => set({ conditionLibraryKey: e.target.value })}
           />
         </div>
-        <Input
+        <ListInput
           label="Checklist keys (comma separated)"
-          value={body.checklistKeys.join(', ')}
-          onChange={(e) => set({ checklistKeys: list(e.target.value) })}
+          values={body.checklistKeys}
+          onValues={(next) => set({ checklistKeys: next })}
+          separator={/,/}
         />
-        <Input
+        <ListInput
           label="Template keys (comma separated)"
-          value={body.templateKeys.join(', ')}
-          onChange={(e) => set({ templateKeys: list(e.target.value) })}
+          values={body.templateKeys}
+          onValues={(next) => set({ templateKeys: next })}
+          separator={/,/}
         />
       </FieldGroup>
       <FieldGroup name="bindings" label="Bindings" errors={errors}>
@@ -154,25 +189,23 @@ export function ApplicationTypeEditor({
             })
           }
         />
-        <Area
+        <ListInput
           label="Sub-steps (one per line: state:key:label)"
-          rows={4}
-          value={body.workflow.substeps.map((s) => `${s.state}:${s.key}:${s.label}`).join('\n')}
-          onChange={(e) =>
+          values={body.workflow.substeps.map((x) => `${x.state}:${x.key}:${x.label}`)}
+          separator={/\n/}
+          multiline
+          onValues={(lines) =>
             set({
               workflow: {
                 ...body.workflow,
-                substeps: e.target.value
-                  .split('\n')
-                  .filter((l) => l.trim() !== '')
-                  .map((l) => {
-                    const [state = '', key = '', ...label] = l.split(':')
-                    return {
-                      state: state.trim() as 'under_review',
-                      key: key.trim(),
-                      label: label.join(':').trim(),
-                    }
-                  }),
+                substeps: lines.map((l) => {
+                  const [state = '', key = '', ...label] = l.split(':')
+                  return {
+                    state: state.trim() as 'under_review',
+                    key: key.trim(),
+                    label: label.join(':').trim(),
+                  }
+                }),
               },
             })
           }

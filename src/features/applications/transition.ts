@@ -7,7 +7,10 @@ import {
   isTransitionAllowed,
   TERMINAL_STATES,
 } from '@/features/applications/states'
-import { runTransitionEffects } from '@/features/applications/transitionEffects'
+import {
+  assessForTransition,
+  runTransitionEffects,
+} from '@/features/applications/transitionEffects'
 import type { AnyActor } from '@/features/audit/actorRef'
 import { toAuditActor } from '@/features/audit/actorRef'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -30,6 +33,7 @@ export type TransitionError =
   | 'forbidden'
   | 'invalid_transition'
   | 'stale_version'
+  | 'fees_incomplete'
   | 'not_found'
   | { gateBlocked: GateResult[] }
 
@@ -50,14 +54,12 @@ async function isAllowedActor(
 ): Promise<boolean> {
   if (actor.kind === 'system') return to === 'expired'
   if (to === 'expired' || to === 'suspended') return false
+  if (app.state === 'suspended' && to === 'issued') return false
   if (NEEDS_ISSUE_CAPABILITY.includes(to)) {
     return await hasCapability(tx, actor.userId, 'permit.issue', signal)
   }
   if (hasFullRecordAccess(actor)) return true
-  return (
-    (to === 'submitted' || to === 'withdrawn') &&
-    (await isActiveParty(tx, actor.userId, app.projectId))
-  )
+  return to === 'withdrawn' && (await isActiveParty(tx, actor.userId, app.projectId))
 }
 
 export async function applyTransition(
@@ -82,6 +84,8 @@ export async function applyTransition(
   const reinstating = app.state === 'suspended' && input.to === 'issued'
   const results = reinstating ? [] : await evaluateGates(tx, app, input.to, today, signal)
   if (results.some((g) => g.effective === 'blocked')) return err({ gateBlocked: results })
+  const assessed = await assessForTransition(tx, actor, app, input.to, signal)
+  if (!assessed.ok) return err(assessed.error)
   const rowVersion = app.rowVersion + 1
   const stampsDecision = input.to === 'decided' || input.to === 'denied'
   await tx
@@ -95,7 +99,7 @@ export async function applyTransition(
       issuedOn: input.to === 'issued' ? (app.issuedOn ?? today) : app.issuedOn,
     })
     .where(eq(applications.id, input.applicationId))
-  await runTransitionEffects(tx, actor, app, input.to, today, signal)
+  await runTransitionEffects(tx, app, input.to, today, signal)
   await writeAudit(
     tx,
     {
@@ -118,6 +122,7 @@ export async function transitionApplication(
   signal: AbortSignal,
   now: Date = new Date(),
 ): Promise<Result<TransitionOutcome, TransitionError>> {
+  if (input.to === 'submitted') return err('invalid_transition')
   const app = await loadApplicationContext(tx, input.applicationId, signal)
   if (app === null) return err('not_found')
   if (!(await isAllowedActor(tx, actor, app, input.to, signal))) return err('forbidden')

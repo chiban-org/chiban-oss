@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { applications, auditLog, clocks, jobEffects, jobRuns } from '@/db/schema'
 import { startClocksFor } from '@/features/clocks/startClocks'
-import { clocksDailyJob } from '@/jobs/clocksDaily'
+import { clocksDailyJob, expireLapsedPermits } from '@/jobs/clocksDaily'
 import { runJob } from '@/jobs/defineJob'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -99,5 +99,18 @@ describe('clocks.daily', () => {
 
   it('the dedup key carries the civil date', () => {
     expect(clocksDailyJob.dedupKey({ today: d('2028-03-16') })).toBe('clocks.daily:2028-03-16')
+  })
+
+  it('a permit whose expiry transition fails keeps a running clock so the next run retries it', async () => {
+    const app = await issuedApp()
+    const failing = () => Promise.resolve({ ok: false as const, error: 'stale_version' as const })
+    const failures = await handle.db.transaction((tx) =>
+      expireLapsedPermits(tx, d('2028-03-16'), signal, failing),
+    )
+    expect(failures).toHaveLength(1)
+    expect((await clockOf(app.applicationId, 'town.bp.expiration'))?.status).toBe('running')
+    expect(await appState(app.applicationId)).toBe('issued')
+    expect((await run('2028-03-16')).ok).toBe(true)
+    expect(await appState(app.applicationId)).toBe('expired')
   })
 })

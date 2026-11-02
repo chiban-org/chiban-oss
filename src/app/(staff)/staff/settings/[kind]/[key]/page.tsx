@@ -35,6 +35,7 @@ export default async function SettingsKeyPage({ params }: Props) {
         kind={kind}
         configKey={key}
         initialBody={state.body}
+        resetKey={state.versions.map((v) => `${v.id}:${v.status}`).join(',')}
         context={editorContext()}
         saveAction={saveDraftAction}
         publishAction={publishAction}

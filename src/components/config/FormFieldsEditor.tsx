@@ -7,6 +7,7 @@ import {
   Input,
   Pick,
   RowButton,
+  rowKey,
 } from '@/components/config/primitives'
 import { FIELD_TYPES, type FormBody, type FormField } from '@/features/forms/formSchema'
 
@@ -20,6 +21,18 @@ const FACTS = [
   ['dwellingUnits', 'Dwelling units'],
   ['afterTheFact', 'After the fact'],
 ] as const
+
+function displayValue(value: Leaf['value']): string {
+  if (Array.isArray(value)) return value.join(', ')
+  return value === undefined ? '' : String(value)
+}
+
+function splitList(text: string): string[] {
+  return text
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s !== '')
+}
 
 function leafOf(condition: Condition | undefined): Leaf | null {
   return condition !== undefined && 'field' in condition ? condition : null
@@ -38,7 +51,7 @@ function ConditionPicker({
 }) {
   const leaf = leafOf(value)
   const set = (patch: Partial<Leaf>) =>
-    onChange({ field: earlier[0] ?? '', op: 'equals', ...leaf, ...patch } as Leaf)
+    onChange({ field: earlier[0] ?? '', op: 'equals', ...leaf, ...patch })
   return (
     <div className="grid grid-cols-3 gap-2">
       <Pick
@@ -53,16 +66,20 @@ function ConditionPicker({
         label={`${label}: test`}
         value={leaf?.op ?? 'equals'}
         options={OPS.map((o): [string, string] => [o, o.replaceAll('_', ' ')])}
-        onChange={(e) => set({ op: e.target.value as Leaf['op'] })}
+        onChange={(e) => {
+          const op = e.target.value as Leaf['op']
+          set({
+            op,
+            value: op === 'in' ? splitList(displayValue(leaf?.value)) : displayValue(leaf?.value),
+          })
+        }}
       />
       <Input
         label={`${label}: value`}
-        value={
-          typeof leaf?.value === 'string' || typeof leaf?.value === 'number'
-            ? String(leaf.value)
-            : ''
+        value={displayValue(leaf?.value)}
+        onChange={(e) =>
+          set({ value: leaf?.op === 'in' ? splitList(e.target.value) : e.target.value })
         }
-        onChange={(e) => set({ value: e.target.value })}
       />
     </div>
   )
@@ -89,7 +106,7 @@ export function FormFieldsEditor({
       <FieldGroup name="fields" label="Fields" errors={errors}>
         {body.fields.map((field, i) => (
           <div
-            key={`${field.key}-${i}`}
+            key={rowKey('field', i)}
             className="my-3 rounded-md border p-3"
             data-field-row={field.key}
           >

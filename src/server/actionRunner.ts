@@ -38,9 +38,11 @@ export const ERROR_COPY: Record<string, string> = {
   unknown_starter: 'Unknown starter.',
   no_such_version: 'That version does not exist.',
   not_found: 'That record was not found.',
+  fees_incomplete: 'The fees cannot be worked out yet because a count they depend on is not known.',
   stale_version: 'This application changed since you opened it. Reload the page and try again.',
   invalid_transition: 'That step is not available from the current state.',
   not_submitted: 'The application has not been submitted yet.',
+  already_complete: 'The application is already marked complete.',
   before_receipt: 'The completeness date cannot be before the application was received.',
   statutory_requires_authority:
     'This gate comes from state law. Only a statutory exception with legal authority can clear it.',

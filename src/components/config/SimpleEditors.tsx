@@ -8,6 +8,7 @@ import {
   Input,
   Pick,
   RowButton,
+  rowKey,
 } from '@/components/config/primitives'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import type { LocalCodeAmendmentBody } from '@/features/config/kinds'
@@ -73,7 +74,7 @@ export function ConditionsEditor({ body, onChange, errors }: EditorProps<Conditi
     <FieldGroup name="conditions" label="Conditions" errors={errors}>
       {body.conditions.map((c, i) => (
         <div
-          key={`${c.code}-${i}`}
+          key={rowKey('condition', i)}
           className="my-2 grid grid-cols-[8rem_1fr_auto_auto] items-end gap-2"
         >
           <Input
@@ -156,7 +157,7 @@ export function ChecklistEditor({ body, onChange, errors }: EditorProps<Checklis
       <FieldGroup name="items" label="Checklist items" errors={errors}>
         {body.items.map((item, i) => (
           <div
-            key={`${item.key}-${i}`}
+            key={rowKey('item', i)}
             className="my-2 grid grid-cols-[8rem_1fr_auto_auto] items-end gap-2"
           >
             <Input

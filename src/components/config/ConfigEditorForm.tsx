@@ -32,6 +32,7 @@ interface Props {
   kind: ConfigKind
   configKey: string
   initialBody: unknown
+  resetKey: string
   context: EditorContext
   saveAction: (formData: FormData) => Promise<ActionResult>
   publishAction: (formData: FormData) => Promise<ActionResult>
@@ -98,11 +99,17 @@ export function ConfigEditorForm({
   kind,
   configKey,
   initialBody,
+  resetKey,
   context,
   saveAction,
   publishAction,
 }: Props) {
   const [body, setBody] = useState<unknown>(initialBody)
+  const [seenKey, setSeenKey] = useState(resetKey)
+  if (seenKey !== resetKey) {
+    setSeenKey(resetKey)
+    setBody(initialBody)
+  }
   const [result, run, pending] = useActionState(
     async (_previous: ActionResult | null, formData: FormData) =>
       formData.get('intent') === 'publish'

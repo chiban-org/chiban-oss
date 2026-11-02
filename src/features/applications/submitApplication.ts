@@ -1,17 +1,22 @@
 import { createHash } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { Db, Tx } from '@/db/client'
 import { applications, attestations } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
-import { loadApplicationContext } from '@/features/applications/context'
+import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import type { CoreState } from '@/features/applications/states'
-import { transitionApplication } from '@/features/applications/transition'
+import { applyTransition } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { getVersion } from '@/features/config/store'
 import type { FormBody } from '@/features/forms/formSchema'
-import { type FieldError, validateSubmission } from '@/features/forms/validateSubmission'
+import {
+  extractFacts,
+  type FieldError,
+  type FieldValue,
+  validateSubmission,
+} from '@/features/forms/validateSubmission'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
@@ -67,7 +72,7 @@ export async function submitApplication(
       statementText: statement,
       statementSha256: input.attestation.statementSha256,
     })
-    const moved = await transitionApplication(
+    const moved = await applyTransition(
       tx,
       actor,
       {
@@ -79,7 +84,7 @@ export async function submitApplication(
       signal,
       now,
     )
-    if (!moved.ok) return err(moved.error === 'forbidden' ? 'forbidden' : 'invalid_transition')
+    if (!moved.ok) return err('invalid_transition')
     return ok({ state: 'submitted' })
   })
 }
@@ -87,34 +92,65 @@ export async function submitApplication(
 const OPEN_FOR_APPLICANT: readonly CoreState[] = ['draft', 'submitted']
 const OPEN_AFTER_REVIEW: readonly CoreState[] = ['under_review', 'decided', 'issued', 'suspended']
 
+type AmendError = 'forbidden' | 'not_found' | 'not_amendable' | { fieldErrors: FieldError[] }
+
+async function amendPermission(
+  tx: Tx,
+  actor: Actor,
+  app: ApplicationContext,
+  signal: AbortSignal,
+): Promise<'ok' | 'forbidden' | 'not_amendable'> {
+  const early = OPEN_FOR_APPLICANT.includes(app.state)
+  if (!early && !OPEN_AFTER_REVIEW.includes(app.state)) return 'not_amendable'
+  const permitted = early
+    ? hasFullRecordAccess(actor) || (await isActiveParty(tx, actor.userId, app.projectId))
+    : await hasCapability(tx, actor.userId, 'application.amend_after_review', signal)
+  return permitted ? 'ok' : 'forbidden'
+}
+
+function keepStaffOnlyValues(
+  form: FormBody,
+  existing: Record<string, FieldValue>,
+  incoming: Record<string, FieldValue>,
+): Record<string, FieldValue> {
+  const merged = { ...incoming }
+  for (const field of form.fields) {
+    const kept = existing[field.key]
+    if (field.staffOnly === true && kept !== undefined) merged[field.key] = kept
+  }
+  return merged
+}
+
 export async function amendApplication(
   db: Db,
   actor: Actor,
   input: { applicationId: string; values: Record<string, unknown> },
   signal: AbortSignal,
-): Promise<
-  Result<void, 'forbidden' | 'not_found' | 'not_amendable' | { fieldErrors: FieldError[] }>
-> {
+): Promise<Result<void, AmendError>> {
   signal.throwIfAborted()
-  const app = await loadApplicationContext(db, input.applicationId, signal)
-  if (app === null) return err('not_found')
-  const early = OPEN_FOR_APPLICANT.includes(app.state)
-  if (!early && !OPEN_AFTER_REVIEW.includes(app.state)) return err('not_amendable')
-  const permitted = early
-    ? await mayEdit(db, actor, app.projectId)
-    : await hasCapability(db, actor.userId, 'application.amend_after_review', signal)
-  if (!permitted) return err('forbidden')
-  const form = await getVersion(db, app.pins.form, signal)
-  const checked = validateSubmission(form?.body as FormBody, input.values, {
-    asStaff: hasFullRecordAccess(actor),
-  })
-  if (!checked.ok) return err({ fieldErrors: checked.error })
-  return await transactionResult(db, async (tx) => {
+  return await transactionResult<void, AmendError>(db, async (tx) => {
+    await tx
+      .select({ id: applications.id })
+      .from(applications)
+      .where(eq(applications.id, input.applicationId))
+      .for('update')
+    const app = await loadApplicationContext(tx, input.applicationId, signal)
+    if (app === null) return err('not_found')
+    const verdict = await amendPermission(tx, actor, app, signal)
+    if (verdict !== 'ok') return err(verdict)
+    const form = await getVersion(tx, app.pins.form, signal)
+    const formBody = form?.body as FormBody
+    const asStaff = hasFullRecordAccess(actor)
+    const checked = validateSubmission(formBody, input.values, { asStaff })
+    if (!checked.ok) return err({ fieldErrors: checked.error })
+    const values = asStaff
+      ? checked.value.values
+      : keepStaffOnlyValues(formBody, app.values, checked.value.values)
     await tx
       .update(applications)
       .set({
-        values: checked.value.values,
-        facts: checked.value.facts,
+        values,
+        facts: asStaff ? checked.value.facts : extractFacts(formBody, values),
         rowVersion: app.rowVersion + 1,
         updatedAt: new Date(),
       })
@@ -127,7 +163,7 @@ export async function amendApplication(
         entityType: 'application',
         entityId: input.applicationId,
         before: { values: app.values },
-        after: { values: checked.value.values },
+        after: { values },
       },
       signal,
     )

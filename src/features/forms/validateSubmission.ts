@@ -115,7 +115,7 @@ function parseValue(field: FormField, raw: unknown): Parsed {
   }
 }
 
-function extractFacts(form: FormBody, values: Record<string, FieldValue>): ProjectFacts {
+export function extractFacts(form: FormBody, values: Record<string, FieldValue>): ProjectFacts {
   const facts: ProjectFacts = { classification: null, dwellingUnits: null, afterTheFact: false }
   for (const field of form.fields) {
     const value = values[field.key]

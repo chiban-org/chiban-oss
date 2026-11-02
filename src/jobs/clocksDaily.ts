@@ -30,10 +30,11 @@ async function markOverdue(tx: Tx, today: CivilDate): Promise<void> {
   }
 }
 
-async function expireLapsedPermits(
+export async function expireLapsedPermits(
   tx: Tx,
   today: CivilDate,
   signal: AbortSignal,
+  move: typeof transitionApplication = transitionApplication,
 ): Promise<string[]> {
   const pack = loadPack()
   const past = await tx
@@ -46,7 +47,7 @@ async function expireLapsedPermits(
     const rule = ruleByKey(pack, clock.ruleKey, clock.ruleVersion)
     if (rule.kind !== 'clock' || rule.clockType !== 'exercise_by' || state !== 'issued') continue
     await tx.update(clocks).set({ status: 'lapsed' }).where(eq(clocks.id, clock.id))
-    const moved = await transitionApplication(
+    const moved = await move(
       tx,
       SYSTEM_ACTOR,
       {
@@ -57,7 +58,10 @@ async function expireLapsedPermits(
       },
       signal,
     )
-    if (!moved.ok) failures.push(`${clock.applicationId}: ${JSON.stringify(moved.error)}`)
+    if (!moved.ok) {
+      await tx.update(clocks).set({ status: 'running' }).where(eq(clocks.id, clock.id))
+      failures.push(`${clock.applicationId}: ${JSON.stringify(moved.error)}`)
+    }
   }
   return failures
 }
