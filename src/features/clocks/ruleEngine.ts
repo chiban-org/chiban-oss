@@ -1,4 +1,5 @@
 import type { ClockLength, ClockRule, PackRule, StartEvent } from '@packs/nh/schema'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import { computeDue, type DueResult } from '@/features/clocks/computeDue'
 import type { HolidayCalendar } from '@/features/clocks/holidayCalendar'
 import { evaluateCondition } from '@/features/forms/condition'
@@ -51,6 +52,11 @@ export function resolveRuleLength(
     const hit = length.cases.find((c) => factMatches(c.when, facts))
     const value = hit?.value ?? length.otherwise
     return { unit: length.unit, value, source: 'pack_rule', packDefault: value }
+  }
+  if (length.unit === 'stated_date') {
+    throw new AppError(ErrorIds.PACK_INVALID, 'A stated date rule has no fixed length', {
+      key: rule.key,
+    })
   }
   if (townValue !== undefined && hasLocalBound(rule)) {
     return {

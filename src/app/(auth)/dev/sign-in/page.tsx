@@ -22,6 +22,10 @@ export default async function DevSignInPage() {
   return (
     <main className="mx-auto max-w-md p-6">
       <h1>Dev sign-in</h1>
+      <p>
+        Anonymous complaint intake is off in the demo. It turns on only after the retention check
+        passes on a real deployment, from Admin, Anonymous intake.
+      </p>
       <ul className="flex flex-col gap-2">
         {rows.map((row) => (
           <li key={row.email}>

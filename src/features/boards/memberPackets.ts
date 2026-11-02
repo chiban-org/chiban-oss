@@ -16,6 +16,7 @@ import {
   memberCanSeeMeeting,
 } from '@/features/access/predicates'
 import type { Actor } from '@/features/auth/actor'
+import { townDateOf } from '@/features/boards/packetLinks'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -27,7 +28,7 @@ export interface MemberPacketView {
   title: string
   board: 'planning_board' | 'zba'
   meetingDate: CivilDate
-  items: { versionId: string; title: string; filename: string }[]
+  items: { versionId: string; title: string; filename: string; withdrawnOn: CivilDate | null }[]
 }
 
 export interface MemberMeetingRow {
@@ -132,12 +133,14 @@ export async function getMemberPacket(
   const items = await db
     .select({
       versionId: boardPacketItems.versionId,
+      formerVersionId: boardPacketItems.formerVersionId,
       title: documents.title,
       filename: documentVersions.filename,
+      withdrawnAt: boardPacketItems.withdrawnAt,
     })
     .from(boardPacketItems)
     .innerJoin(documents, eq(documents.id, boardPacketItems.documentId))
-    .innerJoin(documentVersions, eq(documentVersions.id, boardPacketItems.versionId))
+    .leftJoin(documentVersions, eq(documentVersions.id, boardPacketItems.versionId))
     .where(eq(boardPacketItems.packetId, packet.id))
     .orderBy(asc(boardPacketItems.position))
   await db.insert(boardPacketAccess).values({ userId: actor.userId, versionId: null })
@@ -146,7 +149,14 @@ export async function getMemberPacket(
     title: packet.title,
     board: packet.board,
     meetingDate: packet.meetingDate as CivilDate,
-    items,
+    items: await Promise.all(
+      items.map(async ({ withdrawnAt, formerVersionId, ...item }) => ({
+        title: item.title,
+        versionId: item.versionId ?? formerVersionId ?? '',
+        filename: item.filename ?? '',
+        withdrawnOn: withdrawnAt === null ? null : await townDateOf(db, withdrawnAt, signal),
+      })),
+    ),
   })
 }
 
@@ -156,7 +166,7 @@ export async function openMemberPacketVersion(
   actor: Actor,
   input: { meetingId: string; versionId: string },
   signal: AbortSignal,
-): Promise<Result<{ url: string }, 'not_found'>> {
+): Promise<Result<{ url: string }, 'not_found' | { withdrawnOn: CivilDate }>> {
   signal.throwIfAborted()
   const meeting = await visibleMeeting(db, actor, input.meetingId)
   if (meeting === null) return err('not_found')
@@ -167,17 +177,27 @@ export async function openMemberPacketVersion(
       storageKey: files.storageKey,
       filename: documentVersions.filename,
       contentType: documentVersions.contentType,
+      withdrawnAt: boardPacketItems.withdrawnAt,
     })
     .from(boardPacketItems)
-    .innerJoin(documentVersions, eq(documentVersions.id, boardPacketItems.versionId))
-    .innerJoin(files, eq(files.sha256, documentVersions.fileSha256))
+    .leftJoin(documentVersions, eq(documentVersions.id, boardPacketItems.versionId))
+    .leftJoin(files, eq(files.sha256, documentVersions.fileSha256))
     .where(
       and(
         eq(boardPacketItems.packetId, packet.id),
-        eq(boardPacketItems.versionId, input.versionId),
+        or(
+          eq(boardPacketItems.versionId, input.versionId),
+          eq(boardPacketItems.formerVersionId, input.versionId),
+        ),
       ),
     )
   if (row === undefined) return err('not_found')
+  if (row.withdrawnAt !== null) {
+    return err({ withdrawnOn: await townDateOf(db, row.withdrawnAt, signal) })
+  }
+  if (row.storageKey === null || row.filename === null || row.contentType === null) {
+    return err('not_found')
+  }
   await db.insert(boardPacketAccess).values({ userId: actor.userId, versionId: input.versionId })
   const url = await store.presignGet(row.storageKey, {
     expiresSeconds: DOWNLOAD_SECONDS,

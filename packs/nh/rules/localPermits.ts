@@ -1,0 +1,56 @@
+import type { PackRule } from '@packs/nh/schema'
+
+const TOWN_RULE = { label: 'Town rule', url: null } as const
+
+export const LOCAL_PERMIT_RULES: PackRule[] = [
+  {
+    kind: 'town_setting',
+    key: 'town.registration.validity',
+    version: 1,
+    label: 'Registration validity period',
+    citation: TOWN_RULE,
+    unit: 'months',
+    overridePolicy: { policy: 'delegated_choice', default: 12 },
+  },
+  {
+    kind: 'clock',
+    key: 'town.registration.expiration',
+    version: 1,
+    label: 'Registration expiration',
+    citation: TOWN_RULE,
+    clockType: 'exercise_by',
+    whose: 'applicant',
+    startEvent: 'permit_issued',
+    length: { unit: 'months', fromSetting: 'town.registration.validity' },
+    direction: 'after',
+    consequence: { kind: 'lapse', text: 'The registration expires unless renewed.' },
+    extension: { allowed: true, by: 'town_renewal' },
+    waivable: false,
+    overridePolicy: { policy: 'fixed' },
+  },
+  {
+    kind: 'town_setting',
+    key: 'town.temporary.validity',
+    version: 1,
+    label: 'Temporary structure validity period',
+    citation: TOWN_RULE,
+    unit: 'days',
+    overridePolicy: { policy: 'delegated_choice', default: 180 },
+  },
+  {
+    kind: 'clock',
+    key: 'town.temporary.expiration',
+    version: 1,
+    label: 'Temporary structure removal date',
+    citation: TOWN_RULE,
+    clockType: 'exercise_by',
+    whose: 'applicant',
+    startEvent: 'permit_issued',
+    length: { unit: 'days', fromSetting: 'town.temporary.validity' },
+    direction: 'after',
+    consequence: { kind: 'lapse', text: 'The temporary structure must be removed by this date.' },
+    extension: { allowed: true, by: 'town_renewal' },
+    waivable: false,
+    overridePolicy: { policy: 'fixed' },
+  },
+]

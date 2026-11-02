@@ -13,6 +13,7 @@ import {
   versionsOf,
   WORLD_TIMEOUT_MS,
 } from '@/test/migrationWorld'
+import { approvePublic } from '@/test/renditionFixtures'
 
 let handle: TestDb
 let world: MigrationWorld
@@ -119,6 +120,10 @@ describe('publication', () => {
       filename: 'redacted.pdf',
       contentType: 'application/pdf',
     })
+    const redactedRow = (await versionsOf(world, item.documentId)).find(
+      (v) => v.role === 'public_redacted',
+    )
+    await approvePublic(world.db, world.publisher, redactedRow?.id ?? '', world.store)
     const asPublic = await resolveRendition(world.db, null, item.documentId ?? '', signal)
     expect(asPublic.ok && asPublic.value.role).toBe('public_redacted')
     const asStaff = await resolveRendition(world.db, world.publisher, item.documentId ?? '', signal)

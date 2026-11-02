@@ -35,6 +35,7 @@ function sourceFiles(dir: string): string[] {
 
 const SURFACES = [
   'app/(public)',
+  'app/(anonymous)',
   'components/portal',
   'components/inspections',
   'app/(staff)/staff/inspections',

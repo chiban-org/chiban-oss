@@ -38,9 +38,13 @@ export default async function BoardPacketPage({ params }: { params: Promise<{ to
         </li>
         {packet.items.map((item) => (
           <li key={item.versionId}>
-            <Link href={`${base}/${item.versionId}`} className={LINK}>
-              {`${item.title} (${item.filename})`}
-            </Link>
+            {item.withdrawnOn === null ? (
+              <Link href={`${base}/${item.versionId}`} className={LINK}>
+                {`${item.title} (${item.filename})`}
+              </Link>
+            ) : (
+              <span>{`${item.title}: withdrawn by the town on ${formatCivilDate(item.withdrawnOn)}`}</span>
+            )}
           </li>
         ))}
       </ul>

@@ -5,7 +5,7 @@ import {
   ProceedingClassificationSchema,
 } from '@packs/nh/boardSchema'
 import { z } from 'zod'
-import { RecipientRoleSchema } from '@/features/abutters/roles'
+import { RecipientRoleSchema as AbutterRecipientRoleSchema } from '@/features/abutters/roles'
 import { CORE_STATES } from '@/features/applications/states'
 import { NOTICE_CHANNELS } from '@/features/notices/channels'
 import { type CivilDate, parseCivilDate } from '@/types/civilDate'
@@ -47,6 +47,10 @@ export const StartEventSchema = z.enum([
   'decision_filed',
   'rehearing_vote',
   'administrative_decision',
+  'order_served',
+  'judgment_entered',
+  'rtk_request_received',
+  'rtk_time_statement',
 ])
 export type StartEvent = z.infer<typeof StartEventSchema>
 
@@ -82,12 +86,13 @@ const LengthSchema = z.union([
     unit: z.enum(['days', 'months', 'business_days']),
     value: z.number().int().positive(),
   }),
+  z.object({ unit: z.literal('stated_date') }),
   z.object({
     unit: z.literal('days'),
     cases: z.array(z.object({ when: FactConditionSchema, value: z.number().int().positive() })),
     otherwise: z.number().int().positive(),
   }),
-  z.object({ unit: z.literal('months'), fromSetting: z.string().min(1) }),
+  z.object({ unit: z.enum(['days', 'months']), fromSetting: z.string().min(1) }),
 ])
 export type ClockLength = z.infer<typeof LengthSchema>
 
@@ -117,6 +122,7 @@ export const ClockRuleSchema = z
         'notice_defective',
         'amendment_window_opens',
         'appeal_untimely',
+        'enforcement_step_opens',
       ]),
       text: z.string().min(1),
     }),
@@ -166,7 +172,7 @@ export type RecordRule = z.infer<typeof RecordRuleSchema>
 export const EffectRuleSchema = z.object({
   ...base,
   kind: z.literal('effect'),
-  effect: z.literal('suspend_on_appeal_of_issuance'),
+  effect: z.enum(['suspend_on_appeal_of_issuance', 'stay_enforcement_on_appeal']),
   overridePolicy: OverridePolicySchema,
 })
 
@@ -204,7 +210,7 @@ export const NoticeRequirementRuleSchema = z.object({
     z.object({ townChoice: z.array(z.enum(['public_posting', 'newspaper'])).min(1) }),
   ]),
   recipients: z.union([
-    z.object({ roles: z.array(RecipientRoleSchema).min(1) }),
+    z.object({ roles: z.array(AbutterRecipientRoleSchema).min(1) }),
     z.object({ public: z.literal(true) }),
   ]),
   leadRuleKey: z.string().min(1),
@@ -212,6 +218,68 @@ export const NoticeRequirementRuleSchema = z.object({
   overridePolicy: OverridePolicySchema,
 })
 export type NoticeRequirementRule = z.infer<typeof NoticeRequirementRuleSchema>
+export const RECIPIENT_ROLES = [
+  'record_owner',
+  'owner_agent',
+  'taxpayer',
+  'occupying_tenant',
+  'person_in_control',
+  'mortgagee_of_record',
+] as const
+export const RecipientRoleSchema = z.enum(RECIPIENT_ROLES)
+export type RecipientRole = z.infer<typeof RecipientRoleSchema>
+
+export const PERSONAL_SERVER_ROLES = [
+  'sheriff',
+  'deputy_sheriff',
+  'local_police_officer',
+  'constable',
+] as const
+export const PersonalServerRoleSchema = z.enum(PERSONAL_SERVER_ROLES)
+export type PersonalServerRole = z.infer<typeof PersonalServerRoleSchema>
+
+export const ORDER_CONTENT_FIELDS = [
+  'provisions',
+  'facts',
+  'inspectionDate',
+  'correctiveAction',
+  'correctiveDeadline',
+  'motionNotice',
+  'lienWarning',
+] as const
+export const OrderContentFieldSchema = z.enum(ORDER_CONTENT_FIELDS)
+export type OrderContentField = z.infer<typeof OrderContentFieldSchema>
+
+export const CeaseAndDesistRuleSchema = z.object({
+  ...base,
+  kind: z.literal('cease_and_desist'),
+  contentFields: z.array(OrderContentFieldSchema).min(1),
+  issuerMustBeDesignated: z.boolean(),
+  recipientRoles: z.array(RecipientRoleSchema).min(1),
+  ownerRoles: z.array(RecipientRoleSchema).min(1),
+  personalServerRoles: z.array(PersonalServerRoleSchema).min(1),
+  ownerNotFoundFallback: z.object({
+    posting: z.boolean(),
+    publicationWeeks: z.number().int().positive(),
+  }),
+  answerRuleKey: z.string().min(1),
+  courtFilingLeadDays: z.number().int().min(0),
+  judgmentAppealRuleKey: z.string().min(1),
+  penaltyRuleKey: z.string().min(1),
+  overridePolicy: z.object({ policy: z.literal('fixed') }),
+})
+export type CeaseAndDesistRule = z.infer<typeof CeaseAndDesistRuleSchema>
+
+export const CivilPenaltyRuleSchema = z.object({
+  ...base,
+  kind: z.literal('civil_penalty'),
+  firstOffenseCentsPerDay: z.number().int().positive(),
+  subsequentCentsPerDay: z.number().int().positive(),
+  accrual: z.literal('after_earlier_of_conviction_or_written_notice'),
+  imposedBy: z.literal('court'),
+  overridePolicy: z.object({ policy: z.literal('fixed') }),
+})
+export type CivilPenaltyRule = z.infer<typeof CivilPenaltyRuleSchema>
 
 export const PackRuleSchema = z
   .union([
@@ -223,6 +291,8 @@ export const PackRuleSchema = z
     EffectRuleSchema,
     TownSettingRuleSchema,
     NoticeRequirementRuleSchema,
+    CeaseAndDesistRuleSchema,
+    CivilPenaltyRuleSchema,
   ])
   .refine(
     (r) =>
@@ -257,6 +327,8 @@ export const RecordEventKindSchema = z.enum([
   'application_withdrawn',
   'application_denied',
   'building_removed',
+  'registration_expired',
+  'septic_replaced_or_removed',
   'appeal_period_expired',
 ])
 export type RecordEventKind = z.infer<typeof RecordEventKindSchema>
@@ -297,7 +369,10 @@ export const PackManifestSchema = z
     classifications: z.array(ProceedingClassificationSchema).min(1),
     codeEditions: z.array(CodeEditionEntrySchema).min(1),
     recordSeries: z.array(RecordSeriesSchema).min(1),
-    recordSeriesDefaults: z.object({ byClassification: z.record(z.string(), z.string()) }),
+    recordSeriesDefaults: z.object({
+      byClassification: z.record(z.string(), z.string()),
+      byApplicationType: z.record(z.string(), z.string()),
+    }),
     abutterParams: z.array(AbutterParamsSchema).min(1),
   })
   .superRefine((m, ctx) => {

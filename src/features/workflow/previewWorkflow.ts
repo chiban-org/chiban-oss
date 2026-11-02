@@ -55,7 +55,7 @@ type Dates = PreviewInput['sampleDates']
 function eventPlacement(
   event: ClockRule['startEvent'],
   dates: Dates,
-): { state: CoreState; on: CivilDate } {
+): { state: CoreState; on: CivilDate } | null {
   const accepted = dates.accepted ?? dates.received
   const meeting = dates.meeting ?? accepted
   switch (event) {
@@ -76,6 +76,11 @@ function eventPlacement(
     case 'final_approval':
     case 'rehearing_vote':
       return { state: 'decided', on: meeting }
+    case 'order_served':
+    case 'judgment_entered':
+    case 'rtk_request_received':
+    case 'rtk_time_statement':
+      return null
   }
 }
 
@@ -103,7 +108,9 @@ function clocksFor(body: ApplicationTypeBody, facts: ProjectFacts, dates: Dates)
   for (const event of StartEventSchema.options) {
     const eventFacts: ProjectFacts =
       event === 'board_vote' ? { ...facts, outcome: 'approved' } : facts
-    const { state, on } = eventPlacement(event, dates)
+    const placed = eventPlacement(event, dates)
+    if (placed === null) continue
+    const { state, on } = placed
     for (const rule of rulesForEvent(pack.rules, event, bound, eventFacts)) {
       const list = byState.get(state) ?? []
       list.push({

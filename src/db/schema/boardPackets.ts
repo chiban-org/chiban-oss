@@ -10,6 +10,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { documents, documentVersions } from './documents'
 import { citext } from './identity'
+import { renditionApprovals } from './renditionApprovals'
 
 export const boardPackets = pgTable('board_packets', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -29,10 +30,12 @@ export const boardPacketItems = pgTable(
     documentId: uuid('document_id')
       .notNull()
       .references(() => documents.id),
-    versionId: uuid('version_id')
-      .notNull()
-      .references(() => documentVersions.id),
+    versionId: uuid('version_id').references(() => documentVersions.id),
+    formerVersionId: uuid('former_version_id'),
     position: integer('position').notNull(),
+    approvalId: uuid('approval_id').references(() => renditionApprovals.id),
+    withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
+    withdrawnReason: text('withdrawn_reason', { enum: ['revoked', 'disposed'] }),
   },
   (t) => [primaryKey({ columns: [t.packetId, t.documentId] })],
 )
@@ -61,7 +64,7 @@ export const boardPacketAccess = pgTable(
     id: uuid('id').primaryKey().defaultRandom(),
     linkId: uuid('link_id').references(() => boardPacketLinks.id),
     userId: uuid('user_id'),
-    versionId: uuid('version_id').references(() => documentVersions.id),
+    versionId: uuid('version_id'),
     accessedAt: timestamp('accessed_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('board_packet_access_link_idx').on(t.linkId)],

@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import {
+  type AnyPgColumn,
   bigint,
   bigserial,
   boolean,
@@ -31,15 +32,24 @@ export const documents = pgTable(
         'inspection_photo',
         'certificate_of_occupancy',
         'notice_proof',
+        'enforcement_photo',
+        'enforcement_letter',
+        'service_proof',
+        'court_document',
+        'rtk_letter',
       ],
     }).notNull(),
     audiences: text('audiences').array().notNull().default(sql`'{}'::text[]`),
     isPublic: boolean('is_public').notNull().default(false),
     publicChangedBy: uuid('public_changed_by'),
     publicChangedAt: timestamp('public_changed_at', { withTimezone: true }),
-    createdByKind: text('created_by_kind', { enum: ['user', 'system'] }).notNull(),
+    createdByKind: text('created_by_kind', {
+      enum: ['user', 'system', 'anonymous_public_intake'],
+    }).notNull(),
     createdBy: uuid('created_by'),
     migrationBatchId: uuid('migration_batch_id').references(() => migrationBatches.id),
+    disposedAt: timestamp('disposed_at', { withTimezone: true }),
+    disposedTombstoneId: uuid('disposed_tombstone_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -55,13 +65,19 @@ export const documentVersions = pgTable(
     documentId: uuid('document_id')
       .notNull()
       .references(() => documents.id),
-    role: text('role', { enum: ['original', 'public_redacted', 'pdfa'] }).notNull(),
+    role: text('role', {
+      enum: ['original', 'public_redacted', 'pdfa', 'release_redacted'],
+    }).notNull(),
     fileSha256: text('file_sha256')
       .notNull()
       .references(() => files.sha256),
     filename: text('filename').notNull(),
     contentType: text('content_type').notNull(),
     createdBy: uuid('created_by'),
+    derivedFromVersionId: uuid('derived_from_version_id').references(
+      (): AnyPgColumn => documentVersions.id,
+    ),
+    redactionJobId: uuid('redaction_job_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
@@ -84,6 +100,7 @@ export const uploadIntents = pgTable('upload_intents', {
   sizeBytes: bigint('size_bytes', { mode: 'number' }).notNull(),
   tempKey: text('temp_key').notNull(),
   seriesKey: text('series_key'),
+  docKind: text('doc_kind'),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   finalizedAt: timestamp('finalized_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

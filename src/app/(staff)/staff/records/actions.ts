@@ -32,6 +32,8 @@ const DOC_COPY = {
   not_found: errorCopy('not_found'),
   invalid_audience: errorCopy('invalid_input'),
   unknown_series: 'Choose a record series from the list.',
+  doc_kind_not_allowed: 'Choose a record series from the list.',
+  approval_required: 'Approve a version for the public before publishing this document.',
 } as const
 
 const UPLOAD_COPY = {
@@ -41,6 +43,7 @@ const UPLOAD_COPY = {
   type_not_allowed: 'Upload a PDF, JPEG, or PNG file.',
   series_required: 'Choose a record series for a parcel file.',
   unknown_series: 'Choose a record series from the list.',
+  doc_kind_not_allowed: 'That kind of document cannot be added here.',
   expired: 'The upload took too long. Try again.',
   already_finalized: 'That upload was already completed.',
   not_uploaded: 'The file did not arrive. Try again.',

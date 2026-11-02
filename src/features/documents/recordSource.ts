@@ -21,6 +21,11 @@ const KIND_LABEL = {
   inspection_photo: 'Inspection photo',
   certificate_of_occupancy: 'Certificate of occupancy',
   notice_proof: 'Proof of notice',
+  enforcement_photo: 'Case photo',
+  enforcement_letter: 'Case letter',
+  service_proof: 'Proof of service',
+  court_document: 'Court document',
+  rtk_letter: 'Right-to-Know letter',
 } as const
 
 export async function summarizeDocuments(
@@ -44,6 +49,7 @@ export async function summarizeDocuments(
     status: { label: row.isPublic ? 'Public' : 'Private', chip: 'neutral' },
     date: todayInTimeZone(zone, row.createdAt),
     href: `/api/documents/${row.id}`,
+    thumbnailHref: `/api/documents/${row.id}/thumbnail`,
   }))
 }
 

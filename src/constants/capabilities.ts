@@ -34,6 +34,16 @@ export const CAPABILITIES = {
   'board.manage_members': 'Invite board members and end their terms',
   'abutters.manage':
     'Keep condominium, park, and restriction rosters and draw, confirm, and issue abutter lists',
+  'enforcement.manage':
+    'Open enforcement cases, record findings and notes, and review complaint text',
+  'enforcement.issue_order': 'Issue cease and desist orders as a designated enforcement officer',
+  'enforcement.record_service': 'Record service of an order, answers, court steps, and appeals',
+  'enforcement.refer_counsel': 'Refer an enforcement case to town counsel and record outcomes',
+  'fine.record': 'Record a court-imposed fine on the ledger',
+  'anonymous_intake.enable': 'Verify and enable anonymous complaint intake',
+  'rtk.manage': 'Log Right-to-Know requests, respond, withhold, and release records',
+  'redaction.create': 'Draw redactions on a document version and run them',
+  'disposition.propose': 'Propose a disposition batch from the retention worklist',
 } as const
 
 export type Capability = keyof typeof CAPABILITIES

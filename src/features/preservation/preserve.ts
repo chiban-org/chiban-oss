@@ -40,7 +40,7 @@ async function readBytes(
 interface LoadedVersion {
   id: string
   documentId: string
-  role: 'original' | 'public_redacted' | 'pdfa'
+  role: 'original' | 'public_redacted' | 'pdfa' | 'release_redacted'
   contentType: string
   filename: string
   storageKey: string

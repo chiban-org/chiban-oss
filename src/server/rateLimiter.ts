@@ -3,6 +3,8 @@ export interface RateLimiter {
   isLimited(key: string): boolean
   clear(key: string): void
   reset(): void
+  prune(): void
+  size(): number
 }
 
 interface Options {
@@ -35,6 +37,12 @@ export function createRateLimiter(options: Options): RateLimiter {
     },
     reset() {
       failures.clear()
+    },
+    prune() {
+      for (const key of [...failures.keys()]) recent(key)
+    },
+    size() {
+      return failures.size
     },
   }
 }

@@ -2,6 +2,8 @@ import { and, desc, eq, isNotNull, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
   applications,
+  enforcementCases,
+  enforcementFines,
   ledgerAllocations,
   ledgerEntries,
   paymentAttempts,
@@ -49,8 +51,14 @@ async function entryApplications(db: Db, entryIds: string[]): Promise<Map<string
     .from(ledgerAllocations)
     .innerJoin(applications, eq(applications.id, ledgerAllocations.applicationId))
     .where(sql`${ledgerAllocations.entryId} in ${entryIds}`)
+  const fineRows = await db
+    .selectDistinct({ entryId: ledgerAllocations.entryId, number: enforcementCases.number })
+    .from(ledgerAllocations)
+    .innerJoin(enforcementFines, eq(enforcementFines.id, ledgerAllocations.fineId))
+    .innerJoin(enforcementCases, eq(enforcementCases.id, enforcementFines.caseId))
+    .where(sql`${ledgerAllocations.entryId} in ${entryIds}`)
   const byEntry = new Map<string, string[]>()
-  for (const row of rows)
+  for (const row of [...rows, ...fineRows])
     byEntry.set(row.entryId, [...(byEntry.get(row.entryId) ?? []), row.number])
   return byEntry
 }

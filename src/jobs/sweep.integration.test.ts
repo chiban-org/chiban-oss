@@ -223,7 +223,7 @@ describe('jobs.sweep', () => {
     expect(await queued(JOB_NAMES.NOTIFICATIONS_SEND)).toBe(1)
   })
 
-  it('registers the six sweep targets', () => {
+  it('registers the sweep targets', () => {
     expect(SWEEP_TARGETS.map((t) => t.name)).toEqual([
       'clocks.daily',
       'appeals.daily',
@@ -231,6 +231,11 @@ describe('jobs.sweep', () => {
       'calendar.push',
       'records.preserve',
       'exports.build',
+      'redaction.run',
+      'records.dispose',
+      'files.delete',
+      'files.release',
+      'renditions.derive',
     ])
   })
 })

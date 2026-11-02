@@ -1,6 +1,13 @@
-import { and, desc, eq, type SQL, sql } from 'drizzle-orm'
+import { and, desc, eq, isNull, type SQL, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { documents, documentText, documentVersions, type FileRow, files } from '@/db/schema'
+import {
+  documents,
+  documentText,
+  documentVersions,
+  type FileRow,
+  files,
+  renditionApprovals,
+} from '@/db/schema'
 import {
   isBoardMember,
   memberCanSeeApplication,
@@ -55,15 +62,24 @@ export function documentPrivateAccess(actor: Actor | null): SQL {
   return sql`(${sql.join(clauses, sql` or `)})`
 }
 
+function publicDocument(): SQL {
+  return sql`(${documents.isPublic} and ${documents.recordKind} <> 'rtk_request' and exists (
+    select 1 from rendition_approvals ra
+    where ra.document_id = ${documents.id} and ra.purpose = 'public' and ra.revoked_at is null)
+    and (${documents.recordKind} <> 'enforcement_case' or exists (
+    select 1 from enforcement_cases ec
+    where ec.id = ${documents.recordId} and ec.is_public)))`
+}
+
 export function documentVisibleTo(actor: Actor | null): SQL {
-  return sql`(${documents.isPublic} or ${documentPrivateAccess(actor)})`
+  return sql`(${documents.disposedAt} is null and (${publicDocument()} or ${documentPrivateAccess(actor)}))`
 }
 
 export type Rendition = 'default' | 'pdfa'
 
 export interface ResolvedRendition {
   versionId: string
-  role: 'original' | 'public_redacted' | 'pdfa'
+  role: 'original' | 'public_redacted' | 'pdfa' | 'release_redacted'
   file: FileRow
   filename: string
   contentType: string
@@ -96,7 +112,9 @@ export async function resolveRendition(
     .orderBy(desc(documentVersions.createdAt))
   const latest = (role: ResolvedRendition['role']) => versions.find((v) => v.role === role)
   const textLayers = await textLayerByVersion(db, documentId)
-  const chosen = chooseVersion(doc.privately, rendition, latest, textLayers)
+  const chosen = doc.privately
+    ? chooseVersion(rendition, latest, textLayers)
+    : await approvedPublicVersion(db, documentId, rendition, versions, latest, textLayers)
   if (chosen === undefined) return err('not_found')
   return ok({
     versionId: chosen.id,
@@ -105,6 +123,30 @@ export async function resolveRendition(
     filename: chosen.filename,
     contentType: chosen.contentType,
   })
+}
+
+async function approvedPublicVersion<T extends Candidate & { role: ResolvedRendition['role'] }>(
+  db: DbOrTx,
+  documentId: string,
+  rendition: Rendition,
+  versions: T[],
+  latest: (role: ResolvedRendition['role']) => T | undefined,
+  textLayers: ReadonlyMap<string, boolean>,
+): Promise<T | undefined> {
+  if (rendition === 'pdfa') return undefined
+  const [approval] = await db
+    .select({ versionId: renditionApprovals.versionId })
+    .from(renditionApprovals)
+    .where(
+      and(
+        eq(renditionApprovals.documentId, documentId),
+        eq(renditionApprovals.purpose, 'public'),
+        isNull(renditionApprovals.revokedAt),
+      ),
+    )
+  const approved = versions.find((v) => v.id === approval?.versionId)
+  if (approved === undefined) return undefined
+  return approved.role === 'original' ? defaultOriginal(latest, textLayers) : approved
 }
 
 async function textLayerByVersion(
@@ -138,13 +180,10 @@ function defaultOriginal<T extends Candidate>(
 }
 
 function chooseVersion<T extends Candidate>(
-  privately: boolean,
   rendition: Rendition,
   latest: (role: ResolvedRendition['role']) => T | undefined,
   textLayers: ReadonlyMap<string, boolean>,
 ): T | undefined {
-  if (rendition === 'pdfa') return privately ? latest('pdfa') : undefined
-  const preferred = defaultOriginal(latest, textLayers)
-  if (privately) return preferred
-  return latest('public_redacted') ?? preferred
+  if (rendition === 'pdfa') return latest('pdfa')
+  return defaultOriginal(latest, textLayers)
 }

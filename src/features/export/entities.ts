@@ -2,6 +2,7 @@ import { getTableName } from 'drizzle-orm'
 import { getTableConfig, type PgTable } from 'drizzle-orm/pg-core'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import * as t from '@/db/schema'
+import { M10_SPECS } from '@/features/export/m10Specs'
 
 export interface ExportEntity {
   name: string
@@ -28,13 +29,34 @@ export const HASH_COLUMNS_ALLOWED = [
 
 const RANDOM_HASH = `encode(gen_random_bytes(32), 'hex')`
 
-interface Spec {
+export interface Spec {
   table: PgTable
   importMode?: ExportEntity['importMode']
   omit?: string[]
   fill?: Record<string, string>
   poly?: ExportEntity['polyRefs']
 }
+
+const ENFORCEMENT_SPECS: Spec[] = [
+  { table: t.enforcementCases },
+  { table: t.complaints },
+  { table: t.enforcementNotes },
+  { table: t.violationFindings },
+  { table: t.violationNotices },
+  { table: t.enforcementDesignations },
+  { table: t.enforcementOrders },
+  { table: t.orderServiceRecipients },
+  { table: t.orderServiceRoleChecks },
+  { table: t.orderServiceEvents },
+  { table: t.orderCourtSteps },
+  { table: t.enforcementAppeals },
+  { table: t.perilCertifications },
+  { table: t.restrainingOrders },
+  { table: t.counselReferrals },
+  { table: t.counselOutcomes },
+  { table: t.enforcementFines },
+  { table: t.anonymousIntakeVerifications },
+]
 
 const SPECS: Spec[] = [
   { table: t.abutterListCandidates },
@@ -43,6 +65,8 @@ const SPECS: Spec[] = [
   { table: t.acceptanceSchedules },
   { table: t.agendaItems },
   { table: t.agendas },
+  ...ENFORCEMENT_SPECS,
+  ...M10_SPECS,
   { table: t.aliasOverrides },
   { table: t.applicationParcels },
   { table: t.appealNodes },
@@ -93,6 +117,7 @@ const SPECS: Spec[] = [
           parcel: 'parcels',
           meeting: 'board_meetings',
           migration_batch: 'migration_batches',
+          enforcement_case: 'enforcement_cases',
         },
       },
     ],
@@ -156,6 +181,7 @@ const SPECS: Spec[] = [
           inspection: 'inspections',
           document: 'documents',
           historical_record: 'historical_records',
+          enforcement_case: 'enforcement_cases',
         },
       },
     ],

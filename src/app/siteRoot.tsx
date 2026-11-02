@@ -8,12 +8,12 @@ import { Providers } from '@/components/providers'
 import { CSRF_COOKIE } from '@/constants/cookies'
 import './globals.css'
 
-export const metadata: Metadata = {
+export const SITE_METADATA: Metadata = {
   title: 'Chiban',
   description: 'Land-use software for small towns.',
 }
 
-export default async function RootLayout({ children }: { children: ReactNode }) {
+export async function SiteRoot({ children }: { children: ReactNode }) {
   const token = (await cookies()).get(CSRF_COOKIE)?.value ?? ''
   return (
     <html lang="en">

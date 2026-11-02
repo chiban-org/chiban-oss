@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   boardMemberships,
   boardPacketAccess,
+  boardPacketItems,
   boardPacketLinks,
   documents,
   userRoles,
@@ -422,6 +423,59 @@ describe('packets for members', () => {
         (r) => r.userId === zba.userId && r.versionId === item?.versionId && r.linkId === null,
       ),
     ).toBe(true)
+  })
+
+  it('a withdrawn packet item is listed as withdrawn and refused to the member', async () => {
+    const zba = await invite('zba.member@alderpond.example', 'zba')
+    const { meetingId: id } = await packet()
+    const before = await getMemberPacket(handle.db, zba.actor, id, signal)
+    if (!before.ok) throw new Error('no packet')
+    const versionId = before.value.items[0]?.versionId ?? ''
+    await handle.db
+      .update(boardPacketItems)
+      .set({ withdrawnAt: NOW, withdrawnReason: 'revoked' })
+      .where(eq(boardPacketItems.versionId, versionId))
+    const after = await getMemberPacket(handle.db, zba.actor, id, signal)
+    if (!after.ok) throw new Error('no packet')
+    expect(after.value.items.find((i) => i.versionId === versionId)?.withdrawnOn).toBe('2027-04-10')
+    const opened = await openMemberPacketVersion(
+      handle.db,
+      store,
+      zba.actor,
+      { meetingId: id, versionId },
+      signal,
+    )
+    expect(opened).toEqual({ ok: false, error: { withdrawnOn: '2027-04-10' } })
+  })
+
+  it('a disposed packet item keeps its place under its former version', async () => {
+    const zba = await invite('zba.member@alderpond.example', 'zba')
+    const { meetingId: id } = await packet()
+    const before = await getMemberPacket(handle.db, zba.actor, id, signal)
+    if (!before.ok) throw new Error('no packet')
+    const versionId = before.value.items[0]?.versionId ?? ''
+    await handle.db
+      .update(boardPacketItems)
+      .set({
+        versionId: null,
+        formerVersionId: versionId,
+        withdrawnAt: NOW,
+        withdrawnReason: 'disposed',
+      })
+      .where(eq(boardPacketItems.versionId, versionId))
+    const after = await getMemberPacket(handle.db, zba.actor, id, signal)
+    if (!after.ok) throw new Error('no packet')
+    expect(after.value.items.map((i) => i.versionId)).toEqual(
+      before.value.items.map((i) => i.versionId),
+    )
+    const opened = await openMemberPacketVersion(
+      handle.db,
+      store,
+      zba.actor,
+      { meetingId: id, versionId },
+      signal,
+    )
+    expect(opened).toEqual({ ok: false, error: { withdrawnOn: '2027-04-10' } })
   })
 
   it('a version outside the packet is not_found for the member', async () => {

@@ -38,7 +38,7 @@ function textMatch(q: string): SQL {
 }
 
 const ORIGINAL = sql`(select dv.id from document_versions dv where dv.document_id = documents.id and dv.role = 'original' limit 1)`
-const REDACTED = sql`(select dv.id from document_versions dv where dv.document_id = documents.id and dv.role = 'public_redacted' order by dv.created_at desc limit 1)`
+const APPROVED = sql`(select ra.version_id from rendition_approvals ra where ra.document_id = documents.id and ra.purpose = 'public' and ra.revoked_at is null)`
 
 const PREFERRED = sql`coalesce(
   (select p.id from document_versions p
@@ -49,6 +49,11 @@ const PREFERRED = sql`coalesce(
         select 1 from document_text ot where ot.version_id = o.id and ot.has_text_layer))
     order by p.created_at desc limit 1),
   ${ORIGINAL})`
+
+const PUBLIC_VERSION = sql`(case
+  when ${APPROVED} is null then null
+  when (select av.role from document_versions av where av.id = ${APPROVED}) = 'original' then ${PREFERRED}
+  else ${APPROVED} end)`
 
 function runSearch(
   db: DbOrTx,
@@ -100,14 +105,7 @@ export async function searchPublicDocuments(
   const q = input.q.trim()
   if (q.length < MIN_QUERY_LENGTH) return []
   const limit = clampLimit(input.limit)
-  const result = await runSearch(
-    db,
-    sql`coalesce(${REDACTED}, ${PREFERRED})`,
-    sql`documents.is_public`,
-    q,
-    limit,
-    null,
-  )
+  const result = await runSearch(db, PUBLIC_VERSION, documentVisibleTo(null), q, limit, null)
   return result.rows.slice(0, limit).map(toPublicHit)
 }
 
@@ -122,7 +120,7 @@ export async function searchDocuments(
   if (q.length < MIN_QUERY_LENGTH) return { rows: [], nextCursor: null }
   const limit = clampLimit(input.limit)
   const after = input.cursor === undefined ? null : Number(input.cursor)
-  const version = sql`case when ${documentPrivateAccess(actor)} then ${PREFERRED} else coalesce(${REDACTED}, ${PREFERRED}) end`
+  const version = sql`case when ${documentPrivateAccess(actor)} then ${PREFERRED} else ${PUBLIC_VERSION} end`
   const result = await runSearch(
     db,
     version,

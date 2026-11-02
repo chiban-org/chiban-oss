@@ -34,6 +34,15 @@ function RecordRow({
   const carried = 'carriedFrom' in record ? record.carriedFrom : undefined
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 border-b py-3">
+      {record.thumbnailHref === undefined || record.thumbnailHref === null ? null : (
+        <img
+          src={record.thumbnailHref}
+          alt={`First page of ${record.title}`}
+          width={96}
+          loading="lazy"
+          className="h-auto w-24 border"
+        />
+      )}
       <div>
         {record.href === null ? (
           <span className="font-semibold">{record.title}</span>

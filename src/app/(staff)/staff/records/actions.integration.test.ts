@@ -3,11 +3,13 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { documents, legalHolds, projects } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { holdSubjects } from '@/features/records/holds'
+import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/minio'
 import { staffActor } from '@/test/parcels'
+import { approvePublic } from '@/test/renditionFixtures'
 
 interface MockState {
   db: unknown
@@ -45,6 +47,8 @@ const actions = await import('./actions')
 let handle: TestDb
 let world: PermitWorld
 let documentId = ''
+let versionId = ''
+let testStore: ObjectStore
 let projectId = ''
 
 function form(fields: Record<string, string>, token: string | null = 'tok'): FormData {
@@ -60,16 +64,17 @@ beforeAll(async () => {
   world = await setupPermitWorld(handle.db)
   projectId = world.projectId
   const { store } = await makeTestStore()
+  testStore = store
   const app = await makeApplication(handle.db, world)
-  documentId = (
-    await uploadAs(
-      handle.db,
-      store,
-      world.applicant,
-      { kind: 'application', id: app.applicationId },
-      pdfBytes('records'),
-    )
-  ).documentId
+  const uploaded = await uploadAs(
+    handle.db,
+    store,
+    world.applicant,
+    { kind: 'application', id: app.applicationId },
+    pdfBytes('records'),
+  )
+  documentId = uploaded.documentId
+  versionId = uploaded.versionId
 })
 afterAll(async () => {
   await handle.drop()
@@ -87,7 +92,15 @@ describe('records actions', () => {
     expect(doc?.isPublic).toBe(false)
   })
 
+  it('setPublicAction without an approved version tells staff to approve one first', async () => {
+    expect(await actions.setPublicAction(form({ documentId, isPublic: 'true' }))).toMatchObject({
+      ok: false,
+      error: expect.stringContaining('Approve a version'),
+    })
+  })
+
   it('staff can publish and set audiences; a reviewer cannot', async () => {
+    await approvePublic(handle.db, world.staff, versionId, testStore)
     expect(await actions.setPublicAction(form({ documentId, isPublic: 'true' }))).toMatchObject({
       ok: true,
     })

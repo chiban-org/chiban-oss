@@ -155,6 +155,18 @@ References:
 - `parcel_id` refers to `parcels`
 - `replaced_parcel_id` refers to `parcels`
 
+### anonymous_intake_verifications
+
+File: `data/anonymous_intake_verifications.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `image_ref`: text, nullable
+- `app_version`: text
+- `caddyfile_sha256`: text
+- `ran_at`: timestamp with time zone
+- `passed`: boolean
+- `findings`: jsonb
+
 ### appeal_nodes
 
 File: `data/appeal_nodes.ndjson`. Ordered by id.
@@ -401,7 +413,6 @@ File: `data/board_packet_access.ndjson`. Ordered by id.
 
 References:
 - `link_id` refers to `board_packet_links`
-- `version_id` refers to `document_versions`
 
 ### board_packet_items
 
@@ -409,13 +420,18 @@ File: `data/board_packet_items.ndjson`. Ordered by packet_id, document_id.
 
 - `packet_id`: uuid
 - `document_id`: uuid
-- `version_id`: uuid
+- `version_id`: uuid, nullable
+- `former_version_id`: uuid, nullable
 - `position`: integer
+- `approval_id`: uuid, nullable
+- `withdrawn_at`: timestamp with time zone, nullable
+- `withdrawn_reason`: text, nullable
 
 References:
 - `packet_id` refers to `board_packets`
 - `document_id` refers to `documents`
 - `version_id` refers to `document_versions`
+- `approval_id` refers to `rendition_approvals`
 
 ### board_packet_links
 
@@ -484,6 +500,23 @@ File: `data/calendar_pushes.ndjson`. Ordered by id.
 
 References:
 - `inspection_id` refers to `inspections`
+
+### census_classifications
+
+File: `data/census_classifications.ndjson`. Ordered by application_id.
+
+- `application_id`: uuid
+- `category`: text
+- `excluded_reason`: text, nullable
+- `phase`: text
+- `buildings`: integer
+- `housing_units`: integer
+- `valuation_dollars`: integer
+- `classified_by`: uuid
+- `classified_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
 
 ### certificates_of_occupancy
 
@@ -570,6 +603,32 @@ File: `data/code_edition_records.ndjson`. Ordered by application_id.
 References:
 - `application_id` refers to `applications`
 
+### complaints
+
+File: `data/complaints.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `number`: text
+- `case_id`: uuid, nullable
+- `channel`: text
+- `received_on`: date
+- `location_text`: text
+- `parcel_id`: uuid, nullable
+- `description_original`: text
+- `description_public`: text, nullable
+- `public_text_approved_by`: uuid, nullable
+- `public_text_approved_at`: timestamp with time zone, nullable
+- `complainant_name`: text, nullable
+- `complainant_email`: citext, nullable
+- `complainant_phone`: text, nullable
+- `created_by`: uuid, nullable
+- `is_probe`: boolean
+- `created_at`: timestamp with time zone
+
+References:
+- `case_id` refers to `enforcement_cases`
+- `parcel_id` refers to `parcels`
+
 ### completeness_votes
 
 File: `data/completeness_votes.ndjson`. Ordered by id.
@@ -627,6 +686,41 @@ References:
 
 Omitted columns: `token_hash`
 
+### counsel_outcomes
+
+File: `data/counsel_outcomes.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `referral_id`: uuid
+- `kind`: text
+- `occurred_on`: date
+- `court`: text, nullable
+- `docket`: text, nullable
+- `document_id`: uuid, nullable
+- `note`: text, nullable
+- `recorded_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `referral_id` refers to `counsel_referrals`
+- `document_id` refers to `documents`
+
+### counsel_referrals
+
+File: `data/counsel_referrals.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `referred_on`: date
+- `counsel_name`: text
+- `purpose`: text
+- `packet_document_id`: uuid
+- `referred_by`: uuid
+
+References:
+- `case_id` refers to `enforcement_cases`
+- `packet_document_id` refers to `documents`
+
 ### cutover_reconciliations
 
 File: `data/cutover_reconciliations.ndjson`. Ordered by id.
@@ -666,6 +760,57 @@ File: `data/des_proximity_determinations.ndjson`. Ordered by application_id.
 References:
 - `application_id` refers to `applications`
 
+### disposition_batches
+
+File: `data/disposition_batches.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `as_of`: date
+- `status`: text
+- `proposed_by`: uuid
+- `proposed_at`: timestamp with time zone
+- `approved_by`: uuid, nullable
+- `approved_at`: timestamp with time zone, nullable
+- `executed_at`: timestamp with time zone, nullable
+- `cancelled_at`: timestamp with time zone, nullable
+
+### disposition_items
+
+File: `data/disposition_items.ndjson`. Ordered by batch_id, record_kind, record_id.
+
+- `batch_id`: uuid
+- `record_kind`: text
+- `record_id`: uuid
+- `series_key`: text
+- `series_version`: text
+- `eligible_on`: date
+- `outcome`: text, nullable
+
+References:
+- `batch_id` refers to `disposition_batches`
+
+### disposition_tombstones
+
+File: `data/disposition_tombstones.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `batch_id`: uuid
+- `record_kind`: text
+- `record_id`: uuid
+- `title`: text
+- `series_key`: text
+- `series_version`: text
+- `series_citation`: jsonb
+- `retention_basis`: jsonb
+- `version_ids`: uuid[]
+- `file_sha256s`: text[]
+- `proposed_by`: uuid
+- `approved_by`: uuid
+- `executed_at`: timestamp with time zone
+
+References:
+- `batch_id` refers to `disposition_batches`
+
 ### document_text
 
 File: `data/document_text.ndjson`. Ordered by version_id.
@@ -690,11 +835,14 @@ File: `data/document_versions.ndjson`. Ordered by id.
 - `filename`: text
 - `content_type`: text
 - `created_by`: uuid, nullable
+- `derived_from_version_id`: uuid, nullable
+- `redaction_job_id`: uuid, nullable
 - `created_at`: timestamp with time zone
 
 References:
 - `document_id` refers to `documents`
 - `file_sha256` refers to `files`
+- `derived_from_version_id` refers to `document_versions`
 
 ### documents
 
@@ -713,13 +861,130 @@ File: `data/documents.ndjson`. Ordered by id.
 - `created_by_kind`: text
 - `created_by`: uuid, nullable
 - `migration_batch_id`: uuid, nullable
+- `disposed_at`: timestamp with time zone, nullable
+- `disposed_tombstone_id`: uuid, nullable
 - `created_at`: timestamp with time zone
 
 References:
 - `migration_batch_id` refers to `migration_batches`
 
 Typed references:
-- `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, project to `projects`, parcel to `parcels`, meeting to `board_meetings`, migration_batch to `migration_batches`
+- `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, project to `projects`, parcel to `parcels`, meeting to `board_meetings`, migration_batch to `migration_batches`, enforcement_case to `enforcement_cases`
+
+### enforcement_appeals
+
+File: `data/enforcement_appeals.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `target_kind`: text
+- `target_id`: uuid
+- `filed_on`: date
+- `appellant_name`: text
+- `board`: text
+- `resolved_on`: date, nullable
+- `outcome`: text, nullable
+- `recorded_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `case_id` refers to `enforcement_cases`
+
+### enforcement_cases
+
+File: `data/enforcement_cases.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `number`: text
+- `parcel_id`: uuid, nullable
+- `location_text`: text
+- `status`: text
+- `opened_on`: date
+- `closed_on`: date, nullable
+- `closure_reason`: text, nullable
+- `assigned_to`: uuid, nullable
+- `is_public`: boolean
+- `public_summary`: text, nullable
+- `row_version`: integer
+- `created_at`: timestamp with time zone
+- `updated_at`: timestamp with time zone
+
+References:
+- `parcel_id` refers to `parcels`
+
+### enforcement_designations
+
+File: `data/enforcement_designations.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `user_id`: uuid
+- `title`: text
+- `adopting_authority`: text
+- `adopted_on`: date
+- `ended_on`: date, nullable
+
+### enforcement_fines
+
+File: `data/enforcement_fines.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `order_id`: uuid, nullable
+- `kind`: text
+- `rule_key`: text, nullable
+- `amount_cents`: integer
+- `imposed_on`: date
+- `court`: text
+- `docket`: text
+- `judgment_step_id`: uuid, nullable
+- `counsel_outcome_id`: uuid, nullable
+- `recorded_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `case_id` refers to `enforcement_cases`
+- `order_id` refers to `enforcement_orders`
+- `judgment_step_id` refers to `order_court_steps`
+- `counsel_outcome_id` refers to `counsel_outcomes`
+
+### enforcement_notes
+
+File: `data/enforcement_notes.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `observed_on`: date
+- `body`: text
+- `author_id`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `case_id` refers to `enforcement_cases`
+
+### enforcement_orders
+
+File: `data/enforcement_orders.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `number`: text
+- `rule_key`: text
+- `rule_version`: integer
+- `finding_ids`: uuid[]
+- `corrective_action`: text
+- `corrective_deadline`: date, nullable
+- `cease_immediately`: boolean
+- `status`: text
+- `drafted_by`: uuid
+- `issued_on`: date, nullable
+- `issued_by`: uuid, nullable
+- `document_id`: uuid, nullable
+- `row_version`: integer
+- `created_at`: timestamp with time zone
+
+References:
+- `case_id` refers to `enforcement_cases`
+- `document_id` refers to `documents`
 
 ### export_targets
 
@@ -768,6 +1033,19 @@ File: `data/fee_overrides.ndjson`. Ordered by id.
 
 References:
 - `application_id` refers to `applications`
+
+### file_tombstones
+
+File: `data/file_tombstones.ndjson`. Ordered by sha256.
+
+- `sha256`: text
+- `size_bytes`: bigint
+- `content_type`: text
+- `deleted_at`: timestamp with time zone
+- `batch_id`: uuid
+
+References:
+- `batch_id` refers to `disposition_batches`
 
 ### files
 
@@ -973,12 +1251,14 @@ File: `data/ledger_allocations.ndjson`. Ordered by id.
 - `fee_assessment_id`: uuid, nullable
 - `stage`: text, nullable
 - `fee_code`: text, nullable
+- `fine_id`: uuid, nullable
 - `amount_cents`: integer
 
 References:
 - `entry_id` refers to `ledger_entries`
 - `application_id` refers to `applications`
 - `fee_assessment_id` refers to `fee_assessments`
+- `fine_id` refers to `enforcement_fines`
 
 ### ledger_entries
 
@@ -1160,6 +1440,79 @@ File: `data/notification_outbox.ndjson`. Ordered by id.
 References:
 - `application_id` refers to `applications`
 
+### order_court_steps
+
+File: `data/order_court_steps.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `order_id`: uuid
+- `kind`: text
+- `occurred_on`: date
+- `court`: text
+- `docket`: text, nullable
+- `document_id`: uuid
+- `judgment_outcome`: text, nullable
+- `appeal_due`: jsonb, nullable
+- `recorded_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `order_id` refers to `enforcement_orders`
+- `document_id` refers to `documents`
+
+### order_service_events
+
+File: `data/order_service_events.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `order_id`: uuid
+- `recipient_id`: uuid, nullable
+- `method`: text
+- `served_on`: date
+- `server_name`: text, nullable
+- `server_role`: text, nullable
+- `newspaper`: text, nullable
+- `proof_document_id`: uuid
+- `recorded_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `order_id` refers to `enforcement_orders`
+- `recipient_id` refers to `order_service_recipients`
+- `proof_document_id` refers to `documents`
+
+### order_service_recipients
+
+File: `data/order_service_recipients.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `order_id`: uuid
+- `role`: text
+- `name`: text
+- `address`: text
+- `source`: text
+- `answer_due`: jsonb, nullable
+- `answered_on`: date, nullable
+- `answer_document_id`: uuid, nullable
+
+References:
+- `order_id` refers to `enforcement_orders`
+- `answer_document_id` refers to `documents`
+
+### order_service_role_checks
+
+File: `data/order_service_role_checks.ndjson`. Ordered by order_id, role.
+
+- `order_id`: uuid
+- `role`: text
+- `outcome`: text
+- `basis`: text
+- `checked_by`: uuid
+- `checked_on`: date
+
+References:
+- `order_id` refers to `enforcement_orders`
+
 ### parcel_aliases
 
 File: `data/parcel_aliases.ndjson`. Ordered by id.
@@ -1245,7 +1598,7 @@ References:
 - `parcel_id` refers to `parcels`
 
 Typed references:
-- `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, document to `documents`, historical_record to `historical_records`
+- `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, document to `documents`, historical_record to `historical_records`, enforcement_case to `enforcement_cases`
 
 ### parcels
 
@@ -1322,6 +1675,20 @@ File: `data/payment_attempts.ndjson`. Ordered by id.
 
 References:
 - `processor_account_id` refers to `processor_accounts`
+
+### peril_certifications
+
+File: `data/peril_certifications.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `appeal_id`: uuid
+- `certified_on`: date
+- `certified_by`: uuid
+- `categories`: text[]
+- `statement`: text
+
+References:
+- `appeal_id` refers to `enforcement_appeals`
 
 ### preservation_records
 
@@ -1432,7 +1799,8 @@ File: `data/receipts.ndjson`. Ordered by id.
 File: `data/record_events.ndjson`. Ordered by id.
 
 - `id`: uuid
-- `project_id`: uuid
+- `project_id`: uuid, nullable
+- `case_id`: uuid, nullable
 - `application_id`: uuid, nullable
 - `kind`: text
 - `occurred_on`: date
@@ -1442,7 +1810,46 @@ File: `data/record_events.ndjson`. Ordered by id.
 
 References:
 - `project_id` refers to `projects`
+- `case_id` refers to `enforcement_cases`
 - `application_id` refers to `applications`
+
+### redaction_boxes
+
+File: `data/redaction_boxes.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `job_id`: uuid
+- `page`: integer, nullable
+- `pdf_box`: jsonb, nullable
+- `image_box`: jsonb, nullable
+- `exemption_key`: text
+- `other_citation`: text, nullable
+- `explanation`: text
+
+References:
+- `job_id` refers to `redaction_jobs`
+
+### redaction_jobs
+
+File: `data/redaction_jobs.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `document_id`: uuid
+- `source_version_id`: uuid
+- `purpose`: text
+- `rtk_request_id`: uuid, nullable
+- `status`: text
+- `failure_reason`: text, nullable
+- `result_version_id`: uuid, nullable
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+- `finished_at`: timestamp with time zone, nullable
+
+References:
+- `document_id` refers to `documents`
+- `source_version_id` refers to `document_versions`
+- `rtk_request_id` refers to `rtk_requests`
+- `result_version_id` refers to `document_versions`
 
 ### refund_requests
 
@@ -1522,6 +1929,43 @@ File: `data/remediation_tasks.ndjson`. Ordered by id.
 
 References:
 - `application_id` refers to `applications`
+
+### rendition_approvals
+
+File: `data/rendition_approvals.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `document_id`: uuid
+- `version_id`: uuid
+- `purpose`: text
+- `rtk_request_id`: uuid, nullable
+- `approved_by_kind`: text
+- `approved_by`: uuid, nullable
+- `approved_at`: timestamp with time zone
+- `review_statement`: text
+- `revoked_at`: timestamp with time zone, nullable
+- `revoked_by`: uuid, nullable
+- `revoke_reason`: text, nullable
+
+References:
+- `document_id` refers to `documents`
+- `version_id` refers to `document_versions`
+- `rtk_request_id` refers to `rtk_requests`
+
+### restraining_orders
+
+File: `data/restraining_orders.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `appeal_id`: uuid
+- `issued_by`: text
+- `issued_on`: date
+- `document_id`: uuid
+- `dissolved_on`: date, nullable
+
+References:
+- `appeal_id` refers to `enforcement_appeals`
+- `document_id` refers to `documents`
 
 ### restriction_holdings
 
@@ -1603,6 +2047,102 @@ File: `data/roster_reviews.ndjson`. Ordered by id.
 - `reviewed_by`: uuid
 - `recorded_at`: timestamp with time zone
 
+### rtk_release_items
+
+File: `data/rtk_release_items.ndjson`. Ordered by release_id, document_id.
+
+- `release_id`: uuid
+- `document_id`: uuid
+- `version_id`: uuid, nullable
+- `former_version_id`: uuid, nullable
+- `approval_id`: uuid, nullable
+- `position`: integer
+- `withdrawn_at`: timestamp with time zone, nullable
+- `withdrawn_reason`: text, nullable
+
+References:
+- `release_id` refers to `rtk_releases`
+- `document_id` refers to `documents`
+- `version_id` refers to `document_versions`
+- `approval_id` refers to `rendition_approvals`
+
+### rtk_releases
+
+File: `data/rtk_releases.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `request_id`: uuid
+- `sequence`: integer
+- `released_on`: date
+- `method`: text
+- `letter_document_id`: uuid, nullable
+- `released_by`: uuid
+- `link_expires_at`: timestamp with time zone, nullable
+- `link_revoked_at`: timestamp with time zone, nullable
+- `created_at`: timestamp with time zone
+
+References:
+- `request_id` refers to `rtk_requests`
+- `letter_document_id` refers to `documents`
+
+Omitted columns: `link_token_hash`
+
+### rtk_requests
+
+File: `data/rtk_requests.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `number`: text
+- `received_on`: date
+- `received_via`: text
+- `requester_name`: text, nullable
+- `requester_contact`: text, nullable
+- `description`: text
+- `status`: text
+- `response_due`: jsonb
+- `stated_due`: jsonb, nullable
+- `open_due_on`: date, nullable
+- `first_response_on`: date, nullable
+- `first_response_kind`: text, nullable
+- `first_response_url`: text, nullable
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+- `row_version`: integer
+
+### rtk_time_statements
+
+File: `data/rtk_time_statements.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `request_id`: uuid
+- `stated_on`: date
+- `stated_date`: date
+- `delay_reason`: text
+- `cost_estimate`: jsonb
+
+References:
+- `request_id` refers to `rtk_requests`
+
+### rtk_withholdings
+
+File: `data/rtk_withholdings.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `request_id`: uuid
+- `release_id`: uuid, nullable
+- `scope`: text
+- `document_id`: uuid, nullable
+- `record_description`: text
+- `exemption_key`: text
+- `other_citation`: text, nullable
+- `explanation`: text
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `request_id` refers to `rtk_requests`
+- `release_id` refers to `rtk_releases`
+
 ### rule_transitions_applied
 
 File: `data/rule_transitions_applied.ndjson`. Ordered by id.
@@ -1640,6 +2180,7 @@ File: `data/town_settings.ndjson`. Ordered by id.
 - `service_status`: text
 - `service_status_since`: date, nullable
 - `export_window_days`: integer
+- `anonymous_intake_enabled`: boolean
 - `updated_at`: timestamp with time zone
 
 ### trc_routings
@@ -1677,3 +2218,38 @@ File: `data/users.ndjson`. Ordered by id.
 - `created_at`: timestamp with time zone
 
 Omitted columns: `password_hash`, `totp_secret_enc`, `totp_enabled`, `totp_last_counter`
+
+### violation_findings
+
+File: `data/violation_findings.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `provision_kind`: text
+- `provision_ref`: text
+- `facts`: text
+- `inspection_date`: date
+- `found_on`: date
+- `found_by`: uuid
+- `status`: text
+
+References:
+- `case_id` refers to `enforcement_cases`
+
+### violation_notices
+
+File: `data/violation_notices.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `finding_ids`: uuid[]
+- `sent_on`: date
+- `method`: text
+- `sent_by`: uuid
+- `received_on`: date, nullable
+- `receipt_basis`: text, nullable
+- `document_id`: uuid, nullable
+
+References:
+- `case_id` refers to `enforcement_cases`
+- `document_id` refers to `documents`

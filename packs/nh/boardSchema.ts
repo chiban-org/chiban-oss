@@ -17,6 +17,10 @@ export const CLASSIFICATION_KEYS = [
   'nh.zba_administrative_appeal',
   'nh.zba_equitable_waiver',
   'nh.zba_rehearing_motion',
+  'nh.enforcement_zoning',
+  'nh.enforcement_building_code',
+  'nh.local_zoning_permit',
+  'nh.local_permit_other',
 ] as const
 
 export const AbuttersSpecSchema = z.object({

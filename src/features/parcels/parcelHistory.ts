@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import '@/features/applications/recordSource'
 import '@/features/documents/recordSource'
+import '@/features/enforcement/recordSource'
 import '@/features/historical/recordSource'
 import '@/features/inspections/recordSource'
 import type { DbOrTx } from '@/db/client'

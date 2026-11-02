@@ -35,6 +35,7 @@ export interface TransitionInput {
     | 'certificate_of_occupancy'
     | 'not_accepted_incomplete'
     | 'notice_costs_unpaid'
+    | 'issuance'
   cutover?: boolean
   boardVote?: boolean
 }

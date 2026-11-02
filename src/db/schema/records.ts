@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import {
+  check,
   date,
   index,
   integer,
@@ -9,6 +10,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
+import { enforcementCases } from './enforcement'
 import { applications, projects } from './projects'
 
 export const retentionAssignments = pgTable(
@@ -37,15 +39,16 @@ export const recordEvents = pgTable(
   'record_events',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    projectId: uuid('project_id')
-      .notNull()
-      .references(() => projects.id),
+    projectId: uuid('project_id').references(() => projects.id),
+    caseId: uuid('case_id').references(() => enforcementCases.id),
     applicationId: uuid('application_id').references(() => applications.id),
     kind: text('kind', {
       enum: [
         'application_withdrawn',
         'application_denied',
         'building_removed',
+        'registration_expired',
+        'septic_replaced_or_removed',
         'appeal_period_expired',
       ],
     }).notNull(),
@@ -54,14 +57,20 @@ export const recordEvents = pgTable(
     recordedBy: uuid('recorded_by'),
     note: text('note'),
   },
-  (t) => [index('record_events_project_idx').on(t.projectId)],
+  (t) => [
+    index('record_events_project_idx').on(t.projectId),
+    index('record_events_case_idx').on(t.caseId),
+    check('record_events_one_target_check', sql`(${t.projectId} is null) <> (${t.caseId} is null)`),
+  ],
 )
 
 export const legalHolds = pgTable(
   'legal_holds',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    targetKind: text('target_kind', { enum: ['project', 'application', 'document'] }).notNull(),
+    targetKind: text('target_kind', {
+      enum: ['project', 'application', 'document', 'enforcement_case', 'rtk_request'],
+    }).notNull(),
     targetId: uuid('target_id').notNull(),
     reason: text('reason').notNull(),
     placedBy: uuid('placed_by').notNull(),

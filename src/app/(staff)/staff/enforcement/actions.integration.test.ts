@@ -1,0 +1,201 @@
+import { and, eq } from 'drizzle-orm'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { enforcementCases, enforcementOrders, roleCapabilities } from '@/db/schema'
+import { makeTestDb, type TestDb } from '@/test/db'
+import {
+  type EnforcementWorld,
+  type IssuedOrder,
+  issuedOrder,
+  setupEnforcementWorld,
+} from '@/test/enforcementFixtures'
+import { makeTestStore } from '@/test/minio'
+
+interface MockState {
+  db: unknown
+  csrfCookie: string | null
+  actor: unknown
+}
+
+const state = vi.hoisted((): MockState => ({ db: null, csrfCookie: 'tok', actor: null }))
+
+vi.mock('@/db/client', () => ({
+  get db() {
+    return state.db
+  },
+}))
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
+vi.mock('next/headers', () => ({
+  cookies: () =>
+    Promise.resolve({
+      get: (name: string) =>
+        name === 'chiban_csrf' && state.csrfCookie !== null
+          ? { value: state.csrfCookie }
+          : undefined,
+    }),
+  headers: () =>
+    Promise.resolve(
+      new Headers({
+        origin: 'https://alderpond.example',
+        host: 'alderpond.example',
+        'sec-fetch-site': 'same-origin',
+      }),
+    ),
+}))
+vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
+
+const main = await import('@/app/(staff)/staff/enforcement/actions')
+const service = await import('@/app/(staff)/staff/enforcement/serviceActions')
+const appeals = await import('@/app/(staff)/staff/enforcement/appealActions')
+const money = await import('@/app/(staff)/staff/enforcement/moneyActions')
+const uploads = await import('@/app/(staff)/staff/enforcement/uploadActions')
+const admin = await import('@/app/(staff)/staff/admin/anonymous-intake/actions')
+const officers = await import('@/app/(staff)/staff/admin/enforcement-officers/actions')
+
+let handle: TestDb
+let world: EnforcementWorld
+let order: IssuedOrder
+
+beforeAll(async () => {
+  handle = await makeTestDb()
+  state.db = handle.db
+  world = await setupEnforcementWorld(handle.db)
+  const { store } = await makeTestStore()
+  order = await issuedOrder(handle.db, store, world)
+})
+afterAll(async () => {
+  await handle.drop()
+})
+beforeEach(() => {
+  state.csrfCookie = 'tok'
+  state.actor = world.staff
+})
+
+function form(fields: Record<string, string>, token: string | null = 'tok'): FormData {
+  const f = new FormData()
+  if (token !== null) f.set('csrf_token', token)
+  for (const [k, v] of Object.entries(fields)) f.set(k, v)
+  return f
+}
+
+const ALL = {
+  openCaseAction: main.openCaseAction,
+  staffComplaintAction: main.staffComplaintAction,
+  setCaseStatusAction: main.setCaseStatusAction,
+  addNoteAction: main.addNoteAction,
+  recordFindingAction: main.recordFindingAction,
+  sendNoticeAction: main.sendNoticeAction,
+  recordNoticeReceiptAction: main.recordNoticeReceiptAction,
+  draftOrderAction: main.draftOrderAction,
+  issueOrderAction: main.issueOrderAction,
+  complaintPublicTextAction: main.complaintPublicTextAction,
+  publishCaseAction: main.publishCaseAction,
+  unpublishCaseAction: main.unpublishCaseAction,
+  listRecipientAction: service.listRecipientAction,
+  roleCheckAction: service.roleCheckAction,
+  serviceEventAction: service.serviceEventAction,
+  answerAction: service.answerAction,
+  courtStepAction: service.courtStepAction,
+  appealAction: appeals.appealAction,
+  resolveAppealAction: appeals.resolveAppealAction,
+  certifyPerilAction: appeals.certifyPerilAction,
+  restrainingOrderAction: appeals.restrainingOrderAction,
+  dissolveRestrainingOrderAction: appeals.dissolveRestrainingOrderAction,
+  fineAction: money.fineAction,
+  finePaymentAction: money.finePaymentAction,
+  referAction: money.referAction,
+  outcomeAction: money.outcomeAction,
+  createCaseUploadIntentAction: uploads.createCaseUploadIntentAction,
+  finalizeCaseUploadAction: uploads.finalizeCaseUploadAction,
+  designateOfficerAction: officers.designateOfficerAction,
+  enableAnonymousIntakeAction: admin.enableAnonymousIntakeAction,
+  disableAnonymousIntakeAction: admin.disableAnonymousIntakeAction,
+}
+
+describe('enforcement server actions', () => {
+  it.each(Object.entries(ALL))('%s rejects a missing csrf token', async (_name, action) => {
+    state.actor = world.admin
+    expect(await action(form({}, null))).toMatchObject({ ok: false })
+  })
+
+  it.each(Object.entries(ALL))('%s refuses a signed-out visitor', async (_name, action) => {
+    state.actor = null
+    expect(await action(form({}))).toMatchObject({ ok: false })
+  })
+
+  it('issueOrderAction without a csrf token is refused and changes nothing', async () => {
+    const result = await main.issueOrderAction(
+      form({ orderId: order.orderId, issuedOn: '2027-03-02', expectedRowVersion: '1' }, null),
+    )
+    expect(result).toMatchObject({ ok: false })
+    const [row] = await handle.db
+      .select()
+      .from(enforcementOrders)
+      .where(eq(enforcementOrders.id, order.orderId))
+    expect(row?.status).toBe('issued')
+  })
+
+  it('opens a case through the action', async () => {
+    const result = await main.openCaseAction(form({ locationText: '9 Alder Court' }))
+    expect(result).toEqual({ ok: true, message: 'Case opened.' })
+    const rows = await handle.db
+      .select()
+      .from(enforcementCases)
+      .where(eq(enforcementCases.locationText, '9 Alder Court'))
+    expect(rows).toHaveLength(1)
+  })
+
+  it('an invalid form is answered with the form message, not a stack', async () => {
+    const result = await main.openCaseAction(form({ locationText: '' }))
+    expect(result).toEqual({ ok: false, error: 'Check the form fields and try again.' })
+  })
+
+  it('inspector without enforcement.issue_order is forbidden via server action', async () => {
+    await handle.db
+      .delete(roleCapabilities)
+      .where(
+        and(
+          eq(roleCapabilities.role, 'inspector'),
+          eq(roleCapabilities.capability, 'enforcement.issue_order'),
+        ),
+      )
+    state.actor = world.inspector
+    const result = await main.issueOrderAction(
+      form({ orderId: order.orderId, issuedOn: '2027-03-02', expectedRowVersion: '1' }),
+    )
+    expect(result).toEqual({ ok: false, error: 'You do not have permission to do this.' })
+  })
+
+  it('motion recorded through the server action without enforcement.record_service is forbidden', async () => {
+    state.actor = world.finance
+    const result = await service.courtStepAction(
+      form({
+        orderId: order.orderId,
+        kind: 'motion_to_enforce',
+        occurredOn: '2027-03-23',
+        court: 'District Court',
+        documentId: crypto.randomUUID(),
+      }),
+    )
+    expect(result).toEqual({ ok: false, error: 'You do not have permission to do this.' })
+  })
+
+  it('a missing-content refusal names what is missing in words', async () => {
+    state.actor = world.staff
+    const opened = await main.openCaseAction(form({ locationText: '12 Pine Court' }))
+    expect(opened.ok).toBe(true)
+    const result = await main.draftOrderAction(
+      form({ caseId: crypto.randomUUID(), findingIds: crypto.randomUUID(), correctiveAction: '' }),
+    )
+    expect(result.ok).toBe(false)
+    expect(JSON.stringify(result)).not.toMatch(/[a-z]+_[a-z_]+/)
+  })
+
+  it('turning anonymous intake on without a passing retention check is refused in words', async () => {
+    state.actor = world.admin
+    const result = await admin.enableAnonymousIntakeAction(form({}))
+    expect(result).toEqual({
+      ok: false,
+      error: 'Anonymous intake needs a passing retention check for the version that is running.',
+    })
+  })
+})

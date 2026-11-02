@@ -9,6 +9,7 @@ import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { seedBoards } from '@/features/demo/seedBoards'
 import { seedCama } from '@/features/demo/seedCama'
 import { seedCutover } from '@/features/demo/seedCutover'
+import { seedEnforcement } from '@/features/demo/seedEnforcement'
 import { seedBusinessExport, seedExportTarget } from '@/features/demo/seedExports'
 import { seedAcknowledgedEmailTest, seedStaleJobAlert } from '@/features/demo/seedHealth'
 import { seedHistorical } from '@/features/demo/seedHistorical'
@@ -19,6 +20,7 @@ import { seedPayments } from '@/features/demo/seedPayments'
 import { actorFor } from '@/features/demo/seedPermitSupport'
 import { seedPermits } from '@/features/demo/seedPermits'
 import { type SeedRecordsDeps, seedRecords } from '@/features/demo/seedRecords'
+import { seedRecordsM10 } from '@/features/demo/seedRtk'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import type { OcrConverter } from '@/features/migration/ocrmypdf'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
@@ -113,6 +115,7 @@ export interface SeedReport {
   inspectionsSeeded: boolean
   operationsSeeded: boolean
   boardsSeeded: boolean
+  enforcementSeeded: boolean
 }
 
 export async function seedDemo(
@@ -172,6 +175,18 @@ export async function seedDemo(
     deps.operations?.store ?? deps.records?.store,
   )
   const operationsSeeded = await seedOperations(db, signal, deps.operations ?? {})
+  const enforcementSeeded = await seedEnforcement(
+    db,
+    deps.operations?.store ?? getObjectStore(),
+    signal,
+    deps.operations?.now ?? new Date(),
+  )
+  await seedRecordsM10(
+    db,
+    deps.operations?.store ?? getObjectStore(),
+    signal,
+    deps.operations?.now ?? new Date(),
+  )
   return {
     ...base,
     parcelsSeeded: seeded.imported,
@@ -181,6 +196,7 @@ export async function seedDemo(
     inspectionsSeeded,
     operationsSeeded,
     boardsSeeded,
+    enforcementSeeded,
   }
 }
 

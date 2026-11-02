@@ -69,7 +69,8 @@ afterAll(async () => {
 describe('staff application pages', () => {
   it('the application list shows every seeded application with a link', async () => {
     const page = await html(ApplicationsPage({ searchParams: Promise.resolve({}) }))
-    expect(page.match(/href="\/staff\/applications\//g)).toHaveLength(22)
+    const seeded = await handle.db.select().from(applications)
+    expect(page.match(/href="\/staff\/applications\//g)).toHaveLength(seeded.length)
     expect(page).toContain('Under review')
     expect(page).toContain('Suspended by appeal (RSA 676:6)')
   })

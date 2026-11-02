@@ -13,6 +13,7 @@ export interface ParcelRecordSummary {
   date: CivilDate | null
   href: string | null
   note?: string | null
+  thumbnailHref?: string | null
 }
 
 export interface ParcelRecordSource {

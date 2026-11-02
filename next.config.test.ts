@@ -28,8 +28,26 @@ describe('next config headers', () => {
     expect(map.get('Referrer-Policy')).toBe('strict-origin-when-cross-origin')
   })
 
+  it('sends no-referrer and no-store for the anonymous paths after the general rule', async () => {
+    const rules = await resolvedHeaders()
+    const general = rules.findIndex((r) => r.source === '/:path*')
+    for (const prefix of ['/report-anonymously', '/intake/anonymous']) {
+      const index = rules.findIndex((r) => r.source === `${prefix}/:path*`)
+      expect(index).toBeGreaterThan(general)
+      const map = new Map(rules[index]?.headers.map((h) => [h.key, h.value]))
+      expect(map.get('Referrer-Policy')).toBe('no-referrer')
+      expect(map.get('Cache-Control')).toBe('no-store')
+    }
+  })
+
   it('keeps the existing server settings', () => {
     expect(nextConfig.poweredByHeader).toBe(false)
-    expect(nextConfig.serverExternalPackages).toEqual(['pg', 'pg-boss', 'better-sqlite3'])
+    expect(nextConfig.serverExternalPackages).toEqual(['pg', 'pg-boss', 'better-sqlite3', 'mupdf'])
+  })
+})
+
+describe('next config externals', () => {
+  it('keeps the WebAssembly redaction engine out of the server bundle', () => {
+    expect(nextConfig.serverExternalPackages).toContain('mupdf')
   })
 })

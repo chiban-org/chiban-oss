@@ -20,6 +20,7 @@ import { expectDbError } from '@/test/dbErrors'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/minio'
 import { pdfPages } from '@/test/pdfText'
+import { approvePublic } from '@/test/renditionFixtures'
 
 const signal = new AbortController().signal
 const ATTESTATION = attestationHash(appTypeBody().attestationText)
@@ -152,6 +153,12 @@ describe('application snapshots', () => {
     const documentId = versions.find((v) => v.role === 'public_redacted')?.documentId
     expect(documentId).toBeDefined()
     expect(snap).toBeDefined()
+    await approvePublic(
+      handle.db,
+      world.staff,
+      versions.find((v) => v.role === 'public_redacted')?.id ?? '',
+      store,
+    )
     await setPublic(
       handle.db,
       world.staff,

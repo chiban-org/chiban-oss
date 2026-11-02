@@ -1,7 +1,15 @@
-import { and, eq, lt } from 'drizzle-orm'
+import { and, eq, inArray, lt, sql } from 'drizzle-orm'
 import { JOB_NAMES } from '@/constants/jobNames'
 import type { Db } from '@/db/client'
-import { exportsTable, jobRuns, notificationOutbox, preservationRecords } from '@/db/schema'
+import {
+  dispositionBatches,
+  exportsTable,
+  fileDeletions,
+  jobRuns,
+  notificationOutbox,
+  preservationRecords,
+  redactionJobs,
+} from '@/db/schema'
 import { overdueCalendarPushes } from '@/features/calendar/queuePush'
 import { getTownSettings } from '@/features/town/settings'
 import { todayInTimeZone } from '@/types/civilDate'
@@ -10,8 +18,12 @@ import { calendarPushJob } from './calendarPush'
 import { clocksDailyJob } from './clocksDaily'
 import type { JobDefinition } from './defineJob'
 import { exportsBuildJob } from './exportsBuild'
+import { filesDeleteJob, filesReleaseJob } from './filesRelease'
 import { notificationsSendJob } from './notificationsSend'
+import { recordsDisposeJob } from './recordsDispose'
 import { recordsPreserveJob } from './recordsPreserve'
+import { redactionRunJob } from './redactionRun'
+import { renditionsDeriveJob } from './renditionsDerive'
 
 export interface SweepItem {
   job: JobDefinition<object>
@@ -139,6 +151,94 @@ const exportsBuildTarget: SweepTarget = {
   },
 }
 
+const REDACTION_OVERDUE_MINUTES = 5
+
+const redactionTarget: SweepTarget = {
+  name: JOB_NAMES.REDACTION_RUN,
+  async findOverdue(db, now) {
+    const lost = await db
+      .select({ id: redactionJobs.id })
+      .from(redactionJobs)
+      .where(
+        and(
+          eq(redactionJobs.status, 'queued'),
+          lt(redactionJobs.createdAt, minutesBefore(now, REDACTION_OVERDUE_MINUTES)),
+        ),
+      )
+    return lost.map((row) => ({ job: redactionRunJob, payload: { jobId: row.id } }))
+  },
+}
+
+const DISPOSE_OVERDUE_MINUTES = 5
+
+const disposeTarget: SweepTarget = {
+  name: JOB_NAMES.RECORDS_DISPOSE,
+  async findOverdue(db, now) {
+    const stuck = await db
+      .select({ id: dispositionBatches.id })
+      .from(dispositionBatches)
+      .where(
+        and(
+          inArray(dispositionBatches.status, ['approved', 'executing']),
+          lt(dispositionBatches.approvedAt, minutesBefore(now, DISPOSE_OVERDUE_MINUTES)),
+        ),
+      )
+    return stuck.map((row) => ({ job: recordsDisposeJob, payload: { batchId: row.id } }))
+  },
+}
+
+const FILE_OVERDUE_MINUTES = 10
+
+const filesDeleteTarget: SweepTarget = {
+  name: JOB_NAMES.FILES_DELETE,
+  async findOverdue(db, now) {
+    const queued = await db
+      .select({ sha256: fileDeletions.sha256 })
+      .from(fileDeletions)
+      .where(lt(fileDeletions.queuedAt, minutesBefore(now, FILE_OVERDUE_MINUTES)))
+    return queued.map((row) => ({ job: filesDeleteJob, payload: { sha256: row.sha256 } }))
+  },
+}
+
+const filesReleaseTarget: SweepTarget = {
+  name: JOB_NAMES.FILES_RELEASE,
+  async findOverdue(db, now) {
+    const rows = await db.execute<{ batch_id: string }>(sql`
+      select distinct b.id as batch_id
+      from disposition_batches b
+      join disposition_tombstones t on t.batch_id = b.id
+      cross join lateral unnest(t.file_sha256s) as h(sha)
+      join files f on f.sha256 = h.sha
+      where b.status = 'executed'
+        and b.executed_at < ${minutesBefore(now, FILE_OVERDUE_MINUTES)}
+        and not exists (select 1 from document_versions dv where dv.file_sha256 = h.sha)`)
+    return rows.rows.map((row) => ({ job: filesReleaseJob, payload: { batchId: row.batch_id } }))
+  },
+}
+
+const DERIVE_OVERDUE_MINUTES = 30
+const DERIVE_BATCH = 25
+
+const renditionsTarget: SweepTarget = {
+  name: JOB_NAMES.RENDITIONS_DERIVE,
+  async findOverdue(db, now) {
+    const rows = await db.execute<{ version_id: string }>(sql`
+      select distinct ra.version_id
+      from rendition_approvals ra
+      join document_versions dv on dv.id = ra.version_id
+      left join document_renditions dr on dr.version_id = ra.version_id and dr.kind = 'thumbnail'
+      where ra.revoked_at is null
+        and ra.approved_at < ${minutesBefore(now, DERIVE_OVERDUE_MINUTES)}
+        and dv.content_type in ('application/pdf', 'image/jpeg', 'image/png')
+        and dr.version_id is null
+      limit ${DERIVE_BATCH}`)
+    return rows.rows.map((row) => ({
+      job: renditionsDeriveJob,
+      payload: { versionId: row.version_id },
+    }))
+  },
+}
+
 const targets: SweepTarget[] = [
   clocksDailyTarget,
   appealsDailyTarget,
@@ -146,6 +246,11 @@ const targets: SweepTarget[] = [
   calendarTarget,
   preservationTarget,
   exportsBuildTarget,
+  redactionTarget,
+  renditionsTarget,
+  disposeTarget,
+  filesDeleteTarget,
+  filesReleaseTarget,
 ]
 
 export const SWEEP_TARGETS: readonly SweepTarget[] = targets

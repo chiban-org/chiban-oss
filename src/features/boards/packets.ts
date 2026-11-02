@@ -1,6 +1,12 @@
-import { asc, desc, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { boardPacketItems, boardPackets, documents, documentVersions } from '@/db/schema'
+import {
+  boardPacketItems,
+  boardPackets,
+  documents,
+  documentVersions,
+  renditionApprovals,
+} from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -26,13 +32,19 @@ interface Versioned {
 function frozenVersion(
   doc: { audiences: string[]; isPublic: boolean },
   versions: Versioned[],
-): string | null {
+  approved: { id: string; versionId: string } | null,
+): { versionId: string; approvalId: string | null } | null {
   const latest = (role: string) =>
     versions
       .filter((v) => v.role === role)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]
-  if (doc.audiences.includes('board')) return latest('original')?.id ?? null
-  if (doc.isPublic) return (latest('public_redacted') ?? latest('original'))?.id ?? null
+  if (doc.audiences.includes('board')) {
+    const original = latest('original')
+    return original === undefined ? null : { versionId: original.id, approvalId: null }
+  }
+  if (doc.isPublic && approved !== null) {
+    return { versionId: approved.versionId, approvalId: approved.id }
+  }
   return null
 }
 
@@ -50,18 +62,34 @@ export async function createPacket(
     .select()
     .from(documentVersions)
     .where(inArray(documentVersions.documentId, input.documentIds))
+  const approvals = await db
+    .select({
+      id: renditionApprovals.id,
+      documentId: renditionApprovals.documentId,
+      versionId: renditionApprovals.versionId,
+    })
+    .from(renditionApprovals)
+    .where(
+      and(
+        inArray(renditionApprovals.documentId, input.documentIds),
+        eq(renditionApprovals.purpose, 'public'),
+        isNull(renditionApprovals.revokedAt),
+      ),
+    )
+  const approvedFor = new Map(approvals.map((a) => [a.documentId, a]))
   const picked = input.documentIds.map((id) => {
     const doc = docs.find((d) => d.id === id)
-    const versionId =
+    const frozen =
       doc === undefined
         ? null
         : frozenVersion(
             doc,
             versions.filter((v) => v.documentId === id),
+            approvedFor.get(id) ?? null,
           )
-    return { id, versionId }
+    return { id, frozen }
   })
-  const refused = picked.filter((p) => p.versionId === null).map((p) => p.id)
+  const refused = picked.filter((p) => p.frozen === null).map((p) => p.id)
   if (refused.length > 0) return err({ notForBoard: refused })
   return await transactionResult<{ packetId: string }, PacketError>(db, async (tx) => {
     const [packet] = await tx
@@ -74,11 +102,29 @@ export async function createPacket(
       })
       .returning({ id: boardPackets.id })
     const packetId = packet?.id ?? ''
+    const approvalIds = picked.flatMap((p) =>
+      p.frozen?.approvalId == null ? [] : [p.frozen.approvalId],
+    )
+    if (approvalIds.length > 0) {
+      const stillActive = await tx
+        .select({ id: renditionApprovals.id })
+        .from(renditionApprovals)
+        .where(
+          and(inArray(renditionApprovals.id, approvalIds), isNull(renditionApprovals.revokedAt)),
+        )
+        .for('share')
+      const live = new Set(stillActive.map((r) => r.id))
+      const lost = picked.filter(
+        (p) => p.frozen?.approvalId != null && !live.has(p.frozen.approvalId),
+      )
+      if (lost.length > 0) return err({ notForBoard: lost.map((p) => p.id) })
+    }
     await tx.insert(boardPacketItems).values(
       picked.map((p, position) => ({
         packetId,
         documentId: p.id,
-        versionId: p.versionId ?? '',
+        versionId: p.frozen?.versionId ?? '',
+        approvalId: p.frozen?.approvalId ?? null,
         position,
       })),
     )

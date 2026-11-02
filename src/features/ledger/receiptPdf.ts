@@ -1,6 +1,13 @@
 import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { applications, ledgerAllocations, ledgerEntries, receipts } from '@/db/schema'
+import {
+  applications,
+  enforcementCases,
+  enforcementFines,
+  ledgerAllocations,
+  ledgerEntries,
+  receipts,
+} from '@/db/schema'
 import { assessedLines, lineKey } from '@/features/ledger/lineTotals'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
 import { renderPdf } from '@/features/pdf/renderPdf'
@@ -23,6 +30,7 @@ type LabelCache = Map<string, Map<string, string>>
 
 function kindLabel(a: Allocation): string | null {
   if (a.targetKind === 'convenience_fee') return 'Convenience fee'
+  if (a.targetKind === 'fine') return 'Court-imposed fine'
   return a.targetKind === 'overpayment' ? 'Overpayment held' : null
 }
 
@@ -38,6 +46,16 @@ async function feeLabel(db: Db, a: Allocation, labels: LabelCache): Promise<stri
     a.feeCode ??
     ''
   )
+}
+
+async function fineCaseNumber(db: Db, a: Allocation): Promise<string> {
+  if (a.fineId === null) return ''
+  const [row] = await db
+    .select({ number: enforcementCases.number })
+    .from(enforcementFines)
+    .innerJoin(enforcementCases, eq(enforcementCases.id, enforcementFines.caseId))
+    .where(eq(enforcementFines.id, a.fineId))
+  return row?.number ?? ''
 }
 
 async function lineRows(
@@ -58,7 +76,7 @@ async function lineRows(
     if (outOfScope) continue
     totalCents += a.amountCents
     if (a.applicationId === null) {
-      rows.push(['', kindLabel(a) ?? '', formatCents(a.amountCents)])
+      rows.push([await fineCaseNumber(db, a), kindLabel(a) ?? '', formatCents(a.amountCents)])
       continue
     }
     const [app] = await db

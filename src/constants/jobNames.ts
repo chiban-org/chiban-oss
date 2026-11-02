@@ -15,6 +15,11 @@ export const JOB_NAMES = {
   EXPORTS_PRUNE: 'exports.prune',
   HEALTH_CHECK: 'health.check',
   JOBS_SWEEP: 'jobs.sweep',
+  REDACTION_RUN: 'redaction.run',
+  RENDITIONS_DERIVE: 'renditions.derive',
+  RECORDS_DISPOSE: 'records.dispose',
+  FILES_RELEASE: 'files.release',
+  FILES_DELETE: 'files.delete',
 } as const
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES]

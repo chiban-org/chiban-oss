@@ -1,7 +1,8 @@
-import { eq, inArray } from 'drizzle-orm'
+import { and, desc, eq, inArray } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { documentVersions, preservationRecords } from '@/db/schema'
+import { documentVersions, preservationRecords, renditionApprovals } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { hasCapability } from '@/features/authz/capabilities'
 import { listDocuments } from '@/features/documents/listDocuments'
 import type { DocumentListRow, RecordRef } from '@/features/documents/types'
 import { retentionFor } from '@/features/records/disposition'
@@ -9,7 +10,15 @@ import { retentionText } from '@/features/records/retentionText'
 
 export type PreservationState = 'preserved' | 'incomplete' | 'not_required' | 'pending'
 
+export type RenditionState = 'approved' | 'public_no_copy' | 'redacted_waiting' | 'revoked' | 'none'
+
 export interface PanelDocument extends DocumentListRow {
+  rendition: RenditionState
+  approvalId: string | null
+  approvedRole: string | null
+  originalVersionId: string | null
+  approvable: { id: string; role: 'original' | 'public_redacted'; createdAt: string }[]
+  canRedact: boolean
   preservation: PreservationState
   preservationRecordId: string | null
   series: { label: string; citation: { label: string; url: string } } | null
@@ -22,6 +31,76 @@ const PRESERVATION: Record<string, PreservationState> = {
   incomplete: 'incomplete',
   not_required: 'not_required',
   pending: 'pending',
+}
+
+type RenditionFields = Pick<
+  PanelDocument,
+  'rendition' | 'approvalId' | 'approvedRole' | 'originalVersionId' | 'approvable'
+>
+
+function stateOf(
+  isPublic: boolean,
+  active: boolean,
+  hasRedacted: boolean,
+  anyRevoked: boolean,
+): RenditionState {
+  if (active) return 'approved'
+  if (isPublic) return 'public_no_copy'
+  if (hasRedacted) return 'redacted_waiting'
+  return anyRevoked ? 'revoked' : 'none'
+}
+
+async function renditionDetails(
+  db: DbOrTx,
+  ids: string[],
+): Promise<(row: DocumentListRow) => RenditionFields> {
+  if (ids.length === 0) {
+    return () => ({
+      rendition: 'none',
+      approvalId: null,
+      approvedRole: null,
+      originalVersionId: null,
+      approvable: [],
+    })
+  }
+  const versions = await db
+    .select({
+      id: documentVersions.id,
+      documentId: documentVersions.documentId,
+      role: documentVersions.role,
+      createdAt: documentVersions.createdAt,
+    })
+    .from(documentVersions)
+    .where(inArray(documentVersions.documentId, ids))
+    .orderBy(documentVersions.createdAt)
+  const approvals = await db
+    .select()
+    .from(renditionApprovals)
+    .where(
+      and(inArray(renditionApprovals.documentId, ids), eq(renditionApprovals.purpose, 'public')),
+    )
+    .orderBy(desc(renditionApprovals.approvedAt))
+  return (row) => {
+    const mine = versions.filter((v) => v.documentId === row.documentId)
+    const own = approvals.filter((a) => a.documentId === row.documentId)
+    const active = own.find((a) => a.revokedAt === null)
+    return {
+      rendition: stateOf(
+        row.isPublic,
+        active !== undefined,
+        mine.some((v) => v.role === 'public_redacted'),
+        own.some((a) => a.revokedAt !== null),
+      ),
+      approvalId: active?.id ?? null,
+      approvedRole: mine.find((v) => v.id === active?.versionId)?.role ?? null,
+      originalVersionId: mine.find((v) => v.role === 'original')?.id ?? null,
+      approvable: mine.flatMap((v) =>
+        v.role === 'original' || v.role === 'public_redacted'
+          ? [{ id: v.id, role: v.role, createdAt: v.createdAt.toISOString() }]
+          : [],
+      ),
+    }
+  }
 }
 
 export async function loadPanelDocuments(
@@ -48,11 +127,16 @@ export async function loadPanelDocuments(
           )
           .where(inArray(documentVersions.documentId, ids))
   const out: PanelDocument[] = []
+  const canRedact = await hasCapability(db, actor.userId, 'redaction.create', signal)
+  const details = await renditionDetails(db, ids)
   for (const row of listed.rows) {
+    const rendition = details(row)
     const rec = records.find((r) => r.documentId === row.documentId)
     const retention = await retentionFor(db, { kind: 'document', id: row.documentId }, signal)
     out.push({
       ...row,
+      ...rendition,
+      canRedact,
       preservation: PRESERVATION[rec?.status ?? 'not_required'] ?? 'not_required',
       preservationRecordId: rec?.id ?? null,
       series:

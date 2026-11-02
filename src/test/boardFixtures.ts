@@ -51,7 +51,7 @@ export interface BoardWorld extends PermitWorld {
 }
 
 export function boardTypeBody(
-  classificationKey: (typeof NH_CLASSIFICATIONS)[number]['key'],
+  classificationKey: NonNullable<ApplicationTypeBody['classification']>,
   key: string,
   prefix: string,
   overrides: Partial<ApplicationTypeBody> = {},

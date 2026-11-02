@@ -35,9 +35,13 @@ export default async function BoardMeetingPage({
       <ul className="m-0 list-none space-y-2 p-0">
         {packet.value.items.map((item) => (
           <li key={item.versionId}>
-            <Link href={`${base}/${item.versionId}`} className={LINK}>
-              {`${item.title} (${item.filename})`}
-            </Link>
+            {item.withdrawnOn === null ? (
+              <Link href={`${base}/${item.versionId}`} className={LINK}>
+                {`${item.title} (${item.filename})`}
+              </Link>
+            ) : (
+              <span>{`${item.title}: withdrawn by the town on ${formatCivilDate(item.withdrawnOn)}`}</span>
+            )}
           </li>
         ))}
       </ul>

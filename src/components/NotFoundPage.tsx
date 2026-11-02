@@ -2,7 +2,7 @@ import Link from 'next/link'
 
 const LINK = 'tap-target inline-flex items-center text-lg underline'
 
-export default function NotFound() {
+export function NotFoundPage() {
   return (
     <div className="public-shell mx-auto flex min-h-screen max-w-[var(--content-max-width)] flex-col justify-center px-4 py-6">
       <main>

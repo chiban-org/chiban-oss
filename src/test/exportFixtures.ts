@@ -5,6 +5,21 @@ import { demoSeedDeps } from '@/test/demoSeedDeps'
 
 const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
   {
+    table: 'peril_certifications',
+    statement: sql`insert into peril_certifications (appeal_id, certified_on, certified_by, categories, statement)
+      select id, filed_on, gen_random_uuid(), array['safety'], 'Coverage row' from enforcement_appeals limit 1`,
+  },
+  {
+    table: 'restraining_orders',
+    statement: sql`insert into restraining_orders (appeal_id, issued_by, issued_on, document_id)
+      select a.id, 'zba', a.filed_on, (select id from documents limit 1) from enforcement_appeals a limit 1`,
+  },
+  {
+    table: 'anonymous_intake_verifications',
+    statement: sql`insert into anonymous_intake_verifications (app_version, caddyfile_sha256, passed, findings)
+      values ('0.0.0', repeat('c', 64), true, '[]'::jsonb)`,
+  },
+  {
     table: 'application_conditions',
     statement: sql`insert into application_conditions (application_id, code, text_snapshot, blocks_issuance, changed_by)
       select id, 'C-EXPORT', 'Condition kept for export coverage', false, gen_random_uuid() from applications limit 1`,

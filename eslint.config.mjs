@@ -133,4 +133,36 @@ export default tseslint.config(
       'no-restricted-syntax': 'off',
     },
   },
+
+  {
+    files: [
+      'src/features/anonymousIntake/**/*.{ts,tsx}',
+      'src/app/(anonymous)/**/*.{ts,tsx}',
+      'src/app/intake/**/*.{ts,tsx}',
+    ],
+    ignores: [
+      '**/*.test.{ts,tsx}',
+      'src/features/anonymousIntake/retention*.ts',
+      'src/features/anonymousIntake/staffControl.ts',
+      'src/features/anonymousIntake/purgeProbe.ts',
+    ],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            { name: 'next/headers', message: 'The anonymous path reads no cookie or header.' },
+            { name: '@/server/getActor', message: 'The anonymous path reads no session.' },
+            { name: '@/server/actionGuard', message: 'The anonymous path reads no CSRF cookie.' },
+            { name: '@/server/actionRunner', message: 'The anonymous path uses no action runner.' },
+          ],
+          patterns: [
+            { group: ['../../../*'] },
+            { group: ['@/features/auth/*'], message: 'The anonymous path reads no account.' },
+            { group: ['@/server/trpc/*'], message: 'The anonymous path uses no tRPC context.' },
+          ],
+        },
+      ],
+    },
+  },
 )

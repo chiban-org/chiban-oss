@@ -128,3 +128,30 @@ describe('describeCounting', () => {
     )
   })
 })
+
+describe('right-to-know business days', () => {
+  const business = (start: string, value = 5) =>
+    computeDue({
+      start: d(start),
+      length: { unit: 'business_days', value },
+      direction: 'after',
+      clockType: 'action_due',
+      holidays,
+    })
+
+  it('request on 2027-07-02 is due 2027-07-12', () => {
+    expect(business('2027-07-02').due).toBe('2027-07-12')
+  })
+
+  it('business days from Saturday 2027-07-03 are due 2027-07-12', () => {
+    expect(business('2027-07-03').due).toBe('2027-07-12')
+  })
+
+  it('five business days from Wednesday 2027-11-10 skip Veterans Day and end 2027-11-18', () => {
+    expect(business('2027-11-10').due).toBe('2027-11-18')
+  })
+
+  it('business-day due never reports rolledFrom', () => {
+    expect(business('2027-07-02').rolledFrom).toBeNull()
+  })
+})

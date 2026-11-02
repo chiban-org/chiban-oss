@@ -25,4 +25,27 @@ describe('rate limiter', () => {
     limiter.clear('a')
     expect(limiter.isLimited('a')).toBe(false)
   })
+
+  it('limiter holds no key after its window', () => {
+    let t = 0
+    const limiter = createRateLimiter({ max: 5, windowMs: 1000, now: () => t })
+    limiter.recordFailure('a')
+    limiter.recordFailure('b')
+    expect(limiter.size()).toBe(2)
+    t = 1001
+    limiter.prune()
+    expect(limiter.size()).toBe(0)
+  })
+
+  it('prune keeps keys that are still inside the window', () => {
+    let t = 0
+    const limiter = createRateLimiter({ max: 5, windowMs: 1000, now: () => t })
+    limiter.recordFailure('old')
+    t = 600
+    limiter.recordFailure('new')
+    t = 1200
+    limiter.prune()
+    expect(limiter.size()).toBe(1)
+    expect(limiter.isLimited('new')).toBe(false)
+  })
 })

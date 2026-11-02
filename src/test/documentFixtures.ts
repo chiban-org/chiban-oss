@@ -1,7 +1,7 @@
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
-import type { RecordRef } from '@/features/documents/types'
+import type { DocKind, RecordRef } from '@/features/documents/types'
 import { createUploadIntent, finalizeUpload } from '@/features/documents/uploads'
 import type { AllowedType } from '@/features/files/sniff'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -18,6 +18,7 @@ export interface UploadOptions {
   contentType?: AllowedType
   now?: Date
   seriesKey?: string
+  docKind?: DocKind
 }
 
 export async function uploadAs(
@@ -40,6 +41,7 @@ export async function uploadAs(
       contentType,
       sizeBytes: bytes.length,
       ...(options.seriesKey === undefined ? {} : { seriesKey: options.seriesKey }),
+      ...(options.docKind === undefined ? {} : { docKind: options.docKind }),
     },
     signal,
   )

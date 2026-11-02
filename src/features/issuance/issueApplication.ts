@@ -3,6 +3,7 @@ import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
 import { applications } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { loadApplicationContext } from '@/features/applications/context'
 import { type TransitionError, transitionApplication } from '@/features/applications/transition'
 import type { Actor } from '@/features/auth/actor'
 import { attachDocument } from '@/features/documents/attach'
@@ -64,7 +65,37 @@ export async function issueInTransaction(
     },
     signal,
   )
+  const closed = await closeIfIssuanceCloses(tx, actor, input.applicationId, signal, deps.now)
+  if (!closed.ok) {
+    throw new AppError(ErrorIds.DB_INVARIANT, 'An issued permit could not be closed', {
+      applicationId: input.applicationId,
+    })
+  }
   return ok({ documentId: attached.documentId })
+}
+
+async function closeIfIssuanceCloses(
+  tx: Tx,
+  actor: Actor,
+  applicationId: string,
+  signal: AbortSignal,
+  now: Date | undefined,
+): Promise<Result<void, TransitionError>> {
+  const app = await loadApplicationContext(tx, applicationId, signal)
+  if (app === null || app.typeBody.workflow.closesOn !== 'issuance') return ok(undefined)
+  const closed = await transitionApplication(
+    tx,
+    actor,
+    {
+      applicationId,
+      to: 'closed',
+      closureReason: 'issuance',
+      expectedRowVersion: app.rowVersion,
+    },
+    signal,
+    now,
+  )
+  return closed.ok ? ok(undefined) : err(closed.error)
 }
 
 export async function issueApplication(

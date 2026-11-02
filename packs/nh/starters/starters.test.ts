@@ -9,12 +9,14 @@ import { loadPack } from '@/features/packs/loadPack'
 import { unknownMergeFields } from '@/features/templates/mergeFields'
 import { TemplateBodySchema } from '@/features/templates/templateSchema'
 
-const PERMIT_STARTERS = NH_STARTERS.filter(
-  (s) => s.applicationType.workflow.closesOn !== 'staff_closes',
+const PERMIT_STARTERS = NH_STARTERS.filter((s) =>
+  ['final_inspection_passed', 'certificate_of_occupancy'].includes(
+    s.applicationType.workflow.closesOn,
+  ),
 )
 
 describe('NH starters', () => {
-  it('ships building, electrical, plumbing, mechanical/gas, and the board types', () => {
+  it('ships building, electrical, plumbing, mechanical/gas, the board types, and the local permits', () => {
     expect(NH_STARTERS.map((s) => s.applicationType.prefix)).toEqual([
       'BP',
       'EL',
@@ -33,6 +35,15 @@ describe('NH starters', () => {
       'EW',
       'AAD',
       'RH',
+      'DW',
+      'SG',
+      'HO',
+      'AR',
+      'SA',
+      'CO',
+      'SC',
+      'TS',
+      'STR',
     ])
   })
 
@@ -127,11 +138,14 @@ describe('NH starters', () => {
     for (const s of NH_STARTERS.filter(
       (x) => x.applicationType.classification === 'nh.trade_permit',
     )) {
+      expect(s.checklists.map((c) => c.inspectionType)).toContain('final')
       expect(s.applicationType).toMatchObject({
         payTiming: 'at_intake',
         workflow: { allowsDirectIssue: true, closesOn: 'final_inspection_passed' },
       })
       expect(s.form.fields.find((f) => f.key === 'contractor_license_number')?.required).toBe(true)
+    }
+    for (const s of NH_STARTERS.slice(1, 4)) {
       expect(s.checklists.map((c) => c.inspectionType)).toEqual(['rough', 'final'])
     }
   })
@@ -140,6 +154,14 @@ describe('NH starters', () => {
     for (const s of PERMIT_STARTERS) {
       expect(s.checklists.filter((c) => c.final)).toHaveLength(1)
       expect(s.checklists.find((c) => c.final)?.inspectionType).toBe('final')
+    }
+  })
+
+  it('starters with checklists name exactly one final checklist', () => {
+    for (const s of NH_STARTERS) {
+      const needsFinal = s.checklists.length > 0
+      expect(s.checklists.filter((c) => c.final)).toHaveLength(needsFinal ? 1 : 0)
+      if (needsFinal) expect(s.checklists.find((c) => c.final)?.inspectionType).toBe('final')
     }
   })
 })

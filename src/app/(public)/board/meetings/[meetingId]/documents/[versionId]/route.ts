@@ -1,6 +1,7 @@
 import { db } from '@/db/client'
 import { openMemberPacketVersion } from '@/features/boards/memberPackets'
 import { getObjectStore } from '@/features/storage/objectStore'
+import { formatCivilDate } from '@/lib/formatDate'
 import { getActor } from '@/server/getActor'
 
 export const runtime = 'nodejs'
@@ -30,5 +31,11 @@ export async function GET(
     signal,
   )
   if (result.ok) return new Response(null, { status: 302, headers: { location: result.value.url } })
+  if (typeof result.error === 'object') {
+    return plain(
+      410,
+      `This document was withdrawn by the town on ${formatCivilDate(result.error.withdrawnOn)}.`,
+    )
+  }
   return plain(404, 'Not found')
 }
