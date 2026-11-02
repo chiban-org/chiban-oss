@@ -103,3 +103,23 @@ describe('BoxEditor', () => {
     expect(screen.queryByRole('group', { name: 'Box 1 on page 1' })).toBeNull()
   })
 })
+
+describe('BoxEditor page navigation', () => {
+  const thirty = Array.from({ length: 30 }, (_, i) => ({ ...geometry, page: i + 1 }))
+
+  it('pages past the first twelve can be reached and keep their boxes across pages', () => {
+    render(<BoxEditor pages={thirty} exemptions={EXEMPTIONS} mode="pdf" />)
+    expect(screen.queryByText('Page 13')).toBeNull()
+    const next = screen.queryByRole('button', { name: 'Show pages 13 to 24' })
+    expect(next).not.toBeNull()
+    if (next !== null) fireEvent.click(next)
+    expect(screen.queryByText('Page 13')).not.toBeNull()
+    expect(screen.queryByText('Page 1')).toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Add a box to page 13' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Show pages 1 to 12' }))
+    expect(screen.queryByText('Page 1')).not.toBeNull()
+    expect(screen.queryByText('Box 1 on page 13')).not.toBeNull()
+    fireEvent.click(screen.getByRole('button', { name: 'Show pages 25 to 30' }))
+    expect(screen.queryByText('Page 30')).not.toBeNull()
+  })
+})

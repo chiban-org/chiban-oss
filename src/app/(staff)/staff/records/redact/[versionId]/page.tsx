@@ -46,7 +46,7 @@ export default async function RedactPage({
       </main>
     )
   }
-  const { documentId, title, mode, pages, truncated } = source.value
+  const { documentId, title, mode, pages } = source.value
   const forRequest = request !== undefined && isUuid(request) ? request : undefined
   return (
     <main className="space-y-6">
@@ -55,9 +55,6 @@ export default async function RedactPage({
         The original is never changed. Everything under each box is removed from a new copy, and
         nothing is public until you approve that copy.
       </p>
-      {truncated ? (
-        <p role="status">Only the first pages are shown. Redact the rest in a second pass.</p>
-      ) : null}
       <ActionForm
         action={requestRedactionAction}
         submitLabel="Make the redacted copy"

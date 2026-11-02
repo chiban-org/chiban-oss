@@ -8,7 +8,6 @@ import { openPdf } from '@/features/redaction/verifyRedaction'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
 
-export const MAX_EDITOR_PAGES = 12
 const EDITOR_WIDTH = 900
 
 export interface EditorSource {
@@ -17,19 +16,25 @@ export interface EditorSource {
   versionId: string
   mode: 'pdf' | 'image'
   pages: PageGeometry[]
-  truncated: boolean
 }
+
+type SourceError = 'not_found' | 'unsupported' | 'unreadable'
 
 const dataUrl = (bytes: Uint8Array) =>
   `data:image/png;base64,${Buffer.from(bytes).toString('base64')}`
 
-export async function loadEditorSource(
+export function editorPageUrl(versionId: string, page: number): string {
+  return `/staff/records/redact/${versionId}/pages/${page}`
+}
+
+async function editableVersion(
   db: DbOrTx,
   store: ObjectStore,
   versionId: string,
   signal: AbortSignal,
-): Promise<Result<EditorSource, 'not_found' | 'unsupported' | 'unreadable'>> {
-  signal.throwIfAborted()
+): Promise<
+  Result<{ documentId: string; title: string; contentType: string; bytes: Uint8Array }, SourceError>
+> {
   const [row] = await db
     .select({
       documentId: documentVersions.documentId,
@@ -48,57 +53,79 @@ export async function loadEditorSource(
   const stream = await store.getStream(row.storageKey, signal)
   if (!stream.ok) return err('unreadable')
   const bytes = new Uint8Array(await new Response(stream.value).arrayBuffer())
-  if (row.contentType === 'application/pdf') {
-    const doc = openPdf(bytes)
-    if (doc === null || doc.needsPassword()) return err('unreadable')
-    const count = doc.countPages()
-    const pages: PageGeometry[] = []
-    for (let i = 0; i < Math.min(count, MAX_EDITOR_PAGES); i += 1) {
-      const page = doc.loadPage(i)
-      const [x0, y0, x1, y1] = page.getBounds()
-      const scale = EDITOR_WIDTH / (x1 - x0)
-      const pixmap = page.toPixmap(
-        mupdf.Matrix.scale(scale, scale),
-        mupdf.ColorSpace.DeviceRGB,
-        false,
-        true,
-      )
-      pages.push({ page: i + 1, src: dataUrl(pixmap.asPNG()), width: x1 - x0, height: y1 - y0 })
-    }
-    return ok({
-      documentId: row.documentId,
-      title: row.title,
-      versionId,
-      mode: 'pdf',
-      pages,
-      truncated: count > MAX_EDITOR_PAGES,
-    })
+  return ok({ documentId: row.documentId, title: row.title, contentType: row.contentType, bytes })
+}
+
+function openEditablePdf(bytes: Uint8Array): mupdf.PDFDocument | null {
+  const doc = openPdf(bytes)
+  return doc === null || doc.needsPassword() ? null : doc
+}
+
+export async function renderEditorPage(
+  db: DbOrTx,
+  store: ObjectStore,
+  versionId: string,
+  page: number,
+  signal: AbortSignal,
+): Promise<Result<Uint8Array, 'not_found' | 'unreadable'>> {
+  signal.throwIfAborted()
+  const version = await editableVersion(db, store, versionId, signal)
+  if (!version.ok) return err(version.error === 'unreadable' ? 'unreadable' : 'not_found')
+  if (version.value.contentType !== 'application/pdf') return err('not_found')
+  const doc = openEditablePdf(version.value.bytes)
+  if (doc === null) return err('unreadable')
+  if (!Number.isInteger(page) || page < 1 || page > doc.countPages()) return err('not_found')
+  const loaded = doc.loadPage(page - 1)
+  const [x0, , x1] = loaded.getBounds()
+  const scale = EDITOR_WIDTH / (x1 - x0)
+  const pixmap = loaded.toPixmap(
+    mupdf.Matrix.scale(scale, scale),
+    mupdf.ColorSpace.DeviceRGB,
+    false,
+    true,
+  )
+  return ok(pixmap.asPNG())
+}
+
+function pdfSource(versionId: string, bytes: Uint8Array): PageGeometry[] | null {
+  const doc = openEditablePdf(bytes)
+  if (doc === null) return null
+  return Array.from({ length: doc.countPages() }, (_, i) => {
+    const [x0, y0, x1, y1] = doc.loadPage(i).getBounds()
+    return { page: i + 1, src: editorPageUrl(versionId, i + 1), width: x1 - x0, height: y1 - y0 }
+  })
+}
+
+async function imageSource(bytes: Uint8Array): Promise<PageGeometry[] | null> {
+  try {
+    const oriented = await sharp(bytes).rotate().toBuffer({ resolveWithObject: true })
+    const preview = await sharp(oriented.data)
+      .resize({ width: EDITOR_WIDTH, withoutEnlargement: true })
+      .png()
+      .toBuffer()
+    return [
+      { page: 1, src: dataUrl(preview), width: oriented.info.width, height: oriented.info.height },
+    ]
+  } catch {
+    return null
   }
-  if (row.contentType === 'image/jpeg' || row.contentType === 'image/png') {
-    try {
-      const oriented = await sharp(bytes).rotate().toBuffer({ resolveWithObject: true })
-      const preview = await sharp(oriented.data)
-        .resize({ width: EDITOR_WIDTH, withoutEnlargement: true })
-        .png()
-        .toBuffer()
-      return ok({
-        documentId: row.documentId,
-        title: row.title,
-        versionId,
-        mode: 'image',
-        pages: [
-          {
-            page: 1,
-            src: dataUrl(preview),
-            width: oriented.info.width,
-            height: oriented.info.height,
-          },
-        ],
-        truncated: false,
-      })
-    } catch {
-      return err('unreadable')
-    }
+}
+
+export async function loadEditorSource(
+  db: DbOrTx,
+  store: ObjectStore,
+  versionId: string,
+  signal: AbortSignal,
+): Promise<Result<EditorSource, SourceError>> {
+  signal.throwIfAborted()
+  const version = await editableVersion(db, store, versionId, signal)
+  if (!version.ok) return err(version.error)
+  const { documentId, title, contentType, bytes } = version.value
+  const isPdf = contentType === 'application/pdf'
+  if (!isPdf && contentType !== 'image/jpeg' && contentType !== 'image/png') {
+    return err('unsupported')
   }
-  return err('unsupported')
+  const pages = isPdf ? pdfSource(versionId, bytes) : await imageSource(bytes)
+  if (pages === null) return err('unreadable')
+  return ok({ documentId, title, versionId, mode: isPdf ? 'pdf' : 'image', pages })
 }

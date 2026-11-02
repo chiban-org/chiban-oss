@@ -21,6 +21,7 @@ export interface BoxEditorProps {
 
 const STEP = 4
 const DEFAULT_SIZE = 80
+const PAGES_PER_VIEW = 12
 let counter = 0
 
 function nextId(): string {
@@ -28,8 +29,46 @@ function nextId(): string {
   return `box-${counter}`
 }
 
+function PageWindows({
+  total,
+  first,
+  onShow,
+}: {
+  total: number
+  first: number
+  onShow: (first: number) => void
+}) {
+  if (total <= PAGES_PER_VIEW) return null
+  const starts = Array.from(
+    { length: Math.ceil(total / PAGES_PER_VIEW) },
+    (_, i) => i * PAGES_PER_VIEW,
+  )
+  return (
+    <nav aria-label="Pages of the document" className="flex flex-wrap gap-2">
+      {starts.map((start) => {
+        const label = `Show pages ${start + 1} to ${Math.min(start + PAGES_PER_VIEW, total)}`
+        const current = start === first
+        return (
+          <button
+            key={start}
+            type="button"
+            aria-current={current ? 'page' : undefined}
+            disabled={current}
+            className="rounded-md border px-3 py-1 text-sm disabled:font-semibold"
+            onClick={() => onShow(start)}
+          >
+            {label}
+          </button>
+        )
+      })}
+    </nav>
+  )
+}
+
 export function BoxEditor({ pages, exemptions, mode, onChange }: BoxEditorProps) {
   const [boxes, setBoxes] = useState<EditorBox[]>([])
+  const [first, setFirst] = useState(0)
+  const shown = pages.slice(first, first + PAGES_PER_VIEW)
   const drawing = useRef<{ id: string; originX: number; originY: number; page: number } | null>(
     null,
   )
@@ -93,7 +132,8 @@ export function BoxEditor({ pages, exemptions, mode, onChange }: BoxEditorProps)
         move it with the arrow keys, resize it with Shift and the arrow keys, and remove it with
         Delete.
       </p>
-      {pages.map((geometry) => (
+      <PageWindows total={pages.length} first={first} onShow={setFirst} />
+      {shown.map((geometry) => (
         <div key={geometry.page} className="space-y-2">
           <p className="m-0 font-medium">{`Page ${geometry.page}`}</p>
           <div
@@ -133,6 +173,7 @@ export function BoxEditor({ pages, exemptions, mode, onChange }: BoxEditorProps)
           >
             <img
               src={geometry.src}
+              loading="lazy"
               alt={`Page ${geometry.page} of the document`}
               className="pointer-events-none block h-full w-full"
               draggable={false}
