@@ -288,6 +288,13 @@
       "when": 1793601036504,
       "tag": "0040_colorful_carmella_unuscione",
       "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1793602321036,
+      "tag": "0041_groovy_galactus",
+      "breakpoints": true
     }
   ]
 }
