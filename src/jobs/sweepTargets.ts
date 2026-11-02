@@ -1,7 +1,13 @@
 import { and, eq, lt } from 'drizzle-orm'
 import { JOB_NAMES } from '@/constants/jobNames'
 import type { Db } from '@/db/client'
-import { exportsTable, jobRuns, notificationOutbox, preservationRecords } from '@/db/schema'
+import {
+  exportsTable,
+  jobRuns,
+  notificationOutbox,
+  preservationRecords,
+  redactionJobs,
+} from '@/db/schema'
 import { overdueCalendarPushes } from '@/features/calendar/queuePush'
 import { getTownSettings } from '@/features/town/settings'
 import { todayInTimeZone } from '@/types/civilDate'
@@ -11,6 +17,7 @@ import type { JobDefinition } from './defineJob'
 import { exportsBuildJob } from './exportsBuild'
 import { notificationsSendJob } from './notificationsSend'
 import { recordsPreserveJob } from './recordsPreserve'
+import { redactionRunJob } from './redactionRun'
 
 export interface SweepItem {
   job: JobDefinition<object>
@@ -121,12 +128,31 @@ const exportsBuildTarget: SweepTarget = {
   },
 }
 
+const REDACTION_OVERDUE_MINUTES = 5
+
+const redactionTarget: SweepTarget = {
+  name: JOB_NAMES.REDACTION_RUN,
+  async findOverdue(db, now) {
+    const lost = await db
+      .select({ id: redactionJobs.id })
+      .from(redactionJobs)
+      .where(
+        and(
+          eq(redactionJobs.status, 'queued'),
+          lt(redactionJobs.createdAt, minutesBefore(now, REDACTION_OVERDUE_MINUTES)),
+        ),
+      )
+    return lost.map((row) => ({ job: redactionRunJob, payload: { jobId: row.id } }))
+  },
+}
+
 const targets: SweepTarget[] = [
   clocksDailyTarget,
   notificationsTarget,
   calendarTarget,
   preservationTarget,
   exportsBuildTarget,
+  redactionTarget,
 ]
 
 export const SWEEP_TARGETS: readonly SweepTarget[] = targets

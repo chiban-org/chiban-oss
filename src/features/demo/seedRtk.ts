@@ -4,6 +4,7 @@ import { rtkRequests } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { computeDue } from '@/features/clocks/computeDue'
 import { actorFor, must } from '@/features/demo/seedPermitSupport'
+import { seedLetterDocument, seedRedactedVersion } from '@/features/demo/seedRedaction'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { logRequest } from '@/features/rtk/requests'
 import { recordFirstResponse } from '@/features/rtk/responses'
@@ -133,5 +134,7 @@ export async function seedRecordsM10(
     staff: await actorFor(db, 'staff', signal),
   }
   await seedRtkRequests(ctx)
+  const letter = await seedLetterDocument(ctx, 'Demo letter with a private phone number')
+  await seedRedactedVersion(ctx, letter, 'public')
   return true
 }

@@ -216,7 +216,7 @@ describe('jobs.sweep', () => {
   })
 
   it('registers the five M6 targets', () => {
-    expect(SWEEP_TARGETS.map((t) => t.name)).toEqual([
+    expect(SWEEP_TARGETS.map((t) => t.name).slice(0, 5)).toEqual([
       'clocks.daily',
       'notifications.send',
       'calendar.push',

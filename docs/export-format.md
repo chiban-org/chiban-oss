@@ -509,11 +509,14 @@ File: `data/document_versions.ndjson`. Ordered by id.
 - `filename`: text
 - `content_type`: text
 - `created_by`: uuid, nullable
+- `derived_from_version_id`: uuid, nullable
+- `redaction_job_id`: uuid, nullable
 - `created_at`: timestamp with time zone
 
 References:
 - `document_id` refers to `documents`
 - `file_sha256` refers to `files`
+- `derived_from_version_id` refers to `document_versions`
 
 ### documents
 
@@ -1365,6 +1368,44 @@ File: `data/record_events.ndjson`. Ordered by id.
 References:
 - `project_id` refers to `projects`
 - `application_id` refers to `applications`
+
+### redaction_boxes
+
+File: `data/redaction_boxes.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `job_id`: uuid
+- `page`: integer, nullable
+- `pdf_box`: jsonb, nullable
+- `image_box`: jsonb, nullable
+- `exemption_key`: text
+- `other_citation`: text, nullable
+- `explanation`: text
+
+References:
+- `job_id` refers to `redaction_jobs`
+
+### redaction_jobs
+
+File: `data/redaction_jobs.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `document_id`: uuid
+- `source_version_id`: uuid
+- `purpose`: text
+- `rtk_request_id`: uuid, nullable
+- `status`: text
+- `failure_reason`: text, nullable
+- `result_version_id`: uuid, nullable
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+- `finished_at`: timestamp with time zone, nullable
+
+References:
+- `document_id` refers to `documents`
+- `source_version_id` refers to `document_versions`
+- `rtk_request_id` refers to `rtk_requests`
+- `result_version_id` refers to `document_versions`
 
 ### refund_requests
 
