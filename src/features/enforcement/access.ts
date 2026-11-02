@@ -1,9 +1,16 @@
 import { and, asc, desc, eq, lt, type SQL, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { complaints, type EnforcementStatus, enforcementCases, enforcementNotes } from '@/db/schema'
+import {
+  complaints,
+  type EnforcementStatus,
+  enforcementCases,
+  enforcementNotes,
+  enforcementOrders,
+  violationFindings,
+} from '@/db/schema'
 import { hasFullRecordAccess } from '@/features/access/roles'
 import type { Actor } from '@/features/auth/actor'
-import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
+import { CASE_STATUS_LABELS, PROVISION_KIND_LABELS } from '@/features/enforcement/labels'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -21,6 +28,8 @@ export interface PublicCaseView {
   closedOn: CivilDate | null
   summary: string
   approvedComplaintText: string[]
+  provisions: string[]
+  orders: { number: string; issuedOn: CivilDate }[]
 }
 
 export interface StaffCaseView {
@@ -34,7 +43,7 @@ export type CaseView = PublicCaseView | StaffCaseView
 
 export function publicCaseView(
   row: typeof enforcementCases.$inferSelect,
-  approvedTexts: string[],
+  extras: Pick<PublicCaseView, 'approvedComplaintText' | 'provisions' | 'orders'>,
 ): PublicCaseView {
   return {
     kind: 'public',
@@ -44,17 +53,40 @@ export function publicCaseView(
     openedOn: row.openedOn as CivilDate,
     closedOn: row.closedOn as CivilDate | null,
     summary: row.publicSummary ?? '',
-    approvedComplaintText: approvedTexts,
+    ...extras,
   }
 }
 
-async function approvedTextsFor(db: DbOrTx, caseId: string): Promise<string[]> {
-  const rows = await db
-    .select({ text: complaints.descriptionPublic })
-    .from(complaints)
-    .where(and(eq(complaints.caseId, caseId), sql`${complaints.descriptionPublic} is not null`))
-    .orderBy(asc(complaints.createdAt))
-  return rows.flatMap((r) => (r.text === null ? [] : [r.text]))
+async function publicExtras(
+  db: DbOrTx,
+  caseId: string,
+): Promise<Pick<PublicCaseView, 'approvedComplaintText' | 'provisions' | 'orders'>> {
+  const [texts, findings, orders] = await Promise.all([
+    db
+      .select({ text: complaints.descriptionPublic })
+      .from(complaints)
+      .where(and(eq(complaints.caseId, caseId), sql`${complaints.descriptionPublic} is not null`))
+      .orderBy(asc(complaints.createdAt)),
+    db
+      .select({ kind: violationFindings.provisionKind, ref: violationFindings.provisionRef })
+      .from(violationFindings)
+      .where(eq(violationFindings.caseId, caseId))
+      .orderBy(asc(violationFindings.foundOn)),
+    db
+      .select({ number: enforcementOrders.number, issuedOn: enforcementOrders.issuedOn })
+      .from(enforcementOrders)
+      .where(
+        and(eq(enforcementOrders.caseId, caseId), sql`${enforcementOrders.issuedOn} is not null`),
+      )
+      .orderBy(asc(enforcementOrders.number)),
+  ])
+  return {
+    approvedComplaintText: texts.flatMap((r) => (r.text === null ? [] : [r.text])),
+    provisions: findings.map((f) => `${PROVISION_KIND_LABELS[f.kind]}: ${f.ref}`),
+    orders: orders.flatMap((o) =>
+      o.issuedOn === null ? [] : [{ number: o.number, issuedOn: o.issuedOn as CivilDate }],
+    ),
+  }
 }
 
 export async function getCase(
@@ -70,7 +102,7 @@ export async function getCase(
     .where(and(eq(enforcementCases.id, caseId), enforcementCaseVisibleTo(actor)))
   if (row === undefined) return err('not_found')
   if (actor === null || !hasFullRecordAccess(actor)) {
-    return ok(publicCaseView(row, await approvedTextsFor(db, row.id)))
+    return ok(publicCaseView(row, await publicExtras(db, row.id)))
   }
   const [caseComplaints, notes] = await Promise.all([
     db
