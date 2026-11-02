@@ -127,6 +127,10 @@ describe('writeArchive', () => {
     await handle.db.execute(sql`
       insert into processor_accounts (processor, mode, account_ref, credentials_enc, webhook_secret_enc, created_by)
       values ('stripe', 'test', 'acct_x', 'v1:SECRETCREDENTIALS', 'v1:SECRETWEBHOOK', gen_random_uuid())`)
+    await handle.db.execute(sql`
+      insert into processor_events (processor_account_id, event_id, type, raw)
+      select id, 'evt_secret_probe', 'payment_intent.created', '{"data":{"client_secret":"pi_SECRETCLIENTVALUE"}}'::jsonb
+      from processor_accounts where account_ref = 'acct_x'`)
     const { entries } = await archive()
     const everything = Buffer.concat([...entries.values()]).toString('latin1')
     for (const secret of [
@@ -134,9 +138,11 @@ describe('writeArchive', () => {
       'SECRETTOTPVALUE',
       'SECRETCREDENTIALS',
       'SECRETWEBHOOK',
+      'SECRETCLIENTVALUE',
     ]) {
       expect(everything.includes(secret), secret).toBe(false)
     }
+    await handle.db.execute(sql`delete from processor_events where event_id = 'evt_secret_probe'`)
     await handle.db.execute(sql`delete from processor_accounts where account_ref = 'acct_x'`)
   })
 

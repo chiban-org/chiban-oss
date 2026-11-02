@@ -148,7 +148,7 @@ const SPECS: Spec[] = [
     omit: ['credentials_enc', 'webhook_secret_enc', 'is_active'],
     fill: { credentials_enc: `''`, webhook_secret_enc: `''` },
   },
-  { table: t.processorEvents },
+  { table: t.processorEvents, omit: ['raw'], fill: { raw: `'{}'::jsonb` } },
   { table: t.projectParties },
   { table: t.projects },
   { table: t.receiptNumberCounters },

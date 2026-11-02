@@ -65,13 +65,17 @@ export async function buildBusinessExport(
     return { ok: true }
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
-    tar.stream.destroy()
-    await uploading.catch(() => undefined)
-    await store.delete(key, signal).catch(() => undefined)
-    await db
-      .update(exportsTable)
-      .set({ status: 'failed', error: message, finishedAt: new Date() })
-      .where(eq(exportsTable.id, exportId))
+    try {
+      tar.stream.destroy()
+      counted.destroy()
+      await uploading.catch(() => undefined)
+      await store.delete(key, signal).catch(() => undefined)
+    } finally {
+      await db
+        .update(exportsTable)
+        .set({ status: 'failed', error: message, finishedAt: new Date() })
+        .where(eq(exportsTable.id, exportId))
+    }
     return { ok: false, error: message }
   }
 }

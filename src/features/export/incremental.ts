@@ -1,11 +1,12 @@
 import { createHash, randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
-import { and, desc, eq } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { exportsTable, exportTargets } from '@/db/schema'
 import type { ArchiveSink } from '@/features/export/archiveTypes'
 import { EXPORT_ROOT, recordInIndex } from '@/features/export/exportIndex'
-import { type ExportManifest, manifestBytes, manifestSchema } from '@/features/export/manifest'
+import { folderFor, lastReadyManifest } from '@/features/export/incrementalPlan'
+import { manifestBytes } from '@/features/export/manifest'
 import { readAll } from '@/features/export/readArchive'
 import { TargetFailure } from '@/features/export/targets/targetFailure'
 import type { StorageTarget, TargetError } from '@/features/export/targets/types'
@@ -22,41 +23,6 @@ export interface IncrementalReport {
 
 const HELD_PATHS = ['FORMAT.md', 'manifest.sha256', 'manifest.json'] as const
 const HELD_LIMIT = 256 * 1024 * 1024
-
-async function folderFor(db: Db, targetId: string, month: string): Promise<string> {
-  const rows = await db
-    .select({ storageKey: exportsTable.storageKey })
-    .from(exportsTable)
-    .where(
-      and(
-        eq(exportsTable.targetId, targetId),
-        eq(exportsTable.kind, 'incremental'),
-        eq(exportsTable.status, 'ready'),
-      ),
-    )
-  const taken = rows.filter((r) => {
-    const key = r.storageKey ?? ''
-    return key === `${EXPORT_ROOT}/${month}` || key.startsWith(`${EXPORT_ROOT}/${month}-`)
-  }).length
-  return taken === 0 ? month : `${month}-${taken + 1}`
-}
-
-async function lastReadyManifest(db: Db, targetId: string): Promise<ExportManifest | null> {
-  const [row] = await db
-    .select({ manifest: exportsTable.manifest })
-    .from(exportsTable)
-    .where(
-      and(
-        eq(exportsTable.targetId, targetId),
-        eq(exportsTable.kind, 'incremental'),
-        eq(exportsTable.status, 'ready'),
-      ),
-    )
-    .orderBy(desc(exportsTable.finishedAt))
-    .limit(1)
-  const parsed = manifestSchema.safeParse(row?.manifest)
-  return parsed.success ? parsed.data : null
-}
 
 function unwrap(result: Result<unknown, TargetError>): void {
   if (!result.ok) throw new TargetFailure(result.error)
@@ -120,16 +86,20 @@ function targetSink(target: StorageTarget, folder: string, signal: AbortSignal) 
   return { sink, finish, written }
 }
 
+async function recordTargetFailure(db: Db, targetId: string, detail: string, now: Date) {
+  await db
+    .update(exportTargets)
+    .set({ lastFailureAt: now, lastError: detail })
+    .where(eq(exportTargets.id, targetId))
+}
+
 async function recordFailure(db: Db, exportId: string, targetId: string, detail: string) {
   const now = new Date()
   await db
     .update(exportsTable)
     .set({ status: 'failed', error: detail, finishedAt: now })
     .where(eq(exportsTable.id, exportId))
-  await db
-    .update(exportTargets)
-    .set({ lastFailureAt: now, lastError: detail })
-    .where(eq(exportTargets.id, targetId))
+  await recordTargetFailure(db, targetId, detail, now)
 }
 
 export async function runIncremental(
@@ -141,9 +111,18 @@ export async function runIncremental(
   signal: AbortSignal,
 ): Promise<Result<IncrementalReport, TargetError>> {
   const month = (await townToday(db, now, signal)).slice(0, 7)
-  const folder = await folderFor(db, targetId, month)
   const base = await lastReadyManifest(db, targetId)
   const exportId = randomUUID()
+  let folder: string
+  try {
+    folder = await folderFor(db, target, targetId, month, signal)
+  } catch (e) {
+    if (e instanceof TargetFailure) {
+      await recordTargetFailure(db, targetId, e.error.detail, new Date())
+      return err(e.error)
+    }
+    throw e
+  }
   await db.insert(exportsTable).values({
     id: exportId,
     kind: 'incremental',

@@ -3,13 +3,20 @@ import { createHash, randomUUID } from 'node:crypto'
 import { createReadStream, createWriteStream } from 'node:fs'
 import { mkdir, rm, stat } from 'node:fs/promises'
 import { join } from 'node:path'
-import { PassThrough, Readable, Transform } from 'node:stream'
+import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import { promisify } from 'node:util'
 import { APP_VERSION } from '@/config/appVersion'
 import { env } from '@/config/env'
 import type { Db } from '@/db/client'
 import { getMigrationHead } from '@/db/migrationHead'
+import {
+  MissingObjects,
+  type ObjectRecord,
+  referencedKeys,
+  unreadableKeys,
+  writeObject,
+} from '@/features/backup/backupObjects'
 import { connectionEnv } from '@/features/export/recovery/buildRecovery'
 import { encryptStream } from '@/features/export/recovery/envelope'
 import { TargetFailure } from '@/features/export/targets/targetFailure'
@@ -42,28 +49,12 @@ export interface BackupReport {
   objects: number
 }
 
-export type BackupError = 'passphrase_too_short' | 'dump_failed' | 'object_unreadable' | TargetError
-
-export interface ObjectRecord {
-  key: string
-  size: number
-  sha256: string
-}
-
-function hashing(): { transform: Transform; digest(): { sha256: string; size: number } } {
-  const hash = createHash('sha256')
-  let size = 0
-  return {
-    transform: new Transform({
-      transform(chunk: Buffer, _enc, cb) {
-        hash.update(chunk)
-        size += chunk.length
-        cb(null, chunk)
-      },
-    }),
-    digest: () => ({ sha256: hash.digest('hex'), size }),
-  }
-}
+export type BackupError =
+  | 'passphrase_too_short'
+  | 'dump_failed'
+  | 'object_unreadable'
+  | { missingObjects: string[] }
+  | TargetError
 
 async function sha256Of(path: string): Promise<string> {
   const hash = createHash('sha256')
@@ -84,27 +75,6 @@ async function dumpTo(deps: BackupDeps, file: string, signal: AbortSignal): Prom
   }
 }
 
-async function writeObject(
-  deps: BackupDeps,
-  tar: ReturnType<typeof createTarSink>,
-  key: string,
-  signal: AbortSignal,
-): Promise<ObjectRecord | null> {
-  const head = await deps.store.head(key, signal)
-  if (!head.ok) return null
-  const stream = await deps.store.getStream(key, signal)
-  if (!stream.ok) return null
-  const h = hashing()
-  const body = new PassThrough()
-  const source = Readable.fromWeb(stream.value as never)
-  source.on('error', (e) => body.destroy(e))
-  source.pipe(h.transform).pipe(body)
-  await tar.sink.write({ path: `objects/${key}`, size: head.value.size, body })
-  const digest = h.digest()
-  if (digest.size !== head.value.size) throw new TargetFailure({ kind: 'bad_shape', detail: key })
-  return { key, size: digest.size, sha256: digest.sha256 }
-}
-
 async function writeBytes(tar: ReturnType<typeof createTarSink>, path: string, bytes: Buffer) {
   await tar.sink.write({ path, size: bytes.length, body: Readable.from([bytes]) })
 }
@@ -113,6 +83,7 @@ async function buildArchive(
   deps: BackupDeps,
   dumpFile: string,
   encFile: string,
+  referenced: Set<string>,
   signal: AbortSignal,
 ): Promise<number> {
   const tar = createTarSink()
@@ -139,8 +110,9 @@ async function buildArchive(
     const keys = (await deps.store.list('', signal)).filter((k) => !k.startsWith(EXCLUDED_PREFIX))
     for (const key of keys) {
       signal.throwIfAborted()
-      const record = await writeObject(deps, tar, key, signal)
+      const record = await writeObject(deps.store, tar, key, signal)
       if (record !== null) objects.push(record)
+      else if (referenced.has(key)) throw new MissingObjects([key])
     }
     await writeBytes(
       tar,
@@ -175,11 +147,15 @@ export async function createBackup(
   const dumpFile = join(workDir, 'database.dump')
   const encFile = join(workDir, 'backup.bin')
   try {
+    const referenced = await referencedKeys(deps.db)
+    const missing = await unreadableKeys(deps.store, referenced, signal)
+    if (missing.length > 0) return err({ missingObjects: missing })
     if (!(await dumpTo(deps, dumpFile, signal))) return err('dump_failed')
     let objects: number
     try {
-      objects = await buildArchive(deps, dumpFile, encFile, signal)
+      objects = await buildArchive(deps, dumpFile, encFile, new Set(referenced), signal)
     } catch (e) {
+      if (e instanceof MissingObjects) return err({ missingObjects: e.keys })
       if (e instanceof TargetFailure) return err('object_unreadable')
       throw e
     }

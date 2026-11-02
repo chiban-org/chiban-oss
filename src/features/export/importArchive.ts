@@ -1,9 +1,6 @@
-import { createHash, randomUUID } from 'node:crypto'
-import { createWriteStream } from 'node:fs'
+import { randomUUID } from 'node:crypto'
 import { mkdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
-import { PassThrough, Transform } from 'node:stream'
-import { pipeline } from 'node:stream/promises'
 import { sql } from 'drizzle-orm'
 import { env } from '@/config/env'
 import type { Db } from '@/db/client'
@@ -11,12 +8,9 @@ import { getMigrationHead } from '@/db/migrationHead'
 import type { ArchiveEntry } from '@/features/export/archiveTypes'
 import { EXPORT_ENTITIES } from '@/features/export/entities'
 import { DanglingRefs, insertAllEntities } from '@/features/export/insertEntities'
-import {
-  type ExportManifest,
-  manifestChecksumLine,
-  manifestSchema,
-} from '@/features/export/manifest'
+import { type ExportManifest, manifestSchema } from '@/features/export/manifest'
 import { type ArchiveSource, readAll } from '@/features/export/readArchive'
+import { receive } from '@/features/export/receiveArchive'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
 
@@ -36,10 +30,7 @@ export type ImportArchiveError =
   | { versionMismatch: { archive: string; instance: string } }
   | { hashMismatch: string[] }
   | { danglingRefs: string[] }
-
-function blobKeyOf(sha: string): string {
-  return `blobs/sha256/${sha.slice(0, 2)}/${sha.slice(2, 4)}/${sha}`
-}
+  | { uploadFailed: string }
 
 async function hasExistingRecords(db: Db): Promise<boolean> {
   for (const entity of EXPORT_ENTITIES) {
@@ -50,21 +41,6 @@ async function hasExistingRecords(db: Db): Promise<boolean> {
     if (found.rows[0]?.present === true) return true
   }
   return false
-}
-
-function hashing(): { transform: Transform; digest(): { sha256: string; size: number } } {
-  const hash = createHash('sha256')
-  let size = 0
-  return {
-    transform: new Transform({
-      transform(chunk: Buffer, _enc, cb) {
-        hash.update(chunk)
-        size += chunk.length
-        cb(null, chunk)
-      },
-    }),
-    digest: () => ({ sha256: hash.digest('hex'), size }),
-  }
 }
 
 async function readManifest(
@@ -79,79 +55,6 @@ async function readManifest(
   } catch {
     return null
   }
-}
-
-async function receiveFile(
-  entry: ArchiveEntry,
-  file: ExportManifest['files'][number],
-  store: ObjectStore,
-  signal: AbortSignal,
-): Promise<boolean> {
-  const h = hashing()
-  const sink = new PassThrough()
-  const key = blobKeyOf(file.sha256)
-  const uploading = store.upload(key, sink, file.contentType, signal)
-  await pipeline(entry.body, h.transform, sink).catch(() => undefined)
-  await uploading.catch(() => undefined)
-  const digest = h.digest()
-  const valid = digest.sha256 === file.sha256 && digest.size === file.size
-  if (!valid) await store.delete(key, signal).catch(() => undefined)
-  return valid
-}
-
-interface ReceiveContext {
-  manifest: ExportManifest
-  manifestBytes: Buffer
-  workDir: string
-  store: ObjectStore
-  signal: AbortSignal
-}
-
-type EntryVerdict = 'ok' | 'checksum_ok' | 'manifest_mismatch' | 'bad_file'
-
-async function handleEntry(ctx: ReceiveContext, entry: ArchiveEntry): Promise<EntryVerdict> {
-  if (entry.path === 'manifest.sha256') {
-    const text = (await readAll(entry.body, 1024)).toString('utf8')
-    return text === manifestChecksumLine(ctx.manifestBytes) ? 'checksum_ok' : 'manifest_mismatch'
-  }
-  if (entry.path === 'FORMAT.md') {
-    entry.body.resume()
-    return 'ok'
-  }
-  const entity = ctx.manifest.entities.find((e) => e.path === entry.path)
-  if (entity !== undefined) {
-    const h = hashing()
-    await pipeline(
-      entry.body,
-      h.transform,
-      createWriteStream(join(ctx.workDir, `${entity.name}.ndjson`)),
-    )
-    return h.digest().sha256 === entity.sha256 ? 'ok' : 'manifest_mismatch'
-  }
-  const file = ctx.manifest.files.find((f) => f.path === entry.path)
-  if (file === undefined) return 'manifest_mismatch'
-  return (await receiveFile(entry, file, ctx.store, ctx.signal)) ? 'ok' : 'bad_file'
-}
-
-async function receive(
-  iterator: AsyncIterator<ArchiveEntry>,
-  ctx: ReceiveContext,
-): Promise<Result<number, 'manifest_mismatch' | { hashMismatch: string[] }>> {
-  const seen = new Set<string>()
-  const bad: string[] = []
-  let sumsOk = false
-  for (let step = await iterator.next(); step.done !== true; step = await iterator.next()) {
-    ctx.signal.throwIfAborted()
-    seen.add(step.value.path)
-    const verdict = await handleEntry(ctx, step.value)
-    if (verdict === 'manifest_mismatch') return err('manifest_mismatch')
-    if (verdict === 'checksum_ok') sumsOk = true
-    if (verdict === 'bad_file') bad.push(step.value.path)
-  }
-  if (bad.length > 0) return err({ hashMismatch: bad })
-  const expected = [...ctx.manifest.entities, ...ctx.manifest.files].map((e) => e.path)
-  if (!sumsOk || expected.some((p) => !seen.has(p))) return err('manifest_mismatch')
-  return ok(ctx.manifest.files.length)
 }
 
 export async function importArchive(

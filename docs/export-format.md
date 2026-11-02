@@ -1012,10 +1012,11 @@ File: `data/processor_events.ndjson`. Ordered by id.
 - `received_at`: timestamp with time zone
 - `processed_at`: timestamp with time zone, nullable
 - `outcome`: text, nullable
-- `raw`: jsonb
 
 References:
 - `processor_account_id` refers to `processor_accounts`
+
+Omitted columns: `raw`
 
 ### project_parties
 

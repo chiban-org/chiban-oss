@@ -31,3 +31,26 @@ export async function freshTarget() {
   const { store } = await makeTestStore()
   return { target, store }
 }
+
+export async function collectEntries(bytes: Buffer): Promise<Map<string, Buffer>> {
+  const out = new Map<string, Buffer>()
+  for await (const entry of sourceOf(bytes).entries()) {
+    const chunks: Buffer[] = []
+    for await (const c of entry.body) chunks.push(Buffer.from(c as Uint8Array))
+    out.set(entry.path, Buffer.concat(chunks))
+  }
+  return out
+}
+
+export async function rebuildTar(entries: Map<string, Buffer>): Promise<Buffer> {
+  const out = createTarSink()
+  const chunks: Buffer[] = []
+  out.stream.on('data', (c: Buffer) => chunks.push(c))
+  const finished = new Promise<void>((resolve) => out.stream.on('end', () => resolve()))
+  for (const [path, bytes] of entries) {
+    await out.sink.write({ path, size: bytes.length, body: Readable.from([bytes]) })
+  }
+  out.finish()
+  await finished
+  return Buffer.concat(chunks)
+}

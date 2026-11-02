@@ -1,16 +1,14 @@
 import { createHash } from 'node:crypto'
-import { Readable } from 'node:stream'
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { files, parcels } from '@/db/schema'
 import { compareTowns } from '@/features/export/compareTowns'
 import { EXPORT_ENTITIES } from '@/features/export/entities'
 import { importArchive } from '@/features/export/importArchive'
-import { createTarSink } from '@/features/export/tarSink'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { seedExportTown } from '@/test/exportFixtures'
-import { buildTar, freshTarget, sourceOf } from '@/test/roundTrip'
+import { buildTar, collectEntries, freshTarget, rebuildTar, sourceOf } from '@/test/roundTrip'
 
 const signal = new AbortController().signal
 const sourceStore = getObjectStore()
@@ -72,11 +70,16 @@ describe('archive round trip', () => {
   it('archive from another migration head is versionMismatch', async () => {
     const { target, store } = await freshTarget()
     try {
-      const entries = await collect(tar)
+      const entries = await collectEntries(tar)
       const manifest = JSON.parse(entries.get('manifest.json')?.toString('utf8') ?? '{}')
       manifest.migrationHead = '0000_other'
       entries.set('manifest.json', Buffer.from(JSON.stringify(manifest)))
-      const result = await importArchive(target.db, store, sourceOf(await rebuild(entries)), signal)
+      const result = await importArchive(
+        target.db,
+        store,
+        sourceOf(await rebuildTar(entries)),
+        signal,
+      )
       expect(result).toMatchObject({
         ok: false,
         error: { versionMismatch: { archive: '0000_other' } },
@@ -89,13 +92,18 @@ describe('archive round trip', () => {
   it('a flipped byte in one file is hashMismatch naming that file and nothing is committed', async () => {
     const { target, store } = await freshTarget()
     try {
-      const entries = await collect(tar)
+      const entries = await collectEntries(tar)
       const victim = [...entries.keys()].find((k) => k.startsWith('files/'))
       expect(victim).toBeDefined()
       const bytes = Buffer.from(entries.get(victim ?? '') ?? Buffer.alloc(0))
       bytes[0] = (bytes[0] ?? 0) ^ 0xff
       entries.set(victim ?? '', bytes)
-      const result = await importArchive(target.db, store, sourceOf(await rebuild(entries)), signal)
+      const result = await importArchive(
+        target.db,
+        store,
+        sourceOf(await rebuildTar(entries)),
+        signal,
+      )
       expect(result).toMatchObject({ ok: false, error: { hashMismatch: [victim] } })
       expect((await target.db.select().from(parcels)).length).toBe(0)
     } finally {
@@ -106,10 +114,15 @@ describe('archive round trip', () => {
   it('an edited ndjson line is manifest_mismatch', async () => {
     const { target, store } = await freshTarget()
     try {
-      const entries = await collect(tar)
+      const entries = await collectEntries(tar)
       const text = entries.get('data/parcels.ndjson')?.toString('utf8') ?? ''
       entries.set('data/parcels.ndjson', Buffer.from(text.replace('"id"', '"id" ')))
-      const result = await importArchive(target.db, store, sourceOf(await rebuild(entries)), signal)
+      const result = await importArchive(
+        target.db,
+        store,
+        sourceOf(await rebuildTar(entries)),
+        signal,
+      )
       expect(result).toMatchObject({ ok: false, error: 'manifest_mismatch' })
       expect((await target.db.select().from(parcels)).length).toBe(0)
     } finally {
@@ -146,26 +159,3 @@ describe('archive round trip', () => {
     }
   })
 })
-
-async function collect(bytes: Buffer): Promise<Map<string, Buffer>> {
-  const out = new Map<string, Buffer>()
-  for await (const entry of sourceOf(bytes).entries()) {
-    const chunks: Buffer[] = []
-    for await (const c of entry.body) chunks.push(Buffer.from(c as Uint8Array))
-    out.set(entry.path, Buffer.concat(chunks))
-  }
-  return out
-}
-
-async function rebuild(entries: Map<string, Buffer>): Promise<Buffer> {
-  const out = createTarSink()
-  const chunks: Buffer[] = []
-  out.stream.on('data', (c: Buffer) => chunks.push(c))
-  const finished = new Promise<void>((resolve) => out.stream.on('end', () => resolve()))
-  for (const [path, bytes] of entries) {
-    await out.sink.write({ path, size: bytes.length, body: Readable.from([bytes]) })
-  }
-  out.finish()
-  await finished
-  return Buffer.concat(chunks)
-}
