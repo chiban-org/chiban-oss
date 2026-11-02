@@ -12,6 +12,7 @@ export const CAPABILITIES = {
   'parcel.manage':
     'Record lineage, override parcel IDs, carry records forward, resolve unresolved records, and disposition import exceptions',
   'gis.import': 'Run GIS layer imports',
+  'clock.adjust': 'Extend or waive a clock where the rule allows it, with a recorded reason',
   'fee.override': 'Waive or set a fee amount with a recorded reason',
 } as const
 

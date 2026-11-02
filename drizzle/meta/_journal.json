@@ -134,6 +134,13 @@
       "when": 1793587602213,
       "tag": "0018_low_tarantula",
       "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1793587720741,
+      "tag": "0019_numerous_wallflower",
+      "breakpoints": true
     }
   ]
 }

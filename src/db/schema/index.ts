@@ -1,5 +1,6 @@
 export * from './aliasOverrides'
 export * from './audit'
+export * from './clocks'
 export * from './conditions'
 export * from './config'
 export * from './fees'

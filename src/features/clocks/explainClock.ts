@@ -1,0 +1,96 @@
+import type { ClockRule } from '@packs/nh/schema'
+import type { clockAdjustments, clocks } from '@/db/schema'
+import type { Sourced } from '@/features/fees/sourced'
+import { type CivilDate, daysBetween } from '@/types/civilDate'
+
+type ClockRow = typeof clocks.$inferSelect
+type AdjustmentRow = typeof clockAdjustments.$inferSelect
+
+export const START_EVENT_LABELS: Record<string, string> = {
+  application_received: 'Application received',
+  application_completed: 'Application completed',
+  permit_issued: 'Permit issued',
+  regional_impact_notice_mailed: 'Regional impact notice mailed',
+}
+
+export interface ClockExplanation {
+  ruleLabel: string
+  citation: { label: string; url: string | null }
+  ruleKey: string
+  ruleVersion: number
+  packVersion: string
+  startEvent: string
+  startDate: CivilDate
+  countingMethod: string
+  computedDue: CivilDate
+  currentDue: Sourced<CivilDate>
+  rolledFrom: CivilDate | null
+  adjustments: {
+    kind: string
+    days: number | null
+    newDue: CivilDate | null
+    reason: string
+    legalAuthority: { citation: string; explanation: string } | null
+    by: string
+    at: Date
+  }[]
+  consequence: string
+  status: ClockRow['status']
+  daysRemaining: number
+}
+
+function currentDueOf(clock: ClockRow, adjusted: boolean): Sourced<CivilDate> {
+  const due = clock.currentDue as CivilDate
+  if (adjusted) {
+    return {
+      value: due,
+      source: 'manual_override',
+      replaced: { value: clock.computedDue as CivilDate, source: clock.source },
+    }
+  }
+  return {
+    value: due,
+    source: clock.source,
+    replaced:
+      clock.source === 'town_setting' && clock.replacedDue !== null
+        ? { value: clock.replacedDue as CivilDate, source: 'pack_rule' }
+        : null,
+  }
+}
+
+export function explainClock(
+  clock: ClockRow,
+  adjustments: AdjustmentRow[],
+  rule: ClockRule,
+  today: CivilDate,
+): ClockExplanation {
+  const live = adjustments.filter((a) => a.supersededBy === null)
+  return {
+    ruleLabel: rule.label,
+    citation: rule.citation,
+    ruleKey: clock.ruleKey,
+    ruleVersion: clock.ruleVersion,
+    packVersion: clock.packVersion,
+    startEvent: START_EVENT_LABELS[clock.startEvent] ?? clock.startEvent,
+    startDate: clock.startDate as CivilDate,
+    countingMethod: clock.countingMethod,
+    computedDue: clock.computedDue as CivilDate,
+    currentDue: currentDueOf(
+      clock,
+      live.some((a) => a.newDue !== null),
+    ),
+    rolledFrom: clock.rolledFrom as CivilDate | null,
+    adjustments: live.map((a) => ({
+      kind: a.kind,
+      days: a.days,
+      newDue: a.newDue as CivilDate | null,
+      reason: a.reason,
+      legalAuthority: a.legalAuthority as { citation: string; explanation: string } | null,
+      by: a.createdBy,
+      at: a.createdAt,
+    })),
+    consequence: rule.consequence.text,
+    status: clock.status,
+    daysRemaining: daysBetween(today, clock.currentDue as CivilDate),
+  }
+}
