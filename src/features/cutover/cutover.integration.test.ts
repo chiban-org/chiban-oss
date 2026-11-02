@@ -13,6 +13,8 @@ import {
   files,
   ledgerEntries,
   notificationOutbox,
+  projectParties,
+  roleCapabilities,
 } from '@/db/schema'
 import { transitionApplication } from '@/features/applications/transition'
 import { attachCutoverFolder } from '@/features/cutover/attachFolder'
@@ -126,6 +128,48 @@ describe('cutover import', () => {
       receivedDate: '2027-02-01',
     })
     expect(app?.number).toContain('2027')
+  })
+
+  it('an admin import creates the applicant, owner and contractor parties', async () => {
+    const report = await run(
+      [
+        electrical('L-ADMIN', {
+          owner_name: 'Olive Owner',
+          contractor_name: 'Carl Contractor',
+          contractor_email: 'carl@contractor.example',
+        }),
+      ],
+      false,
+      world.admin,
+    )
+    expect(report.counts).toEqual({ imported: 1, alreadyImported: 0, errors: 0 })
+    const [app] = await handle.db
+      .select()
+      .from(applications)
+      .where(eq(applications.number, report.rows[0]?.applicationNumber ?? ''))
+    const parties = await handle.db
+      .select()
+      .from(projectParties)
+      .where(eq(projectParties.projectId, app?.projectId ?? ''))
+    expect(parties.map((p) => p.role).sort()).toEqual(['applicant', 'contractor', 'owner'])
+  })
+
+  it('a row whose parties cannot be added fails instead of reporting an import', async () => {
+    await handle.db
+      .delete(roleCapabilities)
+      .where(eq(roleCapabilities.capability, 'project.manage_parties'))
+    const before = await handle.db.select().from(cutoverRows)
+    const report = await run([electrical('L-NOPARTY')], false, world.staff)
+    await handle.db
+      .insert(roleCapabilities)
+      .values([
+        { role: 'staff', capability: 'project.manage_parties' },
+        { role: 'admin', capability: 'project.manage_parties' },
+      ])
+      .onConflictDoNothing()
+    expect(report.counts).toEqual({ imported: 0, alreadyImported: 0, errors: 1 })
+    expect(report.rows[0]?.errors).toEqual(['party_refused'])
+    expect(await handle.db.select().from(cutoverRows)).toHaveLength(before.length)
   })
 
   it('an issued building row carries the exercise-by clock from its issue date', async () => {

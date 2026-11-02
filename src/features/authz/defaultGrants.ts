@@ -5,6 +5,7 @@ import { roleCapabilities } from '@/db/schema'
 
 export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]>>> = {
   admin: [
+    'project.manage_parties',
     'gate.record_statutory_exception',
     'payment.refund_void_correct',
     'hold.place_release',
@@ -46,7 +47,12 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
   ],
   inspector: ['regional_impact.determine', 'inspection.schedule', 'inspection.record'],
   finance: ['payment.refund_void_correct', 'payment.collect', 'payment.report', 'report.view'],
-  records_custodian: ['hold.place_release', 'disposition.approve', 'export.download'],
+  records_custodian: [
+    'hold.place_release',
+    'disposition.approve',
+    'export.download',
+    'document.manage',
+  ],
 }
 
 export async function seedDefaultGrants(db: DbOrTx, signal: AbortSignal): Promise<void> {

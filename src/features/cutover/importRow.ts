@@ -51,7 +51,7 @@ async function addParties(
   projectId: string,
   row: CutoverRow,
   signal: AbortSignal,
-) {
+): Promise<boolean> {
   const parties = [
     { role: 'applicant' as const, name: row.applicantName, email: row.applicantEmail },
     ...(row.ownerName === undefined
@@ -62,7 +62,7 @@ async function addParties(
       : [{ role: 'contractor' as const, name: row.contractorName, email: row.contractorEmail }]),
   ]
   for (const party of parties) {
-    await addParty(
+    const added = await addParty(
       tx,
       actor,
       {
@@ -73,7 +73,9 @@ async function addParties(
       },
       signal,
     )
+    if (!added.ok) return false
   }
+  return true
 }
 
 async function waiveAllLines(
@@ -149,7 +151,9 @@ async function createRecord(
     signal,
   )
   if (!project.ok) return err(['parcel_not_found'])
-  await addParties(tx, actor, project.value.projectId, row, signal)
+  if (!(await addParties(tx, actor, project.value.projectId, row, signal))) {
+    return err(['party_refused'])
+  }
   const made = await createApplication(
     tx,
     actor,
