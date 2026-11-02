@@ -1,11 +1,7 @@
-import { desc } from 'drizzle-orm'
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
-import { boardPacketLinks } from '@/db/schema'
-import { eligibleBoardDocuments, listPackets } from '@/features/boards/packets'
-import { formatCivilDate, formatInstant } from '@/lib/formatDate'
+import { loadPacketsPage } from '@/features/boards/packetsPage'
 import { requireStaffContext } from '@/server/requireStaff'
-import type { CivilDate } from '@/types/civilDate'
 import { createPacketAction, revokePacketLinkAction, sendPacketLinkAction } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -17,8 +13,8 @@ const BOARDS: [string, string][] = [
 
 export default async function PacketsPage() {
   const ctx = await requireStaffContext()
-  const packets = await listPackets(ctx.db, ctx.actor, ctx.signal)
-  if (!packets.ok) {
+  const page = await loadPacketsPage(ctx.db, ctx.actor, ctx.signal)
+  if (!page.ok) {
     return (
       <main>
         <h1>Board packets</h1>
@@ -26,15 +22,14 @@ export default async function PacketsPage() {
       </main>
     )
   }
-  const eligible = await eligibleBoardDocuments(ctx.db, ctx.actor, ctx.signal)
-  const docs = eligible.ok ? eligible.value : []
-  const links = await ctx.db
-    .select()
-    .from(boardPacketLinks)
-    .orderBy(desc(boardPacketLinks.createdAt))
+  const { packets, documents } = page.value
   return (
     <main className="space-y-6">
       <h1>Board packets</h1>
+      <p>
+        Seated board members read a packet on their board page once the meeting agenda is published.
+        Sending to a seated member emails them a notice. Anyone else gets a link that expires.
+      </p>
       <section aria-label="New packet">
         <h2>New packet</h2>
         <ActionForm action={createPacketAction} submitLabel="Create packet" variant="default">
@@ -42,40 +37,43 @@ export default async function PacketsPage() {
           <SelectField label="Board" name="board" options={BOARDS} />
           <TextField label="Meeting date" name="meetingDate" type="date" required />
           <fieldset className="space-y-1 border-0 p-0">
-            <legend className="font-medium">Documents shared with the board or public</legend>
-            {docs.length === 0 ? <p>No documents are shared with the board yet.</p> : null}
-            {docs.map((d) => (
+            <legend className="font-medium">Board documents shared with the board or public</legend>
+            {documents.length === 0 ? (
+              <p>No board documents are shared with the board yet.</p>
+            ) : null}
+            {documents.map((d) => (
               <label key={d.id} className="flex items-center gap-2">
                 <input type="checkbox" name="documentId" value={d.id} />
-                {d.title}
+                {d.label}
               </label>
             ))}
           </fieldset>
         </ActionForm>
       </section>
-      {packets.value.map((p) => (
-        <section key={p.id} aria-label={p.title}>
-          <h2>{`${p.title}, ${formatCivilDate(p.meetingDate as CivilDate)}`}</h2>
+      {packets.map((p) => (
+        <section key={p.id} aria-label={p.heading}>
+          <h2>{p.heading}</h2>
           <ul className="space-y-1">
-            {links
-              .filter((l) => l.packetId === p.id)
-              .map((l) => (
-                <li key={l.id}>
-                  {`${l.recipientName} (${l.recipientEmail}), ${l.revokedAt === null ? `expires ${formatInstant(l.expiresAt, 'America/New_York')}` : 'revoked'}`}
-                  {l.revokedAt === null ? (
-                    <ActionForm action={revokePacketLinkAction} submitLabel="Revoke link">
-                      <input type="hidden" name="linkId" value={l.id} />
-                    </ActionForm>
-                  ) : null}
-                </li>
-              ))}
+            {p.notified.map((line) => (
+              <li key={line}>{line}</li>
+            ))}
+            {p.links.map((l) => (
+              <li key={l.id}>
+                {l.text}
+                {l.revocable ? (
+                  <ActionForm action={revokePacketLinkAction} submitLabel="Revoke link">
+                    <input type="hidden" name="linkId" value={l.id} />
+                  </ActionForm>
+                ) : null}
+              </li>
+            ))}
           </ul>
           <ActionForm action={sendPacketLinkAction} submitLabel="Send link">
             <input type="hidden" name="packetId" value={p.id} />
             <TextField label="Recipient name" name="recipientName" required />
             <TextField label="Recipient email" name="recipientEmail" type="email" required />
             <TextField
-              label="Days until it expires (default 14, at most 30)"
+              label="Days until a link expires (default 14, at most 30)"
               name="days"
               inputMode="numeric"
             />

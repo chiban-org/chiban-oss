@@ -1,3 +1,4 @@
+import type { Board } from '@packs/nh/schema'
 import { asc, desc, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { boardPacketItems, boardPackets, documents, documentVersions } from '@/db/schema'
@@ -5,8 +6,12 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { documentOwners } from '@/features/boards/documentBoard'
+import { BOARD_NAMES } from '@/features/hearings/views'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
+
+const ELIGIBLE_SCAN = 500
 
 export interface CreatePacketInput {
   title: string
@@ -61,7 +66,15 @@ export async function createPacket(
           )
     return { id, versionId }
   })
-  const refused = picked.filter((p) => p.versionId === null).map((p) => p.id)
+  const ownerOf = documentOwners(db, signal)
+  const otherBoard = new Set<string>()
+  for (const doc of docs) {
+    const owner = await ownerOf(doc)
+    if (owner !== null && owner.board !== input.board) otherBoard.add(doc.id)
+  }
+  const refused = picked
+    .filter((p) => p.versionId === null || otherBoard.has(p.id))
+    .map((p) => p.id)
   if (refused.length > 0) return err({ notForBoard: refused })
   return await transactionResult<{ packetId: string }, PacketError>(db, async (tx) => {
     const [packet] = await tx
@@ -118,9 +131,23 @@ export async function eligibleBoardDocuments(db: Db, actor: Actor, signal: Abort
       title: documents.title,
       audiences: documents.audiences,
       isPublic: documents.isPublic,
+      recordKind: documents.recordKind,
+      recordId: documents.recordId,
     })
     .from(documents)
     .orderBy(desc(documents.seq))
-    .limit(200)
-  return ok(rows.filter((d) => d.audiences.includes('board') || d.isPublic))
+    .limit(ELIGIBLE_SCAN)
+  const ownerOf = documentOwners(db, signal)
+  const out: { id: string; label: string; board: Board }[] = []
+  for (const d of rows.filter((r) => r.audiences.includes('board') || r.isPublic)) {
+    const owner = await ownerOf(d)
+    if (owner === null) continue
+    const prefix = owner.applicationNumber === null ? '' : `${owner.applicationNumber}: `
+    out.push({
+      id: d.id,
+      label: `${prefix}${d.title}, ${BOARD_NAMES[owner.board]}`,
+      board: owner.board,
+    })
+  }
+  return ok(out)
 }

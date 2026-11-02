@@ -60,7 +60,12 @@ export async function sendPacketLinkAction(formData: FormData): Promise<ActionRe
     )
     if (!sent.ok) return { ok: false, error: SEND_COPY[sent.error] }
     revalidatePath('/staff/boards/packets')
-    return { ok: true, message: 'Link sent.' }
+    return {
+      ok: true,
+      message: sent.value.viaAccount
+        ? 'Board member notified. They read the packet on their board page, so there is no link to expire or revoke.'
+        : 'Link sent.',
+    }
   })
 }
 
