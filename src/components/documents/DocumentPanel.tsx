@@ -72,18 +72,24 @@ function versionLabel(v: PanelDocument['approvable'][number]): string {
 }
 
 function ApprovalControls({ doc, actions }: { doc: PanelDocument; actions: DocumentPanelActions }) {
+  const candidates = doc.approvable.filter((v) => v.id !== doc.approvedVersionId)
   return (
     <>
-      {actions.approve !== undefined && doc.rendition !== 'approved' ? (
+      {actions.approve !== undefined && candidates.length > 0 ? (
         <ActionForm action={actions.approve} submitLabel="Approve for the public">
           <input type="hidden" name="purpose" value="public" />
+          {doc.approvalId === null ? null : (
+            <p className="m-0 text-sm">
+              Approving another version replaces the current public copy.
+            </p>
+          )}
           <label className="block text-sm font-medium">
             Version to approve
             <select
               name="versionId"
               className="mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-sm"
             >
-              {doc.approvable.map((v) => (
+              {candidates.map((v) => (
                 <option key={v.id} value={v.id}>
                   {versionLabel(v)}
                 </option>

@@ -16,6 +16,7 @@ export interface PanelDocument extends DocumentListRow {
   rendition: RenditionState
   approvalId: string | null
   approvedRole: string | null
+  approvedVersionId: string | null
   originalVersionId: string | null
   approvable: { id: string; role: 'original' | 'public_redacted'; createdAt: string }[]
   canRedact: boolean
@@ -35,7 +36,12 @@ const PRESERVATION: Record<string, PreservationState> = {
 
 type RenditionFields = Pick<
   PanelDocument,
-  'rendition' | 'approvalId' | 'approvedRole' | 'originalVersionId' | 'approvable'
+  | 'rendition'
+  | 'approvalId'
+  | 'approvedRole'
+  | 'approvedVersionId'
+  | 'originalVersionId'
+  | 'approvable'
 >
 
 function stateOf(
@@ -59,6 +65,7 @@ async function renditionDetails(
       rendition: 'none',
       approvalId: null,
       approvedRole: null,
+      approvedVersionId: null,
       originalVersionId: null,
       approvable: [],
     })
@@ -93,6 +100,7 @@ async function renditionDetails(
       ),
       approvalId: active?.id ?? null,
       approvedRole: mine.find((v) => v.id === active?.versionId)?.role ?? null,
+      approvedVersionId: active?.versionId ?? null,
       originalVersionId: mine.find((v) => v.role === 'original')?.id ?? null,
       approvable: mine.flatMap((v) =>
         v.role === 'original' || v.role === 'public_redacted'

@@ -45,6 +45,7 @@ function doc(overrides: Partial<PanelDocument> = {}): PanelDocument {
     rendition: 'approved',
     approvalId: 'ap1',
     approvedRole: 'original',
+    approvedVersionId: 'v1',
     originalVersionId: 'v1',
     approvable: [
       { id: 'v1', role: 'original', createdAt: '2027-03-02T15:00:00.000Z' },
@@ -133,12 +134,14 @@ describe('DocumentPanel', () => {
     expect(screen.getByText('Revoked')).toBeTruthy()
   })
 
-  it('offers approval until a version is approved, then offers revocation', () => {
-    view([doc({ rendition: 'public_no_copy', approvalId: null })])
+  it('offers approval until every version is approved, then offers only revocation', () => {
+    view([doc({ rendition: 'public_no_copy', approvalId: null, approvedVersionId: null })])
     expect(screen.getByRole('button', { name: 'Approve for the public' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Revoke the approval' })).toBeNull()
     cleanup()
-    view([doc()])
+    view([
+      doc({ approvable: [{ id: 'v1', role: 'original', createdAt: '2027-03-02T15:00:00.000Z' }] }),
+    ])
     expect(screen.getByRole('button', { name: 'Revoke the approval' })).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Approve for the public' })).toBeNull()
   })
@@ -163,5 +166,15 @@ describe('DocumentPanel', () => {
     expect(
       screen.getByRole('option', { name: 'Redacted copy, March 3, 2027 16:30 UTC' }),
     ).toBeTruthy()
+  })
+
+  it('a redacted copy can be approved in place of the approved original without revoking first', () => {
+    view([doc()])
+    expect(screen.queryByRole('button', { name: 'Approve for the public' })).not.toBeNull()
+    const options = screen.queryAllByRole('option').map((o) => o.getAttribute('value'))
+    expect(options).toEqual(['v2'])
+    expect(
+      screen.queryByText('Approving another version replaces the current public copy.'),
+    ).not.toBeNull()
   })
 })
