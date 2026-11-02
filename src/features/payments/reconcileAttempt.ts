@@ -13,6 +13,7 @@ import { feeBalance } from '@/features/ledger/feeBalance'
 import { lockApplications, postEntry } from '@/features/ledger/postEntry'
 import { issueReceipt } from '@/features/ledger/receipts'
 import type { AllocationInput } from '@/features/ledger/types'
+import { queueNotification } from '@/features/notifications/queue'
 import { isMoneyState, nextAttemptMove } from '@/features/payments/attemptStates'
 import type { ProcessorPaymentState } from '@/features/payments/processors/types'
 import { postProcessorReversals } from '@/features/payments/reconcileReversals'
@@ -164,7 +165,34 @@ async function ensurePayment(
       attemptId: attempt.id,
       reason: posted.error,
     })
+  await notifyPayer(tx, attempt, allocations, receipt.number, signal)
   return { entryId: posted.value.entryId, posted: 1 }
+}
+
+async function notifyPayer(
+  tx: Tx,
+  attempt: PaymentAttemptRow,
+  allocations: { applicationId?: string | undefined }[],
+  receiptNumber: string,
+  signal: AbortSignal,
+): Promise<void> {
+  if (attempt.payerUserId === null) return
+  const applicationIds = new Set(
+    allocations.flatMap((a) => (a.applicationId === undefined ? [] : [a.applicationId])),
+  )
+  for (const applicationId of applicationIds) {
+    await queueNotification(
+      tx,
+      {
+        event: 'payment_received',
+        applicationId,
+        recipientUserIds: [attempt.payerUserId],
+        discriminator: receiptNumber,
+        extra: { receiptNumber },
+      },
+      signal,
+    )
+  }
 }
 
 export async function reconcileAttempt(

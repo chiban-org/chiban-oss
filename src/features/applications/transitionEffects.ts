@@ -4,6 +4,8 @@ import { type CoreState, TERMINAL_STATES } from '@/features/applications/states'
 import type { AnyActor } from '@/features/audit/actorRef'
 import { markClockMet, startClocksFor, stopRunningClocks } from '@/features/clocks/startClocks'
 import { assessFees } from '@/features/fees/assess'
+import { feeBalance } from '@/features/ledger/feeBalance'
+import { queueForParties } from '@/features/notifications/queue'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -25,7 +27,24 @@ export async function assessForTransition(
         : null
   if (stage === null) return ok(undefined)
   const assessed = await assessFees(tx, app.id, stage, actor, signal)
-  return assessed.ok ? ok(undefined) : err('fees_incomplete')
+  if (!assessed.ok) return err('fees_incomplete')
+  if (stage === 'at_approval') await notifyFeesDue(tx, app.id, signal)
+  return ok(undefined)
+}
+
+async function notifyFeesDue(tx: Tx, applicationId: string, signal: AbortSignal): Promise<void> {
+  const balance = await feeBalance(tx, applicationId, signal)
+  if (balance.dueCents <= 0) return
+  await queueForParties(
+    tx,
+    {
+      event: 'fees_due',
+      applicationId,
+      discriminator: String(balance.dueCents),
+      extra: { amountCents: balance.dueCents },
+    },
+    signal,
+  )
 }
 
 export async function runTransitionEffects(

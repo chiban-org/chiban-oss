@@ -17,6 +17,7 @@ import {
   type FieldValue,
   validateSubmission,
 } from '@/features/forms/validateSubmission'
+import { queueForParties } from '@/features/notifications/queue'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
 import { captureSnapshot } from '@/features/snapshots/captureSnapshot'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
@@ -95,6 +96,11 @@ export async function submitApplication(
     )
     if (!moved.ok) return err('invalid_transition')
     await captureSnapshot(tx, input.applicationId, 'submission', actor, signal, store, now)
+    await queueForParties(
+      tx,
+      { event: 'application_submitted', applicationId: input.applicationId },
+      signal,
+    )
     return ok({ state: 'submitted' })
   })
 }

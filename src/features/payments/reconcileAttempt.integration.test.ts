@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   ledgerAllocations,
   ledgerEntries,
+  notificationOutbox,
   paymentAttempts,
   paymentAttemptTransitions,
 } from '@/db/schema'
@@ -87,6 +88,25 @@ describe('reconcileAttempt states', () => {
     const balance = await feeBalance(handle.db, trade.applicationId, signal)
     expect(balance).toMatchObject({ pendingAttempts: 1, unknownAttempts: 0, dueCents: 4500 })
     expect((await tryIssue(handle.db, trade)).ok).toBe(false)
+  })
+
+  it('a captured online payment queues payment_received for the payer, once per receipt', async () => {
+    await handle.db
+      .update(paymentAttempts)
+      .set({ payerUserId: trade.world.applicant.userId })
+      .where(eq(paymentAttempts.id, attemptId))
+    await reconcile(processorState())
+    await reconcile(processorState())
+    const rows = (await handle.db.select().from(notificationOutbox)).filter(
+      (r) => r.event === 'payment_received',
+    )
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({
+      event: 'payment_received',
+      recipientUserId: trade.world.applicant.userId,
+      applicationId: trade.applicationId,
+    })
+    expect((rows[0]?.payload as { receiptNumber: string }).receiptNumber).toMatch(/^R-/)
   })
 
   it('captured state posts one 4635 payment allocated 4500 and 135', async () => {

@@ -5,6 +5,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { queueNotification } from '@/features/notifications/queue'
 import { err, ok, type Result } from '@/types/result'
 
 async function isActiveReviewer(db: DbOrTx, userId: string): Promise<boolean> {
@@ -64,6 +65,17 @@ export async function assignReviewer(
         entityType: 'application',
         entityId: input.applicationId,
         after: { reviewerUserId: input.reviewerUserId, assignmentId: created.id },
+      },
+      signal,
+    )
+    await queueNotification(
+      tx,
+      {
+        event: 'review_assigned',
+        applicationId: input.applicationId,
+        recipientUserIds: [input.reviewerUserId],
+        discriminator: created.id,
+        extra: { assignmentId: created.id },
       },
       signal,
     )

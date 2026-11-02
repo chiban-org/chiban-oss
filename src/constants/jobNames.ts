@@ -6,6 +6,7 @@ export const JOB_NAMES = {
   CLOCKS_DAILY: 'clocks.daily',
   PAYMENTS_RECONCILE: 'payments.reconcile',
   RECORDS_PRESERVE: 'records.preserve',
+  NOTIFICATIONS_SEND: 'notifications.send',
 } as const
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES]

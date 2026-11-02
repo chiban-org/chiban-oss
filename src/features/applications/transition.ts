@@ -16,6 +16,7 @@ import { toAuditActor } from '@/features/audit/actorRef'
 import { writeAudit } from '@/features/audit/writeAudit'
 import { hasCapability } from '@/features/authz/capabilities'
 import { evaluateGates, type GateResult } from '@/features/gates/evaluateGates'
+import { queueForParties } from '@/features/notifications/queue'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
 import { applyOutcomeSeries } from '@/features/records/assignments'
 import { townToday } from '@/features/town/today'
@@ -101,6 +102,16 @@ export async function applyTransition(
     })
     .where(eq(applications.id, input.applicationId))
   await runTransitionEffects(tx, app, input.to, today, signal)
+  if (input.to === 'denied' || (input.to === 'issued' && app.state !== 'suspended')) {
+    await queueForParties(
+      tx,
+      {
+        event: input.to === 'denied' ? 'application_denied' : 'application_issued',
+        applicationId: input.applicationId,
+      },
+      signal,
+    )
+  }
   if (input.to === 'withdrawn' || input.to === 'denied' || input.to === 'expired') {
     await applyOutcomeSeries(tx, input.applicationId, input.to, today, signal)
   }
