@@ -512,6 +512,13 @@
       "when": 1793635559995,
       "tag": "0072_m10_rtk_releases",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1793635899024,
+      "tag": "0073_m10_record_events_cases",
+      "breakpoints": true
     }
   ]
 }
