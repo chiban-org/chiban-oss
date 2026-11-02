@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { findUndeclaredKeys } from '@/config/envStrict'
 
 const boolFromString = z.enum(['true', 'false']).transform((v) => v === 'true')
 
@@ -49,6 +50,8 @@ export const envSchema = z
     GHOSTSCRIPT_ICC_PROFILE: z.string().min(1).optional(),
     CHIBAN_SECRET_KEYS: secretKeys,
     CHIBAN_ACTIVE_KEY_ID: z.string().regex(KEY_ID),
+    CHIBAN_IMAGE_REF: z.string().min(1).optional(),
+    CHIBAN_TERMS_FILE: z.string().optional(),
   })
   .refine((v) => v.CHIBAN_ACTIVE_KEY_ID in v.CHIBAN_SECRET_KEYS, {
     path: ['CHIBAN_ACTIVE_KEY_ID'],
@@ -63,8 +66,13 @@ export type Env = z.infer<typeof envSchema>
 
 function loadEnv(): Env {
   const parsed = envSchema.safeParse(process.env)
-  if (!parsed.success) {
-    const lines = parsed.error.issues.map((i) => `  ${i.path.join('.')}: ${i.message}`)
+  const undeclared = findUndeclaredKeys(Object.keys(process.env), Object.keys(envSchema.shape))
+  if (!parsed.success || undeclared.length > 0) {
+    const issues = parsed.success ? [] : parsed.error.issues
+    const lines = [
+      ...issues.map((i) => `  ${i.path.join('.')}: ${i.message}`),
+      ...undeclared.map((key) => `  ${key}: not a recognised setting`),
+    ]
     console.error(`[env] invalid configuration:\n${lines.join('\n')}`)
     process.exit(1)
   }
