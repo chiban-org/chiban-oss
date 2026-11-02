@@ -11,8 +11,13 @@ const NEW_CAPABILITIES: Capability[] = [
   'export.import',
   'report.view',
   'cutover.import',
+  'board.record',
+  'abutters.manage',
 ]
-const MIGRATION = new URL('../../../drizzle/0054_export_report_cutover_grants.sql', import.meta.url)
+const MIGRATIONS = [
+  new URL('../../../drizzle/0054_export_report_cutover_grants.sql', import.meta.url),
+  new URL('../../../drizzle/0057_board_abutter_grants.sql', import.meta.url),
+]
 
 let handle: TestDb
 
@@ -27,11 +32,13 @@ beforeEach(async () => {
 })
 
 async function applyMigration(): Promise<void> {
-  const statements = readFileSync(MIGRATION, 'utf8')
-    .split('--> statement-breakpoint')
-    .map((s) => s.trim())
-    .filter((s) => s.length > 0)
-  for (const statement of statements) await handle.db.execute(sql.raw(statement))
+  for (const migration of MIGRATIONS) {
+    const statements = readFileSync(migration, 'utf8')
+      .split('--> statement-breakpoint')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0)
+    for (const statement of statements) await handle.db.execute(sql.raw(statement))
+  }
 }
 
 async function grantsOf(): Promise<string[]> {

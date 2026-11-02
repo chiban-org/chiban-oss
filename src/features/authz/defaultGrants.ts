@@ -23,6 +23,8 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'export.import',
     'report.view',
     'cutover.import',
+    'board.record',
+    'abutters.manage',
   ],
   staff: [
     'permit.issue',
@@ -44,6 +46,8 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'inspection.record',
     'report.view',
     'cutover.import',
+    'board.record',
+    'abutters.manage',
   ],
   inspector: ['regional_impact.determine', 'inspection.schedule', 'inspection.record'],
   finance: ['payment.refund_void_correct', 'payment.collect', 'payment.report', 'report.view'],

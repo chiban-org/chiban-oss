@@ -2,6 +2,7 @@ import type { ComponentType } from 'react'
 import {
   AmendmentAdapter,
   ApplicationTypeAdapter,
+  BoardSettingsAdapter,
   ChecklistAdapter,
   ConditionsAdapter,
   type EditorProps,
@@ -9,6 +10,7 @@ import {
   FormAdapter,
   InspectionAdapter,
   PaymentAdapter,
+  RegionalContactsAdapter,
   TemplateAdapter,
   TownRuleAdapter,
 } from '@/components/config/editorAdapters'
@@ -25,4 +27,6 @@ export const CONFIG_EDITORS: Record<ConfigKind, ComponentType<EditorProps>> = {
   local_code_amendment: AmendmentAdapter,
   payment_settings: PaymentAdapter,
   inspection_settings: InspectionAdapter,
+  board_settings: BoardSettingsAdapter,
+  regional_contacts: RegionalContactsAdapter,
 }

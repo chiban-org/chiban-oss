@@ -3,7 +3,10 @@ import { and, eq, inArray } from 'drizzle-orm'
 import type { DbOrTx, Tx } from '@/db/client'
 import { clocks } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
+import { boardMeetingCalendar, type MeetingCalendar } from '@/features/boards/calendar'
+import type { DueResult } from '@/features/clocks/computeDue'
 import { describeCounting } from '@/features/clocks/describeCounting'
+import { describeMeetingBound, meetingBoundTiming } from '@/features/clocks/meetingBoundTiming'
 import {
   computeRuleDue,
   type ResolvedLength,
@@ -38,6 +41,7 @@ export async function startClocksFor(
   onDate: CivilDate,
   signal: AbortSignal,
   pack: Pack = loadPack(),
+  calendar: MeetingCalendar = boardMeetingCalendar(tx),
 ): Promise<void> {
   signal.throwIfAborted()
   const app = await loadApplicationContext(tx, applicationId, signal)
@@ -51,7 +55,11 @@ export async function startClocksFor(
   const runningKeys = new Set(running.map((c) => c.ruleKey))
   for (const rule of rules) {
     if (runningKeys.has(rule.key)) continue
-    await createClock(tx, { applicationId, rule, facts: app.facts, event, onDate, pack }, signal)
+    await createClock(
+      tx,
+      { applicationId, rule, facts: app.facts, event, onDate, pack, calendar },
+      signal,
+    )
   }
 }
 
@@ -62,6 +70,7 @@ export interface NewClockInput {
   event: StartEvent
   onDate: CivilDate
   pack: Pack
+  calendar?: MeetingCalendar
 }
 
 export async function createClock(
@@ -72,7 +81,11 @@ export async function createClock(
   const { applicationId, rule, event, onDate, pack } = input
   const length = await resolveClockLength(tx, rule, input.facts, pack, signal)
   const holidays = packHolidayCalendar()
-  const due = computeRuleDue(rule, length, onDate, holidays)
+  const bound = await meetingBoundTiming(
+    { rule, length, onDate, pack, calendar: input.calendar ?? boardMeetingCalendar(tx) },
+    signal,
+  )
+  const due: DueResult = bound ?? computeRuleDue(rule, length, onDate, holidays)
   const packDue = computeRuleDue(
     rule,
     { unit: length.unit, value: length.packDefault },
@@ -90,17 +103,20 @@ export async function createClock(
       startDate: onDate,
       lengthValue: length.value,
       lengthUnit: length.unit,
-      countingMethod: describeCounting(
-        {
-          start: onDate,
-          length,
-          direction: rule.direction,
-          clockType: rule.clockType,
-          holidays,
-        },
-        due,
-        PACK_COUNTING_CITATIONS,
-      ),
+      countingMethod:
+        bound === null
+          ? describeCounting(
+              {
+                start: onDate,
+                length,
+                direction: rule.direction,
+                clockType: rule.clockType,
+                holidays,
+              },
+              due,
+              PACK_COUNTING_CITATIONS,
+            )
+          : describeMeetingBound(bound, onDate, length.value),
       computedDue: due.due,
       currentDue: due.due,
       rolledFrom: due.rolledFrom,

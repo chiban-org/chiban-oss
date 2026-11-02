@@ -1,5 +1,7 @@
 import type { Tx } from '@/db/client'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
+import type { BoardSettingsBody } from '@/features/boards/boardSettings'
+import { checkBoardSettings } from '@/features/boards/boardSettingsChecks'
 import type { ConfigIssue, ConfigKind, TownRuleSettingBody } from '@/features/config/kinds'
 import { type ConfigVersionRow, getPublished } from '@/features/config/store'
 import { exprFieldRefs, type FeeScheduleBody } from '@/features/fees/feeSchema'
@@ -111,5 +113,6 @@ export async function runPublishChecks(
     return unknown.length > 0 ? { unknownMergeFields: unknown } : null
   }
   if (kind === 'town_rule_setting') return checkTownRule(body as TownRuleSettingBody, key)
+  if (kind === 'board_settings') return checkBoardSettings(body as BoardSettingsBody)
   return null
 }

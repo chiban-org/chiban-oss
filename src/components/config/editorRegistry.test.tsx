@@ -34,6 +34,8 @@ function starterOrDefaultBody(kind: ConfigKind): unknown {
     case 'local_code_amendment':
     case 'payment_settings':
     case 'inspection_settings':
+    case 'board_settings':
+    case 'regional_contacts':
       return skeletonBody(kind, 'default')
   }
 }

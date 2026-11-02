@@ -29,6 +29,10 @@ export const CAPABILITIES = {
   'export.import': 'Restore an export archive into an empty instance',
   'report.view': 'View and download permit volume, processing time, and revenue reports',
   'cutover.import': 'Import open applications from the prior system and reconcile them',
+  'board.record':
+    'Schedule board meetings and record completeness votes, certifications, and board extensions',
+  'abutters.manage':
+    'Keep condominium, park, and restriction rosters and draw, confirm, and issue abutter lists',
 } as const
 
 export type Capability = keyof typeof CAPABILITIES

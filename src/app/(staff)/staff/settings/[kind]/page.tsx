@@ -9,6 +9,13 @@ import { loadPack } from '@/features/packs/loadPack'
 import { requireStaffContext } from '@/server/requireStaff'
 import { startDraftAction } from '../actions'
 
+const SINGLETON_KINDS = [
+  'payment_settings',
+  'inspection_settings',
+  'board_settings',
+  'regional_contacts',
+]
+
 interface Props {
   params: Promise<{ kind: string }>
 }
@@ -59,7 +66,7 @@ export default async function SettingsKindPage({ params }: Props) {
             name="key"
             options={townRules.map((r): [string, string] => [r.key, r.label])}
           />
-        ) : kind === 'payment_settings' || kind === 'inspection_settings' ? (
+        ) : SINGLETON_KINDS.includes(kind) ? (
           <input type="hidden" name="key" value="default" />
         ) : (
           <TextField

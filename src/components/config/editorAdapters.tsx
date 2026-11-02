@@ -1,12 +1,14 @@
 'use client'
 
 import { ApplicationTypeEditor } from '@/components/config/ApplicationTypeEditor'
+import { BoardSettingsEditor } from '@/components/config/BoardSettingsEditor'
 import { useEditorContext } from '@/components/config/EditorContextProvider'
 import { FeeLinesEditor } from '@/components/config/FeeLinesEditor'
 import { FormFieldsEditor } from '@/components/config/FormFieldsEditor'
 import { InspectionSettingsEditor } from '@/components/config/InspectionSettingsEditor'
 import { PaymentSettingsEditor } from '@/components/config/PaymentSettingsEditor'
 import type { FieldErrors } from '@/components/config/primitives'
+import { RegionalContactsEditor } from '@/components/config/RegionalContactsEditor'
 import {
   ChecklistEditor,
   ConditionsEditor,
@@ -15,6 +17,8 @@ import {
 } from '@/components/config/SimpleEditors'
 import { TownRuleEditor } from '@/components/config/TownRuleEditor'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
+import type { BoardSettingsBody } from '@/features/boards/boardSettings'
+import type { RegionalContactsBody } from '@/features/boards/regionalContacts'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import type {
   ConfigIssue,
@@ -115,4 +119,18 @@ export function ApplicationTypeAdapter({ body, onChange, issues }: EditorProps) 
       classifications={classifications}
     />
   )
+}
+
+export function BoardSettingsAdapter({ body, onChange, issues }: EditorProps) {
+  return (
+    <BoardSettingsEditor
+      body={body as BoardSettingsBody}
+      onChange={onChange}
+      errors={errorsOf(issues)}
+    />
+  )
+}
+
+export function RegionalContactsAdapter({ body, onChange }: EditorProps) {
+  return <RegionalContactsEditor body={body as RegionalContactsBody} onChange={onChange} />
 }

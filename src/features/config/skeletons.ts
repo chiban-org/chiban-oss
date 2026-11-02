@@ -1,4 +1,6 @@
 import { NH_INSPECTION_SETTINGS_DEFAULT } from '@packs/nh/starters'
+import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettings'
+import { EMPTY_REGIONAL_CONTACTS } from '@/features/boards/regionalContacts'
 import type { ConfigKind } from '@/features/config/kinds'
 
 export function skeletonBody(kind: ConfigKind, key: string): unknown {
@@ -50,6 +52,10 @@ export function skeletonBody(kind: ConfigKind, key: string): unknown {
       }
     case 'inspection_settings':
       return NH_INSPECTION_SETTINGS_DEFAULT
+    case 'board_settings':
+      return BOARD_SETTINGS_DEFAULT
+    case 'regional_contacts':
+      return EMPTY_REGIONAL_CONTACTS
     case 'application_type':
       return {
         key,

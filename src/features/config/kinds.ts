@@ -2,6 +2,8 @@ import { civilDateSchema } from '@packs/nh/schema'
 import type { ZodType } from 'zod'
 import { z } from 'zod'
 import { ApplicationTypeBodySchema } from '@/features/applications/applicationTypeSchema'
+import { BoardSettingsBodySchema } from '@/features/boards/boardSettingsSchema'
+import { RegionalContactsBodySchema } from '@/features/boards/regionalContactsSchema'
 import { ConditionLibraryBodySchema } from '@/features/conditions/conditionSchema'
 import { FeeScheduleBodySchema } from '@/features/fees/feeSchema'
 import { FormBodySchema } from '@/features/forms/formSchema'
@@ -21,6 +23,8 @@ export const CONFIG_KINDS = [
   'local_code_amendment',
   'payment_settings',
   'inspection_settings',
+  'board_settings',
+  'regional_contacts',
 ] as const
 export type ConfigKind = (typeof CONFIG_KINDS)[number]
 
@@ -52,6 +56,8 @@ export const CONFIG_SCHEMAS: Record<ConfigKind, ZodType> = {
   local_code_amendment: LocalCodeAmendmentBodySchema,
   payment_settings: PaymentSettingsBodySchema,
   inspection_settings: InspectionSettingsBodySchema,
+  board_settings: BoardSettingsBodySchema,
+  regional_contacts: RegionalContactsBodySchema,
 }
 
 const CONFIG_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/
