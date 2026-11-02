@@ -1,7 +1,10 @@
 'use server'
 
+import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
+import { parcelIdFormats } from '@/db/schema'
 import { createAliasOverride } from '@/features/parcels/aliasOverrides'
+import { idFormatHint } from '@/features/parcels/idFormats'
 import { submitLineage } from '@/features/parcels/lineageForm'
 import { carryForward, resolveUnresolvedLink } from '@/features/parcels/recordLinks'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
@@ -40,6 +43,12 @@ export async function recordLineageAction(formData: FormData): Promise<ActionRes
   })
 }
 
+async function overrideErrorCopy(db: Db, error: string, formatKey: string): Promise<string> {
+  if (error !== 'id_format_mismatch') return errorCopy(error)
+  const [format] = await db.select().from(parcelIdFormats).where(eq(parcelIdFormats.key, formatKey))
+  return format === undefined ? errorCopy(error) : `${errorCopy(error)} ${idFormatHint(format)}`
+}
+
 export async function createAliasOverrideAction(formData: FormData): Promise<ActionResult> {
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
     const expiresOn = text(formData, 'expiresOn')
@@ -57,7 +66,7 @@ export async function createAliasOverrideAction(formData: FormData): Promise<Act
     )
     return result.ok
       ? { ok: true, message: 'Override saved.' }
-      : { ok: false, error: errorCopy(result.error) }
+      : { ok: false, error: await overrideErrorCopy(db, result.error, text(formData, 'format')) }
   })
 }
 

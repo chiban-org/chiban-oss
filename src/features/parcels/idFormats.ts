@@ -21,3 +21,9 @@ export function checkIdFormat(
   }
   return ok(value)
 }
+
+export function idFormatHint(format: Omit<IdFormat, 'key'> & { label: string }): string {
+  if (format.kind !== 'digits') return `${format.label}: enter a value.`
+  if (format.width === null) return `${format.label}: digits only.`
+  return `${format.label}: exactly ${format.width} digits, counting leading zeros.`
+}
