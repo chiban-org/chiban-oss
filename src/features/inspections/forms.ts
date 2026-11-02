@@ -75,8 +75,8 @@ export function parseRequestForm(
   formData: FormData,
   channels: readonly string[],
 ): RequestInspectionInput | null {
-  const raw = entries(formData)
-  if (raw.preferredDate === 'any') delete raw.preferredDate
+  const { preferredDate: rawDate, ...others } = entries(formData)
+  const raw = rawDate === 'any' ? others : { ...others, preferredDate: rawDate }
   const parsed = RequestSchema.safeParse(raw)
   if (!parsed.success || !channels.includes(parsed.data.channel)) return null
   const { preferredDate, contactPhone, accessNotes, reinspectionOf, ...rest } = parsed.data
