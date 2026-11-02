@@ -11,7 +11,7 @@ describe('feeChoices', () => {
       ['application', 'Application fee'],
       ['notice_mail', 'Mailed notice to abutters'],
     ])
-    expect(feeChoices(null, [{ lines }, { lines: [lines[0]] }])).toEqual([
+    expect(feeChoices(null, [{ lines }, { lines: lines.slice(0, 1) }])).toEqual([
       ['application', 'Application fee'],
       ['notice_mail', 'Mailed notice to abutters'],
     ])
