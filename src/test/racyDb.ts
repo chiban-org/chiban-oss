@@ -27,7 +27,9 @@ export function racyAfterFirstSelect(db: Db, inject: () => Promise<void>): Db {
     get(target, prop, receiver) {
       if (prop !== 'select') return Reflect.get(target, prop, receiver) as unknown
       return (...args: unknown[]) => {
-        const builder = Reflect.apply(target.select, target, args) as Builder
+        const builder = (target as unknown as { select: (...a: unknown[]) => Builder }).select(
+          ...args,
+        )
         if (fired) return builder
         fired = true
         return wrap(builder, inject)

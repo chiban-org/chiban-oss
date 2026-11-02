@@ -132,9 +132,9 @@ describe('job effects', () => {
 
   it('same payload enqueued again after completion runs the handler once in total', async () => {
     let calls = 0
-    const counting = effectJob(async () => {
+    const counting = effectJob(() => {
       calls += 1
-      return ok(undefined)
+      return Promise.resolve(ok(undefined))
     })
     expect(await runJob(handle.db, counting, { id: 'once' }, signal)).toEqual({
       ok: true,
@@ -181,7 +181,7 @@ describe('job effects', () => {
   })
 
   it('records the failure in job_runs even though the effect rolled back', async () => {
-    const failing = effectJob(async () => err('nope'))
+    const failing = effectJob(() => Promise.resolve(err('nope')))
     await runJob(handle.db, failing, { id: 'recorded' }, signal)
     const [row] = await handle.db
       .select()
