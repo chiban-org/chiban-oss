@@ -1,4 +1,8 @@
 import { ActionForm } from '@/components/ActionForm'
+import { CsrfField } from '@/components/CsrfField'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { listExports } from '@/features/export/requestExport'
 import { currentServiceState } from '@/features/town/serviceStatus'
 import { getTownSettings } from '@/features/town/settings'
@@ -89,6 +93,52 @@ export default async function ExportPage() {
           </li>
         ))}
       </ul>
+      {ctx.actor.roles.includes('admin') && service.mode !== 'closed' ? (
+        <section aria-labelledby="recovery-heading">
+          <h2 id="recovery-heading">Recovery export</h2>
+          <p>
+            The recovery export holds the whole database and the keys that unlock the saved secrets.
+            It is encrypted with a passphrase you choose, goes straight to your computer, and is not
+            kept anywhere else. Keep the passphrase safe: without it the file cannot be opened.
+          </p>
+          <form method="post" action="/staff/admin/export/recovery" className="max-w-md space-y-3">
+            <CsrfField />
+            <div>
+              <Label htmlFor="recovery-password">Your password</Label>
+              <Input
+                id="recovery-password"
+                name="password"
+                type="password"
+                required
+                autoComplete="current-password"
+              />
+            </div>
+            <div>
+              <Label htmlFor="recovery-totp">Authenticator code</Label>
+              <Input
+                id="recovery-totp"
+                name="totp"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+              />
+            </div>
+            <div>
+              <Label htmlFor="recovery-passphrase">
+                Passphrase for the file (at least 16 characters)
+              </Label>
+              <Input
+                id="recovery-passphrase"
+                name="passphrase"
+                type="password"
+                minLength={16}
+                required
+                autoComplete="new-password"
+              />
+            </div>
+            <Button type="submit">Download recovery export</Button>
+          </form>
+        </section>
+      ) : null}
     </main>
   )
 }

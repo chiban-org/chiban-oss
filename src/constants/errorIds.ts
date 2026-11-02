@@ -51,6 +51,8 @@ export const ErrorIds = {
   EXPORT_REF_CYCLE: 'E_EXP_001',
   EXPORT_ARCHIVE_INVALID: 'E_EXP_002',
   EXPORT_BLOB_INVALID: 'E_EXP_003',
+  EXPORT_ENVELOPE_INVALID: 'E_EXP_004',
+  EXPORT_DUMP_FAILED: 'E_EXP_005',
 } as const
 
 export type ErrorId = (typeof ErrorIds)[keyof typeof ErrorIds]

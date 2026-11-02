@@ -24,7 +24,7 @@ await db
   .update(townSettings)
   .set({
     serviceStatus: status,
-    serviceStatusSince: status === 'active' || since === null || !since.ok ? null : since.value,
+    serviceStatusSince: status === 'active' || since === null ? null : since.value,
     ...(values.window === undefined ? {} : { exportWindowDays: Number(values.window) }),
   })
   .where(eq(townSettings.id, 1))

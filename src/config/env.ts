@@ -42,6 +42,8 @@ export const envSchema = z
     S3_SECRET_ACCESS_KEY: z.string().min(1).default('chiban-dev-secret'),
     S3_REGION: z.string().min(1).default('us-east-1'),
     MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(104_857_600),
+    PATH: z.string().optional(),
+    PG_DUMP_PATH: z.string().min(1).default('pg_dump'),
     EXPORT_WORK_DIR: z.string().min(1).default('/tmp/chiban-export'),
     GHOSTSCRIPT_PATH: z.string().min(1).default('gs'),
     GHOSTSCRIPT_ICC_PROFILE: z.string().min(1).optional(),
