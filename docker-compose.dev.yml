@@ -1,0 +1,37 @@
+services:
+  postgres:
+    image: imresamu/postgis:16-3.5
+    environment:
+      POSTGRES_USER: chiban
+      POSTGRES_PASSWORD: chiban
+      POSTGRES_DB: chiban
+    ports: ["5434:5432"]
+    volumes:
+      - chiban-pg:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chiban"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: chiban
+      MINIO_ROOT_PASSWORD: chiban-dev-secret
+    ports:
+      - "9010:9000"
+      - "9011:9001"
+    volumes:
+      - chiban-minio:/data
+
+  mailpit:
+    image: axllent/mailpit:latest
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  chiban-pg:
+  chiban-minio:
