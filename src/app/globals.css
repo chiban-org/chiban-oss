@@ -167,3 +167,18 @@
   padding-inline: calc(var(--space-base) * 1);
   border-radius: calc(var(--radius) / 2);
 }
+
+@media print {
+  .staff-shell > nav {
+    display: none;
+  }
+
+  .staff-shell > div {
+    max-width: none;
+    padding: 0;
+  }
+
+  .no-print {
+    display: none;
+  }
+}
