@@ -1,12 +1,18 @@
+import { NH_STARTERS } from '@packs/nh/starters'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import { recordCompletenessVote } from '@/features/boards/acceptance'
+import { generateDecisionDocuments } from '@/features/decisions/decisionDocuments'
+import { recordDecision } from '@/features/decisions/recordDecision'
 import { markHearingHeld, markProperlyNoticed, scheduleHearing } from '@/features/hearings/hearings'
+import type { ObjectStore } from '@/features/storage/objectStore'
 import {
   type BoardWorld,
+  boardTypeBody,
   recordNoRegionalImpact,
   submitBoardApplication,
 } from '@/test/boardFixtures'
+import { saveAndPublish } from '@/test/configFixtures'
 import {
   issueListWithRecipients,
   proveEverything,
@@ -126,4 +132,71 @@ export async function heldPbHearing(
     await schedule(db, world, applicationId, date, 'planning_board', 'public_hearing'),
     date,
   )
+}
+
+export async function publishBoardTemplates(db: Db, world: BoardWorld): Promise<void> {
+  const starter = NH_STARTERS.find((s) => s.id === 'nh.starter.zba_variance')
+  if (starter === undefined) throw new AppError(ErrorIds.DB_INVARIANT, 'no variance starter')
+  for (const template of starter.templates) {
+    await saveAndPublish(db, world.admin, 'template', template.key, template)
+  }
+  await saveAndPublish(
+    db,
+    world.admin,
+    'application_type',
+    world.zbaTypeKey,
+    boardTypeBody('nh.zba_variance', world.zbaTypeKey, 'VAR', {
+      templateKeys: starter.templates.map((t) => t.key),
+    }),
+  )
+}
+
+export const FIXTURE_VOTES = {
+  for: 4,
+  against: 1,
+  abstain: 0,
+  members: [
+    { name: 'Avery Stone', vote: 'for' as const },
+    { name: 'Robin Vale', vote: 'for' as const },
+    { name: 'Morgan Reed', vote: 'for' as const },
+    { name: 'Casey Lund', vote: 'for' as const },
+    { name: 'Drew Hale', vote: 'against' as const },
+  ],
+}
+
+export async function decidedZba(
+  db: Db,
+  world: BoardWorld,
+  store: ObjectStore,
+  options: { votedOn?: string; regional?: 'yes' | 'no'; documents?: boolean } = {},
+): Promise<HeldHearing & { decisionId: string }> {
+  await publishBoardTemplates(db, world)
+  const held = await heldZbaHearing(db, world, { regional: options.regional ?? 'no' })
+  const decided = await recordDecision(
+    db,
+    world.staff,
+    {
+      applicationId: held.applicationId,
+      hearingId: held.hearingId,
+      votedOn: d(options.votedOn ?? '2027-04-15'),
+      outcome: 'approved',
+      motion: 'Move to approve as presented.',
+      votes: FIXTURE_VOTES,
+      findings: 'The proposal meets each criterion of the ordinance.',
+    },
+    signal,
+  )
+  if (!decided.ok)
+    throw new AppError(ErrorIds.DB_INVARIANT, `decision: ${JSON.stringify(decided.error)}`)
+  if (options.documents !== false) {
+    const made = await generateDecisionDocuments(
+      db,
+      store,
+      world.staff,
+      decided.value.decisionId,
+      signal,
+    )
+    if (!made.ok) throw new AppError(ErrorIds.DB_INVARIANT, `documents: ${made.error}`)
+  }
+  return { ...held, decisionId: decided.value.decisionId }
 }

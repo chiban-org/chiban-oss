@@ -1,4 +1,3 @@
-import { NH_STARTERS } from '@packs/nh/starters'
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { applicationConditions, applications, boardDecisions, clocks } from '@/db/schema'
@@ -8,10 +7,14 @@ import {
 } from '@/features/decisions/decisionDocuments'
 import { type RecordDecisionInput, recordDecision } from '@/features/decisions/recordDecision'
 import type { ObjectStore } from '@/features/storage/objectStore'
-import { type BoardWorld, boardTypeBody, setupBoardWorld } from '@/test/boardFixtures'
-import { saveAndPublish } from '@/test/configFixtures'
+import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { type HeldHearing, heldPbHearing, heldZbaHearing } from '@/test/hearingFixtures'
+import {
+  type HeldHearing,
+  heldPbHearing,
+  heldZbaHearing,
+  publishBoardTemplates,
+} from '@/test/hearingFixtures'
 import { makeTestStore } from '@/test/minio'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -222,26 +225,9 @@ describe('recordDecision effects', () => {
   })
 })
 
-async function publishZbaTemplates() {
-  const starter = NH_STARTERS.find((s) => s.id === 'nh.starter.zba_variance')
-  if (starter === undefined) throw new Error('no variance starter')
-  for (const template of starter.templates) {
-    await saveAndPublish(handle.db, world.admin, 'template', template.key, template)
-  }
-  await saveAndPublish(
-    handle.db,
-    world.admin,
-    'application_type',
-    world.zbaTypeKey,
-    boardTypeBody('nh.zba_variance', world.zbaTypeKey, 'VAR', {
-      templateKeys: starter.templates.map((t) => t.key),
-    }),
-  )
-}
-
 describe('decision documents', () => {
   async function decided() {
-    await publishZbaTemplates()
+    await publishBoardTemplates(handle.db, world)
     const held = await heldZbaHearing(handle.db, world)
     const result = await record(held, {
       outcome: 'approved_with_conditions',
