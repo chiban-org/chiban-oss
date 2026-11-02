@@ -137,3 +137,28 @@ export const PERIL_LABELS = {
   property: 'Property',
   environment: 'Environment',
 } as const
+
+export const ORDER_CONTENT_LABELS = {
+  provisions: 'the provisions violated',
+  facts: 'the facts',
+  inspectionDate: 'the date of inspection',
+  correctiveAction: 'the corrective action required',
+  correctiveDeadline: 'the corrective action deadline',
+  motionNotice: 'the notice of motion to enforce',
+  lienWarning: 'the lien warning',
+} as const
+
+export const MOTION_BLOCK_TEXT = {
+  service_incomplete: 'Service on every required recipient is not complete.',
+  answer_period_running: 'An answer period is still running.',
+  answered: 'An answer was received.',
+  not_filed_with_clerk: 'The order has not been filed with the court clerk.',
+  stayed: 'Enforcement is stayed by an appeal.',
+} as const
+
+export const DOCUMENT_KIND_LABELS = {
+  enforcement_photo: 'Photo',
+  enforcement_letter: 'Case document',
+  service_proof: 'Proof of service',
+  court_document: 'Court document',
+} as const

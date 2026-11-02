@@ -2,11 +2,37 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
+import { APP_VERSION } from '@/config/appVersion'
+import { env } from '@/config/env'
+import { db } from '@/db/client'
+import { intakeOpen } from '@/features/anonymousIntake/enablement'
 
 export const MAX_DESCRIPTION_CHARS = 5000
 export const MAX_PHOTOS = 5
 
-export default function ReportAnonymouslyPage() {
+export const dynamic = 'force-dynamic'
+
+const TIMEOUT_MS = 10_000
+
+export default async function ReportAnonymouslyPage() {
+  const open = await intakeOpen(
+    db,
+    env.CHIBAN_IMAGE_REF ?? null,
+    APP_VERSION,
+    AbortSignal.timeout(TIMEOUT_MS),
+  )
+  if (!open) {
+    return (
+      <>
+        <h1>Anonymous reports are not available</h1>
+        <p className="max-w-prose text-base">
+          This town is not taking anonymous reports right now. You can report a possible violation
+          with your contact details, which only town staff see, at the report a possible violation
+          page.
+        </p>
+      </>
+    )
+  }
   return (
     <>
       <h1>Report a possible violation anonymously</h1>

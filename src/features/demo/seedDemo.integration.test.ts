@@ -125,6 +125,15 @@ async function counts(): Promise<Record<string, number>> {
     union all select 'health_alerts', count(*)::int from health_alerts
     union all select 'alert_tests', count(*)::int from alert_tests
     union all select 'job_runs', count(*)::int from job_runs
+    union all select 'enforcement_cases', count(*)::int from enforcement_cases
+    union all select 'complaints', count(*)::int from complaints
+    union all select 'enforcement_orders', count(*)::int from enforcement_orders
+    union all select 'order_service_events', count(*)::int from order_service_events
+    union all select 'order_court_steps', count(*)::int from order_court_steps
+    union all select 'enforcement_appeals', count(*)::int from enforcement_appeals
+    union all select 'enforcement_fines', count(*)::int from enforcement_fines
+    union all select 'counsel_referrals', count(*)::int from counsel_referrals
+    union all select 'counsel_outcomes', count(*)::int from counsel_outcomes
   `)
   return Object.fromEntries(result.rows.map((r) => [r.t, r.n]))
 }
@@ -232,7 +241,7 @@ describe('seedDemo', () => {
     await seedDemo(handle.db, signal, SEED_DEPS)
     await seedDemo(handle.db, signal, SEED_DEPS)
     expect(await counts()).toEqual(before)
-    expect(before.applications).toBe(15)
+    expect(before.applications).toBe(17)
     expect(before.inspections).toBeGreaterThan(5)
     expect(before.certificates).toBe(1)
     expect(before.config_versions).toBeGreaterThan(30)
@@ -260,6 +269,8 @@ describe('seedDemo', () => {
     const byState = Object.fromEntries(rows.map((r) => [r.number, r.state]))
     expect(Object.values(byState).sort()).toEqual([
       'closed',
+      'expired',
+      'issued',
       'issued',
       'issued',
       'issued',

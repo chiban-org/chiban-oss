@@ -8,6 +8,7 @@ import { seedDefaultGrants } from '@/features/authz/defaultGrants'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { seedCama } from '@/features/demo/seedCama'
 import { seedCutover } from '@/features/demo/seedCutover'
+import { seedEnforcement } from '@/features/demo/seedEnforcement'
 import { seedBusinessExport, seedExportTarget } from '@/features/demo/seedExports'
 import { seedAcknowledgedEmailTest, seedStaleJobAlert } from '@/features/demo/seedHealth'
 import { seedHistorical } from '@/features/demo/seedHistorical'
@@ -96,6 +97,7 @@ export interface SeedReport {
   recordsSeeded: boolean
   inspectionsSeeded: boolean
   operationsSeeded: boolean
+  enforcementSeeded: boolean
 }
 
 export async function seedDemo(
@@ -149,6 +151,12 @@ export async function seedDemo(
   const recordsSeeded = await seedRecords(db, signal, deps.records)
   const inspectionsSeeded = await seedInspections(db, signal, deps.inspections)
   const operationsSeeded = await seedOperations(db, signal, deps.operations ?? {})
+  const enforcementSeeded = await seedEnforcement(
+    db,
+    deps.operations?.store ?? getObjectStore(),
+    signal,
+    deps.operations?.now ?? new Date(),
+  )
   return {
     ...base,
     parcelsSeeded: seeded.imported,
@@ -157,6 +165,7 @@ export async function seedDemo(
     recordsSeeded,
     inspectionsSeeded,
     operationsSeeded,
+    enforcementSeeded,
   }
 }
 

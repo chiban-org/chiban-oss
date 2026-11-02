@@ -5,8 +5,10 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { attachComplaintPhotos, type CleanPhoto } from '@/features/enforcement/complaintPhotos'
 import { nextEnforcementNumber } from '@/features/enforcement/numbering'
 import { linkRecordToParcel } from '@/features/parcels/recordLinks'
+import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
 
 export const MAX_COMPLAINT_CHARS = 5000
@@ -91,6 +93,7 @@ export async function recordComplaint(
   input: ComplaintInput,
   signal: AbortSignal,
   now: Date = new Date(),
+  attachments?: { store: ObjectStore; photos: CleanPhoto[] },
 ): Promise<
   Result<{ complaintId: string; number: string; caseId: string }, 'forbidden' | 'invalid'>
 > {
@@ -119,6 +122,18 @@ export async function recordComplaint(
       now,
       signal,
     )
+    if (attachments !== undefined && attachments.photos.length > 0) {
+      await attachComplaintPhotos(
+        tx,
+        attachments.store,
+        {
+          caseId: created.caseId,
+          photos: attachments.photos,
+          actor: { kind: 'system', job: 'enforcement.public_complaint' },
+        },
+        signal,
+      )
+    }
     await writeAudit(
       tx,
       {

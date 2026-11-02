@@ -7,15 +7,13 @@ import { intakeOpen } from '@/features/anonymousIntake/enablement'
 import { isLiveProbeToken } from '@/features/anonymousIntake/probeToken'
 import { type SanitizedType, sanitizeImage } from '@/features/anonymousIntake/sanitizeImage'
 import { writeAudit } from '@/features/audit/writeAudit'
-import { attachDocument } from '@/features/documents/attach'
+import { attachComplaintPhotos } from '@/features/enforcement/complaintPhotos'
 import { insertComplaintWithCase, MAX_COMPLAINT_CHARS } from '@/features/enforcement/complaints'
-import { storeGeneratedBytes } from '@/features/files/ingest'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import type { RateLimiter } from '@/server/rateLimiter'
 
 export const MAX_PHOTOS = 5
 const SAFE_HEADERS = { 'referrer-policy': 'no-referrer', 'cache-control': 'no-store' } as const
-const EXTENSIONS: Record<SanitizedType, string> = { 'image/jpeg': 'jpg', 'image/png': 'png' }
 
 export interface IntakeDeps {
   db: Db
@@ -94,24 +92,16 @@ async function storeReport(deps: IntakeDeps, parsed: Parsed, signal: AbortSignal
       deps.now(),
       signal,
     )
-    for (const [index, photo] of parsed.photos.entries()) {
-      const stored = await storeGeneratedBytes(tx, deps.store, photo.bytes, photo.type, signal)
-      await attachDocument(
-        tx,
-        { kind: 'anonymous_public_intake' },
-        {
-          target: { kind: 'enforcement_case', id: created.caseId },
-          title: `Complaint photo ${index + 1}`,
-          docKind: 'enforcement_photo',
-          file: {
-            sha256: stored.sha256,
-            filename: `photo-${index + 1}.${EXTENSIONS[photo.type]}`,
-            contentType: photo.type,
-          },
-        },
-        signal,
-      )
-    }
+    await attachComplaintPhotos(
+      tx,
+      deps.store,
+      {
+        caseId: created.caseId,
+        photos: parsed.photos,
+        actor: { kind: 'anonymous_public_intake' },
+      },
+      signal,
+    )
     await writeAudit(
       tx,
       {

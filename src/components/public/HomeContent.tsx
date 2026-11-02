@@ -38,6 +38,11 @@ export function HomeContent({ audience }: { audience: HomeAudience }) {
           </Link>
         </li>
         <li>
+          <Link href="/complaints/new" className={LINK}>
+            Report a possible violation
+          </Link>
+        </li>
+        <li>
           <AccountLink audience={audience} />
         </li>
       </ul>

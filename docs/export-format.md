@@ -53,6 +53,18 @@ References:
 - `parcel_id` refers to `parcels`
 - `replaced_parcel_id` refers to `parcels`
 
+### anonymous_intake_verifications
+
+File: `data/anonymous_intake_verifications.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `image_ref`: text, nullable
+- `app_version`: text
+- `caddyfile_sha256`: text
+- `ran_at`: timestamp with time zone
+- `passed`: boolean
+- `findings`: jsonb
+
 ### appeals
 
 File: `data/appeals.ndjson`. Ordered by id.
@@ -347,6 +359,32 @@ File: `data/code_edition_records.ndjson`. Ordered by application_id.
 References:
 - `application_id` refers to `applications`
 
+### complaints
+
+File: `data/complaints.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `number`: text
+- `case_id`: uuid, nullable
+- `channel`: text
+- `received_on`: date
+- `location_text`: text
+- `parcel_id`: uuid, nullable
+- `description_original`: text
+- `description_public`: text, nullable
+- `public_text_approved_by`: uuid, nullable
+- `public_text_approved_at`: timestamp with time zone, nullable
+- `complainant_name`: text, nullable
+- `complainant_email`: citext, nullable
+- `complainant_phone`: text, nullable
+- `created_by`: uuid, nullable
+- `is_probe`: boolean
+- `created_at`: timestamp with time zone
+
+References:
+- `case_id` refers to `enforcement_cases`
+- `parcel_id` refers to `parcels`
+
 ### config_versions
 
 File: `data/config_versions.ndjson`. Ordered by id.
@@ -386,6 +424,41 @@ References:
 - `party_id` refers to `project_parties`
 
 Omitted columns: `token_hash`
+
+### counsel_outcomes
+
+File: `data/counsel_outcomes.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `referral_id`: uuid
+- `kind`: text
+- `occurred_on`: date
+- `court`: text, nullable
+- `docket`: text, nullable
+- `document_id`: uuid, nullable
+- `note`: text, nullable
+- `recorded_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `referral_id` refers to `counsel_referrals`
+- `document_id` refers to `documents`
+
+### counsel_referrals
+
+File: `data/counsel_referrals.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `referred_on`: date
+- `counsel_name`: text
+- `purpose`: text
+- `packet_document_id`: uuid
+- `referred_by`: uuid
+
+References:
+- `case_id` refers to `enforcement_cases`
+- `packet_document_id` refers to `documents`
 
 ### cutover_reconciliations
 
@@ -465,7 +538,122 @@ References:
 - `migration_batch_id` refers to `migration_batches`
 
 Typed references:
-- `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, project to `projects`, parcel to `parcels`, migration_batch to `migration_batches`
+- `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, project to `projects`, parcel to `parcels`, migration_batch to `migration_batches`, enforcement_case to `enforcement_cases`
+
+### enforcement_appeals
+
+File: `data/enforcement_appeals.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `target_kind`: text
+- `target_id`: uuid
+- `filed_on`: date
+- `appellant_name`: text
+- `board`: text
+- `resolved_on`: date, nullable
+- `outcome`: text, nullable
+- `recorded_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `case_id` refers to `enforcement_cases`
+
+### enforcement_cases
+
+File: `data/enforcement_cases.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `number`: text
+- `parcel_id`: uuid, nullable
+- `location_text`: text
+- `status`: text
+- `opened_on`: date
+- `closed_on`: date, nullable
+- `closure_reason`: text, nullable
+- `assigned_to`: uuid, nullable
+- `is_public`: boolean
+- `public_summary`: text, nullable
+- `row_version`: integer
+- `created_at`: timestamp with time zone
+- `updated_at`: timestamp with time zone
+
+References:
+- `parcel_id` refers to `parcels`
+
+### enforcement_designations
+
+File: `data/enforcement_designations.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `user_id`: uuid
+- `title`: text
+- `adopting_authority`: text
+- `adopted_on`: date
+- `ended_on`: date, nullable
+
+### enforcement_fines
+
+File: `data/enforcement_fines.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `order_id`: uuid, nullable
+- `kind`: text
+- `rule_key`: text, nullable
+- `amount_cents`: integer
+- `imposed_on`: date
+- `court`: text
+- `docket`: text
+- `judgment_step_id`: uuid, nullable
+- `counsel_outcome_id`: uuid, nullable
+- `recorded_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `case_id` refers to `enforcement_cases`
+- `order_id` refers to `enforcement_orders`
+- `judgment_step_id` refers to `order_court_steps`
+- `counsel_outcome_id` refers to `counsel_outcomes`
+
+### enforcement_notes
+
+File: `data/enforcement_notes.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `observed_on`: date
+- `body`: text
+- `author_id`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `case_id` refers to `enforcement_cases`
+
+### enforcement_orders
+
+File: `data/enforcement_orders.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `number`: text
+- `rule_key`: text
+- `rule_version`: integer
+- `finding_ids`: uuid[]
+- `corrective_action`: text
+- `corrective_deadline`: date, nullable
+- `cease_immediately`: boolean
+- `status`: text
+- `drafted_by`: uuid
+- `issued_on`: date, nullable
+- `issued_by`: uuid, nullable
+- `document_id`: uuid, nullable
+- `row_version`: integer
+- `created_at`: timestamp with time zone
+
+References:
+- `case_id` refers to `enforcement_cases`
+- `document_id` refers to `documents`
 
 ### export_targets
 
@@ -695,12 +883,14 @@ File: `data/ledger_allocations.ndjson`. Ordered by id.
 - `fee_assessment_id`: uuid, nullable
 - `stage`: text, nullable
 - `fee_code`: text, nullable
+- `fine_id`: uuid, nullable
 - `amount_cents`: integer
 
 References:
 - `entry_id` refers to `ledger_entries`
 - `application_id` refers to `applications`
 - `fee_assessment_id` refers to `fee_assessments`
+- `fine_id` refers to `enforcement_fines`
 
 ### ledger_entries
 
@@ -822,6 +1012,79 @@ File: `data/notification_outbox.ndjson`. Ordered by id.
 References:
 - `application_id` refers to `applications`
 
+### order_court_steps
+
+File: `data/order_court_steps.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `order_id`: uuid
+- `kind`: text
+- `occurred_on`: date
+- `court`: text
+- `docket`: text, nullable
+- `document_id`: uuid
+- `judgment_outcome`: text, nullable
+- `appeal_due`: jsonb, nullable
+- `recorded_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `order_id` refers to `enforcement_orders`
+- `document_id` refers to `documents`
+
+### order_service_events
+
+File: `data/order_service_events.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `order_id`: uuid
+- `recipient_id`: uuid, nullable
+- `method`: text
+- `served_on`: date
+- `server_name`: text, nullable
+- `server_role`: text, nullable
+- `newspaper`: text, nullable
+- `proof_document_id`: uuid
+- `recorded_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `order_id` refers to `enforcement_orders`
+- `recipient_id` refers to `order_service_recipients`
+- `proof_document_id` refers to `documents`
+
+### order_service_recipients
+
+File: `data/order_service_recipients.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `order_id`: uuid
+- `role`: text
+- `name`: text
+- `address`: text
+- `source`: text
+- `answer_due`: jsonb, nullable
+- `answered_on`: date, nullable
+- `answer_document_id`: uuid, nullable
+
+References:
+- `order_id` refers to `enforcement_orders`
+- `answer_document_id` refers to `documents`
+
+### order_service_role_checks
+
+File: `data/order_service_role_checks.ndjson`. Ordered by order_id, role.
+
+- `order_id`: uuid
+- `role`: text
+- `outcome`: text
+- `basis`: text
+- `checked_by`: uuid
+- `checked_on`: date
+
+References:
+- `order_id` refers to `enforcement_orders`
+
 ### parcel_aliases
 
 File: `data/parcel_aliases.ndjson`. Ordered by id.
@@ -907,7 +1170,7 @@ References:
 - `parcel_id` refers to `parcels`
 
 Typed references:
-- `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, document to `documents`, historical_record to `historical_records`
+- `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, document to `documents`, historical_record to `historical_records`, enforcement_case to `enforcement_cases`
 
 ### parcels
 
@@ -967,6 +1230,20 @@ File: `data/payment_attempts.ndjson`. Ordered by id.
 
 References:
 - `processor_account_id` refers to `processor_accounts`
+
+### peril_certifications
+
+File: `data/peril_certifications.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `appeal_id`: uuid
+- `certified_on`: date
+- `certified_by`: uuid
+- `categories`: text[]
+- `statement`: text
+
+References:
+- `appeal_id` refers to `enforcement_appeals`
 
 ### preservation_records
 
@@ -1146,6 +1423,21 @@ File: `data/remediation_tasks.ndjson`. Ordered by id.
 References:
 - `application_id` refers to `applications`
 
+### restraining_orders
+
+File: `data/restraining_orders.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `appeal_id`: uuid
+- `issued_by`: text
+- `issued_on`: date
+- `document_id`: uuid
+- `dissolved_on`: date, nullable
+
+References:
+- `appeal_id` refers to `enforcement_appeals`
+- `document_id` refers to `documents`
+
 ### retention_assignments
 
 File: `data/retention_assignments.ndjson`. Ordered by id.
@@ -1221,6 +1513,7 @@ File: `data/town_settings.ndjson`. Ordered by id.
 - `service_status`: text
 - `service_status_since`: date, nullable
 - `export_window_days`: integer
+- `anonymous_intake_enabled`: boolean
 - `updated_at`: timestamp with time zone
 
 ### user_roles
@@ -1245,3 +1538,38 @@ File: `data/users.ndjson`. Ordered by id.
 - `created_at`: timestamp with time zone
 
 Omitted columns: `password_hash`, `totp_secret_enc`, `totp_enabled`, `totp_last_counter`
+
+### violation_findings
+
+File: `data/violation_findings.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `provision_kind`: text
+- `provision_ref`: text
+- `facts`: text
+- `inspection_date`: date
+- `found_on`: date
+- `found_by`: uuid
+- `status`: text
+
+References:
+- `case_id` refers to `enforcement_cases`
+
+### violation_notices
+
+File: `data/violation_notices.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `case_id`: uuid
+- `finding_ids`: uuid[]
+- `sent_on`: date
+- `method`: text
+- `sent_by`: uuid
+- `received_on`: date, nullable
+- `receipt_basis`: text, nullable
+- `document_id`: uuid, nullable
+
+References:
+- `case_id` refers to `enforcement_cases`
+- `document_id` refers to `documents`

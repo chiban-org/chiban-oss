@@ -47,7 +47,11 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
   { href: '/staff/boards/packets', label: 'Board packets', access: any('packet.manage') },
   { href: '/staff/records/preservation', label: 'Records', access: any('document.manage') },
   { href: '/staff/records/holds', label: 'Legal holds', access: any('hold.place_release') },
-  { href: '/staff/enforcement', label: 'Enforcement', access: any('enforcement.manage') },
+  {
+    href: '/staff/enforcement',
+    label: 'Enforcement',
+    access: any('enforcement.manage', 'enforcement.refer_counsel', 'fine.record'),
+  },
   { href: '/staff/reports', label: 'Reports', access: any('report.view') },
   { href: '/staff/map', label: 'Map', access: open },
   { href: '/staff/gis/imports', label: 'Imports', access: open },
