@@ -204,6 +204,13 @@
       "when": 1793592671492,
       "tag": "0028_faithful_nuke",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1793593278743,
+      "tag": "0029_harsh_darkhawk",
+      "breakpoints": true
     }
   ]
 }

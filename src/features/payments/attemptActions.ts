@@ -1,0 +1,154 @@
+import { eq } from 'drizzle-orm'
+import type { Db } from '@/db/client'
+import { type AttemptState, paymentAttempts } from '@/db/schema'
+import { writeAudit } from '@/features/audit/writeAudit'
+import type { Actor } from '@/features/auth/actor'
+import { hasCapability } from '@/features/authz/capabilities'
+import { MIN_REASON_LENGTH } from '@/features/ledger/reversalSupport'
+import { markVoided } from '@/features/payments/attemptTransitions'
+import { openProcessor, type ProcessorFactoryDeps } from '@/features/payments/openProcessor'
+import type {
+  PaymentProcessor,
+  ProcessorError,
+  ProcessorPaymentState,
+} from '@/features/payments/processors/types'
+import { reconcileAttempt } from '@/features/payments/reconcileAttempt'
+import { err, ok, type Result } from '@/types/result'
+
+export interface AttemptDeps extends ProcessorFactoryDeps {
+  now?: Date
+}
+
+async function remoteState(
+  db: Db,
+  processor: PaymentProcessor,
+  attempt: typeof paymentAttempts.$inferSelect,
+  signal: AbortSignal,
+): Promise<Result<ProcessorPaymentState | null, ProcessorError>> {
+  if (attempt.processorObjectId === null) return ok(null)
+  const state = await processor.getPaymentState(attempt.processorObjectId, signal)
+  if (state.ok) return state
+  if (state.error.kind === 'not_found') return ok(null)
+  return err(state.error)
+}
+
+export async function checkWithProcessor(
+  db: Db,
+  actor: Actor,
+  attemptId: string,
+  signal: AbortSignal,
+  deps: AttemptDeps = {},
+): Promise<
+  Result<
+    { state: AttemptState; outcomeUnknown: boolean },
+    'forbidden' | 'not_found' | ProcessorError
+  >
+> {
+  signal.throwIfAborted()
+  const collects = await hasCapability(db, actor.userId, 'payment.collect', signal)
+  const corrects = await hasCapability(db, actor.userId, 'payment.refund_void_correct', signal)
+  if (!collects && !corrects) return err('forbidden')
+  const [attempt] = await db.select().from(paymentAttempts).where(eq(paymentAttempts.id, attemptId))
+  if (attempt === undefined) return err('not_found')
+  const opened = await openProcessor(db, attempt.processorAccountId, deps, signal)
+  if (!opened.ok) return err(opened.error)
+  const state = await remoteState(db, opened.value.processor, attempt, signal)
+  if (!state.ok) return err(state.error)
+  if (state.value === null)
+    return ok({ state: attempt.state, outcomeUnknown: attempt.outcomeUnknown })
+  const reconciled = await db.transaction((tx) =>
+    reconcileAttempt(
+      tx,
+      attempt.id,
+      state.value as ProcessorPaymentState,
+      { kind: 'staff', userId: actor.userId },
+      signal,
+      deps.now,
+    ),
+  )
+  if (!reconciled.ok)
+    return err({ kind: 'rejected', detail: 'Processor object belongs to another account' })
+  const [fresh] = await db.select().from(paymentAttempts).where(eq(paymentAttempts.id, attemptId))
+  return ok({ state: reconciled.value.state, outcomeUnknown: fresh?.outcomeUnknown ?? false })
+}
+
+type VoidPlan = 'void' | 'reconcile' | 'refuse' | 'cancel_authorization'
+
+function planVoid(
+  attempt: typeof paymentAttempts.$inferSelect,
+  remote: ProcessorPaymentState | null,
+): VoidPlan {
+  if (remote?.status === 'captured') return 'reconcile'
+  if (attempt.outcomeUnknown) {
+    const gone =
+      remote === null
+        ? attempt.processorObjectId !== null
+        : remote.status === 'declined' || remote.status === 'canceled'
+    if (!gone) return 'refuse'
+  }
+  return remote?.status === 'authorized' ? 'cancel_authorization' : 'void'
+}
+
+type VoidError =
+  | 'forbidden'
+  | 'reason_required'
+  | 'not_found'
+  | 'not_voidable'
+  | 'outcome_unknown'
+  | 'processor_reports_payment'
+  | ProcessorError
+
+export async function voidAttempt(
+  db: Db,
+  actor: Actor,
+  input: { attemptId: string; reason: string },
+  signal: AbortSignal,
+  deps: AttemptDeps = {},
+): Promise<Result<{ state: AttemptState }, VoidError>> {
+  signal.throwIfAborted()
+  if (!(await hasCapability(db, actor.userId, 'payment.refund_void_correct', signal))) {
+    return err('forbidden')
+  }
+  const reason = input.reason.trim()
+  if (reason.length < MIN_REASON_LENGTH) return err('reason_required')
+  const [attempt] = await db
+    .select()
+    .from(paymentAttempts)
+    .where(eq(paymentAttempts.id, input.attemptId))
+  if (attempt === undefined) return err('not_found')
+  if (attempt.state !== 'pending' && attempt.state !== 'authorized') return err('not_voidable')
+  const opened = await openProcessor(db, attempt.processorAccountId, deps, signal)
+  if (!opened.ok) return err(opened.error)
+  const state = await remoteState(db, opened.value.processor, attempt, signal)
+  if (!state.ok) return err(state.error)
+  const remote = state.value
+  const plan = planVoid(attempt, remote)
+  if (plan === 'reconcile' && remote !== null) {
+    const source = { kind: 'staff', userId: actor.userId } as const
+    await db.transaction((tx) => reconcileAttempt(tx, attempt.id, remote, source, signal, deps.now))
+    return err('processor_reports_payment')
+  }
+  if (plan === 'refuse') return err('outcome_unknown')
+  if (plan === 'cancel_authorization' && attempt.processorObjectId !== null) {
+    const canceled = await opened.value.processor.cancelAuthorization(
+      attempt.processorObjectId,
+      signal,
+    )
+    if (!canceled.ok) return err(canceled.error)
+  }
+  await db.transaction(async (tx) => {
+    await markVoided(tx, attempt, deps.now ?? new Date())
+    await writeAudit(
+      tx,
+      {
+        actor: { kind: 'user', userId: actor.userId },
+        action: 'payment.attempt.void',
+        entityType: 'payment_attempt',
+        entityId: attempt.id,
+        after: { reason },
+      },
+      signal,
+    )
+  })
+  return ok({ state: 'voided' })
+}

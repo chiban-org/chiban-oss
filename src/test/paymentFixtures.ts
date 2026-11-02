@@ -22,6 +22,7 @@ export async function setupPayments(
   db: Db,
   admin: Actor,
   processor: 'stripe' | 'clover' | 'simulated' = 'stripe',
+  accountRef: string = ACCOUNT_REF,
 ): Promise<{ accountId: string }> {
   await saveAndPublish(db, admin, 'payment_settings', 'default', PAYMENT_SETTINGS)
   const saved = await saveProcessorAccount(
@@ -30,7 +31,7 @@ export async function setupPayments(
     {
       processor,
       mode: 'test',
-      accountRef: ACCOUNT_REF,
+      accountRef,
       settings: {},
       credentials: { secretKey: 'sk_test_123' },
       webhookSecret: 'whsec_test',

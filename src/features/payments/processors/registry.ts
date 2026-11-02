@@ -6,6 +6,7 @@ import {
   CloverCredentialsSchema,
   createCloverProcessor,
 } from '@/features/payments/processors/clover'
+import { createSimulatedProcessor } from '@/features/payments/processors/simulated'
 import {
   createStripeProcessor,
   StripeCredentialsSchema,
@@ -19,36 +20,40 @@ export interface ProcessorDeps {
   cardPresentTimeoutMs?: number
 }
 
+function malformed(account: ProcessorAccountRow): AppError {
+  return new AppError(ErrorIds.CFG_SCHEMA_FAIL, 'Stored processor credentials are malformed', {
+    accountId: account.id,
+    processor: account.processor,
+  })
+}
+
 export function createProcessor(
   account: ProcessorAccountRow,
   credentials: unknown,
   deps: ProcessorDeps,
 ): PaymentProcessor {
-  if (account.processor === 'stripe') {
-    const parsed = StripeCredentialsSchema.safeParse(credentials)
-    if (!parsed.success) {
-      throw new AppError(ErrorIds.CFG_SCHEMA_FAIL, 'Stored Stripe credentials are malformed', {
-        accountId: account.id,
+  switch (account.processor) {
+    case 'stripe': {
+      const parsed = StripeCredentialsSchema.safeParse(credentials)
+      if (!parsed.success) throw malformed(account)
+      return createStripeProcessor(parsed.data, account, {
+        fetch: deps.fetch,
+        apiBase: deps.stripeApiBase ?? env.STRIPE_API_BASE,
       })
     }
-    return createStripeProcessor(parsed.data, account, {
-      fetch: deps.fetch,
-      apiBase: deps.stripeApiBase ?? env.STRIPE_API_BASE,
-    })
-  }
-  if (account.processor === 'clover') {
-    const parsed = CloverCredentialsSchema.safeParse(credentials)
-    if (!parsed.success) {
-      throw new AppError(ErrorIds.CFG_SCHEMA_FAIL, 'Stored Clover credentials are malformed', {
-        accountId: account.id,
+    case 'clover': {
+      const parsed = CloverCredentialsSchema.safeParse(credentials)
+      if (!parsed.success) throw malformed(account)
+      return createCloverProcessor(parsed.data, account, {
+        fetch: deps.fetch,
+        cardPresentTimeoutMs: deps.cardPresentTimeoutMs,
       })
     }
-    return createCloverProcessor(parsed.data, account, {
-      fetch: deps.fetch,
-      cardPresentTimeoutMs: deps.cardPresentTimeoutMs,
-    })
+    case 'simulated':
+      return createSimulatedProcessor(deps.db)
+    default:
+      throw new AppError(ErrorIds.PAY_UNKNOWN_PROCESSOR, 'No adapter for this processor', {
+        processor: account.processor,
+      })
   }
-  throw new AppError(ErrorIds.PAY_UNKNOWN_PROCESSOR, 'No adapter for this processor', {
-    processor: account.processor,
-  })
 }

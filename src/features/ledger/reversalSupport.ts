@@ -1,17 +1,15 @@
 import { eq } from 'drizzle-orm'
 import type { Db, DbOrTx } from '@/db/client'
-import type { ProcessorAccountRow } from '@/db/schema'
 import { type LedgerEntryRow, ledgerEntries } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
-import type { PaymentProcessor } from '@/features/payments/processors/types'
+import type { ProcessorFactoryDeps } from '@/features/payments/openProcessor'
 import { err, ok, type Result } from '@/types/result'
 
 export const MIN_REASON_LENGTH = 10
 
-export interface ReversalDeps {
+export interface ReversalDeps extends ProcessorFactoryDeps {
   now?: Date
-  processorFactory?: (account: ProcessorAccountRow, credentials: unknown) => PaymentProcessor
 }
 
 export async function authorizeReversal(

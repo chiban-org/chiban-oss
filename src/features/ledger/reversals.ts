@@ -1,6 +1,6 @@
 import { count, eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { type LedgerEntryRow, ledgerEntries, refundRequests } from '@/db/schema'
+import { ledgerEntries, refundRequests } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -9,9 +9,8 @@ import { issueReceipt } from '@/features/ledger/receipts'
 import { allocateReversal } from '@/features/ledger/reversalAllocations'
 import { authorizeReversal, loadEntry, type ReversalDeps } from '@/features/ledger/reversalSupport'
 import type { AllocationInput } from '@/features/ledger/types'
-import { getProcessorAccount } from '@/features/payments/processorAccounts'
-import { createProcessor } from '@/features/payments/processors/registry'
-import type { PaymentProcessor, ProcessorError } from '@/features/payments/processors/types'
+import { openProcessor } from '@/features/payments/openProcessor'
+import type { ProcessorError } from '@/features/payments/processors/types'
 import { err, ok, type Result } from '@/types/result'
 
 export {
@@ -35,23 +34,6 @@ export type RefundError =
   | 'not_a_payment'
   | 'amount_mismatch'
   | ProcessorError
-
-async function openProcessor(
-  db: Db,
-  entry: LedgerEntryRow,
-  deps: ReversalDeps,
-  signal: AbortSignal,
-): Promise<Result<PaymentProcessor, ProcessorError>> {
-  const opened = await getProcessorAccount(db, entry.processorAccountId ?? '', signal)
-  if (opened.state !== 'known') {
-    return err({ kind: 'rejected', detail: 'Processor credentials cannot be read' })
-  }
-  const { account, credentials } = opened.value
-  const factory = deps.processorFactory
-  return ok(
-    factory ? factory(account, credentials) : createProcessor(account, credentials, { fetch, db }),
-  )
-}
 
 async function plannedAllocations(
   db: Db,
@@ -93,9 +75,9 @@ export async function refundEntry(
   const now = deps.now ?? new Date()
   let refundObjectId: string | null = null
   if (entry.processor !== null) {
-    const processor = await openProcessor(db, entry, deps, signal)
-    if (!processor.ok) return err(processor.error)
-    const refunded = await processor.value.refund(
+    const opened = await openProcessor(db, entry.processorAccountId ?? '', deps, signal)
+    if (!opened.ok) return err(opened.error)
+    const refunded = await opened.value.processor.refund(
       {
         objectId: entry.processorObjectId ?? '',
         amountCents: input.amountCents,
