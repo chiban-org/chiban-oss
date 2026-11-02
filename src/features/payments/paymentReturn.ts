@@ -43,6 +43,7 @@ export interface PaymentReturnDetails {
   simulated: boolean
   amountCents: number | null
   applicationNumbers: string[]
+  applications: { id: string; number: string }[]
   receiptId: string | null
 }
 
@@ -51,6 +52,7 @@ const EMPTY: PaymentReturnDetails = {
   simulated: false,
   amountCents: null,
   applicationNumbers: [],
+  applications: [],
   receiptId: null,
 }
 
@@ -94,7 +96,7 @@ export async function paymentReturnDetails(
     applicationIds.length === 0
       ? []
       : await db
-          .select({ number: applications.number })
+          .select({ id: applications.id, number: applications.number })
           .from(applications)
           .where(inArray(applications.id, applicationIds))
           .orderBy(applications.number)
@@ -103,6 +105,7 @@ export async function paymentReturnDetails(
     simulated: attempt.processor === 'simulated',
     amountCents: attempt.amountCents,
     applicationNumbers: numbers.map((n) => n.number),
+    applications: numbers,
     receiptId: status === 'received' ? await receiptOf(db, attemptId) : null,
   }
 }
