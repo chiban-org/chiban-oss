@@ -7,6 +7,16 @@ const SEED_NOW = new Date('2027-06-01T16:00:00Z')
 
 const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
   {
+    table: 'cutover_rows',
+    statement: sql`insert into cutover_rows (legacy_number, application_id, imported_by, source_sha256)
+      select 'LEGACY-EXPORT', id, gen_random_uuid(), 'abc' from applications limit 1`,
+  },
+  {
+    table: 'cutover_reconciliations',
+    statement: sql`insert into cutover_reconciliations (list_sha256, report, created_by)
+      values ('abc', '{"inListAndImported":[],"inListNotImported":[],"importedNotInList":[],"documentCounts":{}}'::jsonb, gen_random_uuid())`,
+  },
+  {
     table: 'application_conditions',
     statement: sql`insert into application_conditions (application_id, code, text_snapshot, blocks_issuance, changed_by)
       select id, 'C-EXPORT', 'Condition kept for export coverage', false, gen_random_uuid() from applications limit 1`,

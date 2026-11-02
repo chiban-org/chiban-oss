@@ -22,6 +22,7 @@ import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
 import { captureSnapshot } from '@/features/snapshots/captureSnapshot'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
+import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 export function attestationHash(statement: string): string {
@@ -46,6 +47,7 @@ export async function submitApplication(
     applicationId: string
     values: Record<string, unknown>
     attestation: { statementSha256: string }
+    cutover?: { receivedDate: CivilDate; enteredBy: string }
   },
   signal: AbortSignal,
   now: Date = new Date(),
@@ -56,9 +58,17 @@ export async function submitApplication(
   if (app === null) return err('not_found')
   if (!(await mayEdit(db, actor, app.projectId))) return err('forbidden')
   if (app.state !== 'draft') return err('invalid_transition')
-  const statement = app.typeBody.attestationText
-  if (input.attestation.statementSha256 !== attestationHash(statement))
-    return err('attestation_mismatch')
+  const cutover = input.cutover
+  if (cutover !== undefined && !(await hasCapability(db, actor.userId, 'cutover.import', signal))) {
+    return err('forbidden')
+  }
+  const statement =
+    cutover === undefined
+      ? app.typeBody.attestationText
+      : `Entered from the prior system by ${cutover.enteredBy}`
+  const statementSha256 =
+    cutover === undefined ? input.attestation.statementSha256 : attestationHash(statement)
+  if (statementSha256 !== attestationHash(statement)) return err('attestation_mismatch')
   const form = await getVersion(db, app.pins.form, signal)
   const checked = validateSubmission(form?.body as FormBody, input.values, {
     asStaff: hasFullRecordAccess(actor),
@@ -71,7 +81,7 @@ export async function submitApplication(
     : keepStaffOnlyValues(formBody, app.values, checked.value.values)
   const facts = staff ? checked.value.facts : extractFacts(formBody, values)
   return await transactionResult<{ state: 'submitted' }, SubmitError>(db, async (tx) => {
-    const today = await townToday(tx, now, signal)
+    const today = cutover?.receivedDate ?? (await townToday(tx, now, signal))
     await tx
       .update(applications)
       .set({ values, facts, receivedDate: today })
@@ -80,7 +90,7 @@ export async function submitApplication(
       applicationId: input.applicationId,
       userId: actor.userId,
       statementText: statement,
-      statementSha256: input.attestation.statementSha256,
+      statementSha256,
     })
     const moved = await applyTransition(
       tx,
@@ -96,11 +106,13 @@ export async function submitApplication(
     )
     if (!moved.ok) return err('invalid_transition')
     await captureSnapshot(tx, input.applicationId, 'submission', actor, signal, store, now)
-    await queueForParties(
-      tx,
-      { event: 'application_submitted', applicationId: input.applicationId },
-      signal,
-    )
+    if (cutover === undefined) {
+      await queueForParties(
+        tx,
+        { event: 'application_submitted', applicationId: input.applicationId },
+        signal,
+      )
+    }
     return ok({ state: 'submitted' })
   })
 }

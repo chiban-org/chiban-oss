@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import { applications } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { loadApplicationContext } from '@/features/applications/context'
@@ -12,7 +12,7 @@ import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 export async function markComplete(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   input: { applicationId: string; completedDate: CivilDate },
   signal: AbortSignal,

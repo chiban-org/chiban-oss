@@ -25,7 +25,7 @@ export interface FeeOverrideInput {
 }
 
 export async function createFeeOverride(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   input: FeeOverrideInput,
   signal: AbortSignal,

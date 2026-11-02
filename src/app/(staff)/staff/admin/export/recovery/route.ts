@@ -1,10 +1,16 @@
 import { env } from '@/config/env'
 import { handleRecoveryRequest } from '@/features/export/recovery/recoveryHandler'
+import { staffActorOrNull } from '@/server/requireStaff'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
+const REQUEST_TIMEOUT_MS = 30_000
+
 export async function POST(request: Request): Promise<Response> {
+  if ((await staffActorOrNull(AbortSignal.timeout(REQUEST_TIMEOUT_MS))) === null) {
+    return Response.json({ error: 'forbidden' }, { status: 403 })
+  }
   return await handleRecoveryRequest(request, {
     pgDumpPath: env.PG_DUMP_PATH,
     databaseUrl: env.DATABASE_URL,

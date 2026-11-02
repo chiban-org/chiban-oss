@@ -387,6 +387,31 @@ References:
 
 Omitted columns: `token_hash`
 
+### cutover_reconciliations
+
+File: `data/cutover_reconciliations.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `list_sha256`: text
+- `report`: jsonb
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+- `signed_off_by`: uuid, nullable
+- `signed_off_at`: timestamp with time zone, nullable
+
+### cutover_rows
+
+File: `data/cutover_rows.ndjson`. Ordered by legacy_number.
+
+- `legacy_number`: text
+- `application_id`: uuid
+- `imported_by`: uuid
+- `imported_at`: timestamp with time zone
+- `source_sha256`: text
+
+References:
+- `application_id` refers to `applications`
+
 ### document_text
 
 File: `data/document_text.ndjson`. Ordered by version_id.

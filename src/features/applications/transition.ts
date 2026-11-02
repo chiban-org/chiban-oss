@@ -30,7 +30,10 @@ export interface TransitionInput {
   expectedRowVersion: number
   onDate?: CivilDate
   closureReason?: 'final_inspection_passed' | 'certificate_of_occupancy'
+  cutover?: boolean
 }
+
+export const CUTOVER_GATE_NOTE = 'Status carried from the prior system; gates not evaluated'
 
 export type TransitionError =
   | 'forbidden'
@@ -53,9 +56,11 @@ async function isAllowedActor(
   actor: AnyActor,
   app: ApplicationContext,
   to: CoreState,
+  cutover: boolean,
   signal: AbortSignal,
 ): Promise<boolean> {
   if (actor.kind === 'system') return to === 'expired'
+  if (cutover) return await hasCapability(tx, actor.userId, 'cutover.import', signal)
   if (to === 'expired' || to === 'suspended') return false
   if (app.state === 'suspended' && to === 'issued') return false
   if (NEEDS_ISSUE_CAPABILITY.includes(to)) {
@@ -69,6 +74,23 @@ async function isAllowedActor(
   }
   if (hasFullRecordAccess(actor)) return true
   return to === 'withdrawn' && (await isActiveParty(tx, actor.userId, app.projectId))
+}
+
+async function gateResultsFor(
+  tx: Tx,
+  app: ApplicationContext,
+  input: TransitionInput,
+  today: CivilDate,
+  reinstating: boolean,
+  signal: AbortSignal,
+): Promise<GateResult[]> {
+  if (reinstating || input.cutover === true) return []
+  return await evaluateGates(tx, app, input.to, today, signal)
+}
+
+function notifiesParties(input: TransitionInput, from: CoreState): boolean {
+  if (input.cutover === true) return false
+  return input.to === 'denied' || (input.to === 'issued' && from !== 'suspended')
 }
 
 export async function applyTransition(
@@ -91,7 +113,10 @@ export async function applyTransition(
     return err('invalid_transition')
   const today = input.onDate ?? (await townToday(tx, now, signal))
   const reinstating = app.state === 'suspended' && input.to === 'issued'
-  const results = reinstating ? [] : await evaluateGates(tx, app, input.to, today, signal)
+  const results =
+    reinstating || input.cutover === true
+      ? []
+      : await evaluateGates(tx, app, input.to, today, signal)
   if (results.some((g) => g.effective === 'blocked')) return err({ gateBlocked: results })
   const assessed = await assessForTransition(tx, actor, app, input.to, signal)
   if (!assessed.ok) return err(assessed.error)
@@ -110,7 +135,7 @@ export async function applyTransition(
     })
     .where(eq(applications.id, input.applicationId))
   await runTransitionEffects(tx, app, input.to, today, signal)
-  if (input.to === 'denied' || (input.to === 'issued' && app.state !== 'suspended')) {
+  if (notifiesParties(input, app.state)) {
     await queueForParties(
       tx,
       {
@@ -131,7 +156,10 @@ export async function applyTransition(
       entityType: 'application',
       entityId: input.applicationId,
       before: { state: app.state, substep: app.substep },
-      after: { state: input.to },
+      after: {
+        state: input.to,
+        ...(input.cutover === true ? { note: CUTOVER_GATE_NOTE } : {}),
+      },
     },
     signal,
   )
@@ -148,7 +176,9 @@ export async function transitionApplication(
   if (input.to === 'submitted') return err('invalid_transition')
   const app = await loadApplicationContext(tx, input.applicationId, signal)
   if (app === null) return err('not_found')
-  if (!(await isAllowedActor(tx, actor, app, input.to, signal))) return err('forbidden')
+  if (!(await isAllowedActor(tx, actor, app, input.to, input.cutover === true, signal))) {
+    return err('forbidden')
+  }
   return await applyTransition(tx, actor, input, signal, now)
 }
 
