@@ -28,7 +28,8 @@ export function exteriorRings(geometry: GeoJsonGeometry): Pt[][] {
       return geometry.coordinates.flatMap((polygon) => polygon.slice(0, 1).map(toPoints))
     case 'GeometryCollection':
       return geometry.geometries.flatMap(exteriorRings)
-    default:
+    case 'LineString':
+    case 'MultiLineString':
       return []
   }
 }
@@ -41,7 +42,8 @@ function linePaths(geometry: GeoJsonGeometry): Pt[][] {
       return geometry.coordinates.map(toPoints)
     case 'GeometryCollection':
       return geometry.geometries.flatMap(linePaths)
-    default:
+    case 'Polygon':
+    case 'MultiPolygon':
       return []
   }
 }
@@ -97,7 +99,7 @@ export async function loadCrossingInputs(
   const applicantJson = applicant.rows[0]?.gj
   return {
     applicantRings:
-      applicantJson === undefined || applicantJson === null
+      applicantJson === undefined
         ? []
         : exteriorRings(JSON.parse(applicantJson) as GeoJsonGeometry),
     others: nearby.rows.map((r) => ({
