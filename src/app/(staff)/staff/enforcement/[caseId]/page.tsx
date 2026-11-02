@@ -3,7 +3,6 @@ import { loadCaseDetail } from '@/features/enforcement/caseDetail'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
-import { getTownSettings } from '@/features/town/settings'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -31,7 +30,6 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
   if (!loaded.ok) notFound()
   const detail = loaded.value
   const can = await loadCan(ctx.db, ctx.actor, ctx.signal)
-  const town = await getTownSettings(ctx.db, ctx.signal)
   const { row } = detail.staff
   return (
     <main className="space-y-6">
@@ -51,11 +49,7 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
       <AppealsSection detail={detail} can={can} />
       <MoneySection detail={detail} can={can} />
       <CounselSection detail={detail} can={can} />
-      <DocumentsSection
-        detail={detail}
-        can={can}
-        zone={town.ok ? town.value.timeZone : 'America/New_York'}
-      />
+      <DocumentsSection detail={detail} can={can} />
     </main>
   )
 }

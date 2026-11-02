@@ -9,16 +9,21 @@ export interface Can {
   counsel: boolean
   fine: boolean
   collect: boolean
+  publish: boolean
+  manageDocuments: boolean
 }
 
 export async function loadCan(db: DbOrTx, actor: Actor, signal: AbortSignal): Promise<Can> {
-  const [manage, issue, service, counsel, fine, collect] = await Promise.all([
-    hasCapability(db, actor.userId, 'enforcement.manage', signal),
-    hasCapability(db, actor.userId, 'enforcement.issue_order', signal),
-    hasCapability(db, actor.userId, 'enforcement.record_service', signal),
-    hasCapability(db, actor.userId, 'enforcement.refer_counsel', signal),
-    hasCapability(db, actor.userId, 'fine.record', signal),
-    hasCapability(db, actor.userId, 'payment.collect', signal),
-  ])
-  return { manage, issue, service, counsel, fine, collect }
+  const [manage, issue, service, counsel, fine, collect, publish, manageDocuments] =
+    await Promise.all([
+      hasCapability(db, actor.userId, 'enforcement.manage', signal),
+      hasCapability(db, actor.userId, 'enforcement.issue_order', signal),
+      hasCapability(db, actor.userId, 'enforcement.record_service', signal),
+      hasCapability(db, actor.userId, 'enforcement.refer_counsel', signal),
+      hasCapability(db, actor.userId, 'fine.record', signal),
+      hasCapability(db, actor.userId, 'payment.collect', signal),
+      hasCapability(db, actor.userId, 'document.publish', signal),
+      hasCapability(db, actor.userId, 'document.manage', signal),
+    ])
+  return { manage, issue, service, counsel, fine, collect, publish, manageDocuments }
 }

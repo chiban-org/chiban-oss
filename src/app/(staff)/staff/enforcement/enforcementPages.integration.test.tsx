@@ -1,7 +1,13 @@
 import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { complaints, enforcementCases, enforcementOrders, violationFindings } from '@/db/schema'
+import {
+  complaints,
+  documents,
+  enforcementCases,
+  enforcementOrders,
+  violationFindings,
+} from '@/db/schema'
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { draftOrder } from '@/features/enforcement/orders'
@@ -307,5 +313,19 @@ describe('enforcement queue and case pages', () => {
     )
     expect(page).toContain('Save the draft')
     expect(page).toContain('Discard the draft')
+  })
+
+  it('a case photo can be approved for the public from the case page', async () => {
+    await actAs('staff')
+    const [photo] = await handle.db
+      .select()
+      .from(documents)
+      .where(eq(documents.recordKind, 'enforcement_case'))
+      .limit(1)
+    if (photo === undefined) throw new Error('no case document')
+    const page = visibleText(
+      await html(CasePage({ params: Promise.resolve({ caseId: photo.recordId }) })),
+    )
+    expect(page).toContain('Approve for the public')
   })
 })
