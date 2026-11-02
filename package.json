@@ -21,7 +21,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file .env src/entrypoints/migrate.ts",
     "staff:create": "tsx --env-file .env scripts/createStaffUser.ts",
-    "worker": "tsx --env-file .env src/entrypoints/worker.ts"
+    "worker": "tsx --env-file .env src/entrypoints/worker.ts",
+    "db:seed:demo": "tsx --env-file .env scripts/seedDemo.ts"
   },
   "dependencies": {
     "@fontsource-variable/mulish": "^5.3.0",
