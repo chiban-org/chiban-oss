@@ -98,8 +98,8 @@ export function ScheduleBoard({
 
   return (
     <div className="grid gap-6 md:grid-cols-[22rem_1fr]">
-      <section aria-label="Unscheduled requests" className="space-y-3">
-        <h2 className="m-0 text-lg">Unscheduled requests</h2>
+      <section aria-label="Requests and bookings" className="space-y-3">
+        <h2 className="m-0 text-lg">Requests and bookings</h2>
         <input
           ref={search}
           type="search"
