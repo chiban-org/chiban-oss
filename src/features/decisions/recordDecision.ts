@@ -99,6 +99,17 @@ async function applyConditions(
   }
 }
 
+function voteTiming(
+  hearing: { status: string; heldOn: string | null },
+  votedOn: CivilDate,
+): 'hearing_not_held' | 'before_meeting' | null {
+  if (hearing.status !== 'held') return 'hearing_not_held'
+  if (hearing.heldOn !== null && compareCivil(votedOn, hearing.heldOn as CivilDate) < 0) {
+    return 'before_meeting'
+  }
+  return null
+}
+
 export async function recordDecision(
   db: Db,
   actor: Actor,
@@ -118,10 +129,8 @@ export async function recordDecision(
       return err('not_found')
     const app = await loadApplicationContext(tx, input.applicationId, signal)
     if (app === null) return err('not_found')
-    if (hearing.status !== 'held') return err('hearing_not_held')
-    if (hearing.heldOn !== null && compareCivil(input.votedOn, hearing.heldOn as CivilDate) < 0) {
-      return err('before_meeting')
-    }
+    const timing = voteTiming(hearing, input.votedOn)
+    if (timing !== null) return err(timing)
     const [already] = await tx
       .select({ id: boardDecisions.id })
       .from(boardDecisions)

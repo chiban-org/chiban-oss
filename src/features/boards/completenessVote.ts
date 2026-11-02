@@ -51,6 +51,7 @@ async function checkVoteMeeting(
   applicationId: string,
   board: Board,
   meetingId: string,
+  votedOn: CivilDate,
   signal: AbortSignal,
 ): Promise<Result<NonNullable<Awaited<ReturnType<typeof getMeeting>>>, VoteError>> {
   const meeting = await getMeeting(tx, meetingId, signal)
@@ -61,7 +62,10 @@ async function checkVoteMeeting(
     .select({ meetingId: acceptanceSchedules.meetingId })
     .from(acceptanceSchedules)
     .where(eq(acceptanceSchedules.applicationId, applicationId))
-  return scheduled?.meetingId === meeting.id ? ok(meeting) : err('meeting_not_set')
+  if (scheduled?.meetingId !== meeting.id) return err('meeting_not_set')
+  return compareCivil(votedOn, meeting.meetingDate as CivilDate) < 0
+    ? err('before_meeting')
+    : ok(meeting)
 }
 
 function voteErrorFrom(error: TransitionError): VoteError {
@@ -97,12 +101,16 @@ export async function recordCompletenessVote(
     const board = boardOfApplication(app)
     if (board === null) return err('wrong_board')
     if (app.state !== 'submitted') return err('not_submitted')
-    const checked = await checkVoteMeeting(tx, app.id, board, input.meetingId, signal)
+    const checked = await checkVoteMeeting(
+      tx,
+      app.id,
+      board,
+      input.meetingId,
+      input.votedOn,
+      signal,
+    )
     if (!checked.ok) return checked
     const meeting = checked.value
-    if (compareCivil(input.votedOn, meeting.meetingDate as CivilDate) < 0) {
-      return err('before_meeting')
-    }
     await markClockMet(tx, app.id, COMPLETENESS_KEY, input.votedOn, signal)
     if (board === 'zba') await markClockMet(tx, app.id, 'nh.zba.hearing', input.votedOn, signal)
     const moved = await transitionApplication(
