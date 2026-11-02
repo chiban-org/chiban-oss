@@ -8,6 +8,7 @@ export const metadata: Metadata = {
   title: 'Report a possible violation',
   robots: { index: false, follow: false },
   referrer: 'no-referrer',
+  icons: { icon: 'data:,' },
 }
 
 export default function AnonymousLayout({ children }: { children: ReactNode }) {

@@ -203,10 +203,13 @@ describe('anonymous intake retention', () => {
       const markers = { ...markersFor(clientIp), sessionEmail: user?.email ?? '' }
       const report = await runRetentionProbe(depsFor(caddy), markers, signal)
       expect(report).toEqual({ passed: true, findings: [], submitStatus: 303 })
+      await fetch(`${caddy.url}/favicon.ico`, { headers: { 'user-agent': markers.userAgent } })
       const logs = await caddy.logs()
       expect(logs).toContain(CONTROL_QUERY)
       expect(logs).not.toContain('/intake/anonymous')
       expect(logs).not.toContain('report-anonymously')
+      expect(logs).not.toContain('/favicon.ico')
+      expect(logs).not.toContain(markers.userAgent)
       expect(clientIp.length).toBeGreaterThan(3)
     } finally {
       stdout.mockRestore()

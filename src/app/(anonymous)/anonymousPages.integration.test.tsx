@@ -16,6 +16,7 @@ vi.mock('@/config/appVersion', () => ({ APP_VERSION: '0.0.0' }))
 
 const { default: ReportPage } = await import('@/app/(anonymous)/report-anonymously/page')
 const { default: ReceivedPage } = await import('@/app/(anonymous)/report-anonymously/received/page')
+const { metadata: anonymousMetadata } = await import('@/app/(anonymous)/layout')
 
 let handle: TestDb
 
@@ -31,6 +32,10 @@ afterAll(async () => {
 const render = async (element: Promise<unknown>) => renderToStaticMarkup((await element) as never)
 
 describe('anonymous pages', () => {
+  it('declare an inline icon so the browser never asks for /favicon.ico', () => {
+    expect(anonymousMetadata.icons).toEqual({ icon: 'data:,' })
+  })
+
   it('say the form is not available while intake is closed', async () => {
     const page = visibleText(await render(ReportPage()))
     expect(page).toContain('Anonymous reports are not available')
