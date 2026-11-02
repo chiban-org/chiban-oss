@@ -111,4 +111,23 @@ describe('ActionForm', () => {
       expect(screen.getByLabelText<HTMLSelectElement>('Kind').value).toBe('a')
     })
   })
+  it('clears an old message once the person edits the form again', async () => {
+    render(
+      <CsrfProvider token="t1">
+        <ActionForm
+          action={() => Promise.resolve({ ok: false as const, error: 'A reason is required.' })}
+          submitLabel="Save"
+        >
+          <label>
+            Reason
+            <input name="reason" required />
+          </label>
+        </ActionForm>
+      </CsrfProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Save' }))
+    await waitFor(() => expect(screen.getByText('Fill in: Reason.')).toBeTruthy())
+    fireEvent.input(screen.getByRole('textbox'), { target: { value: 'Because' } })
+    expect(screen.getByRole('status').textContent).toBe('')
+  })
 })

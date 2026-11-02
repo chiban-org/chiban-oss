@@ -199,4 +199,10 @@ describe('board actions', () => {
     )
     expect(result).toMatchObject({ ok: true })
   })
+  it('a water determination of within with no reason always answers in words', async () => {
+    const result = await boardActions.desDeterminationAction(
+      form({ applicationId: lw.applicationId, determination: 'within_500ft', reason: '' }),
+    )
+    expect(result.ok ? result.message : result.error).toMatch(/^[A-Z].+\.$/)
+  })
 })
