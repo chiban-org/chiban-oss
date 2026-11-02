@@ -67,6 +67,20 @@ describe('payment attempt page', () => {
     expect(html).toContain('No events yet')
   })
 
+  it('tells staff without payment access they lack permission, the same for any attempt id', async () => {
+    const inspector = await staffActor(handle.db, 'inspector')
+    const html = await render(inspector)
+    expect(html).toContain('You do not have permission to view payments.')
+    expect(html).not.toContain('paid by card at the counter')
+    state.actor = inspector
+    const unknown = renderToStaticMarkup(
+      await AttemptPage({
+        params: Promise.resolve({ attemptId: '00000000-0000-4000-8000-000000000000' }),
+      }),
+    )
+    expect(unknown).toContain('You do not have permission to view payments.')
+  })
+
   it('hides the void control from staff who cannot void', async () => {
     const html = await render(world.staff)
     expect(html).not.toContain('Void this attempt')

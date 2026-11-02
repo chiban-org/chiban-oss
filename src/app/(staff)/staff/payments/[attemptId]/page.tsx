@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
+import { NoPermission } from '@/components/staff/NoPermission'
 import type { Db } from '@/db/client'
 import {
   applications,
@@ -83,7 +84,9 @@ export default async function PaymentAttemptPage({
   const { attemptId } = await params
   if (!isUuid(attemptId)) notFound()
   const ctx = await requireStaffContext()
-  if (!(await mayViewPayments(ctx.db, ctx.actor, ctx.signal))) notFound()
+  if (!(await mayViewPayments(ctx.db, ctx.actor, ctx.signal))) {
+    return <NoPermission title="Payment" action="view payments" />
+  }
   const [attempt] = await ctx.db
     .select()
     .from(paymentAttempts)
