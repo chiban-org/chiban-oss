@@ -17,6 +17,7 @@ import {
 import { applicationStatusText } from '@/features/applications/statusText'
 import { applicationSubtitle } from '@/features/applications/subtitle'
 import { hasCapability } from '@/features/authz/capabilities'
+import { loadBoardPanel } from '@/features/boards/panelData'
 import { loadPanelDocuments } from '@/features/documents/panelData'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import type { GateResult } from '@/features/gates/evaluateGates'
@@ -29,6 +30,7 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { PANEL_ACTIONS } from '../../records/panelActions'
 import { overrideGateAction, revokeOverrideAction, statutoryExceptionAction } from './actions'
+import { BoardPanel } from './boardPanel'
 import { AppealPanel, CodeEditionPanel, RegionalImpactPanel } from './buildingPanels'
 import { FeeOverrideForm } from './feePanels'
 import { InspectionsPanel, loadInspectionsPanelData } from './inspectionsPanel'
@@ -125,6 +127,7 @@ export default async function StaffApplicationPage({ params }: Props) {
   const payments = await loadApplicationPayments(ctx.db, ctx.actor, applicationId, ctx.signal)
   const records = await loadRecordsData(ctx, applicationId, view.projectId)
   const inspections = await loadInspectionsPanelData(ctx, applicationId)
+  const board = await loadBoardPanel(ctx.db, ctx.actor, applicationId, ctx.signal)
   const [imported] = await ctx.db
     .select({ legacyNumber: cutoverRows.legacyNumber })
     .from(cutoverRows)
@@ -168,6 +171,7 @@ export default async function StaffApplicationPage({ params }: Props) {
         canAssign={records.canAssign}
       />
       <PartiesPanel view={view} />
+      {board === null ? null : <BoardPanel data={board} />}
       <CompletenessPanel view={view} />
       <section aria-label="Clocks">
         <h2>Clocks</h2>

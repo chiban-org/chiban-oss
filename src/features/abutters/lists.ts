@@ -146,7 +146,13 @@ export async function generateList(
       .update(abutterLists)
       .set({ status: 'discarded' })
       .where(and(eq(abutterLists.applicationId, app.id), eq(abutterLists.status, 'draft')))
-    const version = (latest?.version ?? 0) + 1
+    const [highest] = await tx
+      .select({ version: abutterLists.version })
+      .from(abutterLists)
+      .where(eq(abutterLists.applicationId, app.id))
+      .orderBy(desc(abutterLists.version))
+      .limit(1)
+    const version = (highest?.version ?? 0) + 1
     const incomplete: StoredIncomplete = { strategy: selection.incomplete, resolver: [] }
     const [created] = await tx
       .insert(abutterLists)

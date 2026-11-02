@@ -41,6 +41,23 @@ describe('staff navigation', () => {
     expect(labels).toContain('Account')
   })
 
+  it('shows the boards and rosters pages to staff and admin only', () => {
+    for (const role of ['staff', 'admin'] as const) {
+      expect(labelsFor(role)).toEqual(expect.arrayContaining(['Boards', 'Rosters']))
+    }
+    for (const role of [
+      'reviewer',
+      'board_member',
+      'inspector',
+      'finance',
+      'records_custodian',
+    ] as const) {
+      const labels = labelsFor(role)
+      expect(labels).not.toContain('Boards')
+      expect(labels).not.toContain('Rosters')
+    }
+  })
+
   it('shows a reviewer reviews, applications and the queue but not the day list', () => {
     const labels = labelsFor('reviewer')
     expect(labels).toContain('Reviews')

@@ -1,0 +1,107 @@
+import { asc } from 'drizzle-orm'
+import type { Db } from '@/db/client'
+import { associationRosters, parkRosters, restrictionHoldings } from '@/db/schema'
+import type { Actor } from '@/features/auth/actor'
+import { displayIdsFor } from '@/features/parcels/displayId'
+import { mayManageAbutters } from '@/features/rosters/manage'
+import { type RosterKind, type RosterStatus, rosterStatus } from '@/features/rosters/reviews'
+import { townToday } from '@/features/town/today'
+import { formatCivilDate } from '@/lib/formatDate'
+
+export interface RosterKindView {
+  kind: RosterKind
+  label: string
+  statusText: string
+}
+
+export interface RostersView {
+  today: string
+  kinds: RosterKindView[]
+  associations: { parcel: string; name: string; officers: string[]; asOfText: string }[]
+  parks: { parcel: string; name: string; owner: string; tenants: string[]; asOfText: string }[]
+  restrictions: {
+    id: string
+    parcel: string
+    holder: string
+    kindText: string
+    reference: string
+    endedText: string | null
+  }[]
+}
+
+const KIND_LABELS: Record<RosterKind, string> = {
+  condo: 'Condominium association officers',
+  park: 'Manufactured housing parks',
+  restrictions: 'Easement and restriction holders',
+  regional_contacts: 'Regional planning commission, municipalities, and NH DES contacts',
+}
+
+const RESTRICTION_LABELS = {
+  conservation: 'Conservation easement',
+  preservation: 'Preservation easement',
+  agricultural_preservation: 'Agricultural preservation restriction',
+} as const
+
+function statusText(status: RosterStatus): string {
+  if (status.state === 'never_reviewed') return 'Never reviewed'
+  const age = status.ageDays ?? 0
+  return `Reviewed ${formatCivilDate(status.reviewedOn ?? '')}, ${age} ${age === 1 ? 'day' : 'days'} ago`
+}
+
+export async function loadRostersView(
+  db: Db,
+  actor: Actor,
+  signal: AbortSignal,
+): Promise<RostersView | null> {
+  signal.throwIfAborted()
+  if (!(await mayManageAbutters(db, actor.userId, signal))) return null
+  const today = await townToday(db, new Date(), signal)
+  const kinds: RosterKindView[] = []
+  for (const kind of ['condo', 'park', 'restrictions', 'regional_contacts'] as const) {
+    kinds.push({
+      kind,
+      label: KIND_LABELS[kind],
+      statusText: statusText(await rosterStatus(db, kind, today, signal)),
+    })
+  }
+  const associations = await db
+    .select()
+    .from(associationRosters)
+    .orderBy(asc(associationRosters.associationName))
+  const parks = await db.select().from(parkRosters).orderBy(asc(parkRosters.parkName))
+  const holdings = await db
+    .select()
+    .from(restrictionHoldings)
+    .orderBy(asc(restrictionHoldings.holderName))
+  const labels = await displayIdsFor(db, [
+    ...associations.map((a) => a.parcelId),
+    ...parks.map((p) => p.parcelId),
+    ...holdings.map((h) => h.parcelId),
+  ])
+  const label = (id: string) => labels.get(id) ?? 'Parcel'
+  return {
+    today,
+    kinds,
+    associations: associations.map((a) => ({
+      parcel: label(a.parcelId),
+      name: a.associationName,
+      officers: a.officers.map((o) => `${o.name}, ${o.title}`),
+      asOfText: formatCivilDate(a.asOf),
+    })),
+    parks: parks.map((p) => ({
+      parcel: label(p.parcelId),
+      name: p.parkName,
+      owner: p.ownerName,
+      tenants: p.tenants.map((t) => `${t.name}, ${t.siteLabel}`),
+      asOfText: formatCivilDate(p.asOf),
+    })),
+    restrictions: holdings.map((h) => ({
+      id: h.id,
+      parcel: label(h.parcelId),
+      holder: h.holderName,
+      kindText: RESTRICTION_LABELS[h.restrictionKind],
+      reference: h.recordedReference,
+      endedText: h.endedOn === null ? null : formatCivilDate(h.endedOn),
+    })),
+  }
+}

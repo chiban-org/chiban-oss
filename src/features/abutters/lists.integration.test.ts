@@ -94,6 +94,13 @@ describe('draft lists', () => {
     expect(old?.status).toBe('discarded')
   })
 
+  it('versions keep counting after drafts are discarded', async () => {
+    await generate()
+    await generate()
+    const third = await generate()
+    expect(third.version).toBe(3)
+  })
+
   it('staff selections carry into the next version', async () => {
     const first = await generate()
     await selectParcel(
