@@ -13,14 +13,18 @@ import {
 } from '@/features/applications/staffApplicationView'
 import { stateLabel } from '@/features/applications/stateLabel'
 import { applicationSubtitle } from '@/features/applications/subtitle'
+import { hasCapability } from '@/features/authz/capabilities'
+import { listDocuments } from '@/features/documents/listDocuments'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { returnedCheckNotices } from '@/features/ledger/balanceNotice'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
+import { listApplicationReviewers, listReviewerChoices } from '@/features/reviews/reviewerView'
 import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { overrideGateAction, revokeOverrideAction, statutoryExceptionAction } from './actions'
 import { AppealPanel, CodeEditionPanel, RegionalImpactPanel } from './buildingPanels'
+import { DocumentsList } from './documentsList'
 import { FeeOverrideForm } from './feePanels'
 import {
   ClockAdjustForm,
@@ -30,6 +34,7 @@ import {
   TransitionBar,
 } from './panels'
 import { PaymentsPanel } from './paymentsPanel'
+import { ReviewersPanel } from './reviewersPanel'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -110,6 +115,17 @@ export default async function StaffApplicationPage({ params }: Props) {
   if (view === null) notFound()
   const balanceNotices = await returnedCheckNotices(ctx.db, [applicationId], ctx.signal)
   const payments = await loadApplicationPayments(ctx.db, ctx.actor, applicationId, ctx.signal)
+  const reviewers = await listApplicationReviewers(ctx.db, applicationId)
+  const canAssign = await hasCapability(ctx.db, ctx.actor.userId, 'review.assign', ctx.signal)
+  const choices = canAssign ? await listReviewerChoices(ctx.db) : []
+  const documents = (
+    await listDocuments(
+      ctx.db,
+      ctx.actor,
+      { record: { kind: 'application', id: applicationId }, limit: 100 },
+      ctx.signal,
+    )
+  ).rows
   return (
     <main>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -139,6 +155,12 @@ export default async function StaffApplicationPage({ params }: Props) {
       </p>
       <BalanceDueNotice notices={balanceNotices} />
       <TransitionBar view={view} />
+      <ReviewersPanel
+        applicationId={view.id}
+        reviewers={reviewers}
+        choices={choices}
+        canAssign={canAssign}
+      />
       <PartiesPanel view={view} />
       <CompletenessPanel view={view} />
       <section aria-label="Clocks">
@@ -180,6 +202,7 @@ export default async function StaffApplicationPage({ params }: Props) {
         <FeeOverrideForm view={view} />
       </section>
       <PaymentsPanel payments={payments} />
+      <DocumentsList documents={documents} />
       {view.state === 'issued' ? <PrintLinks applicationId={view.id} /> : null}
       <CodeEditionPanel view={view} />
       <RegionalImpactPanel view={view} />

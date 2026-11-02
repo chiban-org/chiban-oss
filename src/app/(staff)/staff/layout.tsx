@@ -6,6 +6,8 @@ import { createContext } from '@/server/trpc/context'
 const NAV_ITEMS = [
   { href: '/staff/parcels', label: 'Parcels' },
   { href: '/staff/counter', label: 'Counter' },
+  { href: '/staff/queue', label: 'Queue' },
+  { href: '/staff/reviews', label: 'Reviews' },
   { href: '/staff/applications', label: 'Applications' },
   { href: '/staff/payments', label: 'Payments' },
   { href: '/staff/reports/cash-receipts', label: 'Reports' },
