@@ -1,7 +1,7 @@
 import type { Board, ClockRule } from '@packs/nh/schema'
-import { eq, inArray } from 'drizzle-orm'
+import { asc, eq, inArray } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
-import { clocks } from '@/db/schema'
+import { clockAdjustments, clocks } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { boardMeetingCalendar } from '@/features/boards/calendar'
 import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
@@ -13,6 +13,25 @@ import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import type { CivilDate } from '@/types/civilDate'
 
 export const MEETING_CALENDAR_CHANGED = 'meeting_calendar_changed'
+
+async function carryAdjustments(tx: Tx, fromClockId: string, toClockId: string): Promise<void> {
+  const recorded = await tx
+    .select()
+    .from(clockAdjustments)
+    .where(eq(clockAdjustments.clockId, fromClockId))
+    .orderBy(asc(clockAdjustments.createdAt))
+  if (recorded.length === 0) return
+  await tx.insert(clockAdjustments).values(
+    recorded.map(({ id: _id, clockId: _clockId, ...rest }) => ({
+      ...rest,
+      clockId: toClockId,
+    })),
+  )
+  const governing = recorded.flatMap((a) => (a.newDue === null ? [] : [a.newDue])).at(-1)
+  if (governing !== undefined) {
+    await tx.update(clocks).set({ currentDue: governing }).where(eq(clocks.id, toClockId))
+  }
+}
 
 export async function recomputeMeetingBoundClocks(
   tx: Tx,
@@ -50,7 +69,7 @@ export async function recomputeMeetingBoundClocks(
       },
       signal,
     )
-    if (timing === null || timing.due === clock.currentDue) continue
+    if (timing === null || timing.due === clock.computedDue) continue
     const freshId = await createClock(
       tx,
       {
@@ -64,6 +83,7 @@ export async function recomputeMeetingBoundClocks(
       },
       signal,
     )
+    await carryAdjustments(tx, clock.id, freshId)
     await tx
       .update(clocks)
       .set({
