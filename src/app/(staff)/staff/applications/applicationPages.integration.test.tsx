@@ -120,7 +120,9 @@ describe('staff application pages', () => {
     const page = await html(
       ApplicationPage({ params: Promise.resolve({ applicationId: first.applicationId }) }),
     )
-    expect(page).toContain(`Number in the prior system: ${first.legacyNumber}`)
+    expect(page).toMatch(
+      new RegExp(`Number in the prior system</dt><dd[^>]*>${first.legacyNumber}</dd>`),
+    )
     const importedIds = new Set(imported.map((r) => r.applicationId))
     const native = (await handle.db.select().from(applications)).find((a) => !importedIds.has(a.id))
     const other = await html(

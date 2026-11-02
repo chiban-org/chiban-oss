@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { ParcelSearchHotkey } from '@/components/counter/ParcelSearchHotkey'
 import { QuickIssueForm } from '@/components/counter/QuickIssueForm'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { parcels } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -48,6 +49,46 @@ function SearchNotice({ q, hitCount }: { q: string; hitCount: number }) {
   const length = q.trim().length
   if (length === 0 || (length >= 2 && hitCount > 0)) return null
   return <p>{length < 2 ? 'Enter at least two characters.' : 'No parcels match that search.'}</p>
+}
+
+interface ParcelHit {
+  parcelId: string
+  displayId: string | null
+  siteAddress: string | null
+  ownerName: string | null
+}
+
+function ParcelHits({
+  hits,
+  selected,
+  hrefFor,
+}: {
+  hits: readonly ParcelHit[]
+  selected: string | undefined
+  hrefFor: (parcelId: string) => string
+}) {
+  if (hits.length === 0) return null
+  return (
+    <ul className="divide-y rounded-md border">
+      {hits.map((hit) => (
+        <li key={hit.parcelId}>
+          <Link
+            href={hrefFor(hit.parcelId)}
+            aria-current={hit.parcelId === selected ? 'true' : undefined}
+            className="grid gap-x-4 px-4 py-2.5 text-ink no-underline hover:bg-canvas aria-[current=true]:bg-canvas sm:grid-cols-[9rem_14rem_1fr]"
+          >
+            <span className="font-semibold text-action underline">
+              {hit.displayId ?? 'No map-lot ID'}
+            </span>
+            <span>{hit.siteAddress ?? 'No site address'}</span>
+            {hit.ownerName === null ? null : (
+              <span className="text-muted-foreground">{hit.ownerName}</span>
+            )}
+          </Link>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 export default async function CounterPage({ searchParams }: Props) {
@@ -104,12 +145,12 @@ export default async function CounterPage({ searchParams }: Props) {
     ) : null
 
   return (
-    <main className="space-y-6">
+    <main>
       <ParcelSearchHotkey />
-      <h1>Counter</h1>
+      <PageHeader title="Counter" lead="Find the parcel, then choose the permit type." />
       <section aria-labelledby="parcel" className="space-y-3">
         <h2 id="parcel">Parcel</h2>
-        <form method="get" role="search" className="flex gap-3">
+        <form method="get" role="search" className="flex max-w-3xl gap-3">
           <input type="hidden" name="type" value={selectedType?.key ?? ''} />
           <label className="flex-1 text-sm font-medium">
             Search by parcel ID, address, or owner (press / to search)
@@ -124,38 +165,27 @@ export default async function CounterPage({ searchParams }: Props) {
           </Button>
         </form>
         {parcelId === undefined ? null : (
-          <p>
+          <p className="rounded-md border border-action bg-canvas px-4 py-3">
             Selected parcel: <strong>{display.get(parcelId) ?? 'No map-lot ID'}</strong>
             {`, ${selectedParcel?.siteAddress ?? 'No site address'}`}
           </p>
         )}
         <SearchNotice q={q} hitCount={hits.length} />
-        <ul className="space-y-1">
-          {hits.map((hit) => (
-            <li key={hit.parcelId}>
-              <Link
-                href={href({ q, parcel: hit.parcelId, type: selectedType?.key })}
-                className="text-action underline"
-              >
-                {hit.displayId ?? 'No map-lot ID'}
-              </Link>{' '}
-              {hit.siteAddress ?? 'No site address'}
-              {hit.ownerName === null ? '' : `, ${hit.ownerName}`}
-            </li>
-          ))}
-        </ul>
+        <ParcelHits
+          hits={hits}
+          selected={parcelId}
+          hrefFor={(id) => href({ q, parcel: id, type: selectedType?.key })}
+        />
       </section>
       <section aria-labelledby="permit-type" className="space-y-2">
         <h2 id="permit-type">Permit type</h2>
-        <ul className="flex flex-wrap gap-3">
+        <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {types.map((t) => (
             <li key={t.key}>
               <Link
                 href={href({ q, parcel: parcelId, type: t.key })}
                 aria-current={t.key === selectedType?.key ? 'true' : undefined}
-                className={
-                  t.key === selectedType?.key ? 'font-semibold underline' : 'text-action underline'
-                }
+                className="flex min-h-11 items-center rounded-md border border-control-border bg-surface px-4 py-2 text-ink no-underline hover:border-action hover:bg-canvas aria-[current=true]:border-2 aria-[current=true]:border-action aria-[current=true]:bg-canvas aria-[current=true]:font-semibold"
               >
                 {t.label}
               </Link>
@@ -165,7 +195,9 @@ export default async function CounterPage({ searchParams }: Props) {
         {types.length === 0 ? <p>No permit type is set up for counter issue.</p> : null}
       </section>
       {form ?? (
-        <p className="text-muted-foreground">Choose a parcel and a permit type to continue.</p>
+        <p className="rounded-md border border-dashed px-6 py-8 text-center text-muted-foreground">
+          Choose a parcel and a permit type to continue.
+        </p>
       )}
     </main>
   )

@@ -6,16 +6,18 @@ import { ClockCard } from '@/components/clocks/ClockCard'
 import { DocumentPanel } from '@/components/documents/DocumentPanel'
 import { FeeTable } from '@/components/fees/FeeTable'
 import { GatePanel } from '@/components/gates/GatePanel'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { RecordLayout } from '@/components/layout/RecordLayout'
 import { StatusChip } from '@/components/StatusChip'
 import { BalanceDueNotice } from '@/components/staff/BalanceDueNotice'
 import { AreaField, TextField } from '@/components/staff/fields'
 import { applicationSnapshots, cutoverRows } from '@/db/schema'
+import { applicationChipStatus } from '@/features/applications/chipStatus'
 import {
   getStaffApplicationView,
   type StaffApplicationView,
 } from '@/features/applications/staffApplicationView'
 import { applicationStatusText } from '@/features/applications/statusText'
-import { applicationSubtitle } from '@/features/applications/subtitle'
 import { hasCapability } from '@/features/authz/capabilities'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { loadPanelDocuments } from '@/features/documents/panelData'
@@ -56,7 +58,7 @@ interface Props {
 
 function PrintLinks({ applicationId }: { applicationId: string }) {
   return (
-    <p>
+    <p className="flex gap-6">
       <Link
         href={`/staff/applications/${applicationId}/permit.pdf`}
         className="text-action underline"
@@ -137,106 +139,116 @@ export default async function StaffApplicationPage({ params }: Props) {
     .where(eq(cutoverRows.applicationId, applicationId))
   return (
     <main>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1>{view.number}</h1>
-        <StatusChip
-          status={
-            view.state === 'issued'
-              ? 'passed'
-              : view.state === 'suspended'
-                ? 'overdue'
-                : view.state === 'denied' || view.state === 'expired'
-                  ? 'failed'
-                  : 'neutral'
-          }
-          label={applicationStatusText(view.state, view.substep, view.substeps)}
-        />
-      </div>
-      <p className="text-muted-foreground">
-        {`${applicationSubtitle(view.typeLabel, view.projectTitle)} on parcel `}
-        <Link href={`/staff/parcels/${view.parcelId}`} className="text-action underline">
-          {view.parcelDisplayId}
-        </Link>
-        {view.receivedDate === null
-          ? '. Not yet submitted.'
-          : `. Received ${formatCivilDate(view.receivedDate)}.`}
-        {view.issuedOn === null ? '' : ` Issued ${formatCivilDate(view.issuedOn)}.`}
-      </p>
-      {imported === undefined ? null : (
-        <p>{`Number in the prior system: ${imported.legacyNumber}`}</p>
-      )}
-      <BalanceDueNotice notices={balanceNotices} />
-      <TransitionBar view={view} />
-      <ReviewersPanel
-        applicationId={view.id}
-        reviewers={records.reviewers}
-        choices={records.choices}
-        canAssign={records.canAssign}
-      />
-      <PartiesPanel view={view} />
-      {board === null ? null : <BoardPanel data={board} />}
-      <HearingsPanel data={hearings} />
-      <CompletenessPanel view={view} />
-      <section aria-label="Clocks">
-        <h2>Clocks</h2>
-        {view.clocks.length === 0 ? <p>No clock is running on this application.</p> : null}
-        {view.clocks.map((clock) => (
-          <div key={clock.clockId}>
-            <ClockCard clock={clock} />
-            {clock.status === 'running' || clock.status === 'overdue' ? (
-              <ClockAdjustForm
-                view={view}
-                clockId={clock.clockId}
-                allowedKinds={clock.allowedAdjustments}
-              />
-            ) : null}
-          </div>
-        ))}
-      </section>
-      <section aria-label="Gates">
-        <h2>Gates</h2>
-        <GatePanel
-          groups={view.gates}
-          renderControls={(result) => <GateControls view={view} result={result} />}
-        />
-      </section>
-      <ConditionsPanel view={view} />
-      <section aria-label="Fees">
-        <h2>Fees</h2>
-        {view.fees.assessments.map((a) => (
-          <FeeTable
-            key={a.id}
-            title={`Assessed ${a.stage.replaceAll('_', ' ')} (assessment ${a.sequence})`}
-            computation={a.computation as FeeComputation}
+      <PageHeader
+        kicker={view.typeLabel}
+        title={view.number}
+        status={
+          <StatusChip
+            status={applicationChipStatus(view.state)}
+            label={applicationStatusText(view.state, view.substep, view.substeps)}
           />
-        ))}
-        {view.fees.preview === null ? null : (
-          <FeeTable title="Preview of the next assessment" computation={view.fees.preview} />
-        )}
-        <FeeOverrideForm view={view} />
-      </section>
-      <PaymentsPanel payments={payments} />
-      <InspectionsPanel data={inspections} applicationId={applicationId} number={view.number} />
-      <DocumentPanel
-        documents={records.documents}
-        canPublish={records.canPublish}
-        canManage={records.canManageDocuments}
-        actions={PANEL_ACTIONS}
-        target={{ kind: 'application', id: applicationId }}
+        }
+        lead={view.projectTitle}
+        facts={[
+          {
+            label: 'Parcel',
+            value: (
+              <Link href={`/staff/parcels/${view.parcelId}`} className="text-action underline">
+                {view.parcelDisplayId}
+              </Link>
+            ),
+          },
+          {
+            label: 'Received',
+            value:
+              view.receivedDate === null ? 'Not yet submitted' : formatCivilDate(view.receivedDate),
+          },
+          ...(view.issuedOn === null
+            ? []
+            : [{ label: 'Issued', value: formatCivilDate(view.issuedOn) }]),
+          ...(imported === undefined
+            ? []
+            : [{ label: 'Number in the prior system', value: imported.legacyNumber }]),
+        ]}
+        actions={
+          <div className="flex flex-col gap-4 empty:hidden">
+            <BalanceDueNotice notices={balanceNotices} />
+            <TransitionBar view={view} />
+            {view.state === 'issued' ? <PrintLinks applicationId={view.id} /> : null}
+          </div>
+        }
       />
-      <RecordsPanel
-        applicationId={applicationId}
-        projectId={view.projectId}
-        snapshots={records.snapshots}
-        holds={records.appHolds}
-        canHold={records.canHold}
-        canManage={records.canManageDocuments}
-        zone={records.zone}
-      />
-      {view.state === 'issued' ? <PrintLinks applicationId={view.id} /> : null}
-      <CodeEditionPanel view={view} />
-      <RegionalImpactPanel view={view} />
-      <AppealPanel view={view} />
+      <RecordLayout>
+        <ReviewersPanel
+          applicationId={view.id}
+          reviewers={records.reviewers}
+          choices={records.choices}
+          canAssign={records.canAssign}
+        />
+        <PartiesPanel view={view} />
+        {board === null ? null : <BoardPanel data={board} />}
+        <HearingsPanel data={hearings} />
+        <CompletenessPanel view={view} />
+        <section aria-label="Clocks">
+          <h2>Clocks</h2>
+          {view.clocks.length === 0 ? <p>No clock is running on this application.</p> : null}
+          {view.clocks.map((clock) => (
+            <div key={clock.clockId}>
+              <ClockCard clock={clock} />
+              {clock.status === 'running' || clock.status === 'overdue' ? (
+                <ClockAdjustForm
+                  view={view}
+                  clockId={clock.clockId}
+                  allowedKinds={clock.allowedAdjustments}
+                />
+              ) : null}
+            </div>
+          ))}
+        </section>
+        <section aria-label="Gates">
+          <h2>Gates</h2>
+          <GatePanel
+            groups={view.gates}
+            renderControls={(result) => <GateControls view={view} result={result} />}
+          />
+        </section>
+        <ConditionsPanel view={view} />
+        <section aria-label="Fees">
+          <h2>Fees</h2>
+          {view.fees.assessments.map((a) => (
+            <FeeTable
+              key={a.id}
+              title={`Assessed ${a.stage.replaceAll('_', ' ')} (assessment ${a.sequence})`}
+              computation={a.computation as FeeComputation}
+            />
+          ))}
+          {view.fees.preview === null ? null : (
+            <FeeTable title="Preview of the next assessment" computation={view.fees.preview} />
+          )}
+          <FeeOverrideForm view={view} />
+        </section>
+        <PaymentsPanel payments={payments} />
+        <InspectionsPanel data={inspections} applicationId={applicationId} number={view.number} />
+        <DocumentPanel
+          documents={records.documents}
+          canPublish={records.canPublish}
+          canManage={records.canManageDocuments}
+          actions={PANEL_ACTIONS}
+          target={{ kind: 'application', id: applicationId }}
+        />
+        <RecordsPanel
+          applicationId={applicationId}
+          projectId={view.projectId}
+          snapshots={records.snapshots}
+          holds={records.appHolds}
+          canHold={records.canHold}
+          canManage={records.canManageDocuments}
+          zone={records.zone}
+        />
+        <CodeEditionPanel view={view} />
+        <RegionalImpactPanel view={view} />
+        <AppealPanel view={view} />
+      </RecordLayout>
     </main>
   )
 }

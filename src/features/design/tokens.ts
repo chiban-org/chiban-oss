@@ -18,6 +18,8 @@ export const TOKENS = {
   'map-selected': '#2a65a3',
   'map-road': '#5b6470',
   'map-water-fill': '#d9e7f2',
+  hairline: '#d5dce3',
+  'control-border': '#808a95',
 } as const
 
 export type TokenName = keyof typeof TOKENS

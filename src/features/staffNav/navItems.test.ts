@@ -2,7 +2,12 @@ import { describe, expect, it } from 'vitest'
 import type { Capability } from '@/constants/capabilities'
 import type { Role } from '@/constants/roles'
 import { DEFAULT_GRANTS } from '@/features/authz/defaultGrants'
-import { navItemsFor, STAFF_NAV_ITEMS } from '@/features/staffNav/navItems'
+import {
+  activeNavHref,
+  groupNavItems,
+  navItemsFor,
+  STAFF_NAV_ITEMS,
+} from '@/features/staffNav/navItems'
 
 function labelsFor(role: Role): string[] {
   const capabilities = new Set<Capability>(DEFAULT_GRANTS[role] ?? [])
@@ -96,5 +101,23 @@ describe('staff navigation', () => {
     ]
     const seen = new Set(everyRole.flatMap(labelsFor))
     expect(STAFF_NAV_ITEMS.map((i) => i.label).filter((l) => !seen.has(l))).toEqual([])
+  })
+
+  it('groups the staff nav in a fixed order and drops empty groups', () => {
+    const inspector = navItemsFor({
+      roles: ['inspector'],
+      capabilities: new Set<Capability>(DEFAULT_GRANTS.inspector ?? []),
+    })
+    const sections = groupNavItems(inspector)
+    expect(sections.every((s) => s.items.length > 0)).toBe(true)
+    expect(sections.flatMap((s) => s.items).length).toBe(inspector.length)
+    expect(sections.at(-1)?.key).toBe('account')
+  })
+
+  it('marks the most specific nav entry for a nested page as active', () => {
+    expect(activeNavHref('/staff/inspections/day', STAFF_NAV_ITEMS)).toBe('/staff/inspections/day')
+    expect(activeNavHref('/staff/inspections/123', STAFF_NAV_ITEMS)).toBe('/staff/inspections')
+    expect(activeNavHref('/staff/boards/members', STAFF_NAV_ITEMS)).toBe('/staff/boards/members')
+    expect(activeNavHref('/staff/applicationsx', STAFF_NAV_ITEMS)).toBeNull()
   })
 })

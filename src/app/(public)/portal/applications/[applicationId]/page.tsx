@@ -1,8 +1,10 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { StatusTimeline } from '@/components/portal/StatusTimeline'
 import { StatusChip } from '@/components/StatusChip'
 import { env } from '@/config/env'
+import { applicationChipStatus } from '@/features/applications/chipStatus'
 import { displayFieldValue } from '@/features/forms/displayValue'
 import { honestText } from '@/features/honest/honest'
 import { loadPortalBoardRecord, type PortalBoardRecord } from '@/features/portal/boardRecord'
@@ -98,23 +100,24 @@ export default async function PortalApplicationPage({
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
   const board = await loadPortalBoardRecord(ctx.db, ctx.actor, applicationId, ctx.signal)
   return (
-    <main className="space-y-8">
-      <header className="space-y-3">
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1 className="m-0">{`${view.typeLabel} ${view.number}`}</h1>
-          <StatusChip
-            status={view.state === 'issued' ? 'passed' : 'neutral'}
-            label={view.stateLabel}
-          />
-        </div>
-        <p className="m-0">
-          {`${honestText(view.parcel.siteAddress, 'Address not on file')}${view.parcel.displayId === null ? '' : `, parcel ${view.parcel.displayId}`}`}
-        </p>
-        <StatusTimeline state={view.state} />
-        {view.decisionDue === null ? null : (
-          <p className="m-0">{`The town's decision is due ${formatCivilDate(view.decisionDue.date)}. ${view.decisionDue.consequence}`}</p>
-        )}
-      </header>
+    <main>
+      <PageHeader
+        kicker={view.typeLabel}
+        title={view.number}
+        status={<StatusChip status={applicationChipStatus(view.state)} label={view.stateLabel} />}
+        lead={`${honestText(view.parcel.siteAddress, 'Address not on file')}${view.parcel.displayId === null ? '' : `, parcel ${view.parcel.displayId}`}`}
+        actions={
+          <div className="flex flex-col gap-4 pt-2">
+            <StatusTimeline state={view.state} />
+            {view.decisionDue === null ? null : (
+              <p className="m-0 max-w-[65ch]">
+                <span className="attention">{`The town's decision is due ${formatCivilDate(view.decisionDue.date)}.`}</span>
+                {` ${view.decisionDue.consequence}`}
+              </p>
+            )}
+          </div>
+        }
+      />
 
       <section aria-labelledby="details-heading" className="space-y-3">
         <h2 id="details-heading">Application</h2>

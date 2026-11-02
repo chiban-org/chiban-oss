@@ -19,7 +19,7 @@ export function FeeTable({ title, computation }: { title: string; computation: F
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-left">
-            <th className="py-1">Fee</th>
+            <th>Fee</th>
             <th>Amount</th>
             <th>How it was worked out</th>
           </tr>
@@ -27,7 +27,7 @@ export function FeeTable({ title, computation }: { title: string; computation: F
         <tbody>
           {computation.lines.map((line) => (
             <tr key={line.code} className="border-b align-top">
-              <td className="py-1">{line.label}</td>
+              <td>{line.label}</td>
               <td>{amountText(line)}</td>
               <td>
                 {line.explanation.map((step) => (
@@ -41,7 +41,7 @@ export function FeeTable({ title, computation }: { title: string; computation: F
         </tbody>
         <tfoot>
           <tr>
-            <th className="py-1 text-left">Total</th>
+            <th className="text-left text-ink">Total</th>
             <td colSpan={2}>
               {computation.totalCents === null
                 ? 'Total not yet known'

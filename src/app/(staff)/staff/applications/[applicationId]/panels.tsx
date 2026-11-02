@@ -20,8 +20,9 @@ export function TransitionBar({ view }: { view: StaffApplicationView }) {
   const allowed = view.nextTransitions.filter(
     (to) => mayIssue || !['issued', 'decided', 'denied'].includes(to),
   )
+  if (allowed.length === 0 && view.substeps.length === 0) return null
   return (
-    <section aria-label="Next step" className="my-4 flex flex-wrap gap-3">
+    <section aria-label="Next step" data-plain className="flex flex-wrap items-end gap-3">
       {allowed.map((to, index) => (
         <ActionForm
           key={to}

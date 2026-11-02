@@ -16,27 +16,48 @@ function position(state: CoreState): number {
   return state === 'closed' || state === 'suspended' || state === 'expired' ? STEPS.length - 1 : 1
 }
 
+function dotClass(done: boolean, here: boolean): string {
+  const base = 'size-4 shrink-0 rounded-full border-2'
+  if (done) return `${base} border-action bg-action`
+  if (here) return `${base} border-action bg-surface ring-4 ring-action/20`
+  return `${base} border-control-border bg-surface`
+}
+
 export function StatusTimeline({ state }: { state: CoreState }) {
   const current = position(state)
   const outcome = OUTCOMES[state]
   return (
     <div>
-      <ol className="m-0 flex list-none flex-wrap gap-x-6 gap-y-2 p-0">
+      <ol className="m-0 flex list-none flex-col gap-3 p-0 sm:grid sm:grid-cols-5 sm:gap-0">
         {STEPS.map((step, index) => {
           const done =
             index < current || (index === current && outcome !== undefined && state === 'closed')
           const here = index === current
           return (
-            <li key={step} aria-current={here ? 'step' : undefined} className="text-base">
-              <span className={here ? 'font-semibold' : ''}>{STATE_LABELS[step]}</span>
-              <span className="ml-2 text-muted-foreground">
+            <li
+              key={step}
+              aria-current={here ? 'step' : undefined}
+              className="relative flex items-center gap-3 text-base sm:flex-col sm:items-start sm:gap-2 sm:pr-2"
+            >
+              <span className="flex items-center sm:w-full" aria-hidden="true">
+                <span className={dotClass(done, here)} />
+                {index === STEPS.length - 1 ? null : (
+                  <span
+                    className={`hidden h-0.5 flex-1 sm:block ${done ? 'bg-action' : 'bg-hairline'}`}
+                  />
+                )}
+              </span>
+              <span className={here ? 'font-semibold text-ink' : 'text-ink-secondary'}>
+                {STATE_LABELS[step]}
+              </span>
+              <span className="text-muted-foreground sm:-mt-2">
                 {done ? 'Done' : here ? 'Now' : 'Not yet'}
               </span>
             </li>
           )
         })}
       </ol>
-      {outcome === undefined ? null : <p className="mt-2 text-base font-medium">{outcome}</p>}
+      {outcome === undefined ? null : <p className="mt-4 text-base font-semibold">{outcome}</p>}
     </div>
   )
 }

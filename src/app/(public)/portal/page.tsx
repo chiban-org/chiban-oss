@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { StatusChip } from '@/components/StatusChip'
+import { applicationChipStatus } from '@/features/applications/chipStatus'
 import { listApplicationsForViewer } from '@/features/applications/listForViewer'
 import { stateLabel } from '@/features/applications/stateLabel'
 import { CORE_STATES, type CoreState } from '@/features/applications/states'
@@ -57,7 +58,7 @@ export default async function PortalHomePage() {
                 <p className="m-0">{`${row.number}, started ${formatInstant(row.createdAt, zone)}`}</p>
               </div>
               <StatusChip
-                status={row.state === 'issued' ? 'passed' : 'neutral'}
+                status={isCoreState(row.state) ? applicationChipStatus(row.state) : 'neutral'}
                 label={isCoreState(row.state) ? stateLabel(row.state) : row.state}
               />
             </li>

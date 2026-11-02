@@ -21,6 +21,8 @@
   --map-selected: #2a65a3;
   --map-road: #5b6470;
   --map-water-fill: #d9e7f2;
+  --hairline: #d5dce3;
+  --control-border: #808a95;
 
   --radius: 10px;
   --space-base: 4px;
@@ -47,8 +49,8 @@
   --accent: var(--highlight);
   --accent-foreground: var(--ink);
   --destructive: var(--status-failed-fg);
-  --border: var(--ink-secondary);
-  --input: var(--ink-secondary);
+  --border: var(--hairline);
+  --input: var(--control-border);
   --ring: var(--action);
 }
 
@@ -77,6 +79,8 @@
   --color-ink-secondary: var(--ink-secondary);
   --color-action: var(--action);
   --color-highlight: var(--highlight);
+  --color-hairline: var(--hairline);
+  --color-control-border: var(--control-border);
   --color-status-passed-fg: var(--status-passed-fg);
   --color-status-passed-bg: var(--status-passed-bg);
   --color-status-failed-fg: var(--status-failed-fg);
@@ -98,6 +102,8 @@
   --text-2xl: 1.424rem;
   --text-3xl: 1.602rem;
   --text-4xl: 1.802rem;
+  --text-5xl: 2.027rem;
+  --text-6xl: 2.281rem;
 }
 
 @layer base {
@@ -116,24 +122,52 @@
   }
 
   h1,
-  h2,
-  h3 {
+  h2 {
     font-family: var(--font-headline);
     letter-spacing: 0;
     font-weight: 600;
     line-height: 1.2;
+    text-wrap: balance;
   }
 
   h1 {
-    font-size: var(--text-4xl);
+    font-size: var(--text-5xl);
   }
 
   h2 {
-    font-size: var(--text-3xl);
+    font-size: var(--text-2xl);
+  }
+
+  h3,
+  h4 {
+    font-family: var(--font-body);
+    font-weight: 700;
+    line-height: 1.3;
+    letter-spacing: var(--body-tracking);
   }
 
   h3 {
-    font-size: var(--text-2xl);
+    font-size: var(--text-lg);
+  }
+
+  h4 {
+    font-size: var(--text-base);
+  }
+
+  :where(input:not([type="checkbox"], [type="radio"]), select, textarea) {
+    border-color: var(--control-border);
+  }
+
+  :where(th) {
+    text-align: left;
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  :where(summary) {
+    cursor: pointer;
+    color: var(--action);
+    font-weight: 600;
   }
 
   a {
@@ -168,6 +202,72 @@
 
 .staff-shell table {
   font-size: 0.875rem;
+}
+
+@layer components {
+  :where(main) > :where(h1) {
+    margin-bottom: calc(var(--space-base) * 1);
+  }
+
+  :where(main) > :where(h1 + p) {
+    color: var(--muted);
+    max-width: 75ch;
+  }
+
+  :where(main) :where(section):not(:where(section section, [data-plain])) {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius);
+    padding: var(--card-padding);
+    margin-block: calc(var(--space-base) * 5);
+  }
+
+  @media (max-width: 639px) {
+    :where(main) :where(section):not(:where(section section, [data-plain])) {
+      padding: calc(var(--space-base) * 4);
+    }
+  }
+
+  :where(main) :where(section section):not(:first-child) {
+    border-top: 1px solid var(--hairline);
+    padding-top: calc(var(--space-base) * 5);
+    margin-top: calc(var(--space-base) * 5);
+  }
+
+  :where(main section:not([data-plain])) > :where(* + *) {
+    margin-top: calc(var(--space-base) * 3);
+  }
+
+  :where(main section) > :where(h2, h3):first-child {
+    margin-top: 0;
+  }
+
+  :where(main section) > :where(h2 + *) {
+    margin-top: calc(var(--space-base) * 4);
+  }
+
+  :where(.staff-shell main form:not([role="search"]))
+    :where(input:not([type="checkbox"], [type="radio"], [type="hidden"]), select, textarea) {
+    max-width: 36rem;
+  }
+
+  :where(main) :where(table) {
+    width: 100%;
+  }
+
+  :where(main) :where(th, td) {
+    padding-block: calc(var(--space-base) * 2.5);
+    padding-inline-end: calc(var(--space-base) * 4);
+    vertical-align: top;
+  }
+
+  :where(main) :where(thead th) {
+    border-bottom: 1px solid var(--control-border);
+  }
+
+  :where(main) :where(tbody tr + tr) {
+    border-top: 1px solid var(--hairline);
+  }
 }
 
 .attention {

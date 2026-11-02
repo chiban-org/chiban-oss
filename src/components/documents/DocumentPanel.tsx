@@ -123,11 +123,72 @@ function ApprovalControls({ doc, actions }: { doc: PanelDocument; actions: Docum
   )
 }
 
+function ManageControls({ doc, props }: { doc: PanelDocument; props: Props }) {
+  if (!props.canManage && !props.canPublish && !doc.canRedact) return null
+  return (
+    <details>
+      <summary className="text-sm">Manage sharing and approval</summary>
+      <div className="mt-3 space-y-4 rounded-md bg-canvas p-4">
+        {props.canManage ? (
+          <ActionForm action={props.actions.setAudiences} submitLabel="Save audiences">
+            <input type="hidden" name="documentId" value={doc.documentId} />
+            <div className="flex flex-wrap gap-4">
+              {AUDIENCES.map((a) => (
+                <label key={a} className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    name="audience"
+                    value={a}
+                    defaultChecked={doc.audiences.includes(a)}
+                  />
+                  {AUDIENCE_LABELS[a]}
+                </label>
+              ))}
+            </div>
+          </ActionForm>
+        ) : null}
+        {props.canPublish ? (
+          <>
+            <ActionForm action={props.actions.setPublic} submitLabel="Save public setting">
+              <input type="hidden" name="documentId" value={doc.documentId} />
+              <label className="flex items-center gap-2">
+                <input type="checkbox" name="isPublic" value="true" defaultChecked={doc.isPublic} />
+                Public
+              </label>
+            </ActionForm>
+            <ApprovalControls doc={doc} actions={props.actions} />
+            <RedactedUploader
+              documentId={doc.documentId}
+              target={props.target}
+              actions={props.actions.uploadRedacted}
+            />
+          </>
+        ) : null}
+        {doc.canRedact && doc.originalVersionId !== null ? (
+          <a
+            href={`/staff/records/redact/${doc.originalVersionId}`}
+            className="inline-block text-action underline"
+          >
+            Redact this document
+          </a>
+        ) : null}
+        {props.canManage &&
+        doc.preservation === 'incomplete' &&
+        doc.preservationRecordId !== null ? (
+          <ActionForm action={props.actions.retry} submitLabel="Retry preservation">
+            <input type="hidden" name="recordId" value={doc.preservationRecordId} />
+          </ActionForm>
+        ) : null}
+      </div>
+    </details>
+  )
+}
+
 function DocumentRow({ doc, props }: { doc: PanelDocument; props: Props }) {
   const chip = PRESERVATION_CHIP[doc.preservation]
   const publicCopy = publicCopyText(doc)
   return (
-    <li className="space-y-2 rounded-md border p-3">
+    <li className="space-y-2 py-4 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-center gap-3">
         <a href={`/api/documents/${doc.documentId}`} className="font-medium text-action underline">
           {doc.title}
@@ -148,7 +209,7 @@ function DocumentRow({ doc, props }: { doc: PanelDocument; props: Props }) {
           <span>Not public</span>
         )}
       </div>
-      <p className="m-0">
+      <p className="m-0 text-sm text-muted-foreground">
         {doc.series === null ? (
           'No record series assigned'
         ) : (
@@ -162,54 +223,7 @@ function DocumentRow({ doc, props }: { doc: PanelDocument; props: Props }) {
         {`. `}
         <span>{doc.retention}</span>
       </p>
-      {props.canManage ? (
-        <ActionForm action={props.actions.setAudiences} submitLabel="Save audiences">
-          <input type="hidden" name="documentId" value={doc.documentId} />
-          <div className="flex flex-wrap gap-4">
-            {AUDIENCES.map((a) => (
-              <label key={a} className="flex items-center gap-2">
-                <input
-                  type="checkbox"
-                  name="audience"
-                  value={a}
-                  defaultChecked={doc.audiences.includes(a)}
-                />
-                {AUDIENCE_LABELS[a]}
-              </label>
-            ))}
-          </div>
-        </ActionForm>
-      ) : null}
-      {props.canPublish ? (
-        <>
-          <ActionForm action={props.actions.setPublic} submitLabel="Save public setting">
-            <input type="hidden" name="documentId" value={doc.documentId} />
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="isPublic" value="true" defaultChecked={doc.isPublic} />
-              Public
-            </label>
-          </ActionForm>
-          <ApprovalControls doc={doc} actions={props.actions} />
-          <RedactedUploader
-            documentId={doc.documentId}
-            target={props.target}
-            actions={props.actions.uploadRedacted}
-          />
-        </>
-      ) : null}
-      {doc.canRedact && doc.originalVersionId !== null ? (
-        <a
-          href={`/staff/records/redact/${doc.originalVersionId}`}
-          className="inline-block text-action underline"
-        >
-          Redact this document
-        </a>
-      ) : null}
-      {props.canManage && doc.preservation === 'incomplete' && doc.preservationRecordId !== null ? (
-        <ActionForm action={props.actions.retry} submitLabel="Retry preservation">
-          <input type="hidden" name="recordId" value={doc.preservationRecordId} />
-        </ActionForm>
-      ) : null}
+      <ManageControls doc={doc} props={props} />
     </li>
   )
 }
@@ -219,7 +233,7 @@ export function DocumentPanel(props: Props) {
     <section aria-label="Documents">
       <h2>Documents</h2>
       {props.documents.length === 0 ? <p>No documents are attached.</p> : null}
-      <ul className="m-0 list-none space-y-3 p-0">
+      <ul className="m-0 list-none divide-y p-0">
         {props.documents.map((doc) => (
           <DocumentRow key={doc.documentId} doc={doc} props={props} />
         ))}

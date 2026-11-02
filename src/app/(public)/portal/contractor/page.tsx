@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { StatusChip } from '@/components/StatusChip'
+import { applicationChipStatus } from '@/features/applications/chipStatus'
 import { stateLabel } from '@/features/applications/stateLabel'
 import { listContractorProjects } from '@/features/contractors/dashboard'
 import { honestText } from '@/features/honest/honest'
@@ -44,7 +45,7 @@ export default async function ContractorDashboardPage({
                       className="tap-target inline-flex items-center underline"
                     >{`${app.typeLabel} ${app.number}`}</Link>
                     <StatusChip
-                      status={app.state === 'issued' ? 'passed' : 'neutral'}
+                      status={applicationChipStatus(app.state)}
                       label={stateLabel(app.state)}
                     />
                     {app.issuedOn === null ? null : (

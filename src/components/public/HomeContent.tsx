@@ -1,55 +1,81 @@
 import Link from 'next/link'
+import type { ReactNode } from 'react'
 
 export type HomeAudience = 'visitor' | 'resident' | 'staff'
 
-const LINK = 'tap-target inline-flex items-center text-lg underline'
+const TASK_LINK = 'tap-target inline-flex items-center font-serif text-2xl font-semibold'
 
-function AccountLink({ audience }: { audience: HomeAudience }) {
+function Task({ href, title, children }: { href: string; title: string; children: ReactNode }) {
+  return (
+    <li className="flex flex-col gap-1 py-6 first:pt-0 last:pb-0">
+      <Link href={href} className={TASK_LINK}>
+        {title}
+      </Link>
+      <p className="max-w-[60ch] text-ink-secondary">{children}</p>
+    </li>
+  )
+}
+
+function AccountTask({ audience }: { audience: HomeAudience }) {
   if (audience === 'resident') {
     return (
-      <Link href="/portal" className={LINK}>
-        Your applications
-      </Link>
+      <Task href="/portal" title="Your applications">
+        Check where each application stands, pay fees, and request inspections.
+      </Task>
     )
   }
   if (audience === 'staff') {
     return (
-      <Link href="/staff" className={LINK}>
-        Open the staff site
-      </Link>
+      <Task href="/staff" title="Open the staff site">
+        The counter, the work queue, boards, inspections, and records.
+      </Task>
     )
   }
   return (
-    <Link href="/sign-in" className={LINK}>
-      Sign in to see your applications
-    </Link>
+    <Task href="/sign-in" title="Sign in to see your applications">
+      Applicants and contractors sign in with an emailed link. No password needed.
+    </Task>
   )
 }
 
 export function HomeContent({ audience }: { audience: HomeAudience }) {
   return (
-    <main>
-      <h1>Town of Alder Pond</h1>
-      <p>Find a parcel, see its permits and applications, and track what the town has on file.</p>
-      <ul className="mt-4 space-y-2">
-        <li>
-          <Link href="/parcels" className={LINK}>
-            Look up a parcel
-          </Link>
-        </li>
-        <li>
-          <Link href="/meetings" className={LINK}>
-            Board agendas and decisions
-          </Link>
-        </li>
-        <li>
-          <Link href="/complaints/new" className={LINK}>
-            Report a possible violation
-          </Link>
-        </li>
-        <li>
-          <AccountLink audience={audience} />
-        </li>
+    <main className="mx-auto max-w-3xl">
+      <div className="border-b pb-10">
+        <p className="text-sm font-semibold text-muted-foreground">Land use records</p>
+        <h1 className="mt-2 text-6xl">Town of Alder Pond</h1>
+        <p className="mt-3 max-w-[60ch] text-lg text-ink-secondary">
+          Find a parcel, see its permits and applications, and track what the town has on file.
+        </p>
+        <form action="/parcels" method="get" role="search" className="mt-6 flex flex-wrap gap-3">
+          <label htmlFor="home-parcel-search" className="sr-only">
+            Address, owner, or parcel ID
+          </label>
+          <input
+            id="home-parcel-search"
+            name="q"
+            placeholder="Address, owner, or parcel ID"
+            className="min-w-0 flex-1 rounded-md border bg-surface px-4 text-base"
+          />
+          <button
+            type="submit"
+            className="rounded-md bg-primary px-6 font-semibold text-primary-foreground"
+          >
+            Search parcels
+          </button>
+        </form>
+      </div>
+      <ul className="mt-10 divide-y">
+        <Task href="/parcels" title="Look up a parcel">
+          See the permits, applications, and board decisions on file for any parcel in town.
+        </Task>
+        <Task href="/meetings" title="Board agendas and decisions">
+          Upcoming Planning Board and Zoning Board meetings, their agendas, and filed decisions.
+        </Task>
+        <Task href="/complaints/new" title="Report a possible violation">
+          Tell the town about building or land use work that may not follow the rules.
+        </Task>
+        <AccountTask audience={audience} />
       </ul>
     </main>
   )

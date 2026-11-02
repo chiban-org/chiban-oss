@@ -4,6 +4,7 @@ import { contrastRatio, TOKENS } from '@/features/design/tokens'
 
 const css = readFileSync(new URL('../../app/globals.css', import.meta.url), 'utf8')
 const MIN_AA_TEXT = 4.5
+const MIN_AA_NON_TEXT = 3
 
 describe('design tokens', () => {
   it('holds the spec values exactly', () => {
@@ -39,6 +40,13 @@ describe('design tokens', () => {
     ['status-neutral-fg', 'status-neutral-bg'],
   ] as const)('%s on %s meets 4.5:1', (fg, bg) => {
     expect(contrastRatio(TOKENS[fg], TOKENS[bg])).toBeGreaterThanOrEqual(MIN_AA_TEXT)
+  })
+
+  it.each([
+    ['control-border', 'surface'],
+    ['control-border', 'canvas'],
+  ] as const)('%s on %s meets the 3:1 non-text minimum', (fg, bg) => {
+    expect(contrastRatio(TOKENS[fg], TOKENS[bg])).toBeGreaterThanOrEqual(MIN_AA_NON_TEXT)
   })
 
   it('computes the WCAG formula', () => {

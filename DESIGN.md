@@ -17,6 +17,8 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 | `status-failed` | `#a3261f` on `#fbe9e7` | Failed, denied, violation |
 | `status-overdue` | `#7a4b00` on `#fff7ca` | Past or near a statutory deadline |
 | `status-neutral` | `#2d2f33` on `#e8edf1` | Waived, withdrawn, closed, draft |
+| `hairline` | `#d5dce3` | Panel, divider and table row borders |
+| `control-border` | `#808a95` | Input, select and outline button borders (3:1 on white and canvas) |
 
 `src/features/design/tokens.test.ts` checks every text pair against WCAG AA (4.5:1) and that `globals.css` declares every token.
 
@@ -26,10 +28,17 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 - Highlighter yellow marks what needs attention, behind a short phrase, never as a full surface.
 - Status is never color alone: use `StatusChip`, which always renders an icon and a text label.
 - Records look like documents: serif titles, hairline-bordered white cards on the canvas, almost no shadow.
+- Every top-level `<section>` inside `<main>` renders as a hairline panel; nested sections become divided subsections. Add `data-plain` to a section that should not be a panel (an action bar, for example).
+
+## Layout pieces
+
+- `PageHeader` (`src/components/layout/PageHeader.tsx`): kicker, serif title with status chip, lead line, a fact list, and the page's actions. Use it for every record page.
+- `RecordLayout` (`src/components/layout/RecordLayout.tsx`): wraps a record's sections and adds an "On this page" index on wide screens once there are four or more panels.
+- Staff navigation is grouped by the `group` field on each entry in `src/features/staffNav/navItems.ts` and marks the current page.
 
 ## Type and shape
 
-- Headlines 22px and up use `Charter, "Source Serif 4 Variable", serif`.
+- `h1` and `h2` use `Charter, "Source Serif 4 Variable", serif` (22px and up). `h3` and `h4` use the body face in bold.
 - Everything else uses Mulish Variable at `-0.02em` tracking. Fonts are self-hosted through `@fontsource-variable`.
 - Scale is Major Second (1.125) from a 16px base.
 - 4px spacing base, 10px radius, 24px card padding, 1200px maximum content width.

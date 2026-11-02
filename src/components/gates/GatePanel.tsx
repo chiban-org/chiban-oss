@@ -43,9 +43,10 @@ function OverrideNote({ result }: { result: GateResult }) {
 export function GatePanel({ groups, renderControls }: GatePanelProps) {
   return (
     <div>
+      {groups.length === 0 ? <p>No gates apply: this application has no next step.</p> : null}
       {groups.map((group) => (
         <section key={group.to} aria-label={`Gates for ${STATE_LABELS[group.to]}`} className="my-3">
-          <h3 className="text-base font-semibold">{`Before ${STATE_LABELS[group.to].toLowerCase()}`}</h3>
+          <h3>{`Before ${STATE_LABELS[group.to].toLowerCase()}`}</h3>
           {group.results.length === 0 ? <p>No gates apply to this step.</p> : null}
           <ul className="list-none p-0">
             {group.results.map((result) => (
