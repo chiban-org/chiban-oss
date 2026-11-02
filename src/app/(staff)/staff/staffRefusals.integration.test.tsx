@@ -94,7 +94,7 @@ describe('section pages refuse with one permission page', () => {
   it('a record by id stays a missing page for someone who may not see it', async () => {
     await actAs('board')
     await expect(
-      html(ApplicationPage({ params: Promise.resolve({ applicationId }) } as never)),
+      html(ApplicationPage({ params: Promise.resolve({ applicationId }) })),
     ).rejects.toThrow('NOT_FOUND')
   })
 })
