@@ -4,9 +4,11 @@ import {
   applicationSnapshots,
   applications,
   documents,
+  enforcementCases,
   type LegalHoldRow,
   legalHolds,
   projects,
+  rtkRequests,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -19,7 +21,7 @@ import { isUuid } from '@/utils/uuid'
 const MIN_REASON = 10
 
 export interface HoldTarget {
-  kind: 'project' | 'application' | 'document'
+  kind: 'project' | 'application' | 'document' | 'enforcement_case' | 'rtk_request'
   id: string
 }
 
@@ -35,6 +37,7 @@ export async function placeHold(
   const reason = input.reason.trim()
   if (reason.length < MIN_REASON) return err('reason_required')
   return await transactionResult(db, async (tx) => {
+    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('records.disposition'))`)
     const [row] = await tx
       .insert(legalHolds)
       .values({
@@ -82,12 +85,26 @@ async function resolveHoldReference(
               .from(projects)
               .where(sql`lower(${projects.title}) = lower(${ref})`)
           ).map((r) => r.id)
-        : (
-            await db
-              .select({ id: documents.id })
-              .from(documents)
-              .where(sql`lower(${documents.title}) = lower(${ref})`)
-          ).map((r) => r.id)
+        : kind === 'enforcement_case'
+          ? (
+              await db
+                .select({ id: enforcementCases.id })
+                .from(enforcementCases)
+                .where(sql`lower(${enforcementCases.number}) = lower(${ref})`)
+            ).map((r) => r.id)
+          : kind === 'rtk_request'
+            ? (
+                await db
+                  .select({ id: rtkRequests.id })
+                  .from(rtkRequests)
+                  .where(sql`lower(${rtkRequests.number}) = lower(${ref})`)
+              ).map((r) => r.id)
+            : (
+                await db
+                  .select({ id: documents.id })
+                  .from(documents)
+                  .where(sql`lower(${documents.title}) = lower(${ref})`)
+              ).map((r) => r.id)
   if (matches.length > 1) return err('ambiguous')
   const [only] = matches
   return only === undefined ? err('not_found') : ok(only)
@@ -120,7 +137,7 @@ export async function holdSubjects(
 ): Promise<Map<string, string>> {
   const idsOf = (kind: HoldTarget['kind']) =>
     holds.filter((h) => h.targetKind === kind).map((h) => h.targetId)
-  const [apps, projs, docs] = await Promise.all([
+  const [apps, projs, docs, cases, requests] = await Promise.all([
     idsOf('application').length === 0
       ? []
       : db
@@ -139,8 +156,22 @@ export async function holdSubjects(
           .select({ id: documents.id, label: documents.title })
           .from(documents)
           .where(inArray(documents.id, idsOf('document'))),
+    idsOf('enforcement_case').length === 0
+      ? []
+      : db
+          .select({ id: enforcementCases.id, label: enforcementCases.number })
+          .from(enforcementCases)
+          .where(inArray(enforcementCases.id, idsOf('enforcement_case'))),
+    idsOf('rtk_request').length === 0
+      ? []
+      : db
+          .select({ id: rtkRequests.id, label: rtkRequests.number })
+          .from(rtkRequests)
+          .where(inArray(rtkRequests.id, idsOf('rtk_request'))),
   ])
-  const labels = new Map([...apps, ...projs, ...docs].map((r) => [r.id, r.label]))
+  const labels = new Map(
+    [...apps, ...projs, ...docs, ...cases, ...requests].map((r) => [r.id, r.label]),
+  )
   return new Map(holds.map((h) => [h.id, labels.get(h.targetId) ?? h.targetId]))
 }
 
@@ -181,6 +212,16 @@ interface Lineage {
   documentId: string | null
   applicationId: string | null
   projectId: string | null
+  enforcementCaseId: string | null
+  rtkRequestId: string | null
+}
+
+const NO_LINEAGE: Lineage = {
+  documentId: null,
+  applicationId: null,
+  projectId: null,
+  enforcementCaseId: null,
+  rtkRequestId: null,
 }
 
 async function lineageOf(
@@ -194,15 +235,21 @@ async function lineageOf(
       .innerJoin(applications, eq(applications.id, applicationSnapshots.applicationId))
       .where(eq(applicationSnapshots.id, ref.id))
     return {
-      documentId: null,
+      ...NO_LINEAGE,
       applicationId: row?.applicationId ?? null,
       projectId: row?.projectId ?? null,
     }
   }
   const [doc] = await db.select().from(documents).where(eq(documents.id, ref.id))
-  if (doc === undefined) return { documentId: null, applicationId: null, projectId: null }
+  if (doc === undefined) return NO_LINEAGE
   if (doc.recordKind === 'project') {
-    return { documentId: doc.id, applicationId: null, projectId: doc.recordId }
+    return { ...NO_LINEAGE, documentId: doc.id, projectId: doc.recordId }
+  }
+  if (doc.recordKind === 'enforcement_case') {
+    return { ...NO_LINEAGE, documentId: doc.id, enforcementCaseId: doc.recordId }
+  }
+  if (doc.recordKind === 'rtk_request') {
+    return { ...NO_LINEAGE, documentId: doc.id, rtkRequestId: doc.recordId }
   }
   const applicationId = await applicationIdOfRecord(db, doc)
   if (applicationId !== null) {
@@ -210,9 +257,9 @@ async function lineageOf(
       .select({ projectId: applications.projectId })
       .from(applications)
       .where(eq(applications.id, applicationId))
-    return { documentId: doc.id, applicationId, projectId: app?.projectId ?? null }
+    return { ...NO_LINEAGE, documentId: doc.id, applicationId, projectId: app?.projectId ?? null }
   }
-  return { documentId: doc.id, applicationId: null, projectId: null }
+  return { ...NO_LINEAGE, documentId: doc.id }
 }
 
 export async function holdsCovering(
@@ -235,6 +282,18 @@ export async function holdsCovering(
     lineage.projectId === null
       ? null
       : and(eq(legalHolds.targetKind, 'project'), eq(legalHolds.targetId, lineage.projectId)),
+    lineage.enforcementCaseId === null
+      ? null
+      : and(
+          eq(legalHolds.targetKind, 'enforcement_case'),
+          eq(legalHolds.targetId, lineage.enforcementCaseId),
+        ),
+    lineage.rtkRequestId === null
+      ? null
+      : and(
+          eq(legalHolds.targetKind, 'rtk_request'),
+          eq(legalHolds.targetId, lineage.rtkRequestId),
+        ),
   ].filter((t) => t !== null)
   if (targets.length === 0) return []
   return await db

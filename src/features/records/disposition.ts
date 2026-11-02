@@ -52,6 +52,15 @@ async function applicationIdOf(db: DbOrTx, ref: DispositionRef): Promise<string 
   return doc === undefined ? null : await applicationIdOfRecord(db, doc)
 }
 
+async function caseIdOf(db: DbOrTx, ref: DispositionRef): Promise<string | null> {
+  if (ref.kind !== 'document') return null
+  const [doc] = await db
+    .select({ recordKind: documents.recordKind, recordId: documents.recordId })
+    .from(documents)
+    .where(eq(documents.id, ref.id))
+  return doc?.recordKind === 'enforcement_case' ? doc.recordId : null
+}
+
 async function projectIdsFor(db: DbOrTx, ref: DispositionRef): Promise<string[]> {
   if (ref.kind === 'application_snapshot') {
     const rows = await db
@@ -103,8 +112,9 @@ export async function retentionFor(
   const town = await getTownSettings(db, signal)
   const zone = town.ok ? town.value.timeZone : FALLBACK_ZONE
   const projectIds = await projectIdsFor(db, ref)
+  const caseId = await caseIdOf(db, ref)
   const applicationId = await applicationIdOf(db, ref)
-  const events =
+  const projectEvents =
     projectIds.length === 0
       ? []
       : await db
@@ -121,6 +131,11 @@ export async function retentionFor(
                   ),
             ),
           )
+  const caseEvents =
+    caseId === null
+      ? []
+      : await db.select().from(recordEvents).where(eq(recordEvents.caseId, caseId))
+  const events = [...projectEvents, ...caseEvents]
   const status = computeRetention(series, {
     recordDate: todayInTimeZone(zone, createdAt),
     events: events.map((e) => ({ kind: e.kind, occurredOn: e.occurredOn as CivilDate })),

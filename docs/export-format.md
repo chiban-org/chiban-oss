@@ -1361,7 +1361,8 @@ File: `data/receipts.ndjson`. Ordered by id.
 File: `data/record_events.ndjson`. Ordered by id.
 
 - `id`: uuid
-- `project_id`: uuid
+- `project_id`: uuid, nullable
+- `case_id`: uuid, nullable
 - `application_id`: uuid, nullable
 - `kind`: text
 - `occurred_on`: date
@@ -1371,6 +1372,7 @@ File: `data/record_events.ndjson`. Ordered by id.
 
 References:
 - `project_id` refers to `projects`
+- `case_id` refers to `enforcement_cases`
 - `application_id` refers to `applications`
 
 ### redaction_boxes
