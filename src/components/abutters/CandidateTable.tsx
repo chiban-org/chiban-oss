@@ -59,7 +59,14 @@ function CandidateLine({
   return (
     <tr className="border-b align-top">
       <td className="py-2">{row.parcelLabel}</td>
-      <td>{row.owner}</td>
+      <td>
+        {row.owner}
+        {row.noticeTo === null ? null : (
+          <p className="m-0 text-muted-foreground">
+            {`Notice goes to ${row.noticeTo}, the park owner named on the manufactured housing park roster.`}
+          </p>
+        )}
+      </td>
       <td>
         <ul className="m-0 list-none p-0">
           {row.reasons.map((reason) => (

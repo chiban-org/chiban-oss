@@ -1,7 +1,13 @@
 import { NH_ABUTTER_PARAMS } from '@packs/nh/abutters/params'
 import { asc, eq, inArray } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import { abutterListCandidates, abutterListRecipients, applications, parcels } from '@/db/schema'
+import {
+  abutterListCandidates,
+  abutterListRecipients,
+  applications,
+  parcels,
+  parkRosters,
+} from '@/db/schema'
 import { applicantParcelIds } from '@/features/abutters/applicantParcels'
 import { openIncomplete } from '@/features/abutters/draft'
 import { type NoticeCostSummary, noticeCostSummary } from '@/features/abutters/noticeCosts'
@@ -24,6 +30,7 @@ export interface CandidateRow {
   parcelId: string
   parcelLabel: string
   owner: string
+  noticeTo: string | null
   reasons: string[]
   staffSelected: boolean
   excluded: boolean
@@ -173,12 +180,21 @@ async function candidateRows(tx: Tx, listId: string): Promise<CandidateRow[]> {
           .from(parcels)
           .where(inArray(parcels.id, ids))
   const ownerOf = new Map(owners.map((o) => [o.id, o.owner ?? 'Owner not on record']))
+  const parks =
+    ids.length === 0
+      ? []
+      : await tx
+          .select({ parcelId: parkRosters.parcelId, ownerName: parkRosters.ownerName })
+          .from(parkRosters)
+          .where(inArray(parkRosters.parcelId, ids))
+  const parkOwnerOf = new Map(parks.map((p) => [p.parcelId, p.ownerName]))
   const built = rows.map((r) => {
     const reasons = r.reasons as Candidate['reasons']
     return {
       parcelId: r.parcelId,
       parcelLabel: labels.get(r.parcelId) ?? 'Parcel',
       owner: ownerOf.get(r.parcelId) ?? 'Owner not on record',
+      noticeTo: parkOwnerOf.get(r.parcelId) ?? null,
       reasons: reasonLines(reasons),
       staffSelected: reasons.some((x) => x.kind === 'staff_selected'),
       excluded: r.excluded,

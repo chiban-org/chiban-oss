@@ -12,6 +12,7 @@ const candidate = (overrides: Partial<CandidateRow>): CandidateRow => ({
   parcelId: 'p1',
   parcelLabel: '009002000000',
   owner: 'Wren, Isolde',
+  noticeTo: null,
   reasons: ['Touches the property'],
   staffSelected: false,
   excluded: false,
@@ -36,6 +37,25 @@ const recipient = (overrides: Partial<RecipientView>): RecipientView => ({
 })
 
 describe('CandidateTable', () => {
+  it('a park parcel keeps its landowner and says notice goes to the park owner', () => {
+    render(
+      <CandidateTable
+        rows={[
+          candidate({
+            owner: 'Alder Land Trust',
+            noticeTo: 'Heron Park LLC',
+          }),
+        ]}
+      />,
+    )
+    expect(screen.queryByText('Alder Land Trust')).not.toBeNull()
+    expect(
+      screen.queryByText(
+        'Notice goes to Heron Park LLC, the park owner named on the manufactured housing park roster.',
+      ),
+    ).not.toBeNull()
+  })
+
   it('CandidateTable lists staff selections first', () => {
     render(
       <CandidateTable

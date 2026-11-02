@@ -1,4 +1,6 @@
+import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { parcels } from '@/db/schema'
 import {
   correctRecipient,
   decideTenant,
@@ -79,6 +81,51 @@ describe('a decided park tenant', () => {
       needsDecision: false,
       decisionText: 'Counts as an abutter: Roster shows unit 4 adjoins the lot',
     })
+  })
+})
+
+describe('a park parcel among the candidates', () => {
+  it('keeps the landowner of record and names the park owner who gets notice', async () => {
+    const parkParcel = lw.ids.SW ?? ''
+    const saved = await upsertPark(
+      handle.db,
+      world.staff,
+      {
+        parcelId: parkParcel,
+        parkName: 'Heron Park',
+        ownerName: 'Heron Park LLC',
+        ownerMailingAddress: '1 Heron Road, Alder Pond NH',
+        tenants: [
+          {
+            tenantId: 's4',
+            name: 'Lee Marsh',
+            mailingAddress: '4 Heron Road',
+            siteLabel: 'Site 4',
+          },
+        ],
+        asOf: '2027-02-01' as CivilDate,
+      },
+      signal,
+    )
+    expect(saved.ok).toBe(true)
+    const made = await generateList(
+      handle.db,
+      world.staff,
+      { applicationId: lw.applicationId },
+      signal,
+      LIST_NOW,
+    )
+    if (!made.ok) throw new Error('generate')
+    const view = await loadListView(handle.db, world.staff, made.value.listId, signal)
+    const row = view?.candidates.find((c) => c.parcelId === parkParcel)
+    const [landowner] = await handle.db
+      .select({ owner: parcels.ownerName })
+      .from(parcels)
+      .where(eq(parcels.id, parkParcel))
+    expect(row?.owner).toBe(landowner?.owner)
+    expect(row).toMatchObject({ noticeTo: 'Heron Park LLC' })
+    const other = view?.candidates.find((c) => c.parcelId !== parkParcel)
+    expect(other).toMatchObject({ noticeTo: null })
   })
 })
 
