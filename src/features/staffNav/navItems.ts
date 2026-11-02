@@ -11,7 +11,6 @@ type NavAccess =
   | { kind: 'open' }
   | { kind: 'anyCapability'; capabilities: readonly Capability[] }
   | { kind: 'allCapabilities'; capabilities: readonly Capability[] }
-  | { kind: 'fullRecordAccess' }
   | { kind: 'reviewer' }
   | { kind: 'fullRecordAccessOrReviewer' }
 
@@ -31,7 +30,7 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
     label: 'Counter',
     access: { kind: 'allCapabilities', capabilities: ['permit.issue', 'payment.collect'] },
   },
-  { href: '/staff/queue', label: 'Queue', access: { kind: 'fullRecordAccess' } },
+  { href: '/staff/queue', label: 'Queue', access: { kind: 'fullRecordAccessOrReviewer' } },
   { href: '/staff/reviews', label: 'Reviews', access: { kind: 'reviewer' } },
   {
     href: '/staff/applications',
@@ -87,8 +86,6 @@ export function mayUse(item: NavItem, viewer: NavViewer): boolean {
       return access.capabilities.some((c) => viewer.capabilities.has(c))
     case 'allCapabilities':
       return access.capabilities.every((c) => viewer.capabilities.has(c))
-    case 'fullRecordAccess':
-      return hasRecordAccess(viewer.roles)
     case 'reviewer':
       return viewer.roles.includes('reviewer')
     case 'fullRecordAccessOrReviewer':

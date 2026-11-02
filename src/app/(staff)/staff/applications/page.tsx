@@ -1,8 +1,11 @@
 import Link from 'next/link'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { listApplicationsForViewer } from '@/features/applications/listForViewer'
 import { stateLabel } from '@/features/applications/stateLabel'
 import type { CoreState } from '@/features/applications/states'
 import { displayIdsFor } from '@/features/parcels/displayId'
+import { mayOpen } from '@/features/staffNav/navItems'
+import { loadNavViewer } from '@/features/staffNav/viewer'
 import { requireStaffContext } from '@/server/requireStaff'
 
 const PAGE_SIZE = 25
@@ -14,6 +17,9 @@ interface Props {
 export default async function StaffApplicationsPage({ searchParams }: Props) {
   const { cursor } = await searchParams
   const ctx = await requireStaffContext()
+  if (!mayOpen('/staff/applications', await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
+    return <NoPermission title="Applications" action="see applications" />
+  }
   const page = await listApplicationsForViewer(
     ctx.db,
     ctx.actor,

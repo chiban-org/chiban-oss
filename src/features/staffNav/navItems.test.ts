@@ -41,11 +41,11 @@ describe('staff navigation', () => {
     expect(labels).toContain('Account')
   })
 
-  it('shows a reviewer reviews and applications but not the work queue or the day list', () => {
+  it('shows a reviewer reviews, applications and the queue but not the day list', () => {
     const labels = labelsFor('reviewer')
     expect(labels).toContain('Reviews')
     expect(labels).toContain('Applications')
-    expect(labels).not.toContain('Queue')
+    expect(labels).toContain('Queue')
     expect(labels).not.toContain('My day')
   })
 

@@ -1,8 +1,8 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import { GraphStubNotice } from '@/components/inspections/GraphStubNotice'
 import { RequestForm } from '@/components/inspections/RequestForm'
 import { ScheduleBoardClient } from '@/components/inspections/ScheduleBoardClient'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -29,7 +29,7 @@ export default async function ScheduleBoardPage({
   const { number = '', reinspect = '' } = await searchParams
   const ctx = await requireStaffContext()
   const loaded = await loadScheduleBoard(ctx.db, ctx.actor, ctx.signal)
-  if (!loaded.ok) notFound()
+  if (!loaded.ok) return <NoPermission title="Inspections" action="schedule inspections" />
   const board = loaded.value
   const target =
     number.trim() === ''

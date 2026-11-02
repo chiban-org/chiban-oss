@@ -1,9 +1,12 @@
 import Link from 'next/link'
 import { QueueTable } from '@/components/queue/QueueTable'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { CORE_STATES, type CoreState } from '@/features/applications/states'
 import { hasCapability } from '@/features/authz/capabilities'
 import { listWorkQueue } from '@/features/queue/workQueue'
 import { listReviewerChoices } from '@/features/reviews/reviewerView'
+import { mayOpen } from '@/features/staffNav/navItems'
+import { loadNavViewer } from '@/features/staffNav/viewer'
 import { requireStaffContext } from '@/server/requireStaff'
 import { assignReviewerAction } from '../reviews/actions'
 
@@ -83,6 +86,9 @@ function Filters({ params }: { params: SearchParams }) {
 export default async function QueuePage({ searchParams }: { searchParams: Promise<SearchParams> }) {
   const params = await searchParams
   const ctx = await requireStaffContext()
+  if (!mayOpen('/staff/queue', await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
+    return <NoPermission title="Work queue" action="see the work queue" />
+  }
   const states = stateFilter(params.state)
   const queue = await listWorkQueue(
     ctx.db,

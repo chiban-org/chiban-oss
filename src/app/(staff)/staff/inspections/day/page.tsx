@@ -1,6 +1,6 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
 import { DayList } from '@/components/inspections/DayList'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { listInspectors } from '@/features/inspections/availability'
 import { getDayList } from '@/features/inspections/dayList'
 import { managesAllInspectors } from '@/features/inspections/visibility'
@@ -33,7 +33,7 @@ export default async function InspectorDayPage({
   const inspectorUserId =
     params.inspector !== undefined && isUuid(params.inspector) ? params.inspector : ctx.actor.userId
   const list = await getDayList(ctx.db, ctx.actor, { inspectorUserId, date }, ctx.signal)
-  if (!list.ok) notFound()
+  if (!list.ok) return <NoPermission title="My day" action="see this inspector's day" />
   const inspectors = managesAllInspectors(ctx.actor) ? await listInspectors(ctx.db, ctx.signal) : []
   return (
     <main className="public-shell mx-auto max-w-xl space-y-4">
