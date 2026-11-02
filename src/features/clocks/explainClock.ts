@@ -13,6 +13,8 @@ export const START_EVENT_LABELS: Record<string, string> = {
   regional_impact_notice_mailed: 'Regional impact notice mailed',
   order_served: 'Order served',
   judgment_entered: 'Judgment entered',
+  rtk_request_received: 'Request received',
+  rtk_time_statement: 'Time statement made',
 }
 
 export interface ClockExplanation {

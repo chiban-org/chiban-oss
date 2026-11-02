@@ -1,5 +1,6 @@
 import { NH_RTK_EXEMPTIONS, OTHER_LAW_EXEMPTION_KEY } from '@packs/nh/rtkExemptions'
 import { describe, expect, it } from 'vitest'
+import { START_EVENT_LABELS } from '@/features/clocks/explainClock'
 import { computeSubjectDue } from '@/features/clocks/subjectDue'
 import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
@@ -65,5 +66,16 @@ describe('right-to-know rules', () => {
     expect(
       NH_RTK_EXEMPTIONS.filter((e) => e.paragraph.startsWith('X')).map((e) => e.paragraph),
     ).toEqual(['X', 'XI', 'XII', 'XIII'])
+  })
+
+  it('names the exemptions people cite most in plain words', () => {
+    const label = (p: string) => NH_RTK_EXEMPTIONS.find((e) => e.paragraph === p)?.label
+    expect(label('I')).toBe('Grand and petit jury records')
+    expect(label('XII')).toBe('Attorney-client privileged communications and attorney work product')
+  })
+
+  it('the request start events have plain labels', () => {
+    expect(START_EVENT_LABELS.rtk_request_received).toBe('Request received')
+    expect(START_EVENT_LABELS.rtk_time_statement).toBe('Time statement made')
   })
 })

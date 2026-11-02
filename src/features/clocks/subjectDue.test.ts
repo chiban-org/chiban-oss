@@ -23,7 +23,7 @@ describe('stated date rules', () => {
   it('stated date before the statement date is rejected', () => {
     expect(() =>
       computeSubjectDue(stated(), d('2027-07-02'), ctx(), { statedDue: d('2027-07-01') }),
-    ).toThrow(AppError)
+    ).toThrow(/on or after the statement/)
   })
 
   it('stated date on the statement date is accepted and kept as the due date', () => {
@@ -36,7 +36,9 @@ describe('stated date rules', () => {
   })
 
   it('a stated date rule without a stated date is rejected', () => {
-    expect(() => computeSubjectDue(stated(), d('2027-07-02'), ctx())).toThrow(AppError)
+    expect(() => computeSubjectDue(stated(), d('2027-07-02'), ctx())).toThrow(
+      /on or after the statement/,
+    )
   })
 })
 
