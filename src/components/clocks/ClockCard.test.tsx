@@ -3,6 +3,7 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { ClockCard } from '@/components/clocks/ClockCard'
 import type { ClockExplanation } from '@/features/clocks/explainClock'
+import { findIsoDates } from '@/test/leaks'
 import type { CivilDate } from '@/types/civilDate'
 
 afterEach(cleanup)
@@ -57,7 +58,7 @@ describe('ClockCard', () => {
     expect(within(card).getByText('Building permit decision deadline')).toBeTruthy()
     expect(within(card).getByText(/nh\.bp\.decision version 1/)).toBeTruthy()
     expect(within(card).getByText(/Application completed/)).toBeTruthy()
-    expect(within(card).getByText(/30 calendar days after 2027-03-01/)).toBeTruthy()
+    expect(within(card).getByText(/30 calendar days after March 1, 2027/)).toBeTruthy()
     expect(within(card).getByText(/states no consequence for a missed deadline/)).toBeTruthy()
     expect(within(card).getByText(/Court order extends the review/)).toBeTruthy()
     expect(within(card).getByText(/Superior Court order 2027-03-10/)).toBeTruthy()
@@ -72,6 +73,13 @@ describe('ClockCard', () => {
     expect(screen.getByText('April 14, 2027', { selector: 'strong' })).toBeTruthy()
     expect(screen.getByText(/Adjusted from March 31, 2027/)).toBeTruthy()
     expect(screen.getByText(/new due date April 14, 2027/)).toBeTruthy()
+  })
+
+  it('writes the counting method and rolled-forward date in words', () => {
+    render(<ClockCard clock={{ ...BASE, adjustments: [], rolledFrom: d('2027-03-27') }} />)
+    const text = screen.getByRole('article').textContent
+    expect(text).toContain('Rolled forward from March 27, 2027.')
+    expect(findIsoDates(text)).toEqual([])
   })
 
   it('says who acts and whether the clock can be extended', () => {
@@ -128,6 +136,6 @@ describe('ClockCard', () => {
         }}
       />,
     )
-    expect(screen.getByText(/Rolled forward from 2027-07-04/)).toBeTruthy()
+    expect(screen.getByText(/Rolled forward from July 4, 2027/)).toBeTruthy()
   })
 })

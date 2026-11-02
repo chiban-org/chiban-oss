@@ -5,6 +5,8 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { describeCodeEdition } from '@/features/building/codeEdition'
+import { humanizeIsoDates } from '@/lib/formatDate'
+import { findIsoDates } from '@/test/leaks'
 import type { CivilDate } from '@/types/civilDate'
 
 vi.mock('./actions', () => ({ recordCodeEditionAction: () => Promise.resolve({ ok: true }) }))
@@ -38,11 +40,20 @@ describe('CodeEditionPanel', () => {
         <CodeEditionPanel view={view()} />
       </CsrfProvider>,
     )
-    const label = verified?.label ?? ''
+    const label = humanizeIsoDates(verified?.label ?? '')
     const headline = screen.getByRole('region', { name: 'Code edition' }).querySelectorAll('strong')
     expect(Array.from(headline).map((e) => e.textContent)).toEqual([label])
     const list = (verified?.components ?? []).map((c) => `${c.code} ${c.edition}`).join(', ')
     expect(screen.queryByText(list)).toBeNull()
+  })
+
+  it('prints no ISO date in the headline or the election options', () => {
+    const { container } = render(
+      <CsrfProvider token="t">
+        <CodeEditionPanel view={view()} />
+      </CsrfProvider>,
+    )
+    expect(findIsoDates(container.textContent)).toEqual([])
   })
 
   it('labels the applicant election field in words', () => {

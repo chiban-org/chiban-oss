@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField } from '@/components/staff/fields'
 import type { ApplicationReviewer } from '@/features/reviews/reviewerView'
+import { reviewStatusLabel } from '@/features/reviews/statusLabels'
 import { assignReviewerAction, removeReviewerAction } from '../../reviews/actions'
 
 interface Props {
@@ -18,7 +19,7 @@ export function ReviewersPanel({ applicationId, reviewers, choices, canAssign }:
       <ul className="space-y-2">
         {reviewers.map((r) => (
           <li key={r.assignmentId}>
-            {`${r.name}, ${r.status.replaceAll('_', ' ')}`}
+            {`${r.name}, ${reviewStatusLabel(r.status)}`}
             {canAssign ? (
               <ActionForm action={removeReviewerAction} submitLabel="Remove reviewer">
                 <input type="hidden" name="assignmentId" value={r.assignmentId} />

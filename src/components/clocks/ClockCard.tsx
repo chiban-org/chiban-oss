@@ -1,6 +1,6 @@
 import { StatusChip } from '@/components/StatusChip'
 import type { ClockExplanation } from '@/features/clocks/explainClock'
-import { formatCivilDate } from '@/lib/formatDate'
+import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 
 const WHOSE: Record<ClockExplanation['whose'], string> = {
   official: 'Municipal official',
@@ -81,12 +81,14 @@ export function ClockCard({ clock }: { clock: ClockExplanation & { clockId: stri
         <dt className="font-medium">Starts</dt>
         <dd>{`${clock.startEvent} on ${formatCivilDate(clock.startDate)}`}</dd>
         <dt className="font-medium">Counting</dt>
-        <dd>{clock.countingMethod}</dd>
+        <dd>{humanizeIsoDates(clock.countingMethod)}</dd>
         <dt className="font-medium">Due</dt>
         <dd>
           <strong>{formatCivilDate(clock.currentDue.value)}</strong>
           {note === null ? null : ` ${note}`}
-          {clock.rolledFrom === null ? null : ` Rolled forward from ${clock.rolledFrom}.`}
+          {clock.rolledFrom === null
+            ? null
+            : ` Rolled forward from ${formatCivilDate(clock.rolledFrom)}.`}
         </dd>
         <dt className="font-medium">Who acts</dt>
         <dd>{WHOSE[clock.whose]}</dd>

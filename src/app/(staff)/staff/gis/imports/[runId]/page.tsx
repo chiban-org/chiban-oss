@@ -3,7 +3,9 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { RunReport } from '@/components/staff/RunReport'
 import { importRuns } from '@/db/schema'
+import { importRunSummary } from '@/features/gis/import/runText'
 import type { ImportRunReport } from '@/features/gis/import/types'
+import { townTimeZone } from '@/features/town/timeZone'
 import { requireStaffContext } from '@/server/requireStaff'
 
 interface RunPageProps {
@@ -21,7 +23,7 @@ export default async function StaffRunReportPage({ params }: RunPageProps) {
   return (
     <main>
       <h1>Import run</h1>
-      <p>{`${run.layerKey} from ${run.adapter}, started ${run.startedAt.toISOString()}. Status: ${run.status}.`}</p>
+      <p>{importRunSummary(run, await townTimeZone(ctx.db, ctx.signal))}</p>
       {run.status === 'failed' ? <p role="alert">{`Error: ${run.error ?? 'Unknown'}`}</p> : null}
       {run.report === null ? null : <RunReport report={run.report as ImportRunReport} />}
       <p className="mt-4">

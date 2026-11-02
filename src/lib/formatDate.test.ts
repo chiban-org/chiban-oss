@@ -1,5 +1,17 @@
 import { describe, expect, it } from 'vitest'
-import { formatCivilDate, formatInstant, formatInstantDate } from './formatDate'
+import { formatCivilDate, formatInstant, formatInstantDate, humanizeIsoDates } from './formatDate'
+
+describe('humanizeIsoDates', () => {
+  it('rewrites every ISO date inside a sentence and leaves other text alone', () => {
+    expect(
+      humanizeIsoDates('30 calendar days after 2026-11-02 and before 2026-12-02 (RSA 21:35 I).'),
+    ).toBe('30 calendar days after November 2, 2026 and before December 2, 2026 (RSA 21:35 I).')
+  })
+
+  it('leaves an impossible date as written', () => {
+    expect(humanizeIsoDates('see 2026-13-45')).toBe('see 2026-13-45')
+  })
+})
 
 describe('formatCivilDate', () => {
   it('writes the month in words without shifting the day', () => {

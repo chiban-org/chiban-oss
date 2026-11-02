@@ -9,6 +9,7 @@ import {
 } from '@/db/schema'
 import { type GateEvaluator, registerPackGate } from '@/features/gates/registry'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { formatCivilDate } from '@/lib/formatDate'
 
 export const CODE_EDITION_GATE_KEY = 'nh.bp.code_edition_recorded'
 export const REGIONAL_IMPACT_GATE_KEY = 'nh.bp.regional_impact'
@@ -74,7 +75,10 @@ const regionalImpactCleared: GateEvaluator = async (tx, app, today) => {
     .orderBy(desc(clocks.createdAt))
     .limit(1)
   if (clock !== undefined && today <= clock.currentDue) {
-    return { status: 'blocked', reason: `Comment period open through ${clock.currentDue}.` }
+    return {
+      status: 'blocked',
+      reason: `Comment period open through ${formatCivilDate(clock.currentDue)}.`,
+    }
   }
   return { status: 'pass' }
 }

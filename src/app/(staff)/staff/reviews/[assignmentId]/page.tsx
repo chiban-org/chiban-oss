@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { AreaField } from '@/components/staff/fields'
 import { getAssignmentView } from '@/features/reviews/reviewerView'
+import { reviewStatusLabel } from '@/features/reviews/statusLabels'
 import { getTownSettings } from '@/features/town/settings'
 import { formatInstant } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -27,7 +28,7 @@ export default async function ReviewPage({
   return (
     <main className="space-y-6">
       <h1>{`Review ${view.number}`}</h1>
-      <p>{`Status: ${view.status.replaceAll('_', ' ')}`}</p>
+      <p>{`Status: ${reviewStatusLabel(view.status)}`}</p>
       <section aria-label="Documents">
         <h2>Documents</h2>
         {view.documents.length === 0 ? <p>No documents are shared with reviewers.</p> : null}

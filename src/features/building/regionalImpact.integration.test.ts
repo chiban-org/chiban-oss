@@ -174,7 +174,7 @@ describe('regional impact notices', () => {
     expect(clock).toMatchObject({ computedDue: '2027-07-06', rolledFrom: '2027-07-04' })
     expect((await gate(app.applicationId, '2027-07-06'))?.outcome).toEqual({
       status: 'blocked',
-      reason: 'Comment period open through 2027-07-06.',
+      reason: 'Comment period open through July 6, 2027.',
     })
     expect((await gate(app.applicationId, '2027-07-07'))?.effective).toBe('pass')
   })

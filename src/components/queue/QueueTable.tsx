@@ -13,8 +13,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { stateLabel } from '@/features/applications/stateLabel'
+import { applicationStatusText } from '@/features/applications/statusText'
 import type { WorkQueueRow } from '@/features/queue/workQueue'
+import { reviewStatusLabel } from '@/features/reviews/statusLabels'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import type { ActionResult } from '@/server/actionRunner'
@@ -122,7 +123,15 @@ export function QueueTable({ rows, reviewers, assign, navigate }: Props) {
                   {`${row.typeLabel}${row.parcelDisplayId === null ? '' : `, ${row.parcelDisplayId}`}`}
                 </span>
               </td>
-              <td>{`${stateLabel(row.state)}${row.substep === null ? '' : `, ${row.substep.replaceAll('_', ' ')}`}`}</td>
+              <td>
+                {applicationStatusText(
+                  row.state,
+                  row.substep,
+                  row.substep === null || row.substepLabel === null
+                    ? []
+                    : [{ key: row.substep, label: row.substepLabel }],
+                )}
+              </td>
               <td>
                 <DueChip row={row} />
               </td>
@@ -131,7 +140,7 @@ export function QueueTable({ rows, reviewers, assign, navigate }: Props) {
                 {row.reviewers.length === 0
                   ? 'Unassigned'
                   : row.reviewers
-                      .map((r) => `${r.name} (${r.status.replaceAll('_', ' ')})`)
+                      .map((r) => `${r.name} (${reviewStatusLabel(r.status)})`)
                       .join(', ')}
               </td>
               <td className="space-y-1">

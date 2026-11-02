@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { listApplicationsForViewer } from '@/features/applications/listForViewer'
-import { stateLabel } from '@/features/applications/stateLabel'
 import type { CoreState } from '@/features/applications/states'
+import { applicationStatusText } from '@/features/applications/statusText'
+import { substepLabelsFor } from '@/features/applications/substepLabels'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
@@ -29,6 +30,11 @@ export default async function StaffApplicationsPage({ searchParams }: Props) {
   const display = await displayIdsFor(
     ctx.db,
     page.rows.map((r) => r.parcelId),
+  )
+  const substepLabels = await substepLabelsFor(
+    ctx.db,
+    page.rows.map((r) => r.id),
+    ctx.signal,
   )
   return (
     <main>
@@ -59,7 +65,15 @@ export default async function StaffApplicationsPage({ searchParams }: Props) {
                     {display.get(row.parcelId) ?? 'No map-lot ID'}
                   </Link>
                 </td>
-                <td>{`${stateLabel(row.state as CoreState)}${row.substep === null ? '' : `, ${row.substep.replaceAll('_', ' ')}`}`}</td>
+                <td>
+                  {applicationStatusText(
+                    row.state as CoreState,
+                    row.substep,
+                    row.substep === null
+                      ? []
+                      : [{ key: row.substep, label: substepLabels.get(row.id) ?? '' }],
+                  )}
+                </td>
               </tr>
             ))}
           </tbody>

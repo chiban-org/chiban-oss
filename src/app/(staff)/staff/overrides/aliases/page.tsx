@@ -4,6 +4,7 @@ import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
 import { OverridesTabs } from '@/components/staff/OverridesTabs'
 import { listAliasOverrides, type OverrideStatus } from '@/features/parcels/aliasOverrides'
+import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { createAliasOverrideAction } from '../../parcels/[parcelId]/actions'
 
@@ -57,7 +58,7 @@ export default async function StaffAliasOverridesPage() {
                     : row.replaced.displayId || row.replaced.parcelId}
                 </td>
                 <td>{row.reason}</td>
-                <td>{row.expiresOn ?? 'Never'}</td>
+                <td>{row.expiresOn === null ? 'Never' : formatCivilDate(row.expiresOn)}</td>
                 <td>
                   <StatusChip status={CHIP[row.status].chip} label={CHIP[row.status].label} />
                 </td>

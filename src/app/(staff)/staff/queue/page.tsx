@@ -3,6 +3,7 @@ import { QueueTable } from '@/components/queue/QueueTable'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { CORE_STATES, type CoreState } from '@/features/applications/states'
 import { hasCapability } from '@/features/authz/capabilities'
+import { stateFilterOptions } from '@/features/queue/stateFilterOptions'
 import { listWorkQueue } from '@/features/queue/workQueue'
 import { listReviewerChoices } from '@/features/reviews/reviewerView'
 import { mayOpen } from '@/features/staffNav/navItems'
@@ -57,9 +58,9 @@ function Filters({ params }: { params: SearchParams }) {
           className="rounded-md border px-3 py-2"
         >
           <option value="">Not draft</option>
-          {CORE_STATES.map((s) => (
-            <option key={s} value={s}>
-              {s.replaceAll('_', ' ')}
+          {stateFilterOptions().map(([value, label]) => (
+            <option key={value} value={value}>
+              {label}
             </option>
           ))}
         </select>

@@ -3,6 +3,8 @@ import { TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
 import { IMPORT_EXCEPTION_KINDS, type ImportExceptionKind } from '@/features/gis/exceptionKinds'
 import { listExceptions } from '@/features/gis/exceptionsList'
+import { exceptionDetailText } from '@/features/gis/import/runText'
+import { townTimeZone } from '@/features/town/timeZone'
 import { requireStaffContext } from '@/server/requireStaff'
 import { acceptAllOwnerChangesAction, acceptHeldRowAction, dismissExceptionAction } from './actions'
 
@@ -29,6 +31,7 @@ export default async function StaffExceptionsPage({ searchParams }: ExceptionsPa
     { status, ...(isKind(query.kind) ? { kind: query.kind } : {}) },
     ctx.signal,
   )
+  const timeZone = await townTimeZone(ctx.db, ctx.signal)
   const heldRuns = [
     ...new Set(rows.filter((r) => r.kind === 'owner_changed').map((r) => r.lastSeenRunId)),
   ]
@@ -86,7 +89,9 @@ export default async function StaffExceptionsPage({ searchParams }: ExceptionsPa
           {rows.map((row) => (
             <li key={row.id} className="py-4">
               <p className="font-semibold">{`${row.kind.replaceAll('_', ' ')}: ${row.rowKey}`}</p>
-              <p className="text-sm text-muted-foreground">{`${row.detail}. First seen ${row.createdAt.toISOString()}.`}</p>
+              <p className="text-sm text-muted-foreground">
+                {exceptionDetailText(row.detail, row.createdAt, timeZone)}
+              </p>
               {row.status !== 'open' ? (
                 <p className="text-sm">{`Status: ${row.status.replaceAll('_', ' ')}${row.dispositionReason === null ? '' : `. Reason: ${row.dispositionReason}`}`}</p>
               ) : (

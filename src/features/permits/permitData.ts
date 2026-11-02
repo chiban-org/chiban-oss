@@ -16,6 +16,7 @@ import { displayIdsFor } from '@/features/parcels/displayId'
 import type { MergeContext } from '@/features/templates/renderTemplate'
 import type { TemplateBody } from '@/features/templates/templateSchema'
 import { getTownSettings } from '@/features/town/settings'
+import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 
 const EXPIRATION_RULE_KEY = 'town.bp.expiration'
@@ -81,7 +82,7 @@ async function expiresOn(db: DbOrTx, applicationId: string): Promise<string> {
     )
     .orderBy(desc(clocks.createdAt))
     .limit(1)
-  return clock?.currentDue ?? NOT_APPLICABLE
+  return clock === undefined ? NOT_APPLICABLE : formatCivilDate(clock.currentDue)
 }
 
 async function permitTemplate(
@@ -128,9 +129,9 @@ export async function loadPermitData(
     applicantName: await partyName(db, project.id, 'applicant'),
     contractorName: await partyName(db, project.id, 'contractor'),
     licenseNumber: typeof license === 'string' ? license : '',
-    issuedOn: application.issuedOn ?? '',
+    issuedOn: application.issuedOn === null ? '' : formatCivilDate(application.issuedOn),
     expiresOn: await expiresOn(db, applicationId),
-    conditions: conditions.map((c) => `${c.code}: ${c.textSnapshot}`),
+    conditions: conditions.map((c) => c.textSnapshot),
     codeEdition: edition[0]?.label ?? '',
     feesTotal: formatCents(await feesTotal(db, applicationId)),
     permitTemplate: await permitTemplate(db, application.pins.templates, signal),

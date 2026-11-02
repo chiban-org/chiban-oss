@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { HonestValue } from '@/features/honest/honest'
-import { todayInTimeZone } from '@/types/civilDate'
+import { formatInstantDate } from '@/lib/formatDate'
 
 interface HonestTextProps<T> {
   value: HonestValue<T>
@@ -16,7 +16,7 @@ function Note({ children }: { children: ReactNode }) {
 
 export function HonestText<T>({ value, format, timeZone = DEFAULT_TIME_ZONE }: HonestTextProps<T>) {
   const show = (v: T): ReactNode => (format === undefined ? String(v) : format(v))
-  const day = (iso: string) => todayInTimeZone(timeZone, new Date(iso))
+  const day = (iso: string) => formatInstantDate(new Date(iso), timeZone)
   switch (value.state) {
     case 'known':
       return <span>{show(value.value)}</span>

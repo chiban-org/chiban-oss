@@ -22,7 +22,9 @@ describe('HonestText', () => {
         timeZone="America/New_York"
       />,
     )
-    expect(screen.getByText('Stale: last imported 2027-01-01, older than 90 days')).toBeTruthy()
+    expect(
+      screen.getByText('Stale: last imported January 1, 2027, older than 90 days'),
+    ).toBeTruthy()
     expect(screen.getByText('x')).toBeTruthy()
   })
 
@@ -38,7 +40,7 @@ describe('HonestText', () => {
         timeZone="America/New_York"
       />,
     )
-    expect(screen.getByText(/Last import failed 2027-02-01/)).toBeTruthy()
+    expect(screen.getByText(/Last import failed February 1, 2027/)).toBeTruthy()
     expect(screen.getByText('Last Known Owner')).toBeTruthy()
   })
 

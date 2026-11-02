@@ -6,6 +6,7 @@ import {
   recordRegionalImpactNotice,
 } from '@/features/building/regionalImpact'
 import { renewPermit } from '@/features/building/renewal'
+import { renewedMessage } from '@/features/building/renewalText'
 import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
 import { dateOf, done, INVALID, INVALID_DATE, idOf } from './actionInput'
 
@@ -108,7 +109,7 @@ export async function renewAction(formData: FormData): Promise<ActionResult> {
     if (renewedOn === null) return INVALID_DATE
     const result = await renewPermit(db, actor, { applicationId, renewedOn }, signal)
     return result.ok
-      ? { ok: true, message: `Renewed. The permit now runs to ${result.value.newDue}.` }
+      ? { ok: true, message: renewedMessage(result.value.newDue) }
       : { ok: false, error: errorCopy(result.error) }
   })
 }
