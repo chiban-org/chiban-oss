@@ -1,4 +1,4 @@
-import { count } from 'drizzle-orm'
+import { count, eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
@@ -227,6 +227,40 @@ describe('records screens with the demo seed', () => {
     )
     expect(page).toContain('Add a box to page 1')
     expect(page).toContain('The original is never changed')
+  })
+
+  it('the redact page says where each kind of copy is approved and links there', async () => {
+    await actAs('records')
+    const jobs = await handle.db
+      .select({
+        purpose: redactionJobs.purpose,
+        rtkRequestId: redactionJobs.rtkRequestId,
+        sourceVersionId: redactionJobs.sourceVersionId,
+        recordKind: documents.recordKind,
+        recordId: documents.recordId,
+      })
+      .from(redactionJobs)
+      .innerJoin(documentVersions, eq(documentVersions.id, redactionJobs.sourceVersionId))
+      .innerJoin(documents, eq(documents.id, documentVersions.documentId))
+    const forPublic = jobs.find((j) => j.purpose === 'public')
+    const forRequest = jobs.find((j) => j.rtkRequestId !== null)
+    expect(forPublic?.recordKind).toBe('parcel')
+    const publicPage = await html(
+      RedactPage({
+        params: Promise.resolve({ versionId: forPublic?.sourceVersionId ?? '' }),
+        ...search(),
+      }),
+    )
+    expect(publicPage).toContain(`href="/staff/parcels/${forPublic?.recordId}"`)
+    expect(visibleText(publicPage)).toContain('permission to publish documents')
+    const requestPage = await html(
+      RedactPage({
+        params: Promise.resolve({ versionId: forRequest?.sourceVersionId ?? '' }),
+        ...search({ request: forRequest?.rtkRequestId ?? '' }),
+      }),
+    )
+    expect(requestPage).toContain(`href="/staff/records/requests/${forRequest?.rtkRequestId}"`)
+    expect(visibleText(requestPage)).toContain('is approved under Releases on the')
   })
 
   it('a reviewer gets the permission page or not-found and a resident is sent to sign in', async () => {
