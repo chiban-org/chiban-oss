@@ -7,6 +7,7 @@ export const ENV_PREFIXES_STRICT = [
   'PAGER_',
   'EXPORT_',
   'GHOSTSCRIPT_',
+  'BACKUP_',
 ] as const
 
 export function findUndeclaredKeys(

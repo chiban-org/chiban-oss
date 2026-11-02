@@ -2,6 +2,7 @@ import type { Readable } from 'node:stream'
 import {
   CopyObjectCommand,
   CreateBucketCommand,
+  DeleteBucketCommand,
   DeleteObjectCommand,
   GetObjectCommand,
   HeadBucketCommand,
@@ -61,6 +62,7 @@ export interface ObjectStore {
   ): Promise<void>
   delete(key: string, signal: AbortSignal): Promise<void>
   createBucket(signal: AbortSignal): Promise<void>
+  deleteBucket(signal: AbortSignal): Promise<void>
   bucketExists(signal: AbortSignal): Promise<boolean>
 }
 
@@ -191,6 +193,9 @@ export function createObjectStore(config: ObjectStoreConfig): ObjectStore {
     },
     async createBucket(signal) {
       await server.send(new CreateBucketCommand({ Bucket }), { abortSignal: signal })
+    },
+    async deleteBucket(signal) {
+      await server.send(new DeleteBucketCommand({ Bucket }), { abortSignal: signal })
     },
     async bucketExists(signal) {
       try {

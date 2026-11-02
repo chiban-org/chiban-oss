@@ -18,7 +18,7 @@ export interface RecoveryDeps {
   activeKeyId: string
 }
 
-function connectionEnv(databaseUrl: string): NodeJS.ProcessEnv {
+export function connectionEnv(databaseUrl: string): NodeJS.ProcessEnv {
   const url = new URL(databaseUrl)
   return {
     PATH: env.PATH,

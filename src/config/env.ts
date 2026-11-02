@@ -56,6 +56,8 @@ export const envSchema = z
     MAX_UPLOAD_BYTES: z.coerce.number().int().positive().default(104_857_600),
     PATH: z.string().optional(),
     PG_DUMP_PATH: z.string().min(1).default('pg_dump'),
+    PG_RESTORE_PATH: z.string().min(1).default('pg_restore'),
+    BACKUP_PASSPHRASE: z.string().min(16).optional(),
     EXPORT_WORK_DIR: z.string().min(1).default('/tmp/chiban-export'),
     GHOSTSCRIPT_PATH: z.string().min(1).default('gs'),
     GHOSTSCRIPT_ICC_PROFILE: z.string().min(1).optional(),

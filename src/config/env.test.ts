@@ -89,6 +89,7 @@ describe('strict env prefixes', () => {
       'PAGER_',
       'EXPORT_',
       'GHOSTSCRIPT_',
+      'BACKUP_',
     ])
   })
 

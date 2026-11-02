@@ -107,3 +107,62 @@ The version response includes the image reference, the pack identity, and the mi
 ## Exports
 
 Staff with export permission can request a full export of the town's records from the export page at `/staff/admin/export`. An export is a single archive that includes the data, the uploaded documents, and a description of the format, which is also published in `docs/export-format.md`. Downloads are served through the `s3.APP_DOMAIN` name, so that record must resolve for the download link to work.
+
+## Backups
+
+A backup covers the whole recovery unit in one encrypted file: the database, every file in object storage (except the `exports/` folder, which only holds downloads that can be made again), and the secret keys the application uses to read saved credentials. Nothing readable is left on disk or in the destination.
+
+### Set the passphrase
+
+Set `BACKUP_PASSPHRASE` in `deploy/.env` to a passphrase of at least 16 characters. The scripts refuse to run when it is empty. Keep the passphrase and a copy of `CHIBAN_SECRET_KEYS` somewhere other than the backups themselves, for example in the town's password manager. A backup cannot be opened without its passphrase, and the keys inside the backup are not a substitute for a separate copy.
+
+### Nightly backup
+
+`deploy/backup.sh` writes `deploy/backups/chiban-backup-YYYY-MM-DD.bin`. Run it from cron:
+
+```
+15 2 * * * cd /opt/chiban/deploy && ./backup.sh >> backup.log 2>&1
+```
+
+To send backups to a configured export target instead of the local folder, run `node dist/backup.mjs --target "Target name"` inside the app image. Targets are managed at `/staff/admin/export/targets`.
+
+The tool never deletes old files. Keep several nights, and copy the folder off the host regularly. Prune old files with your own schedule.
+
+### Monthly restore check
+
+A backup that has never been restored is not proven. `deploy/restore-verify.sh` decrypts a backup, restores the database into a temporary database on the same server, copies the files into a temporary bucket, compares every table with the live town, re-hashes every stored document, and then removes the temporary database and bucket. It exits 0 only when everything matches.
+
+Run it right after a fresh backup, because rows that changed since the backup show up as differences. `./backup.sh --verify` does both:
+
+```
+0 4 1 * * cd /opt/chiban/deploy && ./backup.sh --verify >> restore-verify.log 2>&1
+```
+
+To check an older file, run `./restore-verify.sh backups/chiban-backup-YYYY-MM-DD.bin`. The report lists any table that differs.
+
+### Restoring for real
+
+1. On the new host, install the stack as described above with the same `CHIBAN_SECRET_KEYS` and `CHIBAN_ACTIVE_KEY_ID` (they are also inside the backup in `secrets.json`), but start only `postgres` and `minio`.
+2. Decrypt the backup. The passphrase is typed at the terminal:
+
+   ```
+   mkdir -p restore
+   docker compose run --rm --no-deps -v "$PWD/backups:/in" -v "$PWD/restore:/out" app node dist/chiban-recover.mjs decrypt --in /in/chiban-backup-YYYY-MM-DD.bin --out /out/backup.tar
+   tar -xf restore/backup.tar -C restore
+   ```
+
+3. Restore the database:
+
+   ```
+   docker compose exec -T postgres pg_restore --clean --if-exists --no-owner --no-privileges -U chiban -d chiban < restore/database.dump
+   ```
+
+4. Copy the files back into the bucket:
+
+   ```
+   docker compose run --rm --no-deps -v "$PWD/restore/objects:/objects" --entrypoint mc createbucket mirror /objects local/chiban
+   ```
+
+5. Delete the `restore` folder, which now holds readable copies, and start the application with `docker compose up -d`.
+
+The mirroring advice for the object storage image above applies to backups too: keep a mirrored copy of the pinned images, so a restore does not depend on a registry being reachable.
