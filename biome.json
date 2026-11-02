@@ -6,7 +6,17 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["**", "!**/dist/**", "!**/build/**", "!**/coverage/**", "!**/node_modules/**"]
+    "includes": [
+      "**",
+      "!**/dist/**",
+      "!**/.next/**",
+      "!.claude",
+      "!.worktrees",
+      "!next-env.d.ts",
+      "!**/build/**",
+      "!**/coverage/**",
+      "!**/node_modules/**"
+    ]
   },
   "formatter": {
     "enabled": true,

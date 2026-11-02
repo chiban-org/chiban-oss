@@ -7,7 +7,17 @@ import tseslint from 'typescript-eslint'
 
 export default tseslint.config(
   {
-    ignores: ['dist/**', 'build/**', 'coverage/**', 'node_modules/**', '*.config.*'],
+    ignores: [
+      '.next/**',
+      '.claude/**',
+      '.worktrees/**',
+      'next-env.d.ts',
+      'dist/**',
+      'build/**',
+      'coverage/**',
+      'node_modules/**',
+      '*.config.*',
+    ],
   },
 
   ...tseslint.configs.recommendedTypeChecked,
@@ -103,7 +113,7 @@ export default tseslint.config(
   },
 
   {
-    files: ['src/utils/env.ts'],
+    files: ['src/config/env.ts', 'vitest.setup.ts', 'vitest.globalSetup.ts'],
     rules: {
       'no-restricted-properties': 'off',
       'no-console': 'off',

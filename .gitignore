@@ -8,3 +8,6 @@ coverage/
 CLAUDE.local.md
 .harness/ledger.jsonl
 .next/
+next-env.d.ts
+*.tsbuildinfo
+.worktrees/
