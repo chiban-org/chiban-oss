@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/staff/applications', label: 'Applications' },
   { href: '/staff/payments', label: 'Payments' },
   { href: '/staff/boards/packets', label: 'Board packets' },
+  { href: '/staff/records/preservation', label: 'Records' },
   { href: '/staff/reports/cash-receipts', label: 'Reports' },
   { href: '/staff/map', label: 'Map' },
   { href: '/staff/gis/imports', label: 'Imports' },

@@ -4,29 +4,38 @@ import { ROLES } from '@/constants/roles'
 import {
   appeals,
   applications,
+  boardPacketLinks,
   clocks,
   codeEditionRecords,
+  documentVersions,
   importExceptions,
   ledgerEntries,
+  legalHolds,
   parcels,
   paymentAttempts,
+  reviewComments,
   users,
 } from '@/db/schema'
 import { getStaffApplicationView } from '@/features/applications/staffApplicationView'
+import type { Actor } from '@/features/auth/actor'
 import { loadActor } from '@/features/auth/actor'
 import { listClockAdjustments } from '@/features/clocks/clockOverrides'
+import { listContractorProjects } from '@/features/contractors/dashboard'
 import { DEMO_USERS, seedDemo } from '@/features/demo/seedDemo'
 import { DEMO_SEED_NOW } from '@/features/demo/seedParcels'
 import { listFeeOverrides } from '@/features/fees/feeOverrides'
+import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { listAliasOverrides } from '@/features/parcels/aliasOverrides'
 import { getPublicParcelView } from '@/features/parcels/publicParcelView'
 import { getStaffParcelView } from '@/features/parcels/staffParcelView'
 import { listUnresolvedLinks } from '@/features/parcels/unresolvedList'
+import { listPreservationIncomplete } from '@/features/preservation/preserve'
 import { getTownSettings } from '@/features/town/settings'
 import { makeTestDb, type TestDb } from '@/test/db'
 
 let handle: TestDb
 const signal = new AbortController().signal
+const SEED_DEPS = { records: { mail: createMemoryTransport() } }
 
 beforeAll(async () => {
   handle = await makeTestDb()
@@ -67,13 +76,27 @@ async function counts(): Promise<Record<string, number>> {
     union all select 'processor_accounts', count(*)::int from processor_accounts
     union all select 'license_checks', count(*)::int from license_checks
     union all select 'audit_log', count(*)::int from audit_log
+    union all select 'documents', count(*)::int from documents
+    union all select 'document_versions', count(*)::int from document_versions
+    union all select 'files', count(*)::int from files
+    union all select 'preservation_records', count(*)::int from preservation_records
+    union all select 'document_text', count(*)::int from document_text
+    union all select 'retention_assignments', count(*)::int from retention_assignments
+    union all select 'legal_holds', count(*)::int from legal_holds
+    union all select 'review_assignments', count(*)::int from review_assignments
+    union all select 'review_comments', count(*)::int from review_comments
+    union all select 'application_snapshots', count(*)::int from application_snapshots
+    union all select 'board_packets', count(*)::int from board_packets
+    union all select 'board_packet_links', count(*)::int from board_packet_links
+    union all select 'contractor_claims', count(*)::int from contractor_claims
+    union all select 'notification_outbox', count(*)::int from notification_outbox
   `)
   return Object.fromEntries(result.rows.map((r) => [r.t, r.n]))
 }
 
 describe('seedDemo', () => {
   it('creates Alder Pond, default grants, and one user per role', async () => {
-    const report = await seedDemo(handle.db, signal)
+    const report = await seedDemo(handle.db, signal, SEED_DEPS)
     expect(report.usersCreated).toBe(ROLES.length)
     const town = await getTownSettings(handle.db, signal)
     expect(town).toEqual({
@@ -111,7 +134,7 @@ describe('seedDemo', () => {
 
   it('creates nothing and fails nothing on the second run', async () => {
     const before = await counts()
-    const report = await seedDemo(handle.db, signal)
+    const report = await seedDemo(handle.db, signal, SEED_DEPS)
     expect(await counts()).toEqual(before)
     expect(report.usersCreated).toBe(0)
   })
@@ -169,10 +192,10 @@ describe('seedDemo', () => {
 
   it('seed twice leaves identical row counts', async () => {
     const before = await counts()
-    await seedDemo(handle.db, signal)
-    await seedDemo(handle.db, signal)
+    await seedDemo(handle.db, signal, SEED_DEPS)
+    await seedDemo(handle.db, signal, SEED_DEPS)
     expect(await counts()).toEqual(before)
-    expect(before.applications).toBe(9)
+    expect(before.applications).toBe(11)
     expect(before.config_versions).toBeGreaterThan(30)
   })
 
@@ -186,11 +209,13 @@ describe('seedDemo', () => {
       'issued',
       'issued',
       'submitted',
+      'submitted',
+      'submitted',
       'suspended',
       'under_review',
       'under_review',
     ])
-    expect(Object.keys(byState).filter((n) => n.startsWith('EL-'))).toHaveLength(2)
+    expect(Object.keys(byState).filter((n) => n.startsWith('EL-'))).toHaveLength(4)
   })
 
   it('seeds one fee waiver, one renewal, one appeal, and an open comment period', async () => {
@@ -228,5 +253,49 @@ describe('seedDemo', () => {
     const records = await handle.db.select().from(codeEditionRecords)
     expect(records.length).toBeGreaterThanOrEqual(2)
     expect(records.every((r) => r.editionKey === 'nh.edition.2024_07_01')).toBe(true)
+  })
+})
+
+describe('seeded records', () => {
+  it('seeded public parcel page lists two public documents and no private ones', async () => {
+    const alias = await handle.db.query.parcelAliases.findFirst({
+      where: (a, { eq }) => eq(a.value, '007001000000'),
+    })
+    const view = await getPublicParcelView(handle.db, alias?.parcelId ?? '', new Date(), signal)
+    if (!view.ok) throw new Error('public view')
+    const titles = view.value.history.own.filter((r) => r.kind === 'document').map((r) => r.title)
+    expect(titles.sort()).toEqual(['Panel schedule', 'Recorded plat', 'Septic approval'])
+    expect(titles).not.toContain('Site sketch')
+    expect(titles).not.toContain('Scanned letter (unreadable)')
+  })
+
+  it('preservation queue loader lists the seeded incomplete document', async () => {
+    const staff = await handle.db.query.users.findFirst({
+      where: (u, { eq }) => eq(u.email, 'staff@alderpond.example'),
+    })
+    const actor = (await loadActor(handle.db, staff?.id ?? '', signal)) as Actor
+    const queue = await listPreservationIncomplete(handle.db, actor, { limit: 25 }, signal)
+    if (!queue.ok) throw new Error('queue')
+    expect(queue.value.rows.map((r) => r.title)).toEqual(['Scanned letter (unreadable)'])
+  })
+
+  it('seeded contractor dashboard lists two projects', async () => {
+    const contractor = await handle.db.query.users.findFirst({
+      where: (u, { eq }) => eq(u.email, 'contractor@alderpond.example'),
+    })
+    const actor = (await loadActor(handle.db, contractor?.id ?? '', signal)) as Actor
+    const page = await listContractorProjects(handle.db, actor, { limit: 25 }, signal)
+    expect(page.rows).toHaveLength(2)
+    expect(page.rows.flatMap((r) => r.applications)).toHaveLength(2)
+  })
+
+  it('seeds a reviewer comment, a legal hold, a live board link, and a redacted public copy', async () => {
+    const roles = await handle.db.select().from(documentVersions)
+    expect(roles.filter((v) => v.role === 'public_redacted').length).toBeGreaterThanOrEqual(1)
+    expect(await handle.db.select().from(legalHolds)).toHaveLength(1)
+    expect(await handle.db.select().from(reviewComments)).toHaveLength(1)
+    const links = await handle.db.select().from(boardPacketLinks)
+    expect(links).toHaveLength(1)
+    expect(links[0]?.revokedAt).toBeNull()
   })
 })

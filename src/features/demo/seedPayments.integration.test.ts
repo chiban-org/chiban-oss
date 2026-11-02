@@ -5,6 +5,7 @@ import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { DEMO_PAYMENT_DATE } from '@/features/demo/seedPayments'
 import { feeBalance } from '@/features/ledger/feeBalance'
+import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
 import { getActiveProcessor } from '@/features/payments/processorAccounts'
 import { cashReceiptsReport } from '@/features/reports/cashReceipts'
@@ -15,7 +16,7 @@ let handle: TestDb
 
 beforeAll(async () => {
   handle = await makeTestDb()
-  await seedDemo(handle.db, signal)
+  await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
 })
 afterAll(async () => {
   await handle.drop()

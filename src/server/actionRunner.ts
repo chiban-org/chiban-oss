@@ -108,6 +108,18 @@ export async function runStaffAction(
   return result
 }
 
+export async function runStaffValue<T extends { ok: boolean }>(
+  formData: FormData,
+  fail: (error: string) => T,
+  fn: (ctx: ActionContext) => Promise<T>,
+): Promise<T> {
+  const signal = AbortSignal.timeout(ACTION_TIMEOUT_MS)
+  const guard = await guardAction(formData, signal)
+  if (!guard.ok) return fail(errorCopy('csrf'))
+  if (guard.value?.kind !== 'staff') return fail(errorCopy('signed_out'))
+  return await fn({ db, actor: guard.value, signal })
+}
+
 export function text(formData: FormData, key: string): string {
   const value = formData.get(key)
   return typeof value === 'string' ? value.trim() : ''

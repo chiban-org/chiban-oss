@@ -12,7 +12,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import type { DocumentActor } from '@/features/documents/types'
-import { requireSeries } from '@/features/records/series'
+import { findSeries, requireSeries } from '@/features/records/series'
 import { outcomeSeriesKey, type SeriesOutcome } from '@/features/records/seriesSummary'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -139,6 +139,45 @@ export async function recordBuildingRemoved(
         entityType: 'project',
         entityId: input.projectId,
         after: { occurredOn: input.occurredOn },
+      },
+      signal,
+    )
+    return ok(undefined)
+  })
+}
+
+export async function setDocumentSeries(
+  db: DbOrTx,
+  actor: Actor,
+  input: { documentId: string; seriesKey: string },
+  signal: AbortSignal,
+): Promise<Result<void, 'forbidden' | 'unknown_series' | 'not_found'>> {
+  signal.throwIfAborted()
+  const allowed = await requireCapability(db, actor.userId, 'document.manage', signal)
+  if (!allowed.ok) return err('forbidden')
+  if (findSeries(input.seriesKey) === null) return err('unknown_series')
+  return await transactionResult(db, async (tx) => {
+    const [doc] = await tx
+      .select({ id: documents.id })
+      .from(documents)
+      .where(eq(documents.id, input.documentId))
+    if (doc === undefined) return err('not_found')
+    await assignSeries(
+      tx,
+      { kind: 'document', id: doc.id },
+      input.seriesKey,
+      'staff',
+      actor,
+      signal,
+    )
+    await writeAudit(
+      tx,
+      {
+        actor: { kind: 'user', userId: actor.userId },
+        action: 'record.series',
+        entityType: 'document',
+        entityId: doc.id,
+        after: { seriesKey: input.seriesKey },
       },
       signal,
     )

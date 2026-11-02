@@ -48,6 +48,7 @@ export interface StaffApplicationView {
   substep: string | null
   substeps: { key: string; label: string }[]
   rowVersion: number
+  projectId: string
   projectTitle: string
   parcelId: string
   parcelDisplayId: string
@@ -204,6 +205,7 @@ export async function getStaffApplicationView(
       .filter((s) => s.state === app.state)
       .map((s) => ({ key: s.key, label: s.label })),
     rowVersion: app.rowVersion,
+    projectId: project.id,
     projectTitle: project.title,
     parcelId: project.parcelId,
     parcelDisplayId: display.get(project.parcelId) ?? 'No map-lot ID',

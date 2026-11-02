@@ -31,6 +31,7 @@ interface UploaderProps {
   actions: UploaderActions
   onUploaded: () => void
   put?: PutFile
+  extraFields?: Record<string, string>
 }
 
 const BYTES_PER_MB = 1024 * 1024
@@ -59,6 +60,7 @@ export function Uploader({
   actions,
   onUploaded,
   put = putWithProgress,
+  extraFields = {},
 }: UploaderProps) {
   const csrf = useCsrfToken()
   const [file, setFile] = useState<File | null>(null)
@@ -76,6 +78,7 @@ export function Uploader({
     data.set('filename', chosen.name)
     data.set('contentType', chosen.type)
     data.set('sizeBytes', String(chosen.size))
+    for (const [key, value] of Object.entries(extraFields)) data.set(key, value)
     return data
   }
 

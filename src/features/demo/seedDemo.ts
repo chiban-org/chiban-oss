@@ -8,6 +8,7 @@ import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { seedParcels } from '@/features/demo/seedParcels'
 import { seedPayments } from '@/features/demo/seedPayments'
 import { seedPermits } from '@/features/demo/seedPermits'
+import { type SeedRecordsDeps, seedRecords } from '@/features/demo/seedRecords'
 
 export { DEMO_DOMAIN }
 
@@ -62,9 +63,14 @@ export interface SeedReport {
   parcelsSeeded: boolean
   permitsSeeded: boolean
   paymentsSeeded: boolean
+  recordsSeeded: boolean
 }
 
-export async function seedDemo(db: Db, signal: AbortSignal): Promise<SeedReport> {
+export async function seedDemo(
+  db: Db,
+  signal: AbortSignal,
+  deps: { records?: SeedRecordsDeps } = {},
+): Promise<SeedReport> {
   signal.throwIfAborted()
   const base = await db.transaction(async (tx) => {
     const town = await tx
@@ -108,5 +114,6 @@ export async function seedDemo(db: Db, signal: AbortSignal): Promise<SeedReport>
   const seeded = await seedParcels(db, signal)
   const permitsSeeded = await seedPermits(db, signal)
   const paymentsSeeded = await seedPayments(db, signal)
-  return { ...base, parcelsSeeded: seeded.imported, permitsSeeded, paymentsSeeded }
+  const recordsSeeded = await seedRecords(db, signal, deps.records)
+  return { ...base, parcelsSeeded: seeded.imported, permitsSeeded, paymentsSeeded, recordsSeeded }
 }

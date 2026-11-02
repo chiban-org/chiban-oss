@@ -3,6 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { applications } from '@/db/schema'
 import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
+import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
 
 interface MockState {
@@ -23,6 +24,7 @@ vi.mock('next/headers', () => ({
 }))
 vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
 vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
   notFound: () => {
     throw new Error('NOT_FOUND')
   },
@@ -52,7 +54,7 @@ async function html(element: Promise<unknown>): Promise<string> {
 beforeAll(async () => {
   handle = await makeTestDb()
   state.db = handle.db
-  await seedDemo(handle.db, signal)
+  await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
   const staff = await handle.db.query.users.findFirst({
     where: (u, { eq }) => eq(u.email, 'staff@alderpond.example'),
   })
@@ -67,7 +69,7 @@ afterAll(async () => {
 describe('staff application pages', () => {
   it('the application list shows every seeded application with a link', async () => {
     const page = await html(ApplicationsPage({ searchParams: Promise.resolve({}) }))
-    expect(page.match(/href="\/staff\/applications\//g)).toHaveLength(9)
+    expect(page.match(/href="\/staff\/applications\//g)).toHaveLength(11)
     expect(page).toContain('Under review')
     expect(page).toContain('Suspended by appeal (RSA 676:6)')
   })

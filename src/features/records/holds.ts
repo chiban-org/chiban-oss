@@ -1,4 +1,4 @@
-import { and, eq, isNull, or } from 'drizzle-orm'
+import { and, desc, eq, isNull, or } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
   applicationSnapshots,
@@ -152,4 +152,34 @@ export async function holdsCovering(
     .select()
     .from(legalHolds)
     .where(and(isNull(legalHolds.releasedAt), or(...targets)))
+}
+
+export async function listHolds(
+  db: DbOrTx,
+  actor: Actor,
+  signal: AbortSignal,
+): Promise<Result<LegalHoldRow[], 'forbidden'>> {
+  signal.throwIfAborted()
+  const allowed = await requireCapability(db, actor.userId, 'hold.place_release', signal)
+  if (!allowed.ok) return err('forbidden')
+  return ok(await db.select().from(legalHolds).orderBy(desc(legalHolds.placedAt)))
+}
+
+export async function applicationHolds(
+  db: DbOrTx,
+  applicationId: string,
+  projectId: string,
+): Promise<LegalHoldRow[]> {
+  return await db
+    .select()
+    .from(legalHolds)
+    .where(
+      and(
+        isNull(legalHolds.releasedAt),
+        or(
+          and(eq(legalHolds.targetKind, 'application'), eq(legalHolds.targetId, applicationId)),
+          and(eq(legalHolds.targetKind, 'project'), eq(legalHolds.targetId, projectId)),
+        ),
+      ),
+    )
 }

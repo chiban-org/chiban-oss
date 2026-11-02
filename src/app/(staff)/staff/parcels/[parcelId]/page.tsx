@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
+import { DocumentPanel } from '@/components/documents/DocumentPanel'
+import { ParcelFileUploader } from '@/components/documents/ParcelFileUploader'
 import { LinkedParcelMap } from '@/components/map/LinkedParcelMap'
 import { HonestText } from '@/components/parcels/HonestText'
 import { RecordsSection } from '@/components/parcels/RecordsSection'
@@ -8,11 +10,16 @@ import { StatusChip } from '@/components/StatusChip'
 import { BalanceDueNotice } from '@/components/staff/BalanceDueNotice'
 import { TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
+import { hasCapability } from '@/features/authz/capabilities'
+import { loadPanelDocuments } from '@/features/documents/panelData'
 import { bboxOfGeometry, configuredOverlayLayers } from '@/features/gis/extent'
 import { returnedCheckNoticesForParcel } from '@/features/ledger/balanceNotice'
+import { loadPack } from '@/features/packs/loadPack'
 import { getStaffParcelView } from '@/features/parcels/staffParcelView'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
+import { createStaffUploadIntentAction, finalizeStaffUploadAction } from '../../records/actions'
+import { PANEL_ACTIONS } from '../../records/panelActions'
 import { carryForwardAction, createAliasOverrideAction } from './actions'
 
 interface ParcelPageProps {
@@ -41,6 +48,19 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
   const town = await getTownSettings(ctx.db, ctx.signal)
   const overlays = await configuredOverlayLayers(ctx.db, ctx.signal)
   const timeZone = town.ok ? town.value.timeZone : 'America/New_York'
+  const parcelDocuments = await loadPanelDocuments(
+    ctx.db,
+    ctx.actor,
+    { kind: 'parcel', id: parcelId },
+    ctx.signal,
+  )
+  const canPublish = await hasCapability(ctx.db, ctx.actor.userId, 'document.publish', ctx.signal)
+  const canManage = await hasCapability(ctx.db, ctx.actor.userId, 'document.manage', ctx.signal)
+  const series = loadPack().recordSeries.map((s) => ({
+    key: s.key,
+    label: s.label,
+    citation: s.citation.label,
+  }))
   const displayId = view.aliases.find((a) => a.status === 'active')?.value ?? 'No map-lot ID'
   const geometry =
     view.geometry.state === 'known' || view.geometry.state === 'stale' ? view.geometry.value : null
@@ -130,6 +150,26 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
           basemapAttribution={town.ok ? town.value.basemapAttribution : null}
         />
       )}
+      <DocumentPanel
+        documents={parcelDocuments}
+        canPublish={canPublish}
+        canManage={canManage}
+        actions={PANEL_ACTIONS}
+        target={{ kind: 'parcel', id: parcelId }}
+      />
+      {canManage ? (
+        <section aria-label="Add a parcel file">
+          <h3>Add a parcel file</h3>
+          <ParcelFileUploader
+            parcelId={parcelId}
+            series={series}
+            actions={{
+              createIntent: createStaffUploadIntentAction,
+              finalize: finalizeStaffUploadAction,
+            }}
+          />
+        </section>
+      ) : null}
       <h2 className="mt-6">Lineage</h2>
       {view.lineage.parents.length + view.lineage.children.length === 0 ? (
         <p>No lineage events for this parcel.</p>

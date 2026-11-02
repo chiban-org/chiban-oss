@@ -1,12 +1,15 @@
+import { asc, eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { ClockCard } from '@/components/clocks/ClockCard'
+import { DocumentPanel } from '@/components/documents/DocumentPanel'
 import { FeeTable } from '@/components/fees/FeeTable'
 import { GatePanel } from '@/components/gates/GatePanel'
 import { StatusChip } from '@/components/StatusChip'
 import { BalanceDueNotice } from '@/components/staff/BalanceDueNotice'
 import { AreaField, TextField } from '@/components/staff/fields'
+import { applicationSnapshots } from '@/db/schema'
 import {
   getStaffApplicationView,
   type StaffApplicationView,
@@ -14,17 +17,19 @@ import {
 import { stateLabel } from '@/features/applications/stateLabel'
 import { applicationSubtitle } from '@/features/applications/subtitle'
 import { hasCapability } from '@/features/authz/capabilities'
-import { listDocuments } from '@/features/documents/listDocuments'
+import { loadPanelDocuments } from '@/features/documents/panelData'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { returnedCheckNotices } from '@/features/ledger/balanceNotice'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
+import { applicationHolds } from '@/features/records/holds'
 import { listApplicationReviewers, listReviewerChoices } from '@/features/reviews/reviewerView'
+import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
+import { PANEL_ACTIONS } from '../../records/panelActions'
 import { overrideGateAction, revokeOverrideAction, statutoryExceptionAction } from './actions'
 import { AppealPanel, CodeEditionPanel, RegionalImpactPanel } from './buildingPanels'
-import { DocumentsList } from './documentsList'
 import { FeeOverrideForm } from './feePanels'
 import {
   ClockAdjustForm,
@@ -34,6 +39,8 @@ import {
   TransitionBar,
 } from './panels'
 import { PaymentsPanel } from './paymentsPanel'
+import { loadRecordsData } from './recordsData'
+import { RecordsPanel } from './recordsPanels'
 import { ReviewersPanel } from './reviewersPanel'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
@@ -115,17 +122,7 @@ export default async function StaffApplicationPage({ params }: Props) {
   if (view === null) notFound()
   const balanceNotices = await returnedCheckNotices(ctx.db, [applicationId], ctx.signal)
   const payments = await loadApplicationPayments(ctx.db, ctx.actor, applicationId, ctx.signal)
-  const reviewers = await listApplicationReviewers(ctx.db, applicationId)
-  const canAssign = await hasCapability(ctx.db, ctx.actor.userId, 'review.assign', ctx.signal)
-  const choices = canAssign ? await listReviewerChoices(ctx.db) : []
-  const documents = (
-    await listDocuments(
-      ctx.db,
-      ctx.actor,
-      { record: { kind: 'application', id: applicationId }, limit: 100 },
-      ctx.signal,
-    )
-  ).rows
+  const records = await loadRecordsData(ctx, applicationId, view.projectId)
   return (
     <main>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -157,9 +154,9 @@ export default async function StaffApplicationPage({ params }: Props) {
       <TransitionBar view={view} />
       <ReviewersPanel
         applicationId={view.id}
-        reviewers={reviewers}
-        choices={choices}
-        canAssign={canAssign}
+        reviewers={records.reviewers}
+        choices={records.choices}
+        canAssign={records.canAssign}
       />
       <PartiesPanel view={view} />
       <CompletenessPanel view={view} />
@@ -202,7 +199,22 @@ export default async function StaffApplicationPage({ params }: Props) {
         <FeeOverrideForm view={view} />
       </section>
       <PaymentsPanel payments={payments} />
-      <DocumentsList documents={documents} />
+      <DocumentPanel
+        documents={records.documents}
+        canPublish={records.canPublish}
+        canManage={records.canManageDocuments}
+        actions={PANEL_ACTIONS}
+        target={{ kind: 'application', id: applicationId }}
+      />
+      <RecordsPanel
+        applicationId={applicationId}
+        projectId={view.projectId}
+        snapshots={records.snapshots}
+        holds={records.appHolds}
+        canHold={records.canHold}
+        canManage={records.canManageDocuments}
+        zone={records.zone}
+      />
       {view.state === 'issued' ? <PrintLinks applicationId={view.id} /> : null}
       <CodeEditionPanel view={view} />
       <RegionalImpactPanel view={view} />
