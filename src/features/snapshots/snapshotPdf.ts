@@ -1,0 +1,80 @@
+import type { FormField } from '@/features/forms/formSchema'
+import type { FieldValue } from '@/features/forms/validateSubmission'
+import { type PdfBlock, renderPdf } from '@/features/pdf/renderPdf'
+import type { PublicSnapshotView } from '@/features/snapshots/publicView'
+import { formatCivilDate } from '@/lib/formatDate'
+import { formatCents } from '@/lib/money'
+
+interface PdfParty {
+  role: string
+  name: string
+  email?: string | null
+}
+
+type SnapshotPdfInput = Omit<PublicSnapshotView, 'parties'> & {
+  parties: PdfParty[]
+  attestation?: { statementSha256: string; attestedAt: string } | null
+}
+
+function displayValue(field: FormField, value: FieldValue): string {
+  if (Array.isArray(value)) return value.map((v) => optionLabel(field, v)).join(', ')
+  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
+  if (field.type === 'money' && typeof value === 'number') return formatCents(value)
+  if (field.type === 'date' && typeof value === 'string') return formatCivilDate(value)
+  return optionLabel(field, String(value))
+}
+
+function optionLabel(field: FormField, value: string): string {
+  return field.options?.find((o) => o.value === value)?.label ?? value
+}
+
+function fieldRows(body: SnapshotPdfInput): { label: string; value: string }[] {
+  return body.form.fields.flatMap((field) => {
+    const value = body.values[field.key]
+    return value === undefined || value === ''
+      ? []
+      : [{ label: field.label, value: displayValue(field, value) }]
+  })
+}
+
+function blocks(body: SnapshotPdfInput): PdfBlock[] {
+  const out: PdfBlock[] = [
+    { kind: 'heading', text: body.form.label },
+    { kind: 'fields', rows: fieldRows(body) },
+  ]
+  if (body.parties.length > 0) {
+    out.push({
+      kind: 'table',
+      columns: ['Role', 'Name', 'Email'],
+      rows: body.parties.map((p) => [p.role, p.name, p.email ?? '']),
+    })
+  }
+  if (body.attachments.length > 0) {
+    out.push({
+      kind: 'table',
+      columns: ['Attachment', 'SHA-256'],
+      rows: body.attachments.map((a) => [a.filename, a.sha256]),
+    })
+  }
+  if (body.attestation) {
+    out.push({
+      kind: 'notice',
+      text: `Attested on ${body.attestation.attestedAt.slice(0, 10)}. Statement hash ${body.attestation.statementSha256}.`,
+    })
+  }
+  return out
+}
+
+export async function renderSnapshotPdf(
+  body: SnapshotPdfInput,
+  townName: string,
+  sequence: number,
+): Promise<Uint8Array> {
+  return await renderPdf({
+    title: `Application ${body.applicationNumber}`,
+    subtitle: `Snapshot ${sequence}`,
+    townName,
+    scale: 'document',
+    blocks: blocks(body),
+  })
+}

@@ -18,6 +18,8 @@ import {
   validateSubmission,
 } from '@/features/forms/validateSubmission'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
+import { captureSnapshot } from '@/features/snapshots/captureSnapshot'
+import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
 
@@ -46,6 +48,7 @@ export async function submitApplication(
   },
   signal: AbortSignal,
   now: Date = new Date(),
+  store: ObjectStore = getObjectStore(),
 ): Promise<Result<{ state: 'submitted' }, SubmitError>> {
   signal.throwIfAborted()
   const app = await loadApplicationContext(db, input.applicationId, signal)
@@ -91,6 +94,7 @@ export async function submitApplication(
       now,
     )
     if (!moved.ok) return err('invalid_transition')
+    await captureSnapshot(tx, input.applicationId, 'submission', actor, signal, store, now)
     return ok({ state: 'submitted' })
   })
 }
@@ -132,6 +136,7 @@ export async function amendApplication(
   actor: Actor,
   input: { applicationId: string; values: Record<string, unknown> },
   signal: AbortSignal,
+  store: ObjectStore = getObjectStore(),
 ): Promise<Result<void, AmendError>> {
   signal.throwIfAborted()
   return await transactionResult<void, AmendError>(db, async (tx) => {
@@ -173,6 +178,9 @@ export async function amendApplication(
       },
       signal,
     )
+    if (app.state !== 'draft') {
+      await captureSnapshot(tx, input.applicationId, 'amendment', actor, signal, store)
+    }
     return ok(undefined)
   })
 }

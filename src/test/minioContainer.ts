@@ -1,3 +1,4 @@
+import { CreateBucketCommand, S3Client } from '@aws-sdk/client-s3'
 import { MinioContainer } from '@testcontainers/minio'
 import { MINIO_IMAGE } from '../constants/infra.ts'
 
@@ -25,11 +26,19 @@ export async function startMinio(): Promise<{
     .withEnvironment({ MINIO_API_CORS_ALLOW_ORIGIN: CORS_ORIGIN })
     .start()
   const endpoint = `http://${container.getHost()}:${container.getMappedPort(API_PORT)}`
+  const bucket = 'chiban-test'
+  const client = new S3Client({
+    endpoint,
+    region: 'us-east-1',
+    forcePathStyle: true,
+    credentials: { accessKeyId: USERNAME, secretAccessKey: PASSWORD },
+  })
+  await client.send(new CreateBucketCommand({ Bucket: bucket }))
   return {
     config: {
       endpoint,
       publicEndpoint: endpoint,
-      bucket: 'chiban-test',
+      bucket,
       accessKeyId: USERNAME,
       secretAccessKey: PASSWORD,
       region: 'us-east-1',
