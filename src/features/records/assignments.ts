@@ -1,10 +1,11 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNull, or } from 'drizzle-orm'
 import type { DbOrTx, Tx } from '@/db/client'
 import {
   applicationSnapshots,
   applications,
   documents,
   documentVersions,
+  inspections,
   preservationRecords,
   recordEvents,
   retentionAssignments,
@@ -81,11 +82,22 @@ export async function applyOutcomeSeries(
       recordedByKind: 'system',
     })
   }
+  const inspectionIds = (
+    await tx
+      .select({ id: inspections.id })
+      .from(inspections)
+      .where(eq(inspections.applicationId, applicationId))
+  ).map((r) => r.id)
   const docIds = (
     await tx
       .select({ id: documents.id })
       .from(documents)
-      .where(and(eq(documents.recordKind, 'application'), eq(documents.recordId, applicationId)))
+      .where(
+        or(
+          and(eq(documents.recordKind, 'application'), eq(documents.recordId, applicationId)),
+          and(eq(documents.recordKind, 'inspection'), inArray(documents.recordId, inspectionIds)),
+        ),
+      )
   ).map((r) => r.id)
   const snapIds = (
     await tx
