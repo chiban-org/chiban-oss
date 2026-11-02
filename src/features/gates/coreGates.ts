@@ -1,10 +1,49 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, isNull, ne } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
-import { applicationConditions, certificatesOfOccupancy, inspections } from '@/db/schema'
+import {
+  applicationConditions,
+  certificatesOfOccupancy,
+  inspections,
+  reviewAssignments,
+} from '@/db/schema'
 import { type GateOutcome, registerGate } from '@/features/gates/registry'
+import { loadPack } from '@/features/packs/loadPack'
 
 export const CONDITIONS_GATE_KEY = 'conditions.blocking_met'
 export const CLOSURE_GATE_KEY = 'closure.requirement_met'
+export const REVIEWS_GATE_KEY = 'reviews.signed_off'
+
+registerGate({
+  key: REVIEWS_GATE_KEY,
+  label: 'Assigned reviews signed off',
+  kind: 'administrative',
+  appliesTo: ['decided'],
+  boundBy: null,
+  evaluate: async (tx, app) => {
+    const board = loadPack().classifications.find(
+      (c) => c.key === app.typeBody.classification,
+    )?.board
+    if (board !== undefined && board !== null) return { status: 'pass' }
+    const open = await tx
+      .select({ id: reviewAssignments.id })
+      .from(reviewAssignments)
+      .where(
+        and(
+          eq(reviewAssignments.applicationId, app.id),
+          isNull(reviewAssignments.removedAt),
+          ne(reviewAssignments.status, 'signed_off'),
+        ),
+      )
+    if (open.length === 0) return { status: 'pass' }
+    return {
+      status: 'blocked',
+      reason:
+        open.length === 1
+          ? '1 assigned review is not signed off.'
+          : `${open.length} assigned reviews are not signed off.`,
+    }
+  },
+})
 
 async function hasPassedFinal(tx: Tx, applicationId: string): Promise<boolean> {
   const rows = await tx
