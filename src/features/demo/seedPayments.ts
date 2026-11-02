@@ -190,7 +190,7 @@ export async function seedPayments(db: Db, signal: AbortSignal): Promise<boolean
       title: `${PAYMENT_PREFIX} ${title}`,
       typeKey,
       values: { ...TRADE_BASE, contractor_license_number: license, ...extra },
-      submittedOn: '2027-05-30',
+      submittedOn: '2026-10-30',
     })
 
   const cash = await trade('007008000000', 'Gas line paid in cash', 'MG', 'MG-11802')

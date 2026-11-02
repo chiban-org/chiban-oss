@@ -15,7 +15,7 @@ const EXTRA_COLUMNS = [
 ] as const
 const COLUMNS = [...CUTOVER_BASE_COLUMNS, ...EXTRA_COLUMNS]
 const MISSING_NUMBER = 'LEG-1996-0207'
-const IMPORT_AT = new Date('2027-05-20T15:00:00Z')
+const IMPORT_AT = new Date('2026-05-20T15:00:00Z')
 
 type Row = Partial<Record<(typeof COLUMNS)[number], string>>
 
@@ -30,8 +30,8 @@ const ROWS: Row[] = [
     state: 'issued',
     fees_paid_in_prior_system: 'yes',
     prior_receipt_ref: 'Ledger 1996-0114',
-    received_date: '2027-02-01',
-    issued_on: '2027-02-10',
+    received_date: '2026-02-01',
+    issued_on: '2026-02-10',
     'field.description': 'Service upgrade to 200 amp',
     'field.contractor_license_number': 'EL-4401',
   },
@@ -43,8 +43,8 @@ const ROWS: Row[] = [
     project_title: 'Boathouse',
     applicant_name: 'Odessa Quillfeather',
     state: 'under_review',
-    received_date: '2027-03-01',
-    completed_date: '2027-03-05',
+    received_date: '2026-03-01',
+    completed_date: '2026-03-05',
     'field.work_type': 'building',
     'field.description': 'Lakeside boathouse',
     'field.classification': 'residential',
@@ -60,8 +60,8 @@ const ROWS: Row[] = [
     state: 'issued',
     fees_paid_in_prior_system: 'yes',
     prior_receipt_ref: 'Ledger 1996-0188',
-    received_date: '2027-03-12',
-    issued_on: '2027-03-20',
+    received_date: '2026-03-12',
+    issued_on: '2026-03-20',
     'field.description': 'New barn lighting circuit',
     'field.contractor_license_number': 'EL-4402',
   },

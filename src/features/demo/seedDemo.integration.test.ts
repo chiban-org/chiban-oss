@@ -238,6 +238,23 @@ describe('seedDemo', () => {
     expect(before.config_versions).toBeGreaterThan(30)
   })
 
+  it('no seeded application is issued, decided, or completed before it was received', async () => {
+    const backwards = await handle.db.execute<{ number: string }>(sql`
+      select number from applications
+      where received_date is not null
+        and (issued_on < received_date or decided_on < received_date or completed_date < received_date)
+      order by number`)
+    expect(backwards.rows.map((r) => r.number)).toEqual([])
+  })
+
+  it('every seeded application waiting for staff was received no later than the real current date', async () => {
+    const future = await handle.db.execute<{ number: string }>(sql`
+      select number || ' ' || received_date::text as number from applications
+      where state in ('submitted', 'under_review') and received_date > current_date
+      order by number`)
+    expect(future.rows.map((r) => r.number)).toEqual([])
+  })
+
   it('seeds the four starters and the permit scenarios', async () => {
     const rows = await handle.db.select().from(applications).orderBy(applications.number)
     const byState = Object.fromEntries(rows.map((r) => [r.number, r.state]))

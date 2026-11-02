@@ -46,9 +46,9 @@ export async function seedPermits(db: Db, signal: AbortSignal): Promise<boolean>
     title: 'Addition under review',
     typeKey: 'BP',
     values: BUILDING_VALUES,
-    submittedOn: '2027-05-10',
+    submittedOn: '2026-10-12',
   })
-  await completeAndReview(inReview, '2027-05-12', '2027-05-13')
+  await completeAndReview(inReview, '2026-10-14', '2026-10-15')
   must(
     await createFeeOverride(
       db,
@@ -69,9 +69,9 @@ export async function seedPermits(db: Db, signal: AbortSignal): Promise<boolean>
     title: 'Lodge with regional impact',
     typeKey: 'BP',
     values: { ...BUILDING_VALUES, classification: 'nonresidential', commercial_sq_ft: '5200' },
-    submittedOn: '2027-05-20',
+    submittedOn: '2026-10-19',
   })
-  await completeAndReview(regional, '2027-05-21', '2027-05-22')
+  await completeAndReview(regional, '2026-10-20', '2026-10-21')
   must(
     await recordRegionalImpactDetermination(
       db,

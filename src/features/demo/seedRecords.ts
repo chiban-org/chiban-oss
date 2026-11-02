@@ -170,14 +170,14 @@ export async function seedRecords(
     title: 'Panel upgrade with documents',
     typeKey: 'EL',
     values: TRADE_VALUES,
-    submittedOn: '2027-06-02',
+    submittedOn: '2026-10-22',
   })
   const second = await open(db, cast, signal, {
     parcel: '007002000000',
     title: 'Subpanel for the barn',
     typeKey: 'EL',
     values: TRADE_VALUES,
-    submittedOn: '2027-06-03',
+    submittedOn: '2026-10-23',
   })
   const target: RecordRef = { kind: 'application', id: first.applicationId }
   const schedule = await attach(ctx, cast.applicant, {
