@@ -1,3 +1,4 @@
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Role } from '@/constants/roles'
 import type { Db, DbOrTx } from '@/db/client'
 import { parcelAliases, parcelIdFormats, parcels, townSettings } from '@/db/schema'
@@ -54,7 +55,7 @@ export async function seedTown(db: DbOrTx): Promise<void> {
 export async function staffActor(db: Db, role: Role = 'staff'): Promise<Actor> {
   const userId = await makeUser(db, { role })
   const actor = await loadActor(db, userId, new AbortController().signal)
-  if (actor === null) throw new Error('actor not loadable')
+  if (actor === null) throw new AppError(ErrorIds.DB_INVARIANT, 'actor not loadable')
   return actor
 }
 

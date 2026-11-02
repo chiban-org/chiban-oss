@@ -46,8 +46,11 @@ export async function recordLineageEvent(
       .orderBy(asc(parcels.id))
       .for('update')
     if (locked.length !== listed.length) return err('unknown_parcel')
-    if (input.kind !== 'lot_line_adjustment') {
-      if (await wouldCreateCycle(tx, input.parents, input.children)) return err('cycle')
+    if (
+      input.kind !== 'lot_line_adjustment' &&
+      (await wouldCreateCycle(tx, input.parents, input.children))
+    ) {
+      return err('cycle')
     }
     const [event] = await tx
       .insert(parcelLineageEvents)
