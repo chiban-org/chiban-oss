@@ -1,7 +1,9 @@
+import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { JOB_NAMES } from '@/constants/jobNames'
-import { redactionJobs } from '@/db/schema'
+import { redactionJobs, renditionApprovals } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { deriveRenditions } from '@/features/renditions/derive'
 import { SWEEP_TARGETS } from '@/jobs/sweepTargets'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/minio'
@@ -53,5 +55,20 @@ describe('records sweep targets', () => {
     const items = await target(JOB_NAMES.REDACTION_RUN).findOverdue(handle.db, NOW, signal)
     expect(items.map((i) => i.payload)).toEqual([{ jobId: old?.id }])
     expect(fresh?.id).not.toBe(old?.id)
+  })
+
+  it('an approved version with no thumbnail after 30 minutes is re-enqueued and a fresh or derived one is not', async () => {
+    const store = (await makeTestStore()).store
+    const stale = await uploadRedactionFixture(handle.db, store, staff, 'letter.pdf')
+    const derived = await uploadRedactionFixture(handle.db, store, staff, 'site-photo.jpg')
+    await deriveRenditions(handle.db, store, derived.versionId, signal)
+    await handle.db.update(renditionApprovals).set({ approvedAt: minutesAgo(45) })
+    const fresh = await uploadRedactionFixture(handle.db, store, staff, 'letter.pdf')
+    await handle.db
+      .update(renditionApprovals)
+      .set({ approvedAt: minutesAgo(5) })
+      .where(eq(renditionApprovals.documentId, fresh.documentId))
+    const items = await target(JOB_NAMES.RENDITIONS_DERIVE).findOverdue(handle.db, NOW, signal)
+    expect(items.map((i) => i.payload)).toEqual([{ versionId: stale.versionId }])
   })
 })

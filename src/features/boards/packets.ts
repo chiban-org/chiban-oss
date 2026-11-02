@@ -32,14 +32,19 @@ interface Versioned {
 function frozenVersion(
   doc: { audiences: string[]; isPublic: boolean },
   versions: Versioned[],
-  approvedPublicVersionId: string | null,
-): string | null {
+  approved: { id: string; versionId: string } | null,
+): { versionId: string; approvalId: string | null } | null {
   const latest = (role: string) =>
     versions
       .filter((v) => v.role === role)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]
-  if (doc.audiences.includes('board')) return latest('original')?.id ?? null
-  if (doc.isPublic) return approvedPublicVersionId
+  if (doc.audiences.includes('board')) {
+    const original = latest('original')
+    return original === undefined ? null : { versionId: original.id, approvalId: null }
+  }
+  if (doc.isPublic && approved !== null) {
+    return { versionId: approved.versionId, approvalId: approved.id }
+  }
   return null
 }
 
@@ -58,7 +63,11 @@ export async function createPacket(
     .from(documentVersions)
     .where(inArray(documentVersions.documentId, input.documentIds))
   const approvals = await db
-    .select({ documentId: renditionApprovals.documentId, versionId: renditionApprovals.versionId })
+    .select({
+      id: renditionApprovals.id,
+      documentId: renditionApprovals.documentId,
+      versionId: renditionApprovals.versionId,
+    })
     .from(renditionApprovals)
     .where(
       and(
@@ -67,10 +76,10 @@ export async function createPacket(
         isNull(renditionApprovals.revokedAt),
       ),
     )
-  const approvedFor = new Map(approvals.map((a) => [a.documentId, a.versionId]))
+  const approvedFor = new Map(approvals.map((a) => [a.documentId, a]))
   const picked = input.documentIds.map((id) => {
     const doc = docs.find((d) => d.id === id)
-    const versionId =
+    const frozen =
       doc === undefined
         ? null
         : frozenVersion(
@@ -78,9 +87,9 @@ export async function createPacket(
             versions.filter((v) => v.documentId === id),
             approvedFor.get(id) ?? null,
           )
-    return { id, versionId }
+    return { id, frozen }
   })
-  const refused = picked.filter((p) => p.versionId === null).map((p) => p.id)
+  const refused = picked.filter((p) => p.frozen === null).map((p) => p.id)
   if (refused.length > 0) return err({ notForBoard: refused })
   return await transactionResult<{ packetId: string }, PacketError>(db, async (tx) => {
     const [packet] = await tx
@@ -97,7 +106,8 @@ export async function createPacket(
       picked.map((p, position) => ({
         packetId,
         documentId: p.id,
-        versionId: p.versionId ?? '',
+        versionId: p.frozen?.versionId ?? '',
+        approvalId: p.frozen?.approvalId ?? null,
         position,
       })),
     )

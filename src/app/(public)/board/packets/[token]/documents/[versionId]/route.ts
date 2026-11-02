@@ -4,6 +4,7 @@ import { openPacket, openPacketVersion } from '@/features/boards/packetLinks'
 import { pdfOk, toResponse } from '@/features/pdf/pdfResponse'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { getTownSettings } from '@/features/town/settings'
+import { formatCivilDate } from '@/lib/formatDate'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -34,5 +35,11 @@ export async function GET(
   if (!UUID.test(versionId)) return plain(404, 'Not found')
   const result = await openPacketVersion(db, getObjectStore(), token, versionId, now, signal)
   if (result.ok) return new Response(null, { status: 302, headers: { location: result.value.url } })
+  if (typeof result.error === 'object') {
+    return plain(
+      410,
+      `This document was withdrawn by the town on ${formatCivilDate(result.error.withdrawnOn)}.`,
+    )
+  }
   return result.error === 'expired' ? plain(410, EXPIRED_COPY) : plain(404, 'Not found')
 }

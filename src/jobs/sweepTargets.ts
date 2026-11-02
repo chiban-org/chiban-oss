@@ -1,4 +1,4 @@
-import { and, eq, lt } from 'drizzle-orm'
+import { and, eq, lt, sql } from 'drizzle-orm'
 import { JOB_NAMES } from '@/constants/jobNames'
 import type { Db } from '@/db/client'
 import {
@@ -18,6 +18,7 @@ import { exportsBuildJob } from './exportsBuild'
 import { notificationsSendJob } from './notificationsSend'
 import { recordsPreserveJob } from './recordsPreserve'
 import { redactionRunJob } from './redactionRun'
+import { renditionsDeriveJob } from './renditionsDerive'
 
 export interface SweepItem {
   job: JobDefinition<object>
@@ -146,6 +147,29 @@ const redactionTarget: SweepTarget = {
   },
 }
 
+const DERIVE_OVERDUE_MINUTES = 30
+const DERIVE_BATCH = 25
+
+const renditionsTarget: SweepTarget = {
+  name: JOB_NAMES.RENDITIONS_DERIVE,
+  async findOverdue(db, now) {
+    const rows = await db.execute<{ version_id: string }>(sql`
+      select distinct ra.version_id
+      from rendition_approvals ra
+      join document_versions dv on dv.id = ra.version_id
+      left join document_renditions dr on dr.version_id = ra.version_id and dr.kind = 'thumbnail'
+      where ra.revoked_at is null
+        and ra.approved_at < ${minutesBefore(now, DERIVE_OVERDUE_MINUTES)}
+        and dv.content_type in ('application/pdf', 'image/jpeg', 'image/png')
+        and dr.version_id is null
+      limit ${DERIVE_BATCH}`)
+    return rows.rows.map((row) => ({
+      job: renditionsDeriveJob,
+      payload: { versionId: row.version_id },
+    }))
+  },
+}
+
 const targets: SweepTarget[] = [
   clocksDailyTarget,
   notificationsTarget,
@@ -153,6 +177,7 @@ const targets: SweepTarget[] = [
   preservationTarget,
   exportsBuildTarget,
   redactionTarget,
+  renditionsTarget,
 ]
 
 export const SWEEP_TARGETS: readonly SweepTarget[] = targets

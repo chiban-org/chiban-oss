@@ -15,6 +15,7 @@ export const JOB_NAMES = {
   HEALTH_CHECK: 'health.check',
   JOBS_SWEEP: 'jobs.sweep',
   REDACTION_RUN: 'redaction.run',
+  RENDITIONS_DERIVE: 'renditions.derive',
 } as const
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES]

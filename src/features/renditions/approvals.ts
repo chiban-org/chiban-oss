@@ -13,7 +13,8 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { onApprovalRevoked } from '@/features/renditions/propagate'
+import { deleteDerivedObjects, onApprovalRevoked } from '@/features/renditions/propagate'
+import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
 
 const MIN_REASON = 10
@@ -79,13 +80,15 @@ export async function approveRendition(
   actor: Actor,
   input: z.input<typeof ApproveSchema>,
   signal: AbortSignal,
+  store?: ObjectStore,
 ): Promise<Result<{ approvalId: string }, ApproveError>> {
   signal.throwIfAborted()
   const parsed = ApproveSchema.safeParse(input)
   if (!parsed.success) return err('invalid')
   const value = parsed.data
   if (!(await mayManageApprovals(db, actor.userId, value.purpose, signal))) return err('forbidden')
-  return await transactionResult<{ approvalId: string }, ApproveError>(db, async (tx) => {
+  const staleKeys: string[] = []
+  const result = await transactionResult<{ approvalId: string }, ApproveError>(db, async (tx) => {
     const [version] = await tx
       .select({ documentId: documentVersions.documentId, role: documentVersions.role })
       .from(documentVersions)
@@ -120,8 +123,15 @@ export async function approveRendition(
         'superseded',
         now,
       )
-      for (const old of superseded)
-        await onApprovalRevoked(tx, { versionId: old.versionId, revokedAt: now }, signal)
+      for (const old of superseded) {
+        staleKeys.push(
+          ...(await onApprovalRevoked(
+            tx,
+            { approvalId: old.id, versionId: old.versionId, revokedAt: now },
+            signal,
+          )),
+        )
+      }
     }
     const [row] = await tx
       .insert(renditionApprovals)
@@ -150,6 +160,8 @@ export async function approveRendition(
     )
     return ok({ approvalId })
   })
+  if (result.ok) await deleteDerivedObjects(store, staleKeys, signal)
+  return result
 }
 
 export type RevokeError =
@@ -164,10 +176,12 @@ export async function revokeApproval(
   actor: Actor,
   input: { approvalId: string; reason: string },
   signal: AbortSignal,
+  store?: ObjectStore,
 ): Promise<Result<void, RevokeError>> {
   signal.throwIfAborted()
   if (!z.string().uuid().safeParse(input.approvalId).success) return err('invalid')
-  return await transactionResult<void, RevokeError>(db, async (tx) => {
+  const staleKeys: string[] = []
+  const result = await transactionResult<void, RevokeError>(db, async (tx) => {
     const [approval] = await tx
       .select()
       .from(renditionApprovals)
@@ -187,7 +201,13 @@ export async function revokeApproval(
       input.reason.trim(),
       now,
     )
-    await onApprovalRevoked(tx, { versionId: approval.versionId, revokedAt: now }, signal)
+    staleKeys.push(
+      ...(await onApprovalRevoked(
+        tx,
+        { approvalId: approval.id, versionId: approval.versionId, revokedAt: now },
+        signal,
+      )),
+    )
     await writeAudit(
       tx,
       {
@@ -201,4 +221,6 @@ export async function revokeApproval(
     )
     return ok(undefined)
   })
+  if (result.ok) await deleteDerivedObjects(store, staleKeys, signal)
+  return result
 }

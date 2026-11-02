@@ -9,8 +9,10 @@ export const dynamic = 'force-dynamic'
 const REQUEST_TIMEOUT_MS = 30_000
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
+const NO_STORE = { 'cache-control': 'no-store' }
+
 function notFound(): Response {
-  return new Response('Not found', { status: 404 })
+  return new Response('Not found', { status: 404, headers: NO_STORE })
 }
 
 export async function GET(
@@ -25,5 +27,8 @@ export async function GET(
     new URL(request.url).searchParams.get('rendition') === 'pdfa' ? 'pdfa' : 'default'
   const result = await downloadDocument(db, getObjectStore(), actor, documentId, rendition, signal)
   if (!result.ok) return notFound()
-  return new Response(null, { status: 302, headers: { location: result.value.url } })
+  return new Response(null, {
+    status: 302,
+    headers: { location: result.value.url, ...NO_STORE },
+  })
 }
