@@ -41,7 +41,7 @@ async function validatedGeometry(
 ): Promise<
   { ok: true; geometry: Geometry } | { ok: false; kind: ImportExceptionKind; detail: string }
 > {
-  if (row.geometries.length === 0) {
+  if (row.geometries.length === 0 || row.partsMissingGeometry > 0) {
     return { ok: false, kind: 'missing_geometry', detail: 'Feature has no geometry' }
   }
   const valid: Geometry[] = []

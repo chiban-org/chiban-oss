@@ -17,6 +17,7 @@ export interface PreparedRow {
   ownerName: string | null
   mailingAddress: string | null
   geometries: GeoJSON.Geometry[]
+  partsMissingGeometry: number
   rowRefs: string[]
   properties: SourceFeature['properties']
   failure: { kind: ImportExceptionKind; detail: string } | null
@@ -85,6 +86,7 @@ function fromFeature(
     ownerName: mapping.ownerName === undefined ? null : textOf(f.properties, mapping.ownerName),
     mailingAddress: joinFields(f.properties, mapping.mailingAddress?.fields),
     geometries: f.geometry === null ? [] : [f.geometry],
+    partsMissingGeometry: f.geometry === null ? 1 : 0,
     rowRefs: [f.rowRef],
     properties: f.properties,
   }
@@ -126,6 +128,7 @@ function fromFeature(
 
 function mergeInto(target: PreparedRow, other: PreparedRow): void {
   target.geometries.push(...other.geometries)
+  target.partsMissingGeometry += other.partsMissingGeometry
   target.rowRefs.push(...other.rowRefs)
   for (const extra of other.extras) {
     if (!target.extras.some((e) => e.format === extra.format && e.value === extra.value)) {

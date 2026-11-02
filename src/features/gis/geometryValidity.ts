@@ -1,8 +1,23 @@
-import { sql } from 'drizzle-orm'
-import type { DbOrTx } from '@/db/client'
+import { type SQL, sql } from 'drizzle-orm'
+import type { Db, DbOrTx } from '@/db/client'
+import { coordinateIssue } from '@/features/gis/coordinateShape'
 import { err, ok, type Result } from '@/types/result'
 
 const POLYGONAL = new Set(['Polygon', 'MultiPolygon'])
+const UNEVALUABLE = 'Geometry could not be evaluated'
+
+async function evaluate<T extends Record<string, unknown>>(
+  db: DbOrTx,
+  query: SQL,
+): Promise<T | undefined> {
+  try {
+    return await (db as Db).transaction(
+      async (sp) => (await sp.execute<T>(query)).rows[0] as T | undefined,
+    )
+  } catch {
+    return undefined
+  }
+}
 
 export async function checkGeometry(
   db: DbOrTx,
@@ -11,15 +26,18 @@ export async function checkGeometry(
 ): Promise<Result<GeoJSON.MultiPolygon, { reason: string }>> {
   signal.throwIfAborted()
   if (!POLYGONAL.has(geom.type)) return err({ reason: `Unsupported geometry type ${geom.type}` })
-  const json = JSON.stringify(geom)
-  const res = await db.execute<{ valid: boolean; reason: string; multi: string }>(
-    sql`WITH g AS (SELECT ST_SetSRID(ST_GeomFromGeoJSON(${json}), 4326) AS geom)
-        SELECT ST_IsValid(geom) AS valid, ST_IsValidReason(geom) AS reason,
+  const shape = coordinateIssue(geom)
+  if (shape !== null) return err({ reason: shape })
+  const row = await evaluate<{ valid: boolean; empty: boolean; reason: string; multi: string }>(
+    db,
+    sql`WITH g AS (SELECT ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(geom)}), 4326) AS geom)
+        SELECT ST_IsValid(geom) AS valid, ST_IsEmpty(geom) AS empty,
+               ST_IsValidReason(geom) AS reason,
                ST_AsGeoJSON(ST_Multi(geom), 15) AS multi
         FROM g`,
   )
-  const row = res.rows[0]
-  if (row === undefined) return err({ reason: 'Geometry could not be evaluated' })
+  if (row === undefined) return err({ reason: UNEVALUABLE })
+  if (row.empty) return err({ reason: 'Geometry is empty' })
   if (!row.valid) return err({ reason: row.reason })
   return ok(JSON.parse(row.multi) as GeoJSON.MultiPolygon)
 }
@@ -33,12 +51,16 @@ export async function checkAnyGeometry(
 ): Promise<Result<GeoJSON.Geometry, { reason: string }>> {
   signal.throwIfAborted()
   if (!ANY_SHAPE.has(geom.type)) return err({ reason: `Unsupported geometry type ${geom.type}` })
-  const res = await db.execute<{ valid: boolean; reason: string }>(
+  const shape = coordinateIssue(geom)
+  if (shape !== null) return err({ reason: shape })
+  const row = await evaluate<{ valid: boolean; empty: boolean; reason: string }>(
+    db,
     sql`WITH g AS (SELECT ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(geom)}), 4326) AS geom)
-        SELECT ST_IsValid(geom) AS valid, ST_IsValidReason(geom) AS reason FROM g`,
+        SELECT ST_IsValid(geom) AS valid, ST_IsEmpty(geom) AS empty,
+               ST_IsValidReason(geom) AS reason FROM g`,
   )
-  const row = res.rows[0]
-  if (row === undefined) return err({ reason: 'Geometry could not be evaluated' })
+  if (row === undefined) return err({ reason: UNEVALUABLE })
+  if (row.empty) return err({ reason: 'Geometry is empty' })
   return row.valid ? ok(geom) : err({ reason: row.reason })
 }
 

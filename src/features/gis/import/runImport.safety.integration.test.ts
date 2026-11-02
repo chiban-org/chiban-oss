@@ -139,4 +139,57 @@ describe('runImport safety', () => {
     expect(second.ok && second.value.countUnchanged).toBe(7)
     expect(await handle.db.select().from(gisFeatures)).toHaveLength(7)
   })
+  describe('bad geometry rows', () => {
+    const square = (offset: number): GeoJSON.Polygon => ({
+      type: 'Polygon',
+      coordinates: [
+        [
+          [-71.5 + offset, 43.2],
+          [-71.499 + offset, 43.2],
+          [-71.499 + offset, 43.201],
+          [-71.5 + offset, 43.2],
+        ],
+      ],
+    })
+    const props = (id: string) => ({ MAPLOT: id })
+
+    async function importAll(features: SourceFeature[]) {
+      const { importer } = await userActor()
+      const r = await runImport(handle.db, importer, input(features), signal)
+      if (!r.ok) throw new Error(r.error)
+      return r.value
+    }
+
+    it('malformed coordinates become an exception and the valid rows still apply', async () => {
+      const malformed = { type: 'Polygon', coordinates: [[['x', 1]]] } as unknown as GeoJSON.Polygon
+      const report = await importAll([
+        { rowRef: '0', properties: props('007001000000'), geometry: square(0) },
+        { rowRef: '1', properties: props('007002000000'), geometry: malformed },
+        { rowRef: '2', properties: props('007003000000'), geometry: square(0.01) },
+      ])
+      expect(report.countCreated).toBe(2)
+      expect(report.exceptionsByKind).toEqual({ invalid_geometry: 1 })
+      expect(await handle.db.select().from(parcels)).toHaveLength(2)
+    })
+
+    it('an empty polygon is an exception and never replaces a stored boundary', async () => {
+      await importAll([{ rowRef: '0', properties: props('007001000000'), geometry: square(0) }])
+      const empty: GeoJSON.Polygon = { type: 'Polygon', coordinates: [] }
+      const report = await importAll([
+        { rowRef: '0', properties: props('007001000000'), geometry: empty },
+      ])
+      expect(report.exceptionsByKind).toEqual({ invalid_geometry: 1 })
+      const [stored] = await handle.db.select().from(parcels)
+      expect(stored?.geom).not.toBeNull()
+    })
+
+    it('a merged row with one part missing its geometry is excepted as missing geometry', async () => {
+      const report = await importAll([
+        { rowRef: '0', properties: props('007001000000'), geometry: square(0) },
+        { rowRef: '1', properties: props('007001000000'), geometry: null },
+      ])
+      expect(report.exceptionsByKind).toEqual({ missing_geometry: 1 })
+      expect(await handle.db.select().from(parcels)).toHaveLength(0)
+    })
+  })
 })

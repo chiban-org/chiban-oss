@@ -1,4 +1,4 @@
-import { eq, sql } from 'drizzle-orm'
+import { eq, type SQL, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { gisLayers } from '@/db/schema'
 import { err, ok, type Result } from '@/types/result'
@@ -10,6 +10,13 @@ const MIN_ZOOM = 10
 const MAX_ZOOM = 20
 const EXTENT = 4096
 const BUFFER = 64
+const PROJECTABLE_LATITUDE = 85.0511
+const PROJECTABLE_LONGITUDE = 180
+
+function projectable(column: SQL) {
+  return sql`ST_XMin(${column}) >= ${-PROJECTABLE_LONGITUDE} AND ST_XMax(${column}) <= ${PROJECTABLE_LONGITUDE}
+    AND ST_YMin(${column}) >= ${-PROJECTABLE_LATITUDE} AND ST_YMax(${column}) <= ${PROJECTABLE_LATITUDE}`
+}
 
 function inRange(z: number, x: number, y: number): boolean {
   if (![z, x, y].every(Number.isInteger) || z < MIN_ZOOM || z > MAX_ZOOM) return false
@@ -27,7 +34,7 @@ function parcelTile(z: number, x: number, y: number) {
         p.status AS status,
         ST_AsMVTGeom(ST_Transform(p.geom, 3857), env.e, ${EXTENT}, ${BUFFER}, true) AS geom
       FROM parcels p, env
-      WHERE p.geom && ST_Transform(env.e, 4326)
+      WHERE p.geom && ST_Transform(env.e, 4326) AND ${projectable(sql`p.geom`)}
     )
     SELECT ST_AsMVT(mvt.*, 'parcels', ${EXTENT}, 'geom') AS tile FROM mvt WHERE geom IS NOT NULL`
 }
@@ -40,6 +47,7 @@ function featureTile(layer: TileLayer, z: number, x: number, y: number) {
         ST_AsMVTGeom(ST_Transform(f.geom, 3857), env.e, ${EXTENT}, ${BUFFER}, true) AS geom
       FROM gis_features f, env
       WHERE f.layer_key = ${layer} AND f.geom && ST_Transform(env.e, 4326)
+        AND ${projectable(sql`f.geom`)}
     )
     SELECT ST_AsMVT(mvt.*, ${layer}, ${EXTENT}, 'geom') AS tile FROM mvt WHERE geom IS NOT NULL`
 }

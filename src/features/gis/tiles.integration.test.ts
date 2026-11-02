@@ -1,4 +1,5 @@
 import { VectorTile } from '@mapbox/vector-tile'
+import { sql } from 'drizzle-orm'
 import { PbfReader } from 'pbf'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { runImport } from '@/features/gis/import/runImport'
@@ -92,5 +93,13 @@ describe('parcelExtent', () => {
     expect(box).not.toBeNull()
     expect(box?.[0]).toBeGreaterThan(-71.61)
     expect(box?.[3]).toBeGreaterThan(43.87)
+  })
+  it('a stored geometry beyond the projectable latitude never fails the tile request', async () => {
+    await handle.db.execute(sql`
+      INSERT INTO parcels (geom, status)
+      VALUES (ST_GeomFromText('MULTIPOLYGON(((0 80, 1 80, 1 120, 0 120, 0 80)))', 4326), 'active')`)
+    const { x, y } = tileOf(0.5, 84, 10)
+    const r = await tileFor(handle.db, 'parcels', 10, x, y, signal)
+    expect(r.ok).toBe(true)
   })
 })
