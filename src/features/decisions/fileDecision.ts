@@ -22,6 +22,7 @@ export type FileError =
   | 'not_found'
   | 'already_filed'
   | 'future_date'
+  | 'before_vote'
   | 'no_written_decision'
   | 'document_not_found'
   | 'wrong_document'
@@ -96,6 +97,7 @@ export async function fileDecision(
     if (decision.filedOn !== null) return err('already_filed')
     if (decision.writtenDecisionDocumentId === null) return err('no_written_decision')
     if (compareCivil(input.filedOn, await townToday(tx, now, signal)) > 0) return err('future_date')
+    if (compareCivil(input.filedOn, decision.votedOn as CivilDate) < 0) return err('before_vote')
     const [minutes] = await tx
       .select({
         recordKind: documents.recordKind,

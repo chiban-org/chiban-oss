@@ -49,6 +49,7 @@ const COPY: Record<string, string> = {
   method_not_allowed: 'That proof method does not satisfy this kind of notice.',
   reference_required: 'Enter the tracking number from the receipt.',
   future_date: 'The date cannot be in the future.',
+  before_vote: 'The decision cannot be filed before the date of the vote.',
   document_not_found:
     'Upload the certificate or receipt to this application first, then choose it.',
   wrong_document:

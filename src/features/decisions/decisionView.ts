@@ -47,6 +47,7 @@ export interface DecisionView {
   applicationNumber: string
   typeLabel: string
   outcomeText: string
+  votedOn: string
   votedOnText: string
   motion: string
   voteText: string
@@ -173,6 +174,7 @@ export async function loadDecisionView(
     applicationNumber: app.number,
     typeLabel: app.typeBody.label,
     outcomeText: OUTCOME_LABELS[decision.outcome],
+    votedOn: decision.votedOn,
     votedOnText: formatCivilDate(decision.votedOn),
     motion: decision.motion,
     voteText: `${decision.votes.for} for, ${decision.votes.against} against, ${decision.votes.abstain} abstaining`,
