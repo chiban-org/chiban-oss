@@ -1,10 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import type { CivilDate } from '@/types/civilDate'
 import { formatCivilDate, formatInstant } from './formatDate'
 
 describe('formatCivilDate', () => {
   it('writes the month in words without shifting the day', () => {
-    expect(formatCivilDate('2027-05-20' as CivilDate)).toBe('May 20, 2027')
+    expect(formatCivilDate('2027-05-20')).toBe('May 20, 2027')
   })
 })
 
