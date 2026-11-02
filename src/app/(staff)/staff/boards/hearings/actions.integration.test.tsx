@@ -332,7 +332,9 @@ describe('staff and public pages', () => {
   })
 
   it('the public page lists only filed decisions and published agendas, with no text under 16px', async () => {
-    const html = renderToStaticMarkup(await PublicMeetingsPage())
+    const html = renderToStaticMarkup(
+      await PublicMeetingsPage({ searchParams: Promise.resolve({}) }),
+    )
     expect(html).toContain('No decisions have been filed yet.')
     expect(html).not.toMatch(/text-(xs|sm)\b/)
     state.actor = world.staff
@@ -344,11 +346,23 @@ describe('staff and public pages', () => {
         minutesDocumentId: await proofDocument(handle.db, world, decided.applicationId),
       }),
     )
-    const page = renderToStaticMarkup(await PublicMeetingsPage())
+    const page = renderToStaticMarkup(
+      await PublicMeetingsPage({ searchParams: Promise.resolve({}) }),
+    )
     expect(filed.ok).toBe(true)
     expect(page).toContain('Approved, voted April 15, 2027')
     expect(page).toContain('Notice of Decision')
     expect(findIsoDates(page.replace(/href="[^"]*"/g, ''))).toEqual([])
+  })
+
+  it('the second page of agendas links back to newer agendas in 16px text', async () => {
+    const html = renderToStaticMarkup(
+      await PublicMeetingsPage({ searchParams: Promise.resolve({ agendas: '2' }) }),
+    )
+    expect(html).toContain('href="/meetings?agendas=1"')
+    expect(html).toContain('Newer agendas')
+    expect(html).not.toContain('Older agendas')
+    expect(html).not.toMatch(/text-(xs|sm)\b/)
   })
 
   it('the letters route prints for staff and is refused for a reviewer', async () => {

@@ -1,4 +1,4 @@
-import { desc, eq, isNotNull } from 'drizzle-orm'
+import { and, desc, eq, isNotNull } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { agendas, applications, boardDecisions, boardMeetings, documents } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
@@ -21,24 +21,35 @@ export interface PublicDecisionLine {
 }
 
 const LIMIT = 100
+export const AGENDA_PAGE_SIZE = 20
+
+export interface PublicPage {
+  page: number
+  hasNext: boolean
+}
+
+export interface PublicBoardRecords {
+  agendas: PublicAgendaLine[]
+  agendaPage: PublicPage
+  decisions: PublicDecisionLine[]
+}
 
 export async function loadPublicBoardRecords(
   db: Db,
   signal: AbortSignal,
-): Promise<{ agendas: PublicAgendaLine[]; decisions: PublicDecisionLine[] }> {
+  options: { agendaPage?: number } = {},
+): Promise<PublicBoardRecords> {
   signal.throwIfAborted()
+  const page = Math.max(1, Math.floor(options.agendaPage ?? 1))
   const agendaRows = await db
-    .select({
-      meeting: boardMeetings,
-      documentId: agendas.documentId,
-      isPublic: documents.isPublic,
-    })
+    .select({ meeting: boardMeetings, documentId: documents.id })
     .from(agendas)
     .innerJoin(boardMeetings, eq(boardMeetings.id, agendas.meetingId))
     .innerJoin(documents, eq(documents.id, agendas.documentId))
-    .where(eq(agendas.status, 'published'))
-    .orderBy(desc(boardMeetings.meetingDate))
-    .limit(LIMIT)
+    .where(and(eq(agendas.status, 'published'), eq(documents.isPublic, true)))
+    .orderBy(desc(boardMeetings.meetingDate), desc(boardMeetings.id))
+    .limit(AGENDA_PAGE_SIZE + 1)
+    .offset((page - 1) * AGENDA_PAGE_SIZE)
   const decisionRows = await db
     .select({ decision: boardDecisions, number: applications.number })
     .from(boardDecisions)
@@ -58,13 +69,12 @@ export async function loadPublicBoardRecords(
     })
   }
   return {
-    agendas: agendaRows
-      .filter((r) => r.isPublic && r.documentId !== null)
-      .map((r) => ({
-        meetingId: r.meeting.id,
-        text: `${BOARD_NAMES[r.meeting.board]}, ${formatCivilDate(r.meeting.meetingDate)}`,
-        documentId: r.documentId ?? '',
-      })),
+    agendas: agendaRows.slice(0, AGENDA_PAGE_SIZE).map((r) => ({
+      meetingId: r.meeting.id,
+      text: `${BOARD_NAMES[r.meeting.board]}, ${formatCivilDate(r.meeting.meetingDate)}`,
+      documentId: r.documentId,
+    })),
+    agendaPage: { page, hasNext: agendaRows.length > AGENDA_PAGE_SIZE },
     decisions,
   }
 }
