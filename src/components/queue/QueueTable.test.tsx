@@ -19,6 +19,7 @@ function row(overrides: Partial<WorkQueueRow>): WorkQueueRow {
     typeLabel: 'Building permit',
     state: 'submitted',
     substep: null,
+    substepLabel: null,
     parcelDisplayId: '007001000000',
     nextDue: null,
     daysUntilDue: null,
@@ -44,6 +45,19 @@ function setup(rows: WorkQueueRow[], navigate = vi.fn()) {
 }
 
 describe('QueueTable', () => {
+  it('writes the state, substep label, and reviewer status in words', () => {
+    setup([
+      row({
+        state: 'issued',
+        substep: 'co_pending',
+        substepLabel: 'Certificate of occupancy pending',
+        reviewers: [{ name: 'Remy Reviewer', status: 'signed_off' }],
+      }),
+    ])
+    expect(screen.getByText('Issued, certificate of occupancy pending')).toBeTruthy()
+    expect(screen.getByText('Remy Reviewer (Signed off)')).toBeTruthy()
+  })
+
   it('queue row shows the overdue chip with a text label', () => {
     setup([row({ dueStatus: 'overdue', nextDue: d('2027-03-01'), daysUntilDue: -1 })])
     expect(screen.getByText('Overdue')).toBeTruthy()

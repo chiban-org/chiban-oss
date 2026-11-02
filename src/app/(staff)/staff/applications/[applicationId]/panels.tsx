@@ -4,6 +4,8 @@ import { SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { STATE_LABELS } from '@/features/applications/states'
 import type { AdjustmentKind } from '@/features/clocks/explainClock'
+import { partyLine } from '@/features/projects/partyRoleLabels'
+import { formatCivilDate } from '@/lib/formatDate'
 import {
   applyConditionAction,
   markCompleteAction,
@@ -56,7 +58,7 @@ export function PartiesPanel({ view }: { view: StaffApplicationView }) {
       <ul>
         {view.parties.map((p) => (
           <li key={p.id}>
-            {`${p.name}, ${p.role}`}
+            {partyLine(p.name, p.role)}
             {p.role === 'agent'
               ? p.ownerAuthorizationOnFile
                 ? ', owner authorization on file'
@@ -81,7 +83,7 @@ export function CompletenessPanel({ view }: { view: StaffApplicationView }) {
       <p>
         {view.completedDate === null
           ? 'The application has not been marked complete, so the decision clock has not started.'
-          : `Marked complete on ${view.completedDate}.`}
+          : `Marked complete on ${formatCivilDate(view.completedDate)}.`}
       </p>
       {applies ? (
         <ActionForm action={markCompleteAction} submitLabel="Mark complete">

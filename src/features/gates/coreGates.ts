@@ -12,7 +12,7 @@ registerGate({
   boundBy: null,
   evaluate: async (tx, app) => {
     const unmet = await tx
-      .select({ code: applicationConditions.code })
+      .select({ text: applicationConditions.textSnapshot })
       .from(applicationConditions)
       .where(
         and(
@@ -24,7 +24,7 @@ registerGate({
     if (unmet.length === 0) return { status: 'pass' }
     return {
       status: 'blocked',
-      reason: `Unmet conditions block issuance: ${unmet.map((u) => u.code).join(', ')}.`,
+      reason: `Unmet conditions block issuance: ${unmet.map((u) => u.text).join('; ')}.`,
     }
   },
 })

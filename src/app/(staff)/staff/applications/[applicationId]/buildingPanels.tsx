@@ -3,7 +3,16 @@ import { StatusChip } from '@/components/StatusChip'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { componentsNotInLabel } from '@/features/building/codeEdition'
+import {
+  APPEAL_OUTCOME_OPTIONS,
+  DETERMINATION_OPTIONS,
+  labelFor,
+  NOTICE_METHOD_OPTIONS,
+  RECIPIENT_KIND_OPTIONS,
+} from '@/features/building/labels'
 import { loadPack } from '@/features/packs/loadPack'
+import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
+import { lowerFirst } from '@/lib/words'
 import { recordCodeEditionAction } from './actions'
 import {
   recordAppealAction,
@@ -18,7 +27,7 @@ const ELECTION_NONE: [string, string] = ['', 'No election: use the edition in fo
 function electionOptions(): [string, string][] {
   return loadPack()
     .codeEditions.filter((e) => e.status === 'verified')
-    .map((e): [string, string] => [e.key, e.label])
+    .map((e): [string, string] => [e.key, humanizeIsoDates(e.label)])
 }
 
 export function CodeEditionPanel({ view }: { view: StaffApplicationView }) {
@@ -32,7 +41,7 @@ export function CodeEditionPanel({ view }: { view: StaffApplicationView }) {
       ) : (
         <>
           <p>
-            <strong>{edition.description.label}</strong>
+            <strong>{humanizeIsoDates(edition.description.label)}</strong>
             {edition.description.status === 'unverified' ? (
               <StatusChip status="overdue" label="Edition not verified" />
             ) : null}
@@ -42,7 +51,7 @@ export function CodeEditionPanel({ view }: { view: StaffApplicationView }) {
           )}
           {edition.description.amendmentPackagesInForce.map((label) => (
             <p key={label} className="m-0">
-              {label}
+              {humanizeIsoDates(label)}
             </p>
           ))}
           <dl className="grid grid-cols-[12rem_1fr] gap-x-4 text-sm">
@@ -81,20 +90,12 @@ export function RegionalImpactPanel({ view }: { view: StaffApplicationView }) {
       <p>
         {r.determination === null
           ? 'No determination is recorded. Issuance is blocked until one is.'
-          : `Determination: ${r.determination.determination.replaceAll('_', ' ')} on ${r.determination.determinedOn}${r.determination.previousBoardRef === null ? '' : ` (board reference ${r.determination.previousBoardRef})`}.`}
+          : `Determination: ${lowerFirst(labelFor(DETERMINATION_OPTIONS, r.determination.determination))} on ${formatCivilDate(r.determination.determinedOn)}${r.determination.previousBoardRef === null ? '' : ` (board reference ${r.determination.previousBoardRef})`}.`}
       </p>
       {view.permissions.canDetermineRegionalImpact ? (
         <ActionForm action={regionalImpactAction} submitLabel="Record determination">
           <input type="hidden" name="applicationId" value={view.id} />
-          <SelectField
-            label="Determination"
-            name="determination"
-            options={[
-              ['yes', 'Potential regional impact'],
-              ['no', 'No regional impact'],
-              ['previously_determined', 'Previously determined by another board'],
-            ]}
-          />
+          <SelectField label="Determination" name="determination" options={DETERMINATION_OPTIONS} />
           <TextField label="Board reference (if previously determined)" name="previousBoardRef" />
           <TextField
             label="Determined on"
@@ -110,33 +111,16 @@ export function RegionalImpactPanel({ view }: { view: StaffApplicationView }) {
           {r.notices.map((n) => (
             <li
               key={n.id}
-            >{`${n.recipientName} (${n.recipientKind.replaceAll('_', ' ')}), ${n.method.replaceAll('_', ' ')}, mailed ${n.mailedOn}`}</li>
+            >{`${n.recipientName} (${lowerFirst(labelFor(RECIPIENT_KIND_OPTIONS, n.recipientKind))}), ${lowerFirst(labelFor(NOTICE_METHOD_OPTIONS, n.method))}, mailed ${formatCivilDate(n.mailedOn)}`}</li>
           ))}
         </ul>
       )}
       {r.determination?.determination === 'yes' && view.permissions.canDetermineRegionalImpact ? (
         <ActionForm action={regionalNoticeAction} submitLabel="Record notice">
           <input type="hidden" name="applicationId" value={view.id} />
-          <SelectField
-            label="Recipient"
-            name="recipientKind"
-            options={[
-              ['regional_planning_commission', 'Regional planning commission'],
-              ['affected_municipality', 'Affected municipality'],
-              ['governing_body', 'Local governing body'],
-            ]}
-          />
+          <SelectField label="Recipient" name="recipientKind" options={RECIPIENT_KIND_OPTIONS} />
           <TextField label="Recipient name" name="recipientName" required />
-          <SelectField
-            label="Method"
-            name="method"
-            options={[
-              ['certified_mail', 'Certified mail'],
-              ['hand_delivery', 'Hand delivery'],
-              ['email', 'Email'],
-              ['other', 'Other'],
-            ]}
-          />
+          <SelectField label="Method" name="method" options={NOTICE_METHOD_OPTIONS} />
           <TextField
             label="Mailed on"
             name="mailedOn"
@@ -161,7 +145,7 @@ export function AppealPanel({ view }: { view: StaffApplicationView }) {
         {view.appeals.map((a) => (
           <li
             key={a.id}
-          >{`Filed ${a.filedOn} by ${a.appellantName}. ${a.resolvedOn === null ? 'Open.' : `Resolved ${a.resolvedOn}: ${a.outcome?.replaceAll('_', ' ')}.`}`}</li>
+          >{`Filed ${formatCivilDate(a.filedOn)} by ${a.appellantName}. ${a.resolvedOn === null ? 'Open.' : `Resolved ${formatCivilDate(a.resolvedOn)}: ${lowerFirst(labelFor(APPEAL_OUTCOME_OPTIONS, a.outcome ?? ''))}.`}`}</li>
         ))}
       </ul>
       {view.state === 'issued' && view.permissions.canIssue ? (
@@ -192,14 +176,7 @@ export function AppealPanel({ view }: { view: StaffApplicationView }) {
       {open !== undefined && view.permissions.canIssue ? (
         <ActionForm action={resolveAppealAction} submitLabel="Resolve appeal">
           <input type="hidden" name="applicationId" value={view.id} />
-          <SelectField
-            label="Outcome"
-            name="outcome"
-            options={[
-              ['permit_upheld', 'Permit upheld'],
-              ['permit_revoked', 'Permit revoked'],
-            ]}
-          />
+          <SelectField label="Outcome" name="outcome" options={APPEAL_OUTCOME_OPTIONS} />
           <TextField
             label="Resolved on"
             name="resolvedOn"

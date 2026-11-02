@@ -24,6 +24,7 @@ import {
 import { renderSnapshotPdf } from '@/features/snapshots/snapshotPdf'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { getTownSettings } from '@/features/town/settings'
+import { townTimeZone } from '@/features/town/timeZone'
 
 export type SnapshotReason = 'submission' | 'amendment'
 
@@ -119,11 +120,13 @@ export async function captureSnapshot(
     .returning({ id: applicationSnapshots.id })
   const town = await getTownSettings(tx, signal)
   const townName = town.ok ? town.value.name : ''
-  const full = await renderSnapshotPdf(body, townName, sequence)
+  const timeZone = await townTimeZone(tx, signal)
+  const full = await renderSnapshotPdf(body, townName, sequence, timeZone)
   const redacted = await renderSnapshotPdf(
     { ...publicSnapshotView(body), attestation: null },
     townName,
     sequence,
+    timeZone,
   )
   const original = await storeGeneratedBytes(tx, store, full, 'application/pdf', signal)
   const publicCopy = await storeGeneratedBytes(tx, store, redacted, 'application/pdf', signal)

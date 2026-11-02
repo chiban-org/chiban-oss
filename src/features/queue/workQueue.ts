@@ -5,6 +5,7 @@ import { applicationVisibleTo } from '@/features/access/predicates'
 import { hasFullRecordAccess } from '@/features/access/roles'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { CoreState } from '@/features/applications/states'
+import { substepLabel } from '@/features/applications/statusText'
 import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
 import { displayIdsFor } from '@/features/parcels/displayId'
@@ -30,6 +31,7 @@ export interface WorkQueueRow {
   typeLabel: string
   state: CoreState
   substep: string | null
+  substepLabel: string | null
   parcelDisplayId: string | null
   nextDue: CivilDate | null
   daysUntilDue: number | null
@@ -109,11 +111,20 @@ function filterClauses(
   ]
 }
 
+interface TypeLabels {
+  label: string
+  substeps: { key: string; label: string }[]
+}
+
 async function typeLabels(db: DbOrTx, pins: string[], signal: AbortSignal) {
-  const labels = new Map<string, string>()
+  const labels = new Map<string, TypeLabels>()
   for (const id of new Set(pins)) {
     const version = await getVersion(db, id, signal)
-    labels.set(id, (version?.body as ApplicationTypeBody | undefined)?.label ?? '')
+    const body = version?.body as ApplicationTypeBody | undefined
+    labels.set(id, {
+      label: body?.label ?? '',
+      substeps: body?.workflow.substeps ?? [],
+    })
   }
   return labels
 }
@@ -197,12 +208,14 @@ export async function listWorkQueue(
   return {
     rows: page.map((r) => {
       const nextDue = r.nextDue as CivilDate | null
+      const type = labels.get((r.configPins as { applicationType: string }).applicationType)
       return {
         applicationId: r.id,
         number: r.number,
-        typeLabel: labels.get((r.configPins as { applicationType: string }).applicationType) ?? '',
+        typeLabel: type?.label ?? '',
         state: r.state as CoreState,
         substep: r.substep,
+        substepLabel: r.substep === null ? null : substepLabel(r.substep, type?.substeps ?? []),
         parcelDisplayId: display.get(r.parcelId) ?? null,
         nextDue,
         daysUntilDue: nextDue === null ? null : daysBetween(today, nextDue),

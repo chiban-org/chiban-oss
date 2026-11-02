@@ -15,6 +15,7 @@ import { loadPanelDocuments } from '@/features/documents/panelData'
 import { bboxOfGeometry, configuredOverlayLayers } from '@/features/gis/extent'
 import { returnedCheckNoticesForParcel } from '@/features/ledger/balanceNotice'
 import { loadPack } from '@/features/packs/loadPack'
+import { lineageEventText, retiredText } from '@/features/parcels/parcelText'
 import { getStaffParcelView } from '@/features/parcels/staffParcelView'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -85,7 +86,7 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
       </div>
       {view.status === 'retired' ? (
         <p>
-          <StatusChip status="neutral" label={`Retired ${view.retiredOn ?? ''}`.trim()} />
+          <StatusChip status="neutral" label={retiredText(view.retiredOn)} />
         </p>
       ) : null}
       <BalanceDueNotice notices={balanceNotices} linkApplications />
@@ -134,7 +135,7 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
             <tr key={`${a.format}:${a.value}:${a.status}`} className="border-b">
               <td className="py-2">{a.label}</td>
               <td>{a.value}</td>
-              <td>{a.status === 'retired' ? `Retired ${a.retiredOn ?? ''}`.trim() : 'Active'}</td>
+              <td>{a.status === 'retired' ? retiredText(a.retiredOn) : 'Active'}</td>
               <td>{a.source}</td>
             </tr>
           ))}
@@ -184,7 +185,7 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
               <Link href={`/staff/parcels/${l.parcelId}`} className="text-action underline">
                 {l.displayId ?? 'No map-lot ID'}
               </Link>
-              {`, ${l.eventKind.replaceAll('_', ' ')} effective ${l.effectiveDate}`}
+              {`, ${lineageEventText(l.eventKind, l.effectiveDate)}`}
             </li>
           ))}
         </ul>

@@ -14,7 +14,7 @@ import {
   getStaffApplicationView,
   type StaffApplicationView,
 } from '@/features/applications/staffApplicationView'
-import { stateLabel } from '@/features/applications/stateLabel'
+import { applicationStatusText } from '@/features/applications/statusText'
 import { applicationSubtitle } from '@/features/applications/subtitle'
 import { hasCapability } from '@/features/authz/capabilities'
 import { loadPanelDocuments } from '@/features/documents/panelData'
@@ -139,7 +139,7 @@ export default async function StaffApplicationPage({ params }: Props) {
                   ? 'failed'
                   : 'neutral'
           }
-          label={`${stateLabel(view.state)}${view.substep === null ? '' : `, ${view.substep.replaceAll('_', ' ')}`}`}
+          label={applicationStatusText(view.state, view.substep, view.substeps)}
         />
       </div>
       <p className="text-muted-foreground">

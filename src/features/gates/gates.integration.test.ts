@@ -50,6 +50,16 @@ describe('conditions gate', () => {
     })
   })
 
+  it('the blocked reason names the condition text, not its code', async () => {
+    const app = await makeApplication(handle.db, world)
+    await blockingCondition(app.applicationId)
+    const reason = (await gates(app.applicationId)).find((r) => r.key === 'conditions.blocking_met')
+    expect(reason?.outcome).toMatchObject({
+      status: 'blocked',
+      reason: 'Unmet conditions block issuance: Approved septic design on file.',
+    })
+  })
+
   it('no conditions passes, and a met condition passes', async () => {
     const app = await makeApplication(handle.db, world)
     expect(effectiveOf(await gates(app.applicationId), 'conditions.blocking_met')).toBe('pass')

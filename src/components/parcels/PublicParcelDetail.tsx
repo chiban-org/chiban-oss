@@ -4,7 +4,7 @@ import { HonestText } from '@/components/parcels/HonestText'
 import { RecordsSection } from '@/components/parcels/RecordsSection'
 import type { Bbox } from '@/features/gis/extent'
 import type { PublicParcelView } from '@/features/parcels/publicParcelView'
-import { todayInTimeZone } from '@/types/civilDate'
+import { formatCivilDate, formatInstantDate } from '@/lib/formatDate'
 
 interface PublicParcelDetailProps {
   view: PublicParcelView
@@ -43,7 +43,7 @@ export function ParcelSearchBox({ defaultValue = '' }: { defaultValue?: string }
 function Banner({ view, timeZone }: { view: PublicParcelView; timeZone: string }) {
   const { layer } = view
   const last =
-    layer.lastSuccessAt === null ? null : todayInTimeZone(timeZone, new Date(layer.lastSuccessAt))
+    layer.lastSuccessAt === null ? null : formatInstantDate(new Date(layer.lastSuccessAt), timeZone)
   let text: string | null = null
   if (layer.state === 'stale' && last !== null)
     text = `Parcel data last imported ${last}. It may be out of date.`
@@ -72,7 +72,9 @@ export function PublicParcelDetail({
       <ParcelSearchBox />
       <h1>{display?.value ?? 'Parcel'}</h1>
       {view.status === 'retired' ? (
-        <p className="font-semibold">{`Retired ${view.retiredOn ?? ''}`.trim()}</p>
+        <p className="font-semibold">
+          {`Retired ${view.retiredOn === null ? '' : formatCivilDate(view.retiredOn)}`.trim()}
+        </p>
       ) : null}
       <Banner view={view} timeZone={timeZone} />
       <dl className="my-4 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
@@ -110,7 +112,7 @@ export function PublicParcelDetail({
                 <Link href={`/parcels/${p.parcelId}`} className="tap-target text-action underline">
                   {p.displayId ?? 'Parcel'}
                 </Link>
-                {`, ${p.eventKind.replaceAll('_', ' ')} effective ${p.effectiveDate}`}
+                {`, ${p.eventKind.replaceAll('_', ' ')} effective ${formatCivilDate(p.effectiveDate)}`}
               </li>
             ))}
             {view.lineage.children.map((c) => (
@@ -119,7 +121,7 @@ export function PublicParcelDetail({
                 <Link href={`/parcels/${c.parcelId}`} className="tap-target text-action underline">
                   {c.displayId ?? 'Parcel'}
                 </Link>
-                {`, ${c.eventKind.replaceAll('_', ' ')} effective ${c.effectiveDate}`}
+                {`, ${c.eventKind.replaceAll('_', ' ')} effective ${formatCivilDate(c.effectiveDate)}`}
               </li>
             ))}
           </ul>

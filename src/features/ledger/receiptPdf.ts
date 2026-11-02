@@ -5,6 +5,7 @@ import { assessedLines, lineKey } from '@/features/ledger/lineTotals'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { getTownSettings } from '@/features/town/settings'
+import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { err, ok, type Result } from '@/types/result'
 
@@ -92,7 +93,7 @@ export async function buildReceiptPdf(
   const method = entry === undefined ? '' : (METHOD_LABELS[entry.method] ?? entry.method)
   const fields = [
     { label: 'Receipt', value: receipt.number },
-    { label: 'Date', value: receipt.businessDate },
+    { label: 'Date', value: formatCivilDate(receipt.businessDate) },
     { label: refund ? 'Refunded to' : 'Received from', value: receipt.payerName },
     {
       label: 'Method',

@@ -30,7 +30,7 @@ export async function listDocuments(
       createdAt: documents.createdAt,
       hasRedactedCopy: sql<boolean>`exists (
         select 1 from document_versions dv
-        where dv.document_id = ${documents.id} and dv.role = 'public_redacted')`,
+        where dv.document_id = documents.id and dv.role = 'public_redacted')`,
     })
     .from(documents)
     .where(

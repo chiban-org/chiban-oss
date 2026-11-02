@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { AssignmentList } from '@/components/reviews/AssignmentList'
 import { listMyAssignments } from '@/features/reviews/reviewerView'
 import { requireStaffContext } from '@/server/requireStaff'
 
@@ -13,16 +13,7 @@ export default async function ReviewsPage() {
       {mine.length === 0 ? (
         <p>No applications are assigned to you.</p>
       ) : (
-        <ul className="space-y-2">
-          {mine.map((a) => (
-            <li key={a.assignmentId}>
-              <Link href={`/staff/reviews/${a.assignmentId}`} className="text-action underline">
-                {a.number}
-              </Link>
-              <span className="ml-2">{a.status.replaceAll('_', ' ')}</span>
-            </li>
-          ))}
-        </ul>
+        <AssignmentList assignments={mine} />
       )}
     </main>
   )

@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { PublicParcelDetail } from '@/components/parcels/PublicParcelDetail'
 import type { LayerStatus } from '@/features/gis/layerStatus'
 import type { PublicParcelView } from '@/features/parcels/publicParcelView'
+import { findIsoDates } from '@/test/leaks'
 import type { CivilDate } from '@/types/civilDate'
 
 vi.mock('@/components/map/LinkedParcelMap', () => ({ LinkedParcelMap: () => <div>map</div> }))
@@ -42,7 +43,7 @@ describe('PublicParcelDetail', () => {
   it('public page shows stale banner', () => {
     render(<PublicParcelDetail view={view({ layer: layer('stale') })} {...props} />)
     expect(
-      screen.getByText('Parcel data last imported 2027-01-01. It may be out of date.'),
+      screen.getByText('Parcel data last imported January 1, 2027. It may be out of date.'),
     ).toBeTruthy()
   })
 
@@ -56,8 +57,8 @@ describe('PublicParcelDetail', () => {
     expect(screen.getByText(/latest update of parcel data failed/i)).toBeTruthy()
   })
 
-  it('retired parcel shows "Retired 2027-04-12" and links to its children', () => {
-    render(
+  it('retired parcel shows "Retired April 12, 2027" and links to its children', () => {
+    const { container } = render(
       <PublicParcelDetail
         view={view({
           status: 'retired',
@@ -78,7 +79,9 @@ describe('PublicParcelDetail', () => {
         {...props}
       />,
     )
-    expect(screen.getByText('Retired 2027-04-12')).toBeTruthy()
+    expect(screen.getByText('Retired April 12, 2027')).toBeTruthy()
+    expect(container.textContent).toContain('subdivision effective April 12, 2027')
+    expect(findIsoDates(container.textContent)).toEqual([])
     const link = screen.getByRole('link', { name: '007020001000' })
     expect(link.getAttribute('href')).toBe('/parcels/c1')
   })

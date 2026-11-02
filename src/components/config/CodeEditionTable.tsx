@@ -1,7 +1,9 @@
 import type { CodeEditionEntry } from '@packs/nh/schema'
 import { componentsNotInLabel, describeCodeEdition } from '@/features/building/codeEdition'
+import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 
+const EPOCH = '1970-01-01'
 const FAR_FUTURE = '9999-12-31' as CivilDate
 
 export function CodeEditionTable({ editions }: { editions: CodeEditionEntry[] }) {
@@ -21,8 +23,12 @@ export function CodeEditionTable({ editions }: { editions: CodeEditionEntry[] })
           const d = describeCodeEdition(entry, FAR_FUTURE)
           return (
             <tr key={entry.key} className="border-b align-top">
-              <td className="py-1">{d.label}</td>
-              <td>{entry.effectiveFrom}</td>
+              <td className="py-1">{humanizeIsoDates(d.label)}</td>
+              <td>
+                {entry.effectiveFrom === EPOCH
+                  ? 'Start of records'
+                  : formatCivilDate(entry.effectiveFrom)}
+              </td>
               <td>{d.status === 'verified' ? 'Verified' : 'Not verified'}</td>
               <td>
                 {d.status === 'unverified' ? (
@@ -35,11 +41,11 @@ export function CodeEditionTable({ editions }: { editions: CodeEditionEntry[] })
                   <p className="m-0">{componentsNotInLabel(d).join(', ')}</p>
                 )}
                 {d.enforcementFrom === null ? null : (
-                  <p className="m-0">{`Enforced from ${d.enforcementFrom}`}</p>
+                  <p className="m-0">{`Enforced from ${formatCivilDate(d.enforcementFrom)}`}</p>
                 )}
                 {d.amendmentPackagesInForce.map((label) => (
                   <p key={label} className="m-0">
-                    {label}
+                    {humanizeIsoDates(label)}
                   </p>
                 ))}
                 <a href={d.citation.url} className="text-action underline">
