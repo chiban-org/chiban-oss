@@ -7,7 +7,7 @@ import { openIncomplete } from '@/features/abutters/draft'
 import { type NoticeCostSummary, noticeCostSummary } from '@/features/abutters/noticeCosts'
 import { type Overlay, projectionOverlay } from '@/features/abutters/overlay'
 import { getList, type ListRow, type ListSnapshot } from '@/features/abutters/queries'
-import { provenanceText, reasonText } from '@/features/abutters/reasonText'
+import { provenanceText, reasonLines } from '@/features/abutters/reasonText'
 import type { Recipient } from '@/features/abutters/resolution'
 import { RECIPIENT_ROLE_LABELS } from '@/features/abutters/roles'
 import type { Candidate } from '@/features/abutters/types'
@@ -179,7 +179,7 @@ async function candidateRows(tx: Tx, listId: string): Promise<CandidateRow[]> {
       parcelId: r.parcelId,
       parcelLabel: labels.get(r.parcelId) ?? 'Parcel',
       owner: ownerOf.get(r.parcelId) ?? 'Owner not on record',
-      reasons: reasons.map(reasonText),
+      reasons: reasonLines(reasons),
       staffSelected: reasons.some((x) => x.kind === 'staff_selected'),
       excluded: r.excluded,
       exclusionReason: r.exclusionReason,

@@ -34,7 +34,9 @@ function Header({ view }: { view: ListView }) {
       <p>
         {`Drawn ${view.drawnText}.`}
         {view.issuedText === null ? '' : ` Issued ${view.issuedText}.`}
-        {view.fingerprint === null ? '' : ` Fingerprint ${view.fingerprint}.`}
+        {view.fingerprint === null
+          ? ''
+          : ` Check code ${view.fingerprint}, which matches every printed copy of this version.`}
       </p>
       <section aria-label="Where the data came from">
         <h2>Where the data came from</h2>
