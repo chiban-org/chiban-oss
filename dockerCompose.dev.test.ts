@@ -22,4 +22,10 @@ describe('docker-compose.dev.yml', () => {
   it('compose images match the shared infra constants', () => {
     expect(images).toEqual(expect.arrayContaining([POSTGIS_IMAGE, MINIO_IMAGE, MAILPIT_IMAGE]))
   })
+
+  it('takes the MinIO CORS origin from MINIO_CORS_ORIGIN and defaults to the standard dev origin', () => {
+    expect(compose).toContain(
+      'MINIO_API_CORS_ALLOW_ORIGIN: ${MINIO_CORS_ORIGIN:-http://localhost:3000}',
+    )
+  })
 })

@@ -33,7 +33,7 @@ pnpm db:seed:demo
 pnpm dev
 ```
 
-The app serves on http://localhost:3000. Mailpit shows outgoing mail on http://localhost:8025. If another process holds host port 1025 or 8025, set `MAILPIT_SMTP_PORT` or `MAILPIT_UI_PORT` before `docker compose up` and match `SMTP_URL` in `.env`.
+The app serves on http://localhost:3000. Mailpit shows outgoing mail on http://localhost:8025. If another process holds host port 1025 or 8025, set `MAILPIT_SMTP_PORT` or `MAILPIT_UI_PORT` before `docker compose up` and match `SMTP_URL` in `.env`. To serve the app from another origin, such as a second checkout on port 3100, set `MINIO_CORS_ORIGIN=http://localhost:3100` (comma-separated for several) before `docker compose up` so browser uploads to storage are allowed.
 
 ## Dev sign-in
 
