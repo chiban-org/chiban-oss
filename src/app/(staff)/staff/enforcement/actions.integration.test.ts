@@ -172,6 +172,33 @@ describe('enforcement server actions', () => {
     expect(row?.status).toBe('issued')
   })
 
+  it('a court step without a court document names the missing document', async () => {
+    const result = await service.courtStepAction(
+      form({
+        orderId: order.orderId,
+        kind: 'filed_with_clerk',
+        occurredOn: '2027-03-02',
+        court: 'Alder Pond District Court',
+      }),
+    )
+    expect(result).toEqual({
+      ok: false,
+      error:
+        'Choose the court document. Upload it in the Documents section first, as a court document.',
+    })
+  })
+
+  it('service handed to a person with no recipient chosen says to choose one', async () => {
+    const result = await service.serviceEventAction(
+      form({ orderId: order.orderId, recipientId: '', method: 'in_hand', servedOn: '2027-03-02' }),
+    )
+    expect(result).toEqual({
+      ok: false,
+      error:
+        'Choose who was served. Posting and newspaper publication are the only methods recorded without a recipient.',
+    })
+  })
+
   it('opens a case through the action', async () => {
     const result = await main.openCaseAction(form({ locationText: '9 Alder Court' }))
     expect(result).toEqual({ ok: true, message: 'Case opened.' })

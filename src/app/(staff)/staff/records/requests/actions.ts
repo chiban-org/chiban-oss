@@ -160,6 +160,10 @@ export async function createReleaseAction(formData: FormData): Promise<ActionRes
         signal,
       ),
     'Records released.',
+    {
+      items: 'Tick at least one approved record to release.',
+      releasedOn: 'Enter the date the records were released.',
+    },
   )
 }
 

@@ -9,7 +9,8 @@ import {
 import type { SubjectDue } from '@/features/clocks/subjectDue'
 import { recordAnswer } from '@/features/enforcement/answers'
 import { recordCourtStep } from '@/features/enforcement/courtSteps'
-import { listRecipient, recordRoleCheck, recordServiceEvent } from '@/features/enforcement/service'
+import { listRecipient, recordRoleCheck } from '@/features/enforcement/service'
+import { recordServiceEvent } from '@/features/enforcement/serviceEvents'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import {

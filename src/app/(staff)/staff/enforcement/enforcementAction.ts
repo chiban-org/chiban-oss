@@ -7,6 +7,7 @@ import {
   errorCopy,
   runStaffAction,
 } from '@/server/actionRunner'
+import { type FieldCopy, invalidFieldCopy } from '@/server/fieldCopy'
 import type { CivilDate } from '@/types/civilDate'
 import type { Result } from '@/types/result'
 
@@ -52,6 +53,8 @@ const COPY: Record<string, string> = {
   motion_required: 'Record the motion to enforce before the judgment.',
   service_incomplete: 'Service is not complete.',
   answer_period_running: 'The answer period is still running.',
+  recipient_method_mismatch:
+    'Choose who was served. Posting and newspaper publication are the only methods recorded without a recipient.',
   answered: 'An answer was received, so the motion cannot be filed.',
   not_filed_with_clerk: 'File the order with the court clerk first.',
   document_invalid: 'Choose a document that belongs to this case.',
@@ -102,10 +105,16 @@ export async function runEnforcement<S extends z.ZodType>(
   schema: S,
   call: (ctx: ActionContext, input: z.output<S>) => Promise<Result<unknown, Failure>>,
   message: string,
+  fieldCopy: FieldCopy = {},
 ): Promise<ActionResult> {
   return await runStaffAction(formData, async (ctx) => {
     const parsed = schema.safeParse(formValues(formData))
-    if (!parsed.success) return { ok: false, error: enforcementError('invalid') }
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: invalidFieldCopy(parsed.error, fieldCopy) ?? enforcementError('invalid'),
+      }
+    }
     const result = await call(ctx, parsed.data)
     return result.ok ? { ok: true, message } : { ok: false, error: enforcementError(result.error) }
   })

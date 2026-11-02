@@ -5,7 +5,8 @@ import { z } from 'zod'
 import { COURT_STEP_KINDS, JUDGMENT_OUTCOMES, SERVER_ROLES, SERVICE_METHODS } from '@/db/schema'
 import { recordAnswer } from '@/features/enforcement/answers'
 import { recordCourtStep } from '@/features/enforcement/courtSteps'
-import { listRecipient, recordRoleCheck, recordServiceEvent } from '@/features/enforcement/service'
+import { listRecipient, recordRoleCheck } from '@/features/enforcement/service'
+import { recordServiceEvent } from '@/features/enforcement/serviceEvents'
 import type { ActionResult } from '@/server/actionRunner'
 import { runEnforcement } from './enforcementAction'
 import { date, optional, uuid } from './fields'
@@ -71,6 +72,7 @@ export async function serviceEventAction(formData: FormData): Promise<ActionResu
         new Date(),
       ),
     'Service recorded.',
+    { servedOn: 'Enter the date served.' },
   )
 }
 
@@ -80,6 +82,11 @@ export async function answerAction(formData: FormData): Promise<ActionResult> {
     z.object({ recipientId: uuid, answeredOn: date, documentId: uuid }),
     ({ db, actor, signal }, v) => recordAnswer(db, actor, v, signal),
     'Answer recorded.',
+    {
+      recipientId: 'Choose who answered.',
+      documentId: 'Choose the answer document. Upload it in the Documents section first.',
+      answeredOn: 'Enter the date the answer was received.',
+    },
   )
 }
 
@@ -111,5 +118,11 @@ export async function courtStepAction(formData: FormData): Promise<ActionResult>
         signal,
       ),
     'Court step recorded.',
+    {
+      documentId:
+        'Choose the court document. Upload it in the Documents section first, as a court document.',
+      court: 'Enter the court.',
+      occurredOn: 'Enter the date of the step.',
+    },
   )
 }

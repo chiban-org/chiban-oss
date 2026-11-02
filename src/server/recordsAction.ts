@@ -6,6 +6,7 @@ import {
   errorCopy,
   runStaffAction,
 } from '@/server/actionRunner'
+import { type FieldCopy, invalidFieldCopy } from '@/server/fieldCopy'
 import type { Result } from '@/types/result'
 
 export const uuidField = z.string().uuid()
@@ -79,10 +80,16 @@ export async function runRecords<S extends z.ZodType>(
   schema: S,
   call: (ctx: ActionContext, input: z.output<S>) => Promise<Result<unknown, unknown>>,
   message: string,
+  fieldCopy: FieldCopy = {},
 ): Promise<ActionResult> {
   return await runStaffAction(formData, async (ctx) => {
     const parsed = schema.safeParse(formStrings(formData))
-    if (!parsed.success) return { ok: false, error: recordsError('invalid') }
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: invalidFieldCopy(parsed.error, fieldCopy) ?? recordsError('invalid'),
+      }
+    }
     const result = await call(ctx, parsed.data)
     return result.ok ? { ok: true, message } : { ok: false, error: recordsError(result.error) }
   })

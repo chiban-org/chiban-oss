@@ -195,6 +195,20 @@ describe('records server actions', () => {
     })
   })
 
+  it('a release with no record ticked says to tick one', async () => {
+    const [row] = await handle.db.select().from(rtkRequests)
+    expect(
+      await requestActions.createReleaseAction(
+        form({
+          requestId: row?.id ?? '',
+          releasedOn: '2026-10-30',
+          method: 'electronic_link',
+          recipientEmail: 'jordan@example.test',
+        }),
+      ),
+    ).toMatchObject({ ok: false, error: 'Tick at least one approved record to release.' })
+  })
+
   it('retention actions need the custodian for approval and the actor for proposals', async () => {
     state.actor = reviewer
     expect(
