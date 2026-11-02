@@ -1,4 +1,4 @@
-import { and, eq, inArray, isNull, or } from 'drizzle-orm'
+import { and, eq, inArray, isNull, or, sql } from 'drizzle-orm'
 import type { DbOrTx, Tx } from '@/db/client'
 import {
   applicationSnapshots,
@@ -38,6 +38,7 @@ export async function assignSeries(
 ): Promise<void> {
   signal.throwIfAborted()
   const series = requireSeries(seriesKey)
+  await tx.execute(sql`select pg_advisory_xact_lock_shared(hashtext('records.disposition'))`)
   await tx
     .update(retentionAssignments)
     .set({ supersededAt: new Date() })

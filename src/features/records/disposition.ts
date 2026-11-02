@@ -89,6 +89,8 @@ async function projectIdsFor(db: DbOrTx, ref: DispositionRef): Promise<string[]>
   return rows.map((r) => r.id)
 }
 
+export type RetentionFound = NonNullable<Awaited<ReturnType<typeof retentionFor>>>
+
 export async function retentionFor(
   db: DbOrTx,
   ref: DispositionRef,
@@ -165,7 +167,7 @@ export async function checkDisposition(
   ref: DispositionRef,
   today: CivilDate,
   signal: AbortSignal,
-): Promise<Result<void, DispositionBlock>> {
+): Promise<Result<RetentionFound, DispositionBlock>> {
   const holds = await holdsCovering(db, ref, signal)
   if (holds.length > 0) return err('on_hold')
   const found = await retentionFor(db, ref, signal)
@@ -173,5 +175,5 @@ export async function checkDisposition(
   const { status } = found
   if (status.state === 'permanent') return err('permanent')
   if (status.state === 'not_yet_triggered') return err('not_yet_triggered')
-  return status.date > today ? err('not_yet_eligible') : ok(undefined)
+  return status.date > today ? err('not_yet_eligible') : ok(found)
 }

@@ -18,7 +18,7 @@ import {
   rtkReleaseItems,
 } from '@/db/schema'
 import { writeAudit } from '@/features/audit/writeAudit'
-import { checkDisposition, retentionFor } from '@/features/records/disposition'
+import { checkDisposition } from '@/features/records/disposition'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -115,11 +115,7 @@ async function disposeOne(
     await setOutcome(tx, item, outcome)
     return outcome
   }
-  const found = await retentionFor(tx, ref, signal)
-  if (found === null) {
-    await setOutcome(tx, item, 'skipped_not_eligible')
-    return 'skipped_not_eligible'
-  }
+  const found = checked.value
   const versions =
     item.recordKind === 'document'
       ? await tx
