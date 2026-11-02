@@ -56,7 +56,7 @@ export type Rendition = 'default' | 'pdfa'
 
 export interface ResolvedRendition {
   versionId: string
-  role: 'original' | 'public_redacted' | 'pdfa'
+  role: 'original' | 'public_redacted' | 'pdfa' | 'release_redacted'
   file: FileRow
   filename: string
   contentType: string

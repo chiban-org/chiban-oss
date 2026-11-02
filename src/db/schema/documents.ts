@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import {
+  type AnyPgColumn,
   bigint,
   bigserial,
   boolean,
@@ -61,13 +62,19 @@ export const documentVersions = pgTable(
     documentId: uuid('document_id')
       .notNull()
       .references(() => documents.id),
-    role: text('role', { enum: ['original', 'public_redacted', 'pdfa'] }).notNull(),
+    role: text('role', {
+      enum: ['original', 'public_redacted', 'pdfa', 'release_redacted'],
+    }).notNull(),
     fileSha256: text('file_sha256')
       .notNull()
       .references(() => files.sha256),
     filename: text('filename').notNull(),
     contentType: text('content_type').notNull(),
     createdBy: uuid('created_by'),
+    derivedFromVersionId: uuid('derived_from_version_id').references(
+      (): AnyPgColumn => documentVersions.id,
+    ),
+    redactionJobId: uuid('redaction_job_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [
