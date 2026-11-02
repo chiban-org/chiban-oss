@@ -2,6 +2,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import { FINE_KIND_LABELS } from '@/features/enforcement/labels'
+import { PENALTY_EXPOSURE_AFTER_FINE_LABEL } from '@/features/enforcement/penaltyExposure'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { fineAction, finePaymentAction } from '../moneyActions'
@@ -70,7 +71,9 @@ export function MoneySection({ detail, can }: { detail: CaseDetail; can: Can }) 
       ))}
       {detail.exposure === null ? null : (
         <div className="rounded-md border p-3">
-          <p className="m-0 font-medium">{detail.exposure.label}</p>
+          <p className="m-0 font-medium">
+            {detail.fines.length === 0 ? detail.exposure.label : PENALTY_EXPOSURE_AFTER_FINE_LABEL}
+          </p>
           <p className="m-0">
             {detail.exposure.fromDate === null
               ? 'Accrual has not started: no written notice has been received and no conviction has been recorded.'
