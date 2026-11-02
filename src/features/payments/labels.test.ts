@@ -6,6 +6,7 @@ import {
   channelLabel,
   entryTypeLabel,
   methodLabel,
+  transitionSentence,
 } from '@/features/payments/labels'
 
 describe('payment labels', () => {
@@ -20,5 +21,20 @@ describe('payment labels', () => {
     expect(methodLabel('card_present')).toBe('Card at the counter')
     expect(channelLabel('card_online')).toBe('Card online')
     expect(attemptStateLabel('pending')).toBe('Waiting for the processor')
+  })
+
+  it('describes a transition as a sentence', () => {
+    expect(transitionSentence('pending', 'captured', 'event')).toBe(
+      'Moved from waiting for the processor to captured, reported by the processor.',
+    )
+    expect(transitionSentence('captured', 'voided', 'staff')).toBe(
+      'Moved from captured to voided, by staff.',
+    )
+    expect(transitionSentence('pending', 'declined', 'reconcile')).toBe(
+      'Moved from waiting for the processor to declined, found when checking with the processor.',
+    )
+    expect(transitionSentence('pending', 'captured', 'reader')).toBe(
+      'Moved from waiting for the processor to captured, reported by the card reader.',
+    )
   })
 })

@@ -36,3 +36,19 @@ export const entryTypeLabel = (t: string): string => lookup(ENTRY_TYPES, t)
 export const methodLabel = (m: string): string => lookup(METHODS, m)
 export const channelLabel = (c: string): string => lookup(CHANNELS, c)
 export const attemptStateLabel = (s: string): string => lookup(STATES, s)
+
+const SOURCES: Record<string, string> = {
+  event: 'reported by the processor',
+  reconcile: 'found when checking with the processor',
+  staff: 'by staff',
+  reader: 'reported by the card reader',
+}
+
+function lowerFirst(text: string): string {
+  return text.charAt(0).toLowerCase() + text.slice(1)
+}
+
+export function transitionSentence(from: string, to: string, source: string): string {
+  const how = SOURCES[source] ?? lowerFirst(words(source))
+  return `Moved from ${lowerFirst(attemptStateLabel(from))} to ${lowerFirst(attemptStateLabel(to))}, ${how}.`
+}

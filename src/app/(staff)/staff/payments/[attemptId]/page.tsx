@@ -6,12 +6,11 @@ import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
 import { paymentAttempts, paymentAttemptTransitions, processorAccounts } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
-import { attemptStateLabel, channelLabel } from '@/features/payments/labels'
+import { attemptStateLabel, channelLabel, transitionSentence } from '@/features/payments/labels'
 import { mayViewPayments } from '@/features/payments/overview'
 import { getTownSettings } from '@/features/town/settings'
 import { formatInstant } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
-import { words } from '@/lib/words'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { checkWithProcessorAction, voidAttemptAction } from '../actions'
@@ -86,7 +85,7 @@ export default async function PaymentAttemptPage({
       <ul>
         {transitions.map((t) => (
           <li key={t.id}>
-            {`${formatInstant(t.at, zone)}: ${attemptStateLabel(t.fromState)} to ${attemptStateLabel(t.toState)} (${words(t.source)})`}
+            {`${formatInstant(t.at, zone)}: ${transitionSentence(t.fromState, t.toState, t.source)}`}
           </li>
         ))}
       </ul>
