@@ -243,6 +243,16 @@ describe('staff and public pages', () => {
     ).toEqual([])
   })
 
+  it('a continued hearing page offers no notice marking', async () => {
+    const { hearingId } = await unnoticedHearing()
+    await handle.db.update(hearings).set({ status: 'continued' }).where(eq(hearings.id, hearingId))
+    state.actor = world.staff
+    const html = renderToStaticMarkup(await HearingPage({ params: Promise.resolve({ hearingId }) }))
+    expect(html).toContain('Notice checklist')
+    expect(html).not.toContain('Mark properly noticed')
+    expect(html).not.toContain('still need timely proof')
+  })
+
   it('the hearing page shows the permission page to a reviewer and is not found for a stranger id', async () => {
     state.actor = await staffActor(handle.db, 'reviewer')
     const html = renderToStaticMarkup(

@@ -61,6 +61,7 @@ export default async function HearingPage({ params }: { params: Promise<{ hearin
       <NoticeChecklist
         items={view.checklist}
         noticedOn={view.noticedOn}
+        showMark={scheduled}
         markSlot={
           scheduled ? (
             <ActionForm
