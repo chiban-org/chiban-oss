@@ -30,7 +30,7 @@ export async function createAttempt(
   for (const applicationId of input.applicationIds) {
     const balance = await feeBalance(tx, applicationId, signal)
     for (const line of balance.lines) {
-      if (line.dueCents <= 0 || line.stage === 'at_renewal') continue
+      if (line.dueCents <= 0) continue
       planned.push({
         targetKind: 'fee_assessment_line',
         applicationId,

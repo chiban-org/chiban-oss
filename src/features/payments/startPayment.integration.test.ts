@@ -1,12 +1,14 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
+  feeAssessments,
   ledgerEntries,
   paymentAttempts,
   processorAccounts,
   receipts,
   simulatedProcessorObjects,
 } from '@/db/schema'
+import { recordApplicationPayment } from '@/features/counter/applicationPayment'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import {
   attemptReceiptPdfResponse,
@@ -68,6 +70,39 @@ describe('online payment', () => {
     expect(attempt).toMatchObject({ state: 'pending', channel: 'card_online', amountCents: 4635 })
     expect(redirectUrl).toBe(`/dev/checkout/${attempt?.processorObjectId}`)
     expect(attempt?.checkoutRef).toBe(attempt?.processorObjectId)
+  })
+
+  it('a renewal fee that is the only thing due can be paid online', async () => {
+    const paid = await recordApplicationPayment(
+      handle.db,
+      trade.world.staff,
+      { applicationId: trade.applicationId, method: 'cash', amountCents: 4500, payerName: 'Pat' },
+      signal,
+    )
+    if (!paid.ok) throw new Error(paid.error)
+    await handle.db.insert(feeAssessments).values({
+      applicationId: trade.applicationId,
+      stage: 'at_renewal',
+      sequence: 1,
+      scheduleVersionId: trade.assessmentId,
+      computation: {
+        lines: [
+          {
+            due: 'at_renewal',
+            code: 'renewal',
+            label: 'Permit renewal fee',
+            amount: { value: 4500, source: 'town_setting', replaced: null },
+            explanation: ['Flat fee $45.00'],
+          },
+        ],
+        complete: true,
+        totalCents: 4500,
+      },
+      totalCents: 4500,
+      assessedBy: 'test',
+    })
+    const { attempt } = await startOnline()
+    expect(attempt?.amountCents).toBe(4635)
   })
 
   it('another applicant cannot start a payment on a project they are not party to', async () => {
