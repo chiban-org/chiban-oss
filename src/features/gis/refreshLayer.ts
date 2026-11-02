@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { gisLayers, importRuns } from '@/db/schema'
+import { requireCapability } from '@/features/authz/capabilities'
 import { readAxisGisLayer } from '@/features/gis/adapters/axisGis'
 import { readEsriLayer } from '@/features/gis/adapters/esriRest'
 import type { LayerKey } from '@/features/gis/exceptionKinds'
@@ -45,6 +46,10 @@ export async function refreshLayer(
   signal: AbortSignal,
 ): Promise<Result<ImportRunReport, ImportError>> {
   signal.throwIfAborted()
+  if (actor.kind === 'user') {
+    const allowed = await requireCapability(db, actor.userId, 'gis.import', signal)
+    if (!allowed.ok) return err('forbidden')
+  }
   const [layer] = await db.select().from(gisLayers).where(eq(gisLayers.key, key))
   const adapter = layer?.adapter
   if (layer?.sourceUrl == null || (adapter !== 'esri_rest' && adapter !== 'axisgis')) {

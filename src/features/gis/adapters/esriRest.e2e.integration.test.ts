@@ -36,6 +36,22 @@ async function refresh(deps: ReturnType<typeof fixtureFetch>) {
 }
 
 describe('esri rest adapter', () => {
+  it('a user without gis.import triggers no fetch and records no failure', async () => {
+    const deps = fixtureFetch('esri')
+    const applicant = await staffActor(handle.db, 'applicant')
+    const r = await refreshLayer(
+      handle.db,
+      { kind: 'user', userId: applicant.userId },
+      'parcels',
+      deps,
+      signal,
+    )
+    expect(r).toEqual({ ok: false, error: 'forbidden' })
+    expect(deps.calls).toHaveLength(0)
+    const [layer] = await handle.db.select().from(gisLayers).where(eq(gisLayers.key, 'parcels'))
+    expect(layer?.lastFailureAt).toBeNull()
+  })
+
   it('connect reads metadata and paginates three pages', async () => {
     const deps = fixtureFetch('esri')
     const r = await readEsriLayer(LAYER_URL, deps, signal)
