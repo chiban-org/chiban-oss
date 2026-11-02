@@ -13,6 +13,18 @@ export const MERGE_FIELDS = [
   'fees.totalFormatted',
   'conditions.list',
   'codeEdition.label',
+  'board.name',
+  'meeting.date',
+  'meeting.location',
+  'meeting.time',
+  'hearing.kind',
+  'notice.recipientName',
+  'decision.outcome',
+  'decision.votedOn',
+  'decision.findings',
+  'decision.conditions',
+  'decision.reasons',
+  'decision.appealRights',
 ] as const
 
 export type MergeField = (typeof MERGE_FIELDS)[number]

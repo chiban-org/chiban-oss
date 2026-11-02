@@ -108,6 +108,24 @@ export function boardStarter(input: BoardStarterInput): StarterBundle {
     checklists: [],
     templates: [
       {
+        key: `${slug}-hearing-notice`,
+        label: `${label} hearing notice`,
+        kind: 'hearing_notice',
+        body: `{{town.name}}\n\nNotice of {{hearing.kind}} to {{notice.recipientName}}.\n\nThe {{board.name}} will hold a {{hearing.kind}} on {{meeting.date}} at {{meeting.time}}, {{meeting.location}}, on {{application.typeLabel}} {{application.number}}, {{project.title}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}.\n\nYou are receiving this notice because you may be an abutter or other party entitled to notice. The application is available for inspection at the town offices.`,
+      },
+      {
+        key: `${slug}-notice-of-decision`,
+        label: `${label} notice of decision`,
+        kind: 'notice_of_decision',
+        body: `{{town.name}}\n\nNotice of decision of the {{board.name}} on {{application.typeLabel}} {{application.number}}, {{project.title}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}.\n\nDecision: {{decision.outcome}}, voted {{decision.votedOn}}.\n\nFindings of fact: {{decision.findings}}\n\nConditions: {{decision.conditions}}\n\nReasons for disapproval: {{decision.reasons}}\n\n{{decision.appealRights}}`,
+      },
+      {
+        key: `${slug}-decision-letter`,
+        label: `${label} decision letter`,
+        kind: 'decision_letter',
+        body: `{{town.name}}\n\nDear {{party.applicant.name}}:\n\nOn {{decision.votedOn}} the {{board.name}} voted on {{application.typeLabel}} {{application.number}} for {{parcel.siteAddress}}. The decision is: {{decision.outcome}}.\n\nFindings of fact: {{decision.findings}}\n\nConditions: {{decision.conditions}}\n\nReasons for disapproval: {{decision.reasons}}\n\n{{decision.appealRights}}`,
+      },
+      {
         key: `${slug}-decision`,
         label: `${label} notice of decision`,
         kind: 'letter',
@@ -123,7 +141,12 @@ export function boardStarter(input: BoardStarterInput): StarterBundle {
       feeScheduleKey: `${slug}-fees`,
       conditionLibraryKey: `${slug}-conditions`,
       checklistKeys: [],
-      templateKeys: [`${slug}-decision`],
+      templateKeys: [
+        `${slug}-hearing-notice`,
+        `${slug}-notice-of-decision`,
+        `${slug}-decision-letter`,
+        `${slug}-decision`,
+      ],
       payTiming: 'at_intake',
       attestationText: ATTESTATION_TEXT,
       bindings: [...(classification?.mandatoryRuleKeys ?? [])],

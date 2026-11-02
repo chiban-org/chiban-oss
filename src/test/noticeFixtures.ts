@@ -5,7 +5,11 @@ import { abutterLists, desProximityDeterminations, files } from '@/db/schema'
 import type { Recipient } from '@/features/abutters/resolution'
 import type { RecipientRole } from '@/features/abutters/roles'
 import { attachDocument } from '@/features/documents/attach'
+import { noticeStatus } from '@/features/notices/noticeStatus'
+import { type ProofMethod, referenceRequired } from '@/features/notices/proofMethods'
+import { recordProof } from '@/features/notices/proofs'
 import type { BoardWorld } from '@/test/boardFixtures'
+import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 
@@ -92,4 +96,43 @@ export async function proofDocument(
   )
   if (attached.documentId === '') throw new AppError(ErrorIds.DB_INVARIANT, 'no document')
   return attached.documentId
+}
+
+const METHOD_FOR_CHANNEL: Record<string, ProofMethod> = {
+  verified_mail: 'certificate_of_mailing',
+  certified_mail: 'certified_mail',
+  first_class_mail: 'first_class_mail',
+  newspaper: 'newspaper_publication',
+  public_posting: 'posting',
+  bulletin_board: 'posting',
+  website: 'website_posting',
+}
+
+export async function proveEverything(
+  db: Db,
+  world: BoardWorld,
+  applicationId: string,
+  setId: string,
+  effectiveOn: CivilDate,
+  now: Date,
+): Promise<void> {
+  const status = await noticeStatus(db, setId, signal)
+  for (const channel of new Set(status.items.map((i) => i.channel))) {
+    const method = METHOD_FOR_CHANNEL[channel]
+    if (method === undefined) throw new AppError(ErrorIds.DB_INVARIANT, `no method for ${channel}`)
+    const proved = await recordProof(
+      db,
+      world.staff,
+      {
+        itemIds: status.items.filter((i) => i.channel === channel).map((i) => i.itemId),
+        method,
+        reference: referenceRequired(method) ? 'RR-0001' : null,
+        effectiveOn,
+        documentId: await proofDocument(db, world, applicationId),
+      },
+      signal,
+      now,
+    )
+    if (!proved.ok) throw new AppError(ErrorIds.DB_INVARIANT, `proof ${channel}: ${proved.error}`)
+  }
 }

@@ -10,6 +10,8 @@ import { computeFees } from '@/features/fees/computeFees'
 import { FormBodySchema } from '@/features/forms/formSchema'
 import { validateSubmission } from '@/features/forms/validateSubmission'
 import { loadPack } from '@/features/packs/loadPack'
+import { unknownMergeFields } from '@/features/templates/mergeFields'
+import { validateWorkflow } from '@/features/workflow/validateWorkflow'
 
 const BOARD_CLASSIFICATION = /^nh\.(pb|zba)_/
 const BOARD = NH_STARTERS.filter((s) =>
@@ -25,6 +27,38 @@ function shared(values: Record<string, unknown>) {
     ...values,
   }
 }
+
+describe('board starters, hearing templates', () => {
+  it('every board starter ships hearing notice, notice of decision, and decision letter templates', () => {
+    for (const starter of BOARD) {
+      const kinds = starter.templates.map((t) => t.kind).sort()
+      expect(kinds, starter.id).toEqual([
+        'decision_letter',
+        'hearing_notice',
+        'letter',
+        'notice_of_decision',
+      ])
+      for (const t of starter.templates) expect(unknownMergeFields(t.body), t.key).toEqual([])
+      for (const t of starter.templates) {
+        expect(starter.applicationType.templateKeys, t.key).toContain(t.key)
+      }
+    }
+  })
+
+  it('every board starter workflow satisfies its classification', () => {
+    const pack = loadPack()
+    for (const starter of BOARD) {
+      const classification = pack.classifications.find(
+        (c) => c.key === starter.applicationType.classification,
+      )
+      if (classification === undefined) throw new Error(starter.id)
+      expect(
+        validateWorkflow(starter.applicationType.workflow, classification),
+        starter.id,
+      ).toEqual([])
+    }
+  })
+})
 
 describe('board starters', () => {
   it('there are eight planning board and five zba starters', () => {

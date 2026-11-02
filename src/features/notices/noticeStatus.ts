@@ -36,6 +36,11 @@ export async function noticeStatus(
   signal: AbortSignal,
 ): Promise<NoticeStatus> {
   signal.throwIfAborted()
+  const [own] = await db
+    .select({ applicationId: noticeSets.applicationId, inheritedFrom: noticeSets.inheritedFrom })
+    .from(noticeSets)
+    .where(eq(noticeSets.id, setId))
+  if (own?.inheritedFrom != null) return await noticeStatus(db, own.inheritedFrom, signal)
   const rows = await db
     .select({ item: noticeItems, proof: noticeProofs })
     .from(noticeItems)
@@ -75,14 +80,10 @@ export async function noticeStatus(
       state,
     }
   })
-  const [set] = await db
-    .select({ applicationId: noticeSets.applicationId })
-    .from(noticeSets)
-    .where(eq(noticeSets.id, setId))
   const costs =
-    set?.applicationId === null || set === undefined
+    own?.applicationId == null
       ? 0
-      : (await noticeCostSummary(db, set.applicationId, signal)).dueCents
+      : (await noticeCostSummary(db, own.applicationId, signal)).dueCents
   return {
     items,
     properlyNoticed: items.length > 0 && items.every((i) => i.state === 'proved_on_time'),

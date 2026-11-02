@@ -94,6 +94,106 @@ async function replaceFilingClock(
   await markClockMet(tx, input.applicationId, FILING_LEAD_KEY, input.receivedDate, signal)
 }
 
+export async function setAcceptanceMeetingTx(
+  tx: Tx,
+  actor: Actor,
+  input: { applicationId: string; meetingId: string },
+  signal: AbortSignal,
+): Promise<Result<{ lastFilingDay: CivilDate | null }, AcceptanceError>> {
+  signal.throwIfAborted()
+  await tx
+    .select({ id: applications.id })
+    .from(applications)
+    .where(eq(applications.id, input.applicationId))
+    .for('update')
+  const app = await loadApplicationContext(tx, input.applicationId, signal)
+  if (app === null) return err('not_found')
+  const board = boardOfApplication(app)
+  if (board === null) return err('wrong_board')
+  if (app.state !== 'submitted' || app.receivedDate === null) return err('not_submitted')
+  const meeting = await getMeeting(tx, input.meetingId, signal)
+  if (meeting === null) return err('not_found')
+  if (meeting.board !== board) return err('wrong_board')
+  if (meeting.status === 'cancelled') return err('meeting_cancelled')
+  const meetingDate = meeting.meetingDate as CivilDate
+  let lastFilingDay: CivilDate | null = null
+  const bound = effectiveBindings(app.typeBody, loadPack()).includes(FILING_LEAD_KEY)
+  if (bound) {
+    const { rule } = filingLeadRule()
+    const settings = await getBoardSettings(tx, signal)
+    const resolved = await resolveClockLength(
+      tx,
+      rule,
+      await factsWithDeterminations(tx, app.id, app.facts),
+      loadPack(),
+      signal,
+    )
+    const leadDays =
+      settings.boards.find((b) => b.board === board)?.filingLeadDays ?? resolved.value
+    lastFilingDay = computeRuleDue(
+      rule,
+      { unit: 'days', value: leadDays },
+      meetingDate,
+      packHolidayCalendar(),
+    ).due
+    if (compareCivil(app.receivedDate, lastFilingDay) > 0) {
+      const earliestMeeting = await nextRegularMeeting(
+        tx,
+        board,
+        addDays(app.receivedDate, leadDays),
+        signal,
+      )
+      return err({ filedTooLate: { lastFilingDay, earliestMeeting } })
+    }
+    await replaceFilingClock(
+      tx,
+      {
+        applicationId: app.id,
+        meetingDate,
+        receivedDate: app.receivedDate,
+        leadDays,
+        facts: await factsWithDeterminations(tx, app.id, app.facts),
+      },
+      signal,
+    )
+  }
+  const values = {
+    applicationId: app.id,
+    meetingId: meeting.id,
+    setBy: actor.userId,
+    setAt: new Date(),
+  }
+  await tx
+    .insert(acceptanceSchedules)
+    .values(values)
+    .onConflictDoUpdate({ target: acceptanceSchedules.applicationId, set: values })
+  if (declaresSubstep(app, 'submitted', 'acceptance_scheduled')) {
+    const moved = await setSubstep(
+      tx,
+      actor,
+      {
+        applicationId: app.id,
+        substep: 'acceptance_scheduled',
+        expectedRowVersion: app.rowVersion,
+      },
+      signal,
+    )
+    if (!moved.ok) return err('not_submitted')
+  }
+  await writeAudit(
+    tx,
+    {
+      actor: { kind: 'user', userId: actor.userId },
+      action: 'board.acceptance_meeting.set',
+      entityType: 'application',
+      entityId: app.id,
+      after: { meetingId: meeting.id, meetingDate, lastFilingDay },
+    },
+    signal,
+  )
+  return ok({ lastFilingDay })
+}
+
 export async function setAcceptanceMeeting(
   db: Db,
   actor: Actor,
@@ -102,101 +202,8 @@ export async function setAcceptanceMeeting(
 ): Promise<Result<{ lastFilingDay: CivilDate | null }, AcceptanceError>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
-  return await transactionResult<{ lastFilingDay: CivilDate | null }, AcceptanceError>(
-    db,
-    async (tx) => {
-      await tx
-        .select({ id: applications.id })
-        .from(applications)
-        .where(eq(applications.id, input.applicationId))
-        .for('update')
-      const app = await loadApplicationContext(tx, input.applicationId, signal)
-      if (app === null) return err('not_found')
-      const board = boardOfApplication(app)
-      if (board === null) return err('wrong_board')
-      if (app.state !== 'submitted' || app.receivedDate === null) return err('not_submitted')
-      const meeting = await getMeeting(tx, input.meetingId, signal)
-      if (meeting === null) return err('not_found')
-      if (meeting.board !== board) return err('wrong_board')
-      if (meeting.status === 'cancelled') return err('meeting_cancelled')
-      const meetingDate = meeting.meetingDate as CivilDate
-      let lastFilingDay: CivilDate | null = null
-      const bound = effectiveBindings(app.typeBody, loadPack()).includes(FILING_LEAD_KEY)
-      if (bound) {
-        const { rule } = filingLeadRule()
-        const settings = await getBoardSettings(tx, signal)
-        const resolved = await resolveClockLength(
-          tx,
-          rule,
-          await factsWithDeterminations(tx, app.id, app.facts),
-          loadPack(),
-          signal,
-        )
-        const leadDays =
-          settings.boards.find((b) => b.board === board)?.filingLeadDays ?? resolved.value
-        lastFilingDay = computeRuleDue(
-          rule,
-          { unit: 'days', value: leadDays },
-          meetingDate,
-          packHolidayCalendar(),
-        ).due
-        if (compareCivil(app.receivedDate, lastFilingDay) > 0) {
-          const earliestMeeting = await nextRegularMeeting(
-            tx,
-            board,
-            addDays(app.receivedDate, leadDays),
-            signal,
-          )
-          return err({ filedTooLate: { lastFilingDay, earliestMeeting } })
-        }
-        await replaceFilingClock(
-          tx,
-          {
-            applicationId: app.id,
-            meetingDate,
-            receivedDate: app.receivedDate,
-            leadDays,
-            facts: await factsWithDeterminations(tx, app.id, app.facts),
-          },
-          signal,
-        )
-      }
-      const values = {
-        applicationId: app.id,
-        meetingId: meeting.id,
-        setBy: actor.userId,
-        setAt: new Date(),
-      }
-      await tx
-        .insert(acceptanceSchedules)
-        .values(values)
-        .onConflictDoUpdate({ target: acceptanceSchedules.applicationId, set: values })
-      if (declaresSubstep(app, 'submitted', 'acceptance_scheduled')) {
-        const moved = await setSubstep(
-          tx,
-          actor,
-          {
-            applicationId: app.id,
-            substep: 'acceptance_scheduled',
-            expectedRowVersion: app.rowVersion,
-          },
-          signal,
-        )
-        if (!moved.ok) return err('not_submitted')
-      }
-      await writeAudit(
-        tx,
-        {
-          actor: { kind: 'user', userId: actor.userId },
-          action: 'board.acceptance_meeting.set',
-          entityType: 'application',
-          entityId: app.id,
-          after: { meetingId: meeting.id, meetingDate, lastFilingDay },
-        },
-        signal,
-      )
-      return ok({ lastFilingDay })
-    },
+  return await transactionResult<{ lastFilingDay: CivilDate | null }, AcceptanceError>(db, (tx) =>
+    setAcceptanceMeetingTx(tx, actor, input, signal),
   )
 }
 

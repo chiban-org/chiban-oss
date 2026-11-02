@@ -99,6 +99,9 @@ describe('adoptStarter', () => {
       'fee_schedule',
       'form',
       'template',
+      'template',
+      'template',
+      'template',
     ])
     expect(rows.every((x) => x.status === 'published')).toBe(true)
     expect((await pinCurrent(handle.db, 'VAR', signal)).ok).toBe(true)
