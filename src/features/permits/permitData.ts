@@ -4,7 +4,6 @@ import {
   applicationConditions,
   clocks,
   codeEditionRecords,
-  feeAssessments,
   parcels,
   projectParties,
   projects,
@@ -13,6 +12,7 @@ import { formApplicantName, namedParty } from '@/features/applications/applicant
 import type { ApplicationContext } from '@/features/applications/context'
 import { loadApplicationContext } from '@/features/applications/context'
 import { getVersion } from '@/features/config/store'
+import { feeBalance } from '@/features/ledger/feeBalance'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import type { MergeContext } from '@/features/templates/renderTemplate'
 import type { TemplateBody } from '@/features/templates/templateSchema'
@@ -38,6 +38,7 @@ export interface PermitData {
   conditions: string[]
   codeEdition: string
   feesTotal: string
+  feeStatus: string
   permitTemplate: TemplateBody | null
 }
 
@@ -57,17 +58,16 @@ async function partyName(db: DbOrTx, projectId: string, role: 'applicant' | 'con
   return row?.name ?? ''
 }
 
-async function feesTotal(db: DbOrTx, applicationId: string): Promise<number> {
-  const rows = await db
-    .select()
-    .from(feeAssessments)
-    .where(eq(feeAssessments.applicationId, applicationId))
-  const latest = new Map<string, (typeof rows)[number]>()
-  for (const row of rows) {
-    const held = latest.get(row.stage)
-    if (held === undefined || row.sequence > held.sequence) latest.set(row.stage, row)
-  }
-  return [...latest.values()].reduce((sum, r) => sum + r.totalCents, 0)
+async function feeFigures(db: DbOrTx, applicationId: string, signal: AbortSignal) {
+  const balance = await feeBalance(db, applicationId, signal)
+  const totalCents = balance.lines.reduce((sum, l) => sum + l.assessedCents, 0)
+  const status =
+    totalCents === 0
+      ? 'None assessed'
+      : balance.dueCents === 0
+        ? `${formatCents(totalCents)}, paid in full`
+        : `${formatCents(totalCents)}, ${formatCents(balance.dueCents)} not yet paid`
+  return { total: formatCents(totalCents), status }
 }
 
 async function expiresOn(db: DbOrTx, applicationId: string): Promise<string> {
@@ -120,6 +120,7 @@ export async function loadPermitData(
     .from(applicationConditions)
     .where(eq(applicationConditions.applicationId, applicationId))
   const license = application.values.contractor_license_number
+  const fees = await feeFigures(db, applicationId, signal)
   return {
     application,
     townName: town.ok ? town.value.name : '',
@@ -137,7 +138,8 @@ export async function loadPermitData(
     expiresOn: await expiresOn(db, applicationId),
     conditions: conditions.map((c) => c.textSnapshot),
     codeEdition: edition[0]?.label ?? '',
-    feesTotal: formatCents(await feesTotal(db, applicationId)),
+    feesTotal: fees.total,
+    feeStatus: fees.status,
     permitTemplate: await permitTemplate(db, application.pins.templates, signal),
   }
 }

@@ -1,10 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { PDFDocument } from 'pdf-lib'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { receipts } from '@/db/schema'
+import { ledgerEntries, receipts } from '@/db/schema'
 import { recordCounterPayment } from '@/features/counter/counterPayment'
 import { receiptPdfResponse } from '@/features/ledger/receiptAccess'
 import { buildReceiptPdf } from '@/features/ledger/receiptPdf'
+import { refundEntry } from '@/features/ledger/reversals'
 import { resolveDevCheckout } from '@/features/payments/simulatedCheckout'
 import { startOnlinePayment } from '@/features/payments/startPayment'
 import { permitPdfResponse } from '@/features/permits/permitAccess'
@@ -17,6 +18,7 @@ import {
   type TradeFixture,
   tryIssue,
 } from '@/test/ledgerFixtures'
+import { staffActor } from '@/test/parcels'
 import { setupPayments } from '@/test/paymentFixtures'
 import { pdfText } from '@/test/pdfText'
 
@@ -64,6 +66,24 @@ describe('permit and placard documents', () => {
     expect(text).toContain('Parcel 007001000000')
     expect(text).toContain('Contractor')
     expect(text).toContain('Not applicable')
+  })
+
+  it('the permit says whether its fees are paid', async () => {
+    await payCashAndIssue()
+    const paid = await buildPermitPdf(handle.db, trade.applicationId, signal)
+    if (!paid.ok) throw new Error(paid.error)
+    expect(await pdfText(paid.value)).toContain('$45.00, paid in full')
+    const [entry] = await handle.db.select().from(ledgerEntries)
+    const refunded = await refundEntry(
+      handle.db,
+      await staffActor(handle.db, 'finance'),
+      { entryId: entry?.id ?? '', amountCents: 1000, reason: 'Fee charged in error' },
+      signal,
+    )
+    if (!refunded.ok) throw new Error(JSON.stringify(refunded.error))
+    const owing = await buildPermitPdf(handle.db, trade.applicationId, signal)
+    if (!owing.ok) throw new Error(owing.error)
+    expect(await pdfText(owing.value)).toContain('$45.00, $10.00 not yet paid')
   })
 
   it('permit for an application that is not issued is not_issued', async () => {
