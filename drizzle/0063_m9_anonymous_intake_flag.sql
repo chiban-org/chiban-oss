@@ -1,0 +1,1 @@
+ALTER TABLE "town_settings" ADD COLUMN "anonymous_intake_enabled" boolean DEFAULT false NOT NULL;
