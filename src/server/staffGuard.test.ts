@@ -6,7 +6,7 @@ import { describe, expect, it } from 'vitest'
 const APP = fileURLToPath(new URL('../app', import.meta.url))
 const STAFF_ROOTS = [path.join(APP, '(staff)'), path.join(APP, 'api', 'staff')]
 const ENTRY = /^(page\.tsx|route\.ts)$/
-const GUARD = /\b(requireStaffContext|requireStaffActor|staffActorOrNull)\(/
+const GUARD = /\b(requireStaffContext|requireStaffActor|staffActorOrNull|recordStaffContext)\(/
 
 function entries(dir: string): string[] {
   return readdirSync(dir, { withFileTypes: true }).flatMap((e) => {
