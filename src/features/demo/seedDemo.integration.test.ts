@@ -191,7 +191,7 @@ describe('seedDemo', () => {
       (c) => c.ruleKey === 'nh.bp.regional_impact_comment' && c.status === 'running',
     )
     expect(comment).toHaveLength(1)
-    expect(comment[0]?.currentDue && comment[0].currentDue > '2027-06-01').toBe(true)
+    expect((comment[0]?.currentDue ?? '') > '2027-06-01').toBe(true)
   })
 
   it('seeded application page renders every clock with a non-empty consequence', async () => {

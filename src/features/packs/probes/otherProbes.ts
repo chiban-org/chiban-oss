@@ -4,6 +4,7 @@ import type {
   ProceedingClassification,
   RecordRule,
 } from '@packs/nh/schema'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import { appealSuspends } from '@/features/appeals/suspension'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import {
@@ -45,7 +46,15 @@ function gateProbe(mutate: (r: GateRule) => GateRule): FieldProbe {
     base: () => gateRule('nh.bp.regional_impact'),
     mutate,
     observe: (rule, original) => {
-      const { evaluate: _evaluate, ...definition } = buildGateDefinition(rule, NOOP_GATE)
+      const built = buildGateDefinition(rule, NOOP_GATE)
+      const definition = {
+        key: built.key,
+        label: built.label,
+        citation: built.citation,
+        kind: built.kind,
+        appliesTo: built.appliesTo,
+        boundBy: built.boundBy,
+      }
       return { generic: observeRule(rule, original), definition }
     },
   })
@@ -55,7 +64,7 @@ function recordProbe(mutate: (r: RecordRule) => RecordRule): FieldProbe {
   return probe<RecordRule>({
     base: () => {
       const rule = packRule('nh.bp.code_edition')
-      if (rule.kind !== 'required_record') throw new Error('shape')
+      if (rule.kind !== 'required_record') throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, 'shape')
       return rule
     },
     mutate,

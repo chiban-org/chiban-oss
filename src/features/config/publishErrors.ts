@@ -10,17 +10,35 @@ const POLICY_COPY: Record<string, string> = {
   locally_prohibited: 'The town cannot set this value.',
 }
 
-export function fieldErrorsFor(error: PublishError): FieldErrors {
-  if (error === 'forbidden') return { _form: 'You do not have permission to change configuration.' }
-  if (error === 'not_draft') return { _form: 'Only a draft can be published. Save a draft first.' }
-  if ('invalid' in error) {
-    const out: FieldErrors = {}
-    for (const issue of error.invalid) {
-      const field = issue.path.split('.')[0] || '_form'
-      out[field] = out[field] === undefined ? issue.message : `${out[field]} ${issue.message}`
-    }
-    return out
+const FORM_FIELD = '_form'
+
+function fromIssues(issues: { path: string; message: string }[]): FieldErrors {
+  const out: FieldErrors = {}
+  for (const issue of issues) {
+    const first = issue.path.split('.')[0] ?? ''
+    const field = first === '' ? FORM_FIELD : first
+    const held = out[field]
+    out[field] = held === undefined ? issue.message : `${held} ${issue.message}`
   }
+  return out
+}
+
+function fromPolicyViolations(violations: { ruleKey: string; error: string }[]): FieldErrors {
+  const out: FieldErrors = {}
+  for (const v of violations) {
+    if (v.error === 'adoption_record_missing') {
+      out.adoption = 'Enter who adopted this value and the date they adopted it.'
+    } else {
+      out.value = POLICY_COPY[v.error] ?? 'This value is not allowed.'
+    }
+  }
+  return out
+}
+
+type ObjectError = Exclude<PublishError, string>
+
+function fromObjectError(error: ObjectError): FieldErrors {
+  if ('invalid' in error) return fromIssues(error.invalid)
   if ('missingClassification' in error) {
     return { classification: 'Choose a classification before publishing.' }
   }
@@ -43,13 +61,15 @@ export function fieldErrorsFor(error: PublishError): FieldErrors {
       lines: `Fee lines use fields the form does not have: ${error.unknownFieldRefs.join(', ')}.`,
     }
   }
-  const out: FieldErrors = {}
-  for (const v of error.policyViolations) {
-    if (v.error === 'adoption_record_missing') {
-      out.adoption = 'Enter who adopted this value and the date they adopted it.'
-    } else {
-      out.value = POLICY_COPY[v.error] ?? 'This value is not allowed.'
-    }
+  return fromPolicyViolations(error.policyViolations)
+}
+
+export function fieldErrorsFor(error: PublishError): FieldErrors {
+  if (error === 'forbidden') {
+    return { [FORM_FIELD]: 'You do not have permission to change configuration.' }
   }
-  return out
+  if (error === 'not_draft') {
+    return { [FORM_FIELD]: 'Only a draft can be published. Save a draft first.' }
+  }
+  return fromObjectError(error)
 }

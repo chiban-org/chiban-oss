@@ -5,6 +5,7 @@ import type {
   PackRule,
   ProceedingClassification,
 } from '@packs/nh/schema'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import { loadPack, type Pack } from '@/features/packs/loadPack'
 
 export interface FieldProbe {
@@ -30,31 +31,32 @@ export function probe<T>(spec: ProbeSpec<T>): FieldProbe {
 
 export function packRule(key: string): PackRule {
   const rule = loadPack().rules.find((r) => r.key === key)
-  if (rule === undefined) throw new Error(`no pack rule ${key}`)
+  if (rule === undefined) throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, `no pack rule ${key}`)
   return rule
 }
 
 export function clockRule(key: string): ClockRule {
   const rule = packRule(key)
-  if (rule.kind !== 'clock') throw new Error(`${key} is not a clock`)
+  if (rule.kind !== 'clock') throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, `${key} is not a clock`)
   return rule
 }
 
 export function gateRule(key: string): GateRule {
   const rule = packRule(key)
-  if (rule.kind !== 'gate') throw new Error(`${key} is not a gate`)
+  if (rule.kind !== 'gate') throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, `${key} is not a gate`)
   return rule
 }
 
 export function classificationOf(key: string): ProceedingClassification {
   const found = loadPack().classifications.find((c) => c.key === key)
-  if (found === undefined) throw new Error(`no classification ${key}`)
+  if (found === undefined)
+    throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, `no classification ${key}`)
   return found
 }
 
 export function editionOf(key: string): CodeEditionEntry {
   const found = loadPack().codeEditions.find((e) => e.key === key)
-  if (found === undefined) throw new Error(`no edition ${key}`)
+  if (found === undefined) throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, `no edition ${key}`)
   return found
 }
 

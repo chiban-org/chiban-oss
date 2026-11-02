@@ -1,5 +1,6 @@
 import type { GateRule } from '@packs/nh/schema'
 import { and, desc, eq, ne } from 'drizzle-orm'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import {
   clocks,
   codeEditionRecords,
@@ -15,7 +16,9 @@ const COMMENT_CLOCK_RULE_KEY = 'nh.bp.regional_impact_comment'
 
 function gateRule(key: string): GateRule {
   const rule = ruleByKey(loadPack(), key)
-  if (rule.kind !== 'gate') throw new Error(`${key} is not a gate rule`)
+  if (rule.kind !== 'gate') {
+    throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, 'Not a gate rule', { key })
+  }
   return rule
 }
 

@@ -15,15 +15,13 @@ import type { FeeComputation } from '@/features/fees/computeFees'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { createContext } from '@/server/trpc/context'
 import { overrideGateAction, revokeOverrideAction, statutoryExceptionAction } from './actions'
+import { AppealPanel, CodeEditionPanel, RegionalImpactPanel } from './buildingPanels'
+import { FeeOverrideForm } from './feePanels'
 import {
-  AppealPanel,
   ClockAdjustForm,
-  CodeEditionPanel,
   CompletenessPanel,
   ConditionsPanel,
-  FeeOverrideForm,
   PartiesPanel,
-  RegionalImpactPanel,
   TransitionBar,
 } from './panels'
 

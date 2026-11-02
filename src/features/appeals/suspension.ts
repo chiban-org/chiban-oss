@@ -6,10 +6,11 @@ import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 
 export const APPEAL_SUSPENSION_GATE_KEY = 'nh.appeal.suspension'
 
+const SUSPENDING_EFFECT: string = 'suspend_on_appeal_of_issuance'
+
 export function appealSuspends(pack: Pack, bindings: ReadonlySet<string>): boolean {
   return pack.rules.some(
-    (r) =>
-      r.kind === 'effect' && r.effect === 'suspend_on_appeal_of_issuance' && bindings.has(r.key),
+    (r) => r.kind === 'effect' && r.effect === SUSPENDING_EFFECT && bindings.has(r.key),
   )
 }
 

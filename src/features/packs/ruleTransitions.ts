@@ -1,5 +1,6 @@
 import type { ClockRule } from '@packs/nh/schema'
 import { and, eq } from 'drizzle-orm'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, DbOrTx, Tx } from '@/db/client'
 import { clockAdjustments, clocks, remediationTasks, ruleTransitionsApplied } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -49,7 +50,8 @@ async function affectedClocks(db: DbOrTx, t: RuleTransition): Promise<ClockRow[]
 
 function clockRuleOf(pack: Pack, key: string, version: number): ClockRule {
   const rule = ruleByKey(pack, key, version)
-  if (rule.kind !== 'clock') throw new Error(`${key} is not a clock rule`)
+  if (rule.kind !== 'clock')
+    throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, `${key} is not a clock rule`)
   return rule
 }
 

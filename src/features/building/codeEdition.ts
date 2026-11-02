@@ -138,7 +138,11 @@ export function codeEditionPanelRows(
   return rule.fields.map((field) => {
     const value = record[field]
     const text =
-      value === null || value === undefined || value === '' ? 'Not recorded' : String(value)
+      value === null || value === undefined || value === ''
+        ? 'Not recorded'
+        : typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
+          ? String(value)
+          : JSON.stringify(value)
     return { field, value: text }
   })
 }

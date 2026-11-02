@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import { applications } from '@/db/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
@@ -33,14 +34,18 @@ export async function setupPermitWorld(db: Db, options: WorldOptions = {}): Prom
   await saveAndPublish(db, admin, 'application_type', 'BP', appTypeBody(options.buildingType))
   for (const starter of options.starters ?? []) {
     const adopted = await adoptStarter(db, admin, starter, signal)
-    if (!adopted.ok) throw new Error(`starter ${starter} failed: ${JSON.stringify(adopted.error)}`)
+    if (!adopted.ok)
+      throw new AppError(
+        ErrorIds.DB_INVARIANT,
+        `starter ${starter} failed: ${JSON.stringify(adopted.error)}`,
+      )
   }
   const staff = await staffActor(db, 'staff')
   const reviewer = await staffActor(db, 'reviewer')
   const applicant = await staffActor(db, 'applicant')
   const parcelId = await makeParcel(db, [{ format: 'gis12', value: '007001000000' }])
   const project = await createProject(db, applicant, { parcelId, title: 'Garage addition' }, signal)
-  if (!project.ok) throw new Error('project failed')
+  if (!project.ok) throw new AppError(ErrorIds.DB_INVARIANT, 'project failed')
   return { admin, staff, reviewer, applicant, parcelId, projectId: project.value.projectId }
 }
 
@@ -67,7 +72,7 @@ export async function makeApplication(
     signal,
     now,
   )
-  if (!made.ok) throw new Error(`application failed: ${made.error}`)
+  if (!made.ok) throw new AppError(ErrorIds.DB_INVARIANT, `application failed: ${made.error}`)
   if (Object.keys(patch).length > 0) {
     await db.update(applications).set(patch).where(eq(applications.id, made.value.applicationId))
   }

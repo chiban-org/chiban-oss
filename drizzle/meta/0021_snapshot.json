@@ -77,12 +77,8 @@
           "name": "alias_overrides_parcel_id_parcels_id_fk",
           "tableFrom": "alias_overrides",
           "tableTo": "parcels",
-          "columnsFrom": [
-            "parcel_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parcel_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -90,12 +86,8 @@
           "name": "alias_overrides_replaced_parcel_id_parcels_id_fk",
           "tableFrom": "alias_overrides",
           "tableTo": "parcels",
-          "columnsFrom": [
-            "replaced_parcel_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["replaced_parcel_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -287,12 +279,8 @@
           "name": "code_edition_records_application_id_applications_id_fk",
           "tableFrom": "code_edition_records",
           "tableTo": "applications",
-          "columnsFrom": [
-            "application_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["application_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -399,12 +387,8 @@
           "name": "clock_adjustments_clock_id_clocks_id_fk",
           "tableFrom": "clock_adjustments",
           "tableTo": "clocks",
-          "columnsFrom": [
-            "clock_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["clock_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -580,12 +564,8 @@
           "name": "clocks_application_id_applications_id_fk",
           "tableFrom": "clocks",
           "tableTo": "applications",
-          "columnsFrom": [
-            "application_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["application_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -680,12 +660,8 @@
           "name": "application_conditions_application_id_applications_id_fk",
           "tableFrom": "application_conditions",
           "tableTo": "applications",
-          "columnsFrom": [
-            "application_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["application_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -906,12 +882,8 @@
           "name": "fee_assessments_application_id_applications_id_fk",
           "tableFrom": "fee_assessments",
           "tableTo": "applications",
-          "columnsFrom": [
-            "application_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["application_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -921,11 +893,7 @@
         "fee_assessments_seq_uq": {
           "name": "fee_assessments_seq_uq",
           "nullsNotDistinct": false,
-          "columns": [
-            "application_id",
-            "stage",
-            "sequence"
-          ]
+          "columns": ["application_id", "stage", "sequence"]
         }
       },
       "policies": {},
@@ -1015,12 +983,8 @@
           "name": "fee_overrides_application_id_applications_id_fk",
           "tableFrom": "fee_overrides",
           "tableTo": "applications",
-          "columnsFrom": [
-            "application_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["application_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1120,12 +1084,8 @@
           "name": "gate_overrides_application_id_applications_id_fk",
           "tableFrom": "gate_overrides",
           "tableTo": "applications",
-          "columnsFrom": [
-            "application_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["application_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1195,10 +1155,7 @@
         "gis_features_source_unique": {
           "name": "gis_features_source_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "layer_key",
-            "source_key"
-          ]
+          "columns": ["layer_key", "source_key"]
         }
       },
       "policies": {},
@@ -1430,12 +1387,8 @@
           "name": "import_exceptions_first_run_id_import_runs_id_fk",
           "tableFrom": "import_exceptions",
           "tableTo": "import_runs",
-          "columnsFrom": [
-            "first_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["first_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1443,12 +1396,8 @@
           "name": "import_exceptions_last_seen_run_id_import_runs_id_fk",
           "tableFrom": "import_exceptions",
           "tableTo": "import_runs",
-          "columnsFrom": [
-            "last_seen_run_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["last_seen_run_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1584,10 +1533,7 @@
       "compositePrimaryKeys": {
         "role_capabilities_role_capability_pk": {
           "name": "role_capabilities_role_capability_pk",
-          "columns": [
-            "role",
-            "capability"
-          ]
+          "columns": ["role", "capability"]
         }
       },
       "uniqueConstraints": {},
@@ -1618,12 +1564,8 @@
           "name": "user_roles_user_id_users_id_fk",
           "tableFrom": "user_roles",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -1631,10 +1573,7 @@
       "compositePrimaryKeys": {
         "user_roles_user_id_role_pk": {
           "name": "user_roles_user_id_role_pk",
-          "columns": [
-            "user_id",
-            "role"
-          ]
+          "columns": ["user_id", "role"]
         }
       },
       "uniqueConstraints": {},
@@ -1718,9 +1657,7 @@
         "users_email_unique": {
           "name": "users_email_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "email"
-          ]
+          "columns": ["email"]
         }
       },
       "policies": {},
@@ -1756,10 +1693,7 @@
       "compositePrimaryKeys": {
         "job_effects_job_name_dedup_key_pk": {
           "name": "job_effects_job_name_dedup_key_pk",
-          "columns": [
-            "job_name",
-            "dedup_key"
-          ]
+          "columns": ["job_name", "dedup_key"]
         }
       },
       "uniqueConstraints": {},
@@ -1912,12 +1846,8 @@
           "name": "parcel_lineage_links_event_id_parcel_lineage_events_id_fk",
           "tableFrom": "parcel_lineage_links",
           "tableTo": "parcel_lineage_events",
-          "columnsFrom": [
-            "event_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["event_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -1925,12 +1855,8 @@
           "name": "parcel_lineage_links_parcel_id_parcels_id_fk",
           "tableFrom": "parcel_lineage_links",
           "tableTo": "parcels",
-          "columnsFrom": [
-            "parcel_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parcel_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -1938,11 +1864,7 @@
       "compositePrimaryKeys": {
         "parcel_lineage_links_event_id_parcel_id_role_pk": {
           "name": "parcel_lineage_links_event_id_parcel_id_role_pk",
-          "columns": [
-            "event_id",
-            "parcel_id",
-            "role"
-          ]
+          "columns": ["event_id", "parcel_id", "role"]
         }
       },
       "uniqueConstraints": {},
@@ -2036,12 +1958,8 @@
           "name": "magic_links_user_id_users_id_fk",
           "tableFrom": "magic_links",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -2051,9 +1969,7 @@
         "magic_links_token_hash_unique": {
           "name": "magic_links_token_hash_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token_hash"
-          ]
+          "columns": ["token_hash"]
         }
       },
       "policies": {},
@@ -2096,12 +2012,8 @@
           "name": "parcel_record_carry_forwards_link_id_parcel_record_links_id_fk",
           "tableFrom": "parcel_record_carry_forwards",
           "tableTo": "parcel_record_links",
-          "columnsFrom": [
-            "link_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["link_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2109,12 +2021,8 @@
           "name": "parcel_record_carry_forwards_to_parcel_id_parcels_id_fk",
           "tableFrom": "parcel_record_carry_forwards",
           "tableTo": "parcels",
-          "columnsFrom": [
-            "to_parcel_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["to_parcel_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2122,10 +2030,7 @@
       "compositePrimaryKeys": {
         "parcel_record_carry_forwards_link_id_to_parcel_id_pk": {
           "name": "parcel_record_carry_forwards_link_id_to_parcel_id_pk",
-          "columns": [
-            "link_id",
-            "to_parcel_id"
-          ]
+          "columns": ["link_id", "to_parcel_id"]
         }
       },
       "uniqueConstraints": {},
@@ -2231,12 +2136,8 @@
           "name": "parcel_record_links_parcel_id_parcels_id_fk",
           "tableFrom": "parcel_record_links",
           "tableTo": "parcels",
-          "columnsFrom": [
-            "parcel_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parcel_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2246,11 +2147,7 @@
         "parcel_record_links_unique": {
           "name": "parcel_record_links_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "record_kind",
-            "record_id",
-            "parcel_id"
-          ]
+          "columns": ["record_kind", "record_id", "parcel_id"]
         }
       },
       "policies": {},
@@ -2384,12 +2281,8 @@
           "name": "parcel_aliases_parcel_id_parcels_id_fk",
           "tableFrom": "parcel_aliases",
           "tableTo": "parcels",
-          "columnsFrom": [
-            "parcel_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parcel_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         },
@@ -2397,12 +2290,8 @@
           "name": "parcel_aliases_format_parcel_id_formats_key_fk",
           "tableFrom": "parcel_aliases",
           "tableTo": "parcel_id_formats",
-          "columnsFrom": [
-            "format"
-          ],
-          "columnsTo": [
-            "key"
-          ],
+          "columnsFrom": ["format"],
+          "columnsTo": ["key"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2619,10 +2508,7 @@
       "compositePrimaryKeys": {
         "application_number_counters_prefix_year_pk": {
           "name": "application_number_counters_prefix_year_pk",
-          "columns": [
-            "prefix",
-            "year"
-          ]
+          "columns": ["prefix", "year"]
         }
       },
       "uniqueConstraints": {},
@@ -2793,12 +2679,8 @@
           "name": "applications_project_id_projects_id_fk",
           "tableFrom": "applications",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2808,16 +2690,12 @@
         "applications_seq_unique": {
           "name": "applications_seq_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "seq"
-          ]
+          "columns": ["seq"]
         },
         "applications_number_unique": {
           "name": "applications_number_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "number"
-          ]
+          "columns": ["number"]
         }
       },
       "policies": {},
@@ -2873,12 +2751,8 @@
           "name": "attestations_application_id_applications_id_fk",
           "tableFrom": "attestations",
           "tableTo": "applications",
-          "columnsFrom": [
-            "application_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["application_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -2994,12 +2868,8 @@
           "name": "project_parties_project_id_projects_id_fk",
           "tableFrom": "project_parties",
           "tableTo": "projects",
-          "columnsFrom": [
-            "project_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["project_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3069,12 +2939,8 @@
           "name": "projects_parcel_id_parcels_id_fk",
           "tableFrom": "projects",
           "tableTo": "parcels",
-          "columnsFrom": [
-            "parcel_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["parcel_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3126,12 +2992,8 @@
           "name": "regional_impact_determinations_application_id_applications_id_fk",
           "tableFrom": "regional_impact_determinations",
           "tableTo": "applications",
-          "columnsFrom": [
-            "application_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["application_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3225,12 +3087,8 @@
           "name": "regional_impact_notices_application_id_applications_id_fk",
           "tableFrom": "regional_impact_notices",
           "tableTo": "applications",
-          "columnsFrom": [
-            "application_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["application_id"],
+          "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
         }
@@ -3306,12 +3164,8 @@
           "name": "sessions_user_id_users_id_fk",
           "tableFrom": "sessions",
           "tableTo": "users",
-          "columnsFrom": [
-            "user_id"
-          ],
-          "columnsTo": [
-            "id"
-          ],
+          "columnsFrom": ["user_id"],
+          "columnsTo": ["id"],
           "onDelete": "cascade",
           "onUpdate": "no action"
         }
@@ -3321,9 +3175,7 @@
         "sessions_token_hash_unique": {
           "name": "sessions_token_hash_unique",
           "nullsNotDistinct": false,
-          "columns": [
-            "token_hash"
-          ]
+          "columns": ["token_hash"]
         }
       },
       "policies": {},

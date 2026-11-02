@@ -9,6 +9,8 @@ import type { CivilDate } from '@/types/civilDate'
 import { attempt, clockRule, type FieldProbe, packRule, probe } from './probe'
 import { observeRule, ruleProbes } from './ruleProbes'
 
+const DECISION = 'nh.bp.decision'
+
 export const ALL_POLICY_FIELDS = ['policy', 'floor', 'ceiling', 'default', 'range.min', 'range.max']
 const d = (s: string) => s as CivilDate
 const FACT_SETS: ProjectFacts[] = [
@@ -93,17 +95,17 @@ function mapCases(
 
 export function clockProbes(): Record<string, FieldProbe> {
   const probes: Record<string, FieldProbe> = {
-    ...ruleProbes('clock', 'nh.bp.decision', ALL_POLICY_FIELDS),
+    ...ruleProbes('clock', DECISION, ALL_POLICY_FIELDS),
     'clock.clockType': clockProbe('nh.bp.regional_impact_comment', (r) => ({
       ...r,
       clockType: 'action_due',
     })),
-    'clock.whose': clockProbe('nh.bp.decision', (r) => ({ ...r, whose: 'board' })),
-    'clock.startEvent': clockProbe('nh.bp.decision', (r) => ({
+    'clock.whose': clockProbe(DECISION, (r) => ({ ...r, whose: 'board' })),
+    'clock.startEvent': clockProbe(DECISION, (r) => ({
       ...r,
       startEvent: 'permit_issued',
     })),
-    'clock.direction': clockProbe('nh.bp.decision', (r) => ({ ...r, direction: 'before' })),
+    'clock.direction': clockProbe(DECISION, (r) => ({ ...r, direction: 'before' })),
     'clock.length.unit': clockProbe('nh.bp.regional_impact_comment', (r) => ({
       ...r,
       length: { unit: 'months', value: 30 },
@@ -112,49 +114,49 @@ export function clockProbes(): Record<string, FieldProbe> {
       ...r,
       length: { unit: 'days', value: 45 },
     })),
-    'clock.length.otherwise': clockProbe('nh.bp.decision', (r) =>
+    'clock.length.otherwise': clockProbe(DECISION, (r) =>
       'cases' in r.length ? { ...r, length: { ...r.length, otherwise: 14 } } : r,
     ),
     'clock.length.fromSetting': clockProbe('town.bp.expiration', (r) => ({
       ...r,
       length: { unit: 'months', fromSetting: 'nh.code.technical_requirements' },
     })),
-    'clock.length.cases.value': clockProbe('nh.bp.decision', (r) =>
+    'clock.length.cases.value': clockProbe(DECISION, (r) =>
       mapCases(r, (c, i) => (i === 0 ? { ...c, value: 90 } : c)),
     ),
-    'clock.length.cases.when.fact': clockProbe('nh.bp.decision', (r) =>
+    'clock.length.cases.when.fact': clockProbe(DECISION, (r) =>
       mapCases(r, (c, i) =>
         i === 1 ? { ...c, when: { fact: 'classification', in: ['residential'] } } : c,
       ),
     ),
-    'clock.length.cases.when.in': clockProbe('nh.bp.decision', (r) =>
+    'clock.length.cases.when.in': clockProbe(DECISION, (r) =>
       mapCases(r, (c, i) =>
         i === 0 ? { ...c, when: { fact: 'classification', in: ['residential'] } } : c,
       ),
     ),
-    'clock.length.cases.when.gt': clockProbe('nh.bp.decision', (r) =>
+    'clock.length.cases.when.gt': clockProbe(DECISION, (r) =>
       mapCases(r, (c, i) => (i === 1 ? { ...c, when: { fact: 'dwellingUnits', gt: 0 } } : c)),
     ),
-    'clock.consequence.kind': clockProbe('nh.bp.decision', (r) => ({
+    'clock.consequence.kind': clockProbe(DECISION, (r) => ({
       ...r,
       consequence: { ...r.consequence, kind: 'lapse' },
     })),
-    'clock.consequence.text': clockProbe('nh.bp.decision', (r) => ({
+    'clock.consequence.text': clockProbe(DECISION, (r) => ({
       ...r,
       consequence: { ...r.consequence, text: 'Changed' },
     })),
-    'clock.extension.allowed': clockProbe('nh.bp.decision', (r) => ({
+    'clock.extension.allowed': clockProbe(DECISION, (r) => ({
       ...r,
       extension: { allowed: true, by: 'town_renewal' },
     })),
-    'clock.extension.note': clockProbe('nh.bp.decision', (r) =>
+    'clock.extension.note': clockProbe(DECISION, (r) =>
       r.extension.allowed ? r : { ...r, extension: { allowed: false, note: 'Changed note' } },
     ),
     'clock.extension.by': clockProbe('town.bp.expiration', (r) => ({
       ...r,
       extension: { allowed: true, by: 'applicant_consent' },
     })),
-    'clock.waivable': clockProbe('nh.bp.decision', (r) => ({ ...r, waivable: true })),
+    'clock.waivable': clockProbe(DECISION, (r) => ({ ...r, waivable: true })),
   }
   return probes
 }

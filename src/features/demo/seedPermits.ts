@@ -1,190 +1,27 @@
 import { NH_STARTERS } from '@packs/nh/starters'
-import { eq, like } from 'drizzle-orm'
-import { AppError, ErrorIds } from '@/constants/errorIds'
+import { like } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { applications, projects, users } from '@/db/schema'
+import { projects } from '@/db/schema'
 import { recordAppeal } from '@/features/appeals/appeals'
-import { createApplication } from '@/features/applications/createApplication'
-import type { CoreState } from '@/features/applications/states'
-import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
-import { transitionApplication } from '@/features/applications/transition'
-import { type Actor, loadActor } from '@/features/auth/actor'
-import { recordCodeEdition } from '@/features/building/codeEdition'
-import { markComplete } from '@/features/building/completeness'
 import {
   recordRegionalImpactDetermination,
   recordRegionalImpactNotice,
 } from '@/features/building/regionalImpact'
 import { renewPermit } from '@/features/building/renewal'
 import { adoptStarter } from '@/features/config/adoptStarter'
-import { DEMO_DOMAIN } from '@/features/demo/domain'
+import {
+  actorFor,
+  BUILDING_VALUES,
+  type Cast,
+  completeAndReview,
+  d,
+  must,
+  open,
+  readyToIssue,
+  TITLE_PREFIX,
+  TRADE_VALUES,
+} from '@/features/demo/seedPermitSupport'
 import { createFeeOverride } from '@/features/fees/feeOverrides'
-import { resolveParcelId } from '@/features/parcels/resolveParcelId'
-import { createProject } from '@/features/projects/projects'
-import type { CivilDate } from '@/types/civilDate'
-
-const TITLE_PREFIX = 'Demo permit:'
-
-interface Cast {
-  admin: Actor
-  staff: Actor
-  applicant: Actor
-}
-
-const d = (s: string) => s as CivilDate
-const noon = (s: string) => new Date(`${s}T17:00:00Z`)
-
-async function actorFor(db: Db, local: string, signal: AbortSignal): Promise<Actor> {
-  const [row] = await db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.email, `${local}@${DEMO_DOMAIN}`))
-  const actor = row === undefined ? null : await loadActor(db, row.id, signal)
-  if (actor === null) throw new AppError(ErrorIds.DB_INVARIANT, 'Demo user missing', { local })
-  return actor
-}
-
-function must<T>(result: { ok: true; value: T } | { ok: false; error: unknown }, what: string): T {
-  if (!result.ok)
-    throw new AppError(ErrorIds.DB_INVARIANT, `Demo seed step failed: ${what}`, {
-      error: JSON.stringify(result.error),
-    })
-  return result.value
-}
-
-const BUILDING_VALUES = {
-  work_type: 'building',
-  description: 'Two-story addition with an attached garage',
-  classification: 'residential',
-  dwelling_units: 1,
-  finished_sq_ft: '1800',
-  unfinished_sq_ft: '400',
-  estimated_cost: '185000.00',
-}
-
-const TRADE_VALUES = {
-  description: 'Replace the main panel and service entrance',
-  contractor_license_number: 'EL-20418',
-  service_amps: 200,
-}
-
-class Scenario {
-  constructor(
-    readonly db: Db,
-    readonly cast: Cast,
-    readonly signal: AbortSignal,
-    readonly applicationId: string,
-  ) {}
-
-  async step(to: CoreState, on: string, actor: Actor = this.cast.staff): Promise<void> {
-    const [row] = await this.db
-      .select()
-      .from(applications)
-      .where(eq(applications.id, this.applicationId))
-    const moved = await this.db.transaction((tx) =>
-      transitionApplication(
-        tx,
-        actor,
-        {
-          applicationId: this.applicationId,
-          to,
-          expectedRowVersion: row?.rowVersion ?? 0,
-          onDate: d(on),
-        },
-        this.signal,
-        noon(on),
-      ),
-    )
-    must(moved, `move to ${to}`)
-  }
-}
-
-async function open(
-  db: Db,
-  cast: Cast,
-  signal: AbortSignal,
-  input: {
-    parcel: string
-    title: string
-    typeKey: string
-    values: Record<string, unknown>
-    submittedOn: string
-  },
-): Promise<Scenario> {
-  const parcel = must(await resolveParcelId(db, { value: input.parcel }, signal), 'parcel')
-  const project = must(
-    await createProject(
-      db,
-      cast.applicant,
-      { parcelId: parcel.parcelId, title: `${TITLE_PREFIX} ${input.title}` },
-      signal,
-    ),
-    'project',
-  )
-  const created = must(
-    await createApplication(
-      db,
-      cast.applicant,
-      { projectId: project.projectId, applicationTypeKey: input.typeKey },
-      signal,
-      noon(input.submittedOn),
-    ),
-    'application',
-  )
-  const type = NH_STARTERS.find((s) => s.applicationType.key === input.typeKey)
-  must(
-    await submitApplication(
-      db,
-      cast.applicant,
-      {
-        applicationId: created.applicationId,
-        values: input.values,
-        attestation: {
-          statementSha256: attestationHash(type?.applicationType.attestationText ?? ''),
-        },
-      },
-      signal,
-      noon(input.submittedOn),
-    ),
-    'submit',
-  )
-  return new Scenario(db, cast, signal, created.applicationId)
-}
-
-async function completeAndReview(
-  s: Scenario,
-  completedOn: string,
-  reviewOn: string,
-): Promise<void> {
-  must(
-    await markComplete(
-      s.db,
-      s.cast.staff,
-      { applicationId: s.applicationId, completedDate: d(completedOn) },
-      s.signal,
-      noon(reviewOn),
-    ),
-    'complete',
-  )
-  await s.step('under_review', reviewOn)
-}
-
-async function readyToIssue(s: Scenario, decidedOn: string): Promise<void> {
-  await s.step('decided', decidedOn)
-  must(
-    await recordCodeEdition(s.db, s.cast.staff, { applicationId: s.applicationId }, s.signal),
-    'code edition',
-  )
-  must(
-    await recordRegionalImpactDetermination(
-      s.db,
-      s.cast.staff,
-      { applicationId: s.applicationId, determination: 'no', determinedOn: d(decidedOn) },
-      s.signal,
-    ),
-    'regional impact',
-  )
-}
 
 export async function seedPermits(db: Db, signal: AbortSignal): Promise<boolean> {
   signal.throwIfAborted()

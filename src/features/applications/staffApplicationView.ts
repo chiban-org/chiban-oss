@@ -40,7 +40,7 @@ import { hasFullRecordAccess } from '@/features/projects/access'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 
-const MANUAL_TARGETS_EXCLUDED: readonly CoreState[] = ['suspended', 'expired']
+const MANUAL_TARGETS_EXCLUDED: readonly CoreState[] = ['suspended', 'expired', 'submitted']
 
 export interface StaffApplicationView {
   id: string
@@ -125,7 +125,7 @@ async function clockExplanations(db: Db, applicationId: string, today: CivilDate
       .from(clockAdjustments)
       .where(eq(clockAdjustments.clockId, clock.id))
       .orderBy(asc(clockAdjustments.createdAt))
-    out.push({ ...explainClock(clock, adjustments, rule as ClockRule, today), clockId: clock.id })
+    out.push({ ...explainClock(clock, adjustments, rule, today), clockId: clock.id })
   }
   return out
 }
@@ -148,6 +148,7 @@ export async function getStaffApplicationView(
   const nextTransitions = CORE_TRANSITIONS[app.state].filter(
     (to) =>
       !MANUAL_TARGETS_EXCLUDED.includes(to) &&
+      !(app.state === 'suspended' && to === 'issued') &&
       isTransitionAllowed(app.state, to, app.typeBody.workflow),
   )
   const gates = await db.transaction(async (tx) => {

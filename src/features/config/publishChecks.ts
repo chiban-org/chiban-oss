@@ -23,7 +23,7 @@ export type PublishError =
 
 const NUMERIC_TYPES = new Set(['integer', 'decimal', 'money'])
 
-async function checkTownRule(body: TownRuleSettingBody, key: string): Promise<PublishError | null> {
+function checkTownRule(body: TownRuleSettingBody, key: string): PublishError | null {
   const rule = loadPack().rules.find((r) => r.key === body.ruleKey)
   if (rule === undefined) {
     return { invalid: [{ path: 'ruleKey', message: `unknown rule ${body.ruleKey}` }] }
@@ -76,7 +76,7 @@ async function checkApplicationType(
   const numeric = new Set(
     formBody.fields.filter((f) => NUMERIC_TYPES.has(f.type)).map((f) => f.key),
   )
-  const refs = ((fee?.body as FeeScheduleBody).lines ?? []).flatMap((l) => exprFieldRefs(l.expr))
+  const refs = (fee?.body as FeeScheduleBody).lines.flatMap((l) => exprFieldRefs(l.expr))
   const unknownFieldRefs = [...new Set(refs.filter((r) => !numeric.has(r)))]
   if (unknownFieldRefs.length > 0) return { unknownFieldRefs }
   const merge = templates.flatMap((t) => unknownMergeFields((t?.body as TemplateBody).body))
@@ -91,16 +91,13 @@ export async function runPublishChecks(
   body: unknown,
   signal: AbortSignal,
 ): Promise<PublishError | null> {
-  switch (kind) {
-    case 'application_type':
-      return await checkApplicationType(tx, body as ApplicationTypeBody, signal)
-    case 'template': {
-      const unknown = unknownMergeFields((body as TemplateBody).body)
-      return unknown.length > 0 ? { unknownMergeFields: unknown } : null
-    }
-    case 'town_rule_setting':
-      return await checkTownRule(body as TownRuleSettingBody, key)
-    default:
-      return null
+  if (kind === 'application_type') {
+    return await checkApplicationType(tx, body as ApplicationTypeBody, signal)
   }
+  if (kind === 'template') {
+    const unknown = unknownMergeFields((body as TemplateBody).body)
+    return unknown.length > 0 ? { unknownMergeFields: unknown } : null
+  }
+  if (kind === 'town_rule_setting') return checkTownRule(body as TownRuleSettingBody, key)
+  return null
 }
