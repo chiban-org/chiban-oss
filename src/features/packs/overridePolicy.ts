@@ -14,32 +14,35 @@ export type ProposedTownValue =
   | { value: number; adoptingAuthority?: string; adoptedOn?: CivilDate }
   | { alter: true }
 
+type DelegatedPolicy = Extract<PackRule['overridePolicy'], { policy: 'delegated_choice' }>
+type ProposedValue = Exclude<ProposedTownValue, { alter: true }>
+
+function checkDelegated(
+  policy: DelegatedPolicy,
+  proposed: ProposedValue,
+): Result<void, TownValueError> {
+  const { range } = policy
+  if (range !== undefined && (proposed.value < range.min || proposed.value > range.max)) {
+    return err('outside_delegated_range')
+  }
+  const authority = proposed.adoptingAuthority?.trim() ?? ''
+  if (authority === '' || proposed.adoptedOn === undefined) return err('adoption_record_missing')
+  return ok(undefined)
+}
+
 export function checkTownValue(
   rule: PackRule,
   proposed: ProposedTownValue,
 ): Result<void, TownValueError> {
   const policy = rule.overridePolicy
-  switch (policy.policy) {
-    case 'fixed':
-      return err('fixed')
-    case 'locally_prohibited':
-      return err('locally_prohibited')
-    case 'minimum':
-      if ('alter' in proposed) return ok(undefined)
-      return proposed.value < policy.floor ? err('below_minimum') : ok(undefined)
-    case 'maximum':
-      if ('alter' in proposed) return ok(undefined)
-      return proposed.value > policy.ceiling ? err('above_maximum') : ok(undefined)
-    case 'delegated_choice': {
-      if ('alter' in proposed) return ok(undefined)
-      const { range } = policy
-      if (range !== undefined && (proposed.value < range.min || proposed.value > range.max)) {
-        return err('outside_delegated_range')
-      }
-      const authority = proposed.adoptingAuthority?.trim() ?? ''
-      if (authority === '' || proposed.adoptedOn === undefined)
-        return err('adoption_record_missing')
-      return ok(undefined)
-    }
+  if (policy.policy === 'fixed') return err('fixed')
+  if (policy.policy === 'locally_prohibited') return err('locally_prohibited')
+  if ('alter' in proposed) return ok(undefined)
+  if (policy.policy === 'minimum') {
+    return proposed.value < policy.floor ? err('below_minimum') : ok(undefined)
   }
+  if (policy.policy === 'maximum') {
+    return proposed.value > policy.ceiling ? err('above_maximum') : ok(undefined)
+  }
+  return checkDelegated(policy, proposed)
 }
