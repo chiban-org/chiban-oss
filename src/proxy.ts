@@ -6,7 +6,7 @@ export const config = {
   matcher: ['/((?!_next/|api/tiles/|.*\\.[a-zA-Z0-9]+$).*)'],
 }
 
-const SKIPPED_PREFIXES = ['/_next/', '/api/tiles/']
+const SKIPPED_PREFIXES = ['/_next/', '/api/tiles/', '/api/payments/webhooks/']
 
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl

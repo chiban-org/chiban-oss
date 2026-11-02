@@ -36,3 +36,10 @@ describe('proxy', () => {
     expect(proxy(req).headers.get('set-cookie')).toBeNull()
   })
 })
+
+describe('proxy payment webhooks', () => {
+  it('skips /api/payments/webhooks/x', () => {
+    const res = proxy(get('/api/payments/webhooks/x'))
+    expect(res.headers.get('set-cookie')).toBeNull()
+  })
+})

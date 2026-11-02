@@ -10,6 +10,7 @@ const TOLERANCE_SECONDS = 300
 
 export interface FakeProcessor extends PaymentProcessor {
   setState(objectId: string, state: ProcessorPaymentState): void
+  setCheckoutObject(checkoutRef: string, objectId: string): void
   refunds: { objectId: string; amountCents: number }[]
   lastCheckoutKey: string | null
 }
@@ -22,6 +23,7 @@ export function signFakePayload(secret: string, rawBody: string, at: Date): stri
 
 export function createFakeProcessor(accountRef = 'acct_alder'): FakeProcessor {
   const states = new Map<string, ProcessorPaymentState>()
+  const checkouts = new Map<string, string>()
   const refunds: { objectId: string; amountCents: number }[] = []
   let refundCounter = 0
   const fake: FakeProcessor = {
@@ -30,6 +32,9 @@ export function createFakeProcessor(accountRef = 'acct_alder'): FakeProcessor {
     lastCheckoutKey: null,
     setState: (objectId, state) => {
       states.set(objectId, state)
+    },
+    setCheckoutObject: (checkoutRef, objectId) => {
+      checkouts.set(checkoutRef, objectId)
     },
     verifyAccount: () => Promise.resolve(ok({ accountRef })),
     createOnlineCheckout: (input) => {
@@ -42,7 +47,8 @@ export function createFakeProcessor(accountRef = 'acct_alder'): FakeProcessor {
         }),
       )
     },
-    resolveCheckout: () => Promise.resolve(ok({ objectId: null })),
+    resolveCheckout: (checkoutRef) =>
+      Promise.resolve(ok({ objectId: checkouts.get(checkoutRef) ?? null })),
     startCardPresent: (input) => Promise.resolve(ok({ objectId: `pi_${input.attemptId}` })),
     getPaymentState: (objectId) => {
       const state = states.get(objectId)
