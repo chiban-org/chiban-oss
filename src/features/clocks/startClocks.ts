@@ -13,7 +13,7 @@ import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/h
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 import type { CivilDate } from '@/types/civilDate'
 
-interface ResolvedLength {
+export interface ResolvedLength {
   unit: 'days' | 'months'
   value: number
   source: 'pack_rule' | 'town_setting'
@@ -33,7 +33,7 @@ export function factMatches(
   )
 }
 
-async function resolveLength(
+export async function resolveClockLength(
   tx: Tx,
   rule: ClockRule,
   facts: ProjectFacts,
@@ -85,7 +85,7 @@ export async function startClocksFor(
   const holidays = packHolidayCalendar()
   for (const rule of rules) {
     if (runningKeys.has(rule.key)) continue
-    const length = await resolveLength(tx, rule, app.facts, pack, signal)
+    const length = await resolveClockLength(tx, rule, app.facts, pack, signal)
     const input = {
       start: onDate,
       length: { unit: length.unit, value: length.value },

@@ -42,6 +42,7 @@ export const FEE_BODY = {
         centsPerUnit: 35,
       },
     },
+    { code: 'renewal', label: 'Renewal', due: 'at_renewal', expr: { op: 'flat', cents: 4500 } },
   ],
 }
 

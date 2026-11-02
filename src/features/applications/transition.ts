@@ -79,8 +79,9 @@ export async function applyTransition(
   if (!isTransitionAllowed(app.state, input.to, app.typeBody.workflow))
     return err('invalid_transition')
   const today = input.onDate ?? (await townToday(tx, now, signal))
-  const blocked = await evaluateGates(tx, app, input.to, today, signal)
-  if (blocked.some((g) => g.effective === 'blocked')) return err({ gateBlocked: blocked })
+  const reinstating = app.state === 'suspended' && input.to === 'issued'
+  const results = reinstating ? [] : await evaluateGates(tx, app, input.to, today, signal)
+  if (results.some((g) => g.effective === 'blocked')) return err({ gateBlocked: results })
   const rowVersion = app.rowVersion + 1
   const stampsDecision = input.to === 'decided' || input.to === 'denied'
   await tx
