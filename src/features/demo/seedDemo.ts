@@ -55,6 +55,20 @@ export const DEMO_USERS: readonly DemoUser[] = [
     kind: 'staff',
   },
   { email: `board@${DEMO_DOMAIN}`, displayName: 'Bea Board', role: 'board_member', kind: 'staff' },
+  { email: `fire@${DEMO_DOMAIN}`, displayName: 'Faye Fire', role: 'reviewer', kind: 'staff' },
+  { email: `works@${DEMO_DOMAIN}`, displayName: 'Wes Works', role: 'reviewer', kind: 'staff' },
+  {
+    email: `pb.member@${DEMO_DOMAIN}`,
+    displayName: 'Robin Vale',
+    role: 'board_member',
+    kind: 'public',
+  },
+  {
+    email: `zba.member@${DEMO_DOMAIN}`,
+    displayName: 'Drew Hale',
+    role: 'board_member',
+    kind: 'public',
+  },
   {
     email: `applicant@${DEMO_DOMAIN}`,
     displayName: 'Alex Applicant',
@@ -151,7 +165,12 @@ export async function seedDemo(
   const paymentsSeeded = await seedPayments(db, signal)
   const recordsSeeded = await seedRecords(db, signal, deps.records)
   const inspectionsSeeded = await seedInspections(db, signal, deps.inspections)
-  const boardsSeeded = await seedBoards(db, signal, deps.boards?.now)
+  const boardsSeeded = await seedBoards(
+    db,
+    signal,
+    deps.boards?.now,
+    deps.operations?.store ?? deps.records?.store,
+  )
   const operationsSeeded = await seedOperations(db, signal, deps.operations ?? {})
   return {
     ...base,

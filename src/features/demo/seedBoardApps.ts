@@ -13,7 +13,7 @@ import { type Cast, d, must, noon, open, type Scenario } from '@/features/demo/s
 import { addProfessional } from '@/features/rosters/professionals'
 import type { CivilDate } from '@/types/civilDate'
 
-const COMMON = {
+export const COMMON = {
   project_description: 'Demonstration board application',
   applicant_mailing_address: '12 Osprey Lane, Alder Pond NH 03999',
   owner_authorization: true,
@@ -160,7 +160,7 @@ export async function seedMinorSitePlan(db: Db, cast: Cast, signal: AbortSignal,
   return s
 }
 
-const VARIANCE_VALUES = {
+export const VARIANCE_VALUES = {
   ...COMMON,
   ordinance_section: 'Article 4, Section 4.3',
   relief_requested: 'Reduce the side setback from 20 feet to 12 feet',

@@ -23,6 +23,7 @@ import {
 } from '@/test/boardFixtures'
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { findIsoDates, findRawKeys, findUuids } from '@/test/leaks'
 import { makeTestStore } from '@/test/minio'
 import { issueListWithRecipients, proofDocument, recipient } from '@/test/noticeFixtures'
 import { staffActor } from '@/test/parcels'
@@ -255,6 +256,9 @@ describe('agenda pdf', () => {
     expect(text).toContain('Pat Heron')
     expect(text).toContain('7:00 PM')
     expect(text).toContain('Town Hall')
+    expect(findIsoDates(text)).toEqual([])
+    expect(findUuids(text)).toEqual([])
+    expect(findRawKeys(text, ['public_hearing', 'minutes_approval'])).toEqual([])
   })
 })
 

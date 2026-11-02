@@ -38,6 +38,11 @@ export function HomeContent({ audience }: { audience: HomeAudience }) {
           </Link>
         </li>
         <li>
+          <Link href="/meetings" className={LINK}>
+            Board agendas and decisions
+          </Link>
+        </li>
+        <li>
           <AccountLink audience={audience} />
         </li>
       </ul>

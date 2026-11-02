@@ -19,3 +19,7 @@ export const NOTICE_CHANNEL_LABELS: Record<NoticeChannel, string> = {
   website: 'Town website',
   bulletin_board: 'Bulletin board',
 }
+
+export function channelLabel(channel: string): string {
+  return (NOTICE_CHANNEL_LABELS as Record<string, string>)[channel] ?? channel
+}

@@ -21,6 +21,9 @@ export default async function BoardsPage() {
         </Link>{' '}
         <Link href="/staff/rosters" className="text-action underline">
           Rosters
+        </Link>{' '}
+        <Link href="/staff/boards/members" className="text-action underline">
+          Board members
         </Link>
       </p>
       {view.sections.map((section) => (

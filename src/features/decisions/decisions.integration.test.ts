@@ -15,6 +15,7 @@ import {
   heldZbaHearing,
   publishBoardTemplates,
 } from '@/test/hearingFixtures'
+import { findIsoDates, findRawKeys, findUuids } from '@/test/leaks'
 import { makeTestStore } from '@/test/minio'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -247,6 +248,11 @@ describe('decision documents', () => {
       expect(text).toContain('File a stamped boundary survey.')
       expect(text).toContain('Approved with conditions')
       expect(text).not.toContain('approved_with_conditions')
+      expect(findIsoDates(text)).toEqual([])
+      expect(findUuids(text)).toEqual([])
+      expect(
+        findRawKeys(text, ['approved_with_conditions', 'nh.zba_variance', 'zba_decision']),
+      ).toEqual([])
     }
   })
 

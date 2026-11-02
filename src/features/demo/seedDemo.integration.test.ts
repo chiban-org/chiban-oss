@@ -132,7 +132,7 @@ async function counts(): Promise<Record<string, number>> {
 describe('seedDemo', () => {
   it('creates Alder Pond, default grants, and one user per role', async () => {
     const report = await seedDemo(handle.db, signal, SEED_DEPS)
-    expect(report.usersCreated).toBe(ROLES.length)
+    expect(report.usersCreated).toBe(DEMO_USERS.length)
     const town = await getTownSettings(handle.db, signal)
     expect(town).toEqual({
       ok: true,
@@ -149,7 +149,7 @@ describe('seedDemo', () => {
     expect(emails.every((e) => e.endsWith('@alderpond.example'))).toBe(true)
   })
 
-  it('names the nine seeded users by short role', () => {
+  it('names the thirteen seeded users by short role', () => {
     expect(DEMO_USERS.map((u) => u.email).sort()).toEqual(
       [
         'admin',
@@ -159,6 +159,10 @@ describe('seedDemo', () => {
         'records',
         'reviewer',
         'board',
+        'fire',
+        'works',
+        'pb.member',
+        'zba.member',
         'applicant',
         'contractor',
       ]
@@ -232,7 +236,7 @@ describe('seedDemo', () => {
     await seedDemo(handle.db, signal, SEED_DEPS)
     await seedDemo(handle.db, signal, SEED_DEPS)
     expect(await counts()).toEqual(before)
-    expect(before.applications).toBe(19)
+    expect(before.applications).toBe(22)
     expect(before.inspections).toBeGreaterThan(5)
     expect(before.certificates).toBe(1)
     expect(before.config_versions).toBeGreaterThan(30)
@@ -261,6 +265,8 @@ describe('seedDemo', () => {
     expect(Object.values(byState).sort()).toEqual([
       'closed',
       'decided',
+      'decided',
+      'denied',
       'issued',
       'issued',
       'issued',
@@ -274,6 +280,7 @@ describe('seedDemo', () => {
       'submitted',
       'submitted',
       'suspended',
+      'under_review',
       'under_review',
       'under_review',
       'under_review',

@@ -45,6 +45,7 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
     access: any('payment.collect', 'payment.report', 'payment.refund_void_correct'),
   },
   { href: '/staff/boards', label: 'Boards', access: any('board.record') },
+  { href: '/staff/boards/members', label: 'Board members', access: any('board.manage_members') },
   { href: '/staff/rosters', label: 'Rosters', access: any('abutters.manage') },
   { href: '/staff/boards/packets', label: 'Board packets', access: any('packet.manage') },
   { href: '/staff/records/preservation', label: 'Records', access: any('document.manage') },

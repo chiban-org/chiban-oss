@@ -21,6 +21,7 @@ import { loadBoardPanel } from '@/features/boards/panelData'
 import { loadPanelDocuments } from '@/features/documents/panelData'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import type { GateResult } from '@/features/gates/evaluateGates'
+import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import { returnedCheckNotices } from '@/features/ledger/balanceNotice'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
 import { applicationHolds } from '@/features/records/holds'
@@ -33,6 +34,7 @@ import { overrideGateAction, revokeOverrideAction, statutoryExceptionAction } fr
 import { BoardPanel } from './boardPanel'
 import { AppealPanel, CodeEditionPanel, RegionalImpactPanel } from './buildingPanels'
 import { FeeOverrideForm } from './feePanels'
+import { HearingsPanel } from './hearingsPanel'
 import { InspectionsPanel, loadInspectionsPanelData } from './inspectionsPanel'
 import {
   ClockAdjustForm,
@@ -128,6 +130,7 @@ export default async function StaffApplicationPage({ params }: Props) {
   const records = await loadRecordsData(ctx, applicationId, view.projectId)
   const inspections = await loadInspectionsPanelData(ctx, applicationId)
   const board = await loadBoardPanel(ctx.db, ctx.actor, applicationId, ctx.signal)
+  const hearings = await loadApplicationHearingsPanel(ctx.db, ctx.actor, applicationId, ctx.signal)
   const [imported] = await ctx.db
     .select({ legacyNumber: cutoverRows.legacyNumber })
     .from(cutoverRows)
@@ -172,6 +175,7 @@ export default async function StaffApplicationPage({ params }: Props) {
       />
       <PartiesPanel view={view} />
       {board === null ? null : <BoardPanel data={board} />}
+      <HearingsPanel data={hearings} />
       <CompletenessPanel view={view} />
       <section aria-label="Clocks">
         <h2>Clocks</h2>

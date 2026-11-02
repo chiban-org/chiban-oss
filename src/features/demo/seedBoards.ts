@@ -7,6 +7,7 @@ import {
   seedMinorSitePlan,
   seedPendingVariance,
   seedSitePlan,
+  VARIANCE_VALUES,
 } from '@/features/demo/seedBoardApps'
 import {
   importScenarioParcels,
@@ -15,8 +16,10 @@ import {
   scheduleBoardMeetings,
   seedRosters,
 } from '@/features/demo/seedBoardData'
+import { seedHearings } from '@/features/demo/seedHearings'
 import { actorFor, type Cast, must } from '@/features/demo/seedPermitSupport'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
+import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { todayInTimeZone } from '@/types/civilDate'
 
 const TOWN_ZONE = 'America/New_York'
@@ -35,6 +38,7 @@ export async function seedBoards(
   db: Db,
   signal: AbortSignal,
   now: Date = new Date(),
+  store: ObjectStore = getObjectStore(),
 ): Promise<boolean> {
   signal.throwIfAborted()
   const existing = await db.select({ id: boardMeetings.id }).from(boardMeetings).limit(1)
@@ -57,5 +61,6 @@ export async function seedBoards(
   await seedMinorSitePlan(db, cast, signal, now)
   await seedPendingVariance(db, cast, signal, now)
   await seedGrantedVariance(db, cast, signal, now, sitePlan)
+  await seedHearings(db, store, cast, { sitePlan }, VARIANCE_VALUES, signal, now)
   return true
 }

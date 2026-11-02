@@ -38,3 +38,7 @@ export function methodAllowed(channel: NoticeChannel, method: ProofMethod): bool
 export function referenceRequired(method: ProofMethod): boolean {
   return method === 'certified_mail' || method === 'other_carrier_with_evidence'
 }
+
+export function proofMethodLabel(method: string): string {
+  return (PROOF_METHOD_LABELS as Record<string, string>)[method] ?? method
+}

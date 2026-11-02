@@ -1,3 +1,4 @@
+import { channelLabel } from '@/features/notices/channels'
 import { formatCivilDate } from '@/lib/formatDate'
 
 const COPY: Record<string, string> = {
@@ -16,7 +17,7 @@ const COPY: Record<string, string> = {
   unknown_municipality: 'One of those municipalities has no contact on file.',
   board_ref_required: 'Enter the board reference for the earlier determination.',
   clock_not_overdue: 'The board decision deadline has not passed on that date.',
-  not_draft: 'This list has been issued or replaced and can no longer be changed.',
+  not_draft: 'This can only be changed while it is a draft.',
   not_board: 'This is not a board application.',
   parcel_layer_unavailable:
     'The parcel layer has no usable import, so no list can be drawn. Import the parcel layer first.',
@@ -36,11 +37,64 @@ const COPY: Record<string, string> = {
   fees_incomplete: 'The notice cost could not be worked out from the issued list.',
   invalid_state: 'That step is not available from the current state.',
   unknown_parcel: 'That parcel ID was not found.',
+  no_issued_list: 'Issue the abutter list before scheduling a hearing.',
+  determination_missing: 'Record the regional impact and water proximity determinations first.',
+  details_required: 'Enter the date, time, and place that were announced at the meeting.',
+  not_properly_noticed:
+    'The hearing is not properly noticed. Record timely proof for every notice item.',
+  not_continuable: 'Only a scheduled hearing can be continued.',
+  method_not_allowed: 'That proof method does not satisfy this kind of notice.',
+  reference_required: 'Enter the tracking number from the receipt.',
+  future_date: 'The date cannot be in the future.',
+  document_not_found:
+    'Upload the certificate or receipt to this application first, then choose it.',
+  item_not_found: 'Choose at least one notice item.',
+  hearing_not_held: 'The hearing has not been held yet.',
+  votes_inconsistent: 'The member votes do not add up to the totals.',
+  already_filed: 'This decision has already been filed.',
+  no_written_decision: 'Generate the Notice of Decision before filing.',
+  already_generated: 'The decision documents have already been generated.',
+  no_template: 'The application type has no template for this document. Add one in Settings.',
+  not_regional: 'This decision has no regional impact, so there is nothing to send.',
+  contacts_missing: 'Add the regional planning commission and affected municipalities in Settings.',
+  no_clock: 'The transmittal deadline was not started for this application.',
+  route_not_allowed: 'That step does not follow from the one you chose.',
+  wrong_outcome: 'Choose whether the rehearing was granted or denied.',
+  no_route: 'No Technical Review Committee route is set for this application type.',
+  staff_account: 'That email belongs to a staff account. Board members need their own account.',
+  send_failed:
+    'The email could not be sent. The record was saved, so check the address and try again.',
+  empty: 'There is nothing to include yet.',
+  already_published: 'This agenda is already published. Reopen it to change it.',
 }
 
-export function boardErrorCopy(error: unknown): string {
-  if (typeof error === 'string') return COPY[error] ?? 'Something went wrong. Try again.'
-  if (typeof error === 'object' && error !== null) {
+const FALLBACK = 'Something went wrong. Try again.'
+
+const NOTICE_STATE_WORDS: Record<string, string> = { missing: 'Missing', proved_late: 'Late' }
+const FIELD_WORDS: Record<string, string> = {
+  findings: 'Findings',
+  conditions: 'Conditions',
+  reasonsForDisapproval: 'Reasons for disapproval',
+}
+
+function noticeItemsText(
+  items: { channel: string; recipientName: string | null; state: string }[],
+) {
+  const describe = (state: string) =>
+    items
+      .filter((i) => i.state === state)
+      .map((i) =>
+        [channelLabel(i.channel), i.recipientName].filter((p) => p !== null && p !== '').join(', '),
+      )
+  return Object.entries(NOTICE_STATE_WORDS)
+    .map(([state, word]) => ({ word, names: describe(state) }))
+    .filter((g) => g.names.length > 0)
+    .map((g) => `${g.word}: ${g.names.join('; ')}.`)
+    .join(' ')
+}
+
+function objectErrorCopy(error: object): string | null {
+  {
     if ('filedTooLate' in error) {
       const late = (
         error as { filedTooLate: { lastFilingDay: string; earliestMeeting: string | null } }
@@ -50,6 +104,19 @@ export function boardErrorCopy(error: unknown): string {
           ? 'No later meeting is on the calendar yet.'
           : `The earliest meeting it can be accepted at is ${formatCivilDate(late.earliestMeeting)}.`
       return `This application was filed too late for that meeting. The last day to file was ${formatCivilDate(late.lastFilingDay)}. ${next}`
+    }
+    if ('notProperlyNoticed' in error) {
+      const items = (error as { notProperlyNoticed: Parameters<typeof noticeItemsText>[0] })
+        .notProperlyNoticed
+      return `The hearing is not properly noticed yet. ${noticeItemsText(items)}`
+    }
+    if ('missingFields' in error) {
+      const fields = (error as { missingFields: string[] }).missingFields
+      return `The decision cannot be recorded yet. Still needed: ${fields.map((f) => FIELD_WORDS[f] ?? f).join(', ')}.`
+    }
+    if ('departmentWithoutReviewer' in error) {
+      const names = (error as { departmentWithoutReviewer: string[] }).departmentWithoutReviewer
+      return `These departments have no active reviewer: ${names.join(', ')}. Add one in the Technical Review Committee settings.`
     }
     if ('incomplete' in error) {
       const items = (error as { incomplete: { detail: string }[] }).incomplete
@@ -65,5 +132,11 @@ export function boardErrorCopy(error: unknown): string {
       return `A rule blocks this step. ${blocked.map((g) => g.outcome.reason ?? g.label).join(' ')}`
     }
   }
-  return 'Something went wrong. Try again.'
+  return null
+}
+
+export function boardErrorCopy(error: unknown): string {
+  if (typeof error === 'string') return COPY[error] ?? FALLBACK
+  if (typeof error === 'object' && error !== null) return objectErrorCopy(error) ?? FALLBACK
+  return FALLBACK
 }

@@ -32,7 +32,10 @@ export default async function MeetingsPage() {
             {section.meetings.map((m) => (
               <li key={m.id} className="flex flex-wrap items-end gap-4 border-b pb-2">
                 <p className="m-0 min-w-72 flex-1">
-                  {`${m.dateText}, ${m.kindText}${m.location === '' ? '' : `, ${m.location}`}`}
+                  <Link href={`/staff/boards/meetings/${m.id}`} className="text-action underline">
+                    {m.dateText}
+                  </Link>
+                  {`, ${m.kindText}${m.location === '' ? '' : `, ${m.location}`}`}
                   {m.cancelled ? `. Cancelled: ${m.cancelReason ?? ''}` : ''}
                   {m.past && !m.cancelled ? ' (past)' : ''}
                 </p>
