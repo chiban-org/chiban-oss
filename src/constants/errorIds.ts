@@ -55,6 +55,8 @@ export const ErrorIds = {
   EXPORT_BLOB_INVALID: 'E_EXP_003',
   EXPORT_ENVELOPE_INVALID: 'E_EXP_004',
   EXPORT_DUMP_FAILED: 'E_EXP_005',
+
+  ENF_INVARIANT: 'E_ENF_001',
 } as const
 
 export type ErrorId = (typeof ErrorIds)[keyof typeof ErrorIds]

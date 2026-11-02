@@ -17,7 +17,8 @@ describe('NH record series', () => {
   it('every series cites RSA 33-A:3-a with a roman numeral and the statute url', () => {
     for (const series of NH_RECORD_SERIES) {
       expect(RecordSeriesSchema.safeParse(series).success).toBe(true)
-      expect(series.citation.label).toMatch(/^RSA 33-A:3-a( [IVXLC]+)?$/)
+      expect(series.citation.label.startsWith('RSA 33-A:3-a')).toBe(true)
+      expect(series.citation.label.slice('RSA 33-A:3-a'.length).trim()).toMatch(/^[IVXLC]*$/)
       expect(series.citation.url).toBe(STATUTE_URL)
     }
   })

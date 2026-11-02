@@ -8,7 +8,7 @@ import { hasFullRecordAccess } from '@/features/access/roles'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { attachDocument } from '@/features/documents/attach'
-import type { RecordRef } from '@/features/documents/types'
+import type { DocKind, RecordRef } from '@/features/documents/types'
 import { ingestTempObject } from '@/features/files/ingest'
 import { type AllowedType, isAllowedType } from '@/features/files/sniff'
 import { managesAllInspectors } from '@/features/inspections/visibility'
@@ -27,6 +27,7 @@ export interface UploadIntentInput {
   contentType: string
   sizeBytes: number
   seriesKey?: string
+  docKind?: DocKind
 }
 
 async function applicationProject(db: DbOrTx, applicationId: string) {
@@ -82,6 +83,21 @@ async function mayUploadToInspection(
   )
 }
 
+const CASE_DOC_KINDS: readonly DocKind[] = [
+  'enforcement_photo',
+  'enforcement_letter',
+  'service_proof',
+  'court_document',
+]
+
+async function mayUploadToCase(db: DbOrTx, actor: Actor, signal: AbortSignal): Promise<boolean> {
+  return (
+    hasFullRecordAccess(actor) &&
+    ((await hasCapability(db, actor.userId, 'enforcement.manage', signal)) ||
+      (await hasCapability(db, actor.userId, 'enforcement.record_service', signal)))
+  )
+}
+
 export async function mayUploadTo(
   db: DbOrTx,
   actor: Actor,
@@ -92,6 +108,7 @@ export async function mayUploadTo(
   if (target.kind === 'inspection') {
     return await mayUploadToInspection(db, actor, target.id, signal, now)
   }
+  if (target.kind === 'enforcement_case') return await mayUploadToCase(db, actor, signal)
   if (await hasCapability(db, actor.userId, 'document.manage', signal)) return true
   if (target.kind === 'parcel' || hasFullRecordAccess(actor)) return false
   if (target.kind === 'project') {
@@ -104,6 +121,11 @@ export async function mayUploadTo(
   return await isPartyOf(db, actor, app.projectId)
 }
 
+function docKindAllowed(kind: RecordRef['kind'], docKind: DocKind | undefined): boolean {
+  if (docKind === undefined) return kind !== 'enforcement_case'
+  return kind === 'enforcement_case' && CASE_DOC_KINDS.includes(docKind)
+}
+
 export async function createUploadIntent(
   db: Db,
   store: ObjectStore,
@@ -114,11 +136,18 @@ export async function createUploadIntent(
 ): Promise<
   Result<
     { intentId: string; url: string; headers: Record<string, string> },
-    'forbidden' | 'too_large' | 'empty' | 'type_not_allowed' | 'series_required' | 'unknown_series'
+    | 'forbidden'
+    | 'too_large'
+    | 'empty'
+    | 'type_not_allowed'
+    | 'series_required'
+    | 'unknown_series'
+    | 'doc_kind_not_allowed'
   >
 > {
   signal.throwIfAborted()
   if (!(await mayUploadTo(db, actor, input.target, signal, now))) return err('forbidden')
+  if (!docKindAllowed(input.target.kind, input.docKind)) return err('doc_kind_not_allowed')
   if (!isAllowedType(input.contentType)) return err('type_not_allowed')
   if (input.sizeBytes > env.MAX_UPLOAD_BYTES) return err('too_large')
   if (input.sizeBytes < 1) return err('empty')
@@ -139,6 +168,7 @@ export async function createUploadIntent(
       sizeBytes: input.sizeBytes,
       tempKey,
       seriesKey: input.seriesKey ?? null,
+      docKind: input.docKind ?? null,
       expiresAt: new Date(now.getTime() + INTENT_MINUTES * MINUTE_MS),
     })
     .returning({ id: uploadIntents.id })
@@ -154,7 +184,8 @@ export async function createUploadIntent(
   })
 }
 
-function docKindFor(kind: RecordRef['kind']): 'parcel_file' | 'inspection_photo' | 'attachment' {
+function docKindFor(kind: RecordRef['kind'], chosen: string | null): DocKind {
+  if (chosen !== null) return chosen as DocKind
   if (kind === 'parcel') return 'parcel_file'
   return kind === 'inspection' ? 'inspection_photo' : 'attachment'
 }
@@ -234,7 +265,7 @@ export async function finalizeUpload(
         {
           target,
           title: intent.title,
-          docKind: docKindFor(target.kind),
+          docKind: docKindFor(target.kind, intent.docKind),
           ...(intent.seriesKey === null ? {} : { seriesKey: intent.seriesKey }),
           file: { sha256, filename: intent.filename, contentType: intent.contentType },
         },

@@ -1,6 +1,13 @@
 import { eq } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
-import { applications, documents, documentVersions, inspections, projects } from '@/db/schema'
+import {
+  applications,
+  documents,
+  documentVersions,
+  enforcementCases,
+  inspections,
+  projects,
+} from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import {
@@ -28,6 +35,7 @@ export interface AttachInput {
 export function defaultsFor(kind: RecordRef['kind']): { audiences: Audience[]; isPublic: boolean } {
   if (kind === 'parcel') return { audiences: [...AUDIENCES], isPublic: true }
   if (kind === 'inspection') return { audiences: ['project_parties'], isPublic: false }
+  if (kind === 'enforcement_case') return { audiences: [], isPublic: false }
   return { audiences: ['project_parties', 'reviewers'], isPublic: false }
 }
 
@@ -43,6 +51,13 @@ export async function applicationOf(tx: Tx, target: RecordRef): Promise<string |
 
 export async function parcelOf(tx: Tx, target: RecordRef): Promise<string | null> {
   if (target.kind === 'parcel') return target.id
+  if (target.kind === 'enforcement_case') {
+    const [row] = await tx
+      .select({ parcelId: enforcementCases.parcelId })
+      .from(enforcementCases)
+      .where(eq(enforcementCases.id, target.id))
+    return row?.parcelId ?? null
+  }
   if (target.kind === 'project') {
     const [row] = await tx
       .select({ parcelId: projects.parcelId })
@@ -133,6 +148,13 @@ export async function defaultSeriesForApplication(
   return defaultSeriesKey(classification, app.typeBody.key)
 }
 
+const ENFORCEMENT_SERIES: Partial<Record<DocKind, string>> = {
+  enforcement_photo: 'nh.rs.complaint_log',
+  enforcement_letter: 'nh.rs.code_enforcement_specifications',
+  service_proof: 'nh.rs.code_enforcement_specifications',
+  court_document: 'nh.rs.code_enforcement_specifications',
+}
+
 async function assignInitialSeries(
   tx: Tx,
   actor: DocumentActor,
@@ -144,6 +166,11 @@ async function assignInitialSeries(
   if (input.seriesKey !== undefined) {
     await assignSeries(tx, ref, input.seriesKey, 'staff', actor, signal)
     return input.seriesKey
+  }
+  if (input.target.kind === 'enforcement_case') {
+    const key = ENFORCEMENT_SERIES[input.docKind] ?? null
+    if (key !== null) await assignSeries(tx, ref, key, 'default', actor, signal)
+    return key
   }
   const applicationId = await applicationOf(tx, input.target)
   if (applicationId === null) return null

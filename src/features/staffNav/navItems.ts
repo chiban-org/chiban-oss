@@ -47,6 +47,7 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
   { href: '/staff/boards/packets', label: 'Board packets', access: any('packet.manage') },
   { href: '/staff/records/preservation', label: 'Records', access: any('document.manage') },
   { href: '/staff/records/holds', label: 'Legal holds', access: any('hold.place_release') },
+  { href: '/staff/enforcement', label: 'Enforcement', access: any('enforcement.manage') },
   { href: '/staff/reports', label: 'Reports', access: any('report.view') },
   { href: '/staff/map', label: 'Map', access: open },
   { href: '/staff/gis/imports', label: 'Imports', access: open },
@@ -57,6 +58,11 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
   { href: '/staff/admin/export', label: 'Export', access: any('export.download') },
   { href: '/staff/admin/health', label: 'Health', access: any('config.edit') },
   { href: '/staff/admin/cutover', label: 'Cutover', access: any('cutover.import') },
+  {
+    href: '/staff/admin/anonymous-intake',
+    label: 'Anonymous intake',
+    access: any('anonymous_intake.enable'),
+  },
   {
     href: '/staff/admin/migration',
     label: 'Migration',

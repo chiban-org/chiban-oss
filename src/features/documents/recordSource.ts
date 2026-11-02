@@ -20,6 +20,10 @@ const KIND_LABEL = {
   board_material: 'Board material',
   inspection_photo: 'Inspection photo',
   certificate_of_occupancy: 'Certificate of occupancy',
+  enforcement_photo: 'Case photo',
+  enforcement_letter: 'Case letter',
+  service_proof: 'Proof of service',
+  court_document: 'Court document',
 } as const
 
 export async function summarizeDocuments(

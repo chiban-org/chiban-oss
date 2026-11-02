@@ -1,5 +1,6 @@
 import type { RecordSeries } from '@packs/nh/schema'
 
+const UNSCHEDULED = 'nh.rs.unscheduled_permanent'
 const STATUTE_URL = 'https://gc.nh.gov/rsa/html/III/33-A/33-A-3-a.htm'
 
 function cite(numeral: string): RecordSeries['citation'] {
@@ -97,7 +98,7 @@ export const NH_RECORD_SERIES: RecordSeries[] = [
     preservation: 'pdfa',
   },
   {
-    key: 'nh.rs.unscheduled_permanent',
+    key: UNSCHEDULED,
     version: 1,
     label: 'No schedule entry: kept permanently pending review',
     citation: { label: 'RSA 33-A:3-a', url: STATUTE_URL },
@@ -116,10 +117,10 @@ export const RECORD_SERIES_DEFAULTS = {
     AR: 'nh.rs.licenses_other',
     STR: 'nh.rs.licenses_other',
     SC: 'nh.rs.septic_plans',
-    SG: 'nh.rs.unscheduled_permanent',
-    HO: 'nh.rs.unscheduled_permanent',
-    SA: 'nh.rs.unscheduled_permanent',
-    CO: 'nh.rs.unscheduled_permanent',
-    TS: 'nh.rs.unscheduled_permanent',
+    SG: UNSCHEDULED,
+    HO: UNSCHEDULED,
+    SA: UNSCHEDULED,
+    CO: UNSCHEDULED,
+    TS: UNSCHEDULED,
   } as Record<string, string>,
 }

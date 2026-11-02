@@ -29,6 +29,13 @@ export const CAPABILITIES = {
   'export.import': 'Restore an export archive into an empty instance',
   'report.view': 'View and download permit volume, processing time, and revenue reports',
   'cutover.import': 'Import open applications from the prior system and reconcile them',
+  'enforcement.manage':
+    'Open enforcement cases, record findings and notes, and review complaint text',
+  'enforcement.issue_order': 'Issue cease and desist orders as a designated enforcement officer',
+  'enforcement.record_service': 'Record service of an order, answers, court steps, and appeals',
+  'enforcement.refer_counsel': 'Refer an enforcement case to town counsel and record outcomes',
+  'fine.record': 'Record a court-imposed fine on the ledger',
+  'anonymous_intake.enable': 'Verify and enable anonymous complaint intake',
 } as const
 
 export type Capability = keyof typeof CAPABILITIES

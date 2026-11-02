@@ -42,6 +42,7 @@ const INTENT_COPY = {
   type_not_allowed: 'Use a JPEG or PNG photo.',
   series_required: PHOTO_FORBIDDEN,
   unknown_series: PHOTO_FORBIDDEN,
+  doc_kind_not_allowed: PHOTO_FORBIDDEN,
 } as const
 
 const FINALIZE_COPY = {

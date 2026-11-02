@@ -42,8 +42,14 @@ export function documentPrivateAccess(actor: Actor | null): SQL {
   return sql`(${sql.join(clauses, sql` or `)})`
 }
 
+function publicDocument(): SQL {
+  return sql`(${documents.isPublic} and (${documents.recordKind} <> 'enforcement_case' or exists (
+    select 1 from enforcement_cases ec
+    where ec.id = ${documents.recordId} and ec.is_public)))`
+}
+
 export function documentVisibleTo(actor: Actor | null): SQL {
-  return sql`(${documents.isPublic} or ${documentPrivateAccess(actor)})`
+  return sql`(${publicDocument()} or ${documentPrivateAccess(actor)})`
 }
 
 export type Rendition = 'default' | 'pdfa'

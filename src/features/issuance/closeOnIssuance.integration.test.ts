@@ -23,14 +23,14 @@ afterEach(async () => {
   await handle.drop()
 })
 
-async function submitted(typeKey: string, values: Record<string, unknown>) {
+async function submitted(typeKey: string, values: Record<string, string>) {
   const made = await makeApplication(handle.db, world, {}, NOW, typeKey)
   const result = await submitApplication(
     handle.db,
     world.staff,
     {
       applicationId: made.applicationId,
-      values: values as never,
+      values: values,
       attestation: { statementSha256: attestationHash(ATTESTATION_TEXT) },
     },
     signal,

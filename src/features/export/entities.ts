@@ -36,7 +36,14 @@ interface Spec {
   poly?: ExportEntity['polyRefs']
 }
 
+const ENFORCEMENT_SPECS: Spec[] = [
+  { table: t.enforcementCases },
+  { table: t.complaints },
+  { table: t.enforcementNotes },
+]
+
 const SPECS: Spec[] = [
+  ...ENFORCEMENT_SPECS,
   { table: t.aliasOverrides },
   { table: t.appeals },
   { table: t.applicationConditions },
@@ -77,6 +84,7 @@ const SPECS: Spec[] = [
           project: 'projects',
           parcel: 'parcels',
           migration_batch: 'migration_batches',
+          enforcement_case: 'enforcement_cases',
         },
       },
     ],
@@ -135,6 +143,7 @@ const SPECS: Spec[] = [
           inspection: 'inspections',
           document: 'documents',
           historical_record: 'historical_records',
+          enforcement_case: 'enforcement_cases',
         },
       },
     ],
