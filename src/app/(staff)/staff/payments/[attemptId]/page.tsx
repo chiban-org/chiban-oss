@@ -5,8 +5,13 @@ import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
 import { paymentAttempts, paymentAttemptTransitions, processorAccounts } from '@/db/schema'
+import { hasCapability } from '@/features/authz/capabilities'
+import { attemptStateLabel, channelLabel } from '@/features/payments/labels'
 import { mayViewPayments } from '@/features/payments/overview'
+import { getTownSettings } from '@/features/town/settings'
+import { formatInstant } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
+import { words } from '@/lib/words'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { checkWithProcessorAction, voidAttemptAction } from '../actions'
@@ -36,12 +41,19 @@ export default async function PaymentAttemptPage({
     .from(paymentAttemptTransitions)
     .where(eq(paymentAttemptTransitions.attemptId, attempt.id))
     .orderBy(paymentAttemptTransitions.at)
+  const [canVoid, canCollect, town] = await Promise.all([
+    hasCapability(ctx.db, ctx.actor.userId, 'payment.refund_void_correct', ctx.signal),
+    hasCapability(ctx.db, ctx.actor.userId, 'payment.collect', ctx.signal),
+    getTownSettings(ctx.db, ctx.signal),
+  ])
+  const canCheck = canVoid || canCollect
+  const zone = town.ok ? town.value.timeZone : 'America/New_York'
   const open = attempt.state === 'pending' || attempt.state === 'authorized'
   return (
     <main>
       <h1>Card payment attempt</h1>
       <p>
-        {`${formatCents(attempt.amountCents)} from ${attempt.payerName} by ${attempt.channel.replaceAll('_', ' ')}. State: ${attempt.state}.`}
+        {`${formatCents(attempt.amountCents)} from ${attempt.payerName}, paid by ${channelLabel(attempt.channel).toLowerCase()}. Status: ${attemptStateLabel(attempt.state)}.`}
       </p>
       {attempt.outcomeUnknown ? <StatusChip status="overdue" label="Outcome unknown" /> : null}
       {attempt.anomaly === null ? null : (
@@ -70,17 +82,20 @@ export default async function PaymentAttemptPage({
         </p>
       ) : null}
       <h2>History</h2>
+      {transitions.length === 0 ? <p>No events yet.</p> : null}
       <ul>
         {transitions.map((t) => (
-          <li
-            key={t.id}
-          >{`${t.at.toISOString()}: ${t.fromState} to ${t.toState} (${t.source})`}</li>
+          <li key={t.id}>
+            {`${formatInstant(t.at, zone)}: ${attemptStateLabel(t.fromState)} to ${attemptStateLabel(t.toState)} (${words(t.source)})`}
+          </li>
         ))}
       </ul>
-      <ActionForm action={checkWithProcessorAction} submitLabel="Check with processor">
-        <input type="hidden" name="attemptId" value={attempt.id} />
-      </ActionForm>
-      {open ? (
+      {canCheck ? (
+        <ActionForm action={checkWithProcessorAction} submitLabel="Check with processor">
+          <input type="hidden" name="attemptId" value={attempt.id} />
+        </ActionForm>
+      ) : null}
+      {open && canVoid ? (
         <ActionForm action={voidAttemptAction} submitLabel="Void this attempt">
           <input type="hidden" name="attemptId" value={attempt.id} />
           <TextField label="Reason (at least 10 characters)" name="reason" required />

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { StatusChip } from '@/components/StatusChip'
+import { entryTypeLabel, methodLabel } from '@/features/payments/labels'
 import { loadPaymentsOverview } from '@/features/payments/overview'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -76,14 +77,23 @@ export default async function PaymentsPage() {
         <h2>{`Entries for ${formatCivilDate(today)}`}</h2>
         {todaysEntries.length === 0 ? <p>No money has moved today.</p> : null}
         <table className="my-2 w-full text-sm">
+          <thead>
+            <tr className="border-b text-left">
+              <th className="py-1">Entry</th>
+              <th className="px-3 text-right">Amount</th>
+              <th className="px-3">Payer</th>
+              <th className="px-3">Application</th>
+              <th className="px-3">Receipt</th>
+            </tr>
+          </thead>
           <tbody>
             {todaysEntries.map((e) => (
               <tr key={e.id} className="border-b">
-                <td className="py-1">{`${e.entryType.replaceAll('_', ' ')} by ${e.method.replaceAll('_', ' ')}`}</td>
-                <td className="text-right">{formatCents(e.amountCents)}</td>
-                <td>{e.payerName}</td>
-                <td>{e.applicationNumbers.join(', ')}</td>
-                <td>
+                <td className="py-1">{`${entryTypeLabel(e.entryType)}, ${methodLabel(e.method).toLowerCase()}`}</td>
+                <td className="px-3 text-right">{formatCents(e.amountCents)}</td>
+                <td className="px-3">{e.payerName}</td>
+                <td className="px-3">{e.applicationNumbers.join(', ')}</td>
+                <td className="px-3">
                   {e.receiptId === null ? null : (
                     <Link href={`/staff/receipts/${e.receiptId}`} className="text-action underline">
                       {`Receipt ${e.receiptNumber ?? ''}`}
