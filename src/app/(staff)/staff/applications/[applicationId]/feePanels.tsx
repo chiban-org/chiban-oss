@@ -1,29 +1,24 @@
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
+import { type FeeLineLike, feeChoices } from '@/features/fees/feeChoices'
 import { formatCents } from '@/lib/money'
 import { feeOverrideAction } from './clockFeeActions'
 
 export function FeeOverrideForm({ view }: { view: StaffApplicationView }) {
   if (!view.permissions.canOverrideFee) return null
-  const codes = view.fees.preview?.lines.map((l) => l.code) ?? [
-    ...new Set(
-      view.fees.assessments.flatMap((a) =>
-        (a.computation as { lines: { code: string }[] }).lines.map((l) => l.code),
-      ),
-    ),
-  ]
-  if (codes.length === 0) return null
+  const choices = feeChoices(
+    view.fees.preview?.lines ?? null,
+    view.fees.assessments.map((a) => a.computation as { lines: FeeLineLike[] }),
+  )
+  const labelOf = new Map(choices)
+  if (choices.length === 0) return null
   return (
     <details className="my-2">
       <summary>Waive or set a fee</summary>
       <ActionForm action={feeOverrideAction} submitLabel="Save fee override">
         <input type="hidden" name="applicationId" value={view.id} />
-        <SelectField
-          label="Fee"
-          name="feeCode"
-          options={codes.map((c): [string, string] => [c, c])}
-        />
+        <SelectField label="Fee" name="feeCode" options={choices} />
         <SelectField
           label="Override"
           name="kind"
@@ -39,7 +34,7 @@ export function FeeOverrideForm({ view }: { view: StaffApplicationView }) {
         <p
           key={o.id}
           className="text-sm"
-        >{`${o.feeCode}: ${o.kind === 'waive' ? 'waived' : `set to ${formatCents(o.amountCents ?? 0)}`}. ${o.reason}`}</p>
+        >{`${labelOf.get(o.feeCode) ?? o.feeCode}: ${o.kind === 'waive' ? 'waived' : `set to ${formatCents(o.amountCents ?? 0)}`}. ${o.reason}`}</p>
       ))}
     </details>
   )
