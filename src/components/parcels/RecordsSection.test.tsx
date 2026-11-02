@@ -59,4 +59,14 @@ describe('RecordsSection', () => {
     render(<RecordsSection history={history} />)
     expect(screen.getByText('Carried forward from parcel 007020000000')).toBeTruthy()
   })
+
+  it('renders a record with no page as plain text, not a link', () => {
+    const history: ParcelHistory = {
+      own: [{ ...record, href: null }],
+      ancestral: [],
+      sourcesRegistered: 1,
+    }
+    render(<RecordsSection history={history} />)
+    expect(screen.getByText('Deck permit').closest('a')).toBeNull()
+  })
 })

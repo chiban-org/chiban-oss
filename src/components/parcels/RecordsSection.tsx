@@ -19,9 +19,13 @@ function RecordRow({
   return (
     <li className="flex flex-wrap items-center justify-between gap-3 border-b py-3">
       <div>
-        <Link href={record.href} className="font-semibold text-action underline">
-          {record.title}
-        </Link>
+        {record.href === null ? (
+          <span className="font-semibold">{record.title}</span>
+        ) : (
+          <Link href={record.href} className="font-semibold text-action underline">
+            {record.title}
+          </Link>
+        )}
         {record.number === null ? null : (
           <span className="ml-2 text-muted-foreground">{record.number}</span>
         )}

@@ -136,3 +136,8 @@ export async function statusOf(db: Db, id: string): Promise<string | undefined> 
   const [row] = await db.select().from(configVersions).where(eq(configVersions.id, id))
   return row?.status
 }
+
+export async function publishBuildingType(db: Db, admin: Actor): Promise<void> {
+  await publishBuildingSupport(db, admin)
+  await saveAndPublish(db, admin, 'application_type', 'BP', appTypeBody())
+}

@@ -1,4 +1,5 @@
 import { and, eq } from 'drizzle-orm'
+import '@/features/applications/recordSource'
 import type { DbOrTx } from '@/db/client'
 import { parcelRecordCarryForwards, parcelRecordLinks } from '@/db/schema'
 import { listAncestors } from '@/features/parcels/ancestors'
