@@ -11,3 +11,16 @@ describe('ruleChoicesFor', () => {
     expect(keys.filter((k) => k.startsWith('nh.bp.'))).toEqual([])
   })
 })
+
+describe('pack rule choices', () => {
+  it('no two offered rules share a label', () => {
+    const labels = editorContext().packRules.map((r) => r.label)
+    expect(labels.filter((label, i) => labels.indexOf(label) !== i)).toEqual([])
+  })
+
+  it('tells same-named rules apart by citation', () => {
+    const labels = editorContext().packRules.map((r) => r.label)
+    expect(labels).toContain('Answer to a cease and desist order (RSA 676:17-a V)')
+    expect(labels).toContain('Answer to a cease and desist order (RSA 155-A:8-b V)')
+  })
+})
