@@ -203,7 +203,7 @@ export default async function DecisionPage({
                 required
                 options={[
                   ['', 'Choose an uploaded file'],
-                  ...view.minutesChoices.map((d): [string, string] => [d.id, d.label]),
+                  ...view.proofChoices.map((d): [string, string] => [d.id, d.label]),
                 ]}
               />
             </ActionForm>

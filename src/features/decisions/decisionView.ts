@@ -17,7 +17,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { TRANSMITTAL_SUBJECT } from '@/features/decisions/regionalTransmittal'
-import { evidenceOf } from '@/features/documents/evidence'
+import { evidenceOf, noticeProofDocumentIds } from '@/features/documents/evidence'
 import { channelLabel } from '@/features/notices/channels'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { proofMethodLabel } from '@/features/notices/proofMethods'
@@ -58,6 +58,7 @@ export interface DecisionView {
   filedText: string | null
   filingDueText: string | null
   minutesChoices: { id: string; label: string }[]
+  proofChoices: { id: string; label: string }[]
   regional: boolean
   transmittalStarted: boolean
   transmittal: {
@@ -150,6 +151,10 @@ export async function loadDecisionView(
     .from(documents)
     .where(evidenceOf(decision.applicationId))
     .orderBy(asc(documents.seq))
+  const proofDocs = await noticeProofDocumentIds(
+    db,
+    docs.map((d) => d.id),
+  )
   const nodes = await db
     .select()
     .from(appealNodes)
@@ -184,7 +189,10 @@ export async function loadDecisionView(
     documentsGenerated: decision.writtenDecisionDocumentId !== null,
     filedText: decision.filedOn === null ? null : formatCivilDate(decision.filedOn),
     filingDueText: await filingDue(db, decision.applicationId),
-    minutesChoices: docs.map((d) => ({ id: d.id, label: d.title })),
+    minutesChoices: docs
+      .filter((d) => !proofDocs.has(d.id))
+      .map((d) => ({ id: d.id, label: d.title })),
+    proofChoices: docs.map((d) => ({ id: d.id, label: d.title })),
     regional: regional?.determination === 'yes',
     transmittalStarted: transmittal !== undefined,
     transmittal:
