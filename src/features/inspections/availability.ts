@@ -47,6 +47,7 @@ export async function availability(
       inspectorUserId: inspections.inspectorUserId,
       date: inspections.scheduledDate,
       start: inspections.startMinute,
+      length: inspections.durationMinutes,
     })
     .from(inspections)
     .where(
@@ -60,11 +61,18 @@ export async function availability(
   return dates.flatMap((date) =>
     inspectors.map((inspectorUserId) => {
       const taken = booked.filter((b) => b.inspectorUserId === inspectorUserId && b.date === date)
-      const takenStarts = new Set(taken.map((t) => t.start))
+      const isFree = (s: number) =>
+        !taken.some(
+          (t) =>
+            t.start !== null &&
+            t.length !== null &&
+            s < t.start + t.length &&
+            t.start < s + settings.slotMinutes,
+        )
       return {
         date,
         inspectorUserId,
-        freeStarts: starts.filter((s) => !takenStarts.has(s)),
+        freeStarts: starts.filter(isFree),
         booked: taken.length,
       }
     }),

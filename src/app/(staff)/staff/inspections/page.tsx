@@ -8,7 +8,10 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { loadScheduleBoard } from '@/features/inspections/boardData'
 import { inspectableTypes } from '@/features/inspections/eligibility'
-import { findIssuedApplicationByNumber } from '@/features/inspections/lookup'
+import {
+  findIssuedApplicationByNumber,
+  findReinspectionTarget,
+} from '@/features/inspections/lookup'
 import { describePhoneHours } from '@/features/inspections/phoneHours'
 import { schedulingDates } from '@/features/inspections/slots'
 import { packHolidayCalendar } from '@/features/packs/holidays'
@@ -20,9 +23,9 @@ export const dynamic = 'force-dynamic'
 export default async function ScheduleBoardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ number?: string }>
+  searchParams: Promise<{ number?: string; reinspect?: string }>
 }) {
-  const { number = '' } = await searchParams
+  const { number = '', reinspect = '' } = await searchParams
   const ctx = await requireStaffContext()
   const loaded = await loadScheduleBoard(ctx.db, ctx.actor, ctx.signal)
   if (!loaded.ok) notFound()
@@ -32,6 +35,10 @@ export default async function ScheduleBoardPage({
       ? null
       : await findIssuedApplicationByNumber(ctx.db, ctx.actor, number, ctx.signal)
   const types = target === null ? [] : await inspectableTypes(ctx.db, target.id, ctx.signal)
+  const reinspection =
+    target === null
+      ? null
+      : await findReinspectionTarget(ctx.db, ctx.actor, target.id, reinspect, ctx.signal)
   const dates = schedulingDates(board.settings, packHolidayCalendar(), board.today)
   const hasGraph = board.inspectors.some((i) => i.calendarKind === 'graph')
   return (
@@ -68,7 +75,11 @@ export default async function ScheduleBoardPage({
         {target !== null && target.state === 'issued' ? (
           <RequestForm
             applicationId={target.id}
-            types={types.map((t) => ({ checklistVersionId: t.checklistVersionId, label: t.label }))}
+            types={(reinspection === null ? types : [reinspection]).map((t) => ({
+              checklistVersionId: t.checklistVersionId,
+              label: t.label,
+            }))}
+            {...(reinspection === null ? {} : { reinspectionOf: reinspection.inspectionId })}
             dates={dates}
             action={requestInspectionAction}
             channels={[

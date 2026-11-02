@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { RequestForm } from '@/components/inspections/RequestForm'
 import { StatusChip } from '@/components/StatusChip'
+import { findReinspectionTarget } from '@/features/inspections/lookup'
 import { loadPortalInspections } from '@/features/inspections/portalInspections'
 import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
 import { minutesToClock } from '@/features/inspections/zonedTime'
@@ -31,15 +32,21 @@ const LABEL = {
 
 export default async function PortalInspectionsPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ applicationId: string }>
+  searchParams: Promise<{ reinspect?: string }>
 }) {
   const { applicationId } = await params
+  const { reinspect = '' } = await searchParams
   const ctx = await requirePortalContext(`/portal/applications/${applicationId}/inspections`)
   if (!isUuid(applicationId)) notFound()
   const loaded = await loadPortalInspections(ctx.db, ctx.actor, applicationId, ctx.signal)
   if (!loaded.ok) notFound()
   const view = loaded.value
+  const reinspection = view.canRequest
+    ? await findReinspectionTarget(ctx.db, ctx.actor, applicationId, reinspect, ctx.signal)
+    : null
   return (
     <main className="space-y-6">
       <h1>{`Inspections for ${view.number}`}</h1>
@@ -64,7 +71,8 @@ export default async function PortalInspectionsPage({
           <h2>Request an inspection</h2>
           <RequestForm
             applicationId={applicationId}
-            types={view.types}
+            types={reinspection === null ? view.types : [reinspection]}
+            {...(reinspection === null ? {} : { reinspectionOf: reinspection.inspectionId })}
             dates={view.dates}
             action={portalRequestInspectionAction}
             channels={[{ value: 'portal', label: 'Online' }]}
@@ -89,6 +97,14 @@ export default async function PortalInspectionsPage({
               {row.resultNotes === null ? null : (
                 <p className="m-0">{`Notes: ${row.resultNotes}`}</p>
               )}
+              {row.status === 'failed' && view.canRequest ? (
+                <Link
+                  href={`/portal/applications/${applicationId}/inspections?reinspect=${row.id}`}
+                  className="tap-target inline-flex items-center underline"
+                >
+                  Request a reinspection
+                </Link>
+              ) : null}
               {row.channel === 'portal' &&
               row.requestedByUserId === ctx.actor.userId &&
               (row.status === 'requested' || row.status === 'scheduled') ? (

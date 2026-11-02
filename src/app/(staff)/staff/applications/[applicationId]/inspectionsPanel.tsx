@@ -52,6 +52,7 @@ export async function loadInspectionsPanelData(
   const canIssue = await hasCapability(ctx.db, ctx.actor.userId, 'permit.issue', ctx.signal)
   const latestFinal = history
     .filter((h) => h.isFinal && (h.status === 'passed' || h.status === 'failed'))
+    .sort((a, b) => (a.resultRecordedAt?.getTime() ?? 0) - (b.resultRecordedAt?.getTime() ?? 0))
     .at(-1)
   return {
     history,
@@ -95,6 +96,14 @@ export function InspectionsPanel({
             ) : null}
             {row.resultNotes === null ? null : <p className="m-0">{`Notes: ${row.resultNotes}`}</p>}
             {row.photoCount === 0 ? null : <p className="m-0">{`${row.photoCount} photos`}</p>}
+            {canSchedule && row.status === 'failed' ? (
+              <Link
+                href={`/staff/inspections?number=${encodeURIComponent(number)}&reinspect=${row.id}`}
+                className="text-action underline"
+              >
+                Request a reinspection
+              </Link>
+            ) : null}
             {canSchedule && (row.status === 'requested' || row.status === 'scheduled') ? (
               <ActionForm action={cancelInspectionAction} submitLabel="Cancel this inspection">
                 <input type="hidden" name="inspectionId" value={row.id} />

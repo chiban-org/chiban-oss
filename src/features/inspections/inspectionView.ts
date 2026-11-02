@@ -5,6 +5,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { getVersion } from '@/features/config/store'
 import { listDocuments } from '@/features/documents/listDocuments'
+import { mayUploadTo } from '@/features/documents/uploads'
 import type { HonestValue } from '@/features/honest/honest'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
 import { inspectionTypeLabel, loadSiteInfo } from '@/features/inspections/siteInfo'
@@ -94,7 +95,13 @@ export async function loadInspectionView(
     previousFailureNotes: previous?.resultNotes ?? null,
     photos: photos.rows.map((p) => ({ documentId: p.documentId, title: p.title })),
     canRecord: mayRecord && assigned && scheduled && dateReached,
-    canAddPhotos: mayRecord && assigned && scheduled,
+    canAddPhotos: await mayUploadTo(
+      db,
+      actor,
+      { kind: 'inspection', id: inspection.id },
+      signal,
+      now,
+    ),
     waitingForDate: mayRecord && assigned && scheduled && !dateReached,
   })
 }

@@ -88,6 +88,13 @@ export async function requestInspection(
   return await transactionResult<{ inspectionId: string }, RequestInspectionError>(
     db,
     async (tx) => {
+      const [live] = await tx
+        .select({ state: applications.state })
+        .from(applications)
+        .where(eq(applications.id, app.id))
+        .for('update')
+      if (live?.state === 'suspended') return err('permit_suspended')
+      if (live?.state !== 'issued') return err('not_issued')
       const blocked = await checkReinspection(tx, input, type.inspectionType)
       if (blocked !== null) return err(blocked)
       const [row] = await tx

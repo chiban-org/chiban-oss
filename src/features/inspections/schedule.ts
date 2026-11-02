@@ -3,6 +3,7 @@ import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
 import { applications, inspections, users } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { isProjectParty } from '@/features/access/queries'
 import { isSuspended } from '@/features/appeals/suspension'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -12,6 +13,7 @@ import { getInspectionSettings } from '@/features/inspections/inspectionSettings
 import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
 import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
 import { schedulingDates, slotStarts } from '@/features/inspections/slots'
+import { PORTAL_PARTY_ROLES } from '@/features/inspections/types'
 import { localToUtc, minutesToClock, utcToLocal } from '@/features/inspections/zonedTime'
 import { INSPECTION_PARTY_ROLES, queueForParties } from '@/features/notifications/queue'
 import { packHolidayCalendar } from '@/features/packs/holidays'
@@ -136,6 +138,22 @@ async function queueBookingPushes(
   return pushIds
 }
 
+function bookingConflict(
+  booked: { startMinute: number | null; durationMinutes: number | null }[],
+  input: ScheduleInput,
+  rules: Rules,
+): 'inspector_full' | 'slot_taken' | null {
+  if (booked.length >= rules.settings.maxPerInspectorPerDay) return 'inspector_full'
+  const overlaps = booked.some(
+    (b) =>
+      b.startMinute !== null &&
+      b.durationMinutes !== null &&
+      input.startMinute < b.startMinute + b.durationMinutes &&
+      b.startMinute < input.startMinute + rules.settings.slotMinutes,
+  )
+  return overlaps ? 'slot_taken' : null
+}
+
 async function bookInTransaction(
   tx: Tx,
   actor: Actor,
@@ -155,16 +173,22 @@ async function bookInTransaction(
     .select({ state: applications.state })
     .from(applications)
     .where(eq(applications.id, locked.applicationId))
+    .for('update')
   if (app?.state === 'suspended' || (await isSuspended(tx, locked.applicationId, signal))) {
     return err('permit_suspended')
   }
+  if (app?.state !== 'issued') return err('not_schedulable')
   await tx
     .select({ id: users.id })
     .from(users)
     .where(eq(users.id, input.inspectorUserId))
     .for('update')
   const booked = await tx
-    .select({ id: inspections.id, startMinute: inspections.startMinute })
+    .select({
+      id: inspections.id,
+      startMinute: inspections.startMinute,
+      durationMinutes: inspections.durationMinutes,
+    })
     .from(inspections)
     .where(
       and(
@@ -174,8 +198,8 @@ async function bookInTransaction(
         ne(inspections.id, input.inspectionId),
       ),
     )
-  if (booked.length >= rules.settings.maxPerInspectorPerDay) return err('inspector_full')
-  if (booked.some((b) => b.startMinute === input.startMinute)) return err('slot_taken')
+  const conflict = bookingConflict(booked, input, rules)
+  if (conflict !== null) return err(conflict)
   const wasScheduled = locked.status === 'scheduled'
   const sequence = wasScheduled ? locked.calendarSequence + 1 : locked.calendarSequence
   const offGridReason = input.offGrid?.reason.trim() ?? null
@@ -277,6 +301,22 @@ export interface CancelInput {
 
 export type CancelError = 'not_found' | 'forbidden' | 'stale_version' | 'not_cancellable'
 
+async function stillAParty(
+  tx: Tx,
+  actor: Actor,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<boolean> {
+  const [app] = await tx
+    .select({ projectId: applications.projectId })
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+  return (
+    app !== undefined &&
+    (await isProjectParty(tx, actor, app.projectId, [...PORTAL_PARTY_ROLES], signal))
+  )
+}
+
 export async function cancelInspection(
   db: Db,
   actor: Actor,
@@ -293,7 +333,9 @@ export async function cancelInspection(
       .for('update')
     if (locked === undefined) return err('not_found')
     const ownRequest = locked.channel === 'portal' && locked.requestedByUserId === actor.userId
-    if (!isStaff && !ownRequest) return err('not_found')
+    if (!isStaff && !(ownRequest && (await stillAParty(tx, actor, locked.applicationId, signal)))) {
+      return err('not_found')
+    }
     if (locked.rowVersion !== input.expectedRowVersion) return err('stale_version')
     if (locked.status !== 'requested' && locked.status !== 'scheduled')
       return err('not_cancellable')

@@ -78,8 +78,13 @@ afterAll(async () => {
   await handle.drop()
 })
 
-async function render(applicationId: string): Promise<string> {
-  return renderToStaticMarkup(await Page({ params: Promise.resolve({ applicationId }) }))
+async function render(applicationId: string, reinspect?: string): Promise<string> {
+  return renderToStaticMarkup(
+    await Page({
+      params: Promise.resolve({ applicationId }),
+      searchParams: Promise.resolve(reinspect === undefined ? {} : { reinspect }),
+    }),
+  )
 }
 
 describe('portal inspection requests', () => {
@@ -178,5 +183,31 @@ describe('portal inspection requests', () => {
   it('page for a signed-out visitor sends them to sign in', async () => {
     state.actor = null
     await expect(render(w.trade.applicationId)).rejects.toThrow('NEXT_REDIRECT')
+  })
+
+  it('a failed inspection offers a reinspection request that links back to it', async () => {
+    state.actor = w.world.applicant
+    const permit = await newIssuedPermit(handle.db, w, 'EL')
+    const failed = await insertInspection(handle.db, permit.applicationId, 'rough', {
+      status: 'failed',
+      resultNotes: 'Secure the box',
+    })
+    const list = await render(permit.applicationId)
+    expect(list).toContain(`reinspect=${failed}`)
+    const form = await render(permit.applicationId, failed)
+    expect(form).toContain('name="reinspectionOf"')
+    expect(form).toContain(`value="${failed}"`)
+    expect(form).not.toContain('Electrical final inspection')
+  })
+
+  it('a reinspect id from another permit is ignored', async () => {
+    state.actor = w.world.applicant
+    const permit = await newIssuedPermit(handle.db, w, 'EL')
+    const other = await newIssuedPermit(handle.db, w, 'EL')
+    const failed = await insertInspection(handle.db, other.applicationId, 'rough', {
+      status: 'failed',
+    })
+    const form = await render(permit.applicationId, failed)
+    expect(form).not.toContain('name="reinspectionOf"')
   })
 })

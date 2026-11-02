@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull } from 'drizzle-orm'
+import { and, desc, eq, gt, isNotNull, sql } from 'drizzle-orm'
 import { env } from '@/config/env'
 import type { DbOrTx } from '@/db/client'
 import {
@@ -58,19 +58,33 @@ async function recordFailure(
 
 async function previousRefFor(db: DbOrTx, push: CalendarPushRow): Promise<string | null> {
   const [latest] = await db
-    .select({ ref: calendarPushes.externalRef })
+    .select({ ref: calendarPushes.externalRef, createdAt: calendarPushes.createdAt })
     .from(calendarPushes)
     .where(
       and(
         eq(calendarPushes.inspectionId, push.inspectionId),
         eq(calendarPushes.inspectorUserId, push.inspectorUserId),
         eq(calendarPushes.status, 'sent'),
+        eq(calendarPushes.op, 'publish'),
         isNotNull(calendarPushes.externalRef),
       ),
     )
-    .orderBy(desc(calendarPushes.sentAt))
+    .orderBy(desc(calendarPushes.sentAt), desc(calendarPushes.createdAt))
     .limit(1)
-  return latest?.ref ?? null
+  const [cancelledSince] = await db
+    .select({ id: calendarPushes.id })
+    .from(calendarPushes)
+    .where(
+      and(
+        eq(calendarPushes.inspectionId, push.inspectionId),
+        eq(calendarPushes.inspectorUserId, push.inspectorUserId),
+        eq(calendarPushes.status, 'sent'),
+        eq(calendarPushes.op, 'cancel'),
+        gt(calendarPushes.createdAt, latest?.createdAt ?? new Date(0)),
+      ),
+    )
+    .limit(1)
+  return cancelledSince === undefined ? (latest?.ref ?? null) : null
 }
 
 async function buildBooking(
@@ -147,6 +161,15 @@ export async function deliverPush(
   signal: AbortSignal,
 ): Promise<Result<DeliverOutcome, CalendarError>> {
   signal.throwIfAborted()
+  const [peek] = await db
+    .select({ inspectionId: calendarPushes.inspectionId })
+    .from(calendarPushes)
+    .where(eq(calendarPushes.id, pushId))
+  if (peek !== undefined) {
+    await db.execute(
+      sql`select pg_advisory_xact_lock(hashtext(${`calendar:${peek.inspectionId}`}))`,
+    )
+  }
   const [claimed] = await db
     .select()
     .from(calendarPushes)
@@ -162,9 +185,13 @@ export async function deliverPush(
     .from(inspectorCalendars)
     .where(eq(inspectorCalendars.userId, claimed.inspectorUserId))
   const [account] = await db
-    .select({ email: users.email, name: users.displayName })
+    .select({ email: users.email, name: users.displayName, isActive: users.isActive })
     .from(users)
     .where(eq(users.id, claimed.inspectorUserId))
+  if (account?.isActive === false) {
+    await markSent(db, claimed, deps.now, null)
+    return ok('superseded')
+  }
   if (account === undefined) {
     const error: CalendarError = { kind: 'rejected', detail: 'inspector account is gone' }
     await recordFailure(db, claimed, error)
