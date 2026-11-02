@@ -10,6 +10,7 @@ export interface MembersView {
   rows: {
     membershipId: string
     name: string
+    email: string
     boardName: string
     titleText: string
     termText: string
@@ -35,14 +36,15 @@ export async function loadMembersView(
   if (!(await hasCapability(db, actor.userId, 'board.manage_members', signal))) return null
   const settings = await getBoardSettings(db, signal)
   const rows = await db
-    .select({ m: boardMemberships, name: users.displayName })
+    .select({ m: boardMemberships, name: users.displayName, email: users.email })
     .from(boardMemberships)
     .innerJoin(users, eq(users.id, boardMemberships.userId))
     .orderBy(asc(boardMemberships.board), asc(users.displayName))
   return {
-    rows: rows.map(({ m, name }) => ({
+    rows: rows.map(({ m, name, email }) => ({
       membershipId: m.id,
       name,
+      email,
       boardName: boardLabel(settings, m.board),
       titleText: TITLE_TEXT[m.title],
       termText:

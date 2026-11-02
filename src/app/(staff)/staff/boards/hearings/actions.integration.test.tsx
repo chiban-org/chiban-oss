@@ -359,7 +359,9 @@ describe('staff and public pages', () => {
 
   it('the members page is for staff with board.manage_members only', async () => {
     state.actor = world.staff
-    expect(renderToStaticMarkup(await MembersPage())).toContain('Add a board member')
+    const members = renderToStaticMarkup(await MembersPage())
+    expect(members).toContain('Add a board member')
+    expect(members).toContain('Avery Stone (member1@alderpond.example), Member, Alder Pond Planning Board.')
     state.actor = await staffActor(handle.db, 'inspector')
     expect(renderToStaticMarkup(await MembersPage())).toContain(
       'You do not have permission to manage board members.',
