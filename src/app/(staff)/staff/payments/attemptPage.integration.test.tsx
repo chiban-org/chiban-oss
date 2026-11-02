@@ -38,13 +38,14 @@ const { default: AttemptPage } = await import('./[attemptId]/page')
 let handle: TestDb
 let world: PermitWorld
 let attemptId = ''
+let trade: Awaited<ReturnType<typeof submittedTrade>>
 
 beforeAll(async () => {
   handle = await makeTestDb()
   state.db = handle.db
   world = (await setupTradeWorld(handle.db)).world
   await setupPayments(handle.db, world.admin)
-  const trade = await submittedTrade(handle.db, world)
+  trade = await submittedTrade(handle.db, world)
   attemptId = (await makeCardAttempt(handle.db, trade, 'card_present')).attemptId
 })
 afterAll(async () => {
@@ -74,5 +75,13 @@ describe('payment attempt page', () => {
   it('offers the void control to finance', async () => {
     const finance = await staffActor(handle.db, 'finance')
     expect(await render(finance)).toContain('Void this attempt')
+  })
+
+  it('links to the application and splits the amount into the fee and the convenience fee', async () => {
+    const html = await render(world.staff)
+    expect(html).toContain(`href="/staff/applications/${trade.applicationId}"`)
+    expect(html).toContain(trade.number)
+    expect(html).toContain('Permit fees: $45.00')
+    expect(html).toMatch(/Card convenience fee: \$\d+\.\d{2}/)
   })
 })

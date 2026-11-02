@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
   applicationConditions,
@@ -10,7 +10,7 @@ import {
   receipts,
 } from '@/db/schema'
 import { canViewApplication, isProjectParty } from '@/features/access/queries'
-import { loadApplicationContext } from '@/features/applications/context'
+import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import { stateLabel } from '@/features/applications/stateLabel'
 import type { CoreState } from '@/features/applications/states'
 import { attestationHash } from '@/features/applications/submitApplication'
@@ -18,6 +18,7 @@ import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
 import { listDocuments } from '@/features/documents/listDocuments'
 import type { DocumentListRow } from '@/features/documents/types'
+import { previewFees } from '@/features/fees/preview'
 import type { FormBody } from '@/features/forms/formSchema'
 import type { FieldValue } from '@/features/forms/validateSubmission'
 import { getLayerStatus } from '@/features/gis/layerStatus'
@@ -36,6 +37,7 @@ import { isUuid } from '@/utils/uuid'
 const DECISION_CLOCK_KEY = 'nh.bp.decision'
 const PAYER_ROLES = ['applicant', 'owner', 'agent', 'contractor'] as const
 const WRITABLE_STATES: readonly CoreState[] = ['draft', 'submitted']
+const ESTIMATE_STATES: readonly CoreState[] = ['draft', 'submitted', 'under_review']
 const DOCUMENT_LIMIT = 50
 
 export interface PortalApplicationView {
@@ -54,10 +56,11 @@ export interface PortalApplicationView {
   conditions: { text: string; status: 'unmet' | 'met' | 'waived' }[]
   documents: DocumentListRow[]
   fees: FeeBalance
+  feeEstimate: { totalCents: number; due: 'at_intake' | 'at_approval' } | null
   onlineTotalCents: number
   convenienceCents: number
   canPay: boolean
-  receipts: { receiptId: string; number: string; totalCents: number; date: string }[]
+  history: PortalMoneyEntry[]
   canEdit: boolean
   canUpload: boolean
 }
@@ -83,29 +86,61 @@ async function decisionDue(db: Db, applicationId: string) {
   }
 }
 
-async function receiptsFor(db: Db, actor: Actor, applicationId: string) {
+export interface PortalMoneyEntry {
+  entryId: string
+  entryType: string
+  method: string
+  checkNumber: string | null
+  amountCents: number
+  convenienceCents: number
+  date: string
+  receiptId: string | null
+  receiptNumber: string | null
+}
+
+async function historyFor(
+  db: Db,
+  actor: Actor,
+  applicationId: string,
+): Promise<PortalMoneyEntry[]> {
   const rows = await db
     .select({
-      receiptId: receipts.id,
-      number: receipts.number,
-      totalCents: sql<number>`sum(${ledgerAllocations.amountCents})::int`,
-      date: receipts.businessDate,
-      issuedAt: receipts.issuedAt,
+      entryId: ledgerEntries.id,
+      entryType: ledgerEntries.entryType,
+      method: ledgerEntries.method,
+      checkNumber: ledgerEntries.checkNumber,
+      amountCents: sql<number>`sum(${ledgerAllocations.amountCents})::int`,
+      convenienceCents: sql<
+        number | null
+      >`(sum(${ledgerAllocations.amountCents}) filter (where ${ledgerAllocations.targetKind} = 'convenience_fee'))::int`,
+      date: ledgerEntries.businessDate,
+      postedAt: ledgerEntries.postedAt,
+      receiptId: ledgerEntries.receiptId,
+      receiptNumber: receipts.number,
     })
     .from(ledgerEntries)
     .innerJoin(ledgerAllocations, eq(ledgerAllocations.entryId, ledgerEntries.id))
-    .innerJoin(receipts, eq(receipts.id, ledgerEntries.receiptId))
-    .where(
-      and(
-        eq(ledgerAllocations.applicationId, applicationId),
-        isNotNull(ledgerEntries.receiptId),
-        eq(ledgerEntries.entryType, 'payment'),
-        ledgerEntryVisibleTo(actor),
-      ),
-    )
-    .groupBy(receipts.id)
-    .orderBy(desc(receipts.issuedAt))
-  return rows.map(({ issuedAt: _issuedAt, ...r }) => r)
+    .leftJoin(receipts, eq(receipts.id, ledgerEntries.receiptId))
+    .where(and(eq(ledgerAllocations.applicationId, applicationId), ledgerEntryVisibleTo(actor)))
+    .groupBy(ledgerEntries.id, receipts.number)
+    .orderBy(desc(ledgerEntries.postedAt), desc(ledgerEntries.id))
+  return rows.map(({ postedAt: _postedAt, ...r }) => ({
+    ...r,
+    convenienceCents: r.convenienceCents ?? 0,
+  }))
+}
+
+async function feeEstimate(
+  db: Db,
+  app: ApplicationContext,
+  signal: AbortSignal,
+): Promise<PortalApplicationView['feeEstimate']> {
+  if (!ESTIMATE_STATES.includes(app.state)) return null
+  const preview = await previewFees(db, app, signal)
+  if (preview?.complete !== true || preview.totalCents === null || preview.totalCents <= 0) {
+    return null
+  }
+  return { totalCents: preview.totalCents, due: app.typeBody.payTiming }
 }
 
 export async function getPortalApplicationView(
@@ -180,10 +215,11 @@ export async function getPortalApplicationView(
       )
     ).rows,
     fees,
+    feeEstimate: await feeEstimate(db, app, signal),
     onlineTotalCents: fees.dueCents + convenienceCents,
     convenienceCents,
     canPay: fees.dueCents > 0 && payer,
-    receipts: await receiptsFor(db, actor, applicationId),
+    history: await historyFor(db, actor, applicationId),
     canEdit: app.state === 'draft' && isParty,
     canUpload: writable && isParty,
   })

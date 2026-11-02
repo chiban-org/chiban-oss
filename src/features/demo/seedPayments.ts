@@ -14,7 +14,7 @@ import {
   type Scenario,
   TITLE_PREFIX,
 } from '@/features/demo/seedPermitSupport'
-import { feeBalance } from '@/features/ledger/feeBalance'
+import { allocateToDueLines, feeBalance } from '@/features/ledger/feeBalance'
 import { recordReturnedCheck, refundEntry } from '@/features/ledger/reversals'
 import { saveProcessorAccount } from '@/features/payments/processorAccounts'
 import { resolveSimulatedReader, startCardPresentPayment } from '@/features/payments/startPayment'
@@ -31,16 +31,7 @@ const TRADE_BASE = { description: 'Demo trade work' }
 
 async function dueAllocations(db: Db, applicationId: string, signal: AbortSignal) {
   const balance = await feeBalance(db, applicationId, signal)
-  return balance.lines
-    .filter((l) => l.dueCents > 0)
-    .map((l) => ({
-      targetKind: 'fee_assessment_line' as const,
-      applicationId,
-      feeAssessmentId: l.feeAssessmentId,
-      stage: l.stage,
-      feeCode: l.feeCode,
-      amountCents: l.dueCents,
-    }))
+  return allocateToDueLines(applicationId, balance, balance.dueCents)
 }
 
 async function configurePayments(db: Db, cast: Cast, signal: AbortSignal): Promise<void> {

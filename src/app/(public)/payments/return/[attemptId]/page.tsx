@@ -13,7 +13,31 @@ const NOT_FOUND_DETAILS: PaymentReturnDetails = {
   simulated: false,
   amountCents: null,
   applicationNumbers: [],
+  applications: [],
   receiptId: null,
+}
+
+const LINK = 'tap-target inline-flex items-center text-action underline'
+
+function ApplicationLinks({
+  details,
+  label,
+}: {
+  details: PaymentReturnDetails
+  label: (number: string) => string
+}) {
+  if (details.applications.length === 0) return null
+  return (
+    <ul className="m-0 list-none space-y-1 p-0">
+      {details.applications.map((a) => (
+        <li key={a.id}>
+          <a href={`/portal/applications/${a.id}`} className={LINK}>
+            {label(a.number)}
+          </a>
+        </li>
+      ))}
+    </ul>
+  )
 }
 
 const HEADINGS = {
@@ -62,17 +86,18 @@ export default async function PaymentReturnPage({
             <dd>{details.applicationNumbers.join(', ')}</dd>
           </dl>
           <p>
-            <a
-              href={`/payments/receipt/${attemptId}`}
-              className="tap-target inline-flex items-center text-action underline"
-            >
+            <a href={`/payments/receipt/${attemptId}`} className={LINK}>
               Open your receipt
             </a>
           </p>
+          <ApplicationLinks details={details} label={(n) => `Back to ${n}`} />
         </>
       ) : null}
       {status === 'declined' ? (
-        <p>The payment did not go through and you were not charged. The fee is still due.</p>
+        <>
+          <p>The payment did not go through and you were not charged. The fee is still due.</p>
+          <ApplicationLinks details={details} label={(n) => `Try the payment again from ${n}`} />
+        </>
       ) : null}
     </main>
   )

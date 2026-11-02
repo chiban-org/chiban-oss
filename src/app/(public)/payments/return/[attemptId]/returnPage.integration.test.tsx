@@ -30,12 +30,15 @@ let attemptId = ''
 let processorObjectId = ''
 let stranger: unknown = null
 let payer: unknown = null
+let applicationId = ''
+let world: Awaited<ReturnType<typeof setupTradeWorld>>['world']
 
 beforeAll(async () => {
   handle = await makeTestDb()
   state.db = handle.db
-  const { world } = await setupTradeWorld(handle.db)
+  world = (await setupTradeWorld(handle.db)).world
   const trade = await submittedTrade(handle.db, world)
+  applicationId = trade.applicationId
   state.actor = world.applicant
   payer = world.applicant
   stranger = await staffActor(handle.db, 'applicant')
@@ -59,8 +62,8 @@ afterAll(async () => {
   await handle.drop()
 })
 
-async function render(): Promise<string> {
-  return renderToStaticMarkup(await ReturnPage({ params: Promise.resolve({ attemptId }) }))
+async function render(id = attemptId): Promise<string> {
+  return renderToStaticMarkup(await ReturnPage({ params: Promise.resolve({ attemptId: id }) }))
 }
 
 describe('payment return page', () => {
@@ -78,6 +81,28 @@ describe('payment return page', () => {
     expect(html).toContain('$46.35')
     expect(html).toMatch(/EL-\d{4}-\d{4}/)
     expect(html).toContain(`/payments/receipt/${attemptId}`)
+    expect(html).toContain(`href="/portal/applications/${applicationId}"`)
+  })
+
+  it('a declined payment links back to the application to try again', async () => {
+    const other = await submittedTrade(handle.db, world)
+    const started = await startOnlinePayment(
+      handle.db,
+      world.applicant,
+      { applicationIds: [other.applicationId], payerName: 'Alex Applicant' },
+      signal,
+      deps,
+    )
+    if (!started.ok) throw new Error('start failed')
+    const [attempt] = await handle.db
+      .select()
+      .from(paymentAttempts)
+      .where(eq(paymentAttempts.id, started.value.attemptId))
+    await resolveDevCheckout(handle.db, attempt?.processorObjectId ?? '', 'decline', signal, deps)
+    const html = await render(started.value.attemptId)
+    expect(html).toContain('Payment declined')
+    expect(html).toContain(`href="/portal/applications/${other.applicationId}"`)
+    expect(html).toContain('Try the payment again')
   })
 })
 

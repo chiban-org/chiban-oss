@@ -2,6 +2,7 @@ import Link from 'next/link'
 import {
   chargebackAction,
   correctAction,
+  recordPaymentAction,
   refundAction,
   returnedCheckAction,
 } from '@/app/(staff)/staff/payments/actions'
@@ -9,7 +10,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { ApplicationPayments } from '@/features/payments/applicationPayments'
 import { entrySummary } from '@/features/payments/entrySummary'
-import { formatCents } from '@/lib/money'
+import { centsToDollarInput, formatCents } from '@/lib/money'
 
 type Entry = ApplicationPayments['entries'][number]
 
@@ -67,6 +68,40 @@ function EntryControls({ entry, payments }: { entry: Entry; payments: Applicatio
   )
 }
 
+function RecordPaymentForm({ payments }: { payments: ApplicationPayments }) {
+  if (!payments.canCollect || payments.balance.dueCents <= 0) return null
+  return (
+    <details>
+      <summary>Record a cash or check payment</summary>
+      <ActionForm action={recordPaymentAction} submitLabel="Record payment">
+        <input type="hidden" name="applicationId" value={payments.applicationId} />
+        <SelectField
+          label="Paid by"
+          name="method"
+          options={[
+            ['check', 'Check'],
+            ['cash', 'Cash'],
+          ]}
+        />
+        <TextField
+          label="Amount in dollars"
+          name="amount"
+          inputMode="decimal"
+          defaultValue={centsToDollarInput(payments.balance.dueCents)}
+          required
+        />
+        <TextField label="Check number (checks only)" name="checkNumber" />
+        <TextField
+          label="Cash tendered in dollars (cash only, to work out change)"
+          name="tendered"
+          inputMode="decimal"
+        />
+        <TextField label="Payer name" name="payerName" required />
+      </ActionForm>
+    </details>
+  )
+}
+
 export function PaymentsPanel({ payments }: { payments: ApplicationPayments | null }) {
   if (payments === null) return null
   const { balance } = payments
@@ -100,6 +135,7 @@ export function PaymentsPanel({ payments }: { payments: ApplicationPayments | nu
       {balance.pendingAttempts > 0 ? (
         <p>{`${balance.pendingAttempts} card payment waiting on the processor.`}</p>
       ) : null}
+      <RecordPaymentForm payments={payments} />
       {payments.entries.length === 0 ? (
         <p>No money has been recorded on this application.</p>
       ) : (

@@ -16,31 +16,54 @@ export function lineKey(stage: string, feeCode: string): string {
   return `${stage}|${feeCode}`
 }
 
+const CUMULATIVE_STAGES: readonly string[] = ['at_renewal']
+
+function linesOf(row: typeof feeAssessments.$inferSelect): AssessedLine[] {
+  const computation = row.computation as FeeComputation
+  return computation.lines.flatMap((line) =>
+    'value' in line.amount
+      ? [
+          {
+            stage: row.stage,
+            feeCode: line.code,
+            label: line.label,
+            feeAssessmentId: row.id,
+            assessedCents: line.amount.value,
+          },
+        ]
+      : [],
+  )
+}
+
+function addUp(lines: AssessedLine[]): AssessedLine[] {
+  const byKey = new Map<string, AssessedLine>()
+  for (const line of lines) {
+    const key = lineKey(line.stage, line.feeCode)
+    const held = byKey.get(key)
+    byKey.set(
+      key,
+      held === undefined
+        ? line
+        : { ...line, assessedCents: held.assessedCents + line.assessedCents },
+    )
+  }
+  return [...byKey.values()]
+}
+
 export async function assessedLines(db: DbOrTx, applicationId: string): Promise<AssessedLine[]> {
   const rows = await db
     .select()
     .from(feeAssessments)
     .where(eq(feeAssessments.applicationId, applicationId))
+    .orderBy(feeAssessments.assessedAt, feeAssessments.sequence)
   const latest = new Map<string, (typeof rows)[number]>()
+  const cumulative: AssessedLine[] = []
   for (const row of rows) {
-    const current = latest.get(row.stage)
-    if (current === undefined || row.sequence > current.sequence) latest.set(row.stage, row)
+    const held = latest.get(row.stage)
+    if (CUMULATIVE_STAGES.includes(row.stage)) cumulative.push(...linesOf(row))
+    else if (held === undefined || row.sequence > held.sequence) latest.set(row.stage, row)
   }
-  const lines: AssessedLine[] = []
-  for (const row of latest.values()) {
-    const computation = row.computation as FeeComputation
-    for (const line of computation.lines) {
-      if (!('value' in line.amount)) continue
-      lines.push({
-        stage: row.stage,
-        feeCode: line.code,
-        label: line.label,
-        feeAssessmentId: row.id,
-        assessedCents: line.amount.value,
-      })
-    }
-  }
-  return lines
+  return [...[...latest.values()].flatMap(linesOf), ...addUp(cumulative)]
 }
 
 export async function paidByLine(db: DbOrTx, applicationId: string): Promise<Map<string, number>> {

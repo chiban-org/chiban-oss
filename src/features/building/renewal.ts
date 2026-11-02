@@ -8,6 +8,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { recordAdjustment } from '@/features/clocks/adjustClock'
 import { resolveClockLength } from '@/features/clocks/startClocks'
 import { assessFees } from '@/features/fees/assess'
+import { feeBalance } from '@/features/ledger/feeBalance'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { addMonthsClamped, type CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -21,7 +22,10 @@ export async function renewPermit(
   input: { applicationId: string; renewedOn: CivilDate },
   signal: AbortSignal,
 ): Promise<
-  Result<{ newDue: CivilDate }, 'forbidden' | 'not_issued' | 'already_lapsed' | 'fees_incomplete'>
+  Result<
+    { newDue: CivilDate },
+    'forbidden' | 'not_issued' | 'already_lapsed' | 'fees_incomplete' | 'renewal_fee_due'
+  >
 > {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'permit.issue', signal))) return err('forbidden')
@@ -42,6 +46,10 @@ export async function renewPermit(
       .limit(1)
     if (clock === undefined) return err('not_issued')
     if (input.renewedOn > clock.currentDue) return err('already_lapsed')
+    const balance = await feeBalance(tx, input.applicationId, signal)
+    if (balance.lines.some((l) => l.stage === 'at_renewal' && l.dueCents > 0)) {
+      return err('renewal_fee_due')
+    }
     const pack = loadPack()
     const rule = ruleByKey(pack, clock.ruleKey, clock.ruleVersion)
     if (rule.kind !== 'clock') return err('not_issued')

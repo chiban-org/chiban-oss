@@ -70,6 +70,8 @@ export const ERROR_COPY: Record<string, string> = {
   before_filing: 'The resolution date cannot be before the appeal was filed.',
   not_suspended: 'The permit is not suspended.',
   already_lapsed: 'The permit has already lapsed and cannot be renewed.',
+  renewal_fee_due:
+    'The fee for the last renewal has not been paid. Record that payment before renewing again.',
   election_not_allowed: 'The applicant cannot elect that edition on this receipt date.',
   license_not_active:
     'The license is not active. Do not issue at the counter. Take the application through the normal path.',

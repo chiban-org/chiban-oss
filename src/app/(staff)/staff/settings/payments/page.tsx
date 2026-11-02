@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { processorFormDefaults } from '@/features/payments/processorFormDefaults'
 import { loadProcessorSettings } from '@/features/payments/settingsView'
 import { recordStaffContext } from '@/server/requireStaff'
 import { publishPaymentSettingsAction, saveProcessorAccountAction } from './actions'
@@ -28,6 +29,7 @@ export default async function PaymentSettingsPage() {
   }
   const { accounts, active, settings, cloverStatus } = result.value
   const fee = settings.convenienceFee
+  const current = processorFormDefaults(accounts)
   return (
     <main>
       <h1>Payment settings</h1>
@@ -47,6 +49,11 @@ export default async function PaymentSettingsPage() {
         The simulated processor and card reader are not connected to a live processor. They exist
         for practice and demonstrations, and no card is ever charged.
       </p>
+      <p className="text-muted-foreground">
+        {current === null
+          ? 'Save an account to turn on card payments.'
+          : 'The form below starts from the active account. Secrets are never shown, so enter them again whenever you save.'}
+      </p>
       <ActionForm
         action={saveProcessorAccountAction}
         submitLabel="Save processor account"
@@ -55,6 +62,7 @@ export default async function PaymentSettingsPage() {
         <SelectField
           label="Processor"
           name="processor"
+          defaultValue={current?.processor}
           options={[
             ['stripe', 'Stripe'],
             ['clover', 'Clover'],
@@ -64,6 +72,7 @@ export default async function PaymentSettingsPage() {
         <SelectField
           label="Mode"
           name="mode"
+          defaultValue={current?.mode}
           options={[
             ['test', 'Test'],
             ['live', 'Live'],
@@ -72,6 +81,7 @@ export default async function PaymentSettingsPage() {
         <TextField
           label="Account reference (Stripe account ID or Clover merchant ID)"
           name="accountRef"
+          defaultValue={current?.accountRef}
           required
         />
         <TextField
@@ -87,9 +97,13 @@ export default async function PaymentSettingsPage() {
           autoComplete="off"
           required
         />
-        <TextField label="Clover API base URL" name="apiBase" />
-        <TextField label="Clover checkout base URL" name="ecommBase" />
-        <TextField label="Card reader device ID" name="deviceId" />
+        <TextField label="Clover API base URL" name="apiBase" defaultValue={current?.apiBase} />
+        <TextField
+          label="Clover checkout base URL"
+          name="ecommBase"
+          defaultValue={current?.ecommBase}
+        />
+        <TextField label="Card reader device ID" name="deviceId" defaultValue={current?.deviceId} />
       </ActionForm>
       <h2>Convenience fee and receipts</h2>
       <p className="text-muted-foreground">

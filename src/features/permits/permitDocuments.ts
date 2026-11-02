@@ -62,6 +62,7 @@ export async function buildPermitPdf(
               label: 'Code edition',
               value: data.codeEdition === '' ? 'Not recorded' : data.codeEdition,
             },
+            { label: 'Fees', value: data.feeStatus },
           ],
         },
         ...conditionsBlock(data),

@@ -1,10 +1,16 @@
-import { eq } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
-import { paymentAttempts, paymentAttemptTransitions, processorAccounts } from '@/db/schema'
+import type { Db } from '@/db/client'
+import {
+  applications,
+  paymentAttempts,
+  paymentAttemptTransitions,
+  processorAccounts,
+} from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
 import { attemptStateLabel, channelLabel, transitionSentence } from '@/features/payments/labels'
 import { mayViewPayments } from '@/features/payments/overview'
@@ -16,6 +22,58 @@ import { isUuid } from '@/utils/uuid'
 import { checkWithProcessorAction, voidAttemptAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
+
+async function attemptApplications(db: Db, planned: unknown) {
+  const ids = [
+    ...new Set(
+      (planned as { applicationId?: string }[]).flatMap((a) =>
+        a.applicationId === undefined ? [] : [a.applicationId],
+      ),
+    ),
+  ]
+  if (ids.length === 0) return []
+  return await db
+    .select({ id: applications.id, number: applications.number })
+    .from(applications)
+    .where(inArray(applications.id, ids))
+    .orderBy(applications.number)
+}
+
+function AmountBreakdown({
+  baseCents,
+  convenienceFeeCents,
+  linked,
+}: {
+  baseCents: number
+  convenienceFeeCents: number
+  linked: { id: string; number: string }[]
+}) {
+  return (
+    <>
+      <ul>
+        <li>{`Permit fees: ${formatCents(baseCents)}`}</li>
+        {convenienceFeeCents > 0 ? (
+          <li>
+            {`Card convenience fee: ${formatCents(convenienceFeeCents)}, paid by the payer and not town fee revenue`}
+          </li>
+        ) : null}
+      </ul>
+      {linked.length === 0 ? null : (
+        <p>
+          {'For '}
+          {linked.map((a, i) => (
+            <span key={a.id}>
+              {i > 0 ? ', ' : null}
+              <Link href={`/staff/applications/${a.id}`} className="text-action underline">
+                {a.number}
+              </Link>
+            </span>
+          ))}
+        </p>
+      )}
+    </>
+  )
+}
 
 export default async function PaymentAttemptPage({
   params,
@@ -40,6 +98,7 @@ export default async function PaymentAttemptPage({
     .from(paymentAttemptTransitions)
     .where(eq(paymentAttemptTransitions.attemptId, attempt.id))
     .orderBy(paymentAttemptTransitions.at)
+  const linked = await attemptApplications(ctx.db, attempt.plannedAllocations)
   const [canVoid, canCollect, town] = await Promise.all([
     hasCapability(ctx.db, ctx.actor.userId, 'payment.refund_void_correct', ctx.signal),
     hasCapability(ctx.db, ctx.actor.userId, 'payment.collect', ctx.signal),
@@ -54,6 +113,11 @@ export default async function PaymentAttemptPage({
       <p>
         {`${formatCents(attempt.amountCents)} from ${attempt.payerName}, paid by ${channelLabel(attempt.channel).toLowerCase()}. Status: ${attemptStateLabel(attempt.state)}.`}
       </p>
+      <AmountBreakdown
+        baseCents={attempt.baseCents}
+        convenienceFeeCents={attempt.convenienceFeeCents}
+        linked={linked}
+      />
       {attempt.outcomeUnknown ? <StatusChip status="overdue" label="Outcome unknown" /> : null}
       {attempt.anomaly === null ? null : (
         <p role="alert">{`Anomaly: ${attempt.anomaly.replaceAll('_', ' ')}`}</p>

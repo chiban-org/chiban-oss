@@ -8,6 +8,7 @@ import { applicationChipStatus } from '@/features/applications/chipStatus'
 import { displayFieldValue } from '@/features/forms/displayValue'
 import { honestText } from '@/features/honest/honest'
 import { loadPortalBoardRecord, type PortalBoardRecord } from '@/features/portal/boardRecord'
+import { moneyEntrySentence } from '@/features/portal/moneyHistory'
 import { getPortalApplicationView, type PortalApplicationView } from '@/features/portal/portalView'
 import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate, formatInstant } from '@/lib/formatDate'
@@ -42,9 +43,21 @@ function Details({ view }: { view: PortalApplicationView }) {
   )
 }
 
+const ESTIMATE_DUE = {
+  at_intake: 'when the application is submitted',
+  at_approval: 'when the town approves the application',
+} as const
+
+function NoFeesYet({ view }: { view: PortalApplicationView }) {
+  if (view.feeEstimate === null) return <p>No fees have been set for this application yet.</p>
+  return (
+    <p>{`No fees are due yet. The estimated fee is ${formatCents(view.feeEstimate.totalCents)}, due ${ESTIMATE_DUE[view.feeEstimate.due]}.`}</p>
+  )
+}
+
 function Fees({ view }: { view: PortalApplicationView }) {
   const { fees } = view
-  if (fees.lines.length === 0) return <p>No fees have been set for this application yet.</p>
+  if (fees.lines.length === 0) return <NoFeesYet view={view} />
   return (
     <>
       <ul className="m-0 list-none space-y-1 p-0">
@@ -68,6 +81,31 @@ function Fees({ view }: { view: PortalApplicationView }) {
           <PortalPayButton applicationId={view.applicationId} dueCents={view.onlineTotalCents} />
         </>
       ) : null}
+    </>
+  )
+}
+
+function MoneyHistory({ view }: { view: PortalApplicationView }) {
+  if (view.history.length === 0) return null
+  return (
+    <>
+      <h3>Payment history</h3>
+      <ul className="m-0 space-y-1">
+        {view.history.map((entry) => (
+          <li key={entry.entryId}>
+            {moneyEntrySentence(entry)}
+            {entry.receiptId === null ? null : (
+              <>
+                {' '}
+                <a
+                  href={`/portal/applications/${view.applicationId}/receipts/${entry.receiptId}`}
+                  className="tap-target inline-flex items-center underline"
+                >{`Receipt ${entry.receiptNumber ?? ''}`}</a>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
     </>
   )
 }
@@ -188,18 +226,7 @@ export default async function PortalApplicationPage({
       <section aria-labelledby="fees-heading" className="space-y-3">
         <h2 id="fees-heading">Fees and payment</h2>
         <Fees view={view} />
-        {view.receipts.length === 0 ? null : (
-          <ul className="m-0 space-y-1">
-            {view.receipts.map((r) => (
-              <li key={r.receiptId}>
-                <a
-                  href={`/portal/applications/${view.applicationId}/receipts/${r.receiptId}`}
-                  className="tap-target inline-flex items-center underline"
-                >{`Receipt ${r.number}, ${formatCents(r.totalCents)}, ${formatCivilDate(r.date)}`}</a>
-              </li>
-            ))}
-          </ul>
-        )}
+        <MoneyHistory view={view} />
       </section>
     </main>
   )
