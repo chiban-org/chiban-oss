@@ -1,5 +1,6 @@
 import { StatusChip } from '@/components/StatusChip'
 import type { ClockExplanation } from '@/features/clocks/explainClock'
+import { formatCivilDate } from '@/lib/formatDate'
 
 const WHOSE: Record<ClockExplanation['whose'], string> = {
   official: 'Municipal official',
@@ -49,9 +50,10 @@ function statusChip(clock: ClockExplanation) {
 
 function dueNote(clock: ClockExplanation): string | null {
   const { source, replaced } = clock.currentDue
-  if (source === 'manual_override' && replaced !== null) return `Adjusted from ${replaced.value}.`
+  if (source === 'manual_override' && replaced !== null)
+    return `Adjusted from ${formatCivilDate(replaced.value)}.`
   if (source === 'town_setting' && replaced !== null) {
-    return `Town setting. The pack default would be ${replaced.value}.`
+    return `Town setting. The pack default would be ${formatCivilDate(replaced.value)}.`
   }
   if (source === 'town_setting') return 'Town setting.'
   return null
@@ -77,12 +79,12 @@ export function ClockCard({ clock }: { clock: ClockExplanation & { clockId: stri
       </p>
       <dl className="mt-2 grid grid-cols-[10rem_1fr] gap-x-4 gap-y-1 text-sm">
         <dt className="font-medium">Starts</dt>
-        <dd>{`${clock.startEvent} on ${clock.startDate}`}</dd>
+        <dd>{`${clock.startEvent} on ${formatCivilDate(clock.startDate)}`}</dd>
         <dt className="font-medium">Counting</dt>
         <dd>{clock.countingMethod}</dd>
         <dt className="font-medium">Due</dt>
         <dd>
-          <strong>{clock.currentDue.value}</strong>
+          <strong>{formatCivilDate(clock.currentDue.value)}</strong>
           {note === null ? null : ` ${note}`}
           {clock.rolledFrom === null ? null : ` Rolled forward from ${clock.rolledFrom}.`}
         </dd>
@@ -97,7 +99,7 @@ export function ClockCard({ clock }: { clock: ClockExplanation & { clockId: stri
         <ul className="mt-2 list-disc pl-5 text-sm">
           {clock.adjustments.map((a) => (
             <li key={`${a.kind}-${a.at.toISOString()}`}>
-              {`${KIND_LABEL[a.kind] ?? a.kind}${a.days === null ? '' : `, ${a.days} ${plural(a.days)}`}${a.newDue === null ? '' : `, new due date ${a.newDue}`}. ${a.reason}`}
+              {`${KIND_LABEL[a.kind] ?? a.kind}${a.days === null ? '' : `, ${a.days} ${plural(a.days)}`}${a.newDue === null ? '' : `, new due date ${formatCivilDate(a.newDue)}`}. ${a.reason}`}
               {a.legalAuthority === null
                 ? null
                 : ` Authority: ${a.legalAuthority.citation}. ${a.legalAuthority.explanation}`}

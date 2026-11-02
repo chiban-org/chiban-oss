@@ -8,6 +8,7 @@ import {
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { ApplicationPayments } from '@/features/payments/applicationPayments'
+import { entrySummary } from '@/features/payments/entrySummary'
 import { formatCents } from '@/lib/money'
 
 type Entry = ApplicationPayments['entries'][number]
@@ -106,7 +107,7 @@ export function PaymentsPanel({ payments }: { payments: ApplicationPayments | nu
           {payments.entries.map((entry) => (
             <li key={entry.id} className="rounded-md border p-2">
               <p className="m-0">
-                {`${entry.businessDate} ${entry.entryType.replaceAll('_', ' ')} by ${entry.method.replaceAll('_', ' ')}${entry.checkNumber === null ? '' : ` ${entry.checkNumber}`}: ${formatCents(entry.amountCents)} from ${entry.payerName}. `}
+                {`${entrySummary(entry)} `}
                 {entry.receiptId === null ? null : (
                   <Link
                     href={`/staff/receipts/${entry.receiptId}`}

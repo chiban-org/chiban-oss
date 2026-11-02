@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { cashReceiptsReport, REPORT_METHODS } from '@/features/reports/cashReceipts'
 import { townToday } from '@/features/town/today'
+import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { requireStaffContext } from '@/server/requireStaff'
 import { parseCivilDate } from '@/types/civilDate'
@@ -58,7 +59,7 @@ export default async function CashReceiptsPage({
           Download CSV
         </Link>
       </form>
-      <h2>{day}</h2>
+      <h2>{formatCivilDate(day)}</h2>
       <table className="my-4 w-full text-sm">
         <thead>
           <tr className="border-b text-left">

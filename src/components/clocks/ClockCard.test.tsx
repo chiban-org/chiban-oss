@@ -69,8 +69,9 @@ describe('ClockCard', () => {
 
   it('shows the adjusted due date next to the date it replaced', () => {
     render(<ClockCard clock={BASE} />)
-    expect(screen.getByText('2027-04-14', { selector: 'strong' })).toBeTruthy()
-    expect(screen.getByText(/Adjusted from 2027-03-31/)).toBeTruthy()
+    expect(screen.getByText('April 14, 2027', { selector: 'strong' })).toBeTruthy()
+    expect(screen.getByText(/Adjusted from March 31, 2027/)).toBeTruthy()
+    expect(screen.getByText(/new due date April 14, 2027/)).toBeTruthy()
   })
 
   it('says who acts and whether the clock can be extended', () => {
@@ -91,7 +92,7 @@ describe('ClockCard', () => {
     }
     render(<ClockCard clock={clock} />)
     expect(screen.getByText(/Town setting/)).toBeTruthy()
-    expect(screen.getByText(/pack default would be 2028-03-15/)).toBeTruthy()
+    expect(screen.getByText(/pack default would be March 15, 2028/)).toBeTruthy()
   })
 
   it('for an overdue clock uses the overdue chip with a text label', () => {
