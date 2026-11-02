@@ -19,7 +19,7 @@ import { computeSubjectDue, type SubjectDue } from '@/features/clocks/subjectDue
 import { answerDueOf } from '@/features/enforcement/answers'
 import { type MotionBlock, motionBlocks } from '@/features/enforcement/motionGate'
 import { loadServiceState, orderRule, statusOf } from '@/features/enforcement/service'
-import { NOT_STAYED } from '@/features/enforcement/stay'
+import { type StayState, stayFor } from '@/features/enforcement/stay'
 import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { townToday } from '@/features/town/today'
@@ -67,7 +67,7 @@ function firstMotionBlock(input: {
   status: ReturnType<typeof statusOf>
   state: Awaited<ReturnType<typeof loadServiceState>>
   filedOn: string | null
-  stay: typeof NOT_STAYED
+  stay: StayState
   today: CivilDate
 }): MotionBlock | undefined {
   const recipients = input.state.recipients.map((r) => ({
@@ -150,7 +150,7 @@ export async function recordCourtStep(
         .filter((s) => s.kind === 'filed_with_clerk')
         .map((s) => s.occurredOn)
         .sort()[0] ?? null
-    const stay = NOT_STAYED
+    const stay = await stayFor(tx, order.caseId, value.occurredOn, signal)
     if (value.kind !== 'judgment' && stay.stayed) return err('stayed')
     if (value.kind === 'filed_with_clerk' && !status.complete) {
       return err('filing_needs_complete_service')

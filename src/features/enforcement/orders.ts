@@ -12,6 +12,7 @@ import { attachDocument } from '@/features/documents/attach'
 import { designationOn } from '@/features/enforcement/designations'
 import { nextEnforcementNumber } from '@/features/enforcement/numbering'
 import { missingOrderContent, renderOrderPdf } from '@/features/enforcement/orderPdf'
+import { stayFor } from '@/features/enforcement/stay'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -109,6 +110,7 @@ export type IssueOrderError =
   | 'not_a_draft'
   | 'stale_version'
   | 'case_not_ready'
+  | 'stayed'
   | 'not_designated'
   | 'deadline_before_issue'
   | { missingContent: OrderContentField[] }
@@ -148,6 +150,7 @@ export async function issueOrder(
       .where(eq(enforcementCases.id, order.caseId))
       .for('update')
     if (caseRow === undefined) return err('not_found')
+    if ((await stayFor(tx, caseRow.id, value.issuedOn, signal)).stayed) return err('stayed')
     if (caseRow.status !== 'violation_found') return err('case_not_ready')
     const rule = ruleByKey(loadPack(), order.ruleKey, order.ruleVersion)
     if (rule.kind !== 'cease_and_desist') {
