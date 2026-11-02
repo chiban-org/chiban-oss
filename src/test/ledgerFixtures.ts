@@ -2,10 +2,12 @@ import { ATTESTATION_TEXT } from '@packs/nh/starters/types'
 import { and, eq } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
-import { feeAssessments } from '@/db/schema'
+import { applications, feeAssessments } from '@/db/schema'
 import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
+import { transitionApplication } from '@/features/applications/transition'
 import type { AllocationInput } from '@/features/ledger/types'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
+import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 
@@ -78,4 +80,21 @@ export function lineAllocation(trade: TradeFixture, amountCents: number): Alloca
     feeCode: trade.feeCode,
     amountCents,
   }
+}
+
+export async function tryIssue(db: Db, trade: TradeFixture) {
+  const [row] = await db.select().from(applications).where(eq(applications.id, trade.applicationId))
+  return await db.transaction((tx) =>
+    transitionApplication(
+      tx,
+      trade.world.staff,
+      {
+        applicationId: trade.applicationId,
+        to: 'issued',
+        expectedRowVersion: row?.rowVersion ?? 0,
+        onDate: '2027-03-10' as CivilDate,
+      },
+      signal,
+    ),
+  )
 }

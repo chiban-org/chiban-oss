@@ -18,6 +18,7 @@ import {
   PROCESSORS,
 } from '@/features/ledger/types'
 import { feeAssessments } from './fees'
+import { paymentAttempts } from './paymentAttempts'
 import { applications } from './projects'
 import { receipts } from './receipts'
 
@@ -32,7 +33,7 @@ export const ledgerEntries = pgTable(
     businessDate: date('business_date', { mode: 'string' }).notNull(),
     receiptId: uuid('receipt_id').references(() => receipts.id),
     reversesEntryId: uuid('reverses_entry_id').references((): AnyPgColumn => ledgerEntries.id),
-    paymentAttemptId: uuid('payment_attempt_id'),
+    paymentAttemptId: uuid('payment_attempt_id').references(() => paymentAttempts.id),
     processor: text('processor', { enum: PROCESSORS }),
     processorAccountId: uuid('processor_account_id'),
     processorObjectId: text('processor_object_id'),

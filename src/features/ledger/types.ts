@@ -44,6 +44,7 @@ export interface PostEntryInput {
   payerUserId?: string
   reason?: string
   receiptId?: string
+  processorReported?: boolean
   actor: LedgerActor
   allocations: AllocationInput[]
 }

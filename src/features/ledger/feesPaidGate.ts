@@ -12,6 +12,9 @@ registerGate({
   boundBy: null,
   evaluate: async (tx, app, _today, signal) => {
     const balance = await feeBalance(tx, app.id, signal)
+    if (balance.unknownAttempts > 0) {
+      return { status: 'unknown', reason: 'A card payment outcome is unknown.' }
+    }
     const due = balance.lines
       .filter((l) => l.stage !== 'at_renewal')
       .reduce((sum, l) => sum + l.dueCents, 0)

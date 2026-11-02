@@ -1,8 +1,9 @@
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Tx } from '@/db/client'
 import { applications, ledgerAllocations, ledgerEntries } from '@/db/schema'
 import { assessedLines, lineKey, paidByLine } from '@/features/ledger/lineTotals'
+import { allocationKey, netAllocations } from '@/features/ledger/reversalAllocations'
 import type { AllocationInput, PostEntryInput } from '@/features/ledger/types'
 import { getTownSettings } from '@/features/town/settings'
 import { todayInTimeZone } from '@/types/civilDate'
@@ -12,10 +13,6 @@ export type PostEntryError = 'over_allocated' | 'over_reversed'
 
 const FALLBACK_TIME_ZONE = 'UTC'
 
-function allocationKey(a: AllocationInput): string {
-  return [a.targetKind, a.applicationId ?? '', a.stage ?? '', a.feeCode ?? ''].join('|')
-}
-
 function netByKey(allocations: AllocationInput[]): Map<string, number> {
   const totals = new Map<string, number>()
   for (const a of allocations) {
@@ -24,7 +21,7 @@ function netByKey(allocations: AllocationInput[]): Map<string, number> {
   return totals
 }
 
-async function lockApplications(tx: Tx, allocations: AllocationInput[]): Promise<void> {
+export async function lockApplications(tx: Tx, allocations: AllocationInput[]): Promise<void> {
   const ids = [
     ...new Set(
       allocations.flatMap((a) => (a.applicationId === undefined ? [] : [a.applicationId])),
@@ -72,27 +69,8 @@ async function exceedsNetPaid(
 ): Promise<boolean> {
   const negatives = [...netByKey(allocations).entries()].filter(([, cents]) => cents < 0)
   if (negatives.length === 0) return false
-  const rows = await tx.execute<{
-    target_kind: string
-    application_id: string | null
-    stage: string | null
-    fee_code: string | null
-    net: number
-  }>(sql`
-    with recursive tree as (
-      select id from ledger_entries where id = ${reversesEntryId}
-      union all
-      select l.id from ledger_entries l join tree t on l.reverses_entry_id = t.id
-    )
-    select a.target_kind, a.application_id, a.stage, a.fee_code, sum(a.amount_cents)::int as net
-    from ledger_allocations a join tree t on a.entry_id = t.id
-    group by a.target_kind, a.application_id, a.stage, a.fee_code
-  `)
   const available = new Map(
-    rows.rows.map((r) => [
-      [r.target_kind, r.application_id ?? '', r.stage ?? '', r.fee_code ?? ''].join('|'),
-      r.net,
-    ]),
+    (await netAllocations(tx, reversesEntryId)).map((n) => [n.key, n.cents]),
   )
   return negatives.some(([key, cents]) => -cents > (available.get(key) ?? 0))
 }
@@ -142,6 +120,7 @@ export async function postEntry(
   if (await exceedsDue(tx, input.allocations)) return err('over_allocated')
   if (
     input.reversesEntryId !== undefined &&
+    input.processorReported !== true &&
     (await exceedsNetPaid(tx, input.reversesEntryId, input.allocations))
   ) {
     return err('over_reversed')
