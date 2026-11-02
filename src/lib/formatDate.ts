@@ -32,6 +32,20 @@ export function formatInstant(instant: Date, timeZone: string): string {
     .replace(NARROW_NO_BREAK_SPACE, ' ')
 }
 
+export function formatInstantLong(instant: Date, timeZone: string): string {
+  return `${formatInstantDate(instant, timeZone)}, ${new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    hour: 'numeric',
+    minute: '2-digit',
+  })
+    .format(instant)
+    .replace(NARROW_NO_BREAK_SPACE, ' ')}`
+}
+
+export function formatInstantOrNever(instant: Date | null, timeZone: string): string {
+  return instant === null ? 'Never' : formatInstantLong(instant, timeZone)
+}
+
 export function formatInstantDate(instant: Date, timeZone: string): string {
   return new Intl.DateTimeFormat('en-US', {
     timeZone,

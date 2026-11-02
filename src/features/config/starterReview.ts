@@ -6,12 +6,18 @@ import { membersInOrder } from '@/features/config/adoptStarter'
 import type { ConfigKind } from '@/features/config/kinds'
 import { type DiffEntry, starterDiff } from '@/features/config/starterDiff'
 import { getPublished } from '@/features/config/store'
+import { words } from '@/lib/words'
 
 export interface ReviewBundle {
   starterId: string
   label: string
   upstreamVersion: number
-  members: { kind: ConfigKind; key: string; entries: DiffEntry[] }[]
+  members: { kind: ConfigKind; key: string; label: string; entries: DiffEntry[] }[]
+}
+
+function memberLabel(body: unknown, key: string): string {
+  const label = (body as { label?: unknown }).label
+  return typeof label === 'string' && label !== '' ? label : words(key)
 }
 
 export async function loadStarterReviews(db: DbOrTx, signal: AbortSignal): Promise<ReviewBundle[]> {
@@ -45,7 +51,12 @@ export async function loadStarterReviews(db: DbOrTx, signal: AbortSignal): Promi
       if (published === null || recorded >= starter.version) continue
       const entries = starterDiff(published.body, member.body)
       if (entries.length === 0) continue
-      members.push({ kind: member.kind, key: member.key, entries })
+      members.push({
+        kind: member.kind,
+        key: member.key,
+        label: memberLabel(published.body, member.key),
+        entries,
+      })
     }
     if (members.length > 0) {
       bundles.push({

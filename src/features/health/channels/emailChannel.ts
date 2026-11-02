@@ -20,7 +20,8 @@ const STATE_LINE: Record<AlertMessage['state'], string> = {
 }
 
 function bodyLines(msg: AlertMessage): string[] {
-  const lines = [msg.summary, STATE_LINE[msg.state], `Alert: ${msg.key}`]
+  const lines = [msg.summary, STATE_LINE[msg.state]]
+  if (msg.kind !== 'synthetic') lines.push(`Alert: ${msg.key}`)
   if (msg.ackUrl !== null) lines.push(`Confirm you received this test: ${msg.ackUrl}`)
   return lines
 }

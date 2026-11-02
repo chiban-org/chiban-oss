@@ -43,7 +43,13 @@ function cleaned(mapping: CamaMapping): CamaMapping {
   }
 }
 
-export function CamaImportPanel({ saved }: { saved: CamaMapping }) {
+export function CamaImportPanel({
+  saved,
+  formats,
+}: {
+  saved: CamaMapping
+  formats: { key: string; label: string }[]
+}) {
   const router = useRouter()
   const formRef = useRef<HTMLFormElement>(null)
   const [mapping, setMapping] = useState<CamaMapping>(saved)
@@ -121,10 +127,11 @@ export function CamaImportPanel({ saved }: { saved: CamaMapping }) {
         Read the file and preview
       </Button>
       <h2>Column mapping</h2>
-      <TextField
+      <SelectField
         label="Parcel ID format"
         value={mapping.id.format}
         onChange={(e) => setMapping({ ...mapping, id: { ...mapping.id, format: e.target.value } })}
+        options={formats.map((f) => [f.key, f.label] as const)}
       />
       <IdPartsEditor parts={mapping.id.parts} headers={headers} onChange={setParts} />
       <ColumnList

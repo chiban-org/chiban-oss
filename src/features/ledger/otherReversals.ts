@@ -3,6 +3,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { postEntry } from '@/features/ledger/postEntry'
+import { returnedCheckReason } from '@/features/ledger/returnedReason'
 import { allocateReversal, netAllocations } from '@/features/ledger/reversalAllocations'
 import { authorizeReversal, loadEntry, type ReversalDeps } from '@/features/ledger/reversalSupport'
 import type { AllocationInput } from '@/features/ledger/types'
@@ -93,7 +94,7 @@ export async function recordReturnedCheck(
       entryType: 'returned_check',
       entryId: entry.id,
       amountCents: -remaining,
-      reason: `Returned ${input.returnedOn}: ${authorized.value}`,
+      reason: returnedCheckReason(input.returnedOn, authorized.value),
       allocations: split.allocations,
       action: 'payment.returned_check',
     },

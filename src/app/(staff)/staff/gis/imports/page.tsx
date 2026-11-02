@@ -7,9 +7,11 @@ import { gisLayers, importRuns } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
 import { AXISGIS_ADAPTER_STATUS, AXISGIS_STUB_NOTICE } from '@/features/gis/adapters/axisGis'
 import { LAYER_KEYS } from '@/features/gis/exceptionKinds'
+import { adapterLabel, layerLabel } from '@/features/gis/import/runText'
 import { getLayerStatus } from '@/features/gis/layerStatus'
 import { getTownSettings } from '@/features/town/settings'
-import { formatInstant } from '@/lib/formatDate'
+import { formatInstantLong } from '@/lib/formatDate'
+import { words } from '@/lib/words'
 import { requireStaffContext } from '@/server/requireStaff'
 import { updateLayerSettingsAction } from './actions'
 import { LayerImportAction } from './LayerImportAction'
@@ -48,7 +50,7 @@ export default async function StaffImportsPage() {
   const now = new Date()
   const town = await getTownSettings(ctx.db, ctx.signal)
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
-  const when = (iso: string) => formatInstant(new Date(iso), zone)
+  const when = (iso: string) => formatInstantLong(new Date(iso), zone)
   const statuses = await Promise.all(
     LAYER_KEYS.map((k) => getLayerStatus(ctx.db, k, now, ctx.signal)),
   )
@@ -147,10 +149,10 @@ export default async function StaffImportsPage() {
           <tbody>
             {runs.map((run) => (
               <tr key={run.id} className="border-b">
-                <td className="py-2">{formatInstant(run.startedAt, zone)}</td>
-                <td>{run.layerKey}</td>
-                <td>{run.adapter}</td>
-                <td>{run.status}</td>
+                <td className="py-2">{formatInstantLong(run.startedAt, zone)}</td>
+                <td>{layerLabel(run.layerKey)}</td>
+                <td>{adapterLabel(run.adapter)}</td>
+                <td>{words(run.status)}</td>
                 <td>
                   <Link href={`/staff/gis/imports/${run.id}`} className="text-action underline">
                     Report

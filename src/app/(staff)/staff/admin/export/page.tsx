@@ -6,9 +6,9 @@ import { Label } from '@/components/ui/label'
 import { listExports } from '@/features/export/requestExport'
 import { currentServiceState } from '@/features/town/serviceStatus'
 import { getTownSettings } from '@/features/town/settings'
-import { formatCivilDate } from '@/lib/formatDate'
+import { DEFAULT_TIME_ZONE } from '@/features/town/timeZone'
+import { formatCivilDate, formatInstantLong } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
-import { todayInTimeZone } from '@/types/civilDate'
 import { requestExportAction } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -55,9 +55,8 @@ export default async function ExportPage({ searchParams }: ExportPageProps = {})
     getTownSettings(ctx.db, ctx.signal),
     currentServiceState(ctx.db, new Date(), ctx.signal),
   ])
-  const zone = town.ok ? town.value.timeZone : 'UTC'
-  const day = (instant: Date | null) =>
-    instant === null ? '' : formatCivilDate(todayInTimeZone(zone, instant))
+  const zone = town.ok ? town.value.timeZone : DEFAULT_TIME_ZONE
+  const day = (instant: Date | null) => (instant === null ? '' : formatInstantLong(instant, zone))
   return (
     <main>
       <h1>Export your records</h1>

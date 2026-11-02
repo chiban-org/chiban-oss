@@ -54,6 +54,8 @@ describe('reports page', () => {
     expect(html).toContain('January 1, 2027')
     expect(html).toContain('December 31, 2027')
     expect(html).toContain('March 2027')
+    expect(html).toContain('<td>Electrical permit</td>')
+    expect(html).not.toContain('<td>EL</td>')
     expect(html).toContain('/staff/reports/permit-volume/csv?from=2027-01-01&amp;to=2027-12-31')
     expect(html).toContain('/staff/reports/processing-time/csv')
     expect(html).toContain('/staff/reports/cash-receipts')

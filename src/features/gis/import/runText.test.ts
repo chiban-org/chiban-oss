@@ -1,20 +1,49 @@
 import { describe, expect, it } from 'vitest'
-import { exceptionDetailText, importRunSummary } from '@/features/gis/import/runText'
+import { LAYER_ADAPTERS } from '@/features/gis/exceptionKinds'
+import {
+  adapterLabel,
+  exceptionDetailText,
+  exceptionTitle,
+  importRunSummary,
+  layerLabel,
+} from '@/features/gis/import/runText'
 import { findIsoDates } from '@/test/leaks'
 
 describe('gis import text', () => {
+  it('titles an exception without the internal row key prefix', () => {
+    expect(exceptionTitle('owner_changed', 'id:007001000000')).toBe(
+      'Owner changed: parcel ID 007001000000',
+    )
+    expect(exceptionTitle('missing_required_field', 'line:12')).toBe(
+      'Missing required field: line 12',
+    )
+    expect(exceptionTitle('invalid_geometry', 'src:abc')).toBe(
+      'Invalid geometry: source feature abc',
+    )
+  })
+
+  it('names every adapter and layer in words', () => {
+    for (const a of LAYER_ADAPTERS) {
+      expect(adapterLabel(a)).not.toContain('_')
+      expect(adapterLabel(a)).not.toBe(a)
+    }
+    expect(adapterLabel('file_cama_csv')).toBe('CAMA CSV file')
+    expect(layerLabel('cama')).toBe('CAMA owner data')
+    expect(layerLabel('parcels')).toBe('Parcels')
+  })
+
   it('summarizes a run with a town-zone time and a labelled status', () => {
     const text = importRunSummary(
       {
         layerKey: 'parcels',
-        adapter: 'shapefile',
+        adapter: 'file_shapefile',
         startedAt: new Date('2026-11-02T15:30:00Z'),
         status: 'completed_with_errors',
       },
       'America/New_York',
     )
     expect(text).toBe(
-      'parcels from shapefile, started Nov 2, 2026, 10:30 AM. Status: Completed with errors.',
+      'Parcels from Shapefile, started November 2, 2026, 10:30 AM. Status: Completed with errors.',
     )
     expect(findIsoDates(text)).toEqual([])
   })
@@ -25,6 +54,6 @@ describe('gis import text', () => {
       new Date('2026-11-03T02:30:00Z'),
       'America/New_York',
     )
-    expect(text).toBe('Missing owner. First seen Nov 2, 2026, 9:30 PM.')
+    expect(text).toBe('Missing owner. First seen November 2, 2026, 9:30 PM.')
   })
 })

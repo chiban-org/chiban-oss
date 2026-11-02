@@ -72,7 +72,7 @@ export default async function SettingsPage() {
         >
           <div>
             <strong>{starter.applicationType.label}</strong>
-            <p className="m-0 text-sm text-muted-foreground">{`${starter.id}, version ${starter.version}`}</p>
+            <p className="m-0 text-sm text-muted-foreground">{`Version ${starter.version}`}</p>
           </div>
           {adopted.has(starter.applicationType.key) ? (
             <span>Adopted</span>

@@ -1,5 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { formatCivilDate, formatInstant, formatInstantDate, humanizeIsoDates } from './formatDate'
+import {
+  formatCivilDate,
+  formatInstant,
+  formatInstantDate,
+  formatInstantOrNever,
+  humanizeIsoDates,
+} from './formatDate'
+
+describe('formatInstantOrNever', () => {
+  it('writes date and time in the zone, or Never for null', () => {
+    expect(formatInstantOrNever(new Date('2026-11-02T15:30:00Z'), 'America/New_York')).toBe(
+      'November 2, 2026, 10:30 AM',
+    )
+    expect(formatInstantOrNever(null, 'America/New_York')).toBe('Never')
+  })
+})
 
 describe('humanizeIsoDates', () => {
   it('rewrites every ISO date inside a sentence and leaves other text alone', () => {

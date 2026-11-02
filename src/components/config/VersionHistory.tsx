@@ -1,20 +1,18 @@
+import { NH_STARTERS } from '@packs/nh/starters'
 import type { ReactNode } from 'react'
 import type { VersionRowView } from '@/features/config/settingsViews'
+import { formatInstantLong } from '@/lib/formatDate'
+import { words } from '@/lib/words'
 
 const STATUS_LABEL = { draft: 'Draft', published: 'Published', superseded: 'Superseded' } as const
 
-function formatInZone(date: Date, timeZone: string): string {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone,
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hourCycle: 'h23',
-  }).formatToParts(date)
-  const get = (type: string) => parts.find((p) => p.type === type)?.value ?? ''
-  return `${get('year')}-${get('month')}-${get('day')} ${get('hour')}:${get('minute')}`
+function upstreamText(upstream: { id: string; version: number }): string {
+  const starter = NH_STARTERS.find((s) => s.id === upstream.id)
+  const name =
+    starter === undefined
+      ? words(upstream.id.split('.').at(-1) ?? upstream.id)
+      : `${starter.applicationType.label} starter`
+  return `${name}, version ${upstream.version}`
 }
 
 export function VersionHistory({
@@ -51,13 +49,9 @@ export function VersionHistory({
             <td>
               {row.publishedAt === null
                 ? 'Not published'
-                : `${row.publishedBy ?? 'Unknown'} on ${formatInZone(row.publishedAt, timeZone)}`}
+                : `${row.publishedBy ?? 'Unknown'} on ${formatInstantLong(row.publishedAt, timeZone)}`}
             </td>
-            <td>
-              {row.upstream === null
-                ? 'None'
-                : `${row.upstream.id} version ${row.upstream.version}`}
-            </td>
+            <td>{row.upstream === null ? 'None' : upstreamText(row.upstream)}</td>
             <td>{row.status === 'superseded' ? rollbackSlot?.(row) : null}</td>
           </tr>
         ))}

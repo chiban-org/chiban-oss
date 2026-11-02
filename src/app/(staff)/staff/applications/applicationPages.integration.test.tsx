@@ -168,7 +168,8 @@ describe('staff settings pages', () => {
     )
     expect(key).toContain('Version history')
     expect(key).toContain('Bindings')
-    expect(key).toContain('nh.starter.building version 2')
+    expect(key).toContain('Building or demolition permit starter, version 2')
+    expect(key).not.toContain('nh.starter.building')
   })
 
   it('an unknown kind is not found', async () => {
