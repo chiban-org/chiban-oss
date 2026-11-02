@@ -105,20 +105,29 @@ describe('validateCensus', () => {
       housingUnits: 0,
       valuationDollars: 0,
     }
-    expect(validateCensus(excluded)).toEqual({ ok: false, error: 'reason_required' })
+    expect(validateCensus(excluded)).toEqual({ ok: false, error: 'excluded_reason_required' })
     expect(validateCensus({ ...excluded, excludedReason: 'addition_or_alteration' }).ok).toBe(true)
     expect(
       validateCensus({ ...excluded, excludedReason: 'addition_or_alteration', buildings: 1 }),
     ).toEqual({
       ok: false,
-      error: 'units_do_not_fit_category',
+      error: 'excluded_carries_counts',
     })
+    expect(
+      validateCensus({
+        ...excluded,
+        excludedReason: 'addition_or_alteration',
+        buildings: 0,
+        housingUnits: 0,
+        valuationDollars: 185000,
+      }),
+    ).toEqual({ ok: false, error: 'excluded_carries_counts' })
   })
 
   it('a reason on a counted category is refused', () => {
     expect(validateCensus({ ...base, excludedReason: 'demolition' })).toEqual({
       ok: false,
-      error: 'units_do_not_fit_category',
+      error: 'reason_without_exclusion',
     })
   })
 })

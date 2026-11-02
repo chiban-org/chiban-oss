@@ -51,7 +51,13 @@ export const RECORDS_COPY: Record<string, string> = {
   not_approved: 'That batch is not approved.',
   stale_version: 'This record changed since you opened it. Reload the page and try again.',
   already_closed: 'This request is already closed.',
-  units_do_not_fit_category: 'The building and unit counts do not fit that kind of structure.',
+  units_do_not_fit_category:
+    'The housing units do not fit that kind of structure: one per building for a single-family house, two per building for a two-unit building, three or four per building, or five or more per building.',
+  excluded_reason_required: 'Choose why the permit is left out of the count.',
+  excluded_carries_counts:
+    'A permit left out of the count reports 0 buildings, 0 housing units and a valuation of 0.',
+  reason_without_exclusion:
+    'A reason to leave the permit out goes with the kind "Left out of the count". Choose that kind, or set the reason to "Not left out".',
   phase_counts_must_be_zero:
     'A foundation or finish-only permit reports no buildings or units, only a valuation above zero.',
   not_a_building_permit: 'Only building permits are reported to the Census Bureau.',
