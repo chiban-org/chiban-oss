@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { importRuns } from '@/db/schema'
+import { importRuns, parcels } from '@/db/schema'
 import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
@@ -90,5 +90,37 @@ describe('record administration pages', () => {
     await actAs('staff')
     expect(await html((await page('settings'))(undefined))).not.toContain(NO_PERMISSION)
     expect(await html((await page('overrides/aliases'))(undefined))).not.toContain(NO_PERMISSION)
+  })
+
+  it('only configuration editors get the settings editor, others see the permission page first', async () => {
+    const props = { params: Promise.resolve({ kind: 'fee_schedule', key: 'building-fees' }) }
+    await actAs('staff')
+    expect(await html((await page('settings/[kind]/[key]'))(props))).toContain(NO_PERMISSION)
+    await actAs('admin')
+    expect(
+      await html(
+        (await page('settings/[kind]/[key]'))({
+          params: Promise.resolve({ kind: 'fee_schedule', key: 'building-fees' }),
+        }),
+      ),
+    ).not.toContain(NO_PERMISSION)
+  })
+
+  it('parcel ID overrides and lineage events are offered only to those who may record them', async () => {
+    const [parcel] = await handle.db.select({ id: parcels.id }).from(parcels).limit(1)
+    const props = () => ({ params: Promise.resolve({ parcelId: parcel?.id ?? '' }) })
+    await actAs('reviewer')
+    const reviewerPage = await html((await page('parcels/[parcelId]'))(props()))
+    expect(reviewerPage).not.toContain('Override an ID')
+    expect(reviewerPage).not.toContain('Record lineage event')
+    expect(
+      await html(
+        (await page('parcels/lineage/new'))({ searchParams: Promise.resolve({ parent: '' }) }),
+      ),
+    ).toContain(NO_PERMISSION)
+    await actAs('staff')
+    const staffPage = await html((await page('parcels/[parcelId]'))(props()))
+    expect(staffPage).toContain('Override an ID')
+    expect(staffPage).toContain('Record lineage event')
   })
 })

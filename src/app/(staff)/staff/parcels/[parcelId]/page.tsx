@@ -59,6 +59,7 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
   )
   const canPublish = await hasCapability(ctx.db, ctx.actor.userId, 'document.publish', ctx.signal)
   const canManage = await hasCapability(ctx.db, ctx.actor.userId, 'document.manage', ctx.signal)
+  const canManageParcel = await hasCapability(ctx.db, ctx.actor.userId, 'parcel.manage', ctx.signal)
   const series = loadPack().recordSeries.map((s) => ({
     key: s.key,
     label: s.label,
@@ -115,11 +116,13 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
           <div className="flex flex-col items-start gap-4">
             <BalanceDueNotice notices={balanceNotices} linkApplications />
             <LayerBanner state={view.layer.state} text={layerText} />
-            <Button asChild>
-              <Link href={`/staff/parcels/lineage/new?parent=${encodeURIComponent(displayId)}`}>
-                Record lineage event
-              </Link>
-            </Button>
+            {canManageParcel ? (
+              <Button asChild>
+                <Link href={`/staff/parcels/lineage/new?parent=${encodeURIComponent(displayId)}`}>
+                  Record lineage event
+                </Link>
+              </Button>
+            ) : null}
           </div>
         }
       />
@@ -138,7 +141,7 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
           history={view.history}
           parcelHrefBase="/staff/parcels/"
           renderAction={(record) =>
-            record.linkId === undefined ? null : (
+            record.linkId === undefined || !canManageParcel ? null : (
               <ActionForm action={carryForwardAction} submitLabel="Carry forward to this parcel">
                 <input type="hidden" name="linkId" value={record.linkId} />
                 <input type="hidden" name="toParcelId" value={parcelId} />
@@ -210,25 +213,27 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
             </tbody>
           </table>
         </section>
-        <section aria-label="Override an ID">
-          <h2>Override an ID</h2>
-          <ActionForm
-            action={createAliasOverrideAction}
-            submitLabel="Save override"
-            className="max-w-md"
-          >
-            <input type="hidden" name="parcelRef" value={displayId} />
-            <TextField
-              label="Format key"
-              name="format"
-              required
-              hint="For example cama15 or gis12."
-            />
-            <TextField label="ID value" name="value" required />
-            <TextField label="Reason" name="reason" required />
-            <TextField label="Expires on" name="expiresOn" type="date" />
-          </ActionForm>
-        </section>
+        {canManageParcel ? (
+          <section aria-label="Override an ID">
+            <h2>Override an ID</h2>
+            <ActionForm
+              action={createAliasOverrideAction}
+              submitLabel="Save override"
+              className="max-w-md"
+            >
+              <input type="hidden" name="parcelRef" value={displayId} />
+              <TextField
+                label="Format key"
+                name="format"
+                required
+                hint="For example cama15 or gis12."
+              />
+              <TextField label="ID value" name="value" required />
+              <TextField label="Reason" name="reason" required />
+              <TextField label="Expires on" name="expiresOn" type="date" />
+            </ActionForm>
+          </section>
+        ) : null}
       </RecordLayout>
     </main>
   )
