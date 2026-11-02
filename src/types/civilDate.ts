@@ -28,3 +28,9 @@ export function todayInTimeZone(tz: string, now: Date): CivilDate {
 export function civilYear(d: CivilDate): number {
   return Number(d.slice(0, 4))
 }
+
+const MS_PER_DAY = 86_400_000
+
+export function daysBetween(from: CivilDate, to: CivilDate): number {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / MS_PER_DAY)
+}

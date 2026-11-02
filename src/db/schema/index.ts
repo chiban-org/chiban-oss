@@ -1,4 +1,5 @@
 export * from './audit'
+export * from './gisImports'
 export * from './identity'
 export * from './jobRuns'
 export * from './lineage'
