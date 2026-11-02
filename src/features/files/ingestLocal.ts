@@ -4,20 +4,11 @@ import { eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { files } from '@/db/schema'
 import { blobKey } from '@/features/files/ingest'
-import { SNIFF_BYTES } from '@/features/files/sniff'
+import { matchContentType, type SignatureTable, SNIFF_BYTES } from '@/features/files/sniff'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
 
-function matchedType(head: Uint8Array, allowed: Record<string, readonly number[]>): string | null {
-  for (const [type, signature] of Object.entries(allowed)) {
-    if (head.length >= signature.length && signature.every((byte, i) => head[i] === byte)) {
-      return type
-    }
-  }
-  return null
-}
-
-async function digestFile(
+export async function digestFile(
   path: string,
   signal: AbortSignal,
 ): Promise<{ sha256: string; size: number; head: Uint8Array }> {
@@ -38,7 +29,7 @@ export async function ingestLocalFile(
   db: DbOrTx,
   store: ObjectStore,
   path: string,
-  allowed: Record<string, readonly number[]>,
+  allowed: SignatureTable,
   signal: AbortSignal,
 ): Promise<
   Result<
@@ -49,7 +40,7 @@ export async function ingestLocalFile(
   signal.throwIfAborted()
   try {
     const digest = await digestFile(path, signal)
-    const contentType = matchedType(digest.head, allowed)
+    const contentType = matchContentType(allowed, digest.head)
     if (contentType === null) return err('type_not_allowed')
     const [known] = await db
       .select({ sha: files.sha256 })

@@ -11,6 +11,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 import { files } from './files'
+import { migrationBatches } from './migration'
 
 export const documents = pgTable(
   'documents',
@@ -37,9 +38,13 @@ export const documents = pgTable(
     publicChangedAt: timestamp('public_changed_at', { withTimezone: true }),
     createdByKind: text('created_by_kind', { enum: ['user', 'system'] }).notNull(),
     createdBy: uuid('created_by'),
+    migrationBatchId: uuid('migration_batch_id').references(() => migrationBatches.id),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('documents_record_idx').on(t.recordKind, t.recordId)],
+  (t) => [
+    index('documents_record_idx').on(t.recordKind, t.recordId),
+    index('documents_migration_batch_idx').on(t.migrationBatchId),
+  ],
 )
 
 export const documentVersions = pgTable(

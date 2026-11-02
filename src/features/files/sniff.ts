@@ -17,3 +17,34 @@ export function sniffMatches(contentType: AllowedType, firstBytes: Uint8Array): 
   if (firstBytes.length < signature.length) return false
   return signature.every((byte, i) => firstBytes[i] === byte)
 }
+
+const TIFF_SIGNATURES = [
+  [0x49, 0x49, 0x2a, 0x00],
+  [0x4d, 0x4d, 0x00, 0x2a],
+] as const
+
+export type SignatureTable = Readonly<
+  Record<string, readonly number[] | readonly (readonly number[])[]>
+>
+
+export const MIGRATION_ORIGINAL_TYPES = {
+  ...ALLOWED_UPLOAD_TYPES,
+  'image/tiff': TIFF_SIGNATURES,
+} as const satisfies SignatureTable
+
+function signaturesOf(entry: readonly number[] | readonly (readonly number[])[]) {
+  return typeof entry[0] === 'number'
+    ? [entry as readonly number[]]
+    : (entry as readonly (readonly number[])[])
+}
+
+export function matchContentType(table: SignatureTable, head: Uint8Array): string | null {
+  for (const [type, entry] of Object.entries(table)) {
+    const matched = signaturesOf(entry).some(
+      (signature) =>
+        head.length >= signature.length && signature.every((byte, i) => head[i] === byte),
+    )
+    if (matched) return type
+  }
+  return null
+}

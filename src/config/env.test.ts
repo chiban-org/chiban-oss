@@ -69,6 +69,15 @@ describe('alert environment', () => {
   })
 })
 
+describe('ocr environment', () => {
+  it('OCRMYPDF_PATH defaults to ocrmypdf and can be overridden', () => {
+    expect(envSchema.parse(base).OCRMYPDF_PATH).toBe('ocrmypdf')
+    expect(envSchema.parse({ ...base, OCRMYPDF_PATH: '/opt/ocr/ocrmypdf' }).OCRMYPDF_PATH).toBe(
+      '/opt/ocr/ocrmypdf',
+    )
+  })
+})
+
 describe('strict env prefixes', () => {
   it('lists the prefixes the product owns', () => {
     expect(ENV_PREFIXES_STRICT).toEqual([

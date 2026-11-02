@@ -458,10 +458,14 @@ File: `data/documents.ndjson`. Ordered by id.
 - `public_changed_at`: timestamp with time zone, nullable
 - `created_by_kind`: text
 - `created_by`: uuid, nullable
+- `migration_batch_id`: uuid, nullable
 - `created_at`: timestamp with time zone
 
+References:
+- `migration_batch_id` refers to `migration_batches`
+
 Typed references:
-- `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, project to `projects`, parcel to `parcels`
+- `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, project to `projects`, parcel to `parcels`, migration_batch to `migration_batches`
 
 ### fee_assessments
 
@@ -729,6 +733,45 @@ File: `data/license_checks.ndjson`. Ordered by id.
 
 References:
 - `application_id` refers to `applications`
+
+### migration_batches
+
+File: `data/migration_batches.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `name`: text
+- `source_root`: text
+- `series_key`: text
+- `folder_pattern`: text
+- `id_format`: text
+- `status`: text
+- `report`: jsonb, nullable
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+- `updated_at`: timestamp with time zone
+
+### migration_items
+
+File: `data/migration_items.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `batch_id`: uuid
+- `source_path`: text
+- `size_bytes`: bigint
+- `sha256`: text
+- `folder_key`: text, nullable
+- `outcome`: text, nullable
+- `except_reason`: text, nullable
+- `document_id`: uuid, nullable
+- `duplicate_of_item`: uuid, nullable
+- `parcel_link`: text
+- `ocr_status`: text
+- `ocr_reason`: text, nullable
+- `created_at`: timestamp with time zone
+
+References:
+- `batch_id` refers to `migration_batches`
+- `document_id` refers to `documents`
 
 ### notification_outbox
 

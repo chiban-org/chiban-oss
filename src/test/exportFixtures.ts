@@ -17,6 +17,17 @@ const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
       values ('abc', '{"inListAndImported":[],"inListNotImported":[],"importedNotInList":[],"documentCounts":{}}'::jsonb, gen_random_uuid())`,
   },
   {
+    table: 'migration_batches',
+    statement: sql`insert into migration_batches (name, source_root, series_key, folder_pattern, id_format, status, created_by)
+      values ('Export coverage', '/srv/legacy', 'nh.rs.correspondence_administrative', '^Map (?<map>\\d+)', 'cama15', 'staged', gen_random_uuid())`,
+  },
+  {
+    table: 'migration_items',
+    statement: sql`insert into migration_items (batch_id, source_path, size_bytes, sha256, folder_key, outcome, document_id)
+      select b.id, 'Map 7/scan.pdf', 12, 'abc', '007000000000000', 'imported', (select id from documents limit 1)
+      from migration_batches b limit 1`,
+  },
+  {
     table: 'application_conditions',
     statement: sql`insert into application_conditions (application_id, code, text_snapshot, blocks_issuance, changed_by)
       select id, 'C-EXPORT', 'Condition kept for export coverage', false, gen_random_uuid() from applications limit 1`,

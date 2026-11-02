@@ -8,6 +8,7 @@ Open-source land-use software for small US towns: building and trade permits, in
 - pnpm 9
 - Docker with Compose (Postgres with PostGIS, MinIO, and Mailpit run in containers)
 - Ghostscript 10 on the PATH for PDF/A preservation (`brew install ghostscript` or `apt-get install ghostscript`)
+- OCRmyPDF with the English Tesseract data on the PATH, only to migrate scanned legacy files (`brew install ocrmypdf` or `apt-get install ocrmypdf tesseract-ocr-eng`)
 
 ## Getting started
 

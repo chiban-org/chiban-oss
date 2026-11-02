@@ -1,6 +1,6 @@
 import { and, desc, eq, type SQL, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { documents, documentVersions, type FileRow, files } from '@/db/schema'
+import { documents, documentText, documentVersions, type FileRow, files } from '@/db/schema'
 import { hasFullRecordAccess, isReviewer } from '@/features/access/roles'
 import type { Actor } from '@/features/auth/actor'
 import { err, ok, type Result } from '@/types/result'
@@ -82,7 +82,8 @@ export async function resolveRendition(
     .where(eq(documentVersions.documentId, documentId))
     .orderBy(desc(documentVersions.createdAt))
   const latest = (role: ResolvedRendition['role']) => versions.find((v) => v.role === role)
-  const chosen = chooseVersion(doc.privately, rendition, latest)
+  const textLayers = await textLayerByVersion(db, documentId)
+  const chosen = chooseVersion(doc.privately, rendition, latest, textLayers)
   if (chosen === undefined) return err('not_found')
   return ok({
     versionId: chosen.id,
@@ -93,12 +94,44 @@ export async function resolveRendition(
   })
 }
 
-function chooseVersion<T>(
+async function textLayerByVersion(
+  db: DbOrTx,
+  documentId: string,
+): Promise<ReadonlyMap<string, boolean>> {
+  const rows = await db
+    .select({ versionId: documentText.versionId, hasTextLayer: documentText.hasTextLayer })
+    .from(documentText)
+    .innerJoin(documentVersions, eq(documentVersions.id, documentText.versionId))
+    .where(eq(documentVersions.documentId, documentId))
+  return new Map(rows.map((r) => [r.versionId, r.hasTextLayer]))
+}
+
+interface Candidate {
+  id: string
+  contentType: string
+}
+
+function defaultOriginal<T extends Candidate>(
+  latest: (role: ResolvedRendition['role']) => T | undefined,
+  textLayers: ReadonlyMap<string, boolean>,
+): T | undefined {
+  const original = latest('original')
+  const pdfa = latest('pdfa')
+  if (original === undefined || pdfa === undefined || textLayers.get(pdfa.id) !== true) {
+    return original
+  }
+  const scanned = original.contentType === 'image/tiff' || textLayers.get(original.id) !== true
+  return scanned ? pdfa : original
+}
+
+function chooseVersion<T extends Candidate>(
   privately: boolean,
   rendition: Rendition,
   latest: (role: ResolvedRendition['role']) => T | undefined,
+  textLayers: ReadonlyMap<string, boolean>,
 ): T | undefined {
   if (rendition === 'pdfa') return privately ? latest('pdfa') : undefined
-  if (privately) return latest('original')
-  return latest('public_redacted') ?? latest('original')
+  const preferred = defaultOriginal(latest, textLayers)
+  if (privately) return preferred
+  return latest('public_redacted') ?? preferred
 }

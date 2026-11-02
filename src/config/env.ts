@@ -59,6 +59,7 @@ export const envSchema = z
     EXPORT_WORK_DIR: z.string().min(1).default('/tmp/chiban-export'),
     GHOSTSCRIPT_PATH: z.string().min(1).default('gs'),
     GHOSTSCRIPT_ICC_PROFILE: z.string().min(1).optional(),
+    OCRMYPDF_PATH: z.string().min(1).default('ocrmypdf'),
     ALERT_EMAIL_TO: commaList(z.email()).default([]),
     HEALTH_DISK_PATHS: commaList(z.string().min(1)).default(['/']),
     HEALTH_HEARTBEAT_URL: z.url().optional(),

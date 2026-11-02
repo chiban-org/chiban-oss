@@ -358,6 +358,13 @@
       "when": 1793612468780,
       "tag": "0050_cama_layer",
       "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1793613655983,
+      "tag": "0051_legacy_migration",
+      "breakpoints": true
     }
   ]
 }

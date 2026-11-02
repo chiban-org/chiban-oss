@@ -40,6 +40,16 @@ function textMatch(q: string): SQL {
 const ORIGINAL = sql`(select dv.id from document_versions dv where dv.document_id = documents.id and dv.role = 'original' limit 1)`
 const REDACTED = sql`(select dv.id from document_versions dv where dv.document_id = documents.id and dv.role = 'public_redacted' order by dv.created_at desc limit 1)`
 
+const PREFERRED = sql`coalesce(
+  (select p.id from document_versions p
+    join document_text pt on pt.version_id = p.id and pt.has_text_layer
+    join document_versions o on o.document_id = p.document_id and o.role = 'original'
+    where p.document_id = documents.id and p.role = 'pdfa'
+      and (o.content_type = 'image/tiff' or not exists (
+        select 1 from document_text ot where ot.version_id = o.id and ot.has_text_layer))
+    order by p.created_at desc limit 1),
+  ${ORIGINAL})`
+
 function runSearch(
   db: DbOrTx,
   versionExpr: SQL,
@@ -92,7 +102,7 @@ export async function searchPublicDocuments(
   const limit = clampLimit(input.limit)
   const result = await runSearch(
     db,
-    sql`coalesce(${REDACTED}, ${ORIGINAL})`,
+    sql`coalesce(${REDACTED}, ${PREFERRED})`,
     sql`documents.is_public`,
     q,
     limit,
@@ -112,7 +122,7 @@ export async function searchDocuments(
   if (q.length < MIN_QUERY_LENGTH) return { rows: [], nextCursor: null }
   const limit = clampLimit(input.limit)
   const after = input.cursor === undefined ? null : Number(input.cursor)
-  const version = sql`case when ${documentPrivateAccess(actor)} then ${ORIGINAL} else coalesce(${REDACTED}, ${ORIGINAL}) end`
+  const version = sql`case when ${documentPrivateAccess(actor)} then ${PREFERRED} else coalesce(${REDACTED}, ${PREFERRED}) end`
   const result = await runSearch(
     db,
     version,
