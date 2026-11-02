@@ -8,6 +8,7 @@ import {
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { loadApplicationContext } from '@/features/applications/context'
+import { lockApplication } from '@/features/applications/lockApplication'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { getBoardSettings } from '@/features/boards/boardSettings'
@@ -49,6 +50,9 @@ async function mutateDraft(
   signal.throwIfAborted()
   if (!(await mayManageAbutters(db, actor.userId, signal))) return err('forbidden')
   return await transactionResult<void, DraftError>(db, async (tx) => {
+    const peek = await getList(tx, listId, signal)
+    if (peek === null) return err('not_found')
+    await lockApplication(tx, peek.applicationId)
     const opened = await openDraft(tx, listId, signal)
     if (!opened.ok) return opened
     const changed = await change(tx, opened.value.list)
