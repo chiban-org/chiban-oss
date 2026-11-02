@@ -150,6 +150,10 @@
   font-size: max(var(--public-min-body), 1rem);
 }
 
+.public-shell :is(.text-sm, .text-xs, [class*="text-[1"]) {
+  font-size: var(--public-min-body);
+}
+
 .public-shell :is(button, [role="button"], input, select, textarea, a.tap-target) {
   min-height: var(--public-min-tap-target);
 }
