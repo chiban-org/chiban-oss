@@ -1,6 +1,7 @@
 import { eq, sql } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { counselOutcomes, documentVersions, files } from '@/db/schema'
+import { certifyImminentPeril, recordEnforcementAppeal } from '@/features/enforcement/appeals'
 import { loadCaseDetail } from '@/features/enforcement/caseDetail'
 import { recordCounselOutcome, referToCounsel } from '@/features/enforcement/counsel'
 import { recordFine } from '@/features/enforcement/fines'
@@ -65,6 +66,38 @@ async function refer(purpose: 'motion_to_enforce' | 'penalty_action' = 'motion_t
 }
 
 describe('counsel referrals', () => {
+  it('the packet shows an imminent peril certification and that the case is not stayed', async () => {
+    const appeal = await recordEnforcementAppeal(
+      handle.db,
+      world.staff,
+      {
+        caseId: order.caseId,
+        targetKind: 'order',
+        targetId: order.orderId,
+        filedOn: d('2027-03-05'),
+        appellantName: 'Pat Owner',
+      },
+      signal,
+      NOW,
+    )
+    if (!appeal.ok) throw new Error(appeal.error)
+    const certified = await certifyImminentPeril(
+      handle.db,
+      world.staff,
+      {
+        appealId: appeal.value.appealId,
+        categories: ['safety'],
+        statement: 'The garage wall is leaning over the road.',
+        certifiedOn: d('2027-03-06'),
+      },
+      signal,
+    )
+    if (!certified.ok) throw new Error(certified.error)
+    const text = await packetText((await refer()).packetDocumentId)
+    expect(text).toContain('Imminent peril certified March 6, 2027')
+    expect(text).toContain('Not stayed')
+  })
+
   it('packet lists every service proof by title', async () => {
     await completeService(handle.db, store, world, order, '2027-03-01')
     await uploadProof(handle.db, store, world.staff, order.caseId, 'Affidavit of posting')

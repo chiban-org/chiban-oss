@@ -12,6 +12,7 @@ import {
   orderServiceEvents,
   orderServiceRecipients,
   orderServiceRoleChecks,
+  perilCertifications,
   violationFindings,
   violationNotices,
 } from '@/db/schema'
@@ -172,6 +173,18 @@ async function appealBlocks(
     .select()
     .from(enforcementAppeals)
     .where(eq(enforcementAppeals.caseId, caseId))
+  const certifications =
+    appeals.length === 0
+      ? []
+      : await db
+          .select()
+          .from(perilCertifications)
+          .where(
+            inArray(
+              perilCertifications.appealId,
+              appeals.map((a) => a.id),
+            ),
+          )
   const blocks: PdfBlock[] = [{ kind: 'heading', text: 'Appeals and stays' }]
   if (appeals.length === 0) blocks.push({ kind: 'paragraph', text: 'No appeals have been filed.' })
   for (const a of appeals) {
@@ -181,10 +194,17 @@ async function appealBlocks(
       kind: 'paragraph',
       text: `${APPEAL_TARGET_LABELS[a.targetKind]} appealed to the ZBA by ${a.appellantName} on ${formatCivilDate(a.filedOn)}, ${outcome}.`,
     })
+    for (const c of certifications.filter((x) => x.appealId === a.id)) {
+      blocks.push({
+        kind: 'paragraph',
+        text: `Imminent peril certified ${formatCivilDate(c.certifiedOn)}: ${c.statement}`,
+      })
+    }
   }
   const stay = await stayFor(db, caseId, today, signal)
   const filedOn = (appeals[0]?.filedOn ?? null) as CivilDate | null
-  const banner = stayBanner(stay, filedOn, null)
+  const certifiedOn = (certifications[0]?.certifiedOn ?? null) as CivilDate | null
+  const banner = stayBanner(stay, filedOn, certifiedOn)
   if (banner !== null) blocks.push({ kind: 'notice', text: banner })
   return blocks
 }
