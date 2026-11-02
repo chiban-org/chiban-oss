@@ -3,7 +3,9 @@ import { type Db, db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { guardAction } from '@/server/actionGuard'
 
-export type ActionResult = { ok: true; message: string } | { ok: false; error: string }
+export type ActionResult =
+  | { ok: true; message: string }
+  | { ok: false; error: string; fieldErrors?: Record<string, string> }
 
 export interface ActionContext {
   db: Db
@@ -32,6 +34,35 @@ export const ERROR_COPY: Record<string, string> = {
   invalid_parcel_id: 'Choose a parcel from the list.',
   invalid_date: 'Enter a valid date.',
   unknown_format: 'Unknown ID format.',
+  already_adopted: 'This starter has already been adopted.',
+  unknown_starter: 'Unknown starter.',
+  no_such_version: 'That version does not exist.',
+  not_found: 'That record was not found.',
+  stale_version: 'This application changed since you opened it. Reload the page and try again.',
+  invalid_transition: 'That step is not available from the current state.',
+  not_submitted: 'The application has not been submitted yet.',
+  before_receipt: 'The completeness date cannot be before the application was received.',
+  statutory_requires_authority:
+    'This gate comes from state law. Only a statutory exception with legal authority can clear it.',
+  authority_required: 'Enter the legal authority: a citation and an explanation.',
+  unknown_gate: 'That gate does not exist.',
+  unknown_condition: "That condition is not in the application's condition library.",
+  not_extendable: 'This clock cannot be extended.',
+  not_waivable: 'This clock cannot be waived.',
+  consent_required: "This extension needs the applicant's consent.",
+  due_required: 'Enter the number of days or a new due date.',
+  amount_required: 'Enter the amount.',
+  board_ref_required: 'Enter the board reference for the earlier determination.',
+  certified_mail_required:
+    'The regional planning commission and affected municipalities must be notified by certified mail.',
+  no_yes_determination: 'Record a determination of regional impact first.',
+  not_issued: 'The permit is not issued.',
+  no_open_appeal: 'There is no open appeal on this application.',
+  before_filing: 'The resolution date cannot be before the appeal was filed.',
+  not_suspended: 'The permit is not suspended.',
+  already_lapsed: 'The permit has already lapsed and cannot be renewed.',
+  election_not_allowed: 'The applicant cannot elect that edition on this receipt date.',
+  no_edition_for_date: 'No code edition is on record for the receipt date.',
 }
 
 export function errorCopy(code: string): string {

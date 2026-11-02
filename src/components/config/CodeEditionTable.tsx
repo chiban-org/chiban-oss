@@ -1,0 +1,55 @@
+import type { CodeEditionEntry } from '@packs/nh/schema'
+import { describeCodeEdition } from '@/features/building/codeEdition'
+import type { CivilDate } from '@/types/civilDate'
+
+const FAR_FUTURE = '9999-12-31' as CivilDate
+
+export function CodeEditionTable({ editions }: { editions: CodeEditionEntry[] }) {
+  const ordered = [...editions].sort((a, b) => (a.effectiveFrom < b.effectiveFrom ? 1 : -1))
+  return (
+    <table className="my-3 w-full text-sm">
+      <thead>
+        <tr className="border-b text-left">
+          <th className="py-1">Edition</th>
+          <th>Effective from</th>
+          <th>Status</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        {ordered.map((entry) => {
+          const d = describeCodeEdition(entry, FAR_FUTURE)
+          return (
+            <tr key={entry.key} className="border-b align-top">
+              <td className="py-1">{d.label}</td>
+              <td>{entry.effectiveFrom}</td>
+              <td>{d.status === 'verified' ? 'Verified' : 'Not verified'}</td>
+              <td>
+                {d.status === 'unverified' ? (
+                  <p className="m-0">
+                    Chiban does not know which codes applied in this period. Applications received
+                    then record this edition as not verified.
+                  </p>
+                ) : null}
+                {d.components.length === 0 ? null : (
+                  <p className="m-0">{d.components.join(', ')}</p>
+                )}
+                {d.enforcementFrom === null ? null : (
+                  <p className="m-0">{`Enforced from ${d.enforcementFrom}`}</p>
+                )}
+                {d.amendmentPackagesInForce.map((label) => (
+                  <p key={label} className="m-0">
+                    {label}
+                  </p>
+                ))}
+                <a href={d.citation.url} className="text-action underline">
+                  {d.citation.label}
+                </a>
+              </td>
+            </tr>
+          )
+        })}
+      </tbody>
+    </table>
+  )
+}

@@ -5,11 +5,13 @@ import { createContext } from '@/server/trpc/context'
 
 const NAV_ITEMS = [
   { href: '/staff/parcels', label: 'Parcels' },
+  { href: '/staff/applications', label: 'Applications' },
   { href: '/staff/map', label: 'Map' },
   { href: '/staff/gis/imports', label: 'Imports' },
   { href: '/staff/gis/exceptions', label: 'Exceptions' },
   { href: '/staff/parcels/unresolved', label: 'Unresolved records' },
   { href: '/staff/overrides/aliases', label: 'Overrides' },
+  { href: '/staff/settings', label: 'Settings' },
   { href: '/staff/account', label: 'Account' },
 ] as const
 
