@@ -2,9 +2,11 @@ import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { openCase, setCaseStatus } from '@/features/enforcement/cases'
+import { recordCourtStep } from '@/features/enforcement/courtSteps'
 import { designateEnforcementOfficer } from '@/features/enforcement/designations'
 import { recordFinding } from '@/features/enforcement/findings'
 import { draftOrder, issueOrder } from '@/features/enforcement/orders'
+import { listRecipient, recordRoleCheck, recordServiceEvent } from '@/features/enforcement/service'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
@@ -174,4 +176,120 @@ export async function uploadProof(
     { title, docKind },
   )
   return up.documentId
+}
+
+export interface ServedOrder extends IssuedOrder {
+  ownerId: string
+}
+
+export async function completeService(
+  db: Db,
+  store: ObjectStore,
+  world: EnforcementWorld,
+  order: IssuedOrder,
+  servedOn: string,
+): Promise<ServedOrder> {
+  const owner = must(
+    await listRecipient(
+      db,
+      world.staff,
+      {
+        orderId: order.orderId,
+        role: 'record_owner',
+        name: 'Pat Owner',
+        address: '14 Birch Lane',
+        source: 'CAMA owner',
+      },
+      signal,
+    ),
+    'owner',
+  )
+  must(
+    await recordRoleCheck(
+      db,
+      world.staff,
+      {
+        orderId: order.orderId,
+        role: 'taxpayer',
+        outcome: 'same_as_owner',
+        basis: 'Tax bill goes to the owner',
+        checkedOn: servedOn,
+      },
+      signal,
+    ),
+    'taxpayer',
+  )
+  for (const role of ['occupying_tenant', 'person_in_control', 'mortgagee_of_record'] as const) {
+    must(
+      await recordRoleCheck(
+        db,
+        world.staff,
+        {
+          orderId: order.orderId,
+          role,
+          outcome: 'none_exist',
+          basis: 'Registry search on file',
+          checkedOn: servedOn,
+        },
+        signal,
+      ),
+      role,
+    )
+  }
+  must(
+    await recordServiceEvent(
+      db,
+      world.staff,
+      {
+        orderId: order.orderId,
+        recipientId: owner.recipientId,
+        method: 'in_hand',
+        servedOn,
+        serverName: 'Sheriff Dale',
+        serverRole: 'sheriff',
+        proofDocumentId: await uploadProof(db, store, world.staff, order.caseId),
+      },
+      signal,
+    ),
+    'service',
+  )
+  return { ...order, ownerId: owner.recipientId }
+}
+
+export type StepKind = 'filed_with_clerk' | 'motion_to_enforce' | 'judgment'
+
+export function makeStepper(
+  db: Db,
+  store: ObjectStore,
+  world: EnforcementWorld,
+  order: IssuedOrder,
+  now: Date,
+) {
+  return async (
+    kind: StepKind,
+    occurredOn: string,
+    extra: Partial<Parameters<typeof recordCourtStep>[2]> = {},
+  ) =>
+    await recordCourtStep(
+      db,
+      world.staff,
+      {
+        orderId: order.orderId,
+        kind,
+        occurredOn,
+        court: 'District Court, Alder Pond Division',
+        docket: '2027-CV-0042',
+        documentId: await uploadProof(
+          db,
+          store,
+          world.staff,
+          order.caseId,
+          'Court filing',
+          'court_document',
+        ),
+        ...extra,
+      },
+      signal,
+      now,
+    )
 }

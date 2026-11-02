@@ -96,7 +96,7 @@ export async function recordAnswer(
       .update(orderServiceRecipients)
       .set({ answeredOn: value.answeredOn, answerDocumentId: value.documentId })
       .where(eq(orderServiceRecipients.id, value.recipientId))
-    if (['issued', 'served'].includes(order.status)) {
+    if (['issued', 'served', 'filed_with_court'].includes(order.status)) {
       await tx
         .update(enforcementOrders)
         .set({ status: 'answered', rowVersion: order.rowVersion + 1 })
