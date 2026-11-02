@@ -45,6 +45,7 @@ const BASE: ClockExplanation & { clockId: string } = {
   consequenceKind: 'none_stated',
   whose: 'official',
   extensionPolicy: 'RSA 155-A:4 IX provides no extension.',
+  allowedAdjustments: ['statutory_exception'],
   status: 'running',
   daysRemaining: 10,
 }

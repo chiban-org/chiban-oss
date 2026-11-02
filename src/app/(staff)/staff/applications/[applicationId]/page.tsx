@@ -141,7 +141,11 @@ export default async function StaffApplicationPage({ params }: Props) {
           <div key={clock.clockId}>
             <ClockCard clock={clock} />
             {clock.status === 'running' || clock.status === 'overdue' ? (
-              <ClockAdjustForm view={view} clockId={clock.clockId} />
+              <ClockAdjustForm
+                view={view}
+                clockId={clock.clockId}
+                allowedKinds={clock.allowedAdjustments}
+              />
             ) : null}
           </div>
         ))}

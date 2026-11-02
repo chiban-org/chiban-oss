@@ -3,6 +3,7 @@ import { StatusChip } from '@/components/StatusChip'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { STATE_LABELS } from '@/features/applications/states'
+import type { AdjustmentKind } from '@/features/clocks/explainClock'
 import {
   applyConditionAction,
   markCompleteAction,
@@ -98,15 +99,26 @@ export function CompletenessPanel({ view }: { view: StaffApplicationView }) {
   )
 }
 
+const ADJUSTMENT_OPTIONS: Record<AdjustmentKind, [string, string]> = {
+  extension: ['extension', 'Extension'],
+  waiver: ['waiver', 'Waiver'],
+  statutory_exception: ['statutory_exception', 'Statutory exception (needs legal authority)'],
+}
+
 export function ClockAdjustForm({
   view,
   clockId,
+  allowedKinds,
 }: {
   view: StaffApplicationView
   clockId: string
+  allowedKinds: AdjustmentKind[]
 }) {
   const { canAdjustClock, canRecordStatutoryException } = view.permissions
-  if (!canAdjustClock && !canRecordStatutoryException) return null
+  const offered = allowedKinds.filter((kind) =>
+    kind === 'statutory_exception' ? canRecordStatutoryException : canAdjustClock,
+  )
+  if (offered.length === 0) return null
   return (
     <details className="my-2">
       <summary>Adjust this clock</summary>
@@ -115,11 +127,7 @@ export function ClockAdjustForm({
         <SelectField
           label="Kind"
           name="kind"
-          options={[
-            ['extension', 'Extension'],
-            ['waiver', 'Waiver'],
-            ['statutory_exception', 'Statutory exception (needs legal authority)'],
-          ]}
+          options={offered.map((kind) => ADJUSTMENT_OPTIONS[kind])}
         />
         <TextField label="Days" name="days" type="number" />
         <TextField label="Reason" name="reason" required />

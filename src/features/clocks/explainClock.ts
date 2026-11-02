@@ -38,8 +38,19 @@ export interface ClockExplanation {
   consequenceKind: ClockRule['consequence']['kind']
   whose: ClockRule['whose']
   extensionPolicy: string
+  allowedAdjustments: AdjustmentKind[]
   status: ClockRow['status']
   daysRemaining: number
+}
+
+export type AdjustmentKind = 'extension' | 'waiver' | 'statutory_exception'
+
+export function allowedAdjustmentKinds(rule: ClockRule): AdjustmentKind[] {
+  return [
+    ...(rule.extension.allowed ? (['extension'] as const) : []),
+    ...(rule.waivable ? (['waiver'] as const) : []),
+    'statutory_exception',
+  ]
 }
 
 export function extensionPolicyText(rule: ClockRule): string {
@@ -103,6 +114,7 @@ export function explainClock(
     consequenceKind: rule.consequence.kind,
     whose: rule.whose,
     extensionPolicy: extensionPolicyText(rule),
+    allowedAdjustments: allowedAdjustmentKinds(rule),
     status: clock.status,
     daysRemaining: daysBetween(today, clock.currentDue as CivilDate),
   }
