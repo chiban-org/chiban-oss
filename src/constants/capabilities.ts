@@ -16,6 +16,8 @@ export const CAPABILITIES = {
   'regional_impact.determine':
     'Record a regional impact determination and notices under the building permit rules',
   'fee.override': 'Waive or set a fee amount with a recorded reason',
+  'payment.collect': 'Record counter payments and start card payments at the counter',
+  'payment.report': 'View and export the daily cash receipts report',
 } as const
 
 export type Capability = keyof typeof CAPABILITIES

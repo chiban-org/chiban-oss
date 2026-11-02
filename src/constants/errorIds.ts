@@ -41,6 +41,10 @@ export const ErrorIds = {
 
   PACK_INVALID: 'E_PACK_001',
   PACK_UNKNOWN_RULE: 'E_PACK_002',
+
+  PAY_LEDGER_IMMUTABLE: 'E_PAY_001',
+  PAY_ALLOCATION_MISMATCH: 'E_PAY_002',
+  PAY_UNKNOWN_PROCESSOR: 'E_PAY_003',
 } as const
 
 export type ErrorId = (typeof ErrorIds)[keyof typeof ErrorIds]

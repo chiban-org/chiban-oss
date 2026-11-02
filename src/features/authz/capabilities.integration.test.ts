@@ -119,3 +119,20 @@ describe('requireCapability', () => {
     expect(result.ok).toBe(true)
   })
 })
+
+describe('payment capabilities', () => {
+  it('finance and staff hold payment.collect; reviewer does not', async () => {
+    expect(await check('finance', 'payment.collect')).toBe(true)
+    expect(await check('staff', 'payment.collect')).toBe(true)
+    expect(await check('reviewer', 'payment.collect')).toBe(false)
+    expect(await check('admin', 'payment.collect')).toBe(false)
+  })
+
+  it('payment.report holders are staff, finance, admin', async () => {
+    for (const role of ['staff', 'finance', 'admin'] as const) {
+      expect(await check(role, 'payment.report')).toBe(true)
+    }
+    expect(await check('reviewer', 'payment.report')).toBe(false)
+    expect(await check('applicant', 'payment.report')).toBe(false)
+  })
+})

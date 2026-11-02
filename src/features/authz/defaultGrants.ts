@@ -13,6 +13,7 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'gis.import',
     'fee.override',
     'clock.adjust',
+    'payment.report',
   ],
   staff: [
     'permit.issue',
@@ -25,9 +26,11 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'fee.override',
     'clock.adjust',
     'regional_impact.determine',
+    'payment.collect',
+    'payment.report',
   ],
   inspector: ['regional_impact.determine'],
-  finance: ['payment.refund_void_correct'],
+  finance: ['payment.refund_void_correct', 'payment.collect', 'payment.report'],
   records_custodian: ['hold.place_release', 'disposition.approve'],
 }
 

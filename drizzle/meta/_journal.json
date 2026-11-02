@@ -169,6 +169,13 @@
       "when": 1793588323832,
       "tag": "0023_cooing_the_renegades",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1793591565238,
+      "tag": "0024_easy_vengeance",
+      "breakpoints": true
     }
   ]
 }
