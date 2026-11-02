@@ -1,7 +1,7 @@
 import { db } from '@/db/client'
 import { censusBpsReport, censusCsv } from '@/features/census/bpsReport'
 import { townToday } from '@/features/town/today'
-import { getActor } from '@/server/getActor'
+import { staffActorOrNull } from '@/server/requireStaff'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -15,8 +15,8 @@ function integer(value: string | null, fallback: number): number {
 
 export async function GET(request: Request): Promise<Response> {
   const signal = AbortSignal.timeout(TIMEOUT_MS)
-  const actor = await getActor(signal)
-  if (actor?.kind !== 'staff') return new Response('Not found', { status: 404 })
+  const actor = await staffActorOrNull(signal)
+  if (actor === null) return new Response('Not found', { status: 404 })
   const url = new URL(request.url)
   const today = await townToday(db, new Date(), signal)
   const year = integer(url.searchParams.get('year'), Number(today.slice(0, 4)))
