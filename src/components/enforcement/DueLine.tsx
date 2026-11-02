@@ -12,7 +12,21 @@ function statusText(due: SubjectDue, today: CivilDate): string {
   return `${daysRemaining} ${daysRemaining === 1 ? 'day' : 'days'} left.`
 }
 
-export function DueLine({ due, today }: { due: SubjectDue; today: CivilDate }) {
+function consequenceText(due: SubjectDue, today: CivilDate): string {
+  return subjectDueStatus(due, today).status === 'passed'
+    ? due.consequence
+    : `If the date passes: ${due.consequence}`
+}
+
+export function DueLine({
+  due,
+  today,
+  met = false,
+}: {
+  due: SubjectDue
+  today: CivilDate
+  met?: boolean
+}) {
   const rule = ruleByKey(loadPack(), due.ruleKey, due.ruleVersion)
   const startLabel = START_EVENT_LABELS[due.startEvent] ?? due.startEvent
   return (
@@ -35,9 +49,9 @@ export function DueLine({ due, today }: { due: SubjectDue; today: CivilDate }) {
       <p className="m-0">
         {`Due ${formatCivilDate(due.due)}`}
         {due.rolledFrom === null ? '' : `, moved from ${formatCivilDate(due.rolledFrom)}`}
-        {`. ${statusText(due, today)}`}
+        {met ? '.' : `. ${statusText(due, today)}`}
       </p>
-      <p className="m-0">{due.consequence}</p>
+      {met ? null : <p className="m-0">{consequenceText(due, today)}</p>}
     </div>
   )
 }

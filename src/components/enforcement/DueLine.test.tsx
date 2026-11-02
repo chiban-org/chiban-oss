@@ -51,4 +51,17 @@ describe('DueLine', () => {
     const passed = render(<DueLine due={due} today={d('2027-03-25')} />)
     expect(passed.container.textContent).toContain('Passed 3 days ago.')
   })
+
+  it('before the date it frames the consequence as what happens if the date passes', () => {
+    const { container } = render(<DueLine due={due} today={d('2027-03-10')} />)
+    expect(container.textContent).toContain(`If the date passes: ${due.consequence}`)
+  })
+
+  it('once met it shows the date without a countdown or a consequence', () => {
+    const { container } = render(<DueLine due={due} today={d('2027-03-25')} met />)
+    const text = container.textContent
+    expect(text).toContain('Due March 22, 2027, moved from March 21, 2027.')
+    expect(text).not.toContain('Passed')
+    expect(text).not.toContain(due.consequence)
+  })
 })

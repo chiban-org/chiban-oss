@@ -77,7 +77,7 @@ function OrderBlock({ order, detail, can }: { order: OrderDetail; detail: CaseDe
           {order.answerDues.map((a) => (
             <div key={a.recipientId} className="space-y-1">
               <p className="m-0 font-medium">{a.name}</p>
-              <DueLine due={a.due} today={detail.today} />
+              <DueLine due={a.due} today={detail.today} met={a.answeredOn !== null} />
               {a.answeredOn === null ? null : (
                 <p className="m-0">{`Answer received ${formatCivilDate(a.answeredOn)}.`}</p>
               )}

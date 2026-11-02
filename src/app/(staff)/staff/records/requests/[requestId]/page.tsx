@@ -59,12 +59,16 @@ export default async function RequestPage({ params }: { params: Promise<{ reques
       )}
       <section aria-labelledby="clock" className="space-y-2 border-t pt-4">
         <h2 id="clock">Response deadline</h2>
-        <DueLine due={request.responseDue} today={today} />
+        <DueLine due={request.responseDue} today={today} met={request.firstResponseOn !== null} />
         {late === null ? null : <p role="status">{late}</p>}
         {request.statedDue === null ? null : (
           <>
             <h3>Date the town stated</h3>
-            <DueLine due={request.statedDue} today={today} />
+            <DueLine
+              due={request.statedDue}
+              today={today}
+              met={request.status === 'closed' || request.status === 'withdrawn'}
+            />
           </>
         )}
       </section>
