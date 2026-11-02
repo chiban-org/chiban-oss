@@ -12,6 +12,8 @@ import { recordCodeEdition } from '@/features/building/codeEdition'
 import { markComplete } from '@/features/building/completeness'
 import { recordRegionalImpactDetermination } from '@/features/building/regionalImpact'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { feeBalance } from '@/features/ledger/feeBalance'
+import { postEntry } from '@/features/ledger/postEntry'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import { createProject } from '@/features/projects/projects'
 import type { CivilDate } from '@/types/civilDate'
@@ -73,6 +75,7 @@ export class Scenario {
   ) {}
 
   async step(to: CoreState, on: string, actor: Actor = this.cast.staff): Promise<void> {
+    if (to === 'issued') await this.payFeesInCash(on)
     const [row] = await this.db
       .select()
       .from(applications)
@@ -92,6 +95,37 @@ export class Scenario {
       ),
     )
     must(moved, `move to ${to}`)
+  }
+
+  private async payFeesInCash(on: string): Promise<void> {
+    const balance = await feeBalance(this.db, this.applicationId, this.signal)
+    const allocations = balance.lines
+      .filter((l) => l.dueCents > 0)
+      .map((l) => ({
+        targetKind: 'fee_assessment_line' as const,
+        applicationId: this.applicationId,
+        feeAssessmentId: l.feeAssessmentId,
+        stage: l.stage,
+        feeCode: l.feeCode,
+        amountCents: l.dueCents,
+      }))
+    if (allocations.length === 0) return
+    const posted = await this.db.transaction((tx) =>
+      postEntry(
+        tx,
+        {
+          entryType: 'payment',
+          method: 'cash',
+          amountCents: balance.dueCents,
+          postedAt: noon(on),
+          payerName: 'Demo payer',
+          actor: { kind: 'user', userId: this.cast.staff.userId },
+          allocations,
+        },
+        this.signal,
+      ),
+    )
+    must(posted, 'demo payment')
   }
 }
 

@@ -26,8 +26,15 @@ export async function submittedTrade(
   db: Db,
   world: PermitWorld,
   now: Date = new Date('2027-03-02T15:00:00Z'),
+  projectId: string = world.projectId,
 ): Promise<TradeFixture> {
-  const made = await makeApplication(db, world, {}, now, 'EL')
+  const made = await makeApplication(
+    db,
+    { ...world, projectId, applicant: world.staff },
+    {},
+    now,
+    'EL',
+  )
   const submitted = await submitApplication(
     db,
     world.staff,

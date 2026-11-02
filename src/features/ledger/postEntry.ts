@@ -25,7 +25,11 @@ function netByKey(allocations: AllocationInput[]): Map<string, number> {
 }
 
 async function lockApplications(tx: Tx, allocations: AllocationInput[]): Promise<void> {
-  const ids = [...new Set(allocations.flatMap((a) => (a.applicationId === undefined ? [] : [a.applicationId])))]
+  const ids = [
+    ...new Set(
+      allocations.flatMap((a) => (a.applicationId === undefined ? [] : [a.applicationId])),
+    ),
+  ]
   if (ids.length === 0) return
   await tx
     .select({ id: applications.id })

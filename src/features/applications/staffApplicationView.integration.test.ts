@@ -89,6 +89,7 @@ describe('getStaffApplicationView', () => {
     const issued = view?.gates.find((g) => g.to === 'issued')
     expect(issued?.results.map((r) => r.key).sort()).toEqual([
       'conditions.blocking_met',
+      'fees.paid',
       'nh.bp.code_edition_recorded',
       'nh.bp.regional_impact',
     ])
