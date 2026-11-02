@@ -6,6 +6,7 @@ import { setSubstep, transitionApplication } from '@/features/applications/trans
 import type { Actor } from '@/features/auth/actor'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { applyCondition } from '@/features/conditions/applicationConditions'
+import { overrideAdministrativeGate } from '@/features/gates/overrides'
 import {
   type ApplicationPatch,
   makeApplication,
@@ -14,6 +15,7 @@ import {
 } from '@/test/applicationFixtures'
 import { appTypeBody, saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { insertInspection } from '@/test/inspectionFixtures'
 import { staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -143,6 +145,16 @@ describe('transitions', () => {
     await handle.db.transaction((tx) =>
       startClocksFor(tx, app.applicationId, 'permit_issued', ON, signal),
     )
+    await overrideAdministrativeGate(
+      handle.db,
+      world.staff,
+      {
+        applicationId: app.applicationId,
+        gateKey: 'closure.requirement_met',
+        reason: 'Work abandoned before the final inspection.',
+      },
+      signal,
+    )
     expect(await go(world.staff, app.applicationId, 'closed')).toMatchObject({ ok: true })
     expect(await go(world.staff, app.applicationId, 'issued')).toEqual({
       ok: false,
@@ -215,10 +227,50 @@ describe('transitions', () => {
     const finance = await staffActor(handle.db, 'finance')
     const first = await trade({ state: 'issued' })
     const second = await trade({ state: 'issued' })
+    await insertInspection(handle.db, second.applicationId, 'final', { status: 'passed' })
     expect(await go(finance, first.applicationId, 'closed')).toEqual({
       ok: false,
       error: 'forbidden',
     })
     expect(await go(inspector, second.applicationId, 'closed')).toMatchObject({ ok: true })
+  })
+
+  it('a trade permit closes by hand only once its final inspection has passed', async () => {
+    const app = await trade({ state: 'issued' })
+    const blocked = await go(world.staff, app.applicationId, 'closed')
+    expect(blocked.ok).toBe(false)
+    const results =
+      !blocked.ok && typeof blocked.error === 'object' ? blocked.error.gateBlocked : []
+    expect(results.find((g) => g.key === 'closure.requirement_met')).toMatchObject({
+      kind: 'administrative',
+      effective: 'blocked',
+      outcome: { status: 'blocked', reason: 'No final inspection has passed.' },
+    })
+    await insertInspection(handle.db, app.applicationId, 'final', { status: 'passed' })
+    expect(await go(world.staff, app.applicationId, 'closed')).toMatchObject({ ok: true })
+  })
+
+  it('a building permit closes by hand only with a certificate of occupancy or an override', async () => {
+    const app = await makeApplication(handle.db, world, { state: 'issued' })
+    const blocked = await go(world.staff, app.applicationId, 'closed')
+    const results =
+      !blocked.ok && typeof blocked.error === 'object' ? blocked.error.gateBlocked : []
+    expect(results.find((g) => g.key === 'closure.requirement_met')?.outcome).toEqual({
+      status: 'blocked',
+      reason: 'No certificate of occupancy has been issued.',
+    })
+    expect(
+      await overrideAdministrativeGate(
+        handle.db,
+        world.staff,
+        {
+          applicationId: app.applicationId,
+          gateKey: 'closure.requirement_met',
+          reason: 'Owner abandoned the project; permit closed unfinished.',
+        },
+        signal,
+      ),
+    ).toMatchObject({ ok: true })
+    expect(await go(world.staff, app.applicationId, 'closed')).toMatchObject({ ok: true })
   })
 })

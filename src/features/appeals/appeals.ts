@@ -1,6 +1,6 @@
 import { and, desc, eq, isNull } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import { appeals, applications, clocks } from '@/db/schema'
+import { appeals, clocks } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { appealSuspends } from '@/features/appeals/suspension'
 import { loadApplicationContext } from '@/features/applications/context'
@@ -120,16 +120,12 @@ export async function resolveAppeal(
         to,
         expectedRowVersion: app.rowVersion,
         onDate: input.resolvedOn,
+        ...(to === 'closed' ? { closureReason: 'revoked_on_appeal' as const } : {}),
       },
       signal,
     )
     if (!moved.ok) return err('not_suspended')
-    if (input.outcome === 'permit_revoked') {
-      await tx
-        .update(applications)
-        .set({ closureReason: 'revoked_on_appeal' })
-        .where(eq(applications.id, input.applicationId))
-    } else {
+    if (input.outcome !== 'permit_revoked') {
       await tollStoppedClocks(
         tx,
         actor,

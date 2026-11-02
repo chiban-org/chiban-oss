@@ -9,6 +9,7 @@ import {
 } from '@/db/schema'
 import { recordAppeal } from '@/features/appeals/appeals'
 import { transitionApplication } from '@/features/applications/transition'
+import { overrideAdministrativeGate } from '@/features/gates/overrides'
 import { availability } from '@/features/inspections/availability'
 import { requestInspection } from '@/features/inspections/requestInspection'
 import { cancelInspection, scheduleInspection } from '@/features/inspections/schedule'
@@ -380,6 +381,16 @@ describe('permit state effects', () => {
   it('closing a permit cancels its open requests with permit_closed', async () => {
     const permit = await newIssuedPermit(handle.db, w, 'EL')
     const id = await requested(permit.applicationId)
+    await overrideAdministrativeGate(
+      handle.db,
+      w.world.staff,
+      {
+        applicationId: permit.applicationId,
+        gateKey: 'closure.requirement_met',
+        reason: 'Work abandoned before the final inspection.',
+      },
+      signal,
+    )
     const result = await handle.db.transaction((tx) =>
       transitionApplication(
         tx,
