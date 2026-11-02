@@ -243,6 +243,27 @@ export type ServiceEventError =
 const FALLBACK_METHODS = ['posting_on_property', 'newspaper_publication']
 const PERSONAL_METHODS = ['in_hand', 'abode']
 
+function serviceInputError(
+  rule: CeaseAndDesistRule,
+  before: ServiceState,
+  value: z.output<typeof ServiceEventSchema>,
+): ServiceEventError | null {
+  if (value.recipientId !== null && !before.recipients.some((r) => r.id === value.recipientId)) {
+    return 'recipient_not_found'
+  }
+  const personal = PERSONAL_METHODS.includes(value.method)
+  if (personal && (value.serverName === undefined || !serverRoleAllowed(rule, value.serverRole))) {
+    return 'server_role_required'
+  }
+  if (!FALLBACK_METHODS.includes(value.method)) return null
+  const ownerNotFound = before.checks.some(
+    (c) => c.role === 'record_owner' && c.outcome === 'owner_not_found',
+  )
+  const postingRefused =
+    value.method === 'posting_on_property' && !rule.ownerNotFoundFallback.posting
+  return ownerNotFound && !postingRefused ? null : 'fallback_needs_owner_not_found'
+}
+
 export async function recordServiceEvent(
   db: Db,
   actor: Actor,
@@ -265,30 +286,8 @@ export async function recordServiceEvent(
       if (order.status === 'draft') return err('order_not_issued')
       const rule = orderRule(order)
       const before = await loadServiceState(tx, value.orderId, signal)
-      if (
-        value.recipientId !== null &&
-        !before.recipients.some((r) => r.id === value.recipientId)
-      ) {
-        return err('recipient_not_found')
-      }
-      if (PERSONAL_METHODS.includes(value.method)) {
-        const roleOk =
-          value.serverName !== undefined &&
-          value.serverRole !== undefined &&
-          (rule.personalServerRoles as readonly string[]).includes(value.serverRole)
-        if (!roleOk) return err('server_role_required')
-      }
-      const ownerNotFound = before.checks.some(
-        (c) => c.role === 'record_owner' && c.outcome === 'owner_not_found',
-      )
-      if (isFallback && !ownerNotFound) return err('fallback_needs_owner_not_found')
-      if (
-        isFallback &&
-        value.method === 'posting_on_property' &&
-        !rule.ownerNotFoundFallback.posting
-      ) {
-        return err('fallback_needs_owner_not_found')
-      }
+      const invalid = serviceInputError(rule, before, value)
+      if (invalid !== null) return err(invalid)
       const proof = await validProof(tx, order.caseId, value.proofDocumentId)
       if (!proof) return err('proof_required')
       const [row] = await tx
@@ -328,6 +327,13 @@ export async function recordServiceEvent(
       return ok({ eventId: row?.id ?? '', status })
     },
   )
+}
+
+export function serverRoleAllowed(
+  rule: CeaseAndDesistRule,
+  role: (typeof SERVER_ROLES)[number] | undefined,
+): boolean {
+  return role !== undefined && (rule.personalServerRoles as readonly string[]).includes(role)
 }
 
 export async function validProof(

@@ -2,6 +2,7 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { DbOrTx, Tx } from '@/db/client'
 import { applications, ledgerAllocations, ledgerEntries } from '@/db/schema'
+import { exceedsFineDue, lockFines } from '@/features/ledger/fineDue'
 import { assessedLines, lineKey, paidByLine } from '@/features/ledger/lineTotals'
 import { allocationKey, netAllocations } from '@/features/ledger/reversalAllocations'
 import type { AllocationInput, PostEntryInput } from '@/features/ledger/types'
@@ -117,7 +118,9 @@ export async function postEntry(
     if (existing !== null) return ok({ entryId: existing })
   }
   await lockApplications(tx, input.allocations)
+  await lockFines(tx, input.allocations)
   if (await exceedsDue(tx, input.allocations)) return err('over_allocated')
+  if (await exceedsFineDue(tx, input.allocations)) return err('over_allocated')
   if (
     input.reversesEntryId !== undefined &&
     input.processorReported !== true &&
@@ -163,6 +166,7 @@ export async function postEntry(
       feeAssessmentId: a.feeAssessmentId ?? null,
       stage: a.stage ?? null,
       feeCode: a.feeCode ?? null,
+      fineId: a.fineId ?? null,
       amountCents: a.amountCents,
     })),
   )

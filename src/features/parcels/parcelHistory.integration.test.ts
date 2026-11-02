@@ -5,6 +5,7 @@ import { getParcelHistory } from '@/features/parcels/parcelHistory'
 import { carryForward, linkRecordToParcel } from '@/features/parcels/recordLinks'
 import {
   type ParcelRecordSummary,
+  parcelRecordSources,
   registerParcelRecordSource,
 } from '@/features/parcels/recordSources'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -80,7 +81,7 @@ describe('getParcelHistory', () => {
     expect(h.own).toEqual([])
     expect(h.ancestral[0]?.label).toBe('from parent lot 007020000000, before the 2027 subdivision')
     expect(h.ancestral[0]?.records).toHaveLength(1)
-    expect(h.sourcesRegistered).toBe(5)
+    expect(h.sourcesRegistered).toBe(parcelRecordSources().length)
   })
 
   it('own records come before ancestral records', async () => {

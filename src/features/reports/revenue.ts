@@ -6,7 +6,7 @@ import { labelsFor } from '@/features/reports/cashReceipts'
 import { checkRange, type RangeError, type ReportRange } from '@/features/reports/range'
 import { err, ok, type Result } from '@/types/result'
 
-export type RevenueKind = 'fee' | 'convenience_fee' | 'overpayment' | 'simulated'
+export type RevenueKind = 'fee' | 'convenience_fee' | 'overpayment' | 'simulated' | 'fine'
 
 export interface RevenueRow {
   month: string
@@ -41,6 +41,7 @@ export async function revenueReport(
       case when e.processor = 'simulated' then 'simulated'
            when a.target_kind = 'convenience_fee' then 'convenience_fee'
            when a.target_kind = 'overpayment' then 'overpayment'
+           when a.target_kind = 'fine' then 'fine'
            else 'fee' end as kind,
       case when e.processor is distinct from 'simulated' and a.target_kind = 'fee_assessment_line'
            then a.fee_code else '' end as code,
@@ -64,6 +65,7 @@ export async function revenueReport(
               convenience_fee: 'Convenience fee (not town revenue)',
               overpayment: 'Overpayment held for refund (not town revenue)',
               simulated: 'Simulated payments (not town revenue)',
+              fine: 'Court-imposed fines',
             }[r.kind],
       netCents: r.net,
     })),

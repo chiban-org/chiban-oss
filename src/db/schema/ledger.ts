@@ -17,6 +17,7 @@ import {
   PAYMENT_METHODS,
   PROCESSORS,
 } from '@/features/ledger/types'
+import { enforcementFines } from './enforcementMoney'
 import { feeAssessments } from './fees'
 import { paymentAttempts } from './paymentAttempts'
 import { applications } from './projects'
@@ -87,6 +88,7 @@ export const ledgerAllocations = pgTable(
     feeAssessmentId: uuid('fee_assessment_id').references(() => feeAssessments.id),
     stage: text('stage', { enum: ['at_intake', 'at_approval', 'at_renewal'] }),
     feeCode: text('fee_code'),
+    fineId: uuid('fine_id').references(() => enforcementFines.id),
     amountCents: integer('amount_cents').notNull(),
   },
   (t) => [
@@ -95,6 +97,10 @@ export const ledgerAllocations = pgTable(
       sql`${t.targetKind} <> 'fee_assessment_line'
         or (${t.applicationId} is not null and ${t.feeAssessmentId} is not null
           and ${t.stage} is not null and ${t.feeCode} is not null)`,
+    ),
+    check(
+      'ledger_allocations_fine_fields',
+      sql`${t.targetKind} <> 'fine' or (${t.fineId} is not null and ${t.applicationId} is null)`,
     ),
     check('ledger_allocations_nonzero', sql`${t.amountCents} <> 0`),
     index('ledger_allocations_entry_idx').on(t.entryId),

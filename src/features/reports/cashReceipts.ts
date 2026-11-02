@@ -62,6 +62,8 @@ async function returnedCheckIds(db: Db, entryIds: string[]): Promise<Set<string>
   return new Set(rows.flatMap((r) => (r.reverses === null ? [] : [r.reverses])))
 }
 
+const FINE_CODE = 'fine'
+
 export async function cashReceiptsReport(
   db: Db,
   actor: Actor,
@@ -102,9 +104,10 @@ export async function cashReceiptsReport(
     if (a.targetKind === 'convenience_fee') convenienceFees[method] += a.amountCents
     else if (a.targetKind === 'overpayment') overpayments[method] += a.amountCents
     else {
-      const row = byCode.get(a.feeCode ?? '') ?? zeroes()
+      const code = a.targetKind === 'fine' ? FINE_CODE : (a.feeCode ?? '')
+      const row = byCode.get(code) ?? zeroes()
       row[method] += a.amountCents
-      byCode.set(a.feeCode ?? '', row)
+      byCode.set(code, row)
     }
   }
   const assessmentIds = [
@@ -120,7 +123,7 @@ export async function cashReceiptsReport(
       .sort(([a], [b]) => a.localeCompare(b))
       .map(([feeCode, byMethod]) => ({
         feeCode,
-        label: labels.get(feeCode) ?? feeCode,
+        label: feeCode === FINE_CODE ? 'Court-imposed fine' : (labels.get(feeCode) ?? feeCode),
         byMethod,
         totalCents: Object.values(byMethod).reduce((sum, n) => sum + n, 0),
       })),

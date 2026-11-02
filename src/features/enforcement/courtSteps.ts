@@ -1,7 +1,6 @@
-import { civilDateSchema } from '@packs/nh/schema'
+import { type ClockRule, civilDateSchema } from '@packs/nh/schema'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
 import {
   COURT_STEP_KINDS,
@@ -18,10 +17,11 @@ import { requireCapability } from '@/features/authz/capabilities'
 import { computeSubjectDue, type SubjectDue } from '@/features/clocks/subjectDue'
 import { answerDueOf } from '@/features/enforcement/answers'
 import { type MotionBlock, motionBlocks } from '@/features/enforcement/motionGate'
+import { enforcementRulesFor } from '@/features/enforcement/ruleLinks'
 import { loadServiceState, orderRule, statusOf } from '@/features/enforcement/service'
 import { type StayState, stayFor } from '@/features/enforcement/stay'
 import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
-import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { loadPack } from '@/features/packs/loadPack'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -99,17 +99,10 @@ async function validCourtDocument(tx: Tx, caseId: string, documentId: string): P
   return doc !== undefined
 }
 
-function judgmentAppealDue(judgmentAppealRuleKey: string, on: CivilDate): SubjectDue {
-  const pack = loadPack()
-  const rule = ruleByKey(pack, judgmentAppealRuleKey)
-  if (rule.kind !== 'clock') {
-    throw new AppError(ErrorIds.ENF_INVARIANT, 'Judgment appeal rule is not a clock', {
-      key: judgmentAppealRuleKey,
-    })
-  }
+function judgmentAppealDue(rule: ClockRule, on: CivilDate): SubjectDue {
   return computeSubjectDue(rule, on, {
     holidays: packHolidayCalendar(),
-    packVersion: pack.version,
+    packVersion: loadPack().version,
     citations: PACK_COUNTING_CITATIONS,
   })
 }
@@ -171,7 +164,7 @@ export async function recordCourtStep(
     }
     const appealDue =
       value.kind === 'judgment'
-        ? judgmentAppealDue(rule.judgmentAppealRuleKey, value.occurredOn)
+        ? judgmentAppealDue(enforcementRulesFor(rule).judgmentAppeal, value.occurredOn)
         : null
     const [row] = await tx
       .insert(orderCourtSteps)

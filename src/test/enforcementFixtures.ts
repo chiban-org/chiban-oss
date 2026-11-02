@@ -293,3 +293,22 @@ export function makeStepper(
       now,
     )
 }
+
+export async function judgmentFor(
+  db: Db,
+  store: ObjectStore,
+  world: EnforcementWorld,
+  order: IssuedOrder,
+  outcome: 'affirmed' | 'modified' | 'annulled' = 'affirmed',
+): Promise<string> {
+  const later = new Date('2027-07-20T15:00:00Z')
+  const step = makeStepper(db, store, world, order, later)
+  await completeService(db, store, world, order, '2027-03-01')
+  must(await step('filed_with_clerk', '2027-03-10'), 'file')
+  must(await step('motion_to_enforce', '2027-03-23'), 'motion')
+  const judgment = must(
+    await step('judgment', '2027-06-18', { judgmentOutcome: outcome }),
+    'judgment',
+  )
+  return judgment.stepId
+}

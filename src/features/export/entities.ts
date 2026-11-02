@@ -51,6 +51,9 @@ const ENFORCEMENT_SPECS: Spec[] = [
   { table: t.enforcementAppeals },
   { table: t.perilCertifications },
   { table: t.restrainingOrders },
+  { table: t.counselReferrals },
+  { table: t.counselOutcomes },
+  { table: t.enforcementFines },
 ]
 
 const SPECS: Spec[] = [

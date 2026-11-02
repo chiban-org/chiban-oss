@@ -4,7 +4,9 @@ import { prorate } from '@/features/ledger/prorate'
 import type { AllocationInput, AllocationTarget, FeeStageKey } from '@/features/ledger/types'
 
 export function allocationKey(a: AllocationInput): string {
-  return [a.targetKind, a.applicationId ?? '', a.stage ?? '', a.feeCode ?? ''].join('|')
+  return [a.targetKind, a.applicationId ?? '', a.stage ?? '', a.feeCode ?? '', a.fineId ?? ''].join(
+    '|',
+  )
 }
 
 export interface NetAllocation {
@@ -19,6 +21,7 @@ interface NetRow extends Record<string, unknown> {
   fee_assessment_id: string | null
   stage: FeeStageKey | null
   fee_code: string | null
+  fine_id: string | null
   net: number
 }
 
@@ -30,10 +33,10 @@ export async function netAllocations(tx: DbOrTx, entryId: string): Promise<NetAl
       select l.id from ledger_entries l join tree t on l.reverses_entry_id = t.id
     )
     select a.target_kind, a.application_id, min(a.fee_assessment_id::text) as fee_assessment_id,
-      a.stage, a.fee_code, sum(a.amount_cents)::int as net
+      a.stage, a.fee_code, a.fine_id::text as fine_id, sum(a.amount_cents)::int as net
     from ledger_allocations a join tree t on a.entry_id = t.id
-    group by a.target_kind, a.application_id, a.stage, a.fee_code
-    order by a.target_kind, a.application_id, a.stage, a.fee_code
+    group by a.target_kind, a.application_id, a.stage, a.fee_code, a.fine_id
+    order by a.target_kind, a.application_id, a.stage, a.fee_code, a.fine_id
   `)
   return result.rows.map((r) => {
     const allocation: AllocationInput = {
@@ -42,6 +45,7 @@ export async function netAllocations(tx: DbOrTx, entryId: string): Promise<NetAl
       feeAssessmentId: r.fee_assessment_id ?? undefined,
       stage: r.stage ?? undefined,
       feeCode: r.fee_code ?? undefined,
+      fineId: r.fine_id ?? undefined,
       amountCents: 0,
     }
     return { key: allocationKey(allocation), allocation, cents: r.net }

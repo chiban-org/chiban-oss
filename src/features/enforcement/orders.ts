@@ -1,4 +1,4 @@
-import { civilDateSchema, type OrderContentField } from '@packs/nh/schema'
+import { type CeaseAndDesistRule, civilDateSchema, type OrderContentField } from '@packs/nh/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { AppError, ErrorIds } from '@/constants/errorIds'
@@ -103,6 +103,10 @@ export async function draftOrder(
   })
 }
 
+export function issuerAuthorized(rule: CeaseAndDesistRule, designated: boolean): boolean {
+  return designated || !rule.issuerMustBeDesignated
+}
+
 export type IssueOrderError =
   | 'forbidden'
   | 'invalid'
@@ -159,7 +163,7 @@ export async function issueOrder(
       })
     }
     const designation = await designationOn(tx, actor.userId, value.issuedOn)
-    if (rule.issuerMustBeDesignated && designation === null) return err('not_designated')
+    if (!issuerAuthorized(rule, designation !== null)) return err('not_designated')
     const findings = await tx
       .select()
       .from(violationFindings)

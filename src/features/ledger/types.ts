@@ -15,7 +15,12 @@ export type PaymentMethod = (typeof PAYMENT_METHODS)[number]
 export const PROCESSORS = ['stripe', 'clover', 'simulated'] as const
 export type Processor = (typeof PROCESSORS)[number]
 
-export const ALLOCATION_TARGETS = ['fee_assessment_line', 'convenience_fee', 'overpayment'] as const
+export const ALLOCATION_TARGETS = [
+  'fee_assessment_line',
+  'convenience_fee',
+  'overpayment',
+  'fine',
+] as const
 export type AllocationTarget = (typeof ALLOCATION_TARGETS)[number]
 
 export type FeeStageKey = 'at_intake' | 'at_approval' | 'at_renewal'
@@ -26,6 +31,7 @@ export interface AllocationInput {
   feeAssessmentId?: string
   stage?: FeeStageKey
   feeCode?: string
+  fineId?: string
   amountCents: number
 }
 

@@ -32,6 +32,7 @@ function ceaseAndDesist(
     answerRuleKey: `nh.enf.answer_${suffix}`,
     courtFilingLeadDays: 5,
     judgmentAppealRuleKey: `nh.enf.judgment_appeal_${suffix}`,
+    penaltyRuleKey: `nh.enf.penalty_${suffix}`,
     overridePolicy: { policy: 'fixed' },
   }
 }

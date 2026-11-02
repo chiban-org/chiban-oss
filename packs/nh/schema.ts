@@ -170,6 +170,7 @@ export const CeaseAndDesistRuleSchema = z.object({
   answerRuleKey: z.string().min(1),
   courtFilingLeadDays: z.number().int().min(0),
   judgmentAppealRuleKey: z.string().min(1),
+  penaltyRuleKey: z.string().min(1),
   overridePolicy: z.object({ policy: z.literal('fixed') }),
 })
 export type CeaseAndDesistRule = z.infer<typeof CeaseAndDesistRuleSchema>

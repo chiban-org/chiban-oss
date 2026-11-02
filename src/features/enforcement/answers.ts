@@ -1,7 +1,6 @@
 import { civilDateSchema } from '@packs/nh/schema'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
-import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
 import { documents, enforcementOrders, orderServiceRecipients } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -9,9 +8,10 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { computeSubjectDue, type SubjectDue } from '@/features/clocks/subjectDue'
+import { enforcementRulesFor } from '@/features/enforcement/ruleLinks'
 import { loadServiceState, orderRule, statusOf } from '@/features/enforcement/service'
 import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
-import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { loadPack } from '@/features/packs/loadPack'
 import { err, ok, type Result } from '@/types/result'
 
 export async function refreshAnswerDues(
@@ -24,12 +24,7 @@ export async function refreshAnswerDues(
   if (order === undefined) return
   const rule = orderRule(order)
   const pack = loadPack()
-  const answerRule = ruleByKey(pack, rule.answerRuleKey)
-  if (answerRule.kind !== 'clock') {
-    throw new AppError(ErrorIds.ENF_INVARIANT, 'Answer rule is not a clock', {
-      key: rule.answerRuleKey,
-    })
-  }
+  const answerRule = enforcementRulesFor(rule).answer
   const state = await loadServiceState(tx, orderId, signal)
   const status = statusOf(rule, state)
   for (const recipient of state.recipients) {
