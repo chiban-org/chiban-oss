@@ -82,6 +82,21 @@ describe('claim page', () => {
     expect(html).toContain(`/sign-in?next=${encodeURIComponent(`/claim/${token}`)}`)
   })
 
+  it('an invalid link offers a way on: sign in when signed out, contractor projects when signed in', async () => {
+    state.actor = null
+    const out = renderToStaticMarkup(await ClaimPage({ params: Promise.resolve({ token: 'bad' }) }))
+    expect(out).toContain('This link is no longer valid.')
+    expect(out).toContain('href="/sign-in"')
+    expect(out).toContain('href="/"')
+    const id = await makeUser(handle.db, { role: 'contractor', email: 'someone@alderpond.example' })
+    state.actor = await loadActor(handle.db, id, signal)
+    const signedIn = renderToStaticMarkup(
+      await ClaimPage({ params: Promise.resolve({ token: 'bad' }) }),
+    )
+    expect(signedIn).toContain('href="/portal/contractor"')
+    expect(signedIn).not.toContain('href="/sign-in"')
+  })
+
   it('a different signed-in address is told the link was sent elsewhere', async () => {
     const id = await makeUser(handle.db, { role: 'contractor', email: 'other@alderpond.example' })
     state.actor = await loadActor(handle.db, id, signal)
