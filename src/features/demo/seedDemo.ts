@@ -5,6 +5,7 @@ import { townSettings, userRoles, users } from '@/db/schema'
 import { seedDefaultGrants } from '@/features/authz/defaultGrants'
 
 import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { type SeedInspectionsDeps, seedInspections } from '@/features/demo/seedInspections'
 import { seedParcels } from '@/features/demo/seedParcels'
 import { seedPayments } from '@/features/demo/seedPayments'
 import { seedPermits } from '@/features/demo/seedPermits'
@@ -64,12 +65,13 @@ export interface SeedReport {
   permitsSeeded: boolean
   paymentsSeeded: boolean
   recordsSeeded: boolean
+  inspectionsSeeded: boolean
 }
 
 export async function seedDemo(
   db: Db,
   signal: AbortSignal,
-  deps: { records?: SeedRecordsDeps } = {},
+  deps: { records?: SeedRecordsDeps; inspections?: SeedInspectionsDeps } = {},
 ): Promise<SeedReport> {
   signal.throwIfAborted()
   const base = await db.transaction(async (tx) => {
@@ -115,5 +117,13 @@ export async function seedDemo(
   const permitsSeeded = await seedPermits(db, signal)
   const paymentsSeeded = await seedPayments(db, signal)
   const recordsSeeded = await seedRecords(db, signal, deps.records)
-  return { ...base, parcelsSeeded: seeded.imported, permitsSeeded, paymentsSeeded, recordsSeeded }
+  const inspectionsSeeded = await seedInspections(db, signal, deps.inspections)
+  return {
+    ...base,
+    parcelsSeeded: seeded.imported,
+    permitsSeeded,
+    paymentsSeeded,
+    recordsSeeded,
+    inspectionsSeeded,
+  }
 }

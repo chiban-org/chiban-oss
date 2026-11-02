@@ -5,10 +5,14 @@ import {
   appeals,
   applications,
   boardPacketLinks,
+  certificatesOfOccupancy,
   clocks,
   codeEditionRecords,
+  documents,
   documentVersions,
   importExceptions,
+  inspections,
+  inspectorCalendars,
   ledgerEntries,
   legalHolds,
   parcels,
@@ -24,6 +28,8 @@ import { listContractorProjects } from '@/features/contractors/dashboard'
 import { DEMO_USERS, seedDemo } from '@/features/demo/seedDemo'
 import { DEMO_SEED_NOW } from '@/features/demo/seedParcels'
 import { listFeeOverrides } from '@/features/fees/feeOverrides'
+import { loadScheduleBoard } from '@/features/inspections/boardData'
+import { getDayList } from '@/features/inspections/dayList'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { listAliasOverrides } from '@/features/parcels/aliasOverrides'
 import { getPublicParcelView } from '@/features/parcels/publicParcelView'
@@ -32,10 +38,15 @@ import { listUnresolvedLinks } from '@/features/parcels/unresolvedList'
 import { listPreservationIncomplete } from '@/features/preservation/preserve'
 import { getTownSettings } from '@/features/town/settings'
 import { makeTestDb, type TestDb } from '@/test/db'
+import type { CivilDate } from '@/types/civilDate'
 
 let handle: TestDb
 const signal = new AbortController().signal
-const SEED_DEPS = { records: { mail: createMemoryTransport() } }
+const SEED_NOW = new Date('2027-06-01T16:00:00Z')
+const SEED_DEPS = {
+  records: { mail: createMemoryTransport() },
+  inspections: { now: SEED_NOW },
+}
 
 beforeAll(async () => {
   handle = await makeTestDb()
@@ -90,6 +101,11 @@ async function counts(): Promise<Record<string, number>> {
     union all select 'board_packet_links', count(*)::int from board_packet_links
     union all select 'contractor_claims', count(*)::int from contractor_claims
     union all select 'notification_outbox', count(*)::int from notification_outbox
+    union all select 'inspections', count(*)::int from inspections
+    union all select 'inspection_item_results', count(*)::int from inspection_item_results
+    union all select 'calendar_pushes', count(*)::int from calendar_pushes
+    union all select 'inspector_calendars', count(*)::int from inspector_calendars
+    union all select 'certificates', count(*)::int from certificates_of_occupancy
   `)
   return Object.fromEntries(result.rows.map((r) => [r.t, r.n]))
 }
@@ -195,7 +211,9 @@ describe('seedDemo', () => {
     await seedDemo(handle.db, signal, SEED_DEPS)
     await seedDemo(handle.db, signal, SEED_DEPS)
     expect(await counts()).toEqual(before)
-    expect(before.applications).toBe(11)
+    expect(before.applications).toBe(12)
+    expect(before.inspections).toBeGreaterThan(5)
+    expect(before.certificates).toBe(1)
     expect(before.config_versions).toBeGreaterThan(30)
   })
 
@@ -203,6 +221,7 @@ describe('seedDemo', () => {
     const rows = await handle.db.select().from(applications).orderBy(applications.number)
     const byState = Object.fromEntries(rows.map((r) => [r.number, r.state]))
     expect(Object.values(byState).sort()).toEqual([
+      'closed',
       'issued',
       'issued',
       'issued',
@@ -253,6 +272,82 @@ describe('seedDemo', () => {
     const records = await handle.db.select().from(codeEditionRecords)
     expect(records.length).toBeGreaterThanOrEqual(2)
     expect(records.every((r) => r.editionKey === 'nh.edition.2024_07_01')).toBe(true)
+  })
+})
+
+describe('seeded inspections', () => {
+  const SEEDED_DAY = '2027-06-02'
+
+  async function actorOf(local: string): Promise<Actor> {
+    const row = await handle.db.query.users.findFirst({
+      where: (u, { eq }) => eq(u.email, `${local}@alderpond.example`),
+    })
+    return (await loadActor(handle.db, row?.id ?? '', signal)) as Actor
+  }
+
+  it('seeded inspector day list for the seeded date has two stops', async () => {
+    const inspector = await actorOf('inspector')
+    const list = await getDayList(
+      handle.db,
+      inspector,
+      { inspectorUserId: inspector.userId, date: SEEDED_DAY as CivilDate },
+      signal,
+      { now: SEED_NOW },
+    )
+    expect(list.ok && list.value.map((s) => s.status)).toEqual(['scheduled', 'scheduled'])
+    expect(list.ok && list.value.some((s) => s.isReinspection)).toBe(true)
+    expect(list.ok && list.value.find((s) => s.isReinspection)?.previousFailureNotes).toContain(
+      'blocking',
+    )
+  })
+
+  it('seeded schedule board lists one unscheduled portal request', async () => {
+    const staff = await actorOf('staff')
+    const board = await loadScheduleBoard(handle.db, staff, signal, SEED_NOW)
+    if (!board.ok) throw new Error('board')
+    expect(board.value.requests).toHaveLength(1)
+    expect(board.value.requests[0]?.channel).toBe('portal')
+  })
+
+  it('seeds a failed framing inspection with notes and one photo, and a passed final with a certificate', async () => {
+    const failed = (await handle.db.select().from(inspections)).filter((i) => i.status === 'failed')
+    expect(failed).toHaveLength(1)
+    expect(failed[0]).toMatchObject({ inspectionType: 'framing' })
+    expect(failed[0]?.resultNotes).toContain('blocking')
+    const photos = (await handle.db.select().from(documents)).filter(
+      (doc) => doc.docKind === 'inspection_photo',
+    )
+    expect(photos).toHaveLength(1)
+    const certs = await handle.db.select().from(certificatesOfOccupancy)
+    expect(certs).toHaveLength(1)
+    expect(certs[0]?.number).toMatch(/^CO-2027-0001$/)
+  })
+
+  it('the permit under appeal shows its cancelled inspection', async () => {
+    const cancelled = (await handle.db.select().from(inspections)).filter(
+      (i) => i.status === 'cancelled',
+    )
+    expect(cancelled).toHaveLength(1)
+    expect(cancelled[0]?.cancelReason).toBe('permit_suspended')
+  })
+
+  it('public parcel history lists inspections without notes or contact', async () => {
+    const alias = await handle.db.query.parcelAliases.findFirst({
+      where: (a, { eq }) => eq(a.value, '007006000000'),
+    })
+    const view = await getPublicParcelView(handle.db, alias?.parcelId ?? '', new Date(), signal)
+    if (!view.ok) throw new Error('public view')
+    const rows = view.value.history.own.filter((r) => r.kind === 'inspection')
+    expect(rows.map((r) => r.status.label).sort()).toEqual(['Failed', 'Scheduled'])
+    const text = JSON.stringify(rows)
+    expect(text).not.toContain('blocking')
+    expect(text).not.toContain('Contact')
+  })
+
+  it('inspector calendar is an email invite to the seeded inspector', async () => {
+    const rows = await handle.db.select().from(inspectorCalendars)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ kind: 'ics_email', email: 'inspector@alderpond.example' })
   })
 })
 
