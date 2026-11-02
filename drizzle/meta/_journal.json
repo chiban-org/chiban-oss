@@ -127,6 +127,13 @@
       "when": 1793587462282,
       "tag": "0017_polite_the_leader",
       "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1793587602213,
+      "tag": "0018_low_tarantula",
+      "breakpoints": true
     }
   ]
 }
