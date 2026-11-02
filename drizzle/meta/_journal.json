@@ -498,6 +498,20 @@
       "when": 1793633331438,
       "tag": "0070_uneven_manta",
       "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1793633647975,
+      "tag": "0071_majestic_surge",
+      "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1793633673287,
+      "tag": "0072_board_member_grants",
+      "breakpoints": true
     }
   ]
 }

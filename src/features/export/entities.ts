@@ -60,6 +60,7 @@ const SPECS: Spec[] = [
   { table: t.boardPacketLinks, omit: ['token_hash'], fill: { token_hash: RANDOM_HASH } },
   { table: t.boardDecisions },
   { table: t.boardMeetings },
+  { table: t.boardMemberships },
   { table: t.boardPackets },
   {
     table: t.calendarAccounts,

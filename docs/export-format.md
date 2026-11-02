@@ -376,12 +376,26 @@ File: `data/board_meetings.ndjson`. Ordered by id.
 - `created_by`: uuid
 - `created_at`: timestamp with time zone
 
+### board_memberships
+
+File: `data/board_memberships.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `user_id`: uuid
+- `board`: text
+- `title`: text
+- `term_start`: date
+- `term_end`: date, nullable
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+
 ### board_packet_access
 
 File: `data/board_packet_access.ndjson`. Ordered by id.
 
 - `id`: uuid
-- `link_id`: uuid
+- `link_id`: uuid, nullable
+- `user_id`: uuid, nullable
 - `version_id`: uuid, nullable
 - `accessed_at`: timestamp with time zone
 

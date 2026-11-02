@@ -13,10 +13,12 @@ const NEW_CAPABILITIES: Capability[] = [
   'cutover.import',
   'board.record',
   'abutters.manage',
+  'board.manage_members',
 ]
 const MIGRATIONS = [
   new URL('../../../drizzle/0054_export_report_cutover_grants.sql', import.meta.url),
   new URL('../../../drizzle/0057_board_abutter_grants.sql', import.meta.url),
+  new URL('../../../drizzle/0072_board_member_grants.sql', import.meta.url),
 ]
 
 let handle: TestDb

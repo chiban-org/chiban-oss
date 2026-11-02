@@ -59,9 +59,8 @@ export const boardPacketAccess = pgTable(
   'board_packet_access',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    linkId: uuid('link_id')
-      .notNull()
-      .references(() => boardPacketLinks.id),
+    linkId: uuid('link_id').references(() => boardPacketLinks.id),
+    userId: uuid('user_id'),
     versionId: uuid('version_id').references(() => documentVersions.id),
     accessedAt: timestamp('accessed_at', { withTimezone: true }).notNull().defaultNow(),
   },

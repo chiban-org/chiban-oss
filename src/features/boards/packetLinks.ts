@@ -1,8 +1,9 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import { env } from '@/config/env'
 import type { Db } from '@/db/client'
 import {
+  boardMemberships,
   boardPacketAccess,
   boardPacketItems,
   boardPacketLinks,
@@ -10,7 +11,9 @@ import {
   documents,
   documentVersions,
   files,
+  users,
 } from '@/db/schema'
+import { activeMembershipOn } from '@/features/access/predicates'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
@@ -30,6 +33,61 @@ export function hashPacketToken(token: string): string {
   return createHash('sha256').update(token).digest('base64url')
 }
 
+async function isActiveMemberOf(
+  db: Db,
+  email: string,
+  board: 'planning_board' | 'zba',
+): Promise<boolean> {
+  const rows = await db
+    .select({ id: boardMemberships.id })
+    .from(boardMemberships)
+    .innerJoin(users, eq(users.id, boardMemberships.userId))
+    .where(
+      and(
+        eq(users.email, email),
+        eq(users.isActive, true),
+        eq(boardMemberships.board, board),
+        activeMembershipOn(sql`${boardMemberships.userId}`, sql`${board}`),
+      ),
+    )
+    .limit(1)
+  return rows.length > 0
+}
+
+async function notifyMember(
+  db: Db,
+  mail: MailTransport,
+  actor: Actor,
+  packet: typeof boardPackets.$inferSelect,
+  input: { recipientName: string; recipientEmail: string },
+  signal: AbortSignal,
+): Promise<Result<{ linkId: string | null; viaAccount: boolean }, 'send_failed'>> {
+  const date = formatCivilDate(packet.meetingDate)
+  const text = `Packet ready: sign in at ${env.BASE_URL}/board to read the packet for the ${date} meeting.\n`
+  const sent = await mail.send(
+    {
+      to: input.recipientEmail,
+      subject: `Board packet: ${packet.title}, meeting ${date}`,
+      text,
+      html: `<p>Packet ready: sign in at <a href="${env.BASE_URL}/board">${env.BASE_URL}/board</a> to read the packet for the ${date} meeting.</p>`,
+    },
+    signal,
+  )
+  if (!sent.ok) return err('send_failed')
+  await writeAudit(
+    db,
+    {
+      actor: { kind: 'user', userId: actor.userId },
+      action: 'packet.member.notify',
+      entityType: 'board_packet',
+      entityId: packet.id,
+      after: { recipientEmail: input.recipientEmail },
+    },
+    signal,
+  )
+  return ok({ linkId: null, viaAccount: true })
+}
+
 export async function sendPacketLink(
   db: Db,
   mail: MailTransport,
@@ -43,7 +101,10 @@ export async function sendPacketLink(
   signal: AbortSignal,
   now: Date = new Date(),
 ): Promise<
-  Result<{ linkId: string }, 'forbidden' | 'expiry_too_long' | 'not_found' | 'send_failed'>
+  Result<
+    { linkId: string | null; viaAccount: boolean },
+    'forbidden' | 'expiry_too_long' | 'not_found' | 'send_failed'
+  >
 > {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'packet.manage', signal)
@@ -52,6 +113,10 @@ export async function sendPacketLink(
   if (days > MAX_DAYS) return err('expiry_too_long')
   const [packet] = await db.select().from(boardPackets).where(eq(boardPackets.id, input.packetId))
   if (packet === undefined) return err('not_found')
+  const recipientEmail = input.recipientEmail.trim().toLowerCase()
+  if (await isActiveMemberOf(db, recipientEmail, packet.board)) {
+    return await notifyMember(db, mail, actor, packet, { ...input, recipientEmail }, signal)
+  }
   const token = randomBytes(TOKEN_BYTES).toString('base64url')
   const [created] = await db
     .insert(boardPacketLinks)
@@ -88,7 +153,7 @@ export async function sendPacketLink(
     signal,
   )
   if (!sent.ok) return err('send_failed')
-  return ok({ linkId: created?.id ?? '' })
+  return ok({ linkId: created?.id ?? '', viaAccount: false })
 }
 
 export async function revokePacketLink(

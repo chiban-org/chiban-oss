@@ -23,11 +23,41 @@ function activePartyOf(userId: string, projectIdColumn: PgColumn): SQL {
   )
 }
 
+export const TOWN_TODAY = sql`(now() at time zone coalesce((select time_zone from town_settings limit 1), 'America/New_York'))::date`
+
+export function isBoardMember(actor: Actor): boolean {
+  return actor.roles.includes('board_member')
+}
+
+export function activeMembershipOn(userId: string | SQL, boardColumn: SQL): SQL {
+  return sql`exists (select 1 from board_memberships bm
+    where bm.user_id = ${userId} and bm.board = ${boardColumn}
+      and bm.term_start <= ${TOWN_TODAY} and (bm.term_end is null or bm.term_end >= ${TOWN_TODAY}))`
+}
+
+export function memberCanSeeApplication(userId: string, applicationIdColumn: SQL): SQL {
+  return sql`exists (select 1 from hearings h
+    join board_meetings m on m.id = h.meeting_id and m.status = 'scheduled'
+    join agendas a on a.meeting_id = m.id and a.status = 'published'
+    where h.application_id = ${applicationIdColumn}
+      and ${activeMembershipOn(userId, sql`m.board`)})`
+}
+
+export function memberCanSeeMeeting(userId: string, meetingIdColumn: SQL): SQL {
+  return sql`exists (select 1 from board_meetings m
+    join agendas a on a.meeting_id = m.id and a.status = 'published'
+    where m.id = ${meetingIdColumn} and m.status = 'scheduled'
+      and ${activeMembershipOn(userId, sql`m.board`)})`
+}
+
 export function applicationVisibleTo(actor: Actor | null): SQL {
   if (actor === null) return NOTHING
   if (hasFullRecordAccess(actor)) return EVERYTHING
   const asParty = activePartyOf(actor.userId, applications.projectId)
-  if (!isReviewer(actor)) return asParty
+  const asMember = isBoardMember(actor)
+    ? memberCanSeeApplication(actor.userId, sql`${applications.id}`)
+    : null
+  if (!isReviewer(actor)) return asMember === null ? asParty : sql`(${asParty} or ${asMember})`
   const assigned = exists(
     sqlBuilder
       .select({ one: reviewAssignments.id })
@@ -40,7 +70,9 @@ export function applicationVisibleTo(actor: Actor | null): SQL {
         ),
       ),
   )
-  return sql`(${asParty} or ${assigned})`
+  return asMember === null
+    ? sql`(${asParty} or ${assigned})`
+    : sql`(${asParty} or ${assigned} or ${asMember})`
 }
 
 export function projectVisibleTo(actor: Actor | null): SQL {

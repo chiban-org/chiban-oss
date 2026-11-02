@@ -31,6 +31,7 @@ export const CAPABILITIES = {
   'cutover.import': 'Import open applications from the prior system and reconcile them',
   'board.record':
     'Schedule board meetings and record completeness votes, certifications, and board extensions',
+  'board.manage_members': 'Invite board members and end their terms',
   'abutters.manage':
     'Keep condominium, park, and restriction rosters and draw, confirm, and issue abutter lists',
 } as const

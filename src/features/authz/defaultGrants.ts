@@ -24,6 +24,7 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'report.view',
     'cutover.import',
     'board.record',
+    'board.manage_members',
     'abutters.manage',
   ],
   staff: [
@@ -47,6 +48,7 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'report.view',
     'cutover.import',
     'board.record',
+    'board.manage_members',
     'abutters.manage',
   ],
   inspector: ['regional_impact.determine', 'inspection.schedule', 'inspection.record'],

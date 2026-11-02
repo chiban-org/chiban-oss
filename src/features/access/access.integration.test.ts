@@ -170,7 +170,7 @@ describe('application visibility', () => {
     ).toBe(false)
   })
 
-  it('board member account sees nothing in Phase 1', async () => {
+  it('board member account without a membership sees nothing', async () => {
     const board = await staffActor(handle.db, 'board_member')
     expect(await visibility(board, mineApp)).toEqual({ inList: false, total: 0, canView: false })
   })

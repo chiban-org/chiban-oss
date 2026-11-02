@@ -1,6 +1,11 @@
 import { and, desc, eq, type SQL, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { documents, documentText, documentVersions, type FileRow, files } from '@/db/schema'
+import {
+  isBoardMember,
+  memberCanSeeApplication,
+  memberCanSeeMeeting,
+} from '@/features/access/predicates'
 import { hasFullRecordAccess, isReviewer } from '@/features/access/roles'
 import type { Actor } from '@/features/auth/actor'
 import { err, ok, type Result } from '@/types/result'
@@ -34,11 +39,19 @@ function reviewerClause(userId: string): SQL {
   ))`
 }
 
+function boardMemberClause(userId: string): SQL {
+  return sql`('board' = any(${documents.audiences}) and (
+    (${documents.recordKind} = 'application' and ${memberCanSeeApplication(userId, sql`${documents.recordId}`)})
+    or (${documents.recordKind} = 'meeting' and ${memberCanSeeMeeting(userId, sql`${documents.recordId}`)})
+  ))`
+}
+
 export function documentPrivateAccess(actor: Actor | null): SQL {
   if (actor === null) return NOTHING
   if (hasFullRecordAccess(actor)) return sql`true`
   const clauses = [partyClause(actor.userId)]
   if (isReviewer(actor)) clauses.push(reviewerClause(actor.userId))
+  if (isBoardMember(actor)) clauses.push(boardMemberClause(actor.userId))
   return sql`(${sql.join(clauses, sql` or `)})`
 }
 

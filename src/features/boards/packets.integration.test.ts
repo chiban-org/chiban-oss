@@ -90,7 +90,7 @@ async function link(packetId: string, expiresInDays?: number) {
   )
   if (!sent.ok) throw new Error(sent.error)
   const token = /\/board\/packets\/([A-Za-z0-9_-]+)/.exec(mail.sent.at(-1)?.text ?? '')?.[1] ?? ''
-  return { linkId: sent.value.linkId, token }
+  return { linkId: sent.value.linkId ?? '', token }
 }
 
 describe('board packets', () => {
