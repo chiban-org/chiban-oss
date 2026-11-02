@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { healthAlerts } from '@/db/schema'
+import { healthAlerts, workerState } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
 import { configuredChannelKinds } from '@/features/health/channels/configured'
 import { PAGER_STUB_NOTICE } from '@/features/health/channels/pagerChannel'
@@ -19,6 +19,9 @@ const READINESS_COPY: Record<ReadinessStatus, string> = {
   never_tested: 'Never tested',
 }
 
+const NO_WORKER_COPY =
+  'No background worker has started for this town. Until one runs, no job on this page runs: emails stay queued and exports stay waiting to start.'
+
 const CHANNEL_COPY = { email: 'Email', pager: 'Pager' } as const
 
 export default async function HealthPage() {
@@ -33,11 +36,12 @@ export default async function HealthPage() {
   }
   const now = new Date()
   const kinds = configuredChannelKinds()
-  const [jobs, firing, readiness, town] = await Promise.all([
+  const [jobs, firing, readiness, town, [worker]] = await Promise.all([
     jobHealth(ctx.db, now, ctx.signal),
     ctx.db.select().from(healthAlerts).where(eq(healthAlerts.state, 'firing')),
     alertReadiness(ctx.db, kinds, now, ctx.signal),
     getTownSettings(ctx.db, ctx.signal),
+    ctx.db.select().from(workerState).limit(1),
   ])
   const zone = town.ok ? town.value.timeZone : DEFAULT_TIME_ZONE
   const day = (instant: Date | null) => formatInstantOrNever(instant, zone)
@@ -58,6 +62,11 @@ export default async function HealthPage() {
       </section>
       <section aria-labelledby="jobs-heading">
         <h2 id="jobs-heading">Background jobs</h2>
+        {worker === undefined ? (
+          <p role="alert">{NO_WORKER_COPY}</p>
+        ) : (
+          <p>The background worker last started {day(worker.startedAt)}.</p>
+        )}
         <ul className="m-0 list-none space-y-2 p-0">
           {jobs.map((job) => (
             <li key={job.name} className="rounded-md border p-3">

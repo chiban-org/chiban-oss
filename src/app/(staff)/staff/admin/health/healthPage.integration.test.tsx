@@ -1,7 +1,8 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { healthAlerts } from '@/db/schema'
+import { healthAlerts, workerState } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { recordWorkerStart } from '@/features/health/workerState'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 
@@ -79,6 +80,27 @@ describe('admin health page', () => {
       'Pager alerts are not connected to a live service. They are sent to the address you configured and have only been tested against a local stand-in.',
     )
     expect(html).toContain(PAGER_STUB_NOTICE)
+  })
+
+  it('says plainly when no background worker has ever started', async () => {
+    state.actor = admin
+    await handle.db.delete(workerState)
+    const html = renderToStaticMarkup(await HealthPage())
+    expect(html).toContain(
+      'No background worker has started for this town. Until one runs, no job on this page runs: emails stay queued and exports stay waiting to start.',
+    )
+  })
+
+  it('shows when the background worker last started', async () => {
+    state.actor = admin
+    await recordWorkerStart(
+      handle.db,
+      new Date('2026-11-02T14:00:00Z'),
+      new AbortController().signal,
+    )
+    const html = renderToStaticMarkup(await HealthPage())
+    expect(html).toContain('The background worker last started November 2, 2026')
+    expect(html).not.toContain('No background worker has started')
   })
 
   it('tells staff without the capability they cannot use it', async () => {
