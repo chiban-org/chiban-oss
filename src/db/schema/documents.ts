@@ -27,6 +27,8 @@ export const documents = pgTable(
         'application_snapshot',
         'issued_permit',
         'board_material',
+        'inspection_photo',
+        'certificate_of_occupancy',
       ],
     }).notNull(),
     audiences: text('audiences').array().notNull().default(sql`'{}'::text[]`),

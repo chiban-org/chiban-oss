@@ -15,6 +15,11 @@ function partyClause(userId: string): SQL {
     or (${documents.recordKind} = 'application' and exists (
       select 1 from applications a join project_parties pp on pp.project_id = a.project_id
       where a.id = ${documents.recordId} and pp.user_id = ${userId} and pp.removed_at is null))
+    or (${documents.recordKind} = 'inspection' and exists (
+      select 1 from inspections i
+      join applications a on a.id = i.application_id
+      join project_parties pp on pp.project_id = a.project_id
+      where i.id = ${documents.recordId} and pp.user_id = ${userId} and pp.removed_at is null))
   ))`
 }
 

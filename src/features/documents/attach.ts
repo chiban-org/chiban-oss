@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
-import { applications, documents, documentVersions, projects } from '@/db/schema'
+import { applications, documents, documentVersions, inspections, projects } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import {
@@ -27,7 +27,18 @@ export interface AttachInput {
 
 export function defaultsFor(kind: RecordRef['kind']): { audiences: Audience[]; isPublic: boolean } {
   if (kind === 'parcel') return { audiences: [...AUDIENCES], isPublic: true }
+  if (kind === 'inspection') return { audiences: ['project_parties'], isPublic: false }
   return { audiences: ['project_parties', 'reviewers'], isPublic: false }
+}
+
+export async function applicationOf(tx: Tx, target: RecordRef): Promise<string | null> {
+  if (target.kind === 'application') return target.id
+  if (target.kind !== 'inspection') return null
+  const [row] = await tx
+    .select({ applicationId: inspections.applicationId })
+    .from(inspections)
+    .where(eq(inspections.id, target.id))
+  return row?.applicationId ?? null
 }
 
 export async function parcelOf(tx: Tx, target: RecordRef): Promise<string | null> {
@@ -39,11 +50,12 @@ export async function parcelOf(tx: Tx, target: RecordRef): Promise<string | null
       .where(eq(projects.id, target.id))
     return row?.parcelId ?? null
   }
+  const applicationId = await applicationOf(tx, target)
   const [row] = await tx
     .select({ parcelId: projects.parcelId })
     .from(applications)
     .innerJoin(projects, eq(projects.id, applications.projectId))
-    .where(eq(applications.id, target.id))
+    .where(eq(applications.id, applicationId ?? ''))
   return row?.parcelId ?? null
 }
 
@@ -132,8 +144,9 @@ async function assignInitialSeries(
     await assignSeries(tx, ref, input.seriesKey, 'staff', actor, signal)
     return input.seriesKey
   }
-  if (input.target.kind !== 'application') return null
-  const key = await defaultSeriesForApplication(tx, input.target.id, signal)
+  const applicationId = await applicationOf(tx, input.target)
+  if (applicationId === null) return null
+  const key = await defaultSeriesForApplication(tx, applicationId, signal)
   if (key !== null) await assignSeries(tx, ref, key, 'default', actor, signal)
   return key
 }

@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { and, eq, isNull } from 'drizzle-orm'
 import { env } from '@/config/env'
 import type { Db, DbOrTx, Tx } from '@/db/client'
-import { applications, projectParties, uploadIntents } from '@/db/schema'
+import { applications, inspections, projectParties, uploadIntents } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { hasFullRecordAccess } from '@/features/access/roles'
 import type { Actor } from '@/features/auth/actor'
@@ -11,6 +11,7 @@ import { attachDocument } from '@/features/documents/attach'
 import type { RecordRef } from '@/features/documents/types'
 import { ingestTempObject } from '@/features/files/ingest'
 import { type AllowedType, isAllowedType } from '@/features/files/sniff'
+import { managesAllInspectors } from '@/features/inspections/visibility'
 import { findSeries } from '@/features/records/series'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
@@ -59,12 +60,38 @@ async function projectHasOpenApplication(db: DbOrTx, projectId: string): Promise
   return rows.some((r) => WRITABLE_STATES.includes(r.state))
 }
 
+const PHOTO_WINDOW_MS = 7 * 24 * 60 * MINUTE_MS
+
+async function mayUploadToInspection(
+  db: DbOrTx,
+  actor: Actor,
+  inspectionId: string,
+  signal: AbortSignal,
+  now: Date,
+): Promise<boolean> {
+  if (!(await hasCapability(db, actor.userId, 'inspection.record', signal))) return false
+  const [row] = await db.select().from(inspections).where(eq(inspections.id, inspectionId))
+  if (row === undefined) return false
+  if (row.inspectorUserId !== actor.userId && !managesAllInspectors(actor)) return false
+  if (row.status === 'scheduled') return true
+  const decided = row.status === 'passed' || row.status === 'failed'
+  return (
+    decided &&
+    row.resultRecordedAt !== null &&
+    now.getTime() - row.resultRecordedAt.getTime() <= PHOTO_WINDOW_MS
+  )
+}
+
 export async function mayUploadTo(
   db: DbOrTx,
   actor: Actor,
   target: RecordRef,
   signal: AbortSignal,
+  now: Date = new Date(),
 ): Promise<boolean> {
+  if (target.kind === 'inspection') {
+    return await mayUploadToInspection(db, actor, target.id, signal, now)
+  }
   if (await hasCapability(db, actor.userId, 'document.manage', signal)) return true
   if (target.kind === 'parcel' || hasFullRecordAccess(actor)) return false
   if (target.kind === 'project') {
@@ -91,7 +118,7 @@ export async function createUploadIntent(
   >
 > {
   signal.throwIfAborted()
-  if (!(await mayUploadTo(db, actor, input.target, signal))) return err('forbidden')
+  if (!(await mayUploadTo(db, actor, input.target, signal, now))) return err('forbidden')
   if (!isAllowedType(input.contentType)) return err('type_not_allowed')
   if (input.sizeBytes > env.MAX_UPLOAD_BYTES) return err('too_large')
   if (input.sizeBytes < 1) return err('too_large')
@@ -125,6 +152,11 @@ export async function createUploadIntent(
     url,
     headers: { 'content-type': input.contentType },
   })
+}
+
+function docKindFor(kind: RecordRef['kind']): 'parcel_file' | 'inspection_photo' | 'attachment' {
+  if (kind === 'parcel') return 'parcel_file'
+  return kind === 'inspection' ? 'inspection_photo' : 'attachment'
 }
 
 export type FinalizeError =
@@ -191,7 +223,7 @@ export async function finalizeUpload(
   if (!ingested.ok) return err(ingested.error)
   const { intent, sha256 } = ingested.value
   const target = { kind: intent.targetKind, id: intent.targetId } as RecordRef
-  if (!(await mayUploadTo(db, actor, target, signal))) return err('forbidden')
+  if (!(await mayUploadTo(db, actor, target, signal, now))) return err('forbidden')
   return await transactionResult<{ documentId: string; versionId: string }, FinalizeError>(
     db,
     async (tx) => {
@@ -202,7 +234,7 @@ export async function finalizeUpload(
         {
           target,
           title: intent.title,
-          docKind: target.kind === 'parcel' ? 'parcel_file' : 'attachment',
+          docKind: docKindFor(target.kind),
           ...(intent.seriesKey === null ? {} : { seriesKey: intent.seriesKey }),
           file: { sha256, filename: intent.filename, contentType: intent.contentType },
         },

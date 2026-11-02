@@ -18,6 +18,8 @@ const KIND_LABEL = {
   application_snapshot: 'Application snapshot',
   issued_permit: 'Issued permit',
   board_material: 'Board material',
+  inspection_photo: 'Inspection photo',
+  certificate_of_occupancy: 'Certificate of occupancy',
 } as const
 
 export async function summarizeDocuments(
