@@ -14,6 +14,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { lockCase } from '@/features/enforcement/cases'
 import { stayFor } from '@/features/enforcement/stay'
 import { fineDueCents } from '@/features/ledger/fineDue'
 import { loadPack } from '@/features/packs/loadPack'
@@ -115,6 +116,7 @@ export async function recordFine(
   const penalty = penaltyRuleFor(value.ruleKey)
   if (value.ruleKey !== undefined && penalty === null) return err('invalid')
   return await transactionResult(db, async (tx) => {
+    await lockCase(tx, value.caseId)
     if (finesNeedJudgment(penalty) && !(await judgmentSupports(tx, value))) {
       return err('judgment_required')
     }

@@ -8,7 +8,7 @@ import {
   ledgerEntries,
 } from '@/db/schema'
 import { recordCounterPayment } from '@/features/counter/counterPayment'
-import { recordEnforcementAppeal } from '@/features/enforcement/appeals'
+import { recordEnforcementAppeal, resolveEnforcementAppeal } from '@/features/enforcement/appeals'
 import { fineBalance, recordFine } from '@/features/enforcement/fines'
 import { ledgerEntryVisibleTo } from '@/features/ledger/visibility'
 import { cashReceiptsReport } from '@/features/reports/cashReceipts'
@@ -21,6 +21,7 @@ import {
   judgmentFor,
   setupEnforcementWorld,
 } from '@/test/enforcementFixtures'
+import { blockedOrSettled, holdOpen } from '@/test/lockWait'
 import { makeTestStore } from '@/test/minio'
 import { staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
@@ -154,6 +155,37 @@ describe('fines on the ledger', () => {
       signal,
     )
     expect(await fine(step)).toEqual({ ok: false, error: 'stayed' })
+  })
+
+  it('a fine waits for an appeal resolution that annuls the order, then needs a judgment', async () => {
+    const step = await judgmentFor(handle.db, store, world, order)
+    const appeal = await recordEnforcementAppeal(
+      handle.db,
+      world.staff,
+      {
+        caseId: order.caseId,
+        targetKind: 'order',
+        targetId: order.orderId,
+        filedOn: d('2027-07-01'),
+        appellantName: 'Pat Owner',
+      },
+      signal,
+    )
+    if (!appeal.ok) throw new Error('appeal')
+    const held = await holdOpen(handle.db, async (tx) => {
+      const resolved = await resolveEnforcementAppeal(
+        tx,
+        world.staff,
+        { appealId: appeal.value.appealId, resolvedOn: d('2027-07-10'), outcome: 'annulled' },
+        signal,
+      )
+      if (!resolved.ok) throw new Error(resolved.error)
+    })
+    const recording = fine(step)
+    const waited = await blockedOrSettled(handle.db, recording)
+    await held.commit()
+    expect(waited).toBe('blocked')
+    expect(await recording).toEqual({ ok: false, error: 'judgment_required' })
   })
 
   it('staff without fine.record is forbidden', async () => {

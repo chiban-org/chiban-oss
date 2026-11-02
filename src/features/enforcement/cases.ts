@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull } from 'drizzle-orm'
 import { z } from 'zod'
-import type { Db } from '@/db/client'
+import type { Db, Tx } from '@/db/client'
 import { complaints, type EnforcementStatus, enforcementCases } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -29,6 +29,14 @@ const OpenCaseSchema = z.object({
 })
 
 export type OpenCaseInput = z.input<typeof OpenCaseSchema>
+
+export async function lockCase(tx: Tx, caseId: string): Promise<void> {
+  await tx
+    .select({ id: enforcementCases.id })
+    .from(enforcementCases)
+    .where(eq(enforcementCases.id, caseId))
+    .for('update')
+}
 
 export async function openCase(
   db: Db,

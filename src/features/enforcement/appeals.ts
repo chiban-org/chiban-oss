@@ -16,6 +16,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { lockCase } from '@/features/enforcement/cases'
 import { err, ok, type Result } from '@/types/result'
 
 const AppealSchema = z.object({
@@ -107,6 +108,12 @@ export async function resolveEnforcementAppeal(
   if (!parsed.success) return err('invalid')
   const value = parsed.data
   return await transactionResult(db, async (tx) => {
+    const [target] = await tx
+      .select({ caseId: enforcementAppeals.caseId })
+      .from(enforcementAppeals)
+      .where(eq(enforcementAppeals.id, value.appealId))
+    if (target === undefined) return err('not_found')
+    await lockCase(tx, target.caseId)
     const [appeal] = await tx
       .select()
       .from(enforcementAppeals)
