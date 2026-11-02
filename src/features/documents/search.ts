@@ -105,7 +105,7 @@ export async function searchPublicDocuments(
   const q = input.q.trim()
   if (q.length < MIN_QUERY_LENGTH) return []
   const limit = clampLimit(input.limit)
-  const result = await runSearch(db, PUBLIC_VERSION, sql`documents.is_public`, q, limit, null)
+  const result = await runSearch(db, PUBLIC_VERSION, documentVisibleTo(null), q, limit, null)
   return result.rows.slice(0, limit).map(toPublicHit)
 }
 

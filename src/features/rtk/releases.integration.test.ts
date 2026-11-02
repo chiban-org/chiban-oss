@@ -303,6 +303,20 @@ describe('creating a release', () => {
     expect(text).toContain('Records released')
   })
 
+  it('a release dated in the future or before the request was received is refused', async () => {
+    const doc = await releasable()
+    const items = [{ documentId: doc.documentId, approvalId: doc.approvalId }]
+    expect(await release(items, { releasedOn: d('2027-07-20') })).toEqual({
+      ok: false,
+      error: 'future_date',
+    })
+    expect(await release(items, { releasedOn: d('2027-07-01') })).toEqual({
+      ok: false,
+      error: 'before_received',
+    })
+    expect(await handle.db.select().from(rtkReleases)).toHaveLength(0)
+  })
+
   it('a reviewer cannot release', async () => {
     const doc = await releasable()
     expect(

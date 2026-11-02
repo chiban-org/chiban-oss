@@ -25,7 +25,9 @@ import type { MailTransport } from '@/features/mail/transport'
 import { buildResponseLetter } from '@/features/rtk/responseLetter'
 import { RTK_LETTER_SERIES } from '@/features/rtk/responses'
 import type { ObjectStore } from '@/features/storage/objectStore'
+import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
+import { type CivilDate, daysBetween } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 const TOKEN_BYTES = 32
@@ -52,6 +54,8 @@ export type ReleaseError =
   | 'invalid'
   | 'not_found'
   | 'not_open'
+  | 'future_date'
+  | 'before_received'
   | 'approval_missing'
   | 'approval_revoked'
   | 'redaction_not_cited'
@@ -189,6 +193,11 @@ export async function createRelease(
         .for('update')
       if (request === undefined) return err('not_found')
       if (!OPEN_STATUSES.includes(request.status)) return err('not_open')
+      if (daysBetween(await townToday(tx, now, signal), value.releasedOn) > 0)
+        return err('future_date')
+      if (daysBetween(request.receivedOn as CivilDate, value.releasedOn) < 0) {
+        return err('before_received')
+      }
       const items = await resolveItems(tx, value.requestId, value.items)
       if (!items.ok) return err(items.error)
       const [last] = await tx
