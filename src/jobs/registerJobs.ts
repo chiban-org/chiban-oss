@@ -6,6 +6,7 @@ import { clocksDailyJob } from './clocksDaily'
 import { cronForInterval } from './cron'
 import { type JobDefinition, runJob } from './defineJob'
 import { expireAliasOverridesJob } from './expireAliasOverrides'
+import { exportsBuildJob, exportsPruneJob } from './exportsBuild'
 import { gisRefreshLayerJob, gisScheduleRefreshesJob } from './gisRefreshLayer'
 import { heartbeatJob } from './heartbeat'
 import { notificationsSendJob } from './notificationsSend'
@@ -48,4 +49,6 @@ export async function registerAllJobs(boss: PgBoss, db: Db): Promise<void> {
   await registerJob(boss, db, notificationsSendJob)
   await registerJob(boss, db, calendarPushJob)
   await registerJob(boss, db, calendarSweepJob)
+  await registerJob(boss, db, exportsBuildJob)
+  await registerJob(boss, db, exportsPruneJob)
 }

@@ -1,0 +1,100 @@
+import { createHash } from 'node:crypto'
+import { PassThrough } from 'node:stream'
+import { eq } from 'drizzle-orm'
+import { JOB_NAMES } from '@/constants/jobNames'
+import type { Db } from '@/db/client'
+import { exportsTable } from '@/db/schema'
+import { manifestBytes } from '@/features/export/manifest'
+import { pruneExpiredExports } from '@/features/export/pruneExports'
+import { createTarSink } from '@/features/export/tarSink'
+import { writeArchive } from '@/features/export/writeArchive'
+import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
+import { townToday } from '@/features/town/today'
+import { ok } from '@/types/result'
+import { defineJob, failKeepingWrites } from './defineJob'
+
+const DAY_MS = 24 * 60 * 60 * 1000
+const RETENTION_DAYS = 7
+
+export function exportObjectKey(exportId: string, today: string): string {
+  return `exports/${exportId}/chiban-export-${today}.tar`
+}
+
+export async function buildBusinessExport(
+  db: Db,
+  store: ObjectStore,
+  exportId: string,
+  signal: AbortSignal,
+): Promise<{ ok: true } | { ok: false; error: string }> {
+  const now = new Date()
+  const key = exportObjectKey(exportId, await townToday(db, now, signal))
+  await db
+    .update(exportsTable)
+    .set({ status: 'running', storageKey: key })
+    .where(eq(exportsTable.id, exportId))
+  const tar = createTarSink()
+  const counted = new PassThrough()
+  let size = 0
+  counted.on('data', (chunk: Buffer) => {
+    size += chunk.length
+  })
+  tar.stream.pipe(counted)
+  const uploading = store.upload(key, counted, 'application/x-tar', signal)
+  try {
+    const manifest = await writeArchive(
+      db,
+      store,
+      { exportId, kind: 'business', base: null },
+      tar.sink,
+      signal,
+    )
+    tar.finish()
+    await uploading
+    await db
+      .update(exportsTable)
+      .set({
+        status: 'ready',
+        sizeBytes: size,
+        manifest,
+        manifestSha256: createHash('sha256').update(manifestBytes(manifest)).digest('hex'),
+        finishedAt: new Date(),
+        expiresAt: new Date(now.getTime() + RETENTION_DAYS * DAY_MS),
+      })
+      .where(eq(exportsTable.id, exportId))
+    return { ok: true }
+  } catch (e) {
+    const message = e instanceof Error ? e.message : String(e)
+    tar.stream.destroy()
+    await uploading.catch(() => undefined)
+    await store.delete(key, signal).catch(() => undefined)
+    await db
+      .update(exportsTable)
+      .set({ status: 'failed', error: message, finishedAt: new Date() })
+      .where(eq(exportsTable.id, exportId))
+    return { ok: false, error: message }
+  }
+}
+
+export const exportsBuildJob = defineJob<{ exportId: string }>({
+  name: JOB_NAMES.EXPORTS_BUILD,
+  dedupKey: (p) => `exports.build:${p.exportId}`,
+  handler: async (payload, ctx) => {
+    const result = await buildBusinessExport(
+      ctx.root,
+      getObjectStore(),
+      payload.exportId,
+      ctx.signal,
+    )
+    return result.ok ? ok(undefined) : failKeepingWrites(result.error)
+  },
+})
+
+export const exportsPruneJob = defineJob<{ at?: string }>({
+  name: JOB_NAMES.EXPORTS_PRUNE,
+  intervalSeconds: DAY_MS / 1000,
+  dedupKey: (p) => `exports.prune:${(p.at ?? new Date().toISOString()).slice(0, 10)}`,
+  handler: async (_payload, ctx) => {
+    await pruneExpiredExports(ctx.root, getObjectStore(), new Date(), ctx.signal)
+    return ok(undefined)
+  },
+})

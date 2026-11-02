@@ -4,5 +4,6 @@ export const EXCLUDED_TABLES: Record<string, string> = {
   upload_intents: 'temporary upload bookkeeping for files not yet ingested',
   simulated_processor_objects: 'state of the simulated card processor, not a town record',
   job_runs: 'operational state of the job scheduler',
+  exports: 'export bookkeeping',
   job_effects: 'job de-duplication bookkeeping',
 }

@@ -9,6 +9,8 @@ export const JOB_NAMES = {
   NOTIFICATIONS_SEND: 'notifications.send',
   CALENDAR_PUSH: 'calendar.push',
   CALENDAR_SWEEP: 'calendar.sweep',
+  EXPORTS_BUILD: 'exports.build',
+  EXPORTS_PRUNE: 'exports.prune',
 } as const
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES]

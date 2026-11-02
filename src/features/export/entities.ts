@@ -7,7 +7,7 @@ export interface ExportEntity {
   name: string
   table: PgTable
   file: string
-  importMode: 'insert' | 'upsert'
+  importMode: 'insert' | 'replace'
   orderBy: string[]
   refs: { column: string; entity: string }[]
   polyRefs: { kindColumn: string; idColumn: string; map: Record<string, string> }[]
@@ -83,7 +83,7 @@ const SPECS: Spec[] = [
   { table: t.files },
   { table: t.gateOverrides },
   { table: t.gisFeatures },
-  { table: t.gisLayers, importMode: 'upsert' },
+  { table: t.gisLayers, importMode: 'replace' },
   { table: t.importExceptions },
   { table: t.importRuns },
   { table: t.inspectionItemResults },
@@ -104,7 +104,7 @@ const SPECS: Spec[] = [
   { table: t.licenseChecks },
   { table: t.notificationOutbox },
   { table: t.parcelAliases },
-  { table: t.parcelIdFormats, importMode: 'upsert' },
+  { table: t.parcelIdFormats, importMode: 'replace' },
   { table: t.parcelLineageEvents },
   { table: t.parcelLineageLinks },
   { table: t.parcelRecordCarryForwards },
@@ -149,9 +149,9 @@ const SPECS: Spec[] = [
   },
   { table: t.reviewAssignments },
   { table: t.reviewComments },
-  { table: t.roleCapabilities, importMode: 'upsert' },
+  { table: t.roleCapabilities, importMode: 'replace' },
   { table: t.ruleTransitionsApplied },
-  { table: t.townSettings, importMode: 'upsert' },
+  { table: t.townSettings, importMode: 'replace' },
   { table: t.userRoles },
   {
     table: t.users,

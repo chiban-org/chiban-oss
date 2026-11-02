@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import { Readable } from 'node:stream'
 import { describe, expect, it } from 'vitest'
 import { ensureBucket } from '@/features/storage/objectStore'
 import { makeTestStore } from '@/test/minio'
@@ -119,5 +120,21 @@ describe('object store', () => {
     const { store } = await makeTestStore()
     await expect(ensureBucket(store, AbortSignal.timeout(10_000))).resolves.toBeUndefined()
     await expect(ensureBucket(store, AbortSignal.timeout(10_000))).resolves.toBeUndefined()
+  })
+
+  it('upload streams a body larger than one part and list pages through every key', async () => {
+    const { store } = await makeTestStore()
+    const signal = AbortSignal.timeout(60_000)
+    const big = Buffer.alloc(12 * 1024 * 1024, 7)
+    await store.upload('big/object', Readable.from([big]), 'application/octet-stream', signal)
+    const head = await store.head('big/object', signal)
+    expect(head).toMatchObject({ ok: true, value: { size: big.length } })
+    for (let i = 0; i < 1100; i += 1) {
+      await store.putBytes(`many/${String(i).padStart(4, '0')}`, FIVE_BYTES, 'text/plain', signal)
+    }
+    const keys = await store.list('many/', signal)
+    expect(keys).toHaveLength(1100)
+    expect(keys[0]).toBe('many/0000')
+    expect(await store.list('big/', signal)).toEqual(['big/object'])
   })
 })

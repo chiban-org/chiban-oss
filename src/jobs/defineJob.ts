@@ -7,6 +7,7 @@ import { requireBoss } from './requireBoss'
 
 export interface JobContext {
   db: Tx
+  root: Db
   signal: AbortSignal
 }
 
@@ -96,7 +97,7 @@ async function runClaimed<P>(
         .onConflictDoNothing()
         .returning({ key: jobEffects.dedupKey })
       if (claimed.length === 0) return ok(undefined)
-      const outcome = await execute(job, payload, { db: tx, signal })
+      const outcome = await execute(job, payload, { db: tx, root: db, signal })
       if (isCommittedFailure(outcome)) {
         await tx
           .delete(jobEffects)

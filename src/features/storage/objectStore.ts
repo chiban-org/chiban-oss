@@ -1,3 +1,4 @@
+import type { Readable } from 'node:stream'
 import {
   CopyObjectCommand,
   CreateBucketCommand,
@@ -5,9 +6,11 @@ import {
   GetObjectCommand,
   HeadBucketCommand,
   HeadObjectCommand,
+  ListObjectsV2Command,
   PutObjectCommand,
   S3Client,
 } from '@aws-sdk/client-s3'
+import { Upload } from '@aws-sdk/lib-storage'
 import { getSignedUrl } from '@aws-sdk/s3-request-presigner'
 import { env } from '@/config/env'
 import { err, ok, type Result } from '@/types/result'
@@ -48,6 +51,8 @@ export interface ObjectStore {
     signal: AbortSignal,
   ): Promise<Result<ReadableStream<Uint8Array>, 'not_found'>>
   putBytes(key: string, bytes: Uint8Array, contentType: string, signal: AbortSignal): Promise<void>
+  upload(key: string, body: Readable, contentType: string, signal: AbortSignal): Promise<void>
+  list(prefix: string, signal: AbortSignal): Promise<string[]>
   copy(
     fromKey: string,
     toKey: string,
@@ -143,6 +148,32 @@ export function createObjectStore(config: ObjectStoreConfig): ObjectStore {
         new PutObjectCommand({ Bucket, Key: key, Body: bytes, ContentType: contentType }),
         { abortSignal: signal },
       )
+    },
+    async upload(key, body, contentType, signal) {
+      const upload = new Upload({
+        client: server,
+        params: { Bucket, Key: key, Body: body, ContentType: contentType },
+      })
+      const abort = () => void upload.abort()
+      signal.addEventListener('abort', abort, { once: true })
+      try {
+        await upload.done()
+      } finally {
+        signal.removeEventListener('abort', abort)
+      }
+    },
+    async list(prefix, signal) {
+      const keys: string[] = []
+      let token: string | undefined
+      do {
+        const out = await server.send(
+          new ListObjectsV2Command({ Bucket, Prefix: prefix, ContinuationToken: token }),
+          { abortSignal: signal },
+        )
+        for (const item of out.Contents ?? []) if (item.Key !== undefined) keys.push(item.Key)
+        token = out.IsTruncated === true ? out.NextContinuationToken : undefined
+      } while (token !== undefined)
+      return keys
     },
     async copy(fromKey, toKey, signal, options) {
       await server.send(

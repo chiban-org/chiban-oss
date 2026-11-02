@@ -10,7 +10,7 @@ import {
 } from '@/features/export/entities'
 import { EXCLUDED_TABLES } from '@/features/export/excluded'
 
-const allTables = Object.values(schema)
+const allTables = (Object.values(schema) as unknown[])
   .filter((v): v is PgTable => is(v, PgTable))
   .map((t) => ({ table: t, config: getTableConfig(t) }))
 

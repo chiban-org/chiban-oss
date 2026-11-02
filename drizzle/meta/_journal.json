@@ -323,6 +323,13 @@
       "when": 1793606091400,
       "tag": "0045_workable_northstar",
       "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1793609262733,
+      "tag": "0046_exports",
+      "breakpoints": true
     }
   ]
 }
