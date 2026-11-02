@@ -8,7 +8,11 @@ import {
   simulatedProcessorObjects,
 } from '@/db/schema'
 import { feeBalance } from '@/features/ledger/feeBalance'
-import { paymentReturnStatus } from '@/features/payments/paymentReturn'
+import {
+  attemptReceiptPdfResponse,
+  paymentReturnDetails,
+  paymentReturnStatus,
+} from '@/features/payments/paymentReturn'
 import { loadDevCheckout, resolveDevCheckout } from '@/features/payments/simulatedCheckout'
 import {
   checkWithProcessor,
@@ -112,6 +116,29 @@ describe('online payment', () => {
     const { attempt } = await startOnline()
     expect(await paymentReturnStatus(handle.db, attempt?.id ?? '', signal)).toBe('processing')
     expect(await entries()).toHaveLength(0)
+  })
+
+  it('the return details give the payer the amount, the application, the simulated flag, and a receipt', async () => {
+    const { attempt } = await startOnline()
+    await resolveDevCheckout(handle.db, attempt?.processorObjectId ?? '', 'approve', signal, deps)
+    const details = await paymentReturnDetails(handle.db, attempt?.id ?? '', signal)
+    expect(details).toMatchObject({
+      status: 'received',
+      simulated: true,
+      amountCents: 4635,
+      applicationNumbers: [expect.stringMatching(/^EL-/)],
+    })
+    expect(details.receiptId).not.toBeNull()
+    const pdf = await attemptReceiptPdfResponse(handle.db, attempt?.id ?? '', signal)
+    expect(pdf.status).toBe(200)
+    expect(pdf.contentType).toBe('application/pdf')
+  })
+
+  it('no receipt is offered while the attempt is pending or declined', async () => {
+    const { attempt } = await startOnline()
+    const pending = await paymentReturnDetails(handle.db, attempt?.id ?? '', signal)
+    expect(pending).toMatchObject({ status: 'processing', receiptId: null })
+    expect((await attemptReceiptPdfResponse(handle.db, attempt?.id ?? '', signal)).status).toBe(404)
   })
 
   it('the simulated receipt says no card was charged', async () => {
