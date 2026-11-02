@@ -6,6 +6,8 @@ import type { Db } from '@/db/client'
 import * as schema from '@/db/schema'
 import type { TestPgConnection } from '../../vitest.globalSetup.ts'
 
+const ADMIN_SHUTDOWN = '57P01'
+
 export interface TestDb {
   db: Db
   pool: Pool
@@ -41,6 +43,9 @@ export async function makeTestDb(): Promise<TestDb> {
 
   const url = connectionUri(pg, name)
   const pool = new Pool({ connectionString: url, max: 4 })
+  pool.on('error', (e: Error & { code?: string }) => {
+    if (e.code !== ADMIN_SHUTDOWN) console.error(e)
+  })
   const db = drizzle(pool, { schema })
 
   return {
