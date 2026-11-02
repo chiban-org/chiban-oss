@@ -1,3 +1,4 @@
+import path from 'node:path'
 import { sql } from 'drizzle-orm'
 import type { Role } from '@/constants/roles'
 import type { Db } from '@/db/client'
@@ -5,11 +6,21 @@ import { townSettings, userRoles, users } from '@/db/schema'
 import { seedDefaultGrants } from '@/features/authz/defaultGrants'
 
 import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { seedCama } from '@/features/demo/seedCama'
+import { seedCutover } from '@/features/demo/seedCutover'
+import { seedBusinessExport, seedExportTarget } from '@/features/demo/seedExports'
+import { seedAcknowledgedEmailTest, seedStaleJobAlert } from '@/features/demo/seedHealth'
+import { seedHistorical } from '@/features/demo/seedHistorical'
 import { type SeedInspectionsDeps, seedInspections } from '@/features/demo/seedInspections'
+import { demoOcrConverter, seedMigration } from '@/features/demo/seedMigration'
 import { seedParcels } from '@/features/demo/seedParcels'
 import { seedPayments } from '@/features/demo/seedPayments'
+import { actorFor } from '@/features/demo/seedPermitSupport'
 import { seedPermits } from '@/features/demo/seedPermits'
 import { type SeedRecordsDeps, seedRecords } from '@/features/demo/seedRecords'
+import { createMemoryTransport } from '@/features/mail/memoryTransport'
+import type { OcrConverter } from '@/features/migration/ocrmypdf'
+import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 
 export { DEMO_DOMAIN }
 
@@ -57,6 +68,24 @@ export const DEMO_USERS: readonly DemoUser[] = [
   },
 ]
 
+export interface SeedOperationsDeps {
+  store?: ObjectStore
+  exportDir?: string
+  legacySourceDir?: string
+  converter?: OcrConverter
+  mail?: ReturnType<typeof createMemoryTransport>
+  now?: Date
+}
+
+export interface SeedDemoDeps {
+  records?: SeedRecordsDeps
+  inspections?: SeedInspectionsDeps
+  operations?: SeedOperationsDeps
+}
+
+const DEFAULT_EXPORT_DIR = './.data/exports'
+const DEFAULT_LEGACY_DIR = './.data/legacy-source'
+
 export interface SeedReport {
   townConfigured: boolean
   usersCreated: number
@@ -66,12 +95,13 @@ export interface SeedReport {
   paymentsSeeded: boolean
   recordsSeeded: boolean
   inspectionsSeeded: boolean
+  operationsSeeded: boolean
 }
 
 export async function seedDemo(
   db: Db,
   signal: AbortSignal,
-  deps: { records?: SeedRecordsDeps; inspections?: SeedInspectionsDeps } = {},
+  deps: SeedDemoDeps = {},
 ): Promise<SeedReport> {
   signal.throwIfAborted()
   const base = await db.transaction(async (tx) => {
@@ -118,6 +148,7 @@ export async function seedDemo(
   const paymentsSeeded = await seedPayments(db, signal)
   const recordsSeeded = await seedRecords(db, signal, deps.records)
   const inspectionsSeeded = await seedInspections(db, signal, deps.inspections)
+  const operationsSeeded = await seedOperations(db, signal, deps.operations ?? {})
   return {
     ...base,
     parcelsSeeded: seeded.imported,
@@ -125,5 +156,35 @@ export async function seedDemo(
     paymentsSeeded,
     recordsSeeded,
     inspectionsSeeded,
+    operationsSeeded,
   }
+}
+
+async function seedOperations(
+  db: Db,
+  signal: AbortSignal,
+  deps: SeedOperationsDeps,
+): Promise<boolean> {
+  const admin = await actorFor(db, 'admin', signal)
+  const staff = await actorFor(db, 'staff', signal)
+  const now = deps.now ?? new Date()
+  const store = deps.store ?? getObjectStore()
+  const steps = [
+    await seedCama(db, admin, signal),
+    await seedCutover(db, staff, signal),
+    await seedHistorical(db, admin, signal),
+    await seedMigration(
+      db,
+      store,
+      deps.converter ?? demoOcrConverter,
+      admin,
+      path.resolve(deps.legacySourceDir ?? DEFAULT_LEGACY_DIR),
+      signal,
+    ),
+    await seedStaleJobAlert(db, now, signal),
+    await seedAcknowledgedEmailTest(db, deps.mail ?? createMemoryTransport(), now, signal),
+    await seedExportTarget(db, admin, path.resolve(deps.exportDir ?? DEFAULT_EXPORT_DIR), signal),
+    await seedBusinessExport(db, store, admin, signal),
+  ]
+  return steps.some(Boolean)
 }

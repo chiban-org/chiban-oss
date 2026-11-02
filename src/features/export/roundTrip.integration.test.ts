@@ -6,48 +6,21 @@ import { files, parcels } from '@/db/schema'
 import { compareTowns } from '@/features/export/compareTowns'
 import { EXPORT_ENTITIES } from '@/features/export/entities'
 import { importArchive } from '@/features/export/importArchive'
-import { tarSource } from '@/features/export/readArchive'
 import { createTarSink } from '@/features/export/tarSink'
-import { writeArchive } from '@/features/export/writeArchive'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { seedExportTown } from '@/test/exportFixtures'
-import { makeTestStore } from '@/test/minio'
+import { buildTar, freshTarget, sourceOf } from '@/test/roundTrip'
 
 const signal = new AbortController().signal
 const sourceStore = getObjectStore()
 let source: TestDb
 let tar: Buffer
 
-async function buildTar(db: TestDb['db']): Promise<Buffer> {
-  const out = createTarSink()
-  const chunks: Buffer[] = []
-  out.stream.on('data', (c: Buffer) => chunks.push(c))
-  const finished = new Promise<void>((resolve) => out.stream.on('end', () => resolve()))
-  await writeArchive(
-    db,
-    sourceStore,
-    { exportId: crypto.randomUUID(), kind: 'business', base: null },
-    out.sink,
-    signal,
-  )
-  out.finish()
-  await finished
-  return Buffer.concat(chunks)
-}
-
-const sourceOf = (bytes: Buffer) => tarSource(Readable.from([bytes]))
-
-async function freshTarget() {
-  const target = await makeTestDb()
-  const { store } = await makeTestStore()
-  return { target, store }
-}
-
 beforeAll(async () => {
   source = await makeTestDb()
   await seedExportTown(source.db, signal)
-  tar = await buildTar(source.db)
+  tar = await buildTar(source.db, sourceStore, signal)
 }, 300_000)
 afterAll(async () => {
   await source.drop()

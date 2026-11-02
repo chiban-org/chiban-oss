@@ -1,42 +1,9 @@
 import { sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { seedDemo } from '@/features/demo/seedDemo'
-import { createMemoryTransport } from '@/features/mail/memoryTransport'
-
-const SEED_NOW = new Date('2027-06-01T16:00:00Z')
+import { demoSeedDeps } from '@/test/demoSeedDeps'
 
 const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
-  {
-    table: 'export_targets',
-    statement: sql`insert into export_targets (kind, name, settings, credentials_enc, day_of_month)
-      values ('local_fs', 'Export coverage', '{"root":"/srv/chiban-export"}'::jsonb, 'secret-never-exported', 5)`,
-  },
-  {
-    table: 'cutover_rows',
-    statement: sql`insert into cutover_rows (legacy_number, application_id, imported_by, source_sha256)
-      select 'LEGACY-EXPORT', id, gen_random_uuid(), 'abc' from applications limit 1`,
-  },
-  {
-    table: 'cutover_reconciliations',
-    statement: sql`insert into cutover_reconciliations (list_sha256, report, created_by)
-      values ('abc', '{"inListAndImported":[],"inListNotImported":[],"importedNotInList":[],"documentCounts":{}}'::jsonb, gen_random_uuid())`,
-  },
-  {
-    table: 'historical_records',
-    statement: sql`insert into historical_records (record_type, number, recorded_on, description, values, source_file, source_sha256, source_sheet, source_row, imported_by)
-      values ('Building', 'B-EXPORT', '1987-03-04', 'Coverage row', '{"Contractor":"Coverage"}'::jsonb, 'ledger.xlsx', 'abc', 'Permits', 3, gen_random_uuid())`,
-  },
-  {
-    table: 'migration_batches',
-    statement: sql`insert into migration_batches (name, source_root, series_key, folder_pattern, id_format, status, created_by)
-      values ('Export coverage', '/srv/legacy', 'nh.rs.correspondence_administrative', '^Map (?<map>\\d+)', 'cama15', 'staged', gen_random_uuid())`,
-  },
-  {
-    table: 'migration_items',
-    statement: sql`insert into migration_items (batch_id, source_path, size_bytes, sha256, folder_key, outcome, document_id)
-      select b.id, 'Map 7/scan.pdf', 12, 'abc', '007000000000000', 'imported', (select id from documents limit 1)
-      from migration_batches b limit 1`,
-  },
   {
     table: 'application_conditions',
     statement: sql`insert into application_conditions (application_id, code, text_snapshot, blocks_issuance, changed_by)
@@ -105,9 +72,6 @@ export async function topUpEmptyEntities(db: Db): Promise<void> {
 }
 
 export async function seedExportTown(db: Db, signal: AbortSignal): Promise<void> {
-  await seedDemo(db, signal, {
-    records: { mail: createMemoryTransport() },
-    inspections: { now: SEED_NOW },
-  })
+  await seedDemo(db, signal, await demoSeedDeps())
   await topUpEmptyEntities(db)
 }

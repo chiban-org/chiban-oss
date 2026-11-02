@@ -1,20 +1,29 @@
-import { sql } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ROLES } from '@/constants/roles'
 import {
+  alertTests,
   appeals,
   applications,
   boardPacketLinks,
   certificatesOfOccupancy,
   clocks,
   codeEditionRecords,
+  cutoverReconciliations,
+  cutoverRows,
   documents,
   documentVersions,
+  exportsTable,
+  exportTargets,
+  gisLayers,
+  healthAlerts,
+  historicalRecords,
   importExceptions,
   inspections,
   inspectorCalendars,
   ledgerEntries,
   legalHolds,
+  migrationBatches,
   parcels,
   paymentAttempts,
   reviewComments,
@@ -23,14 +32,16 @@ import {
 import { getStaffApplicationView } from '@/features/applications/staffApplicationView'
 import type { Actor } from '@/features/auth/actor'
 import { loadActor } from '@/features/auth/actor'
+import { hasCapability } from '@/features/authz/capabilities'
 import { listClockAdjustments } from '@/features/clocks/clockOverrides'
 import { listContractorProjects } from '@/features/contractors/dashboard'
-import { DEMO_USERS, seedDemo } from '@/features/demo/seedDemo'
+import type { ReconciliationReport } from '@/features/cutover/reconcile'
+import { DEMO_USERS, type SeedDemoDeps, seedDemo } from '@/features/demo/seedDemo'
 import { DEMO_SEED_NOW } from '@/features/demo/seedParcels'
 import { listFeeOverrides } from '@/features/fees/feeOverrides'
 import { loadScheduleBoard } from '@/features/inspections/boardData'
 import { getDayList } from '@/features/inspections/dayList'
-import { createMemoryTransport } from '@/features/mail/memoryTransport'
+import type { MigrationReport } from '@/features/migration/types'
 import { listAliasOverrides } from '@/features/parcels/aliasOverrides'
 import { getPublicParcelView } from '@/features/parcels/publicParcelView'
 import { getStaffParcelView } from '@/features/parcels/staffParcelView'
@@ -38,18 +49,16 @@ import { listUnresolvedLinks } from '@/features/parcels/unresolvedList'
 import { listPreservationIncomplete } from '@/features/preservation/preserve'
 import { getTownSettings } from '@/features/town/settings'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { DEMO_SEED_INSTANT, demoSeedDeps } from '@/test/demoSeedDeps'
 import type { CivilDate } from '@/types/civilDate'
 
 let handle: TestDb
 const signal = new AbortController().signal
-const SEED_NOW = new Date('2027-06-01T16:00:00Z')
-const SEED_DEPS = {
-  records: { mail: createMemoryTransport() },
-  inspections: { now: SEED_NOW },
-}
+let SEED_DEPS: SeedDemoDeps
 
 beforeAll(async () => {
   handle = await makeTestDb()
+  SEED_DEPS = await demoSeedDeps()
 })
 afterAll(async () => {
   await handle.drop()
@@ -106,6 +115,16 @@ async function counts(): Promise<Record<string, number>> {
     union all select 'calendar_pushes', count(*)::int from calendar_pushes
     union all select 'inspector_calendars', count(*)::int from inspector_calendars
     union all select 'certificates', count(*)::int from certificates_of_occupancy
+    union all select 'exports', count(*)::int from exports
+    union all select 'export_targets', count(*)::int from export_targets
+    union all select 'cutover_rows', count(*)::int from cutover_rows
+    union all select 'cutover_reconciliations', count(*)::int from cutover_reconciliations
+    union all select 'migration_batches', count(*)::int from migration_batches
+    union all select 'migration_items', count(*)::int from migration_items
+    union all select 'historical_records', count(*)::int from historical_records
+    union all select 'health_alerts', count(*)::int from health_alerts
+    union all select 'alert_tests', count(*)::int from alert_tests
+    union all select 'job_runs', count(*)::int from job_runs
   `)
   return Object.fromEntries(result.rows.map((r) => [r.t, r.n]))
 }
@@ -195,15 +214,17 @@ describe('seedDemo', () => {
     expect(rows[0]).toMatchObject({ status: 'applied', reason: 'Folder label uses old map number' })
   })
 
-  it('seeded unresolved queue has one row', async () => {
+  it('seeded unresolved queue holds the demo record and the unmapped legacy folder', async () => {
     const rows = await listUnresolvedLinks(handle.db, signal)
-    expect(rows).toHaveLength(1)
-    expect(rows[0]?.rawRefValue).toBe('008099000000')
+    expect(rows.map((r) => r.rawRefValue).sort()).toEqual(['008099000000', '009099000000000'])
   })
 
-  it('seeded exception queue holds one open owner change', async () => {
+  it('seeded exception queue holds one open owner change per layer', async () => {
     const rows = await handle.db.select().from(importExceptions)
-    expect(rows.map((r) => [r.kind, r.status])).toEqual([['owner_changed', 'open']])
+    expect(rows.map((r) => [r.layerKey, r.kind, r.status]).sort()).toEqual([
+      ['cama', 'owner_changed', 'open'],
+      ['parcels', 'owner_changed', 'open'],
+    ])
   })
 
   it('seed twice leaves identical row counts', async () => {
@@ -211,7 +232,7 @@ describe('seedDemo', () => {
     await seedDemo(handle.db, signal, SEED_DEPS)
     await seedDemo(handle.db, signal, SEED_DEPS)
     expect(await counts()).toEqual(before)
-    expect(before.applications).toBe(12)
+    expect(before.applications).toBe(15)
     expect(before.inspections).toBeGreaterThan(5)
     expect(before.certificates).toBe(1)
     expect(before.config_versions).toBeGreaterThan(30)
@@ -227,18 +248,23 @@ describe('seedDemo', () => {
       'issued',
       'issued',
       'issued',
+      'issued',
+      'issued',
       'submitted',
       'submitted',
       'submitted',
       'suspended',
       'under_review',
       'under_review',
+      'under_review',
     ])
-    expect(Object.keys(byState).filter((n) => n.startsWith('EL-'))).toHaveLength(4)
+    expect(Object.keys(byState).filter((n) => n.startsWith('EL-'))).toHaveLength(6)
   })
 
   it('seeds one fee waiver, one renewal, one appeal, and an open comment period', async () => {
-    const overrides = await listFeeOverrides(handle.db, signal)
+    const overrides = (await listFeeOverrides(handle.db, signal)).filter(
+      (o) => !o.reason.startsWith('Paid in prior system'),
+    )
     expect(overrides.map((o) => [o.kind, o.status])).toEqual([['waive', 'applied']])
     const adjustments = await listClockAdjustments(handle.db, signal)
     expect(adjustments.map((a) => [a.kind, a.status])).toEqual([['renewal', 'applied']])
@@ -275,15 +301,15 @@ describe('seedDemo', () => {
   })
 })
 
+async function actorOf(local: string): Promise<Actor> {
+  const row = await handle.db.query.users.findFirst({
+    where: (u, { eq }) => eq(u.email, `${local}@alderpond.example`),
+  })
+  return (await loadActor(handle.db, row?.id ?? '', signal)) as Actor
+}
+
 describe('seeded inspections', () => {
   const SEEDED_DAY = '2027-06-02'
-
-  async function actorOf(local: string): Promise<Actor> {
-    const row = await handle.db.query.users.findFirst({
-      where: (u, { eq }) => eq(u.email, `${local}@alderpond.example`),
-    })
-    return (await loadActor(handle.db, row?.id ?? '', signal)) as Actor
-  }
 
   it('seeded inspector day list for the seeded date has two stops', async () => {
     const inspector = await actorOf('inspector')
@@ -292,7 +318,7 @@ describe('seeded inspections', () => {
       inspector,
       { inspectorUserId: inspector.userId, date: SEEDED_DAY as CivilDate },
       signal,
-      { now: SEED_NOW },
+      { now: DEMO_SEED_INSTANT },
     )
     expect(list.ok && list.value.map((s) => s.status)).toEqual(['scheduled', 'scheduled'])
     expect(list.ok && list.value.some((s) => s.isReinspection)).toBe(true)
@@ -303,7 +329,7 @@ describe('seeded inspections', () => {
 
   it('seeded schedule board lists one unscheduled portal request', async () => {
     const staff = await actorOf('staff')
-    const board = await loadScheduleBoard(handle.db, staff, signal, SEED_NOW)
+    const board = await loadScheduleBoard(handle.db, staff, signal, DEMO_SEED_INSTANT)
     if (!board.ok) throw new Error('board')
     expect(board.value.requests).toHaveLength(1)
     expect(board.value.requests[0]?.channel).toBe('portal')
@@ -371,7 +397,10 @@ describe('seeded records', () => {
     const actor = (await loadActor(handle.db, staff?.id ?? '', signal)) as Actor
     const queue = await listPreservationIncomplete(handle.db, actor, { limit: 25 }, signal)
     if (!queue.ok) throw new Error('queue')
-    expect(queue.value.rows.map((r) => r.title)).toEqual(['Scanned letter (unreadable)'])
+    expect(queue.value.rows.map((r) => r.title).sort()).toEqual([
+      'Scanned letter (unreadable)',
+      'locked.pdf',
+    ])
   })
 
   it('seeded contractor dashboard lists two projects', async () => {
@@ -392,5 +421,77 @@ describe('seeded records', () => {
     const links = await handle.db.select().from(boardPacketLinks)
     expect(links).toHaveLength(1)
     expect(links[0]?.revokedAt).toBeNull()
+  })
+})
+
+describe('seeded exit, reports, and operations data', () => {
+  it('seeds one ready business export that the object store holds', async () => {
+    const rows = await handle.db.select().from(exportsTable)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ kind: 'business', status: 'ready' })
+    expect(rows[0]?.sizeBytes).toBeGreaterThan(0)
+  })
+
+  it('seeds a local_fs export target under the injected directory', async () => {
+    const rows = await handle.db.select().from(exportTargets)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ kind: 'local_fs', isActive: true })
+    expect(rows[0]?.settings).toEqual({ root: SEED_DEPS.operations?.exportDir })
+  })
+
+  it('seeds a published CAMA mapping with one held owner change', async () => {
+    const [layer] = await handle.db.select().from(gisLayers).where(eq(gisLayers.key, 'cama'))
+    expect(layer).toMatchObject({ adapter: 'file_cama_csv' })
+    expect(layer?.mapping).toMatchObject({ delimiter: ',' })
+    const held = await handle.db
+      .select()
+      .from(importExceptions)
+      .where(eq(importExceptions.layerKey, 'cama'))
+    expect(held.map((r) => [r.kind, r.status])).toEqual([['owner_changed', 'open']])
+  })
+
+  it('seeds three cutover applications and a reconciliation with one missing number', async () => {
+    expect(await handle.db.select().from(cutoverRows)).toHaveLength(3)
+    const [rec] = await handle.db.select().from(cutoverReconciliations)
+    const report = rec?.report as ReconciliationReport
+    expect(report.inListAndImported).toHaveLength(3)
+    expect(report.inListNotImported).toHaveLength(1)
+    expect(report.importedNotInList).toEqual([])
+  })
+
+  it('seeds a staged migration batch with one OCR failure and one unresolved folder', async () => {
+    const [batch] = await handle.db.select().from(migrationBatches)
+    expect(batch?.status).toBe('staged')
+    expect(batch?.report).toMatchObject({ ocrFailed: 1, unresolvedParcel: 1 })
+    expect((batch?.report as MigrationReport).imported).toBeGreaterThan(0)
+  })
+
+  it('seeds two historical records', async () => {
+    const rows = await handle.db.select().from(historicalRecords)
+    expect(rows).toHaveLength(2)
+  })
+
+  it('seeds one firing job_stale alert and one acknowledged email test', async () => {
+    const alerts = await handle.db.select().from(healthAlerts)
+    expect(alerts.map((a) => [a.kind, a.state])).toEqual([['job_stale', 'firing']])
+    const tests = await handle.db.select().from(alertTests)
+    expect(tests.map((t) => [t.channel, t.acknowledgedAt !== null])).toEqual([['email', true]])
+  })
+
+  it('gives admin export, health, cutover and migration access and staff reports and cutover', async () => {
+    const admin = await actorOf('admin')
+    const staff = await actorOf('staff')
+    for (const cap of [
+      'export.download',
+      'config.edit',
+      'cutover.import',
+      'document.manage',
+      'parcel.manage',
+    ] as const) {
+      expect(await hasCapability(handle.db, admin.userId, cap, signal), cap).toBe(true)
+    }
+    for (const cap of ['report.view', 'cutover.import'] as const) {
+      expect(await hasCapability(handle.db, staff.userId, cap, signal), cap).toBe(true)
+    }
   })
 })
