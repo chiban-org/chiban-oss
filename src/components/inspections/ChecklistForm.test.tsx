@@ -52,6 +52,16 @@ describe('ChecklistForm', () => {
     expect((button as HTMLButtonElement).disabled).toBe(false)
   })
 
+  it('the result reads passed only once every required item is answered', () => {
+    setup()
+    expect(screen.queryByText('Result: Passed')).toBeNull()
+    expect(screen.getByText('Result: answer the required items first')).toBeTruthy()
+    choose('Panel secured', 'Pass')
+    expect(screen.queryByText('Result: Passed')).toBeNull()
+    choose('Labels present', 'Pass')
+    expect(screen.getByText('Result: Passed')).toBeTruthy()
+  })
+
   it('checklist controls are labeled radio groups', () => {
     setup()
     for (const name of ['Panel secured', 'Labels present', 'Photos taken']) {
