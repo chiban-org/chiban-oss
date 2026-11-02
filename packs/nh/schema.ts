@@ -32,6 +32,8 @@ export const StartEventSchema = z.enum([
   'application_completed',
   'permit_issued',
   'regional_impact_notice_mailed',
+  'order_served',
+  'judgment_entered',
 ])
 export type StartEvent = z.infer<typeof StartEventSchema>
 
@@ -51,7 +53,7 @@ const LengthSchema = z.union([
     cases: z.array(z.object({ when: FactConditionSchema, value: z.number().int().positive() })),
     otherwise: z.number().int().positive(),
   }),
-  z.object({ unit: z.literal('months'), fromSetting: z.string().min(1) }),
+  z.object({ unit: z.enum(['days', 'months']), fromSetting: z.string().min(1) }),
 ])
 export type ClockLength = z.infer<typeof LengthSchema>
 
@@ -72,7 +74,7 @@ export const ClockRuleSchema = z
     length: LengthSchema,
     direction: z.enum(['after', 'before']),
     consequence: z.object({
-      kind: z.enum(['none_stated', 'issuance_blocked', 'lapse']),
+      kind: z.enum(['none_stated', 'issuance_blocked', 'lapse', 'enforcement_step_opens']),
       text: z.string().min(1),
     }),
     extension: z.union([
@@ -109,7 +111,7 @@ export type RecordRule = z.infer<typeof RecordRuleSchema>
 export const EffectRuleSchema = z.object({
   ...base,
   kind: z.literal('effect'),
-  effect: z.literal('suspend_on_appeal_of_issuance'),
+  effect: z.enum(['suspend_on_appeal_of_issuance', 'stay_enforcement_on_appeal']),
   overridePolicy: OverridePolicySchema,
 })
 
@@ -121,6 +123,68 @@ export const TownSettingRuleSchema = z.object({
 })
 export type TownSettingRule = z.infer<typeof TownSettingRuleSchema>
 
+export const RECIPIENT_ROLES = [
+  'record_owner',
+  'owner_agent',
+  'taxpayer',
+  'occupying_tenant',
+  'person_in_control',
+  'mortgagee_of_record',
+] as const
+export const RecipientRoleSchema = z.enum(RECIPIENT_ROLES)
+export type RecipientRole = z.infer<typeof RecipientRoleSchema>
+
+export const PERSONAL_SERVER_ROLES = [
+  'sheriff',
+  'deputy_sheriff',
+  'local_police_officer',
+  'constable',
+] as const
+export const PersonalServerRoleSchema = z.enum(PERSONAL_SERVER_ROLES)
+export type PersonalServerRole = z.infer<typeof PersonalServerRoleSchema>
+
+export const ORDER_CONTENT_FIELDS = [
+  'provisions',
+  'facts',
+  'inspectionDate',
+  'correctiveAction',
+  'correctiveDeadline',
+  'motionNotice',
+  'lienWarning',
+] as const
+export const OrderContentFieldSchema = z.enum(ORDER_CONTENT_FIELDS)
+export type OrderContentField = z.infer<typeof OrderContentFieldSchema>
+
+export const CeaseAndDesistRuleSchema = z.object({
+  ...base,
+  kind: z.literal('cease_and_desist'),
+  contentFields: z.array(OrderContentFieldSchema).min(1),
+  issuerMustBeDesignated: z.boolean(),
+  recipientRoles: z.array(RecipientRoleSchema).min(1),
+  ownerRoles: z.array(RecipientRoleSchema).min(1),
+  personalServerRoles: z.array(PersonalServerRoleSchema).min(1),
+  ownerNotFoundFallback: z.object({
+    posting: z.boolean(),
+    publicationWeeks: z.number().int().positive(),
+  }),
+  answerRuleKey: z.string().min(1),
+  courtFilingLeadDays: z.number().int().min(0),
+  judgmentAppealRuleKey: z.string().min(1),
+  overridePolicy: z.object({ policy: z.literal('fixed') }),
+})
+export type CeaseAndDesistRule = z.infer<typeof CeaseAndDesistRuleSchema>
+
+export const CivilPenaltyRuleSchema = z.object({
+  ...base,
+  kind: z.literal('civil_penalty'),
+  firstOffenseCentsPerDay: z.number().int().positive(),
+  subsequentCentsPerDay: z.number().int().positive(),
+  accrual: z.literal('after_earlier_of_conviction_or_written_notice'),
+  imposedBy: z.literal('court'),
+  overridePolicy: z.object({ policy: z.literal('fixed') }),
+})
+export type CivilPenaltyRule = z.infer<typeof CivilPenaltyRuleSchema>
+
 export const PackRuleSchema = z
   .union([
     ClockRuleSchema,
@@ -128,6 +192,8 @@ export const PackRuleSchema = z
     RecordRuleSchema,
     EffectRuleSchema,
     TownSettingRuleSchema,
+    CeaseAndDesistRuleSchema,
+    CivilPenaltyRuleSchema,
   ])
   .refine(
     (r) =>
@@ -142,7 +208,14 @@ export const PackRuleSchema = z
 export type PackRule = z.infer<typeof PackRuleSchema>
 
 export const ProceedingClassificationSchema = z.object({
-  key: z.enum(['nh.building_permit', 'nh.trade_permit']),
+  key: z.enum([
+    'nh.building_permit',
+    'nh.trade_permit',
+    'nh.enforcement_zoning',
+    'nh.enforcement_building_code',
+    'nh.local_zoning_permit',
+    'nh.local_permit_other',
+  ]),
   label: z.string().min(1),
   mandatoryRuleKeys: z.array(z.string().min(1)),
 })

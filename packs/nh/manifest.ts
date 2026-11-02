@@ -4,6 +4,7 @@ import { NH_RECORD_SERIES, RECORD_SERIES_DEFAULTS } from '@packs/nh/recordSeries
 import { APPEAL_RULES } from '@packs/nh/rules/appeals'
 import { BUILDING_RULES } from '@packs/nh/rules/building'
 import { CODE_RULES } from '@packs/nh/rules/code'
+import { ENFORCEMENT_RULES } from '@packs/nh/rules/enforcement'
 import type {
   CodeEditionEntry,
   PackRule,
@@ -23,8 +24,8 @@ export interface PackManifest {
 
 export const NH_PACK_MANIFEST: PackManifest = {
   id: 'nh',
-  version: '0.3.0',
-  rules: [...BUILDING_RULES, ...APPEAL_RULES, ...CODE_RULES],
+  version: '0.4.0',
+  rules: [...BUILDING_RULES, ...APPEAL_RULES, ...CODE_RULES, ...ENFORCEMENT_RULES],
   classifications: NH_CLASSIFICATIONS,
   codeEditions: NH_CODE_EDITIONS,
   recordSeries: NH_RECORD_SERIES,

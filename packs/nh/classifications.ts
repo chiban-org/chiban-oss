@@ -20,4 +20,26 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     label: 'Trade permit',
     mandatoryRuleKeys: ['nh.appeal.suspension'],
   },
+  {
+    key: 'nh.enforcement_zoning',
+    label: 'Land use enforcement',
+    mandatoryRuleKeys: [
+      'nh.enf.cd_zoning',
+      'nh.enf.answer_zoning',
+      'nh.enf.judgment_appeal_zoning',
+      'nh.enf.penalty_zoning',
+      'nh.appeal.enforcement_stay',
+    ],
+  },
+  {
+    key: 'nh.enforcement_building_code',
+    label: 'Building code enforcement',
+    mandatoryRuleKeys: [
+      'nh.enf.cd_building',
+      'nh.enf.answer_building',
+      'nh.enf.judgment_appeal_building',
+      'nh.enf.penalty_building',
+      'nh.appeal.enforcement_stay',
+    ],
+  },
 ]

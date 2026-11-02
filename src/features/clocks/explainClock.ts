@@ -11,6 +11,8 @@ export const START_EVENT_LABELS: Record<string, string> = {
   application_completed: 'Application completed',
   permit_issued: 'Permit issued',
   regional_impact_notice_mailed: 'Regional impact notice mailed',
+  order_served: 'Order served',
+  judgment_entered: 'Judgment entered',
 }
 
 export interface ClockExplanation {
