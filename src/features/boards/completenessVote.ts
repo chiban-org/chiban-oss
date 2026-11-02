@@ -13,7 +13,6 @@ import {
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-
 import { boardOfApplication, declaresSubstep } from '@/features/boards/boardOf'
 import { getBoardSettings } from '@/features/boards/boardSettings'
 import { nextRegularMeeting } from '@/features/boards/calendar'
@@ -40,6 +39,7 @@ export type VoteError =
   | 'not_found'
   | 'wrong_board'
   | 'meeting_not_set'
+  | 'meeting_cancelled'
   | 'reason_required'
   | 'not_submitted'
   | 'invalid_state'
@@ -55,6 +55,7 @@ async function checkVoteMeeting(
   const meeting = await getMeeting(tx, meetingId, signal)
   if (meeting === null) return err('not_found')
   if (meeting.board !== board) return err('wrong_board')
+  if (meeting.status === 'cancelled') return err('meeting_cancelled')
   const [scheduled] = await tx
     .select({ meetingId: acceptanceSchedules.meetingId })
     .from(acceptanceSchedules)

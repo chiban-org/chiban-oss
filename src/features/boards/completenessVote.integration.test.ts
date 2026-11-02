@@ -5,7 +5,7 @@ import { summarizeApplications } from '@/features/applications/recordSource'
 import { recordCompletenessVote, setAcceptanceMeeting } from '@/features/boards/acceptance'
 import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettings'
 import { recordSelectmenCertification } from '@/features/boards/certification'
-import { scheduleMeeting } from '@/features/boards/meetings'
+import { cancelMeeting, scheduleMeeting } from '@/features/boards/meetings'
 import { adjustClock } from '@/features/clocks/adjustClock'
 import {
   type BoardWorld,
@@ -227,5 +227,18 @@ describe('recordCompletenessVote', () => {
       signal,
     )
     expect(result).toEqual({ ok: false, error: 'forbidden' })
+  })
+  it('a vote at a cancelled meeting is meeting_cancelled and leaves the application submitted', async () => {
+    const id = await filed('2027-03-24')
+    await setMeeting(id, '2027-04-14')
+    await cancelMeeting(
+      handle.db,
+      world.staff,
+      { meetingId: await meetingIdOn('2027-04-14'), reason: 'No quorum this month' },
+      signal,
+    )
+    expect(await accept(id, '2027-04-14')).toEqual({ ok: false, error: 'meeting_cancelled' })
+    const [app] = await handle.db.select().from(applications).where(eq(applications.id, id))
+    expect(app?.state).toBe('submitted')
   })
 })
