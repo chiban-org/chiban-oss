@@ -15,7 +15,7 @@ import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
-import type { DocumentActor } from '@/features/documents/types'
+import { type DocumentActor, isUserActor } from '@/features/documents/types'
 import { defaultSeriesKey, findSeries, requireSeries } from '@/features/records/series'
 import { outcomeSeriesKey, type SeriesOutcome } from '@/features/records/seriesSummary'
 import type { CivilDate } from '@/types/civilDate'
@@ -54,8 +54,8 @@ export async function assignSeries(
     seriesKey: series.key,
     seriesVersion: series.version,
     reason,
-    assignedByKind: actor.kind === 'system' ? 'system' : 'user',
-    assignedBy: actor.kind === 'system' ? null : actor.userId,
+    assignedByKind: isUserActor(actor) ? 'user' : 'system',
+    assignedBy: isUserActor(actor) ? actor.userId : null,
   })
 }
 

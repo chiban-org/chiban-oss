@@ -7,6 +7,11 @@
 }
 
 {$APP_DOMAIN} {
+	@anonymousIntake path /report-anonymously* /intake/anonymous*
+	log {
+		output stdout
+	}
+	log_skip @anonymousIntake
 	header Strict-Transport-Security "max-age=31536000"
 	request_body {
 		max_size 80MB

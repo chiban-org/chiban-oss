@@ -15,6 +15,7 @@ import {
   type Audience,
   type DocKind,
   type DocumentActor,
+  isUserActor,
   type RecordRef,
 } from '@/features/documents/types'
 import { linkRecordToParcel } from '@/features/parcels/recordLinks'
@@ -75,9 +76,18 @@ export async function parcelOf(tx: Tx, target: RecordRef): Promise<string | null
 }
 
 function auditActor(actor: DocumentActor) {
-  return actor.kind === 'system'
-    ? ({ kind: 'system', job: actor.job } as const)
-    : ({ kind: 'user', userId: actor.userId } as const)
+  if (actor.kind === 'system') return { kind: 'system', job: actor.job } as const
+  if (!isUserActor(actor)) return { kind: 'anonymous_public_intake' } as const
+  return { kind: 'user', userId: actor.userId } as const
+}
+
+function createdByKind(actor: DocumentActor): 'user' | 'system' | 'anonymous_public_intake' {
+  if (actor.kind === 'system') return 'system'
+  return isUserActor(actor) ? 'user' : 'anonymous_public_intake'
+}
+
+function createdById(actor: DocumentActor): string | null {
+  return isUserActor(actor) ? actor.userId : null
 }
 
 export async function attachDocument(
@@ -97,8 +107,8 @@ export async function attachDocument(
       docKind: input.docKind,
       audiences: input.audiences ?? defaults.audiences,
       isPublic: input.isPublic ?? defaults.isPublic,
-      createdByKind: actor.kind === 'system' ? 'system' : 'user',
-      createdBy: actor.kind === 'system' ? null : actor.userId,
+      createdByKind: createdByKind(actor),
+      createdBy: createdById(actor),
     })
     .returning({ id: documents.id })
   const documentId = doc?.id ?? ''
@@ -110,7 +120,7 @@ export async function attachDocument(
       fileSha256: input.file.sha256,
       filename: input.file.filename,
       contentType: input.file.contentType,
-      createdBy: actor.kind === 'system' ? null : actor.userId,
+      createdBy: createdById(actor),
     })
     .returning({ id: documentVersions.id })
   const parcelId = await parcelOf(tx, input.target)

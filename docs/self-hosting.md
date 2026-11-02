@@ -104,6 +104,12 @@ curl https://town.example.org/api/version
 
 The version response includes the image reference, the pack identity, and the migration head.
 
+## Anonymous complaints
+
+The anonymous complaint form lives at `/report-anonymously` and posts to `/intake/anonymous`. The bundled Caddyfile writes an access log for the main site and skips it for those two paths, so no address or request line for an anonymous complaint is kept.
+
+If a load balancer, CDN, or any other proxy sits in front of Caddy, it must skip logging for the same two path prefixes. If it cannot, do not put it in front of this deployment: the retention verification below will pass on Caddy's own logs and still miss a log that Chiban cannot see.
+
 ## Exports
 
 Staff with export permission can request a full export of the town's records from the export page at `/staff/admin/export`. An export is a single archive that includes the data, the uploaded documents, and a description of the format, which is also published in `docs/export-format.md`. Downloads are served through the `s3.APP_DOMAIN` name, so that record must resolve for the download link to work.

@@ -38,4 +38,15 @@ describe('Caddyfile', () => {
   it('does not cap request bodies on the object storage vhost', () => {
     expect(siteBlock('s3.{$APP_DOMAIN}')).not.toContain('max_size')
   })
+
+  it('anonymous paths skip the access log', () => {
+    const block = siteBlock('{$APP_DOMAIN}')
+    expect(block).toMatch(/@anonymousIntake path \/report-anonymously\* \/intake\/anonymous\*/)
+    expect(block).toMatch(/\blog \{\s+output stdout\s+\}/)
+    expect(block).toContain('log_skip @anonymousIntake')
+  })
+
+  it('the access log is on for the app vhost so the skip is meaningful', () => {
+    expect(siteBlock('{$APP_DOMAIN}')).toMatch(/^\tlog \{/m)
+  })
 })

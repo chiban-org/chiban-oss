@@ -33,7 +33,12 @@ export const DOC_KINDS = [
 export type DocKind = (typeof DOC_KINDS)[number]
 
 export type SystemActor = { kind: 'system'; job: string }
-export type DocumentActor = Actor | SystemActor
+export type AnonymousIntakeActor = { kind: 'anonymous_public_intake' }
+export type DocumentActor = Actor | SystemActor | AnonymousIntakeActor
+
+export function isUserActor(actor: DocumentActor): actor is Actor {
+  return actor.kind === 'staff' || actor.kind === 'public'
+}
 
 export interface DocumentListRow {
   documentId: string
