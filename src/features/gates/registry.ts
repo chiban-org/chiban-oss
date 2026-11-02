@@ -1,3 +1,4 @@
+import type { GateRule } from '@packs/nh/schema'
 import type { Tx } from '@/db/client'
 import type { ApplicationContext } from '@/features/applications/context'
 import type { CoreState } from '@/features/applications/states'
@@ -10,6 +11,8 @@ export type GateOutcome =
 
 export interface GateDefinition {
   key: string
+  label?: string
+  citation?: { label: string; url: string | null }
   kind: 'administrative' | 'statutory'
   appliesTo: CoreState[]
   boundBy: string | null
@@ -19,6 +22,20 @@ export interface GateDefinition {
     today: CivilDate,
     signal: AbortSignal,
   ): Promise<GateOutcome>
+}
+
+export type GateEvaluator = GateDefinition['evaluate']
+
+export function buildGateDefinition(rule: GateRule, evaluate: GateEvaluator): GateDefinition {
+  return {
+    key: rule.key,
+    label: rule.label,
+    citation: rule.citation,
+    kind: rule.gateKind,
+    appliesTo: [...rule.appliesTo],
+    boundBy: rule.key,
+    evaluate,
+  }
 }
 
 const registry = new Map<string, GateDefinition>()
@@ -33,4 +50,8 @@ export function registeredGates(): GateDefinition[] {
 
 export function gateByKey(key: string): GateDefinition | undefined {
   return registry.get(key)
+}
+
+export function registerPackGate(rule: GateRule, evaluate: GateEvaluator): void {
+  registerGate(buildGateDefinition(rule, evaluate))
 }

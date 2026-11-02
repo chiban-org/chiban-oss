@@ -2,8 +2,16 @@ import { and, eq, isNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { appeals } from '@/db/schema'
 import { registerGate } from '@/features/gates/registry'
+import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 
 export const APPEAL_SUSPENSION_GATE_KEY = 'nh.appeal.suspension'
+
+export function appealSuspends(pack: Pack, bindings: ReadonlySet<string>): boolean {
+  return pack.rules.some(
+    (r) =>
+      r.kind === 'effect' && r.effect === 'suspend_on_appeal_of_issuance' && bindings.has(r.key),
+  )
+}
 
 export async function isSuspended(
   db: DbOrTx,
@@ -19,11 +27,15 @@ export async function isSuspended(
   return open.length > 0
 }
 
+const effect = ruleByKey(loadPack(), APPEAL_SUSPENSION_GATE_KEY)
+
 registerGate({
-  key: APPEAL_SUSPENSION_GATE_KEY,
+  key: effect.key,
+  label: effect.label,
+  citation: effect.citation,
   kind: 'statutory',
   appliesTo: ['closed'],
-  boundBy: APPEAL_SUSPENSION_GATE_KEY,
+  boundBy: effect.key,
   evaluate: async (tx, app, _today, signal) =>
     (await isSuspended(tx, app.id, signal))
       ? { status: 'blocked', reason: 'Suspended by appeal (RSA 676:6). Resolve the appeal first.' }

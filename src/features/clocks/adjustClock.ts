@@ -81,7 +81,10 @@ export async function recordAdjustment(
   )
 }
 
-function checkRule(rule: ClockRule, input: AdjustInput): AdjustError | null {
+export function checkAdjustment(
+  rule: ClockRule,
+  input: Pick<AdjustInput, 'kind' | 'applicantConsent'>,
+): AdjustError | null {
   if (input.kind === 'extension') {
     if (!rule.extension.allowed) return 'not_extendable'
     if (rule.extension.by === 'applicant_consent' && input.applicantConsent !== true) {
@@ -109,7 +112,7 @@ export async function adjustClock(
   if (clock === undefined) return err('not_found')
   const rule = ruleByKey(pack, clock.ruleKey, clock.ruleVersion)
   if (rule.kind !== 'clock') return err('not_found')
-  const ruleError = checkRule(rule, input)
+  const ruleError = checkAdjustment(rule, input)
   if (ruleError !== null) return err(ruleError)
   const citation = input.legalAuthority?.citation.trim() ?? ''
   const explanation = input.legalAuthority?.explanation.trim() ?? ''

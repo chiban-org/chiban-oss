@@ -1,4 +1,4 @@
-import type { CodeEditionEntry } from '@packs/nh/schema'
+import type { CodeEditionEntry, RecordRule } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { codeEditionRecords } from '@/db/schema'
@@ -104,4 +104,41 @@ export async function getCodeEditionRecord(db: Db, applicationId: string) {
     .from(codeEditionRecords)
     .where(eq(codeEditionRecords.applicationId, applicationId))
   return row ?? null
+}
+
+export interface EditionDescription {
+  label: string
+  status: CodeEditionEntry['status']
+  components: string[]
+  enforcementFrom: CivilDate | null
+  amendmentPackagesInForce: string[]
+  citation: CodeEditionEntry['citation']
+}
+
+export function describeCodeEdition(
+  entry: CodeEditionEntry,
+  receiptDate: CivilDate,
+): EditionDescription {
+  return {
+    label: entry.label,
+    status: entry.status,
+    components: entry.components.map((c) => `${c.code} ${c.edition}`),
+    enforcementFrom: entry.enforcementFrom,
+    amendmentPackagesInForce: entry.amendmentPackages
+      .filter((p) => p.effectiveFrom <= receiptDate)
+      .map((p) => p.label),
+    citation: entry.citation,
+  }
+}
+
+export function codeEditionPanelRows(
+  rule: RecordRule,
+  record: Record<string, unknown>,
+): { field: string; value: string }[] {
+  return rule.fields.map((field) => {
+    const value = record[field]
+    const text =
+      value === null || value === undefined || value === '' ? 'Not recorded' : String(value)
+    return { field, value: text }
+  })
 }

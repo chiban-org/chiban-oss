@@ -5,6 +5,7 @@ import { recordAppeal, resolveAppeal } from '@/features/appeals/appeals'
 import { isSuspended } from '@/features/appeals/suspension'
 import { transitionApplication } from '@/features/applications/transition'
 import { startClocksFor } from '@/features/clocks/startClocks'
+import { loadPack } from '@/features/packs/loadPack'
 import { getParcelHistory } from '@/features/parcels/parcelHistory'
 import { clocksDailyJob } from '@/jobs/clocksDaily'
 import { runJob } from '@/jobs/defineJob'
@@ -169,5 +170,39 @@ describe('resolveAppeal', () => {
     expect(await resolve(app.applicationId, 'permit_upheld', '2027-06-10', world.reviewer)).toEqual(
       { ok: false, error: 'forbidden' },
     )
+  })
+})
+
+describe('pack-driven suspension', () => {
+  it('an appeal on an application without the suspension binding is recorded but does not suspend', async () => {
+    const pack = loadPack()
+    const noEffect = {
+      ...pack,
+      rules: pack.rules.filter((r) => r.kind !== 'effect'),
+      classifications: pack.classifications.map((c) => ({
+        ...c,
+        mandatoryRuleKeys: c.mandatoryRuleKeys.filter((k) => k !== 'nh.appeal.suspension'),
+      })),
+    }
+    const app = await issued()
+    const r = await recordAppeal(
+      handle.db,
+      world.staff,
+      {
+        applicationId: app.applicationId,
+        filedOn: d('2027-05-01'),
+        appellantName: 'Abutter Smith',
+      },
+      signal,
+      noEffect,
+    )
+    expect(r.ok).toBe(true)
+    expect((await appRow(app.applicationId))?.state).toBe('issued')
+    expect((await expirationClock(app.applicationId))?.status).toBe('running')
+    expect(await resolve(app.applicationId, 'permit_upheld')).toEqual({
+      ok: true,
+      value: undefined,
+    })
+    expect(await isSuspended(handle.db, app.applicationId, signal)).toBe(false)
   })
 })

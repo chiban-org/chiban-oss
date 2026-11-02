@@ -104,6 +104,8 @@ export const RecordRuleSchema = z.object({
   overridePolicy: OverridePolicySchema,
 })
 
+export type RecordRule = z.infer<typeof RecordRuleSchema>
+
 export const EffectRuleSchema = z.object({
   ...base,
   kind: z.literal('effect'),

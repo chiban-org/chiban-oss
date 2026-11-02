@@ -6,6 +6,7 @@ export const CONDITIONS_GATE_KEY = 'conditions.blocking_met'
 
 registerGate({
   key: CONDITIONS_GATE_KEY,
+  label: 'Blocking conditions met',
   kind: 'administrative',
   appliesTo: ['issued'],
   boundBy: null,

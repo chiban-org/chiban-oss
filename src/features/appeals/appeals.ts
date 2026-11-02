@@ -2,13 +2,15 @@ import { and, desc, eq, isNull } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { appeals, applications, clocks } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { appealSuspends } from '@/features/appeals/suspension'
 import { loadApplicationContext } from '@/features/applications/context'
 import { applyTransition } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { recordAdjustment } from '@/features/clocks/adjustClock'
-import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { effectiveBindings } from '@/features/config/bindings'
+import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -32,24 +34,28 @@ export async function recordAppeal(
   actor: Actor,
   input: { applicationId: string; filedOn: CivilDate; appellantName: string },
   signal: AbortSignal,
+  pack: Pack = loadPack(),
 ): Promise<Result<void, 'forbidden' | 'not_issued'>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'permit.issue', signal))) return err('forbidden')
   return await transactionResult(db, async (tx) => {
     const app = await loadApplicationContext(tx, input.applicationId, signal)
     if (app?.state !== 'issued') return err('not_issued')
-    const moved = await applyTransition(
-      tx,
-      actor,
-      {
-        applicationId: input.applicationId,
-        to: 'suspended',
-        expectedRowVersion: app.rowVersion,
-        onDate: input.filedOn,
-      },
-      signal,
-    )
-    if (!moved.ok) return err('not_issued')
+    const suspends = appealSuspends(pack, new Set(effectiveBindings(app.typeBody, pack)))
+    if (suspends) {
+      const moved = await applyTransition(
+        tx,
+        actor,
+        {
+          applicationId: input.applicationId,
+          to: 'suspended',
+          expectedRowVersion: app.rowVersion,
+          onDate: input.filedOn,
+        },
+        signal,
+      )
+      if (!moved.ok) return err('not_issued')
+    }
     await tx.insert(appeals).values({
       applicationId: input.applicationId,
       kind: 'appeal_of_issuance',
@@ -57,8 +63,10 @@ export async function recordAppeal(
       appellantName: input.appellantName,
       recordedBy: actor.userId,
     })
-    for (const clock of await exerciseByClocks(tx, input.applicationId, 'running')) {
-      await tx.update(clocks).set({ status: 'stopped' }).where(eq(clocks.id, clock.id))
+    if (suspends) {
+      for (const clock of await exerciseByClocks(tx, input.applicationId, 'running')) {
+        await tx.update(clocks).set({ status: 'stopped' }).where(eq(clocks.id, clock.id))
+      }
     }
     await writeAudit(
       tx,
@@ -97,11 +105,12 @@ export async function resolveAppeal(
     if (open === undefined) return err('no_open_appeal')
     if (input.resolvedOn < open.filedOn) return err('before_filing')
     const app = await loadApplicationContext(tx, input.applicationId, signal)
-    if (app?.state !== 'suspended') return err('not_suspended')
+    if (app === null) return err('not_suspended')
     await tx
       .update(appeals)
       .set({ resolvedOn: input.resolvedOn, outcome: input.outcome, resolvedBy: actor.userId })
       .where(eq(appeals.id, open.id))
+    if (app.state !== 'suspended') return ok(undefined)
     const to = input.outcome === 'permit_upheld' ? 'issued' : 'closed'
     const moved = await applyTransition(
       tx,

@@ -35,8 +35,18 @@ export interface ClockExplanation {
     at: Date
   }[]
   consequence: string
+  consequenceKind: ClockRule['consequence']['kind']
+  whose: ClockRule['whose']
+  extensionPolicy: string
   status: ClockRow['status']
   daysRemaining: number
+}
+
+export function extensionPolicyText(rule: ClockRule): string {
+  if (!rule.extension.allowed) return rule.extension.note
+  return rule.extension.by === 'applicant_consent'
+    ? 'May be extended with the applicant consent.'
+    : 'May be extended by renewal.'
 }
 
 function currentDueOf(clock: ClockRow, adjusted: boolean): Sourced<CivilDate> {
@@ -90,6 +100,9 @@ export function explainClock(
       at: a.createdAt,
     })),
     consequence: rule.consequence.text,
+    consequenceKind: rule.consequence.kind,
+    whose: rule.whose,
+    extensionPolicy: extensionPolicyText(rule),
     status: clock.status,
     daysRemaining: daysBetween(today, clock.currentDue as CivilDate),
   }

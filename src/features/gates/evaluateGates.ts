@@ -14,6 +14,8 @@ export type GateOverrideRow = typeof gateOverrides.$inferSelect
 
 export interface GateResult {
   key: string
+  label: string
+  citation: { label: string; url: string | null } | null
   kind: 'administrative' | 'statutory'
   outcome: GateOutcome
   override: GateOverrideRow | null
@@ -48,6 +50,8 @@ export async function evaluateGates(
     const passes = outcome.status === 'pass' || override !== null
     results.push({
       key: gate.key,
+      label: gate.label ?? gate.key,
+      citation: gate.citation ?? null,
       kind: gate.kind,
       outcome,
       override,
