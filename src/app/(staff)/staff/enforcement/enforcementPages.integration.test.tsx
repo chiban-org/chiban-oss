@@ -287,6 +287,21 @@ describe('enforcement queue and case pages', () => {
     expect(findUuids(page)).toEqual([])
   })
 
+  it('the officers page offers only people who may issue orders and can end a designation', async () => {
+    await actAs('admin')
+    const markup = await html(OfficersPage())
+    const select = markup.slice(markup.indexOf('name="userId"'), markup.indexOf('</select>'))
+    const names = [...select.matchAll(/<option[^>]*>([^<]*)</g)].map((m) => m[1])
+    expect(names).toContain('Sam Clerk')
+    for (const role of ['finance', 'board']) {
+      const user = await handle.db.query.users.findFirst({
+        where: (u, { eq: equals }) => equals(u.email, `${role}@alderpond.example`),
+      })
+      expect(names).not.toContain(user?.displayName)
+    }
+    expect(visibleText(markup)).toContain('End this designation')
+  })
+
   it('a draft order without a deadline can be completed or discarded from the case page', async () => {
     await actAs('staff')
     const [finding] = await handle.db

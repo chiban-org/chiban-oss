@@ -1,7 +1,10 @@
 'use server'
 
 import { z } from 'zod'
-import { designateEnforcementOfficer } from '@/features/enforcement/designations'
+import {
+  designateEnforcementOfficer,
+  endEnforcementDesignation,
+} from '@/features/enforcement/designations'
 import type { ActionResult } from '@/server/actionRunner'
 import { runEnforcement } from '../../enforcement/enforcementAction'
 import { date, uuid } from '../../enforcement/fields'
@@ -17,5 +20,14 @@ export async function designateOfficerAction(formData: FormData): Promise<Action
     }),
     ({ db, actor, signal }, v) => designateEnforcementOfficer(db, actor, v, signal),
     'Officer designated.',
+  )
+}
+
+export async function endDesignationAction(formData: FormData): Promise<ActionResult> {
+  return await runEnforcement(
+    formData,
+    z.object({ designationId: uuid, endedOn: date }),
+    ({ db, actor, signal }, v) => endEnforcementDesignation(db, actor, v, signal),
+    'Designation ended.',
   )
 }

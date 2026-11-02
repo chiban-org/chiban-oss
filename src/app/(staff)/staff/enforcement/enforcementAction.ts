@@ -56,6 +56,7 @@ const COPY: Record<string, string> = {
     'Only the officer who issued the order or sent the notice can certify imminent peril.',
   appeal_resolved: 'That appeal is already resolved.',
   already_resolved: 'That appeal is already resolved.',
+  already_ended: 'That designation has already ended.',
   already_certified: 'Imminent peril is already certified for this appeal.',
   judgment_required: 'A fine needs a recorded court judgment for this case.',
   complaint_text_unreviewed:

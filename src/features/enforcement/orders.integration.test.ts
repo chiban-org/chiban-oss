@@ -10,13 +10,17 @@ import {
   documents,
   documentVersions,
   enforcementCases,
+  enforcementDesignations,
   enforcementOrders,
   files,
   violationNotices,
 } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { openCase, setCaseStatus } from '@/features/enforcement/cases'
-import { designateEnforcementOfficer } from '@/features/enforcement/designations'
+import {
+  designateEnforcementOfficer,
+  endEnforcementDesignation,
+} from '@/features/enforcement/designations'
 import { recordFinding } from '@/features/enforcement/findings'
 import { recordNoticeReceipt, sendViolationNotice } from '@/features/enforcement/notices'
 import {
@@ -309,6 +313,30 @@ describe('cease and desist orders', () => {
     const drafted = await draft(caseId, [findingId])
     if (!drafted.ok) throw new Error('draft')
     await designate(staff, '2027-03-10')
+    const result = await issueOrder(
+      handle.db,
+      store,
+      staff,
+      { orderId: drafted.value.orderId, issuedOn: d('2027-03-02'), expectedRowVersion: 1 },
+      signal,
+      NOW,
+    )
+    expect(result).toEqual({ ok: false, error: 'not_designated' })
+  })
+
+  it('an officer whose designation ended before the issue date cannot issue', async () => {
+    const { caseId, findingId } = await caseWithFinding()
+    const drafted = await draft(caseId, [findingId])
+    if (!drafted.ok) throw new Error('draft')
+    await designate()
+    const [designation] = await handle.db.select().from(enforcementDesignations)
+    const ended = await endEnforcementDesignation(
+      handle.db,
+      admin,
+      { designationId: designation?.id ?? '', endedOn: d('2027-02-28') },
+      signal,
+    )
+    expect(ended.ok).toBe(true)
     const result = await issueOrder(
       handle.db,
       store,

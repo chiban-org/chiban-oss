@@ -1,15 +1,14 @@
-import { desc, eq, inArray } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { STAFF_ROLES } from '@/constants/roles'
-import { enforcementDesignations, userRoles, users } from '@/db/schema'
+import { enforcementDesignations, roleCapabilities, userRoles, users } from '@/db/schema'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
-import { designateOfficerAction } from './actions'
+import { designateOfficerAction, endDesignationAction } from './actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -40,7 +39,14 @@ export default async function EnforcementOfficersPage() {
     .selectDistinct({ id: users.id, name: users.displayName })
     .from(users)
     .innerJoin(userRoles, eq(userRoles.userId, users.id))
-    .where(inArray(userRoles.role, [...STAFF_ROLES]))
+    .innerJoin(
+      roleCapabilities,
+      and(
+        eq(roleCapabilities.role, userRoles.role),
+        eq(roleCapabilities.capability, 'enforcement.issue_order'),
+      ),
+    )
+    .where(eq(users.isActive, true))
     .orderBy(users.displayName)
   return (
     <main className="space-y-6">
@@ -52,8 +58,22 @@ export default async function EnforcementOfficersPage() {
       {designations.length === 0 ? <p>No officer has been designated.</p> : null}
       <ul className="m-0 list-none space-y-2 p-0">
         {designations.map((d) => (
-          <li key={d.id} className="rounded-md border p-3">
-            {`${d.name}, ${d.title}. Designated by ${d.authority} on ${formatCivilDate(d.adoptedOn)}${d.endedOn === null ? '' : `, ended ${formatCivilDate(d.endedOn)}`}.`}
+          <li key={d.id} className="space-y-2 rounded-md border p-3">
+            <p className="m-0">
+              {`${d.name}, ${d.title}. Designated by ${d.authority} on ${formatCivilDate(d.adoptedOn)}${d.endedOn === null ? '' : `, ended ${formatCivilDate(d.endedOn)}`}.`}
+            </p>
+            {d.endedOn === null ? (
+              <ActionForm action={endDesignationAction} submitLabel="End this designation">
+                <input type="hidden" name="designationId" value={d.id} />
+                <TextField
+                  label="Last day as officer"
+                  name="endedOn"
+                  type="date"
+                  defaultValue={today}
+                  required
+                />
+              </ActionForm>
+            ) : null}
           </li>
         ))}
       </ul>
