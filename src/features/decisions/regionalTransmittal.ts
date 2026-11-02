@@ -142,7 +142,7 @@ export async function recordRegionalTransmittal(
             requirementKey: TRANSMITTAL_CLOCK_KEY,
             requirementVersion: clock.ruleVersion,
             source: 'pack_rule' as const,
-            channel: 'first_class_mail',
+            channel: 'certified_mail',
             recipientKey: r.key,
             recipientName: r.name,
             recipientAddress: r.mailingAddress,

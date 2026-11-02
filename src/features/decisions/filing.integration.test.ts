@@ -62,14 +62,14 @@ async function clockRows(applicationId: string) {
   return await handle.db.select().from(clocks).where(eq(clocks.applicationId, applicationId))
 }
 
-async function proveFirstClass(applicationId: string, ids: string[], effectiveOn: string) {
+async function proveCertified(applicationId: string, ids: string[], effectiveOn: string) {
   return await recordProof(
     handle.db,
     world.staff,
     {
       itemIds: ids,
-      method: 'first_class_mail',
-      reference: null,
+      method: 'certified_mail',
+      reference: '7019 0700 0001 2345 6789',
       effectiveOn: d(effectiveOn),
       documentId: await proofDocument(handle.db, world, applicationId),
     },
@@ -227,7 +227,7 @@ describe('regional transmittal', () => {
       'Town of Pine River',
     ])
     expect(
-      status.items.every((i) => i.channel === 'first_class_mail' && i.dueOn === '2027-07-09'),
+      status.items.every((i) => i.channel === 'certified_mail' && i.dueOn === '2027-07-09'),
     ).toBe(true)
   })
 
@@ -243,7 +243,7 @@ describe('regional transmittal', () => {
     if (!first.ok) throw new Error('derive failed')
     const status = await noticeStatus(handle.db, first.value.setId, signal)
     const prove = (ids: string[], effectiveOn: string) =>
-      proveFirstClass(made.applicationId, ids, effectiveOn)
+      proveCertified(made.applicationId, ids, effectiveOn)
     await prove(
       status.items.slice(0, 2).map((i) => i.itemId),
       '2027-07-07',
@@ -285,6 +285,34 @@ describe('regional transmittal', () => {
     })
   })
 
+  it('a first class mailing does not prove the transmittal', async () => {
+    const made = await regionalDecided()
+    const first = await recordRegionalTransmittal(
+      handle.db,
+      world.staff,
+      made.decisionId,
+      signal,
+      AFTER_FILING,
+    )
+    if (!first.ok) throw new Error('derive failed')
+    const status = await noticeStatus(handle.db, first.value.setId, signal)
+    expect(
+      await recordProof(
+        handle.db,
+        world.staff,
+        {
+          itemIds: status.items.map((i) => i.itemId),
+          method: 'first_class_mail',
+          reference: null,
+          effectiveOn: d('2027-07-08'),
+          documentId: await proofDocument(handle.db, world, made.applicationId),
+        },
+        signal,
+        AFTER_FILING,
+      ),
+    ).toEqual({ ok: false, error: 'method_not_allowed' })
+  })
+
   it('a late proof leaves the transmittal clock unmet', async () => {
     const made = await regionalDecided()
     const first = await recordRegionalTransmittal(
@@ -301,8 +329,8 @@ describe('regional transmittal', () => {
       world.staff,
       {
         itemIds: status.items.map((i) => i.itemId),
-        method: 'first_class_mail',
-        reference: null,
+        method: 'certified_mail',
+        reference: '7019 0700 0001 2345 6789',
         effectiveOn: d('2027-07-12'),
         documentId: await proofDocument(handle.db, world, made.applicationId),
       },
@@ -379,7 +407,7 @@ describe('regional transmittal', () => {
     if (!first.ok) throw new Error('derive failed')
     const status = await noticeStatus(handle.db, first.value.setId, signal)
     const prove = (ids: string[], effectiveOn: string) =>
-      proveFirstClass(made.applicationId, ids, effectiveOn)
+      proveCertified(made.applicationId, ids, effectiveOn)
     await prove(
       status.items.map((i) => i.itemId),
       '2027-07-08',

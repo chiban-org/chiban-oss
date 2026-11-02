@@ -21,11 +21,7 @@ import {
 export const dynamic = 'force-dynamic'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const TRANSMITTAL_METHODS: ProofMethod[] = [
-  'first_class_mail',
-  'certificate_of_mailing',
-  'certified_mail',
-]
+const TRANSMITTAL_METHODS: ProofMethod[] = ['certified_mail']
 const APPEAL_STEPS: [string, string][] = [
   ['rehearing_motion', 'Motion for rehearing'],
   ['rehearing_outcome', 'Rehearing decision'],
@@ -119,6 +115,12 @@ export default async function DecisionPage({
       {view.regional ? (
         <>
           <h2>Regional transmittal</h2>
+          <p>
+            Within 5 business days after the decision, send copies of the minutes of the decision
+            meeting by certified mail to the regional planning commission and each affected
+            municipality. At the same time, send the initial set of plans to the regional planning
+            commission only, at the applicant&apos;s cost (RSA 36:57 II).
+          </p>
           <ActionForm
             action={transmittalAction}
             submitLabel={

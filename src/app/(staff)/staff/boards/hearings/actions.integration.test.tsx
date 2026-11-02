@@ -306,6 +306,9 @@ describe('staff and public pages', () => {
       await DecisionPage({ params: Promise.resolve({ decisionId: regional.decisionId }) }),
     )
     expect(html).toContain('Record proof of transmittal')
+    expect(html).toContain('by certified mail')
+    expect(html).toContain('initial set of plans to the regional planning commission only')
+    expect(html).not.toContain('First class mail')
     expect(html).toContain('Alder Valley Regional Planning Commission')
     expect(html).toContain('Town of Pine River')
     expect(html).not.toContain('Mark properly noticed')
