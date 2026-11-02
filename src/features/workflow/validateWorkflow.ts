@@ -15,7 +15,7 @@ export interface WorkflowIssue {
 
 export function validateWorkflow(
   workflow: ApplicationTypeBody['workflow'],
-  classification: ProceedingClassification,
+  classification: Pick<ProceedingClassification, 'requiredSubsteps' | 'directIssueAllowed'>,
 ): WorkflowIssue[] {
   const issues: WorkflowIssue[] = []
   const seen = new Set<string>()

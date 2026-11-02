@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import type { PreviewActionResult } from '@/components/config/WorkflowEditor'
 import { adoptStarter } from '@/features/config/adoptStarter'
 import { applyStarterPaths } from '@/features/config/applyStarterPaths'
 import { type ConfigIssue, type ConfigKind, isConfigKind } from '@/features/config/kinds'
@@ -8,7 +9,15 @@ import { publishConfig, rollbackConfig } from '@/features/config/publish'
 import { fieldErrorsFor } from '@/features/config/publishErrors'
 import { skeletonBody } from '@/features/config/skeletons'
 import { saveDraft } from '@/features/config/store'
-import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
+import { previewWorkflow } from '@/features/workflow/previewWorkflow'
+import {
+  type ActionResult,
+  errorCopy,
+  runStaffAction,
+  runStaffValue,
+  text,
+} from '@/server/actionRunner'
+import { type CivilDate, parseCivilDate } from '@/types/civilDate'
 
 function parseBody(formData: FormData): unknown {
   try {
@@ -145,4 +154,55 @@ export async function applyStarterPathsAction(formData: FormData): Promise<Actio
     }
     return { ok: true, message: `Applied changes to ${selections.length} configuration items.` }
   })
+}
+
+function previewFailure(result: ActionResult): PreviewActionResult {
+  return result.ok ? { ok: false, error: errorCopy('invalid_input') } : result
+}
+
+function sampleDate(formData: FormData, name: string): CivilDate | undefined {
+  const parsed = parseCivilDate(text(formData, name))
+  return parsed.ok ? parsed.value : undefined
+}
+
+export async function previewWorkflowAction(formData: FormData): Promise<PreviewActionResult> {
+  return await runStaffValue<PreviewActionResult>(
+    formData,
+    (error) => ({ ok: false, error }),
+    async ({ db, actor, signal }) => {
+      const body = parseBody(formData)
+      const received = sampleDate(formData, 'previewReceived')
+      if (body === undefined || received === undefined) return previewFailure(INVALID)
+      const saved = await saveDraft(
+        db,
+        actor,
+        { kind: 'application_type', key: text(formData, 'key'), body },
+        signal,
+      )
+      if (!saved.ok) return previewFailure(refusedDraft(saved.error))
+      const accepted = sampleDate(formData, 'previewAccepted')
+      const meeting = sampleDate(formData, 'previewMeeting')
+      const shown = await previewWorkflow(
+        db,
+        actor,
+        {
+          versionId: saved.value.versionId,
+          sampleFacts: {
+            classification: null,
+            dwellingUnits: null,
+            afterTheFact: false,
+            regionalImpact: text(formData, 'previewRegionalImpact') !== '',
+          },
+          sampleDates: {
+            received,
+            ...(accepted === undefined ? {} : { accepted }),
+            ...(meeting === undefined ? {} : { meeting }),
+          },
+        },
+        signal,
+      )
+      if (!shown.ok) return { ok: false, error: errorCopy(shown.error) }
+      return { ok: true, message: 'Preview updated. Nothing was published.', preview: shown.value }
+    },
+  )
 }

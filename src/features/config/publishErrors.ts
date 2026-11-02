@@ -1,4 +1,5 @@
 import type { PublishError } from '@/features/config/publishChecks'
+import { workflowIssueText } from '@/features/workflow/issueText'
 
 export type FieldErrors = Record<string, string>
 
@@ -65,6 +66,9 @@ function fromObjectError(error: ObjectError): FieldErrors {
     return {
       lines: `Fee lines use fields the form does not have: ${error.unknownFieldRefs.join(', ')}.`,
     }
+  }
+  if ('workflowIssues' in error) {
+    return { workflow: error.workflowIssues.map(workflowIssueText).join(' ') }
   }
   return fromPolicyViolations(error.policyViolations)
 }

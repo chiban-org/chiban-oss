@@ -32,6 +32,16 @@ export default async function SettingsKeyPage({ params }: Props) {
         </Link>
       </p>
       <h1>{key}</h1>
+      {kind === 'application_type' ? (
+        <p>
+          <Link
+            href={`/staff/settings/workflow/${encodeURIComponent(key)}`}
+            className="text-action underline"
+          >
+            Edit the workflow steps
+          </Link>
+        </p>
+      ) : null}
       <ConfigEditorForm
         kind={kind}
         configKey={key}

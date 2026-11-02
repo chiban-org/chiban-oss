@@ -11,6 +11,7 @@ import { loadPack } from '@/features/packs/loadPack'
 import { checkTownValue } from '@/features/packs/overridePolicy'
 import { unknownMergeFields } from '@/features/templates/mergeFields'
 import type { TemplateBody } from '@/features/templates/templateSchema'
+import { validateWorkflow, type WorkflowIssue } from '@/features/workflow/validateWorkflow'
 
 export type PublishError =
   | 'forbidden'
@@ -24,6 +25,7 @@ export type PublishError =
   | { unknownMergeFields: string[] }
   | { unknownFieldRefs: string[] }
   | { finalChecklistCount: number }
+  | { workflowIssues: WorkflowIssue[] }
 
 const NUMERIC_TYPES = new Set(['integer', 'decimal', 'money'])
 
@@ -56,6 +58,8 @@ export async function checkApplicationType(
   const pack = loadPack()
   const classification = pack.classifications.find((c) => c.key === body.classification)
   if (classification === undefined) return { missingClassification: true }
+  const workflowIssues = validateWorkflow(body.workflow, classification)
+  if (workflowIssues.length > 0) return { workflowIssues }
   const known = new Set(pack.rules.map((r) => r.key))
   const unknownBindings = body.bindings.filter((b) => !known.has(b))
   if (unknownBindings.length > 0) return { unknownBindings }
