@@ -31,6 +31,7 @@ import { PANEL_ACTIONS } from '../../records/panelActions'
 import { overrideGateAction, revokeOverrideAction, statutoryExceptionAction } from './actions'
 import { AppealPanel, CodeEditionPanel, RegionalImpactPanel } from './buildingPanels'
 import { FeeOverrideForm } from './feePanels'
+import { InspectionsPanel, loadInspectionsPanelData } from './inspectionsPanel'
 import {
   ClockAdjustForm,
   CompletenessPanel,
@@ -123,6 +124,7 @@ export default async function StaffApplicationPage({ params }: Props) {
   const balanceNotices = await returnedCheckNotices(ctx.db, [applicationId], ctx.signal)
   const payments = await loadApplicationPayments(ctx.db, ctx.actor, applicationId, ctx.signal)
   const records = await loadRecordsData(ctx, applicationId, view.projectId)
+  const inspections = await loadInspectionsPanelData(ctx, applicationId)
   return (
     <main>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -199,6 +201,7 @@ export default async function StaffApplicationPage({ params }: Props) {
         <FeeOverrideForm view={view} />
       </section>
       <PaymentsPanel payments={payments} />
+      <InspectionsPanel data={inspections} applicationId={applicationId} number={view.number} />
       <DocumentPanel
         documents={records.documents}
         canPublish={records.canPublish}

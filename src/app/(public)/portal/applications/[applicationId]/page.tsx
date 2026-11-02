@@ -152,6 +152,18 @@ export default async function PortalApplicationPage({
         ) : null}
       </section>
 
+      {view.state === 'issued' || view.state === 'suspended' || view.state === 'closed' ? (
+        <section aria-labelledby="inspections-heading" className="space-y-3">
+          <h2 id="inspections-heading">Inspections</h2>
+          <Link
+            href={`/portal/applications/${view.applicationId}/inspections`}
+            className="tap-target inline-flex items-center underline"
+          >
+            Request or review inspections
+          </Link>
+        </section>
+      ) : null}
+
       <section aria-labelledby="fees-heading" className="space-y-3">
         <h2 id="fees-heading">Fees and payment</h2>
         <Fees view={view} />
