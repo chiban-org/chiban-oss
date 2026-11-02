@@ -34,7 +34,7 @@ export default async function ReleasePage({ params }: { params: Promise<{ token:
           <li key={item.versionId} className="text-base">
             {item.withdrawnOn === null ? (
               <Link href={`${base}/${item.versionId}`} className={LINK}>
-                {`${item.title} (${item.filename})`}
+                {item.downloadName}
               </Link>
             ) : (
               <span>{`${item.title}: withdrawn by the town on ${formatCivilDate(item.withdrawnOn)}`}</span>
