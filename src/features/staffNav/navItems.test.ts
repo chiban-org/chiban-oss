@@ -64,6 +64,18 @@ describe('staff navigation', () => {
     expect(labels).toContain('Applications')
     expect(labels).toContain('Queue')
     expect(labels).not.toContain('My day')
+    for (const hidden of ['Imports', 'Exceptions', 'Unresolved records', 'Overrides', 'Settings']) {
+      expect(labels).not.toContain(hidden)
+    }
+    expect(labelsFor('staff')).toEqual(
+      expect.arrayContaining([
+        'Imports',
+        'Exceptions',
+        'Unresolved records',
+        'Overrides',
+        'Settings',
+      ]),
+    )
   })
 
   it('shows admin the administration pages and finance the payments page', () => {
