@@ -1,10 +1,11 @@
 import type { NoticeRequirementRule } from '@packs/nh/schema'
 import type { RecipientRole } from '@/features/abutters/roles'
+import { describeCounting } from '@/features/clocks/describeCounting'
 import { computeRuleDue, resolveRuleLength } from '@/features/clocks/ruleEngine'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import type { NoticeChannel } from '@/features/notices/channels'
 import { applies } from '@/features/notices/requirementsFor'
-import { packHolidayCalendar } from '@/features/packs/holidays'
+import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -21,6 +22,7 @@ export interface PlannedRequirement {
   dueOn: CivilDate
   leadDays: number
   leadSource: 'pack_rule' | 'town_setting'
+  countingMethod: string
 }
 
 export interface PlanInput {
@@ -45,8 +47,20 @@ export function planRequirement(
   const lead = ruleByKey(loadPack(), rule.leadRuleKey)
   if (lead.kind !== 'clock') return null
   const length = resolveRuleLength(lead, EMPTY_FACTS, null, input.townLeadDays[lead.key])
-  const { due } = computeRuleDue(lead, length, input.hearingDate, packHolidayCalendar())
+  const holidays = packHolidayCalendar()
+  const { due } = computeRuleDue(lead, length, input.hearingDate, holidays)
   return {
+    countingMethod: describeCounting(
+      {
+        start: input.hearingDate,
+        length: { unit: length.unit, value: length.value },
+        direction: lead.direction,
+        clockType: lead.clockType,
+        holidays,
+      },
+      { due, rolledFrom: null },
+      PACK_COUNTING_CITATIONS,
+    ),
     channel: channelOf(rule, input.publicChoice),
     recipients: rule.recipients,
     dueOn: due,

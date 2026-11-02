@@ -30,6 +30,7 @@ export const documents = pgTable(
         'board_material',
         'inspection_photo',
         'certificate_of_occupancy',
+        'notice_proof',
       ],
     }).notNull(),
     audiences: text('audiences').array().notNull().default(sql`'{}'::text[]`),

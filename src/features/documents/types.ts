@@ -19,6 +19,7 @@ export const DOC_KINDS = [
   'board_material',
   'inspection_photo',
   'certificate_of_occupancy',
+  'notice_proof',
 ] as const
 export type DocKind = (typeof DOC_KINDS)[number]
 
