@@ -107,6 +107,35 @@ References:
 - `application_id` refers to `applications`
 - `meeting_id` refers to `board_meetings`
 
+### agenda_items
+
+File: `data/agenda_items.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `meeting_id`: uuid
+- `position`: integer
+- `kind`: text
+- `hearing_id`: uuid, nullable
+- `title`: text
+- `description`: text
+
+References:
+- `meeting_id` refers to `agendas`
+- `hearing_id` refers to `hearings`
+
+### agendas
+
+File: `data/agendas.ndjson`. Ordered by meeting_id.
+
+- `meeting_id`: uuid
+- `status`: text
+- `revision`: integer
+- `published_at`: timestamp with time zone, nullable
+- `document_id`: uuid, nullable
+
+References:
+- `meeting_id` refers to `board_meetings`
+
 ### alias_overrides
 
 File: `data/alias_overrides.ndjson`. Ordered by id.
@@ -283,6 +312,33 @@ File: `data/audit_log.ndjson`. Ordered by id.
 - `entity_id`: text
 - `before`: jsonb, nullable
 - `after`: jsonb, nullable
+
+### board_decisions
+
+File: `data/board_decisions.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `application_id`: uuid
+- `hearing_id`: uuid
+- `meeting_id`: uuid
+- `voted_on`: date
+- `outcome`: text
+- `motion`: text
+- `votes`: jsonb
+- `findings`: text
+- `conditions`: jsonb
+- `reasons_for_disapproval`: text, nullable
+- `filed_on`: date, nullable
+- `minutes_document_id`: uuid, nullable
+- `written_decision_document_id`: uuid, nullable
+- `letter_document_id`: uuid, nullable
+- `recorded_by`: uuid
+- `recorded_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+- `hearing_id` refers to `hearings`
+- `meeting_id` refers to `board_meetings`
 
 ### board_meetings
 
@@ -628,7 +684,7 @@ References:
 - `migration_batch_id` refers to `migration_batches`
 
 Typed references:
-- `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, project to `projects`, parcel to `parcels`, migration_batch to `migration_batches`
+- `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, project to `projects`, parcel to `parcels`, meeting to `board_meetings`, migration_batch to `migration_batches`
 
 ### export_targets
 
@@ -730,6 +786,30 @@ File: `data/gis_layers.ndjson`. Ordered by key.
 - `last_success_at`: timestamp with time zone, nullable
 - `last_failure_at`: timestamp with time zone, nullable
 - `last_error`: text, nullable
+
+### hearings
+
+File: `data/hearings.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `application_id`: uuid
+- `meeting_id`: uuid
+- `kind`: text
+- `status`: text
+- `continued_from`: uuid, nullable
+- `continuation_announced`: boolean, nullable
+- `announced_details`: text, nullable
+- `notice_set_id`: uuid
+- `properly_noticed_at`: timestamp with time zone, nullable
+- `properly_noticed_by`: uuid, nullable
+- `held_on`: date, nullable
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+- `meeting_id` refers to `board_meetings`
+- `notice_set_id` refers to `notice_sets`
 
 ### historical_records
 
@@ -966,6 +1046,66 @@ File: `data/migration_items.ndjson`. Ordered by id.
 References:
 - `batch_id` refers to `migration_batches`
 - `document_id` refers to `documents`
+
+### notice_items
+
+File: `data/notice_items.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `set_id`: uuid
+- `requirement_key`: text
+- `requirement_version`: integer
+- `source`: text
+- `channel`: text
+- `recipient_key`: text, nullable
+- `recipient_name`: text, nullable
+- `recipient_address`: text, nullable
+- `roles`: text[]
+- `due_on`: date
+- `counting_method`: text
+
+References:
+- `set_id` refers to `notice_sets`
+
+### notice_proof_supersessions
+
+File: `data/notice_proof_supersessions.ndjson`. Ordered by proof_id.
+
+- `proof_id`: uuid
+- `superseded_by_proof_id`: uuid
+- `recorded_at`: timestamp with time zone
+
+References:
+- `proof_id` refers to `notice_proofs`
+- `superseded_by_proof_id` refers to `notice_proofs`
+
+### notice_proofs
+
+File: `data/notice_proofs.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `item_id`: uuid
+- `method`: text
+- `reference`: text, nullable
+- `effective_on`: date
+- `document_id`: uuid
+- `recorded_by`: uuid
+- `recorded_at`: timestamp with time zone
+
+References:
+- `item_id` refers to `notice_items`
+
+### notice_sets
+
+File: `data/notice_sets.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `subject_kind`: text
+- `subject_id`: uuid
+- `application_id`: uuid, nullable
+- `anchor_date`: date
+- `inherited_from`: uuid, nullable
+- `created_at`: timestamp with time zone
 
 ### notification_outbox
 

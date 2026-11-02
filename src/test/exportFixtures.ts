@@ -49,6 +49,49 @@ const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
     statement: sql`insert into board_packet_access (link_id) select id from board_packet_links limit 1`,
   },
   {
+    table: 'notice_sets',
+    statement: sql`insert into notice_sets (subject_kind, subject_id, application_id, anchor_date)
+      select 'hearing', gen_random_uuid(), id, '2027-04-14' from applications limit 1`,
+  },
+  {
+    table: 'notice_items',
+    statement: sql`insert into notice_items (set_id, requirement_key, requirement_version, source, channel, recipient_name, due_on, counting_method)
+      select id, 'nh.pb.notice_req.mail', 1, 'pack_rule', 'verified_mail', 'Coverage Recipient', '2027-04-04', 'Coverage row' from notice_sets limit 1`,
+  },
+  {
+    table: 'notice_proofs',
+    statement: sql`insert into notice_proofs (item_id, method, effective_on, document_id, recorded_by)
+      select i.id, 'certificate_of_mailing', '2027-04-01', gen_random_uuid(), gen_random_uuid()
+      from notice_items i, generate_series(1, 2) limit 2`,
+  },
+  {
+    table: 'notice_proof_supersessions',
+    statement: sql`insert into notice_proof_supersessions (proof_id, superseded_by_proof_id)
+      select a.id, b.id from notice_proofs a, notice_proofs b where a.id < b.id limit 1`,
+  },
+  {
+    table: 'hearings',
+    statement: sql`insert into hearings (application_id, meeting_id, kind, notice_set_id, created_by)
+      select s.application_id, m.id, 'public_hearing', s.id, gen_random_uuid()
+      from notice_sets s, board_meetings m where s.application_id is not null limit 1`,
+  },
+  {
+    table: 'agendas',
+    statement: sql`insert into agendas (meeting_id) select meeting_id from hearings limit 1`,
+  },
+  {
+    table: 'agenda_items',
+    statement: sql`insert into agenda_items (meeting_id, position, kind, hearing_id, title)
+      select meeting_id, 0, 'hearing', id, 'Coverage item' from hearings limit 1`,
+  },
+  {
+    table: 'board_decisions',
+    statement: sql`insert into board_decisions (application_id, hearing_id, meeting_id, voted_on, outcome, motion, votes, findings, conditions, recorded_by)
+      select application_id, id, meeting_id, '2027-04-15', 'approved', 'Coverage motion',
+        '{"for":1,"against":0,"abstain":0,"members":[{"name":"Coverage Member","vote":"for"}]}'::jsonb,
+        'Coverage findings', '[]'::jsonb, gen_random_uuid() from hearings limit 1`,
+  },
+  {
     table: 'processor_events',
     statement: sql`insert into processor_events (processor_account_id, event_id, type, raw)
       select id, 'evt_export', 'charge.succeeded', '{}'::jsonb from processor_accounts limit 1`,
