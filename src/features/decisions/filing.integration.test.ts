@@ -4,6 +4,7 @@ import { boardDecisions, clocks, documents, regionalImpactParties } from '@/db/s
 import { fileDecision } from '@/features/decisions/fileDecision'
 import { recordRegionalTransmittal } from '@/features/decisions/regionalTransmittal'
 import { listDocuments } from '@/features/documents/listDocuments'
+import { resolveRendition } from '@/features/documents/visibility'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { recordProof } from '@/features/notices/proofs'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -132,6 +133,15 @@ describe('fileDecision', () => {
     expect(ids).toContain(minutesId)
     expect(ids).toContain(decision?.writtenDecisionDocumentId)
     expect(ids).not.toContain(decision?.letterDocumentId)
+    const minutes = await resolveRendition(handle.db, null, minutesId, signal)
+    const written = await resolveRendition(
+      handle.db,
+      null,
+      decision?.writtenDecisionDocumentId ?? '',
+      signal,
+    )
+    expect(minutes.ok && minutes.value.role).toBe('original')
+    expect(written.ok && written.value.role).toBe('original')
   })
 
   it('filing before the written decision exists is no_written_decision', async () => {
