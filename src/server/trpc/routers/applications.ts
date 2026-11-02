@@ -1,5 +1,9 @@
+import { TRPCError } from '@trpc/server'
 import { z } from 'zod'
-import { listApplicationsForViewer } from '@/features/applications/listForViewer'
+import {
+  getApplicationForViewer,
+  listApplicationsForViewer,
+} from '@/features/applications/listForViewer'
 import { authedProcedure, router } from '../trpc'
 
 const listInput = z.object({
@@ -11,4 +15,9 @@ export const applicationsRouter = router({
   list: authedProcedure
     .input(listInput)
     .query(({ ctx, input }) => listApplicationsForViewer(ctx.db, ctx.actor, input, ctx.signal)),
+  get: authedProcedure.input(z.object({ id: z.uuid() })).query(async ({ ctx, input }) => {
+    const row = await getApplicationForViewer(ctx.db, ctx.actor, input.id, ctx.signal)
+    if (row === null) throw new TRPCError({ code: 'NOT_FOUND', message: 'not found' })
+    return row
+  }),
 })

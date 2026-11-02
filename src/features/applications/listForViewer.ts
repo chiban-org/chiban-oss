@@ -1,8 +1,8 @@
-import { and, desc, eq, exists, isNull, lt, type SQL } from 'drizzle-orm'
+import { and, desc, eq, lt } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { applications, projectParties, projects } from '@/db/schema'
+import { applications, projects } from '@/db/schema'
+import { applicationVisibleTo } from '@/features/access/predicates'
 import type { Actor } from '@/features/auth/actor'
-import { hasFullRecordAccess } from '@/features/projects/access'
 
 export interface ApplicationListRow {
   id: string
@@ -25,22 +25,6 @@ export interface ApplicationPage {
 function decodeCursor(cursor: string): number | null {
   const seq = Number(cursor)
   return Number.isSafeInteger(seq) ? seq : null
-}
-
-function visibleTo(db: DbOrTx, actor: Actor): SQL | undefined {
-  if (hasFullRecordAccess(actor)) return undefined
-  return exists(
-    db
-      .select({ one: projectParties.id })
-      .from(projectParties)
-      .where(
-        and(
-          eq(projectParties.projectId, applications.projectId),
-          eq(projectParties.userId, actor.userId),
-          isNull(projectParties.removedAt),
-        ),
-      ),
-  )
 }
 
 export async function listApplicationsForViewer(
@@ -67,7 +51,7 @@ export async function listApplicationsForViewer(
     })
     .from(applications)
     .innerJoin(projects, eq(projects.id, applications.projectId))
-    .where(and(visibleTo(db, actor), afterClause))
+    .where(and(applicationVisibleTo(actor), afterClause))
     .orderBy(desc(applications.seq))
     .limit(input.limit + 1)
   const page = rows.slice(0, input.limit)
@@ -77,4 +61,31 @@ export async function listApplicationsForViewer(
     rows: page,
     nextCursor: hasMore && last !== undefined ? String(last.seq) : null,
   }
+}
+
+export async function getApplicationForViewer(
+  db: DbOrTx,
+  actor: Actor,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<ApplicationListRow | null> {
+  signal.throwIfAborted()
+  const [row] = await db
+    .select({
+      id: applications.id,
+      seq: applications.seq,
+      number: applications.number,
+      applicationTypeKey: applications.applicationTypeKey,
+      state: applications.state,
+      substep: applications.substep,
+      projectId: applications.projectId,
+      projectTitle: projects.title,
+      parcelId: projects.parcelId,
+      createdAt: applications.createdAt,
+    })
+    .from(applications)
+    .innerJoin(projects, eq(projects.id, applications.projectId))
+    .where(and(eq(applications.id, applicationId), applicationVisibleTo(actor)))
+    .limit(1)
+  return row ?? null
 }

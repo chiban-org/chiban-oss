@@ -232,6 +232,13 @@
       "when": 1793598806610,
       "tag": "0032_watery_lionheart",
       "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1793598941048,
+      "tag": "0033_dear_stellaris",
+      "breakpoints": true
     }
   ]
 }

@@ -1,13 +1,8 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { projectParties } from '@/db/schema'
-import type { Actor } from '@/features/auth/actor'
 
-const FULL_ACCESS_ROLES = ['admin', 'staff', 'inspector', 'finance', 'records_custodian'] as const
-
-export function hasFullRecordAccess(actor: Actor): boolean {
-  return actor.kind === 'staff' && actor.roles.some((r) => FULL_ACCESS_ROLES.includes(r as never))
-}
+export { hasFullRecordAccess } from '@/features/access/roles'
 
 export async function isActiveParty(
   db: DbOrTx,

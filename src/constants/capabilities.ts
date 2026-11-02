@@ -18,6 +18,10 @@ export const CAPABILITIES = {
   'fee.override': 'Waive or set a fee amount with a recorded reason',
   'payment.collect': 'Record counter payments and start card payments at the counter',
   'payment.report': 'View and export the daily cash receipts report',
+  'review.assign': 'Assign and remove reviewers on an application',
+  'document.manage':
+    'Attach documents to any record, set document audiences, and retry preservation',
+  'packet.manage': 'Create board packets and send or revoke their links',
 } as const
 
 export type Capability = keyof typeof CAPABILITIES
