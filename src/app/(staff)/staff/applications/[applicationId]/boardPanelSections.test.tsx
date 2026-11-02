@@ -28,7 +28,7 @@ function data(suggested: 'within_500ft' | 'not_within' | null): BoardPanelData {
 }
 
 function determination(): HTMLSelectElement {
-  return screen.getByLabelText('Determination') as HTMLSelectElement
+  return screen.getByLabelText<HTMLSelectElement>('Determination')
 }
 
 describe('NH DES determination form', () => {

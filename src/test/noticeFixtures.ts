@@ -133,6 +133,7 @@ export async function proveEverything(
       signal,
       now,
     )
-    if (!proved.ok) throw new AppError(ErrorIds.DB_INVARIANT, `proof ${channel}: ${proved.error}`)
+    if (!proved.ok)
+      throw new AppError(ErrorIds.DB_INVARIANT, `proof ${channel}: ${JSON.stringify(proved.error)}`)
   }
 }
