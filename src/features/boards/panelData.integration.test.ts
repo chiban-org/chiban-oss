@@ -3,8 +3,14 @@ import { setAcceptanceMeeting } from '@/features/boards/acceptance'
 import { recordDesDetermination } from '@/features/boards/des500'
 import { scheduleMeeting } from '@/features/boards/meetings'
 import { loadBoardPanel } from '@/features/boards/panelData'
+import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
-import { type BoardWorld, setupBoardWorld, submitBoardApplication } from '@/test/boardFixtures'
+import {
+  type BoardWorld,
+  publishRegionalContacts,
+  setupBoardWorld,
+  submitBoardApplication,
+} from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { issueFixtureList } from '@/test/listFixtures'
 import type { CivilDate } from '@/types/civilDate'
@@ -78,5 +84,23 @@ describe('issued list currency', () => {
     )
     const panel = await loadBoardPanel(handle.db, world.staff, id, signal)
     expect(panel?.lists[0]?.statusText).toBe('Issued, out of date. Draw and issue a new list.')
+  })
+})
+
+describe('regional impact summary', () => {
+  it('names the affected municipalities in a sentence', async () => {
+    await publishRegionalContacts(handle.db, world)
+    const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')
+    const recorded = await recordBoardRegionalImpact(
+      handle.db,
+      world.staff,
+      { applicationId: id, determination: 'yes', municipalityKeys: ['pine_river', 'dunmore'] },
+      signal,
+    )
+    expect(recorded.ok).toBe(true)
+    const panel = await loadBoardPanel(handle.db, world.staff, id, signal)
+    expect(panel?.regional.summary).toBe(
+      'Regional impact: yes. Affected municipalities: Town of Dunmore and Town of Pine River.',
+    )
   })
 })

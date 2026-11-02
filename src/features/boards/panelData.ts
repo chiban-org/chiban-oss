@@ -44,6 +44,7 @@ export interface BoardPanelData {
   today: string
   regional: {
     text: string | null
+    summary: string
     options: { key: string; name: string }[]
     chosen: string[]
   }
@@ -74,6 +75,16 @@ const DETERMINATION_TEXT = {
   no: 'Regional impact: no',
   previously_determined: 'Regional impact: previously determined by another board',
 } as const
+
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names.join('')
+  return `${names.slice(0, -1).join(', ')} and ${names.at(-1) ?? ''}`
+}
+
+function regionalSummary(text: string | null, names: string[]): string {
+  if (text === null) return 'Regional impact has not been determined.'
+  return names.length === 0 ? `${text}.` : `${text}. Affected municipalities: ${joinNames(names)}.`
+}
 
 const DES_TEXT = {
   within_500ft: 'Within the distance of a water body: NH DES receives notice',
@@ -213,6 +224,13 @@ export async function loadBoardPanel(
     today,
     regional: {
       text: determination === undefined ? null : DETERMINATION_TEXT[determination.determination],
+      summary: regionalSummary(
+        determination === undefined ? null : DETERMINATION_TEXT[determination.determination],
+        contacts.municipalities
+          .filter((m) => parties.some((p) => p.municipalityKey === m.key))
+          .map((m) => m.name)
+          .sort(),
+      ),
       options: contacts.municipalities.map((m) => ({ key: m.key, name: m.name })),
       chosen: parties.map((p) => p.municipalityKey),
     },
