@@ -86,6 +86,20 @@ describe('proposing and approving', () => {
     })
   })
 
+  it('the custodian who proposed a batch cannot approve it; another custodian can', async () => {
+    await eligibleCase(handle.db, store, staff, 1)
+    const batchId = await proposed(custodian)
+    expect(await approveDisposition(handle.db, custodian, { batchId }, signal)).toEqual({
+      ok: false,
+      error: 'own_proposal',
+    })
+    const [still] = await handle.db.select().from(dispositionBatches)
+    expect(still?.status).toBe('proposed')
+    const second = await staffActor(handle.db, 'records_custodian')
+    expect(second.userId).not.toBe(custodian.userId)
+    expect((await approveDisposition(handle.db, second, { batchId }, signal)).ok).toBe(true)
+  })
+
   it('admin without disposition.approve is forbidden', async () => {
     await eligibleCase(handle.db, store, staff, 1)
     const batchId = await proposed()

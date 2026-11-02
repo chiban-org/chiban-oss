@@ -50,6 +50,7 @@ export const RECORDS_COPY: Record<string, string> = {
   kind_not_for_target: 'That event does not apply to this kind of record.',
   nothing_eligible: 'No records are eligible on that date.',
   not_proposed: 'That batch is no longer waiting for approval.',
+  own_proposal: 'You proposed this batch, so another records custodian has to approve it.',
   not_cancellable: 'That batch can no longer be cancelled.',
   not_approved: 'That batch is not approved.',
   stale_version: 'This record changed since you opened it. Reload the page and try again.',

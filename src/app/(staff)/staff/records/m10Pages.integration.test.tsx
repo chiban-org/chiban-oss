@@ -292,4 +292,26 @@ describe('records screens with the demo seed', () => {
       html(RequestPage({ params: Promise.resolve({ requestId: 'nope' }) })),
     ).rejects.toThrow('NOT_FOUND')
   })
+
+  it('a proposed batch says who may approve it instead of offering approval to its proposer', async () => {
+    const proposer = await handle.db.query.users.findFirst({
+      where: (u, { eq: is }) => is(u.email, 'records@alderpond.example'),
+    })
+    const [batch] = await handle.db
+      .insert(dispositionBatches)
+      .values({ asOf: '2026-10-01', proposedBy: proposer?.id ?? '' })
+      .returning({ id: dispositionBatches.id })
+    const render = async () =>
+      visibleText(await html(BatchPage({ params: Promise.resolve({ batchId: batch?.id ?? '' }) })))
+    try {
+      await actAs('records')
+      const own = await render()
+      expect(own).toContain('You proposed this batch, so another records custodian approves it.')
+      expect(own).not.toContain('Approve and carry out')
+      await actAs('staff')
+      expect(await render()).toContain('A records custodian approves it.')
+    } finally {
+      await handle.db.delete(dispositionBatches).where(eq(dispositionBatches.id, batch?.id ?? ''))
+    }
+  })
 })
