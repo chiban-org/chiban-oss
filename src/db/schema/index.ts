@@ -1,5 +1,6 @@
 export * from './aliasOverrides'
 export * from './audit'
+export * from './config'
 export * from './gisImports'
 export * from './identity'
 export * from './jobRuns'
