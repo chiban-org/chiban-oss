@@ -12,6 +12,7 @@ import {
   type StaffApplicationView,
 } from '@/features/applications/staffApplicationView'
 import { stateLabel } from '@/features/applications/stateLabel'
+import { applicationSubtitle } from '@/features/applications/subtitle'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { returnedCheckNotices } from '@/features/ledger/balanceNotice'
@@ -127,7 +128,7 @@ export default async function StaffApplicationPage({ params }: Props) {
         />
       </div>
       <p className="text-muted-foreground">
-        {`${view.typeLabel} for ${view.projectTitle} on parcel `}
+        {`${applicationSubtitle(view.typeLabel, view.projectTitle)} on parcel `}
         <Link href={`/staff/parcels/${view.parcelId}`} className="text-action underline">
           {view.parcelDisplayId}
         </Link>
