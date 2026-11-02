@@ -122,4 +122,37 @@ describe('packets page', () => {
       },
     })
   })
+
+  it('an expired link reads as expired and offers no revoke', async () => {
+    const variance = await submitBoardApplication(handle.db, world, world.zbaTypeKey, '2027-03-02')
+    const documentId = await boardDocument(variance, 'Site plan')
+    const made = await createPacket(
+      handle.db,
+      world.staff,
+      { title: 'April', board: 'zba', meetingDate: MEETING, documentIds: [documentId] },
+      signal,
+    )
+    if (!made.ok) throw new Error('packet')
+    await sendPacketLink(
+      handle.db,
+      createMemoryTransport(),
+      world.staff,
+      {
+        packetId: made.value.packetId,
+        recipientName: 'Pat Guest',
+        recipientEmail: 'pat@example.org',
+      },
+      signal,
+      new Date('2027-03-01T16:00:00Z'),
+    )
+    const page = await loadPacketsPage(
+      handle.db,
+      world.staff,
+      signal,
+      new Date('2027-04-01T16:00:00Z'),
+    )
+    const [link] = page.ok ? (page.value.packets[0]?.links ?? []) : []
+    expect(link?.revocable).toBe(false)
+    expect(link?.text).toMatch(/^Pat Guest \(pat@example\.org\), expired March 15, 2027/)
+  })
 })

@@ -28,10 +28,28 @@ export interface PacketsPageView {
 
 const FALLBACK_ZONE = 'America/New_York'
 
+function linkLine(
+  link: typeof boardPacketLinks.$inferSelect,
+  zone: string,
+  now: Date,
+): PacketLinkLine {
+  const expired = link.expiresAt.getTime() <= now.getTime()
+  const state =
+    link.revokedAt !== null
+      ? 'revoked'
+      : `${expired ? 'expired' : 'expires'} ${formatInstant(link.expiresAt, zone)}`
+  return {
+    id: link.id,
+    revocable: link.revokedAt === null && !expired,
+    text: `${link.recipientName} (${link.recipientEmail}), ${state}`,
+  }
+}
+
 export async function loadPacketsPage(
   db: Db,
   actor: Actor,
   signal: AbortSignal,
+  now: Date = new Date(),
 ): Promise<Result<PacketsPageView, 'forbidden'>> {
   signal.throwIfAborted()
   const packets = await listPackets(db, actor, signal)
@@ -77,13 +95,7 @@ export async function loadPacketsPage(
       documents: items
         .filter((i) => i.packetId === p.id)
         .map((i) => (i.withdrawnAt === null ? i.title : `${i.title} (withdrawn)`)),
-      links: links
-        .filter((l) => l.packetId === p.id)
-        .map((l) => ({
-          id: l.id,
-          revocable: l.revokedAt === null,
-          text: `${l.recipientName} (${l.recipientEmail}), ${l.revokedAt === null ? `expires ${formatInstant(l.expiresAt, zone)}` : 'revoked'}`,
-        })),
+      links: links.filter((l) => l.packetId === p.id).map((l) => linkLine(l, zone, now)),
       notified: notices
         .filter((n) => n.entityId === p.id)
         .map((n) => {
