@@ -14,6 +14,7 @@ import {
 } from '@/test/applicationFixtures'
 import { appTypeBody, saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -183,5 +184,41 @@ describe('transitions', () => {
     expect(rows).toHaveLength(1)
     expect(rows[0]?.before).toMatchObject({ state: 'submitted' })
     expect(rows[0]?.after).toMatchObject({ state: 'issued' })
+  })
+
+  it('closing records the closure reason', async () => {
+    const app = await trade({ state: 'issued' })
+    const [row] = await handle.db
+      .select()
+      .from(applications)
+      .where(eq(applications.id, app.applicationId))
+    const r = await handle.db.transaction((tx) =>
+      transitionApplication(
+        tx,
+        world.staff,
+        {
+          applicationId: app.applicationId,
+          to: 'closed',
+          closureReason: 'final_inspection_passed',
+          expectedRowVersion: row?.rowVersion ?? 0,
+          onDate: ON,
+        },
+        signal,
+      ),
+    )
+    expect(r.ok).toBe(true)
+    expect((await stateOf(app.applicationId))?.closureReason).toBe('final_inspection_passed')
+  })
+
+  it('an inspector may close a permit but finance may not', async () => {
+    const inspector = await staffActor(handle.db, 'inspector')
+    const finance = await staffActor(handle.db, 'finance')
+    const first = await trade({ state: 'issued' })
+    const second = await trade({ state: 'issued' })
+    expect(await go(finance, first.applicationId, 'closed')).toEqual({
+      ok: false,
+      error: 'forbidden',
+    })
+    expect(await go(inspector, second.applicationId, 'closed')).toMatchObject({ ok: true })
   })
 })

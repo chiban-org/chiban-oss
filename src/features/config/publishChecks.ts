@@ -4,6 +4,7 @@ import type { ConfigIssue, ConfigKind, TownRuleSettingBody } from '@/features/co
 import { type ConfigVersionRow, getPublished } from '@/features/config/store'
 import { exprFieldRefs, type FeeScheduleBody } from '@/features/fees/feeSchema'
 import type { FormBody } from '@/features/forms/formSchema'
+import type { ChecklistBody } from '@/features/inspections/checklistSchema'
 import { loadPack } from '@/features/packs/loadPack'
 import { checkTownValue } from '@/features/packs/overridePolicy'
 import { unknownMergeFields } from '@/features/templates/mergeFields'
@@ -20,6 +21,7 @@ export type PublishError =
   | { policyViolations: { ruleKey: string; error: string }[] }
   | { unknownMergeFields: string[] }
   | { unknownFieldRefs: string[] }
+  | { finalChecklistCount: number }
 
 const NUMERIC_TYPES = new Set(['integer', 'decimal', 'money'])
 
@@ -76,6 +78,12 @@ export async function checkApplicationType(
     ...body.templateKeys.filter((_, i) => templates[i] === null).map((k) => `template:${k}`),
   ]
   if (missingReferences.length > 0) return { missingReferences }
+  if (body.checklistKeys.length > 0) {
+    const finalChecklistCount = checklists.filter(
+      (c) => (c?.body as ChecklistBody).final === true,
+    ).length
+    if (finalChecklistCount !== 1) return { finalChecklistCount }
+  }
   const formBody = form?.body as FormBody
   const numeric = new Set(
     formBody.fields.filter((f) => NUMERIC_TYPES.has(f.type)).map((f) => f.key),

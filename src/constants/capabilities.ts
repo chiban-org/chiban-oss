@@ -22,6 +22,8 @@ export const CAPABILITIES = {
   'document.manage':
     'Attach documents to any record, set document audiences, and retry preservation',
   'packet.manage': 'Create board packets and send or revoke their links',
+  'inspection.schedule': 'Take inspection requests and schedule, reschedule, or cancel inspections',
+  'inspection.record': 'Record inspection results and attach inspection photos',
 } as const
 
 export type Capability = keyof typeof CAPABILITIES

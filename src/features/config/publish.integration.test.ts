@@ -251,3 +251,41 @@ describe('bindings and amendments', () => {
     expect(later.map((a) => a.title)).toEqual(['Local rail rule'])
   })
 })
+
+describe('final checklist publish check', () => {
+  async function publishChecklists(finals: boolean[]): Promise<string[]> {
+    const admin = await staffActor(handle.db, 'admin')
+    await publishBuildingSupport(handle.db, admin)
+    const keys: string[] = []
+    for (const [i, final] of finals.entries()) {
+      const key = `bp-check-${i}`
+      keys.push(key)
+      await saveAndPublish(handle.db, admin, 'inspection_checklist', key, {
+        key,
+        inspectionType: final ? 'final' : 'rough',
+        label: key,
+        final,
+        items: [{ key: 'item-1', label: 'Item', required: true }],
+      })
+    }
+    return keys
+  }
+
+  it('building type with two final checklists fails publish with finalChecklistCount 2', async () => {
+    const keys = await publishChecklists([true, true])
+    const r = await publishResult('application_type', 'BP', appTypeBody({ checklistKeys: keys }))
+    expect(r).toEqual({ ok: false, error: { finalChecklistCount: 2 } })
+  })
+
+  it('a type with checklists and no final checklist fails with finalChecklistCount 0', async () => {
+    const keys = await publishChecklists([false])
+    const r = await publishResult('application_type', 'BP', appTypeBody({ checklistKeys: keys }))
+    expect(r).toEqual({ ok: false, error: { finalChecklistCount: 0 } })
+  })
+
+  it('a type with exactly one final checklist publishes', async () => {
+    const keys = await publishChecklists([false, true])
+    const r = await publishResult('application_type', 'BP', appTypeBody({ checklistKeys: keys }))
+    expect(r.ok).toBe(true)
+  })
+})

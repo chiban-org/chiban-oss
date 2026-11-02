@@ -20,7 +20,7 @@ export function tradeStarter(input: TradeInput): StarterBundle {
   const checklistKeys = [`${slug}-rough`, `${slug}-final`]
   return {
     id: input.id,
-    version: 1,
+    version: 2,
     form: {
       key: `${slug}-form`,
       label: `${label} permit application`,
@@ -68,12 +68,14 @@ export function tradeStarter(input: TradeInput): StarterBundle {
         key: checklistKeys[0] ?? '',
         inspectionType: 'rough',
         label: `${label} rough inspection`,
+        final: false,
         items: [{ key: 'rough-1', label: 'Rough-in installed and accessible', required: true }],
       },
       {
         key: checklistKeys[1] ?? '',
         inspectionType: 'final',
         label: `${label} final inspection`,
+        final: true,
         items: [{ key: 'final-1', label: 'Installation complete and operable', required: true }],
       },
     ],

@@ -17,7 +17,7 @@ vi.mock('@/db/client', () => ({
   },
 }))
 vi.mock('@/server/requirePortal', () => ({
-  portalActorOrNull: async () => state.actor,
+  portalActorOrNull: () => Promise.resolve(state.actor),
 }))
 vi.mock('./PaymentStatusPoller', () => ({ PaymentStatusPoller: () => null }))
 

@@ -18,7 +18,7 @@ const INSPECTIONS = [
 
 export const BUILDING_DEMOLITION_STARTER: StarterBundle = {
   id: 'nh.starter.building',
-  version: 1,
+  version: 2,
   form: {
     key: 'bp-form',
     label: 'Building or demolition permit application',
@@ -149,6 +149,7 @@ export const BUILDING_DEMOLITION_STARTER: StarterBundle = {
     key: `bp-${type}`,
     inspectionType: type,
     label,
+    final: type === 'final',
     items: items.map((item, i) => ({ key: `${type}-${i + 1}`, label: item, required: true })),
   })),
   templates: [

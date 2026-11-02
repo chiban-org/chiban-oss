@@ -113,4 +113,11 @@ describe('NH starters', () => {
       expect(s.checklists.map((c) => c.inspectionType)).toEqual(['rough', 'final'])
     }
   })
+
+  it('every starter names exactly one final checklist', () => {
+    for (const s of NH_STARTERS) {
+      expect(s.checklists.filter((c) => c.final)).toHaveLength(1)
+      expect(s.checklists.find((c) => c.final)?.inspectionType).toBe('final')
+    }
+  })
 })

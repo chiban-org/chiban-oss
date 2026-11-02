@@ -34,8 +34,10 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'review.assign',
     'document.manage',
     'packet.manage',
+    'inspection.schedule',
+    'inspection.record',
   ],
-  inspector: ['regional_impact.determine'],
+  inspector: ['regional_impact.determine', 'inspection.schedule', 'inspection.record'],
   finance: ['payment.refund_void_correct', 'payment.collect', 'payment.report'],
   records_custodian: ['hold.place_release', 'disposition.approve'],
 }

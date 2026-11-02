@@ -56,6 +56,11 @@ function fromObjectError(error: ObjectError): FieldErrors {
   if ('unknownMergeFields' in error) {
     return { body: `Unknown merge fields: ${error.unknownMergeFields.join(', ')}.` }
   }
+  if ('finalChecklistCount' in error) {
+    return {
+      checklists: `Choose exactly one final inspection checklist. This type names ${error.finalChecklistCount}.`,
+    }
+  }
   if ('unknownFieldRefs' in error) {
     return {
       lines: `Fee lines use fields the form does not have: ${error.unknownFieldRefs.join(', ')}.`,

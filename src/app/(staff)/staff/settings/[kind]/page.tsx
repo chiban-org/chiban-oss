@@ -59,7 +59,7 @@ export default async function SettingsKindPage({ params }: Props) {
             name="key"
             options={townRules.map((r): [string, string] => [r.key, r.label])}
           />
-        ) : kind === 'payment_settings' ? (
+        ) : kind === 'payment_settings' || kind === 'inspection_settings' ? (
           <input type="hidden" name="key" value="default" />
         ) : (
           <TextField

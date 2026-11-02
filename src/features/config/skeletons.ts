@@ -28,6 +28,7 @@ export function skeletonBody(kind: ConfigKind, key: string): unknown {
         key,
         inspectionType: 'final',
         label: key,
+        final: true,
         items: [{ key: 'item-1', label: 'Describe the check', required: true }],
       }
     case 'town_rule_setting':

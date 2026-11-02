@@ -29,6 +29,7 @@ export interface TransitionInput {
   substep?: string
   expectedRowVersion: number
   onDate?: CivilDate
+  closureReason?: 'final_inspection_passed' | 'certificate_of_occupancy'
 }
 
 export type TransitionError =
@@ -59,6 +60,12 @@ async function isAllowedActor(
   if (app.state === 'suspended' && to === 'issued') return false
   if (NEEDS_ISSUE_CAPABILITY.includes(to)) {
     return await hasCapability(tx, actor.userId, 'permit.issue', signal)
+  }
+  if (to === 'closed') {
+    return (
+      (await hasCapability(tx, actor.userId, 'permit.issue', signal)) ||
+      (await hasCapability(tx, actor.userId, 'inspection.record', signal))
+    )
   }
   if (hasFullRecordAccess(actor)) return true
   return to === 'withdrawn' && (await isActiveParty(tx, actor.userId, app.projectId))
@@ -99,6 +106,7 @@ export async function applyTransition(
       updatedAt: new Date(),
       decidedOn: stampsDecision ? today : app.decidedOn,
       issuedOn: input.to === 'issued' ? (app.issuedOn ?? today) : app.issuedOn,
+      ...(input.closureReason === undefined ? {} : { closureReason: input.closureReason }),
     })
     .where(eq(applications.id, input.applicationId))
   await runTransitionEffects(tx, app, input.to, today, signal)

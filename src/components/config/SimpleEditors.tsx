@@ -154,6 +154,11 @@ export function ChecklistEditor({ body, onChange, errors }: EditorProps<Checklis
           onChange={(e) => onChange({ ...body, inspectionType: e.target.value })}
         />
       </div>
+      <Check
+        label="Final inspection of the permit"
+        checked={body.final}
+        onChange={(e) => onChange({ ...body, final: e.target.checked })}
+      />
       <FieldGroup name="items" label="Checklist items" errors={errors}>
         {body.items.map((item, i) => (
           <div

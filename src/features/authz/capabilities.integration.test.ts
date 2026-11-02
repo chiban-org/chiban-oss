@@ -83,6 +83,15 @@ describe('default grants from the spec table', () => {
     }
   })
 
+  it('inspector holds inspection.record; finance does not', async () => {
+    expect(await check('inspector', 'inspection.record')).toBe(true)
+    expect(await check('inspector', 'inspection.schedule')).toBe(true)
+    expect(await check('staff', 'inspection.record')).toBe(true)
+    expect(await check('finance', 'inspection.record')).toBe(false)
+    expect(await check('finance', 'inspection.schedule')).toBe(false)
+    expect(await check('reviewer', 'inspection.schedule')).toBe(false)
+  })
+
   it('seeding twice changes nothing', async () => {
     await seedDefaultGrants(handle.db, signal)
     expect(await check('staff', 'permit.issue')).toBe(true)
