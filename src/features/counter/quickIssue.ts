@@ -7,6 +7,7 @@ import {
   ledgerAllocations,
   ledgerEntries,
   licenseChecks,
+  parcels,
   receipts,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -23,6 +24,7 @@ import type { FieldError } from '@/features/forms/validateSubmission'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import type { AllocationInput } from '@/features/ledger/types'
+import { displayIdsFor } from '@/features/parcels/displayId'
 import { getActiveProcessor } from '@/features/payments/processorAccounts'
 import type { ProcessorError } from '@/features/payments/processors/types'
 import { startCardPresentPayment } from '@/features/payments/startPayment'
@@ -151,6 +153,16 @@ async function collectPayment(
   return paid.ok ? ok(paid.value.receiptNumber) : err(paid.error)
 }
 
+async function counterTitle(tx: Tx, typeLabel: string, parcelId: string): Promise<string> {
+  const [parcel] = await tx
+    .select({ siteAddress: parcels.siteAddress })
+    .from(parcels)
+    .where(eq(parcels.id, parcelId))
+  const display = await displayIdsFor(tx, [parcelId])
+  const where = parcel?.siteAddress ?? display.get(parcelId) ?? 'parcel on file'
+  return `${typeLabel}, ${where}`
+}
+
 export async function quickIssue(
   db: Db,
   actor: Actor,
@@ -173,7 +185,7 @@ export async function quickIssue(
     const project = await createProject(
       tx,
       actor,
-      { parcelId: input.parcelId, title: `Counter permit: ${typeBody.label}` },
+      { parcelId: input.parcelId, title: await counterTitle(tx, typeBody.label, input.parcelId) },
       signal,
     )
     if (!project.ok) return err(project.error)

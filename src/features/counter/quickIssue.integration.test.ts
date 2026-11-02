@@ -4,6 +4,7 @@ import {
   applications,
   ledgerEntries,
   licenseChecks,
+  parcels,
   projectParties,
   projects,
   roleCapabilities,
@@ -58,6 +59,24 @@ const counts = async () => ({
 })
 
 describe('quickIssue cash and check', () => {
+  it('titles the project with the permit type and the parcel, not a nested phrase', async () => {
+    await handle.db
+      .update(parcels)
+      .set({ siteAddress: '12 Heron Cove Road' })
+      .where(eq(parcels.id, world.parcelId))
+    const r = await quickIssue(handle.db, world.staff, input(), signal, deps)
+    expect(r.ok).toBe(true)
+    const [project] = await handle.db.select().from(projects).orderBy(sql`created_at desc`).limit(1)
+    expect(project?.title).toBe('Electrical permit, 12 Heron Cove Road')
+  })
+
+  it('falls back to the parcel id when the parcel has no address', async () => {
+    const r = await quickIssue(handle.db, world.staff, input(), signal, deps)
+    expect(r.ok).toBe(true)
+    const [project] = await handle.db.select().from(projects).orderBy(sql`created_at desc`).limit(1)
+    expect(project?.title).toBe('Electrical permit, 007001000000')
+  })
+
   it('cash quick issue creates an issued EL permit with one 4500 entry, a license check row, and a contractor party with no user id', async () => {
     const r = await quickIssue(handle.db, world.staff, input(), signal, deps)
     expect(r.ok && r.value).toMatchObject({
