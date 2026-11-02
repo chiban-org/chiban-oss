@@ -1,6 +1,6 @@
-import { and, desc, eq, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { auditLog, boardPacketLinks } from '@/db/schema'
+import { auditLog, boardPacketItems, boardPacketLinks, documents } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { eligibleBoardDocuments, listPackets } from '@/features/boards/packets'
 import { BOARD_NAMES } from '@/features/hearings/views'
@@ -15,7 +15,14 @@ export interface PacketLinkLine {
 }
 
 export interface PacketsPageView {
-  packets: { id: string; heading: string; links: PacketLinkLine[]; notified: string[] }[]
+  packets: {
+    id: string
+    heading: string
+    meeting: string
+    documents: string[]
+    links: PacketLinkLine[]
+    notified: string[]
+  }[]
   documents: { id: string; label: string }[]
 }
 
@@ -41,6 +48,19 @@ export async function loadPacketsPage(
           .from(boardPacketLinks)
           .where(inArray(boardPacketLinks.packetId, ids))
           .orderBy(desc(boardPacketLinks.createdAt))
+  const items =
+    ids.length === 0
+      ? []
+      : await db
+          .select({
+            packetId: boardPacketItems.packetId,
+            title: documents.title,
+            withdrawnAt: boardPacketItems.withdrawnAt,
+          })
+          .from(boardPacketItems)
+          .innerJoin(documents, eq(documents.id, boardPacketItems.documentId))
+          .where(inArray(boardPacketItems.packetId, ids))
+          .orderBy(asc(boardPacketItems.position))
   const notices =
     ids.length === 0
       ? []
@@ -52,7 +72,11 @@ export async function loadPacketsPage(
   return ok({
     packets: packets.value.map((p) => ({
       id: p.id,
-      heading: `${p.title}, ${BOARD_NAMES[p.board]}, ${formatCivilDate(p.meetingDate)}`,
+      heading: p.title,
+      meeting: `${BOARD_NAMES[p.board]} meeting, ${formatCivilDate(p.meetingDate)}`,
+      documents: items
+        .filter((i) => i.packetId === p.id)
+        .map((i) => (i.withdrawnAt === null ? i.title : `${i.title} (withdrawn)`)),
       links: links
         .filter((l) => l.packetId === p.id)
         .map((l) => ({

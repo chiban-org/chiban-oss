@@ -113,7 +113,9 @@ describe('packets page', () => {
       value: {
         packets: [
           {
-            heading: 'April, Zoning Board of Adjustment, April 15, 2027',
+            heading: 'April',
+            meeting: 'Zoning Board of Adjustment meeting, April 15, 2027',
+            documents: ['Site plan'],
             notified: [expect.stringMatching(/^Drew Hale \(drew@alderpond\.example\), notified /)],
           },
         ],

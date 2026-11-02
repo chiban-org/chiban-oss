@@ -53,6 +53,10 @@ export default async function PacketsPage() {
       {packets.map((p) => (
         <section key={p.id} aria-label={p.heading}>
           <h2>{p.heading}</h2>
+          <p className="m-0">{p.meeting}</p>
+          <p className="m-0">
+            {p.documents.length === 0 ? 'No documents.' : `Documents: ${p.documents.join('; ')}.`}
+          </p>
           <ul className="space-y-1">
             {p.notified.map((line) => (
               <li key={line}>{line}</li>
