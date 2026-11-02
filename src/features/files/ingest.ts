@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
+import { eq, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { files } from '@/db/schema'
+import { documentVersions, files } from '@/db/schema'
 import { type AllowedType, SNIFF_BYTES, sniffMatches } from '@/features/files/sniff'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
@@ -93,4 +94,17 @@ export async function storeGeneratedBytes(
   await store.putBytes(blobKey(sha256), bytes, contentType, signal)
   await recordFile(db, { sha256, sizeBytes: bytes.length, contentType })
   return { sha256 }
+}
+
+export async function fileReferenceCount(
+  db: DbOrTx,
+  sha256: string,
+  signal: AbortSignal,
+): Promise<number> {
+  signal.throwIfAborted()
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(documentVersions)
+    .where(eq(documentVersions.fileSha256, sha256))
+  return row?.n ?? 0
 }
