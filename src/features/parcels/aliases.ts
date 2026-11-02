@@ -86,3 +86,40 @@ export async function retireAliases(
   }
   return retired.length
 }
+
+export async function retireAlias(
+  tx: Tx,
+  key: { format: string; value: string; parcelId?: string; source?: AliasSource },
+  reason: 'lineage' | 'overridden' | 'expired' | 'manual',
+  retiredOn: CivilDate,
+  who: AuditWho,
+  signal: AbortSignal,
+): Promise<string | null> {
+  signal.throwIfAborted()
+  const conditions = [
+    eq(parcelAliases.format, key.format),
+    eq(parcelAliases.value, key.value),
+    eq(parcelAliases.status, 'active'),
+  ]
+  if (key.parcelId !== undefined) conditions.push(eq(parcelAliases.parcelId, key.parcelId))
+  if (key.source !== undefined) conditions.push(eq(parcelAliases.source, key.source))
+  const [retired] = await tx
+    .update(parcelAliases)
+    .set({ status: 'retired', retiredOn, retiredReason: reason })
+    .where(and(...conditions))
+    .returning({ parcelId: parcelAliases.parcelId })
+  if (retired === undefined) return null
+  await writeAudit(
+    tx,
+    {
+      actor: auditActor(who),
+      action: 'parcel.alias.retire',
+      entityType: 'parcel',
+      entityId: retired.parcelId,
+      before: { format: key.format, value: key.value },
+      after: { reason, retiredOn },
+    },
+    signal,
+  )
+  return retired.parcelId
+}
