@@ -4,8 +4,9 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
 import { promisify } from 'node:util'
+import { and, count, eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { roleCapabilities } from '@/db/schema'
+import { auditLog, exportsTable, roleCapabilities } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hashPassword } from '@/features/auth/password'
 import { currentTotpCode, generateTotpSecret } from '@/features/auth/totp'
@@ -42,7 +43,9 @@ vi.mock('next/headers', () => ({
 }))
 
 const { buildRecoveryStream } = await import('@/features/export/recovery/buildRecovery')
-const { handleRecoveryRequest } = await import('@/features/export/recovery/recoveryHandler')
+const { handleRecoveryForm, handleRecoveryRequest } = await import(
+  '@/features/export/recovery/recoveryHandler'
+)
 const { env } = await import('@/config/env')
 const { loadActor } = await import('@/features/auth/actor')
 
@@ -54,6 +57,7 @@ const totpSecret = generateTotpSecret()
 let handle: TestDb
 let adminActor: Actor
 let custodianWithGrant: Actor
+let plainStaff: Actor
 
 beforeAll(async () => {
   handle = await makeTestDb()
@@ -73,6 +77,11 @@ beforeAll(async () => {
     .insert(roleCapabilities)
     .values({ role: 'records_custodian', capability: 'export.recovery' })
     .onConflictDoNothing()
+  const staffId = await makeUser(handle.db, {
+    role: 'staff',
+    passwordHash: await hashPassword(PASSWORD, signal),
+  })
+  plainStaff = (await loadActor(handle.db, staffId, signal)) as Actor
   adminActor = (await loadActor(handle.db, adminId, signal)) as Actor
   custodianWithGrant = (await loadActor(handle.db, custodianId, signal)) as Actor
 })
@@ -98,6 +107,25 @@ function post(fields: Record<string, string>): Promise<Response> {
   )
 }
 
+function postFromBrowser(fields: Record<string, string>): Promise<Response> {
+  const form = new FormData()
+  form.set('csrf_token', 'tok')
+  for (const [k, v] of Object.entries(fields)) form.set(k, v)
+  return handleRecoveryForm(
+    new Request('https://alderpond.example/staff/admin/export/recovery', {
+      method: 'POST',
+      body: form,
+      headers: { accept: 'text/html,application/xhtml+xml' },
+    }),
+    {
+      pgDumpPath: 'pg_dump',
+      databaseUrl: handle.url,
+      secretKeys: env.CHIBAN_SECRET_KEYS,
+      activeKeyId: env.CHIBAN_ACTIVE_KEY_ID,
+    },
+  )
+}
+
 async function entriesOf(stream: Readable): Promise<Map<string, Buffer>> {
   const out = new Map<string, Buffer>()
   for await (const entry of tarSource(stream).entries()) {
@@ -108,7 +136,52 @@ async function entriesOf(stream: Readable): Promise<Map<string, Buffer>> {
   return out
 }
 
+async function writesSnapshot(): Promise<number[]> {
+  const [audits] = await handle.db.select({ n: count() }).from(auditLog)
+  const [exportRows] = await handle.db.select({ n: count() }).from(exportsTable)
+  return [audits?.n ?? 0, exportRows?.n ?? 0]
+}
+
 describe('recovery export', () => {
+  it('a crafted POST from plain staff is refused with 403, streams nothing and writes nothing', async () => {
+    state.actor = plainStaff
+    const before = await writesSnapshot()
+    const res = await post({
+      password: PASSWORD,
+      totp: '000000',
+      passphrase: PASSPHRASE,
+    })
+    expect(res.status).toBe(403)
+    expect(res.headers.get('content-type')).not.toBe('application/octet-stream')
+    expect(await res.text()).not.toContain('CHIBANREC1')
+    expect(await writesSnapshot()).toEqual(before)
+  })
+
+  it('a crafted POST from an admin whose role lacks export.recovery is refused and writes nothing', async () => {
+    state.actor = adminActor
+    await handle.db
+      .delete(roleCapabilities)
+      .where(
+        and(eq(roleCapabilities.role, 'admin'), eq(roleCapabilities.capability, 'export.recovery')),
+      )
+    try {
+      const before = await writesSnapshot()
+      const res = await post({
+        password: PASSWORD,
+        totp: currentTotpCode(totpSecret, Date.now()),
+        passphrase: PASSPHRASE,
+      })
+      expect(res.status).toBe(403)
+      expect(res.headers.get('content-type')).not.toBe('application/octet-stream')
+      expect(await writesSnapshot()).toEqual(before)
+    } finally {
+      await handle.db
+        .insert(roleCapabilities)
+        .values({ role: 'admin', capability: 'export.recovery' })
+        .onConflictDoNothing()
+    }
+  })
+
   it('recovery tar contains a dump that pg_restore --list accepts and the configured key material', async () => {
     try {
       await run('pg_dump', ['--version'])
@@ -182,6 +255,22 @@ describe('recovery export', () => {
       passphrase: 'too short',
     })
     expect(res.status).toBe(422)
+  })
+
+  it('a browser form post that is refused redirects back to the export page with the error code', async () => {
+    state.actor = adminActor
+    const res = await postFromBrowser({
+      password: PASSWORD,
+      totp: '000000',
+      passphrase: PASSPHRASE,
+    })
+    expect(res.status).toBe(303)
+    expect(res.headers.get('location')).toBe(
+      '/staff/admin/export?recovery_error=invalid_credentials',
+    )
+    state.actor = plainStaff
+    const denied = await postFromBrowser({ passphrase: PASSPHRASE })
+    expect(denied.headers.get('location')).toBe('/staff/admin/export?recovery_error=forbidden')
   })
 
   it('a signed-out visitor is refused', async () => {

@@ -9,7 +9,6 @@ export const CUTOVER_BASE_COLUMNS = [
   'owner_name',
   'contractor_name',
   'contractor_email',
-  'contractor_license_number',
   'state',
   'received_date',
   'completed_date',
@@ -29,3 +28,6 @@ export const CUTOVER_REQUIRED_COLUMNS = [
 
 export const CUTOVER_STATES = ['submitted', 'under_review', 'decided', 'issued'] as const
 export type CutoverState = (typeof CUTOVER_STATES)[number]
+
+export const CUTOVER_FEES_PAID_VALUES = ['yes', 'y', 'true', 'no', 'n', 'false'] as const
+export const CUTOVER_FEES_PAID_TRUE = ['yes', 'y', 'true'] as const

@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { exportsTable } from '@/db/schema'
+import { exportsTable, townSettings } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
@@ -73,5 +73,35 @@ describe('export page', () => {
   it('redirects a signed-out visitor to sign in', async () => {
     state.actor = null
     await expect(ExportPage()).rejects.toThrow('NEXT_REDIRECT:/staff/sign-in')
+  })
+
+  it('shows a human message for a refused recovery export next to the form', async () => {
+    state.actor = admin
+    const html = renderToStaticMarkup(
+      await ExportPage({
+        searchParams: Promise.resolve({ recovery_error: 'invalid_credentials' }),
+      }),
+    )
+    expect(html).toContain('Your password or authenticator code was not right')
+    expect(html).not.toContain('invalid_credentials')
+    const unknown = renderToStaticMarkup(
+      await ExportPage({ searchParams: Promise.resolve({ recovery_error: '<b>x</b>' }) }),
+    )
+    expect(unknown).not.toContain('<b>x</b>')
+  })
+
+  it('only claims an export does not interrupt anyone while the service is active', async () => {
+    state.actor = admin
+    expect(renderToStaticMarkup(await ExportPage())).toContain(
+      'Preparing an export does not interrupt anyone using Chiban.',
+    )
+    await handle.db.update(townSettings).set({
+      serviceStatus: 'terminated',
+      serviceStatusSince: '2020-01-01',
+      exportWindowDays: 36500,
+    })
+    const html = renderToStaticMarkup(await ExportPage())
+    expect(html).not.toContain('does not interrupt anyone')
+    expect(html).toContain('Nobody is using Chiban now')
   })
 })

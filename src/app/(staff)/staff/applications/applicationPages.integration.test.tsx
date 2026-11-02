@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { applications } from '@/db/schema'
+import { applications, cutoverRows } from '@/db/schema'
 import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
@@ -110,6 +110,22 @@ describe('staff application pages', () => {
     expect(page).toContain('Suspended by appeal (RSA 676:6)')
     expect(page).toContain('Abutter at 12 Pond Road')
     expect(page).toContain('Resolve appeal')
+  })
+
+  it('an imported application shows its number from the prior system and others do not', async () => {
+    const imported = await handle.db.select().from(cutoverRows)
+    const first = imported[0]
+    if (first === undefined) throw new Error('no imported application seeded')
+    const page = await html(
+      ApplicationPage({ params: Promise.resolve({ applicationId: first.applicationId }) }),
+    )
+    expect(page).toContain(`Number in the prior system: ${first.legacyNumber}`)
+    const importedIds = new Set(imported.map((r) => r.applicationId))
+    const native = (await handle.db.select().from(applications)).find((a) => !importedIds.has(a.id))
+    const other = await html(
+      ApplicationPage({ params: Promise.resolve({ applicationId: native?.id ?? '' }) }),
+    )
+    expect(other).not.toContain('Number in the prior system')
   })
 
   it('an unknown application is not found', async () => {

@@ -1,5 +1,5 @@
 import { env } from '@/config/env'
-import { handleRecoveryRequest } from '@/features/export/recovery/recoveryHandler'
+import { handleRecoveryForm } from '@/features/export/recovery/recoveryHandler'
 import { staffActorOrNull } from '@/server/requireStaff'
 
 export const runtime = 'nodejs'
@@ -11,7 +11,7 @@ export async function POST(request: Request): Promise<Response> {
   if ((await staffActorOrNull(AbortSignal.timeout(REQUEST_TIMEOUT_MS))) === null) {
     return Response.json({ error: 'forbidden' }, { status: 403 })
   }
-  return await handleRecoveryRequest(request, {
+  return await handleRecoveryForm(request, {
     pgDumpPath: env.PG_DUMP_PATH,
     databaseUrl: env.DATABASE_URL,
     secretKeys: env.CHIBAN_SECRET_KEYS,

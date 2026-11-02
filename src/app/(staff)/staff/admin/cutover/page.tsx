@@ -32,7 +32,13 @@ export default async function CutoverPage() {
         <a className="text-action underline" href="/staff/admin/cutover/template.csv">
           Download the CSV template
         </a>{' '}
-        or add <code>?type=KEY</code> for an application type to include its form fields.
+        or add <code>?type=KEY</code> for an application type to include only its form fields. The
+        template lists the form fields of every adopted application type.
+      </p>
+      <p>
+        In <code>fees_paid_in_prior_system</code>, write <code>yes</code>, <code>y</code> or{' '}
+        <code>true</code> if the fees were paid, <code>no</code>, <code>n</code> or{' '}
+        <code>false</code> if not, or leave it empty. An amount such as 45.00 is not accepted.
       </p>
       <h2>Import</h2>
       <ActionForm action={importCutoverAction} submitLabel="Check the file (dry run)">
