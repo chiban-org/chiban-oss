@@ -17,7 +17,7 @@ const ROLE_LABELS: Record<string, string> = {
 function versionLabel(title: string, v: ReleaseCandidate['versions'][number]): string {
   const day = formatCivilDate(v.createdAt.slice(0, 10))
   const time = v.role === 'original' ? '' : ` ${v.createdAt.slice(11, 16)} UTC`
-  return `${title}: ${ROLE_LABELS[v.role] ?? v.role}, ${day}${time} (${v.filename})`
+  return `${title}: ${ROLE_LABELS[v.role] ?? v.role}, ${day}${time}`
 }
 
 function Hidden({ name, value }: { name: string; value: string | number }) {

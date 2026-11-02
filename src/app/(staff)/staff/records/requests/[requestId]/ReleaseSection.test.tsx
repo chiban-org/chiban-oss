@@ -68,9 +68,9 @@ describe('ReleaseSection', () => {
     const labels = versionOptions()
     expect(new Set(labels).size).toBe(labels.length)
     expect(labels).toEqual([
-      'Site plan: Original, March 2, 2027 (site-plan.pdf)',
-      'Site plan: Redacted copy for this request, March 3, 2027 16:30 UTC (site-plan.pdf)',
-      'Site plan: Redacted copy for this request, March 4, 2027 09:05 UTC (site-plan.pdf)',
+      'Site plan: Original, March 2, 2027',
+      'Site plan: Redacted copy for this request, March 3, 2027 16:30 UTC',
+      'Site plan: Redacted copy for this request, March 4, 2027 09:05 UTC',
     ])
   })
 })
