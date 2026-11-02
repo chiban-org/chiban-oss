@@ -103,7 +103,7 @@ export async function recordBoardRegionalImpact(
     }
     const determinedOn = await townToday(tx, now, signal)
     const recorded = await recordRegionalImpactDetermination(
-      tx as unknown as Db,
+      tx,
       actor,
       {
         applicationId: input.applicationId,

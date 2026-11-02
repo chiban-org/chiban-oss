@@ -1,4 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
 import { acceptanceSchedules, applications, clocks, completenessVotes } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -40,7 +41,7 @@ export type AcceptanceError =
 function filingLeadRule() {
   const rule = ruleByKey(loadPack(), FILING_LEAD_KEY)
   if (rule.kind !== 'clock' || !('value' in rule.length)) {
-    throw new Error('nh.pb.filing_lead must be a plain clock')
+    throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, 'nh.pb.filing_lead must be a plain clock')
   }
   return { rule, packDays: rule.length.value }
 }

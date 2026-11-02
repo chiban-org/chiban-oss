@@ -276,6 +276,23 @@ export const RecordSeriesSchema = z.object({
 })
 export type RecordSeries = z.infer<typeof RecordSeriesSchema>
 
+export const AbutterParamsSchema = z.object({
+  key: z.string().min(1),
+  version: z.number().int().positive(),
+  citation: z.object({ label: z.string().min(1), url: z.string().url() }),
+  captureRadiusFt: z.number().positive(),
+  adjacencyToleranceFt: z.number().positive(),
+  simplifyToleranceFt: z.number().positive(),
+  cornerTurnDeg: z.number().positive(),
+  areaFrontageToleranceFt: z.number().positive(),
+  parallelToleranceDeg: z.number().positive(),
+  onFeatureToleranceFt: z.number().positive(),
+  maxCrossingFt: z.number().positive(),
+  alongDepthFt: z.number().positive(),
+  tolerancesLabel: z.string().min(1),
+})
+export type AbutterParams = z.infer<typeof AbutterParamsSchema>
+
 export const PackManifestSchema = z
   .object({
     id: z.string().min(1),
@@ -285,6 +302,7 @@ export const PackManifestSchema = z
     codeEditions: z.array(CodeEditionEntrySchema).min(1),
     recordSeries: z.array(RecordSeriesSchema).min(1),
     recordSeriesDefaults: z.object({ byClassification: z.record(z.string(), z.string()) }),
+    abutterParams: z.array(AbutterParamsSchema).min(1),
   })
   .superRefine((m, ctx) => {
     const keys = new Set(m.rules.map((r) => r.key))

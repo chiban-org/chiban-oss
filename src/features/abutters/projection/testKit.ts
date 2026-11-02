@@ -130,3 +130,82 @@ export const PARCEL_K: Pt[] = [
   polar(7000, 200, 825),
   polar(7000, 200, 525),
 ]
+
+export interface ProbeScenario {
+  name: string
+  applicantRings: Pt[][]
+  others: { parcelId: string; rings: Pt[][] }[]
+  features: CrossingFeature[]
+}
+
+const SLIVER = { parcelId: 'sliver', rings: [rect(300, 900, -0.1, 0.05)] }
+
+export const PROBE_SCENARIOS: ProbeScenario[] = [
+  {
+    name: 'standard',
+    applicantRings: [PARCEL_A],
+    others: NORTH_PARCELS,
+    features: [OSPREY_CENTERLINE],
+  },
+  {
+    name: 'spike',
+    applicantRings: [
+      [
+        [400, -325],
+        [800, -325],
+        [800, -25],
+        [601, -25],
+        [600.5, -22],
+        [600, -25],
+        [400, -25],
+        [400, -325],
+      ],
+    ],
+    others: NORTH_PARCELS,
+    features: [OSPREY_CENTERLINE],
+  },
+  {
+    name: 'bend',
+    applicantRings: [
+      [
+        [400, -325],
+        [800, -325],
+        [800, -25],
+        [550, -8],
+        [500, -25],
+        [400, -25],
+        [400, -325],
+      ],
+    ],
+    others: NORTH_PARCELS,
+    features: [OSPREY_CENTERLINE],
+  },
+  {
+    name: 'offset',
+    applicantRings: [rect(2700, 2997, -200, 0)],
+    others: BANK_PARCELS,
+    features: [MINK_POLYGON],
+  },
+  {
+    name: 'angled',
+    applicantRings: [
+      [
+        [400, -325],
+        [800, -325],
+        [800, -25],
+        [470, -25],
+        [430, -48],
+        [400, -325],
+      ],
+    ],
+    others: NORTH_PARCELS,
+    features: [OSPREY_CENTERLINE],
+  },
+  {
+    name: 'on feature',
+    applicantRings: [rect(400, 800, -325, -0.3)],
+    others: [SLIVER, ...NORTH_PARCELS],
+    features: [OSPREY_CENTERLINE],
+  },
+  { name: 'wide', applicantRings: [PARCEL_P], others: [], features: [HERON_POND] },
+]

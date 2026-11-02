@@ -1,4 +1,6 @@
-export const NH_ABUTTER_PARAMS = {
+import type { AbutterParams } from '@packs/nh/schema'
+
+export const NH_ABUTTER_PARAMS: AbutterParams = {
   key: 'nh.abutters.adjacency_projection',
   version: 1,
   citation: { label: 'RSA 672:3', url: 'https://gc.nh.gov/rsa/html/LXIV/672/672-3.htm' },
@@ -13,6 +15,4 @@ export const NH_ABUTTER_PARAMS = {
   alongDepthFt: 5,
   tolerancesLabel:
     'Engineering tolerances chosen by Chiban; only the 50-foot capture radius is statutory.',
-} as const
-
-export type NhAbutterParams = typeof NH_ABUTTER_PARAMS
+}

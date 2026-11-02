@@ -1,5 +1,6 @@
 import type { ProximityRule } from '@packs/nh/schema'
 import { sql } from 'drizzle-orm'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, DbOrTx } from '@/db/client'
 import { desProximityDeterminations } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -22,7 +23,9 @@ export type DesSuggestion = HonestValue<{ within: boolean; withinFt: number | nu
 
 export function desRule(): ProximityRule {
   const rule = ruleByKey(loadPack(), DES_RULE_KEY)
-  if (rule.kind !== 'proximity') throw new Error('nh.pb.des_500ft must be a proximity rule')
+  if (rule.kind !== 'proximity') {
+    throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, 'nh.pb.des_500ft must be a proximity rule')
+  }
   return rule
 }
 

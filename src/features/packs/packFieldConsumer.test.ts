@@ -1,4 +1,5 @@
 import {
+  AbutterParamsSchema,
   ClockRuleSchema,
   CodeEditionEntrySchema,
   EffectRuleSchema,
@@ -25,6 +26,7 @@ const KIND_SCHEMAS = {
   classification: ProceedingClassificationSchema,
   code_edition: CodeEditionEntrySchema,
   record_series: RecordSeriesSchema,
+  abutter_params: AbutterParamsSchema,
 } as const
 
 const DISCRIMINATOR = 'kind'

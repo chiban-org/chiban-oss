@@ -106,10 +106,8 @@ describe('adoptStarter', () => {
 
   it('every board starter passes publish checks', async () => {
     const admin = await staffActor(handle.db, 'admin')
-    for (const starter of NH_STARTERS.filter(
-      (s) =>
-        s.applicationType.classification?.startsWith('nh.pb') ||
-        s.applicationType.classification?.startsWith('nh.zba'),
+    for (const starter of NH_STARTERS.filter((s) =>
+      /^nh\.(pb|zba)_/.test(s.applicationType.classification ?? ''),
     )) {
       const r = await adoptStarter(handle.db, admin, starter.id, signal)
       if (!r.ok) throw new Error(`${starter.id}: ${JSON.stringify(r.error)}`)

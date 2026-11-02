@@ -84,7 +84,7 @@ function projectRun(
   const centroid = polygonCentroid(ring)
   const corners = findCorners(ring, run, params)
   const outcomes = corners.map((corner) => projectCorner(corner, feature, centroid, others, params))
-  const result: ProjectionResult = { points: [], regions: [], flags: [] }
+  const result: ProjectionResult = { points: [], regions: [], flags: [], regionFeatureIds: [] }
   for (const outcome of outcomes) {
     if (outcome === null) continue
     if (isPoint(outcome)) result.points.push(outcome)
@@ -98,6 +98,7 @@ function projectRun(
       result.regions.push(
         regionBetween(first as ProjectedPoint, second as ProjectedPoint, params.alongDepthFt),
       )
+      result.regionFeatureIds.push(feature.id)
     }
   }
   return result
@@ -109,7 +110,7 @@ export function projectAcross(input: {
   features: CrossingFeature[]
   params: ProjectionParams
 }): ProjectionResult {
-  const total: ProjectionResult = { points: [], regions: [], flags: [] }
+  const total: ProjectionResult = { points: [], regions: [], flags: [], regionFeatureIds: [] }
   for (const raw of input.applicantRings) {
     const ring = prepareRing(raw, input.params)
     for (const feature of input.features) {
@@ -117,6 +118,7 @@ export function projectAcross(input: {
         const part = projectRun(ring, run, feature, input.others, input.params)
         total.points.push(...part.points)
         total.regions.push(...part.regions)
+        total.regionFeatureIds.push(...part.regionFeatureIds)
         total.flags.push(...part.flags)
       }
     }

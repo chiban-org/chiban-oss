@@ -1,3 +1,4 @@
+import { NH_ABUTTER_PARAMS } from '@packs/nh/abutters/params'
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
 import { NH_CODE_EDITIONS } from '@packs/nh/codeEditions'
 import { NH_RECORD_SERIES, RECORD_SERIES_DEFAULTS } from '@packs/nh/recordSeries'
@@ -8,6 +9,7 @@ import { PLANNING_BOARD_RULES } from '@packs/nh/rules/planningBoard'
 import { REGIONAL_IMPACT_BOARD_RULES } from '@packs/nh/rules/regionalImpact'
 import { ZBA_RULES } from '@packs/nh/rules/zba'
 import type {
+  AbutterParams,
   CodeEditionEntry,
   PackRule,
   ProceedingClassification,
@@ -22,6 +24,7 @@ export interface PackManifest {
   codeEditions: CodeEditionEntry[]
   recordSeries: RecordSeries[]
   recordSeriesDefaults: { byClassification: Record<string, string> }
+  abutterParams: AbutterParams[]
 }
 
 export const NH_PACK_MANIFEST: PackManifest = {
@@ -39,4 +42,5 @@ export const NH_PACK_MANIFEST: PackManifest = {
   codeEditions: NH_CODE_EDITIONS,
   recordSeries: NH_RECORD_SERIES,
   recordSeriesDefaults: RECORD_SERIES_DEFAULTS,
+  abutterParams: [NH_ABUTTER_PARAMS],
 }

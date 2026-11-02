@@ -11,10 +11,9 @@ import { FormBodySchema } from '@/features/forms/formSchema'
 import { validateSubmission } from '@/features/forms/validateSubmission'
 import { loadPack } from '@/features/packs/loadPack'
 
-const BOARD = NH_STARTERS.filter(
-  (s) =>
-    s.applicationType.classification?.startsWith('nh.pb') ||
-    s.applicationType.classification?.startsWith('nh.zba'),
+const BOARD_CLASSIFICATION = /^nh\.(pb|zba)_/
+const BOARD = NH_STARTERS.filter((s) =>
+  BOARD_CLASSIFICATION.test(s.applicationType.classification ?? ''),
 )
 const FACTS = { classification: null, dwellingUnits: null, afterTheFact: false }
 
@@ -29,11 +28,11 @@ function shared(values: Record<string, unknown>) {
 
 describe('board starters', () => {
   it('there are eight planning board and five zba starters', () => {
-    expect(BOARD.filter((s) => s.applicationType.classification?.startsWith('nh.pb'))).toHaveLength(
-      8,
-    )
     expect(
-      BOARD.filter((s) => s.applicationType.classification?.startsWith('nh.zba')),
+      BOARD.filter((s) => (s.applicationType.classification ?? '').startsWith('nh.pb')),
+    ).toHaveLength(8)
+    expect(
+      BOARD.filter((s) => (s.applicationType.classification ?? '').startsWith('nh.zba')),
     ).toHaveLength(5)
   })
 

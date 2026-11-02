@@ -1,8 +1,8 @@
 import { and, desc, eq, inArray, lt } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { Db, Tx } from '@/db/client'
 import { applications, clocks, selectmenCertifications } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
-import { loadApplicationContext } from '@/features/applications/context'
+import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import { setSubstep, transitionApplication } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -20,6 +20,38 @@ export type CertificationError =
   | 'clock_not_overdue'
   | 'invalid_state'
   | { gateBlocked: GateResult[] }
+
+async function certify(
+  tx: Tx,
+  actor: Actor,
+  app: ApplicationContext,
+  decidedOn: CivilDate,
+  signal: AbortSignal,
+): Promise<Result<void, CertificationError>> {
+  const moved = await transitionApplication(
+    tx,
+    actor,
+    { applicationId: app.id, to: 'decided', expectedRowVersion: app.rowVersion, onDate: decidedOn },
+    signal,
+  )
+  if (!moved.ok) {
+    if (typeof moved.error !== 'string') return err(moved.error)
+    return err(
+      moved.error === 'forbidden' || moved.error === 'not_found' ? moved.error : 'invalid_state',
+    )
+  }
+  const stepped = await setSubstep(
+    tx,
+    actor,
+    {
+      applicationId: app.id,
+      substep: 'certified_by_selectmen',
+      expectedRowVersion: moved.value.rowVersion,
+    },
+    signal,
+  )
+  return stepped.ok ? ok(undefined) : err('invalid_state')
+}
 
 export async function recordSelectmenCertification(
   db: Db,
@@ -59,36 +91,8 @@ export async function recordSelectmenCertification(
     if (overdue === undefined) return err('clock_not_overdue')
     const decidedOn = input.decidedOn ?? input.requestedOn
     if (input.outcome === 'certified') {
-      const moved = await transitionApplication(
-        tx,
-        actor,
-        {
-          applicationId: app.id,
-          to: 'decided',
-          expectedRowVersion: app.rowVersion,
-          onDate: decidedOn,
-        },
-        signal,
-      )
-      if (!moved.ok) {
-        if (typeof moved.error !== 'string') return err(moved.error)
-        return err(
-          moved.error === 'forbidden' || moved.error === 'not_found'
-            ? moved.error
-            : 'invalid_state',
-        )
-      }
-      const stepped = await setSubstep(
-        tx,
-        actor,
-        {
-          applicationId: app.id,
-          substep: 'certified_by_selectmen',
-          expectedRowVersion: moved.value.rowVersion,
-        },
-        signal,
-      )
-      if (!stepped.ok) return err('invalid_state')
+      const certified = await certify(tx, actor, app, decidedOn, signal)
+      if (!certified.ok) return certified
     }
     await tx.insert(selectmenCertifications).values({
       applicationId: app.id,

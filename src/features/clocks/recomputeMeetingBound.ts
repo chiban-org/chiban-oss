@@ -52,7 +52,7 @@ export async function recomputeMeetingBoundClocks(
       tx,
       {
         applicationId: clock.applicationId,
-        rule: rule as ClockRule,
+        rule,
         facts: await factsWithDeterminations(tx, clock.applicationId, app.facts),
         event: clock.startEvent as ClockRule['startEvent'],
         onDate: clock.startDate as CivilDate,

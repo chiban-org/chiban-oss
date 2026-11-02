@@ -43,4 +43,5 @@ export interface ProjectionResult {
   points: ProjectedPoint[]
   regions: Pt[][]
   flags: ProjectionFlag[]
+  regionFeatureIds: string[]
 }
