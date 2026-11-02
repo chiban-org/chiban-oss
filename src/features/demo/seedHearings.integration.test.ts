@@ -5,6 +5,7 @@ import {
   appealNodes,
   boardDecisions,
   boardMemberships,
+  documents,
   hearings,
   noticeItems,
   trcRoutings,
@@ -78,6 +79,11 @@ describe('hearing demo data', () => {
       .where(eq(hearings.applicationId, decision?.applicationId ?? ''))
     const status = await noticeStatus(handle.db, hearing?.noticeSetId ?? '', signal)
     expect(status.properlyNoticed).toBe(true)
+    const [minutes] = await handle.db
+      .select()
+      .from(documents)
+      .where(eq(documents.title, 'Minutes of October 14'))
+    expect(minutes?.docKind).toBe('attachment')
   })
 
   it('has a variance hearing continued without announcement and missing newspaper proof', async () => {
