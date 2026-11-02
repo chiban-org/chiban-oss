@@ -40,6 +40,10 @@ const ENFORCEMENT_SPECS: Spec[] = [
   { table: t.enforcementCases },
   { table: t.complaints },
   { table: t.enforcementNotes },
+  { table: t.violationFindings },
+  { table: t.violationNotices },
+  { table: t.enforcementDesignations },
+  { table: t.enforcementOrders },
 ]
 
 const SPECS: Spec[] = [
