@@ -1,0 +1,8 @@
+{
+  "id": "PAYMENT1ALDER",
+  "amount": 4635,
+  "result": "SUCCESS",
+  "createdTime": 1803466800000,
+  "cardTransaction": { "state": "CLOSED", "type": "AUTH" },
+  "refunds": { "elements": [] }
+}

@@ -1,0 +1,9 @@
+{
+  "createdTime": 1803466800000,
+  "message": "Approved for 4635",
+  "status": "APPROVED",
+  "type": "PAYMENT",
+  "id": "PAYMENT1ALDER",
+  "merchantId": "MERCHANT1ALDER",
+  "data": "session-abc123"
+}

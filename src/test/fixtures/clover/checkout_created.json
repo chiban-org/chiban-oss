@@ -1,0 +1,5 @@
+{
+  "href": "https://checkout.clover.example/checkout/session-abc123",
+  "checkoutSessionId": "session-abc123",
+  "expirationTime": "2027-03-02T18:00:00Z"
+}

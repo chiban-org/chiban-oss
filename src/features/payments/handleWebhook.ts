@@ -65,6 +65,7 @@ async function findAttempt(
     .where(where('checkoutRef', event.checkoutRef))
   if (byCheckout === undefined) return null
   if (byCheckout.processorObjectId !== null) return byCheckout
+  if (event.objectId !== null) return { ...byCheckout, processorObjectId: event.objectId }
   const resolved = await processor.resolveCheckout(event.checkoutRef, signal)
   if (!resolved.ok) return 'lookup_failed'
   return { ...byCheckout, processorObjectId: resolved.value.objectId }

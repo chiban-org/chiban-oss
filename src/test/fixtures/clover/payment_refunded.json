@@ -1,0 +1,7 @@
+{
+  "id": "PAYMENT1ALDER",
+  "amount": 4635,
+  "result": "SUCCESS",
+  "cardTransaction": { "state": "CLOSED" },
+  "refunds": { "elements": [{ "id": "REFUND1ALDER", "amount": 1000 }] }
+}

@@ -24,6 +24,7 @@
     "rules:migrate": "tsx --env-file .env src/entrypoints/rulesMigrate.ts",
     "worker": "tsx --env-file .env src/entrypoints/worker.ts",
     "db:seed:demo": "tsx --env-file .env scripts/seedDemo.ts",
+    "clover:fake": "tsx scripts/cloverFake.ts",
     "term-gate": "tsx --env-file-if-exists=.env scripts/termGate.ts",
     "prepare": "git config core.hooksPath .githooks"
   },
