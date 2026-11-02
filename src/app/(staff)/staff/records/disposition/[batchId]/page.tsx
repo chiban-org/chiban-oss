@@ -1,9 +1,17 @@
-import { asc, eq } from 'drizzle-orm'
+import { asc, eq, inArray } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { dispositionBatches, dispositionItems, dispositionTombstones, documents } from '@/db/schema'
+import {
+  dispositionBatches,
+  dispositionItems,
+  dispositionTombstones,
+  documents,
+  users,
+} from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
+import { findSeries } from '@/features/records/series'
+import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate, formatInstantDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
@@ -24,6 +32,13 @@ const OUTCOME = {
   skipped_not_eligible: 'Skipped: no longer eligible',
 } as const
 const KIND = { document: 'Document', application_snapshot: 'Application snapshot' } as const
+
+function seriesText(key: string, citation: { label: string } | null): string {
+  const series = findSeries(key)
+  const cite = citation?.label ?? series?.citation.label ?? null
+  const label = series?.label ?? 'Record series'
+  return cite === null ? label : `${label} (${cite})`
+}
 
 export default async function DispositionBatchPage({
   params,
@@ -64,15 +79,29 @@ export default async function DispositionBatchPage({
     .leftJoin(documents, eq(documents.id, dispositionItems.recordId))
     .where(eq(dispositionItems.batchId, batchId))
     .orderBy(asc(dispositionItems.recordKind), asc(dispositionItems.recordId))
+  const people = await ctx.db
+    .select({ id: users.id, name: users.displayName })
+    .from(users)
+    .where(inArray(users.id, [batch.proposedBy, batch.approvedBy ?? batch.proposedBy]))
+  const nameOf = (id: string) => people.find((p) => p.id === id)?.name ?? 'Staff'
+  const town = await getTownSettings(ctx.db, ctx.signal)
+  const zone = town.ok ? town.value.timeZone : 'America/New_York'
   return (
     <main className="space-y-6">
       <h1>{`Disposition batch as of ${formatCivilDate(batch.asOf)}`}</h1>
       <p className="m-0">{STATUS[batch.status]}</p>
+      <p className="m-0">
+        {`Proposed by ${nameOf(batch.proposedBy)} on ${formatInstantDate(batch.proposedAt, zone)}.`}
+        {batch.approvedBy === null || batch.approvedAt === null
+          ? ''
+          : ` Approved by ${nameOf(batch.approvedBy)} on ${formatInstantDate(batch.approvedAt, zone)}.`}
+      </p>
       <table className="w-full text-left">
         <thead>
           <tr>
             <th scope="col">Record</th>
             <th scope="col">Kind</th>
+            <th scope="col">Retention series</th>
             <th scope="col">Eligible on</th>
             <th scope="col">Result</th>
           </tr>
@@ -82,6 +111,7 @@ export default async function DispositionBatchPage({
             <tr key={`${i.kind}-${i.recordId}`}>
               <td>{i.title ?? i.documentTitle ?? 'Application snapshot'}</td>
               <td>{KIND[i.kind]}</td>
+              <td>{seriesText(i.seriesKey, i.citation)}</td>
               <td>{formatCivilDate(i.eligibleOn)}</td>
               <td>{i.outcome === null ? 'Not yet carried out' : OUTCOME[i.outcome]}</td>
             </tr>
@@ -89,7 +119,7 @@ export default async function DispositionBatchPage({
         </tbody>
       </table>
       {batch.status === 'executed' ? (
-        <p className="m-0">{`Carried out ${batch.executedAt === null ? '' : formatInstantDate(batch.executedAt, 'America/New_York')}. A tombstone records each disposed record, its retention series, and who approved it.`}</p>
+        <p className="m-0">{`Carried out ${batch.executedAt === null ? '' : formatInstantDate(batch.executedAt, zone)}. A tombstone records each disposed record, its retention series, and who approved it.`}</p>
       ) : null}
       {mayApprove && batch.status === 'proposed' ? (
         <ActionForm action={approveDispositionAction} submitLabel="Approve and carry out">

@@ -144,6 +144,21 @@ describe('records screens with the demo seed', () => {
     expectHuman(batchPage)
   })
 
+  it('the batch page shows each record series and who proposed and approved the batch, and batches are told apart', async () => {
+    await actAs('records')
+    const [batch] = await handle.db.select().from(dispositionBatches)
+    const page = visibleText(
+      await html(BatchPage({ params: Promise.resolve({ batchId: batch?.id ?? '' }) })),
+    )
+    expect(page).toContain('Retention series')
+    expect(page).toMatch(/Proposed by [A-Z][a-z]+ [A-Z][a-z]+ on [A-Z][a-z]+ \d{1,2}, \d{4}/)
+    expect(page).toMatch(/Approved by [A-Z][a-z]+ [A-Z][a-z]+ on [A-Z][a-z]+ \d{1,2}, \d{4}/)
+    const list = visibleText(await html(RetentionPage(search())))
+    expect(list).toMatch(
+      /Batch as of [A-Z][a-z]+ \d{1,2}, \d{4}, proposed [A-Z][a-z]+ \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M/,
+    )
+  })
+
   it('the request log shows the five business day clock, a late-free open request, and an overdue one', async () => {
     await actAs('records')
     const overdue = await html(RequestsPage(search({ overdue: '1' })))

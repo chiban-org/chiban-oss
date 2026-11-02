@@ -10,8 +10,9 @@ import { retentionText } from '@/features/records/retentionText'
 import { retentionWorklist, type WorklistState } from '@/features/records/worklist'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
+import { getTownSettings } from '@/features/town/settings'
 import { townToday } from '@/features/town/today'
-import { formatCivilDate } from '@/lib/formatDate'
+import { formatCivilDate, formatInstantLong } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { proposeDispositionAction, recordRetentionEventAction } from './actions'
 
@@ -73,6 +74,8 @@ export default async function RetentionPage({
   }
   const state = stateOf(params.state)
   const today = await townToday(ctx.db, new Date(), ctx.signal)
+  const town = await getTownSettings(ctx.db, ctx.signal)
+  const zone = town.ok ? town.value.timeZone : 'America/New_York'
   const list = await retentionWorklist(
     ctx.db,
     ctx.actor,
@@ -172,7 +175,7 @@ export default async function RetentionPage({
             {batches.map((b) => (
               <li key={b.id}>
                 <Link href={`/staff/records/disposition/${b.id}`} className="text-action underline">
-                  {`Batch as of ${formatCivilDate(b.asOf)}`}
+                  {`Batch as of ${formatCivilDate(b.asOf)}, proposed ${formatInstantLong(b.proposedAt, zone)}`}
                 </Link>
                 {`: ${BATCH_LABELS[b.status]}`}
               </li>
