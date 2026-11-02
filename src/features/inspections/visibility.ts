@@ -4,6 +4,10 @@ import { inspections } from '@/db/schema'
 import { hasFullRecordAccess } from '@/features/access/roles'
 import type { Actor } from '@/features/auth/actor'
 
+export function managesAllInspectors(actor: Actor): boolean {
+  return actor.kind === 'staff' && (actor.roles.includes('staff') || actor.roles.includes('admin'))
+}
+
 export function inspectionVisibleTo(actor: Actor | null): SQL {
   if (actor === null) return sql`false`
   if (hasFullRecordAccess(actor)) return sql`true`

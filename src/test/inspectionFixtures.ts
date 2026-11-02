@@ -108,3 +108,41 @@ export async function addUnclaimedContractor(
 }
 
 export const civil = (s: string): CivilDate => s as CivilDate
+
+export const RESULT_NOW = new Date('2027-07-07T18:00:00Z')
+
+export async function scheduledInspection(
+  db: Db,
+  inspector: Actor,
+  applicationId: string,
+  inspectionType: string,
+  patch: Partial<typeof inspections.$inferInsert> = {},
+): Promise<string> {
+  return await insertInspection(db, applicationId, inspectionType, {
+    status: 'scheduled',
+    inspectorUserId: inspector.userId,
+    scheduledDate: '2027-07-07',
+    startMinute: nextSlotOffset(),
+    durationMinutes: 60,
+    ...patch,
+  })
+}
+
+let slotOffset = 0
+function nextSlotOffset(): number {
+  slotOffset += 1
+  return 1000 + slotOffset
+}
+
+export async function passingItems(
+  db: Db,
+  applicationId: string,
+  inspectionType: string,
+): Promise<{ itemKey: string; outcome: 'pass' }[]> {
+  const checklistId = await checklistIdFor(db, applicationId, inspectionType)
+  const version = await getVersion(db, checklistId, signal)
+  return (version?.body as ChecklistBody).items.map((i) => ({
+    itemKey: i.key,
+    outcome: 'pass' as const,
+  }))
+}
