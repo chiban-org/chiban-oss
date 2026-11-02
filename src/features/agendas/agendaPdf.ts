@@ -41,7 +41,7 @@ export function agendaBlocks(model: AgendaModel): PdfBlock[] {
     .map(
       (item): PdfBlock => ({
         kind: 'paragraph',
-        text: `${item.position + 1}. ${item.description.trim()}`,
+        text: `Item ${item.position + 1} details: ${item.description.trim()}`,
       }),
     )
   return [

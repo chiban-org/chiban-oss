@@ -53,18 +53,12 @@ export default async function MeetingPage({ params }: { params: Promise<{ meetin
       </ul>
       <h2>Agenda</h2>
       {view.agenda === null ? <p>The agenda has not been started.</p> : null}
-      {view.agenda === null ? null : (
-        <p>
-          {view.agenda.status === 'published'
-            ? `Published on the public site, revision ${view.agenda.revision}.`
-            : 'Draft. Not yet public.'}
-        </p>
-      )}
+      {view.agenda === null ? null : <p>{view.agenda.statusText}</p>}
       {view.agenda === null ? null : (
         <ol className="space-y-2">
           {view.agenda.items.map((item) => (
             <li key={item.id} className="space-y-1">
-              <p className="m-0">{`${item.kindText}: ${item.text}`}</p>
+              <p className="m-0">{item.line}</p>
               {item.description === '' ? null : <p className="m-0 text-sm">{item.description}</p>}
               {draft ? (
                 <div className="flex flex-wrap gap-2">

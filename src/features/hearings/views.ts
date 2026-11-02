@@ -172,7 +172,15 @@ export interface MeetingView {
   agenda: {
     status: 'draft' | 'published'
     revision: number
-    items: { id: string; position: number; text: string; description: string; kindText: string }[]
+    statusText: string
+    items: {
+      id: string
+      position: number
+      text: string
+      line: string
+      description: string
+      kindText: string
+    }[]
     documentId: string | null
   } | null
 }
@@ -231,11 +239,16 @@ export async function loadMeetingView(
         : {
             status: agenda.status,
             revision: agenda.revision,
+            statusText:
+              agenda.status === 'published' && agenda.publishedAt !== null
+                ? `Published on the public site on ${formatCivilDate(todayInTimeZone(await timeZoneOf(db, signal), agenda.publishedAt))}. Revision ${agenda.revision}.`
+                : 'Draft. Not yet public.',
             documentId: agenda.documentId,
             items: items.map((i) => ({
               id: i.id,
               position: i.position,
               text: i.title,
+              line: i.kind === 'hearing' ? i.title : `${AGENDA_KIND_LABELS[i.kind]}: ${i.title}`,
               description: i.description,
               kindText: AGENDA_KIND_LABELS[i.kind],
             })),

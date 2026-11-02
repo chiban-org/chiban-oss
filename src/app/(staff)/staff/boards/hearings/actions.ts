@@ -111,7 +111,15 @@ export async function markHeldAction(formData: FormData): Promise<ActionResult> 
 export async function buildAgendaAction(formData: FormData): Promise<ActionResult> {
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
     const built = await buildAgenda(db, actor, text(formData, 'meetingId'), signal)
-    return errorOrOk(built, 'Agenda updated from the scheduled hearings.')
+    if (built.ok && built.value.added === 0) {
+      return { ok: true, message: 'No new hearings to add. The agenda already lists them.' }
+    }
+    return errorOrOk(
+      built,
+      built.ok && built.value.added === 1
+        ? 'Added 1 hearing to the agenda.'
+        : `Added ${built.ok ? built.value.added : 0} hearings to the agenda.`,
+    )
   })
 }
 
