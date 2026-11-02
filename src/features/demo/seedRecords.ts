@@ -246,7 +246,7 @@ export async function seedRecords(
       {
         title: 'Planning Board agenda',
         board: 'planning_board',
-        meetingDate: d('2027-07-14'),
+        meetingDate: d('2026-07-14'),
         documentIds: files.map((f) => f.documentId),
       },
       signal,
@@ -263,7 +263,7 @@ export async function seedRecords(
       recipientEmail: `board@${DEMO_DOMAIN}`,
     },
     signal,
-    noon('2027-07-01'),
+    noon('2026-07-01'),
   )
 
   const contractor = await actorFor(db, 'contractor', signal)

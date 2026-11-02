@@ -245,11 +245,11 @@ export async function seedInspections(
     title: 'Garage finished and occupied',
     typeKey: 'BP',
     values: BUILDING_VALUES,
-    submittedOn: '2027-03-15',
+    submittedOn: '2026-03-15',
   })
-  await completeAndReview(occupied, '2027-03-16', '2027-03-17')
-  await readyToIssue(occupied, '2027-03-30')
-  await occupied.step('issued', '2027-04-02')
+  await completeAndReview(occupied, '2026-03-16', '2026-03-17')
+  await readyToIssue(occupied, '2026-03-30')
+  await occupied.step('issued', '2026-04-02')
   await run(occupied.applicationId, 'final', {
     day: days.recent,
     slot: SECOND_SLOT,

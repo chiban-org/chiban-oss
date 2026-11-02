@@ -4,7 +4,7 @@ import path from 'node:path'
 import type { SeedDemoDeps } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 
-export const DEMO_SEED_INSTANT = new Date('2027-06-01T16:00:00Z')
+export const DEMO_SEED_INSTANT = new Date('2026-06-01T16:00:00Z')
 
 export async function demoSeedDeps(): Promise<SeedDemoDeps> {
   const base = await mkdtemp(path.join(tmpdir(), 'demo-seed-'))

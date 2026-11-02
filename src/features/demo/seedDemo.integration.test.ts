@@ -290,7 +290,7 @@ describe('seedDemo', () => {
       (c) => c.ruleKey === 'nh.bp.regional_impact_comment' && c.status === 'running',
     )
     expect(comment).toHaveLength(1)
-    expect((comment[0]?.currentDue ?? '') > '2027-06-01').toBe(true)
+    expect((comment[0]?.currentDue ?? '') > '2026-06-01').toBe(true)
   })
 
   it('seeded application page renders every clock with a non-empty consequence', async () => {
@@ -326,7 +326,7 @@ async function actorOf(local: string): Promise<Actor> {
 }
 
 describe('seeded inspections', () => {
-  const SEEDED_DAY = '2027-06-02'
+  const SEEDED_DAY = '2026-06-01'
 
   it('seeded inspector day list for the seeded date has two stops', async () => {
     const inspector = await actorOf('inspector')
@@ -363,7 +363,7 @@ describe('seeded inspections', () => {
     expect(photos).toHaveLength(1)
     const certs = await handle.db.select().from(certificatesOfOccupancy)
     expect(certs).toHaveLength(1)
-    expect(certs[0]?.number).toMatch(/^CO-2027-0001$/)
+    expect(certs[0]?.number).toMatch(/^CO-2026-0001$/)
   })
 
   it('the permit under appeal shows its cancelled inspection', async () => {

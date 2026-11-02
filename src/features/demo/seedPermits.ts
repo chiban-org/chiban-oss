@@ -79,7 +79,7 @@ export async function seedPermits(db: Db, signal: AbortSignal): Promise<boolean>
       {
         applicationId: regional.applicationId,
         determination: 'yes',
-        determinedOn: d('2027-05-25'),
+        determinedOn: d('2026-05-25'),
       },
       signal,
     ),
@@ -94,7 +94,7 @@ export async function seedPermits(db: Db, signal: AbortSignal): Promise<boolean>
         recipientKind: 'regional_planning_commission',
         recipientName: 'Alder Pond Regional Planning Commission',
         method: 'certified_mail',
-        mailedOn: d('2027-05-26'),
+        mailedOn: d('2026-05-26'),
         reference: 'CM-0042',
       },
       signal,
@@ -107,27 +107,27 @@ export async function seedPermits(db: Db, signal: AbortSignal): Promise<boolean>
     title: 'Service upgrade',
     typeKey: 'EL',
     values: TRADE_VALUES,
-    submittedOn: '2027-05-15',
+    submittedOn: '2026-05-15',
   })
-  await trade.step('issued', '2027-05-15')
+  await trade.step('issued', '2026-05-15')
 
   const appealed = await open(db, cast, signal, {
     parcel: '007004000000',
     title: 'Barn conversion under appeal',
     typeKey: 'BP',
     values: BUILDING_VALUES,
-    submittedOn: '2027-03-01',
+    submittedOn: '2026-03-01',
   })
-  await completeAndReview(appealed, '2027-03-02', '2027-03-03')
-  await readyToIssue(appealed, '2027-03-20')
-  await appealed.step('issued', '2027-04-01')
+  await completeAndReview(appealed, '2026-03-02', '2026-03-03')
+  await readyToIssue(appealed, '2026-03-20')
+  await appealed.step('issued', '2026-04-01')
   must(
     await recordAppeal(
       db,
       cast.staff,
       {
         applicationId: appealed.applicationId,
-        filedOn: d('2027-05-01'),
+        filedOn: d('2026-05-01'),
         appellantName: 'Abutter at 12 Pond Road',
       },
       signal,
@@ -140,16 +140,16 @@ export async function seedPermits(db: Db, signal: AbortSignal): Promise<boolean>
     title: 'Deck renewed once',
     typeKey: 'BP',
     values: BUILDING_VALUES,
-    submittedOn: '2026-05-20',
+    submittedOn: '2025-05-20',
   })
-  await completeAndReview(renewed, '2026-05-21', '2026-05-22')
-  await readyToIssue(renewed, '2026-06-05')
-  await renewed.step('issued', '2026-06-10')
+  await completeAndReview(renewed, '2025-05-21', '2025-05-22')
+  await readyToIssue(renewed, '2025-06-05')
+  await renewed.step('issued', '2025-06-10')
   must(
     await renewPermit(
       db,
       cast.staff,
-      { applicationId: renewed.applicationId, renewedOn: d('2027-05-28') },
+      { applicationId: renewed.applicationId, renewedOn: d('2026-05-28') },
       signal,
     ),
     'renewal',

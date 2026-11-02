@@ -67,7 +67,7 @@ describe('seeded operations screens', () => {
 
   it('seeded reports page renders nonzero volume, processing time, and revenue rows', async () => {
     state.actor = await actorOf('staff')
-    const search = { from: '2027-01-01', to: '2027-12-31' }
+    const search = { from: '2026-01-01', to: '2026-12-31' }
     const html = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve(search) }))
     for (const heading of ['Permit volume', 'Processing time', 'Revenue']) {
       const section = html.split(`<h2>${heading}</h2>`)[1]?.split('<h2>')[0] ?? ''

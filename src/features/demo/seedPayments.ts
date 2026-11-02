@@ -20,9 +20,9 @@ import { saveProcessorAccount } from '@/features/payments/processorAccounts'
 import { resolveSimulatedReader, startCardPresentPayment } from '@/features/payments/startPayment'
 import type { CivilDate } from '@/types/civilDate'
 
-export const DEMO_PAYMENT_DATE = '2027-06-01' as CivilDate
-const REFUND_DATE = '2027-06-02'
-const RETURNED_DATE = '2027-06-03'
+export const DEMO_PAYMENT_DATE = '2026-06-01' as CivilDate
+const REFUND_DATE = '2026-06-02'
+const RETURNED_DATE = '2026-06-03'
 const PAYMENT_PREFIX = 'Payments:'
 const REFUND_CENTS = 1000
 const SIMULATED_WEBHOOK_SECRET = 'demo-simulated-webhook-secret'
@@ -190,7 +190,7 @@ export async function seedPayments(db: Db, signal: AbortSignal): Promise<boolean
       title: `${PAYMENT_PREFIX} ${title}`,
       typeKey,
       values: { ...TRADE_BASE, contractor_license_number: license, ...extra },
-      submittedOn: '2026-10-30',
+      submittedOn: '2026-05-30',
     })
 
   const cash = await trade('007008000000', 'Gas line paid in cash', 'MG', 'MG-11802')

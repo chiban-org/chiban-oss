@@ -14,7 +14,7 @@ import { linkRecordByRawRef } from '@/features/parcels/recordLinks'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import type { CivilDate } from '@/types/civilDate'
 
-export const DEMO_SEED_NOW = new Date('2027-06-01T12:00:00Z')
+export const DEMO_SEED_NOW = new Date('2026-06-01T12:00:00Z')
 
 const PARCEL_MAPPING = {
   primaryId: { field: 'MAPLOT', format: 'gis12', padNumeric: false },
@@ -115,7 +115,7 @@ async function seedSubdivision(c: SeedContext): Promise<void> {
     c.actor,
     {
       kind: 'subdivision',
-      effectiveDate: '2027-04-12' as CivilDate,
+      effectiveDate: '2026-04-12' as CivilDate,
       effectiveBasis: 'recording',
       reference: 'Plan book 14, page 7',
       parents: [parent],
