@@ -84,4 +84,35 @@ describe('adoptStarter', () => {
       error: 'unknown_starter',
     })
   })
+
+  it('adopting VAR publishes form, fee schedule, conditions, template, and application type with upstream ids', async () => {
+    const admin = await staffActor(handle.db, 'admin')
+    const r = await adoptStarter(handle.db, admin, 'nh.starter.zba_variance', signal)
+    if (!r.ok) throw new Error(JSON.stringify(r.error))
+    const rows = await handle.db
+      .select()
+      .from(configVersions)
+      .where(eq(configVersions.upstreamTemplateId, 'nh.starter.zba_variance'))
+    expect(rows.map((x) => x.kind).sort()).toEqual([
+      'application_type',
+      'condition_library',
+      'fee_schedule',
+      'form',
+      'template',
+    ])
+    expect(rows.every((x) => x.status === 'published')).toBe(true)
+    expect((await pinCurrent(handle.db, 'VAR', signal)).ok).toBe(true)
+  })
+
+  it('every board starter passes publish checks', async () => {
+    const admin = await staffActor(handle.db, 'admin')
+    for (const starter of NH_STARTERS.filter(
+      (s) =>
+        s.applicationType.classification?.startsWith('nh.pb') ||
+        s.applicationType.classification?.startsWith('nh.zba'),
+    )) {
+      const r = await adoptStarter(handle.db, admin, starter.id, signal)
+      if (!r.ok) throw new Error(`${starter.id}: ${JSON.stringify(r.error)}`)
+    }
+  })
 })

@@ -25,7 +25,7 @@ describe('settings views', () => {
     expect(summary.find((s) => s.kind === 'application_type')).toMatchObject({ keys: 1 })
     expect(summary.find((s) => s.kind === 'inspection_checklist')).toMatchObject({ keys: 2 })
     expect(summary.find((s) => s.kind === 'local_code_amendment')).toMatchObject({ keys: 0 })
-    expect(summary).toHaveLength(10)
+    expect(summary).toHaveLength(12)
   })
 
   it('lists keys of a kind with published version and draft flag', async () => {

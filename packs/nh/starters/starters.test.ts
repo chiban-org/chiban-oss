@@ -9,9 +9,31 @@ import { loadPack } from '@/features/packs/loadPack'
 import { unknownMergeFields } from '@/features/templates/mergeFields'
 import { TemplateBodySchema } from '@/features/templates/templateSchema'
 
+const PERMIT_STARTERS = NH_STARTERS.filter(
+  (s) => s.applicationType.workflow.closesOn !== 'staff_closes',
+)
+
 describe('NH starters', () => {
-  it('ships building, electrical, plumbing, and mechanical/gas', () => {
-    expect(NH_STARTERS.map((s) => s.applicationType.prefix)).toEqual(['BP', 'EL', 'PL', 'MG'])
+  it('ships building, electrical, plumbing, mechanical/gas, and the board types', () => {
+    expect(NH_STARTERS.map((s) => s.applicationType.prefix)).toEqual([
+      'BP',
+      'EL',
+      'PL',
+      'MG',
+      'SPR',
+      'MSP',
+      'SPA',
+      'SUB',
+      'MSUB',
+      'LLA',
+      'CUP',
+      'DR',
+      'VAR',
+      'SE',
+      'EW',
+      'AAD',
+      'RH',
+    ])
   })
 
   it('no starter template prefixes the town name field with the word Town', () => {
@@ -71,8 +93,8 @@ describe('NH starters', () => {
     }
   })
 
-  it('every starter has a blocking condition and a permit template', () => {
-    for (const s of NH_STARTERS) {
+  it('every permit starter has a blocking condition and a permit template', () => {
+    for (const s of PERMIT_STARTERS) {
       expect(s.conditionLibrary.conditions.some((c) => c.blocksIssuance)).toBe(true)
       expect(s.templates.some((t) => t.kind === 'permit')).toBe(true)
     }
@@ -114,8 +136,8 @@ describe('NH starters', () => {
     }
   })
 
-  it('every starter names exactly one final checklist', () => {
-    for (const s of NH_STARTERS) {
+  it('every permit starter names exactly one final checklist', () => {
+    for (const s of PERMIT_STARTERS) {
       expect(s.checklists.filter((c) => c.final)).toHaveLength(1)
       expect(s.checklists.find((c) => c.final)?.inspectionType).toBe('final')
     }

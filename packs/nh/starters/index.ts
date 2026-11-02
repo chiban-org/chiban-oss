@@ -1,3 +1,5 @@
+import { PLANNING_BOARD_STARTERS } from '@packs/nh/starters/boards/planningBoard'
+import { ZBA_STARTERS } from '@packs/nh/starters/boards/zba'
 import { BUILDING_DEMOLITION_STARTER } from '@packs/nh/starters/buildingDemolition'
 import { ELECTRICAL_STARTER } from '@packs/nh/starters/electrical'
 import { MECHANICAL_GAS_STARTER } from '@packs/nh/starters/mechanicalGas'
@@ -11,6 +13,8 @@ export const NH_STARTERS: StarterBundle[] = [
   ELECTRICAL_STARTER,
   PLUMBING_STARTER,
   MECHANICAL_GAS_STARTER,
+  ...PLANNING_BOARD_STARTERS,
+  ...ZBA_STARTERS,
 ]
 
 export { NH_INSPECTION_SETTINGS_DEFAULT } from '@packs/nh/starters/inspectionSettings'
