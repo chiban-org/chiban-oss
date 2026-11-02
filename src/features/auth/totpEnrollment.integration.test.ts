@@ -6,6 +6,7 @@ import { beginTotpEnrollment, confirmTotpEnrollment } from '@/features/auth/totp
 import { decryptSecret } from '@/server/secrets'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeUser } from '@/test/factories'
+import { racyAfterFirstSelect } from '@/test/racyDb'
 
 let handle: TestDb
 const signal = new AbortController().signal
@@ -55,5 +56,37 @@ describe('totp enrollment', () => {
       ok: false,
       error: 'already_enrolled',
     })
+  })
+})
+
+describe('totp enrollment races', () => {
+  it('confirm with the code for secret A after secret B was written fails and leaves totp disabled', async () => {
+    const userId = await makeUser(handle.db, { email: 'race-confirm@alderpond.example' })
+    await beginTotpEnrollment(handle.db, userId, signal)
+    const secretA = decryptSecret((await row(userId))?.totpSecretEnc ?? '')
+    if (!secretA.ok) throw new Error('decrypt')
+    const racy = racyAfterFirstSelect(handle.db, async () => {
+      await beginTotpEnrollment(handle.db, userId, signal)
+    })
+    const result = await confirmTotpEnrollment(
+      racy,
+      userId,
+      currentTotpCode(secretA.value, Date.now()),
+      signal,
+    )
+    expect(result.ok).toBe(false)
+    expect((await row(userId))?.totpEnabled).toBe(false)
+  })
+
+  it('restarting enrollment cannot overwrite the secret of a user who just enabled totp', async () => {
+    const userId = await makeUser(handle.db, { email: 'race-begin@alderpond.example' })
+    await beginTotpEnrollment(handle.db, userId, signal)
+    const enabledSecret = (await row(userId))?.totpSecretEnc
+    const racy = racyAfterFirstSelect(handle.db, async () => {
+      await handle.db.update(users).set({ totpEnabled: true }).where(eq(users.id, userId))
+    })
+    const result = await beginTotpEnrollment(racy, userId, signal)
+    expect(result).toEqual({ ok: false, error: 'already_enrolled' })
+    expect((await row(userId))?.totpSecretEnc).toBe(enabledSecret)
   })
 })

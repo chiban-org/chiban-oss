@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { users } from '@/db/schema'
 import { generateTotpSecret, totpUri, verifyTotp } from '@/features/auth/totp'
@@ -15,10 +15,12 @@ export async function beginTotpEnrollment(
   if (user === undefined) return err('not_found')
   if (user.totpEnabled) return err('already_enrolled')
   const secret = generateTotpSecret()
-  await db
+  const written = await db
     .update(users)
     .set({ totpSecretEnc: encryptSecret(secret) })
-    .where(eq(users.id, userId))
+    .where(and(eq(users.id, userId), eq(users.totpEnabled, false)))
+    .returning({ id: users.id })
+  if (written.length === 0) return err('already_enrolled')
   return ok({ uri: totpUri(secret, user.email) })
 }
 
@@ -46,6 +48,16 @@ export async function confirmTotpEnrollment(
     return err('not_pending')
   const secret = decryptSecret(user.totpSecretEnc)
   if (!secret.ok || !verifyTotp(secret.value, code.trim())) return err('invalid_code')
-  await db.update(users).set({ totpEnabled: true }).where(eq(users.id, userId))
-  return ok(undefined)
+  const enabled = await db
+    .update(users)
+    .set({ totpEnabled: true })
+    .where(
+      and(
+        eq(users.id, userId),
+        eq(users.totpSecretEnc, user.totpSecretEnc),
+        eq(users.totpEnabled, false),
+      ),
+    )
+    .returning({ id: users.id })
+  return enabled.length === 0 ? err('not_pending') : ok(undefined)
 }
