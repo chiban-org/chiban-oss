@@ -435,6 +435,13 @@
       "when": 1793627593241,
       "tag": "0061_m9_enforcement_appeals",
       "breakpoints": true
+    },
+    {
+      "idx": 62,
+      "version": "7",
+      "when": 1793627887219,
+      "tag": "0062_m9_enforcement_money",
+      "breakpoints": true
     }
   ]
 }
