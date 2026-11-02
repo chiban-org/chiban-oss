@@ -139,6 +139,11 @@ export async function censusBpsReport(
   })
 }
 
+export function incompleteCopy(report: CensusReport): string {
+  const n = report.needsClassification.length
+  return `This report is not complete. ${n} issued building ${n === 1 ? 'permit needs' : 'permits need'} classification`
+}
+
 export function censusCsv(report: CensusReport): string {
   return toCsvRows([
     ['Item', 'Type of structure', 'Buildings', 'Housing units', 'Valuation'],

@@ -1,5 +1,5 @@
 import { db } from '@/db/client'
-import { censusBpsReport, censusCsv } from '@/features/census/bpsReport'
+import { censusBpsReport, censusCsv, incompleteCopy } from '@/features/census/bpsReport'
 import { townToday } from '@/features/town/today'
 import { staffActorOrNull } from '@/server/requireStaff'
 
@@ -24,6 +24,12 @@ export async function GET(request: Request): Promise<Response> {
   const month = monthParam === 'year' ? null : integer(monthParam, Number(today.slice(5, 7)))
   const report = await censusBpsReport(db, actor, { year, month }, signal)
   if (!report.ok) return new Response('Not found', { status: 404 })
+  if (!report.value.complete) {
+    return new Response(`${incompleteCopy(report.value)} before it can be exported.`, {
+      status: 409,
+      headers: { 'content-type': 'text/plain; charset=utf-8', 'cache-control': 'no-store' },
+    })
+  }
   const name = `census-building-permits-${year}${month === null ? '' : `-${String(month).padStart(2, '0')}`}.csv`
   return new Response(censusCsv(report.value), {
     status: 200,

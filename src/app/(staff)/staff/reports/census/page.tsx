@@ -4,7 +4,7 @@ import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { CENSUS_EXCLUDED_REASONS } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
-import { censusBpsReport } from '@/features/census/bpsReport'
+import { censusBpsReport, incompleteCopy } from '@/features/census/bpsReport'
 import {
   CENSUS_CATEGORY_LABELS,
   CENSUS_PHASE_LABELS,
@@ -116,7 +116,7 @@ export default async function CensusPage({
       {r.noPermits ? <p role="status">No permits issued.</p> : null}
       {r.complete ? null : (
         <p role="alert">
-          {`This report is not complete. ${r.needsClassification.length} issued building ${r.needsClassification.length === 1 ? 'permit needs' : 'permits need'} classification below.`}
+          {`${incompleteCopy(r)} below. The spreadsheet file is available once every permit is classified.`}
         </p>
       )}
       <section aria-labelledby="section-3" className="space-y-2">
@@ -177,9 +177,11 @@ export default async function CensusPage({
           </table>
         )}
       </section>
-      <Link href={csvHref} className="inline-block text-action underline">
-        Download as a spreadsheet file
-      </Link>
+      {r.complete ? (
+        <Link href={csvHref} className="inline-block text-action underline">
+          Download as a spreadsheet file
+        </Link>
+      ) : null}
       {suggestions.length === 0 ? null : (
         <section aria-labelledby="needs" className="space-y-3 border-t pt-4">
           <h2 id="needs">Needs classification</h2>
