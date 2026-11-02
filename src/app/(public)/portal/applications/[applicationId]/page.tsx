@@ -43,9 +43,21 @@ function Details({ view }: { view: PortalApplicationView }) {
   )
 }
 
+const ESTIMATE_DUE = {
+  at_intake: 'when the application is submitted',
+  at_approval: 'when the town approves the application',
+} as const
+
+function NoFeesYet({ view }: { view: PortalApplicationView }) {
+  if (view.feeEstimate === null) return <p>No fees have been set for this application yet.</p>
+  return (
+    <p>{`No fees are due yet. The estimated fee is ${formatCents(view.feeEstimate.totalCents)}, due ${ESTIMATE_DUE[view.feeEstimate.due]}.`}</p>
+  )
+}
+
 function Fees({ view }: { view: PortalApplicationView }) {
   const { fees } = view
-  if (fees.lines.length === 0) return <p>No fees have been set for this application yet.</p>
+  if (fees.lines.length === 0) return <NoFeesYet view={view} />
   return (
     <>
       <ul className="m-0 list-none space-y-1 p-0">

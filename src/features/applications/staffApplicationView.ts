@@ -28,8 +28,8 @@ import { type ClockExplanation, explainClock } from '@/features/clocks/explainCl
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import { effectiveBindings } from '@/features/config/bindings'
 import { getVersion } from '@/features/config/store'
-import { computeFees, type FeeComputation } from '@/features/fees/computeFees'
-import type { FeeScheduleBody } from '@/features/fees/feeSchema'
+import type { FeeComputation } from '@/features/fees/computeFees'
+import { previewFees } from '@/features/fees/preview'
 import { evaluateGates, type GateResult } from '@/features/gates/evaluateGates'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { displayIdsFor } from '@/features/parcels/displayId'
@@ -164,22 +164,7 @@ export async function getStaffApplicationView(
     .select()
     .from(feeOverrides)
     .where(and(eq(feeOverrides.applicationId, applicationId), isNull(feeOverrides.supersededBy)))
-  const schedule = await getVersion(db, app.pins.feeSchedule, signal)
-  const previewStage = app.typeBody.payTiming
-  const preview =
-    schedule === null || assessments.some((a) => a.stage === previewStage)
-      ? null
-      : computeFees(schedule.body as FeeScheduleBody, {
-          values: app.values,
-          facts: app.facts,
-          counts: { abutters: { state: 'unknown' } },
-          stage: previewStage,
-          overrides: overrides.map((o) => ({
-            feeCode: o.feeCode,
-            kind: o.kind,
-            amountCents: o.amountCents,
-          })),
-        })
+  const preview = await previewFees(db, app, signal)
   const libraryVersion = await getVersion(db, app.pins.conditionLibrary, signal)
   const library = (libraryVersion?.body as ConditionLibraryBody | undefined)?.conditions ?? []
   const [record] = await db

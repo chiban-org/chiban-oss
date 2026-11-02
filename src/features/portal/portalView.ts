@@ -10,7 +10,7 @@ import {
   receipts,
 } from '@/db/schema'
 import { canViewApplication, isProjectParty } from '@/features/access/queries'
-import { loadApplicationContext } from '@/features/applications/context'
+import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import { stateLabel } from '@/features/applications/stateLabel'
 import type { CoreState } from '@/features/applications/states'
 import { attestationHash } from '@/features/applications/submitApplication'
@@ -18,6 +18,7 @@ import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
 import { listDocuments } from '@/features/documents/listDocuments'
 import type { DocumentListRow } from '@/features/documents/types'
+import { previewFees } from '@/features/fees/preview'
 import type { FormBody } from '@/features/forms/formSchema'
 import type { FieldValue } from '@/features/forms/validateSubmission'
 import { getLayerStatus } from '@/features/gis/layerStatus'
@@ -36,6 +37,7 @@ import { isUuid } from '@/utils/uuid'
 const DECISION_CLOCK_KEY = 'nh.bp.decision'
 const PAYER_ROLES = ['applicant', 'owner', 'agent', 'contractor'] as const
 const WRITABLE_STATES: readonly CoreState[] = ['draft', 'submitted']
+const ESTIMATE_STATES: readonly CoreState[] = ['draft', 'submitted', 'under_review']
 const DOCUMENT_LIMIT = 50
 
 export interface PortalApplicationView {
@@ -54,6 +56,7 @@ export interface PortalApplicationView {
   conditions: { text: string; status: 'unmet' | 'met' | 'waived' }[]
   documents: DocumentListRow[]
   fees: FeeBalance
+  feeEstimate: { totalCents: number; due: 'at_intake' | 'at_approval' } | null
   onlineTotalCents: number
   convenienceCents: number
   canPay: boolean
@@ -125,6 +128,19 @@ async function historyFor(
     ...r,
     convenienceCents: r.convenienceCents ?? 0,
   }))
+}
+
+async function feeEstimate(
+  db: Db,
+  app: ApplicationContext,
+  signal: AbortSignal,
+): Promise<PortalApplicationView['feeEstimate']> {
+  if (!ESTIMATE_STATES.includes(app.state)) return null
+  const preview = await previewFees(db, app, signal)
+  if (preview?.complete !== true || preview.totalCents === null || preview.totalCents <= 0) {
+    return null
+  }
+  return { totalCents: preview.totalCents, due: app.typeBody.payTiming }
 }
 
 export async function getPortalApplicationView(
@@ -199,6 +215,7 @@ export async function getPortalApplicationView(
       )
     ).rows,
     fees,
+    feeEstimate: await feeEstimate(db, app, signal),
     onlineTotalCents: fees.dueCents + convenienceCents,
     convenienceCents,
     canPay: fees.dueCents > 0 && payer,

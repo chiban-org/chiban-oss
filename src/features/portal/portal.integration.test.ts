@@ -360,3 +360,40 @@ describe('money history on the portal', () => {
     expect(view.history[0]?.receiptNumber).toBe(refunded.value.receiptNumber)
   })
 })
+
+describe('fee estimate on the portal', () => {
+  beforeEach(async () => {
+    world = await setupPermitWorld(handle.db)
+  })
+
+  it('an application under review shows the fee it will owe at approval, the same figure staff preview', async () => {
+    const app = await makeApplication(handle.db, world, {
+      state: 'under_review',
+      values: { finished_sq_ft: 1000 },
+    })
+    const view = await getPortalApplicationView(
+      handle.db,
+      world.applicant,
+      app.applicationId,
+      signal,
+    )
+    if (!view.ok) throw new Error('view')
+    expect(view.value.fees.lines).toEqual([])
+    expect(view.value.feeEstimate).toEqual({ totalCents: 35000, due: 'at_approval' })
+  })
+
+  it('a denied application shows no estimate', async () => {
+    const app = await makeApplication(handle.db, world, {
+      state: 'denied',
+      values: { finished_sq_ft: 1000 },
+    })
+    const view = await getPortalApplicationView(
+      handle.db,
+      world.applicant,
+      app.applicationId,
+      signal,
+    )
+    if (!view.ok) throw new Error('view')
+    expect(view.value.feeEstimate).toBeNull()
+  })
+})
