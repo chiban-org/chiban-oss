@@ -42,7 +42,7 @@ describe('Caddyfile', () => {
   it('anonymous paths skip the access log', () => {
     const block = siteBlock('{$APP_DOMAIN}')
     expect(block).toMatch(
-      /@anonymousIntake path \/report-anonymously\* \/intake\/anonymous\* \/_next\/\*/,
+      /@anonymousIntake path \/report-anonymously\* \/intake\/anonymous\* \/_next\/\* \/favicon\.ico$/m,
     )
     expect(block).toMatch(/\blog \{\s+output stdout\s+\}/)
     expect(block).toContain('log_skip @anonymousIntake')
