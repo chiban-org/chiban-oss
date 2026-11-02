@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import { QueueTable } from '@/components/queue/QueueTable'
 import type { WorkQueueRow } from '@/features/queue/workQueue'
+import { findIsoDates } from '@/test/leaks'
 import type { CivilDate } from '@/types/civilDate'
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
@@ -24,6 +25,8 @@ function row(overrides: Partial<WorkQueueRow>): WorkQueueRow {
     nextDue: null,
     daysUntilDue: null,
     dueStatus: 'none',
+    noticeDue: null,
+    filingDue: null,
     feesDueCents: 0,
     unknownPayment: false,
     reviewers: [],
@@ -45,6 +48,13 @@ function setup(rows: WorkQueueRow[], navigate = vi.fn()) {
 }
 
 describe('QueueTable', () => {
+  it('shows the notice and filing due dates in words', () => {
+    setup([row({ noticeDue: d('2027-04-10'), filingDue: d('2027-04-22') })])
+    expect(screen.getByText('Notice due April 10, 2027')).toBeTruthy()
+    expect(screen.getByText('Filing due April 22, 2027')).toBeTruthy()
+    expect(findIsoDates(document.body.textContent)).toEqual([])
+  })
+
   it('writes the state, substep label, and reviewer status in words', () => {
     setup([
       row({

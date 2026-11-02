@@ -54,6 +54,19 @@ function DueChip({ row }: { row: WorkQueueRow }) {
   )
 }
 
+function BoardDates({ row }: { row: WorkQueueRow }) {
+  return (
+    <>
+      {row.noticeDue === null ? null : (
+        <span className="block">{`Notice due ${formatCivilDate(row.noticeDue)}`}</span>
+      )}
+      {row.filingDue === null ? null : (
+        <span className="block">{`Filing due ${formatCivilDate(row.filingDue)}`}</span>
+      )}
+    </>
+  )
+}
+
 function useQueueKeys(
   rows: WorkQueueRow[],
   selected: number,
@@ -134,6 +147,7 @@ export function QueueTable({ rows, reviewers, assign, navigate }: Props) {
               </td>
               <td>
                 <DueChip row={row} />
+                <BoardDates row={row} />
               </td>
               <td>{row.feesDueCents > 0 ? `${formatCents(row.feesDueCents)} due` : ''}</td>
               <td>

@@ -8,6 +8,7 @@ import type { CoreState } from '@/features/applications/states'
 import { substepLabel } from '@/features/applications/statusText'
 import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
+import { FILING_CLOCK_KEY } from '@/features/decisions/fileDecision'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { townToday } from '@/features/town/today'
 import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
@@ -36,6 +37,8 @@ export interface WorkQueueRow {
   nextDue: CivilDate | null
   daysUntilDue: number | null
   dueStatus: DueStatus
+  noticeDue: CivilDate | null
+  filingDue: CivilDate | null
   feesDueCents: number
   unknownPayment: boolean
   reviewers: { name: string; status: string }[]
@@ -45,6 +48,17 @@ export interface WorkQueueRow {
 const NEXT_DUE = sql<string | null>`(
   select min(c.current_due) from clocks c
   where c.application_id = ${applications.id} and c.status = 'running')`
+
+const NOTICE_DUE = sql<string | null>`(
+  select min(i.due_on) from notice_items i
+  join hearings h on h.notice_set_id = i.set_id and h.status = 'scheduled'
+  where h.application_id = ${applications.id}
+    and not exists (select 1 from notice_proofs p where p.item_id = i.id))`
+
+const FILING_DUE = sql<string | null>`(
+  select min(c.current_due) from clocks c
+  where c.application_id = ${applications.id} and c.rule_key = ${FILING_CLOCK_KEY}
+    and c.status in ('running', 'overdue'))`
 
 const FEES_DUE = sql<number>`(
   select coalesce(sum(greatest(0, l.amt - coalesce(p.paid, 0))), 0)::int
@@ -177,6 +191,8 @@ export async function listWorkQueue(
       configPins: applications.configPins,
       parcelId: projects.parcelId,
       nextDue: NEXT_DUE,
+      noticeDue: NOTICE_DUE,
+      filingDue: FILING_DUE,
       feesDue: FEES_DUE,
       unknownPayment: UNKNOWN_PAYMENT,
       preservationIncomplete: preservationIncompleteFor(actor),
@@ -220,6 +236,8 @@ export async function listWorkQueue(
         nextDue,
         daysUntilDue: nextDue === null ? null : daysBetween(today, nextDue),
         dueStatus: dueStatusOf(nextDue, today),
+        noticeDue: r.noticeDue as CivilDate | null,
+        filingDue: r.filingDue as CivilDate | null,
         feesDueCents: r.feesDue,
         unknownPayment: r.unknownPayment,
         reviewers: reviewers.get(r.id) ?? [],
