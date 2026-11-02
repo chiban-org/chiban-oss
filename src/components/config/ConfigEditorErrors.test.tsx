@@ -46,6 +46,25 @@ describe('ConfigEditorForm errors', () => {
   })
 })
 
+describe('ConfigEditorForm while a request runs', () => {
+  it('says it is working until the server answers', async () => {
+    const never = () => new Promise<never>(() => undefined)
+    render(
+      <ConfigEditorForm
+        kind="application_type"
+        configKey="CRIT5"
+        initialBody={skeletonBody('application_type', 'CRIT5')}
+        resetKey="v1"
+        context={context}
+        saveAction={never}
+        publishAction={never}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Working'))
+  })
+})
+
 describe('application type prefix', () => {
   it('explains the allowed prefix in words', () => {
     const body = { ...(skeletonBody('application_type', 'CRIT5') as object), prefix: 'CRIT5' }

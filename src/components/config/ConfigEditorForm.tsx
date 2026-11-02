@@ -22,6 +22,12 @@ interface Props {
   publishAction: (formData: FormData) => Promise<ActionResult>
 }
 
+function statusText(pending: boolean, result: ActionResult | null): string | null {
+  if (pending) return 'Working'
+  if (result === null) return null
+  return result.ok ? result.message : result.error
+}
+
 export function ConfigEditorForm({
   kind,
   configKey,
@@ -76,7 +82,7 @@ export function ConfigEditorForm({
           Save draft
         </Button>
         <p role="status" className="text-sm">
-          {result === null ? null : result.ok ? result.message : result.error}
+          {statusText(pending, result)}
         </p>
       </div>
       {listed.length === 0 ? null : (
