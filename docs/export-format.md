@@ -394,10 +394,11 @@ File: `data/document_text.ndjson`. Ordered by version_id.
 - `version_id`: uuid
 - `text`: text
 - `has_text_layer`: boolean
-- `tsv`: tsvector, nullable
 
 References:
 - `version_id` refers to `document_versions`
+
+Omitted columns: `tsv`
 
 ### document_versions
 

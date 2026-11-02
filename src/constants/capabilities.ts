@@ -24,6 +24,11 @@ export const CAPABILITIES = {
   'packet.manage': 'Create board packets and send or revoke their links',
   'inspection.schedule': 'Take inspection requests and schedule, reschedule, or cancel inspections',
   'inspection.record': 'Record inspection results and attach inspection photos',
+  'export.download': 'Request and download the town records export',
+  'export.recovery': 'Download the encrypted recovery export',
+  'export.import': 'Restore an export archive into an empty instance',
+  'report.view': 'View and download permit volume, processing time, and revenue reports',
+  'cutover.import': 'Import open applications from the prior system and reconcile them',
 } as const
 
 export type Capability = keyof typeof CAPABILITIES

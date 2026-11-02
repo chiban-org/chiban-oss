@@ -184,7 +184,10 @@ function build(spec: Spec): ExportEntity {
       }
     }),
     polyRefs: spec.poly ?? [],
-    omitColumns: spec.omit ?? [],
+    omitColumns: [
+      ...(spec.omit ?? []),
+      ...config.columns.filter((c) => c.generated !== undefined).map((c) => c.name),
+    ],
     omitFill: spec.fill ?? {},
   }
 }

@@ -17,6 +17,11 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'review.assign',
     'document.manage',
     'packet.manage',
+    'export.download',
+    'export.recovery',
+    'export.import',
+    'report.view',
+    'cutover.import',
   ],
   staff: [
     'permit.issue',
@@ -36,10 +41,12 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'packet.manage',
     'inspection.schedule',
     'inspection.record',
+    'report.view',
+    'cutover.import',
   ],
   inspector: ['regional_impact.determine', 'inspection.schedule', 'inspection.record'],
-  finance: ['payment.refund_void_correct', 'payment.collect', 'payment.report'],
-  records_custodian: ['hold.place_release', 'disposition.approve'],
+  finance: ['payment.refund_void_correct', 'payment.collect', 'payment.report', 'report.view'],
+  records_custodian: ['hold.place_release', 'disposition.approve', 'export.download'],
 }
 
 export async function seedDefaultGrants(db: DbOrTx, signal: AbortSignal): Promise<void> {
