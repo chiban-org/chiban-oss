@@ -9,7 +9,6 @@ const NEW_CODES = [
   'details_required',
   'not_properly_noticed',
   'not_continuable',
-  'method_not_allowed',
   'reference_required',
   'future_date',
   'document_not_found',
@@ -57,6 +56,12 @@ describe('boardErrorCopy for hearings, decisions, and notices', () => {
   it('lists the missing decision fields in words', () => {
     expect(boardErrorCopy({ missingFields: ['findings', 'reasonsForDisapproval'] })).toBe(
       'The decision cannot be recorded yet. Still needed: Findings, Reasons for disapproval.',
+    )
+  })
+
+  it('names the notice items a proof method cannot satisfy', () => {
+    expect(boardErrorCopy({ methodNotAllowed: ['Newspaper', 'Public posting'] })).toBe(
+      'That proof does not satisfy notice by Newspaper, Public posting. Leave those items unticked and record their own proof separately.',
     )
   })
 

@@ -13,7 +13,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { syncTransmittalClock, TRANSMITTAL_SUBJECT } from '@/features/decisions/regionalTransmittal'
 import { isEvidenceKind } from '@/features/documents/types'
-import type { NoticeChannel } from '@/features/notices/channels'
+import { channelLabel, type NoticeChannel } from '@/features/notices/channels'
 import { methodAllowed, type ProofMethod, referenceRequired } from '@/features/notices/proofMethods'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
@@ -21,7 +21,7 @@ import { err, ok, type Result } from '@/types/result'
 
 export type ProofError =
   | 'forbidden'
-  | 'method_not_allowed'
+  | { methodNotAllowed: string[] }
   | 'reference_required'
   | 'future_date'
   | 'document_not_found'
@@ -62,8 +62,9 @@ export async function recordProof(
       .where(inArray(noticeItems.id, itemIds))
       .for('update', { of: noticeItems })
     if (items.length !== itemIds.length) return err('item_not_found')
-    if (!items.every((i) => methodAllowed(i.channel as NoticeChannel, input.method))) {
-      return err('method_not_allowed')
+    const refused = items.filter((i) => !methodAllowed(i.channel as NoticeChannel, input.method))
+    if (refused.length > 0) {
+      return err({ methodNotAllowed: [...new Set(refused.map((i) => channelLabel(i.channel)))] })
     }
     if (referenceRequired(input.method) && reference === '') return err('reference_required')
     const today = await townToday(tx, now, signal)

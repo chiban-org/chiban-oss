@@ -330,7 +330,7 @@ describe('regional transmittal', () => {
         signal,
         AFTER_FILING,
       ),
-    ).toEqual({ ok: false, error: 'method_not_allowed' })
+    ).toEqual({ ok: false, error: { methodNotAllowed: ['Certified mail'] } })
   })
 
   it('a late proof leaves the transmittal clock unmet', async () => {
