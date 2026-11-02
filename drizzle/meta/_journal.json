@@ -477,6 +477,13 @@
       "when": 1793632007449,
       "tag": "0067_curly_vanisher",
       "breakpoints": true
+    },
+    {
+      "idx": 68,
+      "version": "7",
+      "when": 1793632244514,
+      "tag": "0068_brown_night_thrasher",
+      "breakpoints": true
     }
   ]
 }

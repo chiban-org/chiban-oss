@@ -47,6 +47,18 @@ describe('renderTemplate', () => {
       'fees.totalFormatted',
       'conditions.list',
       'codeEdition.label',
+      'board.name',
+      'meeting.date',
+      'meeting.location',
+      'meeting.time',
+      'hearing.kind',
+      'notice.recipientName',
+      'decision.outcome',
+      'decision.votedOn',
+      'decision.findings',
+      'decision.conditions',
+      'decision.reasons',
+      'decision.appealRights',
     ])
   })
 
