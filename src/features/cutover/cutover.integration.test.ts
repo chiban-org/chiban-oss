@@ -21,7 +21,11 @@ import { attachCutoverFolder } from '@/features/cutover/attachFolder'
 import { cutoverErrorSentence } from '@/features/cutover/errorSentences'
 import { importCutoverCsv } from '@/features/cutover/importCutover'
 import { reconcileCutover, signOffReconciliation } from '@/features/cutover/reconcile'
-import { CUTOVER_FEES_PAID_VALUES, cutoverTemplate } from '@/features/cutover/template'
+import {
+  CUTOVER_FEES_PAID_VALUES,
+  cutoverTemplate,
+  cutoverTemplateTypes,
+} from '@/features/cutover/template'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -305,7 +309,9 @@ describe('cutover import', () => {
   })
 
   it('template lists the base columns then the form fields of the type', async () => {
-    const header = await cutoverTemplate(handle.db, 'EL', signal)
+    const template = await cutoverTemplate(handle.db, 'EL', signal)
+    if (!template.ok) throw new Error(template.error)
+    const header = template.value.header
     expect(header.split(',').slice(0, 3)).toEqual([
       'legacy_number',
       'application_type_key',
@@ -315,12 +321,33 @@ describe('cutover import', () => {
   })
 
   it('template without a type includes the fields of every adopted type and one licence column', async () => {
-    const columns = (await cutoverTemplate(handle.db, '', signal)).split(',')
+    const template = await cutoverTemplate(handle.db, '', signal)
+    if (!template.ok) throw new Error(template.error)
+    const columns = template.value.header.split(',')
     expect(columns).toEqual(
       expect.arrayContaining(['field.description', 'field.work_type', 'field.dwelling_units']),
     )
     expect(columns).not.toContain('contractor_license_number')
     expect(new Set(columns).size).toBe(columns.length)
+  })
+
+  it('template accepts a type key in any case and names the canonical key', async () => {
+    const template = await cutoverTemplate(handle.db, 'el', signal)
+    if (!template.ok) throw new Error(template.error)
+    expect(template.value.typeKey).toBe('EL')
+    expect(template.value.header).toContain('field.description')
+  })
+
+  it('template refuses a type key that no adopted type has', async () => {
+    expect(await cutoverTemplate(handle.db, 'ZZ', signal)).toEqual({
+      ok: false,
+      error: 'unknown_type',
+    })
+  })
+
+  it('lists the adopted application types for the template picker', async () => {
+    const types = await cutoverTemplateTypes(handle.db, signal)
+    expect(types).toEqual(expect.arrayContaining([{ key: 'EL', label: 'Electrical permit' }]))
   })
 
   it('the template documents the accepted fee values', () => {

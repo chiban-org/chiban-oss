@@ -69,6 +69,7 @@ describe('loadStarterReviews', () => {
     const before = await loadStarterReviews(handle.db, signal)
     expect(before).toHaveLength(1)
     expect(before[0]?.members.map((m) => `${m.kind}:${m.key}`)).toEqual(['fee_schedule:bp-fees'])
+    expect(before[0]?.members[0]?.label).toBe('Building or demolition permit')
     const applied = await applyStarterPaths(
       handle.db,
       admin,

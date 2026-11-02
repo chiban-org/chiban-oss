@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { StatusChip } from '@/components/StatusChip'
+import { ruleLabel } from '@/features/packs/ruleLabel'
 import type { OverrideStatus } from '@/features/parcels/aliasOverrides'
 import { formatCivilDate } from '@/lib/formatDate'
 
@@ -49,7 +50,7 @@ export function ClockAdjustmentsTable({ rows }: { rows: ClockAdjustmentView[] })
                 View application
               </Link>
             </td>
-            <td>{row.ruleKey}</td>
+            <td>{ruleLabel(row.ruleKey)}</td>
             <td>{`${row.kind.replaceAll('_', ' ')}${row.days === null ? '' : `, ${row.days} days`}`}</td>
             <td>{row.newDue === null ? 'Unchanged' : formatCivilDate(row.newDue)}</td>
             <td>

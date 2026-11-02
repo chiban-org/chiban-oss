@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Actor } from '@/features/auth/actor'
+import { adoptStarter } from '@/features/config/adoptStarter'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 
@@ -31,6 +32,7 @@ vi.mock('./actions', () => ({
 const { default: CutoverPage } = await import('./page')
 const { GET: template } = await import('./template.csv/route')
 
+const signal = new AbortController().signal
 let handle: TestDb
 let staff: Actor
 let admin: Actor
@@ -67,6 +69,26 @@ describe('cutover page', () => {
     state.actor = null
     await expect(CutoverPage()).rejects.toThrow('NEXT_REDIRECT:/staff/sign-in')
     expect((await template(new Request('https://alderpond.example/x'))).status).toBe(403)
+  })
+
+  it('offers a picker of adopted application types for the template', async () => {
+    const adopted = await adoptStarter(handle.db, admin, 'nh.starter.electrical', signal)
+    if (!adopted.ok) throw new Error(JSON.stringify(adopted.error))
+    state.actor = staff
+    const html = renderToStaticMarkup(await CutoverPage())
+    expect(html).toMatch(/<form[^>]*action="\/staff\/admin\/cutover\/template\.csv"/)
+    expect(html).toMatch(/<select[^>]*name="type"/)
+    expect(html).toContain('<option value="EL">Electrical permit</option>')
+  })
+
+  it('serves a lowercase type key and refuses an unknown one', async () => {
+    state.actor = staff
+    const lower = await template(new Request('https://alderpond.example/x?type=el'))
+    expect(lower.status).toBe(200)
+    expect(await lower.text()).toContain('field.description')
+    const unknown = await template(new Request('https://alderpond.example/x?type=zz'))
+    expect(unknown.status).toBe(400)
+    expect(await unknown.text()).toContain('No adopted application type has the key zz')
   })
 
   it('serves the base columns to staff', async () => {

@@ -1,12 +1,12 @@
 import { ActionForm } from '@/components/ActionForm'
 import { TextField } from '@/components/staff/fields'
-import { listUnresolvedLinks } from '@/features/parcels/unresolvedList'
+import { listUnresolvedRecords } from '@/features/parcels/unresolvedView'
 import { requireStaffContext } from '@/server/requireStaff'
 import { resolveUnresolvedAction } from '../[parcelId]/actions'
 
 export default async function StaffUnresolvedPage() {
   const ctx = await requireStaffContext()
-  const links = await listUnresolvedLinks(ctx.db, ctx.signal)
+  const links = await listUnresolvedRecords(ctx.db, ctx.actor, ctx.signal)
   return (
     <main>
       <h1>Unresolved records</h1>
@@ -19,15 +19,15 @@ export default async function StaffUnresolvedPage() {
       ) : (
         <ul className="divide-y">
           {links.map((link) => (
-            <li key={link.id} className="py-4">
-              <p className="font-semibold">{`${link.recordKind} ${link.recordId}`}</p>
-              <p className="text-sm">{`Named parcel: ${link.rawRefValue ?? 'unknown'}${link.rawRefFormat === null ? '' : ` (${link.rawRefFormat})`}`}</p>
+            <li key={link.linkId} className="py-4">
+              <p className="font-semibold">{link.record}</p>
+              <p className="text-sm">{`Named parcel: ${link.namedParcel}`}</p>
               <ActionForm
                 action={resolveUnresolvedAction}
                 submitLabel="Link to parcel"
                 className="mt-2 max-w-md"
               >
-                <input type="hidden" name="linkId" value={link.id} />
+                <input type="hidden" name="linkId" value={link.linkId} />
                 <TextField label="Parcel ID" name="parcelRef" required />
               </ActionForm>
             </li>

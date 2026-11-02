@@ -48,4 +48,26 @@ describe('ClockAdjustmentsTable', () => {
     )
     expect(screen.getByText('Unchanged')).toBeTruthy()
   })
+
+  it('names the rule instead of showing its key', () => {
+    const { container } = render(
+      <ClockAdjustmentsTable
+        rows={[
+          {
+            id: 'a',
+            applicationId: 'b',
+            ruleKey: 'town.bp.expiration',
+            kind: 'renewal',
+            days: null,
+            newDue: '2027-05-28',
+            reason: 'Permit renewed',
+            legalAuthority: null,
+            status: 'applied',
+          },
+        ]}
+      />,
+    )
+    expect(screen.getByText('Building permit exercise-by date')).toBeTruthy()
+    expect(container.textContent).not.toContain('town.bp.expiration')
+  })
 })
