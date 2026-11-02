@@ -43,6 +43,9 @@ async function advance(
     return attempt.state
   }
   const next = move.kind === 'move' ? move.to : attempt.state
+  if (attempt.state === 'voided' && next !== 'voided') {
+    await noteAnomaly(tx, attempt.id, 'captured_after_voided')
+  }
   const changed = next !== attempt.state
   const clears = resolved && attempt.outcomeUnknown
   if (changed || clears || attempt.processorObjectId === null) {

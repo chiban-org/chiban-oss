@@ -229,7 +229,9 @@ export function createCloverProcessor(
         RefundSchema,
         signal,
       )
-      return refunded.ok ? ok({ refundObjectId: refunded.value.id }) : refunded
+      return refunded.ok
+        ? ok({ refundObjectId: refunded.value.id, status: 'succeeded' as const })
+        : refunded
     },
     cancelAuthorization: () =>
       Promise.resolve(

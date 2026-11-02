@@ -33,6 +33,12 @@ export async function refundAction(formData: FormData): Promise<ActionResult> {
       { entryId, amountCents, reason: text(formData, 'reason') },
       signal,
     )
+    if (result.ok && result.value.pending) {
+      return {
+        ok: true,
+        message: 'Refund sent. The processor has not completed it yet, so it is not in the ledger.',
+      }
+    }
     return done(
       result,
       `Refund recorded on receipt ${result.ok ? result.value.receiptNumber : ''}.`,

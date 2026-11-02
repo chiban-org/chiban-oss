@@ -6,6 +6,7 @@ import type {
   PaymentProcessor,
   ProcessorError,
   ProcessorWebhookEvent,
+  RefundStatus,
 } from '@/features/payments/processors/types'
 import { err, ok, type Result } from '@/types/result'
 
@@ -50,6 +51,11 @@ async function call<T>(fn: () => Promise<T>): Promise<Result<T, ProcessorError>>
   } catch (e) {
     return err(toProcessorError(e))
   }
+}
+
+function refundStatusOf(status: string | null): RefundStatus {
+  if (status === 'succeeded') return 'succeeded'
+  return status === 'failed' || status === 'canceled' ? 'failed' : 'pending'
 }
 
 function paymentIntentId(value: string | { id: string } | null | undefined): string | null {
@@ -170,7 +176,9 @@ export function createStripeProcessor(
           { idempotencyKey: input.idempotencyKey },
         ),
       )
-      return refund.ok ? ok({ refundObjectId: refund.value.id }) : refund
+      return refund.ok
+        ? ok({ refundObjectId: refund.value.id, status: refundStatusOf(refund.value.status) })
+        : refund
     },
     cancelAuthorization: async (objectId) => {
       const canceled = await call(() => stripe.paymentIntents.cancel(objectId))

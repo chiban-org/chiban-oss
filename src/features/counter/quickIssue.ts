@@ -1,6 +1,6 @@
 import { NH_LICENSE_LOOKUP } from '@packs/nh/links'
 import { desc, eq } from 'drizzle-orm'
-import type { Db, DbOrTx } from '@/db/client'
+import type { Db, DbOrTx, Tx } from '@/db/client'
 import {
   applications,
   type LicenseResult,
@@ -18,6 +18,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { getPublished } from '@/features/config/store'
 import { recordCounterPayment } from '@/features/counter/counterPayment'
+import { assessFees } from '@/features/fees/assess'
 import type { FieldError } from '@/features/forms/validateSubmission'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { feeBalance } from '@/features/ledger/feeBalance'
@@ -118,6 +119,38 @@ async function dueAllocations(
   }
 }
 
+async function collectPayment(
+  tx: Tx,
+  actor: Actor,
+  target: { input: QuickIssueInput; typeBody: ApplicationTypeBody; applicationId: string },
+  signal: AbortSignal,
+  now: Date,
+): Promise<Result<string | null, QuickIssueError>> {
+  const { input, typeBody, applicationId } = target
+  if (input.payment.method === 'card') return ok(null)
+  if (typeBody.payTiming !== 'at_intake') {
+    const assessed = await assessFees(tx, applicationId, 'at_approval', actor, signal)
+    if (!assessed.ok) return err('fees_incomplete')
+  }
+  const due = await dueAllocations(tx, applicationId, signal)
+  if (due.totalCents === 0) return ok(null)
+  const paid = await recordCounterPayment(
+    tx,
+    actor,
+    {
+      method: input.payment.method,
+      amountCents: due.totalCents,
+      tenderedCents: input.payment.method === 'cash' ? input.payment.tenderedCents : undefined,
+      checkNumber: input.payment.method === 'check' ? input.payment.checkNumber : undefined,
+      payerName: input.payerName,
+      allocations: due.allocations,
+    },
+    signal,
+    now,
+  )
+  return paid.ok ? ok(paid.value.receiptNumber) : err(paid.error)
+}
+
 export async function quickIssue(
   db: Db,
   actor: Actor,
@@ -191,26 +224,15 @@ export async function quickIssue(
     if (input.payment.method === 'card') {
       return ok({ ...base, state: 'submitted' as const, receiptNumber: null })
     }
-    const due = await dueAllocations(tx, applicationId, signal)
-    let receiptNumber: string | null = null
-    if (due.totalCents > 0) {
-      const paid = await recordCounterPayment(
-        tx,
-        actor,
-        {
-          method: input.payment.method,
-          amountCents: due.totalCents,
-          tenderedCents: input.payment.method === 'cash' ? input.payment.tenderedCents : undefined,
-          checkNumber: input.payment.method === 'check' ? input.payment.checkNumber : undefined,
-          payerName: input.payerName,
-          allocations: due.allocations,
-        },
-        signal,
-        now,
-      )
-      if (!paid.ok) return err(paid.error)
-      receiptNumber = paid.value.receiptNumber
-    }
+    const collected = await collectPayment(
+      tx,
+      actor,
+      { input, typeBody, applicationId },
+      signal,
+      now,
+    )
+    if (!collected.ok) return err(collected.error)
+    const receiptNumber = collected.value
     const [row] = await tx.select().from(applications).where(eq(applications.id, applicationId))
     const issued = await transitionApplication(
       tx,

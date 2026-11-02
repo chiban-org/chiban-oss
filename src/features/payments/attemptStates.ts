@@ -41,6 +41,7 @@ export function nextAttemptMove(current: AttemptState, state: ProcessorPaymentSt
       ? { kind: 'move', to: target }
       : anomaly
   }
+  if (current === 'voided' && isMoneyState(target)) return { kind: 'move', to: target }
   const from = RANK[current]
   const to = RANK[target]
   if (from === undefined || to === undefined) return anomaly

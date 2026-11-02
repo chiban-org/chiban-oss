@@ -27,6 +27,12 @@ export interface RefundInput {
   allocations?: AllocationInput[]
 }
 
+export interface RefundOutcome {
+  entryId: string | null
+  receiptNumber: string | null
+  pending: boolean
+}
+
 export type RefundError =
   | 'forbidden'
   | 'reason_required'
@@ -64,7 +70,7 @@ export async function refundEntry(
   input: RefundInput,
   signal: AbortSignal,
   deps: ReversalDeps = {},
-): Promise<Result<{ entryId: string; receiptNumber: string }, RefundError>> {
+): Promise<Result<RefundOutcome, RefundError>> {
   signal.throwIfAborted()
   const authorized = await authorizeReversal(db, actor, input.reason, signal)
   if (!authorized.ok) return err(authorized.error)
@@ -74,6 +80,7 @@ export async function refundEntry(
   if (!planned.ok) return err(planned.error)
   const now = deps.now ?? new Date()
   let refundObjectId: string | null = null
+  let refundPending = false
   if (entry.processor !== null) {
     const opened = await openProcessor(db, entry.processorAccountId ?? '', deps, signal)
     if (!opened.ok) return err(opened.error)
@@ -86,72 +93,91 @@ export async function refundEntry(
       signal,
     )
     if (!refunded.ok) return err(refunded.error)
+    if (refunded.value.status === 'failed') {
+      return err({ kind: 'rejected', detail: 'The processor did not complete the refund' })
+    }
     refundObjectId = refunded.value.refundObjectId
+    refundPending = refunded.value.status === 'pending'
   }
-  return await transactionResult<{ entryId: string; receiptNumber: string }, RefundError>(
-    db,
-    async (tx) => {
-      const receipt = await issueReceipt(
-        tx,
-        {
-          kind: 'refund',
-          payerName: entry.payerName,
-          totalCents: input.amountCents,
-          simulated: entry.processor === 'simulated',
-          issuedAt: now,
-        },
-        signal,
-      )
-      const posted = await postEntry(
-        tx,
-        {
-          entryType: 'refund',
-          method: entry.method,
-          amountCents: -input.amountCents,
-          postedAt: now,
-          reversesEntryId: entry.id,
-          paymentAttemptId: entry.paymentAttemptId ?? undefined,
-          processor:
-            entry.processor === null || refundObjectId === null || entry.processorAccountId === null
-              ? undefined
-              : {
-                  name: entry.processor,
-                  accountId: entry.processorAccountId,
-                  objectId: refundObjectId,
-                },
-          checkNumber: entry.checkNumber ?? undefined,
-          payerName: entry.payerName,
-          payerUserId: entry.payerUserId ?? undefined,
-          reason: authorized.value,
-          receiptId: receipt.receiptId,
-          actor: { kind: 'user', userId: actor.userId },
-          allocations: planned.value,
-        },
-        signal,
-      )
-      if (!posted.ok) return err('over_reversed' as const)
-      if (refundObjectId !== null) {
-        await tx
-          .insert(refundRequests)
-          .values({ refundObjectId, entryId: posted.value.entryId, allocations: planned.value })
-          .onConflictDoNothing()
-      }
+  return await transactionResult<RefundOutcome, RefundError>(db, async (tx) => {
+    if (refundPending && refundObjectId !== null) {
+      await tx
+        .insert(refundRequests)
+        .values({ refundObjectId, entryId: entry.id, allocations: planned.value })
+        .onConflictDoNothing()
       await writeAudit(
         tx,
         {
           actor: { kind: 'user', userId: actor.userId },
-          action: 'payment.refund',
+          action: 'payment.refund.pending',
           entityType: 'ledger_entry',
-          entityId: posted.value.entryId,
-          after: {
-            reversesEntryId: entry.id,
-            amountCents: input.amountCents,
-            reason: authorized.value,
-          },
+          entityId: entry.id,
+          after: { refundObjectId, amountCents: input.amountCents, reason: authorized.value },
         },
         signal,
       )
-      return ok({ entryId: posted.value.entryId, receiptNumber: receipt.number })
-    },
-  )
+      return ok({ entryId: null, receiptNumber: null, pending: true })
+    }
+    const receipt = await issueReceipt(
+      tx,
+      {
+        kind: 'refund',
+        payerName: entry.payerName,
+        totalCents: input.amountCents,
+        simulated: entry.processor === 'simulated',
+        issuedAt: now,
+      },
+      signal,
+    )
+    const posted = await postEntry(
+      tx,
+      {
+        entryType: 'refund',
+        method: entry.method,
+        amountCents: -input.amountCents,
+        postedAt: now,
+        reversesEntryId: entry.id,
+        paymentAttemptId: entry.paymentAttemptId ?? undefined,
+        processor:
+          entry.processor === null || refundObjectId === null || entry.processorAccountId === null
+            ? undefined
+            : {
+                name: entry.processor,
+                accountId: entry.processorAccountId,
+                objectId: refundObjectId,
+              },
+        checkNumber: entry.checkNumber ?? undefined,
+        payerName: entry.payerName,
+        payerUserId: entry.payerUserId ?? undefined,
+        reason: authorized.value,
+        receiptId: receipt.receiptId,
+        actor: { kind: 'user', userId: actor.userId },
+        allocations: planned.value,
+      },
+      signal,
+    )
+    if (!posted.ok) return err('over_reversed' as const)
+    if (refundObjectId !== null) {
+      await tx
+        .insert(refundRequests)
+        .values({ refundObjectId, entryId: entry.id, allocations: planned.value })
+        .onConflictDoNothing()
+    }
+    await writeAudit(
+      tx,
+      {
+        actor: { kind: 'user', userId: actor.userId },
+        action: 'payment.refund',
+        entityType: 'ledger_entry',
+        entityId: posted.value.entryId,
+        after: {
+          reversesEntryId: entry.id,
+          amountCents: input.amountCents,
+          reason: authorized.value,
+        },
+      },
+      signal,
+    )
+    return ok({ entryId: posted.value.entryId, receiptNumber: receipt.number, pending: false })
+  })
 }

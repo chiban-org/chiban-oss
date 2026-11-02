@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, isNotNull, lt, or } from 'drizzle-orm'
 import { JOB_NAMES } from '@/constants/jobNames'
 import type { Tx } from '@/db/client'
 import { type PaymentAttemptRow, paymentAttempts } from '@/db/schema'
+import { resolveObjectId } from '@/features/payments/attemptActions'
 import { openProcessor, type ProcessorFactoryDeps } from '@/features/payments/openProcessor'
 import type { PaymentProcessor } from '@/features/payments/processors/types'
 import { reconcileAttempt } from '@/features/payments/reconcileAttempt'
@@ -24,7 +25,7 @@ async function dueAttempts(tx: Tx, now: Date): Promise<PaymentAttemptRow[]> {
     .from(paymentAttempts)
     .where(
       and(
-        isNotNull(paymentAttempts.processorObjectId),
+        or(isNotNull(paymentAttempts.processorObjectId), isNotNull(paymentAttempts.checkoutRef)),
         or(
           inArray(paymentAttempts.state, ['authorized', 'captured']),
           and(
@@ -54,7 +55,16 @@ async function checkOne(
   now: Date,
   signal: AbortSignal,
 ): Promise<void> {
-  const state = await processor.getPaymentState(attempt.processorObjectId ?? '', signal)
+  const objectId = await resolveObjectId(tx, processor, attempt, signal)
+  if (!objectId.ok) {
+    await record(tx, attempt.id, `${objectId.error.kind}: ${objectId.error.detail}`, now)
+    return
+  }
+  if (objectId.value === null) {
+    await record(tx, attempt.id, 'checkout_unresolved', now)
+    return
+  }
+  const state = await processor.getPaymentState(objectId.value, signal)
   if (!state.ok) {
     const error =
       state.error.kind === 'not_found' ? 'not_found' : `${state.error.kind}: ${state.error.detail}`

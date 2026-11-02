@@ -67,7 +67,7 @@ export function createSimulatedProcessor(db: DbOrTx): PaymentProcessor {
         .update(simulatedProcessorObjects)
         .set({ refunds })
         .where(eq(simulatedProcessorObjects.id, input.objectId))
-      return ok({ refundObjectId })
+      return ok({ refundObjectId, status: 'succeeded' as const })
     },
     cancelAuthorization: async (objectId) => {
       await db

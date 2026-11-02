@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { Db, DbOrTx } from '@/db/client'
 import { type AttemptState, paymentAttempts } from '@/db/schema'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -19,14 +19,35 @@ export interface AttemptDeps extends ProcessorFactoryDeps {
   now?: Date
 }
 
+export async function resolveObjectId(
+  db: DbOrTx,
+  processor: PaymentProcessor,
+  attempt: typeof paymentAttempts.$inferSelect,
+  signal: AbortSignal,
+): Promise<Result<string | null, ProcessorError>> {
+  if (attempt.processorObjectId !== null) return ok(attempt.processorObjectId)
+  if (attempt.checkoutRef === null) return ok(null)
+  const resolved = await processor.resolveCheckout(attempt.checkoutRef, signal)
+  if (!resolved.ok) return resolved
+  if (resolved.value.objectId !== null) {
+    await db
+      .update(paymentAttempts)
+      .set({ processorObjectId: resolved.value.objectId })
+      .where(eq(paymentAttempts.id, attempt.id))
+  }
+  return ok(resolved.value.objectId)
+}
+
 async function remoteState(
   db: Db,
   processor: PaymentProcessor,
   attempt: typeof paymentAttempts.$inferSelect,
   signal: AbortSignal,
 ): Promise<Result<ProcessorPaymentState | null, ProcessorError>> {
-  if (attempt.processorObjectId === null) return ok(null)
-  const state = await processor.getPaymentState(attempt.processorObjectId, signal)
+  const objectId = await resolveObjectId(db, processor, attempt, signal)
+  if (!objectId.ok) return err(objectId.error)
+  if (objectId.value === null) return ok(null)
+  const state = await processor.getPaymentState(objectId.value, signal)
   if (state.ok) return state
   if (state.error.kind === 'not_found') return ok(null)
   return err(state.error)
@@ -80,13 +101,12 @@ function planVoid(
 ): VoidPlan {
   if (remote?.status === 'captured') return 'reconcile'
   if (attempt.outcomeUnknown) {
-    const gone =
-      remote === null
-        ? attempt.processorObjectId !== null
-        : remote.status === 'declined' || remote.status === 'canceled'
+    const gone = remote === null || remote.status === 'declined' || remote.status === 'canceled'
     if (!gone) return 'refuse'
   }
-  return remote?.status === 'authorized' ? 'cancel_authorization' : 'void'
+  return remote?.status === 'authorized' || remote?.status === 'pending'
+    ? 'cancel_authorization'
+    : 'void'
 }
 
 type VoidError =
@@ -134,7 +154,7 @@ export async function voidAttempt(
       attempt.processorObjectId,
       signal,
     )
-    if (!canceled.ok) return err(canceled.error)
+    if (!canceled.ok && canceled.error.kind !== 'unsupported') return err(canceled.error)
   }
   await db.transaction(async (tx) => {
     await markVoided(tx, attempt, deps.now ?? new Date())

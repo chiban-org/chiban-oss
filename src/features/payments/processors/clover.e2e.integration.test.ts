@@ -265,7 +265,10 @@ describe('clover adapter against the local fake', () => {
       { objectId: 'PAYMENT1ALDER', amountCents: 1000, idempotencyKey: 'rf-1' },
       signal,
     )
-    expect(refund).toEqual({ ok: true, value: { refundObjectId: 'REFUND1ALDER' } })
+    expect(refund).toEqual({
+      ok: true,
+      value: { refundObjectId: 'REFUND1ALDER', status: 'succeeded' },
+    })
     server.setPayment('PAYMENT1ALDER', refunded)
     const state = await processor.getPaymentState('PAYMENT1ALDER', signal)
     expect(state.ok && state.value.refunds).toEqual([

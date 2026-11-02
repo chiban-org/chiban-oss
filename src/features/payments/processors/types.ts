@@ -8,6 +8,8 @@ export type ProcessorError = {
 
 export type ProcessorLookupError = ProcessorError | { kind: 'not_found' }
 
+export type RefundStatus = 'succeeded' | 'pending' | 'failed'
+
 export interface ProcessorPaymentState {
   objectId: string
   accountRef: string
@@ -60,7 +62,7 @@ export interface PaymentProcessor {
   refund(
     input: { objectId: string; amountCents: number; idempotencyKey: string },
     signal: AbortSignal,
-  ): Promise<Result<{ refundObjectId: string }, ProcessorError>>
+  ): Promise<Result<{ refundObjectId: string; status: RefundStatus }, ProcessorError>>
   cancelAuthorization(objectId: string, signal: AbortSignal): Promise<Result<void, ProcessorError>>
   verifyWebhook(input: {
     rawBody: string

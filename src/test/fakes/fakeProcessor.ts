@@ -12,6 +12,8 @@ export interface FakeProcessor extends PaymentProcessor {
   setState(objectId: string, state: ProcessorPaymentState): void
   setCheckoutObject(checkoutRef: string, objectId: string): void
   failFor(objectId: string): void
+  refundStatus: 'succeeded' | 'pending' | 'failed'
+  canceled: string[]
   stateReads: number
   refunds: { objectId: string; amountCents: number }[]
   lastCheckoutKey: string | null
@@ -34,6 +36,8 @@ export function createFakeProcessor(accountRef = 'acct_alder'): FakeProcessor {
     refunds,
     lastCheckoutKey: null,
     stateReads: 0,
+    refundStatus: 'succeeded',
+    canceled: [],
     failFor: (objectId) => {
       failing.add(objectId)
     },
@@ -68,9 +72,14 @@ export function createFakeProcessor(accountRef = 'acct_alder'): FakeProcessor {
     refund: (input) => {
       refundCounter += 1
       refunds.push({ objectId: input.objectId, amountCents: input.amountCents })
-      return Promise.resolve(ok({ refundObjectId: `re_fake_${refundCounter}` }))
+      return Promise.resolve(
+        ok({ refundObjectId: `re_fake_${refundCounter}`, status: fake.refundStatus }),
+      )
     },
-    cancelAuthorization: () => Promise.resolve(ok(undefined)),
+    cancelAuthorization: (objectId) => {
+      fake.canceled.push(objectId)
+      return Promise.resolve(ok(undefined))
+    },
     verifyWebhook: ({ rawBody, headers, secret, now }) => {
       const header = headers.get('x-fake-signature') ?? ''
       const parts = new Map(header.split(',').map((p) => p.split('=') as [string, string]))

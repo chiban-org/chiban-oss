@@ -7,8 +7,10 @@ import {
   type ProcessorAccountRow,
   refundRequests,
 } from '@/db/schema'
+import { feeBalance } from '@/features/ledger/feeBalance'
 import { postEntry } from '@/features/ledger/postEntry'
-import { allocateReversal } from '@/features/ledger/reversalAllocations'
+import { prorate } from '@/features/ledger/prorate'
+import { allocateReversal, netAllocations } from '@/features/ledger/reversalAllocations'
 import type { AllocationInput, LedgerEntryType } from '@/features/ledger/types'
 import type { ProcessorPaymentState } from '@/features/payments/processors/types'
 import {
@@ -96,12 +98,17 @@ async function reversalAllocations(
   return split.allocations
 }
 
-async function restoreAllocations(tx: Tx, chargebackEntryId: string): Promise<AllocationInput[]> {
+async function restoreAllocations(
+  tx: Tx,
+  paymentEntryId: string,
+  chargebackEntryId: string,
+  signal: AbortSignal,
+): Promise<AllocationInput[]> {
   const rows = await tx
     .select()
     .from(ledgerAllocations)
     .where(eq(ledgerAllocations.entryId, chargebackEntryId))
-  return rows.map((r) => ({
+  const negated: AllocationInput[] = rows.map((r) => ({
     targetKind: r.targetKind,
     applicationId: r.applicationId ?? undefined,
     feeAssessmentId: r.feeAssessmentId ?? undefined,
@@ -109,6 +116,51 @@ async function restoreAllocations(tx: Tx, chargebackEntryId: string): Promise<Al
     feeCode: r.feeCode ?? undefined,
     amountCents: -r.amountCents,
   }))
+  const overpaymentBack = negated
+    .filter((a) => a.targetKind === 'overpayment')
+    .reduce((sum, a) => sum + a.amountCents, 0)
+  const heldOverpayment = (await netAllocations(tx, paymentEntryId))
+    .filter((n) => n.allocation.targetKind === 'overpayment')
+    .reduce((sum, n) => sum + n.cents, 0)
+  const deficit = Math.max(0, -(heldOverpayment + overpaymentBack))
+  const money = negated.filter((a) => a.targetKind !== 'overpayment' && a.amountCents > 0)
+  const total = money.reduce((sum, a) => sum + a.amountCents, 0)
+  const reduce = Math.min(deficit, total)
+  const shares =
+    total - reduce > 0
+      ? prorate(
+          total - reduce,
+          money.map((a, i) => ({ key: String(i), cents: a.amountCents })),
+        )
+      : []
+  const dues = new Map<string, number>()
+  for (const applicationId of new Set(
+    money.flatMap((a) => (a.applicationId === undefined ? [] : [a.applicationId])),
+  )) {
+    for (const line of (await feeBalance(tx, applicationId, signal)).lines) {
+      dues.set(`${applicationId}|${line.stage}|${line.feeCode}`, line.dueCents)
+    }
+  }
+  const restored: AllocationInput[] = []
+  let overpayment = overpaymentBack + reduce
+  for (const share of shares) {
+    const source = money[Number(share.key)]
+    if (source === undefined || share.cents <= 0) continue
+    const lineKey = `${source.applicationId}|${source.stage}|${source.feeCode}`
+    const cap = source.targetKind === 'fee_assessment_line' ? (dues.get(lineKey) ?? 0) : share.cents
+    const take = Math.min(share.cents, cap)
+    if (source.targetKind === 'fee_assessment_line') dues.set(lineKey, cap - take)
+    overpayment += share.cents - take
+    if (take > 0) restored.push({ ...source, amountCents: take })
+  }
+  if (overpayment > 0) {
+    restored.push({
+      targetKind: 'overpayment',
+      applicationId: money[0]?.applicationId,
+      amountCents: overpayment,
+    })
+  }
+  return restored
 }
 
 export async function postProcessorReversals(
@@ -185,7 +237,7 @@ export async function postProcessorReversals(
         amountCents: dispute.amountCents,
         reversesEntryId: chargebackId,
         reason: 'Dispute won at the processor',
-        allocations: await restoreAllocations(tx, chargebackId),
+        allocations: await restoreAllocations(tx, ctx.paymentEntryId, chargebackId, signal),
         processorReported: true,
       },
       signal,
