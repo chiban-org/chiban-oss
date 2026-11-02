@@ -1,3 +1,4 @@
+import { revalidatePath } from 'next/cache'
 import type { Db } from '@/db/client'
 import { db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
@@ -21,5 +22,7 @@ export async function withPortalActor<T extends { ok: boolean }>(
   const guard = await guardAction(formData, signal)
   if (!guard.ok) return fail(errorCopy(guard.error))
   if (guard.value === null) return fail(errorCopy('signed_out'))
-  return await fn({ db, actor: guard.value, signal })
+  const result = await fn({ db, actor: guard.value, signal })
+  if (result.ok) revalidatePath('/portal', 'layout')
+  return result
 }

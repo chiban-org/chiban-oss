@@ -121,9 +121,7 @@ describe('portal inspection requests', () => {
     )
     expect(cancelled).toMatchObject({ ok: true })
     expect(vi.mocked(revalidatePath)).toHaveBeenCalledTimes(2)
-    expect(vi.mocked(revalidatePath)).toHaveBeenCalledWith(
-      `/portal/applications/${permit.applicationId}/inspections`,
-    )
+    expect(vi.mocked(revalidatePath)).toHaveBeenCalledWith('/portal', 'layout')
   })
 
   it('portal request action by a non-party is not_found', async () => {

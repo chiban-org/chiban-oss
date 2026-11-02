@@ -17,6 +17,7 @@ interface MockState {
 
 const state = vi.hoisted((): MockState => ({ db: null, actor: null }))
 
+vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('@/db/client', () => ({
   get db() {
     return state.db
