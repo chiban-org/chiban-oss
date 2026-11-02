@@ -11,6 +11,8 @@ const TOLERANCE_SECONDS = 300
 export interface FakeProcessor extends PaymentProcessor {
   setState(objectId: string, state: ProcessorPaymentState): void
   setCheckoutObject(checkoutRef: string, objectId: string): void
+  failFor(objectId: string): void
+  stateReads: number
   refunds: { objectId: string; amountCents: number }[]
   lastCheckoutKey: string | null
 }
@@ -24,12 +26,17 @@ export function signFakePayload(secret: string, rawBody: string, at: Date): stri
 export function createFakeProcessor(accountRef = 'acct_alder'): FakeProcessor {
   const states = new Map<string, ProcessorPaymentState>()
   const checkouts = new Map<string, string>()
+  const failing = new Set<string>()
   const refunds: { objectId: string; amountCents: number }[] = []
   let refundCounter = 0
   const fake: FakeProcessor = {
     processor: 'stripe',
     refunds,
     lastCheckoutKey: null,
+    stateReads: 0,
+    failFor: (objectId) => {
+      failing.add(objectId)
+    },
     setState: (objectId, state) => {
       states.set(objectId, state)
     },
@@ -51,6 +58,10 @@ export function createFakeProcessor(accountRef = 'acct_alder'): FakeProcessor {
       Promise.resolve(ok({ objectId: checkouts.get(checkoutRef) ?? null })),
     startCardPresent: (input) => Promise.resolve(ok({ objectId: `pi_${input.attemptId}` })),
     getPaymentState: (objectId) => {
+      fake.stateReads += 1
+      if (failing.has(objectId)) {
+        return Promise.resolve(err({ kind: 'unreachable' as const, detail: 'fake outage' }))
+      }
       const state = states.get(objectId)
       return Promise.resolve(state === undefined ? err({ kind: 'not_found' as const }) : ok(state))
     },

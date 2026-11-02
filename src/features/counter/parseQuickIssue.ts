@@ -1,20 +1,10 @@
 import { LICENSE_RESULTS, type LicenseResult } from '@/db/schema/licenseChecks'
 import type { QuickIssueInput } from '@/features/counter/quickIssue'
+import { dollarsToCents } from '@/lib/money'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
 
-const DIGITS = /^\d+$/
-const CENTS_PER_DOLLAR = 100
 const VALUE_PREFIX = 'value.'
-
-export function dollarsToCents(text: string): number | null {
-  const [whole = '', fraction = '', ...extra] = text.trim().split('.')
-  const wholeOk = DIGITS.test(whole)
-  const fractionOk =
-    fraction === '' ? !text.trim().includes('.') : DIGITS.test(fraction) && fraction.length <= 2
-  if (extra.length > 0 || !wholeOk || !fractionOk) return null
-  return Number(whole) * CENTS_PER_DOLLAR + Number(fraction.padEnd(2, '0'))
-}
 
 function field(data: FormData, key: string): string {
   const value = data.get(key)
@@ -42,6 +32,8 @@ function paymentOf(data: FormData): QuickIssueInput['payment'] | null {
   const cents = dollarsToCents(tendered)
   return cents === null ? null : { method: 'cash', tenderedCents: cents }
 }
+
+export { dollarsToCents }
 
 export function parseQuickIssue(data: FormData): Result<QuickIssueInput, 'invalid_input'> {
   const parcelId = field(data, 'parcelId')

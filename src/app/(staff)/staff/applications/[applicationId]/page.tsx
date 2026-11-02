@@ -13,6 +13,7 @@ import {
 import { stateLabel } from '@/features/applications/stateLabel'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import type { GateResult } from '@/features/gates/evaluateGates'
+import { loadApplicationPayments } from '@/features/payments/applicationPayments'
 import { createContext } from '@/server/trpc/context'
 import { overrideGateAction, revokeOverrideAction, statutoryExceptionAction } from './actions'
 import { AppealPanel, CodeEditionPanel, RegionalImpactPanel } from './buildingPanels'
@@ -24,11 +25,31 @@ import {
   PartiesPanel,
   TransitionBar,
 } from './panels'
+import { PaymentsPanel } from './paymentsPanel'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 interface Props {
   params: Promise<{ applicationId: string }>
+}
+
+function PrintLinks({ applicationId }: { applicationId: string }) {
+  return (
+    <p>
+      <Link
+        href={`/staff/applications/${applicationId}/permit.pdf`}
+        className="text-action underline"
+      >
+        Print permit
+      </Link>{' '}
+      <Link
+        href={`/staff/applications/${applicationId}/placard.pdf`}
+        className="text-action underline"
+      >
+        Print placard
+      </Link>
+    </p>
+  )
 }
 
 function GateControls({ view, result }: { view: StaffApplicationView; result: GateResult }) {
@@ -84,6 +105,7 @@ export default async function StaffApplicationPage({ params }: Props) {
     ctx.signal,
   )
   if (view === null) notFound()
+  const payments = await loadApplicationPayments(ctx.db, ctx.actor, applicationId, ctx.signal)
   return (
     <main>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -146,6 +168,8 @@ export default async function StaffApplicationPage({ params }: Props) {
         )}
         <FeeOverrideForm view={view} />
       </section>
+      <PaymentsPanel payments={payments} />
+      {view.state === 'issued' ? <PrintLinks applicationId={view.id} /> : null}
       <CodeEditionPanel view={view} />
       <RegionalImpactPanel view={view} />
       <AppealPanel view={view} />

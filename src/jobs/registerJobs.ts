@@ -7,6 +7,7 @@ import { type JobDefinition, runJob } from './defineJob'
 import { expireAliasOverridesJob } from './expireAliasOverrides'
 import { gisRefreshLayerJob, gisScheduleRefreshesJob } from './gisRefreshLayer'
 import { heartbeatJob } from './heartbeat'
+import { paymentsReconcileJob } from './paymentsReconcile'
 
 export async function registerJob<P extends object>(
   boss: PgBoss,
@@ -34,4 +35,5 @@ export async function registerAllJobs(boss: PgBoss, db: Db): Promise<void> {
   await registerJob(boss, db, gisScheduleRefreshesJob)
   await registerJob(boss, db, expireAliasOverridesJob)
   await registerJob(boss, db, clocksDailyJob)
+  await registerJob(boss, db, paymentsReconcileJob)
 }

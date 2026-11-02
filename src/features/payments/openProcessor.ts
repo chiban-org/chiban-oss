@@ -1,4 +1,4 @@
-import type { Db } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import type { ProcessorAccountRow } from '@/db/schema'
 import { getProcessorAccount } from '@/features/payments/processorAccounts'
 import { createProcessor } from '@/features/payments/processors/registry'
@@ -10,7 +10,7 @@ export interface ProcessorFactoryDeps {
 }
 
 export async function openProcessor(
-  db: Db,
+  db: DbOrTx,
   accountId: string,
   deps: ProcessorFactoryDeps,
   signal: AbortSignal,

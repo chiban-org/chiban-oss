@@ -7,3 +7,15 @@ export function formatCents(cents: number): string {
   const rest = String(abs % CENTS_PER_DOLLAR).padStart(2, '0')
   return `${negative ? '-' : ''}$${dollars.toLocaleString('en-US')}.${rest}`
 }
+
+const DIGITS = /^\d+$/
+
+export function dollarsToCents(text: string): number | null {
+  const trimmed = text.trim()
+  const [whole = '', fraction = '', ...extra] = trimmed.split('.')
+  const fractionOk = trimmed.includes('.')
+    ? DIGITS.test(fraction) && fraction.length <= 2
+    : fraction === ''
+  if (extra.length > 0 || !DIGITS.test(whole) || !fractionOk) return null
+  return Number(whole) * CENTS_PER_DOLLAR + Number(fraction.padEnd(2, '0'))
+}

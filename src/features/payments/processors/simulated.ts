@@ -1,6 +1,6 @@
 import { createHmac, randomUUID, timingSafeEqual } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import { simulatedProcessorObjects } from '@/db/schema'
 import type {
   PaymentProcessor,
@@ -20,13 +20,13 @@ export function signSimulatedPayload(secret: string, rawBody: string, at: Date):
   return `t=${t},v1=${createHmac('sha256', secret).update(`${t}.${rawBody}`).digest('hex')}`
 }
 
-async function newObject(db: Db, amountCents: number): Promise<string> {
+async function newObject(db: DbOrTx, amountCents: number): Promise<string> {
   const id = `sim_pi_${randomUUID()}`
   await db.insert(simulatedProcessorObjects).values({ id, amountCents })
   return id
 }
 
-export function createSimulatedProcessor(db: Db): PaymentProcessor {
+export function createSimulatedProcessor(db: DbOrTx): PaymentProcessor {
   return {
     processor: 'simulated',
     verifyAccount: () => Promise.resolve(ok({ accountRef: SIMULATED_ACCOUNT_REF })),

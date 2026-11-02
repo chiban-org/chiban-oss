@@ -47,6 +47,12 @@ export default async function SettingsPage() {
           ))}
         </tbody>
       </table>
+      <h2>Card payments</h2>
+      <p>
+        <Link href="/staff/settings/payments" className="text-action underline">
+          Processor accounts and convenience fee
+        </Link>
+      </p>
       <h2>Starter templates</h2>
       <p className="text-muted-foreground">
         A starter copies a complete set of forms, fees, conditions, checklists, a permit template,

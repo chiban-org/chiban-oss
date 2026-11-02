@@ -32,6 +32,8 @@ export const paymentAttempts = pgTable(
     processorObjectId: text('processor_object_id'),
     idempotencyKey: text('idempotency_key').notNull().unique(),
     anomaly: text('anomaly'),
+    lastCheckError: text('last_check_error'),
+    lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
     createdByUserId: uuid('created_by_user_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),

@@ -1,6 +1,6 @@
 import { env } from '@/config/env'
 import { AppError, ErrorIds } from '@/constants/errorIds'
-import type { Db } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import type { ProcessorAccountRow } from '@/db/schema'
 import {
   CloverCredentialsSchema,
@@ -15,7 +15,7 @@ import type { PaymentProcessor } from '@/features/payments/processors/types'
 
 export interface ProcessorDeps {
   fetch: typeof fetch
-  db: Db
+  db: DbOrTx
   stripeApiBase?: string
   cardPresentTimeoutMs?: number
 }

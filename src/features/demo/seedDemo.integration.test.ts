@@ -7,7 +7,9 @@ import {
   clocks,
   codeEditionRecords,
   importExceptions,
+  ledgerEntries,
   parcels,
+  paymentAttempts,
   users,
 } from '@/db/schema'
 import { getStaffApplicationView } from '@/features/applications/staffApplicationView'
@@ -58,6 +60,12 @@ async function counts(): Promise<Record<string, number>> {
     union all select 'code_edition_records', count(*)::int from code_edition_records
     union all select 'regional_impact_notices', count(*)::int from regional_impact_notices
     union all select 'attestations', count(*)::int from attestations
+    union all select 'ledger_entries', count(*)::int from ledger_entries
+    union all select 'ledger_allocations', count(*)::int from ledger_allocations
+    union all select 'receipts', count(*)::int from receipts
+    union all select 'payment_attempts', count(*)::int from payment_attempts
+    union all select 'processor_accounts', count(*)::int from processor_accounts
+    union all select 'license_checks', count(*)::int from license_checks
     union all select 'audit_log', count(*)::int from audit_log
   `)
   return Object.fromEntries(result.rows.map((r) => [r.t, r.n]))
@@ -164,7 +172,7 @@ describe('seedDemo', () => {
     await seedDemo(handle.db, signal)
     await seedDemo(handle.db, signal)
     expect(await counts()).toEqual(before)
-    expect(before.applications).toBe(5)
+    expect(before.applications).toBe(9)
     expect(before.config_versions).toBeGreaterThan(30)
   })
 
@@ -174,11 +182,15 @@ describe('seedDemo', () => {
     expect(Object.values(byState).sort()).toEqual([
       'issued',
       'issued',
+      'issued',
+      'issued',
+      'issued',
+      'submitted',
       'suspended',
       'under_review',
       'under_review',
     ])
-    expect(Object.keys(byState).filter((n) => n.startsWith('EL-'))).toHaveLength(1)
+    expect(Object.keys(byState).filter((n) => n.startsWith('EL-'))).toHaveLength(2)
   })
 
   it('seeds one fee waiver, one renewal, one appeal, and an open comment period', async () => {

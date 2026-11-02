@@ -77,6 +77,16 @@ export const ERROR_COPY: Record<string, string> = {
   amount_mismatch: 'The amounts do not add up.',
   not_published: 'That permit type is not published.',
   attestation_mismatch: 'The attestation text changed. Reload the page and try again.',
+  over_reversed: 'That is more than was paid.',
+  not_a_payment: 'Only a payment can be refunded.',
+  not_a_check: 'That payment was not made by check.',
+  not_a_card_payment: 'That payment was not made by card.',
+  simulated_disabled: 'The simulated processor is turned off in this environment.',
+  outcome_unknown: 'The outcome is still unknown. Check with the processor first.',
+  not_voidable: 'Only an attempt that has not been paid can be voided.',
+  processor_reports_payment:
+    'The processor reports this payment was captured. It has been recorded.',
+  no_fee_line: 'No fee line on that application can take this amount.',
   no_edition_for_date: 'No code edition is on record for the receipt date.',
 }
 
