@@ -113,10 +113,7 @@ export async function applyTransition(
     return err('invalid_transition')
   const today = input.onDate ?? (await townToday(tx, now, signal))
   const reinstating = app.state === 'suspended' && input.to === 'issued'
-  const results =
-    reinstating || input.cutover === true
-      ? []
-      : await evaluateGates(tx, app, input.to, today, signal)
+  const results = await gateResultsFor(tx, app, input, today, reinstating, signal)
   if (results.some((g) => g.effective === 'blocked')) return err({ gateBlocked: results })
   const assessed = await assessForTransition(tx, actor, app, input.to, signal)
   if (!assessed.ok) return err(assessed.error)
