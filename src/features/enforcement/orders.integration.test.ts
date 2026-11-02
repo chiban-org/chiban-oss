@@ -19,7 +19,12 @@ import { openCase, setCaseStatus } from '@/features/enforcement/cases'
 import { designateEnforcementOfficer } from '@/features/enforcement/designations'
 import { recordFinding } from '@/features/enforcement/findings'
 import { recordNoticeReceipt, sendViolationNotice } from '@/features/enforcement/notices'
-import { draftOrder, issueOrder } from '@/features/enforcement/orders'
+import {
+  discardDraftOrder,
+  draftOrder,
+  issueOrder,
+  reviseDraftOrder,
+} from '@/features/enforcement/orders'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/minio'
@@ -329,6 +334,60 @@ describe('cease and desist orders', () => {
       NOW,
     )
     expect(result).toEqual({ ok: false, error: { missingContent: ['correctiveAction'] } })
+  })
+
+  it('a draft missing its deadline can be given one and then issued', async () => {
+    const { caseId, findingId } = await caseWithFinding()
+    await designate()
+    const drafted = await draft(caseId, [findingId], { correctiveDeadline: null })
+    if (!drafted.ok) throw new Error('draft')
+    const issue = (expectedRowVersion: number) =>
+      issueOrder(
+        handle.db,
+        store,
+        staff,
+        { orderId: drafted.value.orderId, issuedOn: d('2027-03-02'), expectedRowVersion },
+        signal,
+        NOW,
+      )
+    expect(await issue(1)).toEqual({
+      ok: false,
+      error: { missingContent: ['correctiveDeadline'] },
+    })
+    const revised = await reviseDraftOrder(
+      handle.db,
+      staff,
+      {
+        orderId: drafted.value.orderId,
+        expectedRowVersion: 1,
+        correctiveAction: 'Remove the garage or apply for a permit.',
+        correctiveDeadline: d('2027-04-15'),
+        ceaseImmediately: false,
+      },
+      signal,
+    )
+    expect(revised.ok).toBe(true)
+    expect((await issue(2)).ok).toBe(true)
+  })
+
+  it('a discarded draft is withdrawn and can no longer be issued or changed', async () => {
+    const { caseId, findingId } = await caseWithFinding()
+    await designate()
+    const drafted = await draft(caseId, [findingId], { correctiveDeadline: null })
+    if (!drafted.ok) throw new Error('draft')
+    const input = { orderId: drafted.value.orderId, expectedRowVersion: 1 }
+    expect((await discardDraftOrder(handle.db, staff, input, signal)).ok).toBe(true)
+    const [row] = await handle.db
+      .select()
+      .from(enforcementOrders)
+      .where(eq(enforcementOrders.id, drafted.value.orderId))
+    expect(row?.status).toBe('withdrawn')
+    expect(
+      await discardDraftOrder(handle.db, staff, { ...input, expectedRowVersion: 2 }, signal),
+    ).toEqual({
+      ok: false,
+      error: 'not_a_draft',
+    })
   })
 
   it('a deadline before the issue date is deadline_before_issue', async () => {

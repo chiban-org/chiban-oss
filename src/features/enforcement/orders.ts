@@ -109,6 +109,91 @@ export async function draftOrder(
   })
 }
 
+const ReviseSchema = z.object({
+  orderId: z.string().uuid(),
+  expectedRowVersion: z.number().int(),
+  correctiveAction: z.string().max(5000),
+  correctiveDeadline: civilDateSchema.nullable(),
+  ceaseImmediately: z.boolean(),
+})
+
+type DraftChangeError = 'forbidden' | 'invalid' | 'not_found' | 'not_a_draft' | 'stale_version'
+
+async function changeDraft(
+  db: Db,
+  actor: Actor,
+  input: { orderId: string; expectedRowVersion: number },
+  signal: AbortSignal,
+  change: Partial<typeof enforcementOrders.$inferInsert>,
+  action: string,
+): Promise<Result<void, DraftChangeError>> {
+  const allowed = await requireCapability(db, actor.userId, 'enforcement.manage', signal)
+  if (!allowed.ok) return err('forbidden')
+  return await transactionResult<void, DraftChangeError>(db, async (tx) => {
+    const [order] = await tx
+      .select()
+      .from(enforcementOrders)
+      .where(eq(enforcementOrders.id, input.orderId))
+      .for('update')
+    if (order === undefined) return err('not_found')
+    if (order.status !== 'draft') return err('not_a_draft')
+    if (order.rowVersion !== input.expectedRowVersion) return err('stale_version')
+    await tx
+      .update(enforcementOrders)
+      .set({ ...change, rowVersion: order.rowVersion + 1 })
+      .where(eq(enforcementOrders.id, order.id))
+    await writeAudit(
+      tx,
+      {
+        actor: { kind: 'user', userId: actor.userId },
+        action,
+        entityType: 'enforcement_order',
+        entityId: order.id,
+        after: { number: order.number },
+      },
+      signal,
+    )
+    return ok(undefined)
+  })
+}
+
+export async function reviseDraftOrder(
+  db: Db,
+  actor: Actor,
+  input: z.input<typeof ReviseSchema>,
+  signal: AbortSignal,
+): Promise<Result<void, DraftChangeError>> {
+  signal.throwIfAborted()
+  const parsed = ReviseSchema.safeParse(input)
+  if (!parsed.success) return err('invalid')
+  const { correctiveAction, correctiveDeadline, ceaseImmediately } = parsed.data
+  return await changeDraft(
+    db,
+    actor,
+    parsed.data,
+    signal,
+    { correctiveAction, correctiveDeadline, ceaseImmediately },
+    'enforcement.order_draft_revised',
+  )
+}
+
+export async function discardDraftOrder(
+  db: Db,
+  actor: Actor,
+  input: { orderId: string; expectedRowVersion: number },
+  signal: AbortSignal,
+): Promise<Result<void, DraftChangeError>> {
+  signal.throwIfAborted()
+  return await changeDraft(
+    db,
+    actor,
+    input,
+    signal,
+    { status: 'withdrawn' },
+    'enforcement.order_draft_discarded',
+  )
+}
+
 const ORDERABLE_STATUSES: readonly EnforcementStatus[] = ['violation_found', 'order_issued']
 
 export function issuerAuthorized(rule: CeaseAndDesistRule, designated: boolean): boolean {

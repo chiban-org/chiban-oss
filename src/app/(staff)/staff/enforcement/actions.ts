@@ -12,7 +12,12 @@ import { recordComplaint } from '@/features/enforcement/complaints'
 import { recordFinding } from '@/features/enforcement/findings'
 import { addNote } from '@/features/enforcement/notes'
 import { recordNoticeReceipt, sendViolationNotice } from '@/features/enforcement/notices'
-import { draftOrder, issueOrder } from '@/features/enforcement/orders'
+import {
+  discardDraftOrder,
+  draftOrder,
+  issueOrder,
+  reviseDraftOrder,
+} from '@/features/enforcement/orders'
 import {
   publishCase,
   setComplaintPublicText,
@@ -152,6 +157,42 @@ export async function draftOrderAction(formData: FormData): Promise<ActionResult
         signal,
       ),
     'Order drafted.',
+  )
+}
+
+export async function reviseDraftOrderAction(formData: FormData): Promise<ActionResult> {
+  return await runEnforcement(
+    formData,
+    z.object({
+      orderId: uuid,
+      expectedRowVersion: z.coerce.number().int(),
+      correctiveAction: z.string(),
+      correctiveDeadline: optional(date),
+      ceaseImmediately: optional(z.string()),
+    }),
+    ({ db, actor, signal }, v) =>
+      reviseDraftOrder(
+        db,
+        actor,
+        {
+          orderId: v.orderId,
+          expectedRowVersion: v.expectedRowVersion,
+          correctiveAction: v.correctiveAction,
+          correctiveDeadline: v.correctiveDeadline ?? null,
+          ceaseImmediately: v.ceaseImmediately === 'true',
+        },
+        signal,
+      ),
+    'Draft saved.',
+  )
+}
+
+export async function discardDraftOrderAction(formData: FormData): Promise<ActionResult> {
+  return await runEnforcement(
+    formData,
+    z.object({ orderId: uuid, expectedRowVersion: z.coerce.number().int() }),
+    ({ db, actor, signal }, v) => discardDraftOrder(db, actor, v, signal),
+    'Draft discarded.',
   )
 }
 

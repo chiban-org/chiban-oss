@@ -1,8 +1,10 @@
+import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { complaints, enforcementCases } from '@/db/schema'
-import { loadActor } from '@/features/auth/actor'
+import { complaints, enforcementCases, violationFindings } from '@/db/schema'
+import { type Actor, loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
+import { draftOrder } from '@/features/enforcement/orders'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { getPublicParcelView } from '@/features/parcels/publicParcelView'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
@@ -251,5 +253,33 @@ describe('enforcement queue and case pages', () => {
     expect(page).toContain('Sam Clerk, Code Enforcement Officer. Designated by Select Board on')
     expect(findIsoDates(page)).toEqual([])
     expect(findUuids(page)).toEqual([])
+  })
+
+  it('a draft order without a deadline can be completed or discarded from the case page', async () => {
+    await actAs('staff')
+    const [finding] = await handle.db
+      .select()
+      .from(violationFindings)
+      .where(eq(violationFindings.status, 'open'))
+      .limit(1)
+    if (finding === undefined) throw new Error('no open finding')
+    const drafted = await draftOrder(
+      handle.db,
+      state.actor as Actor,
+      {
+        caseId: finding.caseId,
+        findingIds: [finding.id],
+        correctiveAction: 'Remove the shed.',
+        correctiveDeadline: null,
+        ceaseImmediately: false,
+      },
+      signal,
+    )
+    if (!drafted.ok) throw new Error(drafted.error)
+    const page = visibleText(
+      await html(CasePage({ params: Promise.resolve({ caseId: finding.caseId }) })),
+    )
+    expect(page).toContain('Save the draft')
+    expect(page).toContain('Discard the draft')
   })
 })

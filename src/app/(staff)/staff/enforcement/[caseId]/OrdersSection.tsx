@@ -11,7 +11,12 @@ import {
 } from '@/features/enforcement/labels'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
-import { draftOrderAction, issueOrderAction } from '../actions'
+import {
+  discardDraftOrderAction,
+  draftOrderAction,
+  issueOrderAction,
+  reviseDraftOrderAction,
+} from '../actions'
 import { CourtForms } from './CourtForms'
 import type { Can } from './can'
 import { Hidden, Section } from './Section'
@@ -45,14 +50,53 @@ function OrderSummary({ order, detail }: { order: OrderDetail; detail: CaseDetai
   )
 }
 
+function DraftForms({ order }: { order: OrderDetail }) {
+  const { row } = order
+  return (
+    <>
+      <ActionForm action={reviseDraftOrderAction} submitLabel="Save the draft">
+        <Hidden name="orderId" value={row.id} />
+        <Hidden name="expectedRowVersion" value={row.rowVersion} />
+        <AreaField
+          label="Corrective action required"
+          name="correctiveAction"
+          rows={3}
+          defaultValue={row.correctiveAction}
+        />
+        <TextField
+          label="Corrective action due"
+          name="correctiveDeadline"
+          type="date"
+          defaultValue={row.correctiveDeadline ?? ''}
+        />
+        <label className="flex items-center gap-2">
+          <input
+            type="checkbox"
+            name="ceaseImmediately"
+            value="true"
+            defaultChecked={row.ceaseImmediately}
+          />
+          The activity must stop immediately
+        </label>
+      </ActionForm>
+      <ActionForm action={discardDraftOrderAction} submitLabel="Discard the draft">
+        <Hidden name="orderId" value={row.id} />
+        <Hidden name="expectedRowVersion" value={row.rowVersion} />
+        <p className="m-0">The order number stays on record as discarded.</p>
+      </ActionForm>
+    </>
+  )
+}
+
 function OrderBlock({ order, detail, can }: { order: OrderDetail; detail: CaseDetail; can: Can }) {
   const { row } = order
-  const issued = row.status !== 'draft'
+  const issued = row.issuedOn !== null
   return (
     <article className="space-y-4 rounded-md border p-4">
       <h3 className="m-0">{`${row.number}, ${ORDER_STATUS_LABELS[row.status]}`}</h3>
       <OrderSummary order={order} detail={detail} />
-      {!issued && can.issue ? (
+      {row.status === 'draft' && can.manage ? <DraftForms order={order} /> : null}
+      {row.status === 'draft' && can.issue ? (
         <ActionForm action={issueOrderAction} submitLabel="Issue order">
           <Hidden name="orderId" value={row.id} />
           <Hidden name="expectedRowVersion" value={row.rowVersion} />
@@ -119,7 +163,7 @@ export function OrdersSection({ detail, can }: { detail: CaseDetail; can: Can })
             ))}
           </fieldset>
           <AreaField label="Corrective action required" name="correctiveAction" rows={3} />
-          <TextField label="Corrective action due" name="correctiveDeadline" type="date" />
+          <TextField label="Corrective action due" name="correctiveDeadline" type="date" required />
           <label className="flex items-center gap-2">
             <input type="checkbox" name="ceaseImmediately" value="true" />
             The activity must stop immediately
