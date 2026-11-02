@@ -73,6 +73,7 @@ describe('staff application pages', () => {
     expect(page.match(/href="\/staff\/applications\//g)).toHaveLength(seeded.length)
     expect(page).toContain('Under review')
     expect(page).toContain('Suspended by appeal (RSA 676:6)')
+    expect(page).toContain('href="/staff/queue"')
   })
 
   it('seeded application page renders every clock with a non-empty consequence', async () => {
