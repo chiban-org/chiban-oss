@@ -15,7 +15,8 @@
     "resolveJsonModule": true,
     "isolatedModules": true,
     "allowJs": true,
-    "types": ["node"],
+    "types": ["node", "geojson"],
+    "allowUmdGlobalAccess": true,
     "plugins": [{ "name": "next" }],
     "paths": { "@/*": ["./src/*"], "@packs/*": ["./packs/*"] }
   },

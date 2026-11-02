@@ -6,7 +6,7 @@ import { err, ok, type Result } from '@/types/result'
 
 const MIGRATIONS_FOLDER = fileURLToPath(new URL('../../drizzle', import.meta.url))
 
-const REQUIRED_EXTENSIONS = ['postgis', 'pgcrypto', 'citext'] as const
+const REQUIRED_EXTENSIONS = ['postgis', 'pgcrypto', 'citext', 'pg_trgm'] as const
 
 export async function applyMigrations(
   db: NodePgDatabase<Record<string, unknown>>,

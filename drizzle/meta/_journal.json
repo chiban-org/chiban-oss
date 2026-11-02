@@ -36,6 +36,13 @@
       "when": 1793583265042,
       "tag": "0004_sad_shockwave",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793583986680,
+      "tag": "0005_pg_trgm",
+      "breakpoints": true
     }
   ]
 }

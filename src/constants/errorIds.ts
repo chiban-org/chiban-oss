@@ -35,6 +35,9 @@ export const ErrorIds = {
   SEC_UNKNOWN_KEY: 'E_SEC_001',
   SEC_TAMPERED: 'E_SEC_002',
   SEC_MALFORMED: 'E_SEC_003',
+
+  GIS_UNSUPPORTED_GEOMETRY: 'E_GIS_001',
+  GIS_SRID_MISMATCH: 'E_GIS_002',
 } as const
 
 export type ErrorId = (typeof ErrorIds)[keyof typeof ErrorIds]

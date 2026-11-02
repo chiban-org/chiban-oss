@@ -9,6 +9,9 @@ export const CAPABILITIES = {
   'config.edit': 'Edit configuration',
   'project.manage_parties': 'Add or remove authorized parties on a project',
   'application.amend_after_review': 'Amend a submitted application after review starts',
+  'parcel.manage':
+    'Record lineage, override parcel IDs, carry records forward, resolve unresolved records, and disposition import exceptions',
+  'gis.import': 'Run GIS layer imports',
 } as const
 
 export type Capability = keyof typeof CAPABILITIES

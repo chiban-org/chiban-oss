@@ -20,6 +20,7 @@ const testRouter = router({
   authed: authedProcedure.query(({ ctx }) => ctx.actor.userId),
   staffOnly: staffProcedure.query(() => 'staff'),
   issue: capabilityProcedure('permit.issue').mutation(() => 'issued'),
+  importGis: capabilityProcedure('gis.import').mutation(() => 'imported'),
 })
 const callerFor = createCallerFactory(testRouter)
 
@@ -71,6 +72,11 @@ describe('procedures', () => {
   it('rejects a reviewer from permit.issue but accepts staff', async () => {
     expect(await codeOf((await asRole('reviewer')).issue())).toBe('FORBIDDEN')
     expect(await codeOf((await asRole('staff')).issue())).toBe('OK')
+  })
+
+  it('rejects an applicant from gis.import with FORBIDDEN', async () => {
+    expect(await codeOf((await asRole('applicant')).importGis())).toBe('FORBIDDEN')
+    expect(await codeOf((await asRole('staff')).importGis())).toBe('OK')
   })
 
   it('rejects an applicant from a capability procedure', async () => {

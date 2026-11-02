@@ -9,6 +9,8 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'payment.refund_void_correct',
     'hold.place_release',
     'config.edit',
+    'parcel.manage',
+    'gis.import',
   ],
   staff: [
     'permit.issue',
@@ -16,6 +18,8 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'document.publish',
     'project.manage_parties',
     'application.amend_after_review',
+    'parcel.manage',
+    'gis.import',
   ],
   finance: ['payment.refund_void_correct'],
   records_custodian: ['hold.place_release', 'disposition.approve'],

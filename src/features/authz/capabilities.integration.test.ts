@@ -75,6 +75,14 @@ describe('default grants from the spec table', () => {
     expect(await check('applicant', 'config.edit')).toBe(false)
   })
 
+  it('staff and admin hold parcel.manage and gis.import; reviewer does not', async () => {
+    for (const cap of ['parcel.manage', 'gis.import'] as const) {
+      expect(await check('staff', cap)).toBe(true)
+      expect(await check('admin', cap)).toBe(true)
+      expect(await check('reviewer', cap)).toBe(false)
+    }
+  })
+
   it('seeding twice changes nothing', async () => {
     await seedDefaultGrants(handle.db, signal)
     expect(await check('staff', 'permit.issue')).toBe(true)
