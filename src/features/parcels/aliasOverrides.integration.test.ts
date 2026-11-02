@@ -33,6 +33,40 @@ async function pair() {
 }
 
 describe('alias overrides', () => {
+  it('an override that loses a race for the id is refused and leaves no override row', async () => {
+    const actor = await staffActor(handle.db)
+    const rival = await makeParcel(handle.db, [])
+    const target = await makeParcel(handle.db, [])
+    const value = '007077000000'
+    const client = await handle.pool.connect()
+    try {
+      await client.query('BEGIN')
+      await client.query(
+        `INSERT INTO parcel_aliases (parcel_id, format, value, value_normalized, source)
+         VALUES ($1, 'gis12', $2, $2, 'manual')`,
+        [rival, value],
+      )
+      const pending = createAliasOverride(
+        handle.db,
+        actor,
+        { format: 'gis12', value, parcelId: target, reason: 'Claim the id' },
+        signal,
+        NOW,
+      )
+      await new Promise((resolve) => setTimeout(resolve, 300))
+      await client.query('COMMIT')
+      expect(await pending).toEqual({ ok: false, error: 'alias_taken' })
+    } finally {
+      client.release()
+    }
+    expect(await handle.db.select().from(aliasOverrides)).toHaveLength(0)
+    const holders = await handle.db
+      .select()
+      .from(parcelAliases)
+      .where(eq(parcelAliases.value, '007077000000'))
+    expect(holders.map((h) => h.parcelId)).toEqual([rival])
+  })
+
   it('override repoints an id and records the replaced parcel', async () => {
     const actor = await staffActor(handle.db)
     const { old, target } = await pair()

@@ -55,6 +55,7 @@ export type OverrideError =
   | 'invalid_date'
   | 'unknown_parcel'
   | 'unknown_format'
+  | 'alias_taken'
 
 async function townToday(db: Db, now: Date, signal: AbortSignal): Promise<CivilDate> {
   const town = await getTownSettings(db, signal)
@@ -122,7 +123,8 @@ export async function createAliasOverride(
           isNull(aliasOverrides.supersededBy),
         ),
       )
-    await addAlias(tx, { parcelId, format, value, source: 'override' }, actor, signal)
+    const added = await addAlias(tx, { parcelId, format, value, source: 'override' }, actor, signal)
+    if (!added.ok) return err(added.error)
     await writeAudit(
       tx,
       {
