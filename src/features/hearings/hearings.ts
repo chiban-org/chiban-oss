@@ -16,7 +16,7 @@ import type { GateResult } from '@/features/gates/evaluateGates'
 import { deriveNoticeItems } from '@/features/notices/deriveItems'
 import { type NoticeStatusItem, noticeStatus } from '@/features/notices/noticeStatus'
 import { townToday } from '@/features/town/today'
-import type { CivilDate } from '@/types/civilDate'
+import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 export type HearingKind = 'submission_and_hearing' | 'public_hearing' | 'rehearing'
@@ -199,48 +199,51 @@ export async function markProperlyNoticed(
   })
 }
 
+export type HeldError = 'forbidden' | 'not_found' | 'not_properly_noticed' | 'before_meeting'
+
 export async function markHearingHeld(
   db: Db,
   actor: Actor,
   input: { hearingId: string; heldOn: CivilDate },
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden' | 'not_found' | 'not_properly_noticed'>> {
+): Promise<Result<void, HeldError>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
-  return await transactionResult<void, 'forbidden' | 'not_found' | 'not_properly_noticed'>(
-    db,
-    async (tx) => {
-      const [hearing] = await tx
-        .select()
-        .from(hearings)
-        .where(eq(hearings.id, input.hearingId))
-        .for('update')
-      if (hearing === undefined) return err('not_found')
-      if (hearing.status !== 'scheduled' || hearing.properlyNoticedAt === null) {
-        return err('not_properly_noticed')
-      }
-      const status = await noticeStatus(tx, hearing.noticeSetId, signal)
-      if (!status.properlyNoticed) return err('not_properly_noticed')
-      await tx
-        .update(hearings)
-        .set({ status: 'held', heldOn: input.heldOn })
-        .where(eq(hearings.id, hearing.id))
-      const app = await loadApplicationContext(tx, hearing.applicationId, signal)
-      if (app !== null && boardOfApplication(app) === 'zba') {
-        await markClockMet(tx, app.id, 'nh.zba.hearing', input.heldOn, signal)
-      }
-      await writeAudit(
-        tx,
-        {
-          actor: { kind: 'user', userId: actor.userId },
-          action: 'hearing.held',
-          entityType: 'application',
-          entityId: hearing.applicationId,
-          after: { hearingId: hearing.id, heldOn: input.heldOn },
-        },
-        signal,
-      )
-      return ok(undefined)
-    },
-  )
+  return await transactionResult<void, HeldError>(db, async (tx) => {
+    const [hearing] = await tx
+      .select()
+      .from(hearings)
+      .where(eq(hearings.id, input.hearingId))
+      .for('update')
+    if (hearing === undefined) return err('not_found')
+    if (hearing.status !== 'scheduled' || hearing.properlyNoticedAt === null) {
+      return err('not_properly_noticed')
+    }
+    const status = await noticeStatus(tx, hearing.noticeSetId, signal)
+    if (!status.properlyNoticed) return err('not_properly_noticed')
+    const meeting = await getMeeting(tx, hearing.meetingId, signal)
+    if (meeting !== null && compareCivil(input.heldOn, meeting.meetingDate as CivilDate) < 0) {
+      return err('before_meeting')
+    }
+    await tx
+      .update(hearings)
+      .set({ status: 'held', heldOn: input.heldOn })
+      .where(eq(hearings.id, hearing.id))
+    const app = await loadApplicationContext(tx, hearing.applicationId, signal)
+    if (app !== null && boardOfApplication(app) === 'zba') {
+      await markClockMet(tx, app.id, 'nh.zba.hearing', input.heldOn, signal)
+    }
+    await writeAudit(
+      tx,
+      {
+        actor: { kind: 'user', userId: actor.userId },
+        action: 'hearing.held',
+        entityType: 'application',
+        entityId: hearing.applicationId,
+        after: { hearingId: hearing.id, heldOn: input.heldOn },
+      },
+      signal,
+    )
+    return ok(undefined)
+  })
 }

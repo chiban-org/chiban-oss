@@ -1,5 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import {
+  createStaffUploadIntentAction,
+  finalizeStaffUploadAction,
+} from '@/app/(staff)/staff/records/actions'
 import { ActionForm } from '@/components/ActionForm'
 import { AppealGraph } from '@/components/appeals/AppealGraph'
 import { ApplicationFileUploader } from '@/components/documents/ApplicationFileUploader'
@@ -11,7 +15,6 @@ import { loadDecisionView } from '@/features/decisions/decisionView'
 import { PROOF_METHOD_LABELS, type ProofMethod } from '@/features/notices/proofMethods'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
-import { createStaffUploadIntentAction, finalizeStaffUploadAction } from '../../../records/actions'
 import { recordProofAction } from '../../hearings/actions'
 import {
   addAppealNodeAction,

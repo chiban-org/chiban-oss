@@ -40,6 +40,7 @@ export type VoteError =
   | 'wrong_board'
   | 'meeting_not_set'
   | 'meeting_cancelled'
+  | 'before_meeting'
   | 'reason_required'
   | 'not_submitted'
   | 'invalid_state'
@@ -99,6 +100,9 @@ export async function recordCompletenessVote(
     const checked = await checkVoteMeeting(tx, app.id, board, input.meetingId, signal)
     if (!checked.ok) return checked
     const meeting = checked.value
+    if (compareCivil(input.votedOn, meeting.meetingDate as CivilDate) < 0) {
+      return err('before_meeting')
+    }
     await markClockMet(tx, app.id, COMPLETENESS_KEY, input.votedOn, signal)
     if (board === 'zba') await markClockMet(tx, app.id, 'nh.zba.hearing', input.votedOn, signal)
     const moved = await transitionApplication(

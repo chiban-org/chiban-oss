@@ -7,6 +7,7 @@ const COPY: Record<string, string> = {
   wrong_board: 'That meeting belongs to a different board than this application.',
   meeting_not_set: 'Set that meeting for this application before recording the vote.',
   meeting_cancelled: 'That meeting was cancelled. Choose another one.',
+  before_meeting: 'The date cannot be before the meeting.',
   not_submitted: 'The application is not waiting for its acceptance step.',
   not_under_review: 'The application is not under review.',
   already_scheduled: 'That meeting is already on the calendar.',

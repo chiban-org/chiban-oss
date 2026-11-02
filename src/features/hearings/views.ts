@@ -25,7 +25,8 @@ import { noticeStatus } from '@/features/notices/noticeStatus'
 import { proofMethodLabel } from '@/features/notices/proofMethods'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { getTownSettings } from '@/features/town/settings'
-import { formatCivilDate, formatInstant } from '@/lib/formatDate'
+import { formatCivilDate } from '@/lib/formatDate'
+import { todayInTimeZone } from '@/types/civilDate'
 
 export const BOARD_NAMES: Record<Board, string> = {
   planning_board: 'Planning Board',
@@ -59,6 +60,8 @@ export interface HearingView {
   decision: { decisionId: string; text: string } | null
   otherMeetings: { id: string; text: string }[]
   noticeSetId: string
+  defaultHeldOn: string
+  defaultVotedOn: string
 }
 
 async function timeZoneOf(db: Db, signal: AbortSignal): Promise<string> {
@@ -136,7 +139,7 @@ export async function loadHearingView(
     noticedOn:
       row.hearing.properlyNoticedAt === null
         ? null
-        : (formatInstant(row.hearing.properlyNoticedAt, zone).split(',')[0] ?? null),
+        : formatCivilDate(todayInTimeZone(zone, row.hearing.properlyNoticedAt)),
     properlyNoticed: status.properlyNoticed,
     itemChoices: checklist.map((i) => ({
       id: i.itemId,
@@ -151,9 +154,11 @@ export async function loadHearingView(
             text: `${OUTCOME_LABELS[decision.outcome]}, voted ${formatCivilDate(decision.votedOn)}`,
           },
     otherMeetings: upcoming
-      .filter((m) => m.id !== row.meeting.id && m.status === 'scheduled')
+      .filter((m) => m.status === 'scheduled' && m.meetingDate > row.meeting.meetingDate)
       .map((m) => ({ id: m.id, text: formatCivilDate(m.meetingDate) })),
     noticeSetId: row.hearing.noticeSetId,
+    defaultHeldOn: row.meeting.meetingDate,
+    defaultVotedOn: row.hearing.heldOn ?? row.meeting.meetingDate,
   }
 }
 
