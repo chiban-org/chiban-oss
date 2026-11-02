@@ -10,7 +10,7 @@ import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { uploadRedactionFixture } from '@/test/redactionFixtures'
 import { redactedVersionOf } from '@/test/renditionFixtures'
 
-const MIGRATION = new URL('../../../drizzle/0070_m10_rendition_approvals.sql', import.meta.url)
+const MIGRATION = new URL('../../../drizzle/0080_m10_rendition_carry_over.sql', import.meta.url)
 let handle: TestDb
 let store: ObjectStore
 let staff: Actor

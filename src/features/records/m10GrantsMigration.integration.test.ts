@@ -3,7 +3,7 @@ import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { makeTestDb, type TestDb } from '@/test/db'
 
-const MIGRATION = new URL('../../../drizzle/0067_m10_records_grants.sql', import.meta.url)
+const MIGRATION = new URL('../../../drizzle/0079_m10_records_grants.sql', import.meta.url)
 const NEW_GRANTS = [
   'records_custodian:disposition.propose',
   'records_custodian:redaction.create',

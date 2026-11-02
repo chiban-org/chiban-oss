@@ -13,7 +13,7 @@ const ENFORCEMENT_CAPABILITIES: Capability[] = [
   'fine.record',
   'anonymous_intake.enable',
 ]
-const MIGRATION = new URL('../../../drizzle/0057_m9_enforcement_grants.sql', import.meta.url)
+const MIGRATION = new URL('../../../drizzle/0075_m9_enforcement_grants.sql', import.meta.url)
 
 let handle: TestDb
 
