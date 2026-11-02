@@ -98,19 +98,27 @@ describe('enforcement queue and case pages', () => {
     expect(page).toContain('Answer due')
   })
 
-  it('board members get the permission page on the queue and not-found on a case by id', async () => {
-    await actAs('board')
-    expect(await html(QueuePage(noSearch))).toContain('You do not have permission')
-    await expect(
-      html(CasePage({ params: Promise.resolve({ caseId: caseIds[0]?.id ?? '' }) })),
-    ).rejects.toThrow('NOT_FOUND')
+  it('board members and records custodians get the permission page on the queue and on a case by id', async () => {
+    for (const who of ['board', 'records']) {
+      await actAs(who)
+      expect(await html(QueuePage(noSearch))).toContain('You do not have permission')
+      const existing = await html(
+        CasePage({ params: Promise.resolve({ caseId: caseIds[0]?.id ?? '' }) }),
+      )
+      const missing = await html(
+        CasePage({ params: Promise.resolve({ caseId: '00000000-0000-4000-8000-000000000000' }) }),
+      )
+      expect(existing).toContain('You do not have permission to see code enforcement cases.')
+      expect(existing).not.toContain(caseIds[0]?.number ?? 'no case number')
+      expect(missing).toBe(existing)
+    }
   })
 
   it('a reviewer cannot open a private case by id and a resident is sent to sign in', async () => {
     await actAs('reviewer')
-    await expect(
-      html(CasePage({ params: Promise.resolve({ caseId: caseIds[0]?.id ?? '' }) })),
-    ).rejects.toThrow('NOT_FOUND')
+    expect(
+      await html(CasePage({ params: Promise.resolve({ caseId: caseIds[0]?.id ?? '' }) })),
+    ).toContain('You do not have permission')
     await actAs('applicant')
     await expect(
       html(CasePage({ params: Promise.resolve({ caseId: caseIds[0]?.id ?? '' }) })),
