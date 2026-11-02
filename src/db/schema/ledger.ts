@@ -19,6 +19,7 @@ import {
 } from '@/features/ledger/types'
 import { feeAssessments } from './fees'
 import { applications } from './projects'
+import { receipts } from './receipts'
 
 export const ledgerEntries = pgTable(
   'ledger_entries',
@@ -29,7 +30,7 @@ export const ledgerEntries = pgTable(
     amountCents: integer('amount_cents').notNull(),
     postedAt: timestamp('posted_at', { withTimezone: true }).notNull(),
     businessDate: date('business_date', { mode: 'string' }).notNull(),
-    receiptId: uuid('receipt_id'),
+    receiptId: uuid('receipt_id').references(() => receipts.id),
     reversesEntryId: uuid('reverses_entry_id').references((): AnyPgColumn => ledgerEntries.id),
     paymentAttemptId: uuid('payment_attempt_id'),
     processor: text('processor', { enum: PROCESSORS }),

@@ -11,9 +11,9 @@ import { type Actor, loadActor } from '@/features/auth/actor'
 import { recordCodeEdition } from '@/features/building/codeEdition'
 import { markComplete } from '@/features/building/completeness'
 import { recordRegionalImpactDetermination } from '@/features/building/regionalImpact'
+import { recordCounterPayment } from '@/features/counter/counterPayment'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { feeBalance } from '@/features/ledger/feeBalance'
-import { postEntry } from '@/features/ledger/postEntry'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import { createProject } from '@/features/projects/projects'
 import type { CivilDate } from '@/types/civilDate'
@@ -110,20 +110,17 @@ export class Scenario {
         amountCents: l.dueCents,
       }))
     if (allocations.length === 0) return
-    const posted = await this.db.transaction((tx) =>
-      postEntry(
-        tx,
-        {
-          entryType: 'payment',
-          method: 'cash',
-          amountCents: balance.dueCents,
-          postedAt: noon(on),
-          payerName: 'Demo payer',
-          actor: { kind: 'user', userId: this.cast.staff.userId },
-          allocations,
-        },
-        this.signal,
-      ),
+    const posted = await recordCounterPayment(
+      this.db,
+      this.cast.staff,
+      {
+        method: 'cash',
+        amountCents: balance.dueCents,
+        payerName: 'Demo payer',
+        allocations,
+      },
+      this.signal,
+      noon(on),
     )
     must(posted, 'demo payment')
   }
