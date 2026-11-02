@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import type { Db, Tx } from '@/db/client'
+import type { Db, DbOrTx, Tx } from '@/db/client'
 import { applications, attestations } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
@@ -32,12 +32,12 @@ export type SubmitError =
   | 'not_found'
   | { fieldErrors: FieldError[] }
 
-async function mayEdit(db: Db, actor: Actor, projectId: string): Promise<boolean> {
+async function mayEdit(db: DbOrTx, actor: Actor, projectId: string): Promise<boolean> {
   return hasFullRecordAccess(actor) || (await isActiveParty(db, actor.userId, projectId))
 }
 
 export async function submitApplication(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   input: {
     applicationId: string

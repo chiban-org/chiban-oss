@@ -1,0 +1,118 @@
+'use client'
+
+import { useEffect, useState } from 'react'
+import { useCsrfToken } from '@/components/CsrfProvider'
+import type { CounterActions, CounterOutcome } from '@/components/counter/counterTypes'
+import {
+  ContractorSection,
+  FeeSection,
+  IssuedNotice,
+  type Method,
+  PaymentSection,
+  type WorkField,
+  WorkSection,
+} from '@/components/counter/QuickIssueSections'
+import { ReaderPanel } from '@/components/counter/ReaderPanel'
+import { Button } from '@/components/ui/button'
+import { computeConvenienceFee } from '@/features/payments/convenienceFee'
+import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
+import { attempt } from '@/lib/attempt'
+
+interface Props {
+  parcelId: string
+  typeKey: string
+  typeLabel: string
+  fields: WorkField[]
+  baseCents: number
+  convenienceFee: PaymentSettingsBody['convenienceFee']
+  cardAvailable: boolean
+  readerSimulated: boolean
+  lookup: { label: string; url: string }
+  actions: CounterActions
+}
+
+const METHOD_KEYS: Record<string, Method> = { '1': 'cash', '2': 'check', '3': 'card' }
+
+function useMethodHotkeys(cardAvailable: boolean, setMethod: (m: Method) => void): void {
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const picked = METHOD_KEYS[event.key]
+      if (!event.altKey || picked === undefined) return
+      if (picked === 'card' && !cardAvailable) return
+      event.preventDefault()
+      setMethod(picked)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [cardAvailable, setMethod])
+}
+
+function openPrintouts(result: CounterOutcome): void {
+  if (!result.ok || result.state !== 'issued' || result.links === null) return
+  for (const href of [result.links.permit, result.links.placard, result.links.receipt]) {
+    if (href !== null) window.open(href, '_blank', 'noopener')
+  }
+}
+
+export function QuickIssueForm(props: Props) {
+  const csrf = useCsrfToken()
+  const [method, setMethod] = useState<Method>('cash')
+  const [pending, setPending] = useState(false)
+  const [outcome, setOutcome] = useState<CounterOutcome | null>(null)
+  useMethodHotkeys(props.cardAvailable, setMethod)
+
+  const channel = method === 'card' ? 'card_present' : method
+  const convenienceCents = computeConvenienceFee(props.baseCents, props.convenienceFee, channel)
+
+  const show = (result: CounterOutcome) => {
+    setOutcome(result)
+    openPrintouts(result)
+  }
+
+  const submit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const data = new FormData(event.currentTarget)
+    data.set('csrf_token', csrf)
+    const result = await attempt(() => props.actions.issue(data), setPending)
+    show(result.ok ? result.value : { ok: false, error: result.error })
+  }
+
+  const issued = outcome?.ok === true && outcome.state === 'issued' ? outcome : null
+  const waiting = outcome?.ok === true && outcome.state === 'submitted' ? outcome : null
+
+  return (
+    <form onSubmit={(event) => void submit(event)} className="space-y-6">
+      <input type="hidden" name="parcelId" value={props.parcelId} />
+      <input type="hidden" name="typeKey" value={props.typeKey} />
+      <ContractorSection defaultLicenseType={props.typeLabel} lookup={props.lookup} />
+      <WorkSection fields={props.fields} />
+      <FeeSection
+        baseCents={props.baseCents}
+        convenienceCents={convenienceCents}
+        card={method === 'card'}
+      />
+      <PaymentSection
+        method={method}
+        onMethod={setMethod}
+        cardAvailable={props.cardAvailable}
+        readerSimulated={props.readerSimulated}
+      />
+      <div className="flex items-center gap-3">
+        <Button type="submit" disabled={pending || outcome?.ok === true}>
+          Issue and print
+        </Button>
+        {outcome?.ok === false ? <p role="alert">{outcome.error}</p> : null}
+      </div>
+      {issued === null ? null : <IssuedNotice outcome={issued} />}
+      {waiting?.attemptId == null ? null : (
+        <ReaderPanel
+          attemptId={waiting.attemptId}
+          applicationId={waiting.applicationId}
+          simulated={props.readerSimulated}
+          actions={props.actions}
+          onIssued={show}
+        />
+      )}
+    </form>
+  )
+}

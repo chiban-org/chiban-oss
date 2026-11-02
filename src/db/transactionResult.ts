@@ -1,4 +1,4 @@
-import type { Db, Tx } from '@/db/client'
+import type { Db, DbOrTx, Tx } from '@/db/client'
 import type { Result } from '@/types/result'
 
 class RollbackSignal<E> extends Error {
@@ -11,11 +11,11 @@ class RollbackSignal<E> extends Error {
 }
 
 export async function transactionResult<T, E>(
-  db: Db,
+  db: DbOrTx,
   fn: (tx: Tx) => Promise<Result<T, E>>,
 ): Promise<Result<T, E>> {
   try {
-    return await db.transaction(async (tx) => {
+    return await (db as Db).transaction(async (tx) => {
       const result = await fn(tx)
       if (!result.ok) throw new RollbackSignal(result)
       return result

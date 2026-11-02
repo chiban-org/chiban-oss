@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm'
-import type { Db, Tx } from '@/db/client'
+import type { DbOrTx, Tx } from '@/db/client'
 import { applicationNumberCounters, applications, projects } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
@@ -30,7 +30,7 @@ async function nextNumber(tx: Tx, prefix: string, year: number): Promise<string>
 }
 
 export async function createApplication(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   input: { projectId: string; applicationTypeKey: string },
   signal: AbortSignal,

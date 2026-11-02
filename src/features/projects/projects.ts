@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import { parcels, projectParties, projects } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -7,7 +7,7 @@ import type { Actor } from '@/features/auth/actor'
 import { err, ok, type Result } from '@/types/result'
 
 export async function createProject(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   input: { parcelId: string; title: string },
   signal: AbortSignal,

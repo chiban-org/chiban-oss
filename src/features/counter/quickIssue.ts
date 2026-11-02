@@ -1,0 +1,268 @@
+import { NH_LICENSE_LOOKUP } from '@packs/nh/links'
+import { desc, eq } from 'drizzle-orm'
+import type { Db, DbOrTx } from '@/db/client'
+import {
+  applications,
+  type LicenseResult,
+  ledgerAllocations,
+  ledgerEntries,
+  licenseChecks,
+  receipts,
+} from '@/db/schema'
+import { transactionResult } from '@/db/transactionResult'
+import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
+import { createApplication } from '@/features/applications/createApplication'
+import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
+import { transitionApplication } from '@/features/applications/transition'
+import type { Actor } from '@/features/auth/actor'
+import { hasCapability } from '@/features/authz/capabilities'
+import { getPublished } from '@/features/config/store'
+import { recordCounterPayment } from '@/features/counter/counterPayment'
+import type { FieldError } from '@/features/forms/validateSubmission'
+import type { GateResult } from '@/features/gates/evaluateGates'
+import { feeBalance } from '@/features/ledger/feeBalance'
+import type { AllocationInput } from '@/features/ledger/types'
+import { getActiveProcessor } from '@/features/payments/processorAccounts'
+import type { ProcessorError } from '@/features/payments/processors/types'
+import { startCardPresentPayment } from '@/features/payments/startPayment'
+import { addParty } from '@/features/projects/parties'
+import { createProject } from '@/features/projects/projects'
+import { err, ok, type Result } from '@/types/result'
+
+export type { LicenseResult }
+
+export interface QuickIssueInput {
+  parcelId: string
+  applicationTypeKey: string
+  values: Record<string, unknown>
+  contractor: { name: string; email?: string; licenseNumber: string; licenseType: string }
+  licenseCheck: { result: LicenseResult; note?: string }
+  payerName: string
+  payment:
+    | { method: 'cash'; tenderedCents?: number }
+    | { method: 'check'; checkNumber: string }
+    | { method: 'card' }
+}
+
+export interface QuickIssueResult {
+  applicationId: string
+  number: string
+  state: 'issued' | 'submitted'
+  attemptId: string | null
+  receiptNumber: string | null
+}
+
+export type QuickIssueError =
+  | 'forbidden'
+  | 'not_direct_issue_type'
+  | 'license_not_active'
+  | 'tendered_short'
+  | 'check_number_required'
+  | 'unknown_parcel'
+  | 'not_published'
+  | 'config_inconsistent'
+  | 'not_configured'
+  | 'nothing_due'
+  | 'over_allocated'
+  | 'amount_mismatch'
+  | 'stale_version'
+  | 'invalid_transition'
+  | 'fees_incomplete'
+  | 'not_found'
+  | 'attestation_mismatch'
+  | 'agent_needs_owner_authorization'
+  | { fieldErrors: FieldError[] }
+  | { gateBlocked: GateResult[] }
+  | ProcessorError
+
+export interface QuickIssueDeps {
+  now?: Date
+}
+
+async function mayQuickIssue(db: Db, actor: Actor, signal: AbortSignal): Promise<boolean> {
+  return (
+    (await hasCapability(db, actor.userId, 'permit.issue', signal)) &&
+    (await hasCapability(db, actor.userId, 'payment.collect', signal))
+  )
+}
+
+async function receiptNumberFor(db: Db, applicationId: string): Promise<string | null> {
+  const [row] = await db
+    .select({ number: receipts.number })
+    .from(ledgerAllocations)
+    .innerJoin(ledgerEntries, eq(ledgerEntries.id, ledgerAllocations.entryId))
+    .innerJoin(receipts, eq(receipts.id, ledgerEntries.receiptId))
+    .where(eq(ledgerAllocations.applicationId, applicationId))
+    .orderBy(desc(receipts.issuedAt))
+    .limit(1)
+  return row?.number ?? null
+}
+
+async function dueAllocations(
+  db: DbOrTx,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<{ totalCents: number; allocations: AllocationInput[] }> {
+  const balance = await feeBalance(db, applicationId, signal)
+  const due = balance.lines.filter((l) => l.dueCents > 0 && l.stage !== 'at_renewal')
+  return {
+    totalCents: due.reduce((sum, l) => sum + l.dueCents, 0),
+    allocations: due.map((l) => ({
+      targetKind: 'fee_assessment_line' as const,
+      applicationId,
+      feeAssessmentId: l.feeAssessmentId,
+      stage: l.stage,
+      feeCode: l.feeCode,
+      amountCents: l.dueCents,
+    })),
+  }
+}
+
+export async function quickIssue(
+  db: Db,
+  actor: Actor,
+  input: QuickIssueInput,
+  signal: AbortSignal,
+  deps: QuickIssueDeps = {},
+): Promise<Result<QuickIssueResult, QuickIssueError>> {
+  signal.throwIfAborted()
+  const now = deps.now ?? new Date()
+  if (!(await mayQuickIssue(db, actor, signal))) return err('forbidden')
+  if (input.licenseCheck.result !== 'active') return err('license_not_active')
+  const type = await getPublished(db, 'application_type', input.applicationTypeKey, signal)
+  if (type === null) return err('not_published')
+  const typeBody = type.body as ApplicationTypeBody
+  if (!typeBody.workflow.allowsDirectIssue) return err('not_direct_issue_type')
+  if (input.payment.method === 'card' && (await getActiveProcessor(db, signal)).state !== 'known') {
+    return err('not_configured')
+  }
+  const created = await transactionResult<QuickIssueResult, QuickIssueError>(db, async (tx) => {
+    const project = await createProject(
+      tx,
+      actor,
+      { parcelId: input.parcelId, title: `Counter permit: ${typeBody.label}` },
+      signal,
+    )
+    if (!project.ok) return err(project.error)
+    const party = await addParty(
+      tx,
+      actor,
+      {
+        projectId: project.value.projectId,
+        role: 'contractor',
+        name: input.contractor.name,
+        email: input.contractor.email,
+      },
+      signal,
+    )
+    if (!party.ok) return err(party.error)
+    const application = await createApplication(
+      tx,
+      actor,
+      { projectId: project.value.projectId, applicationTypeKey: input.applicationTypeKey },
+      signal,
+      now,
+    )
+    if (!application.ok) return err(application.error)
+    const applicationId = application.value.applicationId
+    const submitted = await submitApplication(
+      tx,
+      actor,
+      {
+        applicationId,
+        values: { ...input.values, contractor_license_number: input.contractor.licenseNumber },
+        attestation: { statementSha256: attestationHash(typeBody.attestationText) },
+      },
+      signal,
+      now,
+    )
+    if (!submitted.ok) return err(submitted.error)
+    await tx.insert(licenseChecks).values({
+      applicationId,
+      licenseNumber: input.contractor.licenseNumber,
+      licenseType: input.contractor.licenseType,
+      result: input.licenseCheck.result,
+      note: input.licenseCheck.note ?? null,
+      lookupUrl: NH_LICENSE_LOOKUP.url,
+      checkedBy: actor.userId,
+      checkedAt: now,
+    })
+    const base = { applicationId, number: application.value.number, attemptId: null }
+    if (input.payment.method === 'card') {
+      return ok({ ...base, state: 'submitted' as const, receiptNumber: null })
+    }
+    const due = await dueAllocations(tx, applicationId, signal)
+    let receiptNumber: string | null = null
+    if (due.totalCents > 0) {
+      const paid = await recordCounterPayment(
+        tx,
+        actor,
+        {
+          method: input.payment.method,
+          amountCents: due.totalCents,
+          tenderedCents: input.payment.method === 'cash' ? input.payment.tenderedCents : undefined,
+          checkNumber: input.payment.method === 'check' ? input.payment.checkNumber : undefined,
+          payerName: input.payerName,
+          allocations: due.allocations,
+        },
+        signal,
+        now,
+      )
+      if (!paid.ok) return err(paid.error)
+      receiptNumber = paid.value.receiptNumber
+    }
+    const [row] = await tx.select().from(applications).where(eq(applications.id, applicationId))
+    const issued = await transitionApplication(
+      tx,
+      actor,
+      { applicationId, to: 'issued', expectedRowVersion: row?.rowVersion ?? 0 },
+      signal,
+      now,
+    )
+    if (!issued.ok) return err(issued.error)
+    return ok({ ...base, state: 'issued' as const, receiptNumber })
+  })
+  if (!created.ok || input.payment.method !== 'card') return created
+  const started = await startCardPresentPayment(
+    db,
+    actor,
+    { applicationIds: [created.value.applicationId], payerName: input.payerName },
+    signal,
+    { now },
+  )
+  if (!started.ok) return err(started.error)
+  return ok({ ...created.value, attemptId: started.value.attemptId })
+}
+
+export async function completeQuickIssue(
+  db: Db,
+  actor: Actor,
+  input: { applicationId: string; expectedRowVersion: number },
+  signal: AbortSignal,
+  deps: QuickIssueDeps = {},
+): Promise<Result<QuickIssueResult, QuickIssueError>> {
+  signal.throwIfAborted()
+  if (!(await mayQuickIssue(db, actor, signal))) return err('forbidden')
+  const moved = await db.transaction((tx) =>
+    transitionApplication(
+      tx,
+      actor,
+      {
+        applicationId: input.applicationId,
+        to: 'issued',
+        expectedRowVersion: input.expectedRowVersion,
+      },
+      signal,
+      deps.now,
+    ),
+  )
+  if (!moved.ok) return err(moved.error)
+  const [row] = await db.select().from(applications).where(eq(applications.id, input.applicationId))
+  return ok({
+    applicationId: input.applicationId,
+    number: row?.number ?? '',
+    state: row?.state === 'issued' ? 'issued' : 'submitted',
+    attemptId: null,
+    receiptNumber: await receiptNumberFor(db, input.applicationId),
+  })
+}

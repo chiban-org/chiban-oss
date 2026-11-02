@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { Db, DbOrTx } from '@/db/client'
 import { projectParties } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -18,7 +18,7 @@ export interface AddPartyInput {
 }
 
 async function mayManageParties(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   projectId: string,
   signal: AbortSignal,
@@ -28,7 +28,7 @@ async function mayManageParties(
 }
 
 export async function addParty(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   input: AddPartyInput,
   signal: AbortSignal,

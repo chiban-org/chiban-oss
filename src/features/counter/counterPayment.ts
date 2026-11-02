@@ -1,4 +1,4 @@
-import type { Db } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -44,7 +44,7 @@ function validate(input: CounterPaymentInput): CounterPaymentError | null {
 }
 
 export async function recordCounterPayment(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   input: CounterPaymentInput,
   signal: AbortSignal,

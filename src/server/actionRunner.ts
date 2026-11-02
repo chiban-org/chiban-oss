@@ -66,6 +66,17 @@ export const ERROR_COPY: Record<string, string> = {
   not_suspended: 'The permit is not suspended.',
   already_lapsed: 'The permit has already lapsed and cannot be renewed.',
   election_not_allowed: 'The applicant cannot elect that edition on this receipt date.',
+  license_not_active:
+    'The license is not active. Do not issue at the counter. Take the application through the normal path.',
+  not_direct_issue_type: 'This permit type cannot be issued at the counter.',
+  tendered_short: 'The cash tendered is less than the amount due.',
+  check_number_required: 'Enter the check number.',
+  not_configured: 'Card payments are not configured.',
+  nothing_due: 'Nothing is due on this application.',
+  over_allocated: 'That payment is more than what is due.',
+  amount_mismatch: 'The amounts do not add up.',
+  not_published: 'That permit type is not published.',
+  attestation_mismatch: 'The attestation text changed. Reload the page and try again.',
   no_edition_for_date: 'No code edition is on record for the receipt date.',
 }
 
