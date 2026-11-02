@@ -1,5 +1,5 @@
 import { LinkedParcelMap } from '@/components/map/LinkedParcelMap'
-import { parcelExtent } from '@/features/gis/extent'
+import { configuredOverlayLayers, parcelExtent } from '@/features/gis/extent'
 import { getTownSettings } from '@/features/town/settings'
 import { createContext } from '@/server/trpc/context'
 
@@ -7,6 +7,7 @@ export default async function StaffMapPage() {
   const ctx = await createContext()
   const town = await getTownSettings(ctx.db, ctx.signal)
   const bbox = await parcelExtent(ctx.db, ctx.signal)
+  const overlays = await configuredOverlayLayers(ctx.db, ctx.signal)
   return (
     <main>
       <h1>Map</h1>
@@ -16,7 +17,7 @@ export default async function StaffMapPage() {
       <LinkedParcelMap
         hrefBase="/staff/parcels/"
         bbox={bbox}
-        layers={['roads', 'water']}
+        layers={overlays}
         basemapRasterUrl={town.ok ? town.value.basemapRasterUrl : null}
         basemapAttribution={town.ok ? town.value.basemapAttribution : null}
       />

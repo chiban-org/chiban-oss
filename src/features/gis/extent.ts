@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
+import { gisLayers } from '@/db/schema'
 
 export type Bbox = [number, number, number, number]
 
@@ -19,4 +20,15 @@ export function bboxOfGeometry(geom: GeoJSON.MultiPolygon): Bbox {
   const xs = points.map((p) => p[0] ?? 0)
   const ys = points.map((p) => p[1] ?? 0)
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]
+}
+
+export async function configuredOverlayLayers(
+  db: DbOrTx,
+  signal: AbortSignal,
+): Promise<('roads' | 'water')[]> {
+  signal.throwIfAborted()
+  const rows = await db.select({ key: gisLayers.key, adapter: gisLayers.adapter }).from(gisLayers)
+  return rows.flatMap((r) =>
+    r.adapter !== null && (r.key === 'roads' || r.key === 'water') ? [r.key] : [],
+  )
 }

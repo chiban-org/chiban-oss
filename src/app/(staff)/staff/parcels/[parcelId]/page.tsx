@@ -7,7 +7,7 @@ import { RecordsSection } from '@/components/parcels/RecordsSection'
 import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
-import { bboxOfGeometry } from '@/features/gis/extent'
+import { bboxOfGeometry, configuredOverlayLayers } from '@/features/gis/extent'
 import { getStaffParcelView } from '@/features/parcels/staffParcelView'
 import { getTownSettings } from '@/features/town/settings'
 import { createContext } from '@/server/trpc/context'
@@ -37,6 +37,7 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
   if (!result.ok) notFound()
   const view = result.value
   const town = await getTownSettings(ctx.db, ctx.signal)
+  const overlays = await configuredOverlayLayers(ctx.db, ctx.signal)
   const timeZone = town.ok ? town.value.timeZone : 'America/New_York'
   const displayId = view.aliases.find((a) => a.status === 'active')?.value ?? 'No map-lot ID'
   const geometry =
@@ -121,7 +122,7 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
           hrefBase="/staff/parcels/"
           selectedParcelId={parcelId}
           bbox={bboxOfGeometry(geometry)}
-          layers={['roads', 'water']}
+          layers={overlays}
           basemapRasterUrl={town.ok ? town.value.basemapRasterUrl : null}
           basemapAttribution={town.ok ? town.value.basemapAttribution : null}
         />
