@@ -14,6 +14,10 @@ export const TOKENS = {
   'status-overdue-bg': '#fff7ca',
   'status-neutral-fg': '#2d2f33',
   'status-neutral-bg': '#e8edf1',
+  'map-parcel-line': '#2d2f33',
+  'map-selected': '#2a65a3',
+  'map-road': '#5b6470',
+  'map-water-fill': '#d9e7f2',
 } as const
 
 export type TokenName = keyof typeof TOKENS

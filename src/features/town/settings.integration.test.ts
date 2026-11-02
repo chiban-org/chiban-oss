@@ -26,8 +26,25 @@ describe('getTownSettings', () => {
     const result = await getTownSettings(handle.db, signal)
     expect(result).toEqual({
       ok: true,
-      value: { name: 'Town of Alder Pond', stateCode: 'NH', timeZone: 'America/New_York' },
+      value: {
+        name: 'Town of Alder Pond',
+        stateCode: 'NH',
+        timeZone: 'America/New_York',
+        basemapRasterUrl: null,
+        basemapAttribution: null,
+      },
     })
+  })
+
+  it('returns an opt-in basemap when configured', async () => {
+    await handle.db.update(townSettings).set({
+      basemapRasterUrl: 'https://tiles.alderpond.example/{z}/{x}/{y}.png',
+      basemapAttribution: 'Alder Pond tiles',
+    })
+    const result = await getTownSettings(handle.db, signal)
+    expect(result.ok && result.value.basemapRasterUrl).toBe(
+      'https://tiles.alderpond.example/{z}/{x}/{y}.png',
+    )
   })
 
   it('refuses a second row', async () => {
