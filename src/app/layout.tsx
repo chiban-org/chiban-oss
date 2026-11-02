@@ -1,5 +1,7 @@
 import type { Metadata } from 'next'
 import type { ReactNode } from 'react'
+import '@fontsource-variable/mulish'
+import '@fontsource-variable/source-serif-4'
 import { Providers } from '@/components/providers'
 import './globals.css'
 

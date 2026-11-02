@@ -1,1 +1,165 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+
+:root {
+  --canvas: #f1f5f8;
+  --surface: #ffffff;
+  --ink: #1f1f1f;
+  --ink-secondary: #2d2f33;
+  --muted: #5b6470;
+  --action: #2a65a3;
+  --highlight: #fff7ca;
+  --status-passed-fg: #1e6b3a;
+  --status-passed-bg: #e6f4ea;
+  --status-failed-fg: #a3261f;
+  --status-failed-bg: #fbe9e7;
+  --status-overdue-fg: #7a4b00;
+  --status-overdue-bg: #fff7ca;
+  --status-neutral-fg: #2d2f33;
+  --status-neutral-bg: #e8edf1;
+
+  --radius: 10px;
+  --space-base: 4px;
+  --card-padding: 24px;
+  --content-max-width: 1200px;
+  --public-min-body: 16px;
+  --public-min-tap-target: 44px;
+
+  --font-headline: Charter, "Source Serif 4 Variable", serif;
+  --font-body: "Mulish Variable", Inter, system-ui, sans-serif;
+  --body-tracking: -0.02em;
+
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary: var(--action);
+  --primary-foreground: var(--surface);
+  --secondary: var(--status-neutral-bg);
+  --secondary-foreground: var(--ink-secondary);
+  --muted-surface: var(--status-neutral-bg);
+  --accent: var(--highlight);
+  --accent-foreground: var(--ink);
+  --destructive: var(--status-failed-fg);
+  --border: var(--ink-secondary);
+  --input: var(--ink-secondary);
+  --ring: var(--action);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted-surface);
+  --color-muted-foreground: var(--muted);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-ink-secondary: var(--ink-secondary);
+  --color-action: var(--action);
+  --color-highlight: var(--highlight);
+  --color-status-passed-fg: var(--status-passed-fg);
+  --color-status-passed-bg: var(--status-passed-bg);
+  --color-status-failed-fg: var(--status-failed-fg);
+  --color-status-failed-bg: var(--status-failed-bg);
+  --color-status-overdue-fg: var(--status-overdue-fg);
+  --color-status-overdue-bg: var(--status-overdue-bg);
+  --color-status-neutral-fg: var(--status-neutral-fg);
+  --color-status-neutral-bg: var(--status-neutral-bg);
+  --font-sans: var(--font-body);
+  --font-serif: var(--font-headline);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --spacing: var(--space-base);
+  --text-base: 1rem;
+  --text-lg: 1.125rem;
+  --text-xl: 1.266rem;
+  --text-2xl: 1.424rem;
+  --text-3xl: 1.602rem;
+  --text-4xl: 1.802rem;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  body {
+    background: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-body);
+    letter-spacing: var(--body-tracking);
+    font-size: var(--text-base);
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-headline);
+    letter-spacing: 0;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  h1 {
+    font-size: var(--text-4xl);
+  }
+
+  h2 {
+    font-size: var(--text-3xl);
+  }
+
+  h3 {
+    font-size: var(--text-2xl);
+  }
+
+  a {
+    color: var(--action);
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+}
+
+.public-shell {
+  font-size: max(var(--public-min-body), 1rem);
+}
+
+.public-shell :is(button, [role="button"], input, select, textarea, a.tap-target) {
+  min-height: var(--public-min-tap-target);
+}
+
+.public-shell :is(button, [role="button"], a.tap-target) {
+  min-width: var(--public-min-tap-target);
+}
+
+.staff-shell table {
+  font-size: 0.875rem;
+}
+
+.attention {
+  background: var(--highlight);
+  padding-inline: calc(var(--space-base) * 1);
+  border-radius: calc(var(--radius) / 2);
+}
