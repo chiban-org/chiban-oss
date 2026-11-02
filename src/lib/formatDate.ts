@@ -20,16 +20,7 @@ export function humanizeIsoDates(text: string): string {
 }
 
 export function formatInstant(instant: Date, timeZone: string): string {
-  return new Intl.DateTimeFormat('en-US', {
-    timeZone,
-    year: 'numeric',
-    month: 'short',
-    day: 'numeric',
-    hour: 'numeric',
-    minute: '2-digit',
-  })
-    .format(instant)
-    .replace(NARROW_NO_BREAK_SPACE, ' ')
+  return formatInstantLong(instant, timeZone)
 }
 
 export function formatInstantLong(instant: Date, timeZone: string): string {
