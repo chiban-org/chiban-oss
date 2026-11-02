@@ -1,5 +1,9 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { searchParcels } from '@/features/parcels/searchParcels'
 import { listPortalTypes } from '@/features/portal/drafts'
@@ -33,12 +37,16 @@ export default async function ApplyPage({
           <input type="hidden" name="parcelId" value={parcelId} />
           <fieldset className="space-y-2 border-0 p-0">
             <legend className="font-medium">Application type</legend>
-            {types.map((t, i) => (
-              <label key={t.key} className="flex min-h-11 items-center gap-3 text-base">
-                <input type="radio" name="typeKey" value={t.key} defaultChecked={i === 0} />
-                {t.label}
-              </label>
-            ))}
+            <RadioGroup name="typeKey" defaultValue={types[0]?.key} className="gap-1">
+              {types.map((t) => (
+                <div key={t.key} className="flex min-h-11 items-center gap-3">
+                  <RadioGroupItem id={`type-${t.key}`} value={t.key} />
+                  <Label htmlFor={`type-${t.key}`} className="text-base">
+                    {t.label}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
           </fieldset>
         </ActionForm>
         <Link href="/portal/apply" className={LINK}>
@@ -58,17 +66,15 @@ export default async function ApplyPage({
     <main className="space-y-4">
       <h1>Start an application</h1>
       <form method="get" className="flex flex-wrap items-end gap-3">
-        <label className="flex flex-col gap-1 text-base">
-          Find your parcel by address, owner, or parcel ID
-          <input
-            name="q"
-            defaultValue={query}
-            className="min-h-11 rounded-md border px-3 text-base"
-          />
-        </label>
-        <button type="submit" className="min-h-11 rounded-md border px-4 text-base">
+        <div className="space-y-1.5">
+          <Label htmlFor="parcel-search" className="text-base">
+            Find your parcel by address, owner, or parcel ID
+          </Label>
+          <Input id="parcel-search" name="q" defaultValue={query} className="min-h-11 text-base" />
+        </div>
+        <Button type="submit" variant="outline" className="min-h-11 text-base">
           Search
-        </button>
+        </Button>
       </form>
       {query.length > 0 && query.length < MIN_QUERY ? <p>Enter at least two characters.</p> : null}
       {query.length >= MIN_QUERY && hits.length === 0 ? <p>No parcels match that search.</p> : null}
