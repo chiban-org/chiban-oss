@@ -26,9 +26,8 @@ export interface FieldError {
   code: FieldErrorCode
 }
 
-const DECIMAL = /^-?\d+(\.\d+)?$/
-const MONEY = /^-?\d+(\.\d{1,2})?$/
-const INTEGER = /^-?\d+$/
+const DIGITS = /^\d+$/
+const MONEY_PLACES = 2
 const EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
 const PHONE_DIGITS = 7
 
@@ -38,9 +37,20 @@ function isBlank(raw: unknown): boolean {
   return raw === undefined || raw === null || raw === '' || (Array.isArray(raw) && raw.length === 0)
 }
 
-function parseNumberText(raw: unknown, pattern: RegExp): string | null {
+type NumberKind = 'integer' | 'decimal' | 'money'
+
+function isNumberText(text: string, kind: NumberKind): boolean {
+  const unsigned = text.startsWith('-') ? text.slice(1) : text
+  const [whole = '', fraction, ...rest] = unsigned.split('.')
+  if (rest.length > 0 || !DIGITS.test(whole)) return false
+  if (fraction === undefined) return true
+  if (kind === 'integer' || !DIGITS.test(fraction)) return false
+  return kind !== 'money' || fraction.length <= MONEY_PLACES
+}
+
+function parseNumberText(raw: unknown, kind: NumberKind): string | null {
   const text = typeof raw === 'number' ? String(raw) : typeof raw === 'string' ? raw.trim() : null
-  return text !== null && pattern.test(text) ? text : null
+  return text !== null && isNumberText(text, kind) ? text : null
 }
 
 function parseSelect(field: FormField, raw: unknown): Parsed {
@@ -71,8 +81,8 @@ function parseText(field: FormField, raw: unknown): Parsed {
 }
 
 function parseNumeric(field: FormField, raw: unknown): Parsed {
-  const pattern = field.type === 'integer' ? INTEGER : field.type === 'money' ? MONEY : DECIMAL
-  const text = parseNumberText(raw, pattern)
+  const kind = field.type as NumberKind
+  const text = parseNumberText(raw, kind)
   if (text === null) return { ok: false, code: 'type' }
   const n = Number(text)
   if (field.validation?.min !== undefined && n < field.validation.min)
@@ -132,6 +142,22 @@ function isRequired(field: FormField, values: Record<string, FieldValue>): boole
   )
 }
 
+function validateField(
+  field: FormField,
+  input: unknown,
+  values: Record<string, FieldValue>,
+  asStaff: boolean,
+): { error: FieldError } | { value: FieldValue } | null {
+  const blank = isBlank(input) || (field.type === 'checkbox' && input === false)
+  if (field.staffOnly === true && !asStaff) {
+    return blank ? null : { error: { field: field.key, code: 'staff_only' } }
+  }
+  if (blank && isRequired(field, values)) return { error: { field: field.key, code: 'required' } }
+  if (blank && field.type !== 'checkbox') return null
+  const parsed = parseValue(field, input)
+  return parsed.ok ? { value: parsed.value } : { error: { field: field.key, code: parsed.code } }
+}
+
 export function validateSubmission(
   form: FormBody,
   raw: Record<string, unknown>,
@@ -141,23 +167,10 @@ export function validateSubmission(
   const errors: FieldError[] = []
   for (const field of form.fields) {
     if (!isShown(field, values)) continue
-    const input = raw[field.key]
-    const blank = isBlank(input) || (field.type === 'checkbox' && input === false)
-    if (field.staffOnly === true && !opts.asStaff) {
-      if (!blank) errors.push({ field: field.key, code: 'staff_only' })
-      continue
-    }
-    if (blank && field.type !== 'checkbox') {
-      if (isRequired(field, values)) errors.push({ field: field.key, code: 'required' })
-      continue
-    }
-    if (blank && isRequired(field, values)) {
-      errors.push({ field: field.key, code: 'required' })
-      continue
-    }
-    const parsed = parseValue(field, input)
-    if (parsed.ok) values[field.key] = parsed.value
-    else errors.push({ field: field.key, code: parsed.code })
+    const outcome = validateField(field, raw[field.key], values, opts.asStaff)
+    if (outcome === null) continue
+    if ('error' in outcome) errors.push(outcome.error)
+    else values[field.key] = outcome.value
   }
   if (errors.length > 0) return err(errors)
   return ok({ values, facts: extractFacts(form, values) })
