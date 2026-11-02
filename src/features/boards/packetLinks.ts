@@ -18,7 +18,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import type { MailTransport } from '@/features/mail/transport'
-import type { ObjectStore } from '@/features/storage/objectStore'
+import type { StoredObject } from '@/features/storage/delivery'
 import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, todayInTimeZone } from '@/types/civilDate'
@@ -28,7 +28,6 @@ const TOKEN_BYTES = 32
 const DEFAULT_DAYS = 14
 const MAX_DAYS = 30
 const DAY_MS = 24 * 60 * 60 * 1000
-const DOWNLOAD_SECONDS = 60
 
 export function hashPacketToken(token: string): string {
   return createHash('sha256').update(token).digest('base64url')
@@ -244,12 +243,11 @@ export type PacketVersionError = 'invalid' | 'expired' | 'not_found' | { withdra
 
 export async function openPacketVersion(
   db: Db,
-  store: ObjectStore,
   token: string,
   versionId: string,
   now: Date,
   signal: AbortSignal,
-): Promise<Result<{ url: string }, PacketVersionError>> {
+): Promise<Result<StoredObject, PacketVersionError>> {
   signal.throwIfAborted()
   const resolved = await resolveLink(db, token, now)
   if (!resolved.ok) return err(resolved.error)
@@ -281,13 +279,7 @@ export async function openPacketVersion(
     return err('not_found')
   }
   await db.insert(boardPacketAccess).values({ linkId: link.id, versionId, accessedAt: now })
-  const url = await store.presignGet(row.storageKey, {
-    expiresSeconds: DOWNLOAD_SECONDS,
-    filename: row.filename,
-    contentType: row.contentType,
-    disposition: 'inline',
-  })
-  return ok({ url })
+  return ok({ storageKey: row.storageKey, filename: row.filename, contentType: row.contentType })
 }
 
 export async function townDateOf(db: Db, at: Date, signal: AbortSignal): Promise<CivilDate> {

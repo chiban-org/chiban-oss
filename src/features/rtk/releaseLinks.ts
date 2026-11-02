@@ -10,12 +10,10 @@ import {
   rtkRequests,
 } from '@/db/schema'
 import { hashReleaseToken } from '@/features/rtk/releases'
-import type { ObjectStore } from '@/features/storage/objectStore'
+import type { StoredObject } from '@/features/storage/delivery'
 import { getTownSettings } from '@/features/town/settings'
 import { type CivilDate, todayInTimeZone } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
-
-const DOWNLOAD_SECONDS = 60
 
 export interface ReleaseView {
   requestNumber: string
@@ -102,14 +100,11 @@ export async function openRelease(
 
 export async function openReleaseVersion(
   db: Db,
-  store: ObjectStore,
   token: string,
   versionId: string,
   now: Date,
   signal: AbortSignal,
-): Promise<
-  Result<{ url: string }, 'invalid' | 'expired' | 'not_found' | { withdrawnOn: CivilDate }>
-> {
+): Promise<Result<StoredObject, 'invalid' | 'expired' | 'not_found' | { withdrawnOn: CivilDate }>> {
   signal.throwIfAborted()
   const resolved = await resolveReleaseLink(db, token, now)
   if (!resolved.ok) return err(resolved.error)
@@ -145,11 +140,5 @@ export async function openReleaseVersion(
   if (row.storageKey === null || row.filename === null || row.contentType === null) {
     return err('not_found')
   }
-  const url = await store.presignGet(row.storageKey, {
-    expiresSeconds: DOWNLOAD_SECONDS,
-    filename: row.filename,
-    contentType: row.contentType,
-    disposition: 'inline',
-  })
-  return ok({ url })
+  return ok({ storageKey: row.storageKey, filename: row.filename, contentType: row.contentType })
 }

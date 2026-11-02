@@ -411,12 +411,11 @@ describe('packets for members', () => {
     const item = view.value.items[0]
     const opened = await openMemberPacketVersion(
       handle.db,
-      store,
       zba.actor,
       { meetingId: id, versionId: item?.versionId ?? '' },
       signal,
     )
-    expect(opened.ok && opened.value.url.startsWith('http')).toBe(true)
+    expect(opened.ok && opened.value.storageKey.length).toBeGreaterThan(0)
     const rows = await handle.db.select().from(boardPacketAccess)
     expect(
       rows.some(
@@ -440,7 +439,6 @@ describe('packets for members', () => {
     expect(after.value.items.find((i) => i.versionId === versionId)?.withdrawnOn).toBe('2027-04-10')
     const opened = await openMemberPacketVersion(
       handle.db,
-      store,
       zba.actor,
       { meetingId: id, versionId },
       signal,
@@ -470,7 +468,6 @@ describe('packets for members', () => {
     )
     const opened = await openMemberPacketVersion(
       handle.db,
-      store,
       zba.actor,
       { meetingId: id, versionId },
       signal,
@@ -483,7 +480,6 @@ describe('packets for members', () => {
     const { meetingId: id } = await packet()
     const opened = await openMemberPacketVersion(
       handle.db,
-      store,
       zba.actor,
       { meetingId: id, versionId: '00000000-0000-4000-8000-000000000000' },
       signal,

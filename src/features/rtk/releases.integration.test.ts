@@ -372,14 +372,15 @@ describe('release links', () => {
     const { doc, token } = await linked()
     const opened = await openRelease(handle.db, token, NOW, signal)
     expect(opened.ok && opened.value.items.map((i) => i.versionId)).toEqual([doc.redactedId])
-    const own = await openReleaseVersion(handle.db, store, token, doc.redactedId, NOW, signal)
-    expect(own.ok && own.value.url).toContain('X-Amz-Signature')
-    const original = await openReleaseVersion(handle.db, store, token, doc.originalId, NOW, signal)
+    const own = await openReleaseVersion(handle.db, token, doc.redactedId, NOW, signal)
+    expect(own).toMatchObject({ ok: true, value: { contentType: 'application/pdf' } })
+    const original = await openReleaseVersion(handle.db, token, doc.originalId, NOW, signal)
     expect(original).toEqual({ ok: false, error: 'not_found' })
     const other = await releasable()
-    expect(
-      await openReleaseVersion(handle.db, store, token, other.redactedId, NOW, signal),
-    ).toEqual({ ok: false, error: 'not_found' })
+    expect(await openReleaseVersion(handle.db, token, other.redactedId, NOW, signal)).toEqual({
+      ok: false,
+      error: 'not_found',
+    })
   })
 
   it('a link of one release does not open the versions of the next release', async () => {
@@ -392,10 +393,10 @@ describe('release links', () => {
     })
     const secondToken = tokenFromMail()
     expect(
-      await openReleaseVersion(handle.db, store, first.token, second.redactedId, NOW, signal),
+      await openReleaseVersion(handle.db, first.token, second.redactedId, NOW, signal),
     ).toEqual({ ok: false, error: 'not_found' })
     expect(
-      (await openReleaseVersion(handle.db, store, secondToken, second.redactedId, NOW, signal)).ok,
+      (await openReleaseVersion(handle.db, secondToken, second.redactedId, NOW, signal)).ok,
     ).toBe(true)
   })
 
@@ -408,7 +409,7 @@ describe('release links', () => {
       signal,
       store,
     )
-    const res = await openReleaseVersion(handle.db, store, token, doc.redactedId, NOW, signal)
+    const res = await openReleaseVersion(handle.db, token, doc.redactedId, NOW, signal)
     expect(res).toEqual({
       ok: false,
       error: { withdrawnOn: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) },
@@ -452,7 +453,7 @@ describe('release links', () => {
     )
     if (!r.ok) throw new Error(`release ${r.error}`)
     const token = tokenFromMail()
-    expect((await openReleaseVersion(handle.db, store, token, redacted, NOW, signal)).ok).toBe(true)
+    expect((await openReleaseVersion(handle.db, token, redacted, NOW, signal)).ok).toBe(true)
     await revokeApproval(
       handle.db,
       staff,
@@ -460,7 +461,7 @@ describe('release links', () => {
       signal,
       store,
     )
-    const res = await openReleaseVersion(handle.db, store, token, redacted, NOW, signal)
+    const res = await openReleaseVersion(handle.db, token, redacted, NOW, signal)
     expect(res.ok).toBe(false)
     expect(!res.ok && typeof res.error === 'object').toBe(true)
   })
@@ -491,7 +492,7 @@ describe('release links', () => {
       signal,
       store,
     )
-    expect((await openReleaseVersion(handle.db, store, token, redacted, NOW, signal)).ok).toBe(true)
+    expect((await openReleaseVersion(handle.db, token, redacted, NOW, signal)).ok).toBe(true)
   })
 
   it('a superseded approval can still be revoked and then withdraws the release made under it', async () => {
@@ -527,7 +528,7 @@ describe('release links', () => {
       store,
     )
     expect(revoked.ok).toBe(true)
-    const res = await openReleaseVersion(handle.db, store, token, redacted, NOW, signal)
+    const res = await openReleaseVersion(handle.db, token, redacted, NOW, signal)
     expect(!res.ok && typeof res.error === 'object').toBe(true)
   })
 
@@ -545,7 +546,6 @@ describe('release links', () => {
     expect(
       await openReleaseVersion(
         handle.db,
-        store,
         token,
         '00000000-0000-4000-8000-000000000000',
         later,

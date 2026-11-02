@@ -1,5 +1,6 @@
 import { db } from '@/db/client'
 import { openReleaseVersion } from '@/features/rtk/releaseLinks'
+import { streamStoredObject } from '@/features/storage/delivery'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { formatCivilDate } from '@/lib/formatDate'
 
@@ -23,17 +24,13 @@ export async function GET(
   if (!UUID.test(versionId)) return plain(404, 'Not found')
   const result = await openReleaseVersion(
     db,
-    getObjectStore(),
     token,
     versionId,
     new Date(),
     AbortSignal.timeout(TIMEOUT_MS),
   )
   if (result.ok) {
-    return new Response(null, {
-      status: 302,
-      headers: { location: result.value.url, 'cache-control': 'no-store' },
-    })
+    return (await streamStoredObject(getObjectStore(), result.value)) ?? plain(404, 'Not found')
   }
   if (typeof result.error === 'object') {
     return plain(

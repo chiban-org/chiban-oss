@@ -1,5 +1,6 @@
 import { db } from '@/db/client'
 import { downloadDocument } from '@/features/documents/download'
+import { streamStoredObject } from '@/features/storage/delivery'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { getActor } from '@/server/getActor'
 
@@ -27,6 +28,9 @@ export async function GET(
     new URL(request.url).searchParams.get('rendition') === 'pdfa' ? 'pdfa' : 'default'
   const result = await downloadDocument(db, getObjectStore(), actor, documentId, rendition, signal)
   if (!result.ok) return notFound()
+  if (result.value.kind === 'stream') {
+    return (await streamStoredObject(getObjectStore(), result.value.object)) ?? notFound()
+  }
   return new Response(null, {
     status: 302,
     headers: { location: result.value.url, ...NO_STORE },

@@ -182,9 +182,9 @@ describe('board packets', () => {
     const packetId = await packetWith([doc.documentId])
     const { token } = await link(packetId)
     const now = new Date()
-    const ok = await openPacketVersion(handle.db, store, token, doc.versionId, now, signal)
+    const ok = await openPacketVersion(handle.db, token, doc.versionId, now, signal)
     expect(ok.ok).toBe(true)
-    expect(await openPacketVersion(handle.db, store, token, other.versionId, now, signal)).toEqual({
+    expect(await openPacketVersion(handle.db, token, other.versionId, now, signal)).toEqual({
       ok: false,
       error: 'not_found',
     })

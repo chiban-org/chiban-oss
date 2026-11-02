@@ -85,6 +85,10 @@ function asciiFilename(filename: string): string {
   return filename.replace(/[^\x20-\x7e]/g, '_').replace(/["\\]/g, '_')
 }
 
+export function contentDisposition(kind: 'inline' | 'attachment', filename: string): string {
+  return `${kind}; filename="${asciiFilename(filename)}"; filename*=UTF-8''${encodeURIComponent(filename)}`
+}
+
 export function createObjectStore(config: ObjectStoreConfig): ObjectStore {
   const server = clientFor(config.endpoint, config)
   const presigner = clientFor(config.publicEndpoint, config)
@@ -107,7 +111,7 @@ export function createObjectStore(config: ObjectStoreConfig): ObjectStore {
       )
     },
     async presignGet(key, opts) {
-      const disposition = `${opts.disposition}; filename="${asciiFilename(opts.filename)}"; filename*=UTF-8''${encodeURIComponent(opts.filename)}`
+      const disposition = contentDisposition(opts.disposition, opts.filename)
       return await getSignedUrl(
         presigner,
         new GetObjectCommand({

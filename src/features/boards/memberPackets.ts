@@ -17,11 +17,9 @@ import {
 } from '@/features/access/predicates'
 import type { Actor } from '@/features/auth/actor'
 import { townDateOf } from '@/features/boards/packetLinks'
-import type { ObjectStore } from '@/features/storage/objectStore'
+import type { StoredObject } from '@/features/storage/delivery'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
-
-const DOWNLOAD_SECONDS = 60
 
 export interface MemberPacketView {
   packetId: string
@@ -162,11 +160,10 @@ export async function getMemberPacket(
 
 export async function openMemberPacketVersion(
   db: Db,
-  store: ObjectStore,
   actor: Actor,
   input: { meetingId: string; versionId: string },
   signal: AbortSignal,
-): Promise<Result<{ url: string }, 'not_found' | { withdrawnOn: CivilDate }>> {
+): Promise<Result<StoredObject, 'not_found' | { withdrawnOn: CivilDate }>> {
   signal.throwIfAborted()
   const meeting = await visibleMeeting(db, actor, input.meetingId)
   if (meeting === null) return err('not_found')
@@ -199,11 +196,5 @@ export async function openMemberPacketVersion(
     return err('not_found')
   }
   await db.insert(boardPacketAccess).values({ userId: actor.userId, versionId: input.versionId })
-  const url = await store.presignGet(row.storageKey, {
-    expiresSeconds: DOWNLOAD_SECONDS,
-    filename: row.filename,
-    contentType: row.contentType,
-    disposition: 'inline',
-  })
-  return ok({ url })
+  return ok({ storageKey: row.storageKey, filename: row.filename, contentType: row.contentType })
 }

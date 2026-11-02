@@ -2,6 +2,7 @@ import { db } from '@/db/client'
 import { packetCoverPdf } from '@/features/boards/cover'
 import { openPacket, openPacketVersion } from '@/features/boards/packetLinks'
 import { pdfOk, toResponse } from '@/features/pdf/pdfResponse'
+import { streamStoredObject } from '@/features/storage/delivery'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -33,8 +34,10 @@ export async function GET(
     return toResponse(pdfOk(bytes), request.headers.get('accept'))
   }
   if (!UUID.test(versionId)) return plain(404, 'Not found')
-  const result = await openPacketVersion(db, getObjectStore(), token, versionId, now, signal)
-  if (result.ok) return new Response(null, { status: 302, headers: { location: result.value.url } })
+  const result = await openPacketVersion(db, token, versionId, now, signal)
+  if (result.ok) {
+    return (await streamStoredObject(getObjectStore(), result.value)) ?? plain(404, 'Not found')
+  }
   if (typeof result.error === 'object') {
     return plain(
       410,

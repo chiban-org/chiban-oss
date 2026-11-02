@@ -1,5 +1,6 @@
 import { db } from '@/db/client'
 import { openMemberPacketVersion } from '@/features/boards/memberPackets'
+import { streamStoredObject } from '@/features/storage/delivery'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { formatCivilDate } from '@/lib/formatDate'
 import { getActor } from '@/server/getActor'
@@ -23,14 +24,10 @@ export async function GET(
   const actor = await getActor(signal)
   if (actor === null) return plain(401, 'Sign in to read board packets')
   if (!UUID.test(meetingId) || !UUID.test(versionId)) return plain(404, 'Not found')
-  const result = await openMemberPacketVersion(
-    db,
-    getObjectStore(),
-    actor,
-    { meetingId, versionId },
-    signal,
-  )
-  if (result.ok) return new Response(null, { status: 302, headers: { location: result.value.url } })
+  const result = await openMemberPacketVersion(db, actor, { meetingId, versionId }, signal)
+  if (result.ok) {
+    return (await streamStoredObject(getObjectStore(), result.value)) ?? plain(404, 'Not found')
+  }
   if (typeof result.error === 'object') {
     return plain(
       410,

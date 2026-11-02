@@ -266,20 +266,16 @@ describe('executing a batch', () => {
     )
     const token = /\/board\/packets\/([A-Za-z0-9_-]+)/.exec(mail.sent.at(-1)?.text ?? '')?.[1] ?? ''
     const versionId = made.versionIds[0] ?? ''
-    expect(
-      (await openPacketVersion(handle.db, store, token, versionId, new Date(), signal)).ok,
-    ).toBe(true)
+    expect((await openPacketVersion(handle.db, token, versionId, new Date(), signal)).ok).toBe(true)
     await run(await approvedBatch())
     expect(await downloadDocument(handle.db, store, staff, documentId, 'default', signal)).toEqual({
       ok: false,
       error: 'not_found',
     })
-    expect(await openPacketVersion(handle.db, store, token, versionId, new Date(), signal)).toEqual(
-      {
-        ok: false,
-        error: { withdrawnOn: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) },
-      },
-    )
+    expect(await openPacketVersion(handle.db, token, versionId, new Date(), signal)).toEqual({
+      ok: false,
+      error: { withdrawnOn: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) },
+    })
     const listed = await listDocuments(
       handle.db,
       staff,

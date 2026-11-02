@@ -347,7 +347,7 @@ describe('documents', () => {
       'default',
       signal,
     )
-    if (!result.ok) throw new Error('download')
+    if (!result.ok || result.value.kind !== 'redirect') throw new Error('download')
     const url = new URL(result.value.url)
     expect(url.searchParams.get('X-Amz-Expires')).toBe('60')
     expect(url.searchParams.get('response-content-disposition')).toContain('inline')

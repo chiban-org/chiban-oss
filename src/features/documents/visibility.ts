@@ -83,6 +83,7 @@ export interface ResolvedRendition {
   file: FileRow
   filename: string
   contentType: string
+  viaPublicApproval: boolean
 }
 
 export async function resolveRendition(
@@ -122,6 +123,7 @@ export async function resolveRendition(
     file: chosen.file,
     filename: chosen.filename,
     contentType: chosen.contentType,
+    viaPublicApproval: !doc.privately,
   })
 }
 

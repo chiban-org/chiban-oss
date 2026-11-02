@@ -68,7 +68,8 @@ async function revokeActive(): Promise<void> {
 
 async function publicDownloadUrl(): Promise<string | null> {
   const r = await downloadDocument(handle.db, store, null, doc.documentId, 'default', signal)
-  return r.ok ? r.value.url : null
+  if (!r.ok) return null
+  return r.value.kind === 'stream' ? r.value.object.storageKey : r.value.url
 }
 
 async function thumbnailEtag(actor: Actor | null): Promise<string | null> {
@@ -109,7 +110,7 @@ async function packetFor(): Promise<{ packetId: string; token: string }> {
 }
 
 const openVersion = (token: string, versionId: string) =>
-  openPacketVersion(handle.db, store, token, versionId, new Date(), signal)
+  openPacketVersion(handle.db, token, versionId, new Date(), signal)
 
 describe('revocation propagation', () => {
   it('revocation stops the stable url, thumbnail, packet item, and search', async () => {
