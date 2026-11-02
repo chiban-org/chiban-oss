@@ -40,6 +40,7 @@ export interface RecipientView {
   excluded: boolean
   exclusionReason: string | null
   needsDecision: boolean
+  tenantDecided: boolean
   decisionText: string | null
   corrected: boolean
 }
@@ -122,6 +123,7 @@ function frozenView(data: Recipient, index: number): RecipientView {
     excluded: false,
     exclusionReason: null,
     needsDecision: false,
+    tenantDecided: false,
     decisionText: null,
     corrected: data.provenance.some((p) => p.source === 'staff_entry'),
   }
@@ -140,14 +142,17 @@ function recipientView(row: typeof abutterListRecipients.$inferSelect): Recipien
     roles: data.roles.map((r) => RECIPIENT_ROLE_LABELS[r]),
     statusText:
       data.status === 'needs_decision'
-        ? 'Needs a staff decision'
+        ? row.qualifies === null
+          ? 'Needs a staff decision'
+          : 'Decided by staff'
         : data.status === 'incomplete_data'
           ? 'Missing name or address'
           : 'Complete',
     provenance: data.provenance.map(provenanceText),
     excluded: row.excluded,
     exclusionReason: row.exclusionReason,
-    needsDecision: data.status === 'needs_decision',
+    needsDecision: data.status === 'needs_decision' && row.qualifies === null,
+    tenantDecided: data.status === 'needs_decision' && row.qualifies !== null,
     decisionText: decision,
     corrected: data.provenance.some((p) => p.source === 'staff_entry'),
   }

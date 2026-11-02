@@ -44,9 +44,11 @@ function RecipientControls({ listId, row }: { listId: string; row: RecipientView
           <TextField label="Reason" name="reason" required />
         </ActionForm>
       </details>
-      {row.needsDecision ? (
+      {row.needsDecision || row.tenantDecided ? (
         <details>
-          <summary>Decide whether this tenant counts</summary>
+          <summary>
+            {row.needsDecision ? 'Decide whether this tenant counts' : 'Change the decision'}
+          </summary>
           <ActionForm action={decideTenantAction} submitLabel="Record decision">
             <input type="hidden" name="listId" value={listId} />
             <input type="hidden" name="recipientId" value={row.id} />
