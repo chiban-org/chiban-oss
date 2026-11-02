@@ -206,7 +206,7 @@ export interface IngestedIntent {
 }
 
 export async function ingestIntent(
-  db: Db,
+  db: DbOrTx,
   store: ObjectStore,
   actor: Actor,
   intentId: string,
@@ -252,14 +252,14 @@ export async function finalizeUpload(
   now: Date = new Date(),
 ): Promise<Result<{ documentId: string; versionId: string }, FinalizeError>> {
   signal.throwIfAborted()
-  const ingested = await ingestIntent(db, store, actor, input.intentId, signal, now)
-  if (!ingested.ok) return err(ingested.error)
-  const { intent, sha256 } = ingested.value
-  const target = { kind: intent.targetKind, id: intent.targetId } as RecordRef
-  if (!(await mayUploadTo(db, actor, target, signal, now))) return err('forbidden')
   return await transactionResult<{ documentId: string; versionId: string }, FinalizeError>(
     db,
     async (tx) => {
+      const ingested = await ingestIntent(tx, store, actor, input.intentId, signal, now)
+      if (!ingested.ok) return err(ingested.error)
+      const { intent, sha256 } = ingested.value
+      const target = { kind: intent.targetKind, id: intent.targetId } as RecordRef
+      if (!(await mayUploadTo(tx, actor, target, signal, now))) return err('forbidden')
       if (!(await claimIntent(tx, intent.id))) return err('already_finalized')
       const attached = await attachDocument(
         tx,

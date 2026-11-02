@@ -113,10 +113,10 @@ export async function uploadRedactedCopy(
     .from(documents)
     .where(eq(documents.id, input.documentId))
   if (doc === undefined) return err('not_found')
-  const ingested = await ingestIntent(db, store, actor, input.intentId, signal, now)
-  if (!ingested.ok) return err(ingested.error)
-  const { intent, sha256 } = ingested.value
   return await transactionResult<{ versionId: string }, RedactedError>(db, async (tx) => {
+    const ingested = await ingestIntent(tx, store, actor, input.intentId, signal, now)
+    if (!ingested.ok) return err(ingested.error)
+    const { intent, sha256 } = ingested.value
     if (!(await claimIntent(tx, intent.id))) return err('already_finalized')
     const [version] = await tx
       .insert(documentVersions)
