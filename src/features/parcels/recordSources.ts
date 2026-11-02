@@ -12,6 +12,7 @@ export interface ParcelRecordSummary {
   status: { label: string; chip: 'passed' | 'failed' | 'overdue' | 'neutral' }
   date: CivilDate | null
   href: string | null
+  note?: string | null
 }
 
 export interface ParcelRecordSource {

@@ -45,6 +45,9 @@ function RecordRow({
         {record.number === null ? null : (
           <span className="ml-2 text-muted-foreground">{record.number}</span>
         )}
+        {record.note === undefined || record.note === null ? null : (
+          <p className="text-sm text-muted-foreground">{record.note}</p>
+        )}
         {carried === undefined ? null : (
           <p className="text-sm text-muted-foreground">
             {'Carried forward from parcel '}

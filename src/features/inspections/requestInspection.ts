@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import { applications, inspections } from '@/db/schema'
+import { applications, inspections, projects } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { applicationVisibleTo } from '@/features/access/predicates'
 import { isProjectParty } from '@/features/access/queries'
@@ -17,6 +17,7 @@ import {
   type RequestInspectionInput,
 } from '@/features/inspections/types'
 import { packHolidayCalendar } from '@/features/packs/holidays'
+import { linkRecordToParcel } from '@/features/parcels/recordLinks'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
 
@@ -106,6 +107,18 @@ export async function requestInspection(
         })
         .returning({ id: inspections.id })
       const inspectionId = row?.id ?? ''
+      const [site] = await tx
+        .select({ parcelId: projects.parcelId })
+        .from(applications)
+        .innerJoin(projects, eq(projects.id, applications.projectId))
+        .where(eq(applications.id, app.id))
+      if (site !== undefined) {
+        await linkRecordToParcel(
+          tx,
+          { recordKind: 'inspection', recordId: inspectionId, parcelId: site.parcelId },
+          signal,
+        )
+      }
       await writeAudit(
         tx,
         {
