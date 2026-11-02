@@ -3,7 +3,7 @@ import type { DbOrTx } from '@/db/client'
 import { applications } from '@/db/schema'
 import type { ConfigPins } from '@/features/config/bindings'
 import { getVersion } from '@/features/config/store'
-import type { ChecklistBody } from '@/features/inspections/checklistSchema'
+import { type ChecklistBody, isFinalChecklist } from '@/features/inspections/checklistSchema'
 import type { InspectableType } from '@/features/inspections/types'
 
 export async function inspectableTypes(
@@ -26,7 +26,7 @@ export async function inspectableTypes(
       checklistVersionId,
       inspectionType: body.inspectionType,
       label: body.label,
-      final: body.final === true,
+      final: isFinalChecklist(body),
     })
   }
   return types

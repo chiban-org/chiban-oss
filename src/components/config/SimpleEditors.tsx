@@ -12,7 +12,7 @@ import {
 } from '@/components/config/primitives'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import type { LocalCodeAmendmentBody } from '@/features/config/kinds'
-import type { ChecklistBody } from '@/features/inspections/checklistSchema'
+import { type ChecklistBody, isFinalChecklist } from '@/features/inspections/checklistSchema'
 import type { TemplateBody } from '@/features/templates/templateSchema'
 
 interface EditorProps<T> {
@@ -156,7 +156,7 @@ export function ChecklistEditor({ body, onChange, errors }: EditorProps<Checklis
       </div>
       <Check
         label="Final inspection of the permit"
-        checked={body.final}
+        checked={isFinalChecklist(body)}
         onChange={(e) => onChange({ ...body, final: e.target.checked })}
       />
       <FieldGroup name="items" label="Checklist items" errors={errors}>

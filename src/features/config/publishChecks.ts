@@ -4,7 +4,7 @@ import type { ConfigIssue, ConfigKind, TownRuleSettingBody } from '@/features/co
 import { type ConfigVersionRow, getPublished } from '@/features/config/store'
 import { exprFieldRefs, type FeeScheduleBody } from '@/features/fees/feeSchema'
 import type { FormBody } from '@/features/forms/formSchema'
-import type { ChecklistBody } from '@/features/inspections/checklistSchema'
+import { type ChecklistBody, isFinalChecklist } from '@/features/inspections/checklistSchema'
 import { loadPack } from '@/features/packs/loadPack'
 import { checkTownValue } from '@/features/packs/overridePolicy'
 import { unknownMergeFields } from '@/features/templates/mergeFields'
@@ -79,8 +79,8 @@ export async function checkApplicationType(
   ]
   if (missingReferences.length > 0) return { missingReferences }
   if (body.checklistKeys.length > 0) {
-    const finalChecklistCount = checklists.filter(
-      (c) => (c?.body as ChecklistBody).final === true,
+    const finalChecklistCount = checklists.filter((c) =>
+      isFinalChecklist(c?.body as ChecklistBody),
     ).length
     if (finalChecklistCount !== 1) return { finalChecklistCount }
   }
