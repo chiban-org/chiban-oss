@@ -1,6 +1,7 @@
 import type { PgBoss } from 'pg-boss'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
+import { clocksDailyJob } from './clocksDaily'
 import { cronForInterval } from './cron'
 import { type JobDefinition, runJob } from './defineJob'
 import { expireAliasOverridesJob } from './expireAliasOverrides'
@@ -32,4 +33,5 @@ export async function registerAllJobs(boss: PgBoss, db: Db): Promise<void> {
   await registerJob(boss, db, gisRefreshLayerJob)
   await registerJob(boss, db, gisScheduleRefreshesJob)
   await registerJob(boss, db, expireAliasOverridesJob)
+  await registerJob(boss, db, clocksDailyJob)
 }

@@ -27,3 +27,25 @@ export const STATE_LABELS: Record<CoreState, string> = {
   expired: 'Expired',
   suspended: 'Suspended',
 }
+
+export const CORE_TRANSITIONS: Record<CoreState, readonly CoreState[]> = {
+  draft: ['submitted', 'withdrawn'],
+  submitted: ['under_review', 'issued', 'denied', 'withdrawn'],
+  under_review: ['decided', 'denied', 'withdrawn'],
+  decided: ['issued', 'withdrawn'],
+  issued: ['closed', 'expired', 'suspended'],
+  suspended: ['issued', 'closed'],
+  closed: [],
+  denied: [],
+  withdrawn: [],
+  expired: [],
+}
+
+export function isTransitionAllowed(
+  from: CoreState,
+  to: CoreState,
+  workflow: { allowsDirectIssue: boolean },
+): boolean {
+  if (!CORE_TRANSITIONS[from].includes(to)) return false
+  return !(from === 'submitted' && to === 'issued' && !workflow.allowsDirectIssue)
+}
