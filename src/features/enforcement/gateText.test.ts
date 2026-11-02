@@ -21,7 +21,7 @@ describe('motionGateText', () => {
       null,
     )
     expect(text).toBe(
-      'The motion to enforce cannot be filed yet. An answer period is still running. The motion cannot be filed until April 6, 2027, five days after filing with the clerk.',
+      'The motion to enforce cannot be filed yet. An answer period is still running. The motion can be filed no earlier than April 6, 2027, five days after filing with the clerk.',
     )
   })
 })
