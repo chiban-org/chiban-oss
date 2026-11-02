@@ -9,6 +9,7 @@ import { InspectionSettingsEditor } from '@/components/config/InspectionSettings
 import { PaymentSettingsEditor } from '@/components/config/PaymentSettingsEditor'
 import type { FieldErrors } from '@/components/config/primitives'
 import { RegionalContactsEditor } from '@/components/config/RegionalContactsEditor'
+import { ReviewRoutesEditor } from '@/components/config/ReviewRoutesEditor'
 import {
   ChecklistEditor,
   ConditionsEditor,
@@ -30,6 +31,7 @@ import type { FormBody } from '@/features/forms/formSchema'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
 import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
 import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
+import type { ReviewRoutesBody } from '@/features/reviews/routesSchema'
 import type { TemplateBody } from '@/features/templates/templateSchema'
 
 export interface EditorProps {
@@ -133,4 +135,8 @@ export function BoardSettingsAdapter({ body, onChange, issues }: EditorProps) {
 
 export function RegionalContactsAdapter({ body, onChange }: EditorProps) {
   return <RegionalContactsEditor body={body as RegionalContactsBody} onChange={onChange} />
+}
+
+export function ReviewRoutesAdapter({ body, onChange }: EditorProps) {
+  return <ReviewRoutesEditor body={body as ReviewRoutesBody} onChange={onChange} />
 }

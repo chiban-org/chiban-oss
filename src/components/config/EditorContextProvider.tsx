@@ -7,6 +7,7 @@ const EMPTY: EditorContext = {
   packRules: [],
   classifications: [],
   mergeFields: [],
+  reviewers: [],
   townRules: {},
 }
 

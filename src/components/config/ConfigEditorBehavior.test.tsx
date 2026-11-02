@@ -220,6 +220,7 @@ describe('ConfigEditorForm', () => {
     packRules: PACK_RULES,
     classifications: CLASSIFICATIONS,
     mergeFields: [],
+    reviewers: [],
     townRules: {},
   }
 

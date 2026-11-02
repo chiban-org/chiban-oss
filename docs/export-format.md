@@ -1628,6 +1628,19 @@ File: `data/town_settings.ndjson`. Ordered by id.
 - `export_window_days`: integer
 - `updated_at`: timestamp with time zone
 
+### trc_routings
+
+File: `data/trc_routings.ndjson`. Ordered by application_id, department_key.
+
+- `application_id`: uuid
+- `department_key`: text
+- `assignment_id`: uuid
+- `comment_due`: date, nullable
+
+References:
+- `application_id` refers to `applications`
+- `assignment_id` refers to `review_assignments`
+
 ### user_roles
 
 File: `data/user_roles.ndjson`. Ordered by user_id, role.

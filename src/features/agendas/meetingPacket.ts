@@ -4,6 +4,10 @@ import { agendaItems, agendas, boardMeetings, documents, hearings } from '@/db/s
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { createPacket } from '@/features/boards/packets'
+import { attachDocument } from '@/features/documents/attach'
+import { storeGeneratedBytes } from '@/features/files/ingest'
+import { trcSummaryPdf } from '@/features/reviews/trcSummary'
+import type { ObjectStore } from '@/features/storage/objectStore'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -14,6 +18,7 @@ const BOARD_OR_PUBLIC = sql`('board' = any(${documents.audiences}) or ${document
 
 export async function createMeetingPacket(
   db: Db,
+  store: ObjectStore,
   actor: Actor,
   meetingId: string,
   signal: AbortSignal,
@@ -30,6 +35,30 @@ export async function createMeetingPacket(
     .innerJoin(hearings, eq(hearings.id, agendaItems.hearingId))
     .where(eq(agendaItems.meetingId, meetingId))
   const applicationIds = applicationRows.map((r) => r.applicationId)
+  for (const applicationId of applicationIds) {
+    const pdf = await trcSummaryPdf(db, actor, applicationId, signal)
+    if (!pdf.ok) continue
+    await db.transaction(async (tx) => {
+      const stored = await storeGeneratedBytes(tx, store, pdf.value, 'application/pdf', signal)
+      await attachDocument(
+        tx,
+        actor,
+        {
+          target: { kind: 'application', id: applicationId },
+          title: 'Technical Review Committee summary',
+          docKind: 'board_material',
+          file: {
+            sha256: stored.sha256,
+            filename: 'trc-summary.pdf',
+            contentType: 'application/pdf',
+          },
+          audiences: ['board'],
+          isPublic: false,
+        },
+        signal,
+      )
+    })
+  }
   const owners = [
     and(eq(documents.recordKind, 'meeting'), eq(documents.recordId, meetingId)),
     ...(applicationIds.length === 0

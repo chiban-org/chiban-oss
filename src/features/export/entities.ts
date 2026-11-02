@@ -199,6 +199,7 @@ const SPECS: Spec[] = [
   { table: t.ruleTransitionsApplied },
   { table: t.selectmenCertifications },
   { table: t.townSettings, importMode: 'replace' },
+  { table: t.trcRoutings },
   { table: t.userRoles },
   {
     table: t.users,

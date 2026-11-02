@@ -7,6 +7,7 @@ import { editorContext } from '@/features/config/editorContext'
 import { KIND_LABELS } from '@/features/config/kindLabels'
 import { isConfigKind } from '@/features/config/kinds'
 import { getEditorState } from '@/features/config/settingsViews'
+import { listReviewerChoices } from '@/features/reviews/reviewerView'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
 import { publishAction, rollbackAction, saveDraftAction } from '../../actions'
@@ -36,7 +37,7 @@ export default async function SettingsKeyPage({ params }: Props) {
         configKey={key}
         initialBody={state.body}
         resetKey={state.versions.map((v) => `${v.id}:${v.status}`).join(',')}
-        context={editorContext()}
+        context={editorContext(await listReviewerChoices(ctx.db))}
         saveAction={saveDraftAction}
         publishAction={publishAction}
       />

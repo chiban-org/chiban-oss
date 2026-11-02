@@ -13,6 +13,7 @@ import {
 import { createMeetingPacket } from '@/features/agendas/meetingPacket'
 import { listDocuments } from '@/features/documents/listDocuments'
 import { scheduleHearing } from '@/features/hearings/hearings'
+import { routeToTrc } from '@/features/reviews/trcRouting'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import {
   type BoardWorld,
@@ -20,9 +21,11 @@ import {
   setupBoardWorld,
   submitBoardApplication,
 } from '@/test/boardFixtures'
+import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/minio'
 import { issueListWithRecipients, proofDocument, recipient } from '@/test/noticeFixtures'
+import { staffActor } from '@/test/parcels'
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -271,7 +274,7 @@ describe('meeting packet', () => {
       .update(documents)
       .set({ audiences: ['reviewers'] })
       .where(eq(documents.id, privateDoc))
-    const packet = await createMeetingPacket(handle.db, world.staff, meetingId, signal)
+    const packet = await createMeetingPacket(handle.db, store, world.staff, meetingId, signal)
     if (!packet.ok) throw new Error(JSON.stringify(packet.error))
     const items = await handle.db
       .select()
@@ -283,18 +286,45 @@ describe('meeting packet', () => {
     expect(items.length).toBe(packet.value.documents)
   })
 
+  it('meeting packet includes the TRC summary of a routed application', async () => {
+    const reviewer = await staffActor(handle.db, 'reviewer')
+    await saveAndPublish(handle.db, world.admin, 'review_routes', 'default', {
+      key: 'default',
+      departments: [{ key: 'fire', label: 'Fire', reviewerUserIds: [reviewer.userId] }],
+      routes: [
+        {
+          applicationTypeKey: world.zbaTypeKey,
+          departmentKeys: ['fire'],
+          commentDueDaysBeforeMeeting: 7,
+        },
+      ],
+    })
+    const { applicationId } = await scheduled()
+    const meetingId = await zbaMeetingId()
+    await routeToTrc(handle.db, world.staff, { applicationId, meetingId }, signal)
+    await buildAgenda(handle.db, world.staff, meetingId, signal)
+    const packet = await createMeetingPacket(handle.db, store, world.staff, meetingId, signal)
+    if (!packet.ok) throw new Error(JSON.stringify(packet.error))
+    const items = await handle.db
+      .select({ title: documents.title })
+      .from(boardPacketItems)
+      .innerJoin(documents, eq(documents.id, boardPacketItems.documentId))
+      .where(eq(boardPacketItems.packetId, packet.value.packetId))
+    expect(items.map((i) => i.title)).toContain('Technical Review Committee summary')
+  })
+
   it('a packet for a meeting with no agenda is empty', async () => {
-    expect(await createMeetingPacket(handle.db, world.staff, await zbaMeetingId(), signal)).toEqual(
-      {
-        ok: false,
-        error: 'empty',
-      },
-    )
+    expect(
+      await createMeetingPacket(handle.db, store, world.staff, await zbaMeetingId(), signal),
+    ).toEqual({
+      ok: false,
+      error: 'empty',
+    })
   })
 
   it('a reviewer cannot create a meeting packet', async () => {
     expect(
-      await createMeetingPacket(handle.db, world.reviewer, await zbaMeetingId(), signal),
+      await createMeetingPacket(handle.db, store, world.reviewer, await zbaMeetingId(), signal),
     ).toEqual({
       ok: false,
       error: 'forbidden',

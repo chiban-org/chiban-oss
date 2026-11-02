@@ -14,6 +14,7 @@ const SINGLETON_KINDS = [
   'inspection_settings',
   'board_settings',
   'regional_contacts',
+  'review_routes',
 ]
 
 interface Props {

@@ -10,6 +10,7 @@ import { FormBodySchema } from '@/features/forms/formSchema'
 import { ChecklistBodySchema } from '@/features/inspections/checklistSchema'
 import { InspectionSettingsBodySchema } from '@/features/inspections/settingsSchema'
 import { PaymentSettingsBodySchema } from '@/features/payments/settingsSchema'
+import { ReviewRoutesBodySchema } from '@/features/reviews/routesSchema'
 import { TemplateBodySchema } from '@/features/templates/templateSchema'
 
 export const CONFIG_KINDS = [
@@ -25,6 +26,7 @@ export const CONFIG_KINDS = [
   'inspection_settings',
   'board_settings',
   'regional_contacts',
+  'review_routes',
 ] as const
 export type ConfigKind = (typeof CONFIG_KINDS)[number]
 
@@ -58,6 +60,7 @@ export const CONFIG_SCHEMAS: Record<ConfigKind, ZodType> = {
   inspection_settings: InspectionSettingsBodySchema,
   board_settings: BoardSettingsBodySchema,
   regional_contacts: RegionalContactsBodySchema,
+  review_routes: ReviewRoutesBodySchema,
 }
 
 const CONFIG_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/

@@ -6,6 +6,7 @@ export interface EditorContext {
   packRules: { key: string; label: string }[]
   classifications: { key: string; label: string; mandatoryRuleKeys: string[] }[]
   mergeFields: string[]
+  reviewers: { id: string; name: string }[]
   townRules: Record<
     string,
     {
@@ -17,7 +18,7 @@ export interface EditorContext {
   >
 }
 
-export function editorContext(): EditorContext {
+export function editorContext(reviewers: { id: string; name: string }[] = []): EditorContext {
   const pack = loadPack()
   const townRules: EditorContext['townRules'] = {}
   for (const rule of pack.rules) {
@@ -38,6 +39,7 @@ export function editorContext(): EditorContext {
       mandatoryRuleKeys: c.mandatoryRuleKeys,
     })),
     mergeFields: [...MERGE_FIELDS],
+    reviewers,
     townRules,
   }
 }

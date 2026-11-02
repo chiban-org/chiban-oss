@@ -37,6 +37,12 @@ function starterOrDefaultBody(kind: ConfigKind): unknown {
     case 'board_settings':
     case 'regional_contacts':
       return skeletonBody(kind, 'default')
+    case 'review_routes':
+      return {
+        key: 'default',
+        departments: [{ key: 'fire', label: 'Fire', reviewerUserIds: [] }],
+        routes: [],
+      }
   }
 }
 

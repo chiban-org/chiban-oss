@@ -13,4 +13,5 @@ export const KIND_LABELS: Record<ConfigKind, string> = {
   inspection_settings: 'Inspection settings',
   board_settings: 'Board settings',
   regional_contacts: 'Regional notice contacts',
+  review_routes: 'Technical Review Committee routes',
 }

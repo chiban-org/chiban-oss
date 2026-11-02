@@ -11,6 +11,7 @@ import {
   InspectionAdapter,
   PaymentAdapter,
   RegionalContactsAdapter,
+  ReviewRoutesAdapter,
   TemplateAdapter,
   TownRuleAdapter,
 } from '@/components/config/editorAdapters'
@@ -29,4 +30,5 @@ export const CONFIG_EDITORS: Record<ConfigKind, ComponentType<EditorProps>> = {
   inspection_settings: InspectionAdapter,
   board_settings: BoardSettingsAdapter,
   regional_contacts: RegionalContactsAdapter,
+  review_routes: ReviewRoutesAdapter,
 }

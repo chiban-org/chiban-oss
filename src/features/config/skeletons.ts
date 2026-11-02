@@ -2,6 +2,7 @@ import { NH_INSPECTION_SETTINGS_DEFAULT } from '@packs/nh/starters'
 import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettings'
 import { EMPTY_REGIONAL_CONTACTS } from '@/features/boards/regionalContacts'
 import type { ConfigKind } from '@/features/config/kinds'
+import { EMPTY_REVIEW_ROUTES } from '@/features/reviews/routesSchema'
 
 export function skeletonBody(kind: ConfigKind, key: string): unknown {
   switch (kind) {
@@ -56,6 +57,8 @@ export function skeletonBody(kind: ConfigKind, key: string): unknown {
       return BOARD_SETTINGS_DEFAULT
     case 'regional_contacts':
       return EMPTY_REGIONAL_CONTACTS
+    case 'review_routes':
+      return EMPTY_REVIEW_ROUTES
     case 'application_type':
       return {
         key,
