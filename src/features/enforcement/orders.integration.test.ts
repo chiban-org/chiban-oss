@@ -324,6 +324,26 @@ describe('cease and desist orders', () => {
     expect(result).toEqual({ ok: false, error: 'not_designated' })
   })
 
+  it('a draft on a case already in court is refused as past orders, not as missing a finding', async () => {
+    const { caseId, findingId } = await caseWithFinding()
+    await designate()
+    const drafted = await draft(caseId, [findingId])
+    if (!drafted.ok) throw new Error('draft')
+    await handle.db
+      .update(enforcementCases)
+      .set({ status: 'in_court' })
+      .where(eq(enforcementCases.id, caseId))
+    const result = await issueOrder(
+      handle.db,
+      store,
+      staff,
+      { orderId: drafted.value.orderId, issuedOn: d('2027-03-02'), expectedRowVersion: 1 },
+      signal,
+      NOW,
+    )
+    expect(result).toEqual({ ok: false, error: 'case_past_orders' })
+  })
+
   it('an officer whose designation ended before the issue date cannot issue', async () => {
     const { caseId, findingId } = await caseWithFinding()
     const drafted = await draft(caseId, [findingId])

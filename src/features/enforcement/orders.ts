@@ -195,6 +195,7 @@ export async function discardDraftOrder(
 }
 
 const ORDERABLE_STATUSES: readonly EnforcementStatus[] = ['violation_found', 'order_issued']
+const PAST_ORDER_STATUSES: readonly EnforcementStatus[] = ['in_court', 'resolved', 'closed']
 
 export function issuerAuthorized(rule: CeaseAndDesistRule, designated: boolean): boolean {
   return designated || !rule.issuerMustBeDesignated
@@ -207,6 +208,7 @@ export type IssueOrderError =
   | 'not_a_draft'
   | 'stale_version'
   | 'case_not_ready'
+  | 'case_past_orders'
   | 'stayed'
   | 'not_designated'
   | 'deadline_before_issue'
@@ -248,6 +250,7 @@ export async function issueOrder(
       .for('update')
     if (caseRow === undefined) return err('not_found')
     if ((await stayFor(tx, caseRow.id, value.issuedOn, signal)).stayed) return err('stayed')
+    if (PAST_ORDER_STATUSES.includes(caseRow.status)) return err('case_past_orders')
     if (!ORDERABLE_STATUSES.includes(caseRow.status)) return err('case_not_ready')
     const rule = ruleByKey(loadPack(), order.ruleKey, order.ruleVersion)
     if (rule.kind !== 'cease_and_desist') {

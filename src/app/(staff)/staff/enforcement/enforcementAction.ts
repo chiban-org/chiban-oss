@@ -23,6 +23,7 @@ const COPY: Record<string, string> = {
     'These findings mix building code and other violations. Issue a separate order for each kind.',
   not_a_draft: 'That order has already been issued.',
   case_not_ready: 'The case needs a violation finding before an order can be issued.',
+  case_past_orders: 'Orders cannot be issued once the case is in court, resolved, or closed.',
   not_designated:
     'You are not on record as a designated enforcement officer on the issue date. An administrator can add it under Admin, Enforcement officers.',
   deadline_before_issue: 'The corrective action deadline is before the issue date.',
