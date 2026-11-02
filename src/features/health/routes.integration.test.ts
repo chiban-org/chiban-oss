@@ -1,4 +1,5 @@
 import { readFileSync } from 'node:fs'
+import { NH_PACK_MANIFEST } from '@packs/nh/manifest'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { applyMigrations } from '@/db/migrate'
 import { healthResponse } from '@/features/health/health'
@@ -34,7 +35,11 @@ describe('/api/version', () => {
     const body = (await response.json()) as Record<string, unknown>
     expect(body).toEqual({
       appVersion: expect.any(String),
-      pack: { id: 'nh', version: '0.1.0', hash: expect.stringMatching(/^[0-9a-f]{64}$/) },
+      pack: {
+        id: 'nh',
+        version: NH_PACK_MANIFEST.version,
+        hash: expect.stringMatching(/^[0-9a-f]{64}$/),
+      },
       migrationHead: lastJournalTag(),
     })
   })
