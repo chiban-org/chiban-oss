@@ -8,7 +8,7 @@ import { isSuspended } from '@/features/appeals/suspension'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
-import { inspectableTypes } from '@/features/inspections/eligibility'
+import { inspectableTypes, typeTaken } from '@/features/inspections/eligibility'
 import { getInspectionSettings } from '@/features/inspections/inspectionSettings'
 import { reinspectableFailureIds } from '@/features/inspections/lookup'
 import { schedulingDates } from '@/features/inspections/slots'
@@ -31,7 +31,9 @@ async function checkReinspection(
   input: RequestInspectionInput,
   inspectionType: string,
 ): Promise<RequestInspectionError | null> {
-  if (input.reinspectionOf === undefined) return null
+  if (input.reinspectionOf === undefined) {
+    return await typeTaken(tx, input.applicationId, inspectionType)
+  }
   const [previous] = await tx
     .select()
     .from(inspections)

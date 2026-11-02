@@ -67,7 +67,12 @@ export default async function PortalInspectionsPage({
       {!view.paused && !view.requestsEnabled ? (
         <p role="status">{`Online requests are turned off. Call the land use office: ${view.phoneHoursText}.`}</p>
       ) : null}
-      {view.canRequest ? (
+      {view.canRequest && reinspection === null && view.types.length === 0 ? (
+        <p role="status">
+          Every inspection on this permit is already requested, scheduled, or passed.
+        </p>
+      ) : null}
+      {view.canRequest && (reinspection !== null || view.types.length > 0) ? (
         <section aria-label="Request an inspection" className="max-w-xl space-y-3">
           <h2>Request an inspection</h2>
           <RequestForm
@@ -112,6 +117,7 @@ export default async function PortalInspectionsPage({
               row.requestedByUserId === ctx.actor.userId &&
               (row.status === 'requested' || row.status === 'scheduled') ? (
                 <ActionForm action={portalCancelInspectionAction} submitLabel="Cancel this request">
+                  <input type="hidden" name="applicationId" value={applicationId} />
                   <input type="hidden" name="inspectionId" value={row.id} />
                   <input type="hidden" name="expectedRowVersion" value={row.rowVersion} />
                 </ActionForm>

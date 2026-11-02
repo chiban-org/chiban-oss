@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { applications } from '@/db/schema'
+import { applications, inspections } from '@/db/schema'
 import type { ConfigPins } from '@/features/config/bindings'
 import { getVersion } from '@/features/config/store'
 import { type ChecklistBody, isFinalChecklist } from '@/features/inspections/checklistSchema'
@@ -30,4 +30,44 @@ export async function inspectableTypes(
     })
   }
   return types
+}
+
+export type TypeTaken = 'inspection_already_open' | 'inspection_already_passed'
+
+async function takenTypes(db: DbOrTx, applicationId: string): Promise<Map<string, TypeTaken>> {
+  const rows = await db
+    .select({ inspectionType: inspections.inspectionType, status: inspections.status })
+    .from(inspections)
+    .where(
+      and(
+        eq(inspections.applicationId, applicationId),
+        inArray(inspections.status, ['requested', 'scheduled', 'passed']),
+      ),
+    )
+  const taken = new Map<string, TypeTaken>()
+  for (const row of rows) {
+    if (row.status === 'passed') taken.set(row.inspectionType, 'inspection_already_passed')
+    else if (!taken.has(row.inspectionType)) {
+      taken.set(row.inspectionType, 'inspection_already_open')
+    }
+  }
+  return taken
+}
+
+export async function typeTaken(
+  db: DbOrTx,
+  applicationId: string,
+  inspectionType: string,
+): Promise<TypeTaken | null> {
+  return (await takenTypes(db, applicationId)).get(inspectionType) ?? null
+}
+
+export async function requestableTypes(
+  db: DbOrTx,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<InspectableType[]> {
+  const types = await inspectableTypes(db, applicationId, signal)
+  const taken = await takenTypes(db, applicationId)
+  return types.filter((t) => !taken.has(t.inspectionType))
 }

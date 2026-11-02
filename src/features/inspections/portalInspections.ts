@@ -4,7 +4,7 @@ import { applications } from '@/db/schema'
 import { canViewApplication, isProjectParty } from '@/features/access/queries'
 import { isSuspended } from '@/features/appeals/suspension'
 import type { Actor } from '@/features/auth/actor'
-import { inspectableTypes } from '@/features/inspections/eligibility'
+import { requestableTypes } from '@/features/inspections/eligibility'
 import { type InspectionHistoryRow, listInspectionHistory } from '@/features/inspections/history'
 import { getInspectionSettings } from '@/features/inspections/inspectionSettings'
 import { reinspectableFailureIds } from '@/features/inspections/lookup'
@@ -44,7 +44,7 @@ export async function loadPortalInspections(
   const today = await townToday(db, now, signal)
   const paused = app.state === 'suspended' || (await isSuspended(db, applicationId, signal))
   const issued = app.state === 'issued'
-  const types = await inspectableTypes(db, applicationId, signal)
+  const types = await requestableTypes(db, applicationId, signal)
   return ok({
     applicationId,
     number: app.number,

@@ -9,6 +9,8 @@ export const INSPECTION_ERROR_COPY: Record<string, string> = {
   reinspection_open: 'A reinspection is already requested for that failure.',
   reinspection_exists: 'That failure already has a reinspection.',
   reinspection_superseded: 'A newer failed inspection of this type needs the reinspection instead.',
+  inspection_already_open: 'That inspection is already requested or scheduled.',
+  inspection_already_passed: 'That inspection has already passed.',
   preferred_date_unavailable:
     'The town does not inspect on that day. Choose one of the listed days.',
   not_an_inspector: 'Choose an inspector.',
