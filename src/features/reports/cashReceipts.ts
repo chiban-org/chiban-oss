@@ -33,7 +33,7 @@ function methodOf(entry: { method: string; processor: string | null }): ReportMe
   return entry.processor === 'simulated' ? 'simulated' : (entry.method as ReportMethod)
 }
 
-async function labelsFor(db: Db, assessmentIds: string[]): Promise<Map<string, string>> {
+export async function labelsFor(db: Db, assessmentIds: string[]): Promise<Map<string, string>> {
   if (assessmentIds.length === 0) return new Map()
   const rows = await db
     .select()
