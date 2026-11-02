@@ -512,6 +512,13 @@
       "when": 1793633673287,
       "tag": "0072_board_member_grants",
       "breakpoints": true
+    },
+    {
+      "idx": 73,
+      "version": "7",
+      "when": 1793641245704,
+      "tag": "0073_m9_m10_schema",
+      "breakpoints": true
     }
   ]
 }
