@@ -32,6 +32,9 @@ interface UploaderProps {
   onUploaded: () => void
   put?: PutFile
   extraFields?: Record<string, string>
+  accept?: string
+  capture?: 'environment' | 'user'
+  fileLabel?: string
 }
 
 const BYTES_PER_MB = 1024 * 1024
@@ -61,6 +64,9 @@ export function Uploader({
   onUploaded,
   put = putWithProgress,
   extraFields = {},
+  accept = '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png',
+  capture,
+  fileLabel = 'File',
 }: UploaderProps) {
   const csrf = useCsrfToken()
   const [file, setFile] = useState<File | null>(null)
@@ -112,12 +118,13 @@ export function Uploader({
     <div className="space-y-3">
       <div className="space-y-1.5">
         <Label htmlFor="upload-file" className="text-base font-medium">
-          File
+          {fileLabel}
         </Label>
         <Input
           id="upload-file"
           type="file"
-          accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+          accept={accept}
+          {...(capture === undefined ? {} : { capture })}
           className="min-h-11 text-base"
           onChange={(event) => setFile(event.target.files?.[0] ?? null)}
         />

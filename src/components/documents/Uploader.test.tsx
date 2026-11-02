@@ -85,4 +85,23 @@ describe('Uploader', () => {
     await waitFor(() => expect(screen.getByText(/could not be sent/)).toBeTruthy())
     expect(finalize).not.toHaveBeenCalled()
   })
+
+  it('passes accept, capture, and the file label to the picker', () => {
+    render(
+      <CsrfProvider token="t1">
+        <Uploader
+          target={{ kind: 'inspection', id: 'i1' }}
+          maxBytes={10 * MB}
+          actions={{ createIntent: vi.fn(), finalize: vi.fn() }}
+          onUploaded={vi.fn()}
+          accept="image/jpeg,image/png"
+          capture="environment"
+          fileLabel="Photo"
+        />
+      </CsrfProvider>,
+    )
+    const input = screen.getByLabelText('Photo')
+    expect(input.getAttribute('accept')).toBe('image/jpeg,image/png')
+    expect(input.getAttribute('capture')).toBe('environment')
+  })
 })
