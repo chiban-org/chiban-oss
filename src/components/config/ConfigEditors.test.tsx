@@ -28,8 +28,18 @@ const PACK_RULES = [
   { key: 'nh.appeal.suspension', label: 'Suspended by appeal (RSA 676:6)' },
 ]
 const CLASSIFICATIONS = [
-  { key: 'nh.building_permit', label: 'Building permit', mandatoryRuleKeys: ['nh.bp.decision'] },
-  { key: 'nh.trade_permit', label: 'Trade permit', mandatoryRuleKeys: ['nh.appeal.suspension'] },
+  {
+    key: 'nh.building_permit',
+    label: 'Building permit',
+    mandatoryRuleKeys: ['nh.bp.decision'],
+    board: null,
+  },
+  {
+    key: 'nh.trade_permit',
+    label: 'Trade permit',
+    mandatoryRuleKeys: ['nh.appeal.suspension'],
+    board: null,
+  },
 ]
 
 const TYPE = skeletonBody('application_type', 'BP') as ApplicationTypeBody
@@ -66,6 +76,7 @@ describe('ApplicationTypeEditor', () => {
     expect(decision.disabled).toBe(true)
     const other = screen.getByLabelText<HTMLInputElement>(/Suspended by appeal/)
     expect(other.checked).toBe(false)
+    expect(document.body.textContent).not.toMatch(/\(nh\./)
   })
 
   it('toggling an optional binding reports the new list', () => {

@@ -4,7 +4,12 @@ import { MERGE_FIELDS } from '@/features/templates/mergeFields'
 
 export interface EditorContext {
   packRules: { key: string; label: string }[]
-  classifications: { key: string; label: string; mandatoryRuleKeys: string[] }[]
+  classifications: {
+    key: string
+    label: string
+    mandatoryRuleKeys: string[]
+    board: string | null
+  }[]
   mergeFields: string[]
   reviewers: { id: string; name: string }[]
   townRules: Record<
@@ -37,6 +42,7 @@ export function editorContext(reviewers: { id: string; name: string }[] = []): E
       key: c.key,
       label: c.label,
       mandatoryRuleKeys: c.mandatoryRuleKeys,
+      board: c.board ?? null,
     })),
     mergeFields: [...MERGE_FIELDS],
     reviewers,
