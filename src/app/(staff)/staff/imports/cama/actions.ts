@@ -54,7 +54,7 @@ function describeError(error: unknown): string {
 function summary(r: ImportRunReport): string {
   const held = r.exceptionsByKind.owner_changed ?? 0
   const missing = r.countMissingFromLayer
-  return `Imported ${r.countIn} rows: ${r.countApplied} filled or updated, ${r.countUnchanged} unchanged, ${r.countExcepted} sent to the exception queue (${held} owner changes held), ${missing} parcels missing from the file.`
+  return `Imported ${r.countIn} rows: ${r.countApplied} filled or updated, ${r.countUnchanged} unchanged, ${r.countExcepted} sent to the exception queue (${held} owner changes held), ${missing} parcels missing from the file. The column mapping used for this run is now the saved mapping.`
 }
 
 export async function previewCamaAction(formData: FormData): Promise<CamaPreviewResponse> {
@@ -86,7 +86,12 @@ export async function runCamaImportAction(formData: FormData): Promise<CamaRunRe
     const bytes = await fileBytes(formData)
     if (bytes === null) return fail(COPY.invalid_file)
     const fullLayer = text(formData, 'fullLayer') === 'on'
-    const result = await runCamaImport(db, actor, { bytes, fullLayer }, signal)
+    const result = await runCamaImport(
+      db,
+      actor,
+      { bytes, fullLayer, mapping: mappingFrom(formData) },
+      signal,
+    )
     if (!result.ok) return fail(describeError(result.error))
     return { ok: true, message: summary(result.value), runId: result.value.runId }
   })
