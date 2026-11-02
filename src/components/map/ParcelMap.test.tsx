@@ -4,10 +4,14 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const noop = vi.hoisted(() => () => undefined)
 const handlers = vi.hoisted(() => new Map<string, () => void>())
+const created = vi.hoisted(() => [] as Record<string, unknown>[])
 
 vi.mock('maplibre-gl/dist/maplibre-gl.css', () => ({}))
 vi.mock('maplibre-gl', () => {
   class FakeMap {
+    constructor(options: Record<string, unknown>) {
+      created.push(options)
+    }
     on(event: string, a: unknown, b?: unknown) {
       const handler = typeof a === 'function' ? a : b
       if (typeof handler === 'function' && typeof a === 'string') return
@@ -31,10 +35,12 @@ vi.mock('maplibre-gl', () => {
 })
 
 const { ParcelMap } = await import('@/components/map/ParcelMap')
+const { PARCEL_TILE_MIN_ZOOM } = await import('@/components/map/mapStyle')
 
 afterEach(() => {
   cleanup()
   handlers.clear()
+  created.length = 0
 })
 
 describe('ParcelMap loading state', () => {
@@ -44,6 +50,15 @@ describe('ParcelMap loading state', () => {
     await waitFor(() => expect(handlers.has('idle')).toBe(true))
     handlers.get('idle')?.()
     await waitFor(() => expect(screen.queryByRole('status')).toBeNull())
+  })
+})
+
+describe('ParcelMap zoom', () => {
+  it('never zooms out past the zoom where parcel tiles start, so a wide town is not a blank map', async () => {
+    render(<ParcelMap layers={[]} onSelect={noop} bbox={[-71.61, 43.87, -71.54, 44.15]} />)
+    await waitFor(() => expect(created).toHaveLength(1))
+    expect(created[0]?.minZoom).toBe(PARCEL_TILE_MIN_ZOOM)
+    expect(created[0]?.zoom).toBeGreaterThanOrEqual(PARCEL_TILE_MIN_ZOOM)
   })
 })
 

@@ -3,7 +3,7 @@
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import { useEffect, useRef, useState } from 'react'
-import { buildMapStyle } from '@/components/map/mapStyle'
+import { buildMapStyle, PARCEL_TILE_MIN_ZOOM } from '@/components/map/mapStyle'
 import { MAPLIBRE_WORKER_URL } from '@/components/map/workerUrl'
 import { TOKENS } from '@/features/design/tokens'
 
@@ -26,7 +26,6 @@ const LABEL_CLASS = 'rounded bg-surface/90 px-1 text-sm font-medium text-foregro
 
 const OVERLAY_SOURCE = 'projection-overlay'
 const NH_CENTER: [number, number] = [-71.5, 43.7]
-const NH_ZOOM = 7
 const FIT_PADDING_PX = 40
 const SELECTED_LAYERS = ['parcel-selected-fill', 'parcel-selected-line'] as const
 
@@ -106,7 +105,8 @@ export function ParcelMap(props: ParcelMapProps) {
           tileBase: window.location.origin,
         }),
         center: NH_CENTER,
-        zoom: NH_ZOOM,
+        zoom: PARCEL_TILE_MIN_ZOOM,
+        minZoom: PARCEL_TILE_MIN_ZOOM,
         attributionControl: { compact: true },
       })
       map.addControl(new maplibre.NavigationControl({ showCompass: false }), 'top-right')

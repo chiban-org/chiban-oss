@@ -10,7 +10,7 @@ export interface MapStyleOptions {
   tileBase?: string
 }
 
-const TILE_MIN_ZOOM = 10
+export const PARCEL_TILE_MIN_ZOOM = 10
 const TILE_MAX_ZOOM = 20
 const PARCEL_FILL_OPACITY = 0.04
 const SELECTED_FILL_OPACITY = 0.25
@@ -20,7 +20,7 @@ function vectorSource(base: string, layer: string): SourceSpecification {
   return {
     type: 'vector',
     tiles: [`${base}/api/tiles/${layer}/{z}/{x}/{y}`],
-    minzoom: TILE_MIN_ZOOM,
+    minzoom: PARCEL_TILE_MIN_ZOOM,
     maxzoom: TILE_MAX_ZOOM,
   }
 }
