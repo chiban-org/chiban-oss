@@ -109,6 +109,21 @@ function planVoid(
     : 'void'
 }
 
+async function reconcileForVoid(
+  db: Db,
+  attemptId: string,
+  remote: ProcessorPaymentState,
+  actor: Actor,
+  signal: AbortSignal,
+  now: Date | undefined,
+): Promise<'processor_reports_payment' | 'foreign_object'> {
+  const source = { kind: 'staff', userId: actor.userId } as const
+  const reconciled = await db.transaction((tx) =>
+    reconcileAttempt(tx, attemptId, remote, source, signal, now),
+  )
+  return reconciled.ok ? 'processor_reports_payment' : reconciled.error
+}
+
 type VoidError =
   | 'forbidden'
   | 'reason_required'
@@ -116,6 +131,7 @@ type VoidError =
   | 'not_voidable'
   | 'outcome_unknown'
   | 'processor_reports_payment'
+  | 'foreign_object'
   | ProcessorError
 
 export async function voidAttempt(
@@ -144,9 +160,7 @@ export async function voidAttempt(
   const remote = state.value
   const plan = planVoid(attempt, remote)
   if (plan === 'reconcile' && remote !== null) {
-    const source = { kind: 'staff', userId: actor.userId } as const
-    await db.transaction((tx) => reconcileAttempt(tx, attempt.id, remote, source, signal, deps.now))
-    return err('processor_reports_payment')
+    return err(await reconcileForVoid(db, attempt.id, remote, actor, signal, deps.now))
   }
   if (plan === 'refuse') return err('outcome_unknown')
   if (plan === 'cancel_authorization' && attempt.processorObjectId !== null) {

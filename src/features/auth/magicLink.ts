@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { and, eq, gt, isNull, sql } from 'drizzle-orm'
 import { env } from '@/config/env'
+import { ErrorIds } from '@/constants/errorIds'
 import type { DbOrTx } from '@/db/client'
 import { magicLinks, userRoles, users } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -72,7 +73,7 @@ export async function requestMagicLink(
     expiresAt: new Date(Date.now() + LINK_TTL_MS),
   })
   const link = `${env.BASE_URL}/auth/verify?token=${token}`
-  await mail.send(
+  const sent = await mail.send(
     {
       to: email,
       subject: 'Your sign-in link',
@@ -81,6 +82,7 @@ export async function requestMagicLink(
     },
     signal,
   )
+  if (!sent.ok) console.error(`[auth] ${ErrorIds.MAIL_SEND_FAILED} sign-in link email was not sent`)
   return ok(undefined)
 }
 

@@ -91,6 +91,7 @@ export const ERROR_COPY: Record<string, string> = {
   not_voidable: 'Only an attempt that has not been paid can be voided.',
   processor_reports_payment:
     'The processor reports this payment was captured. It has been recorded.',
+  foreign_object: 'The processor reports a payment from a different account. Nothing was recorded.',
   no_fee_line: 'No fee line on that application can take this amount.',
   no_edition_for_date: 'No code edition is on record for the receipt date.',
 }

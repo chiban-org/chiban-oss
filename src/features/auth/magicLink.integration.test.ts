@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { magicLinks, userRoles, users } from '@/db/schema'
 import { createStaffUser } from '@/features/auth/createStaffUser'
 import {
@@ -11,6 +11,7 @@ import { loadSession } from '@/features/auth/session'
 import { createMemoryTransport, type MemoryMailTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeUser } from '@/test/factories'
+import { err } from '@/types/result'
 
 let handle: TestDb
 let mail: MemoryMailTransport
@@ -216,5 +217,22 @@ describe('next path', () => {
     await requestMagicLink(handle.db, mail, email, signal, '//evil.example')
     const consumed = await consumeMagicLink(handle.db, tokenFromMail(), signal)
     expect(consumed.ok && consumed.value.nextPath).toBeNull()
+  })
+})
+
+describe('a failed sign-in email', () => {
+  it('is logged with an error id and still reports success to the requester', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const email = 'mailfail@example.com'
+    await makeUser(handle.db, { email, role: 'applicant' })
+    const failing: MemoryMailTransport = {
+      sent: [],
+      send: () => Promise.resolve(err('send_failed' as const)),
+    }
+    const result = await requestMagicLink(handle.db, failing, email, signal)
+    expect(result).toEqual({ ok: true, value: undefined })
+    expect(spy.mock.calls.flat().join(' ')).toContain('E_MAIL_001')
+    expect(spy.mock.calls.flat().join(' ')).not.toContain(email)
+    spy.mockRestore()
   })
 })
