@@ -39,13 +39,21 @@ export interface ObjectStore {
   readonly bucket: string
   presignPut(key: string, opts: PresignPutOptions): Promise<string>
   presignGet(key: string, opts: PresignGetOptions): Promise<string>
-  head(key: string, signal: AbortSignal): Promise<Result<{ size: number }, 'not_found'>>
+  head(
+    key: string,
+    signal: AbortSignal,
+  ): Promise<Result<{ size: number; etag: string | null }, 'not_found'>>
   getStream(
     key: string,
     signal: AbortSignal,
   ): Promise<Result<ReadableStream<Uint8Array>, 'not_found'>>
   putBytes(key: string, bytes: Uint8Array, contentType: string, signal: AbortSignal): Promise<void>
-  copy(fromKey: string, toKey: string, signal: AbortSignal): Promise<void>
+  copy(
+    fromKey: string,
+    toKey: string,
+    signal: AbortSignal,
+    options?: { ifMatch?: string },
+  ): Promise<void>
   delete(key: string, signal: AbortSignal): Promise<void>
   createBucket(signal: AbortSignal): Promise<void>
   bucketExists(signal: AbortSignal): Promise<boolean>
@@ -112,7 +120,7 @@ export function createObjectStore(config: ObjectStoreConfig): ObjectStore {
         const out = await server.send(new HeadObjectCommand({ Bucket, Key: key }), {
           abortSignal: signal,
         })
-        return ok({ size: out.ContentLength ?? 0 })
+        return ok({ size: out.ContentLength ?? 0, etag: out.ETag ?? null })
       } catch (e) {
         if (isMissing(e)) return err('not_found')
         throw e
@@ -136,11 +144,12 @@ export function createObjectStore(config: ObjectStoreConfig): ObjectStore {
         { abortSignal: signal },
       )
     },
-    async copy(fromKey, toKey, signal) {
+    async copy(fromKey, toKey, signal, options) {
       await server.send(
         new CopyObjectCommand({
           Bucket,
           Key: toKey,
+          ...(options?.ifMatch === undefined ? {} : { CopySourceIfMatch: options.ifMatch }),
           CopySource: `${Bucket}/${encodeURIComponent(fromKey).replaceAll('%2F', '/')}`,
         }),
         { abortSignal: signal },
@@ -162,6 +171,11 @@ export function createObjectStore(config: ObjectStoreConfig): ObjectStore {
       }
     },
   }
+}
+
+export function isPreconditionFailure(e: unknown): boolean {
+  const status = (e as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode
+  return status === 412 || (e instanceof Error && e.name === 'PreconditionFailed')
 }
 
 export async function ensureBucket(store: ObjectStore, signal: AbortSignal): Promise<void> {

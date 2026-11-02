@@ -19,7 +19,13 @@ export interface ApplicationSnapshotBody {
   facts: ProjectFacts
   parties: SnapshotParty[]
   attestation: { userId: string; statementSha256: string; attestedAt: string } | null
-  attachments: { documentId: string; versionId: string; sha256: string; filename: string }[]
+  attachments: {
+    documentId: string
+    versionId: string
+    sha256: string
+    filename: string
+    isPublic: boolean
+  }[]
   receivedDate: CivilDate | null
   capturedAt: string
 }
@@ -40,6 +46,7 @@ export function publicSnapshotView(body: ApplicationSnapshotBody): PublicSnapsho
     ...rest,
     form: { ...body.form, fields: body.form.fields.filter((f) => !contactKeys.has(f.key)) },
     values: Object.fromEntries(Object.entries(body.values).filter(([k]) => !contactKeys.has(k))),
+    attachments: body.attachments.filter((a) => a.isPublic),
     parties: parties.map((p) => ({ role: p.role, name: p.name })),
   }
 }

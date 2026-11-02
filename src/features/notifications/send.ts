@@ -3,9 +3,10 @@ import type { DbOrTx } from '@/db/client'
 import { notificationOutbox, users } from '@/db/schema'
 import { canViewApplication } from '@/features/access/queries'
 import { loadActor } from '@/features/auth/actor'
-import type { MailTransport } from '@/features/mail/transport'
+import type { MailMessage, MailTransport } from '@/features/mail/transport'
 import { MESSAGES } from '@/features/notifications/messages'
 import type { NotificationPayload } from '@/features/notifications/queue'
+import { err, type Result } from '@/types/result'
 
 const MAX_ATTEMPTS = 5
 const BATCH = 100
@@ -15,6 +16,19 @@ async function drop(db: DbOrTx, id: string, reason: 'no_access' | 'inactive_user
     .update(notificationOutbox)
     .set({ status: 'dropped', dropReason: reason })
     .where(eq(notificationOutbox.id, id))
+}
+
+async function deliver(
+  mail: MailTransport,
+  message: MailMessage,
+  signal: AbortSignal,
+): Promise<Result<void, 'send_failed'>> {
+  try {
+    return await mail.send(message, signal)
+  } catch (e) {
+    if (e instanceof Error && e.name === 'AbortError') throw e
+    return err('send_failed')
+  }
 }
 
 export async function sendQueuedNotifications(
@@ -53,7 +67,7 @@ export async function sendQueuedNotifications(
       applicationId: row.applicationId,
       payload: row.payload as NotificationPayload,
     })
-    const result = await mail.send({ to: user.email, ...message }, signal)
+    const result = await deliver(mail, { to: user.email, ...message }, signal)
     if (result.ok) {
       await db
         .update(notificationOutbox)

@@ -124,7 +124,7 @@ async function amendPermission(
   return permitted ? 'ok' : 'forbidden'
 }
 
-function keepStaffOnlyValues(
+export function keepStaffOnlyValues(
   form: FormBody,
   existing: Record<string, FieldValue>,
   incoming: Record<string, FieldValue>,

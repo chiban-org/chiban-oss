@@ -2,6 +2,7 @@ import { and, eq, isNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { applications, reviewAssignments, reviewComments, userRoles, users } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { isReviewer } from '@/features/access/roles'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
@@ -123,6 +124,7 @@ async function ownActiveAssignment(
   actor: Actor,
   assignmentId: string,
 ): Promise<{ id: string; applicationId: string } | null> {
+  if (!isReviewer(actor)) return null
   const [row] = await db
     .select({ id: reviewAssignments.id, applicationId: reviewAssignments.applicationId })
     .from(reviewAssignments)

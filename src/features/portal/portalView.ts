@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull } from 'drizzle-orm'
+import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
   applicationConditions,
@@ -85,10 +85,10 @@ async function decisionDue(db: Db, applicationId: string) {
 
 async function receiptsFor(db: Db, actor: Actor, applicationId: string) {
   const rows = await db
-    .selectDistinct({
+    .select({
       receiptId: receipts.id,
       number: receipts.number,
-      totalCents: receipts.totalCents,
+      totalCents: sql<number>`sum(${ledgerAllocations.amountCents})::int`,
       date: receipts.businessDate,
       issuedAt: receipts.issuedAt,
     })
@@ -103,6 +103,7 @@ async function receiptsFor(db: Db, actor: Actor, applicationId: string) {
         ledgerEntryVisibleTo(actor),
       ),
     )
+    .groupBy(receipts.id)
     .orderBy(desc(receipts.issuedAt))
   return rows.map(({ issuedAt: _issuedAt, ...r }) => r)
 }

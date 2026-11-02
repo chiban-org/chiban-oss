@@ -21,7 +21,7 @@ describe('object store', () => {
     const res = await put(url, 'hello', { 'content-type': 'application/pdf' })
     expect(res.status).toBe(200)
     const head = await store.head(key, AbortSignal.timeout(10_000))
-    expect(head).toEqual({ ok: true, value: { size: 5 } })
+    expect(head).toMatchObject({ ok: true, value: { size: 5 } })
   })
 
   it('presigned put with a different length is rejected with 403', async () => {

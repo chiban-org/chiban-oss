@@ -28,6 +28,8 @@ export async function portalReceiptPdfResponse(
     )
     .limit(1)
   if (visible.length === 0) return NOT_FOUND
-  const built = await buildReceiptPdf(db, input.receiptId, signal)
+  const built = await buildReceiptPdf(db, input.receiptId, signal, {
+    applicationId: input.applicationId,
+  })
   return built.ok ? pdfOk(built.value) : NOT_FOUND
 }

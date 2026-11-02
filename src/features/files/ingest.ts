@@ -3,7 +3,7 @@ import { eq, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { documentVersions, files } from '@/db/schema'
 import { type AllowedType, SNIFF_BYTES, sniffMatches } from '@/features/files/sniff'
-import type { ObjectStore } from '@/features/storage/objectStore'
+import { isPreconditionFailure, type ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
 
 export function blobKey(sha256: string): string {
@@ -70,7 +70,19 @@ export async function ingestTempObject(
     if (!stream.ok) return err('not_found')
     const digest = await digestStream(stream.value, signal)
     if (!sniffMatches(input.declaredType, digest.head)) return err('type_mismatch')
-    await store.copy(input.tempKey, blobKey(digest.sha256), signal)
+    const known = await db
+      .select({ sha: files.sha256 })
+      .from(files)
+      .where(eq(files.sha256, digest.sha256))
+    if (known.length > 0) return ok({ sha256: digest.sha256, created: false })
+    try {
+      await store.copy(input.tempKey, blobKey(digest.sha256), signal, {
+        ...(head.value.etag === null ? {} : { ifMatch: head.value.etag }),
+      })
+    } catch (e) {
+      if (isPreconditionFailure(e)) return err('size_mismatch')
+      throw e
+    }
     const created = await recordFile(db, {
       sha256: digest.sha256,
       sizeBytes: input.declaredSize,

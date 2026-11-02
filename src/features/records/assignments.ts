@@ -4,6 +4,8 @@ import {
   applicationSnapshots,
   applications,
   documents,
+  documentVersions,
+  preservationRecords,
   recordEvents,
   retentionAssignments,
 } from '@/db/schema'
@@ -146,6 +148,22 @@ export async function recordBuildingRemoved(
   })
 }
 
+async function requirePreservation(tx: Tx, documentId: string): Promise<void> {
+  const originals = tx
+    .select({ id: documentVersions.id })
+    .from(documentVersions)
+    .where(and(eq(documentVersions.documentId, documentId), eq(documentVersions.role, 'original')))
+  await tx
+    .update(preservationRecords)
+    .set({ required: true, status: 'pending', updatedAt: new Date() })
+    .where(
+      and(
+        eq(preservationRecords.status, 'not_required'),
+        inArray(preservationRecords.originalVersionId, originals),
+      ),
+    )
+}
+
 export async function setDocumentSeries(
   db: DbOrTx,
   actor: Actor,
@@ -170,6 +188,9 @@ export async function setDocumentSeries(
       actor,
       signal,
     )
+    if (requireSeries(input.seriesKey).preservation === 'pdfa') {
+      await requirePreservation(tx, doc.id)
+    }
     await writeAudit(
       tx,
       {

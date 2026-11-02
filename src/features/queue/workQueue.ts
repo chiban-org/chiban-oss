@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, isNull, ne, type SQL, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { applications, projects, reviewAssignments, users } from '@/db/schema'
 import { applicationVisibleTo } from '@/features/access/predicates'
+import { hasFullRecordAccess } from '@/features/access/roles'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { CoreState } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
@@ -67,12 +68,15 @@ const UNKNOWN_PAYMENT = sql<boolean>`exists (
   where pa.outcome_unknown and pa.state in ('pending', 'authorized')
     and pa.planned_allocations @> jsonb_build_array(jsonb_build_object('applicationId', ${applications.id}::text)))`
 
-const PRESERVATION_INCOMPLETE = sql<boolean>`exists (
+function preservationIncompleteFor(actor: Actor) {
+  if (!hasFullRecordAccess(actor)) return sql<boolean>`false`
+  return sql<boolean>`exists (
   select 1 from documents d
   join document_versions dv on dv.document_id = d.id
   join preservation_records pr on pr.original_version_id = dv.id
   where d.record_kind = 'application' and d.record_id = ${applications.id}
     and pr.status = 'incomplete')`
+}
 
 function dueStatusOf(nextDue: CivilDate | null, today: CivilDate): DueStatus {
   if (nextDue === null) return 'none'
@@ -164,7 +168,7 @@ export async function listWorkQueue(
       nextDue: NEXT_DUE,
       feesDue: FEES_DUE,
       unknownPayment: UNKNOWN_PAYMENT,
-      preservationIncomplete: PRESERVATION_INCOMPLETE,
+      preservationIncomplete: preservationIncompleteFor(actor),
     })
     .from(applications)
     .innerJoin(projects, eq(projects.id, applications.projectId))

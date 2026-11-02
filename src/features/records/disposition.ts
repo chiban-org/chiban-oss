@@ -1,5 +1,5 @@
 import type { RecordSeries } from '@packs/nh/schema'
-import { and, desc, eq, inArray, isNull } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, or } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
   applicationSnapshots,
@@ -37,6 +37,18 @@ async function recordCreatedAt(db: DbOrTx, ref: DispositionRef) {
     .from(documents)
     .where(eq(documents.id, ref.id))
   return row?.at ?? null
+}
+
+async function applicationIdOf(db: DbOrTx, ref: DispositionRef): Promise<string | null> {
+  if (ref.kind === 'application_snapshot') {
+    const [row] = await db
+      .select({ id: applicationSnapshots.applicationId })
+      .from(applicationSnapshots)
+      .where(eq(applicationSnapshots.id, ref.id))
+    return row?.id ?? null
+  }
+  const [doc] = await db.select().from(documents).where(eq(documents.id, ref.id))
+  return doc?.recordKind === 'application' ? doc.recordId : null
 }
 
 async function projectIdsFor(db: DbOrTx, ref: DispositionRef): Promise<string[]> {
@@ -88,10 +100,24 @@ export async function retentionFor(
   const town = await getTownSettings(db, signal)
   const zone = town.ok ? town.value.timeZone : FALLBACK_ZONE
   const projectIds = await projectIdsFor(db, ref)
+  const applicationId = await applicationIdOf(db, ref)
   const events =
     projectIds.length === 0
       ? []
-      : await db.select().from(recordEvents).where(inArray(recordEvents.projectId, projectIds))
+      : await db
+          .select()
+          .from(recordEvents)
+          .where(
+            and(
+              inArray(recordEvents.projectId, projectIds),
+              applicationId === null
+                ? undefined
+                : or(
+                    isNull(recordEvents.applicationId),
+                    eq(recordEvents.applicationId, applicationId),
+                  ),
+            ),
+          )
   const status = computeRetention(series, {
     recordDate: todayInTimeZone(zone, createdAt),
     events: events.map((e) => ({ kind: e.kind, occurredOn: e.occurredOn as CivilDate })),

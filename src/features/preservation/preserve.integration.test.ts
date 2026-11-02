@@ -80,7 +80,7 @@ describe('preservation', () => {
       `blobs/sha256/${original?.fileSha256.slice(0, 2)}/${original?.fileSha256.slice(2, 4)}/${original?.fileSha256}`,
       signal,
     )
-    expect(stored).toEqual({ ok: true, value: { size: bytes.length } })
+    expect(stored).toMatchObject({ ok: true, value: { size: bytes.length } })
   })
 
   it('a jpeg upload is wrapped and converted', async () => {

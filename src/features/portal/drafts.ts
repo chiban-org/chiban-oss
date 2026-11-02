@@ -6,10 +6,15 @@ import { canViewApplication } from '@/features/access/queries'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { createApplication } from '@/features/applications/createApplication'
+import { keepStaffOnlyValues } from '@/features/applications/submitApplication'
 import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
 import type { FormBody } from '@/features/forms/formSchema'
-import { type FieldError, validateSubmission } from '@/features/forms/validateSubmission'
+import {
+  extractFacts,
+  type FieldError,
+  validateSubmission,
+} from '@/features/forms/validateSubmission'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
 import { createProject } from '@/features/projects/projects'
@@ -102,12 +107,16 @@ export async function saveDraftValues(
       partial: true,
     })
     if (!checked.ok) return err({ fieldErrors: checked.error })
+    const staff = hasFullRecordAccess(actor)
+    const values = staff
+      ? checked.value.values
+      : keepStaffOnlyValues(form, app.values, checked.value.values)
     const rowVersion = app.rowVersion + 1
     await tx
       .update(applications)
       .set({
-        values: checked.value.values,
-        facts: checked.value.facts,
+        values,
+        facts: staff ? checked.value.facts : extractFacts(form, values),
         rowVersion,
         updatedAt: new Date(),
       })

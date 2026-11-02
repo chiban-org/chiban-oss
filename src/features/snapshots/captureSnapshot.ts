@@ -41,6 +41,7 @@ async function attachmentsOf(tx: Tx, applicationId: string) {
       versionId: documentVersions.id,
       sha256: documentVersions.fileSha256,
       filename: documentVersions.filename,
+      isPublic: documents.isPublic,
     })
     .from(documents)
     .innerJoin(documentVersions, eq(documentVersions.documentId, documents.id))
@@ -50,6 +51,7 @@ async function attachmentsOf(tx: Tx, applicationId: string) {
         eq(documents.recordId, applicationId),
         eq(documents.docKind, 'attachment'),
         eq(documentVersions.role, 'original'),
+        sql`('project_parties' = any(${documents.audiences}) or ${documents.isPublic})`,
       ),
     )
     .orderBy(documents.seq)

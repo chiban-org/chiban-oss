@@ -17,47 +17,63 @@ const METHOD_LABELS: Record<string, string> = {
 
 export const SIMULATED_NOTICE = 'SIMULATED: no card was charged.'
 
-async function lineRows(db: Db, entryId: string): Promise<string[][]> {
+type Allocation = typeof ledgerAllocations.$inferSelect
+type LabelCache = Map<string, Map<string, string>>
+
+function kindLabel(a: Allocation): string | null {
+  if (a.targetKind === 'convenience_fee') return 'Convenience fee'
+  return a.targetKind === 'overpayment' ? 'Overpayment held' : null
+}
+
+async function feeLabel(db: Db, a: Allocation, labels: LabelCache): Promise<string> {
+  const applicationId = a.applicationId ?? ''
+  if (!labels.has(applicationId)) {
+    const lines = await assessedLines(db, applicationId)
+    labels.set(applicationId, new Map(lines.map((l) => [lineKey(l.stage, l.feeCode), l.label])))
+  }
+  return (
+    kindLabel(a) ??
+    labels.get(applicationId)?.get(lineKey(a.stage ?? '', a.feeCode ?? '')) ??
+    a.feeCode ??
+    ''
+  )
+}
+
+async function lineRows(
+  db: Db,
+  entryId: string,
+  scope?: { applicationId: string },
+): Promise<{ rows: string[][]; totalCents: number }> {
   const allocations = await db
     .select()
     .from(ledgerAllocations)
     .where(eq(ledgerAllocations.entryId, entryId))
   const rows: string[][] = []
-  const labels = new Map<string, Map<string, string>>()
+  const labels: LabelCache = new Map()
+  let totalCents = 0
   for (const a of allocations) {
+    const outOfScope =
+      scope !== undefined && a.applicationId !== null && a.applicationId !== scope.applicationId
+    if (outOfScope) continue
+    totalCents += a.amountCents
     if (a.applicationId === null) {
-      rows.push([
-        '',
-        a.targetKind === 'overpayment' ? 'Overpayment held' : 'Convenience fee',
-        formatCents(a.amountCents),
-      ])
+      rows.push(['', kindLabel(a) ?? '', formatCents(a.amountCents)])
       continue
-    }
-    if (!labels.has(a.applicationId)) {
-      const lines = await assessedLines(db, a.applicationId)
-      labels.set(a.applicationId, new Map(lines.map((l) => [lineKey(l.stage, l.feeCode), l.label])))
     }
     const [app] = await db
       .select({ number: applications.number })
       .from(applications)
       .where(eq(applications.id, a.applicationId))
-    const label =
-      a.targetKind === 'convenience_fee'
-        ? 'Convenience fee'
-        : a.targetKind === 'overpayment'
-          ? 'Overpayment held'
-          : (labels.get(a.applicationId)?.get(lineKey(a.stage ?? '', a.feeCode ?? '')) ??
-            a.feeCode ??
-            '')
-    rows.push([app?.number ?? '', label, formatCents(a.amountCents)])
+    rows.push([app?.number ?? '', await feeLabel(db, a, labels), formatCents(a.amountCents)])
   }
-  return rows
+  return { rows, totalCents }
 }
 
 export async function buildReceiptPdf(
   db: Db,
   receiptId: string,
   signal: AbortSignal,
+  scope?: { applicationId: string },
 ): Promise<Result<Uint8Array, 'not_found'>> {
   signal.throwIfAborted()
   const [receipt] = await db.select().from(receipts).where(eq(receipts.id, receiptId))
@@ -69,7 +85,10 @@ export async function buildReceiptPdf(
   const town = await getTownSettings(db, signal)
   const settings = await getPaymentSettings(db, signal)
   const refund = receipt.kind === 'refund'
-  const rows = entry === undefined ? [] : await lineRows(db, entry.id)
+  const lines =
+    entry === undefined ? { rows: [], totalCents: 0 } : await lineRows(db, entry.id, scope)
+  const rows = lines.rows
+  const shownTotal = scope === undefined ? receipt.totalCents : lines.totalCents
   const method = entry === undefined ? '' : (METHOD_LABELS[entry.method] ?? entry.method)
   const fields = [
     { label: 'Receipt', value: receipt.number },
@@ -79,7 +98,7 @@ export async function buildReceiptPdf(
       label: 'Method',
       value: entry?.checkNumber == null ? method : `${method}, check ${entry.checkNumber}`,
     },
-    { label: refund ? 'Total refunded' : 'Total received', value: formatCents(receipt.totalCents) },
+    { label: refund ? 'Total refunded' : 'Total received', value: formatCents(shownTotal) },
     ...(receipt.tenderedCents === null
       ? []
       : [
