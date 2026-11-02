@@ -63,7 +63,7 @@ export default async function AnonymousIntakePage() {
       <p>
         {open
           ? 'Anonymous complaints are being accepted at the report anonymously page.'
-          : 'Anonymous complaints are not being accepted. The page answers as not found.'}
+          : 'Anonymous complaints are not being accepted. The report anonymously page says anonymous reports are not available and links to the named complaint form.'}
       </p>
       <p>
         {verified
