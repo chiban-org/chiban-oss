@@ -46,6 +46,20 @@ const weekly = ['2027-03-04', '2027-03-11', '2027-03-18', '2027-03-25'].map(inse
 const OWNER_NOT_FOUND: ServiceCheck = { role: 'record_owner', outcome: 'owner_not_found' }
 
 describe('serviceStatus', () => {
+  it('a mortgagee listed after a none_exist check must still be served', () => {
+    const status = serviceStatus(rule, {
+      checks: [
+        { role: 'record_owner', outcome: 'recipients_listed' },
+        { role: 'taxpayer', outcome: 'same_as_owner' },
+        ...noneExist(OTHER_ROLES),
+      ],
+      recipients: [owner, { id: 'r-bank', role: 'mortgagee_of_record' }],
+      events: [personal('r-owner', '2027-03-01')],
+    })
+    expect(status.complete).toBe(false)
+    expect(status.missing).toEqual([{ role: 'mortgagee_of_record', reason: 'unserved' }])
+  })
+
   it('owner served and every other role none_exist is complete', () => {
     const status = serviceStatus(rule, {
       checks: [

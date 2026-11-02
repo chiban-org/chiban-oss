@@ -121,12 +121,11 @@ function nonOwnerMissing(
   for (const role of rule.recipientRoles) {
     if (rule.ownerRoles.includes(role)) continue
     const check = input.checks.find((c) => c.role === role)
+    const listed = input.recipients.filter((r) => r.role === role)
+    const mustServe = check?.outcome === 'recipients_listed' || listed.length > 0
     if (check === undefined) missing.push({ role, reason: 'no_check' })
-    else if (check.outcome === 'recipients_listed') {
-      const listed = input.recipients.filter((r) => r.role === role)
-      if (listed.length === 0 || listed.some((r) => own[r.id] === undefined)) {
-        missing.push({ role, reason: 'unserved' })
-      }
+    else if (mustServe && (listed.length === 0 || listed.some((r) => own[r.id] === undefined))) {
+      missing.push({ role, reason: 'unserved' })
     }
   }
   return missing
