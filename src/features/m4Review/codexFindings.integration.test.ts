@@ -171,7 +171,7 @@ describe('finding 2: a receipt shows only lines for the application being viewed
     const portalText = (await pdfPages(body)).join('\n')
     expect(portalText).not.toContain(b.number)
     const view = await getPortalApplicationView(handle.db, w.applicant, a.applicationId, signal)
-    expect(view.ok && view.value.receipts.map((r) => r.totalCents)).toEqual([4500])
+    expect(view.ok && view.value.history.map((h) => h.amountCents)).toEqual([4500])
   })
 })
 
