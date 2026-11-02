@@ -81,6 +81,16 @@ const SPECS: Spec[] = [
       },
     ],
   },
+  {
+    table: t.exportTargets,
+    omit: [
+      'credentials_enc',
+      'run_requested_at',
+      'last_success_at',
+      'last_failure_at',
+      'last_error',
+    ],
+  },
   { table: t.feeAssessments },
   { table: t.feeOverrides },
   { table: t.files },

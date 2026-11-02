@@ -7,6 +7,11 @@ const SEED_NOW = new Date('2027-06-01T16:00:00Z')
 
 const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
   {
+    table: 'export_targets',
+    statement: sql`insert into export_targets (kind, name, settings, credentials_enc, day_of_month)
+      values ('local_fs', 'Export coverage', '{"root":"/srv/chiban-export"}'::jsonb, 'secret-never-exported', 5)`,
+  },
+  {
     table: 'cutover_rows',
     statement: sql`insert into cutover_rows (legacy_number, application_id, imported_by, source_sha256)
       select 'LEGACY-EXPORT', id, gen_random_uuid(), 'abc' from applications limit 1`,

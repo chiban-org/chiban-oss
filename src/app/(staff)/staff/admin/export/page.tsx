@@ -68,6 +68,13 @@ export default async function ExportPage() {
           <p className="m-0">Preparing an export does not interrupt anyone using Chiban.</p>
         </ActionForm>
       )}
+      {ctx.actor.roles.includes('admin') ? (
+        <p>
+          <a className="text-action underline" href="/staff/admin/export/targets">
+            Copy exports to your own storage every month
+          </a>
+        </p>
+      ) : null}
       <h2>Your exports</h2>
       {listed.value.length === 0 ? <p>No exports have been requested yet.</p> : null}
       <ul className="m-0 list-none space-y-3 p-0">

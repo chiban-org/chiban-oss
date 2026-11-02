@@ -1,0 +1,5 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#microsoft.graph.uploadSession",
+  "uploadUrl": "https://fake.invalid/upload/session",
+  "expirationDateTime": "2027-01-01T00:00:00.000Z"
+}

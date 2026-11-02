@@ -9,6 +9,7 @@ export const JOB_NAMES = {
   NOTIFICATIONS_SEND: 'notifications.send',
   CALENDAR_PUSH: 'calendar.push',
   EXPORTS_BUILD: 'exports.build',
+  EXPORTS_INCREMENTAL: 'exports.incremental',
   EXPORTS_PICKUP: 'exports.pickup',
   EXPORTS_PRUNE: 'exports.prune',
   HEALTH_CHECK: 'health.check',

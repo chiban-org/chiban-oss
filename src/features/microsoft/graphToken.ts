@@ -1,5 +1,4 @@
 import { z } from 'zod'
-import type { CalendarError } from '@/features/calendar/publisher'
 import { err, ok, type Result } from '@/types/result'
 
 const REFRESH_MARGIN_MS = 60_000
@@ -9,6 +8,11 @@ const TokenResponseSchema = z.object({
   access_token: z.string().min(1),
   expires_in: z.number().positive(),
 })
+
+export interface GraphTokenError {
+  kind: 'unreachable' | 'auth_failed' | 'bad_shape'
+  detail: string
+}
 
 export interface GraphTokenSource {
   tenantId: string
@@ -22,7 +26,7 @@ export interface TokenDeps {
 }
 
 export interface TokenProvider {
-  get(signal: AbortSignal): Promise<Result<string, CalendarError>>
+  get(signal: AbortSignal): Promise<Result<string, GraphTokenError>>
 }
 
 export function createTokenProvider(

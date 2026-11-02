@@ -1,0 +1,7 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#drives('b!fake')/items/$entity",
+  "id": "01FAKEDRIVEITEM0000000000000000",
+  "name": "file",
+  "size": 0,
+  "file": { "mimeType": "application/octet-stream" }
+}

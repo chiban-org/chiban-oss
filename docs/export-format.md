@@ -467,6 +467,20 @@ References:
 Typed references:
 - `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, project to `projects`, parcel to `parcels`, migration_batch to `migration_batches`
 
+### export_targets
+
+File: `data/export_targets.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `kind`: text
+- `name`: text
+- `settings`: jsonb
+- `day_of_month`: integer
+- `is_active`: boolean
+- `created_at`: timestamp with time zone
+
+Omitted columns: `credentials_enc`, `run_requested_at`, `last_success_at`, `last_failure_at`, `last_error`
+
 ### fee_assessments
 
 File: `data/fee_assessments.ndjson`. Ordered by id.

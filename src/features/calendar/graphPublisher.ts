@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { createTokenProvider, type TokenDeps } from '@/features/calendar/graphToken'
 import type { CalendarBooking } from '@/features/calendar/ics'
 import type { CalendarError, CalendarPublisher } from '@/features/calendar/publisher'
+import { createTokenProvider, type TokenDeps } from '@/features/microsoft/graphToken'
 import { err, ok, type Result } from '@/types/result'
 
 export const GRAPH_ADAPTER_STATUS = 'stubbed' as const
