@@ -15,10 +15,11 @@ export interface AddAliasInput {
   source: AliasSource
 }
 
-export type AuditWho = Actor | { kind: 'system'; job: string }
+export type AuditWho = Actor | { kind: 'user'; userId: string } | { kind: 'system'; job: string }
 
 export function auditActor(who: AuditWho) {
-  return 'userId' in who ? ({ kind: 'user', userId: who.userId } as const) : who
+  if ('job' in who) return { kind: 'system', job: who.job } as const
+  return { kind: 'user', userId: who.userId } as const
 }
 
 export async function addAlias(

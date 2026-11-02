@@ -18,3 +18,10 @@ export const layerMappingSchema = z.object({
 
 export type IdField = z.infer<typeof idFieldSchema>
 export type LayerMapping = z.infer<typeof layerMappingSchema>
+
+export const featureMappingSchema = z.object({
+  sourceKey: z.string().min(1).optional(),
+  name: z.string().min(1).optional(),
+})
+
+export type FeatureMapping = z.infer<typeof featureMappingSchema>
