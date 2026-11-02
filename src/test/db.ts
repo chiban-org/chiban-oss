@@ -35,11 +35,23 @@ function getAdminPool(pg: TestPgConnection): Pool {
 }
 
 export async function makeTestDb(): Promise<TestDb> {
+  return await createDatabase(true)
+}
+
+export async function makeEmptyDb(): Promise<TestDb> {
+  return await createDatabase(false)
+}
+
+async function createDatabase(fromTemplate: boolean): Promise<TestDb> {
   const pg = inject('testPg')
   const admin = getAdminPool(pg)
   const name = `t_${randomUUID().replaceAll('-', '')}`
 
-  await admin.query(`CREATE DATABASE "${name}" TEMPLATE ${pg.template}`)
+  await admin.query(
+    fromTemplate
+      ? `CREATE DATABASE "${name}" TEMPLATE ${pg.template}`
+      : `CREATE DATABASE "${name}"`,
+  )
 
   const url = connectionUri(pg, name)
   const pool = new Pool({ connectionString: url, max: 4 })

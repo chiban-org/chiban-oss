@@ -1,9 +1,12 @@
 import { fileURLToPath } from 'node:url'
+import { sql } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { err, ok, type Result } from '@/types/result'
 
 const MIGRATIONS_FOLDER = fileURLToPath(new URL('../../drizzle', import.meta.url))
+
+const REQUIRED_EXTENSIONS = ['postgis', 'pgcrypto', 'citext'] as const
 
 export async function applyMigrations(
   db: NodePgDatabase<Record<string, unknown>>,
@@ -12,6 +15,9 @@ export async function applyMigrations(
 ): Promise<Result<{ applied: true }, string>> {
   try {
     signal.throwIfAborted()
+    for (const extension of REQUIRED_EXTENSIONS) {
+      await db.execute(sql.raw(`CREATE EXTENSION IF NOT EXISTS ${extension}`))
+    }
     await migrate(db, { migrationsFolder })
     signal.throwIfAborted()
     return ok({ applied: true })

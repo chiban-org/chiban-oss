@@ -22,6 +22,13 @@
       "when": 1793582670018,
       "tag": "0002_mean_fat_cobra",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "7",
+      "when": 1793582894736,
+      "tag": "0003_mean_midnight",
+      "breakpoints": true
     }
   ]
 }

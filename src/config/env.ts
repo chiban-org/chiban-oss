@@ -28,6 +28,8 @@ const envSchema = z
     LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
     DATABASE_URL: z.string().min(1),
     BASE_URL: z.url(),
+    SMTP_URL: z.string().min(1).default('smtp://localhost:1025'),
+    MAIL_FROM: z.string().min(3).default('Town of Alder Pond <noreply@alderpond.example>'),
     CHIBAN_SECRET_KEYS: secretKeys,
     CHIBAN_ACTIVE_KEY_ID: z.string().regex(KEY_ID),
   })

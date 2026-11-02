@@ -1,4 +1,5 @@
 export * from './audit'
 export * from './identity'
+export * from './magicLinks'
 export * from './sessions'
 export * from './town'
