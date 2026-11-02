@@ -6,7 +6,7 @@ import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import type { CivilDate } from '@/types/civilDate'
 
 export interface ResolvedLength {
-  unit: 'days' | 'months'
+  unit: 'days' | 'months' | 'business_days'
   value: number
   source: 'pack_rule' | 'town_setting'
   packDefault: number
@@ -54,7 +54,7 @@ export function resolveRuleLength(
 
 export function computeRuleDue(
   rule: ClockRule,
-  length: { unit: 'days' | 'months'; value: number },
+  length: { unit: 'days' | 'months' | 'business_days'; value: number },
   start: CivilDate,
   holidays: HolidayCalendar,
 ): DueResult {

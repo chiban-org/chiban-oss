@@ -24,7 +24,7 @@ export const clocks = pgTable(
     startEvent: text('start_event').notNull(),
     startDate: date('start_date', { mode: 'string' }).notNull(),
     lengthValue: integer('length_value').notNull(),
-    lengthUnit: text('length_unit', { enum: ['days', 'months'] }).notNull(),
+    lengthUnit: text('length_unit', { enum: ['days', 'months', 'business_days'] }).notNull(),
     countingMethod: text('counting_method').notNull(),
     computedDue: date('computed_due', { mode: 'string' }).notNull(),
     currentDue: date('current_due', { mode: 'string' }).notNull(),
