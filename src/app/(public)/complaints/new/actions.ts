@@ -8,6 +8,7 @@ import { parcelForLocation } from '@/features/enforcement/caseParcel'
 import type { CleanPhoto } from '@/features/enforcement/complaintPhotos'
 import { MAX_COMPLAINT_CHARS, recordComplaint } from '@/features/enforcement/complaints'
 import { getObjectStore } from '@/features/storage/objectStore'
+import { ACTION_FILES_LIMIT_MB, complaintPhotosProblem } from '@/lib/uploadLimits'
 import { guardAction } from '@/server/actionGuard'
 import type { ActionResult } from '@/server/actionRunner'
 
@@ -34,6 +35,7 @@ const FieldsSchema = z.object({
 async function cleanPhotos(formData: FormData): Promise<CleanPhoto[] | null> {
   const files = formData.getAll('photos').filter((v): v is File => v instanceof File && v.size > 0)
   if (files.length > MAX_PHOTOS || files.some((f) => f.size > env.MAX_UPLOAD_BYTES)) return null
+  if (complaintPhotosProblem(files.map((f) => f.size)) !== null) return null
   const out: CleanPhoto[] = []
   for (const file of files) {
     const declared = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
@@ -64,7 +66,10 @@ export async function submitComplaintAction(formData: FormData): Promise<ActionR
   }
   const photos = await cleanPhotos(formData)
   if (photos === null) {
-    return { ok: false, error: 'Attach no more than 5 photos, and use JPEG or PNG files only.' }
+    return {
+      ok: false,
+      error: `Attach no more than 5 photos, use JPEG or PNG files only, and keep them under ${ACTION_FILES_LIMIT_MB} MB in all.`,
+    }
   }
   const v = fields.data
   const parcelId = await parcelForLocation(db, v.locationText, signal)

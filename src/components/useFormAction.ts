@@ -1,6 +1,6 @@
 import { type FormEvent, useActionState, useLayoutEffect, useRef } from 'react'
 
-const UNRESTORED_TYPES = new Set(['hidden', 'password', 'file', 'submit', 'button', 'reset'])
+const UNRESTORED_TYPES = new Set(['hidden', 'password', 'submit', 'button', 'reset'])
 
 type Field = HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
 
@@ -10,6 +10,13 @@ function isField(element: Element): element is Field {
     element instanceof HTMLTextAreaElement ||
     element instanceof HTMLSelectElement
   )
+}
+
+function restoreFiles(input: HTMLInputElement, files: File[]): void {
+  if (typeof DataTransfer === 'undefined' || files.length === 0) return
+  const transfer = new DataTransfer()
+  for (const file of files) transfer.items.add(file)
+  input.files = transfer.files
 }
 
 function restoreField(field: Field, submitted: string[]): void {
@@ -32,11 +39,18 @@ export function restoreSubmittedValues(
   for (const element of Array.from(form.elements)) {
     if (!isField(element) || element.name === '') continue
     if (element instanceof HTMLInputElement && UNRESTORED_TYPES.has(element.type)) continue
-    const submitted = entries
-      .filter(([name]) => name === element.name)
-      .map(([, value]) => value)
-      .filter((value): value is string => typeof value === 'string')
-    restoreField(element, submitted)
+    const values = entries.filter(([name]) => name === element.name).map(([, value]) => value)
+    if (element instanceof HTMLInputElement && element.type === 'file') {
+      restoreFiles(
+        element,
+        values.filter((value): value is File => typeof value !== 'string' && value.size > 0),
+      )
+      continue
+    }
+    restoreField(
+      element,
+      values.filter((value): value is string => typeof value === 'string'),
+    )
   }
 }
 

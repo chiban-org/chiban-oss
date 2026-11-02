@@ -1,10 +1,14 @@
 import type { NextConfig } from 'next'
 import { ANONYMOUS_PREFIXES } from './src/constants/anonymousRoutes'
+import { SERVER_ACTION_BODY_LIMIT_MB } from './src/lib/uploadLimits'
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ['pg', 'pg-boss', 'better-sqlite3', 'mupdf'],
   poweredByHeader: false,
-  experimental: { globalNotFound: true },
+  experimental: {
+    globalNotFound: true,
+    serverActions: { bodySizeLimit: `${SERVER_ACTION_BODY_LIMIT_MB}mb` },
+  },
   headers() {
     return Promise.resolve([
       {

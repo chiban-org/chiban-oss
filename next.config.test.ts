@@ -1,5 +1,7 @@
+import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
 import nextConfig from './next.config'
+import { SERVER_ACTION_BODY_LIMIT_MB } from './src/lib/uploadLimits'
 
 async function resolvedHeaders(): Promise<
   { source: string; headers: { key: string; value: string }[] }[]
@@ -43,6 +45,20 @@ describe('next config headers', () => {
   it('keeps the existing server settings', () => {
     expect(nextConfig.poweredByHeader).toBe(false)
     expect(nextConfig.serverExternalPackages).toEqual(['pg', 'pg-boss', 'better-sqlite3', 'mupdf'])
+  })
+})
+
+describe('next config server actions', () => {
+  it('accepts request bodies up to the shared upload limit instead of the 1 MB default', () => {
+    expect(nextConfig.experimental?.serverActions?.bodySizeLimit).toBe(
+      `${SERVER_ACTION_BODY_LIMIT_MB}mb`,
+    )
+  })
+
+  it('stays under the request body cap the reverse proxy enforces', () => {
+    const caddyfile = readFileSync(new URL('./deploy/Caddyfile', import.meta.url), 'utf8')
+    const proxyCapMb = Number(/max_size (\d+)MB/.exec(caddyfile)?.[1])
+    expect(SERVER_ACTION_BODY_LIMIT_MB).toBeLessThan(proxyCapMb)
   })
 })
 
