@@ -37,7 +37,7 @@ export interface PackManifest {
 
 export const NH_PACK_MANIFEST: PackManifest = {
   id: 'nh',
-  version: '0.4.0',
+  version: '0.5.0',
   rules: [
     ...BUILDING_RULES,
     ...APPEAL_RULES,
