@@ -22,29 +22,36 @@ function motionFiledOn(order: OrderDetail): CivilDate | null {
   return (step?.occurredOn ?? null) as CivilDate | null
 }
 
+function OrderSummary({ order, detail }: { order: OrderDetail; detail: CaseDetail }) {
+  const { row } = order
+  return (
+    <p className="m-0">
+      {`${order.rule.label} (`}
+      <a href={order.rule.citation.url ?? undefined} className="text-action underline">
+        {order.rule.citation.label}
+      </a>
+      {`). Corrective action: ${row.correctiveAction === '' ? 'not written yet' : row.correctiveAction.replace(/\.$/, '')}`}
+      {row.correctiveDeadline === null ? '' : `, due ${formatCivilDate(row.correctiveDeadline)}`}
+      {row.ceaseImmediately ? '. The order requires the activity to stop immediately' : ''}
+      {row.issuedOn === null
+        ? '.'
+        : `. Issued ${formatCivilDate(row.issuedOn)}${row.issuedBy === null ? '' : ` by ${detail.names[row.issuedBy] ?? 'staff'}`}.`}{' '}
+      {row.documentId === null ? null : (
+        <a href={`/api/documents/${row.documentId}`} className="text-action underline">
+          Open order
+        </a>
+      )}
+    </p>
+  )
+}
+
 function OrderBlock({ order, detail, can }: { order: OrderDetail; detail: CaseDetail; can: Can }) {
   const { row } = order
   const issued = row.status !== 'draft'
   return (
     <article className="space-y-4 rounded-md border p-4">
       <h3 className="m-0">{`${row.number}, ${ORDER_STATUS_LABELS[row.status]}`}</h3>
-      <p className="m-0">
-        {`${order.rule.label} (`}
-        <a href={order.rule.citation.url ?? undefined} className="text-action underline">
-          {order.rule.citation.label}
-        </a>
-        {`). Corrective action: ${row.correctiveAction === '' ? 'not written yet' : row.correctiveAction.replace(/\.$/, '')}`}
-        {row.correctiveDeadline === null ? '' : `, due ${formatCivilDate(row.correctiveDeadline)}`}
-        {row.ceaseImmediately ? '. The order requires the activity to stop immediately' : ''}
-        {row.issuedOn === null
-          ? '.'
-          : `. Issued ${formatCivilDate(row.issuedOn)}${row.issuedBy === null ? '' : ` by ${detail.names[row.issuedBy] ?? 'staff'}`}.`}{' '}
-        {row.documentId === null ? null : (
-          <a href={`/api/documents/${row.documentId}`} className="text-action underline">
-            Open order
-          </a>
-        )}
-      </p>
+      <OrderSummary order={order} detail={detail} />
       {!issued && can.issue ? (
         <ActionForm action={issueOrderAction} submitLabel="Issue order">
           <Hidden name="orderId" value={row.id} />

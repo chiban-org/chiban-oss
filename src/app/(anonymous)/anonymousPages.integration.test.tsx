@@ -5,7 +5,7 @@ import { makeTestDb, type TestDb } from '@/test/db'
 import { findIsoDates, findUuids, visibleText } from '@/test/leaks'
 import { seedParcelWorld } from '@/test/parcels'
 
-const state = vi.hoisted(() => ({ db: null as unknown }))
+const state = vi.hoisted((): { db: unknown } => ({ db: null }))
 
 vi.mock('@/db/client', () => ({
   get db() {

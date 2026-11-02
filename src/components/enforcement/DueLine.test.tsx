@@ -24,7 +24,7 @@ const due = computeSubjectDue(rule, d('2027-03-01'), {
 describe('DueLine', () => {
   it('DueLine shows rolled from 2027-03-21', () => {
     const { container } = render(<DueLine due={due} today={d('2027-03-10')} />)
-    const text = container.textContent ?? ''
+    const text = container.textContent
     expect(text).toContain('Due March 22, 2027, moved from March 21, 2027.')
     expect(text).toContain('12 days left.')
     expect(text).not.toMatch(/\d{4}-\d{2}-\d{2}/)
@@ -32,7 +32,7 @@ describe('DueLine', () => {
 
   it('shows the rule label, citation, start event, counting method, and consequence', () => {
     const { container } = render(<DueLine due={due} today={d('2027-03-10')} />)
-    const text = container.textContent ?? ''
+    const text = container.textContent
     expect(text).toContain('Answer to a cease and desist order')
     expect(screen.getByRole('link', { name: 'RSA 676:17-a V' }).getAttribute('href')).toContain(
       'gc.nh.gov',

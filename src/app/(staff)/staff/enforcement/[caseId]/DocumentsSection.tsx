@@ -33,7 +33,7 @@ export function DocumentsSection({
             <a href={`/api/documents/${d.documentId}`} className="text-action underline">
               {d.title}
             </a>
-            {`, ${DOCUMENT_KIND_LABELS[d.docKind as keyof typeof DOCUMENT_KIND_LABELS] ?? 'Document'}, added ${formatInstantDate(new Date(d.createdAt), zone)}. ${d.isPublic ? 'Public.' : 'Private.'}`}
+            {`, ${DOCUMENT_KIND_LABELS[d.docKind as keyof typeof DOCUMENT_KIND_LABELS]}, added ${formatInstantDate(new Date(d.createdAt), zone)}. ${d.isPublic ? 'Public.' : 'Private.'}`}
           </li>
         ))}
       </ul>

@@ -64,16 +64,18 @@ const COPY: Record<string, string> = {
 
 type Failure = string | { missingContent: string[] } | { filingLeadUntil: CivilDate } | object
 
+function contentLabel(key: string): string {
+  return Object.entries(ORDER_CONTENT_LABELS).find(([k]) => k === key)?.[1] ?? key
+}
+
 export function enforcementError(error: Failure): string {
   if (typeof error === 'string') return COPY[error] ?? errorCopy(error)
   if ('missingContent' in error) {
-    const names = (error.missingContent as string[]).map(
-      (key) => ORDER_CONTENT_LABELS[key as keyof typeof ORDER_CONTENT_LABELS] ?? key,
-    )
+    const names = error.missingContent.map(contentLabel)
     return `The order is missing: ${names.join(', ')}.`
   }
   if ('filingLeadUntil' in error) {
-    return `The motion cannot be filed until ${formatCivilDate(error.filingLeadUntil as CivilDate)}, five days after the order was filed with the clerk.`
+    return `The motion cannot be filed until ${formatCivilDate(error.filingLeadUntil)}, five days after the order was filed with the clerk.`
   }
   return errorCopy('unknown')
 }
@@ -98,8 +100,6 @@ export async function runEnforcement<S extends z.ZodType>(
     const parsed = schema.safeParse(formValues(formData))
     if (!parsed.success) return { ok: false, error: enforcementError('invalid') }
     const result = await call(ctx, parsed.data)
-    return result.ok
-      ? { ok: true, message }
-      : { ok: false, error: enforcementError(result.error as Failure) }
+    return result.ok ? { ok: true, message } : { ok: false, error: enforcementError(result.error) }
   })
 }

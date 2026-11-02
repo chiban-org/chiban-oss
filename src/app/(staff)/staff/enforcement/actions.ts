@@ -71,7 +71,7 @@ export async function setCaseStatusAction(formData: FormData): Promise<ActionRes
         actor,
         {
           caseId: v.caseId,
-          to: v.to as EnforcementStatus,
+          to: v.to,
           expectedRowVersion: v.expectedRowVersion,
           ...(v.reason === undefined ? {} : { reason: v.reason }),
         },

@@ -157,7 +157,7 @@ export default tseslint.config(
             { name: '@/server/actionRunner', message: 'The anonymous path uses no action runner.' },
           ],
           patterns: [
-            '../../../*',
+            { group: ['../../../*'] },
             { group: ['@/features/auth/*'], message: 'The anonymous path reads no account.' },
             { group: ['@/server/trpc/*'], message: 'The anonymous path uses no tRPC context.' },
           ],

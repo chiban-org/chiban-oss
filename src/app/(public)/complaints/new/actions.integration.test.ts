@@ -62,7 +62,7 @@ function form(fields: Record<string, string | File | File[]>, token: string | nu
   if (token !== null) f.set('csrf_token', token)
   const base = { locationText: '14 Birch Lane', description: 'A shed with no permit', ...fields }
   for (const [key, value] of Object.entries(base)) {
-    for (const v of Array.isArray(value) ? value : [value]) f.append(key, v)
+    for (const v of Array.isArray(value) ? value : [value]) f.append(key, v as string | Blob)
   }
   return f
 }

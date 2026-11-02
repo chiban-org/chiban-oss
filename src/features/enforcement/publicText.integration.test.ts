@@ -73,7 +73,7 @@ async function anonymousComplaint() {
   expect(response.status).toBe(303)
   const [row] = await handle.db.select().from(complaints)
   if (row?.caseId === null || row === undefined) throw new Error('no complaint')
-  return { complaintId: row.id, caseId: row.caseId ?? '' }
+  return { complaintId: row.id, caseId: row.caseId }
 }
 
 describe('complaint redaction and the public case record', () => {

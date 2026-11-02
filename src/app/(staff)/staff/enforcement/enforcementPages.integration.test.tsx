@@ -139,7 +139,7 @@ describe('enforcement queue and case pages', () => {
   it('the stayed case shows the stay banner and the court gate in words', async () => {
     await actAs('staff')
     const pages = await Promise.all(
-      caseIds.map(async (c) => html(CasePage({ params: Promise.resolve({ caseId: c.id }) }))),
+      caseIds.map(async (c) => await html(CasePage({ params: Promise.resolve({ caseId: c.id }) }))),
     )
     expect(pages.some((p) => p.includes('Enforcement stayed by appeal to the ZBA filed'))).toBe(
       true,

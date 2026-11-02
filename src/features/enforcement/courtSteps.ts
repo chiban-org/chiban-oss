@@ -111,6 +111,38 @@ function judgmentAppealDue(rule: ClockRule, on: CivilDate): SubjectDue {
   })
 }
 
+interface StepContext {
+  value: z.output<typeof CourtStepSchema>
+  rule: ReturnType<typeof orderRule>
+  status: ReturnType<typeof statusOf>
+  state: Awaited<ReturnType<typeof loadServiceState>>
+  steps: (typeof orderCourtSteps.$inferSelect)[]
+  filedOn: string | null
+  stay: StayState
+}
+
+function stepRefusal(c: StepContext): CourtStepError | null {
+  const { value } = c
+  if (value.kind !== 'judgment' && c.stay.stayed) return 'stayed'
+  if (value.kind === 'filed_with_clerk')
+    return c.status.complete ? null : 'filing_needs_complete_service'
+  if (value.kind === 'motion_to_enforce') {
+    return (
+      firstMotionBlock({
+        rule: c.rule,
+        status: c.status,
+        state: c.state,
+        filedOn: c.filedOn,
+        stay: c.stay,
+        today: value.occurredOn,
+      }) ?? null
+    )
+  }
+  const motion = c.steps.find((s) => s.kind === 'motion_to_enforce')
+  if (motion === undefined) return 'motion_required'
+  return value.occurredOn < motion.occurredOn ? 'date_before_motion' : null
+}
+
 export async function recordCourtStep(
   db: Db,
   actor: Actor,
@@ -149,26 +181,8 @@ export async function recordCourtStep(
         .map((s) => s.occurredOn)
         .sort()[0] ?? null
     const stay = await stayFor(tx, order.caseId, value.occurredOn, signal)
-    if (value.kind !== 'judgment' && stay.stayed) return err('stayed')
-    if (value.kind === 'filed_with_clerk' && !status.complete) {
-      return err('filing_needs_complete_service')
-    }
-    if (value.kind === 'motion_to_enforce') {
-      const block = firstMotionBlock({
-        rule,
-        status,
-        state,
-        filedOn,
-        stay,
-        today: value.occurredOn,
-      })
-      if (block !== undefined) return err(block)
-    }
-    const motion = steps.find((s) => s.kind === 'motion_to_enforce')
-    if (value.kind === 'judgment' && motion === undefined) return err('motion_required')
-    if (value.kind === 'judgment' && motion !== undefined && value.occurredOn < motion.occurredOn) {
-      return err('date_before_motion')
-    }
+    const refusal = stepRefusal({ value, rule, status, state, steps, filedOn, stay })
+    if (refusal !== null) return err(refusal)
     const appealDue =
       value.kind === 'judgment'
         ? judgmentAppealDue(enforcementRulesFor(rule).judgmentAppeal, value.occurredOn)

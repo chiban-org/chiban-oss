@@ -61,7 +61,7 @@ describe('ServiceChecklist', () => {
     const status = serviceStatus(rule, state)
     const { container } = render(<ServiceChecklist rule={rule} status={status} state={state} />)
     const tenant = Array.from(container.querySelectorAll('li')).find((li) =>
-      li.textContent?.includes('Robin Renter'),
+      li.textContent.includes('Robin Renter'),
     )
     expect(tenant?.textContent).toContain('Not served')
     expect(tenant?.querySelector('.bg-highlight')?.textContent).toBe('Not served')
