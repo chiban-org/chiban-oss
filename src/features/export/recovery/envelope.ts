@@ -1,5 +1,6 @@
 import { createCipheriv, createDecipheriv, randomBytes, scrypt } from 'node:crypto'
 import { Readable } from 'node:stream'
+import { z } from 'zod'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 
 const MAGIC = 'CHIBANREC1\n'
@@ -11,15 +12,6 @@ const LENGTH_BYTES = 4
 const CHUNK_BYTES = 65536
 const MAX_CHUNK_BYTES = 1024 * 1024
 const KDF_MAXMEM = 128 * 1024 * 1024
-
-interface Header {
-  kdf: 'scrypt'
-  N: number
-  r: number
-  p: number
-  salt: string
-  chunk: number
-}
 
 function invalid(detail: string): AppError {
   return new AppError(ErrorIds.EXPORT_ENVELOPE_INVALID, 'recovery envelope is not valid', {
@@ -141,25 +133,26 @@ class Reader {
   }
 }
 
+const headerSchema = z.object({
+  kdf: z.literal('scrypt'),
+  N: z.number().int().min(1024).max(1048576),
+  r: z.literal(KDF.r),
+  p: z.literal(KDF.p),
+  salt: z.string().min(1),
+  chunk: z.number().int().positive().max(MAX_CHUNK_BYTES),
+})
+
+type Header = z.infer<typeof headerSchema>
+
 async function readHeader(reader: Reader): Promise<Header> {
   if ((await reader.line()) !== MAGIC) throw invalid('not a recovery envelope')
   const raw = await reader.line()
   if (raw === null) throw invalid('missing header')
-  const parsed = JSON.parse(raw) as Partial<Header>
-  const header = parsed as Header
-  const sane =
-    header.kdf === 'scrypt' &&
-    Number.isInteger(header.N) &&
-    header.N >= 1024 &&
-    header.N <= 1 << 20 &&
-    header.r === KDF.r &&
-    header.p === KDF.p &&
-    typeof header.salt === 'string' &&
-    Number.isInteger(header.chunk) &&
-    header.chunk > 0 &&
-    header.chunk <= MAX_CHUNK_BYTES
-  if (!sane) throw invalid('unsupported header')
-  return header
+  try {
+    return headerSchema.parse(JSON.parse(raw))
+  } catch {
+    throw invalid('unsupported header')
+  }
 }
 
 function openChunk(key: Buffer, index: number, last: boolean, frame: Buffer): Buffer {
