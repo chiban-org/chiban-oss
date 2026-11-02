@@ -30,6 +30,7 @@ import {
   serviceStatus,
 } from '@/features/enforcement/serviceStatus'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -257,6 +258,7 @@ export type ServiceEventError =
   | 'proof_required'
   | 'fallback_needs_owner_not_found'
   | 'server_role_required'
+  | 'date_in_future'
 
 const FALLBACK_METHODS = ['posting_on_property', 'newspaper_publication']
 const PERSONAL_METHODS = ['in_hand', 'abode']
@@ -287,6 +289,7 @@ export async function recordServiceEvent(
   actor: Actor,
   input: z.input<typeof ServiceEventSchema>,
   signal: AbortSignal,
+  now: Date = new Date(),
 ): Promise<Result<{ eventId: string; status: ServiceStatus }, ServiceEventError>> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'enforcement.record_service', signal)
@@ -302,6 +305,7 @@ export async function recordServiceEvent(
       const order = await issuedOrderForUpdate(tx, value.orderId)
       if (order === undefined) return err('not_found')
       if (order.status === 'draft') return err('order_not_issued')
+      if (value.servedOn > (await townToday(tx, now, signal))) return err('date_in_future')
       const rule = orderRule(order)
       const before = await loadServiceState(tx, value.orderId, signal)
       const invalid = serviceInputError(rule, before, value)

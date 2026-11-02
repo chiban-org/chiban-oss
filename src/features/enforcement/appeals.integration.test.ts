@@ -70,6 +70,35 @@ async function readyForMotion() {
 }
 
 describe('stay on appeal', () => {
+  it('an appeal filed after today is refused', async () => {
+    const filed = await recordEnforcementAppeal(
+      handle.db,
+      world.staff,
+      {
+        caseId: order.caseId,
+        targetKind: 'order',
+        targetId: order.orderId,
+        filedOn: d('2027-07-21'),
+        appellantName: 'Pat Owner',
+      },
+      signal,
+      LATER,
+    )
+    expect(filed).toEqual({ ok: false, error: 'date_in_future' })
+  })
+
+  it('an appeal resolved after today is refused', async () => {
+    const appealId = await appeal()
+    const resolved = await resolveEnforcementAppeal(
+      handle.db,
+      world.staff,
+      { appealId, resolvedOn: d('2027-07-21'), outcome: 'annulled' },
+      signal,
+      LATER,
+    )
+    expect(resolved).toEqual({ ok: false, error: 'date_in_future' })
+  })
+
   it('motion during an unresolved appeal is stayed', async () => {
     await readyForMotion()
     await appeal()
@@ -125,6 +154,7 @@ describe('stay on appeal', () => {
       world.staff,
       { appealId, resolvedOn: d('2027-05-10'), outcome: 'upheld' },
       signal,
+      LATER,
     )
     const result = await certifyImminentPeril(
       handle.db,
@@ -184,6 +214,7 @@ describe('stay on appeal', () => {
       world.staff,
       { appealId, resolvedOn: d('2027-05-10'), outcome: 'upheld' },
       signal,
+      LATER,
     )
     expect(resolved.ok).toBe(true)
     expect((await step('filed_with_clerk', '2027-05-11')).ok).toBe(true)
@@ -222,6 +253,7 @@ describe('stay on appeal', () => {
         proofDocumentId: await uploadProof(handle.db, store, world.staff, order.caseId),
       },
       signal,
+      LATER,
     )
     expect(recorded.ok).toBe(true)
     const [row] = await handle.db
@@ -313,6 +345,7 @@ describe('stay on appeal', () => {
         appellantName: 'Pat Owner',
       },
       signal,
+      LATER,
     )
     expect(result).toEqual({ ok: false, error: 'target_not_found' })
   })
@@ -325,6 +358,7 @@ describe('stay on appeal', () => {
       world.staff,
       { appealId, resolvedOn: d('2027-05-10'), outcome: 'annulled' },
       signal,
+      LATER,
     )
     const [row] = await handle.db
       .select()

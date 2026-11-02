@@ -13,6 +13,7 @@ import { seedParcelWorld, staffActor } from '@/test/parcels'
 
 const signal = new AbortController().signal
 export const FIXTURE_NOW = new Date('2027-02-26T15:00:00Z')
+export const SERVICE_CLOCK = new Date('2027-12-31T15:00:00Z')
 
 export interface EnforcementWorld {
   staff: Actor
@@ -250,6 +251,7 @@ export async function completeService(
         proofDocumentId: await uploadProof(db, store, world.staff, order.caseId),
       },
       signal,
+      SERVICE_CLOCK,
     ),
     'service',
   )

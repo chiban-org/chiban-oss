@@ -153,6 +153,7 @@ describe('fines on the ledger', () => {
         appellantName: 'Pat Owner',
       },
       signal,
+      NOW,
     )
     expect(await fine(step)).toEqual({ ok: false, error: 'stayed' })
   })
@@ -170,6 +171,7 @@ describe('fines on the ledger', () => {
         appellantName: 'Pat Owner',
       },
       signal,
+      NOW,
     )
     if (!appeal.ok) throw new Error('appeal')
     const held = await holdOpen(handle.db, async (tx) => {
@@ -178,6 +180,7 @@ describe('fines on the ledger', () => {
         world.staff,
         { appealId: appeal.value.appealId, resolvedOn: d('2027-07-10'), outcome: 'annulled' },
         signal,
+        NOW,
       )
       if (!resolved.ok) throw new Error(resolved.error)
     })

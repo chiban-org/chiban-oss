@@ -162,6 +162,7 @@ async function inHand(
         proofDocumentId: proof,
       },
       ctx.signal,
+      ctx.now,
     ),
     'service in hand',
   )
@@ -290,6 +291,7 @@ export async function seedNotFoundCase(ctx: EnforcementSeedContext): Promise<voi
           proofDocumentId: proof,
         },
         ctx.signal,
+        ctx.now,
       ),
       'posting and publication',
     )
@@ -337,6 +339,7 @@ export async function seedStayedCase(ctx: EnforcementSeedContext): Promise<void>
         appellantName: 'Drew Homeowner',
       },
       ctx.signal,
+      ctx.now,
     ),
     'appeal',
   )

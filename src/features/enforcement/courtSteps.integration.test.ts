@@ -211,6 +211,7 @@ describe('answer periods and the motion gate', () => {
           proofDocumentId: await uploadProof(handle.db, store, world.staff, order.caseId, 'Proof'),
         },
         signal,
+        LATER,
       )
       if (!recorded.ok) throw new Error(recorded.error)
     }
@@ -260,6 +261,7 @@ describe('answer periods and the motion gate', () => {
           proofDocumentId: await uploadProof(handle.db, store, world.staff, order.caseId, 'Proof'),
         },
         signal,
+        LATER,
       )
       if (!recorded.ok) throw new Error(recorded.error)
     }

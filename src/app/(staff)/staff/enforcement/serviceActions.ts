@@ -68,6 +68,7 @@ export async function serviceEventAction(formData: FormData): Promise<ActionResu
           proofDocumentId: v.proofDocumentId ?? null,
         },
         signal,
+        new Date(),
       ),
     'Service recorded.',
   )

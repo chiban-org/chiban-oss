@@ -17,6 +17,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { lockCase } from '@/features/enforcement/cases'
+import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
 
 const AppealSchema = z.object({
@@ -52,8 +53,10 @@ export async function recordEnforcementAppeal(
   actor: Actor,
   input: z.input<typeof AppealSchema>,
   signal: AbortSignal,
-  _now: Date = new Date(),
-): Promise<Result<{ appealId: string }, 'forbidden' | 'invalid' | 'target_not_found'>> {
+  now: Date = new Date(),
+): Promise<
+  Result<{ appealId: string }, 'forbidden' | 'invalid' | 'target_not_found' | 'date_in_future'>
+> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'enforcement.record_service', signal)
   if (!allowed.ok) return err('forbidden')
@@ -61,6 +64,7 @@ export async function recordEnforcementAppeal(
   if (!parsed.success) return err('invalid')
   const value = parsed.data
   return await transactionResult(db, async (tx) => {
+    if (value.filedOn > (await townToday(tx, now, signal))) return err('date_in_future')
     const issuer = await targetIssuer(tx, value.caseId, value.targetKind, value.targetId)
     if (issuer === undefined) return err('target_not_found')
     const [row] = await tx
@@ -100,7 +104,10 @@ export async function resolveEnforcementAppeal(
   actor: Actor,
   input: z.input<typeof ResolveSchema>,
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden' | 'invalid' | 'not_found' | 'already_resolved'>> {
+  now: Date = new Date(),
+): Promise<
+  Result<void, 'forbidden' | 'invalid' | 'not_found' | 'already_resolved' | 'date_in_future'>
+> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'enforcement.record_service', signal)
   if (!allowed.ok) return err('forbidden')
@@ -108,6 +115,7 @@ export async function resolveEnforcementAppeal(
   if (!parsed.success) return err('invalid')
   const value = parsed.data
   return await transactionResult(db, async (tx) => {
+    if (value.resolvedOn > (await townToday(tx, now, signal))) return err('date_in_future')
     const [target] = await tx
       .select({ caseId: enforcementAppeals.caseId })
       .from(enforcementAppeals)

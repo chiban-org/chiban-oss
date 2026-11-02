@@ -35,6 +35,7 @@ export async function appealAction(formData: FormData): Promise<ActionResult> {
           appellantName: v.appellantName,
         },
         signal,
+        new Date(),
       )
     },
     'Appeal recorded.',
@@ -45,7 +46,7 @@ export async function resolveAppealAction(formData: FormData): Promise<ActionRes
   return await runEnforcement(
     formData,
     z.object({ appealId: uuid, resolvedOn: date, outcome: z.enum(ENFORCEMENT_APPEAL_OUTCOMES) }),
-    ({ db, actor, signal }, v) => resolveEnforcementAppeal(db, actor, v, signal),
+    ({ db, actor, signal }, v) => resolveEnforcementAppeal(db, actor, v, signal, new Date()),
     'Appeal resolved.',
   )
 }

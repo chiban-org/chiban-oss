@@ -13,6 +13,7 @@ import {
   type EnforcementWorld,
   type IssuedOrder,
   issuedOrder,
+  SERVICE_CLOCK,
   setupEnforcementWorld,
   uploadProof,
 } from '@/test/enforcementFixtures'
@@ -59,6 +60,26 @@ async function proof(title = 'Return of service') {
 }
 
 describe('service of an order', () => {
+  it('a service event dated after today is refused', async () => {
+    const recipientId = await addOwner()
+    const result = await recordServiceEvent(
+      handle.db,
+      world.staff,
+      {
+        orderId: order.orderId,
+        recipientId,
+        method: 'in_hand',
+        servedOn: d('2027-03-02'),
+        serverName: 'Sgt. Lee',
+        serverRole: 'local_police_officer',
+        proofDocumentId: await uploadProof(handle.db, store, world.staff, order.caseId),
+      },
+      signal,
+      new Date('2027-03-01T15:00:00Z'),
+    )
+    expect(result).toEqual({ ok: false, error: 'date_in_future' })
+  })
+
   it('service event without proof is proof_required', async () => {
     const recipientId = await addOwner()
     const result = await recordServiceEvent(
@@ -74,6 +95,7 @@ describe('service of an order', () => {
         proofDocumentId: null,
       },
       signal,
+      SERVICE_CLOCK,
     )
     expect(result).toEqual({ ok: false, error: 'proof_required' })
   })
@@ -95,6 +117,7 @@ describe('service of an order', () => {
         proofDocumentId: foreign,
       },
       signal,
+      SERVICE_CLOCK,
     )
     expect(result).toEqual({ ok: false, error: 'proof_required' })
   })
@@ -122,6 +145,7 @@ describe('service of an order', () => {
         proofDocumentId: photo,
       },
       signal,
+      SERVICE_CLOCK,
     )
     expect(result).toEqual({ ok: false, error: 'proof_required' })
   })
@@ -139,6 +163,7 @@ describe('service of an order', () => {
         proofDocumentId: await proof('Tear sheet'),
       },
       signal,
+      SERVICE_CLOCK,
     )
     expect(result).toEqual({ ok: false, error: 'fallback_needs_owner_not_found' })
   })
@@ -156,6 +181,7 @@ describe('service of an order', () => {
         proofDocumentId: await proof(),
       },
       signal,
+      SERVICE_CLOCK,
     )
     expect(result).toEqual({ ok: false, error: 'server_role_required' })
   })
@@ -175,6 +201,7 @@ describe('service of an order', () => {
         proofDocumentId: await proof(),
       },
       signal,
+      SERVICE_CLOCK,
     )
     expect(result).toEqual({ ok: false, error: 'server_role_required' })
   })
@@ -223,6 +250,7 @@ describe('service of an order', () => {
         proofDocumentId: await proof(),
       },
       signal,
+      SERVICE_CLOCK,
     )
     if (!result.ok) throw new Error(result.error)
     expect(result.value.status.complete).toBe(true)
