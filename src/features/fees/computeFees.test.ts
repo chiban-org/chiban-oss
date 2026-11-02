@@ -219,4 +219,17 @@ describe('computeFees', () => {
     const r = price(BUILDING, { finished_sq_ft: '100' })
     expect(r.lines[0]?.explanation.join(' ')).toMatch(/minimum/i)
   })
+
+  it('explains each step in dollars, never in cents', () => {
+    const r = price(BUILDING, { finished_sq_ft: '100' })
+    const steps = r.lines.flatMap((l) => l.explanation)
+    expect(steps.join(' | ')).not.toMatch(/cents/)
+    expect(steps).toContain('Minimum $40.00 applied')
+    expect(steps.some((step) => step.includes('$0.35 per unit'))).toBe(true)
+  })
+
+  it('names a measured field in words', () => {
+    const r = price(BUILDING, { finished_sq_ft: '100' })
+    expect(r.lines.flatMap((l) => l.explanation).join(' ')).toContain('Finished sq ft')
+  })
 })

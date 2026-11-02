@@ -1,5 +1,6 @@
 import type { RecordRule } from '@packs/nh/schema'
 import { formatCivilDate } from '@/lib/formatDate'
+import { words } from '@/lib/words'
 
 const NOT_RECORDED = 'Not recorded'
 
@@ -14,14 +15,6 @@ const LABELS: Record<string, string> = {
 }
 
 const DATE_FIELDS = new Set(['receiptDate', 'completedDate'])
-
-function words(raw: string): string {
-  const spaced = raw
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .replaceAll('_', ' ')
-    .toLowerCase()
-  return spaced.charAt(0).toUpperCase() + spaced.slice(1)
-}
 
 function amendmentLine(entry: unknown): string {
   const { title, codeSection } = entry as { title: string; codeSection: string }

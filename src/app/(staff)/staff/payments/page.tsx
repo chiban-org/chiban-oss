@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { StatusChip } from '@/components/StatusChip'
 import { loadPaymentsOverview } from '@/features/payments/overview'
 import { townToday } from '@/features/town/today'
+import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { requireStaffContext } from '@/server/requireStaff'
 
@@ -72,7 +73,7 @@ export default async function PaymentsPage() {
         </ul>
       </section>
       <section aria-label="Today">
-        <h2>{`Entries for ${today}`}</h2>
+        <h2>{`Entries for ${formatCivilDate(today)}`}</h2>
         {todaysEntries.length === 0 ? <p>No money has moved today.</p> : null}
         <table className="my-2 w-full text-sm">
           <tbody>

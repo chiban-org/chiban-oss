@@ -14,6 +14,7 @@ import { stateLabel } from '@/features/applications/stateLabel'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
+import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { overrideGateAction, revokeOverrideAction, statutoryExceptionAction } from './actions'
 import { AppealPanel, CodeEditionPanel, RegionalImpactPanel } from './buildingPanels'
@@ -127,8 +128,10 @@ export default async function StaffApplicationPage({ params }: Props) {
         <Link href={`/staff/parcels/${view.parcelId}`} className="text-action underline">
           {view.parcelDisplayId}
         </Link>
-        {view.receivedDate === null ? '. Not yet submitted.' : `. Received ${view.receivedDate}.`}
-        {view.issuedOn === null ? '' : ` Issued ${view.issuedOn}.`}
+        {view.receivedDate === null
+          ? '. Not yet submitted.'
+          : `. Received ${formatCivilDate(view.receivedDate)}.`}
+        {view.issuedOn === null ? '' : ` Issued ${formatCivilDate(view.issuedOn)}.`}
       </p>
       <TransitionBar view={view} />
       <PartiesPanel view={view} />

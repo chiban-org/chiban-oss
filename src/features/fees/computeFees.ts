@@ -3,6 +3,8 @@ import type { Sourced } from '@/features/fees/sourced'
 import { evaluateCondition } from '@/features/forms/condition'
 import type { FieldValue, ProjectFacts } from '@/features/forms/validateSubmission'
 import type { HonestValue } from '@/features/honest/honest'
+import { formatCents } from '@/lib/money'
+import { words } from '@/lib/words'
 
 const SCALE = 10_000n
 const HALF = SCALE / 2n
@@ -68,8 +70,13 @@ function quantity(source: FeeSource, ctx: FeeContext): bigint {
   return BigInt(ctx.counts.abutters.value) * SCALE
 }
 
+function unitRate(centsPerUnit: number): string {
+  if (Number.isInteger(centsPerUnit)) return formatCents(centsPerUnit)
+  return `$${(centsPerUnit / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`
+}
+
 function sourceLabel(source: FeeSource): string {
-  return source.kind === 'field' ? source.field : source.what
+  return source.kind === 'field' ? words(source.field) : words(source.what)
 }
 
 function evalTiered(expr: Extract<FeeExpr, { op: 'tiered' }>, ctx: FeeContext): Node {
@@ -102,13 +109,16 @@ function evalTiered(expr: Extract<FeeExpr, { op: 'tiered' }>, ctx: FeeContext): 
 function evalExpr(expr: FeeExpr, ctx: FeeContext): Node {
   switch (expr.op) {
     case 'flat':
-      return { scaledCents: BigInt(expr.cents) * SCALE, steps: [`Flat ${expr.cents} cents`] }
+      return {
+        scaledCents: BigInt(expr.cents) * SCALE,
+        steps: [`Flat fee ${formatCents(expr.cents)}`],
+      }
     case 'per_unit': {
       const qty = quantity(expr.source, ctx)
       const product = (qty * scaledFromNumber(expr.centsPerUnit)) / SCALE
       return {
         scaledCents: roundHalfUp(product) * SCALE,
-        steps: [`${sourceLabel(expr.source)} at ${expr.centsPerUnit} cents per unit`],
+        steps: [`${sourceLabel(expr.source)} at ${unitRate(expr.centsPerUnit)} per unit`],
       }
     }
     case 'tiered': {
@@ -121,7 +131,7 @@ function evalExpr(expr: FeeExpr, ctx: FeeContext): Node {
       const applied = inner.scaledCents < floor
       return {
         scaledCents: applied ? floor : inner.scaledCents,
-        steps: [...inner.steps, `Minimum ${expr.cents} cents${applied ? ' applied' : ''}`],
+        steps: [...inner.steps, `Minimum ${formatCents(expr.cents)}${applied ? ' applied' : ''}`],
       }
     }
     case 'sum': {
@@ -165,7 +175,10 @@ function priceLine(line: FeeScheduleBody['lines'][number], ctx: FeeContext): Fee
         source: 'manual_override',
         replaced: { value: computed, source: 'town_setting' },
       },
-      explanation: [...node.steps, override.kind === 'waive' ? 'Waived' : `Set to ${value} cents`],
+      explanation: [
+        ...node.steps,
+        override.kind === 'waive' ? 'Waived' : `Set to ${formatCents(value)}`,
+      ],
     }
   } catch (e) {
     if (e instanceof Pending) return { ...head, amount: { pending: e.message }, explanation: [] }
