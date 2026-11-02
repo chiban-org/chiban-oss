@@ -30,6 +30,7 @@ vi.mock('./actions', () => ({
   quickIssueAction: vi.fn(),
   readerAction: vi.fn(),
   reconnectAction: vi.fn(),
+  sendClaimAction: vi.fn(),
 }))
 
 const { default: CounterPage } = await import('./page')
