@@ -1,7 +1,12 @@
-import { and, eq, inArray, isNull } from 'drizzle-orm'
+import { and, count, eq, inArray, isNull } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db, Tx } from '@/db/client'
-import { complaints, type EnforcementStatus, enforcementCases } from '@/db/schema'
+import {
+  complaints,
+  type EnforcementStatus,
+  enforcementCases,
+  violationFindings,
+} from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -92,7 +97,31 @@ export async function openCase(
   })
 }
 
-export type SetStatusError = 'forbidden' | 'not_found' | 'invalid_transition' | 'stale_version'
+export type SetStatusError =
+  | 'forbidden'
+  | 'not_found'
+  | 'invalid_transition'
+  | 'stale_version'
+  | 'reason_required'
+  | 'finding_required'
+
+export const STATUSES_SET_BY_THEIR_STEP: readonly EnforcementStatus[] = ['order_issued', 'in_court']
+
+async function transitionBlock(
+  tx: Tx,
+  caseId: string,
+  to: EnforcementStatus,
+  reason: string,
+): Promise<SetStatusError | null> {
+  if (STATUSES_SET_BY_THEIR_STEP.includes(to)) return 'invalid_transition'
+  if (to === 'closed' && reason === '') return 'reason_required'
+  if (to !== 'violation_found') return null
+  const [found] = await tx
+    .select({ n: count() })
+    .from(violationFindings)
+    .where(eq(violationFindings.caseId, caseId))
+  return (found?.n ?? 0) === 0 ? 'finding_required' : null
+}
 
 export async function setCaseStatus(
   db: Db,
@@ -113,6 +142,9 @@ export async function setCaseStatus(
     if (row === undefined) return err('not_found')
     if (row.rowVersion !== input.expectedRowVersion) return err('stale_version')
     if (!CASE_TRANSITIONS[row.status].includes(input.to)) return err('invalid_transition')
+    const reason = input.reason?.trim() ?? ''
+    const blocked = await transitionBlock(tx, input.caseId, input.to, reason)
+    if (blocked !== null) return err(blocked)
     const today = await townToday(tx, now, signal)
     const rowVersion = row.rowVersion + 1
     await tx
@@ -121,9 +153,7 @@ export async function setCaseStatus(
         status: input.to,
         rowVersion,
         updatedAt: new Date(),
-        ...(input.to === 'closed'
-          ? { closedOn: today, closureReason: input.reason ?? row.closureReason }
-          : {}),
+        ...(input.to === 'closed' ? { closedOn: today, closureReason: reason } : {}),
       })
       .where(eq(enforcementCases.id, input.caseId))
     await writeAudit(
@@ -134,7 +164,7 @@ export async function setCaseStatus(
         entityType: 'enforcement_case',
         entityId: input.caseId,
         before: { status: row.status },
-        after: { status: input.to, reason: input.reason ?? null },
+        after: { status: input.to, reason: reason === '' ? null : reason },
       },
       signal,
     )

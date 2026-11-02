@@ -16,6 +16,9 @@ const COPY: Record<string, string> = {
   not_found: errorCopy('not_found'),
   empty: 'Enter some text.',
   invalid_transition: 'That step is not available from the current status.',
+  reason_required: 'Enter the reason the case is being closed.',
+  finding_required:
+    'Record a violation finding first. Recording it moves the case to Violation found.',
   stale_version: 'This record changed since you opened it. Reload the page and try again.',
   case_not_investigating: 'The case has to be under investigation before findings can be recorded.',
   findings_invalid: 'Choose open findings that belong to this case.',

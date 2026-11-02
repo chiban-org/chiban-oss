@@ -35,6 +35,9 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
     <main className="space-y-6">
       <h1>{`Case ${row.number}`}</h1>
       <p className="m-0">{`${row.locationText}. ${CASE_STATUS_LABELS[row.status]}. Opened ${formatCivilDate(row.openedOn)}${row.closedOn === null ? '' : `, closed ${formatCivilDate(row.closedOn)}`}. ${row.isPublic ? 'This case is public.' : 'This case is private to town staff.'}`}</p>
+      {row.closureReason === null || row.closureReason === '' ? null : (
+        <p className="m-0">{`Reason for closing: ${row.closureReason}`}</p>
+      )}
       {detail.banner === null ? null : (
         <p role="status" className="m-0 rounded-md bg-highlight p-3 font-semibold">
           {detail.banner}
