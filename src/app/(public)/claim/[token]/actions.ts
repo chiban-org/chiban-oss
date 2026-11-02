@@ -19,7 +19,7 @@ const CLAIM_COPY = {
 export async function claimProjectAction(formData: FormData): Promise<ActionResult> {
   const signal = AbortSignal.timeout(ACTION_TIMEOUT_MS)
   const guard = await guardAction(formData, signal)
-  if (!guard.ok) return { ok: false, error: errorCopy('csrf') }
+  if (!guard.ok) return { ok: false, error: errorCopy(guard.error) }
   const result = await claimProject(db, guard.value, text(formData, 'token'), signal)
   if (!result.ok) return { ok: false, error: CLAIM_COPY[result.error] }
   redirect(DASHBOARD)

@@ -1118,6 +1118,9 @@ File: `data/town_settings.ndjson`. Ordered by id.
 - `time_zone`: text
 - `basemap_raster_url`: text, nullable
 - `basemap_attribution`: text, nullable
+- `service_status`: text
+- `service_status_since`: date, nullable
+- `export_window_days`: integer
 - `updated_at`: timestamp with time zone
 
 ### user_roles

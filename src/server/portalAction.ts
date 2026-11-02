@@ -19,7 +19,7 @@ export async function withPortalActor<T extends { ok: boolean }>(
 ): Promise<T> {
   const signal = AbortSignal.timeout(ACTION_TIMEOUT_MS)
   const guard = await guardAction(formData, signal)
-  if (!guard.ok) return fail(errorCopy('csrf'))
+  if (!guard.ok) return fail(errorCopy(guard.error))
   if (guard.value === null) return fail(errorCopy('signed_out'))
   return await fn({ db, actor: guard.value, signal })
 }

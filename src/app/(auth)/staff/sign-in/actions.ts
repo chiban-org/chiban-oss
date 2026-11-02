@@ -24,7 +24,7 @@ const GENERIC = 'Email, password, or code is incorrect.'
 
 export async function signInAction(_prev: SignInState, formData: FormData): Promise<SignInState> {
   const signal = AbortSignal.timeout(15_000)
-  const guard = await guardAction(formData, signal)
+  const guard = await guardAction(formData, signal, { exempt: 'session' })
   if (!guard.ok)
     return { error: 'Your session expired. Reload the page and try again.', needTotp: false }
 

@@ -13,7 +13,7 @@ const inputSchema = z.object({ email: z.email(), kind: z.enum(['staff', 'public'
 
 export async function devSignInAction(formData: FormData): Promise<void> {
   const signal = AbortSignal.timeout(15_000)
-  const guard = await guardAction(formData, signal)
+  const guard = await guardAction(formData, signal, { exempt: 'session' })
   if (!guard.ok) redirect('/dev/sign-in')
   const parsed = inputSchema.safeParse({
     email: formData.get('email'),

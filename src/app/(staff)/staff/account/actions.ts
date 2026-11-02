@@ -39,7 +39,7 @@ export async function confirmTotpAction(_prev: TotpState, formData: FormData): P
 
 export async function signOutAction(formData: FormData): Promise<void> {
   const signal = AbortSignal.timeout(15_000)
-  const guard = await guardAction(formData, signal)
+  const guard = await guardAction(formData, signal, { exempt: 'session' })
   if (!guard.ok) redirect('/staff/sign-in')
   const jar = await cookies()
   await logoutCore({ db, sid: jar.get(SESSION_COOKIE)?.value ?? null, signal })

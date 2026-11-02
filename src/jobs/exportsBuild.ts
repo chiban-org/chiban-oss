@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { PassThrough } from 'node:stream'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { JOB_NAMES } from '@/constants/jobNames'
 import type { Db } from '@/db/client'
 import { exportsTable } from '@/db/schema'
@@ -11,7 +11,7 @@ import { writeArchive } from '@/features/export/writeArchive'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { ok } from '@/types/result'
-import { defineJob, failKeepingWrites } from './defineJob'
+import { defineJob, enqueue, failKeepingWrites } from './defineJob'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const RETENTION_DAYS = 7
@@ -95,6 +95,24 @@ export const exportsPruneJob = defineJob<{ at?: string }>({
   dedupKey: (p) => `exports.prune:${(p.at ?? new Date().toISOString()).slice(0, 10)}`,
   handler: async (_payload, ctx) => {
     await pruneExpiredExports(ctx.root, getObjectStore(), new Date(), ctx.signal)
+    return ok(undefined)
+  },
+})
+
+const MINUTE_CHARS = 16
+const MINUTE_SECONDS = 60
+
+export const exportsPickupJob = defineJob<{ at?: string }>({
+  name: JOB_NAMES.EXPORTS_PICKUP,
+  intervalSeconds: MINUTE_SECONDS,
+  dedupKey: (p) =>
+    `${JOB_NAMES.EXPORTS_PICKUP}:${(p.at ?? new Date().toISOString()).slice(0, MINUTE_CHARS)}`,
+  handler: async (_payload, ctx) => {
+    const waiting = await ctx.db
+      .select({ id: exportsTable.id })
+      .from(exportsTable)
+      .where(and(eq(exportsTable.kind, 'business'), eq(exportsTable.status, 'queued')))
+    for (const row of waiting) await enqueue(exportsBuildJob, { exportId: row.id }, ctx.signal)
     return ok(undefined)
   },
 })

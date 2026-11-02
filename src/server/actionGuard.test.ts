@@ -22,6 +22,10 @@ vi.mock('next/headers', () => ({
     ),
 }))
 
+vi.mock('@/db/client', () => ({ db: {} }))
+vi.mock('@/features/town/serviceStatus', () => ({
+  currentServiceState: () => Promise.resolve({ mode: 'active', exportUntil: null }),
+}))
 vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
 
 const { guardAction } = await import('@/server/actionGuard')

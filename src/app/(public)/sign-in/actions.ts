@@ -18,7 +18,7 @@ export async function requestMagicLinkAction(
   formData: FormData,
 ): Promise<MagicLinkState> {
   const signal = AbortSignal.timeout(15_000)
-  const guard = await guardAction(formData, signal)
+  const guard = await guardAction(formData, signal, { exempt: 'session' })
   if (!guard.ok) return { message: 'Your session expired. Reload the page and try again.' }
   const parsed = emailSchema.safeParse({ email: formData.get('email') })
   if (!parsed.success) return { message: 'Enter a valid email address.' }

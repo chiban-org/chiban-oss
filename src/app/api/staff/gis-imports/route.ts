@@ -22,7 +22,7 @@ export async function POST(request: Request): Promise<NextResponse> {
     return NextResponse.json({ error: 'bad_request' }, { status: 400 })
   }
   const guard = await guardAction(form, signal)
-  if (!guard.ok) return NextResponse.json({ error: 'csrf' }, { status: 403 })
+  if (!guard.ok) return NextResponse.json({ error: guard.error }, { status: 403 })
   const actor = await staffActorOrNull(signal)
   if (actor === null) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const response = await processUpload(db, actor, form, signal)

@@ -1,7 +1,7 @@
 import { revalidatePath } from 'next/cache'
 import { type Db, db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
-import { guardAction } from '@/server/actionGuard'
+import { type GuardOptions, guardAction } from '@/server/actionGuard'
 
 export type ActionResult =
   | { ok: true; message: string }
@@ -17,6 +17,8 @@ const ACTION_TIMEOUT_MS = 30_000
 
 export const ERROR_COPY: Record<string, string> = {
   csrf: 'Your session expired. Reload the page and try again.',
+  service_inactive:
+    'This service is no longer active. Records can be exported from the admin page until the export window ends.',
   signed_out: 'Sign in to continue.',
   forbidden: 'You do not have permission to do this.',
   invalid_input: 'Check the form fields and try again.',
@@ -97,10 +99,11 @@ export function errorCopy(code: string): string {
 export async function runStaffAction(
   formData: FormData,
   fn: (ctx: ActionContext) => Promise<ActionResult>,
+  options: GuardOptions = {},
 ): Promise<ActionResult> {
   const signal = AbortSignal.timeout(ACTION_TIMEOUT_MS)
-  const guard = await guardAction(formData, signal)
-  if (!guard.ok) return { ok: false, error: errorCopy('csrf') }
+  const guard = await guardAction(formData, signal, options)
+  if (!guard.ok) return { ok: false, error: errorCopy(guard.error) }
   const actor = guard.value
   if (actor?.kind !== 'staff') return { ok: false, error: errorCopy('signed_out') }
   const result = await fn({ db, actor, signal })
@@ -115,7 +118,7 @@ export async function runStaffValue<T extends { ok: boolean }>(
 ): Promise<T> {
   const signal = AbortSignal.timeout(ACTION_TIMEOUT_MS)
   const guard = await guardAction(formData, signal)
-  if (!guard.ok) return fail(errorCopy('csrf'))
+  if (!guard.ok) return fail(errorCopy(guard.error))
   if (guard.value?.kind !== 'staff') return fail(errorCopy('signed_out'))
   return await fn({ db, actor: guard.value, signal })
 }

@@ -10,6 +10,7 @@ export const JOB_NAMES = {
   CALENDAR_PUSH: 'calendar.push',
   CALENDAR_SWEEP: 'calendar.sweep',
   EXPORTS_BUILD: 'exports.build',
+  EXPORTS_PICKUP: 'exports.pickup',
   EXPORTS_PRUNE: 'exports.prune',
 } as const
 

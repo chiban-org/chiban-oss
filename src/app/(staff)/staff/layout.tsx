@@ -1,6 +1,8 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
+import { ServiceNotice } from '@/components/ServiceNotice'
+import { currentServiceState } from '@/features/town/serviceStatus'
 import { createContext } from '@/server/trpc/context'
 
 const NAV_ITEMS = [
@@ -13,19 +15,24 @@ const NAV_ITEMS = [
   { href: '/staff/payments', label: 'Payments' },
   { href: '/staff/boards/packets', label: 'Board packets' },
   { href: '/staff/records/preservation', label: 'Records' },
-  { href: '/staff/reports/cash-receipts', label: 'Reports' },
+  { href: '/staff/reports', label: 'Reports' },
   { href: '/staff/map', label: 'Map' },
   { href: '/staff/gis/imports', label: 'Imports' },
   { href: '/staff/gis/exceptions', label: 'Exceptions' },
   { href: '/staff/parcels/unresolved', label: 'Unresolved records' },
   { href: '/staff/overrides/aliases', label: 'Overrides' },
   { href: '/staff/settings', label: 'Settings' },
+  { href: '/staff/admin/export', label: 'Export' },
+  { href: '/staff/admin/health', label: 'Health' },
+  { href: '/staff/admin/cutover', label: 'Cutover' },
+  { href: '/staff/admin/migration', label: 'Migration' },
   { href: '/staff/account', label: 'Account' },
 ] as const
 
 export default async function StaffLayout({ children }: { children: ReactNode }) {
-  const { actor } = await createContext()
+  const { actor, db, signal } = await createContext()
   if (actor?.kind !== 'staff') redirect('/staff/sign-in')
+  const service = await currentServiceState(db, new Date(), signal)
   return (
     <div className="staff-shell flex min-h-screen flex-col md:flex-row">
       <details className="no-print border-b bg-surface p-3 md:hidden">
@@ -55,6 +62,7 @@ export default async function StaffLayout({ children }: { children: ReactNode })
         </ul>
       </nav>
       <div className="mx-auto w-full max-w-[var(--content-max-width)] flex-1 p-4 md:p-6">
+        <ServiceNotice mode={service.mode} exportUntil={service.exportUntil} />
         {children}
       </div>
     </div>

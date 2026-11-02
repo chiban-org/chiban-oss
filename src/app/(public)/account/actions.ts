@@ -9,7 +9,7 @@ import { guardAction } from '@/server/actionGuard'
 
 export async function signOutPublicAction(formData: FormData): Promise<void> {
   const signal = AbortSignal.timeout(15_000)
-  const guard = await guardAction(formData, signal)
+  const guard = await guardAction(formData, signal, { exempt: 'session' })
   if (!guard.ok) redirect('/sign-in')
   const jar = await cookies()
   await logoutCore({ db, sid: jar.get(SESSION_COOKIE)?.value ?? null, signal })

@@ -11,7 +11,7 @@ const ACTION_TIMEOUT_MS = 30_000
 async function resolve(formData: FormData, decision: 'approve' | 'decline'): Promise<ActionResult> {
   const signal = AbortSignal.timeout(ACTION_TIMEOUT_MS)
   const guard = await guardAction(formData, signal)
-  if (!guard.ok) return { ok: false, error: errorCopy('csrf') }
+  if (!guard.ok) return { ok: false, error: errorCopy(guard.error) }
   const result = await resolveDevCheckout(db, text(formData, 'objectId'), decision, signal)
   if (!result.ok) return { ok: false, error: errorCopy('not_found') }
   redirect(`/payments/return/${result.value.attemptId}`)

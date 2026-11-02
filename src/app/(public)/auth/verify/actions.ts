@@ -16,7 +16,7 @@ const ACTION_TIMEOUT_MS = 10_000
 
 export async function confirmMagicLinkAction(formData: FormData): Promise<void> {
   const signal = AbortSignal.timeout(ACTION_TIMEOUT_MS)
-  const guard = await guardAction(formData, signal)
+  const guard = await guardAction(formData, signal, { exempt: 'session' })
   if (!guard.ok) redirect(INVALID)
   const raw = formData.get('token')
   const token = typeof raw === 'string' ? raw : ''
