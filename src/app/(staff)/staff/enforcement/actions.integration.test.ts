@@ -9,6 +9,7 @@ import {
   setupEnforcementWorld,
 } from '@/test/enforcementFixtures'
 import { makeTestStore } from '@/test/minio'
+import { makeParcel } from '@/test/parcels'
 
 interface MockState {
   db: unknown
@@ -112,6 +113,43 @@ const ALL = {
 }
 
 describe('enforcement server actions', () => {
+  it('a case opened with a parcel number or exact site address is linked to that parcel', async () => {
+    const parcelId = await makeParcel(handle.db, [{ format: 'gis12', value: '031004000000' }], {
+      siteAddress: '4 Linden Way',
+    })
+    const byNumber = await main.openCaseAction(
+      form({ locationText: 'Behind the barn', parcelRef: '031-004-000-000' }),
+    )
+    const byAddress = await main.staffComplaintAction(
+      form({ locationText: '4 linden way', description: 'Junk cars in the yard' }),
+    )
+    expect(byNumber.ok && byAddress.ok).toBe(true)
+    const linked = await handle.db
+      .select({ parcelId: enforcementCases.parcelId })
+      .from(enforcementCases)
+      .where(eq(enforcementCases.parcelId, parcelId))
+    expect(linked).toHaveLength(2)
+  })
+
+  it('a case without a parcel can be linked to one from the case page', async () => {
+    const parcelId = await makeParcel(handle.db, [{ format: 'gis12', value: '031005000000' }])
+    const opened = await main.openCaseAction(form({ locationText: 'Unnamed lot' }))
+    expect(opened.ok).toBe(true)
+    const [row] = await handle.db
+      .select()
+      .from(enforcementCases)
+      .where(eq(enforcementCases.locationText, 'Unnamed lot'))
+    const linked = await (
+      main as unknown as { setCaseParcelAction?: (f: FormData) => Promise<{ ok: boolean }> }
+    ).setCaseParcelAction?.(form({ caseId: row?.id ?? '', parcelRef: '031005000000' }))
+    expect(linked?.ok).toBe(true)
+    const [after] = await handle.db
+      .select()
+      .from(enforcementCases)
+      .where(eq(enforcementCases.id, row?.id ?? ''))
+    expect(after?.parcelId).toBe(parcelId)
+  })
+
   it.each(Object.entries(ALL))('%s rejects a missing csrf token', async (_name, action) => {
     state.actor = world.admin
     expect(await action(form({}, null))).toMatchObject({ ok: false })

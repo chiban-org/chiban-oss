@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { env } from '@/config/env'
 import { db } from '@/db/client'
 import { sanitizeImage } from '@/features/anonymousIntake/sanitizeImage'
+import { parcelForLocation } from '@/features/enforcement/caseParcel'
 import type { CleanPhoto } from '@/features/enforcement/complaintPhotos'
 import { MAX_COMPLAINT_CHARS, recordComplaint } from '@/features/enforcement/complaints'
 import { getObjectStore } from '@/features/storage/objectStore'
@@ -66,6 +67,7 @@ export async function submitComplaintAction(formData: FormData): Promise<ActionR
     return { ok: false, error: 'Attach no more than 5 photos, and use JPEG or PNG files only.' }
   }
   const v = fields.data
+  const parcelId = await parcelForLocation(db, v.locationText, signal)
   const result = await recordComplaint(
     db,
     null,
@@ -76,6 +78,7 @@ export async function submitComplaintAction(formData: FormData): Promise<ActionR
       ...(v.name === undefined ? {} : { name: v.name }),
       ...(v.email === undefined ? {} : { email: v.email }),
       ...(v.phone === undefined ? {} : { phone: v.phone }),
+      ...(parcelId === undefined ? {} : { parcelId }),
     },
     signal,
     new Date(),

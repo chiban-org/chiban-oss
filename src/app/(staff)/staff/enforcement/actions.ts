@@ -1,12 +1,19 @@
 'use server'
 
 import { z } from 'zod'
+import type { Db } from '@/db/client'
 import {
   ENFORCEMENT_STATUSES,
   type EnforcementStatus,
   NOTICE_METHODS,
   PROVISION_KINDS,
 } from '@/db/schema'
+import {
+  findParcel,
+  type ParcelLookupError,
+  parcelForLocation,
+  setCaseParcel,
+} from '@/features/enforcement/caseParcel'
 import { openCase, setCaseStatus } from '@/features/enforcement/cases'
 import { recordComplaint } from '@/features/enforcement/complaints'
 import { recordFinding } from '@/features/enforcement/findings'
@@ -25,38 +32,74 @@ import {
 } from '@/features/enforcement/publicText'
 import { getObjectStore } from '@/features/storage/objectStore'
 import type { ActionResult } from '@/server/actionRunner'
+import { ok, type Result } from '@/types/result'
 import { runEnforcement } from './enforcementAction'
 import { date, manyUuids, optional, uuid } from './fields'
+
+async function parcelFor(
+  db: Db,
+  input: { parcelRef?: string | undefined; locationText: string },
+  signal: AbortSignal,
+): Promise<Result<string | undefined, ParcelLookupError>> {
+  if (input.parcelRef === undefined) {
+    return ok(await parcelForLocation(db, input.locationText, signal))
+  }
+  return await findParcel(db, input.parcelRef, signal)
+}
 
 export async function openCaseAction(formData: FormData): Promise<ActionResult> {
   return await runEnforcement(
     formData,
-    z.object({ locationText: z.string().min(1), parcelId: optional(uuid) }),
-    ({ db, actor, signal }, v) =>
-      openCase(
+    z.object({ locationText: z.string().min(1), parcelRef: optional(z.string().trim().min(1)) }),
+    async ({ db, actor, signal }, v) => {
+      const parcel = await parcelFor(db, v, signal)
+      if (!parcel.ok) return parcel
+      return await openCase(
         db,
         actor,
         {
           locationText: v.locationText,
-          ...(v.parcelId === undefined ? {} : { parcelId: v.parcelId }),
+          ...(parcel.value === undefined ? {} : { parcelId: parcel.value }),
         },
         signal,
-      ),
+      )
+    },
     'Case opened.',
+  )
+}
+
+export async function setCaseParcelAction(formData: FormData): Promise<ActionResult> {
+  return await runEnforcement(
+    formData,
+    z.object({ caseId: uuid, parcelRef: z.string().trim().min(1) }),
+    ({ db, actor, signal }, v) => setCaseParcel(db, actor, v, signal),
+    'Parcel linked.',
   )
 }
 
 export async function staffComplaintAction(formData: FormData): Promise<ActionResult> {
   return await runEnforcement(
     formData,
-    z.object({ locationText: z.string().min(1), description: z.string().min(1) }),
-    ({ db, actor, signal }, v) =>
-      recordComplaint(
+    z.object({
+      locationText: z.string().min(1),
+      description: z.string().min(1),
+      parcelRef: optional(z.string().trim().min(1)),
+    }),
+    async ({ db, actor, signal }, v) => {
+      const parcel = await parcelFor(db, v, signal)
+      if (!parcel.ok) return parcel
+      return await recordComplaint(
         db,
         actor,
-        { channel: 'staff_entry', locationText: v.locationText, description: v.description },
+        {
+          channel: 'staff_entry',
+          locationText: v.locationText,
+          description: v.description,
+          ...(parcel.value === undefined ? {} : { parcelId: parcel.value }),
+        },
         signal,
-      ),
+      )
+    },
     'Complaint recorded.',
   )
 }

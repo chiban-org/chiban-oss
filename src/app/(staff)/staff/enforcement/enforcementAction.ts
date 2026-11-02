@@ -41,6 +41,8 @@ const COPY: Record<string, string> = {
     'Hand delivery needs a server who is a sheriff, deputy sheriff, local police officer, or constable.',
   invalid_outcome: 'That result is not allowed for this role.',
   date_in_future: 'The date cannot be in the future.',
+  parcel_not_found: 'No parcel has that number or site address. Check it on the parcel page.',
+  parcel_ambiguous: 'More than one parcel matches. Enter the parcel number instead.',
   filing_needs_complete_service:
     'Every required recipient must be served, with proof, before the order is filed with the clerk.',
   motion_required: 'Record the motion to enforce before the judgment.',

@@ -85,6 +85,11 @@ export default async function EnforcementQueuePage({
         <h2 id="open-case">Open a case</h2>
         <ActionForm action={openCaseAction} submitLabel="Open case" variant="default">
           <TextField label="Where is the property?" name="locationText" required />
+          <TextField
+            label="Parcel number, if known"
+            name="parcelRef"
+            hint="Without one, Chiban links the parcel whose site address matches exactly."
+          />
         </ActionForm>
       </section>
       <section aria-labelledby="enter-complaint" className="space-y-2">
@@ -93,6 +98,11 @@ export default async function EnforcementQueuePage({
         <ActionForm action={staffComplaintAction} submitLabel="Record complaint" variant="default">
           <TextField label="Where is the property?" name="locationText" required />
           <TextField label="What was reported?" name="description" required />
+          <TextField
+            label="Parcel number, if known"
+            name="parcelRef"
+            hint="Without one, Chiban links the parcel whose site address matches exactly."
+          />
         </ActionForm>
       </section>
     </main>

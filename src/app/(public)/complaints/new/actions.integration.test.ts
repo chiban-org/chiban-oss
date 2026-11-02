@@ -5,7 +5,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { auditLog, complaints, documents, enforcementCases } from '@/db/schema'
 import { databaseContains } from '@/test/databaseSearch'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { seedParcelWorld } from '@/test/parcels'
+import { makeParcel, seedParcelWorld } from '@/test/parcels'
 
 interface MockState {
   db: unknown
@@ -102,6 +102,23 @@ describe('submitComplaintAction', () => {
       .from(auditLog)
       .where(eq(auditLog.entityType, 'complaint'))
     expect(JSON.stringify(audit)).not.toContain('pat@example.test')
+  })
+
+  it('a complaint whose location is a parcel site address is linked to that parcel', async () => {
+    const parcelId = await makeParcel(handle.db, [], { siteAddress: '27 Osprey Point Road' })
+    expect(
+      await submitComplaintAction(form({ locationText: '27 osprey point road ' })),
+    ).toMatchObject({ ok: true })
+    const [complaint] = await handle.db
+      .select()
+      .from(complaints)
+      .where(eq(complaints.parcelId, parcelId))
+    expect(complaint?.parcelId).toBe(parcelId)
+    const [linkedCase] = await handle.db
+      .select()
+      .from(enforcementCases)
+      .where(eq(enforcementCases.id, complaint?.caseId ?? ''))
+    expect(linkedCase?.parcelId).toBe(parcelId)
   })
 
   it('accepts a complaint with no contact details at all', async () => {

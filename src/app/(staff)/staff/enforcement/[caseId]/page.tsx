@@ -9,6 +9,7 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { AppealsSection } from './AppealsSection'
+import { CaseParcel } from './CaseParcel'
 import { CaseStatusForm } from './CaseStatusForm'
 import { ComplaintsSection } from './ComplaintsSection'
 import { CounselSection } from './CounselSection'
@@ -41,6 +42,7 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
           {detail.banner}
         </p>
       )}
+      <CaseParcel detail={detail} can={can} />
       {can.manage ? <CaseStatusForm detail={detail} /> : null}
       <ComplaintsSection detail={detail} can={can} />
       <NotesSection detail={detail} can={can} />
