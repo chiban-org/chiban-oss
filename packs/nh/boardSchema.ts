@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { RecipientRoleSchema } from '@/features/abutters/roles'
+import { CORE_STATES } from '@/features/applications/states'
 
 export const BoardSchema = z.enum(['planning_board', 'zba'])
 export type Board = z.infer<typeof BoardSchema>
@@ -36,6 +37,10 @@ export const ProceedingClassificationSchema = z.object({
   mandatoryRuleKeys: z.array(z.string().min(1)),
   board: BoardSchema.nullable(),
   abutters: AbuttersSpecSchema.nullable(),
+  noticeRequirementKeys: z.array(z.string().min(1)),
+  requiredSubsteps: z.array(z.object({ state: z.enum(CORE_STATES), key: z.string().min(1) })),
+  directIssueAllowed: z.boolean(),
+  appealRights: z.string(),
 })
 export type ProceedingClassification = z.infer<typeof ProceedingClassificationSchema>
 

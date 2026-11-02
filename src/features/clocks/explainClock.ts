@@ -14,6 +14,10 @@ export const START_EVENT_LABELS: Record<string, string> = {
   acceptance_meeting_set: 'Meeting set',
   application_accepted: 'Application accepted as complete',
   final_approval: 'Final approval',
+  board_vote: 'Board vote',
+  decision_filed: 'Decision filed',
+  rehearing_vote: 'Rehearing vote',
+  administrative_decision: 'Administrative decision',
 }
 
 export interface ClockExplanation {

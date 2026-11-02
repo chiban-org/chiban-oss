@@ -6,7 +6,7 @@ import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import type { CivilDate } from '@/types/civilDate'
 
 export interface ResolvedLength {
-  unit: 'days' | 'months'
+  unit: 'days' | 'months' | 'business_days'
   value: number
   source: 'pack_rule' | 'town_setting'
   packDefault: number
@@ -19,6 +19,8 @@ export function factMatches(when: CaseCondition, facts: ProjectFacts): boolean {
     return facts.classification !== null && when.in.includes(facts.classification)
   }
   if (when.fact === 'regionalImpact') return facts.regionalImpact === when.is
+  if (when.fact === 'decisionFiledLate') return facts.decisionFiledLate === when.is
+  if (when.fact === 'outcome') return facts.outcome !== undefined && when.in.includes(facts.outcome)
   return evaluateCondition(
     { field: 'dwellingUnits', op: 'gt', value: when.gt },
     { dwellingUnits: facts.dwellingUnits ?? 0 },
@@ -67,7 +69,7 @@ export function hasLocalBound(rule: ClockRule): boolean {
 
 export function computeRuleDue(
   rule: ClockRule,
-  length: { unit: 'days' | 'months'; value: number },
+  length: { unit: 'days' | 'months' | 'business_days'; value: number },
   start: CivilDate,
   holidays: HolidayCalendar,
 ): DueResult {
@@ -84,10 +86,13 @@ export function rulesForEvent(
   rules: readonly PackRule[],
   event: StartEvent,
   bound: ReadonlySet<string>,
+  facts?: ProjectFacts,
 ): ClockRule[] {
   const best = new Map<string, ClockRule>()
   for (const r of rules) {
     if (r.kind !== 'clock' || r.startEvent !== event || !bound.has(r.key)) continue
+    if (r.onlyWhen !== undefined && (facts === undefined || !factMatches(r.onlyWhen, facts)))
+      continue
     const held = best.get(r.key)
     if (held === undefined || r.version > held.version) best.set(r.key, r)
   }

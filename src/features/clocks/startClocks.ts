@@ -50,13 +50,17 @@ export async function startClocksFor(
   signal: AbortSignal,
   pack: Pack = loadPack(),
   calendar: MeetingCalendar = boardMeetingCalendar(tx),
+  decisionFacts: Pick<ProjectFacts, 'outcome' | 'decisionFiledLate'> = {},
 ): Promise<void> {
   signal.throwIfAborted()
   const app = await loadApplicationContext(tx, applicationId, signal)
   if (app === null) return
-  const facts = await factsWithDeterminations(tx, applicationId, app.facts)
+  const facts = {
+    ...(await factsWithDeterminations(tx, applicationId, app.facts)),
+    ...decisionFacts,
+  }
   const bound = new Set(effectiveBindings(app.typeBody, pack))
-  const rules = rulesForEvent(pack.rules, event, bound)
+  const rules = rulesForEvent(pack.rules, event, bound, facts)
   const running = await tx
     .select({ ruleKey: clocks.ruleKey })
     .from(clocks)

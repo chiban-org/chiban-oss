@@ -5,6 +5,8 @@ import { NH_RECORD_SERIES, RECORD_SERIES_DEFAULTS } from '@packs/nh/recordSeries
 import { APPEAL_RULES } from '@packs/nh/rules/appeals'
 import { BUILDING_RULES } from '@packs/nh/rules/building'
 import { CODE_RULES } from '@packs/nh/rules/code'
+import { DECISION_RULES } from '@packs/nh/rules/decisions'
+import { NOTICE_REQUIREMENT_RULES } from '@packs/nh/rules/noticeRequirements'
 import { PLANNING_BOARD_RULES } from '@packs/nh/rules/planningBoard'
 import { REGIONAL_IMPACT_BOARD_RULES } from '@packs/nh/rules/regionalImpact'
 import { ZBA_RULES } from '@packs/nh/rules/zba'
@@ -37,6 +39,8 @@ export const NH_PACK_MANIFEST: PackManifest = {
     ...PLANNING_BOARD_RULES,
     ...ZBA_RULES,
     ...REGIONAL_IMPACT_BOARD_RULES,
+    ...DECISION_RULES,
+    ...NOTICE_REQUIREMENT_RULES,
   ],
   classifications: NH_CLASSIFICATIONS,
   codeEditions: NH_CODE_EDITIONS,

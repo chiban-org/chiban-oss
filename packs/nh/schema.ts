@@ -5,7 +5,9 @@ import {
   ProceedingClassificationSchema,
 } from '@packs/nh/boardSchema'
 import { z } from 'zod'
+import { RecipientRoleSchema } from '@/features/abutters/roles'
 import { CORE_STATES } from '@/features/applications/states'
+import { NOTICE_CHANNELS } from '@/features/notices/channels'
 import { type CivilDate, parseCivilDate } from '@/types/civilDate'
 
 export const civilDateSchema = z
@@ -41,8 +43,22 @@ export const StartEventSchema = z.enum([
   'acceptance_meeting_set',
   'application_accepted',
   'final_approval',
+  'board_vote',
+  'decision_filed',
+  'rehearing_vote',
+  'administrative_decision',
 ])
 export type StartEvent = z.infer<typeof StartEventSchema>
+
+export const DECISION_OUTCOMES = [
+  'approved',
+  'approved_with_conditions',
+  'denied',
+  'rehearing_granted',
+  'rehearing_denied',
+] as const
+const DecisionOutcomeSchema = z.enum(DECISION_OUTCOMES)
+export type DecisionOutcome = z.infer<typeof DecisionOutcomeSchema>
 
 export const FactConditionSchema = z.union([
   z.object({
@@ -51,6 +67,8 @@ export const FactConditionSchema = z.union([
   }),
   z.object({ fact: z.literal('dwellingUnits'), gt: z.number() }),
   z.object({ fact: z.literal('regionalImpact'), is: z.literal(true) }),
+  z.object({ fact: z.literal('decisionFiledLate'), is: z.literal(true) }),
+  z.object({ fact: z.literal('outcome'), in: z.array(DecisionOutcomeSchema).min(1) }),
 ])
 export type FactCondition = z.infer<typeof FactConditionSchema>
 
@@ -60,7 +78,10 @@ const LengthSchema = z.union([
     value: z.number().int().positive(),
     earlierOfNextRegularMeeting: z.object({ board: BoardSchema, noticeRuleKey: z.string().min(1) }),
   }),
-  z.object({ unit: z.enum(['days', 'months']), value: z.number().int().positive() }),
+  z.object({
+    unit: z.enum(['days', 'months', 'business_days']),
+    value: z.number().int().positive(),
+  }),
   z.object({
     unit: z.literal('days'),
     cases: z.array(z.object({ when: FactConditionSchema, value: z.number().int().positive() })),
@@ -94,6 +115,8 @@ export const ClockRuleSchema = z
         'selectmen_certification',
         'not_accepted_at_meeting',
         'notice_defective',
+        'amendment_window_opens',
+        'appeal_untimely',
       ]),
       text: z.string().min(1),
     }),
@@ -105,6 +128,7 @@ export const ClockRuleSchema = z
       }),
     ]),
     waivable: z.boolean(),
+    onlyWhen: FactConditionSchema.optional(),
     relianceFloorMonths: z.number().int().positive().optional(),
     overridePolicy: OverridePolicySchema,
   })
@@ -131,6 +155,9 @@ export const RecordRuleSchema = z.object({
   ...base,
   kind: z.literal('required_record'),
   fields: z.array(z.string().min(1)).min(1),
+  conditionalFields: z
+    .array(z.object({ field: z.string().min(1), outcomes: z.array(DecisionOutcomeSchema).min(1) }))
+    .optional(),
   overridePolicy: OverridePolicySchema,
 })
 
@@ -169,6 +196,23 @@ export const ProximityRuleSchema = z.object({
 })
 export type ProximityRule = z.infer<typeof ProximityRuleSchema>
 
+export const NoticeRequirementRuleSchema = z.object({
+  ...base,
+  kind: z.literal('notice_requirement'),
+  channel: z.union([
+    z.enum(NOTICE_CHANNELS),
+    z.object({ townChoice: z.array(z.enum(['public_posting', 'newspaper'])).min(1) }),
+  ]),
+  recipients: z.union([
+    z.object({ roles: z.array(RecipientRoleSchema).min(1) }),
+    z.object({ public: z.literal(true) }),
+  ]),
+  leadRuleKey: z.string().min(1),
+  onlyWhen: z.enum(['regional_impact_yes', 'des_within_500ft']).optional(),
+  overridePolicy: OverridePolicySchema,
+})
+export type NoticeRequirementRule = z.infer<typeof NoticeRequirementRuleSchema>
+
 export const PackRuleSchema = z
   .union([
     ClockRuleSchema,
@@ -178,6 +222,7 @@ export const PackRuleSchema = z
     RecordRuleSchema,
     EffectRuleSchema,
     TownSettingRuleSchema,
+    NoticeRequirementRuleSchema,
   ])
   .refine(
     (r) =>
@@ -265,6 +310,9 @@ export const PackManifestSchema = z
     for (const c of m.classifications) {
       for (const k of c.mandatoryRuleKeys) {
         if (!keys.has(k)) ctx.addIssue({ code: 'custom', message: `unknown mandatory rule ${k}` })
+      }
+      for (const k of c.noticeRequirementKeys) {
+        if (!keys.has(k)) ctx.addIssue({ code: 'custom', message: `unknown notice rule ${k}` })
       }
     }
   })

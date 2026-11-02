@@ -1,3 +1,4 @@
+import type { DecisionOutcome } from '@packs/nh/schema'
 import { evaluateCondition } from '@/features/forms/condition'
 import type { FormBody, FormField } from '@/features/forms/formSchema'
 import { parseCivilDate } from '@/types/civilDate'
@@ -10,6 +11,8 @@ export interface ProjectFacts {
   dwellingUnits: number | null
   afterTheFact: boolean
   regionalImpact?: boolean
+  decisionFiledLate?: boolean
+  outcome?: DecisionOutcome
 }
 
 export type FieldErrorCode =
