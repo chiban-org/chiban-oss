@@ -14,6 +14,8 @@ const actions: DocumentPanelActions = {
   setAudiences: noop,
   setPublic: noop,
   retry: noop,
+  approve: noop,
+  revoke: noop,
   uploadRedacted: {
     createIntent: () => Promise.resolve({ ok: false, error: 'x' }),
     finalize: () => Promise.resolve({ ok: false, error: 'x' }),
@@ -40,6 +42,15 @@ function doc(overrides: Partial<PanelDocument> = {}): PanelDocument {
     },
     retention: 'Permanent',
     holdCount: 0,
+    rendition: 'approved',
+    approvalId: 'ap1',
+    approvedRole: 'original',
+    originalVersionId: 'v1',
+    approvable: [
+      { id: 'v1', role: 'original' },
+      { id: 'v2', role: 'public_redacted' },
+    ],
+    canRedact: false,
     ...overrides,
   }
 }
@@ -60,7 +71,7 @@ function view(documents: PanelDocument[], canPublish = true, canManage = true) {
 
 describe('DocumentPanel', () => {
   it('document panel shows "Public copy: redacted" when a redacted version exists', () => {
-    view([doc({ hasRedactedCopy: true })])
+    view([doc({ hasRedactedCopy: true, approvedRole: 'public_redacted' })])
     expect(screen.getByText('Public copy: redacted')).toBeTruthy()
   })
 
@@ -101,5 +112,49 @@ describe('DocumentPanel', () => {
     expect(within(form).getByLabelText('Reviewers')).toBeTruthy()
     expect(within(form).getByLabelText('Board')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Retry preservation' })).toBeTruthy()
+  })
+
+  it('shows one chip for each approval state', () => {
+    view([
+      doc({ documentId: 'a', title: 'A', rendition: 'approved' }),
+      doc({ documentId: 'b', title: 'B', rendition: 'public_no_copy', approvalId: null }),
+      doc({
+        documentId: 'c',
+        title: 'C',
+        rendition: 'redacted_waiting',
+        isPublic: false,
+        approvalId: null,
+      }),
+      doc({ documentId: 'd', title: 'D', rendition: 'revoked', isPublic: false, approvalId: null }),
+    ])
+    expect(screen.getByText('Approved for public')).toBeTruthy()
+    expect(screen.getByText('Public, no approved copy')).toBeTruthy()
+    expect(screen.getByText('Redacted, awaiting approval')).toBeTruthy()
+    expect(screen.getByText('Revoked')).toBeTruthy()
+  })
+
+  it('offers approval until a version is approved, then offers revocation', () => {
+    view([doc({ rendition: 'public_no_copy', approvalId: null })])
+    expect(screen.getByRole('button', { name: 'Approve for the public' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Revoke the approval' })).toBeNull()
+    cleanup()
+    view([doc()])
+    expect(screen.getByRole('button', { name: 'Revoke the approval' })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Approve for the public' })).toBeNull()
+  })
+
+  it('shows the redact link only to people who may redact', () => {
+    view([doc()])
+    expect(screen.queryByRole('link', { name: 'Redact this document' })).toBeNull()
+    cleanup()
+    view([doc({ canRedact: true })])
+    expect(screen.getByRole('link', { name: 'Redact this document' }).getAttribute('href')).toBe(
+      '/staff/records/redact/v1',
+    )
+  })
+
+  it('hides approval controls from people who cannot publish', () => {
+    view([doc({ rendition: 'public_no_copy', approvalId: null })], false)
+    expect(screen.queryByRole('button', { name: 'Approve for the public' })).toBeNull()
   })
 })

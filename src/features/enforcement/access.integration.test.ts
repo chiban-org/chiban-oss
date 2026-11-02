@@ -10,6 +10,7 @@ import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/minio'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
+import { approvePublic } from '@/test/renditionFixtures'
 
 const signal = new AbortController().signal
 const NOW = new Date('2027-03-02T15:00:00Z')
@@ -108,6 +109,7 @@ describe('enforcement case access', () => {
       pdfBytes('photo-1'),
       { title: 'Front yard', docKind: 'enforcement_photo' },
     )
+    await approvePublic(handle.db, staff, up.versionId, store)
     await handle.db.update(documents).set({ isPublic: true }).where(eq(documents.id, up.documentId))
     const record = { kind: 'enforcement_case' as const, id: caseId }
     const reviewer = await staffActor(handle.db, 'reviewer')

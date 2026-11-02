@@ -194,6 +194,12 @@ export default async function ReportsPage({
           Open the daily cash receipts report
         </Link>
       </p>
+      <h2>Census building permits</h2>
+      <p>
+        <Link className="text-action underline" href="/staff/reports/census">
+          Open the Census building permits report
+        </Link>
+      </p>
     </main>
   )
 }

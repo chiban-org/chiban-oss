@@ -48,6 +48,7 @@ export async function summarizeDocuments(
     status: { label: row.isPublic ? 'Public' : 'Private', chip: 'neutral' },
     date: todayInTimeZone(zone, row.createdAt),
     href: `/api/documents/${row.id}`,
+    thumbnailHref: `/api/documents/${row.id}/thumbnail`,
   }))
 }
 

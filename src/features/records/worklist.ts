@@ -6,15 +6,22 @@ import { applicationSnapshots, applications, documents, retentionAssignments } f
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { loadPack } from '@/features/packs/loadPack'
+import { applicationIdOfRecord } from '@/features/records/ancestry'
 import type { RetentionStatus } from '@/features/records/computeRetention'
 import { retentionFor } from '@/features/records/disposition'
 import type { CivilDate } from '@/types/civilDate'
 
 export type WorklistState = 'eligible' | 'awaiting_event' | 'on_hold'
 
+export interface EventTarget {
+  kind: 'case' | 'project'
+  id: string
+}
+
 export interface WorklistRow {
   ref: { kind: 'document' | 'application_snapshot'; id: string }
   title: string
+  eventTarget: EventTarget | null
   series: { key: string; label: string; citation: RecordSeries['citation'] }
   status: RetentionStatus
   holds: number
@@ -48,6 +55,28 @@ function stateOf(
   if (holds.length > 0) return 'on_hold'
   if (status.state === 'not_yet_triggered') return 'awaiting_event'
   return status.date <= asOf ? 'eligible' : null
+}
+
+async function eventTargetFor(db: Db, ref: WorklistRow['ref']): Promise<EventTarget | null> {
+  if (ref.kind === 'application_snapshot') {
+    const [row] = await db
+      .select({ projectId: applications.projectId })
+      .from(applicationSnapshots)
+      .innerJoin(applications, eq(applications.id, applicationSnapshots.applicationId))
+      .where(eq(applicationSnapshots.id, ref.id))
+    return row === undefined ? null : { kind: 'project', id: row.projectId }
+  }
+  const [doc] = await db.select().from(documents).where(eq(documents.id, ref.id))
+  if (doc === undefined) return null
+  if (doc.recordKind === 'enforcement_case') return { kind: 'case', id: doc.recordId }
+  if (doc.recordKind === 'project') return { kind: 'project', id: doc.recordId }
+  const applicationId = await applicationIdOfRecord(db, doc)
+  if (applicationId === null) return null
+  const [app] = await db
+    .select({ projectId: applications.projectId })
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+  return app === undefined ? null : { kind: 'project', id: app.projectId }
 }
 
 async function titlesFor(db: Db, refs: WorklistRow['ref'][]): Promise<Map<string, string>> {
@@ -92,7 +121,7 @@ export async function retentionWorklist(
     .recordSeries.filter((s) => s.retention.kind === 'permanent')
     .map((s) => s.key)
   let after = decodeCursor(input.cursor)
-  const matched: Omit<WorklistRow, 'title'>[] = []
+  const matched: Omit<WorklistRow, 'title' | 'eventTarget'>[] = []
   for (;;) {
     signal.throwIfAborted()
     const batch = await db
@@ -136,8 +165,16 @@ export async function retentionWorklist(
     page.map((r) => r.ref),
   )
   const lastRow = page.at(-1)
+  const rows: WorklistRow[] = []
+  for (const r of page) {
+    rows.push({
+      ...r,
+      title: titles.get(r.ref.id) ?? r.ref.id,
+      eventTarget: await eventTargetFor(db, r.ref),
+    })
+  }
   return {
-    rows: page.map((r) => ({ ...r, title: titles.get(r.ref.id) ?? r.ref.id })),
+    rows,
     nextCursor: matched.length > limit && lastRow !== undefined ? encodeCursor(lastRow.ref) : null,
   }
 }
