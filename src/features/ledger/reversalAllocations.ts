@@ -57,8 +57,11 @@ export async function allocateReversal(
   tx: DbOrTx,
   entryId: string,
   amountCents: number,
+  applicationId?: string,
 ): Promise<ReversalAllocation> {
-  const net = await netAllocations(tx, entryId)
+  const net = (await netAllocations(tx, entryId)).filter(
+    (n) => applicationId === undefined || n.allocation.applicationId === applicationId,
+  )
   const open = net.filter((n) => n.cents > 0)
   const remaining = open.reduce((sum, n) => sum + n.cents, 0)
   const covered = Math.min(amountCents, remaining)

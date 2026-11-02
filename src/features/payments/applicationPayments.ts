@@ -4,11 +4,13 @@ import { applications, ledgerAllocations, ledgerEntries, receipts } from '@/db/s
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { type FeeBalance, feeBalance } from '@/features/ledger/feeBalance'
+import { type RefundableLine, refundableLines } from '@/features/ledger/refundableLines'
 import { mayViewPayments } from '@/features/payments/overview'
 
 const TARGET_LIMIT = 25
 
 export interface ApplicationPayments {
+  applicationId: string
   balance: FeeBalance
   entries: {
     id: string
@@ -20,6 +22,7 @@ export interface ApplicationPayments {
     checkNumber: string | null
     receiptId: string | null
     receiptNumber: string | null
+    refundable: RefundableLine[]
   }[]
   canRefund: boolean
   targets: { id: string; number: string }[]
@@ -60,9 +63,19 @@ export async function loadApplicationPayments(
         .orderBy(desc(applications.createdAt), sql`${applications.number}`)
         .limit(TARGET_LIMIT)
     : []
+  const withLines = await Promise.all(
+    entries.map(async ({ postedAt: _postedAt, ...rest }) => ({
+      ...rest,
+      refundable:
+        canRefund && rest.entryType === 'payment'
+          ? await refundableLines(db, rest.id, applicationId)
+          : [],
+    })),
+  )
   return {
+    applicationId,
     balance: await feeBalance(db, applicationId, signal),
-    entries: entries.map(({ postedAt: _postedAt, ...rest }) => rest),
+    entries: withLines,
     canRefund,
     targets,
   }

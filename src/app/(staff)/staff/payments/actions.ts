@@ -26,11 +26,17 @@ export async function refundAction(formData: FormData): Promise<ActionResult> {
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
     const entryId = text(formData, 'entryId')
     const amountCents = dollarsToCents(text(formData, 'amount'))
+    const applicationId = text(formData, 'applicationId')
     if (!isUuid(entryId) || amountCents === null || amountCents <= 0) return INVALID
     const result = await refundEntry(
       db,
       actor,
-      { entryId, amountCents, reason: text(formData, 'reason') },
+      {
+        entryId,
+        amountCents,
+        reason: text(formData, 'reason'),
+        ...(isUuid(applicationId) ? { applicationId } : {}),
+      },
       signal,
     )
     if (result.ok && result.value.pending) {

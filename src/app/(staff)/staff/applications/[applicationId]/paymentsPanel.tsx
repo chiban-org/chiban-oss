@@ -19,6 +19,19 @@ function EntryControls({ entry, payments }: { entry: Entry; payments: Applicatio
       <summary>Refund, correct, or reverse</summary>
       <ActionForm action={refundAction} submitLabel="Refund">
         <input type="hidden" name="entryId" value={entry.id} />
+        <input type="hidden" name="applicationId" value={payments.applicationId} />
+        <p className="m-0 font-medium">
+          A refund here reduces only these lines on this application:
+        </p>
+        {entry.refundable.length === 0 ? (
+          <p className="m-0">Nothing from this payment is left on this application to refund.</p>
+        ) : (
+          <ul className="m-0">
+            {entry.refundable.map((line) => (
+              <li key={line.label}>{`${line.label}, up to ${formatCents(line.cents)}`}</li>
+            ))}
+          </ul>
+        )}
         <TextField label="Refund amount in dollars" name="amount" inputMode="decimal" required />
         <TextField label="Reason (at least 10 characters)" name="reason" required />
       </ActionForm>

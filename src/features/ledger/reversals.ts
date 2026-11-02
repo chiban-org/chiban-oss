@@ -25,6 +25,7 @@ export interface RefundInput {
   amountCents: number
   reason: string
   allocations?: AllocationInput[]
+  applicationId?: string
 }
 
 export interface RefundOutcome {
@@ -46,7 +47,7 @@ async function plannedAllocations(
   input: RefundInput,
 ): Promise<Result<AllocationInput[], 'over_reversed' | 'amount_mismatch'>> {
   if (input.allocations === undefined) {
-    const split = await allocateReversal(db, input.entryId, input.amountCents)
+    const split = await allocateReversal(db, input.entryId, input.amountCents, input.applicationId)
     return split.excessCents > 0 ? err('over_reversed') : ok(split.allocations)
   }
   const negated = input.allocations.map((a) => ({ ...a, amountCents: -Math.abs(a.amountCents) }))
