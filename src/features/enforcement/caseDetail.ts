@@ -128,6 +128,14 @@ async function userNames(db: DbOrTx, ids: string[]): Promise<Record<string, stri
   return Object.fromEntries(rows.map((r) => [r.id, r.name]))
 }
 
+function earliestConviction(
+  courtJudgment: CivilDate | null,
+  outcomes: { kind: string; occurredOn: string }[],
+): CivilDate | null {
+  const won = outcomes.filter((o) => o.kind === 'judgment_for_town').map((o) => o.occurredOn)
+  return ([courtJudgment, ...won].filter((x) => x !== null).sort()[0] ?? null) as CivilDate | null
+}
+
 export async function loadCaseDetail(
   db: DbOrTx,
   actor: Actor,
@@ -243,7 +251,10 @@ export async function loadCaseDetail(
         ? null
         : penaltyExposure(penalty, {
             noticeReceivedOn: notice as CivilDate | null,
-            convictedOn: (judgment?.occurredOn ?? null) as CivilDate | null,
+            convictedOn: earliestConviction(
+              (judgment?.occurredOn ?? null) as CivilDate | null,
+              outcomes,
+            ),
             through: today,
             offense: 'first',
           }),

@@ -1,6 +1,7 @@
 import { eq, sql } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { counselOutcomes, documentVersions, files } from '@/db/schema'
+import { loadCaseDetail } from '@/features/enforcement/caseDetail'
 import { recordCounselOutcome, referToCounsel } from '@/features/enforcement/counsel'
 import { recordFine } from '@/features/enforcement/fines'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -139,6 +140,39 @@ describe('counsel referrals', () => {
       expect(recorded.ok).toBe(true)
     }
     expect(await handle.db.select().from(counselOutcomes)).toHaveLength(2)
+  })
+
+  it('a judgment for the town through counsel starts the penalty accrual on the case', async () => {
+    const referral = await refer('penalty_action')
+    const outcome = await recordCounselOutcome(
+      handle.db,
+      world.staff,
+      {
+        referralId: referral.referralId,
+        kind: 'judgment_for_town',
+        occurredOn: d('2027-08-01'),
+        court: 'District Court',
+        docket: '2027-CV-0099',
+        documentId: await uploadProof(
+          handle.db,
+          store,
+          world.staff,
+          order.caseId,
+          'Judgment',
+          'court_document',
+        ),
+      },
+      signal,
+    )
+    if (!outcome.ok) throw new Error(outcome.error)
+    const detail = await loadCaseDetail(
+      handle.db,
+      world.staff,
+      order.caseId,
+      d('2027-08-11'),
+      signal,
+    )
+    expect(detail.ok && detail.value.exposure?.fromDate).toBe('2027-08-01')
   })
 
   it('a judgment for the town on a penalty action supports a fine with no order', async () => {
