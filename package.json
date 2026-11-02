@@ -23,6 +23,10 @@
     "staff:create": "tsx --env-file .env scripts/createStaffUser.ts"
   },
   "dependencies": {
+    "@tanstack/react-query": "^5.105.1",
+    "@trpc/client": "^11.22.1",
+    "@trpc/react-query": "^11.22.1",
+    "@trpc/server": "^11.22.1",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.4",
@@ -34,6 +38,7 @@
     "qrcode": "^1.5.4",
     "react": "^19",
     "react-dom": "^19",
+    "superjson": "^2.2.6",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.7"
   },

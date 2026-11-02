@@ -8,6 +8,18 @@ importers:
 
   .:
     dependencies:
+      '@tanstack/react-query':
+        specifier: ^5.105.1
+        version: 5.105.1(@types/react@19.3.0)(react@19.3.1)
+      '@trpc/client':
+        specifier: ^11.22.1
+        version: 11.22.1(@trpc/server@11.22.1(typescript@6.0.3))(typescript@6.0.3)
+      '@trpc/react-query':
+        specifier: ^11.22.1
+        version: 11.22.1(@tanstack/react-query@5.105.1(@types/react@19.3.0)(react@19.3.1))(@trpc/client@11.22.1(@trpc/server@11.22.1(typescript@6.0.3))(typescript@6.0.3))(@trpc/server@11.22.1(typescript@6.0.3))(react@19.3.1)(typescript@6.0.3)
+      '@trpc/server':
+        specifier: ^11.22.1
+        version: 11.22.1(typescript@6.0.3)
       class-variance-authority:
         specifier: ^0.7.1
         version: 0.7.1
@@ -41,6 +53,9 @@ importers:
       react-dom:
         specifier: ^19
         version: 19.3.1(react@19.3.1)
+      superjson:
+        specifier: ^2.2.6
+        version: 2.2.6
       tailwind-merge:
         specifier: ^3.7.0
         version: 3.7.0
@@ -1258,6 +1273,18 @@ packages:
   '@tailwindcss/postcss@4.3.3':
     resolution: {integrity: sha512-JTSZZGQi1AyKirbLN3azmjVzef92tcX7h+iSqPdaeStyFpGpDlKvvpxeOE8njhbUanbRwr3z8DyzhICWnMtQeg==}
 
+  '@tanstack/query-core@5.105.1':
+    resolution: {integrity: sha512-B/rNlZoZ54w1dlddiUt9oEe1SLM+37c00SKLJEg9YH+7as3Y54P81o9Fh+2ujZ36tXPnQJ5oVe7AcyEWkyFhPg==}
+
+  '@tanstack/react-query@5.105.1':
+    resolution: {integrity: sha512-qcu+/+PtBOjW8qU4/0l47QVmNG7hPOWsCLzP0bTRhE1X7HYa757C4732wXTUH0QhCjTV1yedX8onsCiEwlNYrA==}
+    peerDependencies:
+      '@types/react': ^18 || ^19
+      react: ^18 || ^19
+    peerDependenciesMeta:
+      '@types/react':
+        optional: true
+
   '@testcontainers/postgresql@12.2.1':
     resolution: {integrity: sha512-MIbI5KjZ9M4SY4+xzxg/w4ZLBeV+Jd6ognXoWn7dh/mhIhBbn7ss0MiZHNg2XbCbu03BW9YQ9+H9xW8PFkJWaA==}
 
@@ -1289,6 +1316,28 @@ packages:
         optional: true
       '@types/react-dom':
         optional: true
+
+  '@trpc/client@11.22.1':
+    resolution: {integrity: sha512-flkAwF8bzzNCVJ5xcTMS+Az6Go/XK30ZIOGT94UJBYAmMq1w2tY7gk7+CIMiRUdvHzOYAVPitX2H+20qcIIomA==}
+    hasBin: true
+    peerDependencies:
+      '@trpc/server': 11.22.1
+      typescript: '>=5.7.2'
+
+  '@trpc/react-query@11.22.1':
+    resolution: {integrity: sha512-PEd3EzQwiJDSi2qlOm1kkfnh5q4rsQcjVGBdKqcbW9iLl7f6/NH/5NOPDdWu/yiV8cY4QJ1pWHENLuD0A1j9uA==}
+    peerDependencies:
+      '@tanstack/react-query': ^5.80.3
+      '@trpc/client': 11.22.1
+      '@trpc/server': 11.22.1
+      react: '>=18.2.0'
+      typescript: '>=5.7.2'
+
+  '@trpc/server@11.22.1':
+    resolution: {integrity: sha512-9SjWTS5iwENHOVPqpTjm0I1Os/CtuT6p8kDlovyEm00pXhpHX55tQM2vszJTEpcQhm/JfUz4ut/7Y9JZZQZo6A==}
+    hasBin: true
+    peerDependencies:
+      typescript: '>=5.7.2'
 
   '@types/aria-query@5.0.4':
     resolution: {integrity: sha512-rfT93uj5s0PRL7EzccGMs3brplhcrghnDoV26NqKhCAS1hVo+WdNsPvE/yb6ilfr5hi2MEk6d5EWJTKdxg8jVw==}
@@ -1776,6 +1825,10 @@ packages:
 
   convert-source-map@2.0.0:
     resolution: {integrity: sha512-Kvp459HrV2FEJ1CAsi1Ku+MY3kasH19TFykTz2xWmMeq6bk2NU3XXvfJ+Q61m0xktWwt+1HSYf3JZsTms3aRJg==}
+
+  copy-anything@4.1.5:
+    resolution: {integrity: sha512-vePst2VLTSqPglW7Q98VwFpGiGpOHTyXIo81MO5VyLecA5zMbZw/P/V1vmwD1jksa2iJpn/YkDrJ3XhTfzUyhQ==}
+    engines: {node: '>=18'}
 
   core-util-is@1.0.3:
     resolution: {integrity: sha512-ZQBvi1DcpJ4GDqanjucZ2Hj3wEO5pZDS89BWbkcrvdxksJorwUDDZamX9ldFkp9aw2lmBDLgkObEA4DWNJ9FYQ==}
@@ -2920,6 +2973,10 @@ packages:
       babel-plugin-macros:
         optional: true
 
+  superjson@2.2.6:
+    resolution: {integrity: sha512-H+ue8Zo4vJmV2nRjpx86P35lzwDT3nItnIsocgumgr0hHMQ+ZGq5vrERg9kJBo5AWGmxZDhzDo+WVIJqkB0cGA==}
+    engines: {node: '>=16'}
+
   tailwind-merge@3.7.0:
     resolution: {integrity: sha512-XPPUyAc+cvspz3lHTcR/QgPfW2A0lv/xQNIjX3HGhLR+Nq2lHaLq5MtTesHn8GUr3W3DguT2KT5x3NVgRtYwmA==}
 
@@ -3974,6 +4031,15 @@ snapshots:
       postcss: 8.5.32
       tailwindcss: 4.3.3
 
+  '@tanstack/query-core@5.105.1': {}
+
+  '@tanstack/react-query@5.105.1(@types/react@19.3.0)(react@19.3.1)':
+    dependencies:
+      '@tanstack/query-core': 5.105.1
+      react: 19.3.1
+    optionalDependencies:
+      '@types/react': 19.3.0
+
   '@testcontainers/postgresql@12.2.1':
     dependencies:
       testcontainers: 12.2.1
@@ -4015,6 +4081,23 @@ snapshots:
     optionalDependencies:
       '@types/react': 19.3.0
       '@types/react-dom': 19.3.0(@types/react@19.3.0)
+
+  '@trpc/client@11.22.1(@trpc/server@11.22.1(typescript@6.0.3))(typescript@6.0.3)':
+    dependencies:
+      '@trpc/server': 11.22.1(typescript@6.0.3)
+      typescript: 6.0.3
+
+  '@trpc/react-query@11.22.1(@tanstack/react-query@5.105.1(@types/react@19.3.0)(react@19.3.1))(@trpc/client@11.22.1(@trpc/server@11.22.1(typescript@6.0.3))(typescript@6.0.3))(@trpc/server@11.22.1(typescript@6.0.3))(react@19.3.1)(typescript@6.0.3)':
+    dependencies:
+      '@tanstack/react-query': 5.105.1(@types/react@19.3.0)(react@19.3.1)
+      '@trpc/client': 11.22.1(@trpc/server@11.22.1(typescript@6.0.3))(typescript@6.0.3)
+      '@trpc/server': 11.22.1(typescript@6.0.3)
+      react: 19.3.1
+      typescript: 6.0.3
+
+  '@trpc/server@11.22.1(typescript@6.0.3)':
+    dependencies:
+      typescript: 6.0.3
 
   '@types/aria-query@5.0.4': {}
 
@@ -4491,6 +4574,8 @@ snapshots:
       readable-stream: 4.8.0
 
   convert-source-map@2.0.0: {}
+
+  copy-anything@4.1.5: {}
 
   core-util-is@1.0.3: {}
 
@@ -5603,6 +5688,10 @@ snapshots:
     dependencies:
       client-only: 0.0.1
       react: 19.3.1
+
+  superjson@2.2.6:
+    dependencies:
+      copy-anything: 4.1.5
 
   tailwind-merge@3.7.0: {}
 
