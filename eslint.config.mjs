@@ -113,7 +113,7 @@ export default tseslint.config(
   },
 
   {
-    files: ['src/config/env.ts', 'vitest.setup.ts', 'vitest.globalSetup.ts'],
+    files: ['src/config/env.ts', 'vitest.setup.ts', 'vitest.globalSetup.ts', 'scripts/termGate.ts'],
     rules: {
       'no-restricted-properties': 'off',
       'no-console': 'off',

@@ -17,12 +17,14 @@
     "test:unit": "vitest run --project unit",
     "test:unit:west": "TZ=America/Los_Angeles vitest run --project unit",
     "test:integration": "vitest run --project integration --passWithNoTests",
-    "gate": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:unit:west && pnpm test:integration",
+    "gate": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:unit:west && pnpm test:integration && pnpm term-gate",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file .env src/entrypoints/migrate.ts",
     "staff:create": "tsx --env-file .env scripts/createStaffUser.ts",
     "worker": "tsx --env-file .env src/entrypoints/worker.ts",
-    "db:seed:demo": "tsx --env-file .env scripts/seedDemo.ts"
+    "db:seed:demo": "tsx --env-file .env scripts/seedDemo.ts",
+    "term-gate": "tsx --env-file-if-exists=.env scripts/termGate.ts",
+    "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
     "@fontsource-variable/mulish": "^5.3.0",
