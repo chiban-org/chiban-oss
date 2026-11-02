@@ -6,6 +6,7 @@ import { loadApplicationContext } from '@/features/applications/context'
 import { hasCapability } from '@/features/authz/capabilities'
 import type { InspectionHistoryRow } from '@/features/inspections/history'
 import { listInspectionHistory } from '@/features/inspections/history'
+import { reinspectableFailureIds } from '@/features/inspections/lookup'
 import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
 import { minutesToClock } from '@/features/inspections/zonedTime'
 import { townToday } from '@/features/town/today'
@@ -35,6 +36,7 @@ export interface InspectionsPanelData {
   certificateReady: boolean
   rowVersion: number
   today: string
+  reinspectableIds: string[]
 }
 
 export async function loadInspectionsPanelData(
@@ -64,6 +66,7 @@ export async function loadInspectionsPanelData(
       latestFinal?.status === 'passed',
     rowVersion: app?.rowVersion ?? 1,
     today: await townToday(ctx.db, new Date(), ctx.signal),
+    reinspectableIds: [...(await reinspectableFailureIds(ctx.db, applicationId))],
   }
 }
 
@@ -76,7 +79,7 @@ export function InspectionsPanel({
   applicationId: string
   number: string
 }) {
-  const { history, canSchedule, certificateReady, rowVersion, today } = data
+  const { history, canSchedule, certificateReady, rowVersion, today, reinspectableIds } = data
   return (
     <section aria-label="Inspections">
       <h2>Inspections</h2>
@@ -95,8 +98,10 @@ export function InspectionsPanel({
               <p className="m-0">{`${formatCivilDate(row.scheduledDate)} at ${minutesToClock(row.startMinute)}`}</p>
             ) : null}
             {row.resultNotes === null ? null : <p className="m-0">{`Notes: ${row.resultNotes}`}</p>}
-            {row.photoCount === 0 ? null : <p className="m-0">{`${row.photoCount} photos`}</p>}
-            {canSchedule && row.status === 'failed' ? (
+            {row.photoCount === 0 ? null : (
+              <p className="m-0">{`${row.photoCount} ${row.photoCount === 1 ? 'photo' : 'photos'}`}</p>
+            )}
+            {canSchedule && row.status === 'failed' && reinspectableIds.includes(row.id) ? (
               <Link
                 href={`/staff/inspections?number=${encodeURIComponent(number)}&reinspect=${row.id}`}
                 className="text-action underline"
