@@ -98,14 +98,16 @@ export async function openIncomplete(tx: Tx, listId: string): Promise<Incomplete
     .from(abutterListRecipients)
     .where(eq(abutterListRecipients.listId, listId))
     .orderBy(asc(abutterListRecipients.position))
-  const corrected = new Set(
-    rows
-      .filter((r) => wasCorrected(r.data as Recipient))
-      .flatMap((r) => (r.data as Recipient).parcelIds),
+  const correctedRecipients = rows.map((r) => r.data as Recipient).filter((r) => wasCorrected(r))
+  const corrected = new Set(correctedRecipients.flatMap((r) => r.parcelIds))
+  const correctedRoles = new Set(
+    correctedRecipients.filter((r) => r.parcelIds.length === 0).flatMap((r) => r.roles),
   )
   const strategy = list.crossingsAttestedAt === null ? stored.strategy : []
   const resolver = stored.resolver.filter(
-    (i) => i.parcelId === undefined || !corrected.has(i.parcelId),
+    (i) =>
+      (i.parcelId === undefined || !corrected.has(i.parcelId)) &&
+      (i.role === undefined || !correctedRoles.has(i.role)),
   )
   const tenants = rows
     .filter(

@@ -40,6 +40,7 @@ export async function resolveApplicant(ctx: Context, signal: AbortSignal): Promi
   ctx.recipients.unshift(entry)
   if (entry.status === 'incomplete_data') {
     ctx.incomplete.push({
+      role: 'applicant',
       code: entry.name === '' ? 'owner_missing' : 'address_missing',
       detail:
         entry.name === ''

@@ -1,4 +1,5 @@
 import type { Tx } from '@/db/client'
+import type { RecipientRole } from '@/features/abutters/roles'
 import type { BoardSettingsBody } from '@/features/boards/boardSettingsSchema'
 import type { LayerKey } from '@/features/gis/exceptionKinds'
 import type { LayerStatus } from '@/features/gis/layerStatus'
@@ -38,6 +39,7 @@ export interface IncompleteReason {
   code: IncompleteCode
   detail: string
   parcelId?: string
+  role?: RecipientRole
 }
 
 export interface StaffSelection {
