@@ -15,6 +15,7 @@ import {
   revokePacketLink,
   sendPacketLink,
 } from '@/features/boards/packetLinks'
+import { notForBoardMessage } from '@/features/boards/packetRefusal'
 import { createPacket } from '@/features/boards/packets'
 import { setAudiences, setPublic } from '@/features/documents/publish'
 import { createMemoryTransport, type MemoryMailTransport } from '@/features/mail/memoryTransport'
@@ -111,6 +112,20 @@ describe('board packets', () => {
       signal,
     )
     expect(made).toEqual({ ok: false, error: { notForBoard: [hidden.documentId] } })
+  })
+
+  it('the refusal names each document that cannot go in the packet', async () => {
+    const hidden = await uploadAs(
+      handle.db,
+      store,
+      world.applicant,
+      appRef,
+      pdfBytes('private plan'),
+      { title: 'Private plan' },
+    )
+    expect(await notForBoardMessage(handle.db, [hidden.documentId], signal)).toBe(
+      'These documents cannot go in this packet because they belong to the other board or are not shared with the board or the public: Private plan.',
+    )
   })
 
   it('packet freezes the version: a later redacted upload does not change what the board receives', async () => {
