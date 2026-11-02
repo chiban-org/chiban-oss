@@ -315,6 +315,71 @@ implementation notes described above while executing an already-approved spec.
 **Project:** chiban
 **Description:** Open-source land-use software for small US towns: building and trade permits, inspections, Planning Board and ZBA applications, and code enforcement, organized around the parcel.
 
-**Stack:** Next.js App Router, TypeScript, Drizzle + Postgres/PostGIS, tRPC + TanStack Query, server actions for mutations, shadcn/ui + Tailwind, pg-boss, MinIO, pnpm, Docker Compose behind Caddy, Vitest with a real Postgres. Conventions follow warpdrive.
+**Stack:** Next.js App Router, TypeScript, Drizzle + Postgres/PostGIS, tRPC + TanStack Query, server actions for mutations, shadcn/ui + Tailwind, pg-boss, MinIO, pnpm, Docker Compose behind Caddy, Vitest with a real Postgres.
 
 **License:** AGPL-3.0. This is the public product repository. Specs, plans, research, pricing, and ops material never land here.
+
+**Commands:** `pnpm dev`, `pnpm lint`, `pnpm typecheck`, `pnpm test:unit`, `pnpm test:unit:west`, `pnpm test:integration`, `pnpm term-gate`, and `pnpm gate`, which runs all of them in order and is what the pre-push hook calls. Database: `pnpm db:generate`, `pnpm db:migrate`, `pnpm db:seed:demo`. Worker: `pnpm worker`.
+
+## Global constraints
+
+- Write no code comments of any kind. Toolchain directives (`@vitest-environment`, `eslint-disable` with no prose) are the only exception.
+- No em dashes or en dashes in any file.
+- Files target under 200 lines; the hook blocks over 300.
+- TDD: every behavior starts with a failing test that you watch fail. Never mock the database; integration tests use the template-database harness in `src/test/db.ts`.
+- `process.env` is read only in `src/config/env.ts`. Zod validates every boundary.
+- Operational failures return `Result`; only `AppError(ErrorIds.X, ...)` is thrown, and only for programmer errors.
+- I/O functions take a required `signal: AbortSignal`.
+- Cookie names contain no dots. Constants are never imported from `"use client"` files. The tRPC `createContext` is wrapped in `React.cache`. Every server action calls the CSRF guard (`guardAction`) first.
+- Inside a transaction use only the transaction handle.
+- Fixtures, seeds, and copy use the fictional Town of Alder Pond, NH. Never use a real town's name, parcel IDs, owners, addresses, or staff names.
+- `.claude/` and `.worktrees/` are excluded from Biome, ESLint, tsc, and Vitest.
+- Commit after each task with a message stating why.
+
+## Engineering conventions
+
+Tests:
+
+- Integration tests clone a template database per test with `CREATE DATABASE ... TEMPLATE`, which is far faster than a fresh migrate. The template runs `CREATE EXTENSION postgis` before migrations.
+- Two lanes, unit and integration, run separately. The unit lane needs no container runtime.
+- Date tests run under at least two time zones, one of them west of UTC.
+- Every list query has a test where the viewer is allowed fewer rows than the page cap.
+- Every importer test runs as a non-admin actor.
+- A flake fix is verified by running at least 8 concurrent copies of the test.
+- Every new test is watched failing with the change reverted before it counts.
+- Every capability is tested by calling the tRPC procedure or server action directly as a user who lacks it.
+
+Deploy configuration:
+
+- The Caddyfile, Dockerfile, `next.config` headers, and deploy workflow each have a text-level `*.test.ts`, changed in the same commit as the file it covers.
+- Every env var that `src/config/env.ts` requires at import time has a schema-valid placeholder in the Dockerfile build stage.
+- A config key absent from the Zod schema fails startup.
+- Ops scripts ship as bundled entrypoints, not run through tsx.
+
+Jobs and transactions:
+
+- The pg-boss handle lives on `globalThis`; `requireBoss()` throws when it is missing; `ensureQueue` is idempotent. Never write `if (boss === null) return`.
+- Every job carries a dedup key, so a retry or a sweeper re-enqueue never doubles an effect.
+- Each job handler reloads its full actor through one shared loader.
+- Inside a transaction, use only the transaction handle, never the pool. A concurrency test runs more parallel callers than pool connections.
+
+Adapters: each adapter has an end-to-end test covering connect, first run, and second run, faking only the third-party call and never the auth step.
+
+Next.js:
+
+- Every server action calls the CSRF guard first.
+- A form that redirects to another origin gets a path-scoped CSP `form-action` carve-out with a test. `frame-ancestors 'none'` everywhere else.
+- Client mutations go through one attempt helper that always yields a value and always clears pending state.
+
+Security controls: each control has a test asserting it fires under the shipped default configuration. Defaults are pinned by reading them in a clean process, not by forcing values inside the test.
+
+Error IDs: the registry in `src/constants/errorIds.ts` is append-only, with a uniqueness test.
+
+Review: before merging any branch that touches clocks, fees, the ledger, authorization, or retention, run `codex exec review` on the finished branch with the default model and stdin closed. Reproduce each finding before fixing it.
+
+Repos and gates:
+
+- Every CI gate also runs from one local `pnpm gate`, which the pre-push hook calls.
+- A gate marked allow-failure is a report, and it carries an owner and a date by which it is promoted or deleted.
+- The term gate reads its banned terms at run time from the file named by `CHIBAN_TERMS_FILE` and reports path and line only.
+- `SECURITY.md` names a real, monitored contact before first publish.
