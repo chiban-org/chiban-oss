@@ -48,7 +48,7 @@ describe('upload intents', () => {
     expect(doc?.audiences).toEqual(['project_parties', 'reviewers'])
   })
 
-  it('parcel-file upload by staff defaults to public with all audiences', async () => {
+  it('parcel-file upload by staff defaults to private with all audiences', async () => {
     const up = await uploadAs(
       handle.db,
       store,
@@ -58,7 +58,7 @@ describe('upload intents', () => {
       { title: 'Survey', seriesKey: 'nh.rs.blueprints_architectural' },
     )
     const [doc] = await handle.db.select().from(documents).where(eq(documents.id, up.documentId))
-    expect(doc?.isPublic).toBe(true)
+    expect(doc?.isPublic).toBe(false)
     expect(doc?.audiences).toEqual(['project_parties', 'reviewers', 'board'])
   })
 

@@ -98,6 +98,7 @@ export function Uploader({
     const done = new FormData()
     done.set('csrf_token', csrf)
     done.set('intentId', intent.intentId)
+    for (const [key, value] of Object.entries(extraFields)) done.set(key, value)
     const finalized = await actions.finalize(done)
     if (!finalized.ok) return setMessage(finalized.error)
     setMessage('Uploaded.')

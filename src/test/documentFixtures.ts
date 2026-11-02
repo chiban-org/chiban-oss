@@ -19,6 +19,7 @@ export interface UploadOptions {
   now?: Date
   seriesKey?: string
   docKind?: DocKind
+  isPublic?: boolean
 }
 
 export async function uploadAs(
@@ -56,7 +57,10 @@ export async function uploadAs(
     db,
     store,
     actor,
-    { intentId: intent.value.intentId },
+    {
+      intentId: intent.value.intentId,
+      ...(options.isPublic === undefined ? {} : { isPublic: options.isPublic }),
+    },
     signal,
     options.now,
   )

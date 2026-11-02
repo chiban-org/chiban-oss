@@ -35,7 +35,7 @@ export interface AttachInput {
 }
 
 export function defaultsFor(kind: RecordRef['kind']): { audiences: Audience[]; isPublic: boolean } {
-  if (kind === 'parcel') return { audiences: [...AUDIENCES], isPublic: true }
+  if (kind === 'parcel') return { audiences: [...AUDIENCES], isPublic: false }
   if (kind === 'inspection') return { audiences: ['project_parties'], isPublic: false }
   if (kind === 'meeting') return { audiences: ['board'], isPublic: false }
   if (kind === 'enforcement_case' || kind === 'rtk_request')
@@ -132,7 +132,8 @@ export async function attachDocument(
     await insertSystemApproval(tx, {
       documentId,
       versionId: version?.id ?? '',
-      statement: 'Published when the file was attached, under the town default for this record.',
+      statement:
+        'Published when the file was attached, at the choice of the staff member who added it.',
     })
   }
   const parcelId = await parcelOf(tx, input.target)

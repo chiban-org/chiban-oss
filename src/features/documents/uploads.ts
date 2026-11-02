@@ -243,11 +243,15 @@ export async function claimIntent(tx: Tx, intentId: string): Promise<boolean> {
   return claimed.length > 0
 }
 
+async function mayPublish(tx: Tx, actor: Actor, signal: AbortSignal): Promise<boolean> {
+  return await hasCapability(tx, actor.userId, 'document.publish', signal)
+}
+
 export async function finalizeUpload(
   db: Db,
   store: ObjectStore,
   actor: Actor,
-  input: { intentId: string },
+  input: { intentId: string; isPublic?: boolean },
   signal: AbortSignal,
   now: Date = new Date(),
 ): Promise<Result<{ documentId: string; versionId: string }, FinalizeError>> {
@@ -260,6 +264,7 @@ export async function finalizeUpload(
       const { intent, sha256 } = ingested.value
       const target = { kind: intent.targetKind, id: intent.targetId } as RecordRef
       if (!(await mayUploadTo(tx, actor, target, signal, now))) return err('forbidden')
+      if (input.isPublic === true && !(await mayPublish(tx, actor, signal))) return err('forbidden')
       if (!(await claimIntent(tx, intent.id))) return err('already_finalized')
       const attached = await attachDocument(
         tx,
@@ -269,6 +274,7 @@ export async function finalizeUpload(
           title: intent.title,
           docKind: docKindFor(target.kind, intent.docKind),
           ...(intent.seriesKey === null ? {} : { seriesKey: intent.seriesKey }),
+          ...(input.isPublic === undefined ? {} : { isPublic: input.isPublic }),
           file: { sha256, filename: intent.filename, contentType: intent.contentType },
         },
         signal,

@@ -23,6 +23,7 @@ export async function uploadRedactionFixture(
   actor: Actor,
   name: 'letter.pdf' | 'site-photo.jpg' | 'scanned-with-ocr.pdf',
   parcelId?: string,
+  isPublic = true,
 ): Promise<{ documentId: string; versionId: string; parcelId: string }> {
   const parcel = parcelId ?? (await makeParcel(db, []))
   const isPhoto = name.endsWith('.jpg')
@@ -37,6 +38,7 @@ export async function uploadRedactionFixture(
       filename: name,
       contentType: isPhoto ? 'image/jpeg' : 'application/pdf',
       seriesKey: 'nh.rs.correspondence_administrative',
+      isPublic,
     },
   )
   return { documentId: uploaded.documentId, versionId: uploaded.versionId, parcelId: parcel }

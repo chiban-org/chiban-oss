@@ -70,7 +70,14 @@ interface ReleasableDoc {
 }
 
 async function releasable(): Promise<ReleasableDoc> {
-  const doc = await uploadRedactionFixture(handle.db, store, custodian, 'letter.pdf')
+  const doc = await uploadRedactionFixture(
+    handle.db,
+    store,
+    custodian,
+    'letter.pdf',
+    undefined,
+    false,
+  )
   const redactedId = await redactedVersionOf(
     handle.db,
     store,
@@ -139,7 +146,14 @@ async function letterText(documentId: string): Promise<string> {
 describe('creating a release', () => {
   it('release with an unapproved redacted version is approval_missing', async () => {
     const doc = await releasable()
-    const other = await uploadRedactionFixture(handle.db, store, custodian, 'letter.pdf')
+    const other = await uploadRedactionFixture(
+      handle.db,
+      store,
+      custodian,
+      'letter.pdf',
+      undefined,
+      false,
+    )
     const loose = await redactedVersionOf(
       handle.db,
       store,
@@ -220,7 +234,14 @@ describe('creating a release', () => {
   })
 
   it('releasing the original adds no withholding', async () => {
-    const doc = await uploadRedactionFixture(handle.db, store, custodian, 'letter.pdf')
+    const doc = await uploadRedactionFixture(
+      handle.db,
+      store,
+      custodian,
+      'letter.pdf',
+      undefined,
+      false,
+    )
     const approved = await approveRendition(
       handle.db,
       custodian,

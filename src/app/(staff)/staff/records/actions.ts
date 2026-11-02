@@ -202,7 +202,9 @@ export async function finalizeStaffUploadAction(formData: FormData): Promise<Act
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
     const intentId = text(formData, 'intentId')
     if (!isUuid(intentId)) return invalid()
-    const done = await finalizeUpload(db, getObjectStore(), actor, { intentId }, signal)
+    const visibility = text(formData, 'visibility')
+    const choice = visibility === '' ? {} : { isPublic: visibility === 'public' }
+    const done = await finalizeUpload(db, getObjectStore(), actor, { intentId, ...choice }, signal)
     return done.ok
       ? { ok: true, message: 'Uploaded.' }
       : { ok: false, error: UPLOAD_COPY[done.error] }

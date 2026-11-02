@@ -85,6 +85,7 @@ async function attach(
           contentType: 'application/pdf',
         },
         ...(input.seriesKey === undefined ? {} : { seriesKey: input.seriesKey }),
+        ...(input.target.kind === 'parcel' ? { isPublic: true } : {}),
       },
       ctx.signal,
     ),

@@ -52,7 +52,14 @@ describe('release document route', () => {
       signal,
     )
     if (!logged.ok) throw new Error('log')
-    const doc = await uploadRedactionFixture(handle.db, store, custodian, 'letter.pdf')
+    const doc = await uploadRedactionFixture(
+      handle.db,
+      store,
+      custodian,
+      'letter.pdf',
+      undefined,
+      false,
+    )
     const redacted = await redactedVersionOf(
       handle.db,
       store,

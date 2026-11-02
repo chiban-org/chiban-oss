@@ -77,7 +77,7 @@ async function publicFile(): Promise<string> {
 }
 
 describe('the public rendition rule', () => {
-  it('a default-public parcel upload is approved by the system at upload', async () => {
+  it('a parcel upload chosen as public is approved by the system at upload', async () => {
     const active = await activePublicApproval(handle.db, doc.documentId)
     expect(active?.approvedByKind).toBe('system')
     expect(active?.versionId).toBe(doc.versionId)
