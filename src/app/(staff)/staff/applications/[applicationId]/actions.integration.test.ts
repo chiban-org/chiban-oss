@@ -1,6 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { applications, clocks, feeOverrides, gateOverrides } from '@/db/schema'
+import {
+  applicationConditions,
+  applications,
+  clocks,
+  feeOverrides,
+  gateOverrides,
+} from '@/db/schema'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -139,6 +145,39 @@ describe('application actions', () => {
       .from(applications)
       .where(eq(applications.id, app.applicationId))
     expect(row?.state).toBe('issued')
+  })
+
+  it('reviewer issuing through the server action is forbidden', async () => {
+    const app = await trade({ state: 'submitted' })
+    state.actor = world.reviewer
+    const result = await actions.transitionAction(
+      form({ applicationId: app.applicationId, to: 'issued', expectedRowVersion: '1' }),
+    )
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining('permission') })
+  })
+
+  it('waiving a blocking condition without gate.override_admin is forbidden through the action', async () => {
+    const app = await trade({ state: 'submitted' })
+    state.actor = world.staff
+    await actions.applyConditionAction(form({ applicationId: app.applicationId, code: 'LICENSE' }))
+    const [condition] = await handle.db
+      .select()
+      .from(applicationConditions)
+      .where(eq(applicationConditions.applicationId, app.applicationId))
+    state.actor = await staffActor(handle.db, 'inspector')
+    const result = await actions.setConditionStatusAction(
+      form({
+        conditionId: condition?.id ?? '',
+        status: 'waived',
+        reason: 'Not needed on this job',
+      }),
+    )
+    expect(result).toMatchObject({ ok: false })
+    const [after] = await handle.db
+      .select()
+      .from(applicationConditions)
+      .where(eq(applicationConditions.id, condition?.id ?? ''))
+    expect(after?.status).toBe('unmet')
   })
 
   it('a blocked gate returns its reason and a stale version asks for a reload', async () => {

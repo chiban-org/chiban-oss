@@ -10,6 +10,7 @@ import {
   recordStatutoryException,
   revokeGateOverride,
 } from '@/features/gates/overrides'
+import { issueApplication } from '@/features/issuance/issueApplication'
 import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
 import { dateOf, done, INVALID, INVALID_DATE, idOf } from './actionInput'
 
@@ -25,14 +26,17 @@ export async function transitionAction(formData: FormData): Promise<ActionResult
     ) {
       return INVALID
     }
-    const result = await db.transaction((tx) =>
-      transitionApplication(
-        tx,
-        actor,
-        { applicationId, to: to as CoreState, expectedRowVersion },
-        signal,
-      ),
-    )
+    const result =
+      to === 'issued'
+        ? await issueApplication(db, actor, { applicationId, expectedRowVersion }, signal)
+        : await db.transaction((tx) =>
+            transitionApplication(
+              tx,
+              actor,
+              { applicationId, to: to as CoreState, expectedRowVersion },
+              signal,
+            ),
+          )
     if (result.ok) return { ok: true, message: `Moved to ${to.replaceAll('_', ' ')}.` }
     if (typeof result.error === 'string') return { ok: false, error: errorCopy(result.error) }
     const reasons = result.error.gateBlocked

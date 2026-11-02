@@ -13,7 +13,6 @@ import {
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
-import { transitionApplication } from '@/features/applications/transition'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { getPublished } from '@/features/config/store'
@@ -25,6 +24,7 @@ import { recordCounterPayment } from '@/features/counter/counterPayment'
 import { assessFees } from '@/features/fees/assess'
 import type { FieldError } from '@/features/forms/validateSubmission'
 import type { GateResult } from '@/features/gates/evaluateGates'
+import { issueInTransaction } from '@/features/issuance/issueApplication'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import type { AllocationInput } from '@/features/ledger/types'
 import { displayIdsFor } from '@/features/parcels/displayId'
@@ -33,6 +33,7 @@ import type { ProcessorError } from '@/features/payments/processors/types'
 import { startCardPresentPayment } from '@/features/payments/startPayment'
 import { addParty } from '@/features/projects/parties'
 import { createProject } from '@/features/projects/projects'
+import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
 
 export type { LicenseResult }
@@ -84,6 +85,7 @@ export type QuickIssueError =
 
 export interface QuickIssueDeps {
   now?: Date
+  store?: ObjectStore
 }
 
 async function mayQuickIssue(db: Db, actor: Actor, signal: AbortSignal): Promise<boolean> {
@@ -195,14 +197,10 @@ export async function quickIssue(
     )
     if (!collected.ok) return err(collected.error)
     const receiptNumber = collected.value
-    const [row] = await tx.select().from(applications).where(eq(applications.id, applicationId))
-    const issued = await transitionApplication(
-      tx,
-      actor,
-      { applicationId, to: 'issued', expectedRowVersion: row?.rowVersion ?? 0 },
-      signal,
+    const issued = await issueInTransaction(tx, actor, { applicationId }, signal, {
       now,
-    )
+      ...(deps.store === undefined ? {} : { store: deps.store }),
+    })
     if (!issued.ok) return err(issued.error)
     return ok({ ...base, state: 'issued' as const, receiptNumber })
   })
@@ -227,17 +225,16 @@ export async function completeQuickIssue(
 ): Promise<Result<QuickIssueResult, QuickIssueError>> {
   signal.throwIfAborted()
   if (!(await mayQuickIssue(db, actor, signal))) return err('forbidden')
-  const moved = await db.transaction((tx) =>
-    transitionApplication(
+  const moved = await transactionResult(db, (tx) =>
+    issueInTransaction(
       tx,
       actor,
-      {
-        applicationId: input.applicationId,
-        to: 'issued',
-        expectedRowVersion: input.expectedRowVersion,
-      },
+      { applicationId: input.applicationId, expectedRowVersion: input.expectedRowVersion },
       signal,
-      deps.now,
+      {
+        ...(deps.now === undefined ? {} : { now: deps.now }),
+        ...(deps.store === undefined ? {} : { store: deps.store }),
+      },
     ),
   )
   if (!moved.ok) return err(moved.error)

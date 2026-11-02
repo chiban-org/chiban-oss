@@ -1,4 +1,4 @@
-import type { Db } from '@/db/client'
+import type { Db, DbOrTx } from '@/db/client'
 import type { PdfBlock } from '@/features/pdf/renderPdf'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { loadPermitData, mergeContextOf, type PermitData } from '@/features/permits/permitData'
@@ -29,7 +29,7 @@ function conditionsBlock(data: PermitData): PdfBlock[] {
 }
 
 export async function buildPermitPdf(
-  db: Db,
+  db: DbOrTx,
   applicationId: string,
   signal: AbortSignal,
 ): Promise<Result<Uint8Array, 'not_issued'>> {
