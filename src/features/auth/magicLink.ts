@@ -93,3 +93,25 @@ export async function consumeMagicLink(
   if (!session.ok) return err('invalid')
   return ok({ sid: session.value.sid, userId: claimed.userId })
 }
+
+export async function peekMagicLink(
+  db: DbOrTx,
+  token: string,
+  signal: AbortSignal,
+): Promise<{ email: string } | null> {
+  signal.throwIfAborted()
+  const [row] = await db
+    .select({ email: users.email })
+    .from(magicLinks)
+    .innerJoin(users, eq(users.id, magicLinks.userId))
+    .where(
+      and(
+        eq(magicLinks.tokenHash, hashToken(token)),
+        isNull(magicLinks.consumedAt),
+        gt(magicLinks.expiresAt, sql`now()`),
+        eq(users.isActive, true),
+        eq(users.kind, 'public'),
+      ),
+    )
+  return row === undefined ? null : { email: row.email }
+}
