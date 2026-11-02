@@ -20,7 +20,8 @@
     "gate": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:unit:west && pnpm test:integration",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file .env src/entrypoints/migrate.ts",
-    "staff:create": "tsx --env-file .env scripts/createStaffUser.ts"
+    "staff:create": "tsx --env-file .env scripts/createStaffUser.ts",
+    "worker": "tsx --env-file .env src/entrypoints/worker.ts"
   },
   "dependencies": {
     "@fontsource-variable/mulish": "^5.3.0",
@@ -38,6 +39,7 @@
     "nodemailer": "^10.3.1",
     "otpauth": "^9.5.2",
     "pg": "^8.23.1",
+    "pg-boss": "^12.38.0",
     "qrcode": "^1.5.4",
     "radix-ui": "^1.8.1",
     "react": "^19",
