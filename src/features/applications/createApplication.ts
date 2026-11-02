@@ -6,6 +6,7 @@ import type { ApplicationTypeBody } from '@/features/applications/applicationTyp
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { pinCurrent } from '@/features/config/bindings'
+import { checkApplicationType } from '@/features/config/publishChecks'
 import { getVersion } from '@/features/config/store'
 import { linkRecordToParcel } from '@/features/parcels/recordLinks'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
@@ -34,7 +35,12 @@ export async function createApplication(
   input: { projectId: string; applicationTypeKey: string },
   signal: AbortSignal,
   now: Date = new Date(),
-): Promise<Result<{ applicationId: string; number: string }, 'forbidden' | 'not_published'>> {
+): Promise<
+  Result<
+    { applicationId: string; number: string },
+    'forbidden' | 'not_published' | 'config_inconsistent'
+  >
+> {
   signal.throwIfAborted()
   const permitted =
     hasFullRecordAccess(actor) || (await isActiveParty(db, actor.userId, input.projectId))
@@ -48,7 +54,10 @@ export async function createApplication(
     const pins = await pinCurrent(tx, input.applicationTypeKey, signal)
     if (!pins.ok) return err('not_published')
     const typeVersion = await getVersion(tx, pins.value.applicationType, signal)
-    const prefix = (typeVersion?.body as ApplicationTypeBody).prefix
+    const typeBody = typeVersion?.body as ApplicationTypeBody
+    if ((await checkApplicationType(tx, typeBody, signal)) !== null)
+      return err('config_inconsistent')
+    const prefix = typeBody.prefix
     const number = await nextNumber(tx, prefix, year)
     const [created] = await tx
       .insert(applications)

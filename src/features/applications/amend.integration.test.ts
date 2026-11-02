@@ -32,7 +32,7 @@ afterEach(async () => {
   await handle.drop()
 })
 
-async function _submit(
+async function submit(
   applicationId: string,
   values: Record<string, unknown>,
   hash = HASH,
@@ -202,6 +202,38 @@ describe('amendApplication', () => {
       state: 'under_review',
       rowVersion: 2,
       values: { classification: 'residential' },
+    })
+  })
+})
+
+describe('submission and staff-only values', () => {
+  it('submitting keeps the staff-only values staff set on the draft', async () => {
+    await saveAndPublish(handle.db, world.admin, 'form', 'bp-form', {
+      ...FORM_BODY,
+      fields: [
+        ...FORM_BODY.fields,
+        {
+          key: 'after_the_fact',
+          label: 'After the fact',
+          type: 'checkbox',
+          required: false,
+          fact: 'afterTheFact',
+          staffOnly: true,
+        },
+      ],
+    })
+    const app = await makeApplication(handle.db, world, {
+      values: { after_the_fact: true },
+      facts: { classification: null, dwellingUnits: null, afterTheFact: true },
+    })
+    expect((await submit(app.applicationId, { classification: 'residential' })).ok).toBe(true)
+    const [row] = await handle.db
+      .select()
+      .from(applications)
+      .where(eq(applications.id, app.applicationId))
+    expect(row).toMatchObject({
+      values: { classification: 'residential', after_the_fact: true },
+      facts: { classification: 'residential', afterTheFact: true },
     })
   })
 })

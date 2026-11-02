@@ -30,6 +30,22 @@ async function markOverdue(tx: Tx, today: CivilDate): Promise<void> {
   }
 }
 
+async function stillLapsed(
+  tx: Tx,
+  clockId: string,
+  applicationId: string,
+  today: CivilDate,
+): Promise<boolean> {
+  await tx
+    .select({ id: applications.id })
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+    .for('update')
+  const [live] = await tx.select().from(clocks).where(eq(clocks.id, clockId)).for('update')
+  const [app] = await tx.select().from(applications).where(eq(applications.id, applicationId))
+  return live?.status === 'running' && live.currentDue < today && app?.state === 'issued'
+}
+
 export async function expireLapsedPermits(
   tx: Tx,
   today: CivilDate,
@@ -46,6 +62,7 @@ export async function expireLapsedPermits(
   for (const { clock, state, rowVersion } of past) {
     const rule = ruleByKey(pack, clock.ruleKey, clock.ruleVersion)
     if (rule.kind !== 'clock' || rule.clockType !== 'exercise_by' || state !== 'issued') continue
+    if (!(await stillLapsed(tx, clock.id, clock.applicationId, today))) continue
     await tx.update(clocks).set({ status: 'lapsed' }).where(eq(clocks.id, clock.id))
     const moved = await move(
       tx,

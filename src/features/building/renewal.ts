@@ -20,7 +20,9 @@ export async function renewPermit(
   actor: Actor,
   input: { applicationId: string; renewedOn: CivilDate },
   signal: AbortSignal,
-): Promise<Result<{ newDue: CivilDate }, 'forbidden' | 'not_issued' | 'already_lapsed'>> {
+): Promise<
+  Result<{ newDue: CivilDate }, 'forbidden' | 'not_issued' | 'already_lapsed' | 'fees_incomplete'>
+> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'permit.issue', signal))) return err('forbidden')
   return await transactionResult(db, async (tx) => {
@@ -52,7 +54,8 @@ export async function renewPermit(
       { kind: 'renewal', days: null, newDue, reason: RENEWAL_REASON },
       signal,
     )
-    await assessFees(tx, input.applicationId, 'at_renewal', actor, signal)
+    const assessed = await assessFees(tx, input.applicationId, 'at_renewal', actor, signal)
+    if (!assessed.ok) return err('fees_incomplete')
     return ok({ newDue })
   })
 }

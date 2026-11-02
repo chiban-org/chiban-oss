@@ -1,12 +1,12 @@
 'use client'
 
-import { useEffect, useState } from 'react'
 import {
   Area,
   Check,
   type FieldErrors,
   FieldGroup,
   Input,
+  ListInput,
   Pick,
 } from '@/components/config/primitives'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
@@ -28,42 +28,6 @@ interface Props {
   errors: FieldErrors
   packRules: PackRuleOption[]
   classifications: ClassificationOption[]
-}
-
-function ListInput({
-  label,
-  values,
-  onValues,
-  separator,
-  multiline,
-}: {
-  label: string
-  values: string[]
-  onValues: (next: string[]) => void
-  separator: RegExp
-  multiline?: boolean
-}) {
-  const joined = values.join(multiline === true ? '\n' : ', ')
-  const [raw, setRaw] = useState(joined)
-  useEffect(() => {
-    if (parseWith(raw, separator).join('|') !== values.join('|')) setRaw(joined)
-  }, [joined, raw, separator, values])
-  const change = (text: string) => {
-    setRaw(text)
-    onValues(parseWith(text, separator))
-  }
-  return multiline === true ? (
-    <Area label={label} rows={4} value={raw} onChange={(e) => change(e.target.value)} />
-  ) : (
-    <Input label={label} value={raw} onChange={(e) => change(e.target.value)} />
-  )
-}
-
-function parseWith(text: string, separator: RegExp): string[] {
-  return text
-    .split(separator)
-    .map((s) => s.trim())
-    .filter((s) => s !== '')
 }
 
 export function ApplicationTypeEditor({

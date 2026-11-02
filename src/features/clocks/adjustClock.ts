@@ -43,6 +43,11 @@ export interface RecordedAdjustment {
   stopsClock?: boolean
 }
 
+function nextStatus(clock: ClockRow, adj: RecordedAdjustment): ClockRow['status'] {
+  if (adj.stopsClock === true) return 'stopped'
+  return clock.status === 'overdue' && adj.newDue !== null ? 'running' : clock.status
+}
+
 export async function recordAdjustment(
   tx: Tx,
   actor: AnyActor,
@@ -64,7 +69,7 @@ export async function recordAdjustment(
     .update(clocks)
     .set({
       currentDue: adj.newDue ?? clock.currentDue,
-      status: adj.stopsClock === true ? 'stopped' : clock.status,
+      status: nextStatus(clock, adj),
     })
     .where(eq(clocks.id, clock.id))
   await writeAudit(

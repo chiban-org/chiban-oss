@@ -60,11 +60,17 @@ export async function submitApplication(
     asStaff: hasFullRecordAccess(actor),
   })
   if (!checked.ok) return err({ fieldErrors: checked.error })
+  const formBody = form?.body as FormBody
+  const staff = hasFullRecordAccess(actor)
+  const values = staff
+    ? checked.value.values
+    : keepStaffOnlyValues(formBody, app.values, checked.value.values)
+  const facts = staff ? checked.value.facts : extractFacts(formBody, values)
   return await transactionResult<{ state: 'submitted' }, SubmitError>(db, async (tx) => {
     const today = await townToday(tx, now, signal)
     await tx
       .update(applications)
-      .set({ values: checked.value.values, facts: checked.value.facts, receivedDate: today })
+      .set({ values, facts, receivedDate: today })
       .where(eq(applications.id, input.applicationId))
     await tx.insert(attestations).values({
       applicationId: input.applicationId,

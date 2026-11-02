@@ -6,7 +6,7 @@ import { listApplicationsForViewer } from '@/features/applications/listForViewer
 import { getParcelHistory } from '@/features/parcels/parcelHistory'
 import { addParty } from '@/features/projects/parties'
 import { createProject } from '@/features/projects/projects'
-import { publishBuildingType } from '@/test/configFixtures'
+import { FEE_BODY, publishBuildingType, saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeParcel, seedParcelWorld, staffActor } from '@/test/parcels'
 
@@ -114,6 +114,32 @@ describe('createApplication', () => {
         NOW,
       ),
     ).toEqual({ ok: false, error: 'not_published' })
+  })
+})
+
+describe('createApplication configuration check', () => {
+  it('refuses to pin a fee schedule that names a field the published form no longer has', async () => {
+    const applicant = await staffActor(handle.db, 'applicant')
+    const admin = await staffActor(handle.db, 'admin')
+    const projectId = await newProject(applicant)
+    await saveAndPublish(handle.db, admin, 'fee_schedule', 'bp-fees', {
+      ...FEE_BODY,
+      lines: [
+        {
+          ...FEE_BODY.lines[0],
+          expr: { op: 'per_unit', source: { kind: 'field', field: 'ghost' }, centsPerUnit: 1 },
+        },
+      ],
+    })
+    expect(
+      await createApplication(
+        handle.db,
+        applicant,
+        { projectId, applicationTypeKey: 'BP' },
+        signal,
+        NOW,
+      ),
+    ).toEqual({ ok: false, error: 'config_inconsistent' })
   })
 })
 

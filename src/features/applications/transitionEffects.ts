@@ -36,7 +36,8 @@ export async function runTransitionEffects(
   signal: AbortSignal,
 ): Promise<void> {
   if (to === 'submitted') await startClocksFor(tx, app.id, 'application_received', today, signal)
-  if (to === 'decided' || to === 'denied') {
+  const issuedDirectly = to === 'issued' && app.state === 'submitted'
+  if (to === 'decided' || to === 'denied' || issuedDirectly) {
     await markClockMet(tx, app.id, DECISION_CLOCK_KEY, today, signal)
   }
   if (to === 'issued' && app.state !== 'suspended') {

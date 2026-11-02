@@ -31,6 +31,10 @@ function checkTownRule(body: TownRuleSettingBody, key: string): PublishError | n
   if (key !== body.ruleKey) {
     return { invalid: [{ path: 'ruleKey', message: 'the configuration key must be the rule key' }] }
   }
+  const clockBacked = rule.kind === 'town_setting'
+  if (clockBacked && !Number.isInteger(body.value)) {
+    return { invalid: [{ path: 'value', message: 'Enter a whole number.' }] }
+  }
   const checked = checkTownValue(rule, {
     value: body.value,
     adoptingAuthority: body.adoptingAuthority,
@@ -40,7 +44,7 @@ function checkTownRule(body: TownRuleSettingBody, key: string): PublishError | n
   return { policyViolations: [{ ruleKey: body.ruleKey, error: checked.error }] }
 }
 
-async function checkApplicationType(
+export async function checkApplicationType(
   tx: Tx,
   body: ApplicationTypeBody,
   signal: AbortSignal,

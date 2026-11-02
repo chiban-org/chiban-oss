@@ -1,6 +1,6 @@
 'use client'
 
-import type { ComponentProps, ReactNode } from 'react'
+import { type ComponentProps, type ReactNode, useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
@@ -103,4 +103,40 @@ export function RowButton({ children, onClick }: { children: ReactNode; onClick:
       {children}
     </Button>
   )
+}
+
+export function ListInput({
+  label,
+  values,
+  onValues,
+  separator,
+  multiline,
+}: {
+  label: string
+  values: string[]
+  onValues: (next: string[]) => void
+  separator: RegExp
+  multiline?: boolean
+}) {
+  const joined = values.join(multiline === true ? '\n' : ', ')
+  const [raw, setRaw] = useState(joined)
+  useEffect(() => {
+    if (parseWith(raw, separator).join('|') !== values.join('|')) setRaw(joined)
+  }, [joined, raw, separator, values])
+  const change = (text: string) => {
+    setRaw(text)
+    onValues(parseWith(text, separator))
+  }
+  return multiline === true ? (
+    <Area label={label} rows={4} value={raw} onChange={(e) => change(e.target.value)} />
+  ) : (
+    <Input label={label} value={raw} onChange={(e) => change(e.target.value)} />
+  )
+}
+
+function parseWith(text: string, separator: RegExp): string[] {
+  return text
+    .split(separator)
+    .map((s) => s.trim())
+    .filter((s) => s !== '')
 }

@@ -140,6 +140,46 @@ describe('markComplete', () => {
     expect(await decisionDue(app.applicationId)).toBe('2027-03-31')
   })
 
+  it('a completion that waited on the application lock is refused when another completed first', async () => {
+    const app = await submittedApp({
+      classification: 'residential',
+      dwellingUnits: 1,
+      afterTheFact: false,
+    })
+    let locked: () => void = () => undefined
+    let release: () => void = () => undefined
+    const lockTaken = new Promise<void>((resolve) => {
+      locked = resolve
+    })
+    const mayCommit = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const first = handle.db.transaction(async (tx) => {
+      await tx
+        .select()
+        .from(applications)
+        .where(eq(applications.id, app.applicationId))
+        .for('update')
+      locked()
+      await mayCommit
+      await tx
+        .update(applications)
+        .set({ completedDate: '2027-03-01' })
+        .where(eq(applications.id, app.applicationId))
+    })
+    await lockTaken
+    const second = complete(app.applicationId, '2027-03-05')
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    release()
+    await first
+    expect(await second).toEqual({ ok: false, error: 'already_complete' })
+    const [row] = await handle.db
+      .select()
+      .from(applications)
+      .where(eq(applications.id, app.applicationId))
+    expect(row?.completedDate).toBe('2027-03-01')
+  })
+
   it('stores the completed date on the application', async () => {
     const app = await submittedApp({
       classification: 'residential',

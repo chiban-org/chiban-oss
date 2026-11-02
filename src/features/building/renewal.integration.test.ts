@@ -102,4 +102,33 @@ describe('renewPermit', () => {
         ?.state,
     ).toBe('issued')
   })
+
+  it('a renewal whose fee cannot be worked out is refused and changes nothing', async () => {
+    await saveAndPublish(handle.db, world.admin, 'fee_schedule', 'bp-fees', {
+      key: 'bp-fees',
+      lines: [
+        {
+          code: 'renewal',
+          label: 'Renewal notice',
+          due: 'at_renewal',
+          expr: {
+            op: 'per_unit',
+            source: { kind: 'count_of', what: 'abutters_on_issued_list' },
+            centsPerUnit: 500,
+          },
+        },
+      ],
+    })
+    const app = await issued()
+    expect(await renew(app.applicationId, '2028-03-01')).toEqual({
+      ok: false,
+      error: 'fees_incomplete',
+    })
+    const rows = await handle.db
+      .select()
+      .from(clocks)
+      .where(eq(clocks.applicationId, app.applicationId))
+    expect(rows.find((c) => c.ruleKey === 'town.bp.expiration')?.currentDue).toBe('2028-03-15')
+    expect(await listClockAdjustments(handle.db, signal)).toEqual([])
+  })
 })

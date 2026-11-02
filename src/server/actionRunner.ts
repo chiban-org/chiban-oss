@@ -38,6 +38,8 @@ export const ERROR_COPY: Record<string, string> = {
   unknown_starter: 'Unknown starter.',
   no_such_version: 'That version does not exist.',
   not_found: 'That record was not found.',
+  config_inconsistent:
+    'The published forms and fees do not agree with each other. Ask an administrator to republish them.',
   fees_incomplete: 'The fees cannot be worked out yet because a count they depend on is not known.',
   stale_version: 'This application changed since you opened it. Reload the page and try again.',
   invalid_transition: 'That step is not available from the current state.',

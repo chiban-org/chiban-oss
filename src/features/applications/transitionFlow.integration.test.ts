@@ -4,6 +4,8 @@ import { applications, auditLog, clocks, feeAssessments } from '@/db/schema'
 import type { CoreState } from '@/features/applications/states'
 import { setSubstep, transitionApplication } from '@/features/applications/transition'
 import type { Actor } from '@/features/auth/actor'
+import { recordCodeEdition } from '@/features/building/codeEdition'
+import { recordRegionalImpactDetermination } from '@/features/building/regionalImpact'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { applyCondition } from '@/features/conditions/applicationConditions'
 import {
@@ -246,6 +248,50 @@ describe('substeps', () => {
     expect(await sub(world.applicant, app.applicationId, 'plan_review')).toEqual({
       ok: false,
       error: 'forbidden',
+    })
+  })
+})
+
+describe('direct issuance of a building permit', () => {
+  it('marks the decision clock met because issuing resolves the application', async () => {
+    await saveAndPublish(
+      handle.db,
+      world.admin,
+      'application_type',
+      'BP',
+      appTypeBody({
+        workflow: { allowsDirectIssue: true, substeps: [], closesOn: 'certificate_of_occupancy' },
+      }),
+    )
+    const app = await makeApplication(handle.db, world, {
+      state: 'submitted',
+      receivedDate: '2027-03-01',
+      facts: { classification: 'residential', dwellingUnits: 1, afterTheFact: false },
+    })
+    await handle.db.transaction((tx) =>
+      startClocksFor(
+        tx,
+        app.applicationId,
+        'application_completed',
+        '2027-03-01' as CivilDate,
+        signal,
+      ),
+    )
+    await recordCodeEdition(handle.db, world.staff, { applicationId: app.applicationId }, signal)
+    await recordRegionalImpactDetermination(
+      handle.db,
+      world.staff,
+      { applicationId: app.applicationId, determination: 'no', determinedOn: ON },
+      signal,
+    )
+    expect(await go(world.staff, app.applicationId, 'issued')).toMatchObject({ ok: true })
+    const rows = await handle.db
+      .select()
+      .from(clocks)
+      .where(eq(clocks.applicationId, app.applicationId))
+    expect(rows.find((c) => c.ruleKey === 'nh.bp.decision')).toMatchObject({
+      status: 'met',
+      metOn: ON,
     })
   })
 })

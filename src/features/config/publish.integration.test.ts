@@ -127,6 +127,17 @@ describe('publish checks', () => {
     expect(r.ok).toBe(true)
   })
 
+  it('a fractional value for a month or day setting is rejected', async () => {
+    const r = await publishResult('town_rule_setting', 'town.bp.validity', {
+      ruleKey: 'town.bp.validity',
+      value: 1.5,
+      adoptingAuthority: 'Select Board',
+      adoptedOn: '2027-01-05',
+    })
+    expect(r.ok).toBe(false)
+    if (!r.ok && typeof r.error === 'object') expect('invalid' in r.error).toBe(true)
+  })
+
   it('setting a value for nh.code.technical_requirements is locally_prohibited', async () => {
     const r = await publishResult('town_rule_setting', 'nh.code.technical_requirements', {
       ruleKey: 'nh.code.technical_requirements',

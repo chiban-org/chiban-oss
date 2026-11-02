@@ -133,6 +133,38 @@ describe('membership conditions', () => {
   })
 })
 
+describe('select options input', () => {
+  it('keeps unfinished text so a second option can be typed', () => {
+    const form: FormBody = {
+      ...(skeletonBody('form', 'f') as FormBody),
+      fields: [
+        {
+          key: 'a',
+          label: 'A',
+          type: 'select',
+          required: false,
+          options: [{ value: 'x', label: 'X' }],
+        },
+      ],
+    }
+    render(
+      <Stateful
+        initial={form}
+        render={(b, set) => <FormFieldsEditor body={b} onChange={set} errors={{}} />}
+      />,
+    )
+    const input = screen.getByLabelText<HTMLInputElement>('Options (value:label, comma separated)')
+    fireEvent.change(input, { target: { value: 'x:X, ' } })
+    expect(input.value).toBe('x:X, ')
+    fireEvent.change(input, { target: { value: 'x:X, y:Y' } })
+    expect(
+      stateOf<{ fields: { options: { value: string }[] }[] }>().fields[0]?.options.map(
+        (o) => o.value,
+      ),
+    ).toEqual(['x', 'y'])
+  })
+})
+
 describe('delimited list inputs', () => {
   it('keep unfinished text so a second entry can be typed', () => {
     render(

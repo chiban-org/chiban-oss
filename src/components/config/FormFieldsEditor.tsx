@@ -5,6 +5,7 @@ import {
   type FieldErrors,
   FieldGroup,
   Input,
+  ListInput,
   Pick,
   RowButton,
   rowKey,
@@ -182,19 +183,16 @@ export function FormFieldsEditor({
               </RowButton>
             </div>
             {field.type === 'select' || field.type === 'multiselect' ? (
-              <Input
+              <ListInput
                 label="Options (value:label, comma separated)"
-                value={(field.options ?? []).map((o) => `${o.value}:${o.label}`).join(', ')}
-                onChange={(e) =>
+                values={(field.options ?? []).map((o) => `${o.value}:${o.label}`)}
+                separator={/,/}
+                onValues={(entries) =>
                   update(i, {
-                    options: e.target.value
-                      .split(',')
-                      .map((s) => s.trim())
-                      .filter((s) => s !== '')
-                      .map((s) => {
-                        const [value = '', label = value] = s.split(':')
-                        return { value: value.trim(), label: label.trim() }
-                      }),
+                    options: entries.map((entry) => {
+                      const [value = '', label = value] = entry.split(':')
+                      return { value: value.trim(), label: label.trim() }
+                    }),
                   })
                 }
               />

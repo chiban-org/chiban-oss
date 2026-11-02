@@ -30,12 +30,17 @@ export async function markComplete(
 > {
   signal.throwIfAborted()
   if (!hasFullRecordAccess(actor)) return err('forbidden')
-  const app = await loadApplicationContext(db, input.applicationId, signal)
-  if (app === null) return err('not_found')
-  if (app.state === 'draft' || app.receivedDate === null) return err('not_submitted')
-  if (app.completedDate !== null) return err('already_complete')
-  if (input.completedDate < app.receivedDate) return err('before_receipt')
   return await transactionResult(db, async (tx) => {
+    await tx
+      .select({ id: applications.id })
+      .from(applications)
+      .where(eq(applications.id, input.applicationId))
+      .for('update')
+    const app = await loadApplicationContext(tx, input.applicationId, signal)
+    if (app === null) return err('not_found')
+    if (app.state === 'draft' || app.receivedDate === null) return err('not_submitted')
+    if (app.completedDate !== null) return err('already_complete')
+    if (input.completedDate < app.receivedDate) return err('before_receipt')
     const today = await townToday(tx, now, signal)
     if (input.completedDate > today) return err('future_date')
     await tx

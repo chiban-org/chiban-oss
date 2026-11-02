@@ -113,4 +113,38 @@ describe('clocks.daily', () => {
     expect((await run('2028-03-16')).ok).toBe(true)
     expect(await appState(app.applicationId)).toBe('expired')
   })
+
+  it('a permit renewed while the job waited on its clock is not expired', async () => {
+    const app = await issuedApp()
+    const clock = await clockOf(app.applicationId, 'town.bp.expiration')
+    let locked: () => void = () => undefined
+    let release: () => void = () => undefined
+    const lockTaken = new Promise<void>((resolve) => {
+      locked = resolve
+    })
+    const mayCommit = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    const renewal = handle.db.transaction(async (tx) => {
+      await tx
+        .select()
+        .from(clocks)
+        .where(eq(clocks.id, clock?.id ?? ''))
+        .for('update')
+      locked()
+      await mayCommit
+      await tx
+        .update(clocks)
+        .set({ currentDue: '2029-03-15' })
+        .where(eq(clocks.id, clock?.id ?? ''))
+    })
+    await lockTaken
+    const running = run('2028-03-16')
+    await new Promise((resolve) => setTimeout(resolve, 200))
+    release()
+    await renewal
+    expect((await running).ok).toBe(true)
+    expect(await appState(app.applicationId)).toBe('issued')
+    expect((await clockOf(app.applicationId, 'town.bp.expiration'))?.status).toBe('running')
+  })
 })

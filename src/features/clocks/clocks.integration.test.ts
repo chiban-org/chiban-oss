@@ -241,6 +241,25 @@ describe('adjustClock', () => {
     })
   })
 
+  it('an adjustment that moves an overdue clock forward returns it to running', async () => {
+    const { clock } = await decisionClock()
+    await handle.db.update(clocks).set({ status: 'overdue' }).where(eq(clocks.id, clock.id))
+    const r = await adjustClock(
+      handle.db,
+      world.admin,
+      {
+        clockId: clock.id,
+        kind: 'statutory_exception',
+        days: 60,
+        reason: 'Court order',
+        legalAuthority: { citation: 'Order', explanation: 'Stay' },
+      },
+      signal,
+    )
+    expect(r.ok).toBe(true)
+    expect((await clockOf(clock.applicationId, 'nh.bp.decision')).status).toBe('running')
+  })
+
   it('an extension needing applicant consent is consent_required without it', async () => {
     const consentRule: ClockRule = {
       ...decisionRule(),
