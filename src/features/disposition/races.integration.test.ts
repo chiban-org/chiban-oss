@@ -62,8 +62,9 @@ describe('disposition races', () => {
       if (!set.ok) throw new Error(`series ${set.error}`)
     })
     const running = executeDisposition(handle.db, { batchId }, signal)
-    expect(await blockedOrSettled(handle.db, running)).toBe('blocked')
+    const waited = await blockedOrSettled(handle.db, running)
     await held.commit()
+    expect(waited).toBe('blocked')
     const report = await running
     expect(report.ok && report.value.disposed).toBe(0)
     const [doc] = await handle.db.select().from(documents).where(eq(documents.id, documentId))
@@ -77,9 +78,10 @@ describe('disposition races', () => {
       await tx.execute(sql`select pg_advisory_xact_lock(hashtext('records.disposition'))`)
     })
     const first = executeDisposition(handle.db, { batchId }, signal)
-    expect(await blockedOrSettled(handle.db, first)).toBe('blocked')
+    const waited = await blockedOrSettled(handle.db, first)
     const second = executeDisposition(handle.db, { batchId }, signal)
     await held.commit()
+    expect(waited).toBe('blocked')
     const settled = await Promise.allSettled([first, second])
     expect(settled.map((r) => r.status)).toEqual(['fulfilled', 'fulfilled'])
     const items = await handle.db
