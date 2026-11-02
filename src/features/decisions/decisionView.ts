@@ -127,6 +127,11 @@ async function checklistFor(db: Db, setId: string, signal: AbortSignal): Promise
   }))
 }
 
+function blankToNull(value: string | null): string | null {
+  const trimmed = value?.trim() ?? ''
+  return trimmed === '' ? null : trimmed
+}
+
 export async function loadDecisionView(
   db: Db,
   actor: Actor,
@@ -173,7 +178,7 @@ export async function loadDecisionView(
     voteText: `${decision.votes.for} for, ${decision.votes.against} against, ${decision.votes.abstain} abstaining`,
     findings: decision.findings,
     conditions: decision.conditions.map((c) => ({ text: c.text, precedent: c.precedent })),
-    reasons: decision.reasonsForDisapproval,
+    reasons: blankToNull(decision.reasonsForDisapproval),
     documentsGenerated: decision.writtenDecisionDocumentId !== null,
     filedText: decision.filedOn === null ? null : formatCivilDate(decision.filedOn),
     filingDueText: await filingDue(db, decision.applicationId),

@@ -118,13 +118,13 @@ export function boardStarter(input: BoardStarterInput): StarterBundle {
         key: `${slug}-notice-of-decision`,
         label: `${label} notice of decision`,
         kind: 'notice_of_decision',
-        body: `{{town.name}}\n\nNotice of decision of the {{board.name}} on {{application.typeLabel}} {{application.number}}, {{project.title}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}.\n\nDecision: {{decision.outcome}}, voted {{decision.votedOn}}.\n\nFindings of fact: {{decision.findings}}\n\nConditions: {{decision.conditions}}\n\nReasons for disapproval: {{decision.reasons}}\n\n{{decision.appealRights}}`,
+        body: `{{town.name}}\n\nNotice of decision of the {{board.name}} on {{application.typeLabel}} {{application.number}}, {{project.title}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}.\n\nDecision: {{decision.outcome}}, voted {{decision.votedOn}}.\n\nFindings of fact: {{decision.findings}}\n\n{{decision.conditionsSection}}\n\n{{decision.reasonsSection}}\n\n{{decision.appealRights}}`,
       },
       {
         key: `${slug}-decision-letter`,
         label: `${label} decision letter`,
         kind: 'decision_letter',
-        body: `{{town.name}}\n\nDear {{party.applicant.name}}:\n\nOn {{decision.votedOn}} the {{board.name}} voted on {{application.typeLabel}} {{application.number}} for {{parcel.siteAddress}}. The decision is: {{decision.outcome}}.\n\nFindings of fact: {{decision.findings}}\n\nConditions: {{decision.conditions}}\n\nReasons for disapproval: {{decision.reasons}}\n\n{{decision.appealRights}}`,
+        body: `{{town.name}}\n\nDear {{party.applicant.name}}:\n\nOn {{decision.votedOn}} the {{board.name}} voted on {{application.typeLabel}} {{application.number}} for {{parcel.siteAddress}}. The decision is: {{decision.outcome}}.\n\nFindings of fact: {{decision.findings}}\n\n{{decision.conditionsSection}}\n\n{{decision.reasonsSection}}\n\n{{decision.appealRights}}`,
       },
       {
         key: `${slug}-decision`,

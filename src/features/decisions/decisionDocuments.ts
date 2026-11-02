@@ -66,6 +66,8 @@ export async function renderDecisionTexts(
   if (notice === null || letter === null) return err('no_template')
   const board = boardOfApplication(app)
   const settings = await getBoardSettings(db, signal)
+  const reasonsText = decision.reasonsForDisapproval?.trim() ?? ''
+  const reasons = reasonsText === '' ? null : reasonsText
   const context = {
     ...mergeContextOf(data),
     'board.name': board === null ? '' : boardLabel(settings, board),
@@ -79,7 +81,12 @@ export async function renderDecisionTexts(
       decision.conditions.length === 0
         ? NOT_APPLICABLE
         : decision.conditions.map((c) => c.text).join('; '),
-    'decision.reasons': decision.reasonsForDisapproval ?? NOT_APPLICABLE,
+    'decision.reasons': reasons ?? NOT_APPLICABLE,
+    'decision.conditionsSection':
+      decision.conditions.length === 0
+        ? ''
+        : `Conditions: ${decision.conditions.map((c) => c.text).join('; ')}`,
+    'decision.reasonsSection': reasons === null ? '' : `Reasons for disapproval: ${reasons}`,
     'decision.appealRights': appealRightsFor(app.typeBody.classification ?? ''),
   }
   const noticeText = renderTemplateText(notice.body, context)

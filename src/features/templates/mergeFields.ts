@@ -25,6 +25,8 @@ export const MERGE_FIELDS = [
   'decision.findings',
   'decision.conditions',
   'decision.reasons',
+  'decision.conditionsSection',
+  'decision.reasonsSection',
   'decision.appealRights',
 ] as const
 

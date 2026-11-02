@@ -278,6 +278,7 @@ describe('staff and public pages', () => {
     )
     expect(html).toContain('Approved, voted April 15, 2027')
     expect(html).toContain('Upload the minutes')
+    expect(html).not.toContain('Reasons for disapproval')
     expect(html).toContain('>Choose the minutes</option>')
     expect(html).not.toContain(', snapshot 1')
     expect(html).not.toContain('>Variance notice of decision</option>')

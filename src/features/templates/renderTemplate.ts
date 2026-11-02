@@ -10,6 +10,11 @@ export type MergeContext = Partial<Record<MergeField, string | null>>
 
 export const NOT_RECORDED = 'Not recorded'
 
+const OMITTED_WHEN_EMPTY: ReadonlySet<string> = new Set([
+  'decision.conditionsSection',
+  'decision.reasonsSection',
+])
+
 const ESCAPES: Record<string, string> = {
   '&': '&amp;',
   '<': '&lt;',
@@ -34,7 +39,8 @@ function merge(
   for (const token of scanTokens(body)) {
     out += body.slice(cursor, token.start)
     const value = isMergeField(token.name) ? ctx[token.name] : null
-    out += value === undefined || value === null || value === '' ? NOT_RECORDED : format(value)
+    const empty = value === undefined || value === null || value === ''
+    out += empty ? (OMITTED_WHEN_EMPTY.has(token.name) ? '' : NOT_RECORDED) : format(value)
     cursor = token.end
   }
   return ok(out + body.slice(cursor))

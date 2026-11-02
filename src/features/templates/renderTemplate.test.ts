@@ -59,6 +59,8 @@ describe('renderTemplate', () => {
       'decision.findings',
       'decision.conditions',
       'decision.reasons',
+      'decision.conditionsSection',
+      'decision.reasonsSection',
       'decision.appealRights',
     ])
   })

@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { boardDecisions, documents, hearings } from '@/db/schema'
+import { loadDecisionView } from '@/features/decisions/decisionView'
 import { fileDecision } from '@/features/decisions/fileDecision'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { recordProof } from '@/features/notices/proofs'
@@ -9,6 +10,8 @@ import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba } from '@/test/hearingFixtures'
 import { makeTestStore } from '@/test/minio'
+import { downloadObject } from '@/test/objectBytes'
+import { pdfText } from '@/test/pdfText'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -93,5 +96,36 @@ describe('documents filed as minutes or proof', () => {
       AFTER_FILING,
     )
     expect(result).toEqual({ ok: false, error: 'wrong_document' })
+  })
+})
+
+describe('documents for an approval', () => {
+  it('the notice of decision leaves out reasons for disapproval and empty conditions', async () => {
+    const made = await decidedZba(handle.db, world, store, { votedOn: '2027-07-01' })
+    const [decision] = await handle.db
+      .select()
+      .from(boardDecisions)
+      .where(eq(boardDecisions.id, made.decisionId))
+    const text = await pdfText(
+      await downloadObject(handle.db, store, decision?.writtenDecisionDocumentId ?? ''),
+    )
+    expect(text).toContain('Approved')
+    expect(text).not.toContain('Reasons for disapproval')
+    expect(text).not.toContain('Conditions:')
+  })
+})
+
+describe('the decision page for an approval', () => {
+  it('a blank reasons field shows no reasons for disapproval', async () => {
+    const made = await decidedZba(handle.db, world, store, {
+      votedOn: '2027-07-01',
+      documents: false,
+    })
+    await handle.db
+      .update(boardDecisions)
+      .set({ reasonsForDisapproval: '' })
+      .where(eq(boardDecisions.id, made.decisionId))
+    const view = await loadDecisionView(handle.db, world.staff, made.decisionId, signal)
+    expect(view?.reasons).toBeNull()
   })
 })
