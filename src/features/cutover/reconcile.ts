@@ -7,6 +7,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { err, ok, type Result } from '@/types/result'
+import { isUuid } from '@/utils/uuid'
 
 export interface ReconciliationReport {
   inListAndImported: string[]
@@ -74,6 +75,7 @@ export async function signOffReconciliation(
 ): Promise<Result<void, 'forbidden' | 'not_found'>> {
   signal.throwIfAborted()
   if (!actor.roles.includes('admin')) return err('forbidden')
+  if (!isUuid(reconciliationId)) return err('not_found')
   const updated = await db
     .update(cutoverReconciliations)
     .set({ signedOffBy: actor.userId, signedOffAt: new Date() })

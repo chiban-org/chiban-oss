@@ -1,3 +1,5 @@
+import { tmpdir } from 'node:os'
+import { join } from 'node:path'
 import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { exportTargets } from '@/db/schema'
@@ -56,7 +58,12 @@ function form(fields: Record<string, string>): FormData {
   return f
 }
 
-const LOCAL = { kind: 'local_fs', name: 'Town server', dayOfMonth: '3', root: '/srv/chiban-copy' }
+const LOCAL = {
+  kind: 'local_fs',
+  name: 'Town server',
+  dayOfMonth: '3',
+  root: join(tmpdir(), 'chiban-target-actions'),
+}
 const S3 = {
   kind: 's3',
   name: 'Bucket',
@@ -72,7 +79,7 @@ const ONEDRIVE = {
   kind: 'onedrive',
   name: 'Clerk drive',
   dayOfMonth: '9',
-  tenantId: 't',
+  tenantId: '11111111-2222-4333-8444-555555555555',
   clientId: 'c',
   driveId: 'd',
   clientSecret: 'graph-secret',

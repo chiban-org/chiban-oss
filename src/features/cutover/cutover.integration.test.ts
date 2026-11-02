@@ -18,9 +18,10 @@ import {
 } from '@/db/schema'
 import { transitionApplication } from '@/features/applications/transition'
 import { attachCutoverFolder } from '@/features/cutover/attachFolder'
+import { cutoverErrorSentence } from '@/features/cutover/errorSentences'
 import { importCutoverCsv } from '@/features/cutover/importCutover'
 import { reconcileCutover, signOffReconciliation } from '@/features/cutover/reconcile'
-import { cutoverTemplate } from '@/features/cutover/template'
+import { CUTOVER_FEES_PAID_VALUES, cutoverTemplate } from '@/features/cutover/template'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -312,6 +313,49 @@ describe('cutover import', () => {
     ])
     expect(header).toContain('field.description')
   })
+
+  it('template without a type includes the fields of every adopted type and one licence column', async () => {
+    const columns = (await cutoverTemplate(handle.db, '', signal)).split(',')
+    expect(columns).toEqual(
+      expect.arrayContaining(['field.description', 'field.work_type', 'field.dwelling_units']),
+    )
+    expect(columns).not.toContain('contractor_license_number')
+    expect(new Set(columns).size).toBe(columns.length)
+  })
+
+  it('the template documents the accepted fee values', () => {
+    expect(CUTOVER_FEES_PAID_VALUES).toEqual(['yes', 'y', 'true', 'no', 'n', 'false'])
+  })
+})
+
+describe('fees_paid_in_prior_system values', () => {
+  it('rejects an amount with a clear code and accepts no, n, false and empty', async () => {
+    const report = await run([
+      electrical('F-1', { fees_paid_in_prior_system: '45.00' }),
+      electrical('F-2', { fees_paid_in_prior_system: 'No' }),
+      electrical('F-3', { fees_paid_in_prior_system: 'false' }),
+      electrical('F-4', { fees_paid_in_prior_system: '' }),
+      electrical('F-5', { fees_paid_in_prior_system: 'Y' }),
+    ])
+    expect(report.rows.map((r) => [r.legacyNumber, r.outcome])).toEqual([
+      ['F-1', 'error'],
+      ['F-2', 'imported'],
+      ['F-3', 'imported'],
+      ['F-4', 'imported'],
+      ['F-5', 'imported'],
+    ])
+    expect(report.rows[0]?.errors).toEqual(['invalid_fees_paid_in_prior_system'])
+  })
+})
+
+describe('plain sentences for import errors', () => {
+  it('maps known codes and keeps unknown ones readable', () => {
+    expect(cutoverErrorSentence('parcel_not_found')).toMatch(/parcel/i)
+    expect(cutoverErrorSentence('invalid_fees_paid_in_prior_system')).toMatch(/yes or no/i)
+    expect(cutoverErrorSentence('description: required')).toBe('The description field is required.')
+    expect(cutoverErrorSentence('future_date')).toMatch(/future/i)
+    expect(cutoverErrorSentence('zzz_unknown')).toBe('zzz_unknown')
+  })
 })
 
 describe('reconciliation', () => {
@@ -331,6 +375,13 @@ describe('reconciliation', () => {
     expect(signed.ok).toBe(true)
     const [saved] = await handle.db.select().from(cutoverReconciliations)
     expect(saved?.signedOffBy).toBe(admin.userId)
+  })
+
+  it('sign off with an id that is not a UUID is not found instead of a database error', async () => {
+    expect(await signOffReconciliation(handle.db, world.admin, 'abc', signal)).toEqual({
+      ok: false,
+      error: 'not_found',
+    })
   })
 })
 

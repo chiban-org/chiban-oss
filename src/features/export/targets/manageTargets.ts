@@ -6,8 +6,10 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { canonicalJson } from '@/features/export/canonical'
+import { folderIsWritable } from '@/features/export/targets/folderCheck'
 import {
   dayOfMonthSchema,
+  isTenantId,
   SETTINGS_SCHEMAS,
   targetNameSchema,
 } from '@/features/export/targets/settings'
@@ -70,11 +72,23 @@ export async function saveTarget(
   actor: Actor,
   input: TargetInput,
   signal: AbortSignal,
-): Promise<Result<{ id: string }, Guarded | 'invalid_input' | 'not_found'>> {
+): Promise<
+  Result<
+    { id: string },
+    Guarded | 'invalid_input' | 'not_found' | 'folder_not_writable' | 'tenant_id_malformed'
+  >
+> {
   signal.throwIfAborted()
   if (!(await allowed(db, actor, signal))) return err('forbidden')
   const checked = validated(input)
   if (checked === null) return err('invalid_input')
+  const checkedSettings = checked.settings as Record<string, unknown>
+  if (input.kind === 'local_fs' && !(await folderIsWritable(String(checkedSettings.root)))) {
+    return err('folder_not_writable')
+  }
+  if (input.kind === 'onedrive' && !isTenantId(String(checkedSettings.tenantId))) {
+    return err('tenant_id_malformed')
+  }
   return await transactionResult(db, async (tx) => {
     const [existing] =
       input.id === undefined

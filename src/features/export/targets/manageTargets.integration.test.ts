@@ -1,4 +1,4 @@
-import { mkdtemp, readFile } from 'node:fs/promises'
+import { chmod, mkdtemp, readFile, writeFile } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { Readable } from 'node:stream'
@@ -117,7 +117,11 @@ describe('export targets', () => {
       kind: 'onedrive' as const,
       name: 'Town OneDrive',
       dayOfMonth: 5,
-      settings: { tenantId: 'tenant-1', clientId: 'client-1', driveId: 'drive-1' },
+      settings: {
+        tenantId: '11111111-2222-4333-8444-555555555555',
+        clientId: 'client-1',
+        driveId: 'drive-1',
+      },
       credentials: { clientSecret: 'graph-secret' },
     }
     expect((await saveTarget(handle.db, admin, input, signal)).ok).toBe(true)
@@ -143,6 +147,53 @@ describe('export targets', () => {
         ok: false,
         error: 'invalid_input',
       })
+    }
+  })
+
+  it('refuses a local folder that cannot be written, with its own error', async () => {
+    const parent = await mkdtemp(join(tmpdir(), 'chiban-ro-'))
+    const file = join(parent, 'a-file')
+    await writeFile(file, 'x')
+    const locked = await mkdtemp(join(tmpdir(), 'chiban-locked-'))
+    await chmod(locked, 0o500)
+    for (const root of [file, locked, join(locked, 'inner'), '/chiban-no-such-root/x']) {
+      const result = await saveTarget(
+        handle.db,
+        admin,
+        { kind: 'local_fs', name: 'x', dayOfMonth: 1, settings: { root }, credentials: null },
+        signal,
+      )
+      expect(result, root).toEqual({ ok: false, error: 'folder_not_writable' })
+    }
+    await chmod(locked, 0o700)
+  })
+
+  it('refuses a malformed Microsoft tenant ID and accepts a GUID or a domain', async () => {
+    const base = {
+      kind: 'onedrive' as const,
+      name: 'T',
+      dayOfMonth: 5,
+      settings: { tenantId: 'x', clientId: 'client-1', driveId: 'drive-1' },
+      credentials: { clientSecret: 'graph-secret' },
+    }
+    for (const tenantId of ['t', 'not a tenant!', 'tenant-1', '../etc']) {
+      expect(
+        await saveTarget(
+          handle.db,
+          admin,
+          { ...base, settings: { ...base.settings, tenantId } },
+          signal,
+        ),
+      ).toEqual({ ok: false, error: 'tenant_id_malformed' })
+    }
+    for (const tenantId of ['11111111-2222-4333-8444-555555555555', 'contoso.onmicrosoft.com']) {
+      const saved = await saveTarget(
+        handle.db,
+        admin,
+        { ...base, settings: { ...base.settings, tenantId } },
+        signal,
+      )
+      expect(saved.ok, tenantId).toBe(true)
     }
   })
 

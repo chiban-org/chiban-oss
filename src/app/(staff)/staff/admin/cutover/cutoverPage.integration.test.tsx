@@ -53,6 +53,7 @@ describe('cutover page', () => {
     state.actor = staff
     const asStaff = renderToStaticMarkup(await CutoverPage())
     expect(asStaff).toContain('Download the CSV template')
+    expect(asStaff).toContain('An amount such as 45.00 is not accepted')
     expect(asStaff).not.toContain('Reconciliation number')
     state.actor = admin
     expect(renderToStaticMarkup(await CutoverPage())).toContain('Reconciliation number')

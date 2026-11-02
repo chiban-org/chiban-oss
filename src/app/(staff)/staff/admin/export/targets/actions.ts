@@ -8,6 +8,10 @@ const COPY = {
   forbidden: errorCopy('forbidden'),
   invalid_input: errorCopy('invalid_input'),
   not_found: errorCopy('not_found'),
+  folder_not_writable:
+    'That folder cannot be written to. Choose an existing folder the Chiban service can write to.',
+  tenant_id_malformed:
+    'The Microsoft 365 tenant ID must be a GUID such as 11111111-2222-3333-4444-555555555555 or a domain such as contoso.onmicrosoft.com.',
   not_active: 'Turn the target on before running it.',
 } as const
 

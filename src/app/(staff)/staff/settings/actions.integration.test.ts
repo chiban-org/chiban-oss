@@ -114,6 +114,14 @@ describe('settings actions', () => {
     expect(await getPublished(handle.db, 'form', 'no-token-form', signal)).toBeNull()
   })
 
+  it('applying starter changes with nothing ticked says to select a change', async () => {
+    state.actor = await staffActor(handle.db, 'admin')
+    expect(await actions.applyStarterPathsAction(form({}))).toEqual({
+      ok: false,
+      error: 'Select at least one change to apply.',
+    })
+  })
+
   it('an admin saves a draft and then publishes it', async () => {
     state.actor = await staffActor(handle.db, 'admin')
     expect(await actions.saveDraftAction(form(formBodyFields('f1')))).toMatchObject({ ok: true })

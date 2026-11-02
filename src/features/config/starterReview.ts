@@ -43,11 +43,9 @@ export async function loadStarterReviews(db: DbOrTx, signal: AbortSignal): Promi
       const recorded = Math.max(0, ...rows.map((r) => r.version ?? 0))
       const published = await getPublished(db, member.kind, member.key, signal)
       if (published === null || recorded >= starter.version) continue
-      members.push({
-        kind: member.kind,
-        key: member.key,
-        entries: starterDiff(published.body, member.body),
-      })
+      const entries = starterDiff(published.body, member.body)
+      if (entries.length === 0) continue
+      members.push({ kind: member.kind, key: member.key, entries })
     }
     if (members.length > 0) {
       bundles.push({

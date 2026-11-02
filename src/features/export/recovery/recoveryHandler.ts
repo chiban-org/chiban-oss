@@ -50,3 +50,20 @@ export async function handleRecoveryRequest(
     },
   })
 }
+
+const RECOVERY_ERROR_PARAM = 'recovery_error'
+
+export async function handleRecoveryForm(request: Request, deps: RecoveryDeps): Promise<Response> {
+  const response = await handleRecoveryRequest(request, deps)
+  const fromBrowser = request.headers.get('accept')?.includes('text/html') ?? false
+  if (response.ok || !fromBrowser) return response
+  const body = (await response.json().catch(() => ({}))) as { error?: unknown }
+  const code = typeof body.error === 'string' ? body.error : 'failed'
+  return new Response(null, {
+    status: 303,
+    headers: {
+      location: `/staff/admin/export?${RECOVERY_ERROR_PARAM}=${encodeURIComponent(code)}`,
+      'cache-control': 'private, no-store',
+    },
+  })
+}

@@ -25,7 +25,22 @@ function megabytes(bytes: number | null): string {
   return bytes === null ? '' : `${(bytes / (1024 * 1024)).toFixed(1)} MB`
 }
 
-export default async function ExportPage() {
+const RECOVERY_ERROR_COPY: Record<string, string> = {
+  invalid_credentials: 'Your password or authenticator code was not right. Try again.',
+  rate_limited: 'Too many attempts. Wait a few minutes and try again.',
+  passphrase_too_short: 'The passphrase must be at least 16 characters.',
+  forbidden: 'You do not have permission to download a recovery export.',
+  csrf: 'Your session expired. Reload the page and try again.',
+  service_inactive: 'Recovery exports are not available right now.',
+}
+const RECOVERY_ERROR_FALLBACK = 'The recovery export could not be prepared. Try again.'
+
+interface ExportPageProps {
+  searchParams?: Promise<{ recovery_error?: string }>
+}
+
+export default async function ExportPage({ searchParams }: ExportPageProps = {}) {
+  const { recovery_error: recoveryError } = (await searchParams) ?? {}
   const ctx = await requireStaffContext()
   const listed = await listExports(ctx.db, ctx.actor, ctx.signal)
   if (!listed.ok) {
@@ -65,7 +80,11 @@ export default async function ExportPage() {
           submitLabel="Request a new export"
           variant="default"
         >
-          <p className="m-0">Preparing an export does not interrupt anyone using Chiban.</p>
+          <p className="m-0">
+            {service.mode === 'active'
+              ? 'Preparing an export does not interrupt anyone using Chiban.'
+              : 'Nobody is using Chiban now, so preparing an export changes nothing for anyone.'}
+          </p>
         </ActionForm>
       )}
       {ctx.actor.roles.includes('admin') ? (
@@ -108,6 +127,9 @@ export default async function ExportPage() {
             It is encrypted with a passphrase you choose, goes straight to your computer, and is not
             kept anywhere else. Keep the passphrase safe: without it the file cannot be opened.
           </p>
+          {recoveryError === undefined ? null : (
+            <p role="alert">{RECOVERY_ERROR_COPY[recoveryError] ?? RECOVERY_ERROR_FALLBACK}</p>
+          )}
           <form method="post" action="/staff/admin/export/recovery" className="max-w-md space-y-3">
             <CsrfField />
             <div>

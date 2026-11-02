@@ -1,6 +1,8 @@
 import { createHash } from 'node:crypto'
 import { parse } from 'csv-parse/sync'
 import {
+  CUTOVER_FEES_PAID_TRUE,
+  CUTOVER_FEES_PAID_VALUES,
   CUTOVER_REQUIRED_COLUMNS,
   CUTOVER_STATES,
   type CutoverState,
@@ -71,6 +73,11 @@ function toRow(raw: Raw, line: number): CutoverRow {
   if (state === 'decided' && decidedOn === null && !errors.includes('invalid_decided_on')) {
     errors.push('decided_on_required')
   }
+  const feesRaw = (clean(raw.fees_paid_in_prior_system) ?? '').toLowerCase()
+  const knownFees: readonly string[] = CUTOVER_FEES_PAID_VALUES
+  if (feesRaw !== '' && !knownFees.includes(feesRaw))
+    errors.push('invalid_fees_paid_in_prior_system')
+  const trueFees: readonly string[] = CUTOVER_FEES_PAID_TRUE
   const fields: Record<string, string> = {}
   for (const [key, value] of Object.entries(raw)) {
     if (key.startsWith('field.') && clean(value) !== undefined) fields[key.slice(6)] = value.trim()
@@ -95,9 +102,7 @@ function toRow(raw: Raw, line: number): CutoverRow {
     completedDate,
     decidedOn,
     issuedOn,
-    feesPaid: ['yes', 'y', 'true'].includes(
-      (clean(raw.fees_paid_in_prior_system) ?? '').toLowerCase(),
-    ),
+    feesPaid: trueFees.includes(feesRaw),
     priorReceiptRef: clean(raw.prior_receipt_ref) ?? 'no receipt reference',
     fields,
     errors,

@@ -1,5 +1,6 @@
 'use server'
 
+import { cutoverErrorSentence } from '@/features/cutover/errorSentences'
 import { importCutoverCsv } from '@/features/cutover/importCutover'
 import { reconcileCutover, signOffReconciliation } from '@/features/cutover/reconcile'
 import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
@@ -30,9 +31,12 @@ export async function importCutoverAction(formData: FormData): Promise<ActionRes
     const problems = rows
       .filter((r) => r.outcome === 'error')
       .slice(0, MAX_LISTED_ERRORS)
-      .map((r) => `line ${r.line} (${r.legacyNumber}): ${r.errors.join(', ')}`)
+      .map(
+        (r) =>
+          `Line ${r.line} (${r.legacyNumber}): ${r.errors.map(cutoverErrorSentence).join(' ')}`,
+      )
     const head = `${dryRun ? 'Dry run, nothing saved' : 'Imported'}: ${counts.imported} ${dryRun ? 'would import' : 'imported'}, ${counts.alreadyImported} already imported, ${counts.errors} with errors.`
-    return { ok: true, message: problems.length === 0 ? head : `${head} ${problems.join('; ')}` }
+    return { ok: true, message: problems.length === 0 ? head : `${head} ${problems.join(' ')}` }
   })
 }
 

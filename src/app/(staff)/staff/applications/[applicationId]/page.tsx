@@ -9,7 +9,7 @@ import { GatePanel } from '@/components/gates/GatePanel'
 import { StatusChip } from '@/components/StatusChip'
 import { BalanceDueNotice } from '@/components/staff/BalanceDueNotice'
 import { AreaField, TextField } from '@/components/staff/fields'
-import { applicationSnapshots } from '@/db/schema'
+import { applicationSnapshots, cutoverRows } from '@/db/schema'
 import {
   getStaffApplicationView,
   type StaffApplicationView,
@@ -125,6 +125,10 @@ export default async function StaffApplicationPage({ params }: Props) {
   const payments = await loadApplicationPayments(ctx.db, ctx.actor, applicationId, ctx.signal)
   const records = await loadRecordsData(ctx, applicationId, view.projectId)
   const inspections = await loadInspectionsPanelData(ctx, applicationId)
+  const [imported] = await ctx.db
+    .select({ legacyNumber: cutoverRows.legacyNumber })
+    .from(cutoverRows)
+    .where(eq(cutoverRows.applicationId, applicationId))
   return (
     <main>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -152,6 +156,9 @@ export default async function StaffApplicationPage({ params }: Props) {
           : `. Received ${formatCivilDate(view.receivedDate)}.`}
         {view.issuedOn === null ? '' : ` Issued ${formatCivilDate(view.issuedOn)}.`}
       </p>
+      {imported === undefined ? null : (
+        <p>{`Number in the prior system: ${imported.legacyNumber}`}</p>
+      )}
       <BalanceDueNotice notices={balanceNotices} />
       <TransitionBar view={view} />
       <ReviewersPanel
