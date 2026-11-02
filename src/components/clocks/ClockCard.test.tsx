@@ -48,6 +48,7 @@ const BASE: ClockExplanation & { clockId: string } = {
   extensionPolicy: 'RSA 155-A:4 IX provides no extension.',
   allowedAdjustments: ['statutory_exception'],
   status: 'running',
+  metOn: null,
   daysRemaining: 10,
 }
 
@@ -124,6 +125,20 @@ describe('ClockCard', () => {
       )
       unmount()
     }
+  })
+
+  it('a clock met after its due date reads as met late, not met', () => {
+    render(<ClockCard clock={{ ...BASE, status: 'met', metOn: d('2027-04-27') }} />)
+    expect(screen.queryByText('Met')).toBeNull()
+    const chip = screen.getByText('Met late, 13 days after the due date').closest('[data-status]')
+    expect(chip?.getAttribute('data-status')).toBe('overdue')
+  })
+
+  it('a clock met on its due date reads as met', () => {
+    render(<ClockCard clock={{ ...BASE, status: 'met', metOn: d('2027-04-14') }} />)
+    expect(screen.getByText('Met').closest('[data-status]')?.getAttribute('data-status')).toBe(
+      'passed',
+    )
   })
 
   it('shows the rolled-from date for a filing window', () => {
