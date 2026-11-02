@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+*.log
+.DS_Store
+.cache/
+coverage/
+CLAUDE.local.md
+.harness/ledger.jsonl
+.next/

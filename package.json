@@ -1,0 +1,30 @@
+{
+  "name": "chiban",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Open-source land-use software for small US towns.",
+  "license": "AGPL-3.0-only",
+  "packageManager": "pnpm@9.15.9",
+  "type": "module",
+  "scripts": {
+    "lint": "biome check . && eslint . --no-warn-ignored",
+    "lint:fix": "biome check --write . && eslint . --fix --no-warn-ignored",
+    "typecheck": "tsc --noEmit",
+    "format": "biome format --write ."
+  },
+  "dependencies": {
+    "zod": "^4.6.7"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.5.2",
+    "@eslint-community/eslint-plugin-eslint-comments": "^4.8.1",
+    "@types/node": "^26.6.6",
+    "eslint": "^10.14.0",
+    "eslint-import-resolver-typescript": "^4.4.5",
+    "eslint-plugin-import-x": "^4.17.1",
+    "eslint-plugin-security": "^4.2.1",
+    "eslint-plugin-sonarjs": "^4.2.2",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.72.1"
+  }
+}
