@@ -1,11 +1,13 @@
 import { and, eq, inArray, ne, sql } from 'drizzle-orm'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
-import { importExceptions, parcels } from '@/db/schema'
+import { importExceptions, parcelAliases, parcels } from '@/db/schema'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import type { ImportExceptionKind, LayerKey } from '@/features/gis/exceptionKinds'
 import { hashJson } from '@/features/gis/import/hash'
+import { addAlias } from '@/features/parcels/aliases'
 import { err, ok, type Result } from '@/types/result'
 
 export interface ExceptionInput {
@@ -70,6 +72,7 @@ interface HeldPayload {
     ownerName: string | null
     mailingAddress: string | null
     geometry: GeoJSON.MultiPolygon
+    extraIds?: { format: string; value: string }[]
   }
 }
 
@@ -92,6 +95,21 @@ async function applyHeld(
     parcel.mailingAddress !== held.current.mailingAddress
   if (stale) return err('no_longer_valid')
   const proposed = held.proposed
+  const newIds: { format: string; value: string }[] = []
+  for (const id of proposed.extraIds ?? []) {
+    const [existing] = await tx
+      .select({ parcelId: parcelAliases.parcelId })
+      .from(parcelAliases)
+      .where(
+        and(
+          eq(parcelAliases.format, id.format),
+          eq(parcelAliases.value, id.value),
+          eq(parcelAliases.status, 'active'),
+        ),
+      )
+    if (existing === undefined) newIds.push(id)
+    else if (existing.parcelId !== held.parcelId) return err('no_longer_valid')
+  }
   await tx
     .update(parcels)
     .set({
@@ -102,6 +120,15 @@ async function applyHeld(
       updatedAt: new Date(),
     })
     .where(eq(parcels.id, held.parcelId))
+  for (const id of newIds) {
+    const added = await addAlias(
+      tx,
+      { parcelId: held.parcelId, ...id, source: 'import' },
+      { kind: 'user', userId: actor.userId },
+      signal,
+    )
+    if (!added.ok) throw new AppError(ErrorIds.DB_INVARIANT, 'Alias taken after check', { ...id })
+  }
   await writeAudit(
     tx,
     {

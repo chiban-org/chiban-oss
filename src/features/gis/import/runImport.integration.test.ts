@@ -183,6 +183,30 @@ describe('runImport', () => {
     expect(audit[0]?.actorUserId).toBe(actor.userId)
   })
 
+  it('accepting a held row also adds the new ids the source row carried', async () => {
+    const { actor } = await userActor()
+    const features = loadGeoJsonFixture('alder-pond-parcels.geojson')
+    await runOk(features)
+    const [first] = features
+    if (first) {
+      first.properties.OWNER = 'Someone Else'
+      first.properties.CAMA_3 = '999999999999999'
+    }
+    await runOk(features)
+    const [held] = await handle.db
+      .select()
+      .from(importExceptions)
+      .where(eq(importExceptions.kind, 'owner_changed'))
+    const r = await acceptHeldRow(handle.db, actor, held?.id ?? '', signal)
+    expect(r.ok).toBe(true)
+    const added = await handle.db
+      .select()
+      .from(parcelAliases)
+      .where(eq(parcelAliases.value, '999999999999999'))
+    expect(added).toHaveLength(1)
+    expect(added[0]?.status).toBe('active')
+  })
+
   it('acceptAllOwnerChanges accepts only owner_changed rows of that run', async () => {
     const { actor } = await userActor()
     const features = loadGeoJsonFixture('alder-pond-parcels.geojson')

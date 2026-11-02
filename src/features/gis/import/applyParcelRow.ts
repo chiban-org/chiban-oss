@@ -230,6 +230,7 @@ async function updateParcel(
           ownerName: row.ownerName,
           mailingAddress: row.mailingAddress,
           geometry,
+          extraIds: row.extras,
         },
       },
     )
