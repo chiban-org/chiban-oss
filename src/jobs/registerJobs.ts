@@ -21,7 +21,12 @@ export async function registerJob<P extends object>(
   if (existing === null) await boss.createQueue(job.name, { policy: 'exclusive' })
   await boss.work<P>(job.name, async (batch) => {
     for (const item of batch) {
-      const outcome = await runJob(db, job, item.data, AbortSignal.timeout(10 * 60 * 1000))
+      const outcome = await runJob(
+        db,
+        job,
+        (item.data ?? {}) as P,
+        AbortSignal.timeout(10 * 60 * 1000),
+      )
       if (!outcome.ok) {
         throw new AppError(ErrorIds.JOB_HANDLER_FAIL, outcome.error, { job: job.name })
       }
