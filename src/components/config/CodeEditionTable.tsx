@@ -1,5 +1,5 @@
 import type { CodeEditionEntry } from '@packs/nh/schema'
-import { describeCodeEdition } from '@/features/building/codeEdition'
+import { componentsNotInLabel, describeCodeEdition } from '@/features/building/codeEdition'
 import type { CivilDate } from '@/types/civilDate'
 
 const FAR_FUTURE = '9999-12-31' as CivilDate
@@ -31,8 +31,8 @@ export function CodeEditionTable({ editions }: { editions: CodeEditionEntry[] })
                     then record this edition as not verified.
                   </p>
                 ) : null}
-                {d.components.length === 0 ? null : (
-                  <p className="m-0">{d.components.join(', ')}</p>
+                {componentsNotInLabel(d).length === 0 ? null : (
+                  <p className="m-0">{componentsNotInLabel(d).join(', ')}</p>
                 )}
                 {d.enforcementFrom === null ? null : (
                   <p className="m-0">{`Enforced from ${d.enforcementFrom}`}</p>

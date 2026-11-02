@@ -23,10 +23,10 @@ describe('CodeEditionTable', () => {
     expect(within(row).getByText('Verified')).toBeTruthy()
     expect(within(row).getByText(/Enforced from 2025-01-01/)).toBeTruthy()
     expect(
-      within(row).getByText(
+      within(row).queryByText(
         'IBC 2021, IEBC 2021, IPC 2021, IMC 2021, IECC 2018, IRC 2021, ISPSC 2021, NEC 2023',
       ),
-    ).toBeTruthy()
+    ).toBeNull()
     expect(within(row).getByText(/2025-07-01/)).toBeTruthy()
     expect(within(row).getByText(/2025-10-15/)).toBeTruthy()
     expect(

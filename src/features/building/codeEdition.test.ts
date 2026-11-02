@@ -1,6 +1,10 @@
 import type { CodeEditionEntry } from '@packs/nh/schema'
 import { describe, expect, it } from 'vitest'
-import { resolveCodeEdition } from '@/features/building/codeEdition'
+import {
+  componentsNotInLabel,
+  type EditionDescription,
+  resolveCodeEdition,
+} from '@/features/building/codeEdition'
 import type { CivilDate } from '@/types/civilDate'
 
 const d = (s: string) => s as CivilDate
@@ -94,5 +98,32 @@ describe('resolveCodeEdition', () => {
   it('does not depend on table order', () => {
     const r = resolveCodeEdition([...TABLE].reverse(), d('2027-08-01'))
     expect(r.ok && r.value.editionKey).toBe('B')
+  })
+})
+
+describe('componentsNotInLabel', () => {
+  const base = {
+    status: 'verified' as const,
+    enforcementFrom: null,
+    amendmentPackagesInForce: [] as string[],
+    citation,
+  }
+
+  it('drops components the label already lists', () => {
+    const description: EditionDescription = {
+      ...base,
+      label: 'IBC 2021, IRC 2021 (effective 2024-07-01)',
+      components: ['IBC 2021', 'IRC 2021'],
+    }
+    expect(componentsNotInLabel(description)).toEqual([])
+  })
+
+  it('keeps components the label does not mention', () => {
+    const description: EditionDescription = {
+      ...base,
+      label: 'State edition effective 2024-07-01',
+      components: ['IBC 2021'],
+    }
+    expect(componentsNotInLabel(description)).toEqual(['IBC 2021'])
   })
 })

@@ -22,11 +22,8 @@ import {
 } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import {
-  codeEditionPanelRows,
-  describeCodeEdition,
-  type EditionDescription,
-} from '@/features/building/codeEdition'
+import { describeCodeEdition, type EditionDescription } from '@/features/building/codeEdition'
+import { codeEditionPanelRows } from '@/features/building/editionPanelRows'
 import { type ClockExplanation, explainClock } from '@/features/clocks/explainClock'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import { effectiveBindings } from '@/features/config/bindings'

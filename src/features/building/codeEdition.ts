@@ -1,4 +1,4 @@
-import type { CodeEditionEntry, RecordRule } from '@packs/nh/schema'
+import type { CodeEditionEntry } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { codeEditionRecords } from '@/db/schema'
@@ -115,6 +115,10 @@ export interface EditionDescription {
   citation: CodeEditionEntry['citation']
 }
 
+export function componentsNotInLabel(description: EditionDescription): string[] {
+  return description.components.filter((c) => !description.label.includes(c))
+}
+
 export function describeCodeEdition(
   entry: CodeEditionEntry,
   receiptDate: CivilDate,
@@ -129,20 +133,4 @@ export function describeCodeEdition(
       .map((p) => p.label),
     citation: entry.citation,
   }
-}
-
-export function codeEditionPanelRows(
-  rule: RecordRule,
-  record: Record<string, unknown>,
-): { field: string; value: string }[] {
-  return rule.fields.map((field) => {
-    const value = record[field]
-    const text =
-      value === null || value === undefined || value === ''
-        ? 'Not recorded'
-        : typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean'
-          ? String(value)
-          : JSON.stringify(value)
-    return { field, value: text }
-  })
 }

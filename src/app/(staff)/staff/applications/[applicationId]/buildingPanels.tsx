@@ -2,6 +2,8 @@ import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
+import { componentsNotInLabel } from '@/features/building/codeEdition'
+import { loadPack } from '@/features/packs/loadPack'
 import { recordCodeEditionAction } from './actions'
 import {
   recordAppealAction,
@@ -10,6 +12,14 @@ import {
   renewAction,
   resolveAppealAction,
 } from './buildingActions'
+
+const ELECTION_NONE: [string, string] = ['', 'No election: use the edition in force']
+
+function electionOptions(): [string, string][] {
+  return loadPack()
+    .codeEditions.filter((e) => e.status === 'verified')
+    .map((e): [string, string] => [e.key, e.label])
+}
 
 export function CodeEditionPanel({ view }: { view: StaffApplicationView }) {
   const edition = view.codeEdition
@@ -27,8 +37,8 @@ export function CodeEditionPanel({ view }: { view: StaffApplicationView }) {
               <StatusChip status="overdue" label="Edition not verified" />
             ) : null}
           </p>
-          {edition.description.components.length === 0 ? null : (
-            <p>{edition.description.components.join(', ')}</p>
+          {componentsNotInLabel(edition.description).length === 0 ? null : (
+            <p>{componentsNotInLabel(edition.description).join(', ')}</p>
           )}
           {edition.description.amendmentPackagesInForce.map((label) => (
             <p key={label} className="m-0">
@@ -51,9 +61,10 @@ export function CodeEditionPanel({ view }: { view: StaffApplicationView }) {
           submitLabel={edition === null ? 'Record code edition' : 'Record again'}
         >
           <input type="hidden" name="applicationId" value={view.id} />
-          <TextField
-            label="Applicant election (edition key, only inside the concurrency period)"
+          <SelectField
+            label="Applicant election, only inside the overlap period"
             name="election"
+            options={[ELECTION_NONE, ...electionOptions()]}
           />
         </ActionForm>
       )}

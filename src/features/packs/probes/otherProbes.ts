@@ -7,11 +7,8 @@ import type {
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { appealSuspends } from '@/features/appeals/suspension'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
-import {
-  codeEditionPanelRows,
-  describeCodeEdition,
-  resolveCodeEdition,
-} from '@/features/building/codeEdition'
+import { describeCodeEdition, resolveCodeEdition } from '@/features/building/codeEdition'
+import { codeEditionPanelRows } from '@/features/building/editionPanelRows'
 import { effectiveBindings } from '@/features/config/bindings'
 import { buildGateDefinition } from '@/features/gates/registry'
 import { loadPack } from '@/features/packs/loadPack'
