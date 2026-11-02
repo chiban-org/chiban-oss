@@ -1,7 +1,9 @@
 import { ActionForm } from '@/components/ActionForm'
+import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { hasCapability } from '@/features/authz/capabilities'
+import { cutoverTemplateTypes } from '@/features/cutover/template'
 import { requireStaffContext } from '@/server/requireStaff'
 import { importCutoverAction, reconcileCutoverAction, signOffReconciliationAction } from './actions'
 
@@ -18,6 +20,7 @@ export default async function CutoverPage() {
     )
   }
   const isAdmin = ctx.actor.roles.includes('admin')
+  const types = await cutoverTemplateTypes(ctx.db, ctx.signal)
   return (
     <main>
       <h1>Move open applications over</h1>
@@ -28,13 +31,28 @@ export default async function CutoverPage() {
         over from the prior system, and fees paid there are recorded as waived with the old receipt
         number.
       </p>
-      <p>
-        <a className="text-action underline" href="/staff/admin/cutover/template.csv">
+      <form method="get" action="/staff/admin/cutover/template.csv" className="my-3 space-y-2">
+        <Label htmlFor="cutover-template-type">Application type</Label>
+        <select
+          id="cutover-template-type"
+          name="type"
+          defaultValue=""
+          className="block min-h-11 rounded-md border bg-surface px-3"
+        >
+          <option value="">Every adopted application type</option>
+          {types.map((t) => (
+            <option key={t.key} value={t.key}>
+              {t.label}
+            </option>
+          ))}
+        </select>
+        <p className="m-0">
+          The template lists the form fields of the type you pick, or of every adopted type.
+        </p>
+        <Button type="submit" variant="outline">
           Download the CSV template
-        </a>{' '}
-        or add <code>?type=KEY</code> for an application type to include only its form fields. The
-        template lists the form fields of every adopted application type.
-      </p>
+        </Button>
+      </form>
       <p>
         In <code>fees_paid_in_prior_system</code>, write <code>yes</code>, <code>y</code> or{' '}
         <code>true</code> if the fees were paid, <code>no</code>, <code>n</code> or{' '}
