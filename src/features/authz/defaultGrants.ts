@@ -24,7 +24,9 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'gis.import',
     'fee.override',
     'clock.adjust',
+    'regional_impact.determine',
   ],
+  inspector: ['regional_impact.determine'],
   finance: ['payment.refund_void_correct'],
   records_custodian: ['hold.place_release', 'disposition.approve'],
 }
