@@ -157,6 +157,19 @@ describe('hearing actions', () => {
     expect(await handle.db.select().from(noticeProofs)).toHaveLength(before)
   })
 
+  it('building the agenda of a meeting with no hearings says none are scheduled', async () => {
+    state.actor = world.staff
+    const [meeting] = await handle.db.query.boardMeetings.findMany({
+      where: (m, { and, eq: equals }) =>
+        and(equals(m.meetingDate, '2027-03-10'), equals(m.board, 'planning_board')),
+    })
+    expect(await actions.buildAgendaAction(form({ meetingId: meeting?.id ?? '' }))).toEqual({
+      ok: true,
+      message:
+        'No hearings are scheduled for this meeting. A continued hearing is listed at the meeting it was continued to.',
+    })
+  })
+
   it('actions are refused for staff without board.record', async () => {
     const { hearingId } = await unnoticedHearing()
     state.actor = await staffActor(handle.db, 'reviewer')

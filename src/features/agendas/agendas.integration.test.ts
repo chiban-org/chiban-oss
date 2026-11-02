@@ -79,7 +79,7 @@ describe('agenda builder', () => {
     const meetingId = await zbaMeetingId()
     expect(await buildAgenda(handle.db, world.staff, meetingId, signal)).toEqual({
       ok: true,
-      value: { added: 2 },
+      value: { added: 2, onMeeting: 2 },
     })
     const items = await itemsOf(meetingId)
     expect(items.map((i) => i.hearingId)).toEqual([first.hearingId, second.hearingId])
@@ -93,9 +93,17 @@ describe('agenda builder', () => {
     await buildAgenda(handle.db, world.staff, meetingId, signal)
     expect(await buildAgenda(handle.db, world.staff, meetingId, signal)).toEqual({
       ok: true,
-      value: { added: 0 },
+      value: { added: 0, onMeeting: 1 },
     })
     expect(await itemsOf(meetingId)).toHaveLength(1)
+  })
+
+  it('a meeting with no scheduled or held hearing has none on it to add', async () => {
+    const meetingId = await zbaMeetingId()
+    expect(await buildAgenda(handle.db, world.staff, meetingId, signal)).toEqual({
+      ok: true,
+      value: { added: 0, onMeeting: 0 },
+    })
   })
 
   it('items can be added, moved, and removed while the agenda is a draft', async () => {

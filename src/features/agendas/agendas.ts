@@ -86,36 +86,39 @@ export async function buildAgenda(
   actor: Actor,
   meetingId: string,
   signal: AbortSignal,
-): Promise<Result<{ added: number }, AgendaError>> {
+): Promise<Result<{ added: number; onMeeting: number }, AgendaError>> {
   signal.throwIfAborted()
   if (!(await allowed(db, actor, signal))) return err('forbidden')
-  return await transactionResult<{ added: number }, AgendaError>(db, async (tx) => {
-    const agenda = await draftAgenda(tx, meetingId)
-    if (!agenda.ok) return agenda
-    const present = new Set((await itemsInOrder(tx, meetingId)).map((i) => i.hearingId))
-    const scheduled = await tx
-      .select()
-      .from(hearings)
-      .where(
-        and(eq(hearings.meetingId, meetingId), inArray(hearings.status, ['scheduled', 'held'])),
-      )
-      .orderBy(asc(hearings.createdAt), asc(hearings.id))
-    let position = await nextPosition(tx, meetingId)
-    let added = 0
-    for (const hearing of scheduled.filter((h) => !present.has(h.id))) {
-      await tx.insert(agendaItems).values({
-        meetingId,
-        position,
-        kind: 'hearing',
-        hearingId: hearing.id,
-        title: await hearingTitle(tx, hearing.applicationId, hearing.kind, signal),
-        description: '',
-      })
-      position += 1
-      added += 1
-    }
-    return ok({ added })
-  })
+  return await transactionResult<{ added: number; onMeeting: number }, AgendaError>(
+    db,
+    async (tx) => {
+      const agenda = await draftAgenda(tx, meetingId)
+      if (!agenda.ok) return agenda
+      const present = new Set((await itemsInOrder(tx, meetingId)).map((i) => i.hearingId))
+      const scheduled = await tx
+        .select()
+        .from(hearings)
+        .where(
+          and(eq(hearings.meetingId, meetingId), inArray(hearings.status, ['scheduled', 'held'])),
+        )
+        .orderBy(asc(hearings.createdAt), asc(hearings.id))
+      let position = await nextPosition(tx, meetingId)
+      let added = 0
+      for (const hearing of scheduled.filter((h) => !present.has(h.id))) {
+        await tx.insert(agendaItems).values({
+          meetingId,
+          position,
+          kind: 'hearing',
+          hearingId: hearing.id,
+          title: await hearingTitle(tx, hearing.applicationId, hearing.kind, signal),
+          description: '',
+        })
+        position += 1
+        added += 1
+      }
+      return ok({ added, onMeeting: scheduled.length })
+    },
+  )
 }
 
 export async function addAgendaItem(
