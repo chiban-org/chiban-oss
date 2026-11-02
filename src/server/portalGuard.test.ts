@@ -4,7 +4,11 @@ import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
 const APP = fileURLToPath(new URL('../app', import.meta.url))
-const PORTAL_ROOTS = [path.join(APP, '(public)', 'portal'), path.join(APP, '(public)', 'claim')]
+const PORTAL_ROOTS = [
+  path.join(APP, '(public)', 'portal'),
+  path.join(APP, '(public)', 'claim'),
+  path.join(APP, '(public)', 'payments'),
+]
 const ENTRY = /^(page\.tsx|route\.ts)$/
 const GUARD = /\b(requirePortalContext|portalActorOrNull|openPacket|openPacketVersion)\(/
 

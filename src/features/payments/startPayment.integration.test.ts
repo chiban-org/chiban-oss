@@ -101,7 +101,7 @@ describe('online payment', () => {
     const [entry] = await entries()
     expect(entry).toMatchObject({ entryType: 'payment', amountCents: 4635, method: 'card_online' })
     expect((await feeBalance(handle.db, trade.applicationId, signal)).dueCents).toBe(0)
-    expect(await paymentReturnStatus(handle.db, attempt?.id ?? '', signal)).toBe('received')
+    expect(await paymentReturnStatus(handle.db, trade.world.applicant, attempt?.id ?? '', signal)).toBe('received')
   })
 
   it('declining posts nothing and leaves the fee due', async () => {
@@ -109,19 +109,19 @@ describe('online payment', () => {
     await resolveDevCheckout(handle.db, attempt?.processorObjectId ?? '', 'decline', signal, deps)
     expect(await entries()).toHaveLength(0)
     expect((await feeBalance(handle.db, trade.applicationId, signal)).dueCents).toBe(4500)
-    expect(await paymentReturnStatus(handle.db, attempt?.id ?? '', signal)).toBe('declined')
+    expect(await paymentReturnStatus(handle.db, trade.world.applicant, attempt?.id ?? '', signal)).toBe('declined')
   })
 
   it('return page state for a pending attempt is processing, not paid', async () => {
     const { attempt } = await startOnline()
-    expect(await paymentReturnStatus(handle.db, attempt?.id ?? '', signal)).toBe('processing')
+    expect(await paymentReturnStatus(handle.db, trade.world.applicant, attempt?.id ?? '', signal)).toBe('processing')
     expect(await entries()).toHaveLength(0)
   })
 
   it('the return details give the payer the amount, the application, the simulated flag, and a receipt', async () => {
     const { attempt } = await startOnline()
     await resolveDevCheckout(handle.db, attempt?.processorObjectId ?? '', 'approve', signal, deps)
-    const details = await paymentReturnDetails(handle.db, attempt?.id ?? '', signal)
+    const details = await paymentReturnDetails(handle.db, trade.world.applicant, attempt?.id ?? '', signal)
     expect(details).toMatchObject({
       status: 'received',
       simulated: true,
@@ -129,16 +129,16 @@ describe('online payment', () => {
       applicationNumbers: [expect.stringMatching(/^EL-/)],
     })
     expect(details.receiptId).not.toBeNull()
-    const pdf = await attemptReceiptPdfResponse(handle.db, attempt?.id ?? '', signal)
+    const pdf = await attemptReceiptPdfResponse(handle.db, trade.world.applicant, attempt?.id ?? '', signal)
     expect(pdf.status).toBe(200)
     expect(pdf.contentType).toBe('application/pdf')
   })
 
   it('no receipt is offered while the attempt is pending or declined', async () => {
     const { attempt } = await startOnline()
-    const pending = await paymentReturnDetails(handle.db, attempt?.id ?? '', signal)
+    const pending = await paymentReturnDetails(handle.db, trade.world.applicant, attempt?.id ?? '', signal)
     expect(pending).toMatchObject({ status: 'processing', receiptId: null })
-    expect((await attemptReceiptPdfResponse(handle.db, attempt?.id ?? '', signal)).status).toBe(404)
+    expect((await attemptReceiptPdfResponse(handle.db, trade.world.applicant, attempt?.id ?? '', signal)).status).toBe(404)
   })
 
   it('the simulated receipt says no card was charged', async () => {

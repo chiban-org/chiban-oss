@@ -1,14 +1,29 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, or, type SQL, sql } from 'drizzle-orm'
 import type { Db, DbOrTx } from '@/db/client'
 import { applications, ledgerEntries, paymentAttempts, processorAccounts } from '@/db/schema'
+import type { Actor } from '@/features/auth/actor'
+import { seesWholeLedger } from '@/features/ledger/visibility'
+import { hasFullRecordAccess } from '@/features/projects/access'
 import { buildReceiptPdf } from '@/features/ledger/receiptPdf'
 import { NOT_FOUND, type PdfResponseData, pdfOk } from '@/features/pdf/pdfResponse'
 import { isUuid } from '@/utils/uuid'
 
 export type PaymentReturnStatus = 'received' | 'processing' | 'declined' | 'not_found'
 
+export function attemptVisibleTo(actor: Actor | null): SQL {
+  if (actor === null) return sql`false`
+  if (hasFullRecordAccess(actor) && seesWholeLedger(actor)) return sql`true`
+  return (
+    or(
+      eq(paymentAttempts.payerUserId, actor.userId),
+      eq(paymentAttempts.createdByUserId, actor.userId),
+    ) ?? sql`false`
+  )
+}
+
 export async function paymentReturnStatus(
   db: DbOrTx,
+  actor: Actor | null,
   attemptId: string,
   signal: AbortSignal,
 ): Promise<PaymentReturnStatus> {
@@ -16,7 +31,7 @@ export async function paymentReturnStatus(
   const [attempt] = await db
     .select({ state: paymentAttempts.state })
     .from(paymentAttempts)
-    .where(eq(paymentAttempts.id, attemptId))
+    .where(and(eq(paymentAttempts.id, attemptId), attemptVisibleTo(actor)))
   if (attempt === undefined) return 'not_found'
   if (attempt.state === 'captured' || attempt.state === 'settled') return 'received'
   if (attempt.state === 'pending' || attempt.state === 'authorized') return 'processing'
@@ -51,11 +66,12 @@ async function receiptOf(db: DbOrTx, attemptId: string): Promise<string | null> 
 
 export async function paymentReturnDetails(
   db: DbOrTx,
+  actor: Actor | null,
   attemptId: string,
   signal: AbortSignal,
 ): Promise<PaymentReturnDetails> {
   signal.throwIfAborted()
-  const status = await paymentReturnStatus(db, attemptId, signal)
+  const status = await paymentReturnStatus(db, actor, attemptId, signal)
   if (status === 'not_found') return EMPTY
   const [attempt] = await db
     .select({
@@ -93,11 +109,12 @@ export async function paymentReturnDetails(
 
 export async function attemptReceiptPdfResponse(
   db: Db,
+  actor: Actor | null,
   attemptId: string,
   signal: AbortSignal,
 ): Promise<PdfResponseData> {
   if (!isUuid(attemptId)) return NOT_FOUND
-  const details = await paymentReturnDetails(db, attemptId, signal)
+  const details = await paymentReturnDetails(db, actor, attemptId, signal)
   if (details.receiptId === null) return NOT_FOUND
   const built = await buildReceiptPdf(db, details.receiptId, signal)
   return built.ok ? pdfOk(built.value) : NOT_FOUND

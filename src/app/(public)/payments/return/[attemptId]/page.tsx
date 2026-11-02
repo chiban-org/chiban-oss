@@ -1,6 +1,7 @@
 import { db } from '@/db/client'
 import { type PaymentReturnDetails, paymentReturnDetails } from '@/features/payments/paymentReturn'
 import { formatCents } from '@/lib/money'
+import { portalActorOrNull } from '@/server/requirePortal'
 import { PaymentStatusPoller } from './PaymentStatusPoller'
 
 export const dynamic = 'force-dynamic'
@@ -28,8 +29,10 @@ export default async function PaymentReturnPage({
   params: Promise<{ attemptId: string }>
 }) {
   const { attemptId } = await params
+  const signal = AbortSignal.timeout(10_000)
+  const actor = await portalActorOrNull(signal)
   const details = UUID.test(attemptId)
-    ? await paymentReturnDetails(db, attemptId, AbortSignal.timeout(10_000))
+    ? await paymentReturnDetails(db, actor, attemptId, signal)
     : NOT_FOUND_DETAILS
   const { status } = details
   return (
