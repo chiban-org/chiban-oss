@@ -6,8 +6,8 @@ import {
   inspections,
   reviewAssignments,
 } from '@/db/schema'
+import { boardOfApplication } from '@/features/boards/boardOf'
 import { type GateOutcome, registerGate } from '@/features/gates/registry'
-import { loadPack } from '@/features/packs/loadPack'
 
 export const CONDITIONS_GATE_KEY = 'conditions.blocking_met'
 export const CLOSURE_GATE_KEY = 'closure.requirement_met'
@@ -20,10 +20,7 @@ registerGate({
   appliesTo: ['decided'],
   boundBy: null,
   evaluate: async (tx, app) => {
-    const board = loadPack().classifications.find(
-      (c) => c.key === app.typeBody.classification,
-    )?.board
-    if (board !== undefined && board !== null) return { status: 'pass' }
+    if (boardOfApplication(app) !== null) return { status: 'pass' }
     const open = await tx
       .select({ id: reviewAssignments.id })
       .from(reviewAssignments)
