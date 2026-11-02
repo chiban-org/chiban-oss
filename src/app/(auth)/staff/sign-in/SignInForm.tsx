@@ -1,6 +1,7 @@
 'use client'
 
 import { CsrfField } from '@/components/CsrfField'
+import { SubmitButton } from '@/components/SubmitButton'
 import { useFormAction } from '@/components/useFormAction'
 import { type SignInState, signInAction } from './actions'
 
@@ -11,7 +12,7 @@ function failed(state: SignInState): boolean {
 }
 
 export function SignInForm() {
-  const { state, pending, formProps } = useFormAction(signInAction, initial, failed)
+  const { state, formProps } = useFormAction(signInAction, initial, failed)
 
   return (
     <form {...formProps} className="flex flex-col gap-4">
@@ -44,9 +45,9 @@ export function SignInForm() {
         </label>
       ) : null}
       {state.error === null ? null : <p role="alert">{state.error}</p>}
-      <button type="submit" disabled={pending} className="p-2">
+      <SubmitButton className="p-2">
         {state.needTotp ? 'Verify and sign in' : 'Sign in'}
-      </button>
+      </SubmitButton>
     </form>
   )
 }

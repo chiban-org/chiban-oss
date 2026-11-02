@@ -15,6 +15,7 @@ import {
 } from '@/components/config/SimpleEditors'
 import { TownRuleEditor } from '@/components/config/TownRuleEditor'
 import { Button } from '@/components/ui/button'
+import { useHydrated } from '@/components/useHydrated'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import type { EditorContext } from '@/features/config/editorContext'
@@ -121,6 +122,7 @@ export function ConfigEditorForm({
         : await saveAction(formData),
     null,
   )
+  const hydrated = useHydrated()
   const errors: FieldErrors = result !== null && !result.ok ? (result.fieldErrors ?? {}) : {}
   return (
     <form action={run} className="max-w-4xl">
@@ -131,10 +133,16 @@ export function ConfigEditorForm({
       <Body kind={kind} body={body} setBody={setBody} errors={errors} context={context} />
       <FieldError errors={errors} name="_form" />
       <div className="mt-4 flex items-center gap-3">
-        <Button type="submit" name="intent" value="publish" disabled={pending}>
+        <Button type="submit" name="intent" value="publish" disabled={pending || !hydrated}>
           Publish
         </Button>
-        <Button type="submit" name="intent" value="save" variant="outline" disabled={pending}>
+        <Button
+          type="submit"
+          name="intent"
+          value="save"
+          variant="outline"
+          disabled={pending || !hydrated}
+        >
           Save draft
         </Button>
         <p role="status" className="text-sm">

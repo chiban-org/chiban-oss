@@ -1,6 +1,7 @@
 import { eq, like } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { CsrfField } from '@/components/CsrfField'
+import { SubmitButton } from '@/components/SubmitButton'
 import { db } from '@/db/client'
 import { userRoles, users } from '@/db/schema'
 import { isDevSignInEnabled } from '@/features/auth/devSignIn'
@@ -28,9 +29,9 @@ export default async function DevSignInPage() {
               <CsrfField />
               <input type="hidden" name="email" value={row.email} />
               <input type="hidden" name="kind" value={row.kind} />
-              <button type="submit">
+              <SubmitButton>
                 {row.name} ({row.role})
-              </button>
+              </SubmitButton>
             </form>
           </li>
         ))}

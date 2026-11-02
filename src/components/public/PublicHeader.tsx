@@ -1,4 +1,5 @@
 import { CsrfField } from '@/components/CsrfField'
+import { SubmitButton } from '@/components/SubmitButton'
 
 interface PublicHeaderProps {
   signedIn: boolean
@@ -22,9 +23,7 @@ export function PublicHeader({ signedIn, signOutAction }: PublicHeaderProps) {
               </a>
               <form action={signOutAction}>
                 <CsrfField />
-                <button type="submit" className="tap-target text-action underline">
-                  Sign out
-                </button>
+                <SubmitButton className="tap-target text-action underline">Sign out</SubmitButton>
               </form>
             </>
           ) : (

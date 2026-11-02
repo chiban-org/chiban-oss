@@ -2,6 +2,7 @@
 
 import { useActionState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
+import { SubmitButton } from '@/components/SubmitButton'
 import { useFormAction } from '@/components/useFormAction'
 import { beginTotpAction, confirmTotpAction, type TotpState } from './actions'
 
@@ -12,20 +13,18 @@ function failed(state: TotpState): boolean {
 }
 
 export function BeginTotpForm() {
-  const [state, action, pending] = useActionState(beginTotpAction, initial)
+  const [state, action] = useActionState(beginTotpAction, initial)
   return (
     <form action={action} className="flex flex-col gap-3">
       <CsrfField />
       {state.error === null ? null : <p role="alert">{state.error}</p>}
-      <button type="submit" disabled={pending}>
-        Set up authenticator
-      </button>
+      <SubmitButton>Set up authenticator</SubmitButton>
     </form>
   )
 }
 
 export function ConfirmTotpForm() {
-  const { state, pending, formProps } = useFormAction(confirmTotpAction, initial, failed)
+  const { state, formProps } = useFormAction(confirmTotpAction, initial, failed)
   return (
     <form {...formProps} className="flex flex-col gap-3">
       <CsrfField />
@@ -41,9 +40,7 @@ export function ConfirmTotpForm() {
         />
       </label>
       {state.error === null ? null : <p role="alert">{state.error}</p>}
-      <button type="submit" disabled={pending}>
-        Confirm
-      </button>
+      <SubmitButton>Confirm</SubmitButton>
     </form>
   )
 }

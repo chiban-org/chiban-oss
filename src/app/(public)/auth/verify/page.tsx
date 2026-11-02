@@ -1,5 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { CsrfField } from '@/components/CsrfField'
+import { SubmitButton } from '@/components/SubmitButton'
 import { db } from '@/db/client'
 import { users } from '@/db/schema'
 import { peekMagicLink } from '@/features/auth/magicLink'
@@ -52,12 +53,9 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
       <form action={confirmMagicLinkAction}>
         <CsrfField />
         <input type="hidden" name="token" value={token} />
-        <button
-          type="submit"
-          className="tap-target rounded-md bg-primary px-5 py-2 text-base text-primary-foreground"
-        >
+        <SubmitButton className="tap-target rounded-md bg-primary px-5 py-2 text-base text-primary-foreground">
           {`Continue as ${link.email}`}
-        </button>
+        </SubmitButton>
       </form>
     </main>
   )

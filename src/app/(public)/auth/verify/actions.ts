@@ -8,6 +8,7 @@ import { consumeMagicLink } from '@/features/auth/magicLink'
 import { sessionCookieOptions } from '@/features/auth/session'
 import { guardAction } from '@/server/actionGuard'
 
+const SIGNED_IN_HOME = '/'
 const INVALID = '/sign-in?error=invalid'
 const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
 const ACTION_TIMEOUT_MS = 10_000
@@ -20,7 +21,7 @@ export async function confirmMagicLinkAction(formData: FormData): Promise<void> 
   const token = typeof raw === 'string' ? raw : ''
   if (token === '') redirect(INVALID)
   const result = await consumeMagicLink(db, token, signal)
-  if (!result.ok) redirect(INVALID)
+  if (!result.ok) redirect(guard.value === null ? INVALID : SIGNED_IN_HOME)
   const jar = await cookies()
   jar.set(SESSION_COOKIE, result.value.sid, {
     ...sessionCookieOptions(),

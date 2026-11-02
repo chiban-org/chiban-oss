@@ -3,6 +3,7 @@ import { and, eq, gt, isNull, sql } from 'drizzle-orm'
 import { env } from '@/config/env'
 import type { DbOrTx } from '@/db/client'
 import { magicLinks, userRoles, users } from '@/db/schema'
+import { transactionResult } from '@/db/transactionResult'
 import { createSession } from '@/features/auth/session'
 import type { MailTransport } from '@/features/mail/transport'
 import { createRateLimiter } from '@/server/rateLimiter'
@@ -86,23 +87,25 @@ export async function consumeMagicLink(
   signal: AbortSignal,
 ): Promise<Result<{ sid: string; userId: string }, 'invalid'>> {
   signal.throwIfAborted()
-  const [claimed] = await db
-    .update(magicLinks)
-    .set({ consumedAt: new Date() })
-    .where(
-      and(
-        eq(magicLinks.tokenHash, hashToken(token)),
-        isNull(magicLinks.consumedAt),
-        gt(magicLinks.expiresAt, sql`now()`),
-      ),
-    )
-    .returning({ email: magicLinks.email })
-  if (claimed === undefined) return err('invalid')
-  const user = await findOrCreatePublicUser(db, claimed.email)
-  if (user === null) return err('invalid')
-  const session = await createSession(db, user.id, signal)
-  if (!session.ok) return err('invalid')
-  return ok({ sid: session.value.sid, userId: user.id })
+  return await transactionResult(db, async (tx) => {
+    const [claimed] = await tx
+      .update(magicLinks)
+      .set({ consumedAt: new Date() })
+      .where(
+        and(
+          eq(magicLinks.tokenHash, hashToken(token)),
+          isNull(magicLinks.consumedAt),
+          gt(magicLinks.expiresAt, sql`now()`),
+        ),
+      )
+      .returning({ email: magicLinks.email })
+    if (claimed === undefined) return err('invalid')
+    const user = await findOrCreatePublicUser(tx, claimed.email)
+    if (user === null) return err('invalid')
+    const session = await createSession(tx, user.id, signal)
+    if (!session.ok) return err('invalid')
+    return ok({ sid: session.value.sid, userId: user.id })
+  })
 }
 
 export async function peekMagicLink(

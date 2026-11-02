@@ -147,4 +147,22 @@ describe('magic link verify page', () => {
     const target = await redirectOf(confirmMagicLinkAction(form('y'.repeat(43), 'tok')))
     expect(target).toBe('/sign-in?error=invalid')
   })
+  it('a repeat submit of an already consumed link by the signed-in user still lands home', async () => {
+    const token = await tokenFor('twice@alderpond.example')
+    expect(await redirectOf(confirmMagicLinkAction(form(token, 'tok')))).toBe('/')
+    const userId = await makeUser(handle.db, {
+      email: 'twice-actor@alderpond.example',
+      role: 'applicant',
+    })
+    state.actor = { userId, kind: 'public', roles: ['applicant'] }
+    expect(await redirectOf(confirmMagicLinkAction(form(token, 'tok')))).toBe('/')
+  })
+
+  it('a link that cannot start a session is not consumed', async () => {
+    const token = await tokenFor('taken@alderpond.example')
+    await makeUser(handle.db, { email: 'taken@alderpond.example', role: 'staff' })
+    const target = await redirectOf(confirmMagicLinkAction(form(token, 'tok')))
+    expect(target).toBe('/sign-in?error=invalid')
+    expect(await consumed()).toEqual([false])
+  })
 })

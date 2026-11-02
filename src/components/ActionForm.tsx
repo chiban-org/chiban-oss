@@ -2,8 +2,10 @@
 
 import type { ReactNode } from 'react'
 import { CsrfField } from '@/components/CsrfField'
+import { SubmitButton } from '@/components/SubmitButton'
 import { Button } from '@/components/ui/button'
 import { useFormAction } from '@/components/useFormAction'
+import { useHydrated } from '@/components/useHydrated'
 import type { ActionResult } from '@/server/actionRunner'
 
 interface ActionFormProps {
@@ -34,12 +36,13 @@ export function ActionForm({
     null,
     isFailure,
   )
+  const hydrated = useHydrated()
   return (
     <form {...formProps} className={className}>
       <CsrfField />
       {children}
       <div className="mt-3 flex items-center gap-3">
-        <Button type="submit" variant={variant} disabled={pending}>
+        <Button type="submit" variant={variant} disabled={pending || !hydrated}>
           {pending ? 'Working' : submitLabel}
         </Button>
         <p role="status" className="text-sm">
