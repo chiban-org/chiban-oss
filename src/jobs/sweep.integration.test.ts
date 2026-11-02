@@ -232,10 +232,10 @@ describe('jobs.sweep', () => {
       'records.preserve',
       'exports.build',
       'redaction.run',
+      'renditions.derive',
       'records.dispose',
       'files.delete',
       'files.release',
-      'renditions.derive',
     ])
   })
 })
