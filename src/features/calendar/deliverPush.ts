@@ -1,4 +1,4 @@
-import { and, desc, eq, gt, isNotNull, sql } from 'drizzle-orm'
+import { and, desc, eq, gt, inArray, isNotNull, sql } from 'drizzle-orm'
 import { env } from '@/config/env'
 import type { DbOrTx } from '@/db/client'
 import {
@@ -136,8 +136,25 @@ async function buildBooking(
   }
 }
 
+async function rebookedSince(db: DbOrTx, push: CalendarPushRow): Promise<boolean> {
+  const [later] = await db
+    .select({ id: calendarPushes.id })
+    .from(calendarPushes)
+    .where(
+      and(
+        eq(calendarPushes.inspectionId, push.inspectionId),
+        eq(calendarPushes.inspectorUserId, push.inspectorUserId),
+        eq(calendarPushes.op, 'publish'),
+        gt(calendarPushes.sequence, push.sequence),
+        inArray(calendarPushes.status, ['queued', 'sent']),
+      ),
+    )
+    .limit(1)
+  return later !== undefined
+}
+
 async function isStale(db: DbOrTx, push: CalendarPushRow): Promise<boolean> {
-  if (push.op !== 'publish') return false
+  if (push.op === 'cancel') return await rebookedSince(db, push)
   const [inspection] = await db
     .select({
       sequence: inspections.calendarSequence,

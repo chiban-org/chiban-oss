@@ -27,6 +27,23 @@ export function ledgerEntryVisibleTo(actor: Actor | null): SQL {
   )`
 }
 
+export function ledgerEntryVisibleForApplication(actor: Actor | null, applicationId: string): SQL {
+  if (actor === null) return sql`false`
+  if (seesWholeLedger(actor)) return sql`true`
+  return sql`(
+    ${ledgerEntries.payerUserId} = ${actor.userId}
+    or exists (
+      select 1
+      from applications app
+      join project_parties pp on pp.project_id = app.project_id
+      where app.id = ${applicationId}
+        and pp.user_id = ${actor.userId}
+        and pp.removed_at is null
+        and pp.role in ('applicant', 'owner', 'agent')
+    )
+  )`
+}
+
 export async function listVisibleEntries(
   db: DbOrTx,
   actor: Actor | null,

@@ -11,6 +11,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { applicationIdOfRecord } from '@/features/records/ancestry'
 import { err, ok, type Result } from '@/types/result'
 
 const MIN_REASON = 10
@@ -116,12 +117,13 @@ async function lineageOf(
   if (doc.recordKind === 'project') {
     return { documentId: doc.id, applicationId: null, projectId: doc.recordId }
   }
-  if (doc.recordKind === 'application') {
+  const applicationId = await applicationIdOfRecord(db, doc)
+  if (applicationId !== null) {
     const [app] = await db
       .select({ projectId: applications.projectId })
       .from(applications)
-      .where(eq(applications.id, doc.recordId))
-    return { documentId: doc.id, applicationId: doc.recordId, projectId: app?.projectId ?? null }
+      .where(eq(applications.id, applicationId))
+    return { documentId: doc.id, applicationId, projectId: app?.projectId ?? null }
   }
   return { documentId: doc.id, applicationId: null, projectId: null }
 }

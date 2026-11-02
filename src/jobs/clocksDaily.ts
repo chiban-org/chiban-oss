@@ -86,7 +86,10 @@ export async function expireLapsedPermits(
 export const clocksDailyJob = defineJob<DailyPayload>({
   name: JOB_NAMES.CLOCKS_DAILY,
   intervalSeconds: SECONDS_PER_DAY,
-  dedupKey: (p) => `clocks.daily:${p.today ?? todayInTimeZone('UTC', new Date())}`,
+  dedupKey: (p) =>
+    p.today === undefined
+      ? `clocks.daily.scheduled:${todayInTimeZone('UTC', new Date())}`
+      : `clocks.daily:${p.today}`,
   handler: async (payload, ctx) => {
     const today = payload.today ?? (await townToday(ctx.db, new Date(), ctx.signal))
     await markOverdue(ctx.db, today)

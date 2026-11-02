@@ -124,6 +124,20 @@ describe('calendar push outbox', () => {
     expect(mail.sent[0]?.icalEvent?.content).toContain('DTSTART:20271117T153000Z')
   })
 
+  it('a replayed cancel is superseded by a later publish to the same inspector', async () => {
+    const id = await scheduled('2027-12-20', 810)
+    const cancelId = await queue(id, 0, 'cancel')
+    const publishId = await queue(id, 1, 'publish')
+    await handle.db.update(inspections).set({ calendarSequence: 1 }).where(eq(inspections.id, id))
+    const { mail, deps: d } = deps()
+    expect(await deliverPush(handle.db, d, publishId, signal)).toEqual({ ok: true, value: 'sent' })
+    expect(await deliverPush(handle.db, d, cancelId, signal)).toEqual({
+      ok: true,
+      value: 'superseded',
+    })
+    expect(mail.sent.map((m) => m.icalEvent?.method)).toEqual(['REQUEST'])
+  })
+
   it('a send failure retries and is failed after 5 attempts', async () => {
     const id = await scheduled('2027-11-22', 570)
     const pushId = await queue(id, 0, 'publish')

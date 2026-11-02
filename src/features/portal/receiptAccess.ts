@@ -3,7 +3,7 @@ import type { Db } from '@/db/client'
 import { ledgerAllocations, ledgerEntries } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { buildReceiptPdf } from '@/features/ledger/receiptPdf'
-import { ledgerEntryVisibleTo } from '@/features/ledger/visibility'
+import { ledgerEntryVisibleForApplication } from '@/features/ledger/visibility'
 import { NOT_FOUND, type PdfResponseData, pdfOk } from '@/features/pdf/pdfResponse'
 import { isUuid } from '@/utils/uuid'
 
@@ -23,7 +23,7 @@ export async function portalReceiptPdfResponse(
       and(
         eq(ledgerEntries.receiptId, input.receiptId),
         eq(ledgerAllocations.applicationId, input.applicationId),
-        ledgerEntryVisibleTo(actor),
+        ledgerEntryVisibleForApplication(actor, input.applicationId),
       ),
     )
     .limit(1)

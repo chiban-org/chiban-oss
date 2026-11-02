@@ -10,6 +10,7 @@ import {
   recordEvents,
   retentionAssignments,
 } from '@/db/schema'
+import { applicationIdOfRecord } from '@/features/records/ancestry'
 import { computeRetention, type RetentionStatus } from '@/features/records/computeRetention'
 import { holdsCovering } from '@/features/records/holds'
 import { requireSeries } from '@/features/records/series'
@@ -48,7 +49,7 @@ async function applicationIdOf(db: DbOrTx, ref: DispositionRef): Promise<string 
     return row?.id ?? null
   }
   const [doc] = await db.select().from(documents).where(eq(documents.id, ref.id))
-  return doc?.recordKind === 'application' ? doc.recordId : null
+  return doc === undefined ? null : await applicationIdOfRecord(db, doc)
 }
 
 async function projectIdsFor(db: DbOrTx, ref: DispositionRef): Promise<string[]> {
@@ -70,10 +71,12 @@ async function projectIdsFor(db: DbOrTx, ref: DispositionRef): Promise<string[]>
       .where(eq(projects.parcelId, doc.recordId))
     return rows.map((r) => r.id)
   }
+  const applicationId = await applicationIdOfRecord(db, doc)
+  if (applicationId === null) return []
   const rows = await db
     .select({ id: applications.projectId })
     .from(applications)
-    .where(eq(applications.id, doc.recordId))
+    .where(eq(applications.id, applicationId))
   return rows.map((r) => r.id)
 }
 

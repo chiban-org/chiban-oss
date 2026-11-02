@@ -1,9 +1,13 @@
+import { mkdtemp, rm, writeFile } from 'node:fs/promises'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { and, asc, eq, gt, inArray, isNull, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { documents, documentText, documentVersions, files, preservationRecords } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { storeGeneratedBytes } from '@/features/files/ingest'
+import type { OcrConverter } from '@/features/migration/ocrmypdf'
 import type { PdfaConverter } from '@/features/preservation/ghostscript'
 import { wrapImageAsPdf } from '@/features/preservation/wrapImage'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -86,10 +90,88 @@ async function markIncomplete(
     .where(eq(preservationRecords.id, recordId))
 }
 
+const TIFF_TYPE = 'image/tiff'
+
+async function completeWithPdf(
+  db: DbOrTx,
+  store: ObjectStore,
+  version: LoadedVersion,
+  recordId: string,
+  pdf: Uint8Array,
+  text: string | null,
+  signal: AbortSignal,
+): Promise<Result<'complete', 'incomplete'>> {
+  const stored = await storeGeneratedBytes(db, store, pdf, PDF_TYPE, signal)
+  const [created] = await db
+    .insert(documentVersions)
+    .values({
+      documentId: version.documentId,
+      role: 'pdfa',
+      fileSha256: stored.sha256,
+      filename: `${version.filename.replace(/\.[^.]+$/, '')}.pdf`,
+      contentType: PDF_TYPE,
+    })
+    .returning({ id: documentVersions.id })
+  if (text !== null && created !== undefined) {
+    await db
+      .insert(documentText)
+      .values({ versionId: created.id, text, hasTextLayer: text.trim() !== '' })
+      .onConflictDoNothing()
+  }
+  await db
+    .update(preservationRecords)
+    .set({
+      status: 'complete',
+      reason: null,
+      detail: null,
+      pdfaVersionId: created?.id ?? null,
+      updatedAt: new Date(),
+    })
+    .where(eq(preservationRecords.id, recordId))
+  return ok('complete')
+}
+
+async function ocrTiff(
+  db: DbOrTx,
+  store: ObjectStore,
+  ocr: OcrConverter | undefined,
+  version: LoadedVersion,
+  recordId: string,
+  bytes: Uint8Array,
+  signal: AbortSignal,
+): Promise<Result<'complete', 'incomplete'>> {
+  if (ocr === undefined) {
+    await markIncomplete(db, recordId, 'conversion_failed', 'TIFF originals need the OCR converter')
+    return err('incomplete')
+  }
+  const dir = await mkdtemp(path.join(tmpdir(), 'chiban-tiff-'))
+  try {
+    const input = path.join(dir, 'input.tiff')
+    await writeFile(input, bytes)
+    const converted = await ocr.ocrToPdfA(input, 'image', signal)
+    if (!converted.ok) {
+      await markIncomplete(db, recordId, `ocr_${converted.error.reason}`, converted.error.detail)
+      return err('incomplete')
+    }
+    return await completeWithPdf(
+      db,
+      store,
+      version,
+      recordId,
+      converted.value.pdf,
+      converted.value.text,
+      signal,
+    )
+  } finally {
+    await rm(dir, { recursive: true, force: true })
+  }
+}
+
 async function convertOriginal(
   db: DbOrTx,
   store: ObjectStore,
   converter: PdfaConverter,
+  ocr: OcrConverter | undefined,
   version: LoadedVersion,
   recordId: string,
   signal: AbortSignal,
@@ -102,6 +184,9 @@ async function convertOriginal(
   if (bytes === null) {
     await markIncomplete(db, recordId, 'conversion_failed', 'The stored file is missing')
     return err('incomplete')
+  }
+  if (version.contentType === TIFF_TYPE) {
+    return await ocrTiff(db, store, ocr, version, recordId, bytes, signal)
   }
   const isImage = version.contentType === 'image/jpeg' || version.contentType === 'image/png'
   let source = bytes
@@ -123,28 +208,7 @@ async function convertOriginal(
     await markIncomplete(db, recordId, converted.error.reason, converted.error.detail)
     return err('incomplete')
   }
-  const stored = await storeGeneratedBytes(db, store, converted.value, PDF_TYPE, signal)
-  const [created] = await db
-    .insert(documentVersions)
-    .values({
-      documentId: version.documentId,
-      role: 'pdfa',
-      fileSha256: stored.sha256,
-      filename: `${version.filename.replace(/\.[^.]+$/, '')}.pdf`,
-      contentType: PDF_TYPE,
-    })
-    .returning({ id: documentVersions.id })
-  await db
-    .update(preservationRecords)
-    .set({
-      status: 'complete',
-      reason: null,
-      detail: null,
-      pdfaVersionId: created?.id ?? null,
-      updatedAt: new Date(),
-    })
-    .where(eq(preservationRecords.id, recordId))
-  return ok('complete')
+  return await completeWithPdf(db, store, version, recordId, converted.value, null, signal)
 }
 
 export async function preserveVersion(
@@ -153,6 +217,7 @@ export async function preserveVersion(
   converter: PdfaConverter,
   versionId: string,
   signal: AbortSignal,
+  ocr?: OcrConverter,
 ): Promise<Result<'complete' | 'not_required', 'incomplete'>> {
   signal.throwIfAborted()
   const version = await loadVersion(db, versionId)
@@ -172,7 +237,7 @@ export async function preserveVersion(
   if (record === undefined || record.status === 'not_required') return ok('not_required')
   if (record.status === 'complete') return ok('complete')
   if (record.status === 'incomplete') return err('incomplete')
-  return await convertOriginal(db, store, converter, version, record.id, signal)
+  return await convertOriginal(db, store, converter, ocr, version, record.id, signal)
 }
 
 export async function processPreservation(
@@ -181,6 +246,7 @@ export async function processPreservation(
   converter: PdfaConverter,
   signal: AbortSignal,
   limit: number = BATCH_LIMIT,
+  ocr?: OcrConverter,
 ): Promise<number> {
   const pending = await db
     .select({ id: preservationRecords.originalVersionId })
@@ -201,7 +267,7 @@ export async function processPreservation(
     )
     .limit(limit)
   const ids = [...new Set([...pending, ...untexted].map((r) => r.id))]
-  for (const id of ids) await preserveVersion(db, store, converter, id, signal)
+  for (const id of ids) await preserveVersion(db, store, converter, id, signal, ocr)
   return ids.length
 }
 
