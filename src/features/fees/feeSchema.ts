@@ -62,7 +62,7 @@ export const FeeExprSchema: z.ZodType<FeeExpr> = z.lazy(() =>
   ]),
 )
 
-export const FEE_STAGES = ['at_intake', 'at_approval', 'at_renewal'] as const
+export const FEE_STAGES = ['at_intake', 'at_approval', 'at_renewal', 'at_notice'] as const
 export type FeeStage = (typeof FEE_STAGES)[number]
 
 export const FeeScheduleBodySchema = z

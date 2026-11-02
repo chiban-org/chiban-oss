@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { RecipientRoleSchema } from '@/features/abutters/roles'
 import { CORE_STATES } from '@/features/applications/states'
 import { type CivilDate, parseCivilDate } from '@/types/civilDate'
 
@@ -32,8 +33,14 @@ export const StartEventSchema = z.enum([
   'application_completed',
   'permit_issued',
   'regional_impact_notice_mailed',
+  'acceptance_meeting_set',
+  'application_accepted',
+  'final_approval',
 ])
 export type StartEvent = z.infer<typeof StartEventSchema>
+
+export const BoardSchema = z.enum(['planning_board', 'zba'])
+export type Board = z.infer<typeof BoardSchema>
 
 export const FactConditionSchema = z.union([
   z.object({
@@ -41,10 +48,16 @@ export const FactConditionSchema = z.union([
     in: z.array(z.enum(['residential', 'nonresidential'])).min(1),
   }),
   z.object({ fact: z.literal('dwellingUnits'), gt: z.number() }),
+  z.object({ fact: z.literal('regionalImpact'), is: z.literal(true) }),
 ])
 export type FactCondition = z.infer<typeof FactConditionSchema>
 
 const LengthSchema = z.union([
+  z.object({
+    unit: z.literal('days'),
+    value: z.number().int().positive(),
+    earlierOfNextRegularMeeting: z.object({ board: BoardSchema, noticeRuleKey: z.string().min(1) }),
+  }),
   z.object({ unit: z.enum(['days', 'months']), value: z.number().int().positive() }),
   z.object({
     unit: z.literal('days'),
@@ -72,20 +85,34 @@ export const ClockRuleSchema = z
     length: LengthSchema,
     direction: z.enum(['after', 'before']),
     consequence: z.object({
-      kind: z.enum(['none_stated', 'issuance_blocked', 'lapse']),
+      kind: z.enum([
+        'none_stated',
+        'issuance_blocked',
+        'lapse',
+        'selectmen_certification',
+        'not_accepted_at_meeting',
+        'notice_defective',
+      ]),
       text: z.string().min(1),
     }),
     extension: z.union([
       z.object({ allowed: z.literal(false), note: z.string().min(1) }),
-      z.object({ allowed: z.literal(true), by: z.enum(['applicant_consent', 'town_renewal']) }),
+      z.object({
+        allowed: z.literal(true),
+        by: z.enum(['applicant_consent', 'town_renewal', 'board_good_cause']),
+      }),
     ]),
     waivable: z.boolean(),
     overridePolicy: OverridePolicySchema,
   })
-  .refine((r) => r.direction === 'after' || r.clockType === 'notice_lead', {
-    message: 'before-direction requires clockType notice_lead',
-    path: ['direction'],
-  })
+  .refine(
+    (r) =>
+      r.direction === 'after' || r.clockType === 'notice_lead' || r.clockType === 'filing_window',
+    {
+      message: 'before-direction requires clockType notice_lead or filing_window',
+      path: ['direction'],
+    },
+  )
 export type ClockRule = z.infer<typeof ClockRuleSchema>
 
 export const GateRuleSchema = z.object({
@@ -121,10 +148,30 @@ export const TownSettingRuleSchema = z.object({
 })
 export type TownSettingRule = z.infer<typeof TownSettingRuleSchema>
 
+export const ListAgeRuleSchema = z.object({
+  ...base,
+  kind: z.literal('list_age'),
+  maxDaysBeforeFiling: z.number().int().positive(),
+  overridePolicy: z.object({ policy: z.literal('fixed') }),
+})
+export type ListAgeRule = z.infer<typeof ListAgeRuleSchema>
+
+export const ProximityRuleSchema = z.object({
+  ...base,
+  kind: z.literal('proximity'),
+  distanceFt: z.number().positive(),
+  layer: z.literal('water'),
+  recipientRole: z.literal('nh_des'),
+  overridePolicy: z.object({ policy: z.literal('fixed') }),
+})
+export type ProximityRule = z.infer<typeof ProximityRuleSchema>
+
 export const PackRuleSchema = z
   .union([
     ClockRuleSchema,
     GateRuleSchema,
+    ListAgeRuleSchema,
+    ProximityRuleSchema,
     RecordRuleSchema,
     EffectRuleSchema,
     TownSettingRuleSchema,
@@ -141,10 +188,38 @@ export const PackRuleSchema = z
   )
 export type PackRule = z.infer<typeof PackRuleSchema>
 
+export const CLASSIFICATION_KEYS = [
+  'nh.building_permit',
+  'nh.trade_permit',
+  'nh.pb_site_plan',
+  'nh.pb_subdivision',
+  'nh.pb_conditional_use',
+  'nh.pb_design_review',
+  'nh.zba_variance',
+  'nh.zba_special_exception',
+  'nh.zba_administrative_appeal',
+  'nh.zba_equitable_waiver',
+  'nh.zba_rehearing_motion',
+] as const
+
+export const AbuttersSpecSchema = z.object({
+  strategyKey: z.string().min(1),
+  resolverKey: z.string().min(1),
+  roles: z.array(RecipientRoleSchema).min(1),
+  conditionalRoles: z.array(
+    z.object({
+      role: RecipientRoleSchema,
+      when: z.enum(['regional_impact_yes', 'des_within_500ft']),
+    }),
+  ),
+})
+
 export const ProceedingClassificationSchema = z.object({
-  key: z.enum(['nh.building_permit', 'nh.trade_permit']),
+  key: z.enum(CLASSIFICATION_KEYS),
   label: z.string().min(1),
   mandatoryRuleKeys: z.array(z.string().min(1)),
+  board: BoardSchema.nullable(),
+  abutters: AbuttersSpecSchema.nullable(),
 })
 export type ProceedingClassification = z.infer<typeof ProceedingClassificationSchema>
 

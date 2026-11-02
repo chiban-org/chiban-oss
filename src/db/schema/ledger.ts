@@ -85,7 +85,7 @@ export const ledgerAllocations = pgTable(
     targetKind: text('target_kind', { enum: ALLOCATION_TARGETS }).notNull(),
     applicationId: uuid('application_id').references(() => applications.id),
     feeAssessmentId: uuid('fee_assessment_id').references(() => feeAssessments.id),
-    stage: text('stage', { enum: ['at_intake', 'at_approval', 'at_renewal'] }),
+    stage: text('stage', { enum: ['at_intake', 'at_approval', 'at_renewal', 'at_notice'] }),
     feeCode: text('fee_code'),
     amountCents: integer('amount_cents').notNull(),
   },

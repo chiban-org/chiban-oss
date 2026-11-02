@@ -26,13 +26,21 @@ describe('checkTownValue', () => {
   it('minimum 10 refuses 9 and accepts 12', () => {
     const rule = settingRule({ policy: 'minimum', floor: 10 })
     expect(checkTownValue(rule, { value: 9 })).toEqual({ ok: false, error: 'below_minimum' })
-    expect(checkTownValue(rule, { value: 12 }).ok).toBe(true)
+    expect(checkTownValue(rule, { value: 12 })).toEqual({
+      ok: false,
+      error: 'adoption_record_missing',
+    })
+    expect(checkTownValue(rule, { value: 12, ...adoption }).ok).toBe(true)
   })
 
   it('maximum 21 refuses 22 and accepts 14', () => {
     const rule = settingRule({ policy: 'maximum', ceiling: 21 })
     expect(checkTownValue(rule, { value: 22 })).toEqual({ ok: false, error: 'above_maximum' })
-    expect(checkTownValue(rule, { value: 14 }).ok).toBe(true)
+    expect(checkTownValue(rule, { value: 14 })).toEqual({
+      ok: false,
+      error: 'adoption_record_missing',
+    })
+    expect(checkTownValue(rule, { value: 14, ...adoption }).ok).toBe(true)
   })
 
   it('delegated choice without adopting authority and date is adoption_record_missing', () => {

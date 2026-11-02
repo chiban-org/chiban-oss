@@ -30,6 +30,18 @@ function checkDelegated(
   return ok(undefined)
 }
 
+function packValueOf(rule: PackRule): number | null {
+  if (rule.kind !== 'clock') return null
+  return 'value' in rule.length ? rule.length.value : null
+}
+
+function checkAdopted(rule: PackRule, proposed: ProposedValue): Result<void, TownValueError> {
+  if (proposed.value === packValueOf(rule)) return ok(undefined)
+  const authority = proposed.adoptingAuthority?.trim() ?? ''
+  if (authority === '' || proposed.adoptedOn === undefined) return err('adoption_record_missing')
+  return ok(undefined)
+}
+
 export function checkTownValue(
   rule: PackRule,
   proposed: ProposedTownValue,
@@ -39,10 +51,10 @@ export function checkTownValue(
   if (policy.policy === 'locally_prohibited') return err('locally_prohibited')
   if ('alter' in proposed) return ok(undefined)
   if (policy.policy === 'minimum') {
-    return proposed.value < policy.floor ? err('below_minimum') : ok(undefined)
+    return proposed.value < policy.floor ? err('below_minimum') : checkAdopted(rule, proposed)
   }
   if (policy.policy === 'maximum') {
-    return proposed.value > policy.ceiling ? err('above_maximum') : ok(undefined)
+    return proposed.value > policy.ceiling ? err('above_maximum') : checkAdopted(rule, proposed)
   }
   return checkDelegated(policy, proposed)
 }

@@ -8,7 +8,9 @@ export const feeAssessments = pgTable(
     applicationId: uuid('application_id')
       .notNull()
       .references(() => applications.id),
-    stage: text('stage', { enum: ['at_intake', 'at_approval', 'at_renewal'] }).notNull(),
+    stage: text('stage', {
+      enum: ['at_intake', 'at_approval', 'at_renewal', 'at_notice'],
+    }).notNull(),
     sequence: integer('sequence').notNull(),
     scheduleVersionId: uuid('schedule_version_id').notNull(),
     computation: jsonb('computation').notNull(),

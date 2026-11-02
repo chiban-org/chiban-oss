@@ -9,6 +9,7 @@ export interface ProjectFacts {
   classification: 'residential' | 'nonresidential' | null
   dwellingUnits: number | null
   afterTheFact: boolean
+  regionalImpact?: boolean
 }
 
 export type FieldErrorCode =

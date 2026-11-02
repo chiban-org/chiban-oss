@@ -1,0 +1,5 @@
+export const RSA_676_4 = 'https://gc.nh.gov/rsa/html/LXIV/676/676-4.htm'
+export const RSA_676_7 = 'https://gc.nh.gov/rsa/html/LXIV/676/676-7.htm'
+export const RSA_674_33 = 'https://gc.nh.gov/rsa/html/LXIV/674/674-33.htm'
+export const RSA_36_57_URL = 'https://gc.nh.gov/rsa/html/III/36/36-57.htm'
+export const RSA_672_3 = 'https://gc.nh.gov/rsa/html/LXIV/672/672-3.htm'

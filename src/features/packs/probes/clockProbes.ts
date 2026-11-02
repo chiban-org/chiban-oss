@@ -2,9 +2,11 @@ import type { ClockRule, PackRule, StartEvent } from '@packs/nh/schema'
 import type { clocks } from '@/db/schema'
 import { checkAdjustment } from '@/features/clocks/adjustClock'
 import { explainClock, START_EVENT_LABELS } from '@/features/clocks/explainClock'
+import { meetingBoundSpec } from '@/features/clocks/meetingBound'
 import { computeRuleDue, resolveRuleLength, rulesForEvent } from '@/features/clocks/ruleEngine'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import { packHolidayCalendar } from '@/features/packs/holidays'
+import { loadPack } from '@/features/packs/loadPack'
 import type { CivilDate } from '@/types/civilDate'
 import { attempt, clockRule, type FieldProbe, packRule, probe } from './probe'
 import { observeRule, ruleProbes } from './ruleProbes'
@@ -18,6 +20,7 @@ const FACT_SETS: ProjectFacts[] = [
   { classification: 'residential', dwellingUnits: 1, afterTheFact: false },
   { classification: 'residential', dwellingUnits: 5, afterTheFact: false },
   { classification: 'residential', dwellingUnits: 11, afterTheFact: false },
+  { classification: 'residential', dwellingUnits: 1, afterTheFact: false, regionalImpact: true },
 ]
 const START_DATES = ['2026-10-04', '2027-03-04', '2027-06-04', '2027-11-25'].map(d)
 const EVENTS = Object.keys(START_EVENT_LABELS) as StartEvent[]
@@ -69,6 +72,7 @@ function observeClock(rule: ClockRule, original: ClockRule): unknown {
     townLength: attempt(() =>
       resolveRuleLength(rule, FACT_SETS[1] as ProjectFacts, settingRule, 18),
     ),
+    meetingBound: attempt(() => meetingBoundSpec(rule, loadPack())),
     started: EVENTS.map((e) => rulesForEvent([rule], e, new Set([original.key])).length),
     adjustments: [
       checkAdjustment(rule, { kind: 'extension' }),
@@ -133,6 +137,39 @@ export function clockProbes(): Record<string, FieldProbe> {
       mapCases(r, (c, i) =>
         i === 0 ? { ...c, when: { fact: 'classification', in: ['residential'] } } : c,
       ),
+    ),
+    'clock.length.cases.when.is': clockProbe('nh.pb.decision', (r) =>
+      mapCases(r, (c, i) => (i === 0 ? { ...c, when: { fact: 'regionalImpact', is: false } } : c)),
+    ),
+    'clock.length.earlierOfNextRegularMeeting.board': clockProbe('nh.pb.completeness', (r) =>
+      'earlierOfNextRegularMeeting' in r.length
+        ? {
+            ...r,
+            length: {
+              ...r.length,
+              earlierOfNextRegularMeeting: {
+                ...r.length.earlierOfNextRegularMeeting,
+                board: 'zba',
+              },
+            },
+          }
+        : r,
+    ),
+    'clock.length.earlierOfNextRegularMeeting.noticeRuleKey': clockProbe(
+      'nh.pb.completeness',
+      (r) =>
+        'earlierOfNextRegularMeeting' in r.length
+          ? {
+              ...r,
+              length: {
+                ...r.length,
+                earlierOfNextRegularMeeting: {
+                  ...r.length.earlierOfNextRegularMeeting,
+                  noticeRuleKey: 'nh.zba.notice.mail',
+                },
+              },
+            }
+          : r,
     ),
     'clock.length.cases.when.gt': clockProbe(DECISION, (r) =>
       mapCases(r, (c, i) => (i === 1 ? { ...c, when: { fact: 'dwellingUnits', gt: 0 } } : c)),

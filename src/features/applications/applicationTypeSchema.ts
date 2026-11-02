@@ -1,3 +1,4 @@
+import { CLASSIFICATION_KEYS } from '@packs/nh/schema'
 import { z } from 'zod'
 import { CORE_STATES } from '@/features/applications/states'
 
@@ -5,7 +6,7 @@ export const ApplicationTypeBodySchema = z.object({
   key: z.string().min(1),
   label: z.string().min(1),
   prefix: z.string().regex(/^[A-Z]{1,4}$/),
-  classification: z.enum(['nh.building_permit', 'nh.trade_permit']).optional(),
+  classification: z.enum(CLASSIFICATION_KEYS).optional(),
   formKey: z.string().min(1),
   feeScheduleKey: z.string().min(1),
   conditionLibraryKey: z.string().min(1),
@@ -19,7 +20,7 @@ export const ApplicationTypeBodySchema = z.object({
     substeps: z.array(
       z.object({ state: z.enum(CORE_STATES), key: z.string().min(1), label: z.string().min(1) }),
     ),
-    closesOn: z.enum(['final_inspection_passed', 'certificate_of_occupancy']),
+    closesOn: z.enum(['final_inspection_passed', 'certificate_of_occupancy', 'staff_closes']),
   }),
 })
 export type ApplicationTypeBody = z.infer<typeof ApplicationTypeBodySchema>

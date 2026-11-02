@@ -30,10 +30,10 @@ describe('nh pack', () => {
     }
   })
 
-  it('notice before-direction requires notice_lead', () => {
+  it('before-direction requires notice_lead or filing_window', () => {
     const base = NH_PACK_MANIFEST.rules.find((r) => r.key === 'nh.bp.regional_impact_comment')
     expect(base?.kind).toBe('clock')
-    const bad = { ...base, direction: 'before', clockType: 'filing_window' }
+    const bad = { ...base, direction: 'before', clockType: 'action_due' }
     expect(PackRuleSchema.safeParse(bad).success).toBe(false)
     const good = { ...base, direction: 'before', clockType: 'notice_lead' }
     expect(PackRuleSchema.safeParse(good).success).toBe(true)
@@ -42,7 +42,15 @@ describe('nh pack', () => {
   it('a manifest naming a mandatory rule that does not exist is rejected', () => {
     const broken = {
       ...NH_PACK_MANIFEST,
-      classifications: [{ key: 'nh.trade_permit', label: 'Trade', mandatoryRuleKeys: ['nope'] }],
+      classifications: [
+        {
+          key: 'nh.trade_permit',
+          label: 'Trade',
+          mandatoryRuleKeys: ['nope'],
+          board: null,
+          abutters: null,
+        },
+      ],
     }
     expect(PackManifestSchema.safeParse(broken).success).toBe(false)
   })

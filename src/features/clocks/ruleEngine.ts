@@ -18,6 +18,7 @@ export function factMatches(when: CaseCondition, facts: ProjectFacts): boolean {
   if (when.fact === 'classification') {
     return facts.classification !== null && when.in.includes(facts.classification)
   }
+  if (when.fact === 'regionalImpact') return facts.regionalImpact === when.is
   return evaluateCondition(
     { field: 'dwellingUnits', op: 'gt', value: when.gt },
     { dwellingUnits: facts.dwellingUnits ?? 0 },
