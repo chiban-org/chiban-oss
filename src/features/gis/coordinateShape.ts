@@ -69,7 +69,9 @@ export function coordinateIssue(geometry: GeoJSON.Geometry): string | null {
       return positionsIssue(coordinates, MIN_LINE_POSITIONS)
     case 'MultiLineString':
       return eachIssue(coordinates, (line) => positionsIssue(line, MIN_LINE_POSITIONS))
-    default:
+    case 'Point':
+    case 'MultiPoint':
+    case 'GeometryCollection':
       return 'Unsupported geometry type'
   }
 }
