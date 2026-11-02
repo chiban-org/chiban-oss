@@ -19,7 +19,8 @@
     "test:integration": "vitest run --project integration --passWithNoTests",
     "gate": "pnpm lint && pnpm typecheck && pnpm test:unit && pnpm test:unit:west && pnpm test:integration",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx --env-file .env src/entrypoints/migrate.ts"
+    "db:migrate": "tsx --env-file .env src/entrypoints/migrate.ts",
+    "staff:create": "tsx --env-file .env scripts/createStaffUser.ts"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",
@@ -27,7 +28,9 @@
     "drizzle-orm": "^0.45.4",
     "lucide-react": "^1.66.0",
     "next": "^16",
+    "otpauth": "^9.5.2",
     "pg": "^8.23.1",
+    "qrcode": "^1.5.4",
     "react": "^19",
     "react-dom": "^19",
     "tailwind-merge": "^3.7.0",
@@ -42,6 +45,7 @@
     "@testing-library/react": "^16.3.3",
     "@types/node": "^26.6.6",
     "@types/pg": "^8.23.1",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",
     "@vitejs/plugin-react": "^6.1.2",
