@@ -10,6 +10,8 @@ import {
 import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { claimProject, sendContractorClaim } from '@/features/contractors/claims'
+import { recordCounterPayment } from '@/features/counter/counterPayment'
+import { recordReturnedCheck, refundEntry } from '@/features/ledger/reversals'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { saveDraftValues, startApplication } from '@/features/portal/drafts'
 import { getPortalApplicationView } from '@/features/portal/portalView'
@@ -17,8 +19,9 @@ import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/appl
 import { appTypeBody } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeUser } from '@/test/factories'
-import { submittedTrade } from '@/test/ledgerFixtures'
+import { lineAllocation, submittedTrade } from '@/test/ledgerFixtures'
 import { staffActor } from '@/test/parcels'
+import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -280,5 +283,80 @@ describe('submit', () => {
     expect((await handle.db.select().from(notificationOutbox)).map((r) => r.event)).toEqual([
       'application_submitted',
     ])
+  })
+})
+
+describe('money history on the portal', () => {
+  beforeEach(async () => {
+    world = await setupPermitWorld(handle.db, { starters: ['nh.starter.electrical'] })
+  })
+
+  async function payByCheck(trade: Awaited<ReturnType<typeof submittedTrade>>) {
+    const paid = await recordCounterPayment(
+      handle.db,
+      world.staff,
+      {
+        method: 'check',
+        amountCents: 4500,
+        checkNumber: '1048',
+        payerName: 'Demo electrician',
+        allocations: [lineAllocation(trade, 4500)],
+      },
+      signal,
+    )
+    if (!paid.ok) throw new Error(paid.error)
+    return paid.value
+  }
+
+  async function historyOf(applicationId: string) {
+    const view = await getPortalApplicationView(handle.db, world.applicant, applicationId, signal)
+    if (!view.ok) throw new Error('view')
+    return view.value
+  }
+
+  it('a returned check shows next to the payment it reverses, so the balance due is explained', async () => {
+    const trade = await submittedTrade(handle.db, world)
+    const paid = await payByCheck(trade)
+    const returned = await recordReturnedCheck(
+      handle.db,
+      await staffActor(handle.db, 'finance'),
+      {
+        entryId: paid.entryId,
+        reason: 'Insufficient funds notice from the bank',
+        returnedOn: '2027-03-05' as CivilDate,
+      },
+      signal,
+    )
+    if (!returned.ok) throw new Error(String(returned.error))
+    const view = await historyOf(trade.applicationId)
+    expect(view.fees.dueCents).toBe(4500)
+    expect(view.history.map((h) => [h.entryType, h.amountCents, h.checkNumber])).toEqual([
+      ['returned_check', -4500, '1048'],
+      ['payment', 4500, '1048'],
+    ])
+    expect(view.history[1]?.receiptNumber).toBe(paid.receiptNumber)
+  })
+
+  it('a refund shows with its own receipt, so the paid amount matches the receipts', async () => {
+    const trade = await submittedTrade(handle.db, world)
+    const paid = await payByCheck(trade)
+    const refunded = await refundEntry(
+      handle.db,
+      await staffActor(handle.db, 'finance'),
+      {
+        entryId: paid.entryId,
+        amountCents: 1000,
+        reason: 'Fixture count reduced after inspection',
+      },
+      signal,
+    )
+    if (!refunded.ok) throw new Error(JSON.stringify(refunded.error))
+    const view = await historyOf(trade.applicationId)
+    expect(view.fees.lines[0]?.paidCents).toBe(3500)
+    expect(view.history.map((h) => [h.entryType, h.amountCents])).toEqual([
+      ['refund', -1000],
+      ['payment', 4500],
+    ])
+    expect(view.history[0]?.receiptNumber).toBe(refunded.value.receiptNumber)
   })
 })

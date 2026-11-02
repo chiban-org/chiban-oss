@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNotNull, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
   applicationConditions,
@@ -57,7 +57,7 @@ export interface PortalApplicationView {
   onlineTotalCents: number
   convenienceCents: number
   canPay: boolean
-  receipts: { receiptId: string; number: string; totalCents: number; date: string }[]
+  history: PortalMoneyEntry[]
   canEdit: boolean
   canUpload: boolean
 }
@@ -83,29 +83,48 @@ async function decisionDue(db: Db, applicationId: string) {
   }
 }
 
-async function receiptsFor(db: Db, actor: Actor, applicationId: string) {
+export interface PortalMoneyEntry {
+  entryId: string
+  entryType: string
+  method: string
+  checkNumber: string | null
+  amountCents: number
+  convenienceCents: number
+  date: string
+  receiptId: string | null
+  receiptNumber: string | null
+}
+
+async function historyFor(
+  db: Db,
+  actor: Actor,
+  applicationId: string,
+): Promise<PortalMoneyEntry[]> {
   const rows = await db
     .select({
-      receiptId: receipts.id,
-      number: receipts.number,
-      totalCents: sql<number>`sum(${ledgerAllocations.amountCents})::int`,
-      date: receipts.businessDate,
-      issuedAt: receipts.issuedAt,
+      entryId: ledgerEntries.id,
+      entryType: ledgerEntries.entryType,
+      method: ledgerEntries.method,
+      checkNumber: ledgerEntries.checkNumber,
+      amountCents: sql<number>`sum(${ledgerAllocations.amountCents})::int`,
+      convenienceCents: sql<
+        number | null
+      >`(sum(${ledgerAllocations.amountCents}) filter (where ${ledgerAllocations.targetKind} = 'convenience_fee'))::int`,
+      date: ledgerEntries.businessDate,
+      postedAt: ledgerEntries.postedAt,
+      receiptId: ledgerEntries.receiptId,
+      receiptNumber: receipts.number,
     })
     .from(ledgerEntries)
     .innerJoin(ledgerAllocations, eq(ledgerAllocations.entryId, ledgerEntries.id))
-    .innerJoin(receipts, eq(receipts.id, ledgerEntries.receiptId))
-    .where(
-      and(
-        eq(ledgerAllocations.applicationId, applicationId),
-        isNotNull(ledgerEntries.receiptId),
-        eq(ledgerEntries.entryType, 'payment'),
-        ledgerEntryVisibleTo(actor),
-      ),
-    )
-    .groupBy(receipts.id)
-    .orderBy(desc(receipts.issuedAt))
-  return rows.map(({ issuedAt: _issuedAt, ...r }) => r)
+    .leftJoin(receipts, eq(receipts.id, ledgerEntries.receiptId))
+    .where(and(eq(ledgerAllocations.applicationId, applicationId), ledgerEntryVisibleTo(actor)))
+    .groupBy(ledgerEntries.id, receipts.number)
+    .orderBy(desc(ledgerEntries.postedAt), desc(ledgerEntries.id))
+  return rows.map(({ postedAt: _postedAt, ...r }) => ({
+    ...r,
+    convenienceCents: r.convenienceCents ?? 0,
+  }))
 }
 
 export async function getPortalApplicationView(
@@ -183,7 +202,7 @@ export async function getPortalApplicationView(
     onlineTotalCents: fees.dueCents + convenienceCents,
     convenienceCents,
     canPay: fees.dueCents > 0 && payer,
-    receipts: await receiptsFor(db, actor, applicationId),
+    history: await historyFor(db, actor, applicationId),
     canEdit: app.state === 'draft' && isParty,
     canUpload: writable && isParty,
   })
