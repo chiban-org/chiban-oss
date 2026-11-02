@@ -1,6 +1,10 @@
+import type { Role } from '@/constants/roles'
 import type { Db, DbOrTx } from '@/db/client'
-import { parcelAliases, parcelIdFormats, parcels } from '@/db/schema'
+import { parcelAliases, parcelIdFormats, parcels, townSettings } from '@/db/schema'
+import { type Actor, loadActor } from '@/features/auth/actor'
+import { seedDefaultGrants } from '@/features/authz/defaultGrants'
 import { normalizeId } from '@/features/parcels/idFormats'
+import { makeUser } from '@/test/factories'
 
 export async function seedFormats(db: DbOrTx): Promise<void> {
   await db
@@ -38,4 +42,24 @@ export async function makeParcel(
     )
   }
   return id
+}
+
+export async function seedTown(db: DbOrTx): Promise<void> {
+  await db
+    .insert(townSettings)
+    .values({ id: 1, name: 'Town of Alder Pond', stateCode: 'NH', timeZone: 'America/New_York' })
+    .onConflictDoNothing()
+}
+
+export async function staffActor(db: Db, role: Role = 'staff'): Promise<Actor> {
+  const userId = await makeUser(db, { role })
+  const actor = await loadActor(db, userId, new AbortController().signal)
+  if (actor === null) throw new Error('actor not loadable')
+  return actor
+}
+
+export async function seedParcelWorld(db: Db): Promise<void> {
+  await seedFormats(db)
+  await seedTown(db)
+  await seedDefaultGrants(db, new AbortController().signal)
 }

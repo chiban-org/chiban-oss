@@ -1,6 +1,7 @@
 export * from './audit'
 export * from './identity'
 export * from './jobRuns'
+export * from './lineage'
 export * from './magicLinks'
 export * from './parcels'
 export * from './sessions'
