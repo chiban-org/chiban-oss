@@ -100,7 +100,7 @@ export default async function SettingsPage() {
               <tr key={`${rule.key}-${rule.version}`} className="border-b align-top">
                 <td className="py-1">
                   {summary.label}
-                  <span className="block text-muted-foreground">{`${summary.key} version ${summary.version}`}</span>
+                  <span className="block text-muted-foreground">{`Version ${summary.version}`}</span>
                 </td>
                 <td>
                   {summary.citation.url === null ? (
