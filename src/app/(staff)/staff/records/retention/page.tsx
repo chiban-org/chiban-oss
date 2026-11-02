@@ -1,9 +1,11 @@
+import type { RecordEventKind } from '@packs/nh/schema'
 import { desc } from 'drizzle-orm'
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { dispositionBatches } from '@/db/schema'
+import type { RetentionStatus } from '@/features/records/computeRetention'
 import { retentionText } from '@/features/records/retentionText'
 import { retentionWorklist, type WorklistState } from '@/features/records/worklist'
 import { mayOpen } from '@/features/staffNav/navItems'
@@ -35,6 +37,25 @@ const EVENT_LABELS = {
     ['septic_replaced_or_removed', 'The septic system was replaced or removed'],
   ],
 } as const
+
+const AUTOMATIC_EVENTS: Partial<Record<RecordEventKind, string>> = {
+  registration_expired: 'Chiban records this when the registration expires.',
+  application_withdrawn: 'Chiban records this when the application is withdrawn.',
+  application_denied: 'Chiban records this when the application is denied.',
+}
+
+function eventChoices(kind: 'case' | 'project', status: RetentionStatus): [string, string][] {
+  const awaiting: readonly string[] = status.state === 'not_yet_triggered' ? status.awaiting : []
+  return EVENT_LABELS[kind].filter(([event]) => awaiting.includes(event)).map(([k, l]) => [k, l])
+}
+
+function automaticNotes(status: RetentionStatus): string[] {
+  if (status.state !== 'not_yet_triggered') return []
+  return status.awaiting.flatMap((event) => {
+    const note = AUTOMATIC_EVENTS[event]
+    return note === undefined ? [] : [note]
+  })
+}
 
 function stateOf(value: string | undefined): WorklistState {
   return STATES.find(([s]) => s === value)?.[0] ?? 'eligible'
@@ -100,14 +121,23 @@ export default async function RetentionPage({
                   ? ` On ${row.holds} legal ${row.holds === 1 ? 'hold' : 'holds'}.`
                   : ''}
               </p>
-              {state === 'awaiting_event' && row.eventTarget !== null ? (
+              {state === 'awaiting_event'
+                ? automaticNotes(row.status).map((note) => (
+                    <p key={note} className="m-0">
+                      {note}
+                    </p>
+                  ))
+                : null}
+              {state === 'awaiting_event' &&
+              row.eventTarget !== null &&
+              eventChoices(row.eventTarget.kind, row.status).length > 0 ? (
                 <ActionForm action={recordRetentionEventAction} submitLabel="Record event">
                   <input type="hidden" name="targetKind" value={row.eventTarget.kind} />
                   <input type="hidden" name="targetId" value={row.eventTarget.id} />
                   <SelectField
                     label="What happened"
                     name="kind"
-                    options={EVENT_LABELS[row.eventTarget.kind]}
+                    options={eventChoices(row.eventTarget.kind, row.status)}
                   />
                   <TextField label="Date it happened" name="occurredOn" type="date" required />
                 </ActionForm>

@@ -165,6 +165,15 @@ describe('records screens with the demo seed', () => {
     expect(waiting).toContain('The appeal period ended')
   })
 
+  it('a registration waiting to expire offers no unrelated events and says Chiban records the expiry', async () => {
+    await actAs('records')
+    const markup = await html(RetentionPage(search({ state: 'awaiting_event' })))
+    const row = markup.split('<li').find((part) => part.includes('AR-2026-0001')) ?? ''
+    expect(row).not.toBe('')
+    expect(row).not.toContain('The building was removed')
+    expect(visibleText(row)).toContain('Chiban records this when the registration expires.')
+  })
+
   it('the census screen shows both sections for the month of the seeded permits', async () => {
     await actAs('staff')
     const [first] = await handle.db.select({ issuedOn: applications.issuedOn }).from(applications)
