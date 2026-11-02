@@ -1,6 +1,7 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
 import { SelectField } from '@/components/staff/fields'
@@ -43,6 +44,7 @@ function describe(body: UploadBody): string {
 }
 
 export function ImportUploadForm({ layerKey, primary }: ImportUploadFormProps) {
+  const router = useRouter()
   const [pending, setPending] = useState(false)
   const [runId, setRunId] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
@@ -60,6 +62,7 @@ export function ImportUploadForm({ layerKey, primary }: ImportUploadFormProps) {
       return setError('The upload could not be sent. Check your connection and try again.')
     if (result.value.runId === undefined) return setError(describe(result.value))
     setRunId(result.value.runId)
+    router.refresh()
   }
 
   return (

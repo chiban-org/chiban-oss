@@ -8,6 +8,8 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { AXISGIS_ADAPTER_STATUS, AXISGIS_STUB_NOTICE } from '@/features/gis/adapters/axisGis'
 import { LAYER_KEYS } from '@/features/gis/exceptionKinds'
 import { getLayerStatus } from '@/features/gis/layerStatus'
+import { getTownSettings } from '@/features/town/settings'
+import { formatInstant } from '@/lib/formatDate'
 import { createContext } from '@/server/trpc/context'
 import { runLayerRefreshAction, updateLayerSettingsAction } from './actions'
 
@@ -26,6 +28,7 @@ const ADAPTER_OPTIONS = [
 ] as const
 
 const adapterStatus: string = AXISGIS_ADAPTER_STATUS
+const DEFAULT_ZONE = 'America/New_York'
 
 export default async function StaffImportsPage() {
   const ctx = await createContext()
@@ -38,6 +41,9 @@ export default async function StaffImportsPage() {
   const layers = await ctx.db.select().from(gisLayers)
   const runs = await ctx.db.select().from(importRuns).orderBy(desc(importRuns.startedAt)).limit(20)
   const now = new Date()
+  const town = await getTownSettings(ctx.db, ctx.signal)
+  const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
+  const when = (iso: string) => formatInstant(new Date(iso), zone)
   const statuses = await Promise.all(
     LAYER_KEYS.map((k) => getLayerStatus(ctx.db, k, now, ctx.signal)),
   )
@@ -61,8 +67,8 @@ export default async function StaffImportsPage() {
             </h2>
             <p>
               {STATE_WORDS[status.state]}
-              {status.lastSuccessAt === null ? '' : `. Last success ${status.lastSuccessAt}`}
-              {status.lastFailureAt === null ? '' : `. Last failure ${status.lastFailureAt}`}
+              {status.lastSuccessAt === null ? '' : `. Last success ${when(status.lastSuccessAt)}`}
+              {status.lastFailureAt === null ? '' : `. Last failure ${when(status.lastFailureAt)}`}
             </p>
             {layer.lastError === null || status.state !== 'import_failed' ? null : (
               <p role="alert">{`Error: ${layer.lastError}`}</p>
@@ -148,7 +154,7 @@ export default async function StaffImportsPage() {
           <tbody>
             {runs.map((run) => (
               <tr key={run.id} className="border-b">
-                <td className="py-2">{run.startedAt.toISOString()}</td>
+                <td className="py-2">{formatInstant(run.startedAt, zone)}</td>
                 <td>{run.layerKey}</td>
                 <td>{run.adapter}</td>
                 <td>{run.status}</td>
