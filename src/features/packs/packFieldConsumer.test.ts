@@ -5,6 +5,7 @@ import {
   GateRuleSchema,
   ProceedingClassificationSchema,
   RecordRuleSchema,
+  RecordSeriesSchema,
   TownSettingRuleSchema,
 } from '@packs/nh/schema'
 import { describe, expect, it } from 'vitest'
@@ -19,6 +20,7 @@ const KIND_SCHEMAS = {
   town_setting: TownSettingRuleSchema,
   classification: ProceedingClassificationSchema,
   code_edition: CodeEditionEntrySchema,
+  record_series: RecordSeriesSchema,
 } as const
 
 const DISCRIMINATOR = 'kind'

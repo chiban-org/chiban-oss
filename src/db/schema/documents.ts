@@ -75,6 +75,7 @@ export const uploadIntents = pgTable('upload_intents', {
   contentType: text('content_type').notNull(),
   sizeBytes: bigint('size_bytes', { mode: 'number' }).notNull(),
   tempKey: text('temp_key').notNull(),
+  seriesKey: text('series_key'),
   expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
   finalizedAt: timestamp('finalized_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

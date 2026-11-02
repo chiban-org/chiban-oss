@@ -55,7 +55,7 @@ describe('upload intents', () => {
       world.staff,
       { kind: 'parcel', id: world.parcelId },
       pdfBytes('parcel file'),
-      { title: 'Survey' },
+      { title: 'Survey', seriesKey: 'nh.rs.blueprints_architectural' },
     )
     const [doc] = await handle.db.select().from(documents).where(eq(documents.id, up.documentId))
     expect(doc?.isPublic).toBe(true)

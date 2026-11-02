@@ -17,6 +17,7 @@ export interface UploadOptions {
   filename?: string
   contentType?: AllowedType
   now?: Date
+  seriesKey?: string
 }
 
 export async function uploadAs(
@@ -38,6 +39,7 @@ export async function uploadAs(
       filename: options.filename ?? 'site-plan.pdf',
       contentType,
       sizeBytes: bytes.length,
+      ...(options.seriesKey === undefined ? {} : { seriesKey: options.seriesKey }),
     },
     signal,
   )

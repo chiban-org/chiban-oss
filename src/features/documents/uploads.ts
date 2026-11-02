@@ -11,6 +11,7 @@ import { attachDocument } from '@/features/documents/attach'
 import type { RecordRef } from '@/features/documents/types'
 import { ingestTempObject } from '@/features/files/ingest'
 import { type AllowedType, isAllowedType } from '@/features/files/sniff'
+import { findSeries } from '@/features/records/series'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
 
@@ -24,6 +25,7 @@ export interface UploadIntentInput {
   filename: string
   contentType: string
   sizeBytes: number
+  seriesKey?: string
 }
 
 async function applicationProject(db: DbOrTx, applicationId: string) {
@@ -85,7 +87,7 @@ export async function createUploadIntent(
 ): Promise<
   Result<
     { intentId: string; url: string; headers: Record<string, string> },
-    'forbidden' | 'too_large' | 'type_not_allowed'
+    'forbidden' | 'too_large' | 'type_not_allowed' | 'series_required' | 'unknown_series'
   >
 > {
   signal.throwIfAborted()
@@ -93,6 +95,10 @@ export async function createUploadIntent(
   if (!isAllowedType(input.contentType)) return err('type_not_allowed')
   if (input.sizeBytes > env.MAX_UPLOAD_BYTES) return err('too_large')
   if (input.sizeBytes < 1) return err('too_large')
+  if (input.target.kind === 'parcel') {
+    if (input.seriesKey === undefined) return err('series_required')
+    if (findSeries(input.seriesKey) === null) return err('unknown_series')
+  }
   const tempKey = `uploads/tmp/${randomUUID()}`
   const [intent] = await db
     .insert(uploadIntents)
@@ -105,6 +111,7 @@ export async function createUploadIntent(
       contentType: input.contentType,
       sizeBytes: input.sizeBytes,
       tempKey,
+      seriesKey: input.seriesKey ?? null,
       expiresAt: new Date(now.getTime() + INTENT_MINUTES * MINUTE_MS),
     })
     .returning({ id: uploadIntents.id })
@@ -196,6 +203,7 @@ export async function finalizeUpload(
           target,
           title: intent.title,
           docKind: target.kind === 'parcel' ? 'parcel_file' : 'attachment',
+          ...(intent.seriesKey === null ? {} : { seriesKey: intent.seriesKey }),
           file: { sha256, filename: intent.filename, contentType: intent.contentType },
         },
         signal,

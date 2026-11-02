@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import { applications, documents, documentVersions, projects } from '@/db/schema'
+import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import {
   AUDIENCES,
@@ -10,6 +11,8 @@ import {
   type RecordRef,
 } from '@/features/documents/types'
 import { linkRecordToParcel } from '@/features/parcels/recordLinks'
+import { assignSeries } from '@/features/records/assignments'
+import { defaultSeriesKey } from '@/features/records/series'
 
 export interface AttachInput {
   target: RecordRef
@@ -18,6 +21,7 @@ export interface AttachInput {
   file: { sha256: string; filename: string; contentType: string }
   audiences?: Audience[]
   isPublic?: boolean
+  seriesKey?: string
 }
 
 export function defaultsFor(kind: RecordRef['kind']): { audiences: Audience[]; isPublic: boolean } {
@@ -85,6 +89,7 @@ export async function attachDocument(
   if (parcelId !== null) {
     await linkRecordToParcel(tx, { recordKind: 'document', recordId: documentId, parcelId }, signal)
   }
+  await assignInitialSeries(tx, actor, documentId, input, signal)
   await writeAudit(
     tx,
     {
@@ -97,4 +102,31 @@ export async function attachDocument(
     signal,
   )
   return { documentId, versionId: version?.id ?? '' }
+}
+
+export async function defaultSeriesForApplication(
+  tx: Tx,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<string | null> {
+  const app = await loadApplicationContext(tx, applicationId, signal)
+  const classification = app?.typeBody.classification
+  return classification === undefined ? null : defaultSeriesKey(classification)
+}
+
+async function assignInitialSeries(
+  tx: Tx,
+  actor: DocumentActor,
+  documentId: string,
+  input: AttachInput,
+  signal: AbortSignal,
+): Promise<void> {
+  const ref = { kind: 'document', id: documentId } as const
+  if (input.seriesKey !== undefined) {
+    await assignSeries(tx, ref, input.seriesKey, 'staff', actor, signal)
+    return
+  }
+  if (input.target.kind !== 'application') return
+  const key = await defaultSeriesForApplication(tx, input.target.id, signal)
+  if (key !== null) await assignSeries(tx, ref, key, 'default', actor, signal)
 }

@@ -165,6 +165,41 @@ export const CodeEditionEntrySchema = z.object({
 })
 export type CodeEditionEntry = z.infer<typeof CodeEditionEntrySchema>
 
+export const RecordEventKindSchema = z.enum([
+  'application_withdrawn',
+  'application_denied',
+  'building_removed',
+])
+export type RecordEventKind = z.infer<typeof RecordEventKindSchema>
+
+export const RetentionSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('permanent') }),
+  z.object({ kind: z.literal('duration'), years: z.number().int().positive() }),
+  z.object({
+    kind: z.literal('event'),
+    events: z.array(RecordEventKindSchema).min(1),
+    plusYears: z.number().int().min(0),
+  }),
+])
+export type Retention = z.infer<typeof RetentionSchema>
+
+export const RecordSeriesSchema = z.object({
+  key: z.string().min(1),
+  version: z.number().int().positive(),
+  label: z.string().min(1),
+  citation: z.object({ label: z.string().min(1), url: z.string().url() }),
+  retention: RetentionSchema,
+  preservation: z.enum(['pdfa', 'original']),
+  outcomes: z
+    .object({
+      withdrawn: z.string().min(1).optional(),
+      denied: z.string().min(1).optional(),
+      expired: z.string().min(1).optional(),
+    })
+    .optional(),
+})
+export type RecordSeries = z.infer<typeof RecordSeriesSchema>
+
 export const PackManifestSchema = z
   .object({
     id: z.string().min(1),
@@ -172,6 +207,8 @@ export const PackManifestSchema = z
     rules: z.array(PackRuleSchema).min(1),
     classifications: z.array(ProceedingClassificationSchema).min(1),
     codeEditions: z.array(CodeEditionEntrySchema).min(1),
+    recordSeries: z.array(RecordSeriesSchema).min(1),
+    recordSeriesDefaults: z.object({ byClassification: z.record(z.string(), z.string()) }),
   })
   .superRefine((m, ctx) => {
     const keys = new Set(m.rules.map((r) => r.key))

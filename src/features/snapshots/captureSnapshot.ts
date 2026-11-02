@@ -11,9 +11,10 @@ import {
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
-import { attachDocument } from '@/features/documents/attach'
+import { attachDocument, defaultSeriesForApplication } from '@/features/documents/attach'
 import { sha256Hex, storeGeneratedBytes } from '@/features/files/ingest'
 import type { FormBody } from '@/features/forms/formSchema'
+import { assignSeries } from '@/features/records/assignments'
 import { canonicalJson } from '@/features/snapshots/canonicalJson'
 import {
   type ApplicationSnapshotBody,
@@ -146,5 +147,16 @@ export async function captureSnapshot(
     contentType: 'application/pdf',
     createdBy: actor.userId,
   })
+  const seriesKey = await defaultSeriesForApplication(tx, applicationId, signal)
+  if (seriesKey !== null) {
+    await assignSeries(
+      tx,
+      { kind: 'application_snapshot', id: snapshot?.id ?? '' },
+      seriesKey,
+      'default',
+      actor,
+      signal,
+    )
+  }
   return { snapshotId: snapshot?.id ?? '', documentId: attached.documentId }
 }

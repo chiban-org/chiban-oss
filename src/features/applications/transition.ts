@@ -17,6 +17,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import { hasCapability } from '@/features/authz/capabilities'
 import { evaluateGates, type GateResult } from '@/features/gates/evaluateGates'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
+import { applyOutcomeSeries } from '@/features/records/assignments'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -100,6 +101,9 @@ export async function applyTransition(
     })
     .where(eq(applications.id, input.applicationId))
   await runTransitionEffects(tx, app, input.to, today, signal)
+  if (input.to === 'withdrawn' || input.to === 'denied' || input.to === 'expired') {
+    await applyOutcomeSeries(tx, input.applicationId, input.to, today, signal)
+  }
   await writeAudit(
     tx,
     {

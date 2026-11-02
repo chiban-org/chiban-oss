@@ -253,6 +253,13 @@
       "when": 1793599456933,
       "tag": "0035_opposite_hardball",
       "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1793599691399,
+      "tag": "0036_ordinary_kid_colt",
+      "breakpoints": true
     }
   ]
 }
