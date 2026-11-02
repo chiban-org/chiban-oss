@@ -13,7 +13,7 @@ describe('toResponse', () => {
     expect(body).not.toContain('"error"')
   })
 
-  it('sends a browser navigation an HTML 404 page', async () => {
+  it('sends a browser navigation an HTML 404 page', () => {
     const res = toResponse(NOT_FOUND, BROWSER_ACCEPT)
     expect(res.status).toBe(404)
     expect(res.headers.get('content-type')).toContain('text/html')
