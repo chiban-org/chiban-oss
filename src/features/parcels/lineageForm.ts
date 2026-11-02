@@ -2,7 +2,9 @@ import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db } from '@/db/client'
 import { parcelIdFormats } from '@/db/schema'
+import { transactionResult } from '@/db/transactionResult'
 import type { Actor } from '@/features/auth/actor'
+import { checkIdFormat } from '@/features/parcels/idFormats'
 import { createParcelPlaceholder, recordLineageEvent } from '@/features/parcels/lineage'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import { type CivilDate, parseCivilDate } from '@/types/civilDate'
@@ -28,34 +30,47 @@ function splitIds(raw: string): string[] {
 
 export type LineageFormError =
   | { code: string }
-  | { code: 'parent_not_found' | 'ambiguous_id'; id: string }
+  | { code: 'parent_not_found' | 'ambiguous_id' | 'id_format_mismatch'; id: string }
 
-async function resolveAll(
+async function resolveParents(
   db: Db,
-  actor: Actor,
   raw: string,
-  displayKey: string | null,
   signal: AbortSignal,
 ): Promise<Result<string[], LineageFormError>> {
   const out: string[] = []
   for (const id of splitIds(raw)) {
     const found = await resolveParcelId(db, { value: id }, signal)
+    if (found.ok) out.push(found.value.parcelId)
+    else if (found.error === 'not_found') return err({ code: 'parent_not_found', id })
+    else return err({ code: 'ambiguous_id', id })
+  }
+  return ok(out)
+}
+
+interface ChildPlan {
+  existing: string[]
+  toCreate: string[]
+}
+
+async function planChildren(
+  db: Db,
+  raw: string,
+  display: typeof parcelIdFormats.$inferSelect,
+  signal: AbortSignal,
+): Promise<Result<ChildPlan, LineageFormError>> {
+  const plan: ChildPlan = { existing: [], toCreate: [] }
+  for (const id of splitIds(raw)) {
+    const found = await resolveParcelId(db, { value: id }, signal)
     if (found.ok) {
-      out.push(found.value.parcelId)
+      plan.existing.push(found.value.parcelId)
       continue
     }
     if (found.error !== 'not_found') return err({ code: 'ambiguous_id', id })
-    if (displayKey === null) return err({ code: 'parent_not_found', id })
-    const created = await createParcelPlaceholder(
-      db,
-      actor,
-      { aliases: [{ format: displayKey, value: id }] },
-      signal,
-    )
-    if (!created.ok) return err({ code: created.error })
-    out.push(created.value.parcelId)
+    const format = { key: display.key, kind: display.kind, width: display.width }
+    if (!checkIdFormat(format, id).ok) return err({ code: 'id_format_mismatch', id })
+    plan.toCreate.push(id)
   }
-  return ok(out)
+  return ok(plan)
 }
 
 export async function submitLineage(
@@ -74,24 +89,37 @@ export async function submitLineage(
     .from(parcelIdFormats)
     .where(eq(parcelIdFormats.isDisplay, true))
   if (display === undefined) return err({ code: 'unknown_format' })
-  const parents = await resolveAll(db, actor, parsed.data.parents, null, signal)
+  const parents = await resolveParents(db, parsed.data.parents, signal)
   if (!parents.ok) return parents
-  const children = await resolveAll(db, actor, parsed.data.children, display.key, signal)
-  if (!children.ok) return children
+  const plan = await planChildren(db, parsed.data.children, display, signal)
+  if (!plan.ok) return plan
   const reference = parsed.data.reference?.trim()
-  const event = await recordLineageEvent(
-    db,
-    actor,
-    {
-      kind: parsed.data.kind,
-      effectiveDate: date.value,
-      effectiveBasis: parsed.data.effectiveBasis,
-      ...(reference === undefined || reference === '' ? {} : { reference }),
-      parents: parents.value,
-      children: children.value,
-    },
-    signal,
-    now,
-  )
-  return event.ok ? ok(event.value) : err({ code: event.error })
+  return await transactionResult(db, async (tx) => {
+    const children = [...plan.value.existing]
+    for (const id of plan.value.toCreate) {
+      const created = await createParcelPlaceholder(
+        tx,
+        actor,
+        { aliases: [{ format: display.key, value: id }] },
+        signal,
+      )
+      if (!created.ok) return err<LineageFormError>({ code: created.error })
+      children.push(created.value.parcelId)
+    }
+    const event = await recordLineageEvent(
+      tx,
+      actor,
+      {
+        kind: parsed.data.kind,
+        effectiveDate: date.value,
+        effectiveBasis: parsed.data.effectiveBasis,
+        ...(reference === undefined || reference === '' ? {} : { reference }),
+        parents: parents.value,
+        children,
+      },
+      signal,
+      now,
+    )
+    return event.ok ? ok(event.value) : err<LineageFormError>({ code: event.error })
+  })
 }

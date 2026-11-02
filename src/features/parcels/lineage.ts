@@ -1,5 +1,5 @@
 import { asc, eq, inArray } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { Db, DbOrTx } from '@/db/client'
 import { parcelLineageEvents, parcelLineageLinks, parcels } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -23,7 +23,7 @@ export type LineageError =
   | 'unknown_parcel'
 
 export async function recordLineageEvent(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   input: LineageInput,
   signal: AbortSignal,
@@ -104,7 +104,7 @@ export async function recordLineageEvent(
 }
 
 export async function createParcelPlaceholder(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   input: { aliases: { format: string; value: string }[] },
   signal: AbortSignal,
