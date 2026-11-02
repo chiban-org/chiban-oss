@@ -1,4 +1,4 @@
-import nodemailer from 'nodemailer'
+import nodemailer, { type Transporter } from 'nodemailer'
 import { env } from '@/config/env'
 import { err, ok, type Result } from '@/types/result'
 
@@ -7,6 +7,7 @@ export interface MailMessage {
   subject: string
   text: string
   html: string
+  icalEvent?: { method: 'REQUEST' | 'CANCEL'; filename: string; content: string }
 }
 
 export interface MailTransport {
@@ -14,7 +15,10 @@ export interface MailTransport {
 }
 
 export function createSmtpTransport(smtpUrl: string, from: string): MailTransport {
-  const transporter = nodemailer.createTransport(smtpUrl)
+  return createTransportFrom(nodemailer.createTransport(smtpUrl), from)
+}
+
+export function createTransportFrom(transporter: Transporter, from: string): MailTransport {
   return {
     async send(message, signal) {
       signal.throwIfAborted()
