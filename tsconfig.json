@@ -17,7 +17,7 @@
     "allowJs": true,
     "types": ["node"],
     "plugins": [{ "name": "next" }],
-    "paths": { "@/*": ["./src/*"] }
+    "paths": { "@/*": ["./src/*"], "@packs/*": ["./packs/*"] }
   },
   "include": [
     "next-env.d.ts",
