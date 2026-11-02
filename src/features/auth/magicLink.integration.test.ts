@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { magicLinks, userRoles, users } from '@/db/schema'
+import { createStaffUser } from '@/features/auth/createStaffUser'
 import {
   consumeMagicLink,
   requestMagicLink,
@@ -43,12 +44,19 @@ async function userIdOf(email: string): Promise<string> {
   return user?.id ?? ''
 }
 
+function linksFor(email: string) {
+  return handle.db.select().from(magicLinks).where(eq(magicLinks.email, email))
+}
+
 describe('requestMagicLink', () => {
-  it('creates a public applicant on first use and mails one link', async () => {
+  it('mails one link and creates no user until the link is used', async () => {
     const token = await requestFor('First@alderpond.example')
     expect(token.length).toBeGreaterThanOrEqual(43)
     expect(mail.sent).toHaveLength(1)
     expect(mail.sent[0]?.to).toBe('first@alderpond.example')
+    expect(await userIdOf('first@alderpond.example')).toBe('')
+    const consumed = await consumeMagicLink(handle.db, token, signal)
+    expect(consumed.ok).toBe(true)
     const [user] = await handle.db
       .select()
       .from(users)
@@ -59,6 +67,47 @@ describe('requestMagicLink', () => {
       .from(userRoles)
       .where(eq(userRoles.userId, user?.id ?? ''))
     expect(roles.map((r) => r.role)).toEqual(['applicant'])
+  })
+
+  it('requesting a link for an unused address creates no users row, and staff create for it succeeds afterwards', async () => {
+    await requestFor('reserved@alderpond.example')
+    expect(await userIdOf('reserved@alderpond.example')).toBe('')
+    const created = await createStaffUser(
+      handle.db,
+      {
+        email: 'reserved@alderpond.example',
+        displayName: 'Reserved Clerk',
+        role: 'staff',
+        password: 'a-long-staff-password',
+      },
+      signal,
+    )
+    expect(created.ok).toBe(true)
+  })
+
+  it('a link requested before the address became a staff account no longer signs in', async () => {
+    const token = await requestFor('late-staff@alderpond.example')
+    await makeUser(handle.db, { email: 'late-staff@alderpond.example', role: 'staff' })
+    expect(await consumeMagicLink(handle.db, token, signal)).toEqual({
+      ok: false,
+      error: 'invalid',
+    })
+  })
+
+  it('two links consumed at once for a new address create one user', async () => {
+    const first = await requestFor('twin@alderpond.example')
+    resetMagicLinkLimiter()
+    const second = await requestFor('twin@alderpond.example')
+    const results = await Promise.all([
+      consumeMagicLink(handle.db, first, signal),
+      consumeMagicLink(handle.db, second, signal),
+    ])
+    expect(results.every((r) => r.ok)).toBe(true)
+    const rows = await handle.db
+      .select()
+      .from(users)
+      .where(eq(users.email, 'twin@alderpond.example'))
+    expect(rows).toHaveLength(1)
   })
 
   it('reports success and sends nothing for a staff email', async () => {
@@ -116,11 +165,10 @@ describe('consumeMagicLink', () => {
 
   it('rejects an expired token', async () => {
     const token = await requestFor('late@alderpond.example')
-    const userId = await userIdOf('late@alderpond.example')
     await handle.db
       .update(magicLinks)
       .set({ expiresAt: new Date(Date.now() - 1000) })
-      .where(eq(magicLinks.userId, userId))
+      .where(eq(magicLinks.email, 'late@alderpond.example'))
     expect(await consumeMagicLink(handle.db, token, signal)).toEqual({
       ok: false,
       error: 'invalid',
@@ -135,6 +183,7 @@ describe('consumeMagicLink', () => {
   })
 
   it('rejects a token after the user is deactivated', async () => {
+    await makeUser(handle.db, { email: 'off@alderpond.example', role: 'applicant' })
     const token = await requestFor('off@alderpond.example')
     await handle.db
       .update(users)
@@ -148,8 +197,7 @@ describe('consumeMagicLink', () => {
 
   it('expires links after 15 minutes', async () => {
     await requestFor('window@alderpond.example')
-    const userId = await userIdOf('window@alderpond.example')
-    const [row] = await handle.db.select().from(magicLinks).where(eq(magicLinks.userId, userId))
+    const [row] = await linksFor('window@alderpond.example')
     const minutes = ((row?.expiresAt.getTime() ?? 0) - (row?.createdAt.getTime() ?? 0)) / 60_000
     expect(Math.round(minutes)).toBe(15)
   })

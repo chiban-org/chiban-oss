@@ -22,19 +22,28 @@ function hashToken(token: string): string {
   return createHash('sha256').update(token).digest('base64url')
 }
 
-async function findOrCreatePublicUser(db: DbOrTx, email: string): Promise<{ id: string } | null> {
+type Eligibility = { eligible: true; userId: string | null } | { eligible: false }
+
+async function eligibilityOf(db: DbOrTx, email: string): Promise<Eligibility> {
   const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1)
-  if (existing !== undefined) {
-    return existing.kind === 'public' && existing.isActive ? { id: existing.id } : null
-  }
+  if (existing === undefined) return { eligible: true, userId: null }
+  return existing.kind === 'public' && existing.isActive
+    ? { eligible: true, userId: existing.id }
+    : { eligible: false }
+}
+
+async function findOrCreatePublicUser(db: DbOrTx, email: string): Promise<{ id: string } | null> {
   const [created] = await db
     .insert(users)
     .values({ email, displayName: email.split('@')[0] ?? email, kind: 'public' })
     .onConflictDoNothing()
     .returning({ id: users.id })
-  if (created === undefined) return null
-  await db.insert(userRoles).values({ userId: created.id, role: 'applicant' })
-  return created
+  if (created !== undefined) {
+    await db.insert(userRoles).values({ userId: created.id, role: 'applicant' })
+    return created
+  }
+  const [existing] = await db.select().from(users).where(eq(users.email, email)).limit(1)
+  return existing?.kind === 'public' && existing.isActive ? { id: existing.id } : null
 }
 
 export async function requestMagicLink(
@@ -48,12 +57,13 @@ export async function requestMagicLink(
   if (limiter.isLimited(email)) return err('rate_limited')
   limiter.recordFailure(email)
 
-  const user = await findOrCreatePublicUser(db, email)
-  if (user === null) return ok(undefined)
+  const eligibility = await eligibilityOf(db, email)
+  if (!eligibility.eligible) return ok(undefined)
 
   const token = randomBytes(32).toString('base64url')
   await db.insert(magicLinks).values({
-    userId: user.id,
+    email,
+    userId: eligibility.userId,
     tokenHash: hashToken(token),
     expiresAt: new Date(Date.now() + LINK_TTL_MS),
   })
@@ -84,14 +94,15 @@ export async function consumeMagicLink(
         eq(magicLinks.tokenHash, hashToken(token)),
         isNull(magicLinks.consumedAt),
         gt(magicLinks.expiresAt, sql`now()`),
-        sql`exists (select 1 from ${users} where ${users.id} = ${magicLinks.userId} and ${users.isActive} and ${users.kind} = 'public')`,
       ),
     )
-    .returning({ userId: magicLinks.userId })
+    .returning({ email: magicLinks.email })
   if (claimed === undefined) return err('invalid')
-  const session = await createSession(db, claimed.userId, signal)
+  const user = await findOrCreatePublicUser(db, claimed.email)
+  if (user === null) return err('invalid')
+  const session = await createSession(db, user.id, signal)
   if (!session.ok) return err('invalid')
-  return ok({ sid: session.value.sid, userId: claimed.userId })
+  return ok({ sid: session.value.sid, userId: user.id })
 }
 
 export async function peekMagicLink(
@@ -101,17 +112,16 @@ export async function peekMagicLink(
 ): Promise<{ email: string } | null> {
   signal.throwIfAborted()
   const [row] = await db
-    .select({ email: users.email })
+    .select({ email: magicLinks.email })
     .from(magicLinks)
-    .innerJoin(users, eq(users.id, magicLinks.userId))
     .where(
       and(
         eq(magicLinks.tokenHash, hashToken(token)),
         isNull(magicLinks.consumedAt),
         gt(magicLinks.expiresAt, sql`now()`),
-        eq(users.isActive, true),
-        eq(users.kind, 'public'),
       ),
     )
-  return row === undefined ? null : { email: row.email }
+  if (row === undefined) return null
+  const eligibility = await eligibilityOf(db, row.email)
+  return eligibility.eligible ? { email: row.email } : null
 }
