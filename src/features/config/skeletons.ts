@@ -39,6 +39,13 @@ export function skeletonBody(kind: ConfigKind, key: string): unknown {
         adoptedOn: '2027-01-01',
         reviewBoardConfirmedOn: null,
       }
+    case 'payment_settings':
+      return {
+        key: 'default',
+        convenienceFee: { basisPoints: 0, fixedCents: 0, appliesTo: [] },
+        receiptFooter: '',
+        checksPayableTo: 'the Town',
+      }
     case 'application_type':
       return {
         key,

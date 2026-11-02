@@ -23,7 +23,7 @@ const secretKeys = z
       ),
   )
 
-const envSchema = z
+export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
     PORT: z.coerce.number().int().positive().default(3000),
@@ -33,12 +33,18 @@ const envSchema = z
     SMTP_URL: z.string().min(1).default('smtp://localhost:1025'),
     MAIL_FROM: z.string().min(3).default('Town of Alder Pond <noreply@alderpond.example>'),
     ENABLE_DEV_SIGN_IN: boolFromString.default(false),
+    ENABLE_SIMULATED_PAYMENTS: boolFromString.default(false),
+    STRIPE_API_BASE: z.url().optional(),
     CHIBAN_SECRET_KEYS: secretKeys,
     CHIBAN_ACTIVE_KEY_ID: z.string().regex(KEY_ID),
   })
   .refine((v) => v.CHIBAN_ACTIVE_KEY_ID in v.CHIBAN_SECRET_KEYS, {
     path: ['CHIBAN_ACTIVE_KEY_ID'],
     message: 'must name a key present in CHIBAN_SECRET_KEYS',
+  })
+  .refine((v) => v.NODE_ENV !== 'production' || v.STRIPE_API_BASE === undefined, {
+    path: ['STRIPE_API_BASE'],
+    message: 'must not be set in production',
   }) satisfies z.ZodType
 
 export type Env = z.infer<typeof envSchema>

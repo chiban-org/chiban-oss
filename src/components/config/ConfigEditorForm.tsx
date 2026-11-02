@@ -5,6 +5,7 @@ import { CsrfField } from '@/components/CsrfField'
 import { ApplicationTypeEditor } from '@/components/config/ApplicationTypeEditor'
 import { FeeLinesEditor } from '@/components/config/FeeLinesEditor'
 import { FormFieldsEditor } from '@/components/config/FormFieldsEditor'
+import { PaymentSettingsEditor } from '@/components/config/PaymentSettingsEditor'
 import { FieldError, type FieldErrors } from '@/components/config/primitives'
 import {
   ChecklistEditor,
@@ -25,6 +26,7 @@ import type {
 import type { FeeScheduleBody } from '@/features/fees/feeSchema'
 import type { FormBody } from '@/features/forms/formSchema'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
+import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
 import type { TemplateBody } from '@/features/templates/templateSchema'
 import type { ActionResult } from '@/server/actionRunner'
 
@@ -71,6 +73,8 @@ function Body({
       )
     case 'inspection_checklist':
       return <ChecklistEditor body={body as ChecklistBody} onChange={setBody} errors={errors} />
+    case 'payment_settings':
+      return <PaymentSettingsEditor body={body as PaymentSettingsBody} onChange={setBody} />
     case 'local_code_amendment':
       return <LocalAmendmentEditor body={body as LocalCodeAmendmentBody} onChange={setBody} />
     case 'town_rule_setting': {

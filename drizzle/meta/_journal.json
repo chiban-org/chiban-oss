@@ -183,6 +183,13 @@
       "when": 1793591880882,
       "tag": "0025_pretty_masque",
       "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1793592024048,
+      "tag": "0026_true_bloodaxe",
+      "breakpoints": true
     }
   ]
 }

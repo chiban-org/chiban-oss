@@ -9,4 +9,5 @@ export const KIND_LABELS: Record<ConfigKind, string> = {
   inspection_checklist: 'Inspection checklists',
   town_rule_setting: 'Town rule settings',
   local_code_amendment: 'Local code amendments',
+  payment_settings: 'Payment settings',
 }
