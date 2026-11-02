@@ -2,6 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { adoptStarter } from '@/features/config/adoptStarter'
+import { applyStarterPaths } from '@/features/config/applyStarterPaths'
 import { type ConfigIssue, type ConfigKind, isConfigKind } from '@/features/config/kinds'
 import { publishConfig, rollbackConfig } from '@/features/config/publish'
 import { fieldErrorsFor } from '@/features/config/publishErrors'
@@ -109,4 +110,39 @@ export async function startDraftAction(formData: FormData): Promise<ActionResult
   })
   if (result.ok && kind !== null) redirect(`/staff/settings/${kind}/${encodeURIComponent(key)}`)
   return result
+}
+
+const PATH_FIELD = 'path:'
+
+function selectedPaths(
+  formData: FormData,
+): Map<string, { kind: ConfigKind; key: string; paths: string[] }> {
+  const grouped = new Map<string, { kind: ConfigKind; key: string; paths: string[] }>()
+  for (const [name, value] of formData.entries()) {
+    if (!name.startsWith(PATH_FIELD) || typeof value !== 'string') continue
+    const [kind = '', key = ''] = name.slice(PATH_FIELD.length).split(':')
+    if (!isConfigKind(kind)) continue
+    const held = grouped.get(name) ?? { kind, key, paths: [] }
+    held.paths.push(value)
+    grouped.set(name, held)
+  }
+  return grouped
+}
+
+export async function applyStarterPathsAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffAction(formData, async ({ db, actor, signal }) => {
+    const selections = [...selectedPaths(formData).values()]
+    if (selections.length === 0) return { ok: false, error: 'Select at least one change to apply.' }
+    for (const selection of selections) {
+      const result = await applyStarterPaths(db, actor, selection, signal)
+      if (result.ok) continue
+      if (typeof result.error === 'string') return { ok: false, error: errorCopy(result.error) }
+      return {
+        ok: false,
+        error: `The change to ${selection.key} did not pass the publish checks.`,
+        fieldErrors: fieldErrorsFor(result.error),
+      }
+    }
+    return { ok: true, message: `Applied changes to ${selections.length} configuration items.` }
+  })
 }
