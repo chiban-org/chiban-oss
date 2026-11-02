@@ -9,6 +9,7 @@ import { recordException } from '@/features/gis/import/exceptions'
 import type { IdValue, PreparedRow } from '@/features/gis/import/prepareRows'
 import type { RowOutcome } from '@/features/gis/import/types'
 import { addAlias } from '@/features/parcels/aliases'
+import { normalizeId } from '@/features/parcels/idFormats'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 
 export interface RowResult {
@@ -62,7 +63,7 @@ async function activeAlias(ctx: ImportContext, id: IdValue) {
     .where(
       and(
         eq(parcelAliases.format, id.format),
-        eq(parcelAliases.value, id.value),
+        eq(parcelAliases.valueNormalized, normalizeId(id.value)),
         eq(parcelAliases.status, 'active'),
       ),
     )

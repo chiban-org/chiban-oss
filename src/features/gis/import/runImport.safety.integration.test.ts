@@ -7,6 +7,7 @@ import {
   importExceptions,
   importRuns,
   parcelAliases,
+  parcelIdFormats,
   parcels,
 } from '@/db/schema'
 import { acceptAllOwnerChanges, acceptHeldRow } from '@/features/gis/import/exceptions'
@@ -191,5 +192,43 @@ describe('runImport safety', () => {
       expect(report.exceptionsByKind).toEqual({ missing_geometry: 1 })
       expect(await handle.db.select().from(parcels)).toHaveLength(0)
     })
+  })
+  it('an alias held by an override blocks a source id that differs only in punctuation', async () => {
+    await handle.db
+      .insert(parcelIdFormats)
+      .values({ key: 'legacy', label: 'Legacy tag', kind: 'free_text', width: null })
+    const held = await makeParcel(handle.db, [{ format: 'legacy', value: 'AB-12' }])
+    await handle.db
+      .update(parcelAliases)
+      .set({ source: 'override' })
+      .where(eq(parcelAliases.parcelId, held))
+    await configureLayer(handle.db, 'parcels', {
+      ...PARCEL_MAPPING,
+      extraIds: [{ field: 'LEGACY', format: 'legacy', padNumeric: false }],
+    })
+    const { importer } = await userActor()
+    const r = await runImport(
+      handle.db,
+      importer,
+      input([
+        {
+          rowRef: '0',
+          properties: { MAPLOT: '007009000000', LEGACY: 'AB12' },
+          geometry: {
+            type: 'Polygon',
+            coordinates: [
+              [
+                [-71.5, 43.2],
+                [-71.499, 43.2],
+                [-71.499, 43.201],
+                [-71.5, 43.2],
+              ],
+            ],
+          },
+        },
+      ]),
+      signal,
+    )
+    expect(r.ok && r.value.exceptionsByKind).toEqual({ alias_conflicts_override: 1 })
   })
 })
