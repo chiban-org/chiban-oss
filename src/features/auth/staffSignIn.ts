@@ -1,10 +1,10 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull, lt, or } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { users } from '@/db/schema'
 import { writeAudit } from '@/features/audit/writeAudit'
 import { verifyPassword } from '@/features/auth/password'
 import { createSession } from '@/features/auth/session'
-import { verifyTotp } from '@/features/auth/totp'
+import { verifyTotpCounter } from '@/features/auth/totp'
 import { createRateLimiter } from '@/server/rateLimiter'
 import { decryptSecret } from '@/server/secrets'
 import { err, ok, type Result } from '@/types/result'
@@ -27,14 +27,31 @@ export interface StaffSignInInput {
 
 type StaffSignInError = 'invalid_credentials' | 'totp_required' | 'rate_limited'
 
-function checkSecondFactor(
-  secretEnc: string | null,
-  rawCode: string | undefined,
-): 'required' | 'rejected' | 'accepted' {
+type SecondFactor =
+  | { kind: 'required' }
+  | { kind: 'rejected' }
+  | { kind: 'accepted'; counter: number }
+
+function checkSecondFactor(secretEnc: string | null, rawCode: string | undefined): SecondFactor {
   const code = rawCode?.trim() ?? ''
-  if (code === '') return 'required'
+  if (code === '') return { kind: 'required' }
   const secret = decryptSecret(secretEnc ?? '')
-  return secret.ok && verifyTotp(secret.value, code) ? 'accepted' : 'rejected'
+  const counter = secret.ok ? verifyTotpCounter(secret.value, code) : null
+  return counter === null ? { kind: 'rejected' } : { kind: 'accepted', counter }
+}
+
+async function consumeTotpCounter(db: DbOrTx, userId: string, counter: number): Promise<boolean> {
+  const consumed = await db
+    .update(users)
+    .set({ totpLastCounter: counter })
+    .where(
+      and(
+        eq(users.id, userId),
+        or(isNull(users.totpLastCounter), lt(users.totpLastCounter, counter)),
+      ),
+    )
+    .returning({ id: users.id })
+  return consumed.length > 0
 }
 
 export async function staffSignIn(
@@ -58,8 +75,9 @@ export async function staffSignIn(
 
   if (user.totpEnabled) {
     const second = checkSecondFactor(user.totpSecretEnc, input.totp)
-    if (second === 'required') return err('totp_required')
-    if (second === 'rejected') return err('invalid_credentials')
+    if (second.kind === 'required') return err('totp_required')
+    if (second.kind === 'rejected') return err('invalid_credentials')
+    if (!(await consumeTotpCounter(db, user.id, second.counter))) return err('invalid_credentials')
   }
 
   const session = await createSession(db, user.id, signal)

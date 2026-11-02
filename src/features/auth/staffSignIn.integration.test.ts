@@ -143,4 +143,31 @@ describe('staffSignIn', () => {
       expect(await staffSignIn(handle.db, bad, signal)).toEqual(generic)
     }
   })
+
+  it('the same valid totp code cannot be used for a second sign-in', async () => {
+    const secret = generateTotpSecret()
+    await staffUser({ email: 'replay@alderpond.example', totp: secret })
+    const attempt = {
+      email: 'replay@alderpond.example',
+      password: PASSWORD,
+      totp: currentTotpCode(secret, Date.now()),
+    }
+    expect((await staffSignIn(handle.db, attempt, signal)).ok).toBe(true)
+    expect(await staffSignIn(handle.db, attempt, signal)).toEqual(generic)
+  })
+
+  it('two simultaneous sign-ins with one totp code let exactly one through', async () => {
+    const secret = generateTotpSecret()
+    await staffUser({ email: 'twin@alderpond.example', totp: secret })
+    const attempt = {
+      email: 'twin@alderpond.example',
+      password: PASSWORD,
+      totp: currentTotpCode(secret, Date.now()),
+    }
+    const results = await Promise.all([
+      staffSignIn(handle.db, attempt, signal),
+      staffSignIn(handle.db, attempt, signal),
+    ])
+    expect(results.filter((r) => r.ok)).toHaveLength(1)
+  })
 })

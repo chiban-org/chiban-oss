@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { users } from '@/db/schema'
-import { generateTotpSecret, totpUri, verifyTotp } from '@/features/auth/totp'
+import { generateTotpSecret, totpUri, verifyTotpCounter } from '@/features/auth/totp'
 import { decryptSecret, encryptSecret } from '@/server/secrets'
 import { err, ok, type Result } from '@/types/result'
 
@@ -47,10 +47,11 @@ export async function confirmTotpEnrollment(
   if (user === undefined || user.totpEnabled || user.totpSecretEnc === null)
     return err('not_pending')
   const secret = decryptSecret(user.totpSecretEnc)
-  if (!secret.ok || !verifyTotp(secret.value, code.trim())) return err('invalid_code')
+  const counter = secret.ok ? verifyTotpCounter(secret.value, code.trim()) : null
+  if (counter === null) return err('invalid_code')
   const enabled = await db
     .update(users)
-    .set({ totpEnabled: true })
+    .set({ totpEnabled: true, totpLastCounter: counter })
     .where(
       and(
         eq(users.id, userId),

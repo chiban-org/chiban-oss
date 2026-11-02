@@ -28,17 +28,25 @@ export function currentTotpCode(secretBase32: string, nowMs: number): string {
   return build(secretBase32, 'code').generate({ timestamp: nowMs })
 }
 
+export function verifyTotpCounter(
+  secretBase32: string,
+  code: string,
+  nowMs: number = Date.now(),
+): number | null {
+  if (!/^\d{6}$/.test(code)) return null
+  const delta = build(secretBase32, 'code').validate({
+    token: code,
+    timestamp: nowMs,
+    window: WINDOW_STEPS,
+  })
+  if (delta === null) return null
+  return Math.floor(nowMs / 1000 / PERIOD_SECONDS) + delta
+}
+
 export function verifyTotp(
   secretBase32: string,
   code: string,
   nowMs: number = Date.now(),
 ): boolean {
-  if (!/^\d{6}$/.test(code)) return false
-  return (
-    build(secretBase32, 'code').validate({
-      token: code,
-      timestamp: nowMs,
-      window: WINDOW_STEPS,
-    }) !== null
-  )
+  return verifyTotpCounter(secretBase32, code, nowMs) !== null
 }

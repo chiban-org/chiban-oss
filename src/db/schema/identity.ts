@@ -1,4 +1,5 @@
 import {
+  bigint,
   boolean,
   customType,
   pgTable,
@@ -22,6 +23,7 @@ export const users = pgTable('users', {
   passwordHash: text('password_hash'),
   totpSecretEnc: text('totp_secret_enc'),
   totpEnabled: boolean('totp_enabled').notNull().default(false),
+  totpLastCounter: bigint('totp_last_counter', { mode: 'number' }),
   isActive: boolean('is_active').notNull().default(true),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 })
