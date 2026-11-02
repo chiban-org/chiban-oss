@@ -5,9 +5,11 @@ import { LinkedParcelMap } from '@/components/map/LinkedParcelMap'
 import { HonestText } from '@/components/parcels/HonestText'
 import { RecordsSection } from '@/components/parcels/RecordsSection'
 import { StatusChip } from '@/components/StatusChip'
+import { BalanceDueNotice } from '@/components/staff/BalanceDueNotice'
 import { TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
 import { bboxOfGeometry, configuredOverlayLayers } from '@/features/gis/extent'
+import { returnedCheckNoticesForParcel } from '@/features/ledger/balanceNotice'
 import { getStaffParcelView } from '@/features/parcels/staffParcelView'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -35,6 +37,7 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
   const result = await getStaffParcelView(ctx.db, ctx.actor, parcelId, new Date(), ctx.signal)
   if (!result.ok) notFound()
   const view = result.value
+  const balanceNotices = await returnedCheckNoticesForParcel(ctx.db, parcelId, ctx.signal)
   const town = await getTownSettings(ctx.db, ctx.signal)
   const overlays = await configuredOverlayLayers(ctx.db, ctx.signal)
   const timeZone = town.ok ? town.value.timeZone : 'America/New_York'
@@ -65,6 +68,7 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
           <StatusChip status="neutral" label={`Retired ${view.retiredOn ?? ''}`.trim()} />
         </p>
       ) : null}
+      <BalanceDueNotice notices={balanceNotices} linkApplications />
       <LayerBanner state={view.layer.state} text={layerText} />
       <dl className="my-4 grid grid-cols-[10rem_1fr] gap-y-2">
         <dt className="font-semibold">Site address</dt>

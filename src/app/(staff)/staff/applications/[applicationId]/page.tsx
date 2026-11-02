@@ -5,6 +5,7 @@ import { ClockCard } from '@/components/clocks/ClockCard'
 import { FeeTable } from '@/components/fees/FeeTable'
 import { GatePanel } from '@/components/gates/GatePanel'
 import { StatusChip } from '@/components/StatusChip'
+import { BalanceDueNotice } from '@/components/staff/BalanceDueNotice'
 import { AreaField, TextField } from '@/components/staff/fields'
 import {
   getStaffApplicationView,
@@ -13,6 +14,7 @@ import {
 import { stateLabel } from '@/features/applications/stateLabel'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import type { GateResult } from '@/features/gates/evaluateGates'
+import { returnedCheckNotices } from '@/features/ledger/balanceNotice'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
 import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -105,6 +107,7 @@ export default async function StaffApplicationPage({ params }: Props) {
     ctx.signal,
   )
   if (view === null) notFound()
+  const balanceNotices = await returnedCheckNotices(ctx.db, [applicationId], ctx.signal)
   const payments = await loadApplicationPayments(ctx.db, ctx.actor, applicationId, ctx.signal)
   return (
     <main>
@@ -133,6 +136,7 @@ export default async function StaffApplicationPage({ params }: Props) {
           : `. Received ${formatCivilDate(view.receivedDate)}.`}
         {view.issuedOn === null ? '' : ` Issued ${formatCivilDate(view.issuedOn)}.`}
       </p>
+      <BalanceDueNotice notices={balanceNotices} />
       <TransitionBar view={view} />
       <PartiesPanel view={view} />
       <CompletenessPanel view={view} />
