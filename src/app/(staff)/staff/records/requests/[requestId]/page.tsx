@@ -26,8 +26,15 @@ function timelinessText(kind: string, dueOn: string, respondedOn: string | null)
   return null
 }
 
-export default async function RequestPage({ params }: { params: Promise<{ requestId: string }> }) {
+export default async function RequestPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ requestId: string }>
+  searchParams?: Promise<{ find?: string }>
+}) {
   const { requestId } = await params
+  const find = (await searchParams)?.find ?? ''
   if (!isUuid(requestId)) notFound()
   const ctx = await requireStaffContext()
   const today = await townToday(ctx.db, new Date(), ctx.signal)
@@ -37,7 +44,7 @@ export default async function RequestPage({ params }: { params: Promise<{ reques
   const [releases, approvals, candidates, letters] = await Promise.all([
     loadReleases(ctx.db, requestId),
     loadRequestApprovals(ctx.db, requestId),
-    loadReleaseCandidates(ctx.db, ctx.actor),
+    loadReleaseCandidates(ctx.db, ctx.actor, find),
     loadRequestLetters(ctx.db, requestId),
   ])
   const late = timelinessText(
@@ -78,6 +85,7 @@ export default async function RequestPage({ params }: { params: Promise<{ reques
         releases={releases}
         approvals={approvals}
         candidates={candidates}
+        find={find}
         today={today}
       />
       <section aria-labelledby="letters" className="space-y-2 border-t pt-4">

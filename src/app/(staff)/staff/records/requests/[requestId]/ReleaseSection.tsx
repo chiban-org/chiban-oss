@@ -29,14 +29,30 @@ interface Props {
   releases: ReleaseSummary[]
   approvals: RequestApproval[]
   candidates: ReleaseCandidate[]
+  find: string
   today: CivilDate
 }
 
-export function ReleaseSection({ request, releases, approvals, candidates, today }: Props) {
+function FindForm({ requestId, find }: { requestId: string; find: string }) {
+  return (
+    <form method="get" action={`/staff/records/requests/${requestId}`} className="space-y-2">
+      <TextField
+        label="Find a document by title or application or case number"
+        name="find"
+        defaultValue={find}
+      />
+      <button type="submit" className="rounded-md border px-4 py-2 text-sm">
+        Find
+      </button>
+    </form>
+  )
+}
+
+export function ReleaseSection({ request, releases, approvals, candidates, find, today }: Props) {
   const open = request.status !== 'closed' && request.status !== 'withdrawn'
   const active = approvals.filter((a) => a.revokedAt === null)
   const versionOptions: [string, string][] = candidates.flatMap((c) =>
-    c.versions.map((v) => [v.id, versionLabel(c.title, v)] as [string, string]),
+    c.versions.map((v) => [v.id, versionLabel(`${c.title}, ${c.context}`, v)] as [string, string]),
   )
   return (
     <section aria-labelledby="releases" className="space-y-3 border-t pt-4">
@@ -82,12 +98,25 @@ export function ReleaseSection({ request, releases, approvals, candidates, today
       {open ? (
         <>
           <h3>Approve a version for this request</h3>
-          <ActionForm action={approveRenditionAction} submitLabel="Approve for release">
-            <Hidden name="purpose" value="rtk_release" />
-            <Hidden name="rtkRequestId" value={request.id} />
-            <SelectField label="Document and version" name="versionId" options={versionOptions} />
-            <TextField label="What you checked before approving" name="reviewStatement" required />
-          </ActionForm>
+          <FindForm requestId={request.id} find={find} />
+          {versionOptions.length === 0 ? (
+            <p>
+              {find.trim() === ''
+                ? 'Find the document first.'
+                : 'No document matches. Try part of its title or the application or case number.'}
+            </p>
+          ) : (
+            <ActionForm action={approveRenditionAction} submitLabel="Approve for release">
+              <Hidden name="purpose" value="rtk_release" />
+              <Hidden name="rtkRequestId" value={request.id} />
+              <SelectField label="Document and version" name="versionId" options={versionOptions} />
+              <TextField
+                label="What you checked before approving"
+                name="reviewStatement"
+                required
+              />
+            </ActionForm>
+          )}
           <h3>Release approved records</h3>
           {active.length === 0 ? (
             <p>Approve at least one version first.</p>

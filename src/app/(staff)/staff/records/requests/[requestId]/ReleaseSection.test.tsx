@@ -22,6 +22,7 @@ const candidates: ReleaseCandidate[] = [
   {
     documentId: 'd1',
     title: 'Site plan',
+    context: 'Application BP-2027-0001',
     versions: [
       {
         id: 'v1',
@@ -53,6 +54,7 @@ function versionOptions(): string[] {
         releases={[]}
         approvals={[]}
         candidates={candidates}
+        find="site plan"
         today={'2027-03-05' as CivilDate}
       />
     </CsrfProvider>,
@@ -68,9 +70,9 @@ describe('ReleaseSection', () => {
     const labels = versionOptions()
     expect(new Set(labels).size).toBe(labels.length)
     expect(labels).toEqual([
-      'Site plan: Original, March 2, 2027',
-      'Site plan: Redacted copy for this request, March 3, 2027 16:30 UTC',
-      'Site plan: Redacted copy for this request, March 4, 2027 09:05 UTC',
+      'Site plan, Application BP-2027-0001: Original, March 2, 2027',
+      'Site plan, Application BP-2027-0001: Redacted copy for this request, March 3, 2027 16:30 UTC',
+      'Site plan, Application BP-2027-0001: Redacted copy for this request, March 4, 2027 09:05 UTC',
     ])
   })
 })

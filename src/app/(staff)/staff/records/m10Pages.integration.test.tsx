@@ -19,9 +19,10 @@ import {
   rtkTimeStatements,
   rtkWithholdings,
 } from '@/db/schema'
-import { loadActor } from '@/features/auth/actor'
+import { type Actor, loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
+import { loadReleaseCandidates } from '@/features/rtk/requestPage'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { findIsoDates, findRawKeys, findUuids, RECORDS_ENUM_KEYS, visibleText } from '@/test/leaks'
 
@@ -163,6 +164,16 @@ describe('records screens with the demo seed', () => {
     const waiting = visibleText(await html(RetentionPage(search({ state: 'awaiting_event' }))))
     expect(waiting).toContain('Open complaint photo log')
     expect(waiting).toContain('The appeal period ended')
+  })
+
+  it('the release picker lists nothing until searched, then only matching documents named with their record', async () => {
+    await actAs('records')
+    const actor = state.actor as Actor
+    expect(await loadReleaseCandidates(handle.db, actor, '')).toEqual([])
+    const found = await loadReleaseCandidates(handle.db, actor, 'complaint photo')
+    expect(found.length).toBeGreaterThan(0)
+    expect(found.every((c) => c.title.toLowerCase().includes('complaint photo'))).toBe(true)
+    expect(found.every((c) => /EC-\d{4}-\d{4}/.test(c.context))).toBe(true)
   })
 
   it('a registration waiting to expire offers no unrelated events and says Chiban records the expiry', async () => {

@@ -10,11 +10,22 @@ import {
 import type { Actor } from '@/features/auth/actor'
 import { rtkRequestVisibleTo } from '@/features/rtk/access'
 
-const CANDIDATE_LIMIT = 200
+const CANDIDATE_LIMIT = 25
+const MIN_QUERY = 2
+
+const RECORD_KIND_LABELS: Record<string, string> = {
+  application: 'Application',
+  enforcement_case: 'Case',
+  parcel: 'Parcel file',
+  inspection: 'Inspection',
+  project: 'Project',
+  meeting: 'Board meeting',
+}
 
 export interface ReleaseCandidate {
   documentId: string
   title: string
+  context: string
   versions: { id: string; role: string; filename: string; createdAt: string }[]
 }
 
@@ -36,15 +47,34 @@ export interface ReleaseSummary {
   items: { title: string; filename: string; withdrawn: boolean }[]
 }
 
-export async function loadReleaseCandidates(db: Db, actor: Actor): Promise<ReleaseCandidate[]> {
+const RECORD_NUMBER = sql<string | null>`coalesce(
+  (select a.number from applications a
+    where ${documents.recordKind} = 'application' and a.id = ${documents.recordId}),
+  (select c.number from enforcement_cases c
+    where ${documents.recordKind} = 'enforcement_case' and c.id = ${documents.recordId}))`
+
+export async function loadReleaseCandidates(
+  db: Db,
+  actor: Actor,
+  query: string,
+): Promise<ReleaseCandidate[]> {
+  const term = query.trim()
+  if (term.length < MIN_QUERY) return []
+  const like = `%${term.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
   const rows = await db
-    .select({ id: documents.id, title: documents.title })
+    .select({
+      id: documents.id,
+      title: documents.title,
+      recordKind: documents.recordKind,
+      recordNumber: RECORD_NUMBER,
+    })
     .from(documents)
     .where(
       and(
         isNull(documents.disposedAt),
         sql`${documents.recordKind} <> 'rtk_request'`,
         rtkRequestVisibleTo(actor),
+        sql`(${documents.title} ilike ${like} or ${RECORD_NUMBER} ilike ${like})`,
       ),
     )
     .orderBy(desc(documents.seq))
@@ -76,6 +106,9 @@ export async function loadReleaseCandidates(db: Db, actor: Actor): Promise<Relea
   return rows.map((r) => ({
     documentId: r.id,
     title: r.title,
+    context: [RECORD_KIND_LABELS[r.recordKind] ?? 'Record', r.recordNumber]
+      .filter((x) => x !== null)
+      .join(' '),
     versions: versions
       .filter((v) => v.documentId === r.id)
       .map(({ createdAt, ...v }) => ({ ...v, createdAt: createdAt.toISOString() })),
