@@ -128,4 +128,32 @@ describe('Uploader', () => {
     expect(screen.queryByText(/larger than/)).toBeNull()
     expect(screen.getByLabelText('File')).not.toBe(before)
   })
+
+  it('gives each uploader on a page its own field ids', () => {
+    const actions = { createIntent: vi.fn(), finalize: vi.fn() }
+    render(
+      <CsrfProvider token="t1">
+        <Uploader
+          target={{ kind: 'parcel', id: 'p1' }}
+          maxBytes={MB}
+          actions={actions}
+          onUploaded={vi.fn()}
+          fileLabel="Plan"
+        />
+        <Uploader
+          target={{ kind: 'parcel', id: 'p1' }}
+          maxBytes={MB}
+          actions={actions}
+          onUploaded={vi.fn()}
+          fileLabel="Letter"
+        />
+      </CsrfProvider>,
+    )
+    const plan = screen.getByLabelText('Plan')
+    const letter = screen.getByLabelText('Letter')
+    expect(plan).not.toBe(letter)
+    const titles = screen.getAllByLabelText('Name for this document')
+    expect(titles).toHaveLength(2)
+    expect(new Set(titles.map((t) => t.id)).size).toBe(2)
+  })
 })

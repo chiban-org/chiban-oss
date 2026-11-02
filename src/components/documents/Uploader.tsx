@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useCsrfToken } from '@/components/CsrfProvider'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -69,6 +69,9 @@ export function Uploader({
   fileLabel = 'File',
 }: UploaderProps) {
   const csrf = useCsrfToken()
+  const fieldId = useId()
+  const fileId = `${fieldId}-file`
+  const titleId = `${fieldId}-title`
   const [file, setFile] = useState<File | null>(null)
   const [title, setTitle] = useState('')
   const [pending, setPending] = useState(false)
@@ -122,12 +125,12 @@ export function Uploader({
   return (
     <div className="space-y-3">
       <div className="space-y-1.5">
-        <Label htmlFor="upload-file" className="text-base font-medium">
+        <Label htmlFor={fileId} className="text-base font-medium">
           {fileLabel}
         </Label>
         <Input
           key={pickerKey}
-          id="upload-file"
+          id={fileId}
           type="file"
           accept={accept}
           {...(capture === undefined ? {} : { capture })}
@@ -136,11 +139,11 @@ export function Uploader({
         />
       </div>
       <div className="space-y-1.5">
-        <Label htmlFor="upload-title" className="text-base font-medium">
+        <Label htmlFor={titleId} className="text-base font-medium">
           Name for this document
         </Label>
         <Input
-          id="upload-title"
+          id={titleId}
           value={title}
           className="min-h-11 text-base"
           onChange={(event) => setTitle(event.target.value)}
