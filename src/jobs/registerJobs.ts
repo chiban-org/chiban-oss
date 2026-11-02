@@ -1,17 +1,9 @@
 import type { PgBoss } from 'pg-boss'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
-import { calendarPushJob, calendarSweepJob } from './calendarPush'
-import { clocksDailyJob } from './clocksDaily'
+import { ALL_JOBS } from './allJobs'
 import { cronForInterval } from './cron'
 import { type JobDefinition, runJob } from './defineJob'
-import { expireAliasOverridesJob } from './expireAliasOverrides'
-import { exportsBuildJob, exportsPickupJob, exportsPruneJob } from './exportsBuild'
-import { gisRefreshLayerJob, gisScheduleRefreshesJob } from './gisRefreshLayer'
-import { heartbeatJob } from './heartbeat'
-import { notificationsSendJob } from './notificationsSend'
-import { paymentsReconcileJob } from './paymentsReconcile'
-import { recordsPreserveJob } from './recordsPreserve'
 
 export async function registerJob<P extends object>(
   boss: PgBoss,
@@ -39,17 +31,5 @@ export async function registerJob<P extends object>(
 }
 
 export async function registerAllJobs(boss: PgBoss, db: Db): Promise<void> {
-  await registerJob(boss, db, heartbeatJob)
-  await registerJob(boss, db, gisRefreshLayerJob)
-  await registerJob(boss, db, gisScheduleRefreshesJob)
-  await registerJob(boss, db, expireAliasOverridesJob)
-  await registerJob(boss, db, clocksDailyJob)
-  await registerJob(boss, db, paymentsReconcileJob)
-  await registerJob(boss, db, recordsPreserveJob)
-  await registerJob(boss, db, notificationsSendJob)
-  await registerJob(boss, db, calendarPushJob)
-  await registerJob(boss, db, calendarSweepJob)
-  await registerJob(boss, db, exportsBuildJob)
-  await registerJob(boss, db, exportsPickupJob)
-  await registerJob(boss, db, exportsPruneJob)
+  for (const job of ALL_JOBS) await registerJob(boss, db, job)
 }

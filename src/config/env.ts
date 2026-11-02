@@ -23,6 +23,17 @@ const secretKeys = z
       ),
   )
 
+const commaList = (item: z.ZodType<string, string>) =>
+  z
+    .string()
+    .transform((raw) =>
+      raw
+        .split(',')
+        .map((part) => part.trim())
+        .filter((part) => part !== ''),
+    )
+    .pipe(z.array(item))
+
 export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -47,12 +58,21 @@ export const envSchema = z
     EXPORT_WORK_DIR: z.string().min(1).default('/tmp/chiban-export'),
     GHOSTSCRIPT_PATH: z.string().min(1).default('gs'),
     GHOSTSCRIPT_ICC_PROFILE: z.string().min(1).optional(),
+    ALERT_EMAIL_TO: commaList(z.email()).default([]),
+    HEALTH_DISK_PATHS: commaList(z.string().min(1)).default(['/']),
+    HEALTH_HEARTBEAT_URL: z.url().optional(),
+    PAGER_EVENTS_URL: z.url().optional(),
+    PAGER_ROUTING_KEY: z.string().min(1).optional(),
     CHIBAN_SECRET_KEYS: secretKeys,
     CHIBAN_ACTIVE_KEY_ID: z.string().regex(KEY_ID),
   })
   .refine((v) => v.CHIBAN_ACTIVE_KEY_ID in v.CHIBAN_SECRET_KEYS, {
     path: ['CHIBAN_ACTIVE_KEY_ID'],
     message: 'must name a key present in CHIBAN_SECRET_KEYS',
+  })
+  .refine((v) => v.PAGER_EVENTS_URL === undefined || v.PAGER_ROUTING_KEY !== undefined, {
+    path: ['PAGER_ROUTING_KEY'],
+    message: 'is required when PAGER_EVENTS_URL is set',
   })
   .refine((v) => v.NODE_ENV !== 'production' || v.STRIPE_API_BASE === undefined, {
     path: ['STRIPE_API_BASE'],

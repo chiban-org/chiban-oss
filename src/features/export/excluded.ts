@@ -6,4 +6,7 @@ export const EXCLUDED_TABLES: Record<string, string> = {
   job_runs: 'operational state of the job scheduler',
   exports: 'export bookkeeping',
   job_effects: 'job de-duplication bookkeeping',
+  health_alerts: 'operational state',
+  alert_tests: 'operational state',
+  worker_state: 'operational state',
 }

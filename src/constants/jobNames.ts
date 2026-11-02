@@ -12,6 +12,7 @@ export const JOB_NAMES = {
   EXPORTS_BUILD: 'exports.build',
   EXPORTS_PICKUP: 'exports.pickup',
   EXPORTS_PRUNE: 'exports.prune',
+  HEALTH_CHECK: 'health.check',
 } as const
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES]
