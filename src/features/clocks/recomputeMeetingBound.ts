@@ -7,6 +7,7 @@ import { boardMeetingCalendar } from '@/features/boards/calendar'
 import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import { meetingBoundSpec } from '@/features/clocks/meetingBound'
 import { meetingBoundTiming } from '@/features/clocks/meetingBoundTiming'
+import { effectiveNoticeLeadDays } from '@/features/clocks/noticeLead'
 import { createClock } from '@/features/clocks/startClocks'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import type { CivilDate } from '@/types/civilDate'
@@ -30,6 +31,9 @@ export async function recomputeMeetingBoundClocks(
     if (rule.kind !== 'clock') continue
     const spec = meetingBoundSpec(rule, pack)
     if (spec === null || spec.board !== board) continue
+    const app = await loadApplicationContext(tx, clock.applicationId, signal)
+    if (app === null) continue
+    const facts = await factsWithDeterminations(tx, clock.applicationId, app.facts)
     const timing = await meetingBoundTiming(
       {
         rule,
@@ -42,18 +46,17 @@ export async function recomputeMeetingBoundClocks(
         onDate: clock.startDate as CivilDate,
         pack,
         calendar,
+        noticeLeadDays: await effectiveNoticeLeadDays(tx, rule, facts, pack, signal),
       },
       signal,
     )
     if (timing === null || timing.due === clock.currentDue) continue
-    const app = await loadApplicationContext(tx, clock.applicationId, signal)
-    if (app === null) continue
     const freshId = await createClock(
       tx,
       {
         applicationId: clock.applicationId,
         rule,
-        facts: await factsWithDeterminations(tx, clock.applicationId, app.facts),
+        facts,
         event: clock.startEvent as ClockRule['startEvent'],
         onDate: clock.startDate as CivilDate,
         pack,

@@ -22,20 +22,22 @@ export async function meetingBoundTiming(
     onDate: CivilDate
     pack: Pack
     calendar: MeetingCalendar
+    noticeLeadDays?: number | undefined
   },
   signal: AbortSignal,
 ): Promise<MeetingBoundTiming | null> {
   const spec = meetingBoundSpec(input.rule, input.pack)
   if (spec === null) return null
+  const noticeLeadDays = input.noticeLeadDays ?? spec.noticeLeadDays
   const meeting = await input.calendar.nextRegularMeeting(
     spec.board,
-    earliestNoticeableDate(input.onDate, spec.noticeLeadDays),
+    earliestNoticeableDate(input.onDate, noticeLeadDays),
     signal,
   )
   const detail = computeMeetingBoundDue({
     start: input.onDate,
     days: input.length.value,
-    noticeLeadDays: spec.noticeLeadDays,
+    noticeLeadDays,
     nextRegularMeetingOnOrAfter: meeting,
   })
   return { due: detail.due, rolledFrom: null, detail }

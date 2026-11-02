@@ -8,6 +8,7 @@ import type { DueResult } from '@/features/clocks/computeDue'
 import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import { describeCounting } from '@/features/clocks/describeCounting'
 import { describeMeetingBound, meetingBoundTiming } from '@/features/clocks/meetingBoundTiming'
+import { effectiveNoticeLeadDays } from '@/features/clocks/noticeLead'
 import {
   computeRuleDue,
   hasLocalBound,
@@ -91,7 +92,14 @@ export async function createClock(
       : { ...resolved, value: input.lengthOverrideDays, source: 'town_setting' }
   const holidays = packHolidayCalendar()
   const bound = await meetingBoundTiming(
-    { rule, length, onDate, pack, calendar: input.calendar ?? boardMeetingCalendar(tx) },
+    {
+      rule,
+      length,
+      onDate,
+      pack,
+      calendar: input.calendar ?? boardMeetingCalendar(tx),
+      noticeLeadDays: await effectiveNoticeLeadDays(tx, rule, input.facts, pack, signal),
+    },
     signal,
   )
   const due: DueResult = bound ?? computeRuleDue(rule, length, onDate, holidays)

@@ -114,13 +114,23 @@ export function RequestForm({
         <Label htmlFor="contactName" className="text-base font-medium">
           Contact name
         </Label>
-        <Input id="contactName" name="contactName" required className="min-h-11 text-base" />
+        <Input
+          id="contactName"
+          name="contactName"
+          required
+          className="min-h-11 text-base md:text-base"
+        />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="contactPhone" className="text-base font-medium">
           Contact phone
         </Label>
-        <Input id="contactPhone" name="contactPhone" type="tel" className="min-h-11 text-base" />
+        <Input
+          id="contactPhone"
+          name="contactPhone"
+          type="tel"
+          className="min-h-11 text-base md:text-base"
+        />
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="accessNotes" className="text-base font-medium">

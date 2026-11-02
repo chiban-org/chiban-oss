@@ -41,4 +41,16 @@ describe('RequestForm', () => {
     renderForm('Record request')
     expect(screen.getByRole('button', { name: 'Record request' })).toBeTruthy()
   })
+
+  it('keeps the contact inputs at 16px at every breakpoint', () => {
+    renderForm()
+    for (const name of ['Contact name', 'Contact phone']) {
+      const input = screen.getByRole(name === 'Contact phone' ? 'textbox' : 'textbox', {
+        name: new RegExp(name, 'i'),
+      })
+      const classes = input.className.split(/\s+/)
+      expect(classes.filter((c) => /^(?:(?:sm|md|lg|xl|2xl):)?text-(?:sm|xs)$/.test(c))).toEqual([])
+      expect(classes).toContain('md:text-base')
+    }
+  })
 })

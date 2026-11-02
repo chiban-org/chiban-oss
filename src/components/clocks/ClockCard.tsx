@@ -1,5 +1,6 @@
 import { StatusChip } from '@/components/StatusChip'
 import type { ClockExplanation } from '@/features/clocks/explainClock'
+import { ruleLabel } from '@/features/packs/ruleLabel'
 import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 
 const WHOSE: Record<ClockExplanation['whose'], string> = {
@@ -69,7 +70,7 @@ export function ClockCard({ clock }: { clock: ClockExplanation & { clockId: stri
         {statusChip(clock)}
       </div>
       <p className="text-sm text-muted-foreground">
-        {`Rule ${clock.ruleKey} version ${clock.ruleVersion}, pack ${clock.packVersion}. `}
+        {`${ruleLabel(clock.ruleKey)}, version ${clock.ruleVersion}, pack ${clock.packVersion}. `}
         {clock.citation.url === null ? (
           clock.citation.label
         ) : (

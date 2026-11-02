@@ -8,6 +8,7 @@ import { publishConfig } from '@/features/config/publish'
 import { getVersion, saveDraft } from '@/features/config/store'
 import { makeApplication } from '@/test/applicationFixtures'
 import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
+import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -44,6 +45,19 @@ describe('meeting-bound completeness clock', () => {
     expect(clock.currentDue).toBe('2027-04-14')
     expect(clock.countingMethod).toContain('2027-04-14')
     expect(clock.countingMethod).toContain('2027-04-23')
+  })
+
+  it('a town notice lead of 30 days moves the next noticeable meeting to 2027-04-28', async () => {
+    await saveAndPublish(handle.db, world.admin, 'town_rule_setting', 'nh.pb.notice.mail', {
+      ruleKey: 'nh.pb.notice.mail',
+      value: 30,
+      adoptingAuthority: 'Planning Board',
+      adoptedOn: '2027-01-12',
+    })
+    const { clock } = await completenessFor('2027-03-24')
+    expect(clock.currentDue).toBe('2027-04-23')
+    expect(clock.countingMethod).toContain('2027-04-28')
+    expect(clock.countingMethod).not.toContain('2027-04-14')
   })
 
   it('completeness for delivery 2027-04-29 is due 2027-05-12', async () => {
