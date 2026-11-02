@@ -10,10 +10,19 @@ const OUTCOMES: Partial<Record<CoreState, string>> = {
   closed: 'This permit is closed.',
 }
 
+const DECIDED_INDEX = STEPS.indexOf('decided')
+
 function position(state: CoreState): number {
   const index = STEPS.indexOf(state)
   if (index >= 0) return index
+  if (state === 'denied') return DECIDED_INDEX
   return state === 'closed' || state === 'suspended' || state === 'expired' ? STEPS.length - 1 : 1
+}
+
+function stepText(done: boolean, here: boolean, denied: boolean): string {
+  if (done) return 'Done'
+  if (here) return 'Now'
+  return denied ? 'Will not happen' : 'Not yet'
 }
 
 function dotClass(done: boolean, here: boolean): string {
@@ -30,8 +39,8 @@ export function StatusTimeline({ state }: { state: CoreState }) {
     <div>
       <ol className="m-0 flex list-none flex-col gap-3 p-0 sm:grid sm:grid-cols-5 sm:gap-0">
         {STEPS.map((step, index) => {
-          const done =
-            index < current || (index === current && outcome !== undefined && state === 'closed')
+          const settled = state === 'closed' || state === 'denied'
+          const done = index < current || (index === current && settled)
           const here = index === current
           return (
             <li
@@ -51,7 +60,7 @@ export function StatusTimeline({ state }: { state: CoreState }) {
                 {STATE_LABELS[step]}
               </span>
               <span className="text-muted-foreground sm:-mt-2">
-                {done ? 'Done' : here ? 'Now' : 'Not yet'}
+                {stepText(done, here, state === 'denied')}
               </span>
             </li>
           )
