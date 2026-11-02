@@ -17,7 +17,7 @@ import { err, ok, type Result } from '@/types/result'
 const FALLBACK_TIME_ZONE = 'UTC'
 const SEQUENCE_WIDTH = 4
 
-async function nextNumber(tx: Tx, prefix: string, year: number): Promise<string> {
+export async function nextNumber(tx: Tx, prefix: string, year: number): Promise<string> {
   const [row] = await tx
     .insert(applicationNumberCounters)
     .values({ prefix, year, last: 1 })
