@@ -2,7 +2,7 @@ import { asc, eq } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { dispositionBatches, dispositionItems, dispositionTombstones } from '@/db/schema'
+import { dispositionBatches, dispositionItems, dispositionTombstones, documents } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
 import { formatCivilDate, formatInstantDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -56,10 +56,12 @@ export default async function DispositionBatchPage({
       eligibleOn: dispositionItems.eligibleOn,
       outcome: dispositionItems.outcome,
       title: dispositionTombstones.title,
+      documentTitle: documents.title,
       citation: dispositionTombstones.seriesCitation,
     })
     .from(dispositionItems)
     .leftJoin(dispositionTombstones, eq(dispositionTombstones.recordId, dispositionItems.recordId))
+    .leftJoin(documents, eq(documents.id, dispositionItems.recordId))
     .where(eq(dispositionItems.batchId, batchId))
     .orderBy(asc(dispositionItems.recordKind), asc(dispositionItems.recordId))
   return (
@@ -78,7 +80,7 @@ export default async function DispositionBatchPage({
         <tbody>
           {items.map((i) => (
             <tr key={`${i.kind}-${i.recordId}`}>
-              <td>{i.title ?? 'Record waiting to be disposed of'}</td>
+              <td>{i.title ?? i.documentTitle ?? 'Application snapshot'}</td>
               <td>{KIND[i.kind]}</td>
               <td>{formatCivilDate(i.eligibleOn)}</td>
               <td>{i.outcome === null ? 'Not yet carried out' : OUTCOME[i.outcome]}</td>

@@ -17,7 +17,7 @@ export interface PanelDocument extends DocumentListRow {
   approvalId: string | null
   approvedRole: string | null
   originalVersionId: string | null
-  approvable: { id: string; role: 'original' | 'public_redacted' }[]
+  approvable: { id: string; role: 'original' | 'public_redacted'; createdAt: string }[]
   canRedact: boolean
   preservation: PreservationState
   preservationRecordId: string | null
@@ -68,9 +68,11 @@ async function renditionDetails(
       id: documentVersions.id,
       documentId: documentVersions.documentId,
       role: documentVersions.role,
+      createdAt: documentVersions.createdAt,
     })
     .from(documentVersions)
     .where(inArray(documentVersions.documentId, ids))
+    .orderBy(documentVersions.createdAt)
   const approvals = await db
     .select()
     .from(renditionApprovals)
@@ -93,7 +95,9 @@ async function renditionDetails(
       approvedRole: mine.find((v) => v.id === active?.versionId)?.role ?? null,
       originalVersionId: mine.find((v) => v.role === 'original')?.id ?? null,
       approvable: mine.flatMap((v) =>
-        v.role === 'original' || v.role === 'public_redacted' ? [{ id: v.id, role: v.role }] : [],
+        v.role === 'original' || v.role === 'public_redacted'
+          ? [{ id: v.id, role: v.role, createdAt: v.createdAt.toISOString() }]
+          : [],
       ),
     }
   }

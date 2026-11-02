@@ -20,6 +20,7 @@ import { listDocuments } from '@/features/documents/listDocuments'
 import { setAudiences } from '@/features/documents/publish'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { placeHold } from '@/features/records/holds'
+import { retentionWorklist } from '@/features/records/worklist'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { expectDbError } from '@/test/dbErrors'
@@ -198,6 +199,22 @@ describe('executing a batch', () => {
     expect(batch?.executedAt).not.toBeNull()
     const items = await handle.db.select().from(dispositionItems)
     expect(items.every((i) => i.outcome === 'disposed')).toBe(true)
+  })
+
+  it('a disposed document no longer appears on the retention worklist', async () => {
+    const made = await eligibleCase(handle.db, store, staff, 1)
+    const worklistIds = async () =>
+      (
+        await retentionWorklist(
+          handle.db,
+          custodian,
+          { asOf: AS_OF, state: 'eligible', limit: 25 },
+          signal,
+        )
+      ).rows.map((r) => r.ref.id)
+    expect(await worklistIds()).toContain(made.documentIds[0])
+    await run(await approvedBatch())
+    expect(await worklistIds()).not.toContain(made.documentIds[0])
   })
 
   it('running an executed batch again does nothing', async () => {

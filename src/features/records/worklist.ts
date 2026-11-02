@@ -121,6 +121,7 @@ async function nextBatch(db: Db, permanent: string[], after: Cursor | null): Pro
     .where(
       and(
         isNull(retentionAssignments.supersededAt),
+        sql`not exists (select 1 from documents d where d.id = ${retentionAssignments.recordId} and d.disposed_at is not null)`,
         permanent.length === 0 ? undefined : notInArray(retentionAssignments.seriesKey, permanent),
         after === null
           ? undefined

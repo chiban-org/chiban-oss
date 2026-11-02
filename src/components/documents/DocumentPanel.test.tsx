@@ -47,8 +47,8 @@ function doc(overrides: Partial<PanelDocument> = {}): PanelDocument {
     approvedRole: 'original',
     originalVersionId: 'v1',
     approvable: [
-      { id: 'v1', role: 'original' },
-      { id: 'v2', role: 'public_redacted' },
+      { id: 'v1', role: 'original', createdAt: '2027-03-02T15:00:00.000Z' },
+      { id: 'v2', role: 'public_redacted', createdAt: '2027-03-03T16:30:00.000Z' },
     ],
     canRedact: false,
     ...overrides,
@@ -156,5 +156,12 @@ describe('DocumentPanel', () => {
   it('hides approval controls from people who cannot publish', () => {
     view([doc({ rendition: 'public_no_copy', approvalId: null })], false)
     expect(screen.queryByRole('button', { name: 'Approve for the public' })).toBeNull()
+  })
+
+  it('tells two redacted copies apart by when they were made', () => {
+    view([doc({ rendition: 'public_no_copy', approvalId: null })])
+    expect(
+      screen.getByRole('option', { name: 'Redacted copy, March 3, 2027 16:30 UTC' }),
+    ).toBeTruthy()
   })
 })

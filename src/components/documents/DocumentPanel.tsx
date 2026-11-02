@@ -8,6 +8,7 @@ import type {
   RenditionState,
 } from '@/features/documents/panelData'
 import { AUDIENCES, type Audience, type RecordRef } from '@/features/documents/types'
+import { formatCivilDate } from '@/lib/formatDate'
 import type { ActionResult } from '@/server/actionRunner'
 
 type FormAction = (formData: FormData) => Promise<ActionResult>
@@ -64,6 +65,12 @@ function publicCopyText(doc: PanelDocument): string | null {
   return doc.approvedRole === 'public_redacted' ? 'Public copy: redacted' : 'Public copy: original'
 }
 
+function versionLabel(v: PanelDocument['approvable'][number]): string {
+  const day = formatCivilDate(v.createdAt.slice(0, 10))
+  const time = v.role === 'public_redacted' ? ` ${v.createdAt.slice(11, 16)} UTC` : ''
+  return `${VERSION_LABELS[v.role]}, ${day}${time}`
+}
+
 function ApprovalControls({ doc, actions }: { doc: PanelDocument; actions: DocumentPanelActions }) {
   return (
     <>
@@ -78,7 +85,7 @@ function ApprovalControls({ doc, actions }: { doc: PanelDocument; actions: Docum
             >
               {doc.approvable.map((v) => (
                 <option key={v.id} value={v.id}>
-                  {VERSION_LABELS[v.role]}
+                  {versionLabel(v)}
                 </option>
               ))}
             </select>
