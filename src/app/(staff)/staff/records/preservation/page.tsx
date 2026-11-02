@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { listPreservationIncomplete } from '@/features/preservation/preserve'
 import { preservationReasonLabel } from '@/features/preservation/reasonCopy'
+import { listPreservationRetrying, type RetryingRow } from '@/features/preservation/retryQueue'
 import { requireStaffContext } from '@/server/requireStaff'
 import { retryPreservationAction } from '../actions'
 
@@ -16,6 +17,7 @@ export default async function PreservationQueuePage() {
     { limit: PAGE_SIZE },
     ctx.signal,
   )
+  const retrying = await listPreservationRetrying(ctx.db, ctx.actor, ctx.signal)
   if (!queue.ok) {
     return (
       <main>
@@ -53,6 +55,29 @@ export default async function PreservationQueuePage() {
           </li>
         ))}
       </ul>
+      {retrying.ok ? <RetryingList rows={retrying.value} /> : null}
     </main>
+  )
+}
+
+function RetryingList({ rows }: { rows: RetryingRow[] }) {
+  if (rows.length === 0) return null
+  return (
+    <section aria-labelledby="retrying" className="space-y-2">
+      <h2 id="retrying">Waiting to be tried again</h2>
+      <p className="m-0">
+        These come back to the list above if the next try fails, or drop off once preserved.
+      </p>
+      <ul className="m-0 list-none space-y-1 p-0">
+        {rows.map((row) => (
+          <li key={row.recordId}>
+            <a href={`/api/documents/${row.documentId}`} className="text-action underline">
+              {row.title}
+            </a>
+            {` (tried ${row.attempts} ${row.attempts === 1 ? 'time' : 'times'} so far)`}
+          </li>
+        ))}
+      </ul>
+    </section>
   )
 }
