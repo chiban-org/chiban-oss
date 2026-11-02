@@ -4,6 +4,7 @@ import 'maplibre-gl/dist/maplibre-gl.css'
 import type { Map as MapLibreMap } from 'maplibre-gl'
 import { useEffect, useRef } from 'react'
 import { buildMapStyle } from '@/components/map/mapStyle'
+import { MAPLIBRE_WORKER_URL } from '@/components/map/workerUrl'
 import { TOKENS } from '@/features/design/tokens'
 
 export type Bbox = [number, number, number, number]
@@ -36,6 +37,7 @@ export function ParcelMap(props: ParcelMapProps) {
     let cancelled = false
     void import('maplibre-gl').then((maplibre) => {
       if (cancelled || container.current === null) return
+      maplibre.setWorkerUrl(MAPLIBRE_WORKER_URL)
       const map = new maplibre.Map({
         container: container.current,
         style: buildMapStyle({
