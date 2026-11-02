@@ -53,6 +53,7 @@ export interface BoardPanelData {
     suggestion: string
     determinationText: string | null
     distanceText: string
+    suggestedDetermination: 'within_500ft' | 'not_within' | null
   }
   lists: { id: string; version: number; statusText: string; drawnText: string; issued: boolean }[]
   notice: NoticeCostSummary
@@ -104,10 +105,15 @@ const LIST_STATUS = {
 function suggestionText(
   s: Awaited<ReturnType<typeof suggestDesProximity>>,
   distanceFt: number,
-): { suggestion: string; distance: string } {
+): {
+  suggestion: string
+  distance: string
+  determination: 'within_500ft' | 'not_within' | null
+} {
   if (s.state === 'known' || s.state === 'stale') {
     const feet = s.value.withinFt === null ? null : Math.round(s.value.withinFt)
     return {
+      determination: s.value.within ? 'within_500ft' : 'not_within',
       suggestion: s.value.within
         ? `The map suggests this parcel is within ${distanceFt} feet of a water body.`
         : `The map suggests this parcel is farther than ${distanceFt} feet from any water body.`,
@@ -117,6 +123,7 @@ function suggestionText(
   return {
     suggestion: 'The map cannot suggest an answer because the water layer is not usable.',
     distance: '',
+    determination: null,
   }
 }
 
@@ -238,6 +245,7 @@ export async function loadBoardPanel(
       applies: desApplies,
       suggestion: text.suggestion,
       distanceText: text.distance,
+      suggestedDetermination: text.determination,
       determinationText: des === undefined ? null : DES_TEXT[des.determination],
     },
     lists: versions.map((v) => ({
