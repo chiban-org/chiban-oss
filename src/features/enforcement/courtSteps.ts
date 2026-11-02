@@ -77,6 +77,7 @@ function firstMotionBlock(input: {
   const recipients = input.state.recipients.map((r) => ({
     answerDue: answerDueOf(r.row),
     answeredOn: r.row.answeredOn as CivilDate | null,
+    served: input.status.servedOn[r.id] !== undefined,
   }))
   return motionBlocks({
     rule: input.rule,

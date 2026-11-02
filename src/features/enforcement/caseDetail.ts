@@ -91,6 +91,7 @@ async function orderDetail(
     recipients: service.recipients.map((r) => ({
       answerDue: answerDueOf(r.row),
       answeredOn: r.row.answeredOn as CivilDate | null,
+      served: status.servedOn[r.id] !== undefined,
     })),
     filedWithClerkOn: (filed ?? null) as CivilDate | null,
     stay,

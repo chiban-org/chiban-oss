@@ -15,6 +15,12 @@ export type MotionBlock =
 export interface GateRecipient {
   answerDue: SubjectDue | null
   answeredOn: CivilDate | null
+  served: boolean
+}
+
+function answerPeriodRunning(r: GateRecipient, today: CivilDate): boolean {
+  if (r.answerDue === null) return r.served
+  return today <= r.answerDue.due
 }
 
 export interface MotionGateInput {
@@ -31,7 +37,7 @@ export function motionBlocks(input: MotionGateInput): MotionBlock[] {
   if (input.stay.stayed) blocks.push('stayed')
   if (!input.status.complete) blocks.push('service_incomplete')
   if (input.recipients.some((r) => r.answeredOn !== null)) blocks.push('answered')
-  if (input.recipients.some((r) => r.answerDue !== null && input.today <= r.answerDue.due)) {
+  if (input.recipients.some((r) => answerPeriodRunning(r, input.today))) {
     blocks.push('answer_period_running')
   }
   if (input.filedWithClerkOn === null) {

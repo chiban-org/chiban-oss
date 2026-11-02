@@ -134,6 +134,7 @@ export async function listRecipient(
         source: value.source,
       })
       .returning({ id: orderServiceRecipients.id })
+    await refreshAnswerDues(tx, value.orderId, signal)
     await writeAudit(
       tx,
       {

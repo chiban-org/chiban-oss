@@ -220,6 +220,70 @@ describe('answer periods and the motion gate', () => {
     })
   })
 
+  it('an owner listed after posting and publication gets an answer due that holds the motion', async () => {
+    for (const [role, outcome] of [
+      ['record_owner', 'owner_not_found'],
+      ['taxpayer', 'same_as_owner'],
+      ['occupying_tenant', 'none_exist'],
+      ['person_in_control', 'none_exist'],
+      ['mortgagee_of_record', 'none_exist'],
+    ] as const) {
+      await recordRoleCheck(
+        handle.db,
+        world.staff,
+        {
+          orderId: order.orderId,
+          role,
+          outcome,
+          basis: 'Search on file',
+          checkedOn: d('2027-03-01'),
+        },
+        signal,
+      )
+    }
+    for (const [method, servedOn] of [
+      ['posting_on_property', '2027-03-02'],
+      ['newspaper_publication', '2027-03-04'],
+      ['newspaper_publication', '2027-03-11'],
+      ['newspaper_publication', '2027-03-18'],
+      ['newspaper_publication', '2027-03-25'],
+    ] as const) {
+      const recorded = await recordServiceEvent(
+        handle.db,
+        world.staff,
+        {
+          orderId: order.orderId,
+          recipientId: null,
+          method,
+          servedOn: d(servedOn),
+          ...(method === 'newspaper_publication' ? { newspaper: 'Alder Pond Gazette' } : {}),
+          proofDocumentId: await uploadProof(handle.db, store, world.staff, order.caseId, 'Proof'),
+        },
+        signal,
+      )
+      if (!recorded.ok) throw new Error(recorded.error)
+    }
+    const owner = await listRecipient(
+      handle.db,
+      world.staff,
+      {
+        orderId: order.orderId,
+        role: 'record_owner',
+        name: 'Pat Owner',
+        address: 'Unknown',
+        source: 'Registry book 1234 page 56',
+      },
+      signal,
+    )
+    if (!owner.ok) throw new Error('owner')
+    expect(await recipientDue(owner.value.recipientId)).toMatchObject({ due: '2027-04-14' })
+    expect((await step('filed_with_clerk', '2027-03-26')).ok).toBe(true)
+    expect(await step('motion_to_enforce', '2027-04-10')).toEqual({
+      ok: false,
+      error: 'answer_period_running',
+    })
+  })
+
   it('a court step with a photo instead of a court document is proof_required', async () => {
     await completeService(handle.db, store, world, order, '2027-03-01')
     const photo = await uploadProof(

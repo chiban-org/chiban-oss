@@ -36,7 +36,7 @@ function gate(overrides: Partial<Parameters<typeof motionGate>[0]> = {}) {
   return motionGate({
     rule,
     status: COMPLETE,
-    recipients: [{ answerDue: dueFor('2027-03-01'), answeredOn: null }],
+    recipients: [{ answerDue: dueFor('2027-03-01'), answeredOn: null, served: true }],
     filedWithClerkOn: d('2027-03-10'),
     stay: NOT_STAYED,
     today: d('2027-03-23'),
@@ -45,6 +45,13 @@ function gate(overrides: Partial<Parameters<typeof motionGate>[0]> = {}) {
 }
 
 describe('motionGate', () => {
+  it('a served recipient whose answer due was never set holds the motion', () => {
+    expect(gate({ recipients: [{ answerDue: null, answeredOn: null, served: true }] })).toEqual({
+      open: false,
+      blocks: ['answer_period_running'],
+    })
+  })
+
   it('motion on 2027-03-22 is answer_period_running for service on 2027-03-01', () => {
     expect(gate({ today: d('2027-03-22') })).toEqual({
       open: false,
@@ -66,7 +73,7 @@ describe('motionGate', () => {
 
   it('a recorded answer blocks the motion as answered', () => {
     const result = gate({
-      recipients: [{ answerDue: dueFor('2027-03-01'), answeredOn: d('2027-03-15') }],
+      recipients: [{ answerDue: dueFor('2027-03-01'), answeredOn: d('2027-03-15'), served: true }],
     })
     expect(result).toEqual({ open: false, blocks: ['answered'] })
   })
@@ -106,10 +113,16 @@ describe('motionGate', () => {
     const due = dueFor('2027-03-25')
     expect(due.due).toBe('2027-04-14')
     expect(
-      gate({ recipients: [{ answerDue: due, answeredOn: null }], today: d('2027-04-14') }).open,
+      gate({
+        recipients: [{ answerDue: due, answeredOn: null, served: true }],
+        today: d('2027-04-14'),
+      }).open,
     ).toBe(false)
     expect(
-      gate({ recipients: [{ answerDue: due, answeredOn: null }], today: d('2027-04-15') }).open,
+      gate({
+        recipients: [{ answerDue: due, answeredOn: null, served: true }],
+        today: d('2027-04-15'),
+      }).open,
     ).toBe(true)
   })
 })
