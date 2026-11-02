@@ -45,6 +45,7 @@ export async function staffSignIn(
   signal.throwIfAborted()
   const key = input.email.trim().toLowerCase()
   if (limiter.isLimited(key)) return err('rate_limited')
+  limiter.recordFailure(key)
 
   const [user] = await db.select().from(users).where(eq(users.email, key)).limit(1)
   const eligible = user?.isActive === true && user.kind === 'staff' && user.passwordHash !== null
@@ -53,18 +54,12 @@ export async function staffSignIn(
     eligible ? (user.passwordHash ?? DUMMY_HASH) : DUMMY_HASH,
     signal,
   )
-  if (!eligible || !passwordOk) {
-    limiter.recordFailure(key)
-    return err('invalid_credentials')
-  }
+  if (!eligible || !passwordOk) return err('invalid_credentials')
 
   if (user.totpEnabled) {
     const second = checkSecondFactor(user.totpSecretEnc, input.totp)
     if (second === 'required') return err('totp_required')
-    if (second === 'rejected') {
-      limiter.recordFailure(key)
-      return err('invalid_credentials')
-    }
+    if (second === 'rejected') return err('invalid_credentials')
   }
 
   const session = await createSession(db, user.id, signal)

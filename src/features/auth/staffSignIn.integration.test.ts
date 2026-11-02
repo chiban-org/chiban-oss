@@ -120,4 +120,27 @@ describe('staffSignIn', () => {
       error: 'rate_limited',
     })
   })
+
+  it('20 concurrent wrong-password attempts for one email make at most 6 credential checks', async () => {
+    await staffUser({ email: 'burst@alderpond.example' })
+    const bad = { email: 'burst@alderpond.example', password: 'nope' }
+    const results = await Promise.all(
+      Array.from({ length: 20 }, () => staffSignIn(handle.db, bad, signal)),
+    )
+    const checked = results.filter((r) => !r.ok && r.error === 'invalid_credentials')
+    const limited = results.filter((r) => !r.ok && r.error === 'rate_limited')
+    expect(checked.length).toBeLessThanOrEqual(6)
+    expect(limited.length).toBe(20 - checked.length)
+  })
+
+  it('a successful sign-in clears the reservation', async () => {
+    await staffUser({ email: 'clears@alderpond.example' })
+    const bad = { email: 'clears@alderpond.example', password: 'nope' }
+    for (let i = 0; i < 4; i += 1) await staffSignIn(handle.db, bad, signal)
+    const good = { email: 'clears@alderpond.example', password: PASSWORD }
+    expect((await staffSignIn(handle.db, good, signal)).ok).toBe(true)
+    for (let i = 0; i < 6; i += 1) {
+      expect(await staffSignIn(handle.db, bad, signal)).toEqual(generic)
+    }
+  })
 })
