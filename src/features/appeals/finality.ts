@@ -17,6 +17,7 @@ const DECISION_KINDS = [
   'administrative_decision',
   'rehearing_outcome',
 ]
+const FINAL_DECISION_KINDS = ['zba_decision', 'pb_decision']
 const APPROVING = ['approved', 'approved_with_conditions']
 
 async function windowClocks(db: DbOrTx, applicationId: string) {
@@ -61,10 +62,12 @@ export async function finality(
     .sort((a, b) => compareCivil(a, b))
     .at(-1)
   const final = pending.length === 0 && running.length === 0
-  const approving = nodes
-    .filter((n) => DECISION_KINDS.includes(n.kind) && APPROVING.includes(n.outcome ?? ''))
+  const latest = nodes
+    .filter((n) => FINAL_DECISION_KINDS.includes(n.kind))
     .sort((a, b) => compareCivil(a.occurredOn as CivilDate, b.occurredOn as CivilDate))
     .at(-1)
+  const approving =
+    latest !== undefined && APPROVING.includes(latest.outcome ?? '') ? latest : undefined
   return {
     final,
     finalOn: final && approving !== undefined ? (approving.occurredOn as CivilDate) : null,

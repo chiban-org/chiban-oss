@@ -1,6 +1,7 @@
 import { NH_APPEAL_ROUTES } from '@packs/nh/appealRoutes'
 import { and, asc, desc, eq } from 'drizzle-orm'
 import type { GraphNode } from '@/components/appeals/AppealGraph'
+import type { ChecklistItem } from '@/components/notices/NoticeChecklist'
 import type { Db } from '@/db/client'
 import {
   appealNodes,
@@ -16,6 +17,9 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { TRANSMITTAL_SUBJECT } from '@/features/decisions/regionalTransmittal'
+import { channelLabel } from '@/features/notices/channels'
+import { noticeStatus } from '@/features/notices/noticeStatus'
+import { proofMethodLabel } from '@/features/notices/proofMethods'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -54,6 +58,10 @@ export interface DecisionView {
   minutesChoices: { id: string; label: string }[]
   regional: boolean
   transmittalStarted: boolean
+  transmittal: {
+    checklist: ChecklistItem[]
+    itemChoices: { id: string; label: string }[]
+  } | null
   graph: GraphNode[]
   nodeChoices: { id: string; label: string }[]
 }
@@ -98,6 +106,26 @@ export function toGraphNodes(rows: (typeof appealNodes.$inferSelect)[]): GraphNo
   }))
 }
 
+async function checklistFor(db: Db, setId: string, signal: AbortSignal): Promise<ChecklistItem[]> {
+  const status = await noticeStatus(db, setId, signal)
+  return status.items.map((i) => ({
+    itemId: i.itemId,
+    channel: channelLabel(i.channel),
+    recipientName: i.recipientName,
+    recipientAddress: i.recipientAddress,
+    dueOn: formatCivilDate(i.dueOn),
+    proof:
+      i.proof === null
+        ? null
+        : {
+            method: proofMethodLabel(i.proof.method),
+            reference: i.proof.reference,
+            effectiveOn: formatCivilDate(i.proof.effectiveOn),
+          },
+    state: i.state,
+  }))
+}
+
 export async function loadDecisionView(
   db: Db,
   actor: Actor,
@@ -131,6 +159,8 @@ export async function loadDecisionView(
       and(eq(noticeSets.subjectKind, TRANSMITTAL_SUBJECT), eq(noticeSets.subjectId, decisionId)),
     )
   const graph = toGraphNodes(nodes)
+  const transmittalItems =
+    transmittal === undefined ? null : await checklistFor(db, transmittal.id, signal)
   return {
     decisionId,
     applicationId: app.id,
@@ -149,6 +179,16 @@ export async function loadDecisionView(
     minutesChoices: docs.map((d) => ({ id: d.id, label: d.title })),
     regional: regional?.determination === 'yes',
     transmittalStarted: transmittal !== undefined,
+    transmittal:
+      transmittalItems === null
+        ? null
+        : {
+            checklist: transmittalItems,
+            itemChoices: transmittalItems.map((i) => ({
+              id: i.itemId,
+              label: i.recipientName ?? i.channel,
+            })),
+          },
     graph,
     nodeChoices: nodes.map((n, i) => ({
       id: n.id,

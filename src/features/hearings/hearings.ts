@@ -30,6 +30,7 @@ export type ScheduleError =
   | 'invalid_state'
   | 'no_issued_list'
   | 'determination_missing'
+  | 'list_out_of_date'
   | { filedTooLate: { lastFilingDay: CivilDate; earliestMeeting: CivilDate | null } }
   | { gateBlocked: GateResult[] }
 

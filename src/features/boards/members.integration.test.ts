@@ -8,7 +8,12 @@ import {
   userRoles,
   users,
 } from '@/db/schema'
-import { buildAgenda, publishAgenda } from '@/features/agendas/agendas'
+import {
+  buildAgenda,
+  publishAgenda,
+  removeAgendaItem,
+  reopenAgenda,
+} from '@/features/agendas/agendas'
 import { createMeetingPacket } from '@/features/agendas/meetingPacket'
 import { listApplicationsForViewer } from '@/features/applications/listForViewer'
 import { type Actor, loadActor } from '@/features/auth/actor'
@@ -201,9 +206,39 @@ describe('board member application access', () => {
     }
     const second = await zbaHearingApplication()
     const id = await meetingId('2027-04-15', 'zba')
-    await handle.db.execute(`update agendas set status = 'published' where meeting_id = '${id}'`)
+    await reopenAgenda(handle.db, world.staff, id, signal)
+    await buildAgenda(handle.db, world.staff, id, signal)
+    await publishAgenda(handle.db, store, world.staff, id, signal)
     const rows = await seen(zba.actor, 25)
     expect(rows.sort()).toEqual([applicationId, second].sort())
+  })
+})
+
+describe('agenda scoping', () => {
+  it('an application removed from the published agenda stays hidden from members', async () => {
+    const zba = await invite('zba.member@alderpond.example', 'zba')
+    const first = await zbaHearingApplication()
+    const second = await zbaHearingApplication()
+    const id = await meetingId('2027-04-15', 'zba')
+    await buildAgenda(handle.db, world.staff, id, signal)
+    const items = await handle.db.query.agendaItems.findMany({
+      where: (i, { eq: equals }) => equals(i.meetingId, id),
+    })
+    const secondItem = items.find(
+      (i) => i.title.includes('VAR') && i.hearingId !== null && i.id !== items[0]?.id,
+    )
+    await removeAgendaItem(handle.db, world.staff, secondItem?.id ?? '', signal)
+    await publishAgenda(handle.db, store, world.staff, id, signal)
+    const visible = await seen(zba.actor)
+    expect(visible).toHaveLength(1)
+    expect([first, second]).toContain(visible[0])
+    const hiddenApp = visible[0] === first ? second : first
+    const doc = await proofDocument(handle.db, world, hiddenApp)
+    await handle.db
+      .update(documents)
+      .set({ audiences: ['board'] })
+      .where(eq(documents.id, doc))
+    expect((await resolveRendition(handle.db, zba.actor, doc, signal)).ok).toBe(false)
   })
 })
 

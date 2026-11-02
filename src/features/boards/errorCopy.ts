@@ -38,6 +38,8 @@ const COPY: Record<string, string> = {
   invalid_state: 'That step is not available from the current state.',
   unknown_parcel: 'That parcel ID was not found.',
   no_issued_list: 'Issue the abutter list before scheduling a hearing.',
+  list_out_of_date:
+    'The abutter list was issued before the regional impact or water proximity finding. Draw and issue a new list first.',
   determination_missing: 'Record the regional impact and water proximity determinations first.',
   details_required: 'Enter the date, time, and place that were announced at the meeting.',
   not_properly_noticed:

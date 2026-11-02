@@ -34,10 +34,12 @@ export function NoticeChecklist({
   items,
   noticedOn,
   markSlot,
+  showMark = true,
 }: {
   items: ChecklistItem[]
   noticedOn: string | null
   markSlot?: ReactNode
+  showMark?: boolean
 }) {
   const outstanding = items.filter((i) => i.state !== 'proved_on_time').length
   return (
@@ -78,7 +80,7 @@ export function NoticeChecklist({
         </tbody>
       </table>
       {noticedOn === null ? null : <p>{`Marked properly noticed on ${noticedOn}.`}</p>}
-      {noticedOn !== null || items.length === 0 ? null : outstanding === 0 ? (
+      {!showMark || noticedOn !== null || items.length === 0 ? null : outstanding === 0 ? (
         markSlot
       ) : (
         <div className="flex flex-wrap items-center gap-3">

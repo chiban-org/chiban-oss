@@ -7,7 +7,13 @@ import { listDocuments } from '@/features/documents/listDocuments'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { recordProof } from '@/features/notices/proofs'
 import type { ObjectStore } from '@/features/storage/objectStore'
-import { type BoardWorld, publishRegionalContacts, setupBoardWorld } from '@/test/boardFixtures'
+import {
+  ALDER_POND_CONTACTS,
+  type BoardWorld,
+  publishRegionalContacts,
+  setupBoardWorld,
+} from '@/test/boardFixtures'
+import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba } from '@/test/hearingFixtures'
 import { makeTestStore } from '@/test/minio'
@@ -54,6 +60,22 @@ async function file(
 
 async function clockRows(applicationId: string) {
   return await handle.db.select().from(clocks).where(eq(clocks.applicationId, applicationId))
+}
+
+async function proveFirstClass(applicationId: string, ids: string[], effectiveOn: string) {
+  return await recordProof(
+    handle.db,
+    world.staff,
+    {
+      itemIds: ids,
+      method: 'first_class_mail',
+      reference: null,
+      effectiveOn: d(effectiveOn),
+      documentId: await proofDocument(handle.db, world, applicationId),
+    },
+    signal,
+    AFTER_FILING,
+  )
 }
 
 describe('fileDecision', () => {
@@ -147,6 +169,26 @@ describe('fileDecision', () => {
     expect(publicRows).toEqual([])
   })
 
+  it('filing needs the authority to publish documents, not only to record board actions', async () => {
+    const made = await decided()
+    const minutesId = await proofDocument(handle.db, world, made.applicationId)
+    const result = await fileDecision(
+      handle.db,
+      world.admin,
+      { decisionId: made.decisionId, filedOn: d('2027-07-09'), minutesDocumentId: minutesId },
+      signal,
+      AFTER_FILING,
+    )
+    expect(result).toEqual({ ok: false, error: 'forbidden' })
+    const [doc] = await handle.db.select().from(documents).where(eq(documents.id, minutesId))
+    expect(doc?.isPublic).toBe(false)
+    const [row] = await handle.db
+      .select()
+      .from(boardDecisions)
+      .where(eq(boardDecisions.id, made.decisionId))
+    expect(row?.filedOn).toBeNull()
+  })
+
   it('a reviewer filing a decision is forbidden', async () => {
     const made = await decided()
     expect(await file(made, '2027-07-09', world.reviewer)).toEqual({
@@ -200,20 +242,8 @@ describe('regional transmittal', () => {
     )
     if (!first.ok) throw new Error('derive failed')
     const status = await noticeStatus(handle.db, first.value.setId, signal)
-    const prove = async (ids: string[], effectiveOn: string) =>
-      await recordProof(
-        handle.db,
-        world.staff,
-        {
-          itemIds: ids,
-          method: 'first_class_mail',
-          reference: null,
-          effectiveOn: d(effectiveOn),
-          documentId: await proofDocument(handle.db, world, made.applicationId),
-        },
-        signal,
-        AFTER_FILING,
-      )
+    const prove = (ids: string[], effectiveOn: string) =>
+      proveFirstClass(made.applicationId, ids, effectiveOn)
     await prove(
       status.items.slice(0, 2).map((i) => i.itemId),
       '2027-07-07',
@@ -290,6 +320,80 @@ describe('regional transmittal', () => {
     ).toMatchObject({
       ok: true,
       value: { met: false },
+    })
+  })
+
+  it('a commission missing from the settings is contacts_missing', async () => {
+    await saveAndPublish(handle.db, world.admin, 'regional_contacts', 'default', {
+      ...ALDER_POND_CONTACTS,
+      commission: null,
+    })
+    const made = await decided({ regional: 'yes' })
+    await handle.db
+      .insert(regionalImpactParties)
+      .values({ applicationId: made.applicationId, municipalityKey: 'pine_river' })
+    expect(
+      await recordRegionalTransmittal(
+        handle.db,
+        world.staff,
+        made.decisionId,
+        signal,
+        AFTER_FILING,
+      ),
+    ).toEqual({
+      ok: false,
+      error: 'contacts_missing',
+    })
+  })
+
+  it('a selected municipality missing from the settings is contacts_missing', async () => {
+    await publishRegionalContacts(handle.db, world)
+    const made = await decided({ regional: 'yes' })
+    await handle.db.insert(regionalImpactParties).values([
+      { applicationId: made.applicationId, municipalityKey: 'pine_river' },
+      { applicationId: made.applicationId, municipalityKey: 'harbor_end' },
+    ])
+    expect(
+      await recordRegionalTransmittal(
+        handle.db,
+        world.staff,
+        made.decisionId,
+        signal,
+        AFTER_FILING,
+      ),
+    ).toEqual({
+      ok: false,
+      error: 'contacts_missing',
+    })
+  })
+
+  it('a late replacement proof reopens the transmittal clock', async () => {
+    const made = await regionalDecided()
+    const first = await recordRegionalTransmittal(
+      handle.db,
+      world.staff,
+      made.decisionId,
+      signal,
+      AFTER_FILING,
+    )
+    if (!first.ok) throw new Error('derive failed')
+    const status = await noticeStatus(handle.db, first.value.setId, signal)
+    const prove = (ids: string[], effectiveOn: string) =>
+      proveFirstClass(made.applicationId, ids, effectiveOn)
+    await prove(
+      status.items.map((i) => i.itemId),
+      '2027-07-08',
+    )
+    let rows = await clockRows(made.applicationId)
+    expect(rows.find((c) => c.ruleKey === 'nh.ri.transmittal')?.status).toBe('met')
+    await prove(
+      status.items.slice(0, 1).map((i) => i.itemId),
+      '2027-07-12',
+    )
+    rows = await clockRows(made.applicationId)
+    expect(rows.find((c) => c.ruleKey === 'nh.ri.transmittal')).toMatchObject({
+      status: 'running',
+      metOn: null,
     })
   })
 

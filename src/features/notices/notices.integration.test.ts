@@ -1,7 +1,7 @@
 import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { noticeItems, noticeProofSupersessions, noticeProofs } from '@/db/schema'
+import { noticeItems, noticeProofSupersessions, noticeProofs, noticeSets } from '@/db/schema'
 import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettingsSchema'
 import { deriveNoticeItems } from '@/features/notices/deriveItems'
 import { noticeStatus } from '@/features/notices/noticeStatus'
@@ -165,6 +165,19 @@ describe('deriveNoticeItems', () => {
     const mail = items.find((i) => i.requirementKey === 'nh.pb.notice_req.mail')
     expect(mail?.dueOn).toBe('2027-03-31')
     expect(mail?.countingMethod).toContain('14')
+  })
+
+  it('a list issued before a regional impact finding cannot support a hearing', async () => {
+    const id = await pbApplication({ regional: 'yes' })
+    await issueListWithRecipients(handle.db, world, id, [recipient(1)])
+    expect(await derive(id, '2027-04-14')).toEqual({ ok: false, error: 'list_out_of_date' })
+    expect(await handle.db.select().from(noticeSets)).toEqual([])
+  })
+
+  it('a list without the water agency cannot support a hearing when the site is near water', async () => {
+    const id = await pbApplication({ des: 'within_500ft' })
+    await issueListWithRecipients(handle.db, world, id, [recipient(1)])
+    expect(await derive(id, '2027-04-14')).toEqual({ ok: false, error: 'list_out_of_date' })
   })
 
   it('without an issued list the result is no_issued_list', async () => {
@@ -389,6 +402,31 @@ describe('recordProof', () => {
       '2027-04-05',
     )
     await expect(handle.db.update(noticeProofs).set({ method: 'posting' })).rejects.toThrow()
+  })
+
+  it('two proofs submitted together leave exactly one live proof per item', async () => {
+    const { id, setId, mail } = await zbaMailItems(1)
+    const first = await proofDocument(handle.db, world, id)
+    const second = await proofDocument(handle.db, world, id)
+    const make = (documentId: string) =>
+      recordProof(
+        handle.db,
+        world.staff,
+        {
+          itemIds: mail.map((i) => i.id),
+          method: 'certificate_of_mailing',
+          reference: null,
+          effectiveOn: d('2027-04-05'),
+          documentId,
+        },
+        signal,
+        NOW,
+      )
+    const results = await Promise.all([make(first), make(second)])
+    expect(results.every((r) => r.ok)).toBe(true)
+    const status = await noticeStatus(handle.db, setId, signal)
+    expect(status.items.filter((i) => i.channel === 'verified_mail')).toHaveLength(1)
+    expect(await handle.db.select().from(noticeProofSupersessions)).toHaveLength(1)
   })
 
   it('a reviewer recording proof is forbidden', async () => {

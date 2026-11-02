@@ -49,7 +49,10 @@ export async function fileDecision(
   now: Date = new Date(),
 ): Promise<Result<{ late: boolean }, FileError>> {
   signal.throwIfAborted()
-  if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
+  const allowed =
+    (await hasCapability(db, actor.userId, 'board.record', signal)) &&
+    (await hasCapability(db, actor.userId, 'document.publish', signal))
+  if (!allowed) return err('forbidden')
   return await transactionResult<{ late: boolean }, FileError>(db, async (tx) => {
     const [decision] = await tx
       .select()

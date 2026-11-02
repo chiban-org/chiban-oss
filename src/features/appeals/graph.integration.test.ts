@@ -361,6 +361,28 @@ describe('finality and the daily job', () => {
     })
   })
 
+  it('a replacement denial after a granted rehearing never becomes a final approval', async () => {
+    const { applicationId, nodeId } = await zbaDecisionNode()
+    const motion = await add(nodeId, 'rehearing_motion', '2027-05-10')
+    if (!motion.ok) throw new Error(motion.error)
+    const outcome = await add(motion.value.nodeId, 'rehearing_outcome', '2027-05-20', {
+      outcome: 'granted',
+    })
+    if (!outcome.ok) throw new Error(outcome.error)
+    const replacement = await add(outcome.value.nodeId, 'zba_decision', '2027-06-24', {
+      outcome: 'denied',
+    })
+    if (!replacement.ok) throw new Error(replacement.error)
+    await handle.db.transaction((tx) => closeAppealPeriods(tx, d('2027-08-01'), signal))
+    const result = await finality(handle.db, applicationId, d('2027-08-01'), signal)
+    expect(result).toMatchObject({ final: true, finalOn: null })
+    const rows = await handle.db
+      .select()
+      .from(clocks)
+      .where(eq(clocks.applicationId, applicationId))
+    expect(rows.find((c) => c.ruleKey === 'nh.zba.exercise')).toBeUndefined()
+  })
+
   it('a window still running on the job date is left alone', async () => {
     const { applicationId } = await zbaDecisionNode()
     await handle.db.transaction((tx) => closeAppealPeriods(tx, d('2027-05-17'), signal))

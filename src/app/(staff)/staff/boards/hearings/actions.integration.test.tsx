@@ -1,11 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { boardDecisions, hearings, noticeProofs } from '@/db/schema'
+import { boardDecisions, hearings, noticeProofs, regionalImpactParties } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import {
   type BoardWorld,
+  publishRegionalContacts,
   recordNoRegionalImpact,
   setupBoardWorld,
   submitBoardApplication,
@@ -280,6 +281,34 @@ describe('staff and public pages', () => {
     expect(
       findRawKeys(html, ['approved_with_conditions', 'zba_decision', 'rehearing_motion']),
     ).toEqual([])
+  })
+
+  it('the decision page shows the transmittal checklist and proof form once it is started', async () => {
+    await publishRegionalContacts(handle.db, world)
+    const regional = await decidedZba(handle.db, world, store, {
+      votedOn: '2027-04-15',
+      regional: 'yes',
+    })
+    await handle.db.insert(regionalImpactParties).values({
+      applicationId: regional.applicationId,
+      municipalityKey: 'pine_river',
+    })
+    state.actor = world.staff
+    const before = renderToStaticMarkup(
+      await DecisionPage({ params: Promise.resolve({ decisionId: regional.decisionId }) }),
+    )
+    expect(before).not.toContain('Record proof of transmittal')
+    const started = await decisionActions.transmittalAction(
+      form({ decisionId: regional.decisionId }),
+    )
+    expect(started.ok).toBe(true)
+    const html = renderToStaticMarkup(
+      await DecisionPage({ params: Promise.resolve({ decisionId: regional.decisionId }) }),
+    )
+    expect(html).toContain('Record proof of transmittal')
+    expect(html).toContain('Alder Valley Regional Planning Commission')
+    expect(html).toContain('Town of Pine River')
+    expect(html).not.toContain('Mark properly noticed')
   })
 
   it('the decision page shows the permission page to a reviewer', async () => {

@@ -10,7 +10,7 @@ import { recordDecision } from '@/features/decisions/recordDecision'
 import { recordRegionalTransmittal } from '@/features/decisions/regionalTransmittal'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { type ActionResult, runStaffAction, text } from '@/server/actionRunner'
-import { dateOf } from './actions'
+import { dateOf } from './dates'
 
 const INVALID: ActionResult = { ok: false, error: 'Check the form fields and try again.' }
 const APPEAL_KINDS = [

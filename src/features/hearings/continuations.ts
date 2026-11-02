@@ -22,6 +22,7 @@ export type ContinueError =
   | 'not_continuable'
   | 'no_issued_list'
   | 'determination_missing'
+  | 'list_out_of_date'
 
 export async function continueHearing(
   db: Db,

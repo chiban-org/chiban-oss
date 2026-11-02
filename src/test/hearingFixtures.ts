@@ -93,7 +93,13 @@ export async function heldZbaHearing(
   const date = options.date ?? '2027-04-15'
   const applicationId = await submitBoardApplication(db, world, world.zbaTypeKey, '2027-03-02')
   await recordNoRegionalImpact(db, world, applicationId, options.regional ?? 'no')
-  await issueListWithRecipients(db, world, applicationId, [recipient(1), recipient(2)])
+  await issueListWithRecipients(db, world, applicationId, [
+    recipient(1),
+    recipient(2),
+    ...(options.regional === 'yes'
+      ? [recipient(3, ['regional_planning_commission']), recipient(4, ['affected_municipality'])]
+      : []),
+  ])
   return await noticeAndHold(
     db,
     world,

@@ -2,12 +2,15 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { AppealGraph } from '@/components/appeals/AppealGraph'
+import { NoticeChecklist } from '@/components/notices/NoticeChecklist'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { loadDecisionView } from '@/features/decisions/decisionView'
+import { PROOF_METHOD_LABELS, type ProofMethod } from '@/features/notices/proofMethods'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
+import { recordProofAction } from '../../hearings/actions'
 import {
   addAppealNodeAction,
   fileDecisionAction,
@@ -18,6 +21,11 @@ import {
 export const dynamic = 'force-dynamic'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+const TRANSMITTAL_METHODS: ProofMethod[] = [
+  'first_class_mail',
+  'certificate_of_mailing',
+  'certified_mail',
+]
 const APPEAL_STEPS: [string, string][] = [
   ['rehearing_motion', 'Motion for rehearing'],
   ['rehearing_outcome', 'Rehearing decision'],
@@ -121,6 +129,46 @@ export default async function DecisionPage({
           </ActionForm>
         </>
       ) : null}
+      {view.transmittal === null ? null : (
+        <div className="space-y-3">
+          <NoticeChecklist items={view.transmittal.checklist} noticedOn={null} showMark={false} />
+          <details>
+            <summary>Record proof of transmittal</summary>
+            <ActionForm action={recordProofAction} submitLabel="Record proof" className="max-w-xl">
+              <fieldset className="space-y-1 rounded-md border p-3">
+                <legend className="px-1 text-sm font-medium">Recipients this proof covers</legend>
+                {view.transmittal.itemChoices.map((c) => (
+                  <label key={c.id} className="flex items-center gap-2 text-sm">
+                    <input type="checkbox" name="itemIds" value={c.id} />
+                    {c.label}
+                  </label>
+                ))}
+              </fieldset>
+              <SelectField
+                label="Proof"
+                name="method"
+                options={TRANSMITTAL_METHODS.map((m): [string, string] => [
+                  m,
+                  PROOF_METHOD_LABELS[m],
+                ])}
+              />
+              <TextField label="Tracking number" name="reference" />
+              <TextField
+                label="Date mailed"
+                name="effectiveOn"
+                type="date"
+                defaultValue={today}
+                required
+              />
+              <SelectField
+                label="Certificate or receipt"
+                name="documentId"
+                options={view.minutesChoices.map((d): [string, string] => [d.id, d.label])}
+              />
+            </ActionForm>
+          </details>
+        </div>
+      )}
       <h2>Appeals</h2>
       <AppealGraph nodes={view.graph} />
       <details>

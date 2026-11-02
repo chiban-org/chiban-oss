@@ -11,6 +11,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { syncTransmittalClock, TRANSMITTAL_SUBJECT } from '@/features/decisions/regionalTransmittal'
 import type { NoticeChannel } from '@/features/notices/channels'
 import { methodAllowed, type ProofMethod, referenceRequired } from '@/features/notices/proofMethods'
 import { townToday } from '@/features/town/today'
@@ -51,10 +52,13 @@ export async function recordProof(
         id: noticeItems.id,
         channel: noticeItems.channel,
         applicationId: noticeSets.applicationId,
+        setId: noticeSets.id,
+        subjectKind: noticeSets.subjectKind,
       })
       .from(noticeItems)
       .innerJoin(noticeSets, eq(noticeSets.id, noticeItems.setId))
       .where(inArray(noticeItems.id, itemIds))
+      .for('update', { of: noticeItems })
     if (items.length !== itemIds.length) return err('item_not_found')
     if (!items.every((i) => methodAllowed(i.channel as NoticeChannel, input.method))) {
       return err('method_not_allowed')
@@ -105,6 +109,11 @@ export async function recordProof(
           .insert(noticeProofSupersessions)
           .values({ proofId: old.id, supersededByProofId: proofId })
       }
+    }
+    for (const setId of new Set(
+      items.filter((i) => i.subjectKind === TRANSMITTAL_SUBJECT).map((i) => i.setId),
+    )) {
+      await syncTransmittalClock(tx, setId, signal)
     }
     await writeAudit(
       tx,

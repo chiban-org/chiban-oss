@@ -5,6 +5,7 @@ const FALLBACK = 'Something went wrong. Try again.'
 const NEW_CODES = [
   'no_issued_list',
   'determination_missing',
+  'list_out_of_date',
   'details_required',
   'not_properly_noticed',
   'not_continuable',

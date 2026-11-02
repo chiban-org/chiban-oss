@@ -67,6 +67,12 @@ describe('NoticeChecklist', () => {
     expect(screen.getByText('2 items still need timely proof.')).toBeTruthy()
   })
 
+  it('shows no mark button at all when the checklist is not for a hearing', () => {
+    render(<NoticeChecklist items={ITEMS} noticedOn={null} showMark={false} />)
+    expect(screen.queryByRole('button', { name: 'Mark properly noticed' })).toBeNull()
+    expect(screen.queryByText(/still need/)).toBeNull()
+  })
+
   it('says it once when exactly one item is outstanding', () => {
     render(<NoticeChecklist items={ITEMS.slice(0, 2)} noticedOn={null} />)
     expect(screen.getByText('1 item still needs timely proof.')).toBeTruthy()

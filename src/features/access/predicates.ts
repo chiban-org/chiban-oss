@@ -39,7 +39,9 @@ export function memberCanSeeApplication(userId: string, applicationIdColumn: SQL
   return sql`exists (select 1 from hearings h
     join board_meetings m on m.id = h.meeting_id and m.status = 'scheduled'
     join agendas a on a.meeting_id = m.id and a.status = 'published'
+    join agenda_items ai on ai.meeting_id = m.id and ai.hearing_id = h.id
     where h.application_id = ${applicationIdColumn}
+      and h.status in ('scheduled', 'held')
       and ${activeMembershipOn(userId, sql`m.board`)})`
 }
 

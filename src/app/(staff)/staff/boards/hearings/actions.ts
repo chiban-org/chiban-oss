@@ -17,16 +17,11 @@ import { recordProof } from '@/features/notices/proofs'
 import { routeToTrc } from '@/features/reviews/trcRouting'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { type ActionResult, runStaffAction, text } from '@/server/actionRunner'
-import { type CivilDate, parseCivilDate } from '@/types/civilDate'
+import { dateOf } from './dates'
 
 const INVALID: ActionResult = { ok: false, error: 'Check the form fields and try again.' }
 const KINDS = ['submission_and_hearing', 'public_hearing', 'rehearing'] as const
 const AGENDA_KINDS = ['hearing', 'business', 'minutes_approval', 'other'] as const
-
-export function dateOf(formData: FormData, key: string): CivilDate | null {
-  const parsed = parseCivilDate(text(formData, key))
-  return parsed.ok ? parsed.value : null
-}
 
 export async function scheduleHearingAction(formData: FormData): Promise<ActionResult> {
   return await runStaffAction(formData, async ({ db, actor, signal }) => {

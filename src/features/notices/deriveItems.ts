@@ -30,7 +30,11 @@ export interface DeriveInput {
   anchorDate: CivilDate
 }
 
-export type DeriveError = 'no_issued_list' | 'determination_missing' | 'not_found'
+export type DeriveError =
+  | 'no_issued_list'
+  | 'determination_missing'
+  | 'list_out_of_date'
+  | 'not_found'
 
 type ItemRow = typeof noticeItems.$inferInsert
 type PublicNotice = BoardSettingsBody['boards'][number]['publicNotice']
@@ -229,6 +233,16 @@ export async function deriveNoticeItems(
   const loaded = await loadContext(tx, input.applicationId, signal)
   if (!loaded.ok) return loaded
   const ctx = loaded.value
+  const rows: ItemRow[] = []
+  let publicPlan: PlannedRequirement | null = null
+  for (const rule of requirementsFor(ctx.classification, ctx.flags)) {
+    const made = rowsForRequirement(rule, ctx, input, '')
+    if (rule.onlyWhen !== undefined && 'roles' in rule.recipients && made.rows.length === 0) {
+      return err('list_out_of_date')
+    }
+    rows.push(...made.rows)
+    publicPlan = made.publicPlan ?? publicPlan
+  }
   const [set] = await tx
     .insert(noticeSets)
     .values({
@@ -239,15 +253,9 @@ export async function deriveNoticeItems(
     })
     .returning({ id: noticeSets.id })
   const setId = set?.id ?? ''
-  const rows: ItemRow[] = []
-  let publicPlan: PlannedRequirement | null = null
-  for (const rule of requirementsFor(ctx.classification, ctx.flags)) {
-    const made = rowsForRequirement(rule, ctx, input, setId)
-    rows.push(...made.rows)
-    publicPlan = made.publicPlan ?? publicPlan
-  }
   if (publicPlan !== null && ctx.notice !== null)
-    rows.push(...townExtras(setId, publicPlan, ctx.notice))
-  if (rows.length > 0) await tx.insert(noticeItems).values(rows)
-  return ok({ setId, items: rows.length })
+    rows.push(...townExtras('', publicPlan, ctx.notice))
+  const stamped = rows.map((r) => ({ ...r, setId }))
+  if (stamped.length > 0) await tx.insert(noticeItems).values(stamped)
+  return ok({ setId, items: stamped.length })
 }

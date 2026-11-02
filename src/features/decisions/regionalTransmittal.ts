@@ -1,5 +1,5 @@
 import { and, desc, eq } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { Db, Tx } from '@/db/client'
 import {
   boardDecisions,
   clocks,
@@ -26,6 +26,38 @@ export type TransmittalError =
   | 'not_regional'
   | 'contacts_missing'
   | 'no_clock'
+
+export async function syncTransmittalClock(tx: Tx, setId: string, signal: AbortSignal) {
+  const status = await noticeStatus(tx, setId, signal)
+  const [set] = await tx.select().from(noticeSets).where(eq(noticeSets.id, setId))
+  if (set?.subjectKind !== TRANSMITTAL_SUBJECT || set.applicationId === null) return status
+  const [clock] = await tx
+    .select()
+    .from(clocks)
+    .where(
+      and(eq(clocks.applicationId, set.applicationId), eq(clocks.ruleKey, TRANSMITTAL_CLOCK_KEY)),
+    )
+    .orderBy(desc(clocks.createdAt))
+    .limit(1)
+  if (clock === undefined) return status
+  if (status.properlyNoticed && clock.status !== 'met') {
+    const last = status.items
+      .flatMap((i) => (i.proof === null ? [] : [i.proof.effectiveOn]))
+      .sort((x, y) => compareCivil(x, y))
+      .at(-1)
+    await markClockMet(
+      tx,
+      set.applicationId,
+      TRANSMITTAL_CLOCK_KEY,
+      last ?? (clock.currentDue as CivilDate),
+      signal,
+    )
+  }
+  if (!status.properlyNoticed && clock.status === 'met') {
+    await tx.update(clocks).set({ status: 'running', metOn: null }).where(eq(clocks.id, clock.id))
+  }
+  return status
+}
 
 export async function recordRegionalTransmittal(
   db: Db,
@@ -91,7 +123,9 @@ export async function recordRegionalTransmittal(
             .filter((m) => parties.has(m.key))
             .map((m) => ({ ...m, role: 'affected_municipality' })),
         ]
-        if (recipients.length === 0) return err('contacts_missing')
+        const known = new Set(contacts.municipalities.map((m) => m.key))
+        const complete = contacts.commission !== null && [...parties].every((key) => known.has(key))
+        if (!complete || recipients.length === 0) return err('contacts_missing')
         const [created] = await tx
           .insert(noticeSets)
           .values({
@@ -119,20 +153,7 @@ export async function recordRegionalTransmittal(
         )
       }
       const setId = set?.id ?? ''
-      const status = await noticeStatus(tx, setId, signal)
-      if (status.properlyNoticed && clock.status !== 'met') {
-        const last = status.items
-          .flatMap((i) => (i.proof === null ? [] : [i.proof.effectiveOn]))
-          .sort((x, y) => compareCivil(x, y))
-          .at(-1)
-        await markClockMet(
-          tx,
-          decision.applicationId,
-          TRANSMITTAL_CLOCK_KEY,
-          last ?? (clock.currentDue as CivilDate),
-          signal,
-        )
-      }
+      const status = await syncTransmittalClock(tx, setId, signal)
       return ok({ setId, items: status.items.length, met: status.properlyNoticed })
     },
   )
