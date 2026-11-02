@@ -200,11 +200,15 @@ File: `data/board_packet_items.ndjson`. Ordered by packet_id, document_id.
 - `document_id`: uuid
 - `version_id`: uuid
 - `position`: integer
+- `approval_id`: uuid, nullable
+- `withdrawn_at`: timestamp with time zone, nullable
+- `withdrawn_reason`: text, nullable
 
 References:
 - `packet_id` refers to `board_packets`
 - `document_id` refers to `documents`
 - `version_id` refers to `document_versions`
+- `approval_id` refers to `rendition_approvals`
 
 ### board_packet_links
 

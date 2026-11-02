@@ -10,4 +10,5 @@ export const EXCLUDED_TABLES: Record<string, string> = {
   alert_tests: 'operational state',
   worker_state: 'operational state',
   anonymous_intake_probe_tokens: 'short-lived probe secret',
+  document_renditions: 'regenerable from the version',
 }

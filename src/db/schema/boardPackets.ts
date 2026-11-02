@@ -10,6 +10,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { documents, documentVersions } from './documents'
 import { citext } from './identity'
+import { renditionApprovals } from './renditionApprovals'
 
 export const boardPackets = pgTable('board_packets', {
   id: uuid('id').primaryKey().defaultRandom(),
@@ -33,6 +34,9 @@ export const boardPacketItems = pgTable(
       .notNull()
       .references(() => documentVersions.id),
     position: integer('position').notNull(),
+    approvalId: uuid('approval_id').references(() => renditionApprovals.id),
+    withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
+    withdrawnReason: text('withdrawn_reason', { enum: ['revoked', 'disposed'] }),
   },
   (t) => [primaryKey({ columns: [t.packetId, t.documentId] })],
 )
