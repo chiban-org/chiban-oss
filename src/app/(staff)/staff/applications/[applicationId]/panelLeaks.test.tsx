@@ -8,7 +8,10 @@ import { findIsoDates, findRawKeys } from '@/test/leaks'
 vi.mock('./actions', () => ({}))
 vi.mock('./clockFeeActions', () => ({}))
 vi.mock('./buildingActions', () => ({}))
-vi.mock('../../reviews/actions', () => ({}))
+vi.mock('../../reviews/actions', () => ({
+  assignReviewerAction: () => Promise.resolve({ ok: true, message: '' }),
+  removeReviewerAction: () => Promise.resolve({ ok: true, message: '' }),
+}))
 
 const { AppealPanel, RegionalImpactPanel } = await import('./buildingPanels')
 const { CompletenessPanel, PartiesPanel } = await import('./panels')
@@ -140,5 +143,36 @@ describe('staff application panels', () => {
     )
     expect(text).toContain('Remy Reviewer, Signed off')
     expect(findRawKeys(text, RAW_KEYS)).toEqual([])
+  })
+
+  it('each remove button names its reviewer and assigned reviewers are not offered again', () => {
+    const { getByRole, queryByRole } = render(
+      <CsrfProvider token="t">
+        <ReviewersPanel
+          applicationId="a1"
+          reviewers={
+            [
+              {
+                assignmentId: 'r1',
+                reviewerUserId: 'u1',
+                name: 'Remy Reviewer',
+                status: 'pending',
+              },
+              { assignmentId: 'r2', reviewerUserId: 'u2', name: 'Faye Fire', status: 'pending' },
+            ] as never
+          }
+          choices={[
+            { id: 'u1', name: 'Remy Reviewer' },
+            { id: 'u2', name: 'Faye Fire' },
+            { id: 'u3', name: 'Wes Works' },
+          ]}
+          canAssign
+        />
+      </CsrfProvider>,
+    )
+    expect(getByRole('button', { name: 'Remove Remy Reviewer' })).toBeTruthy()
+    expect(getByRole('button', { name: 'Remove Faye Fire' })).toBeTruthy()
+    expect(queryByRole('option', { name: 'Faye Fire' })).toBeNull()
+    expect(getByRole('option', { name: 'Wes Works' })).toBeTruthy()
   })
 })

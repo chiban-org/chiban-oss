@@ -57,4 +57,21 @@ describe('reviewer views', () => {
     )
     expect((await listReviewerChoices(handle.db)).map((r) => r.id)).toContain(world.reviewer.userId)
   })
+
+  it('the review page names the project, the permit type, and the parcel', async () => {
+    const view = await getAssignmentView(handle.db, world.reviewer, assignmentId, signal)
+    expect(view).toMatchObject({
+      projectTitle: 'Garage addition',
+      typeLabel: expect.any(String),
+      parcelDisplayId: '007001000000',
+      commentDue: null,
+    })
+    expect(view?.typeLabel).not.toBe('')
+  })
+
+  it('the application reviewer list carries each reviewer id', async () => {
+    expect(await listApplicationReviewers(handle.db, applicationId)).toEqual([
+      expect.objectContaining({ reviewerUserId: world.reviewer.userId }),
+    ])
+  })
 })

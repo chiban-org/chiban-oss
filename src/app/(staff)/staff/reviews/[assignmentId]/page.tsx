@@ -1,10 +1,11 @@
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { AreaField } from '@/components/staff/fields'
 import { getAssignmentView } from '@/features/reviews/reviewerView'
 import { reviewStatusLabel } from '@/features/reviews/statusLabels'
 import { getTownSettings } from '@/features/town/settings'
-import { formatInstant } from '@/lib/formatDate'
+import { formatCivilDate, formatInstant } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { addReviewCommentAction, signOffReviewAction } from '../actions'
@@ -27,8 +28,19 @@ export default async function ReviewPage({
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
   return (
     <main className="space-y-6">
-      <h1>{`Review ${view.number}`}</h1>
-      <p>{`Status: ${reviewStatusLabel(view.status)}`}</p>
+      <PageHeader
+        kicker={view.typeLabel}
+        title={`Review ${view.number}`}
+        lead={view.projectTitle}
+        facts={[
+          { label: 'Parcel', value: view.parcelDisplayId ?? 'No map-lot ID' },
+          {
+            label: 'Comments due',
+            value: view.commentDue === null ? 'No date set' : formatCivilDate(view.commentDue),
+          },
+          { label: 'Your review', value: reviewStatusLabel(view.status) },
+        ]}
+      />
       <section aria-label="Documents">
         <h2>Documents</h2>
         {view.documents.length === 0 ? <p>No documents are shared with reviewers.</p> : null}
@@ -43,7 +55,7 @@ export default async function ReviewPage({
         </ul>
       </section>
       <section aria-label="Comments">
-        <h2>Comments</h2>
+        <h2>Your comments</h2>
         {view.comments.length === 0 ? <p>No comments yet.</p> : null}
         <ul className="space-y-2">
           {view.comments.map((c) => (

@@ -84,6 +84,6 @@ describe('reviewer assignments', () => {
       { applicationId, reviewerUserId: world.reviewer.userId },
       signal,
     )
-    expect(again.ok).toBe(true)
+    expect(again).toMatchObject({ ok: true, value: { alreadyAssigned: true } })
   })
 })
