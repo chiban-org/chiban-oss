@@ -39,6 +39,33 @@ describe('ActionForm', () => {
       't1',
     )
   })
+  it('says which required field is empty instead of ignoring the click', async () => {
+    let called = false
+    render(
+      <CsrfProvider token="t1">
+        <ActionForm
+          action={() => {
+            called = true
+            return Promise.resolve({ ok: true as const, message: 'ok' })
+          }}
+          submitLabel="Record returned check"
+        >
+          <label>
+            Returned on
+            <input name="returnedOn" type="date" required />
+          </label>
+        </ActionForm>
+      </CsrfProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Record returned check' }))
+    await waitFor(() => expect(screen.getByText('Fill in: Returned on.')).toBeTruthy())
+    expect(called).toBe(false)
+    fireEvent.change(screen.getByLabelText('Returned on'), { target: { value: '2027-06-03' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Record returned check' }))
+    await waitFor(() => expect(called).toBe(true))
+    expect(screen.queryByText('Fill in: Returned on.')).toBeNull()
+  })
+
   describe('values after a server answer', () => {
     function renderForm(result: ActionResult) {
       return render(
