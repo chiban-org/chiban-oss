@@ -288,6 +288,12 @@ describe('enforcement queue and case pages', () => {
     expect(findUuids(page)).toEqual([])
   })
 
+  it('a reviewer opening the officers page is told about that page', async () => {
+    await actAs('reviewer')
+    const page = visibleText(await html(OfficersPage()))
+    expect(page).toContain('You do not have permission to designate enforcement officers.')
+  })
+
   it('the officers page offers only people who may issue orders and can end a designation', async () => {
     await actAs('admin')
     const markup = await html(OfficersPage())
