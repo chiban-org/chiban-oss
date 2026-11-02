@@ -37,6 +37,7 @@ const NOW = new Date('2026-11-02T15:00:00Z')
 const minutesAgo = (n: number) => new Date(NOW.getTime() - n * 60_000)
 const SWEPT: JobName[] = [
   JOB_NAMES.CLOCKS_DAILY,
+  JOB_NAMES.APPEALS_DAILY,
   JOB_NAMES.NOTIFICATIONS_SEND,
   JOB_NAMES.CALENDAR_PUSH,
   JOB_NAMES.RECORDS_PRESERVE,
@@ -119,6 +120,13 @@ describe('jobs.sweep', () => {
     expect(await queued(JOB_NAMES.CLOCKS_DAILY)).toBe(0)
     await runSweep(handle.db, AFTER_ONE_AM, signal)
     expect(await queued(JOB_NAMES.CLOCKS_DAILY)).toBe(1)
+  })
+
+  it('a missed appeals.daily for today is re-enqueued after 01:00 town time and not before', async () => {
+    await runSweep(handle.db, BEFORE_ONE_AM, signal)
+    expect(await queued(JOB_NAMES.APPEALS_DAILY)).toBe(0)
+    await runSweep(handle.db, AFTER_ONE_AM, signal)
+    expect(await queued(JOB_NAMES.APPEALS_DAILY)).toBe(1)
   })
 
   it('does not re-enqueue clocks.daily when it already succeeded on the town date', async () => {
@@ -215,9 +223,10 @@ describe('jobs.sweep', () => {
     expect(await queued(JOB_NAMES.NOTIFICATIONS_SEND)).toBe(1)
   })
 
-  it('registers the five M6 targets', () => {
+  it('registers the six sweep targets', () => {
     expect(SWEEP_TARGETS.map((t) => t.name)).toEqual([
       'clocks.daily',
+      'appeals.daily',
       'notifications.send',
       'calendar.push',
       'records.preserve',

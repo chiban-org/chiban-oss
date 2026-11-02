@@ -42,7 +42,12 @@ export const recordEvents = pgTable(
       .references(() => projects.id),
     applicationId: uuid('application_id').references(() => applications.id),
     kind: text('kind', {
-      enum: ['application_withdrawn', 'application_denied', 'building_removed'],
+      enum: [
+        'application_withdrawn',
+        'application_denied',
+        'building_removed',
+        'appeal_period_expired',
+      ],
     }).notNull(),
     occurredOn: date('occurred_on', { mode: 'string' }).notNull(),
     recordedByKind: text('recorded_by_kind', { enum: ['user', 'system'] }).notNull(),

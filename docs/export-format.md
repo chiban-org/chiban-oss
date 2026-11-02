@@ -155,6 +155,27 @@ References:
 - `parcel_id` refers to `parcels`
 - `replaced_parcel_id` refers to `parcels`
 
+### appeal_nodes
+
+File: `data/appeal_nodes.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `kind`: text
+- `application_id`: uuid, nullable
+- `decision_id`: uuid, nullable
+- `parent_id`: uuid, nullable
+- `linked_pb_node_id`: uuid, nullable
+- `occurred_on`: date
+- `outcome`: text, nullable
+- `status`: text
+- `untimely`: boolean
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+- `decision_id` refers to `board_decisions`
+
 ### appeals
 
 File: `data/appeals.ndjson`. Ordered by id.

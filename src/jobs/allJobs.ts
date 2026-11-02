@@ -1,3 +1,4 @@
+import { appealsDailyJob } from './appealsDaily'
 import { calendarPushJob } from './calendarPush'
 import { clocksDailyJob } from './clocksDaily'
 import type { JobDefinition } from './defineJob'
@@ -18,6 +19,7 @@ export const ALL_JOBS: JobDefinition<object>[] = [
   gisScheduleRefreshesJob,
   expireAliasOverridesJob,
   clocksDailyJob,
+  appealsDailyJob,
   paymentsReconcileJob,
   recordsPreserveJob,
   notificationsSendJob,

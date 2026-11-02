@@ -484,6 +484,13 @@
       "when": 1793632244514,
       "tag": "0068_brown_night_thrasher",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1793632746230,
+      "tag": "0069_nasty_quasar",
+      "breakpoints": true
     }
   ]
 }

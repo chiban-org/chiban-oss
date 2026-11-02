@@ -5,6 +5,7 @@ import { exportsTable, jobRuns, notificationOutbox, preservationRecords } from '
 import { overdueCalendarPushes } from '@/features/calendar/queuePush'
 import { getTownSettings } from '@/features/town/settings'
 import { todayInTimeZone } from '@/types/civilDate'
+import { appealsDailyJob } from './appealsDaily'
 import { calendarPushJob } from './calendarPush'
 import { clocksDailyJob } from './clocksDaily'
 import type { JobDefinition } from './defineJob'
@@ -52,6 +53,23 @@ const clocksDailyTarget: SweepTarget = {
     const lastSuccess = run?.lastSuccessAt ?? null
     if (lastSuccess !== null && todayInTimeZone(zone, lastSuccess) === today) return []
     return [{ job: clocksDailyJob, payload: { today } }]
+  },
+}
+
+const appealsDailyTarget: SweepTarget = {
+  name: JOB_NAMES.APPEALS_DAILY,
+  async findOverdue(db, now, signal) {
+    const town = await getTownSettings(db, signal)
+    const zone = town.ok ? town.value.timeZone : FALLBACK_TIME_ZONE
+    if (hourInTimeZone(zone, now) < CLOCKS_FIRST_HOUR) return []
+    const today = todayInTimeZone(zone, now)
+    const [run] = await db
+      .select()
+      .from(jobRuns)
+      .where(eq(jobRuns.jobName, JOB_NAMES.APPEALS_DAILY))
+    const lastSuccess = run?.lastSuccessAt ?? null
+    if (lastSuccess !== null && todayInTimeZone(zone, lastSuccess) === today) return []
+    return [{ job: appealsDailyJob, payload: { today } }]
   },
 }
 
@@ -123,6 +141,7 @@ const exportsBuildTarget: SweepTarget = {
 
 const targets: SweepTarget[] = [
   clocksDailyTarget,
+  appealsDailyTarget,
   notificationsTarget,
   calendarTarget,
   preservationTarget,

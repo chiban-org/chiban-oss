@@ -257,6 +257,7 @@ export const RecordEventKindSchema = z.enum([
   'application_withdrawn',
   'application_denied',
   'building_removed',
+  'appeal_period_expired',
 ])
 export type RecordEventKind = z.infer<typeof RecordEventKindSchema>
 

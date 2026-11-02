@@ -45,6 +45,7 @@ const SPECS: Spec[] = [
   { table: t.agendas },
   { table: t.aliasOverrides },
   { table: t.applicationParcels },
+  { table: t.appealNodes },
   { table: t.appeals },
   { table: t.applicationConditions },
   { table: t.applicationProfessionals },

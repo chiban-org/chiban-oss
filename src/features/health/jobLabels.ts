@@ -6,6 +6,7 @@ const JOB_LABELS = new Map<string, string>([
   ['gis.scheduleRefreshes', 'Parcel layer refresh scheduling'],
   ['parcels.expireAliasOverrides', 'Parcel ID override expiry'],
   ['clocks.daily', 'Daily clock check'],
+  ['appeals.daily', 'Daily appeal period check'],
   ['payments.reconcile', 'Payment reconciliation'],
   ['records.preserve', 'Records preservation'],
   ['notifications.send', 'Notification sending'],

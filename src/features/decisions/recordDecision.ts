@@ -11,11 +11,13 @@ import {
   hearings,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { recordDecisionNode } from '@/features/appeals/graph'
 import { loadApplicationContext } from '@/features/applications/context'
 import { transitionApplication } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { boardOfApplication } from '@/features/boards/boardOf'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import { requiredDecisionFields } from '@/features/decisions/requiredFields'
 import type { GateResult } from '@/features/gates/evaluateGates'
@@ -158,6 +160,17 @@ export async function recordDecision(
       })
       .returning({ id: boardDecisions.id })
     await applyConditions(tx, actor, app.id, input.conditions ?? [])
+    const board = boardOfApplication(app)
+    if (board !== null && !input.outcome.startsWith('rehearing')) {
+      await recordDecisionNode(tx, {
+        applicationId: app.id,
+        decisionId: row?.id ?? '',
+        board,
+        outcome: input.outcome,
+        occurredOn: input.votedOn,
+        createdBy: actor.userId,
+      })
+    }
     await startClocksFor(tx, app.id, 'board_vote', input.votedOn, signal, undefined, undefined, {
       outcome: input.outcome,
     })

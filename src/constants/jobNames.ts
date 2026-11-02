@@ -4,6 +4,7 @@ export const JOB_NAMES = {
   GIS_SCHEDULE_REFRESHES: 'gis.scheduleRefreshes',
   EXPIRE_ALIAS_OVERRIDES: 'parcels.expireAliasOverrides',
   CLOCKS_DAILY: 'clocks.daily',
+  APPEALS_DAILY: 'appeals.daily',
   PAYMENTS_RECONCILE: 'payments.reconcile',
   RECORDS_PRESERVE: 'records.preserve',
   NOTIFICATIONS_SEND: 'notifications.send',

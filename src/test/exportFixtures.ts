@@ -49,6 +49,11 @@ const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
     statement: sql`insert into board_packet_access (link_id) select id from board_packet_links limit 1`,
   },
   {
+    table: 'appeal_nodes',
+    statement: sql`insert into appeal_nodes (kind, application_id, occurred_on, created_by)
+      select 'administrative_decision', id, '2027-03-01', gen_random_uuid() from applications limit 1`,
+  },
+  {
     table: 'notice_sets',
     statement: sql`insert into notice_sets (subject_kind, subject_id, application_id, anchor_date)
       select 'hearing', gen_random_uuid(), id, '2027-04-14' from applications limit 1`,

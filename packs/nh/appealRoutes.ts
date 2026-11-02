@@ -27,6 +27,12 @@ export const NH_APPEAL_ROUTES: AppealRoute[] = [
     citation: { label: 'RSA 676:5 I', url: RSA_676_5 },
   },
   {
+    from: 'zba_appeal',
+    to: 'zba_decision',
+    windowRuleKey: null,
+    citation: { label: 'RSA 676:5', url: RSA_676_5 },
+  },
+  {
     from: 'zba_decision',
     to: 'rehearing_motion',
     windowRuleKey: 'nh.appeal.zba_rehearing',

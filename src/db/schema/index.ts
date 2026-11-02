@@ -1,6 +1,7 @@
 export * from './abutters'
 export * from './agendas'
 export * from './aliasOverrides'
+export * from './appealGraph'
 export * from './appeals'
 export * from './audit'
 export * from './boardPackets'
