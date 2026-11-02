@@ -1,6 +1,6 @@
 'use client'
 
-import { type FormEvent, type ReactNode, useState } from 'react'
+import { type FormEvent, type ReactNode, useEffect, useState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
 import { SubmitButton } from '@/components/SubmitButton'
 import { Button } from '@/components/ui/button'
@@ -90,6 +90,16 @@ export function ActionForm({
     setProblem(null)
     setEdited(true)
   }
+  const form = formProps.ref
+  useEffect(() => {
+    const onOtherSubmit = (event: Event) => {
+      if (event.target === form.current) return
+      setProblem(null)
+      setEdited(true)
+    }
+    document.addEventListener('submit', onOtherSubmit, true)
+    return () => document.removeEventListener('submit', onOtherSubmit, true)
+  }, [form])
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     const found =
       problemMessage(invalidFields(event.currentTarget)) ??

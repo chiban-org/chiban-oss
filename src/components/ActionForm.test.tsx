@@ -111,6 +111,30 @@ describe('ActionForm', () => {
       expect(screen.getByLabelText<HTMLSelectElement>('Kind').value).toBe('a')
     })
   })
+  it('clears its old message once another form on the page is submitted', async () => {
+    render(
+      <CsrfProvider token="t1">
+        <ActionForm
+          action={() => Promise.resolve({ ok: true as const, message: 'Reviewer assigned.' })}
+          submitLabel="Assign reviewer"
+        >
+          <span />
+        </ActionForm>
+        <ActionForm
+          action={() => Promise.resolve({ ok: true as const, message: 'Condition applied.' })}
+          submitLabel="Apply condition"
+        >
+          <span />
+        </ActionForm>
+      </CsrfProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Assign reviewer' }))
+    await waitFor(() => expect(screen.getByText('Reviewer assigned.')).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: 'Apply condition' }))
+    await waitFor(() => expect(screen.getByText('Condition applied.')).toBeTruthy())
+    expect(screen.queryByText('Reviewer assigned.')).toBeNull()
+  })
+
   it('clears an old message once the person edits the form again', async () => {
     render(
       <CsrfProvider token="t1">
