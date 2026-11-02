@@ -296,4 +296,33 @@ describe('createParcelPlaceholder', () => {
     )
     expect(r).toEqual({ ok: false, error: 'alias_taken' })
   })
+
+  it('a placeholder alias must match its id format, keeping leading zeros', async () => {
+    const actor = await staffActor(handle.db)
+    const short = await createParcelPlaceholder(
+      handle.db,
+      actor,
+      { aliases: [{ format: 'gis12', value: '7020' }] },
+      signal,
+    )
+    expect(short).toEqual({ ok: false, error: 'id_format_mismatch' })
+    const ok = await createParcelPlaceholder(
+      handle.db,
+      actor,
+      { aliases: [{ format: 'gis12', value: '000000000042' }] },
+      signal,
+    )
+    expect(ok.ok).toBe(true)
+  })
+
+  it('an unknown alias format is refused', async () => {
+    const actor = await staffActor(handle.db)
+    const r = await createParcelPlaceholder(
+      handle.db,
+      actor,
+      { aliases: [{ format: 'nope', value: '1' }] },
+      signal,
+    )
+    expect(r).toEqual({ ok: false, error: 'unknown_format' })
+  })
 })

@@ -1,10 +1,10 @@
 import { and, eq } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
-import { parcelAliases } from '@/db/schema'
+import { parcelAliases, parcelIdFormats } from '@/db/schema'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import type { AliasSource } from '@/features/parcels/aliasTypes'
-import { normalizeId } from '@/features/parcels/idFormats'
+import { checkIdFormat, normalizeId } from '@/features/parcels/idFormats'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -14,6 +14,8 @@ export interface AddAliasInput {
   value: string
   source: AliasSource
 }
+
+export type AddAliasError = 'alias_taken' | 'unknown_format' | 'id_format_mismatch'
 
 export type AuditWho = Actor | { kind: 'user'; userId: string } | { kind: 'system'; job: string }
 
@@ -27,8 +29,18 @@ export async function addAlias(
   input: AddAliasInput,
   who: AuditWho,
   signal: AbortSignal,
-): Promise<Result<void, 'alias_taken'>> {
+): Promise<Result<void, AddAliasError>> {
   signal.throwIfAborted()
+  const [format] = await tx
+    .select()
+    .from(parcelIdFormats)
+    .where(eq(parcelIdFormats.key, input.format))
+  if (format === undefined) return err('unknown_format')
+  const checked = checkIdFormat(
+    { key: format.key, kind: format.kind, width: format.width },
+    input.value,
+  )
+  if (!checked.ok) return err('id_format_mismatch')
   const inserted = await tx
     .insert(parcelAliases)
     .values({

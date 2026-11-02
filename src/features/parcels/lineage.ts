@@ -5,7 +5,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
-import { addAlias, retireAliases } from '@/features/parcels/aliases'
+import { type AddAliasError, addAlias, retireAliases } from '@/features/parcels/aliases'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { wouldCreateCycle } from '@/features/parcels/lineageCycle'
 import { hasValidShape, type LineageInput, retiredParents } from '@/features/parcels/lineageShape'
@@ -108,7 +108,7 @@ export async function createParcelPlaceholder(
   actor: Actor,
   input: { aliases: { format: string; value: string }[] },
   signal: AbortSignal,
-): Promise<Result<{ parcelId: string }, 'alias_taken' | 'forbidden'>> {
+): Promise<Result<{ parcelId: string }, AddAliasError | 'forbidden'>> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'parcel.manage', signal)
   if (!allowed.ok) return err('forbidden')
@@ -117,7 +117,7 @@ export async function createParcelPlaceholder(
     const parcelId = row?.id ?? ''
     for (const alias of input.aliases) {
       const added = await addAlias(tx, { parcelId, ...alias, source: 'manual' }, actor, signal)
-      if (!added.ok) return err('alias_taken')
+      if (!added.ok) return err(added.error)
     }
     await writeAudit(
       tx,
