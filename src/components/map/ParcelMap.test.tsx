@@ -46,3 +46,11 @@ describe('ParcelMap loading state', () => {
     await waitFor(() => expect(screen.queryByRole('status')).toBeNull())
   })
 })
+
+describe('ParcelMap hint', () => {
+  it('a map without a search box gives its own keyboard hint', () => {
+    render(<ParcelMap layers={[]} onSelect={noop} hint="The tables below list every parcel." />)
+    expect(screen.getByText('The tables below list every parcel.')).toBeTruthy()
+    expect(screen.queryByText(/search box/)).toBeNull()
+  })
+})

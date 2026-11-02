@@ -18,13 +18,15 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
+import { evidenceOf } from '@/features/documents/evidence'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { channelLabel } from '@/features/notices/channels'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { proofMethodLabel } from '@/features/notices/proofMethods'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { getTownSettings } from '@/features/town/settings'
-import { formatCivilDate, formatInstant } from '@/lib/formatDate'
+import { formatCivilDate } from '@/lib/formatDate'
+import { todayInTimeZone } from '@/types/civilDate'
 
 export const BOARD_NAMES: Record<Board, string> = {
   planning_board: 'Planning Board',
@@ -58,6 +60,8 @@ export interface HearingView {
   decision: { decisionId: string; text: string } | null
   otherMeetings: { id: string; text: string }[]
   noticeSetId: string
+  defaultHeldOn: string
+  defaultVotedOn: string
 }
 
 async function timeZoneOf(db: Db, signal: AbortSignal): Promise<string> {
@@ -91,7 +95,7 @@ export async function loadHearingView(
   const docs = await db
     .select({ id: documents.id, title: documents.title })
     .from(documents)
-    .where(eq(documents.recordId, row.hearing.applicationId))
+    .where(evidenceOf(row.hearing.applicationId))
     .orderBy(desc(documents.seq))
   const upcoming = await db
     .select()
@@ -135,7 +139,7 @@ export async function loadHearingView(
     noticedOn:
       row.hearing.properlyNoticedAt === null
         ? null
-        : (formatInstant(row.hearing.properlyNoticedAt, zone).split(',')[0] ?? null),
+        : formatCivilDate(todayInTimeZone(zone, row.hearing.properlyNoticedAt)),
     properlyNoticed: status.properlyNoticed,
     itemChoices: checklist.map((i) => ({
       id: i.itemId,
@@ -150,9 +154,11 @@ export async function loadHearingView(
             text: `${OUTCOME_LABELS[decision.outcome]}, voted ${formatCivilDate(decision.votedOn)}`,
           },
     otherMeetings: upcoming
-      .filter((m) => m.id !== row.meeting.id && m.status === 'scheduled')
+      .filter((m) => m.status === 'scheduled' && m.meetingDate > row.meeting.meetingDate)
       .map((m) => ({ id: m.id, text: formatCivilDate(m.meetingDate) })),
     noticeSetId: row.hearing.noticeSetId,
+    defaultHeldOn: row.meeting.meetingDate,
+    defaultVotedOn: row.hearing.heldOn ?? row.meeting.meetingDate,
   }
 }
 
@@ -166,7 +172,15 @@ export interface MeetingView {
   agenda: {
     status: 'draft' | 'published'
     revision: number
-    items: { id: string; position: number; text: string; description: string; kindText: string }[]
+    statusText: string
+    items: {
+      id: string
+      position: number
+      text: string
+      line: string
+      description: string
+      kindText: string
+    }[]
     documentId: string | null
   } | null
 }
@@ -225,11 +239,16 @@ export async function loadMeetingView(
         : {
             status: agenda.status,
             revision: agenda.revision,
+            statusText:
+              agenda.status === 'published' && agenda.publishedAt !== null
+                ? `Published on the public site on ${formatCivilDate(todayInTimeZone(await timeZoneOf(db, signal), agenda.publishedAt))}. Revision ${agenda.revision}.`
+                : 'Draft. Not yet public.',
             documentId: agenda.documentId,
             items: items.map((i) => ({
               id: i.id,
               position: i.position,
               text: i.title,
+              line: i.kind === 'hearing' ? i.title : `${AGENDA_KIND_LABELS[i.kind]}: ${i.title}`,
               description: i.description,
               kindText: AGENDA_KIND_LABELS[i.kind],
             })),

@@ -59,9 +59,15 @@ export function ActionForm({
   )
   const hydrated = useHydrated()
   const [missing, setMissing] = useState<string[]>([])
+  const [edited, setEdited] = useState(false)
+  const onInput = () => {
+    setMissing([])
+    setEdited(true)
+  }
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     const empty = missingFields(event.currentTarget)
     setMissing(empty)
+    setEdited(false)
     if (empty.length > 0) {
       event.preventDefault()
       return
@@ -71,13 +77,13 @@ export function ActionForm({
   const message =
     missing.length > 0
       ? `Fill in: ${missing.join(', ')}.`
-      : result === null
+      : result === null || edited
         ? null
         : result.ok
           ? result.message
           : result.error
   return (
-    <form {...formProps} onSubmit={onSubmit} noValidate className={className}>
+    <form {...formProps} onSubmit={onSubmit} onInput={onInput} noValidate className={className}>
       <CsrfField />
       {children}
       <div className="mt-3 flex items-center gap-3">

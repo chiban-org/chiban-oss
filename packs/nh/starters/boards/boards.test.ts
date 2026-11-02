@@ -22,6 +22,7 @@ const FACTS = { classification: null, dwellingUnits: null, afterTheFact: false }
 function shared(values: Record<string, unknown>) {
   return {
     project_description: 'Two lots',
+    applicant_name: 'Rae Fenn',
     applicant_mailing_address: '12 Alder Lane, Alder Pond NH',
     owner_authorization: true,
     ...values,
@@ -42,6 +43,17 @@ describe('board starters, hearing templates', () => {
       for (const t of starter.templates) {
         expect(starter.applicationType.templateKeys, t.key).toContain(t.key)
       }
+    }
+  })
+
+  it('every board form asks for the applicant name and every hearing notice carries the recipient address', () => {
+    for (const starter of BOARD) {
+      expect(
+        starter.form.fields.some((f) => f.key === 'applicant_name' && f.required === true),
+        starter.id,
+      ).toBe(true)
+      const notice = starter.templates.find((t) => t.kind === 'hearing_notice')
+      expect(notice?.body, starter.id).toContain('{{notice.recipientAddress}}')
     }
   })
 

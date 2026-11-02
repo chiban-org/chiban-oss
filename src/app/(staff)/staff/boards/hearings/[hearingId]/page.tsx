@@ -1,6 +1,11 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import {
+  createStaffUploadIntentAction,
+  finalizeStaffUploadAction,
+} from '@/app/(staff)/staff/records/actions'
 import { ActionForm } from '@/components/ActionForm'
+import { ApplicationFileUploader } from '@/components/documents/ApplicationFileUploader'
 import { NoticeChecklist } from '@/components/notices/NoticeChecklist'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -56,6 +61,7 @@ export default async function HearingPage({ params }: { params: Promise<{ hearin
       <NoticeChecklist
         items={view.checklist}
         noticedOn={view.noticedOn}
+        showMark={scheduled}
         markSlot={
           scheduled ? (
             <ActionForm
@@ -79,6 +85,14 @@ export default async function HearingPage({ params }: { params: Promise<{ hearin
       {scheduled ? (
         <details>
           <summary>Record proof of notice</summary>
+          <ApplicationFileUploader
+            applicationId={view.applicationId}
+            fileLabel="Upload a certificate or receipt"
+            actions={{
+              createIntent: createStaffUploadIntentAction,
+              finalize: finalizeStaffUploadAction,
+            }}
+          />
           <ActionForm action={recordProofAction} submitLabel="Record proof" className="max-w-xl">
             <fieldset className="space-y-1 rounded-md border p-3">
               <legend className="px-1 text-sm font-medium">Notice items this proof covers</legend>
@@ -109,7 +123,12 @@ export default async function HearingPage({ params }: { params: Promise<{ hearin
             <SelectField
               label="Certificate or receipt"
               name="documentId"
-              options={view.documentChoices.map((d): [string, string] => [d.id, d.label])}
+              defaultValue=""
+              required
+              options={[
+                ['', 'Choose an uploaded file'],
+                ...view.documentChoices.map((d): [string, string] => [d.id, d.label]),
+              ]}
             />
           </ActionForm>
         </details>
@@ -152,7 +171,14 @@ export default async function HearingPage({ params }: { params: Promise<{ hearin
           className="max-w-md"
         >
           <input type="hidden" name="hearingId" value={view.hearingId} />
-          <TextField label="Date held" name="heldOn" type="date" defaultValue={today} required />
+          <TextField
+            label="Date held"
+            name="heldOn"
+            type="date"
+            defaultValue={view.defaultHeldOn}
+            min={view.defaultHeldOn}
+            required
+          />
         </ActionForm>
       ) : null}
       {view.status === 'held' && view.decision === null ? (
@@ -170,7 +196,8 @@ export default async function HearingPage({ params }: { params: Promise<{ hearin
               label="Date of the vote"
               name="votedOn"
               type="date"
-              defaultValue={today}
+              defaultValue={view.defaultVotedOn}
+              min={view.defaultVotedOn}
               required
             />
             <SelectField label="Outcome" name="outcome" options={OUTCOMES} />

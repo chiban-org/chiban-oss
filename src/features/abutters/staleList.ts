@@ -36,3 +36,31 @@ export async function flagIssuedListStale(
     transitionId: STALE_LIST_TRANSITION,
   })
 }
+
+export async function hasOpenRegeneration(db: DbOrTx, applicationId: string): Promise<boolean> {
+  const [open] = await db
+    .select({ id: remediationTasks.id })
+    .from(remediationTasks)
+    .where(
+      and(
+        eq(remediationTasks.applicationId, applicationId),
+        eq(remediationTasks.kind, STALE_LIST_TASK_KIND),
+        eq(remediationTasks.status, 'open'),
+      ),
+    )
+    .limit(1)
+  return open !== undefined
+}
+
+export async function closeRegeneration(db: DbOrTx, applicationId: string): Promise<void> {
+  await db
+    .update(remediationTasks)
+    .set({ status: 'done' })
+    .where(
+      and(
+        eq(remediationTasks.applicationId, applicationId),
+        eq(remediationTasks.kind, STALE_LIST_TASK_KIND),
+        eq(remediationTasks.status, 'open'),
+      ),
+    )
+}

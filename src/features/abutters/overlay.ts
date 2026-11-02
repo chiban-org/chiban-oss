@@ -1,14 +1,19 @@
 import type { AbutterParams } from '@packs/nh/schema'
 import { sql } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
+import { uuidArray } from '@/db/uuidList'
 import { loadCrossingInputs } from '@/features/abutters/crossingInputs'
 import { projectionParamsFor } from '@/features/abutters/projection/paramsFor'
 import { projectAcross } from '@/features/abutters/projection/projectAcross'
 import type { Pt } from '@/features/abutters/projection/types'
+import { displayIdsFor } from '@/features/parcels/displayId'
 
-export type OverlayKind = 'region' | 'corner' | 'projected' | 'connector' | 'capture'
+export type OverlayKind = 'region' | 'corner' | 'projected' | 'connector' | 'capture' | 'label'
 
-export type Overlay = GeoJSON.FeatureCollection<GeoJSON.Geometry, { kind: OverlayKind }>
+export type Overlay = GeoJSON.FeatureCollection<
+  GeoJSON.Geometry,
+  { kind: OverlayKind; text?: string }
+>
 
 const NEARBY_MARGIN_FT = 50
 
@@ -69,5 +74,47 @@ export async function projectionOverlay(
     await add('projected', wkt('POINT', [point.point]))
     await add('capture', wkt('POINT', [point.point]), params.captureRadiusFt)
   }
+  if (features.length > 0) {
+    const labelled = [...applicantParcelIds, ...inputs.others.map((o) => o.parcelId)]
+    features.push(...(await parcelLabels(tx, labelled)))
+    features.push(
+      ...(await featureLabels(
+        tx,
+        inputs.features.map((f) => f.id),
+      )),
+    )
+  }
   return { type: 'FeatureCollection', features }
+}
+
+type LabelFeature = Overlay['features'][number]
+
+function labelAt(text: string, gj: string): LabelFeature {
+  return {
+    type: 'Feature',
+    properties: { kind: 'label', text },
+    geometry: JSON.parse(gj) as GeoJSON.Geometry,
+  }
+}
+
+async function parcelLabels(tx: Tx, parcelIds: string[]): Promise<LabelFeature[]> {
+  if (parcelIds.length === 0) return []
+  const labels = await displayIdsFor(tx, parcelIds)
+  const rows = await tx.execute<{ id: string; gj: string }>(sql`
+    select p.id, ST_AsGeoJSON(ST_Transform(ST_PointOnSurface(p.geom), 4326), 7) as gj
+    from parcels p where p.id = any(${uuidArray(parcelIds)}) and p.geom is not null
+  `)
+  return rows.rows.flatMap((r) => {
+    const text = labels.get(r.id)
+    return text === undefined ? [] : [labelAt(text, r.gj)]
+  })
+}
+
+async function featureLabels(tx: Tx, featureIds: string[]): Promise<LabelFeature[]> {
+  if (featureIds.length === 0) return []
+  const rows = await tx.execute<{ name: string; gj: string }>(sql`
+    select f.name, ST_AsGeoJSON(ST_Transform(ST_PointOnSurface(f.geom), 4326), 7) as gj
+    from gis_features f where f.id = any(${uuidArray(featureIds)}) and f.name is not null
+  `)
+  return rows.rows.map((r) => labelAt(r.name, r.gj))
 }

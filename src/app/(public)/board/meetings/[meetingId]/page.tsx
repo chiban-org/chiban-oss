@@ -37,7 +37,7 @@ export default async function BoardMeetingPage({
           <li key={item.versionId}>
             {item.withdrawnOn === null ? (
               <Link href={`${base}/${item.versionId}`} className={LINK}>
-                {`${item.title} (${item.filename})`}
+                {item.title}
               </Link>
             ) : (
               <span>{`${item.title}: withdrawn by the town on ${formatCivilDate(item.withdrawnOn)}`}</span>

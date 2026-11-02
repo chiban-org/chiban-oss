@@ -29,6 +29,7 @@ const recipient = (overrides: Partial<RecipientView>): RecipientView => ({
   excluded: false,
   exclusionReason: null,
   needsDecision: false,
+  tenantDecided: false,
   decisionText: null,
   corrected: false,
   ...overrides,

@@ -1,5 +1,5 @@
 import type { Board } from '@packs/nh/schema'
-import { and, asc, desc, eq, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
   acceptanceSchedules,
@@ -14,6 +14,7 @@ import {
 import { applicantParcelIds } from '@/features/abutters/applicantParcels'
 import { type NoticeCostSummary, noticeCostSummary } from '@/features/abutters/noticeCosts'
 import { listVersions } from '@/features/abutters/queries'
+import { hasOpenRegeneration } from '@/features/abutters/staleList'
 import { hasFullRecordAccess } from '@/features/access/roles'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
@@ -37,10 +38,13 @@ export interface BoardPanelData {
   canDetermine: boolean
   hasFilingLead: boolean
   acceptanceText: string | null
+  acceptanceMeetingId: string | null
+  acceptanceDate: string | null
   meetings: { id: string; text: string }[]
   today: string
   regional: {
     text: string | null
+    summary: string
     options: { key: string; name: string }[]
     chosen: string[]
   }
@@ -72,11 +76,23 @@ const DETERMINATION_TEXT = {
   previously_determined: 'Regional impact: previously determined by another board',
 } as const
 
+function joinNames(names: string[]): string {
+  if (names.length <= 1) return names.join('')
+  return `${names.slice(0, -1).join(', ')} and ${names.at(-1) ?? ''}`
+}
+
+function regionalSummary(text: string | null, names: string[]): string {
+  if (text === null) return 'Regional impact has not been determined.'
+  return names.length === 0 ? `${text}.` : `${text}. Affected municipalities: ${joinNames(names)}.`
+}
+
 const DES_TEXT = {
   within_500ft: 'Within the distance of a water body: NH DES receives notice',
   not_within: 'Not within the distance of a water body',
   not_applicable: 'The notice to NH DES does not apply',
 } as const
+
+const STALE_ISSUED = 'Issued, out of date. Draw and issue a new list.'
 
 const LIST_STATUS = {
   draft: 'Draft',
@@ -124,10 +140,16 @@ export async function loadBoardPanel(
   const meetings = await db
     .select()
     .from(boardMeetings)
-    .where(and(eq(boardMeetings.board, board), eq(boardMeetings.status, 'scheduled')))
+    .where(
+      and(
+        eq(boardMeetings.board, board),
+        eq(boardMeetings.status, 'scheduled'),
+        gte(boardMeetings.meetingDate, today),
+      ),
+    )
     .orderBy(asc(boardMeetings.meetingDate))
   const [schedule] = await db
-    .select({ date: boardMeetings.meetingDate })
+    .select({ id: boardMeetings.id, date: boardMeetings.meetingDate })
     .from(acceptanceSchedules)
     .innerJoin(boardMeetings, eq(boardMeetings.id, acceptanceSchedules.meetingId))
     .where(eq(acceptanceSchedules.applicationId, applicationId))
@@ -151,6 +173,7 @@ export async function loadBoardPanel(
     : { state: 'unknown' as const }
   const text = suggestionText(suggested, distanceFt)
   const versions = await listVersions(db, applicationId, signal)
+  const stale = await hasOpenRegeneration(db, applicationId)
   const people = await db
     .select()
     .from(applicationProfessionals)
@@ -192,6 +215,8 @@ export async function loadBoardPanel(
     canDetermine: await hasCapability(db, actor.userId, 'regional_impact.determine', signal),
     hasFilingLead: classification?.mandatoryRuleKeys.includes('nh.pb.filing_lead') === true,
     acceptanceText: schedule === undefined ? null : formatCivilDate(schedule.date),
+    acceptanceMeetingId: schedule?.id ?? null,
+    acceptanceDate: schedule?.date ?? null,
     meetings: meetings.map((m) => ({
       id: m.id,
       text: `${formatCivilDate(m.meetingDate)}, ${m.kind === 'special' ? 'special' : 'regular'} meeting`,
@@ -199,6 +224,13 @@ export async function loadBoardPanel(
     today,
     regional: {
       text: determination === undefined ? null : DETERMINATION_TEXT[determination.determination],
+      summary: regionalSummary(
+        determination === undefined ? null : DETERMINATION_TEXT[determination.determination],
+        contacts.municipalities
+          .filter((m) => parties.some((p) => p.municipalityKey === m.key))
+          .map((m) => m.name)
+          .sort(),
+      ),
       options: contacts.municipalities.map((m) => ({ key: m.key, name: m.name })),
       chosen: parties.map((p) => p.municipalityKey),
     },
@@ -211,7 +243,7 @@ export async function loadBoardPanel(
     lists: versions.map((v) => ({
       id: v.id,
       version: v.version,
-      statusText: LIST_STATUS[v.status],
+      statusText: v.status === 'issued' && stale ? STALE_ISSUED : LIST_STATUS[v.status],
       drawnText: formatCivilDate(v.drawnOn),
       issued: v.status === 'issued',
     })),

@@ -10,6 +10,7 @@ import {
   Pick,
 } from '@/components/config/primitives'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
+import { ruleChoicesFor } from '@/features/config/ruleChoices'
 
 export interface PackRuleOption {
   key: string
@@ -20,6 +21,7 @@ export interface ClassificationOption {
   key: string
   label: string
   mandatoryRuleKeys: string[]
+  board: string | null
 }
 
 interface Props {
@@ -37,9 +39,9 @@ export function ApplicationTypeEditor({
   packRules,
   classifications,
 }: Props) {
-  const mandatory = new Set(
-    classifications.find((c) => c.key === body.classification)?.mandatoryRuleKeys ?? [],
-  )
+  const classification = classifications.find((c) => c.key === body.classification)
+  const mandatory = new Set(classification?.mandatoryRuleKeys ?? [])
+  const offered = ruleChoicesFor(packRules, classification)
   const set = (patch: Partial<ApplicationTypeBody>) => onChange({ ...body, ...patch })
   return (
     <>
@@ -113,12 +115,12 @@ export function ApplicationTypeEditor({
         <p className="text-sm text-muted-foreground">
           Rules this type is bound to. Rules required by the classification are always on.
         </p>
-        {packRules.map((rule) => {
+        {offered.map((rule) => {
           const locked = mandatory.has(rule.key)
           return (
             <Check
               key={rule.key}
-              label={`${rule.label} (${rule.key})`}
+              label={rule.label}
               checked={locked || body.bindings.includes(rule.key)}
               disabled={locked}
               onChange={(e) =>

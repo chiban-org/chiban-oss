@@ -44,4 +44,14 @@ describe('projectionOverlay', () => {
     )
     expect(overlay.features).toEqual([])
   })
+  it('labels nearby parcels by their number and the street by its name', async () => {
+    const overlay = await handle.db.transaction((tx) =>
+      projectionOverlay(tx, [ids.A ?? ''], NH_ABUTTER_PARAMS, 50, signal),
+    )
+    const labels = overlay.features
+      .filter((f) => f.properties.kind === 'label')
+      .map((f) => f.properties.text)
+    expect(labels).toContain('009001000000')
+    expect(labels).toContain('Osprey Point Road')
+  })
 })

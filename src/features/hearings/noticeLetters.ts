@@ -67,6 +67,7 @@ export async function renderNoticeLetters(
     const text = renderTemplateText(template.body, {
       ...base,
       'notice.recipientName': item.recipientName ?? '',
+      'notice.recipientAddress': item.recipientAddress ?? '',
     })
     if (!text.ok) return err('no_template')
     const pdf = await renderPdf({

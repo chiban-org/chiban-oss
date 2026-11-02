@@ -2,6 +2,8 @@ import { CLASSIFICATION_KEYS } from '@packs/nh/schema'
 import { z } from 'zod'
 import { CORE_STATES } from '@/features/applications/states'
 
+const STEP_NAME_REQUIRED = 'Name every step.'
+
 export const ApplicationTypeBodySchema = z.object({
   key: z.string().min(1),
   label: z.string().min(1),
@@ -21,7 +23,11 @@ export const ApplicationTypeBodySchema = z.object({
   workflow: z.object({
     allowsDirectIssue: z.boolean(),
     substeps: z.array(
-      z.object({ state: z.enum(CORE_STATES), key: z.string().min(1), label: z.string().min(1) }),
+      z.object({
+        state: z.enum(CORE_STATES),
+        key: z.string().min(1, STEP_NAME_REQUIRED),
+        label: z.string().min(1, STEP_NAME_REQUIRED),
+      }),
     ),
     closesOn: z.enum([
       'final_inspection_passed',

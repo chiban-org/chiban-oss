@@ -15,6 +15,7 @@ import { mayManageAbutters } from '@/features/rosters/manage'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
 import { applicantParcelIds } from './applicantParcels'
+import { carryExclusions, carryRecipientEdits } from './carryEdits'
 import { classificationSpec, refreshRecipients, type StoredIncomplete } from './draft'
 import { getList, type ListRow } from './queries'
 import { abutterStrategy } from './registry'
@@ -131,7 +132,9 @@ export async function generateList(
         })),
       )
     }
+    if (latest !== undefined) await carryExclusions(tx, latest.id, created.id)
     await refreshRecipients(tx, created, app.typeBody.classification, now, signal)
+    if (latest !== undefined) await carryRecipientEdits(tx, latest.id, created.id)
     await writeAudit(
       tx,
       {

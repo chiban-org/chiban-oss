@@ -241,4 +241,12 @@ describe('recordCompletenessVote', () => {
     const [app] = await handle.db.select().from(applications).where(eq(applications.id, id))
     expect(app?.state).toBe('submitted')
   })
+  it('a vote dated before its meeting is before_meeting', async () => {
+    const id = await filed('2027-03-24')
+    await setMeeting(id, '2027-04-14')
+    expect(await accept(id, '2027-04-14', '2027-04-13')).toEqual({
+      ok: false,
+      error: 'before_meeting',
+    })
+  })
 })

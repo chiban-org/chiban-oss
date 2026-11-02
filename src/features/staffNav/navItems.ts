@@ -13,6 +13,7 @@ type NavAccess =
   | { kind: 'allCapabilities'; capabilities: readonly Capability[] }
   | { kind: 'reviewer' }
   | { kind: 'fullRecordAccessOrReviewer' }
+  | { kind: 'fullRecordAccess' }
 
 export interface NavItem {
   href: string
@@ -21,6 +22,7 @@ export interface NavItem {
 }
 
 const open: NavAccess = { kind: 'open' }
+const records: NavAccess = { kind: 'fullRecordAccess' }
 const any = (...capabilities: Capability[]): NavAccess => ({ kind: 'anyCapability', capabilities })
 
 export const STAFF_NAV_ITEMS: readonly NavItem[] = [
@@ -64,11 +66,11 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
   { href: '/staff/reports', label: 'Reports', access: any('report.view') },
   { href: '/staff/reports/census', label: 'Census report', access: any('report.view') },
   { href: '/staff/map', label: 'Map', access: open },
-  { href: '/staff/gis/imports', label: 'Imports', access: open },
-  { href: '/staff/gis/exceptions', label: 'Exceptions', access: open },
-  { href: '/staff/parcels/unresolved', label: 'Unresolved records', access: open },
-  { href: '/staff/overrides/aliases', label: 'Overrides', access: open },
-  { href: '/staff/settings', label: 'Settings', access: open },
+  { href: '/staff/gis/imports', label: 'Imports', access: records },
+  { href: '/staff/gis/exceptions', label: 'Exceptions', access: records },
+  { href: '/staff/parcels/unresolved', label: 'Unresolved records', access: records },
+  { href: '/staff/overrides/aliases', label: 'Overrides', access: records },
+  { href: '/staff/settings', label: 'Settings', access: records },
   { href: '/staff/admin/export', label: 'Export', access: any('export.download') },
   { href: '/staff/admin/health', label: 'Health', access: any('config.edit') },
   { href: '/staff/admin/cutover', label: 'Cutover', access: any('cutover.import') },
@@ -113,6 +115,8 @@ export function mayUse(item: NavItem, viewer: NavViewer): boolean {
       return access.capabilities.every((c) => viewer.capabilities.has(c))
     case 'reviewer':
       return viewer.roles.includes('reviewer')
+    case 'fullRecordAccess':
+      return hasRecordAccess(viewer.roles)
     case 'fullRecordAccessOrReviewer':
       return hasRecordAccess(viewer.roles) || viewer.roles.includes('reviewer')
   }

@@ -60,3 +60,12 @@ export function provenanceText(p: Provenance): string {
     }
   }
 }
+
+export function reasonLines(reasons: CandidateReason[]): string[] {
+  const between = new Set(
+    reasons.flatMap((r) => (r.kind === 'across_between_points' ? [r.featureId] : [])),
+  )
+  return reasons
+    .filter((r) => r.kind !== 'across_within_capture' || !between.has(r.featureId))
+    .map(reasonText)
+}

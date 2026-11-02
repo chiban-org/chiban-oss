@@ -15,6 +15,7 @@ import type { CivilDate } from '@/types/civilDate'
 
 export const COMMON = {
   project_description: 'Demonstration board application',
+  applicant_name: 'Alex Applicant',
   applicant_mailing_address: '12 Osprey Lane, Alder Pond NH 03999',
   owner_authorization: true,
 }

@@ -30,6 +30,7 @@ const NEW_CODES = [
   'send_failed',
   'empty',
   'already_published',
+  'wrong_document',
 ]
 
 describe('boardErrorCopy for hearings, decisions, and notices', () => {

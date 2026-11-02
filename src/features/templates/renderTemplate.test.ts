@@ -53,11 +53,14 @@ describe('renderTemplate', () => {
       'meeting.time',
       'hearing.kind',
       'notice.recipientName',
+      'notice.recipientAddress',
       'decision.outcome',
       'decision.votedOn',
       'decision.findings',
       'decision.conditions',
       'decision.reasons',
+      'decision.conditionsSection',
+      'decision.reasonsSection',
       'decision.appealRights',
     ])
   })

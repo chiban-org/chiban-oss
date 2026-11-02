@@ -81,7 +81,7 @@ async function notifyMember(
       action: 'packet.member.notify',
       entityType: 'board_packet',
       entityId: packet.id,
-      after: { recipientEmail: input.recipientEmail },
+      after: { recipientName: input.recipientName, recipientEmail: input.recipientEmail },
     },
     signal,
   )

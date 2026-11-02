@@ -7,6 +7,7 @@ const COPY: Record<string, string> = {
   wrong_board: 'That meeting belongs to a different board than this application.',
   meeting_not_set: 'Set that meeting for this application before recording the vote.',
   meeting_cancelled: 'That meeting was cancelled. Choose another one.',
+  before_meeting: 'The date cannot be before the meeting.',
   not_submitted: 'The application is not waiting for its acceptance step.',
   not_under_review: 'The application is not under review.',
   already_scheduled: 'That meeting is already on the calendar.',
@@ -50,6 +51,8 @@ const COPY: Record<string, string> = {
   future_date: 'The date cannot be in the future.',
   document_not_found:
     'Upload the certificate or receipt to this application first, then choose it.',
+  wrong_document:
+    'Choose a file uploaded as the minutes, certificate, or receipt, not the application or a generated notice.',
   item_not_found: 'Choose at least one notice item.',
   hearing_not_held: 'The hearing has not been held yet.',
   votes_inconsistent: 'The member votes do not add up to the totals.',

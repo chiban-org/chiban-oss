@@ -29,6 +29,7 @@ export function ProjectionMap({
         basemapRasterUrl={basemapRasterUrl}
         basemapAttribution={basemapAttribution}
         onSelect={(parcelId) => router.push(`/staff/parcels/${parcelId}`)}
+        hint="The map is a visual aid. The tables below list every parcel by its number."
       />
       <ul className="mt-2 flex list-none flex-wrap gap-4 p-0 text-sm">
         <li>Dark dots: corners of the property facing the street or stream</li>

@@ -180,6 +180,8 @@ describe('board pages show words, not keys or dates', () => {
     expect(body).toMatch(/Parcel layer imported [A-Z][a-z]+ \d+, \d{4}/)
     expect(body).toContain('Print mailing labels')
     expect(body).toContain('Touches the property')
+    expect(body).toContain('Check code')
+    expect(body).not.toContain('Fingerprint')
   })
 
   it('the draft list shows an undecided tenant, a reason in words, and one filled action', async () => {

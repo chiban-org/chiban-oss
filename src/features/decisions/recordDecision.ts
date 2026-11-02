@@ -22,7 +22,7 @@ import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import { requiredDecisionFields } from '@/features/decisions/requiredFields'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
-import type { CivilDate } from '@/types/civilDate'
+import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 export interface RecordDecisionInput {
@@ -43,6 +43,7 @@ export type DecisionError =
   | 'hearing_not_held'
   | 'votes_inconsistent'
   | 'invalid_state'
+  | 'before_meeting'
   | { missingFields: string[] }
   | { gateBlocked: GateResult[] }
 
@@ -98,6 +99,17 @@ async function applyConditions(
   }
 }
 
+function voteTiming(
+  hearing: { status: string; heldOn: string | null },
+  votedOn: CivilDate,
+): 'hearing_not_held' | 'before_meeting' | null {
+  if (hearing.status !== 'held') return 'hearing_not_held'
+  if (hearing.heldOn !== null && compareCivil(votedOn, hearing.heldOn as CivilDate) < 0) {
+    return 'before_meeting'
+  }
+  return null
+}
+
 export async function recordDecision(
   db: Db,
   actor: Actor,
@@ -117,7 +129,8 @@ export async function recordDecision(
       return err('not_found')
     const app = await loadApplicationContext(tx, input.applicationId, signal)
     if (app === null) return err('not_found')
-    if (hearing.status !== 'held') return err('hearing_not_held')
+    const timing = voteTiming(hearing, input.votedOn)
+    if (timing !== null) return err(timing)
     const [already] = await tx
       .select({ id: boardDecisions.id })
       .from(boardDecisions)

@@ -5,6 +5,7 @@ import { StatusChip } from '@/components/StatusChip'
 import { env } from '@/config/env'
 import { displayFieldValue } from '@/features/forms/displayValue'
 import { honestText } from '@/features/honest/honest'
+import { loadPortalBoardRecord, type PortalBoardRecord } from '@/features/portal/boardRecord'
 import { getPortalApplicationView, type PortalApplicationView } from '@/features/portal/portalView'
 import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate, formatInstant } from '@/lib/formatDate'
@@ -69,6 +70,20 @@ function Fees({ view }: { view: PortalApplicationView }) {
   )
 }
 
+function BoardRecordSection({ record }: { record: PortalBoardRecord }) {
+  if (record.hearings.length + record.decisions.length + record.deadlines.length === 0) return null
+  return (
+    <section aria-labelledby="board-heading" className="space-y-2">
+      <h2 id="board-heading">Board hearing and decision</h2>
+      <ul className="m-0 space-y-1">
+        {[...record.hearings, ...record.decisions, ...record.deadlines].map((line) => (
+          <li key={line}>{line}</li>
+        ))}
+      </ul>
+    </section>
+  )
+}
+
 export default async function PortalApplicationPage({
   params,
 }: {
@@ -81,6 +96,7 @@ export default async function PortalApplicationPage({
   const view = result.value
   const town = await getTownSettings(ctx.db, ctx.signal)
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
+  const board = await loadPortalBoardRecord(ctx.db, ctx.actor, applicationId, ctx.signal)
   return (
     <main className="space-y-8">
       <header className="space-y-3">
@@ -114,6 +130,8 @@ export default async function PortalApplicationPage({
           <Details view={view} />
         )}
       </section>
+
+      {board.ok ? <BoardRecordSection record={board.value} /> : null}
 
       {view.conditions.length === 0 ? null : (
         <section aria-labelledby="conditions-heading" className="space-y-2">

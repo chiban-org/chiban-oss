@@ -1,7 +1,12 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import {
+  createStaffUploadIntentAction,
+  finalizeStaffUploadAction,
+} from '@/app/(staff)/staff/records/actions'
 import { ActionForm } from '@/components/ActionForm'
 import { AppealGraph } from '@/components/appeals/AppealGraph'
+import { ApplicationFileUploader } from '@/components/documents/ApplicationFileUploader'
 import { NoticeChecklist } from '@/components/notices/NoticeChecklist'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -22,6 +27,10 @@ export const dynamic = 'force-dynamic'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 const TRANSMITTAL_METHODS: ProofMethod[] = ['certified_mail']
+const UPLOAD_ACTIONS = {
+  createIntent: createStaffUploadIntentAction,
+  finalize: finalizeStaffUploadAction,
+}
 const APPEAL_STEPS: [string, string][] = [
   ['rehearing_motion', 'Motion for rehearing'],
   ['rehearing_outcome', 'Rehearing decision'],
@@ -92,6 +101,13 @@ export default async function DecisionPage({
       {view.filingDueText === null ? null : (
         <p>{`Minutes and the written decision are due ${view.filingDueText}.`}</p>
       )}
+      {view.filedText === null ? (
+        <ApplicationFileUploader
+          applicationId={view.applicationId}
+          fileLabel="Upload the minutes"
+          actions={UPLOAD_ACTIONS}
+        />
+      ) : null}
       {view.filedText !== null ? (
         <p>{`Filed ${view.filedText}. The decision and minutes are public.`}</p>
       ) : view.documentsGenerated ? (
@@ -106,7 +122,12 @@ export default async function DecisionPage({
           <SelectField
             label="Minutes"
             name="minutesDocumentId"
-            options={view.minutesChoices.map((d): [string, string] => [d.id, d.label])}
+            defaultValue=""
+            required
+            options={[
+              ['', 'Choose the minutes'],
+              ...view.minutesChoices.map((d): [string, string] => [d.id, d.label]),
+            ]}
           />
         </ActionForm>
       ) : (
@@ -136,6 +157,11 @@ export default async function DecisionPage({
           <NoticeChecklist items={view.transmittal.checklist} noticedOn={null} showMark={false} />
           <details>
             <summary>Record proof of transmittal</summary>
+            <ApplicationFileUploader
+              applicationId={view.applicationId}
+              fileLabel="Upload a certified mail receipt"
+              actions={UPLOAD_ACTIONS}
+            />
             <ActionForm action={recordProofAction} submitLabel="Record proof" className="max-w-xl">
               <fieldset className="space-y-1 rounded-md border p-3">
                 <legend className="px-1 text-sm font-medium">Recipients this proof covers</legend>
@@ -165,7 +191,12 @@ export default async function DecisionPage({
               <SelectField
                 label="Certificate or receipt"
                 name="documentId"
-                options={view.minutesChoices.map((d): [string, string] => [d.id, d.label])}
+                defaultValue=""
+                required
+                options={[
+                  ['', 'Choose an uploaded file'],
+                  ...view.minutesChoices.map((d): [string, string] => [d.id, d.label]),
+                ]}
               />
             </ActionForm>
           </details>

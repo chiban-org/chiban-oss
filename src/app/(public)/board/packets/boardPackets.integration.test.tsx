@@ -98,6 +98,7 @@ describe('board packet page and route', () => {
     expect(html).toContain('April agenda')
     expect(html).toContain('Septic design')
     expect(html).toContain('Cover page and contents')
+    expect(html).not.toMatch(/\.pdf\)/)
   })
 
   it('a missing or unknown token is a 404 page, not a sign-in prompt', async () => {

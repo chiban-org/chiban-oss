@@ -17,6 +17,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { TRANSMITTAL_SUBJECT } from '@/features/decisions/regionalTransmittal'
+import { evidenceOf } from '@/features/documents/evidence'
 import { channelLabel } from '@/features/notices/channels'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { proofMethodLabel } from '@/features/notices/proofMethods'
@@ -126,6 +127,11 @@ async function checklistFor(db: Db, setId: string, signal: AbortSignal): Promise
   }))
 }
 
+function blankToNull(value: string | null): string | null {
+  const trimmed = value?.trim() ?? ''
+  return trimmed === '' ? null : trimmed
+}
+
 export async function loadDecisionView(
   db: Db,
   actor: Actor,
@@ -141,7 +147,7 @@ export async function loadDecisionView(
   const docs = await db
     .select({ id: documents.id, title: documents.title })
     .from(documents)
-    .where(eq(documents.recordId, decision.applicationId))
+    .where(evidenceOf(decision.applicationId))
     .orderBy(asc(documents.seq))
   const nodes = await db
     .select()
@@ -172,7 +178,7 @@ export async function loadDecisionView(
     voteText: `${decision.votes.for} for, ${decision.votes.against} against, ${decision.votes.abstain} abstaining`,
     findings: decision.findings,
     conditions: decision.conditions.map((c) => ({ text: c.text, precedent: c.precedent })),
-    reasons: decision.reasonsForDisapproval,
+    reasons: blankToNull(decision.reasonsForDisapproval),
     documentsGenerated: decision.writtenDecisionDocumentId !== null,
     filedText: decision.filedOn === null ? null : formatCivilDate(decision.filedOn),
     filingDueText: await filingDue(db, decision.applicationId),

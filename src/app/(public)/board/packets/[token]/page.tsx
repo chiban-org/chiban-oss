@@ -40,7 +40,7 @@ export default async function BoardPacketPage({ params }: { params: Promise<{ to
           <li key={item.versionId}>
             {item.withdrawnOn === null ? (
               <Link href={`${base}/${item.versionId}`} className={LINK}>
-                {`${item.title} (${item.filename})`}
+                {item.title}
               </Link>
             ) : (
               <span>{`${item.title}: withdrawn by the town on ${formatCivilDate(item.withdrawnOn)}`}</span>

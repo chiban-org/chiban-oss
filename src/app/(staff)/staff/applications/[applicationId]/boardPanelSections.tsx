@@ -19,12 +19,7 @@ export function DeterminationSection({ data }: { data: BoardPanelData }) {
   return (
     <section aria-label="Determinations" className="space-y-3">
       <h3>Regional impact and water bodies</h3>
-      <p>
-        {data.regional.text ?? 'Regional impact has not been determined.'}
-        {data.regional.chosen.length > 0
-          ? ` Affected municipalities: ${data.regional.chosen.length}.`
-          : ''}
-      </p>
+      <p>{data.regional.summary}</p>
       {data.canDetermine ? (
         <details>
           <summary>Record the regional impact determination</summary>

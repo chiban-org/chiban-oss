@@ -33,6 +33,7 @@ vi.mock('@/db/client', () => ({
 }))
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
 vi.mock('next/navigation', () => ({
+  useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }),
   redirect: (url: string) => {
     throw new Error(`NEXT_REDIRECT:${url}`)
   },
@@ -225,6 +226,9 @@ describe('staff and public pages', () => {
       renderToStaticMarkup(await HearingPage({ params: Promise.resolve({ hearingId }) })),
     )
     expect(html).toContain('Notice checklist')
+    expect(html).toContain('Upload a certificate or receipt')
+    expect(html).toContain('>Choose an uploaded file</option>')
+    expect(html).not.toContain(', snapshot 1')
     expect(html).toContain('Missing')
     expect(html).toContain('Mark properly noticed')
     expect(findUuids(html)).toEqual([])
@@ -237,6 +241,16 @@ describe('staff and public pages', () => {
         'nh.zba.notice_req.mail',
       ]),
     ).toEqual([])
+  })
+
+  it('a continued hearing page offers no notice marking', async () => {
+    const { hearingId } = await unnoticedHearing()
+    await handle.db.update(hearings).set({ status: 'continued' }).where(eq(hearings.id, hearingId))
+    state.actor = world.staff
+    const html = renderToStaticMarkup(await HearingPage({ params: Promise.resolve({ hearingId }) }))
+    expect(html).toContain('Notice checklist')
+    expect(html).not.toContain('Mark properly noticed')
+    expect(html).not.toContain('still need timely proof')
   })
 
   it('the hearing page shows the permission page to a reviewer and is not found for a stranger id', async () => {
@@ -273,6 +287,11 @@ describe('staff and public pages', () => {
       ),
     )
     expect(html).toContain('Approved, voted April 15, 2027')
+    expect(html).toContain('Upload the minutes')
+    expect(html).not.toContain('Reasons for disapproval')
+    expect(html).toContain('>Choose the minutes</option>')
+    expect(html).not.toContain(', snapshot 1')
+    expect(html).not.toContain('>Variance notice of decision</option>')
     expect(html).toContain('The proposal meets each criterion of the ordinance.')
     expect(html).toContain('Zoning Board decision')
     expect(html).toContain('4 for, 1 against, 0 abstaining')

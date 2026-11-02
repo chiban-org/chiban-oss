@@ -7,7 +7,7 @@ import { openIncomplete } from '@/features/abutters/draft'
 import { type NoticeCostSummary, noticeCostSummary } from '@/features/abutters/noticeCosts'
 import { type Overlay, projectionOverlay } from '@/features/abutters/overlay'
 import { getList, type ListRow, type ListSnapshot } from '@/features/abutters/queries'
-import { provenanceText, reasonText } from '@/features/abutters/reasonText'
+import { provenanceText, reasonLines } from '@/features/abutters/reasonText'
 import type { Recipient } from '@/features/abutters/resolution'
 import { RECIPIENT_ROLE_LABELS } from '@/features/abutters/roles'
 import type { Candidate } from '@/features/abutters/types'
@@ -40,6 +40,7 @@ export interface RecipientView {
   excluded: boolean
   exclusionReason: string | null
   needsDecision: boolean
+  tenantDecided: boolean
   decisionText: string | null
   corrected: boolean
 }
@@ -122,6 +123,7 @@ function frozenView(data: Recipient, index: number): RecipientView {
     excluded: false,
     exclusionReason: null,
     needsDecision: false,
+    tenantDecided: false,
     decisionText: null,
     corrected: data.provenance.some((p) => p.source === 'staff_entry'),
   }
@@ -140,14 +142,17 @@ function recipientView(row: typeof abutterListRecipients.$inferSelect): Recipien
     roles: data.roles.map((r) => RECIPIENT_ROLE_LABELS[r]),
     statusText:
       data.status === 'needs_decision'
-        ? 'Needs a staff decision'
+        ? row.qualifies === null
+          ? 'Needs a staff decision'
+          : 'Decided by staff'
         : data.status === 'incomplete_data'
           ? 'Missing name or address'
           : 'Complete',
     provenance: data.provenance.map(provenanceText),
     excluded: row.excluded,
     exclusionReason: row.exclusionReason,
-    needsDecision: data.status === 'needs_decision',
+    needsDecision: data.status === 'needs_decision' && row.qualifies === null,
+    tenantDecided: data.status === 'needs_decision' && row.qualifies !== null,
     decisionText: decision,
     corrected: data.provenance.some((p) => p.source === 'staff_entry'),
   }
@@ -174,7 +179,7 @@ async function candidateRows(tx: Tx, listId: string): Promise<CandidateRow[]> {
       parcelId: r.parcelId,
       parcelLabel: labels.get(r.parcelId) ?? 'Parcel',
       owner: ownerOf.get(r.parcelId) ?? 'Owner not on record',
-      reasons: reasons.map(reasonText),
+      reasons: reasonLines(reasons),
       staffSelected: reasons.some((x) => x.kind === 'staff_selected'),
       excluded: r.excluded,
       exclusionReason: r.exclusionReason,

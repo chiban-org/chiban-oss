@@ -16,8 +16,13 @@ export interface ParcelMapProps {
   onSelect: (parcelId: string) => void
   basemapRasterUrl?: string | null
   basemapAttribution?: string | null
-  overlay?: GeoJSON.FeatureCollection<GeoJSON.Geometry, { kind: string }>
+  overlay?: GeoJSON.FeatureCollection<GeoJSON.Geometry, { kind: string; text?: string }>
+  hint?: string
 }
+
+const SEARCH_HINT =
+  'The map is a visual aid. Use the search box to find a parcel with the keyboard.'
+const LABEL_CLASS = 'rounded bg-surface/90 px-1 text-sm font-medium text-foreground shadow-sm'
 
 const OVERLAY_SOURCE = 'projection-overlay'
 const NH_CENTER: [number, number] = [-71.5, 43.7]
@@ -119,7 +124,17 @@ export function ParcelMap(props: ParcelMapProps) {
       })
       if (props.overlay !== undefined) {
         const overlay = props.overlay
-        map.on('load', () => addOverlay(map, overlay))
+        map.on('load', () => {
+          addOverlay(map, overlay)
+          for (const feature of overlay.features) {
+            if (feature.properties.kind !== 'label' || feature.geometry.type !== 'Point') continue
+            const element = document.createElement('span')
+            element.className = LABEL_CLASS
+            element.textContent = feature.properties.text ?? ''
+            const [lon = 0, lat = 0] = feature.geometry.coordinates
+            new maplibre.Marker({ element }).setLngLat([lon, lat]).addTo(map)
+          }
+        })
       }
       if (props.bbox !== undefined)
         map.fitBounds(props.bbox, { padding: FIT_PADDING_PX, animate: false })
@@ -158,9 +173,7 @@ export function ParcelMap(props: ParcelMapProps) {
           </p>
         ) : null}
       </div>
-      <p className="mt-2 text-sm text-muted-foreground">
-        The map is a visual aid. Use the search box to find a parcel with the keyboard.
-      </p>
+      <p className="mt-2 text-sm text-muted-foreground">{props.hint ?? SEARCH_HINT}</p>
     </div>
   )
 }

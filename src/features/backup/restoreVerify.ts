@@ -177,6 +177,12 @@ async function rehashFiles(
   return { checked: rows.length, bad }
 }
 
+const ADMIN_SHUTDOWN = '57P01'
+
+function rethrowUnlessShutdown(error: Error & { code?: string }): void {
+  if (error.code !== ADMIN_SHUTDOWN) throw error
+}
+
 async function cleanup(scratch: Scratch, admin: Pool, signal: AbortSignal): Promise<void> {
   await scratch.pool?.end().catch(() => undefined)
   if (scratch.databaseCreated) {
@@ -219,6 +225,7 @@ async function restoreDump(job: RestoreRun, signal: AbortSignal): Promise<boolea
       { env: connectionEnv(scratchUrl), signal },
     )
     scratch.pool = new Pool({ connectionString: scratchUrl, max: 2 })
+    scratch.pool.on('error', rethrowUnlessShutdown)
     return true
   } catch (e) {
     if (e instanceof Error && e.name === 'AbortError') throw e

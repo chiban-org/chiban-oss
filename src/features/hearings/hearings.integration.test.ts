@@ -436,6 +436,35 @@ describe('renderNoticeLetters', () => {
     ).toEqual([])
   })
 
+  it('notice letters name the applicant from the form and address each recipient', async () => {
+    await saveAndPublish(handle.db, world.admin, 'template', 'hearing-notice', {
+      key: 'hearing-notice',
+      label: 'Hearing notice',
+      kind: 'hearing_notice',
+      body: '{{notice.recipientName}}\n\n{{notice.recipientAddress}}\n\nApplicant {{party.applicant.name}}.',
+    })
+    await saveAndPublish(
+      handle.db,
+      world.admin,
+      'application_type',
+      world.zbaTypeKey,
+      boardTypeBody('nh.zba_variance', world.zbaTypeKey, 'VAR', {
+        templateKeys: ['hearing-notice'],
+      }),
+    )
+    const id = await zbaApp({ recipients: 1 })
+    await handle.db
+      .update(applications)
+      .set({ values: { applicant_name: 'Rae Fenn' } })
+      .where(eq(applications.id, id))
+    const row = await hearingRow(await schedule(id, '2027-04-15', 'zba'))
+    const pdf = await renderNoticeLetters(handle.db, world.staff, row.noticeSetId, signal)
+    if (!pdf.ok) throw new Error(pdf.error)
+    const text = await pdfText(pdf.value)
+    expect(text).toContain('Applicant Rae Fenn.')
+    expect(text).toContain('1 Heron Lane, Alder Pond NH 03999')
+  })
+
   it('without a hearing notice template the result is no_template', async () => {
     const id = await zbaApp()
     const hearingId = await schedule(id, '2027-04-15', 'zba')
