@@ -175,6 +175,37 @@ describe('records actions', () => {
     ).toMatchObject({ ok: true })
   })
 
+  it('placeHoldAction refuses a document that was already disposed of, by title or by id', async () => {
+    state.actor = await staffActor(handle.db, 'records_custodian')
+    const app = await makeApplication(handle.db, world)
+    const gone = await uploadAs(
+      handle.db,
+      testStore,
+      world.applicant,
+      { kind: 'application', id: app.applicationId },
+      pdfBytes('disposed letter'),
+      { title: 'Disposed letter for the hold test' },
+    )
+    await handle.db
+      .update(documents)
+      .set({ disposedAt: new Date() })
+      .where(eq(documents.id, gone.documentId))
+    const reason = 'Litigation pending on site'
+    for (const targetRef of ['Disposed letter for the hold test', gone.documentId]) {
+      expect(
+        await actions.placeHoldAction(form({ targetKind: 'document', targetRef, reason })),
+      ).toEqual({
+        ok: false,
+        error: 'That document was already disposed of, so there is nothing left to hold.',
+      })
+    }
+    const held = await handle.db
+      .select()
+      .from(legalHolds)
+      .where(eq(legalHolds.targetId, gone.documentId))
+    expect(held).toEqual([])
+  })
+
   it('placeHoldAction by reference is still forbidden for staff without the hold capability', async () => {
     state.actor = world.staff
     const made = await makeApplication(handle.db, world)
