@@ -1,1 +1,1 @@
-export {}
+import '@/features/building/gates'
