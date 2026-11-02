@@ -1,10 +1,10 @@
-import { fileURLToPath } from 'node:url'
+import path from 'node:path'
 import { sql } from 'drizzle-orm'
 import type { NodePgDatabase } from 'drizzle-orm/node-postgres'
 import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { err, ok, type Result } from '@/types/result'
 
-const MIGRATIONS_FOLDER = fileURLToPath(new URL('../../drizzle', import.meta.url))
+const MIGRATIONS_FOLDER = path.resolve(process.cwd(), 'drizzle')
 
 const REQUIRED_EXTENSIONS = ['postgis', 'pgcrypto', 'citext', 'pg_trgm'] as const
 

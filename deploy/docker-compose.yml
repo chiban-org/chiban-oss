@@ -1,0 +1,114 @@
+x-app-environment: &app-environment
+  BASE_URL: ${BASE_URL}
+  DATABASE_URL: postgres://chiban:${POSTGRES_PASSWORD}@postgres:5432/chiban
+  S3_ENDPOINT: http://minio:9000
+  S3_PUBLIC_ENDPOINT: https://s3.${APP_DOMAIN}
+  S3_BUCKET: ${S3_BUCKET}
+  S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+  S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+  SMTP_URL: ${SMTP_URL}
+  MAIL_FROM: ${MAIL_FROM}
+  CHIBAN_ACTIVE_KEY_ID: ${CHIBAN_ACTIVE_KEY_ID}
+  CHIBAN_SECRET_KEYS: ${CHIBAN_SECRET_KEYS}
+
+services:
+  caddy:
+    image: ${CADDY_IMAGE}
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddydata:/data
+      - caddyconfig:/config
+    depends_on:
+      - app
+      - minio
+
+  app:
+    image: ${CHIBAN_IMAGE}
+    restart: unless-stopped
+    environment:
+      <<: *app-environment
+      CHIBAN_IMAGE_REF: ${CHIBAN_IMAGE}
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:3000/api/health').then((r) => process.exit(r.ok ? 0 : 1), () => process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 20s
+
+  worker:
+    image: ${CHIBAN_IMAGE}
+    restart: unless-stopped
+    command: ["node", "dist/worker.mjs"]
+    environment:
+      <<: *app-environment
+      CHIBAN_IMAGE_REF: ${CHIBAN_IMAGE}
+      HEALTH_DISK_PATHS: /monitor/pg,/monitor/minio
+    volumes:
+      - pgdata:/monitor/pg:ro
+      - miniodata:/monitor/minio:ro
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  migrate:
+    image: ${CHIBAN_IMAGE}
+    restart: "no"
+    command: ["node", "dist/migrate.mjs"]
+    environment:
+      <<: *app-environment
+      CHIBAN_IMAGE_REF: ${CHIBAN_IMAGE}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      createbucket:
+        condition: service_completed_successfully
+
+  postgres:
+    image: ${POSTGIS_IMAGE}
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: chiban
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: chiban
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U chiban"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  minio:
+    image: ${MINIO_IMAGE}
+    restart: unless-stopped
+    command: ["server", "/data"]
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+      MINIO_API_CORS_ALLOW_ORIGIN: ${BASE_URL}
+    volumes:
+      - miniodata:/data
+
+  createbucket:
+    image: ${MC_IMAGE}
+    restart: on-failure
+    command: ["mb", "--ignore-existing", "local/${S3_BUCKET}"]
+    environment:
+      MC_HOST_local: http://${MINIO_ROOT_USER}:${MINIO_ROOT_PASSWORD}@minio:9000
+    depends_on:
+      - minio
+
+volumes:
+  pgdata:
+  miniodata:
+  caddydata:
+  caddyconfig:

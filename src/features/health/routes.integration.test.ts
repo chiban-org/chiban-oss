@@ -30,11 +30,12 @@ afterAll(async () => {
 
 describe('/api/version', () => {
   it('reports app version, pack identity, and the applied migration head', async () => {
-    const response = await versionResponse(handle.db, signal)
+    const response = await versionResponse(handle.db, signal, 'registry.example/chiban@sha256:abc')
     expect(response.status).toBe(200)
     const body = (await response.json()) as Record<string, unknown>
     expect(body).toEqual({
       appVersion: expect.any(String),
+      imageRef: 'registry.example/chiban@sha256:abc',
       pack: {
         id: 'nh',
         version: NH_PACK_MANIFEST.version,
@@ -47,7 +48,7 @@ describe('/api/version', () => {
   it('answers 503 when the database cannot be queried', async () => {
     const dead = await makeTestDb()
     await dead.drop()
-    const response = await versionResponse(dead.db, signal)
+    const response = await versionResponse(dead.db, signal, null)
     expect(response.status).toBe(503)
   })
 })

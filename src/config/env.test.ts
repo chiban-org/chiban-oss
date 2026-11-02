@@ -1,5 +1,6 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { envSchema } from '@/config/env'
+import { ENV_PREFIXES_STRICT, findUndeclaredKeys } from '@/config/envStrict'
 
 const base = {
   DATABASE_URL: 'postgres://u:p@localhost:5432/db',
@@ -7,6 +8,12 @@ const base = {
   CHIBAN_SECRET_KEYS: JSON.stringify({ k1: Buffer.alloc(32, 1).toString('base64') }),
   CHIBAN_ACTIVE_KEY_ID: 'k1',
 }
+
+afterEach(() => {
+  vi.unstubAllEnvs()
+  vi.resetModules()
+  vi.restoreAllMocks()
+})
 
 describe('payment environment', () => {
   it('STRIPE_API_BASE in production fails env parsing', () => {
@@ -59,5 +66,57 @@ describe('alert environment', () => {
     })
     expect(parsed.success).toBe(false)
     expect(parsed.error?.issues.map((i) => i.path.join('.'))).toContain('PAGER_ROUTING_KEY')
+  })
+})
+
+describe('strict env prefixes', () => {
+  it('lists the prefixes the product owns', () => {
+    expect(ENV_PREFIXES_STRICT).toEqual([
+      'CHIBAN_',
+      'S3_',
+      'SMTP_',
+      'HEALTH_',
+      'ALERT_',
+      'PAGER_',
+      'EXPORT_',
+      'GHOSTSCRIPT_',
+    ])
+  })
+
+  it('reports only prefixed keys the schema does not declare', () => {
+    const found = findUndeclaredKeys(
+      ['CHIBAN_ACTIVE_KEY_ID', 'CHIBAN_TYPO', 'S3_BUCKET', 'S3_BUKET', 'HOME', 'EXPORT_WORK_DIR'],
+      ['CHIBAN_ACTIVE_KEY_ID', 'S3_BUCKET', 'EXPORT_WORK_DIR'],
+    )
+    expect(found).toEqual(['CHIBAN_TYPO', 'S3_BUKET'])
+  })
+
+  it('declares the optional image ref and the term gate file', () => {
+    expect(Object.keys(envSchema.shape)).toEqual(
+      expect.arrayContaining(['CHIBAN_IMAGE_REF', 'CHIBAN_TERMS_FILE']),
+    )
+  })
+
+  it('treats the image ref as optional', () => {
+    expect(envSchema.shape.CHIBAN_IMAGE_REF.safeParse(undefined).success).toBe(true)
+  })
+})
+
+describe('loadEnv', () => {
+  it('an undeclared CHIBAN_ key fails env parsing', async () => {
+    vi.stubEnv('CHIBAN_NOT_A_REAL_KEY', 'x')
+    const exit = vi.spyOn(process, 'exit').mockImplementation((code) => {
+      throw new Error(`exit ${String(code)}`)
+    })
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    await expect(import('@/config/env')).rejects.toThrow('exit 1')
+    expect(exit).toHaveBeenCalledWith(1)
+    expect(String(logged.mock.calls[0]?.[0])).toContain('CHIBAN_NOT_A_REAL_KEY')
+  })
+
+  it('loads when every prefixed key is declared', async () => {
+    vi.stubEnv('CHIBAN_IMAGE_REF', 'registry.example/chiban@sha256:abc')
+    const mod = await import('@/config/env')
+    expect(mod.env.CHIBAN_IMAGE_REF).toBe('registry.example/chiban@sha256:abc')
   })
 })
