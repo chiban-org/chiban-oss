@@ -2,7 +2,7 @@
 
 import 'maplibre-gl/dist/maplibre-gl.css'
 import type { Map as MapLibreMap } from 'maplibre-gl'
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { buildMapStyle } from '@/components/map/mapStyle'
 import { MAPLIBRE_WORKER_URL } from '@/components/map/workerUrl'
 import { TOKENS } from '@/features/design/tokens'
@@ -32,9 +32,11 @@ export function ParcelMap(props: ParcelMapProps) {
   latest.current = props
   const layerKey = props.layers.join(',')
   const bboxKey = props.bbox?.join(',') ?? ''
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
     let cancelled = false
+    setLoading(true)
     void import('maplibre-gl').then((maplibre) => {
       if (cancelled || container.current === null) return
       maplibre.setWorkerUrl(MAPLIBRE_WORKER_URL)
@@ -69,6 +71,7 @@ export function ParcelMap(props: ParcelMapProps) {
       })
       if (props.bbox !== undefined)
         map.fitBounds(props.bbox, { padding: FIT_PADDING_PX, animate: false })
+      map.once('idle', () => setLoading(false))
       mapRef.current = map
     })
     return () => {
@@ -87,12 +90,22 @@ export function ParcelMap(props: ParcelMapProps) {
 
   return (
     <div>
-      <div
-        ref={container}
-        role="region"
-        aria-label="Parcel map"
-        className="h-[28rem] w-full rounded-lg border bg-canvas"
-      />
+      <div className="relative">
+        <div
+          ref={container}
+          role="region"
+          aria-label="Parcel map"
+          className="h-[28rem] w-full rounded-lg border bg-canvas"
+        />
+        {loading ? (
+          <p
+            role="status"
+            className="absolute inset-0 m-0 flex items-center justify-center rounded-lg bg-canvas/80 text-base font-medium"
+          >
+            Loading the map
+          </p>
+        ) : null}
+      </div>
       <p className="mt-2 text-sm text-muted-foreground">
         The map is a visual aid. Use the search box to find a parcel with the keyboard.
       </p>
