@@ -5,6 +5,7 @@ import {
   linkReliance,
   recordFinalApproval,
   recordRelianceResolution,
+  recordRelianceResolutionTx,
 } from '@/features/boards/exercise'
 import { adjustClock } from '@/features/clocks/adjustClock'
 import { clocksDailyJob } from '@/jobs/clocksDaily'
@@ -17,6 +18,7 @@ import {
 } from '@/test/boardFixtures'
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { blockedOrSettled, holdOpen } from '@/test/lockWait'
 import { staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -119,6 +121,21 @@ describe('recordFinalApproval', () => {
     expect(result).toEqual({ ok: false, error: 'forbidden' })
   })
 
+  it('a second final approval while the first is uncommitted leaves one running exercise clock', async () => {
+    const id = await decidedVariance()
+    const first = await holdOpen(handle.db, (tx) =>
+      recordFinalApproval(tx, world.staff, { applicationId: id, finalOn: d('2027-05-12') }, signal),
+    )
+    const second = finalize(id)
+    await blockedOrSettled(handle.db, second)
+    await first.commit()
+    await second
+    const rows = await handle.db.select().from(clocks).where(eq(clocks.applicationId, id))
+    expect(
+      rows.filter((c) => c.ruleKey === 'nh.zba.exercise' && c.status === 'running'),
+    ).toHaveLength(1)
+  })
+
   it('a system actor may record final approval', async () => {
     const id = await decidedVariance()
     const result = await handle.db.transaction((tx) =>
@@ -208,6 +225,43 @@ describe('exercise extension and reliance', () => {
     const adjustments = await handle.db.select().from(clockAdjustments)
     expect(adjustments[0]).toMatchObject({ kind: 'statutory_floor', newDue: '2029-08-01' })
     expect(adjustments[0]?.reason).toContain('RSA 674:33')
+  })
+
+  it('a smaller reliance floor resolved while a larger one is uncommitted keeps the larger floor', async () => {
+    const { variance, planning } = await relianceSetup()
+    const other = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-06-03')
+    await linkReliance(
+      handle.db,
+      world.staff,
+      { varianceApplicationId: variance, planningApplicationId: other },
+      signal,
+    )
+    const larger = await holdOpen(handle.db, (tx) =>
+      recordRelianceResolutionTx(
+        tx,
+        world.staff,
+        {
+          varianceApplicationId: variance,
+          planningApplicationId: planning,
+          resolvedOn: d('2029-04-01'),
+        },
+        signal,
+      ),
+    )
+    const smaller = recordRelianceResolution(
+      handle.db,
+      world.staff,
+      {
+        varianceApplicationId: variance,
+        planningApplicationId: other,
+        resolvedOn: d('2029-02-01'),
+      },
+      signal,
+    )
+    await blockedOrSettled(handle.db, smaller)
+    await larger.commit()
+    await smaller
+    expect((await exerciseClock(variance))?.currentDue).toBe('2029-10-01')
   })
 
   it('reliance resolved 2028-01-10 leaves 2029-05-12 unchanged', async () => {

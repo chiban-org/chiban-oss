@@ -3,6 +3,7 @@ import type { Db, Tx } from '@/db/client'
 import { clocks, relianceLinks } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { loadApplicationContext } from '@/features/applications/context'
+import { lockApplication } from '@/features/applications/lockApplication'
 import { type AnyActor, toAuditActor } from '@/features/audit/actorRef'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -44,6 +45,7 @@ export async function recordFinalApproval(
   if (actor.kind !== 'system' && !(await hasCapability(tx, actor.userId, 'board.record', signal))) {
     return err('forbidden')
   }
+  await lockApplication(tx, input.applicationId)
   const app = await loadApplicationContext(tx, input.applicationId, signal)
   if (app === null || (app.state !== 'decided' && app.state !== 'issued')) return err('not_decided')
   if (!effectiveBindings(app.typeBody, loadPack()).includes(EXERCISE_KEY)) return err('not_bound')
@@ -89,48 +91,67 @@ export async function linkReliance(
   })
 }
 
+export type RelianceError = 'forbidden' | 'not_linked'
+type RelianceInput = {
+  varianceApplicationId: string
+  planningApplicationId: string
+  resolvedOn: CivilDate
+}
+
+export async function recordRelianceResolutionTx(
+  tx: Tx,
+  actor: Actor,
+  input: RelianceInput,
+  signal: AbortSignal,
+): Promise<Result<{ dueOn: CivilDate | null }, RelianceError>> {
+  signal.throwIfAborted()
+  if (!(await hasCapability(tx, actor.userId, 'board.record', signal))) return err('forbidden')
+  await lockApplication(tx, input.varianceApplicationId)
+  const updated = await tx
+    .update(relianceLinks)
+    .set({ resolvedOn: input.resolvedOn })
+    .where(
+      and(
+        eq(relianceLinks.varianceApplicationId, input.varianceApplicationId),
+        eq(relianceLinks.planningApplicationId, input.planningApplicationId),
+      ),
+    )
+    .returning({ id: relianceLinks.varianceApplicationId })
+  if (updated.length === 0) return err('not_linked')
+  const clock = await runningExerciseClock(tx, input.varianceApplicationId)
+  if (clock === null) return ok({ dueOn: null })
+  const rule = ruleByKey(loadPack(), clock.ruleKey, clock.ruleVersion)
+  const floor = rule.kind === 'clock' ? relianceFloorDue(rule, input.resolvedOn) : null
+  const current = clock.currentDue as CivilDate
+  if (floor === null || compareCivil(floor, current) <= 0) return ok({ dueOn: current })
+  await recordAdjustment(
+    tx,
+    actor,
+    clock,
+    {
+      kind: 'statutory_floor',
+      days: null,
+      newDue: floor,
+      reason: `The approval does not expire within 6 months after the planning application filed in reliance on it is resolved (${FLOOR_AUTHORITY}).`,
+      legalAuthority: {
+        citation: FLOOR_AUTHORITY,
+        explanation: 'Six month minimum after resolution of the reliance application',
+      },
+    },
+    signal,
+  )
+  return ok({ dueOn: floor })
+}
+
 export async function recordRelianceResolution(
   db: Db,
   actor: Actor,
-  input: { varianceApplicationId: string; planningApplicationId: string; resolvedOn: CivilDate },
+  input: RelianceInput,
   signal: AbortSignal,
-): Promise<Result<{ dueOn: CivilDate | null }, 'forbidden' | 'not_linked'>> {
+): Promise<Result<{ dueOn: CivilDate | null }, RelianceError>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
-  return await transactionResult<{ dueOn: CivilDate | null }, 'not_linked'>(db, async (tx) => {
-    const updated = await tx
-      .update(relianceLinks)
-      .set({ resolvedOn: input.resolvedOn })
-      .where(
-        and(
-          eq(relianceLinks.varianceApplicationId, input.varianceApplicationId),
-          eq(relianceLinks.planningApplicationId, input.planningApplicationId),
-        ),
-      )
-      .returning({ id: relianceLinks.varianceApplicationId })
-    if (updated.length === 0) return err('not_linked')
-    const clock = await runningExerciseClock(tx, input.varianceApplicationId)
-    if (clock === null) return ok({ dueOn: null })
-    const rule = ruleByKey(loadPack(), clock.ruleKey, clock.ruleVersion)
-    const floor = rule.kind === 'clock' ? relianceFloorDue(rule, input.resolvedOn) : null
-    const current = clock.currentDue as CivilDate
-    if (floor === null || compareCivil(floor, current) <= 0) return ok({ dueOn: current })
-    await recordAdjustment(
-      tx,
-      actor,
-      clock,
-      {
-        kind: 'statutory_floor',
-        days: null,
-        newDue: floor,
-        reason: `The approval does not expire within 6 months after the planning application filed in reliance on it is resolved (${FLOOR_AUTHORITY}).`,
-        legalAuthority: {
-          citation: FLOOR_AUTHORITY,
-          explanation: 'Six month minimum after resolution of the reliance application',
-        },
-      },
-      signal,
-    )
-    return ok({ dueOn: floor })
-  })
+  return await transactionResult<{ dueOn: CivilDate | null }, RelianceError>(db, (tx) =>
+    recordRelianceResolutionTx(tx, actor, input, signal),
+  )
 }
