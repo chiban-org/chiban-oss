@@ -1,6 +1,6 @@
 import type { Actor } from '@/features/auth/actor'
 
-export const RECORD_KINDS = ['parcel', 'project', 'application', 'inspection'] as const
+export const RECORD_KINDS = ['parcel', 'project', 'application', 'inspection', 'meeting'] as const
 export type RecordKind = (typeof RECORD_KINDS)[number]
 
 export interface RecordRef {

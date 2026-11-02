@@ -470,6 +470,13 @@
       "when": 1793631666318,
       "tag": "0066_young_justin_hammer",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1793632007449,
+      "tag": "0067_curly_vanisher",
+      "breakpoints": true
     }
   ]
 }

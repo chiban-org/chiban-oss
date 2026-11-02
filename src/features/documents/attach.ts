@@ -28,6 +28,7 @@ export interface AttachInput {
 export function defaultsFor(kind: RecordRef['kind']): { audiences: Audience[]; isPublic: boolean } {
   if (kind === 'parcel') return { audiences: [...AUDIENCES], isPublic: true }
   if (kind === 'inspection') return { audiences: ['project_parties'], isPublic: false }
+  if (kind === 'meeting') return { audiences: ['board'], isPublic: false }
   return { audiences: ['project_parties', 'reviewers'], isPublic: false }
 }
 
@@ -51,11 +52,12 @@ export async function parcelOf(tx: Tx, target: RecordRef): Promise<string | null
     return row?.parcelId ?? null
   }
   const applicationId = await applicationOf(tx, target)
+  if (applicationId === null) return null
   const [row] = await tx
     .select({ parcelId: projects.parcelId })
     .from(applications)
     .innerJoin(projects, eq(projects.id, applications.projectId))
-    .where(eq(applications.id, applicationId ?? ''))
+    .where(eq(applications.id, applicationId))
   return row?.parcelId ?? null
 }
 
