@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { RunReport } from '@/components/staff/RunReport'
 import { importRuns } from '@/db/schema'
 import type { ImportRunReport } from '@/features/gis/import/types'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 
 interface RunPageProps {
   params: Promise<{ runId: string }>
@@ -15,7 +15,7 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 export default async function StaffRunReportPage({ params }: RunPageProps) {
   const { runId } = await params
   if (!UUID.test(runId)) notFound()
-  const ctx = await createContext()
+  const ctx = await requireStaffContext()
   const [run] = await ctx.db.select().from(importRuns).where(eq(importRuns.id, runId))
   if (run === undefined) notFound()
   return (

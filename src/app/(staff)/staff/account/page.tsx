@@ -1,12 +1,10 @@
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
 import { CsrfField } from '@/components/CsrfField'
-import { getActor } from '@/server/getActor'
+import { requireStaffActor } from '@/server/requireStaff'
 import { signOutAction } from './actions'
 
 export default async function StaffAccountPage() {
-  const actor = await getActor(AbortSignal.timeout(10_000))
-  if (actor?.kind !== 'staff') redirect('/staff/sign-in')
+  const actor = await requireStaffActor(AbortSignal.timeout(10_000))
 
   return (
     <main className="mx-auto max-w-md p-6">

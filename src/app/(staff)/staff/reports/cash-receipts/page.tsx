@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { cashReceiptsReport, REPORT_METHODS } from '@/features/reports/cashReceipts'
 import { townToday } from '@/features/town/today'
 import { formatCents } from '@/lib/money'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 import { parseCivilDate } from '@/types/civilDate'
 
 export const dynamic = 'force-dynamic'
@@ -21,8 +21,7 @@ export default async function CashReceiptsPage({
   searchParams: Promise<{ date?: string }>
 }) {
   const { date } = await searchParams
-  const ctx = await createContext()
-  if (ctx.actor === null) return null
+  const ctx = await requireStaffContext()
   const parsed = parseCivilDate(date ?? '')
   const day = parsed.ok ? parsed.value : await townToday(ctx.db, new Date(), ctx.signal)
   const result = await cashReceiptsReport(ctx.db, ctx.actor, { date: day }, ctx.signal)

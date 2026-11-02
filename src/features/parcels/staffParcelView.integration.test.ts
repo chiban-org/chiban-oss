@@ -22,6 +22,16 @@ afterEach(async () => {
 })
 
 describe('getStaffParcelView', () => {
+  it('refuses a public actor and returns no mailing address', async () => {
+    const applicant = await staffActor(handle.db, 'applicant')
+    const id = await makeParcel(handle.db, [{ format: 'gis12', value: '007001000000' }], {
+      mailingAddress: 'PO Box 100, Alder Pond NH',
+    })
+    const r = await getStaffParcelView(handle.db, applicant, id, NOW, signal)
+    expect(r).toEqual({ ok: false, error: 'forbidden' })
+    expect(JSON.stringify(r)).not.toContain('PO Box')
+  })
+
   it('never-imported layer returns unknown for owner, not null', async () => {
     const actor = await staffActor(handle.db)
     const id = await makeParcel(handle.db, [{ format: 'gis12', value: '007001000000' }])

@@ -3,13 +3,12 @@ import { StatusChip } from '@/components/StatusChip'
 import { loadPaymentsOverview } from '@/features/payments/overview'
 import { townToday } from '@/features/town/today'
 import { formatCents } from '@/lib/money'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 
 export const dynamic = 'force-dynamic'
 
 export default async function PaymentsPage() {
-  const ctx = await createContext()
-  if (ctx.actor === null) return null
+  const ctx = await requireStaffContext()
   const today = await townToday(ctx.db, new Date(), ctx.signal)
   const result = await loadPaymentsOverview(ctx.db, ctx.actor, { date: today }, ctx.signal)
   if (!result.ok) {

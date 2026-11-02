@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { loadProcessorSettings } from '@/features/payments/settingsView'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 import { publishPaymentSettingsAction, saveProcessorAccountAction } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -14,8 +14,7 @@ const ACTIVE_COPY = {
 } as const
 
 export default async function PaymentSettingsPage() {
-  const ctx = await createContext()
-  if (ctx.actor === null) return null
+  const ctx = await requireStaffContext()
   const result = await loadProcessorSettings(ctx.db, ctx.actor, ctx.signal)
   if (!result.ok) {
     return (

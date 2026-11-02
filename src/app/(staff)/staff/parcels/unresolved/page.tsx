@@ -1,11 +1,11 @@
 import { ActionForm } from '@/components/ActionForm'
 import { TextField } from '@/components/staff/fields'
 import { listUnresolvedLinks } from '@/features/parcels/unresolvedList'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 import { resolveUnresolvedAction } from '../[parcelId]/actions'
 
 export default async function StaffUnresolvedPage() {
-  const ctx = await createContext()
+  const ctx = await requireStaffContext()
   const links = await listUnresolvedLinks(ctx.db, ctx.signal)
   return (
     <main>

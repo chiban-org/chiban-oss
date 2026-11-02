@@ -6,7 +6,7 @@ import { KIND_LABELS } from '@/features/config/kindLabels'
 import { isConfigKind } from '@/features/config/kinds'
 import { listKeysOfKind } from '@/features/config/settingsViews'
 import { loadPack } from '@/features/packs/loadPack'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 import { startDraftAction } from '../actions'
 
 interface Props {
@@ -16,7 +16,7 @@ interface Props {
 export default async function SettingsKindPage({ params }: Props) {
   const { kind } = await params
   if (!isConfigKind(kind)) notFound()
-  const ctx = await createContext()
+  const ctx = await requireStaffContext()
   const rows = await listKeysOfKind(ctx.db, kind, ctx.signal)
   const townRules = loadPack().rules.filter((r) => r.kind === 'town_setting')
   return (

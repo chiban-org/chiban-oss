@@ -4,7 +4,7 @@ import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
 import { OverridesTabs } from '@/components/staff/OverridesTabs'
 import { listAliasOverrides, type OverrideStatus } from '@/features/parcels/aliasOverrides'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 import { createAliasOverrideAction } from '../../parcels/[parcelId]/actions'
 
 const CHIP: Record<
@@ -18,7 +18,7 @@ const CHIP: Record<
 }
 
 export default async function StaffAliasOverridesPage() {
-  const ctx = await createContext()
+  const ctx = await requireStaffContext()
   const rows = await listAliasOverrides(ctx.db, new Date(), ctx.signal)
   return (
     <main>

@@ -1,7 +1,7 @@
 import { db } from '@/db/client'
 import { receiptPdfResponse } from '@/features/ledger/receiptAccess'
 import { toResponse } from '@/features/pdf/pdfResponse'
-import { getActor } from '@/server/getActor'
+import { staffActorOrNull } from '@/server/requireStaff'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -14,6 +14,6 @@ export async function GET(
 ): Promise<Response> {
   const { receiptId } = await params
   const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-  const actor = await getActor(signal)
+  const actor = await staffActorOrNull(signal)
   return toResponse(await receiptPdfResponse(db, actor, receiptId, signal))
 }

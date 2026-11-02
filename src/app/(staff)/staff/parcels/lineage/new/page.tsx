@@ -1,5 +1,6 @@
 import { ActionForm } from '@/components/ActionForm'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
+import { requireStaffContext } from '@/server/requireStaff'
 import { recordLineageAction } from '../../[parcelId]/actions'
 
 interface NewLineagePageProps {
@@ -18,6 +19,7 @@ const BASES = [
 ] as const
 
 export default async function NewLineageEventPage({ searchParams }: NewLineagePageProps) {
+  await requireStaffContext()
   const { parent = '' } = await searchParams
   return (
     <main>

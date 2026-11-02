@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { db } from '@/db/client'
 import { processUpload, UPLOAD_LIMIT_BYTES } from '@/features/gis/uploadImport'
 import { guardAction } from '@/server/actionGuard'
+import { staffActorOrNull } from '@/server/requireStaff'
 
 export const runtime = 'nodejs'
 
@@ -22,8 +23,8 @@ export async function POST(request: Request): Promise<NextResponse> {
   }
   const guard = await guardAction(form, signal)
   if (!guard.ok) return NextResponse.json({ error: 'csrf' }, { status: 403 })
-  const actor = guard.value
-  if (actor?.kind !== 'staff') return NextResponse.json({ error: 'forbidden' }, { status: 403 })
+  const actor = await staffActorOrNull(signal)
+  if (actor === null) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const response = await processUpload(db, actor, form, signal)
   return NextResponse.json(response.body, { status: response.status })
 }

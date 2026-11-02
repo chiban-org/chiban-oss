@@ -3,7 +3,7 @@ import { db } from '@/db/client'
 import { cashReceiptsReport } from '@/features/reports/cashReceipts'
 import { toCsv } from '@/features/reports/cashReceiptsCsv'
 import { townToday } from '@/features/town/today'
-import { getActor } from '@/server/getActor'
+import { staffActorOrNull } from '@/server/requireStaff'
 import { parseCivilDate } from '@/types/civilDate'
 
 export const runtime = 'nodejs'
@@ -13,7 +13,7 @@ const REQUEST_TIMEOUT_MS = 30_000
 
 export async function GET(request: Request): Promise<Response> {
   const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-  const actor = await getActor(signal)
+  const actor = await staffActorOrNull(signal)
   if (actor === null) return NextResponse.json({ error: 'forbidden' }, { status: 403 })
   const requested = parseCivilDate(new URL(request.url).searchParams.get('date') ?? '')
   const date = requested.ok ? requested.value : await townToday(db, new Date(), signal)

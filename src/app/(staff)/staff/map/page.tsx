@@ -1,10 +1,10 @@
 import { LinkedParcelMap } from '@/components/map/LinkedParcelMap'
 import { configuredOverlayLayers, parcelExtent } from '@/features/gis/extent'
 import { getTownSettings } from '@/features/town/settings'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 
 export default async function StaffMapPage() {
-  const ctx = await createContext()
+  const ctx = await requireStaffContext()
   const town = await getTownSettings(ctx.db, ctx.signal)
   const bbox = await parcelExtent(ctx.db, ctx.signal)
   const overlays = await configuredOverlayLayers(ctx.db, ctx.signal)

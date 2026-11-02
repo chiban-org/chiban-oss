@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button'
 import { bboxOfGeometry, configuredOverlayLayers } from '@/features/gis/extent'
 import { getStaffParcelView } from '@/features/parcels/staffParcelView'
 import { getTownSettings } from '@/features/town/settings'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 import { carryForwardAction, createAliasOverrideAction } from './actions'
 
 interface ParcelPageProps {
@@ -31,8 +31,7 @@ function LayerBanner({ state, text }: { state: string; text: string }) {
 export default async function StaffParcelPage({ params }: ParcelPageProps) {
   const { parcelId } = await params
   if (!UUID.test(parcelId)) notFound()
-  const ctx = await createContext()
-  if (ctx.actor === null) notFound()
+  const ctx = await requireStaffContext()
   const result = await getStaffParcelView(ctx.db, ctx.actor, parcelId, new Date(), ctx.signal)
   if (!result.ok) notFound()
   const view = result.value

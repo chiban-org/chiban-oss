@@ -3,7 +3,7 @@ import { listApplicationsForViewer } from '@/features/applications/listForViewer
 import { stateLabel } from '@/features/applications/stateLabel'
 import type { CoreState } from '@/features/applications/states'
 import { displayIdsFor } from '@/features/parcels/displayId'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 
 const PAGE_SIZE = 25
 
@@ -13,8 +13,7 @@ interface Props {
 
 export default async function StaffApplicationsPage({ searchParams }: Props) {
   const { cursor } = await searchParams
-  const ctx = await createContext()
-  if (ctx.actor === null) return null
+  const ctx = await requireStaffContext()
   const page = await listApplicationsForViewer(
     ctx.db,
     ctx.actor,

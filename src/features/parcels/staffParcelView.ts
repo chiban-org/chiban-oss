@@ -99,8 +99,9 @@ export async function getStaffParcelView(
   parcelId: string,
   now: Date,
   signal: AbortSignal,
-): Promise<Result<StaffParcelView, 'not_found'>> {
+): Promise<Result<StaffParcelView, 'not_found' | 'forbidden'>> {
   signal.throwIfAborted()
+  if (actor.kind !== 'staff') return err('forbidden')
   const [parcel] = await db.select().from(parcels).where(eq(parcels.id, parcelId))
   if (parcel === undefined) return err('not_found')
   const layer = await getLayerStatus(db, 'parcels', now, signal)

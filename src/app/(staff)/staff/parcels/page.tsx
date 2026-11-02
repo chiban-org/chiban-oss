@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { searchParcels } from '@/features/parcels/searchParcels'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 
 interface ParcelsPageProps {
   searchParams: Promise<{ q?: string }>
@@ -16,7 +16,7 @@ const MATCH_LABEL = {
 
 export default async function StaffParcelsPage({ searchParams }: ParcelsPageProps) {
   const { q = '' } = await searchParams
-  const ctx = await createContext()
+  const ctx = await requireStaffContext()
   const hits = await searchParcels(ctx.db, { q }, ctx.signal)
   return (
     <main>

@@ -4,7 +4,7 @@ import { OverridesTabs } from '@/components/staff/OverridesTabs'
 import { listFeeOverrides } from '@/features/fees/feeOverrides'
 import type { OverrideStatus } from '@/features/parcels/aliasOverrides'
 import { formatCents } from '@/lib/money'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 
 const CHIP: Record<
   OverrideStatus,
@@ -17,7 +17,7 @@ const CHIP: Record<
 }
 
 export default async function FeeOverridesPage() {
-  const ctx = await createContext()
+  const ctx = await requireStaffContext()
   const rows = await listFeeOverrides(ctx.db, ctx.signal)
   return (
     <main>

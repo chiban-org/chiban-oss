@@ -3,7 +3,7 @@ import { TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
 import { IMPORT_EXCEPTION_KINDS, type ImportExceptionKind } from '@/features/gis/exceptionKinds'
 import { listExceptions } from '@/features/gis/exceptionsList'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 import { acceptAllOwnerChangesAction, acceptHeldRowAction, dismissExceptionAction } from './actions'
 
 interface ExceptionsPageProps {
@@ -22,7 +22,7 @@ function isStatus(v: string | undefined): v is (typeof STATUSES)[number] {
 
 export default async function StaffExceptionsPage({ searchParams }: ExceptionsPageProps) {
   const query = await searchParams
-  const ctx = await createContext()
+  const ctx = await requireStaffContext()
   const status = isStatus(query.status) ? query.status : 'open'
   const rows = await listExceptions(
     ctx.db,

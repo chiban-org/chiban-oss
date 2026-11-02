@@ -10,7 +10,7 @@ import { LAYER_KEYS } from '@/features/gis/exceptionKinds'
 import { getLayerStatus } from '@/features/gis/layerStatus'
 import { getTownSettings } from '@/features/town/settings'
 import { formatInstant } from '@/lib/formatDate'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 import { runLayerRefreshAction, updateLayerSettingsAction } from './actions'
 
 const STATE_WORDS = {
@@ -31,9 +31,8 @@ const adapterStatus: string = AXISGIS_ADAPTER_STATUS
 const DEFAULT_ZONE = 'America/New_York'
 
 export default async function StaffImportsPage() {
-  const ctx = await createContext()
+  const ctx = await requireStaffContext()
   const actor = ctx.actor
-  if (actor === null) return null
   const [canImport, canConfigure] = await Promise.all([
     hasCapability(ctx.db, actor.userId, 'gis.import', ctx.signal),
     hasCapability(ctx.db, actor.userId, 'config.edit', ctx.signal),

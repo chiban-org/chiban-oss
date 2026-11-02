@@ -14,7 +14,7 @@ import { stateLabel } from '@/features/applications/stateLabel'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 import { overrideGateAction, revokeOverrideAction, statutoryExceptionAction } from './actions'
 import { AppealPanel, CodeEditionPanel, RegionalImpactPanel } from './buildingPanels'
 import { FeeOverrideForm } from './feePanels'
@@ -95,8 +95,7 @@ function GateControls({ view, result }: { view: StaffApplicationView; result: Ga
 export default async function StaffApplicationPage({ params }: Props) {
   const { applicationId } = await params
   if (!UUID.test(applicationId)) notFound()
-  const ctx = await createContext()
-  if (ctx.actor === null) notFound()
+  const ctx = await requireStaffContext()
   const view = await getStaffApplicationView(
     ctx.db,
     ctx.actor,

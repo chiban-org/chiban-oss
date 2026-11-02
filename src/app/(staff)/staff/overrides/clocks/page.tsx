@@ -3,7 +3,7 @@ import { StatusChip } from '@/components/StatusChip'
 import { OverridesTabs } from '@/components/staff/OverridesTabs'
 import { listClockAdjustments } from '@/features/clocks/clockOverrides'
 import type { OverrideStatus } from '@/features/parcels/aliasOverrides'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 
 const CHIP: Record<
   OverrideStatus,
@@ -16,7 +16,7 @@ const CHIP: Record<
 }
 
 export default async function ClockOverridesPage() {
-  const ctx = await createContext()
+  const ctx = await requireStaffContext()
   const rows = await listClockAdjustments(ctx.db, ctx.signal)
   return (
     <main>

@@ -8,10 +8,10 @@ import { listKeysOfKind, summarizeKinds } from '@/features/config/settingsViews'
 import { loadPack } from '@/features/packs/loadPack'
 import { packInfo } from '@/features/packs/packInfo'
 import { classificationSummary, ruleSummary } from '@/features/packs/ruleSummary'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 
 export default async function SettingsPage() {
-  const ctx = await createContext()
+  const ctx = await requireStaffContext()
   const kinds = await summarizeKinds(ctx.db, ctx.signal)
   const adopted = new Set(
     (await listKeysOfKind(ctx.db, 'application_type', ctx.signal)).map((k) => k.key),

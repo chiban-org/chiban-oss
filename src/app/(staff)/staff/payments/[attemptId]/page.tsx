@@ -7,7 +7,7 @@ import { TextField } from '@/components/staff/fields'
 import { paymentAttempts, paymentAttemptTransitions, processorAccounts } from '@/db/schema'
 import { mayViewPayments } from '@/features/payments/overview'
 import { formatCents } from '@/lib/money'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { checkWithProcessorAction, voidAttemptAction } from '../actions'
 
@@ -20,8 +20,8 @@ export default async function PaymentAttemptPage({
 }) {
   const { attemptId } = await params
   if (!isUuid(attemptId)) notFound()
-  const ctx = await createContext()
-  if (ctx.actor === null || !(await mayViewPayments(ctx.db, ctx.actor, ctx.signal))) notFound()
+  const ctx = await requireStaffContext()
+  if (!(await mayViewPayments(ctx.db, ctx.actor, ctx.signal))) notFound()
   const [attempt] = await ctx.db
     .select()
     .from(paymentAttempts)

@@ -8,7 +8,7 @@ import { loadCounterFormData } from '@/features/counter/counterFormData'
 import { listDirectIssueTypes } from '@/features/counter/directIssueTypes'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { searchParcels } from '@/features/parcels/searchParcels'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import {
   checkAction,
@@ -42,8 +42,7 @@ function href(params: Record<string, string | undefined>): string {
 
 export default async function CounterPage({ searchParams }: Props) {
   const { q = '', parcel, type } = await searchParams
-  const ctx = await createContext()
-  if (ctx.actor === null) return null
+  const ctx = await requireStaffContext()
   const allowed =
     (await hasCapability(ctx.db, ctx.actor.userId, 'permit.issue', ctx.signal)) &&
     (await hasCapability(ctx.db, ctx.actor.userId, 'payment.collect', ctx.signal))

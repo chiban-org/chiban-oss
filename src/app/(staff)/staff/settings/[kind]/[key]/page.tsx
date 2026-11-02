@@ -8,7 +8,7 @@ import { KIND_LABELS } from '@/features/config/kindLabels'
 import { isConfigKind } from '@/features/config/kinds'
 import { getEditorState } from '@/features/config/settingsViews'
 import { getTownSettings } from '@/features/town/settings'
-import { createContext } from '@/server/trpc/context'
+import { requireStaffContext } from '@/server/requireStaff'
 import { publishAction, rollbackAction, saveDraftAction } from '../../actions'
 
 interface Props {
@@ -19,7 +19,7 @@ export default async function SettingsKeyPage({ params }: Props) {
   const { kind, key: rawKey } = await params
   const key = decodeURIComponent(rawKey)
   if (!isConfigKind(kind)) notFound()
-  const ctx = await createContext()
+  const ctx = await requireStaffContext()
   const state = await getEditorState(ctx.db, kind, key, ctx.signal)
   const town = await getTownSettings(ctx.db, ctx.signal)
   const timeZone = town.ok ? town.value.timeZone : 'America/New_York'
