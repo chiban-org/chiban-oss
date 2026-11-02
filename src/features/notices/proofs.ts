@@ -12,6 +12,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { syncTransmittalClock, TRANSMITTAL_SUBJECT } from '@/features/decisions/regionalTransmittal'
+import { isEvidenceKind } from '@/features/documents/types'
 import type { NoticeChannel } from '@/features/notices/channels'
 import { methodAllowed, type ProofMethod, referenceRequired } from '@/features/notices/proofMethods'
 import { townToday } from '@/features/town/today'
@@ -24,6 +25,7 @@ export type ProofError =
   | 'reference_required'
   | 'future_date'
   | 'document_not_found'
+  | 'wrong_document'
   | 'item_not_found'
 
 export interface ProofInput {
@@ -68,7 +70,12 @@ export async function recordProof(
     if (compareCivil(input.effectiveOn, today) > 0) return err('future_date')
     const applicationIds = new Set(items.map((i) => i.applicationId))
     const [doc] = await tx
-      .select({ id: documents.id, recordKind: documents.recordKind, recordId: documents.recordId })
+      .select({
+        id: documents.id,
+        recordKind: documents.recordKind,
+        recordId: documents.recordId,
+        docKind: documents.docKind,
+      })
       .from(documents)
       .where(eq(documents.id, input.documentId))
     const owners = [...applicationIds].filter((a): a is string => a !== null)
@@ -77,6 +84,7 @@ export async function recordProof(
       doc.recordKind === 'application' &&
       (owners.length === 0 || owners.every((a) => a === doc.recordId))
     if (!belongs) return err('document_not_found')
+    if (!isEvidenceKind(doc.docKind)) return err('wrong_document')
     const live = await tx
       .select({ id: noticeProofs.id, itemId: noticeProofs.itemId })
       .from(noticeProofs)

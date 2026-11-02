@@ -17,6 +17,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { TRANSMITTAL_SUBJECT } from '@/features/decisions/regionalTransmittal'
+import { evidenceOf } from '@/features/documents/evidence'
 import { channelLabel } from '@/features/notices/channels'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { proofMethodLabel } from '@/features/notices/proofMethods'
@@ -141,7 +142,7 @@ export async function loadDecisionView(
   const docs = await db
     .select({ id: documents.id, title: documents.title })
     .from(documents)
-    .where(eq(documents.recordId, decision.applicationId))
+    .where(evidenceOf(decision.applicationId))
     .orderBy(asc(documents.seq))
   const nodes = await db
     .select()

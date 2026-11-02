@@ -23,6 +23,12 @@ export const DOC_KINDS = [
 ] as const
 export type DocKind = (typeof DOC_KINDS)[number]
 
+export const EVIDENCE_KINDS: readonly DocKind[] = ['attachment', 'notice_proof']
+
+export function isEvidenceKind(kind: string): boolean {
+  return (EVIDENCE_KINDS as readonly string[]).includes(kind)
+}
+
 export type SystemActor = { kind: 'system'; job: string }
 export type DocumentActor = Actor | SystemActor
 

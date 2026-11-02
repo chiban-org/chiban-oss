@@ -18,6 +18,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
+import { evidenceOf } from '@/features/documents/evidence'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { channelLabel } from '@/features/notices/channels'
 import { noticeStatus } from '@/features/notices/noticeStatus'
@@ -91,7 +92,7 @@ export async function loadHearingView(
   const docs = await db
     .select({ id: documents.id, title: documents.title })
     .from(documents)
-    .where(eq(documents.recordId, row.hearing.applicationId))
+    .where(evidenceOf(row.hearing.applicationId))
     .orderBy(desc(documents.seq))
   const upcoming = await db
     .select()
