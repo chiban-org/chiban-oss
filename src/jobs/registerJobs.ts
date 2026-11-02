@@ -24,7 +24,7 @@ export async function registerJob<P extends object>(
       const outcome = await runJob(
         db,
         job,
-        (item.data ?? {}) as P,
+        (item.data as P | null) ?? ({} as P),
         AbortSignal.timeout(10 * 60 * 1000),
       )
       if (!outcome.ok) {
