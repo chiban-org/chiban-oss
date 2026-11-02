@@ -8,16 +8,15 @@ import {
   appealNodes,
   boardDecisions,
   boardMeetings,
-  boardMemberships,
   documents,
   hearings,
-  users,
 } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
+import { seatedMemberNames } from '@/features/decisions/seatedVoters'
 import { evidenceOf } from '@/features/documents/evidence'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { channelLabel } from '@/features/notices/channels'
@@ -26,7 +25,7 @@ import { proofMethodLabel } from '@/features/notices/proofMethods'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
-import { todayInTimeZone } from '@/types/civilDate'
+import { type CivilDate, todayInTimeZone } from '@/types/civilDate'
 
 export const BOARD_NAMES: Record<Board, string> = {
   planning_board: 'Planning Board',
@@ -62,6 +61,7 @@ export interface HearingView {
   noticeSetId: string
   defaultHeldOn: string
   defaultVotedOn: string
+  seatedMembers: string[]
 }
 
 async function timeZoneOf(db: Db, signal: AbortSignal): Promise<string> {
@@ -159,6 +159,11 @@ export async function loadHearingView(
     noticeSetId: row.hearing.noticeSetId,
     defaultHeldOn: row.meeting.meetingDate,
     defaultVotedOn: row.hearing.heldOn ?? row.meeting.meetingDate,
+    seatedMembers: await seatedMemberNames(
+      db,
+      row.meeting.board,
+      (row.hearing.heldOn ?? row.meeting.meetingDate) as CivilDate,
+    ),
   }
 }
 
@@ -253,54 +258,6 @@ export async function loadMeetingView(
               kindText: AGENDA_KIND_LABELS[i.kind],
             })),
           },
-  }
-}
-
-export interface MembersView {
-  rows: {
-    membershipId: string
-    name: string
-    boardName: string
-    titleText: string
-    termText: string
-    active: boolean
-  }[]
-}
-
-const TITLE_TEXT = {
-  chair: 'Chair',
-  vice_chair: 'Vice chair',
-  member: 'Member',
-  alternate: 'Alternate',
-  clerk: 'Clerk',
-} as const
-
-export async function loadMembersView(
-  db: Db,
-  actor: Actor,
-  signal: AbortSignal,
-  today: string,
-): Promise<MembersView | null> {
-  signal.throwIfAborted()
-  if (!(await hasCapability(db, actor.userId, 'board.manage_members', signal))) return null
-  const settings = await getBoardSettings(db, signal)
-  const rows = await db
-    .select({ m: boardMemberships, name: users.displayName })
-    .from(boardMemberships)
-    .innerJoin(users, eq(users.id, boardMemberships.userId))
-    .orderBy(asc(boardMemberships.board), asc(users.displayName))
-  return {
-    rows: rows.map(({ m, name }) => ({
-      membershipId: m.id,
-      name,
-      boardName: boardLabel(settings, m.board),
-      titleText: TITLE_TEXT[m.title],
-      termText:
-        m.termEnd === null
-          ? `From ${formatCivilDate(m.termStart)}`
-          : `${formatCivilDate(m.termStart)} to ${formatCivilDate(m.termEnd)}`,
-      active: m.termStart <= today && (m.termEnd === null || m.termEnd >= today),
-    })),
   }
 }
 

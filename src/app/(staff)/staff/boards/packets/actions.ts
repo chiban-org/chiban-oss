@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { revokePacketLink, sendPacketLink } from '@/features/boards/packetLinks'
+import { notForBoardMessage } from '@/features/boards/packetRefusal'
 import { createPacket } from '@/features/boards/packets'
 import { getMailTransport } from '@/features/mail/transport'
 import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
@@ -37,7 +38,7 @@ export async function createPacketAction(formData: FormData): Promise<ActionResu
       return { ok: true, message: 'Packet created.' }
     }
     if (made.error === 'forbidden') return { ok: false, error: errorCopy('forbidden') }
-    return { ok: false, error: 'Some documents are not shared with the board and are not public.' }
+    return { ok: false, error: await notForBoardMessage(db, made.error.notForBoard, signal) }
   })
 }
 

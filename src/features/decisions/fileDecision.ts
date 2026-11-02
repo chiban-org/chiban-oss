@@ -7,6 +7,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
+import { noticeProofDocumentIds } from '@/features/documents/evidence'
 import { isEvidenceKind } from '@/features/documents/types'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
@@ -22,6 +23,7 @@ export type FileError =
   | 'not_found'
   | 'already_filed'
   | 'future_date'
+  | 'before_vote'
   | 'no_written_decision'
   | 'document_not_found'
   | 'wrong_document'
@@ -96,6 +98,7 @@ export async function fileDecision(
     if (decision.filedOn !== null) return err('already_filed')
     if (decision.writtenDecisionDocumentId === null) return err('no_written_decision')
     if (compareCivil(input.filedOn, await townToday(tx, now, signal)) > 0) return err('future_date')
+    if (compareCivil(input.filedOn, decision.votedOn as CivilDate) < 0) return err('before_vote')
     const [minutes] = await tx
       .select({
         recordKind: documents.recordKind,
@@ -108,6 +111,9 @@ export async function fileDecision(
       return err('document_not_found')
     }
     if (!isEvidenceKind(minutes.docKind)) return err('wrong_document')
+    if ((await noticeProofDocumentIds(tx, [input.minutesDocumentId])).size > 0) {
+      return err('wrong_document')
+    }
     const due = await filingDue(tx, decision.applicationId, decision.votedOn as CivilDate)
     const late = compareCivil(input.filedOn, due) > 0
     await tx

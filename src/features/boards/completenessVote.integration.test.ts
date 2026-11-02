@@ -8,6 +8,7 @@ import { recordSelectmenCertification } from '@/features/boards/certification'
 import { cancelMeeting, scheduleMeeting } from '@/features/boards/meetings'
 import { adjustClock } from '@/features/clocks/adjustClock'
 import {
+  BOARD_FIXTURE_NOW,
   type BoardWorld,
   recordNoRegionalImpact,
   setupBoardWorld,
@@ -69,6 +70,7 @@ async function accept(applicationId: string, meeting: string, votedOn = meeting)
       outcome: 'accepted',
     },
     signal,
+    BOARD_FIXTURE_NOW,
   )
 }
 
@@ -158,7 +160,9 @@ describe('recordCompletenessVote', () => {
       votedOn: d('2027-04-14'),
       outcome: 'not_accepted' as const,
     }
-    expect(await recordCompletenessVote(handle.db, world.staff, vote, signal)).toEqual({
+    expect(
+      await recordCompletenessVote(handle.db, world.staff, vote, signal, BOARD_FIXTURE_NOW),
+    ).toEqual({
       ok: false,
       error: 'reason_required',
     })
@@ -169,6 +173,7 @@ describe('recordCompletenessVote', () => {
           world.staff,
           { ...vote, reason: 'Missing the drainage study' },
           signal,
+          BOARD_FIXTURE_NOW,
         )
       ).ok,
     ).toBe(true)
@@ -190,6 +195,7 @@ describe('recordCompletenessVote', () => {
         reason: 'Missing the drainage study',
       },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     const [summary] = await summarizeApplications(handle.db, [id], { kind: 'public' }, signal)
     expect(summary?.status.label).toBe('Not accepted as complete')
@@ -225,6 +231,7 @@ describe('recordCompletenessVote', () => {
         outcome: 'accepted',
       },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     expect(result).toEqual({ ok: false, error: 'forbidden' })
   })

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { loadMembersView } from '@/features/hearings/views'
+import { loadMembersView } from '@/features/boards/membersView'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
 import { endMembershipAction, inviteMemberAction } from './actions'
@@ -31,7 +31,7 @@ export default async function BoardMembersPage() {
         {view.rows.map((row) => (
           <li key={row.membershipId} className="flex flex-wrap items-end gap-4 border-b pb-2">
             <p className="m-0 min-w-72 flex-1">
-              {`${row.name}, ${row.titleText}, ${row.boardName}. ${row.termText}. ${row.active ? 'Active' : 'Not active'}.`}
+              {`${row.name} (${row.email}), ${row.titleText}, ${row.boardName}. ${row.termText}. ${row.active ? 'Active' : 'Not active'}.`}
             </p>
             {row.active ? (
               <ActionForm action={endMembershipAction} submitLabel="End membership">

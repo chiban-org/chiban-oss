@@ -248,7 +248,7 @@ describe('recordProof', () => {
       signal,
       NOW,
     )
-    expect(result).toEqual({ ok: false, error: 'method_not_allowed' })
+    expect(result).toEqual({ ok: false, error: { methodNotAllowed: ['Certified mail'] } })
   })
 
   it('certified mail without a reference is reference_required', async () => {

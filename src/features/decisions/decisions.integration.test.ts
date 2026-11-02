@@ -7,7 +7,12 @@ import {
 } from '@/features/decisions/decisionDocuments'
 import { type RecordDecisionInput, recordDecision } from '@/features/decisions/recordDecision'
 import type { ObjectStore } from '@/features/storage/objectStore'
-import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
+import {
+  BOARD_FIXTURE_NOW,
+  type BoardWorld,
+  endFixtureTerm,
+  setupBoardWorld,
+} from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import {
   type HeldHearing,
@@ -64,7 +69,13 @@ function input(
 }
 
 async function record(held: HeldHearing, overrides: Partial<RecordDecisionInput> = {}) {
-  return await recordDecision(handle.db, world.staff, input(held, overrides), signal)
+  return await recordDecision(
+    handle.db,
+    world.staff,
+    input(held, overrides),
+    signal,
+    BOARD_FIXTURE_NOW,
+  )
 }
 
 async function clockRows(applicationId: string) {
@@ -131,7 +142,9 @@ describe('recordDecision required fields', () => {
 
   it('a reviewer recording a decision is forbidden', async () => {
     const held = await heldZbaHearing(handle.db, world)
-    expect(await recordDecision(handle.db, world.reviewer, input(held), signal)).toEqual({
+    expect(
+      await recordDecision(handle.db, world.reviewer, input(held), signal, BOARD_FIXTURE_NOW),
+    ).toEqual({
       ok: false,
       error: 'forbidden',
     })
@@ -296,5 +309,35 @@ describe('decision documents', () => {
       ok: false,
       error: 'forbidden',
     })
+  })
+})
+
+describe('recordDecision voters', () => {
+  it('a vote by someone not seated on the board is notSeated, naming them', async () => {
+    const held = await heldZbaHearing(handle.db, world)
+    const votes = {
+      for: 2,
+      against: 0,
+      abstain: 0,
+      members: [
+        { name: 'drew  hale', vote: 'for' as const },
+        { name: 'Nobody Real', vote: 'for' as const },
+      ],
+    }
+    expect(await record(held, { votes })).toEqual({
+      ok: false,
+      error: { notSeated: ['Nobody Real'] },
+    })
+    const rows = await handle.db
+      .select()
+      .from(boardDecisions)
+      .where(eq(boardDecisions.hearingId, held.hearingId))
+    expect(rows).toEqual([])
+  })
+
+  it('a member whose term ended before the vote is not seated', async () => {
+    const held = await heldZbaHearing(handle.db, world)
+    await endFixtureTerm(handle.db, 'Casey Lund', 'zba', '2027-04-14')
+    expect(await record(held)).toEqual({ ok: false, error: { notSeated: ['Casey Lund'] } })
   })
 })

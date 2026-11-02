@@ -48,18 +48,30 @@ const METHOD: Record<string, ProofMethod> = {
   website: 'website_posting',
 }
 
-const VOTES = {
-  for: 4,
-  against: 1,
-  abstain: 0,
-  members: [
-    { name: 'Robin Vale', vote: 'for' as const },
-    { name: 'Morgan Reed', vote: 'for' as const },
-    { name: 'Casey Lund', vote: 'for' as const },
-    { name: 'Avery Stone', vote: 'for' as const },
-    { name: 'Drew Hale', vote: 'against' as const },
-  ],
+function votes(names: readonly string[]) {
+  const members = names.map((name, index) => ({
+    name,
+    vote: index === names.length - 1 ? ('against' as const) : ('for' as const),
+  }))
+  return { for: names.length - 1, against: 1, abstain: 0, members }
 }
+
+const PB_SEATS = [
+  ['pb.member', 'Robin Vale'],
+  ['pb.reed', 'Morgan Reed'],
+  ['pb.lund', 'Casey Lund'],
+  ['pb.stone', 'Avery Stone'],
+  ['pb.thorn', 'Lee Thorn'],
+] as const
+const ZBA_SEATS = [
+  ['zba.member', 'Drew Hale'],
+  ['zba.marsh', 'Jules Marsh'],
+  ['zba.fenn', 'Toby Fenn'],
+  ['zba.birch', 'Nell Birch'],
+  ['zba.quill', 'Quinn Quill'],
+] as const
+const PB_VOTES = votes(PB_SEATS.map(([, name]) => name))
+const ZBA_VOTES = votes(ZBA_SEATS.map(([, name]) => name))
 
 async function meetingId(db: Db, board: 'planning_board' | 'zba', date: string): Promise<string> {
   const [row] = await db
@@ -174,7 +186,7 @@ async function holdNoticed(
     await markProperlyNoticed(db, cast.staff, hearingId, signal, now),
     `properly noticed ${hearingId}`,
   )
-  must(await markHearingHeld(db, cast.staff, { hearingId, heldOn: d(heldOn) }, signal), 'held')
+  must(await markHearingHeld(db, cast.staff, { hearingId, heldOn: d(heldOn) }, signal, now), 'held')
 }
 
 async function issueDraftList(db: Db, cast: Cast, s: Scenario, now: Date) {
@@ -191,11 +203,11 @@ async function issueDraftList(db: Db, cast: Cast, s: Scenario, now: Date) {
   must(await issueList(db, cast.staff, { listId }, s.signal, now), 'issue list')
 }
 
-async function seedMembers(db: Db, cast: Cast, signal: AbortSignal) {
+export async function seedMembers(db: Db, cast: Cast, signal: AbortSignal) {
   for (const [local, name, board] of [
-    ['pb.member', 'Robin Vale', 'planning_board'],
-    ['zba.member', 'Drew Hale', 'zba'],
-  ] as const) {
+    ...PB_SEATS.map(([l, n]) => [l, n, 'planning_board'] as const),
+    ...ZBA_SEATS.map(([l, n]) => [l, n, 'zba'] as const),
+  ]) {
     must(
       await inviteBoardMember(
         db,
@@ -308,7 +320,7 @@ async function seedSitePlanDecision(
         votedOn: d('2026-10-14'),
         outcome: 'approved_with_conditions',
         motion: 'Move to approve with the conditions as read.',
-        votes: VOTES,
+        votes: PB_VOTES,
         findings: 'The plan meets the site plan regulations for drainage, access, and screening.',
         conditions: [
           { code: 'C1', text: 'File the stamped drainage report.', precedent: true },
@@ -348,6 +360,62 @@ async function seedSitePlanDecision(
   must(
     await recordRegionalTransmittal(db, cast.staff, decision.decisionId, signal, now),
     'transmittal',
+  )
+}
+
+export async function decideGrantedVariance(
+  db: Db,
+  store: ObjectStore,
+  cast: Cast,
+  applicationId: string,
+  signal: AbortSignal,
+  now: Date,
+): Promise<void> {
+  const { hearingId, setId } = await schedule(db, cast, applicationId, 'zba', '2026-04-15', signal)
+  await proveChannels(db, store, cast, applicationId, setId, [], d('2026-04-01'), signal, now)
+  await holdNoticed(db, cast, hearingId, '2026-04-15', signal, now)
+  const decision = must(
+    await recordDecision(
+      db,
+      cast.staff,
+      {
+        applicationId,
+        hearingId,
+        votedOn: d('2026-04-15'),
+        outcome: 'approved',
+        motion: 'Move to grant the frontage variance.',
+        votes: ZBA_VOTES,
+        findings: 'The variance meets each of the five criteria of RSA 674:33 I(a)(2).',
+      },
+      signal,
+      now,
+    ),
+    'variance granted',
+  )
+  must(
+    await generateDecisionDocuments(db, store, cast.staff, decision.decisionId, signal),
+    'variance decision documents',
+  )
+  must(
+    await fileDecision(
+      db,
+      cast.staff,
+      {
+        decisionId: decision.decisionId,
+        filedOn: d('2026-04-20'),
+        minutesDocumentId: await demoDocument(
+          db,
+          store,
+          cast,
+          applicationId,
+          'Minutes of April 15',
+          signal,
+        ),
+      },
+      signal,
+      now,
+    ),
+    'file variance decision',
   )
 }
 
@@ -466,7 +534,7 @@ async function seedDeniedVariance(
         votedOn: d('2026-10-20'),
         outcome: 'denied',
         motion: 'Move to deny the variance.',
-        votes: VOTES,
+        votes: ZBA_VOTES,
         findings: 'The lot can be used without the relief requested.',
         reasonsForDisapproval:
           'The hardship test is not met because a conforming addition is possible.',
@@ -484,6 +552,7 @@ async function seedDeniedVariance(
       cast.staff,
       { parentId: node?.id ?? '', kind: 'rehearing_motion', occurredOn: d('2026-11-02') },
       signal,
+      now,
     ),
     'rehearing motion',
   )
@@ -550,7 +619,6 @@ export async function seedHearings(
   signal: AbortSignal,
   now: Date,
 ): Promise<void> {
-  await seedMembers(db, cast, signal)
   await seedSitePlanDecision(db, store, cast, signal, now)
   await seedContinuedVariance(db, store, cast, values, signal, now)
   await seedDeniedVariance(db, store, cast, signal, now, values)

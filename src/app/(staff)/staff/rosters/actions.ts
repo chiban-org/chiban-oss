@@ -83,7 +83,13 @@ export async function addRestrictionAction(formData: FormData): Promise<ActionRe
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
     const parcelId = await parcelOf(formData, db, signal)
     const kind = text(formData, 'restrictionKind')
-    if (parcelId === null || !(RESTRICTIONS as readonly string[]).includes(kind)) return INVALID
+    if (parcelId === null) {
+      return {
+        ok: false,
+        error: `No parcel has the ID ${text(formData, 'parcelRef')}. Check the parcel ID and try again.`,
+      }
+    }
+    if (!(RESTRICTIONS as readonly string[]).includes(kind)) return INVALID
     const added = await addRestriction(
       db,
       actor,

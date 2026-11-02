@@ -255,7 +255,12 @@ describe('inviting members', () => {
       signal,
     )
     expect(result).toEqual({ ok: false, error: 'staff_account' })
-    expect(await handle.db.select().from(boardMemberships)).toEqual([])
+    const staffUser = await handle.db.query.users.findFirst({
+      where: (u, { eq: equals }) => equals(u.email, email),
+    })
+    expect(
+      (await handle.db.select().from(boardMemberships)).filter((m) => m.userId === staffUser?.id),
+    ).toEqual([])
   })
 
   it('staff without board.manage_members inviting is forbidden', async () => {
@@ -303,7 +308,9 @@ describe('inviting members', () => {
     const first = await invite('both@alderpond.example', 'zba')
     const second = await invite('both@alderpond.example', 'planning_board')
     expect(second.userId).toBe(first.userId)
-    expect(await handle.db.select().from(boardMemberships)).toHaveLength(2)
+    expect(
+      (await handle.db.select().from(boardMemberships)).filter((m) => m.userId === first.userId),
+    ).toHaveLength(2)
   })
 
   it('ending a membership that does not exist is not_found and a reviewer cannot end one', async () => {

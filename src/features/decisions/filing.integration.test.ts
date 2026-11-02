@@ -155,6 +155,16 @@ describe('fileDecision', () => {
     expect(await file(made, '2027-07-10')).toEqual({ ok: false, error: 'already_filed' })
   })
 
+  it('a filing dated before the vote is before_vote and publishes nothing', async () => {
+    const made = await decided()
+    expect(await file(made, '2027-06-30')).toEqual({ ok: false, error: 'before_vote' })
+    const [decision] = await handle.db
+      .select()
+      .from(boardDecisions)
+      .where(eq(boardDecisions.id, made.decisionId))
+    expect(decision?.filedOn).toBeNull()
+  })
+
   it('a future filing date is refused', async () => {
     const made = await decided()
     expect(await file(made, '2027-07-21')).toEqual({ ok: false, error: 'future_date' })
@@ -320,7 +330,7 @@ describe('regional transmittal', () => {
         signal,
         AFTER_FILING,
       ),
-    ).toEqual({ ok: false, error: 'method_not_allowed' })
+    ).toEqual({ ok: false, error: { methodNotAllowed: ['Certified mail'] } })
   })
 
   it('a late proof leaves the transmittal clock unmet', async () => {

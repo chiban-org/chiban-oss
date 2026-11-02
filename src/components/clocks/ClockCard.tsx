@@ -2,6 +2,7 @@ import { StatusChip } from '@/components/StatusChip'
 import type { ClockExplanation } from '@/features/clocks/explainClock'
 import { ruleLabel } from '@/features/packs/ruleLabel'
 import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
+import { daysBetween } from '@/types/civilDate'
 
 const WHOSE: Record<ClockExplanation['whose'], string> = {
   official: 'Municipal official',
@@ -23,13 +24,22 @@ function plural(n: number): string {
   return n === 1 ? 'day' : 'days'
 }
 
+function metChip(clock: ClockExplanation) {
+  const late = clock.metOn === null ? 0 : daysBetween(clock.currentDue.value, clock.metOn)
+  return late > 0 ? (
+    <StatusChip status="overdue" label={`Met late, ${late} ${plural(late)} after the due date`} />
+  ) : (
+    <StatusChip status="passed" label="Met" />
+  )
+}
+
 function statusChip(clock: ClockExplanation) {
   const days = Math.abs(clock.daysRemaining)
   switch (clock.status) {
     case 'overdue':
       return <StatusChip status="overdue" label={`Overdue by ${days} ${plural(days)}`} />
     case 'met':
-      return <StatusChip status="passed" label="Met" />
+      return metChip(clock)
     case 'lapsed':
       return <StatusChip status="failed" label="Lapsed" />
     case 'superseded':

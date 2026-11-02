@@ -16,7 +16,7 @@ import {
   scheduleBoardMeetings,
   seedRosters,
 } from '@/features/demo/seedBoardData'
-import { seedHearings } from '@/features/demo/seedHearings'
+import { decideGrantedVariance, seedHearings, seedMembers } from '@/features/demo/seedHearings'
 import { actorFor, type Cast, must } from '@/features/demo/seedPermitSupport'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
@@ -60,7 +60,10 @@ export async function seedBoards(
   const sitePlan = await seedSitePlan(db, cast, signal, now)
   await seedMinorSitePlan(db, cast, signal, now)
   await seedPendingVariance(db, cast, signal, now)
-  await seedGrantedVariance(db, cast, signal, now, sitePlan)
+  await seedMembers(db, cast, signal)
+  await seedGrantedVariance(db, cast, signal, now, sitePlan, (applicationId) =>
+    decideGrantedVariance(db, store, cast, applicationId, signal, now),
+  )
   await seedHearings(db, store, cast, { sitePlan }, VARIANCE_VALUES, signal, now)
   return true
 }

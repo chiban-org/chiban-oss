@@ -2,6 +2,12 @@ import { asc } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { associationRosters, parkRosters, restrictionHoldings } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { hasCapability } from '@/features/authz/capabilities'
+import {
+  type Contact,
+  getRegionalContacts,
+  type RegionalContactsBody,
+} from '@/features/boards/regionalContacts'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { mayManageAbutters } from '@/features/rosters/manage'
 import { type RosterKind, type RosterStatus, rosterStatus } from '@/features/rosters/reviews'
@@ -27,6 +33,8 @@ export interface RostersView {
     reference: string
     endedText: string | null
   }[]
+  regionalContacts: { role: string; lines: string[] }[]
+  canEditRegionalContacts: boolean
 }
 
 const KIND_LABELS: Record<RosterKind, string> = {
@@ -41,6 +49,18 @@ const RESTRICTION_LABELS = {
   preservation: 'Preservation easement',
   agricultural_preservation: 'Agricultural preservation restriction',
 } as const
+
+function contactLines(contacts: RegionalContactsBody): { role: string; lines: string[] }[] {
+  const line = (c: Contact) => `${c.name}, ${c.mailingAddress}`
+  return [
+    {
+      role: 'Regional planning commission',
+      lines: contacts.commission === null ? [] : [line(contacts.commission)],
+    },
+    { role: 'Affected municipalities', lines: contacts.municipalities.map(line) },
+    { role: 'NH DES', lines: contacts.nhDes === null ? [] : [line(contacts.nhDes)] },
+  ]
+}
 
 function statusText(status: RosterStatus): string {
   if (status.state === 'never_reviewed') return 'Never reviewed'
@@ -103,5 +123,7 @@ export async function loadRostersView(
       reference: h.recordedReference,
       endedText: h.endedOn === null ? null : formatCivilDate(h.endedOn),
     })),
+    regionalContacts: contactLines(await getRegionalContacts(db, signal)),
+    canEditRegionalContacts: await hasCapability(db, actor.userId, 'config.edit', signal),
   }
 }

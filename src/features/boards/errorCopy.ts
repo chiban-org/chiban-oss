@@ -48,9 +48,9 @@ const COPY: Record<string, string> = {
   not_properly_noticed:
     'The hearing is not properly noticed. Record timely proof for every notice item.',
   not_continuable: 'Only a scheduled hearing can be continued.',
-  method_not_allowed: 'That proof method does not satisfy this kind of notice.',
   reference_required: 'Enter the tracking number from the receipt.',
   future_date: 'The date cannot be in the future.',
+  before_vote: 'The decision cannot be filed before the date of the vote.',
   document_not_found:
     'Upload the certificate or receipt to this application first, then choose it.',
   wrong_document:
@@ -120,6 +120,14 @@ function objectErrorCopy(error: object): string | null {
     if ('missingFields' in error) {
       const fields = (error as { missingFields: string[] }).missingFields
       return `The decision cannot be recorded yet. Still needed: ${fields.map((f) => FIELD_WORDS[f] ?? f).join(', ')}.`
+    }
+    if ('methodNotAllowed' in error) {
+      const channels = (error as { methodNotAllowed: string[] }).methodNotAllowed
+      return `That proof does not satisfy notice by ${channels.join(', ')}. Leave those items unticked and record their own proof separately.`
+    }
+    if ('notSeated' in error) {
+      const names = (error as { notSeated: string[] }).notSeated
+      return `Only members seated on the board on the date of the vote can vote. Not seated: ${names.join(', ')}. Check the names against the board members page.`
     }
     if ('departmentWithoutReviewer' in error) {
       const names = (error as { departmentWithoutReviewer: string[] }).departmentWithoutReviewer

@@ -6,6 +6,7 @@ import { recordCompletenessVote, setAcceptanceMeeting } from '@/features/boards/
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
 import { evaluateGates } from '@/features/gates/evaluateGates'
 import {
+  BOARD_FIXTURE_NOW,
   type BoardWorld,
   publishRegionalContacts,
   recordNoRegionalImpact,
@@ -44,6 +45,7 @@ async function acceptedApplication() {
     world.staff,
     { applicationId: id, meetingId, votedOn: d('2027-04-14'), outcome: 'accepted' },
     signal,
+    BOARD_FIXTURE_NOW,
   )
   return id
 }

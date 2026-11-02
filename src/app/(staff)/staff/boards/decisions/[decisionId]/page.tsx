@@ -118,7 +118,15 @@ export default async function DecisionPage({
           className="max-w-md"
         >
           <input type="hidden" name="decisionId" value={view.decisionId} />
-          <TextField label="Date filed" name="filedOn" type="date" defaultValue={today} required />
+          <TextField
+            label="Date filed"
+            name="filedOn"
+            type="date"
+            defaultValue={today}
+            min={view.votedOn}
+            max={today}
+            required
+          />
           <SelectField
             label="Minutes"
             name="minutesDocumentId"
@@ -195,7 +203,7 @@ export default async function DecisionPage({
                 required
                 options={[
                   ['', 'Choose an uploaded file'],
-                  ...view.minutesChoices.map((d): [string, string] => [d.id, d.label]),
+                  ...view.proofChoices.map((d): [string, string] => [d.id, d.label]),
                 ]}
               />
             </ActionForm>
@@ -213,7 +221,14 @@ export default async function DecisionPage({
             options={view.nodeChoices.map((n): [string, string] => [n.id, n.label])}
           />
           <SelectField label="Step" name="kind" options={APPEAL_STEPS} />
-          <TextField label="Date" name="occurredOn" type="date" defaultValue={today} required />
+          <TextField
+            label="Date"
+            name="occurredOn"
+            type="date"
+            defaultValue={today}
+            max={today}
+            required
+          />
           <SelectField
             label="Result, for a rehearing decision or a decision after appeal"
             name="outcome"

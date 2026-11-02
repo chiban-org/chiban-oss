@@ -12,6 +12,7 @@ import { adjustClock } from '@/features/clocks/adjustClock'
 import { clocksDailyJob } from '@/jobs/clocksDaily'
 import { runJob } from '@/jobs/defineJob'
 import {
+  BOARD_FIXTURE_NOW,
   type BoardWorld,
   publishRegionalContacts,
   recordNoRegionalImpact,
@@ -102,6 +103,7 @@ describe('review: the acceptance workflow cannot be bypassed', () => {
         outcome: 'accepted',
       },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     expect(vote).toEqual({ ok: false, error: 'meeting_not_set' })
   })
@@ -127,6 +129,7 @@ describe('review: regional impact recalculation keeps an extension', () => {
         outcome: 'accepted',
       },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     const [clock] = await handle.db.select().from(clocks).where(eq(clocks.applicationId, id))
     const decision = (

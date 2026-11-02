@@ -15,7 +15,7 @@ import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { deriveNoticeItems } from '@/features/notices/deriveItems'
 import { type NoticeStatusItem, noticeStatus } from '@/features/notices/noticeStatus'
-import { townToday } from '@/features/town/today'
+import { isAfterTownToday, townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -199,16 +199,23 @@ export async function markProperlyNoticed(
   })
 }
 
-export type HeldError = 'forbidden' | 'not_found' | 'not_properly_noticed' | 'before_meeting'
+export type HeldError =
+  | 'forbidden'
+  | 'not_found'
+  | 'not_properly_noticed'
+  | 'before_meeting'
+  | 'future_date'
 
 export async function markHearingHeld(
   db: Db,
   actor: Actor,
   input: { hearingId: string; heldOn: CivilDate },
   signal: AbortSignal,
+  now: Date = new Date(),
 ): Promise<Result<void, HeldError>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
+  if (await isAfterTownToday(db, input.heldOn, now, signal)) return err('future_date')
   return await transactionResult<void, HeldError>(db, async (tx) => {
     const [hearing] = await tx
       .select()

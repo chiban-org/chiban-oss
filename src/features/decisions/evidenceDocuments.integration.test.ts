@@ -1,6 +1,6 @@
 import { and, eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { boardDecisions, documents, hearings } from '@/db/schema'
+import { boardDecisions, documents, hearings, noticeItems, noticeProofs } from '@/db/schema'
 import { loadDecisionView } from '@/features/decisions/decisionView'
 import { fileDecision } from '@/features/decisions/fileDecision'
 import { noticeStatus } from '@/features/notices/noticeStatus'
@@ -72,6 +72,28 @@ describe('documents filed as minutes or proof', () => {
         filedOn: d('2027-07-09'),
         minutesDocumentId: decision?.writtenDecisionDocumentId ?? '',
       },
+      signal,
+      AFTER_FILING,
+    )
+    expect(result).toEqual({ ok: false, error: 'wrong_document' })
+  })
+
+  it('a document recorded as proof of notice is neither offered nor accepted as the minutes', async () => {
+    const made = await decidedZba(handle.db, world, store, { votedOn: '2027-07-01' })
+    const [proof] = await handle.db
+      .select({ documentId: noticeProofs.documentId })
+      .from(noticeProofs)
+      .innerJoin(noticeItems, eq(noticeItems.id, noticeProofs.itemId))
+      .innerJoin(hearings, eq(hearings.noticeSetId, noticeItems.setId))
+      .where(eq(hearings.id, made.hearingId))
+    const proofDocumentId = proof?.documentId ?? ''
+    const view = await loadDecisionView(handle.db, world.staff, made.decisionId, signal)
+    expect(view?.minutesChoices.map((c) => c.id)).not.toContain(proofDocumentId)
+    expect(view?.proofChoices.map((c) => c.id)).toContain(proofDocumentId)
+    const result = await fileDecision(
+      handle.db,
+      world.staff,
+      { decisionId: made.decisionId, filedOn: d('2027-07-09'), minutesDocumentId: proofDocumentId },
       signal,
       AFTER_FILING,
     )

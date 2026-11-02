@@ -75,7 +75,10 @@ export function DeterminationSection({ data }: { data: BoardPanelData }) {
                 <SelectField
                   label="Determination"
                   name="determination"
+                  defaultValue={data.des.suggestedDetermination ?? ''}
+                  required
                   options={[
+                    ['', 'Choose a determination'],
                     ['within_500ft', 'Within the distance, send notice to NH DES'],
                     ['not_within', 'Not within the distance'],
                     ['not_applicable', 'The notice does not apply'],

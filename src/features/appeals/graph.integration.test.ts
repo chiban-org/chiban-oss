@@ -7,7 +7,7 @@ import { recordDecision } from '@/features/decisions/recordDecision'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { closeAppealPeriods } from '@/jobs/appealsDaily'
 import { makeApplication } from '@/test/applicationFixtures'
-import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
+import { BOARD_FIXTURE_NOW, type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba, FIXTURE_VOTES, heldPbHearing } from '@/test/hearingFixtures'
 import { makeTestStore } from '@/test/minio'
@@ -53,6 +53,7 @@ async function add(
     world.staff,
     { parentId, kind, occurredOn: d(occurredOn), ...extra },
     signal,
+    BOARD_FIXTURE_NOW,
   )
 }
 
@@ -89,6 +90,7 @@ describe('decision nodes', () => {
         findings: 'Meets the regulations.',
       },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     expect((await nodesOf(held.applicationId)).map((n) => n.kind)).toEqual(['pb_decision'])
   })
@@ -195,6 +197,7 @@ describe('planning board routes', () => {
         findings: 'Meets the regulations.',
       },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     const [node] = await nodesOf(held.applicationId)
     return { ...held, nodeId: node?.id ?? '' }
@@ -305,6 +308,7 @@ describe('administrative decisions and issued permits', () => {
       world.reviewer,
       { parentId: nodeId, kind: 'rehearing_motion', occurredOn: d('2027-05-10') },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     expect(result).toEqual({ ok: false, error: 'forbidden' })
   })

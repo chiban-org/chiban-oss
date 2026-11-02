@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -142,6 +143,25 @@ export default async function RostersPage() {
             <TextField label="Where it is recorded" name="recordedReference" required />
           </ActionForm>
         </details>
+      </section>
+      <section aria-label="Regional notice contacts" className="space-y-3">
+        <h2>Regional notice contacts</h2>
+        <dl className="space-y-2">
+          {view.regionalContacts.map((c) => (
+            <div key={c.role}>
+              <dt className="font-medium">{c.role}</dt>
+              <dd className="m-0">{c.lines.length === 0 ? 'None on file' : c.lines.join('; ')}</dd>
+            </div>
+          ))}
+        </dl>
+        <p>
+          {'An administrator changes these in Settings. '}
+          {view.canEditRegionalContacts ? (
+            <Link href="/staff/settings/regional_contacts" className="text-action underline">
+              Change the regional notice contacts
+            </Link>
+          ) : null}
+        </p>
       </section>
     </main>
   )

@@ -26,7 +26,7 @@ describe('the meeting agenda', () => {
     await buildAgenda(handle.db, world.staff, made.meetingId, signal)
     expect(await buildAgenda(handle.db, world.staff, made.meetingId, signal)).toEqual({
       ok: true,
-      value: { added: 0 },
+      value: { added: 0, onMeeting: 1 },
     })
     await publishAgenda(handle.db, store, world.staff, made.meetingId, signal)
     const view = await loadMeetingView(handle.db, world.staff, made.meetingId, signal)
