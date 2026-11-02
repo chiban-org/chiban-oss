@@ -120,6 +120,10 @@ function objectErrorCopy(error: object): string | null {
       const fields = (error as { missingFields: string[] }).missingFields
       return `The decision cannot be recorded yet. Still needed: ${fields.map((f) => FIELD_WORDS[f] ?? f).join(', ')}.`
     }
+    if ('notSeated' in error) {
+      const names = (error as { notSeated: string[] }).notSeated
+      return `Only members seated on the board on the date of the vote can vote. Not seated: ${names.join(', ')}. Check the names against the board members page.`
+    }
     if ('departmentWithoutReviewer' in error) {
       const names = (error as { departmentWithoutReviewer: string[] }).departmentWithoutReviewer
       return `These departments have no active reviewer: ${names.join(', ')}. Add one in the Technical Review Committee settings.`

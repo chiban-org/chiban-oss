@@ -1,6 +1,8 @@
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
+import { and, eq } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
+import { boardMemberships, users } from '@/db/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
 import type { Actor } from '@/features/auth/actor'
@@ -104,6 +106,46 @@ export async function scheduleMeetings(
   }
 }
 
+export const FIXTURE_MEMBER_NAMES = [
+  'Avery Stone',
+  'Robin Vale',
+  'Morgan Reed',
+  'Casey Lund',
+  'Drew Hale',
+  'Sam Pike',
+] as const
+
+async function seatFixtureMembers(db: Db, createdBy: string): Promise<void> {
+  for (const [index, displayName] of FIXTURE_MEMBER_NAMES.entries()) {
+    const [user] = await db
+      .insert(users)
+      .values({ email: `member${index + 1}@alderpond.example`, displayName, kind: 'public' })
+      .returning({ id: users.id })
+    for (const board of ['planning_board', 'zba'] as const) {
+      await db.insert(boardMemberships).values({
+        userId: user?.id ?? '',
+        board,
+        title: 'member',
+        termStart: '2026-01-01',
+        createdBy,
+      })
+    }
+  }
+}
+
+export async function endFixtureTerm(
+  db: Db,
+  displayName: string,
+  board: 'planning_board' | 'zba',
+  termEnd: string,
+): Promise<void> {
+  const [user] = await db.select().from(users).where(eq(users.displayName, displayName))
+  await db
+    .update(boardMemberships)
+    .set({ termEnd })
+    .where(and(eq(boardMemberships.userId, user?.id ?? ''), eq(boardMemberships.board, board)))
+}
+
 export async function setupBoardWorld(
   db: Db,
   options: { pbMeetings?: string[]; zbaMeetings?: string[] } = {},
@@ -128,6 +170,7 @@ export async function setupBoardWorld(
     boardTypeBody('nh.zba_variance', zbaTypeKey, 'VAR'),
   )
   await scheduleMeetings(db, world.staff, 'planning_board', options.pbMeetings ?? PB_MEETINGS)
+  await seatFixtureMembers(db, world.admin.userId)
   if (options.zbaMeetings !== undefined) {
     await scheduleMeetings(db, world.staff, 'zba', options.zbaMeetings)
   }

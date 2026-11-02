@@ -3,6 +3,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { boardDecisions, hearings, noticeProofs, regionalImpactParties } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { fileDecision } from '@/features/decisions/fileDecision'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import {
   type BoardWorld,
@@ -17,6 +18,7 @@ import { findIsoDates, findRawKeys, findUuids } from '@/test/leaks'
 import { makeTestStore } from '@/test/minio'
 import { issueListWithRecipients, proofDocument, recipient } from '@/test/noticeFixtures'
 import { staffActor } from '@/test/parcels'
+import type { CivilDate } from '@/types/civilDate'
 
 interface MockState {
   db: unknown
@@ -217,6 +219,7 @@ describe('staff and public pages', () => {
     html
       .replace(/href="[^"]*"/g, '')
       .replace(/value="[^"]*"/g, '')
+      .replace(/(min|max)="[^"]*"/g, '')
       .replace(/name="[^"]*"/g, '')
 
   it('the hearing page shows the checklist and no raw ids, dates, or keys', async () => {
@@ -356,14 +359,16 @@ describe('staff and public pages', () => {
     )
     expect(html).toContain('No decisions have been filed yet.')
     expect(html).not.toMatch(/text-(xs|sm)\b/)
-    state.actor = world.staff
-    const today = new Date().toISOString().slice(0, 10)
-    const filed = await decisionActions.fileDecisionAction(
-      form({
+    const filed = await fileDecision(
+      handle.db,
+      world.staff,
+      {
         decisionId: decided.decisionId,
-        filedOn: today,
+        filedOn: '2027-04-16' as CivilDate,
         minutesDocumentId: await proofDocument(handle.db, world, decided.applicationId),
-      }),
+      },
+      new AbortController().signal,
+      new Date('2027-04-16T16:00:00Z'),
     )
     const page = renderToStaticMarkup(
       await PublicMeetingsPage({ searchParams: Promise.resolve({}) }),

@@ -5,6 +5,7 @@ import { loadHearingView } from '@/features/hearings/views'
 import {
   BOARD_FIXTURE_NOW,
   type BoardWorld,
+  endFixtureTerm,
   recordNoRegionalImpact,
   setupBoardWorld,
   submitBoardApplication,
@@ -99,5 +100,18 @@ describe('hearing page defaults', () => {
     const held = await heldZbaHearing(handle.db, world)
     const view = await loadHearingView(handle.db, world.staff, held.hearingId, signal)
     expect(view).toMatchObject({ defaultVotedOn: '2027-04-15' })
+  })
+
+  it('the vote form lists the members seated on the board on the vote date', async () => {
+    const held = await heldZbaHearing(handle.db, world)
+    await endFixtureTerm(handle.db, 'Casey Lund', 'zba', '2027-04-14')
+    const view = await loadHearingView(handle.db, world.staff, held.hearingId, signal)
+    expect(view?.seatedMembers).toEqual([
+      'Avery Stone',
+      'Drew Hale',
+      'Morgan Reed',
+      'Robin Vale',
+      'Sam Pike',
+    ])
   })
 })

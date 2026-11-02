@@ -31,6 +31,7 @@ const NEW_CODES = [
   'empty',
   'already_published',
   'wrong_document',
+  'before_vote',
 ]
 
 describe('boardErrorCopy for hearings, decisions, and notices', () => {
@@ -56,6 +57,12 @@ describe('boardErrorCopy for hearings, decisions, and notices', () => {
   it('lists the missing decision fields in words', () => {
     expect(boardErrorCopy({ missingFields: ['findings', 'reasonsForDisapproval'] })).toBe(
       'The decision cannot be recorded yet. Still needed: Findings, Reasons for disapproval.',
+    )
+  })
+
+  it('names the voters who are not seated on the board', () => {
+    expect(boardErrorCopy({ notSeated: ['Nobody Real', 'Pat Heron'] })).toBe(
+      'Only members seated on the board on the date of the vote can vote. Not seated: Nobody Real, Pat Heron. Check the names against the board members page.',
     )
   })
 

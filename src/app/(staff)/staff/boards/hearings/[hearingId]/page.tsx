@@ -27,6 +27,14 @@ const OUTCOMES: [string, string][] = [
   ['denied', 'Denied'],
 ]
 
+function votesHint(seated: string[]): string {
+  const roster =
+    seated.length === 0
+      ? 'No members are seated on this board. Add them on the board members page first.'
+      : `Seated members: ${seated.join(', ')}.`
+  return `One member per line, for example: ${seated[0] ?? 'Avery Stone'}: for. Use for, against, abstain, or recused. ${roster}`
+}
+
 export default async function HearingPage({ params }: { params: Promise<{ hearingId: string }> }) {
   const { hearingId } = await params
   const ctx = await requireStaffContext()
@@ -193,7 +201,7 @@ export default async function HearingPage({ params }: { params: Promise<{ hearin
               label="How each member voted"
               name="votes"
               required
-              hint="One member per line, for example: Avery Stone: for. Use for, against, abstain, or recused."
+              hint={votesHint(view.seatedMembers)}
             />
             <AreaField label="Findings of fact" name="findings" required />
             <AreaField

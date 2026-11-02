@@ -1,6 +1,5 @@
-import type { DecisionOutcome, RecordRule } from '@packs/nh/schema'
+import type { DecisionOutcome } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
-import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
 import {
   applicationConditions,
@@ -19,9 +18,8 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
-import { requiredDecisionFields } from '@/features/decisions/requiredFields'
+import { inputProblem } from '@/features/decisions/decisionInputProblems'
 import type { GateResult } from '@/features/gates/evaluateGates'
-import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { isAfterTownToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -46,43 +44,12 @@ export type DecisionError =
   | 'invalid_state'
   | 'before_meeting'
   | 'future_date'
+  | { notSeated: string[] }
   | { missingFields: string[] }
   | { gateBlocked: GateResult[] }
 
 const DECISION_CLOCKS = ['nh.pb.decision', 'nh.zba.decision']
 const DENIAL_OUTCOMES: DecisionOutcome[] = ['denied', 'rehearing_denied']
-
-function writtenDecisionRule(): RecordRule {
-  const rule = ruleByKey(loadPack(), 'nh.board.written_decision')
-  if (rule.kind !== 'required_record') {
-    throw new AppError(
-      ErrorIds.PACK_UNKNOWN_RULE,
-      'nh.board.written_decision must be a record rule',
-    )
-  }
-  return rule
-}
-
-function missingFieldsOf(input: RecordDecisionInput): string[] {
-  const filled: Record<string, boolean> = {
-    findings: input.findings.trim() !== '',
-    conditions: (input.conditions ?? []).length > 0,
-    reasonsForDisapproval: (input.reasonsForDisapproval ?? '').trim() !== '',
-  }
-  return requiredDecisionFields(writtenDecisionRule(), input.outcome).filter(
-    (f) => filled[f] !== true,
-  )
-}
-
-export function votesConsistent(votes: DecisionVotes): boolean {
-  const count = (vote: 'for' | 'against' | 'abstain') =>
-    votes.members.filter((m) => m.vote === vote).length
-  return (
-    count('for') === votes.for &&
-    count('against') === votes.against &&
-    count('abstain') === votes.abstain
-  )
-}
 
 async function applyConditions(
   tx: Tx,
@@ -140,9 +107,8 @@ export async function recordDecision(
       .from(boardDecisions)
       .where(eq(boardDecisions.hearingId, hearing.id))
     if (already !== undefined) return err('invalid_state')
-    const missing = missingFieldsOf(input)
-    if (missing.length > 0) return err({ missingFields: missing })
-    if (!votesConsistent(input.votes)) return err('votes_inconsistent')
+    const problem = await inputProblem(tx, boardOfApplication(app), input)
+    if (problem !== null) return err(problem)
     const moved = await transitionApplication(
       tx,
       actor,

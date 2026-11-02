@@ -42,9 +42,10 @@ async function member(local: string) {
 }
 
 describe('hearing demo data', () => {
-  it('has two board members, one per board, with public accounts', async () => {
+  it('seats five members on each board, with public accounts', async () => {
     const rows = await handle.db.select().from(boardMemberships)
-    expect(rows.map((r) => r.board).sort()).toEqual(['planning_board', 'zba'])
+    expect(rows.filter((r) => r.board === 'planning_board')).toHaveLength(5)
+    expect(rows.filter((r) => r.board === 'zba')).toHaveLength(5)
     expect((await member('pb.member')).kind).toBe('public')
   })
 

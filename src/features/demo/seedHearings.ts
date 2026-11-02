@@ -48,18 +48,30 @@ const METHOD: Record<string, ProofMethod> = {
   website: 'website_posting',
 }
 
-const VOTES = {
-  for: 4,
-  against: 1,
-  abstain: 0,
-  members: [
-    { name: 'Robin Vale', vote: 'for' as const },
-    { name: 'Morgan Reed', vote: 'for' as const },
-    { name: 'Casey Lund', vote: 'for' as const },
-    { name: 'Avery Stone', vote: 'for' as const },
-    { name: 'Drew Hale', vote: 'against' as const },
-  ],
+function votes(names: readonly string[]) {
+  const members = names.map((name, index) => ({
+    name,
+    vote: index === names.length - 1 ? ('against' as const) : ('for' as const),
+  }))
+  return { for: names.length - 1, against: 1, abstain: 0, members }
 }
+
+const PB_SEATS = [
+  ['pb.member', 'Robin Vale'],
+  ['pb.reed', 'Morgan Reed'],
+  ['pb.lund', 'Casey Lund'],
+  ['pb.stone', 'Avery Stone'],
+  ['pb.thorn', 'Lee Thorn'],
+] as const
+const ZBA_SEATS = [
+  ['zba.member', 'Drew Hale'],
+  ['zba.marsh', 'Jules Marsh'],
+  ['zba.fenn', 'Toby Fenn'],
+  ['zba.birch', 'Nell Birch'],
+  ['zba.quill', 'Quinn Quill'],
+] as const
+const PB_VOTES = votes(PB_SEATS.map(([, name]) => name))
+const ZBA_VOTES = votes(ZBA_SEATS.map(([, name]) => name))
 
 async function meetingId(db: Db, board: 'planning_board' | 'zba', date: string): Promise<string> {
   const [row] = await db
@@ -192,9 +204,9 @@ async function issueDraftList(db: Db, cast: Cast, s: Scenario, now: Date) {
 
 async function seedMembers(db: Db, cast: Cast, signal: AbortSignal) {
   for (const [local, name, board] of [
-    ['pb.member', 'Robin Vale', 'planning_board'],
-    ['zba.member', 'Drew Hale', 'zba'],
-  ] as const) {
+    ...PB_SEATS.map(([l, n]) => [l, n, 'planning_board'] as const),
+    ...ZBA_SEATS.map(([l, n]) => [l, n, 'zba'] as const),
+  ]) {
     must(
       await inviteBoardMember(
         db,
@@ -307,7 +319,7 @@ async function seedSitePlanDecision(
         votedOn: d('2026-10-14'),
         outcome: 'approved_with_conditions',
         motion: 'Move to approve with the conditions as read.',
-        votes: VOTES,
+        votes: PB_VOTES,
         findings: 'The plan meets the site plan regulations for drainage, access, and screening.',
         conditions: [
           { code: 'C1', text: 'File the stamped drainage report.', precedent: true },
@@ -464,7 +476,7 @@ async function seedDeniedVariance(
         votedOn: d('2026-10-20'),
         outcome: 'denied',
         motion: 'Move to deny the variance.',
-        votes: VOTES,
+        votes: ZBA_VOTES,
         findings: 'The lot can be used without the relief requested.',
         reasonsForDisapproval:
           'The hardship test is not met because a conforming addition is possible.',

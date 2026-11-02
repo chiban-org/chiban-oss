@@ -5,6 +5,7 @@ import {
   alertTests,
   appeals,
   applications,
+  boardMemberships,
   boardPacketLinks,
   certificatesOfOccupancy,
   clocks,
@@ -154,7 +155,12 @@ describe('seedDemo', () => {
       },
     })
     const emails = (await handle.db.select({ email: users.email }).from(users)).map((u) => u.email)
-    expect(emails.sort()).toEqual(DEMO_USERS.map((u) => u.email).sort())
+    const seated = await handle.db
+      .select({ email: users.email })
+      .from(boardMemberships)
+      .innerJoin(users, eq(users.id, boardMemberships.userId))
+    const expected = new Set([...DEMO_USERS.map((u) => u.email), ...seated.map((u) => u.email)])
+    expect(emails.sort()).toEqual([...expected].sort())
     expect(emails.every((e) => e.endsWith('@alderpond.example'))).toBe(true)
   })
 
