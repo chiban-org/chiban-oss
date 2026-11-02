@@ -1,11 +1,33 @@
 import { eq } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { Db, Tx } from '@/db/client'
 import { gisLayers } from '@/db/schema'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { type CamaMapping, camaMappingSchema } from '@/features/cama/mapping'
+import { layerMappingSchema } from '@/features/gis/layerMapping'
 import { err, ok, type Result } from '@/types/result'
+
+async function leaveOwnerDataToCama(tx: Tx, actor: Actor, signal: AbortSignal): Promise<void> {
+  const [parcelsLayer] = await tx.select().from(gisLayers).where(eq(gisLayers.key, 'parcels'))
+  const parsed = layerMappingSchema.safeParse(parcelsLayer?.mapping)
+  if (parcelsLayer === undefined || !parsed.success) return
+  const { ownerName, mailingAddress, ...withoutOwner } = parsed.data
+  if (ownerName === undefined && mailingAddress === undefined) return
+  await tx.update(gisLayers).set({ mapping: withoutOwner }).where(eq(gisLayers.key, 'parcels'))
+  await writeAudit(
+    tx,
+    {
+      actor: { kind: 'user', userId: actor.userId },
+      action: 'gis_layer.update_settings',
+      entityType: 'gis_layer',
+      entityId: 'parcels',
+      before: parcelsLayer,
+      after: { mapping: withoutOwner },
+    },
+    signal,
+  )
+}
 
 export type SaveCamaMappingError = 'forbidden' | 'invalid_mapping'
 
@@ -38,6 +60,7 @@ export async function saveCamaMapping(
       },
       signal,
     )
+    await leaveOwnerDataToCama(tx, actor, signal)
   })
   return ok(parsed.data)
 }
