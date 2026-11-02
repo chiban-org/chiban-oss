@@ -15,7 +15,7 @@ const CANDIDATE_LIMIT = 200
 export interface ReleaseCandidate {
   documentId: string
   title: string
-  versions: { id: string; role: string; filename: string }[]
+  versions: { id: string; role: string; filename: string; createdAt: string }[]
 }
 
 export interface RequestApproval {
@@ -56,6 +56,7 @@ export async function loadReleaseCandidates(db: Db, actor: Actor): Promise<Relea
       documentId: documentVersions.documentId,
       role: documentVersions.role,
       filename: documentVersions.filename,
+      createdAt: documentVersions.createdAt,
     })
     .from(documentVersions)
     .where(
@@ -75,7 +76,9 @@ export async function loadReleaseCandidates(db: Db, actor: Actor): Promise<Relea
   return rows.map((r) => ({
     documentId: r.id,
     title: r.title,
-    versions: versions.filter((v) => v.documentId === r.id),
+    versions: versions
+      .filter((v) => v.documentId === r.id)
+      .map(({ createdAt, ...v }) => ({ ...v, createdAt: createdAt.toISOString() })),
   }))
 }
 

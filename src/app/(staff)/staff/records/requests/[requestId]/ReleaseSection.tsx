@@ -14,6 +14,12 @@ const ROLE_LABELS: Record<string, string> = {
   release_redacted: 'Redacted copy for this request',
 }
 
+function versionLabel(title: string, v: ReleaseCandidate['versions'][number]): string {
+  const day = formatCivilDate(v.createdAt.slice(0, 10))
+  const time = v.role === 'original' ? '' : ` ${v.createdAt.slice(11, 16)} UTC`
+  return `${title}: ${ROLE_LABELS[v.role] ?? v.role}, ${day}${time} (${v.filename})`
+}
+
 function Hidden({ name, value }: { name: string; value: string | number }) {
   return <input type="hidden" name={name} value={String(value)} />
 }
@@ -30,10 +36,7 @@ export function ReleaseSection({ request, releases, approvals, candidates, today
   const open = request.status !== 'closed' && request.status !== 'withdrawn'
   const active = approvals.filter((a) => a.revokedAt === null)
   const versionOptions: [string, string][] = candidates.flatMap((c) =>
-    c.versions.map(
-      (v) =>
-        [v.id, `${c.title}: ${ROLE_LABELS[v.role] ?? v.role} (${v.filename})`] as [string, string],
-    ),
+    c.versions.map((v) => [v.id, versionLabel(c.title, v)] as [string, string]),
   )
   return (
     <section aria-labelledby="releases" className="space-y-3 border-t pt-4">
