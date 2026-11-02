@@ -10,6 +10,7 @@ import { type ActiveProcessor, getProcessorAccount } from '@/features/payments/p
 import { createProcessor } from '@/features/payments/processors/registry'
 import type { PaymentProcessor, ProcessorWebhookEvent } from '@/features/payments/processors/types'
 import { reconcileAttempt } from '@/features/payments/reconcileAttempt'
+import { isUuid } from '@/utils/uuid'
 
 type EventOutcome = (typeof processorEvents.$inferSelect)['outcome']
 
@@ -24,8 +25,6 @@ export type WebhookResponse =
   | { status: 400; body: { error: 'bad_signature' | 'malformed' } }
   | { status: 404; body: { error: 'unknown_account' } }
   | { status: 500 | 503; body: { error: 'processing_failed' | 'credentials_unreadable' } }
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 const RECEIVED: WebhookResponse = { status: 200, body: { received: true } }
 
@@ -105,7 +104,7 @@ export async function handleWebhook(
   signal: AbortSignal,
 ): Promise<WebhookResponse> {
   signal.throwIfAborted()
-  if (!UUID_PATTERN.test(request.accountId)) {
+  if (!isUuid(request.accountId)) {
     return { status: 404, body: { error: 'unknown_account' } }
   }
   const opened = await getProcessorAccount(db, request.accountId, signal)

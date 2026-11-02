@@ -22,9 +22,10 @@ export function escapeHtml(text: string): string {
   return text.replace(/[&<>"']/g, (c) => ESCAPES[c] ?? c)
 }
 
-export function renderTemplate(
+function merge(
   body: string,
   ctx: MergeContext,
+  format: (value: string) => string,
 ): Result<string, { unknownFields: string[] }> {
   const unknownFields = unknownMergeFields(body)
   if (unknownFields.length > 0) return err({ unknownFields })
@@ -33,8 +34,22 @@ export function renderTemplate(
   for (const token of scanTokens(body)) {
     out += body.slice(cursor, token.start)
     const value = isMergeField(token.name) ? ctx[token.name] : null
-    out += value === undefined || value === null || value === '' ? NOT_RECORDED : escapeHtml(value)
+    out += value === undefined || value === null || value === '' ? NOT_RECORDED : format(value)
     cursor = token.end
   }
   return ok(out + body.slice(cursor))
+}
+
+export function renderTemplate(
+  body: string,
+  ctx: MergeContext,
+): Result<string, { unknownFields: string[] }> {
+  return merge(body, ctx, escapeHtml)
+}
+
+export function renderTemplateText(
+  body: string,
+  ctx: MergeContext,
+): Result<string, { unknownFields: string[] }> {
+  return merge(body, ctx, (value) => value)
 }

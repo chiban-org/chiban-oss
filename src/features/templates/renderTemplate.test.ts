@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { MERGE_FIELDS, unknownMergeFields } from '@/features/templates/mergeFields'
-import { renderTemplate } from '@/features/templates/renderTemplate'
+import { renderTemplate, renderTemplateText } from '@/features/templates/renderTemplate'
 
 describe('renderTemplate', () => {
   it('unknown merge field is reported', () => {
@@ -52,5 +52,28 @@ describe('renderTemplate', () => {
 
   it('unknownMergeFields scans without rendering', () => {
     expect(unknownMergeFields('{{town.name}} {{bad}} {{bad}}')).toEqual(['bad'])
+  })
+})
+
+describe('renderTemplateText', () => {
+  it('renderTemplateText does not escape an ampersand', () => {
+    const r = renderTemplateText('Owner: {{parcel.ownerName}}', {
+      'parcel.ownerName': 'Pat & "Sam" <Co>',
+    })
+    expect(r).toEqual({ ok: true, value: 'Owner: Pat & "Sam" <Co>' })
+  })
+
+  it('reports unknown fields like the html renderer', () => {
+    expect(renderTemplateText('{{nope}}', {})).toEqual({
+      ok: false,
+      error: { unknownFields: ['nope'] },
+    })
+  })
+
+  it('renders Not recorded for a missing value', () => {
+    expect(renderTemplateText('Issued {{application.issuedOn}}', {})).toEqual({
+      ok: true,
+      value: 'Issued Not recorded',
+    })
   })
 })
