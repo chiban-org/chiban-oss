@@ -11,6 +11,7 @@ import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { HEARING_STATUS_LABELS, loadApplicationAppealNodes } from '@/features/hearings/views'
 import { type TrcDepartmentSummary, trcSummary } from '@/features/reviews/trcSummary'
+import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 
 export interface ApplicationHearingsPanel {
@@ -39,6 +40,7 @@ export async function loadApplicationHearingsPanel(
   const canRecord = await hasCapability(db, actor.userId, 'board.record', signal)
   if (!canRecord) return null
   const canRoute = await hasCapability(db, actor.userId, 'review.assign', signal)
+  const today = await townToday(db, new Date(), signal)
   const meetings = await db
     .select()
     .from(boardMeetings)
@@ -68,7 +70,7 @@ export async function loadApplicationHearingsPanel(
     canRecord,
     canRoute,
     scheduleMeetings: meetings
-      .filter((m) => m.status === 'scheduled')
+      .filter((m) => m.status === 'scheduled' && m.meetingDate >= today)
       .map((m) => ({ id: m.id, text: formatCivilDate(m.meetingDate) })),
     scheduleKinds: kinds,
     hearings: held.map(({ hearing, meeting }) => ({

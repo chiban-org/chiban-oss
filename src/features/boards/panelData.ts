@@ -1,5 +1,5 @@
 import type { Board } from '@packs/nh/schema'
-import { and, asc, desc, eq, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, gte, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
   acceptanceSchedules,
@@ -37,6 +37,8 @@ export interface BoardPanelData {
   canDetermine: boolean
   hasFilingLead: boolean
   acceptanceText: string | null
+  acceptanceMeetingId: string | null
+  acceptanceDate: string | null
   meetings: { id: string; text: string }[]
   today: string
   regional: {
@@ -124,10 +126,16 @@ export async function loadBoardPanel(
   const meetings = await db
     .select()
     .from(boardMeetings)
-    .where(and(eq(boardMeetings.board, board), eq(boardMeetings.status, 'scheduled')))
+    .where(
+      and(
+        eq(boardMeetings.board, board),
+        eq(boardMeetings.status, 'scheduled'),
+        gte(boardMeetings.meetingDate, today),
+      ),
+    )
     .orderBy(asc(boardMeetings.meetingDate))
   const [schedule] = await db
-    .select({ date: boardMeetings.meetingDate })
+    .select({ id: boardMeetings.id, date: boardMeetings.meetingDate })
     .from(acceptanceSchedules)
     .innerJoin(boardMeetings, eq(boardMeetings.id, acceptanceSchedules.meetingId))
     .where(eq(acceptanceSchedules.applicationId, applicationId))
@@ -192,6 +200,8 @@ export async function loadBoardPanel(
     canDetermine: await hasCapability(db, actor.userId, 'regional_impact.determine', signal),
     hasFilingLead: classification?.mandatoryRuleKeys.includes('nh.pb.filing_lead') === true,
     acceptanceText: schedule === undefined ? null : formatCivilDate(schedule.date),
+    acceptanceMeetingId: schedule?.id ?? null,
+    acceptanceDate: schedule?.date ?? null,
     meetings: meetings.map((m) => ({
       id: m.id,
       text: `${formatCivilDate(m.meetingDate)}, ${m.kind === 'special' ? 'special' : 'regular'} meeting`,

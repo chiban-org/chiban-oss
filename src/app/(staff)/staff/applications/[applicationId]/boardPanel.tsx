@@ -10,11 +10,17 @@ import {
 } from './boardPanelSections'
 
 function MeetingSelect({ data }: { data: BoardPanelData }) {
+  const chosen = data.meetings.some((m) => m.id === data.acceptanceMeetingId)
   return (
     <SelectField
       label={data.board === 'zba' ? 'Hearing meeting' : 'Meeting'}
       name="meetingId"
-      options={data.meetings.map((m): [string, string] => [m.id, m.text])}
+      defaultValue={chosen ? (data.acceptanceMeetingId ?? '') : ''}
+      required
+      options={[
+        ['', 'Choose an upcoming meeting'],
+        ...data.meetings.map((m): [string, string] => [m.id, m.text]),
+      ]}
     />
   )
 }
@@ -26,12 +32,14 @@ function VoteForm({ data }: { data: BoardPanelData }) {
       <summary>{planning ? 'Record the completeness vote' : 'Open the hearing'}</summary>
       <ActionForm action={completenessVoteAction} submitLabel="Record vote" className="max-w-md">
         <input type="hidden" name="applicationId" value={data.applicationId} />
-        <MeetingSelect data={data} />
+        <input type="hidden" name="meetingId" value={data.acceptanceMeetingId ?? ''} />
+        <p>{`Meeting: ${data.acceptanceText ?? ''}`}</p>
         <TextField
           label="Date of the vote"
           name="votedOn"
           type="date"
-          defaultValue={data.today}
+          defaultValue={data.acceptanceDate ?? data.today}
+          min={data.acceptanceDate ?? undefined}
           required
         />
         <SelectField
@@ -78,7 +86,7 @@ function AcceptanceSection({ data }: { data: BoardPanelData }) {
           <MeetingSelect data={data} />
         </ActionForm>
       ) : null}
-      {open ? <VoteForm data={data} /> : null}
+      {open && data.acceptanceMeetingId !== null ? <VoteForm data={data} /> : null}
     </section>
   )
 }
