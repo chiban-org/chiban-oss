@@ -34,6 +34,8 @@ export const StartEventSchema = z.enum([
   'regional_impact_notice_mailed',
   'order_served',
   'judgment_entered',
+  'rtk_request_received',
+  'rtk_time_statement',
 ])
 export type StartEvent = z.infer<typeof StartEventSchema>
 
@@ -48,6 +50,8 @@ export type FactCondition = z.infer<typeof FactConditionSchema>
 
 const LengthSchema = z.union([
   z.object({ unit: z.enum(['days', 'months']), value: z.number().int().positive() }),
+  z.object({ unit: z.literal('business_days'), value: z.number().int().positive() }),
+  z.object({ unit: z.literal('stated_date') }),
   z.object({
     unit: z.literal('days'),
     cases: z.array(z.object({ when: FactConditionSchema, value: z.number().int().positive() })),

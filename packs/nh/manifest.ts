@@ -6,6 +6,7 @@ import { BUILDING_RULES } from '@packs/nh/rules/building'
 import { CODE_RULES } from '@packs/nh/rules/code'
 import { ENFORCEMENT_RULES } from '@packs/nh/rules/enforcement'
 import { LOCAL_PERMIT_RULES } from '@packs/nh/rules/localPermits'
+import { RTK_RULES } from '@packs/nh/rules/rightToKnow'
 import type {
   CodeEditionEntry,
   PackRule,
@@ -35,6 +36,7 @@ export const NH_PACK_MANIFEST: PackManifest = {
     ...CODE_RULES,
     ...LOCAL_PERMIT_RULES,
     ...ENFORCEMENT_RULES,
+    ...RTK_RULES,
   ],
   classifications: NH_CLASSIFICATIONS,
   codeEditions: NH_CODE_EDITIONS,

@@ -23,10 +23,35 @@ export interface SubjectDueContext {
   citations: CountingCitations
 }
 
+function statedDateDue(
+  rule: ClockRule,
+  startDate: CivilDate,
+  ctx: SubjectDueContext,
+  statedDue: CivilDate | undefined,
+): SubjectDue {
+  if (statedDue === undefined || daysBetween(startDate, statedDue) < 0) {
+    throw new AppError(ErrorIds.PACK_INVALID, 'A stated date must be on or after the statement', {
+      key: rule.key,
+    })
+  }
+  return {
+    ruleKey: rule.key,
+    ruleVersion: rule.version,
+    packVersion: ctx.packVersion,
+    startEvent: rule.startEvent,
+    startDate,
+    countingMethod: `The date the town stated in writing, ${statedDue}. No counting applies.`,
+    due: statedDue,
+    rolledFrom: null,
+    consequence: rule.consequence.text,
+  }
+}
+
 export function computeSubjectDue(
   rule: ClockRule,
   startDate: CivilDate,
   ctx: SubjectDueContext,
+  opts?: { statedDue?: CivilDate },
 ): SubjectDue {
   const length = rule.length
   if ('cases' in length || 'fromSetting' in length) {
@@ -34,6 +59,7 @@ export function computeSubjectDue(
       key: rule.key,
     })
   }
+  if (length.unit === 'stated_date') return statedDateDue(rule, startDate, ctx, opts?.statedDue)
   const input = {
     start: startDate,
     length: { unit: length.unit, value: length.value },
