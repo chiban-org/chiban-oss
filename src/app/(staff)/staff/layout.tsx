@@ -1,9 +1,21 @@
 import Link from 'next/link'
+import { redirect } from 'next/navigation'
 import type { ReactNode } from 'react'
+import { createContext } from '@/server/trpc/context'
 
-const NAV_ITEMS = [{ href: '/staff/account', label: 'Account' }] as const
+const NAV_ITEMS = [
+  { href: '/staff/parcels', label: 'Parcels' },
+  { href: '/staff/map', label: 'Map' },
+  { href: '/staff/gis/imports', label: 'Imports' },
+  { href: '/staff/gis/exceptions', label: 'Exceptions' },
+  { href: '/staff/parcels/unresolved', label: 'Unresolved records' },
+  { href: '/staff/overrides/aliases', label: 'Overrides' },
+  { href: '/staff/account', label: 'Account' },
+] as const
 
-export default function StaffLayout({ children }: { children: ReactNode }) {
+export default async function StaffLayout({ children }: { children: ReactNode }) {
+  const { actor } = await createContext()
+  if (actor?.kind !== 'staff') redirect('/staff/sign-in')
   return (
     <div className="staff-shell flex min-h-screen">
       <nav aria-label="Staff" className="w-56 shrink-0 border-r bg-surface p-4">

@@ -84,3 +84,13 @@ describe('tileFor', () => {
     })
   })
 })
+
+describe('parcelExtent', () => {
+  it('covers the imported grid', async () => {
+    const { parcelExtent } = await import('@/features/gis/extent')
+    const box = await parcelExtent(handle.db, signal)
+    expect(box).not.toBeNull()
+    expect(box?.[0]).toBeGreaterThan(-71.61)
+    expect(box?.[3]).toBeGreaterThan(43.87)
+  })
+})

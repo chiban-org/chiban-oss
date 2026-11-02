@@ -14,11 +14,13 @@ export type OwnRecord = ParcelRecordSummary & {
   carriedFrom?: { parcelId: string; displayId: string }
 }
 
+export type AncestralRecord = ParcelRecordSummary & { linkId?: string }
+
 export interface AncestralGroup {
   parcelId: string
   displayId: string
   label: string
-  records: ParcelRecordSummary[]
+  records: AncestralRecord[]
 }
 
 export interface ParcelHistory {
@@ -117,9 +119,10 @@ export async function getParcelHistory(
   for (const a of ancestors) {
     const records = (ancestorLinks.get(a.parcelId) ?? [])
       .filter((l) => !carriedIds.has(l.linkId))
-      .flatMap((l) => {
+      .flatMap((l): AncestralRecord[] => {
         const s = found.get(`${l.kind}:${l.recordId}`)
-        return s === undefined ? [] : [s]
+        if (s === undefined) return []
+        return [viewer.kind === 'actor' ? { ...s, linkId: l.linkId } : s]
       })
     if (records.length === 0) continue
     const displayId = display.get(a.parcelId) ?? ''
