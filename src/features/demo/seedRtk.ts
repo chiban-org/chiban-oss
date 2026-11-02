@@ -3,6 +3,7 @@ import type { Db } from '@/db/client'
 import { rtkRequests } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { computeDue } from '@/features/clocks/computeDue'
+import { seedCensusDemo } from '@/features/demo/seedCensus'
 import { seedDispositionDemo } from '@/features/demo/seedDisposition'
 import { actorFor, must } from '@/features/demo/seedPermitSupport'
 import { seedLetterDocument, seedRedactedVersion } from '@/features/demo/seedRedaction'
@@ -246,6 +247,7 @@ export async function seedRecordsM10(
   await seedRtkRequests(ctx)
   await seedClosedRequestWithReleases(ctx)
   await seedDispositionDemo(ctx)
+  await seedCensusDemo(ctx)
   const letter = await seedLetterDocument(ctx, 'Demo letter with a private phone number')
   await seedRedactedVersion(ctx, letter, 'public')
   return true

@@ -16,4 +16,5 @@ export const M10_SPECS: Spec[] = [
   { table: t.dispositionItems },
   { table: t.dispositionTombstones },
   { table: t.fileTombstones },
+  { table: t.censusClassifications },
 ]

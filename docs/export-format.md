@@ -278,6 +278,23 @@ File: `data/calendar_pushes.ndjson`. Ordered by id.
 References:
 - `inspection_id` refers to `inspections`
 
+### census_classifications
+
+File: `data/census_classifications.ndjson`. Ordered by application_id.
+
+- `application_id`: uuid
+- `category`: text
+- `excluded_reason`: text, nullable
+- `phase`: text
+- `buildings`: integer
+- `housing_units`: integer
+- `valuation_dollars`: integer
+- `classified_by`: uuid
+- `classified_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+
 ### certificates_of_occupancy
 
 File: `data/certificates_of_occupancy.ndjson`. Ordered by id.
