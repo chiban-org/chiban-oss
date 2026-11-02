@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import type { Db } from '@/db/client'
+import { hasFullRecordAccess } from '@/features/access/roles'
 import type { Actor } from '@/features/auth/actor'
 import { getActor } from '@/server/getActor'
 import { createContext } from '@/server/trpc/context'
@@ -25,4 +26,9 @@ export async function requireStaffContext(): Promise<StaffContext> {
   const ctx = await createContext()
   if (ctx.actor?.kind !== 'staff') redirect('/staff/sign-in')
   return { db: ctx.db, actor: ctx.actor, signal: ctx.signal }
+}
+
+export async function recordStaffContext(): Promise<StaffContext | null> {
+  const ctx = await requireStaffContext()
+  return hasFullRecordAccess(ctx.actor) ? ctx : null
 }

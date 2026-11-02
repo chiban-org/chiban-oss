@@ -1,11 +1,12 @@
 import { ActionForm } from '@/components/ActionForm'
 import { TextField } from '@/components/staff/fields'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { Button } from '@/components/ui/button'
 import { IMPORT_EXCEPTION_KINDS, type ImportExceptionKind } from '@/features/gis/exceptionKinds'
 import { listExceptions } from '@/features/gis/exceptionsList'
 import { exceptionDetailText, exceptionTitle } from '@/features/gis/import/runText'
 import { townTimeZone } from '@/features/town/timeZone'
-import { requireStaffContext } from '@/server/requireStaff'
+import { recordStaffContext } from '@/server/requireStaff'
 import { acceptAllOwnerChangesAction, acceptHeldRowAction, dismissExceptionAction } from './actions'
 
 interface ExceptionsPageProps {
@@ -24,7 +25,8 @@ function isStatus(v: string | undefined): v is (typeof STATUSES)[number] {
 
 export default async function StaffExceptionsPage({ searchParams }: ExceptionsPageProps) {
   const query = await searchParams
-  const ctx = await requireStaffContext()
+  const ctx = await recordStaffContext()
+  if (ctx === null) return <NoPermission title="Import exceptions" action="see import exceptions" />
   const status = isStatus(query.status) ? query.status : 'open'
   const rows = await listExceptions(
     ctx.db,

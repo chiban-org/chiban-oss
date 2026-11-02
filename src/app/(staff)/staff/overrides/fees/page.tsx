@@ -1,10 +1,11 @@
 import Link from 'next/link'
 import { StatusChip } from '@/components/StatusChip'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { OverridesTabs } from '@/components/staff/OverridesTabs'
 import { listFeeOverrides } from '@/features/fees/feeOverrides'
 import type { OverrideStatus } from '@/features/parcels/aliasOverrides'
 import { formatCents } from '@/lib/money'
-import { requireStaffContext } from '@/server/requireStaff'
+import { recordStaffContext } from '@/server/requireStaff'
 
 const CHIP: Record<
   OverrideStatus,
@@ -17,7 +18,8 @@ const CHIP: Record<
 }
 
 export default async function FeeOverridesPage() {
-  const ctx = await requireStaffContext()
+  const ctx = await recordStaffContext()
+  if (ctx === null) return <NoPermission title="Fee overrides" action="see overrides" />
   const rows = await listFeeOverrides(ctx.db, ctx.signal)
   return (
     <main>

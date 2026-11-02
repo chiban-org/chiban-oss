@@ -3,15 +3,17 @@ import Link from 'next/link'
 import { adoptStarterAction } from '@/app/(staff)/staff/settings/actions'
 import { ActionForm } from '@/components/ActionForm'
 import { CodeEditionTable } from '@/components/config/CodeEditionTable'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { KIND_LABELS } from '@/features/config/kindLabels'
 import { listKeysOfKind, summarizeKinds } from '@/features/config/settingsViews'
 import { loadPack } from '@/features/packs/loadPack'
 import { packInfo } from '@/features/packs/packInfo'
 import { classificationSummary, ruleSummary } from '@/features/packs/ruleSummary'
-import { requireStaffContext } from '@/server/requireStaff'
+import { recordStaffContext } from '@/server/requireStaff'
 
 export default async function SettingsPage() {
-  const ctx = await requireStaffContext()
+  const ctx = await recordStaffContext()
+  if (ctx === null) return <NoPermission title="Settings" action="change settings" />
   const kinds = await summarizeKinds(ctx.db, ctx.signal)
   const adopted = new Set(
     (await listKeysOfKind(ctx.db, 'application_type', ctx.signal)).map((k) => k.key),

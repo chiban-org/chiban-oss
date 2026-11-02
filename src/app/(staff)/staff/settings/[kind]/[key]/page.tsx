@@ -3,13 +3,14 @@ import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
 import { VersionHistory } from '@/components/config/VersionHistory'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { editorContext } from '@/features/config/editorContext'
 import { KIND_LABELS } from '@/features/config/kindLabels'
 import { isConfigKind } from '@/features/config/kinds'
 import { getEditorState } from '@/features/config/settingsViews'
 import { listReviewerChoices } from '@/features/reviews/reviewerView'
 import { getTownSettings } from '@/features/town/settings'
-import { requireStaffContext } from '@/server/requireStaff'
+import { recordStaffContext } from '@/server/requireStaff'
 import { publishAction, rollbackAction, saveDraftAction } from '../../actions'
 
 interface Props {
@@ -20,7 +21,8 @@ export default async function SettingsKeyPage({ params }: Props) {
   const { kind, key: rawKey } = await params
   const key = decodeURIComponent(rawKey)
   if (!isConfigKind(kind)) notFound()
-  const ctx = await requireStaffContext()
+  const ctx = await recordStaffContext()
+  if (ctx === null) return <NoPermission title="Settings" action="change settings" />
   const state = await getEditorState(ctx.db, kind, key, ctx.signal)
   const town = await getTownSettings(ctx.db, ctx.signal)
   const timeZone = town.ok ? town.value.timeZone : 'America/New_York'

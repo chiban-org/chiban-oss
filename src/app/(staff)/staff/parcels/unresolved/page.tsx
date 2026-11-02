@@ -1,11 +1,14 @@
 import { ActionForm } from '@/components/ActionForm'
 import { TextField } from '@/components/staff/fields'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { listUnresolvedRecords } from '@/features/parcels/unresolvedView'
-import { requireStaffContext } from '@/server/requireStaff'
+import { recordStaffContext } from '@/server/requireStaff'
 import { resolveUnresolvedAction } from '../[parcelId]/actions'
 
 export default async function StaffUnresolvedPage() {
-  const ctx = await requireStaffContext()
+  const ctx = await recordStaffContext()
+  if (ctx === null)
+    return <NoPermission title="Unresolved records" action="see unresolved records" />
   const links = await listUnresolvedRecords(ctx.db, ctx.actor, ctx.signal)
   return (
     <main>

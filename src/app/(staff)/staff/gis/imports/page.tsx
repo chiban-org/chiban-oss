@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import { ImportUploadForm } from '@/components/staff/ImportUploadForm'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { gisLayers, importRuns } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
 import { AXISGIS_ADAPTER_STATUS, AXISGIS_STUB_NOTICE } from '@/features/gis/adapters/axisGis'
@@ -12,7 +13,7 @@ import { getLayerStatus } from '@/features/gis/layerStatus'
 import { getTownSettings } from '@/features/town/settings'
 import { formatInstantLong } from '@/lib/formatDate'
 import { words } from '@/lib/words'
-import { requireStaffContext } from '@/server/requireStaff'
+import { recordStaffContext } from '@/server/requireStaff'
 import { updateLayerSettingsAction } from './actions'
 import { LayerImportAction } from './LayerImportAction'
 
@@ -39,7 +40,8 @@ const adapterStatus: string = AXISGIS_ADAPTER_STATUS
 const DEFAULT_ZONE = 'America/New_York'
 
 export default async function StaffImportsPage() {
-  const ctx = await requireStaffContext()
+  const ctx = await recordStaffContext()
+  if (ctx === null) return <NoPermission title="Imports" action="see layer imports" />
   const actor = ctx.actor
   const [canImport, canConfigure] = await Promise.all([
     hasCapability(ctx.db, actor.userId, 'gis.import', ctx.signal),

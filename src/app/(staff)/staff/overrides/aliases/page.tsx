@@ -2,10 +2,11 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { OverridesTabs } from '@/components/staff/OverridesTabs'
 import { listAliasOverrides, type OverrideStatus } from '@/features/parcels/aliasOverrides'
 import { formatCivilDate } from '@/lib/formatDate'
-import { requireStaffContext } from '@/server/requireStaff'
+import { recordStaffContext } from '@/server/requireStaff'
 import { createAliasOverrideAction } from '../../parcels/[parcelId]/actions'
 
 const CHIP: Record<
@@ -19,7 +20,8 @@ const CHIP: Record<
 }
 
 export default async function StaffAliasOverridesPage() {
-  const ctx = await requireStaffContext()
+  const ctx = await recordStaffContext()
+  if (ctx === null) return <NoPermission title="Parcel ID overrides" action="see overrides" />
   const rows = await listAliasOverrides(ctx.db, new Date(), ctx.signal)
   return (
     <main>

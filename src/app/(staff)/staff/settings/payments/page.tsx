@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { loadProcessorSettings } from '@/features/payments/settingsView'
-import { requireStaffContext } from '@/server/requireStaff'
+import { recordStaffContext } from '@/server/requireStaff'
 import { publishPaymentSettingsAction, saveProcessorAccountAction } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -14,7 +15,8 @@ const ACTIVE_COPY = {
 } as const
 
 export default async function PaymentSettingsPage() {
-  const ctx = await requireStaffContext()
+  const ctx = await recordStaffContext()
+  if (ctx === null) return <NoPermission title="Payment settings" action="change settings" />
   const result = await loadProcessorSettings(ctx.db, ctx.actor, ctx.signal)
   if (!result.ok) {
     return (

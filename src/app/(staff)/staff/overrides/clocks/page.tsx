@@ -1,10 +1,12 @@
 import { ClockAdjustmentsTable } from '@/components/clocks/ClockAdjustmentsTable'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { OverridesTabs } from '@/components/staff/OverridesTabs'
 import { listClockAdjustments } from '@/features/clocks/clockOverrides'
-import { requireStaffContext } from '@/server/requireStaff'
+import { recordStaffContext } from '@/server/requireStaff'
 
 export default async function ClockOverridesPage() {
-  const ctx = await requireStaffContext()
+  const ctx = await recordStaffContext()
+  if (ctx === null) return <NoPermission title="Clock adjustments" action="see overrides" />
   const rows = await listClockAdjustments(ctx.db, ctx.signal)
   return (
     <main>

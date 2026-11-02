@@ -2,11 +2,12 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { KIND_LABELS } from '@/features/config/kindLabels'
 import { isConfigKind } from '@/features/config/kinds'
 import { listKeysOfKind } from '@/features/config/settingsViews'
 import { loadPack } from '@/features/packs/loadPack'
-import { requireStaffContext } from '@/server/requireStaff'
+import { recordStaffContext } from '@/server/requireStaff'
 import { startDraftAction } from '../actions'
 
 const SINGLETON_KINDS = [
@@ -24,7 +25,8 @@ interface Props {
 export default async function SettingsKindPage({ params }: Props) {
   const { kind } = await params
   if (!isConfigKind(kind)) notFound()
-  const ctx = await requireStaffContext()
+  const ctx = await recordStaffContext()
+  if (ctx === null) return <NoPermission title="Settings" action="change settings" />
   const rows = await listKeysOfKind(ctx.db, kind, ctx.signal)
   const townRules = loadPack().rules.filter((r) => r.kind === 'town_setting')
   return (
