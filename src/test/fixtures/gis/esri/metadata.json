@@ -1,0 +1,16 @@
+{
+  "currentVersion": 10.91,
+  "name": "Parcels",
+  "type": "Feature Layer",
+  "geometryType": "esriGeometryPolygon",
+  "objectIdField": "OBJECTID",
+  "maxRecordCount": 15,
+  "fields": [
+    { "name": "OBJECTID", "type": "esriFieldTypeOID" },
+    { "name": "MAPLOT", "type": "esriFieldTypeString" },
+    { "name": "CAMA", "type": "esriFieldTypeString" },
+    { "name": "SITE_ADDR", "type": "esriFieldTypeString" },
+    { "name": "OWNER", "type": "esriFieldTypeString" },
+    { "name": "MAIL_ADDR", "type": "esriFieldTypeString" }
+  ]
+}

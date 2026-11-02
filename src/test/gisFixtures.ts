@@ -41,3 +41,41 @@ export async function configureLayer(
     .set({ mapping, ...patch })
     .where(eq(gisLayers.key, key))
 }
+
+export interface FixtureFetchOptions {
+  failOnPage?: number
+  errorBody?: boolean
+}
+
+export interface FixtureFetch {
+  fetch: typeof fetch
+  calls: string[]
+}
+
+export function fixtureFetch(dir: string, opts: FixtureFetchOptions = {}): FixtureFetch {
+  const calls: string[] = []
+  const json = (body: unknown, status = 200) =>
+    new Response(JSON.stringify(body), { status, headers: { 'content-type': 'application/json' } })
+  const impl = (input: string | URL | Request): Promise<Response> => {
+    const url = new URL(
+      typeof input === 'string' ? input : input instanceof URL ? input.href : input.url,
+    )
+    calls.push(url.pathname + url.search)
+    if (opts.errorBody === true) {
+      return Promise.resolve(json({ error: { code: 499, message: 'Token Required' } }))
+    }
+    if (!url.pathname.endsWith('/query')) {
+      return Promise.resolve(
+        json(JSON.parse(readFileSync(path.join(FIXTURE_DIR, dir, 'metadata.json'), 'utf8'))),
+      )
+    }
+    const offset = Number(url.searchParams.get('resultOffset') ?? '0')
+    const count = Number(url.searchParams.get('resultRecordCount') ?? '1')
+    const page = Math.floor(offset / count)
+    if (opts.failOnPage === page) return Promise.reject(new TypeError('connection reset'))
+    return Promise.resolve(
+      json(JSON.parse(readFileSync(path.join(FIXTURE_DIR, dir, `page-${page}.json`), 'utf8'))),
+    )
+  }
+  return { fetch: impl as typeof fetch, calls }
+}

@@ -3,6 +3,7 @@ import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import { cronForInterval } from './cron'
 import { type JobDefinition, runJob } from './defineJob'
+import { gisRefreshLayerJob, gisScheduleRefreshesJob } from './gisRefreshLayer'
 import { heartbeatJob } from './heartbeat'
 
 export async function registerJob<P extends object>(
@@ -27,4 +28,6 @@ export async function registerJob<P extends object>(
 
 export async function registerAllJobs(boss: PgBoss, db: Db): Promise<void> {
   await registerJob(boss, db, heartbeatJob)
+  await registerJob(boss, db, gisRefreshLayerJob)
+  await registerJob(boss, db, gisScheduleRefreshesJob)
 }

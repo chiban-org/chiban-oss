@@ -40,17 +40,7 @@ function primitive(v: unknown): Primitive {
   return JSON.stringify(v)
 }
 
-export async function readGeoJson(
-  bytes: Uint8Array,
-  signal: AbortSignal,
-): Promise<Result<SourceFeature[], ReaderError>> {
-  signal.throwIfAborted()
-  let raw: unknown
-  try {
-    raw = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
-  } catch {
-    return err({ kind: 'malformed', detail: 'File is not valid JSON' })
-  }
+export function parseGeoJsonValue(raw: unknown): Result<SourceFeature[], ReaderError> {
   const parsed = collectionSchema.safeParse(raw)
   if (!parsed.success) {
     return err({ kind: 'malformed', detail: 'File is not a GeoJSON FeatureCollection' })
@@ -71,4 +61,18 @@ export async function readGeoJson(
       geometry: f.geometry as GeoJSON.Geometry | null,
     })),
   )
+}
+
+export async function readGeoJson(
+  bytes: Uint8Array,
+  signal: AbortSignal,
+): Promise<Result<SourceFeature[], ReaderError>> {
+  signal.throwIfAborted()
+  let raw: unknown
+  try {
+    raw = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))
+  } catch {
+    return err({ kind: 'malformed', detail: 'File is not valid JSON' })
+  }
+  return parseGeoJsonValue(raw)
 }

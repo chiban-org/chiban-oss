@@ -137,5 +137,5 @@ export function buildShapefileZip(
     'alder-pond.cpg': ENCODER.encode('UTF-8'),
   }
   if (opts.prj) files['alder-pond.prj'] = ENCODER.encode(NH_STATE_PLANE_FEET_WKT)
-  return zipSync(files)
+  return zipSync(files, { mtime: new Date(2020, 0, 1, 12) })
 }

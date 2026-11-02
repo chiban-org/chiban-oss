@@ -1,0 +1,411 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007001000000",
+        "CAMA": "007001000000000",
+        "CAMA_2": null,
+        "CAMA_3": null,
+        "SITE_NUM": "12",
+        "SITE_STREET": "Heron Cove Road",
+        "SITE_ADDR": "12 Heron Cove Road",
+        "OWNER": "Larkspur Family Trust",
+        "MAIL_ADDR": "PO Box 100, Alder Pond NH",
+        "OBJECTID": 1
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.606939759, 43.871814942],
+            [-71.606181323, 43.871814543],
+            [-71.60618049, 43.872637542],
+            [-71.606938937, 43.872637941],
+            [-71.606939759, 43.871814942]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007002000000",
+        "CAMA": "007002000000000",
+        "CAMA_2": null,
+        "CAMA_3": null,
+        "SITE_NUM": "14",
+        "SITE_STREET": "Heron Cove Road",
+        "SITE_ADDR": "14 Heron Cove Road",
+        "OWNER": "Marsh Wren Holdings LLC",
+        "MAIL_ADDR": "PO Box 101, Alder Pond NH",
+        "OBJECTID": 2
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.606181323, 43.871814543],
+            [-71.605422886, 43.871814139],
+            [-71.605422043, 43.872637138],
+            [-71.60618049, 43.872637542],
+            [-71.606181323, 43.871814543]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007003000000",
+        "CAMA": "007003000000000",
+        "CAMA_2": null,
+        "CAMA_3": null,
+        "SITE_NUM": "16",
+        "SITE_STREET": "Heron Cove Road",
+        "SITE_ADDR": "16 Heron Cove Road",
+        "OWNER": "Quillfeather, Odessa",
+        "MAIL_ADDR": "PO Box 102, Alder Pond NH",
+        "OBJECTID": 3
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.605422886, 43.871814139],
+            [-71.60466445, 43.87181373],
+            [-71.604663596, 43.872636729],
+            [-71.605422043, 43.872637138],
+            [-71.605422886, 43.871814139]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007004000000",
+        "CAMA": "007004000000000",
+        "CAMA_2": null,
+        "CAMA_3": null,
+        "SITE_NUM": "18",
+        "SITE_STREET": "Heron Cove Road",
+        "SITE_ADDR": "18 Heron Cove Road",
+        "OWNER": "Bramblewick, Tobias and Ione",
+        "MAIL_ADDR": "PO Box 103, Alder Pond NH",
+        "OBJECTID": 4
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.60466445, 43.87181373],
+            [-71.603906013, 43.871813316],
+            [-71.60390515, 43.872636315],
+            [-71.604663596, 43.872636729],
+            [-71.60466445, 43.87181373]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007005000000",
+        "CAMA": "007005000000000",
+        "CAMA_2": null,
+        "CAMA_3": null,
+        "SITE_NUM": "20",
+        "SITE_STREET": "Heron Cove Road",
+        "SITE_ADDR": "20 Heron Cove Road",
+        "OWNER": "Pennywhistle Land Company",
+        "MAIL_ADDR": "PO Box 104, Alder Pond NH",
+        "OBJECTID": 5
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.603906013, 43.871813316],
+            [-71.603147577, 43.871812897],
+            [-71.603146703, 43.872635896],
+            [-71.60390515, 43.872636315],
+            [-71.603906013, 43.871813316]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007006000000",
+        "CAMA": "007006000000000",
+        "CAMA_2": null,
+        "CAMA_3": null,
+        "SITE_NUM": "22",
+        "SITE_STREET": "Heron Cove Road",
+        "SITE_ADDR": "22 Heron Cove Road",
+        "OWNER": "Thistledown, Calla",
+        "MAIL_ADDR": "PO Box 105, Alder Pond NH",
+        "OBJECTID": 6
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.603147577, 43.871812897],
+            [-71.60238914, 43.871812473],
+            [-71.602388256, 43.872635472],
+            [-71.603146703, 43.872635896],
+            [-71.603147577, 43.871812897]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007007000000",
+        "CAMA": "007007000000000",
+        "CAMA_2": null,
+        "CAMA_3": null,
+        "SITE_NUM": "12",
+        "SITE_STREET": "Alder Pond Road",
+        "SITE_ADDR": "12 Alder Pond Road",
+        "OWNER": "Hollowell Cranberry Trust",
+        "MAIL_ADDR": "PO Box 106, Alder Pond NH",
+        "OBJECTID": 7
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.606938937, 43.872637941],
+            [-71.60618049, 43.872637542],
+            [-71.606179658, 43.873460541],
+            [-71.606938115, 43.873460939],
+            [-71.606938937, 43.872637941]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007008000000",
+        "CAMA": "007008000000000",
+        "CAMA_2": null,
+        "CAMA_3": null,
+        "SITE_NUM": "14",
+        "SITE_STREET": "Alder Pond Road",
+        "SITE_ADDR": "14 Alder Pond Road",
+        "OWNER": "Fenwick, Rowan",
+        "MAIL_ADDR": "PO Box 107, Alder Pond NH",
+        "OBJECTID": 8
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.60618049, 43.872637542],
+            [-71.605422043, 43.872637138],
+            [-71.605421201, 43.873460137],
+            [-71.606179658, 43.873460541],
+            [-71.60618049, 43.872637542]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007009000000",
+        "CAMA": "007009000000000",
+        "CAMA_2": null,
+        "CAMA_3": null,
+        "SITE_NUM": "16",
+        "SITE_STREET": "Alder Pond Road",
+        "SITE_ADDR": "16 Alder Pond Road",
+        "OWNER": "Sedgewater Properties LLC",
+        "MAIL_ADDR": "PO Box 108, Alder Pond NH",
+        "OBJECTID": 9
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.605422043, 43.872637138],
+            [-71.604663596, 43.872636729],
+            [-71.604662743, 43.873459728],
+            [-71.605421201, 43.873460137],
+            [-71.605422043, 43.872637138]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007010000000",
+        "CAMA": "007010000000000",
+        "CAMA_2": null,
+        "CAMA_3": null,
+        "SITE_NUM": "18",
+        "SITE_STREET": "Alder Pond Road",
+        "SITE_ADDR": "18 Alder Pond Road",
+        "OWNER": "Mossgrove, Linden and Pia",
+        "MAIL_ADDR": "PO Box 109, Alder Pond NH",
+        "OBJECTID": 10
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.604663596, 43.872636729],
+            [-71.60390515, 43.872636315],
+            [-71.603904286, 43.873459314],
+            [-71.604662743, 43.873459728],
+            [-71.604663596, 43.872636729]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007011000000",
+        "CAMA": "007011000000000",
+        "CAMA_2": null,
+        "CAMA_3": null,
+        "SITE_NUM": "20",
+        "SITE_STREET": "Alder Pond Road",
+        "SITE_ADDR": "20 Alder Pond Road",
+        "OWNER": "Kestrel Ridge Partners",
+        "MAIL_ADDR": "PO Box 110, Alder Pond NH",
+        "OBJECTID": 11
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.60390515, 43.872636315],
+            [-71.603146703, 43.872635896],
+            [-71.603145829, 43.873458894],
+            [-71.603904286, 43.873459314],
+            [-71.60390515, 43.872636315]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007012000000",
+        "CAMA": "007012000000000",
+        "CAMA_2": null,
+        "CAMA_3": null,
+        "SITE_NUM": "22",
+        "SITE_STREET": "Alder Pond Road",
+        "SITE_ADDR": "22 Alder Pond Road",
+        "OWNER": "Dunnock, Wilhelmina",
+        "MAIL_ADDR": "PO Box 111, Alder Pond NH",
+        "OBJECTID": 12
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.603146703, 43.872635896],
+            [-71.602388256, 43.872635472],
+            [-71.602387371, 43.87345847],
+            [-71.603145829, 43.873458894],
+            [-71.603146703, 43.872635896]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007013000000",
+        "CAMA": "007013000000000",
+        "CAMA_2": null,
+        "CAMA_3": null,
+        "SITE_NUM": "12",
+        "SITE_STREET": "Larkspur Lane",
+        "SITE_ADDR": "12 Larkspur Lane",
+        "OWNER": "Larkspur Family Trust",
+        "MAIL_ADDR": "PO Box 112, Alder Pond NH",
+        "OBJECTID": 13
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.606938115, 43.873460939],
+            [-71.606179658, 43.873460541],
+            [-71.606178825, 43.874283539],
+            [-71.606937293, 43.874283938],
+            [-71.606938115, 43.873460939]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007014000000",
+        "CAMA": "007014000000001",
+        "CAMA_2": "007014000000002",
+        "CAMA_3": "007014000000003",
+        "SITE_NUM": "14",
+        "SITE_STREET": "Larkspur Lane",
+        "SITE_ADDR": "14 Larkspur Lane",
+        "OWNER": "Marsh Wren Holdings LLC",
+        "MAIL_ADDR": "PO Box 113, Alder Pond NH",
+        "OBJECTID": 14
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.606179658, 43.873460541],
+            [-71.605421201, 43.873460137],
+            [-71.605420358, 43.874283135],
+            [-71.606178825, 43.874283539],
+            [-71.606179658, 43.873460541]
+          ]
+        ]
+      }
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "MAPLOT": "007015000000",
+        "CAMA": "007015000000000",
+        "CAMA_2": null,
+        "CAMA_3": null,
+        "SITE_NUM": "16",
+        "SITE_STREET": "Larkspur Lane",
+        "SITE_ADDR": "16 Larkspur Lane",
+        "OWNER": "Quillfeather, Odessa",
+        "MAIL_ADDR": "PO Box 114, Alder Pond NH",
+        "OBJECTID": 15
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-71.605421201, 43.873460137],
+            [-71.604662743, 43.873459728],
+            [-71.60466189, 43.874282726],
+            [-71.605420358, 43.874283135],
+            [-71.605421201, 43.873460137]
+          ]
+        ]
+      }
+    }
+  ],
+  "exceededTransferLimit": true
+}

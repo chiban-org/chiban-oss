@@ -1,6 +1,7 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { buildLots, parcelFeatures, roadFeatures, waterFeatures } from './alderPondGrid.ts'
+import { writeEsriFixtures } from './esriFixtureWriter.ts'
 import { buildGeoPackage } from './geopackageWriter.ts'
 import { buildShapefileZip } from './shapefileWriter.ts'
 
@@ -25,3 +26,5 @@ writeFileSync(path.join(TEST_DIR, 'alder-pond.gpkg'), buildGeoPackage(buildLots(
 writeFileSync(path.join(DEMO_DIR, 'alder-pond-parcels.geojson'), collection(parcelFeatures(false)))
 writeFileSync(path.join(DEMO_DIR, 'alder-pond-roads.geojson'), collection(roadFeatures()))
 writeFileSync(path.join(DEMO_DIR, 'alder-pond-water.geojson'), collection(waterFeatures()))
+writeEsriFixtures(path.join(TEST_DIR, 'esri'), 'Parcels')
+writeEsriFixtures(path.join(TEST_DIR, 'axisgis'), 'TaxParcels')
