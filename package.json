@@ -21,6 +21,7 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file .env src/entrypoints/migrate.ts",
     "staff:create": "tsx --env-file .env scripts/createStaffUser.ts",
+    "rules:migrate": "tsx --env-file .env src/entrypoints/rulesMigrate.ts",
     "worker": "tsx --env-file .env src/entrypoints/worker.ts",
     "db:seed:demo": "tsx --env-file .env scripts/seedDemo.ts",
     "term-gate": "tsx --env-file-if-exists=.env scripts/termGate.ts",

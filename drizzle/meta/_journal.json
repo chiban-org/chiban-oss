@@ -162,6 +162,13 @@
       "when": 1793588179160,
       "tag": "0022_tan_domino",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1793588323832,
+      "tag": "0023_cooing_the_renegades",
+      "breakpoints": true
     }
   ]
 }

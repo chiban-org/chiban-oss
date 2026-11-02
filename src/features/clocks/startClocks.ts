@@ -1,6 +1,6 @@
 import type { ClockLength, ClockRule, StartEvent } from '@packs/nh/schema'
 import { and, eq, inArray } from 'drizzle-orm'
-import type { Tx } from '@/db/client'
+import type { DbOrTx, Tx } from '@/db/client'
 import { clocks } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { computeDue } from '@/features/clocks/computeDue'
@@ -34,7 +34,7 @@ export function factMatches(
 }
 
 export async function resolveClockLength(
-  tx: Tx,
+  tx: DbOrTx,
   rule: ClockRule,
   facts: ProjectFacts,
   pack: Pack,
@@ -62,6 +62,15 @@ export async function resolveClockLength(
   return { unit: length.unit, value: length.value, source: 'pack_rule', packDefault: length.value }
 }
 
+function latestVersions(rules: ClockRule[]): ClockRule[] {
+  const best = new Map<string, ClockRule>()
+  for (const r of rules) {
+    const held = best.get(r.key)
+    if (held === undefined || r.version > held.version) best.set(r.key, r)
+  }
+  return [...best.values()]
+}
+
 export async function startClocksFor(
   tx: Tx,
   applicationId: string,
@@ -74,31 +83,51 @@ export async function startClocksFor(
   const app = await loadApplicationContext(tx, applicationId, signal)
   if (app === null) return
   const bound = new Set(effectiveBindings(app.typeBody, pack))
-  const rules = pack.rules.filter(
-    (r): r is ClockRule => r.kind === 'clock' && r.startEvent === event && bound.has(r.key),
+  const rules = latestVersions(
+    pack.rules.filter(
+      (r): r is ClockRule => r.kind === 'clock' && r.startEvent === event && bound.has(r.key),
+    ),
   )
   const running = await tx
     .select({ ruleKey: clocks.ruleKey })
     .from(clocks)
     .where(and(eq(clocks.applicationId, applicationId), eq(clocks.status, 'running')))
   const runningKeys = new Set(running.map((c) => c.ruleKey))
-  const holidays = packHolidayCalendar()
   for (const rule of rules) {
     if (runningKeys.has(rule.key)) continue
-    const length = await resolveClockLength(tx, rule, app.facts, pack, signal)
-    const input = {
-      start: onDate,
-      length: { unit: length.unit, value: length.value },
-      direction: rule.direction,
-      clockType: rule.clockType,
-      holidays,
-    }
-    const due = computeDue(input)
-    const packDue = computeDue({
-      ...input,
-      length: { unit: length.unit, value: length.packDefault },
-    })
-    await tx.insert(clocks).values({
+    await createClock(tx, { applicationId, rule, facts: app.facts, event, onDate, pack }, signal)
+  }
+}
+
+export interface NewClockInput {
+  applicationId: string
+  rule: ClockRule
+  facts: ProjectFacts
+  event: StartEvent
+  onDate: CivilDate
+  pack: Pack
+}
+
+export async function createClock(
+  tx: Tx,
+  input: NewClockInput,
+  signal: AbortSignal,
+): Promise<string> {
+  const { applicationId, rule, event, onDate, pack } = input
+  const length = await resolveClockLength(tx, rule, input.facts, pack, signal)
+  const holidays = packHolidayCalendar()
+  const calc = {
+    start: onDate,
+    length: { unit: length.unit, value: length.value },
+    direction: rule.direction,
+    clockType: rule.clockType,
+    holidays,
+  }
+  const due = computeDue(calc)
+  const packDue = computeDue({ ...calc, length: { unit: length.unit, value: length.packDefault } })
+  const [row] = await tx
+    .insert(clocks)
+    .values({
       applicationId,
       ruleKey: rule.key,
       ruleVersion: rule.version,
@@ -107,14 +136,15 @@ export async function startClocksFor(
       startDate: onDate,
       lengthValue: length.value,
       lengthUnit: length.unit,
-      countingMethod: describeCounting(input, due, PACK_COUNTING_CITATIONS),
+      countingMethod: describeCounting(calc, due, PACK_COUNTING_CITATIONS),
       computedDue: due.due,
       currentDue: due.due,
       rolledFrom: due.rolledFrom,
       source: length.source,
       replacedDue: length.source === 'town_setting' ? packDue.due : null,
     })
-  }
+    .returning({ id: clocks.id })
+  return row?.id ?? ''
 }
 
 export async function stopRunningClocks(
