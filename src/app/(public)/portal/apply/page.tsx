@@ -30,7 +30,10 @@ export default async function ApplyPage({
     const [types, display, [chosen]] = await Promise.all([
       listPortalTypes(ctx.db, ctx.signal),
       displayIdsFor(ctx.db, [parcelId]),
-      ctx.db.select({ status: parcels.status }).from(parcels).where(eq(parcels.id, parcelId)),
+      ctx.db
+        .select({ status: parcels.status, siteAddress: parcels.siteAddress })
+        .from(parcels)
+        .where(eq(parcels.id, parcelId)),
     ])
     if (chosen?.status === 'retired') {
       return (
@@ -46,7 +49,7 @@ export default async function ApplyPage({
     return (
       <main className="space-y-4">
         <h1>Choose the kind of application</h1>
-        <p>{`Parcel ${display.get(parcelId) ?? ''}`}</p>
+        <p>{`${chosen?.siteAddress ?? 'Address not on file'}, parcel ${display.get(parcelId) ?? ''}`}</p>
         <ActionForm action={startApplicationAction} submitLabel="Continue" variant="default">
           <input type="hidden" name="parcelId" value={parcelId} />
           <fieldset className="space-y-2 border-0 p-0">
