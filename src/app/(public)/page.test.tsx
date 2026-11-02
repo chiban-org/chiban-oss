@@ -22,7 +22,7 @@ describe('HomeContent', () => {
     render(<HomeContent audience="resident" />)
     expect(screen.queryByText('Sign in to see your applications')).toBeNull()
     expect(screen.getByRole('link', { name: 'Your applications' }).getAttribute('href')).toBe(
-      '/account',
+      '/portal',
     )
   })
 

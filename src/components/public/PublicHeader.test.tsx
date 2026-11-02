@@ -24,7 +24,13 @@ describe('PublicHeader', () => {
   it('shows the account link and sign out once signed in, with no sign in link', () => {
     renderHeader(true)
     expect(screen.getByRole('link', { name: 'Your applications' }).getAttribute('href')).toBe(
-      '/account',
+      '/portal',
+    )
+    expect(screen.getByRole('link', { name: 'Contractor projects' }).getAttribute('href')).toBe(
+      '/portal/contractor',
+    )
+    expect(screen.getByRole('link', { name: 'Parcel lookup' }).getAttribute('href')).toBe(
+      '/parcels',
     )
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull()

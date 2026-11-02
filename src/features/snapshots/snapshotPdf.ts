@@ -1,9 +1,6 @@
-import type { FormField } from '@/features/forms/formSchema'
-import type { FieldValue } from '@/features/forms/validateSubmission'
+import { displayFieldValue } from '@/features/forms/displayValue'
 import { type PdfBlock, renderPdf } from '@/features/pdf/renderPdf'
 import type { PublicSnapshotView } from '@/features/snapshots/publicView'
-import { formatCivilDate } from '@/lib/formatDate'
-import { formatCents } from '@/lib/money'
 
 interface PdfParty {
   role: string
@@ -16,24 +13,12 @@ type SnapshotPdfInput = Omit<PublicSnapshotView, 'parties'> & {
   attestation?: { statementSha256: string; attestedAt: string } | null
 }
 
-function displayValue(field: FormField, value: FieldValue): string {
-  if (Array.isArray(value)) return value.map((v) => optionLabel(field, v)).join(', ')
-  if (typeof value === 'boolean') return value ? 'Yes' : 'No'
-  if (field.type === 'money' && typeof value === 'number') return formatCents(value)
-  if (field.type === 'date' && typeof value === 'string') return formatCivilDate(value)
-  return optionLabel(field, String(value))
-}
-
-function optionLabel(field: FormField, value: string): string {
-  return field.options?.find((o) => o.value === value)?.label ?? value
-}
-
 function fieldRows(body: SnapshotPdfInput): { label: string; value: string }[] {
   return body.form.fields.flatMap((field) => {
     const value = body.values[field.key]
     return value === undefined || value === ''
       ? []
-      : [{ label: field.label, value: displayValue(field, value) }]
+      : [{ label: field.label, value: displayFieldValue(field, value) }]
   })
 }
 

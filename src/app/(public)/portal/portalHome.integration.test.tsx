@@ -24,6 +24,7 @@ vi.mock('next/navigation', () => ({
   },
 }))
 
+const { default: PortalHomePage } = await import('@/app/(public)/portal/page')
 const { default: AccountPage } = await import('@/app/(public)/account/page')
 
 let handle: TestDb
@@ -40,15 +41,21 @@ afterAll(async () => {
   await handle.drop()
 })
 
-describe('applicant account page', () => {
+describe('account page', () => {
+  it('sends visitors to the portal', () => {
+    expect(() => AccountPage()).toThrow('NEXT_REDIRECT:/portal')
+  })
+})
+
+describe('applicant portal home', () => {
   it('sends a signed-out visitor to sign in', async () => {
     state.actor = null
-    await expect(AccountPage()).rejects.toThrow('NEXT_REDIRECT:/sign-in')
+    await expect(PortalHomePage()).rejects.toThrow('NEXT_REDIRECT:/sign-in?next=%2Fportal')
   })
 
   it('lists the applicant their own application with its project and a readable status', async () => {
     state.actor = world.applicant
-    const html = renderToStaticMarkup(await AccountPage())
+    const html = renderToStaticMarkup(await PortalHomePage())
     expect(html).toContain(number)
     expect(html).toContain('Garage addition')
     expect(html).toContain('Draft')
@@ -56,8 +63,9 @@ describe('applicant account page', () => {
 
   it('shows an empty state with a lookup link to someone with no applications', async () => {
     state.actor = await staffActor(handle.db, 'applicant')
-    const html = renderToStaticMarkup(await AccountPage())
+    const html = renderToStaticMarkup(await PortalHomePage())
     expect(html).toContain('You have no applications yet.')
     expect(html).toContain('href="/parcels"')
+    expect(html).toContain('href="/portal/apply"')
   })
 })

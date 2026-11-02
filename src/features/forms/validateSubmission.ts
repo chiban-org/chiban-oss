@@ -146,13 +146,14 @@ function validateField(
   field: FormField,
   input: unknown,
   values: Record<string, FieldValue>,
-  asStaff: boolean,
+  opts: { asStaff: boolean; partial: boolean },
 ): { error: FieldError } | { value: FieldValue } | null {
   const blank = isBlank(input) || (field.type === 'checkbox' && input === false)
-  if (field.staffOnly === true && !asStaff) {
+  if (field.staffOnly === true && !opts.asStaff) {
     return blank ? null : { error: { field: field.key, code: 'staff_only' } }
   }
-  if (blank && isRequired(field, values)) return { error: { field: field.key, code: 'required' } }
+  if (blank && !opts.partial && isRequired(field, values))
+    return { error: { field: field.key, code: 'required' } }
   if (blank && field.type !== 'checkbox') return null
   const parsed = parseValue(field, input)
   return parsed.ok ? { value: parsed.value } : { error: { field: field.key, code: parsed.code } }
@@ -161,13 +162,16 @@ function validateField(
 export function validateSubmission(
   form: FormBody,
   raw: Record<string, unknown>,
-  opts: { asStaff: boolean },
+  opts: { asStaff: boolean; partial?: boolean },
 ): Result<{ values: Record<string, FieldValue>; facts: ProjectFacts }, FieldError[]> {
   const values: Record<string, FieldValue> = {}
   const errors: FieldError[] = []
   for (const field of form.fields) {
     if (!isShown(field, values)) continue
-    const outcome = validateField(field, raw[field.key], values, opts.asStaff)
+    const outcome = validateField(field, raw[field.key], values, {
+      asStaff: opts.asStaff,
+      partial: opts.partial === true,
+    })
     if (outcome === null) continue
     if ('error' in outcome) errors.push(outcome.error)
     else values[field.key] = outcome.value

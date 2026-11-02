@@ -7,7 +7,7 @@ const LINK = 'tap-target inline-flex items-center text-lg underline'
 function AccountLink({ audience }: { audience: HomeAudience }) {
   if (audience === 'resident') {
     return (
-      <Link href="/account" className={LINK}>
+      <Link href="/portal" className={LINK}>
         Your applications
       </Link>
     )

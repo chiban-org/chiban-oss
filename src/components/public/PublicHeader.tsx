@@ -18,8 +18,14 @@ export function PublicHeader({ signedIn, signOutAction }: PublicHeaderProps) {
         <nav aria-label="Account" className="flex items-center gap-4">
           {signedIn ? (
             <>
-              <a href="/account" className={LINK}>
+              <a href="/portal" className={LINK}>
                 Your applications
+              </a>
+              <a href="/portal/contractor" className={LINK}>
+                Contractor projects
+              </a>
+              <a href="/parcels" className={LINK}>
+                Parcel lookup
               </a>
               <form action={signOutAction}>
                 <CsrfField />
