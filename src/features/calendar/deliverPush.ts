@@ -95,7 +95,7 @@ async function buildBooking(
     site.siteAddress.state === 'known' || site.siteAddress.state === 'stale'
       ? site.siteAddress.value
       : null
-  const parcel = site.parcelDisplayId === null ? 'unknown' : site.parcelDisplayId
+  const parcel = site.parcelDisplayId ?? 'unknown'
   const host = new URL(env.BASE_URL).host
   const description = [
     `Site: ${address ?? `Parcel ${parcel}`}`,
