@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 const REQUEST_TIMEOUT_MS = 30_000
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ applicationId: string }> },
 ): Promise<Response> {
   const { applicationId } = await params
@@ -17,5 +17,6 @@ export async function GET(
   const actor = await staffActorOrNull(signal)
   return toResponse(
     await permitPdfResponse(db, actor, { applicationId, document: 'permit' }, signal),
+    request.headers.get('accept'),
   )
 }

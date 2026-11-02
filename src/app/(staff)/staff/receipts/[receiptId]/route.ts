@@ -9,11 +9,14 @@ export const dynamic = 'force-dynamic'
 const REQUEST_TIMEOUT_MS = 30_000
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ receiptId: string }> },
 ): Promise<Response> {
   const { receiptId } = await params
   const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
   const actor = await staffActorOrNull(signal)
-  return toResponse(await receiptPdfResponse(db, actor, receiptId, signal))
+  return toResponse(
+    await receiptPdfResponse(db, actor, receiptId, signal),
+    request.headers.get('accept'),
+  )
 }
