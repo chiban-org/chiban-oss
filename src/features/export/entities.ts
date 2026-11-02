@@ -39,6 +39,7 @@ interface Spec {
 const SPECS: Spec[] = [
   { table: t.acceptanceSchedules },
   { table: t.aliasOverrides },
+  { table: t.applicationParcels },
   { table: t.appeals },
   { table: t.applicationConditions },
   { table: t.applicationProfessionals },
@@ -68,6 +69,7 @@ const SPECS: Spec[] = [
   { table: t.contractorClaims, omit: ['token_hash'], fill: { token_hash: RANDOM_HASH } },
   { table: t.cutoverReconciliations },
   { table: t.cutoverRows },
+  { table: t.desProximityDeterminations },
   { table: t.documentText },
   { table: t.documentVersions },
   {

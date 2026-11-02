@@ -1,6 +1,6 @@
 import { eq, sql } from 'drizzle-orm'
 import type { DbOrTx, Tx } from '@/db/client'
-import { applicationNumberCounters, applications, projects } from '@/db/schema'
+import { applicationNumberCounters, applicationParcels, applications, projects } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -8,6 +8,7 @@ import type { Actor } from '@/features/auth/actor'
 import { pinCurrent } from '@/features/config/bindings'
 import { checkApplicationType } from '@/features/config/publishChecks'
 import { getVersion } from '@/features/config/store'
+import { loadPack } from '@/features/packs/loadPack'
 import { linkRecordToParcel } from '@/features/parcels/recordLinks'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
 import { getTownSettings } from '@/features/town/settings'
@@ -27,6 +28,14 @@ export async function nextNumber(tx: Tx, prefix: string, year: number): Promise<
     })
     .returning({ last: applicationNumberCounters.last })
   return `${prefix}-${year}-${String(row?.last ?? 1).padStart(SEQUENCE_WIDTH, '0')}`
+}
+
+function isBoardType(typeBody: ApplicationTypeBody): boolean {
+  return (
+    loadPack().classifications.find((c) => c.key === typeBody.classification)?.board !==
+      undefined &&
+    loadPack().classifications.find((c) => c.key === typeBody.classification)?.board !== null
+  )
 }
 
 export async function createApplication(
@@ -70,6 +79,11 @@ export async function createApplication(
       })
       .returning({ id: applications.id })
     const applicationId = created?.id ?? ''
+    if (isBoardType(typeBody)) {
+      await tx
+        .insert(applicationParcels)
+        .values({ applicationId, parcelId: project.parcelId, addedBy: actor.userId })
+    }
     await linkRecordToParcel(
       tx,
       { recordKind: 'application', recordId: applicationId, parcelId: project.parcelId },

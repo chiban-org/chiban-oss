@@ -7,6 +7,7 @@
   "packageManager": "pnpm@9.15.9",
   "type": "module",
   "scripts": {
+    "fixtures:abutters": "tsx scripts/generateAbutterFixtures.ts",
     "lint": "biome check . && eslint . --no-warn-ignored",
     "lint:fix": "biome check --write . && eslint . --fix --no-warn-ignored",
     "typecheck": "tsc --noEmit",

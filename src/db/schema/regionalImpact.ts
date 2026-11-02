@@ -1,4 +1,4 @@
-import { date, index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { date, index, jsonb, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { applications } from './projects'
 
 export const regionalImpactDeterminations = pgTable('regional_impact_determinations', {
@@ -43,3 +43,16 @@ export const regionalImpactParties = pgTable(
   },
   (t) => [primaryKey({ columns: [t.applicationId, t.municipalityKey] })],
 )
+
+export const desProximityDeterminations = pgTable('des_proximity_determinations', {
+  applicationId: uuid('application_id')
+    .primaryKey()
+    .references(() => applications.id),
+  suggested: jsonb('suggested').notNull(),
+  determination: text('determination', {
+    enum: ['within_500ft', 'not_within', 'not_applicable'],
+  }).notNull(),
+  reason: text('reason').notNull().default(''),
+  determinedBy: uuid('determined_by').notNull(),
+  determinedOn: date('determined_on', { mode: 'string' }).notNull(),
+})
