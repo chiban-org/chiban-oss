@@ -296,3 +296,62 @@ describe('attempt actions', () => {
     expect(row?.state).toBe('pending')
   })
 })
+
+describe('record payment action', () => {
+  it('clerk records a check against the fee due on an existing application', async () => {
+    const fresh = await submittedTrade(handle.db, world)
+    const r = await actions.recordPaymentAction(
+      form({
+        applicationId: fresh.applicationId,
+        method: 'check',
+        amount: '45.00',
+        checkNumber: '2201',
+        payerName: 'Pat Contractor',
+      }),
+    )
+    expect(r.ok && r.message).toMatch(/^Payment recorded on receipt R-\d{4}-\d{6}\.$/)
+    expect((await feeBalance(handle.db, fresh.applicationId, signal)).dueCents).toBe(0)
+  })
+
+  it('cash over the balance due is refused, and cash tendered gives change', async () => {
+    const fresh = await submittedTrade(handle.db, world)
+    const over = await actions.recordPaymentAction(
+      form({
+        applicationId: fresh.applicationId,
+        method: 'cash',
+        amount: '90.00',
+        payerName: 'Pat',
+      }),
+    )
+    expect(over).toEqual({ ok: false, error: 'That payment is more than what is due.' })
+    const r = await actions.recordPaymentAction(
+      form({
+        applicationId: fresh.applicationId,
+        method: 'cash',
+        amount: '45.00',
+        tendered: '50.00',
+        payerName: 'Pat',
+      }),
+    )
+    expect(r.ok && r.message).toMatch(/Change due \$5\.00\.$/)
+  })
+
+  it('a reviewer cannot record a payment and the action refuses a missing csrf token', async () => {
+    const fresh = await submittedTrade(handle.db, world)
+    state.actor = await staffActor(handle.db, 'reviewer')
+    const fields = {
+      applicationId: fresh.applicationId,
+      method: 'cash',
+      amount: '45.00',
+      payerName: 'Pat',
+    }
+    expect(await actions.recordPaymentAction(form(fields))).toEqual({
+      ok: false,
+      error: 'You do not have permission to do this.',
+    })
+    expect(await actions.recordPaymentAction(form(fields, null))).toEqual({
+      ok: false,
+      error: CSRF_COPY,
+    })
+  })
+})

@@ -19,3 +19,7 @@ export function dollarsToCents(text: string): number | null {
   if (extra.length > 0 || !DIGITS.test(whole) || !fractionOk) return null
   return Number(whole) * CENTS_PER_DOLLAR + Number(fraction.padEnd(2, '0'))
 }
+
+export function centsToDollarInput(cents: number): string {
+  return `${Math.floor(cents / CENTS_PER_DOLLAR)}.${String(cents % CENTS_PER_DOLLAR).padStart(2, '0')}`
+}

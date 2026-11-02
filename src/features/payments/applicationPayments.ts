@@ -25,6 +25,7 @@ export interface ApplicationPayments {
     refundable: RefundableLine[]
   }[]
   canRefund: boolean
+  canCollect: boolean
   targets: { id: string; number: string }[]
 }
 
@@ -55,6 +56,7 @@ export async function loadApplicationPayments(
     .where(eq(ledgerAllocations.applicationId, applicationId))
     .orderBy(desc(ledgerEntries.postedAt))
   const canRefund = await hasCapability(db, actor.userId, 'payment.refund_void_correct', signal)
+  const canCollect = await hasCapability(db, actor.userId, 'payment.collect', signal)
   const targets = canRefund
     ? await db
         .select({ id: applications.id, number: applications.number })
@@ -77,6 +79,7 @@ export async function loadApplicationPayments(
     balance: await feeBalance(db, applicationId, signal),
     entries: withLines,
     canRefund,
+    canCollect,
     targets,
   }
 }

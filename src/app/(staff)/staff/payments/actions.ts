@@ -1,9 +1,10 @@
 'use server'
 
+import { recordApplicationPayment } from '@/features/counter/applicationPayment'
 import { moveFunds } from '@/features/ledger/moveFunds'
 import { recordChargeback, recordReturnedCheck, refundEntry } from '@/features/ledger/reversals'
 import { checkWithProcessor, voidAttempt } from '@/features/payments/startPayment'
-import { dollarsToCents } from '@/lib/money'
+import { dollarsToCents, formatCents } from '@/lib/money'
 import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
 import { parseCivilDate } from '@/types/civilDate'
 import { isUuid } from '@/utils/uuid'
@@ -124,5 +125,48 @@ export async function voidAttemptAction(formData: FormData): Promise<ActionResul
       signal,
     )
     return done(result, 'Attempt voided.')
+  })
+}
+
+const COUNTER_METHODS = ['cash', 'check'] as const
+
+export async function recordPaymentAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffAction(formData, async ({ db, actor, signal }) => {
+    const applicationId = text(formData, 'applicationId')
+    const method = COUNTER_METHODS.find((m) => m === text(formData, 'method'))
+    const amountCents = dollarsToCents(text(formData, 'amount'))
+    const tenderedText = text(formData, 'tendered')
+    const tenderedCents = tenderedText === '' ? undefined : dollarsToCents(tenderedText)
+    const payerName = text(formData, 'payerName')
+    if (
+      !isUuid(applicationId) ||
+      method === undefined ||
+      amountCents === null ||
+      amountCents <= 0 ||
+      tenderedCents === null ||
+      payerName === ''
+    ) {
+      return INVALID
+    }
+    const result = await recordApplicationPayment(
+      db,
+      actor,
+      {
+        applicationId,
+        method,
+        amountCents,
+        tenderedCents,
+        checkNumber: text(formData, 'checkNumber'),
+        payerName,
+      },
+      signal,
+    )
+    if (!result.ok) return { ok: false, error: copy(result.error) }
+    const change =
+      result.value.changeCents > 0 ? ` Change due ${formatCents(result.value.changeCents)}.` : ''
+    return {
+      ok: true,
+      message: `Payment recorded on receipt ${result.value.receiptNumber}.${change}`,
+    }
   })
 }

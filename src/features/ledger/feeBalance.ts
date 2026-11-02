@@ -2,7 +2,7 @@ import { and, inArray, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { paymentAttempts } from '@/db/schema'
 import { assessedLines, lineKey, paidByLine } from '@/features/ledger/lineTotals'
-import type { FeeStageKey } from '@/features/ledger/types'
+import type { AllocationInput, FeeStageKey } from '@/features/ledger/types'
 
 export interface FeeBalanceLine {
   stage: FeeStageKey
@@ -61,4 +61,28 @@ export async function feeBalance(
     dueCents: lines.reduce((sum, l) => sum + l.dueCents, 0),
     ...(await countAttempts(db, applicationId)),
   }
+}
+
+export function allocateToDueLines(
+  applicationId: string,
+  balance: FeeBalance,
+  amountCents: number,
+): AllocationInput[] {
+  const allocations: AllocationInput[] = []
+  let left = amountCents
+  for (const line of balance.lines) {
+    if (left <= 0) break
+    const cents = Math.min(left, line.dueCents)
+    if (cents <= 0) continue
+    allocations.push({
+      targetKind: 'fee_assessment_line',
+      applicationId,
+      feeAssessmentId: line.feeAssessmentId,
+      stage: line.stage,
+      feeCode: line.feeCode,
+      amountCents: cents,
+    })
+    left -= cents
+  }
+  return allocations
 }
