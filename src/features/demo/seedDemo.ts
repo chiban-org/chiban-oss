@@ -4,7 +4,10 @@ import type { Db } from '@/db/client'
 import { townSettings, userRoles, users } from '@/db/schema'
 import { seedDefaultGrants } from '@/features/authz/defaultGrants'
 
-export const DEMO_DOMAIN = 'alderpond.example'
+import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { seedParcels } from '@/features/demo/seedParcels'
+
+export { DEMO_DOMAIN }
 
 export interface DemoUser {
   email: string
@@ -54,11 +57,12 @@ export interface SeedReport {
   townConfigured: boolean
   usersCreated: number
   rolesAssigned: number
+  parcelsSeeded: boolean
 }
 
 export async function seedDemo(db: Db, signal: AbortSignal): Promise<SeedReport> {
   signal.throwIfAborted()
-  return await db.transaction(async (tx) => {
+  const base = await db.transaction(async (tx) => {
     const town = await tx
       .insert(townSettings)
       .values({ id: 1, name: 'Town of Alder Pond', stateCode: 'NH', timeZone: 'America/New_York' })
@@ -97,4 +101,6 @@ export async function seedDemo(db: Db, signal: AbortSignal): Promise<SeedReport>
       rolesAssigned: assigned.length,
     }
   })
+  const seeded = await seedParcels(db, signal)
+  return { ...base, parcelsSeeded: seeded.imported }
 }

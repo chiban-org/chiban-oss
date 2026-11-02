@@ -1,8 +1,13 @@
 import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { ROLES } from '@/constants/roles'
-import { users } from '@/db/schema'
+import { importExceptions, parcels, users } from '@/db/schema'
+import { loadActor } from '@/features/auth/actor'
 import { DEMO_USERS, seedDemo } from '@/features/demo/seedDemo'
+import { listAliasOverrides } from '@/features/parcels/aliasOverrides'
+import { getPublicParcelView } from '@/features/parcels/publicParcelView'
+import { getStaffParcelView } from '@/features/parcels/staffParcelView'
+import { listUnresolvedLinks } from '@/features/parcels/unresolvedList'
 import { getTownSettings } from '@/features/town/settings'
 import { makeTestDb, type TestDb } from '@/test/db'
 
@@ -22,6 +27,14 @@ async function counts(): Promise<Record<string, number>> {
     union all select 'user_roles', count(*)::int from user_roles
     union all select 'role_capabilities', count(*)::int from role_capabilities
     union all select 'town_settings', count(*)::int from town_settings
+    union all select 'parcels', count(*)::int from parcels
+    union all select 'parcel_aliases', count(*)::int from parcel_aliases
+    union all select 'lineage_events', count(*)::int from parcel_lineage_events
+    union all select 'alias_overrides', count(*)::int from alias_overrides
+    union all select 'import_exceptions', count(*)::int from import_exceptions
+    union all select 'import_runs', count(*)::int from import_runs
+    union all select 'record_links', count(*)::int from parcel_record_links
+    union all select 'gis_features', count(*)::int from gis_features
   `)
   return Object.fromEntries(result.rows.map((r) => [r.t, r.n]))
 }
@@ -33,7 +46,13 @@ describe('seedDemo', () => {
     const town = await getTownSettings(handle.db, signal)
     expect(town).toEqual({
       ok: true,
-      value: { name: 'Town of Alder Pond', stateCode: 'NH', timeZone: 'America/New_York' },
+      value: {
+        name: 'Town of Alder Pond',
+        stateCode: 'NH',
+        timeZone: 'America/New_York',
+        basemapRasterUrl: null,
+        basemapAttribution: null,
+      },
     })
     const emails = (await handle.db.select({ email: users.email }).from(users)).map((u) => u.email)
     expect(emails.sort()).toEqual(DEMO_USERS.map((u) => u.email).sort())
@@ -63,5 +82,56 @@ describe('seedDemo', () => {
     const report = await seedDemo(handle.db, signal)
     expect(await counts()).toEqual(before)
     expect(report.usersCreated).toBe(0)
+  })
+
+  it('seeds 36 imported parcels, two placeholder children, and one retired parent', async () => {
+    const all = await handle.db.select().from(parcels)
+    expect(all).toHaveLength(38)
+    expect(all.filter((p) => p.status === 'retired')).toHaveLength(1)
+    expect(all.filter((p) => p.geom === null)).toHaveLength(2)
+  })
+
+  it('seeded staff parcel page and public parcel page render with no unknown fields for parcel 007001000000', async () => {
+    const staff = await handle.db.query.users.findFirst({
+      where: (u, { eq }) => eq(u.email, 'staff@alderpond.example'),
+    })
+    const actor = await loadActor(handle.db, staff?.id ?? '', signal)
+    const alias = await handle.db.query.parcelAliases.findFirst({
+      where: (a, { eq }) => eq(a.value, '007001000000'),
+    })
+    const id = alias?.parcelId ?? ''
+    const view = await getStaffParcelView(handle.db, actor!, id, new Date(), signal)
+    if (!view.ok) throw new Error('staff view')
+    for (const field of [
+      view.value.siteAddress,
+      view.value.owner,
+      view.value.mailingAddress,
+      view.value.areaAcres,
+      view.value.geometry,
+    ]) {
+      expect(field.state).toBe('known')
+    }
+    const pub = await getPublicParcelView(handle.db, id, new Date(), signal)
+    if (!pub.ok) throw new Error('public view')
+    for (const field of [pub.value.siteAddress, pub.value.owner, pub.value.areaAcres]) {
+      expect(field.state).toBe('known')
+    }
+  })
+
+  it('seeded overrides view has one applied row', async () => {
+    const rows = await listAliasOverrides(handle.db, new Date(), signal)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ status: 'applied', reason: 'Folder label uses old map number' })
+  })
+
+  it('seeded unresolved queue has one row', async () => {
+    const rows = await listUnresolvedLinks(handle.db, signal)
+    expect(rows).toHaveLength(1)
+    expect(rows[0]?.rawRefValue).toBe('008099000000')
+  })
+
+  it('seeded exception queue holds one open owner change', async () => {
+    const rows = await handle.db.select().from(importExceptions)
+    expect(rows.map((r) => [r.kind, r.status])).toEqual([['owner_changed', 'open']])
   })
 })

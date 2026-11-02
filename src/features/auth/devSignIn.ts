@@ -3,7 +3,7 @@ import { env } from '@/config/env'
 import type { DbOrTx } from '@/db/client'
 import { users } from '@/db/schema'
 import { createSession } from '@/features/auth/session'
-import { DEMO_DOMAIN } from '@/features/demo/seedDemo'
+import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { err, ok, type Result } from '@/types/result'
 
 export function isDevSignInEnabled(): boolean {
