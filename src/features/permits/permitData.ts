@@ -9,6 +9,7 @@ import {
   projectParties,
   projects,
 } from '@/db/schema'
+import { formApplicantName, namedParty } from '@/features/applications/applicantName'
 import type { ApplicationContext } from '@/features/applications/context'
 import { loadApplicationContext } from '@/features/applications/context'
 import { getVersion } from '@/features/config/store'
@@ -126,7 +127,10 @@ export async function loadPermitData(
     siteAddress: parcel?.siteAddress ?? '',
     ownerName: parcel?.ownerName ?? '',
     projectTitle: project.title,
-    applicantName: await partyName(db, project.id, 'applicant'),
+    applicantName:
+      formApplicantName(application.values) ??
+      namedParty(await partyName(db, project.id, 'applicant')) ??
+      '',
     contractorName: await partyName(db, project.id, 'contractor'),
     licenseNumber: typeof license === 'string' ? license : '',
     issuedOn: application.issuedOn === null ? '' : formatCivilDate(application.issuedOn),

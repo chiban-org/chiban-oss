@@ -22,6 +22,7 @@ export interface BoardStarterInput {
 
 const SHARED_FIELDS: FormField[] = [
   { key: 'project_description', label: 'Project description', type: 'textarea', required: true },
+  { key: 'applicant_name', label: 'Applicant name', type: 'text', required: true },
   {
     key: 'applicant_mailing_address',
     label: 'Applicant mailing address',
@@ -111,7 +112,7 @@ export function boardStarter(input: BoardStarterInput): StarterBundle {
         key: `${slug}-hearing-notice`,
         label: `${label} hearing notice`,
         kind: 'hearing_notice',
-        body: `{{town.name}}\n\nNotice of {{hearing.kind}} to {{notice.recipientName}}.\n\nThe {{board.name}} will hold a {{hearing.kind}} on {{meeting.date}} at {{meeting.time}}, {{meeting.location}}, on {{application.typeLabel}} {{application.number}}, {{project.title}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}.\n\nYou are receiving this notice because you may be an abutter or other party entitled to notice. The application is available for inspection at the town offices.`,
+        body: `{{town.name}}\n\n{{notice.recipientName}}\n\n{{notice.recipientAddress}}\n\nNotice of {{hearing.kind}} to {{notice.recipientName}}.\n\nThe {{board.name}} will hold a {{hearing.kind}} on {{meeting.date}} at {{meeting.time}}, {{meeting.location}}, on {{application.typeLabel}} {{application.number}}, {{project.title}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}.\n\nYou are receiving this notice because you may be an abutter or other party entitled to notice. The application is available for inspection at the town offices.`,
       },
       {
         key: `${slug}-notice-of-decision`,

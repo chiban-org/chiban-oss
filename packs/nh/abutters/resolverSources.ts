@@ -10,6 +10,7 @@ import {
   users,
 } from '@/db/schema'
 import { uuidArray } from '@/db/uuidList'
+import { formApplicantName, namedParty } from '@/features/applications/applicantName'
 
 export interface ParcelFacts {
   id: string
@@ -79,9 +80,9 @@ export async function applicantParty(
     )
     .orderBy(asc(projectParties.addedAt))
     .limit(1)
-  if (row === undefined) return { name: null, ref: applicationId }
-  const generic = row.name.trim() === '' || row.name === 'Applicant'
-  return { name: generic ? (row.displayName ?? null) : row.name, ref: row.partyId }
+  const fromForm = formApplicantName(await applicationValues(db, applicationId))
+  if (row === undefined) return { name: fromForm, ref: applicationId }
+  return { name: fromForm ?? namedParty(row.name) ?? row.displayName ?? null, ref: row.partyId }
 }
 
 export async function applicationValues(

@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { parcels, projectParties, projects } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { PLACEHOLDER_PARTY_NAME } from '@/features/applications/applicantName'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { err, ok, type Result } from '@/types/result'
@@ -28,7 +29,7 @@ export async function createProject(
       await tx.insert(projectParties).values({
         projectId,
         userId: actor.userId,
-        name: 'Applicant',
+        name: PLACEHOLDER_PARTY_NAME,
         role: 'applicant',
         addedBy: actor.userId,
       })
