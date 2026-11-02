@@ -1,6 +1,20 @@
 import { sql } from 'drizzle-orm'
-import { date, index, integer, jsonb, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import {
+  type AnyPgColumn,
+  date,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  primaryKey,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from 'drizzle-orm/pg-core'
 import type { SubjectDue } from '@/features/clocks/subjectDue'
+import { documents, documentVersions } from './documents'
+import { renditionApprovals } from './renditionApprovals'
 
 export const RTK_RECEIVED_VIA = ['in_person', 'mail', 'email', 'portal', 'phone'] as const
 export const RTK_STATUSES = [
@@ -67,7 +81,7 @@ export const rtkWithholdings = pgTable(
     requestId: uuid('request_id')
       .notNull()
       .references(() => rtkRequests.id),
-    releaseId: uuid('release_id'),
+    releaseId: uuid('release_id').references((): AnyPgColumn => rtkReleases.id),
     scope: text('scope', { enum: RTK_WITHHOLDING_SCOPES }).notNull(),
     documentId: uuid('document_id'),
     recordDescription: text('record_description').notNull(),
@@ -78,4 +92,46 @@ export const rtkWithholdings = pgTable(
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('rtk_withholdings_request_idx').on(t.requestId)],
+)
+
+export const RTK_RELEASE_METHODS = ['inspection', 'paper', 'electronic_link', 'email'] as const
+
+export const rtkReleases = pgTable(
+  'rtk_releases',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    requestId: uuid('request_id')
+      .notNull()
+      .references(() => rtkRequests.id),
+    sequence: integer('sequence').notNull(),
+    releasedOn: date('released_on', { mode: 'string' }).notNull(),
+    method: text('method', { enum: RTK_RELEASE_METHODS }).notNull(),
+    letterDocumentId: uuid('letter_document_id').references(() => documents.id),
+    releasedBy: uuid('released_by').notNull(),
+    linkTokenHash: text('link_token_hash'),
+    linkExpiresAt: timestamp('link_expires_at', { withTimezone: true }),
+    linkRevokedAt: timestamp('link_revoked_at', { withTimezone: true }),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [unique('rtk_releases_request_sequence_unique').on(t.requestId, t.sequence)],
+)
+
+export const rtkReleaseItems = pgTable(
+  'rtk_release_items',
+  {
+    releaseId: uuid('release_id')
+      .notNull()
+      .references(() => rtkReleases.id),
+    documentId: uuid('document_id')
+      .notNull()
+      .references(() => documents.id),
+    versionId: uuid('version_id').references(() => documentVersions.id),
+    approvalId: uuid('approval_id')
+      .notNull()
+      .references(() => renditionApprovals.id),
+    position: integer('position').notNull(),
+    withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
+    withdrawnReason: text('withdrawn_reason', { enum: ['revoked', 'disposed'] }),
+  },
+  (t) => [primaryKey({ columns: [t.releaseId, t.documentId] })],
 )
