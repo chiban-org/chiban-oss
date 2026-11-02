@@ -39,7 +39,10 @@ function page(status: number, heading: string, text: string, extra: Record<strin
 
 function sameOrigin(request: Request): boolean {
   const origin = request.headers.get('origin')
-  return origin === null || origin === new URL(env.BASE_URL).origin
+  const site = request.headers.get('sec-fetch-site')
+  if (origin === new URL(env.BASE_URL).origin) return site === null || site === 'same-origin'
+  if (origin === 'null') return site === 'same-origin'
+  return origin === null && (site === null || site === 'same-origin')
 }
 
 interface Parsed {

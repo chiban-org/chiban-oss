@@ -189,6 +189,25 @@ describe('anonymous intake handler', () => {
     expect(await handle.db.select().from(complaints)).toHaveLength(0)
   })
 
+  it.each([
+    [
+      'a no-referrer form post from the page',
+      { origin: 'null', 'sec-fetch-site': 'same-origin' },
+      303,
+    ],
+    ['a same-origin fetch', { origin: ORIGIN, 'sec-fetch-site': 'same-origin' }, 303],
+    ['a form posted from another site', { origin: 'null', 'sec-fetch-site': 'cross-site' }, 403],
+    ['a form posted from a sibling site', { origin: 'null', 'sec-fetch-site': 'same-site' }, 403],
+    [
+      'another origin claiming same-origin',
+      { origin: 'https://evil.example', 'sec-fetch-site': 'same-origin' },
+      403,
+    ],
+    ['an opaque origin with no fetch metadata', { origin: 'null' }, 403],
+  ] as const)('%s', async (_name, headers, status) => {
+    expect((await run(post({}, headers))).status).toBe(status)
+  })
+
   it('a same-origin post is accepted', async () => {
     expect((await run(post({}, { origin: ORIGIN }))).status).toBe(303)
   })
