@@ -51,6 +51,9 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'enforcement.issue_order',
     'enforcement.record_service',
     'enforcement.refer_counsel',
+    'rtk.manage',
+    'redaction.create',
+    'disposition.propose',
   ],
   inspector: [
     'regional_impact.determine',
@@ -72,6 +75,9 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'disposition.approve',
     'export.download',
     'document.manage',
+    'rtk.manage',
+    'redaction.create',
+    'disposition.propose',
   ],
 }
 

@@ -36,6 +36,9 @@ export const CAPABILITIES = {
   'enforcement.refer_counsel': 'Refer an enforcement case to town counsel and record outcomes',
   'fine.record': 'Record a court-imposed fine on the ledger',
   'anonymous_intake.enable': 'Verify and enable anonymous complaint intake',
+  'rtk.manage': 'Log Right-to-Know requests, respond, withhold, and release records',
+  'redaction.create': 'Draw redactions on a document version and run them',
+  'disposition.propose': 'Propose a disposition batch from the retention worklist',
 } as const
 
 export type Capability = keyof typeof CAPABILITIES
