@@ -2,9 +2,14 @@
 
 import { useActionState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
+import { useFormAction } from '@/components/useFormAction'
 import { beginTotpAction, confirmTotpAction, type TotpState } from './actions'
 
 const initial: TotpState = { error: null }
+
+function failed(state: TotpState): boolean {
+  return state.error !== null
+}
 
 export function BeginTotpForm() {
   const [state, action, pending] = useActionState(beginTotpAction, initial)
@@ -20,9 +25,9 @@ export function BeginTotpForm() {
 }
 
 export function ConfirmTotpForm() {
-  const [state, action, pending] = useActionState(confirmTotpAction, initial)
+  const { state, pending, formProps } = useFormAction(confirmTotpAction, initial, failed)
   return (
-    <form action={action} className="flex flex-col gap-3">
+    <form {...formProps} className="flex flex-col gap-3">
       <CsrfField />
       <label className="flex flex-col gap-1">
         <span>6-digit code</span>

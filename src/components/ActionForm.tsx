@@ -1,8 +1,9 @@
 'use client'
 
-import { type ReactNode, useActionState } from 'react'
+import type { ReactNode } from 'react'
 import { CsrfField } from '@/components/CsrfField'
 import { Button } from '@/components/ui/button'
+import { useFormAction } from '@/components/useFormAction'
 import type { ActionResult } from '@/server/actionRunner'
 
 interface ActionFormProps {
@@ -13,6 +14,10 @@ interface ActionFormProps {
   children: ReactNode
 }
 
+function isFailure(result: ActionResult | null): boolean {
+  return result !== null && !result.ok
+}
+
 export function ActionForm({
   action,
   submitLabel,
@@ -20,12 +25,17 @@ export function ActionForm({
   className,
   children,
 }: ActionFormProps) {
-  const [result, run, pending] = useActionState(
-    async (_previous: ActionResult | null, formData: FormData) => await action(formData),
+  const {
+    state: result,
+    pending,
+    formProps,
+  } = useFormAction<ActionResult | null>(
+    async (_previous, formData) => await action(formData),
     null,
+    isFailure,
   )
   return (
-    <form action={run} className={className}>
+    <form {...formProps} className={className}>
       <CsrfField />
       {children}
       <div className="mt-3 flex items-center gap-3">

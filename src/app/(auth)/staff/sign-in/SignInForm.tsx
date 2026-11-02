@@ -1,16 +1,20 @@
 'use client'
 
-import { useActionState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
+import { useFormAction } from '@/components/useFormAction'
 import { type SignInState, signInAction } from './actions'
 
 const initial: SignInState = { error: null, needTotp: false }
 
+function failed(state: SignInState): boolean {
+  return state.error !== null
+}
+
 export function SignInForm() {
-  const [state, action, pending] = useActionState(signInAction, initial)
+  const { state, pending, formProps } = useFormAction(signInAction, initial, failed)
 
   return (
-    <form action={action} className="flex flex-col gap-4">
+    <form {...formProps} className="flex flex-col gap-4">
       <CsrfField />
       <label className="flex flex-col gap-1">
         <span>Email</span>
