@@ -7,12 +7,13 @@ import { type MagicLinkState, requestMagicLinkAction } from './actions'
 
 const initial: MagicLinkState = { message: null }
 
-export function MagicLinkForm() {
+export function MagicLinkForm({ next }: { next?: string }) {
   const [state, action] = useActionState(requestMagicLinkAction, initial)
 
   return (
     <form action={action} className="flex flex-col gap-4">
       <CsrfField />
+      {next === undefined ? null : <input type="hidden" name="next" value={next} />}
       <label className="flex flex-col gap-1">
         <span>Email address</span>
         <input name="email" type="email" autoComplete="email" required className="border p-2" />

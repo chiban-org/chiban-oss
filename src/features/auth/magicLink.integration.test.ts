@@ -202,3 +202,19 @@ describe('consumeMagicLink', () => {
     expect(Math.round(minutes)).toBe(15)
   })
 })
+
+describe('next path', () => {
+  it('a safe next path is returned when the link is consumed', async () => {
+    const email = 'next.user@alderpond.example'
+    await requestMagicLink(handle.db, mail, email, signal, '/claim/abc')
+    const consumed = await consumeMagicLink(handle.db, tokenFromMail(), signal)
+    expect(consumed.ok && consumed.value.nextPath).toBe('/claim/abc')
+  })
+
+  it('an unsafe next path is dropped', async () => {
+    const email = 'unsafe.next@alderpond.example'
+    await requestMagicLink(handle.db, mail, email, signal, '//evil.example')
+    const consumed = await consumeMagicLink(handle.db, tokenFromMail(), signal)
+    expect(consumed.ok && consumed.value.nextPath).toBeNull()
+  })
+})

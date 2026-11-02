@@ -35,3 +35,9 @@ export function honestFromLayer<T>(status: LayerStatus, value: T | null): Honest
         : { state: 'known', value, asOf: status.lastSuccessAt }
   }
 }
+
+export function honestText(value: HonestValue<string>, missing: string): string {
+  if (value.state === 'known' || value.state === 'stale') return value.value
+  if (value.state === 'import_failed') return value.value ?? missing
+  return missing
+}

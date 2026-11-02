@@ -9,8 +9,10 @@ import {
   projects,
   roleCapabilities,
 } from '@/db/schema'
+import { sendCounterClaim } from '@/features/contractors/counterClaim'
 import { searchContractors } from '@/features/counter/contractorLookup'
 import { completeQuickIssue, type QuickIssueInput, quickIssue } from '@/features/counter/quickIssue'
+import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { resolveSimulatedReader } from '@/features/payments/startPayment'
 import type { PermitWorld } from '@/test/applicationFixtures'
 import { appTypeBody, saveAndPublish } from '@/test/configFixtures'
@@ -56,6 +58,59 @@ const counts = async () => ({
   projects: (await handle.db.select().from(projects)).length,
   applications: (await handle.db.select().from(applications)).length,
   entries: (await handle.db.select().from(ledgerEntries)).length,
+})
+
+describe('quickIssue claim link', () => {
+  it('counter quick issue sends a claim to the contractor email', async () => {
+    const mail = createMemoryTransport()
+    const r = await quickIssue(handle.db, world.staff, input(), signal, deps)
+    if (!r.ok) throw new Error('issue')
+    const sent = await sendCounterClaim(
+      handle.db,
+      mail,
+      world.staff,
+      { applicationId: r.value.applicationId },
+      signal,
+    )
+    expect(sent.ok).toBe(true)
+    expect(mail.sent.map((m) => m.to)).toEqual(['pat@contractor.example'])
+    expect(mail.sent[0]?.subject).toContain('Claim your project in Chiban')
+  })
+
+  it('a contractor without an email gets no claim', async () => {
+    const mail = createMemoryTransport()
+    const r = await quickIssue(
+      handle.db,
+      world.staff,
+      input({ contractor: { name: 'No Mail', licenseNumber: 'EL-1', licenseType: 'Electrician' } }),
+      signal,
+      deps,
+    )
+    if (!r.ok) throw new Error('issue')
+    const sent = await sendCounterClaim(
+      handle.db,
+      mail,
+      world.staff,
+      { applicationId: r.value.applicationId },
+      signal,
+    )
+    expect(sent).toEqual({ ok: false, error: 'no_contractor_email' })
+    expect(mail.sent).toEqual([])
+  })
+
+  it('a reviewer cannot send it', async () => {
+    const mail = createMemoryTransport()
+    const r = await quickIssue(handle.db, world.staff, input(), signal, deps)
+    if (!r.ok) throw new Error('issue')
+    const sent = await sendCounterClaim(
+      handle.db,
+      mail,
+      world.reviewer,
+      { applicationId: r.value.applicationId },
+      signal,
+    )
+    expect(sent).toEqual({ ok: false, error: 'forbidden' })
+  })
 })
 
 describe('quickIssue cash and check', () => {

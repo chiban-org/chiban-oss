@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation'
 import { SESSION_COOKIE } from '@/constants/cookies'
 import { db } from '@/db/client'
 import { consumeMagicLink } from '@/features/auth/magicLink'
+import { safeNext } from '@/features/auth/safeNext'
 import { sessionCookieOptions } from '@/features/auth/session'
 import { guardAction } from '@/server/actionGuard'
 
@@ -27,5 +28,5 @@ export async function confirmMagicLinkAction(formData: FormData): Promise<void> 
     ...sessionCookieOptions(),
     maxAge: SESSION_MAX_AGE_SECONDS,
   })
-  redirect('/')
+  redirect(result.value.nextPath === null ? SIGNED_IN_HOME : safeNext(result.value.nextPath))
 }

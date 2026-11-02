@@ -107,7 +107,7 @@ export function QuickIssueForm(props: Props) {
         </Button>
         {outcome?.ok === false ? <p role="alert">{outcome.error}</p> : null}
       </div>
-      {issued === null ? null : <IssuedNotice outcome={issued} />}
+      {issued === null ? null : <IssuedNotice outcome={issued} claim={props.actions.claim} />}
       {waiting?.attemptId == null ? null : (
         <ReaderPanel
           key={waiting.attemptId}

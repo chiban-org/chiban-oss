@@ -1,7 +1,8 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import type { CounterOutcome } from '@/components/counter/counterTypes'
+import { ClaimLinkButton } from '@/components/counter/ClaimLinkButton'
+import type { CounterActions, CounterOutcome } from '@/components/counter/counterTypes'
 import { formatCents } from '@/lib/money'
 
 export type Method = 'cash' | 'check' | 'card'
@@ -203,26 +204,37 @@ export function PaymentSection({
   )
 }
 
-export function IssuedNotice({ outcome }: { outcome: Extract<CounterOutcome, { ok: true }> }) {
+export function IssuedNotice({
+  outcome,
+  claim,
+}: {
+  outcome: Extract<CounterOutcome, { ok: true }>
+  claim?: CounterActions['claim']
+}) {
   const links = outcome.links
   return (
-    <p role="status">
-      {outcome.number} is issued.{' '}
-      {links === null ? null : (
-        <>
-          <a href={links.permit} target="_blank" rel="noopener noreferrer">
-            Permit
-          </a>{' '}
-          <a href={links.placard} target="_blank" rel="noopener noreferrer">
-            Placard
-          </a>{' '}
-          {links.receipt === null ? null : (
-            <a href={links.receipt} target="_blank" rel="noopener noreferrer">
-              Receipt
-            </a>
-          )}
-        </>
+    <div className="space-y-3">
+      <p role="status">
+        {outcome.number} is issued.{' '}
+        {links === null ? null : (
+          <>
+            <a href={links.permit} target="_blank" rel="noopener noreferrer">
+              Permit
+            </a>{' '}
+            <a href={links.placard} target="_blank" rel="noopener noreferrer">
+              Placard
+            </a>{' '}
+            {links.receipt === null ? null : (
+              <a href={links.receipt} target="_blank" rel="noopener noreferrer">
+                Receipt
+              </a>
+            )}
+          </>
+        )}
+      </p>
+      {claim === undefined ? null : (
+        <ClaimLinkButton applicationId={outcome.applicationId} send={claim} />
       )}
-    </p>
+    </div>
   )
 }

@@ -16,6 +16,7 @@ import {
   quickIssueAction,
   readerAction,
   reconnectAction,
+  sendClaimAction,
 } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -26,6 +27,7 @@ interface Props {
 
 const actions = {
   issue: quickIssueAction,
+  claim: sendClaimAction,
   reader: readerAction,
   check: checkAction,
   reconnect: reconnectAction,

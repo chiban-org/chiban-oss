@@ -11,6 +11,7 @@ export interface MagicLinkState {
 }
 
 const emailSchema = z.object({ email: z.email() })
+const nextSchema = z.string().max(300).optional()
 
 export async function requestMagicLinkAction(
   _prev: MagicLinkState,
@@ -21,7 +22,14 @@ export async function requestMagicLinkAction(
   if (!guard.ok) return { message: 'Your session expired. Reload the page and try again.' }
   const parsed = emailSchema.safeParse({ email: formData.get('email') })
   if (!parsed.success) return { message: 'Enter a valid email address.' }
-  const result = await requestMagicLink(db, getMailTransport(), parsed.data.email, signal)
+  const next = nextSchema.safeParse(formData.get('next') ?? undefined)
+  const result = await requestMagicLink(
+    db,
+    getMailTransport(),
+    parsed.data.email,
+    signal,
+    next.success ? next.data : undefined,
+  )
   if (!result.ok) return { message: 'Too many requests. Try again in a few minutes.' }
   return { message: 'If that address can sign in, a link is on its way. It expires in 15 minutes.' }
 }

@@ -19,10 +19,13 @@ export type ReaderStatus =
   | { ok: false; error: string }
   | { ok: true; state: string; outcomeUnknown: boolean }
 
+export type CounterClaimResult = { ok: true; message: string } | { ok: false; error: string }
+
 export interface CounterActions {
   issue(formData: FormData): Promise<CounterOutcome>
   reader(formData: FormData): Promise<ReaderStatus>
   check(formData: FormData): Promise<ReaderStatus>
   reconnect(formData: FormData): Promise<ReaderStatus>
   complete(formData: FormData): Promise<CounterOutcome>
+  claim?: (formData: FormData) => Promise<CounterClaimResult>
 }

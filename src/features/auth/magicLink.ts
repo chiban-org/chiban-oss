@@ -4,6 +4,7 @@ import { env } from '@/config/env'
 import type { DbOrTx } from '@/db/client'
 import { magicLinks, userRoles, users } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { safeNext } from '@/features/auth/safeNext'
 import { createSession } from '@/features/auth/session'
 import type { MailTransport } from '@/features/mail/transport'
 import { createRateLimiter } from '@/server/rateLimiter'
@@ -52,6 +53,7 @@ export async function requestMagicLink(
   mail: MailTransport,
   rawEmail: string,
   signal: AbortSignal,
+  next?: string,
 ): Promise<Result<void, 'rate_limited'>> {
   signal.throwIfAborted()
   const email = rawEmail.trim().toLowerCase()
@@ -65,6 +67,7 @@ export async function requestMagicLink(
   await db.insert(magicLinks).values({
     email,
     userId: eligibility.userId,
+    nextPath: next !== undefined && safeNext(next) === next ? next : null,
     tokenHash: hashToken(token),
     expiresAt: new Date(Date.now() + LINK_TTL_MS),
   })
@@ -85,7 +88,7 @@ export async function consumeMagicLink(
   db: DbOrTx,
   token: string,
   signal: AbortSignal,
-): Promise<Result<{ sid: string; userId: string }, 'invalid'>> {
+): Promise<Result<{ sid: string; userId: string; nextPath: string | null }, 'invalid'>> {
   signal.throwIfAborted()
   return await transactionResult(db, async (tx) => {
     const [claimed] = await tx
@@ -98,13 +101,13 @@ export async function consumeMagicLink(
           gt(magicLinks.expiresAt, sql`now()`),
         ),
       )
-      .returning({ email: magicLinks.email })
+      .returning({ email: magicLinks.email, nextPath: magicLinks.nextPath })
     if (claimed === undefined) return err('invalid')
     const user = await findOrCreatePublicUser(tx, claimed.email)
     if (user === null) return err('invalid')
     const session = await createSession(tx, user.id, signal)
     if (!session.ok) return err('invalid')
-    return ok({ sid: session.value.sid, userId: user.id })
+    return ok({ sid: session.value.sid, userId: user.id, nextPath: claimed.nextPath })
   })
 }
 

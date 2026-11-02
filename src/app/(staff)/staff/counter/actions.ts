@@ -2,10 +2,16 @@
 
 import { eq } from 'drizzle-orm'
 import { revalidatePath } from 'next/cache'
-import type { CounterLinks, CounterOutcome, ReaderStatus } from '@/components/counter/counterTypes'
+import type {
+  CounterClaimResult,
+  CounterLinks,
+  CounterOutcome,
+  ReaderStatus,
+} from '@/components/counter/counterTypes'
 import { db } from '@/db/client'
 import { applications, receipts } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { sendCounterClaim } from '@/features/contractors/counterClaim'
 import { parseQuickIssue } from '@/features/counter/parseQuickIssue'
 import {
   completeQuickIssue,
@@ -13,6 +19,7 @@ import {
   type QuickIssueResult,
   quickIssue,
 } from '@/features/counter/quickIssue'
+import { getMailTransport } from '@/features/mail/transport'
 import {
   checkWithProcessor,
   reconnectSimulatedReader,
@@ -41,6 +48,13 @@ async function guarded<T extends { ok: boolean }>(
   if (guard.value?.kind !== 'staff') return fail(errorCopy('signed_out'))
   return await fn({ actor: guard.value, signal })
 }
+
+const CLAIM_COPY = {
+  forbidden: errorCopy('forbidden'),
+  rate_limited: 'Too many claim links were sent for this project. Try again later.',
+  send_failed: 'The email could not be sent. Try again.',
+  no_contractor_email: 'The contractor has no email address on this permit.',
+} as const
 
 const failOutcome = (error: string): CounterOutcome => ({ ok: false, error })
 const failReader = (error: string): ReaderStatus => ({ ok: false, error })
@@ -111,6 +125,17 @@ export async function completeAction(formData: FormData): Promise<CounterOutcome
       signal,
     )
     return result.ok ? await outcomeOf(result.value) : failOutcome(copyFor(result.error))
+  })
+}
+
+export async function sendClaimAction(formData: FormData): Promise<CounterClaimResult> {
+  const fail = (error: string): CounterClaimResult => ({ ok: false, error })
+  return await guarded(formData, fail, async ({ actor, signal }) => {
+    const applicationId = text(formData, 'applicationId')
+    if (!isUuid(applicationId)) return fail(errorCopy('invalid_input'))
+    const sent = await sendCounterClaim(db, getMailTransport(), actor, { applicationId }, signal)
+    if (sent.ok) return { ok: true, message: 'Claim link sent to the contractor.' }
+    return fail(CLAIM_COPY[sent.error])
   })
 }
 
