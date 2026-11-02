@@ -1,0 +1,10 @@
+{
+  "object": "list",
+  "has_more": false,
+  "data": [
+    { "id": "dp_warning", "object": "dispute", "amount": 4635, "status": "warning_needs_response" },
+    { "id": "dp_open", "object": "dispute", "amount": 4635, "status": "needs_response" },
+    { "id": "dp_lost", "object": "dispute", "amount": 4635, "status": "lost" },
+    { "id": "dp_won", "object": "dispute", "amount": 4635, "status": "won" }
+  ]
+}

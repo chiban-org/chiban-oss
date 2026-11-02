@@ -1,0 +1,9 @@
+{
+  "object": "list",
+  "has_more": false,
+  "data": [
+    { "id": "re_3QfixtureOne", "object": "refund", "amount": 1000, "status": "succeeded" },
+    { "id": "re_3QfixtureTwo", "object": "refund", "amount": 500, "status": "pending" },
+    { "id": "re_3QfixtureThree", "object": "refund", "amount": 200, "status": "failed" }
+  ]
+}

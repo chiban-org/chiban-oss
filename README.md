@@ -44,6 +44,12 @@ pnpm staff:create --email you@example.test --name "Your Name" --role admin --pas
 
 Then sign in at `/staff/sign-in` and enroll the authenticator at `/staff/account/totp`. Applicants and contractors sign in with an emailed link at `/sign-in`.
 
+## Payment processors in development
+
+No live processor key is configured anywhere in the repository. Stripe runs against `stripe-mock`, which the Compose file starts on port 12111: set `STRIPE_API_BASE=http://localhost:12111` in `.env` (it is rejected when `NODE_ENV` is `production`) and save a Stripe account with the key `sk_test_123` at `/staff/settings/payments`. `stripe-mock` is stateless and sends no webhooks, so it checks request shapes and response parsing only.
+
+Set `ENABLE_SIMULATED_PAYMENTS=true` to use the simulated processor, which backs the in-app checkout page and the counter card reader panel. Both state on screen that no live processor is connected. The Clover adapter runs against a local fake server (`pnpm clover:fake`) and is not verified against a live merchant account.
+
 ## Checks
 
 ```bash

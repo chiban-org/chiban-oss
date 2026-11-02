@@ -1,0 +1,16 @@
+{
+  "id": "pi_3QfixtureSucceeded",
+  "object": "payment_intent",
+  "amount": 4635,
+  "currency": "usd",
+  "status": "succeeded",
+  "latest_charge": {
+    "id": "ch_3QfixtureCharge",
+    "object": "charge",
+    "balance_transaction": {
+      "id": "txn_3Qfixture",
+      "object": "balance_transaction",
+      "status": "pending"
+    }
+  }
+}

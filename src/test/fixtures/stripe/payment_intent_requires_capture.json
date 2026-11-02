@@ -1,0 +1,8 @@
+{
+  "id": "pi_3QfixtureAuthorized",
+  "object": "payment_intent",
+  "amount": 4635,
+  "currency": "usd",
+  "status": "requires_capture",
+  "latest_charge": null
+}

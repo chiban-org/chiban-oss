@@ -26,6 +26,11 @@ services:
     volumes:
       - chiban-minio:/data
 
+  stripe-mock:
+    image: stripe/stripe-mock:v0.206.0
+    ports:
+      - "12111:12111"
+
   mailpit:
     image: axllent/mailpit:latest
     ports:
