@@ -40,8 +40,10 @@ afterAll(async () => {
 })
 
 const unavailableOcr: OcrConverter = {
-  ocrToPdfA: async () =>
-    err({ reason: 'missing_dependency' as const, exitCode: null, detail: 'ocrmypdf not found' }),
+  ocrToPdfA: () =>
+    Promise.resolve(
+      err({ reason: 'missing_dependency' as const, exitCode: null, detail: 'ocrmypdf not found' }),
+    ),
 }
 
 describe('retrying preservation for a migrated TIFF whose OCR failed', () => {
