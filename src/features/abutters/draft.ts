@@ -5,7 +5,7 @@ import { applicantParcelIds } from '@/features/abutters/applicantParcels'
 import { mergeRecipients } from '@/features/abutters/dedupe'
 import type { ListRow } from '@/features/abutters/queries'
 import { type Recipient, recipientResolver } from '@/features/abutters/resolution'
-import type { IncompleteReason } from '@/features/abutters/types'
+import { CROSSING_CODES, type IncompleteReason } from '@/features/abutters/types'
 import { loadPack } from '@/features/packs/loadPack'
 
 export interface StoredIncomplete {
@@ -103,7 +103,10 @@ export async function openIncomplete(tx: Tx, listId: string): Promise<Incomplete
   const correctedRoles = new Set(
     correctedRecipients.filter((r) => r.parcelIds.length === 0).flatMap((r) => r.roles),
   )
-  const strategy = list.crossingsAttestedAt === null ? stored.strategy : []
+  const strategy =
+    list.crossingsAttestedAt === null
+      ? stored.strategy
+      : stored.strategy.filter((i) => !CROSSING_CODES.includes(i.code))
   const resolver = stored.resolver.filter(
     (i) =>
       (i.parcelId === undefined || !corrected.has(i.parcelId)) &&

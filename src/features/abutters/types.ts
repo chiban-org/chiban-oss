@@ -31,7 +31,15 @@ export const INCOMPLETE_CODES = [
   'regional_contacts_missing',
   'des_contact_missing',
   'determination_missing',
+  'applicant_parcel_unmapped',
 ] as const
+
+export const CROSSING_CODES: readonly IncompleteCode[] = [
+  'projection_disabled',
+  'crossing_layers_unavailable',
+  'crossing_too_wide',
+  'no_property_across',
+]
 
 export type IncompleteCode = (typeof INCOMPLETE_CODES)[number]
 

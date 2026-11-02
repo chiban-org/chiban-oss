@@ -89,7 +89,9 @@ export async function loadCrossingInputs(
   signal.throwIfAborted()
   if (applicantParcelIds.length === 0) return { applicantRings: [], others: [], features: [] }
   const union = sql`(select ST_Transform(ST_Union(a.geom), 3437) from parcels a where a.id = any(${uuidArray(applicantParcelIds)}))`
-  const applicant = await tx.execute<{ gj: string }>(sql`select ST_AsGeoJSON(${union}, 4) as gj`)
+  const applicant = await tx.execute<{ gj: string | null }>(
+    sql`select ST_AsGeoJSON(${union}, 4) as gj`,
+  )
   const nearby = await tx.execute<{ id: string; gj: string }>(sql`
     select p.id, ST_AsGeoJSON(ST_Transform(p.geom, 3437), 4) as gj
     from parcels p
@@ -110,10 +112,10 @@ export async function loadCrossingInputs(
       and ST_DWithin(ST_Transform(f.geom, 3437), ${union}, ${radiusFt})
     order by f.layer_key, f.source_key
   `)
-  const applicantJson = applicant.rows[0]?.gj
+  const applicantJson = applicant.rows[0]?.gj ?? null
   return {
     applicantRings:
-      applicantJson === undefined ? [] : allRings(JSON.parse(applicantJson) as GeoJsonGeometry),
+      applicantJson === null ? [] : allRings(JSON.parse(applicantJson) as GeoJsonGeometry),
     others: nearby.rows.map((r) => ({
       parcelId: r.id,
       rings: allRings(JSON.parse(r.gj) as GeoJsonGeometry),

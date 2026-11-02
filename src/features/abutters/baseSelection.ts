@@ -1,12 +1,16 @@
+import { and, inArray, isNull } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
+import { parcels } from '@/db/schema'
 import { adjacentParcels } from '@/features/abutters/adjacency'
 import { allLayerStatuses, layerUsable } from '@/features/abutters/layerUse'
 import type {
   Candidate,
   CandidateReason,
   CandidateSelection,
+  IncompleteReason,
   StrategyInput,
 } from '@/features/abutters/types'
+import { displayIdsFor } from '@/features/parcels/displayId'
 
 export function mergeCandidates(
   staff: Candidate[],
@@ -27,6 +31,26 @@ export function staffCandidates(input: StrategyInput): Candidate[] {
   return input.staffSelections.map((s) => ({
     parcelId: s.parcelId,
     reasons: [{ kind: 'staff_selected', crossing: s.crossing, note: s.note, by: s.by }],
+  }))
+}
+
+async function unmappedApplicantParcels(
+  tx: Tx,
+  applicantParcelIds: string[],
+): Promise<IncompleteReason[]> {
+  if (applicantParcelIds.length === 0) return []
+  const rows = await tx
+    .select({ id: parcels.id })
+    .from(parcels)
+    .where(and(inArray(parcels.id, applicantParcelIds), isNull(parcels.geom)))
+  const labels = await displayIdsFor(
+    tx,
+    rows.map((r) => r.id),
+  )
+  return rows.map((r) => ({
+    code: 'applicant_parcel_unmapped',
+    parcelId: r.id,
+    detail: `Parcel ${labels.get(r.id) ?? 'on this application'} has no shape on the parcel layer, so its neighbors could not be found. Import the parcel layer with its shape, then draw the list again.`,
   }))
 }
 
@@ -54,7 +78,7 @@ export async function selectAdjacency(
   return {
     candidates: mergeCandidates(staffCandidates(input), adjacent, []),
     layers,
-    incomplete: [],
+    incomplete: await unmappedApplicantParcels(tx, input.applicantParcelIds),
     diagnostics: { adjacent: adjacent.length },
   }
 }

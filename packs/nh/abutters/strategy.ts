@@ -71,7 +71,10 @@ async function selectWithProjection(
       adjacent,
       across,
     ),
-    incomplete: input.crossingsAttested ? [] : flagReasons(result, names),
+    incomplete: [
+      ...base.incomplete,
+      ...(input.crossingsAttested ? [] : flagReasons(result, names)),
+    ],
     diagnostics: { points: result.points.length, regions: result.regions.length },
   }
 }
@@ -82,13 +85,14 @@ export function createNhStrategy(params: AbutterParams): AbutterStrategy {
     version: params.version,
     async select(tx, input, signal) {
       const base = await selectAdjacency(tx, input, params.adjacencyToleranceFt, signal)
-      if (base.incomplete.length > 0) return base
+      if (base.incomplete.some((i) => i.code === 'parcel_layer_unavailable')) return base
       if (!input.settings.projectionEnabled) {
         return input.crossingsAttested
           ? base
           : {
               ...base,
               incomplete: [
+                ...base.incomplete,
                 {
                   code: 'projection_disabled',
                   detail:
@@ -103,6 +107,7 @@ export function createNhStrategy(params: AbutterParams): AbutterStrategy {
           : {
               ...base,
               incomplete: [
+                ...base.incomplete,
                 {
                   code: 'crossing_layers_unavailable',
                   detail:
