@@ -83,7 +83,7 @@ function evalTiered(expr: Extract<FeeExpr, { op: 'tiered' }>, ctx: FeeContext): 
     const rate = scaledFromNumber(tier.centsPerUnit ?? 0)
     const flat = BigInt(tier.flatCents ?? 0) * SCALE * SCALE
     if (expr.mode === 'bracket' && contains) {
-      total = (qty * rate) / 1n + flat
+      total = qty * rate + flat
       break
     }
     if (expr.mode === 'graduated' && reached) {
