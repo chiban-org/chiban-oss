@@ -283,6 +283,7 @@ describe('enforcement queue and case pages', () => {
     await actAs('admin')
     const page = await html(AnonymousAdminPage())
     expect(page).toContain('Anonymous complaints are not being accepted')
+    expect(page).toContain('The public page says anonymous reports are not available')
     expect(page).toContain('no passing retention check')
     expect(page).toContain('No retention check has been recorded.')
   })
