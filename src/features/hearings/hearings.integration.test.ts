@@ -18,12 +18,14 @@ import {
 } from '@/test/boardFixtures'
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { findIsoDates, findRawKeys, findUuids } from '@/test/leaks'
 import {
   issueListWithRecipients,
   proveEverything,
   recipient,
   recordDesProximity,
 } from '@/test/noticeFixtures'
+import { pdfText } from '@/test/pdfText'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -417,6 +419,21 @@ describe('renderNoticeLetters', () => {
     expect(pdf.ok).toBe(true)
     if (!pdf.ok) return
     expect((await PDFDocument.load(pdf.value)).getPageCount()).toBe(3)
+  })
+
+  it('notice letters carry the date in words and no raw ids, dates, or keys', async () => {
+    const id = await templatedZba()
+    const hearingId = await schedule(id, '2027-04-15', 'zba')
+    const row = await hearingRow(hearingId)
+    const pdf = await renderNoticeLetters(handle.db, world.staff, row.noticeSetId, signal)
+    if (!pdf.ok) throw new Error(pdf.error)
+    const text = await pdfText(pdf.value)
+    expect(text).toContain('April 15, 2027')
+    expect(findIsoDates(text)).toEqual([])
+    expect(findUuids(text)).toEqual([])
+    expect(
+      findRawKeys(text, ['public_hearing', 'submission_and_hearing', 'zba', 'verified_mail']),
+    ).toEqual([])
   })
 
   it('without a hearing notice template the result is no_template', async () => {
