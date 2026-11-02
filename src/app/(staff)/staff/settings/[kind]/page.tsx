@@ -66,7 +66,7 @@ export default async function SettingsKindPage({ params }: Props) {
             label="Key"
             name="key"
             required
-            hint="Letters, numbers, and hyphens. Other items refer to it by this key."
+            hint="Letters, numbers, hyphens, underscores, and dots. Other items refer to it by this key."
           />
         )}
       </ActionForm>

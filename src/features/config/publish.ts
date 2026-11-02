@@ -5,7 +5,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
-import type { ConfigKind } from '@/features/config/kinds'
+import { CONFIG_KEY_ISSUE, type ConfigKind, isValidConfigKey } from '@/features/config/kinds'
 import { type PublishError, runPublishChecks } from '@/features/config/publishChecks'
 import { lockConfigKey, nextVersionNumber, validateBody } from '@/features/config/store'
 import { err, ok, type Result } from '@/types/result'
@@ -81,6 +81,7 @@ export async function publishConfig(
     await lockConfigKey(tx, peek.kind as ConfigKind, peek.key)
     const [row] = await tx.select().from(configVersions).where(eq(configVersions.id, versionId))
     if (row?.status !== 'draft') return err('not_draft')
+    if (!isValidConfigKey(row.key)) return err({ invalid: [CONFIG_KEY_ISSUE] })
     return await publishRow(tx, actor, row, 'config.publish', signal)
   })
 }

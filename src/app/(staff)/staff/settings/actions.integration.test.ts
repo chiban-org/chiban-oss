@@ -1,4 +1,7 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { configVersions } from '@/db/schema'
+import type { Actor } from '@/features/auth/actor'
+import { publishConfig } from '@/features/config/publish'
 import { getPublished, listVersions } from '@/features/config/store'
 import { appTypeBody, FORM_BODY } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -198,5 +201,50 @@ describe('settings actions', () => {
     expect((await listVersions(handle.db, 'template', 'my-letter', signal))[0]?.status).toBe(
       'draft',
     )
+  })
+  describe('config keys', () => {
+    const BAD_KEY = 'Bad Key!'
+
+    it.each([
+      'saveDraftAction',
+      'publishAction',
+    ] as const)('%s refuses a key with spaces or punctuation and stores nothing', async (name) => {
+      state.actor = await staffActor(handle.db, 'admin')
+      const result = await actions[name](form(formBodyFields(BAD_KEY)))
+      expect(result).toMatchObject({ ok: false, fieldErrors: { key: expect.any(String) } })
+      expect(await listVersions(handle.db, 'form', BAD_KEY, signal)).toHaveLength(0)
+    })
+
+    it('startDraftAction refuses a bad key with a message about the key', async () => {
+      state.actor = await staffActor(handle.db, 'admin')
+      const result = await actions.startDraftAction(form({ kind: 'form', key: BAD_KEY }))
+      expect(result).toMatchObject({ ok: false, fieldErrors: { key: expect.any(String) } })
+      expect(await listVersions(handle.db, 'form', BAD_KEY, signal)).toHaveLength(0)
+    })
+
+    it('publishing a stored draft whose key is invalid is refused', async () => {
+      state.actor = await staffActor(handle.db, 'admin')
+      await handle.db.insert(configVersions).values({
+        kind: 'form',
+        key: BAD_KEY,
+        version: 1,
+        status: 'draft',
+        body: { ...FORM_BODY, key: BAD_KEY },
+        createdBy: (state.actor as Actor).userId,
+      })
+      const [row] = await listVersions(handle.db, 'form', BAD_KEY, signal)
+      const published = await publishConfig(handle.db, state.actor as Actor, row?.id ?? '', signal)
+      expect(published.ok).toBe(false)
+    })
+  })
+
+  it('publish refused for lack of capability says so instead of reporting draft errors', async () => {
+    state.actor = await staffActor(handle.db, 'staff')
+    const result = await actions.publishAction(form(formBodyFields('staff-form-2')))
+    expect(result).toEqual({
+      ok: false,
+      error: 'You do not have permission to do this.',
+      fieldErrors: { _form: expect.stringContaining('permission') },
+    })
   })
 })

@@ -2,7 +2,7 @@
 
 import { redirect } from 'next/navigation'
 import { adoptStarter } from '@/features/config/adoptStarter'
-import { type ConfigKind, isConfigKind } from '@/features/config/kinds'
+import { type ConfigIssue, type ConfigKind, isConfigKind } from '@/features/config/kinds'
 import { publishConfig, rollbackConfig } from '@/features/config/publish'
 import { fieldErrorsFor } from '@/features/config/publishErrors'
 import { skeletonBody } from '@/features/config/skeletons'
@@ -24,6 +24,12 @@ function kindOf(formData: FormData): ConfigKind | null {
 
 const INVALID: ActionResult = { ok: false, error: errorCopy('invalid_input') }
 
+function refusedDraft(error: 'forbidden' | { invalid: ConfigIssue[] }): ActionResult {
+  const fieldErrors = fieldErrorsFor(error)
+  if (error === 'forbidden') return { ok: false, error: errorCopy('forbidden'), fieldErrors }
+  return { ok: false, error: 'The draft has errors.', fieldErrors }
+}
+
 export async function saveDraftAction(formData: FormData): Promise<ActionResult> {
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
     const kind = kindOf(formData)
@@ -31,10 +37,7 @@ export async function saveDraftAction(formData: FormData): Promise<ActionResult>
     if (kind === null || body === undefined) return INVALID
     const saved = await saveDraft(db, actor, { kind, key: text(formData, 'key'), body }, signal)
     if (saved.ok) return { ok: true, message: 'Draft saved.' }
-    if (saved.error === 'forbidden') {
-      return { ok: false, error: errorCopy('forbidden'), fieldErrors: fieldErrorsFor('forbidden') }
-    }
-    return { ok: false, error: 'The draft has errors.', fieldErrors: fieldErrorsFor(saved.error) }
+    return refusedDraft(saved.error)
   })
 }
 
@@ -44,10 +47,7 @@ export async function publishAction(formData: FormData): Promise<ActionResult> {
     const body = parseBody(formData)
     if (kind === null || body === undefined) return INVALID
     const saved = await saveDraft(db, actor, { kind, key: text(formData, 'key'), body }, signal)
-    if (!saved.ok) {
-      const errors = fieldErrorsFor(saved.error === 'forbidden' ? 'forbidden' : saved.error)
-      return { ok: false, error: 'The draft has errors.', fieldErrors: errors }
-    }
+    if (!saved.ok) return refusedDraft(saved.error)
     const published = await publishConfig(db, actor, saved.value.versionId, signal)
     if (published.ok) return { ok: true, message: `Published version ${published.value.version}.` }
     return {
@@ -105,10 +105,7 @@ export async function startDraftAction(formData: FormData): Promise<ActionResult
     if (kind === null || key === '') return INVALID
     const saved = await saveDraft(db, actor, { kind, key, body: skeletonBody(kind, key) }, signal)
     if (saved.ok) return { ok: true, message: 'Draft created.' }
-    return {
-      ok: false,
-      error: saved.error === 'forbidden' ? errorCopy('forbidden') : errorCopy('invalid_input'),
-    }
+    return refusedDraft(saved.error)
   })
   if (result.ok && kind !== null) redirect(`/staff/settings/${kind}/${encodeURIComponent(key)}`)
   return result

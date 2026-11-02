@@ -51,6 +51,18 @@ export const CONFIG_SCHEMAS: Record<ConfigKind, ZodType> = {
   payment_settings: PaymentSettingsBodySchema,
 }
 
+const CONFIG_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/
+
+export const CONFIG_KEY_ISSUE: ConfigIssue = {
+  path: 'key',
+  message:
+    'Use letters, numbers, hyphens, underscores, and dots, starting with a letter or number.',
+}
+
+export function isValidConfigKey(key: string): boolean {
+  return CONFIG_KEY_PATTERN.test(key)
+}
+
 export interface ConfigIssue {
   path: string
   message: string

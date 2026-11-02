@@ -5,7 +5,13 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
-import { CONFIG_SCHEMAS, type ConfigIssue, type ConfigKind } from '@/features/config/kinds'
+import {
+  CONFIG_KEY_ISSUE,
+  CONFIG_SCHEMAS,
+  type ConfigIssue,
+  type ConfigKind,
+  isValidConfigKey,
+} from '@/features/config/kinds'
 import { err, ok, type Result } from '@/types/result'
 
 export type ConfigVersionRow = typeof configVersions.$inferSelect
@@ -43,6 +49,7 @@ export async function saveDraft(
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'config.edit', signal)
   if (!allowed.ok) return err('forbidden')
+  if (!isValidConfigKey(input.key)) return err({ invalid: [CONFIG_KEY_ISSUE] })
   const checked = validateBody(input.kind, input.body)
   if (!checked.ok) return err({ invalid: checked.issues })
   return await transactionResult(db, async (tx) => {
