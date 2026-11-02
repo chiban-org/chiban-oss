@@ -554,6 +554,23 @@ File: `data/gis_layers.ndjson`. Ordered by key.
 - `last_failure_at`: timestamp with time zone, nullable
 - `last_error`: text, nullable
 
+### historical_records
+
+File: `data/historical_records.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `record_type`: text
+- `number`: text, nullable
+- `recorded_on`: date, nullable
+- `description`: text, nullable
+- `values`: jsonb
+- `source_file`: text
+- `source_sha256`: text
+- `source_sheet`: text
+- `source_row`: integer
+- `imported_by`: uuid
+- `imported_at`: timestamp with time zone
+
 ### import_exceptions
 
 File: `data/import_exceptions.ndjson`. Ordered by id.
@@ -876,7 +893,7 @@ References:
 - `parcel_id` refers to `parcels`
 
 Typed references:
-- `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, document to `documents`
+- `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, document to `documents`, historical_record to `historical_records`
 
 ### parcels
 

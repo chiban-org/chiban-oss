@@ -80,7 +80,7 @@ describe('getParcelHistory', () => {
     expect(h.own).toEqual([])
     expect(h.ancestral[0]?.label).toBe('from parent lot 007020000000, before the 2027 subdivision')
     expect(h.ancestral[0]?.records).toHaveLength(1)
-    expect(h.sourcesRegistered).toBe(4)
+    expect(h.sourcesRegistered).toBe(5)
   })
 
   it('own records come before ancestral records', async () => {

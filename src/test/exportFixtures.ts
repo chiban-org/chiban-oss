@@ -17,6 +17,11 @@ const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
       values ('abc', '{"inListAndImported":[],"inListNotImported":[],"importedNotInList":[],"documentCounts":{}}'::jsonb, gen_random_uuid())`,
   },
   {
+    table: 'historical_records',
+    statement: sql`insert into historical_records (record_type, number, recorded_on, description, values, source_file, source_sha256, source_sheet, source_row, imported_by)
+      values ('Building', 'B-EXPORT', '1987-03-04', 'Coverage row', '{"Contractor":"Coverage"}'::jsonb, 'ledger.xlsx', 'abc', 'Permits', 3, gen_random_uuid())`,
+  },
+  {
     table: 'migration_batches',
     statement: sql`insert into migration_batches (name, source_root, series_key, folder_pattern, id_format, status, created_by)
       values ('Export coverage', '/srv/legacy', 'nh.rs.correspondence_administrative', '^Map (?<map>\\d+)', 'cama15', 'staged', gen_random_uuid())`,

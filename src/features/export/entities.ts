@@ -87,6 +87,7 @@ const SPECS: Spec[] = [
   { table: t.gateOverrides },
   { table: t.gisFeatures },
   { table: t.gisLayers, importMode: 'replace' },
+  { table: t.historicalRecords },
   { table: t.importExceptions },
   { table: t.importRuns },
   { table: t.inspectionItemResults },
@@ -119,7 +120,12 @@ const SPECS: Spec[] = [
       {
         kindColumn: 'record_kind',
         idColumn: 'record_id',
-        map: { application: 'applications', inspection: 'inspections', document: 'documents' },
+        map: {
+          application: 'applications',
+          inspection: 'inspections',
+          document: 'documents',
+          historical_record: 'historical_records',
+        },
       },
     ],
   },

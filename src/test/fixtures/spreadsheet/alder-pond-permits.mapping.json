@@ -1,0 +1,22 @@
+{
+  "sheet": "Permits",
+  "headerRow": 2,
+  "recordType": { "column": "Type" },
+  "number": "Permit No",
+  "parcel": {
+    "format": "gis12",
+    "parts": [
+      { "column": "Map", "width": 3 },
+      { "column": "Lot", "width": 3 },
+      { "column": "Sub", "width": 3 },
+      { "column": "Unit", "width": 3 }
+    ]
+  },
+  "date": {
+    "column": "Issued",
+    "formats": ["excel_serial", "YYYY-MM-DD", "MM/DD/YYYY", "M/D/YY"],
+    "twoDigitYearPivot": 30
+  },
+  "description": ["Work"],
+  "keep": ["Contractor", "Fee", "Clerk Note"]
+}
