@@ -1,11 +1,9 @@
 import Link from 'next/link'
 import { GraphStubNotice } from '@/components/inspections/GraphStubNotice'
+import { PermitLookupForm } from '@/components/inspections/PermitLookupForm'
 import { RequestForm } from '@/components/inspections/RequestForm'
 import { ScheduleBoardClient } from '@/components/inspections/ScheduleBoardClient'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { loadScheduleBoard } from '@/features/inspections/boardData'
 import { inspectableTypes } from '@/features/inspections/eligibility'
 import {
@@ -54,22 +52,7 @@ export default async function ScheduleBoardPage({
       />
       <section aria-label="Take a request" className="max-w-xl space-y-3">
         <h2>Take a request</h2>
-        <form method="get" className="flex flex-wrap items-end gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="permit-number" className="text-base">
-              Permit number
-            </Label>
-            <Input
-              id="permit-number"
-              name="number"
-              defaultValue={number}
-              className="min-h-11 text-base"
-            />
-          </div>
-          <Button type="submit" variant="outline" className="min-h-11 text-base">
-            Find permit
-          </Button>
-        </form>
+        <PermitLookupForm number={number} />
         {number.trim() !== '' && target === null ? <p>No permit has that number.</p> : null}
         {blockedCopy === null ? null : <p>{blockedCopy}</p>}
         {target !== null && blockedCopy === null ? (
