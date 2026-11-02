@@ -102,6 +102,23 @@ export async function createPacket(
       })
       .returning({ id: boardPackets.id })
     const packetId = packet?.id ?? ''
+    const approvalIds = picked.flatMap((p) =>
+      p.frozen?.approvalId == null ? [] : [p.frozen.approvalId],
+    )
+    if (approvalIds.length > 0) {
+      const stillActive = await tx
+        .select({ id: renditionApprovals.id })
+        .from(renditionApprovals)
+        .where(
+          and(inArray(renditionApprovals.id, approvalIds), isNull(renditionApprovals.revokedAt)),
+        )
+        .for('share')
+      const live = new Set(stillActive.map((r) => r.id))
+      const lost = picked.filter(
+        (p) => p.frozen?.approvalId != null && !live.has(p.frozen.approvalId),
+      )
+      if (lost.length > 0) return err({ notForBoard: lost.map((p) => p.id) })
+    }
     await tx.insert(boardPacketItems).values(
       picked.map((p, position) => ({
         packetId,

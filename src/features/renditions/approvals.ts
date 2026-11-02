@@ -192,7 +192,8 @@ export async function revokeApproval(
       return err('forbidden')
     }
     if (input.reason.trim().length < MIN_REASON) return err('reason_required')
-    if (approval.revokedAt !== null) return err('already_revoked')
+    const supersededOnly = approval.revokedAt !== null && approval.revokeReason === 'superseded'
+    if (approval.revokedAt !== null && !supersededOnly) return err('already_revoked')
     const now = new Date()
     const revoked = await revokeActive(
       tx,
@@ -201,7 +202,13 @@ export async function revokeApproval(
       input.reason.trim(),
       now,
     )
-    for (const row of revoked) {
+    const rows = supersededOnly
+      ? [
+          ...revoked,
+          { id: approval.id, versionId: approval.versionId, documentId: approval.documentId },
+        ]
+      : revoked
+    for (const row of rows) {
       staleKeys.push(
         ...(await onApprovalRevoked(
           tx,

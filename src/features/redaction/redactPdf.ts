@@ -20,8 +20,9 @@ const ROOT_KEYS = [
   'Threads',
   'StructTreeRoot',
   'MarkInfo',
+  'AF',
 ]
-const PAGE_KEYS = ['Annots', 'Metadata', 'PieceInfo', 'AA', 'B', 'StructParents']
+const PAGE_KEYS = ['Annots', 'Metadata', 'PieceInfo', 'AA', 'B', 'StructParents', 'AF', 'Thumb']
 const SAVE_OPTIONS = 'garbage=deduplicate,compress=yes,clean=yes,sanitize=yes'
 
 type Failure = Result<never, PdfRedactionFailure>
@@ -134,7 +135,7 @@ function redactPdfNow(
     page.applyRedactions(
       true,
       mupdf.PDFPage.REDACT_IMAGE_PIXELS,
-      mupdf.PDFPage.REDACT_LINE_ART_REMOVE_IF_COVERED,
+      mupdf.PDFPage.REDACT_LINE_ART_REMOVE_IF_TOUCHED,
       mupdf.PDFPage.REDACT_TEXT_REMOVE,
     )
   }

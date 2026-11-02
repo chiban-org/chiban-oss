@@ -202,4 +202,19 @@ describe('releasing files', () => {
     expect(done).toBe(true)
     expect(await handle.db.select().from(files).where(eq(files.sha256, sha))).toHaveLength(1)
   })
+
+  it('disposal also removes the derived thumbnails and previews of the disposed versions', async () => {
+    const made = await eligibleCase(handle.db, store, staff, 1, 'derived images')
+    await store.putBytes(
+      `derived/${made.versionIds[0]}/thumbnail-p1.png`,
+      new Uint8Array([137, 80, 78, 71]),
+      'image/png',
+      signal,
+    )
+    const prefix = `derived/${made.versionIds[0]}/`
+    expect((await store.list(prefix, signal)).length).toBeGreaterThan(0)
+    const batchId = await disposeAll()
+    await finishDisposition(handle.db, store, batchId, signal)
+    expect(await store.list(prefix, signal)).toEqual([])
+  })
 })

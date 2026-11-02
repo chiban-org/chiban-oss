@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import * as mupdf from 'mupdf'
-import { PDFDocument, StandardFonts } from 'pdf-lib'
+import { PDFDocument, rgb, StandardFonts } from 'pdf-lib'
 import { describe, expect, it } from 'vitest'
 import { env } from '@/config/env'
 import { createGhostscriptConverter } from '@/features/preservation/ghostscript'
@@ -143,5 +143,55 @@ describe('redactPdf', () => {
     const result = verifyPdfRedaction(fixture('letter.pdf'), [PHONE])
     expect(result.ok).toBe(false)
     expect(!result.ok && result.error.found).toContain(PHONE)
+  })
+})
+
+describe('redactPdf hidden carriers', () => {
+  async function carrier() {
+    const doc = await PDFDocument.create()
+    const font = await doc.embedFont(StandardFonts.Helvetica)
+    const page = doc.addPage([300, 300])
+    page.drawText('SECRET PHONE 6035550147', { x: 20, y: 150, size: 12, font })
+    const original = await doc.save()
+    const pdf = new mupdf.PDFDocument(original)
+    const pix = pdf
+      .loadPage(0)
+      .toPixmap(mupdf.Matrix.identity, mupdf.ColorSpace.DeviceRGB, false, true)
+    pdf
+      .loadPage(0)
+      .getObject()
+      .put('Thumb', pdf.addImage(new mupdf.Image(pix.asPNG())))
+    const embedded = pdf.addEmbeddedFile(
+      'original.pdf',
+      'application/pdf',
+      original,
+      new Date(),
+      new Date(),
+    )
+    pdf.getTrailer().get('Root').put('AF', [embedded])
+    pdf.loadPage(0).getObject().put('AF', [embedded])
+    return pdf.saveToBuffer('').asUint8Array()
+  }
+
+  it('associated files and page thumbnails do not survive a redaction', async () => {
+    const { bytes } = await mustRedact(await carrier(), [
+      { page: 1, x0: 10, y0: 120, x1: 290, y1: 160 },
+    ])
+    const out = new mupdf.PDFDocument(bytes)
+    expect(out.getTrailer().get('Root', 'AF').isNull()).toBe(true)
+    expect(out.loadPage(0).getObject().get('AF').isNull()).toBe(true)
+    expect(out.loadPage(0).getObject().get('Thumb').isNull()).toBe(true)
+    expect(Object.keys(out.getEmbeddedFiles())).toEqual([])
+    expect(decompressed(bytes)).not.toContain('SECRET PHONE')
+  })
+
+  it('a vector shape that is only partly under a box is removed from the file', async () => {
+    const doc = await PDFDocument.create()
+    const page = doc.addPage([300, 300])
+    page.drawRectangle({ x: 10, y: 100, width: 250, height: 20, color: rgb(0.123, 0.456, 0.789) })
+    const { bytes } = await mustRedact(await doc.save(), [
+      { page: 1, x0: 100, y0: 170, x1: 150, y1: 210 },
+    ])
+    expect(decompressed(bytes)).not.toMatch(/0?\.123\s+0?\.456\s+0?\.789\s+rg/)
   })
 })

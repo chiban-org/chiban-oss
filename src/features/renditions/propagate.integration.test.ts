@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { env } from '@/config/env'
 import { boardPacketItems, documentRenditions } from '@/db/schema'
@@ -213,5 +213,51 @@ describe('revocation propagation', () => {
       .from(documentRenditions)
       .where(eq(documentRenditions.versionId, photo.versionId))
     expect(rows).toHaveLength(2)
+  })
+
+  it('a packet made while a revocation is still committing does not freeze the revoked approval', async () => {
+    const a = await redactedVersionOf(handle.db, store, staff, doc)
+    await approve(a)
+    const active = await activePublicApproval(handle.db, doc.documentId)
+    let release: () => void = () => undefined
+    const gate = new Promise<void>((resolve) => {
+      release = resolve
+    })
+    let locked: () => void = () => undefined
+    const held = new Promise<void>((resolve) => {
+      locked = resolve
+    })
+    const revoking = handle.db.transaction(async (tx) => {
+      await tx.execute(
+        sql`update rendition_approvals set revoked_at = now(), revoke_reason = 'Revoked in a racing session' where id = ${active?.id ?? ''}`,
+      )
+      locked()
+      await gate
+    })
+    await held
+    let made: Awaited<ReturnType<typeof createPacket>> | null = null
+    try {
+      const creating = createPacket(
+        handle.db,
+        staff,
+        {
+          title: 'Racing packet',
+          board: 'planning_board',
+          meetingDate: '2027-04-01' as CivilDate,
+          documentIds: [doc.documentId],
+        },
+        signal,
+      ).then((r) => {
+        made = r
+        return r
+      })
+      await new Promise((resolve) => setTimeout(resolve, 400))
+      release()
+      await revoking
+      await creating
+    } finally {
+      release()
+    }
+    expect(made).toEqual({ ok: false, error: { notForBoard: [doc.documentId] } })
   })
 })

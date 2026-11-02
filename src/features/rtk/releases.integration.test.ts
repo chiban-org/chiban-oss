@@ -480,6 +480,43 @@ describe('release links', () => {
     expect((await openReleaseVersion(handle.db, store, token, redacted, NOW, signal)).ok).toBe(true)
   })
 
+  it('a superseded approval can still be revoked and then withdraws the release made under it', async () => {
+    const staff = await staffActor(handle.db, 'staff')
+    const doc = await uploadRedactionFixture(handle.db, store, staff, 'letter.pdf')
+    const redacted = await redactedVersionOf(handle.db, store, staff, doc, 'public', requestId)
+    const first = await approveRendition(
+      handle.db,
+      staff,
+      { versionId: redacted, purpose: 'public', reviewStatement: STATEMENT },
+      signal,
+      store,
+    )
+    if (!first.ok) throw new Error('approve')
+    await release([{ documentId: doc.documentId, approvalId: first.value.approvalId }], {
+      method: 'electronic_link',
+      recipientEmail: 'jordan@example.test',
+    })
+    const token = tokenFromMail()
+    const next = await redactedVersionOf(handle.db, store, staff, doc)
+    await approveRendition(
+      handle.db,
+      staff,
+      { versionId: next, purpose: 'public', reviewStatement: STATEMENT },
+      signal,
+      store,
+    )
+    const revoked = await revokeApproval(
+      handle.db,
+      staff,
+      { approvalId: first.value.approvalId, reason: 'The old copy leaked a name' },
+      signal,
+      store,
+    )
+    expect(revoked.ok).toBe(true)
+    const res = await openReleaseVersion(handle.db, store, token, redacted, NOW, signal)
+    expect(!res.ok && typeof res.error === 'object').toBe(true)
+  })
+
   it('expired link answers expired and an unknown token is invalid', async () => {
     const { token } = await linked()
     const later = new Date('2027-08-14T15:00:00Z')

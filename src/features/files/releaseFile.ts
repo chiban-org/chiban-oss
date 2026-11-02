@@ -85,12 +85,30 @@ export async function deleteQueuedFile(
   })
 }
 
+async function deleteDerivedImages(
+  db: DbOrTx,
+  store: ObjectStore,
+  batchId: string,
+  signal: AbortSignal,
+): Promise<void> {
+  const tombstones = await db
+    .select({ versionIds: dispositionTombstones.versionIds })
+    .from(dispositionTombstones)
+    .where(eq(dispositionTombstones.batchId, batchId))
+  for (const versionId of tombstones.flatMap((t) => t.versionIds)) {
+    for (const key of await store.list(`derived/${versionId}/`, signal)) {
+      await store.delete(key, signal)
+    }
+  }
+}
+
 export async function finishDisposition(
   db: DbOrTx,
   store: ObjectStore,
   batchId: string,
   signal: AbortSignal,
 ): Promise<{ released: string[]; deleted: string[] }> {
+  await deleteDerivedImages(db, store, batchId, signal)
   const released = await releaseBatchFiles(db, batchId, signal)
   const deleted: string[] = []
   for (const sha256 of released) {
