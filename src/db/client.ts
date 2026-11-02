@@ -7,3 +7,6 @@ export const pool = new Pool({ connectionString: env.DATABASE_URL })
 export const db = drizzle(pool, { schema })
 
 export type Db = NodePgDatabase<typeof schema>
+
+export type Tx = Parameters<Parameters<Db['transaction']>[0]>[0]
+export type DbOrTx = Db | Tx
