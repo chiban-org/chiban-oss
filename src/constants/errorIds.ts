@@ -38,6 +38,9 @@ export const ErrorIds = {
 
   GIS_UNSUPPORTED_GEOMETRY: 'E_GIS_001',
   GIS_SRID_MISMATCH: 'E_GIS_002',
+
+  PACK_INVALID: 'E_PACK_001',
+  PACK_UNKNOWN_RULE: 'E_PACK_002',
 } as const
 
 export type ErrorId = (typeof ErrorIds)[keyof typeof ErrorIds]

@@ -5,10 +5,10 @@ import { canonicalJson, packInfo } from '@/features/packs/packInfo'
 
 describe('packInfo', () => {
   it('reports the nh manifest identity', () => {
-    expect(NH_PACK_MANIFEST).toEqual({ id: 'nh', version: '0.1.0', rules: [] })
     const info = packInfo()
     expect(info.id).toBe('nh')
-    expect(info.version).toBe('0.1.0')
+    expect(info.version).toBe(NH_PACK_MANIFEST.version)
+    expect(NH_PACK_MANIFEST.rules.length).toBeGreaterThan(0)
   })
 
   it('hashes the canonical JSON with SHA-256', () => {
@@ -21,5 +21,20 @@ describe('packInfo', () => {
     expect(canonicalJson({ b: 1, a: { d: [2, { z: 1, y: 2 }], c: null } })).toBe(
       '{"a":{"c":null,"d":[2,{"y":2,"z":1}]},"b":1}',
     )
+  })
+})
+
+describe('packInfo hash', () => {
+  it('packInfo hash changes when a rule label changes', () => {
+    const before = packInfo().hash
+    const rule = NH_PACK_MANIFEST.rules[0]
+    if (rule === undefined) throw new Error('no rules')
+    const originalLabel = rule.label
+    ;(rule as { label: string }).label = `${originalLabel} edited`
+    try {
+      expect(packInfo().hash).not.toBe(before)
+    } finally {
+      ;(rule as { label: string }).label = originalLabel
+    }
   })
 })
