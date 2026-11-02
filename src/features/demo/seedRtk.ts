@@ -1,12 +1,15 @@
-import { count } from 'drizzle-orm'
+import { count, eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { rtkRequests } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { computeDue } from '@/features/clocks/computeDue'
 import { actorFor, must } from '@/features/demo/seedPermitSupport'
 import { seedLetterDocument, seedRedactedVersion } from '@/features/demo/seedRedaction'
+import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { packHolidayCalendar } from '@/features/packs/holidays'
-import { logRequest } from '@/features/rtk/requests'
+import { approveRendition } from '@/features/renditions/approvals'
+import { createRelease } from '@/features/rtk/releases'
+import { closeRequest, logRequest } from '@/features/rtk/requests'
 import { recordFirstResponse } from '@/features/rtk/responses'
 import { recordWithholding } from '@/features/rtk/withholdings'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -115,6 +118,112 @@ export async function seedRtkRequests(ctx: RtkSeedContext): Promise<void> {
   )
 }
 
+export async function seedClosedRequestWithReleases(ctx: RtkSeedContext): Promise<void> {
+  const requestId = await logAt(
+    ctx,
+    addDays(ctx.today, -25),
+    'Letters and permits for the Birch Lane renovation',
+    'Riley Chen',
+  )
+  const letter = await seedLetterDocument(ctx, 'Owner letter for the Birch Lane renovation')
+  const redactedId = await seedRedactedVersion(ctx, letter, 'rtk_release', requestId)
+  const redactedApproval = must(
+    await approveRendition(
+      ctx.db,
+      ctx.custodian,
+      {
+        versionId: redactedId,
+        purpose: 'rtk_release',
+        rtkRequestId: requestId,
+        reviewStatement: 'Checked every page against the boxes drawn.',
+      },
+      ctx.signal,
+      ctx.store,
+    ),
+    'approve the redacted release copy',
+  )
+  must(
+    await recordWithholding(
+      ctx.db,
+      ctx.custodian,
+      {
+        requestId,
+        scope: 'withheld_in_full',
+        recordDescription: 'Email from the town attorney about the Birch Lane variance',
+        exemptionKey: 'nh.rtk.91a5.xii',
+        explanation: 'The email is a confidential communication seeking legal advice from counsel.',
+      },
+      ctx.signal,
+    ),
+    'withhold a record in full',
+  )
+  const mail = createMemoryTransport()
+  must(
+    await createRelease(
+      ctx.db,
+      ctx.store,
+      mail,
+      ctx.custodian,
+      {
+        requestId,
+        releasedOn: addDays(ctx.today, -20),
+        method: 'paper',
+        items: [{ documentId: letter.documentId, approvalId: redactedApproval.approvalId }],
+      },
+      ctx.signal,
+      ctx.now,
+    ),
+    'make the first release',
+  )
+  const second = await seedLetterDocument(
+    ctx,
+    'Permit correspondence for the Birch Lane renovation',
+  )
+  const secondApproval = must(
+    await approveRendition(
+      ctx.db,
+      ctx.custodian,
+      {
+        versionId: second.versionId,
+        purpose: 'rtk_release',
+        rtkRequestId: requestId,
+        reviewStatement: 'Nothing in this letter is exempt from disclosure.',
+      },
+      ctx.signal,
+      ctx.store,
+    ),
+    'approve the second release',
+  )
+  must(
+    await createRelease(
+      ctx.db,
+      ctx.store,
+      mail,
+      ctx.custodian,
+      {
+        requestId,
+        releasedOn: addDays(ctx.today, -18),
+        method: 'electronic_link',
+        recipientEmail: 'riley@example.test',
+        items: [{ documentId: second.documentId, approvalId: secondApproval.approvalId }],
+      },
+      ctx.signal,
+      ctx.now,
+    ),
+    'make the second release',
+  )
+  const [row] = await ctx.db.select().from(rtkRequests).where(eq(rtkRequests.id, requestId))
+  must(
+    await closeRequest(
+      ctx.db,
+      ctx.custodian,
+      { requestId, to: 'closed', expectedRowVersion: row?.rowVersion ?? 0 },
+      ctx.signal,
+    ),
+    'close the request',
+  )
+}
+
 export async function seedRecordsM10(
   db: Db,
   store: ObjectStore,
@@ -134,6 +243,7 @@ export async function seedRecordsM10(
     staff: await actorFor(db, 'staff', signal),
   }
   await seedRtkRequests(ctx)
+  await seedClosedRequestWithReleases(ctx)
   const letter = await seedLetterDocument(ctx, 'Demo letter with a private phone number')
   await seedRedactedVersion(ctx, letter, 'public')
   return true

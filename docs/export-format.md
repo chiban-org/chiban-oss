@@ -1558,6 +1558,45 @@ File: `data/role_capabilities.ndjson`. Ordered by role, capability.
 - `role`: text
 - `capability`: text
 
+### rtk_release_items
+
+File: `data/rtk_release_items.ndjson`. Ordered by release_id, document_id.
+
+- `release_id`: uuid
+- `document_id`: uuid
+- `version_id`: uuid, nullable
+- `approval_id`: uuid
+- `position`: integer
+- `withdrawn_at`: timestamp with time zone, nullable
+- `withdrawn_reason`: text, nullable
+
+References:
+- `release_id` refers to `rtk_releases`
+- `document_id` refers to `documents`
+- `version_id` refers to `document_versions`
+- `approval_id` refers to `rendition_approvals`
+
+### rtk_releases
+
+File: `data/rtk_releases.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `request_id`: uuid
+- `sequence`: integer
+- `released_on`: date
+- `method`: text
+- `letter_document_id`: uuid, nullable
+- `released_by`: uuid
+- `link_expires_at`: timestamp with time zone, nullable
+- `link_revoked_at`: timestamp with time zone, nullable
+- `created_at`: timestamp with time zone
+
+References:
+- `request_id` refers to `rtk_requests`
+- `letter_document_id` refers to `documents`
+
+Omitted columns: `link_token_hash`
+
 ### rtk_requests
 
 File: `data/rtk_requests.ndjson`. Ordered by id.
@@ -1612,6 +1651,7 @@ File: `data/rtk_withholdings.ndjson`. Ordered by id.
 
 References:
 - `request_id` refers to `rtk_requests`
+- `release_id` refers to `rtk_releases`
 
 ### rule_transitions_applied
 

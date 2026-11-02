@@ -1,6 +1,7 @@
+import { eq } from 'drizzle-orm'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
 import { env } from '@/config/env'
-import { parcels } from '@/db/schema'
+import { parcels, redactionJobs } from '@/db/schema'
 import { must } from '@/features/demo/seedPermitSupport'
 import type { RtkSeedContext } from '@/features/demo/seedRtk'
 import { attachDocument } from '@/features/documents/attach'
@@ -96,5 +97,9 @@ export async function seedRedactedVersion(
     'run a demo redaction',
   )
   if (ran !== 'complete') throw new Error('Demo redaction did not complete')
-  return requested.jobId
+  const [job] = await ctx.db
+    .select({ versionId: redactionJobs.resultVersionId })
+    .from(redactionJobs)
+    .where(eq(redactionJobs.id, requested.jobId))
+  return job?.versionId ?? ''
 }

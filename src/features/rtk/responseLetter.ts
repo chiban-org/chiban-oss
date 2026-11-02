@@ -2,7 +2,14 @@ import { NH_RTK_EXEMPTIONS, OTHER_LAW_EXEMPTION_KEY } from '@packs/nh/rtkExempti
 import { asc, eq } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { DbOrTx } from '@/db/client'
-import { rtkRequests, rtkTimeStatements, rtkWithholdings } from '@/db/schema'
+import {
+  documents,
+  rtkReleaseItems,
+  rtkReleases,
+  rtkRequests,
+  rtkTimeStatements,
+  rtkWithholdings,
+} from '@/db/schema'
 import { type PdfBlock, renderPdf } from '@/features/pdf/renderPdf'
 import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -19,6 +26,13 @@ export function exemptionLabel(w: Pick<Withholding, 'exemptionKey' | 'otherCitat
   }
   const found = NH_RTK_EXEMPTIONS.find((e) => e.key === w.exemptionKey)
   return { label: found?.label ?? w.exemptionKey, citation: found?.citation.label ?? '' }
+}
+
+const RELEASE_METHOD_LABELS: Record<(typeof rtkReleases.$inferSelect)['method'], string> = {
+  inspection: 'Inspection at the town office',
+  paper: 'Paper copy',
+  electronic_link: 'Link sent by email',
+  email: 'Email attachment',
 }
 
 const KIND_SENTENCES: Record<string, string> = {
@@ -108,6 +122,31 @@ export async function buildResponseLetter(
         ],
       })
     }
+  }
+  const released = await db
+    .select({
+      sequence: rtkReleases.sequence,
+      releasedOn: rtkReleases.releasedOn,
+      method: rtkReleases.method,
+      title: documents.title,
+    })
+    .from(rtkReleaseItems)
+    .innerJoin(rtkReleases, eq(rtkReleases.id, rtkReleaseItems.releaseId))
+    .innerJoin(documents, eq(documents.id, rtkReleaseItems.documentId))
+    .where(eq(rtkReleases.requestId, requestId))
+    .orderBy(asc(rtkReleases.sequence), asc(rtkReleaseItems.position))
+  if (released.length > 0) {
+    blocks.push({ kind: 'heading', text: 'Records released' })
+    blocks.push({
+      kind: 'table',
+      columns: ['Release', 'Date', 'How', 'Record'],
+      rows: released.map((r) => [
+        String(r.sequence),
+        formatCivilDate(r.releasedOn),
+        RELEASE_METHOD_LABELS[r.method],
+        r.title,
+      ]),
+    })
   }
   blocks.push(...withholdingBlocks(withholdings))
   return await renderPdf({

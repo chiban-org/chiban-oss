@@ -127,7 +127,7 @@ export async function approveRendition(
         staleKeys.push(
           ...(await onApprovalRevoked(
             tx,
-            { approvalId: old.id, versionId: old.versionId, revokedAt: now },
+            { approvalId: old.id, versionId: old.versionId, revokedAt: now, kind: 'superseded' },
             signal,
           )),
         )
@@ -194,20 +194,22 @@ export async function revokeApproval(
     if (input.reason.trim().length < MIN_REASON) return err('reason_required')
     if (approval.revokedAt !== null) return err('already_revoked')
     const now = new Date()
-    await revokeActive(
+    const revoked = await revokeActive(
       tx,
-      eq(renditionApprovals.id, approval.id),
+      eq(renditionApprovals.versionId, approval.versionId),
       actor.userId,
       input.reason.trim(),
       now,
     )
-    staleKeys.push(
-      ...(await onApprovalRevoked(
-        tx,
-        { approvalId: approval.id, versionId: approval.versionId, revokedAt: now },
-        signal,
-      )),
-    )
+    for (const row of revoked) {
+      staleKeys.push(
+        ...(await onApprovalRevoked(
+          tx,
+          { approvalId: row.id, versionId: row.versionId, revokedAt: now, kind: 'revoked' },
+          signal,
+        )),
+      )
+    }
     await writeAudit(
       tx,
       {
