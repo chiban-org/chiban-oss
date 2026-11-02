@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, sql } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
   applicationConditions,
@@ -25,12 +25,12 @@ import { getLayerStatus } from '@/features/gis/layerStatus'
 import { type HonestValue, honestFromLayer } from '@/features/honest/honest'
 import { type FeeBalance, feeBalance } from '@/features/ledger/feeBalance'
 import { ledgerEntryVisibleTo } from '@/features/ledger/visibility'
-import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { computeConvenienceFee } from '@/features/payments/convenienceFee'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
-import type { CivilDate } from '@/types/civilDate'
+import { townToday } from '@/features/town/today'
+import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
 
@@ -65,7 +65,10 @@ export interface PortalApplicationView {
   canUpload: boolean
 }
 
-async function decisionDue(db: Db, applicationId: string) {
+const DECISION_LATE_TEXT =
+  'That date has passed. Call the land use office to ask when to expect the decision.'
+
+async function decisionDue(db: Db, applicationId: string, signal: AbortSignal) {
   const [clock] = await db
     .select()
     .from(clocks)
@@ -73,16 +76,17 @@ async function decisionDue(db: Db, applicationId: string) {
       and(
         eq(clocks.applicationId, applicationId),
         eq(clocks.ruleKey, DECISION_CLOCK_KEY),
-        eq(clocks.status, 'running'),
+        inArray(clocks.status, ['running', 'overdue']),
       ),
     )
     .orderBy(desc(clocks.createdAt))
     .limit(1)
   if (clock === undefined) return null
-  const rule = ruleByKey(loadPack(), clock.ruleKey, clock.ruleVersion)
+  const date = clock.currentDue as CivilDate
+  const today = await townToday(db, new Date(), signal)
   return {
-    date: clock.currentDue as CivilDate,
-    consequence: rule.kind === 'clock' ? rule.consequence.text : '',
+    date,
+    consequence: compareCivil(today, date) > 0 ? DECISION_LATE_TEXT : '',
   }
 }
 
@@ -204,7 +208,7 @@ export async function getPortalApplicationView(
     values: Object.fromEntries(Object.entries(app.values).filter(([k]) => !staffKeys.has(k))),
     attestationText: app.typeBody.attestationText,
     attestationSha256: attestationHash(app.typeBody.attestationText),
-    decisionDue: await decisionDue(db, applicationId),
+    decisionDue: await decisionDue(db, applicationId, signal),
     conditions: conditions.map((c) => ({ text: c.textSnapshot, status: c.status })),
     documents: (
       await listDocuments(

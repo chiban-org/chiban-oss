@@ -9,6 +9,7 @@ import {
 } from '@/db/schema'
 import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
 import { type Actor, loadActor } from '@/features/auth/actor'
+import { startClocksFor } from '@/features/clocks/startClocks'
 import { claimProject, sendContractorClaim } from '@/features/contractors/claims'
 import { recordCounterPayment } from '@/features/counter/counterPayment'
 import { recordReturnedCheck, refundEntry } from '@/features/ledger/reversals'
@@ -174,6 +175,39 @@ describe('portal view', () => {
     expect(
       await getPortalApplicationView(handle.db, world.applicant, 'not-a-uuid', signal),
     ).toEqual({ ok: false, error: 'not_found' })
+  })
+
+  it('the decision date reads in plain words, without statute citations, and says late only when it is', async () => {
+    const dueText = async (completedOn: string) => {
+      const app = await makeApplication(handle.db, world, {
+        state: 'under_review',
+        facts: { classification: 'residential', dwellingUnits: 1, afterTheFact: false },
+      })
+      await handle.db.transaction((tx) =>
+        startClocksFor(
+          tx,
+          app.applicationId,
+          'application_completed',
+          completedOn as CivilDate,
+          signal,
+        ),
+      )
+      const view = await getPortalApplicationView(
+        handle.db,
+        world.applicant,
+        app.applicationId,
+        signal,
+      )
+      if (!view.ok) throw new Error('view')
+      return view.value.decisionDue
+    }
+    const ahead = await dueText('2099-01-01')
+    expect(ahead).toEqual({ date: '2099-01-31', consequence: '' })
+    const late = await dueText('2020-01-01')
+    expect(late?.consequence).toBe(
+      'That date has passed. Call the land use office to ask when to expect the decision.',
+    )
+    expect(late?.consequence).not.toMatch(/RSA/)
   })
 
   it('shows a draft with its form, can edit, and nothing to pay', async () => {

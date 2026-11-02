@@ -17,6 +17,8 @@ const COPY: Record<string, string> = {
   municipality_required: 'Choose at least one affected municipality.',
   unknown_municipality: 'One of those municipalities has no contact on file.',
   board_ref_required: 'Enter the board reference for the earlier determination.',
+  after_issuance:
+    'The regional impact record is fixed once the permit is issued or the application is closed.',
   clock_not_overdue: 'The board decision deadline has not passed on that date.',
   not_draft: 'This can only be changed while it is a draft.',
   not_board: 'This is not a board application.',

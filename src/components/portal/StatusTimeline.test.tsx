@@ -19,4 +19,14 @@ describe('StatusTimeline', () => {
     render(<StatusTimeline state="denied" />)
     expect(screen.getByText('This application was denied.')).toBeTruthy()
   })
+
+  it('a denied application shows review done and the decision made, with no permit to come', () => {
+    render(<StatusTimeline state="denied" />)
+    expect(screen.getByText('Under review').closest('li')?.textContent).toContain('Done')
+    const decided = screen.getByText('Decided').closest('li')
+    expect(decided?.getAttribute('aria-current')).toBe('step')
+    expect(decided?.textContent).toContain('Done')
+    expect(screen.getByText('Issued').closest('li')?.textContent).toContain('Will not happen')
+    expect(screen.queryByText('Not yet')).toBeNull()
+  })
 })

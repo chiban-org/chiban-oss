@@ -15,6 +15,11 @@ export default async function TotpPage() {
   return (
     <main className="mx-auto max-w-md p-6">
       <h1>Authenticator</h1>
+      <p>
+        An authenticator app on your phone makes a new 6-digit code every 30 seconds. Once it is set
+        up, signing in asks for that code after your password, so a stolen password alone cannot
+        open your account.
+      </p>
       {uri === null || qr === null ? (
         <BeginTotpForm />
       ) : (

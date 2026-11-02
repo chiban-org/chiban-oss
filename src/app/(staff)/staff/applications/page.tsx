@@ -39,6 +39,13 @@ export default async function StaffApplicationsPage({ searchParams }: Props) {
   return (
     <main>
       <h1>Applications</h1>
+      <p className="my-2">
+        Every application, newest first. To search by number or filter by state, use the{' '}
+        <Link href="/staff/queue" className="text-action underline">
+          work queue
+        </Link>
+        .
+      </p>
       {page.rows.length === 0 ? (
         <p className="my-4">No applications yet.</p>
       ) : (

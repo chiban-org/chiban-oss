@@ -1,10 +1,20 @@
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { applications, reviewAssignments, reviewComments, userRoles, users } from '@/db/schema'
+import {
+  applications,
+  projects,
+  reviewAssignments,
+  reviewComments,
+  trcRoutings,
+  userRoles,
+  users,
+} from '@/db/schema'
 import { isReviewer } from '@/features/access/roles'
+import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { listDocuments } from '@/features/documents/listDocuments'
 import type { DocumentListRow } from '@/features/documents/types'
+import { displayIdsFor } from '@/features/parcels/displayId'
 
 export interface MyAssignment {
   assignmentId: string
@@ -40,6 +50,10 @@ export interface AssignmentView {
   applicationId: string
   number: string
   status: string
+  projectTitle: string
+  typeLabel: string
+  parcelDisplayId: string | null
+  commentDue: string | null
   comments: { body: string; createdAt: Date }[]
   documents: DocumentListRow[]
 }
@@ -58,9 +72,14 @@ export async function getAssignmentView(
       applicationId: reviewAssignments.applicationId,
       number: applications.number,
       status: reviewAssignments.status,
+      projectTitle: projects.title,
+      parcelId: projects.parcelId,
+      commentDue: trcRoutings.commentDue,
     })
     .from(reviewAssignments)
     .innerJoin(applications, eq(applications.id, reviewAssignments.applicationId))
+    .innerJoin(projects, eq(projects.id, applications.projectId))
+    .leftJoin(trcRoutings, eq(trcRoutings.assignmentId, reviewAssignments.id))
     .where(
       and(
         eq(reviewAssignments.id, assignmentId),
@@ -80,11 +99,21 @@ export async function getAssignmentView(
     { record: { kind: 'application', id: row.applicationId }, limit: 100 },
     signal,
   )
-  return { ...row, comments, documents: documents.rows }
+  const context = await loadApplicationContext(db, row.applicationId, signal)
+  const display = await displayIdsFor(db, [row.parcelId])
+  const { parcelId, ...rest } = row
+  return {
+    ...rest,
+    typeLabel: context?.typeBody.label ?? '',
+    parcelDisplayId: display.get(parcelId) ?? null,
+    comments,
+    documents: documents.rows,
+  }
 }
 
 export interface ApplicationReviewer {
   assignmentId: string
+  reviewerUserId: string
   name: string
   status: string
 }
@@ -96,6 +125,7 @@ export async function listApplicationReviewers(
   return await db
     .select({
       assignmentId: reviewAssignments.id,
+      reviewerUserId: reviewAssignments.reviewerUserId,
       name: users.displayName,
       status: reviewAssignments.status,
     })

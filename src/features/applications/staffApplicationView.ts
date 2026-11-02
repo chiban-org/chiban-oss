@@ -22,6 +22,7 @@ import {
 } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { boardOfApplication } from '@/features/boards/boardOf'
 import { describeCodeEdition, type EditionDescription } from '@/features/building/codeEdition'
 import { codeEditionPanelRows } from '@/features/building/editionPanelRows'
 import { type ClockExplanation, explainClock } from '@/features/clocks/explainClock'
@@ -38,6 +39,7 @@ import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 
 const MANUAL_TARGETS_EXCLUDED: readonly CoreState[] = ['suspended', 'expired', 'submitted']
+const BOARD_DECISION_STATES: readonly CoreState[] = ['decided', 'denied']
 
 export interface StaffApplicationView {
   id: string
@@ -147,6 +149,7 @@ export async function getStaffApplicationView(
     (to) =>
       !MANUAL_TARGETS_EXCLUDED.includes(to) &&
       !(app.state === 'suspended' && to === 'issued') &&
+      !(boardOfApplication(app) !== null && BOARD_DECISION_STATES.includes(to)) &&
       isTransitionAllowed(app.state, to, app.typeBody.workflow),
   )
   const gates = await db.transaction(async (tx) => {

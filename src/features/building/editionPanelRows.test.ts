@@ -33,7 +33,7 @@ describe('codeEditionPanelRows', () => {
       { field: 'Application complete', value: 'May 21, 2027' },
       { field: 'Permit type', value: 'Nonresidential' },
       { field: 'Dwelling units', value: 'Not recorded' },
-      { field: 'Code edition', value: 'IBC 2021 (effective 2024-07-01)' },
+      { field: 'Code edition', value: 'IBC 2021 (effective July 1, 2024)' },
       { field: 'Applicant election', value: 'Not recorded' },
       { field: 'Local amendments in force', value: 'None' },
     ])

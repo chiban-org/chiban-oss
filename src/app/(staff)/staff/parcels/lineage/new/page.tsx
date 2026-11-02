@@ -1,5 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
+import { NoPermission } from '@/components/staff/NoPermission'
+import { hasCapability } from '@/features/authz/capabilities'
 import { requireStaffContext } from '@/server/requireStaff'
 import { recordLineageAction } from '../../[parcelId]/actions'
 
@@ -19,7 +21,10 @@ const BASES = [
 ] as const
 
 export default async function NewLineageEventPage({ searchParams }: NewLineagePageProps) {
-  await requireStaffContext()
+  const ctx = await requireStaffContext()
+  if (!(await hasCapability(ctx.db, ctx.actor.userId, 'parcel.manage', ctx.signal))) {
+    return <NoPermission title="Record lineage event" action="record lineage events" />
+  }
   const { parent = '' } = await searchParams
   return (
     <main>

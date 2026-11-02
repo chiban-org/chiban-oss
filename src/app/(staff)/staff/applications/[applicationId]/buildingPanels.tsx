@@ -10,6 +10,7 @@ import {
   NOTICE_METHOD_OPTIONS,
   RECIPIENT_KIND_OPTIONS,
 } from '@/features/building/labels'
+import { REGIONAL_IMPACT_OPEN_STATES } from '@/features/building/regionalImpactStates'
 import { loadPack } from '@/features/packs/loadPack'
 import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 import { lowerFirst } from '@/lib/words'
@@ -84,6 +85,8 @@ export function CodeEditionPanel({ view }: { view: StaffApplicationView }) {
 export function RegionalImpactPanel({ view }: { view: StaffApplicationView }) {
   const { regionalImpact: r } = view
   if (!r.applies) return null
+  const editable =
+    view.permissions.canDetermineRegionalImpact && REGIONAL_IMPACT_OPEN_STATES.includes(view.state)
   return (
     <section aria-label="Regional impact">
       <h2>Regional impact</h2>
@@ -92,7 +95,7 @@ export function RegionalImpactPanel({ view }: { view: StaffApplicationView }) {
           ? 'No determination is recorded. Issuance is blocked until one is.'
           : `Determination: ${lowerFirst(labelFor(DETERMINATION_OPTIONS, r.determination.determination))} on ${formatCivilDate(r.determination.determinedOn)}${r.determination.previousBoardRef === null ? '' : ` (board reference ${r.determination.previousBoardRef})`}.`}
       </p>
-      {view.permissions.canDetermineRegionalImpact ? (
+      {editable ? (
         <ActionForm action={regionalImpactAction} submitLabel="Record determination">
           <input type="hidden" name="applicationId" value={view.id} />
           <SelectField label="Determination" name="determination" options={DETERMINATION_OPTIONS} />
@@ -115,7 +118,7 @@ export function RegionalImpactPanel({ view }: { view: StaffApplicationView }) {
           ))}
         </ul>
       )}
-      {r.determination?.determination === 'yes' && view.permissions.canDetermineRegionalImpact ? (
+      {r.determination?.determination === 'yes' && editable ? (
         <ActionForm action={regionalNoticeAction} submitLabel="Record notice">
           <input type="hidden" name="applicationId" value={view.id} />
           <SelectField label="Recipient" name="recipientKind" options={RECIPIENT_KIND_OPTIONS} />

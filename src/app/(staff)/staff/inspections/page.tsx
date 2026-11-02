@@ -5,7 +5,7 @@ import { RequestForm } from '@/components/inspections/RequestForm'
 import { ScheduleBoardClient } from '@/components/inspections/ScheduleBoardClient'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { loadScheduleBoard } from '@/features/inspections/boardData'
-import { inspectableTypes } from '@/features/inspections/eligibility'
+import { requestableTypes } from '@/features/inspections/eligibility'
 import {
   describeIntakeBlock,
   findIssuedApplicationByNumber,
@@ -14,10 +14,26 @@ import {
 import { describePhoneHours } from '@/features/inspections/phoneHours'
 import { schedulingDates } from '@/features/inspections/slots'
 import { packHolidayCalendar } from '@/features/packs/holidays'
-import { requireStaffContext } from '@/server/requireStaff'
+import { requireStaffContext, type StaffContext } from '@/server/requireStaff'
 import { requestInspectionAction, scheduleInspectionAction } from './actions'
 
 export const dynamic = 'force-dynamic'
+
+const NOTHING_TO_REQUEST =
+  'Every inspection on this permit is already requested, scheduled, or passed.'
+
+async function offeredTypes(ctx: StaffContext, applicationId: string | null, reinspect: string) {
+  if (applicationId === null) return { offered: [], reinspection: null }
+  const reinspection = await findReinspectionTarget(
+    ctx.db,
+    ctx.actor,
+    applicationId,
+    reinspect,
+    ctx.signal,
+  )
+  if (reinspection !== null) return { offered: [reinspection], reinspection }
+  return { offered: await requestableTypes(ctx.db, applicationId, ctx.signal), reinspection }
+}
 
 export default async function ScheduleBoardPage({
   searchParams,
@@ -34,11 +50,7 @@ export default async function ScheduleBoardPage({
       ? null
       : await findIssuedApplicationByNumber(ctx.db, ctx.actor, number, ctx.signal)
   const blockedCopy = target === null ? null : await describeIntakeBlock(ctx.db, target, ctx.signal)
-  const types = target === null ? [] : await inspectableTypes(ctx.db, target.id, ctx.signal)
-  const reinspection =
-    target === null
-      ? null
-      : await findReinspectionTarget(ctx.db, ctx.actor, target.id, reinspect, ctx.signal)
+  const { offered, reinspection } = await offeredTypes(ctx, target?.id ?? null, reinspect)
   const dates = schedulingDates(board.settings, packHolidayCalendar(), board.today)
   const hasGraph = board.inspectors.some((i) => i.calendarKind === 'graph')
   return (
@@ -55,11 +67,13 @@ export default async function ScheduleBoardPage({
         <PermitLookupForm number={number} />
         {number.trim() !== '' && target === null ? <p>No permit has that number.</p> : null}
         {blockedCopy === null ? null : <p>{blockedCopy}</p>}
-        {target !== null && blockedCopy === null ? (
+        {target === null || blockedCopy !== null ? null : offered.length === 0 ? (
+          <p>{NOTHING_TO_REQUEST}</p>
+        ) : (
           <RequestForm
             submitLabel="Record request"
             applicationId={target.id}
-            types={(reinspection === null ? types : [reinspection]).map((t) => ({
+            types={offered.map((t) => ({
               checklistVersionId: t.checklistVersionId,
               label: t.label,
             }))}
@@ -73,7 +87,7 @@ export default async function ScheduleBoardPage({
             phoneHoursText={describePhoneHours(board.settings)}
             outsidePhoneHours={board.outsidePhoneHours}
           />
-        ) : null}
+        )}
       </section>
       <p>
         <Link href="/staff/inspections/day" className="text-action underline">

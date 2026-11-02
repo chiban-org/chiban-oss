@@ -12,6 +12,8 @@ interface Props {
 }
 
 export function ReviewersPanel({ applicationId, reviewers, choices, canAssign }: Props) {
+  const assigned = new Set(reviewers.map((r) => r.reviewerUserId))
+  const offered = choices.filter((c) => !assigned.has(c.id))
   return (
     <section aria-label="Reviewers">
       <h2>Reviewers</h2>
@@ -21,20 +23,20 @@ export function ReviewersPanel({ applicationId, reviewers, choices, canAssign }:
           <li key={r.assignmentId}>
             {`${r.name}, ${reviewStatusLabel(r.status)}`}
             {canAssign ? (
-              <ActionForm action={removeReviewerAction} submitLabel="Remove reviewer">
+              <ActionForm action={removeReviewerAction} submitLabel={`Remove ${r.name}`}>
                 <input type="hidden" name="assignmentId" value={r.assignmentId} />
               </ActionForm>
             ) : null}
           </li>
         ))}
       </ul>
-      {canAssign && choices.length > 0 ? (
+      {canAssign && offered.length > 0 ? (
         <ActionForm action={assignReviewerAction} submitLabel="Assign reviewer">
           <input type="hidden" name="applicationId" value={applicationId} />
           <SelectField
             label="Reviewer"
             name="reviewerUserId"
-            options={choices.map((c): [string, string] => [c.id, c.name])}
+            options={offered.map((c): [string, string] => [c.id, c.name])}
           />
         </ActionForm>
       ) : null}

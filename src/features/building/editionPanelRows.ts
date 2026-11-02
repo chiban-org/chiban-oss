@@ -1,5 +1,5 @@
 import type { RecordRule } from '@packs/nh/schema'
-import { formatCivilDate } from '@/lib/formatDate'
+import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 import { words } from '@/lib/words'
 
 const NOT_RECORDED = 'Not recorded'
@@ -31,7 +31,8 @@ function displayValue(field: string, value: unknown, record: Record<string, unkn
   }
   if (isEmpty(value)) return NOT_RECORDED
   if (DATE_FIELDS.has(field)) return formatCivilDate(String(value))
-  if (field === 'editionKey' && typeof record.editionLabel === 'string') return record.editionLabel
+  if (field === 'editionKey' && typeof record.editionLabel === 'string')
+    return humanizeIsoDates(record.editionLabel)
   if (field === 'classification') return words(String(value))
   if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
     return String(value)

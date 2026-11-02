@@ -6,6 +6,11 @@ vi.mock('@/server/requireStaff', () => ({
     Promise.resolve({ userId: 'u', kind: 'staff', roles: ['records_custodian'] }),
 }))
 vi.mock('./actions', () => ({ signOutAction: () => undefined }))
+vi.mock('@/db/client', () => ({ db: {} }))
+vi.mock('@/features/auth/accountSummary', () => ({
+  loadAccountSummary: () =>
+    Promise.resolve({ displayName: 'Rae Records', email: 'rae@example.test', totpEnabled: false }),
+}))
 vi.mock('@/components/CsrfField', () => ({ CsrfField: () => null }))
 
 const { default: StaffAccountPage } = await import('./page')
@@ -24,5 +29,12 @@ describe('staff account page', () => {
 
   it('shows role names as words', async () => {
     expect(await html({})).toContain('Records custodian')
+  })
+
+  it('names the person and says whether an authenticator is set up', async () => {
+    const page = await html({})
+    expect(page).toContain('Rae Records')
+    expect(page).toContain('rae@example.test')
+    expect(page).toContain('No authenticator is set up')
   })
 })

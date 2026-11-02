@@ -26,7 +26,12 @@ export async function assignReviewerAction(formData: FormData): Promise<ActionRe
     const result = await assignReviewer(db, actor, { applicationId, reviewerUserId }, signal)
     if (!result.ok) return { ok: false, error: COPY[result.error] }
     revalidatePath('/staff/queue')
-    return { ok: true, message: 'Reviewer assigned.' }
+    return {
+      ok: true,
+      message: result.value.alreadyAssigned
+        ? 'That reviewer is already assigned.'
+        : 'Reviewer assigned.',
+    }
   })
 }
 

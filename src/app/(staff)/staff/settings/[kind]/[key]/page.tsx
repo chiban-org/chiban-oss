@@ -4,6 +4,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
 import { VersionHistory } from '@/components/config/VersionHistory'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { hasCapability } from '@/features/authz/capabilities'
 import { editorContext } from '@/features/config/editorContext'
 import { KIND_LABELS } from '@/features/config/kindLabels'
 import { isConfigKind } from '@/features/config/kinds'
@@ -23,6 +24,9 @@ export default async function SettingsKeyPage({ params }: Props) {
   if (!isConfigKind(kind)) notFound()
   const ctx = await recordStaffContext()
   if (ctx === null) return <NoPermission title="Settings" action="change settings" />
+  if (!(await hasCapability(ctx.db, ctx.actor.userId, 'config.edit', ctx.signal))) {
+    return <NoPermission title="Settings" action="change settings" />
+  }
   const state = await getEditorState(ctx.db, kind, key, ctx.signal)
   const town = await getTownSettings(ctx.db, ctx.signal)
   const timeZone = town.ok ? town.value.timeZone : 'America/New_York'

@@ -56,6 +56,7 @@ vi.mock('@/features/town/today', async (original) => ({
   townToday: () => Promise.resolve('2027-07-01'),
 }))
 
+const { revalidatePath } = await import('next/cache')
 const actions = await import('./actions')
 const { default: Page } = await import('./page')
 
@@ -89,6 +90,7 @@ async function render(applicationId: string, reinspect?: string): Promise<string
 
 describe('portal inspection requests', () => {
   it('a party requests an inspection and cancels it', async () => {
+    vi.mocked(revalidatePath).mockClear()
     state.actor = w.world.applicant
     const permit = await newIssuedPermit(handle.db, w, 'EL')
     const requested = await actions.portalRequestInspectionAction(
@@ -111,9 +113,17 @@ describe('portal inspection requests', () => {
       preferredDate: '2027-07-07',
     })
     const cancelled = await actions.portalCancelInspectionAction(
-      form({ inspectionId: row?.id ?? '', expectedRowVersion: String(row?.rowVersion) }),
+      form({
+        applicationId: permit.applicationId,
+        inspectionId: row?.id ?? '',
+        expectedRowVersion: String(row?.rowVersion),
+      }),
     )
     expect(cancelled).toMatchObject({ ok: true })
+    expect(vi.mocked(revalidatePath)).toHaveBeenCalledTimes(2)
+    expect(vi.mocked(revalidatePath)).toHaveBeenCalledWith(
+      `/portal/applications/${permit.applicationId}/inspections`,
+    )
   })
 
   it('portal request action by a non-party is not_found', async () => {
@@ -150,11 +160,23 @@ describe('portal inspection requests', () => {
 
   it('the page lists the types, the open days, and the town phone hours', async () => {
     state.actor = w.world.applicant
-    const html = await render(w.trade.applicationId)
+    const permit = await newIssuedPermit(handle.db, w, 'EL')
+    const html = await render(permit.applicationId)
     expect(html).toContain('Request an inspection')
     expect(html).toContain('Weekdays, 8:00 AM to 12:00 PM')
     expect(html).toContain('Electrical rough inspection')
     expect(html).toContain('Electrical final inspection')
+  })
+
+  it('a type already requested or passed is not offered again', async () => {
+    state.actor = w.world.applicant
+    const permit = await newIssuedPermit(handle.db, w, 'EL')
+    await insertInspection(handle.db, permit.applicationId, 'rough', { status: 'passed' })
+    const html = await render(permit.applicationId)
+    expect(html).toContain('Electrical final inspection')
+    expect(html).not.toContain(
+      `value="${await checklistIdFor(handle.db, permit.applicationId, 'rough')}"`,
+    )
   })
 
   it('page for a suspended permit offers no request form', async () => {

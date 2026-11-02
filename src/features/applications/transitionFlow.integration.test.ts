@@ -8,6 +8,7 @@ import { recordCodeEdition } from '@/features/building/codeEdition'
 import { recordRegionalImpactDetermination } from '@/features/building/regionalImpact'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { applyCondition } from '@/features/conditions/applicationConditions'
+import { assignReviewer, signOffReview } from '@/features/reviews/assignments'
 import {
   type ApplicationPatch,
   makeApplication,
@@ -82,6 +83,32 @@ describe('building permit review flow', () => {
       facts: { classification: 'residential', dwellingUnits: 1, afterTheFact: false },
     })
   }
+
+  it('decided waits for every assigned reviewer to sign off', async () => {
+    const app = await building('under_review')
+    const assigned = await assignReviewer(
+      handle.db,
+      world.staff,
+      { applicationId: app.applicationId, reviewerUserId: world.reviewer.userId },
+      signal,
+    )
+    if (!assigned.ok) throw new Error(assigned.error)
+    const blocked = await go(world.staff, app.applicationId, 'decided')
+    const results =
+      !blocked.ok && typeof blocked.error === 'object' ? blocked.error.gateBlocked : []
+    expect(results.find((g) => g.key === 'reviews.signed_off')).toMatchObject({
+      kind: 'administrative',
+      effective: 'blocked',
+      outcome: { status: 'blocked', reason: '1 assigned review is not signed off.' },
+    })
+    await signOffReview(
+      handle.db,
+      world.reviewer,
+      { assignmentId: assigned.value.assignmentId },
+      signal,
+    )
+    expect(await go(world.staff, app.applicationId, 'decided')).toMatchObject({ ok: true })
+  })
 
   it('decided assesses at_approval fees once', async () => {
     const app = await building('under_review')

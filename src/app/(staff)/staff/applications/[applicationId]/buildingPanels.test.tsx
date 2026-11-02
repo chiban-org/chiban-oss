@@ -10,9 +10,12 @@ import { findIsoDates } from '@/test/leaks'
 import type { CivilDate } from '@/types/civilDate'
 
 vi.mock('./actions', () => ({ recordCodeEditionAction: () => Promise.resolve({ ok: true }) }))
-vi.mock('./buildingActions', () => ({}))
+vi.mock('./buildingActions', () => ({
+  regionalImpactAction: () => Promise.resolve({ ok: true }),
+  regionalNoticeAction: () => Promise.resolve({ ok: true }),
+}))
 
-const { CodeEditionPanel } = await import('./buildingPanels')
+const { CodeEditionPanel, RegionalImpactPanel } = await import('./buildingPanels')
 
 afterEach(cleanup)
 
@@ -64,5 +67,45 @@ describe('CodeEditionPanel', () => {
     )
     expect(screen.getByLabelText(/Applicant election/)).toBeTruthy()
     expect(screen.queryByLabelText(/edition key/)).toBeNull()
+  })
+})
+
+function regionalView(state: string): StaffApplicationView {
+  return {
+    id: 'app-1',
+    state,
+    today: '2027-05-20',
+    permissions: { canDetermineRegionalImpact: true },
+    regionalImpact: {
+      applies: true,
+      determination: { determination: 'yes', determinedOn: '2027-05-01', previousBoardRef: null },
+      notices: [],
+    },
+  } as unknown as StaffApplicationView
+}
+
+describe('RegionalImpactPanel', () => {
+  it('offers the determination and notice forms before issuance', () => {
+    render(
+      <CsrfProvider token="t">
+        <RegionalImpactPanel view={regionalView('under_review')} />
+      </CsrfProvider>,
+    )
+    expect(screen.getByRole('button', { name: 'Record determination' })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Record notice' })).toBeTruthy()
+  })
+
+  it('shows the record without forms once the permit is issued or closed', () => {
+    for (const state of ['issued', 'closed']) {
+      render(
+        <CsrfProvider token="t">
+          <RegionalImpactPanel view={regionalView(state)} />
+        </CsrfProvider>,
+      )
+      expect(screen.queryByRole('button', { name: 'Record determination' })).toBeNull()
+      expect(screen.queryByRole('button', { name: 'Record notice' })).toBeNull()
+      expect(screen.getByText(/Determination:/)).toBeTruthy()
+      cleanup()
+    }
   })
 })

@@ -76,6 +76,7 @@ async function demoDocument(
   applicationId: string,
   title: string,
   signal: AbortSignal,
+  docKind: 'notice_proof' | 'attachment' = 'notice_proof',
 ): Promise<string> {
   const pdf = await renderPdf({
     title,
@@ -91,7 +92,7 @@ async function demoDocument(
       {
         target: { kind: 'application', id: applicationId },
         title,
-        docKind: 'notice_proof',
+        docKind,
         file: {
           sha256: stored.sha256,
           filename: `${stored.sha256.slice(0, 8)}.pdf`,
@@ -336,6 +337,7 @@ async function seedSitePlanDecision(
           site.applicationId,
           'Minutes of October 14',
           signal,
+          'attachment',
         ),
       },
       signal,

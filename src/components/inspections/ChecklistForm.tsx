@@ -28,6 +28,11 @@ const OPTIONS: readonly (readonly [Outcome, string])[] = [
 
 const MIN_FAIL_NOTES = 10
 
+function resultText(failed: boolean, requiredAnswered: boolean): string {
+  if (failed) return 'Failed'
+  return requiredAnswered ? 'Passed' : 'answer the required items first'
+}
+
 export function ChecklistForm({
   inspectionId,
   rowVersion,
@@ -131,7 +136,7 @@ export function ChecklistForm({
           <p className="m-0">Write at least 10 characters about what failed.</p>
         ) : null}
       </div>
-      <p className="m-0 font-semibold">{`Result: ${failed ? 'Failed' : 'Passed'}`}</p>
+      <p className="m-0 font-semibold">{`Result: ${resultText(failed, requiredAnswered)}`}</p>
       <Button
         type="button"
         className="min-h-11 w-full text-base"

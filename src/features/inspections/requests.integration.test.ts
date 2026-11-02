@@ -4,7 +4,7 @@ import { recordAppeal } from '@/features/appeals/appeals'
 import { loadActor } from '@/features/auth/actor'
 import { publishConfig } from '@/features/config/publish'
 import { saveDraft } from '@/features/config/store'
-import { inspectableTypes } from '@/features/inspections/eligibility'
+import { inspectableTypes, requestableTypes } from '@/features/inspections/eligibility'
 import { describeIntakeBlock, reinspectableFailureIds } from '@/features/inspections/lookup'
 import { requestInspection } from '@/features/inspections/requestInspection'
 import { listVisibleInspections } from '@/features/inspections/visibility'
@@ -62,6 +62,29 @@ describe('inspection requests', () => {
   it('staff phone request on an issued electrical permit is requested', async () => {
     const r = await request(w.world.staff, w.trade.applicationId, 'rough')
     expect(r.ok).toBe(true)
+  })
+
+  it('a type that is already requested, scheduled, or passed is not requested again', async () => {
+    const permit = await newIssuedPermit(handle.db, w, 'EL')
+    await insertInspection(handle.db, permit.applicationId, 'rough', { status: 'passed' })
+    await insertInspection(handle.db, permit.applicationId, 'final', { status: 'scheduled' })
+    expect(await request(w.world.staff, permit.applicationId, 'rough')).toEqual({
+      ok: false,
+      error: 'inspection_already_passed',
+    })
+    expect(await request(w.world.staff, permit.applicationId, 'final')).toEqual({
+      ok: false,
+      error: 'inspection_already_open',
+    })
+    const offered = await requestableTypes(handle.db, permit.applicationId, signal)
+    expect(offered.map((t) => t.inspectionType)).not.toContain('rough')
+    expect(offered.map((t) => t.inspectionType)).not.toContain('final')
+  })
+
+  it('a cancelled request does not stop a new one', async () => {
+    const permit = await newIssuedPermit(handle.db, w, 'EL')
+    await insertInspection(handle.db, permit.applicationId, 'rough', { status: 'cancelled' })
+    expect((await request(w.world.staff, permit.applicationId, 'rough')).ok).toBe(true)
   })
 
   it('request on a submitted building permit is not_issued', async () => {
@@ -294,7 +317,8 @@ describe('inspection requests', () => {
   })
 
   it('preferred date on a Wednesday inside the horizon is accepted', async () => {
-    const r = await request(w.world.staff, w.trade.applicationId, 'rough', {
+    const permit = await newIssuedPermit(handle.db, w, 'EL')
+    const r = await request(w.world.staff, permit.applicationId, 'rough', {
       preferredDate: civil('2027-07-07'),
     })
     expect(r.ok).toBe(true)

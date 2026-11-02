@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { clocks } from '@/db/schema'
+import { applications, clocks } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import {
   recordRegionalImpactDetermination,
@@ -126,6 +126,29 @@ describe('regional impact determination', () => {
     const app = await makeApplication(handle.db, world)
     const inspector = await staffActor(handle.db, 'inspector')
     expect((await determine(app.applicationId, 'no', {}, inspector)).ok).toBe(true)
+  })
+
+  it('a determination cannot change once the permit is issued or closed', async () => {
+    for (const state of ['issued', 'closed'] as const) {
+      const app = await makeApplication(handle.db, world, { state })
+      expect(await determine(app.applicationId, 'yes')).toEqual({
+        ok: false,
+        error: 'after_issuance',
+      })
+    }
+  })
+
+  it('a notice cannot be recorded once the permit is issued', async () => {
+    const app = await makeApplication(handle.db, world)
+    await determine(app.applicationId, 'yes')
+    await handle.db
+      .update(applications)
+      .set({ state: 'issued' })
+      .where(eq(applications.id, app.applicationId))
+    expect(await notify(app.applicationId, '2027-06-02')).toEqual({
+      ok: false,
+      error: 'after_issuance',
+    })
   })
 
   it('a yes with no certified commission notice is blocked', async () => {

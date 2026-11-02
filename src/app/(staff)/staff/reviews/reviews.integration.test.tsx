@@ -94,9 +94,12 @@ describe('reviewer assignment actions and pages', () => {
     const mine = renderToStaticMarkup(await ReviewsPage())
     const assignmentId = /reviews\/([0-9a-f-]{36})/.exec(mine)?.[1] ?? ''
     expect(assignmentId).not.toBe('')
-    expect(
-      renderToStaticMarkup(await ReviewPage({ params: Promise.resolve({ assignmentId }) })),
-    ).toContain('Sign off')
+    const page = renderToStaticMarkup(
+      await ReviewPage({ params: Promise.resolve({ assignmentId }) }),
+    )
+    expect(page).toContain('Sign off')
+    expect(page).toContain('Garage addition')
+    expect(page).toContain('007001000000')
     state.actor = await staffActor(handle.db, 'reviewer')
     await expect(ReviewPage({ params: Promise.resolve({ assignmentId }) })).rejects.toThrow(
       'NEXT_NOT_FOUND',

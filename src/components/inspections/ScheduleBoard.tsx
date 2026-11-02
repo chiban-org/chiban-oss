@@ -165,6 +165,7 @@ export function ScheduleBoard({
                 <button
                   key={start}
                   type="button"
+                  aria-label={`${minutesToClock(start)}, ${formatCivilDate(day.date)}, ${day.inspectorName}`}
                   onFocus={() => {
                     focusedSlot.current = {
                       date: day.date,

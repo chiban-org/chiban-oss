@@ -24,7 +24,12 @@ export async function assignReviewer(
   actor: Actor,
   input: { applicationId: string; reviewerUserId: string },
   signal: AbortSignal,
-): Promise<Result<{ assignmentId: string }, 'forbidden' | 'not_a_reviewer' | 'not_found'>> {
+): Promise<
+  Result<
+    { assignmentId: string; alreadyAssigned: boolean },
+    'forbidden' | 'not_a_reviewer' | 'not_found'
+  >
+> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'review.assign', signal)
   if (!allowed.ok) return err('forbidden')
@@ -34,7 +39,10 @@ export async function assignReviewer(
     .from(applications)
     .where(eq(applications.id, input.applicationId))
   if (app === undefined) return err('not_found')
-  return await transactionResult(db, async (tx) => {
+  return await transactionResult<
+    { assignmentId: string; alreadyAssigned: boolean },
+    'forbidden' | 'not_a_reviewer' | 'not_found'
+  >(db, async (tx) => {
     const inserted = await tx
       .insert(reviewAssignments)
       .values({
@@ -56,7 +64,7 @@ export async function assignReviewer(
             isNull(reviewAssignments.removedAt),
           ),
         )
-      return ok({ assignmentId: active?.id ?? '' })
+      return ok({ assignmentId: active?.id ?? '', alreadyAssigned: true })
     }
     await writeAudit(
       tx,
@@ -80,7 +88,7 @@ export async function assignReviewer(
       },
       signal,
     )
-    return ok({ assignmentId: created.id })
+    return ok({ assignmentId: created.id, alreadyAssigned: false })
   })
 }
 

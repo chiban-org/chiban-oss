@@ -29,7 +29,9 @@ export interface CensusInput {
 
 export type CensusInputError =
   | 'units_do_not_fit_category'
-  | 'reason_required'
+  | 'excluded_reason_required'
+  | 'excluded_carries_counts'
+  | 'reason_without_exclusion'
   | 'phase_counts_must_be_zero'
 
 function unitsFit(category: CensusCategory, buildings: number, units: number): boolean {
@@ -50,11 +52,11 @@ function unitsFit(category: CensusCategory, buildings: number, units: number): b
 
 export function validateCensus(input: CensusInput): Result<void, CensusInputError> {
   if (input.category === 'excluded') {
-    if (input.excludedReason === null) return err('reason_required')
+    if (input.excludedReason === null) return err('excluded_reason_required')
     const empty = input.buildings === 0 && input.housingUnits === 0 && input.valuationDollars === 0
-    return empty ? ok(undefined) : err('units_do_not_fit_category')
+    return empty ? ok(undefined) : err('excluded_carries_counts')
   }
-  if (input.excludedReason !== null) return err('units_do_not_fit_category')
+  if (input.excludedReason !== null) return err('reason_without_exclusion')
   if (input.phase === 'foundation_or_finish_only') {
     const zeroed = input.buildings === 0 && input.housingUnits === 0
     return zeroed && input.valuationDollars > 0 ? ok(undefined) : err('phase_counts_must_be_zero')

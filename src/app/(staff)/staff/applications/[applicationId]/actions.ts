@@ -1,7 +1,10 @@
 'use server'
 
+import type { Db } from '@/db/client'
+import { loadApplicationContext } from '@/features/applications/context'
 import { CORE_STATES, type CoreState } from '@/features/applications/states'
 import { setSubstep, transitionApplication } from '@/features/applications/transition'
+import { boardOfApplication } from '@/features/boards/boardOf'
 import { recordCodeEdition } from '@/features/building/codeEdition'
 import { markComplete } from '@/features/building/completeness'
 import { applyCondition, setConditionStatus } from '@/features/conditions/applicationConditions'
@@ -14,6 +17,20 @@ import { issueApplication } from '@/features/issuance/issueApplication'
 import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
 import { dateOf, done, INVALID, INVALID_DATE, idOf } from './actionInput'
 
+const BOARD_DECISION_ONLY =
+  'Record the board decision from its hearing; that sets the outcome and the state.'
+
+async function isBareBoardDecision(
+  db: Db,
+  applicationId: string,
+  to: string,
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (to !== 'decided' && to !== 'denied') return false
+  const app = await loadApplicationContext(db, applicationId, signal)
+  return app !== null && boardOfApplication(app) !== null
+}
+
 export async function transitionAction(formData: FormData): Promise<ActionResult> {
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
     const applicationId = idOf(formData)
@@ -25,6 +42,9 @@ export async function transitionAction(formData: FormData): Promise<ActionResult
       !Number.isInteger(expectedRowVersion)
     ) {
       return INVALID
+    }
+    if (await isBareBoardDecision(db, applicationId, to, signal)) {
+      return { ok: false, error: BOARD_DECISION_ONLY }
     }
     const result =
       to === 'issued'

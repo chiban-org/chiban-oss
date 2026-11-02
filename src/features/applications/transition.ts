@@ -15,6 +15,7 @@ import type { AnyActor } from '@/features/audit/actorRef'
 import { toAuditActor } from '@/features/audit/actorRef'
 import { writeAudit } from '@/features/audit/writeAudit'
 import { hasCapability } from '@/features/authz/capabilities'
+import { CLOSURE_GATE_KEY } from '@/features/gates/coreGates'
 import { evaluateGates, type GateResult } from '@/features/gates/evaluateGates'
 import { queueForParties } from '@/features/notifications/queue'
 import { loadPack } from '@/features/packs/loadPack'
@@ -36,6 +37,7 @@ export interface TransitionInput {
     | 'not_accepted_incomplete'
     | 'notice_costs_unpaid'
     | 'issuance'
+    | 'revoked_on_appeal'
   cutover?: boolean
   boardVote?: boolean
 }
@@ -102,7 +104,10 @@ async function gateResultsFor(
   signal: AbortSignal,
 ): Promise<GateResult[]> {
   if (reinstating || input.cutover === true) return []
-  return await evaluateGates(tx, app, input.to, today, signal)
+  const results = await evaluateGates(tx, app, input.to, today, signal)
+  return input.closureReason === undefined
+    ? results
+    : results.filter((g) => g.key !== CLOSURE_GATE_KEY)
 }
 
 function notifiesParties(input: TransitionInput, from: CoreState): boolean {

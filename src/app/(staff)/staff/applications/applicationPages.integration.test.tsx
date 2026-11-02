@@ -73,6 +73,7 @@ describe('staff application pages', () => {
     expect(page.match(/href="\/staff\/applications\//g)).toHaveLength(seeded.length)
     expect(page).toContain('Under review')
     expect(page).toContain('Suspended by appeal (RSA 676:6)')
+    expect(page).toContain('href="/staff/queue"')
   })
 
   it('seeded application page renders every clock with a non-empty consequence', async () => {
@@ -166,9 +167,15 @@ describe('staff settings pages', () => {
       SettingsKindPage({ params: Promise.resolve({ kind: 'application_type' }) }),
     )
     expect(kind).toContain('/staff/settings/application_type/BP')
+    const clerk = state.actor
+    const admin = await handle.db.query.users.findFirst({
+      where: (u, { eq }) => eq(u.email, 'admin@alderpond.example'),
+    })
+    state.actor = await loadActor(handle.db, admin?.id ?? '', signal)
     const key = await html(
       SettingsKeyPage({ params: Promise.resolve({ kind: 'application_type', key: 'BP' }) }),
     )
+    state.actor = clerk
     expect(key).toContain('Version history')
     expect(key).toContain('Bindings')
     expect(key).toContain('Building or demolition permit starter, version 2')
