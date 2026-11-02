@@ -165,6 +165,17 @@ async function withholdingsFor(
   return true
 }
 
+async function checkReleaseDate(
+  tx: Tx,
+  receivedOn: CivilDate,
+  releasedOn: CivilDate,
+  now: Date,
+  signal: AbortSignal,
+): Promise<'future_date' | 'before_received' | null> {
+  if (daysBetween(await townToday(tx, now, signal), releasedOn) > 0) return 'future_date'
+  return daysBetween(receivedOn, releasedOn) < 0 ? 'before_received' : null
+}
+
 export async function createRelease(
   db: Db,
   store: ObjectStore,
@@ -193,11 +204,14 @@ export async function createRelease(
         .for('update')
       if (request === undefined) return err('not_found')
       if (!OPEN_STATUSES.includes(request.status)) return err('not_open')
-      if (daysBetween(await townToday(tx, now, signal), value.releasedOn) > 0)
-        return err('future_date')
-      if (daysBetween(request.receivedOn as CivilDate, value.releasedOn) < 0) {
-        return err('before_received')
-      }
+      const dated = await checkReleaseDate(
+        tx,
+        request.receivedOn as CivilDate,
+        value.releasedOn,
+        now,
+        signal,
+      )
+      if (dated !== null) return err(dated)
       const items = await resolveItems(tx, value.requestId, value.items)
       if (!items.ok) return err(items.error)
       const [last] = await tx
