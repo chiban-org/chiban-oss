@@ -8,11 +8,11 @@ export const JOB_NAMES = {
   RECORDS_PRESERVE: 'records.preserve',
   NOTIFICATIONS_SEND: 'notifications.send',
   CALENDAR_PUSH: 'calendar.push',
-  CALENDAR_SWEEP: 'calendar.sweep',
   EXPORTS_BUILD: 'exports.build',
   EXPORTS_PICKUP: 'exports.pickup',
   EXPORTS_PRUNE: 'exports.prune',
   HEALTH_CHECK: 'health.check',
+  JOBS_SWEEP: 'jobs.sweep',
 } as const
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES]

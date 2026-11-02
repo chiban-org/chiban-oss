@@ -4,21 +4,13 @@ import { JOB_NAMES } from '@/constants/jobNames'
 import { deliverPush } from '@/features/calendar/deliverPush'
 import { createIcsEmailPublisher } from '@/features/calendar/icsEmailPublisher'
 import { createPublisherFactory } from '@/features/calendar/publisherFactory'
-import { overdueCalendarPushes } from '@/features/calendar/queuePush'
 import { getMailTransport, type MailTransport } from '@/features/mail/transport'
 import { ok } from '@/types/result'
 import { defineJob, enqueue, failKeepingWrites } from './defineJob'
 
-const MINUTE_CHARS = 16
-const MINUTE_SECONDS = 60
-
 interface PushPayload {
   pushId: string
   attempts: number
-}
-
-interface SweepPayload {
-  at?: string
 }
 
 export function makeCalendarPushJob(deps: { mail: MailTransport; now?: () => Date }) {
@@ -40,20 +32,6 @@ export function makeCalendarPushJob(deps: { mail: MailTransport; now?: () => Dat
 export const calendarPushJob = makeCalendarPushJob({
   get mail() {
     return getMailTransport()
-  },
-})
-
-export const calendarSweepJob = defineJob<SweepPayload>({
-  name: JOB_NAMES.CALENDAR_SWEEP,
-  intervalSeconds: MINUTE_SECONDS,
-  dedupKey: (p) =>
-    `${JOB_NAMES.CALENDAR_SWEEP}:${(p.at ?? new Date().toISOString()).slice(0, MINUTE_CHARS)}`,
-  handler: async (_payload, ctx) => {
-    const overdue = await overdueCalendarPushes(ctx.db, new Date(), ctx.signal)
-    for (const push of overdue) {
-      await enqueue(calendarPushJob, { pushId: push.id, attempts: push.attempts }, ctx.signal)
-    }
-    return ok(undefined)
   },
 })
 
