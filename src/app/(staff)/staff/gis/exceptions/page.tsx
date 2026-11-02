@@ -8,6 +8,7 @@ import { exceptionDetailText, exceptionTitle } from '@/features/gis/import/runTe
 import { townTimeZone } from '@/features/town/timeZone'
 import { recordStaffContext } from '@/server/requireStaff'
 import { acceptAllOwnerChangesAction, acceptHeldRowAction, dismissExceptionAction } from './actions'
+import { ExceptionFacts } from './ExceptionFacts'
 
 interface ExceptionsPageProps {
   searchParams: Promise<{ kind?: string; status?: string }>
@@ -94,6 +95,7 @@ export default async function StaffExceptionsPage({ searchParams }: ExceptionsPa
               <p className="text-sm text-muted-foreground">
                 {exceptionDetailText(row.detail, row.createdAt, timeZone)}
               </p>
+              <ExceptionFacts payload={row.payload} />
               {row.status !== 'open' ? (
                 <p className="text-sm">{`Status: ${row.status.replaceAll('_', ' ')}${row.dispositionReason === null ? '' : `. Reason: ${row.dispositionReason}`}`}</p>
               ) : (
