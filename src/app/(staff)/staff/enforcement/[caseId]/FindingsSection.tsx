@@ -5,6 +5,7 @@ import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import {
   FINDING_STATUS_LABELS,
   NOTICE_METHOD_LABELS,
+  NOTICE_SENT_PHRASES,
   PROVISION_KIND_LABELS,
 } from '@/features/enforcement/labels'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -84,7 +85,7 @@ export function FindingsSection({ detail, can }: { detail: CaseDetail; can: Can 
         {detail.notices.map((n) => (
           <li key={n.id} className="space-y-2 rounded-md border p-3">
             <p className="m-0">
-              {`Sent ${formatCivilDate(n.sentOn)} by ${NOTICE_METHOD_LABELS[n.method].toLowerCase()}. `}
+              {`${NOTICE_SENT_PHRASES[n.method]} on ${formatCivilDate(n.sentOn)}. `}
               {n.receivedOn === null
                 ? 'Receipt not recorded.'
                 : `Received ${formatCivilDate(n.receivedOn)}: ${n.receiptBasis ?? ''}.`}{' '}

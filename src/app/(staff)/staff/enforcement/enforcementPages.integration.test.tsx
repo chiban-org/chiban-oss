@@ -7,6 +7,7 @@ import {
   enforcementCases,
   enforcementOrders,
   violationFindings,
+  violationNotices,
 } from '@/db/schema'
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
@@ -342,5 +343,18 @@ describe('enforcement queue and case pages', () => {
       await html(CasePage({ params: Promise.resolve({ caseId: photo.recordId }) })),
     )
     expect(page).toContain('Approve for the public')
+  })
+
+  it('a notice of violation says how it was sent in a sentence', async () => {
+    await actAs('staff')
+    const notices = await handle.db.select().from(violationNotices)
+    expect(notices.length).toBeGreaterThan(0)
+    for (const caseId of new Set(notices.map((n) => n.caseId))) {
+      const page = visibleText(await html(CasePage({ params: Promise.resolve({ caseId }) })))
+      expect(page).not.toMatch(/ by (handed|posted)/i)
+      expect(page).toMatch(
+        /(Handed to the recipient|Sent by [a-z ]+|Posted on the property) on [A-Z][a-z]+ \d{1,2}, \d{4}\./,
+      )
+    }
   })
 })

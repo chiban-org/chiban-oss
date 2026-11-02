@@ -124,6 +124,14 @@ export const NOTICE_METHOD_LABELS = {
   email: 'Email',
 } as const
 
+export const NOTICE_SENT_PHRASES = {
+  in_hand: 'Handed to the recipient',
+  first_class_mail: 'Sent by first class mail',
+  certified_mail: 'Sent by certified mail',
+  posting: 'Posted on the property',
+  email: 'Sent by email',
+} as const
+
 export const FINDING_STATUS_LABELS = {
   open: 'Open',
   corrected: 'Corrected',
