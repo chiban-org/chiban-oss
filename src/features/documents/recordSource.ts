@@ -24,6 +24,7 @@ const KIND_LABEL = {
   enforcement_letter: 'Case letter',
   service_proof: 'Proof of service',
   court_document: 'Court document',
+  rtk_letter: 'Right-to-Know letter',
 } as const
 
 export async function summarizeDocuments(

@@ -6,6 +6,7 @@ export const RECORD_KINDS = [
   'application',
   'inspection',
   'enforcement_case',
+  'rtk_request',
 ] as const
 export type RecordKind = (typeof RECORD_KINDS)[number]
 
@@ -29,6 +30,7 @@ export const DOC_KINDS = [
   'enforcement_letter',
   'service_proof',
   'court_document',
+  'rtk_letter',
 ] as const
 export type DocKind = (typeof DOC_KINDS)[number]
 

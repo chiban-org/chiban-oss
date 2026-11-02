@@ -43,7 +43,7 @@ export function documentPrivateAccess(actor: Actor | null): SQL {
 }
 
 function publicDocument(): SQL {
-  return sql`(${documents.isPublic} and (${documents.recordKind} <> 'enforcement_case' or exists (
+  return sql`(${documents.isPublic} and ${documents.recordKind} <> 'rtk_request' and (${documents.recordKind} <> 'enforcement_case' or exists (
     select 1 from enforcement_cases ec
     where ec.id = ${documents.recordId} and ec.is_public)))`
 }

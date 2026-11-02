@@ -34,6 +34,7 @@ export const documents = pgTable(
         'enforcement_letter',
         'service_proof',
         'court_document',
+        'rtk_letter',
       ],
     }).notNull(),
     audiences: text('audiences').array().notNull().default(sql`'{}'::text[]`),

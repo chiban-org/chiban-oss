@@ -36,7 +36,8 @@ export interface AttachInput {
 export function defaultsFor(kind: RecordRef['kind']): { audiences: Audience[]; isPublic: boolean } {
   if (kind === 'parcel') return { audiences: [...AUDIENCES], isPublic: true }
   if (kind === 'inspection') return { audiences: ['project_parties'], isPublic: false }
-  if (kind === 'enforcement_case') return { audiences: [], isPublic: false }
+  if (kind === 'enforcement_case' || kind === 'rtk_request')
+    return { audiences: [], isPublic: false }
   return { audiences: ['project_parties', 'reviewers'], isPublic: false }
 }
 
@@ -52,6 +53,7 @@ export async function applicationOf(tx: Tx, target: RecordRef): Promise<string |
 
 export async function parcelOf(tx: Tx, target: RecordRef): Promise<string | null> {
   if (target.kind === 'parcel') return target.id
+  if (target.kind === 'rtk_request') return null
   if (target.kind === 'enforcement_case') {
     const [row] = await tx
       .select({ parcelId: enforcementCases.parcelId })

@@ -2,6 +2,7 @@ import { getTableName } from 'drizzle-orm'
 import { getTableConfig, type PgTable } from 'drizzle-orm/pg-core'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import * as t from '@/db/schema'
+import { M10_SPECS } from '@/features/export/m10Specs'
 
 export interface ExportEntity {
   name: string
@@ -28,7 +29,7 @@ export const HASH_COLUMNS_ALLOWED = [
 
 const RANDOM_HASH = `encode(gen_random_bytes(32), 'hex')`
 
-interface Spec {
+export interface Spec {
   table: PgTable
   importMode?: ExportEntity['importMode']
   omit?: string[]
@@ -59,6 +60,7 @@ const ENFORCEMENT_SPECS: Spec[] = [
 
 const SPECS: Spec[] = [
   ...ENFORCEMENT_SPECS,
+  ...M10_SPECS,
   { table: t.aliasOverrides },
   { table: t.appeals },
   { table: t.applicationConditions },

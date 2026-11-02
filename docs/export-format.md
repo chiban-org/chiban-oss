@@ -1491,6 +1491,61 @@ File: `data/role_capabilities.ndjson`. Ordered by role, capability.
 - `role`: text
 - `capability`: text
 
+### rtk_requests
+
+File: `data/rtk_requests.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `number`: text
+- `received_on`: date
+- `received_via`: text
+- `requester_name`: text, nullable
+- `requester_contact`: text, nullable
+- `description`: text
+- `status`: text
+- `response_due`: jsonb
+- `stated_due`: jsonb, nullable
+- `open_due_on`: date, nullable
+- `first_response_on`: date, nullable
+- `first_response_kind`: text, nullable
+- `first_response_url`: text, nullable
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+- `row_version`: integer
+
+### rtk_time_statements
+
+File: `data/rtk_time_statements.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `request_id`: uuid
+- `stated_on`: date
+- `stated_date`: date
+- `delay_reason`: text
+- `cost_estimate`: jsonb
+
+References:
+- `request_id` refers to `rtk_requests`
+
+### rtk_withholdings
+
+File: `data/rtk_withholdings.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `request_id`: uuid
+- `release_id`: uuid, nullable
+- `scope`: text
+- `document_id`: uuid, nullable
+- `record_description`: text
+- `exemption_key`: text
+- `other_citation`: text, nullable
+- `explanation`: text
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `request_id` refers to `rtk_requests`
+
 ### rule_transitions_applied
 
 File: `data/rule_transitions_applied.ndjson`. Ordered by id.

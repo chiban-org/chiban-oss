@@ -19,6 +19,7 @@ import { seedPayments } from '@/features/demo/seedPayments'
 import { actorFor } from '@/features/demo/seedPermitSupport'
 import { seedPermits } from '@/features/demo/seedPermits'
 import { type SeedRecordsDeps, seedRecords } from '@/features/demo/seedRecords'
+import { seedRecordsM10 } from '@/features/demo/seedRtk'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import type { OcrConverter } from '@/features/migration/ocrmypdf'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
@@ -152,6 +153,12 @@ export async function seedDemo(
   const inspectionsSeeded = await seedInspections(db, signal, deps.inspections)
   const operationsSeeded = await seedOperations(db, signal, deps.operations ?? {})
   const enforcementSeeded = await seedEnforcement(
+    db,
+    deps.operations?.store ?? getObjectStore(),
+    signal,
+    deps.operations?.now ?? new Date(),
+  )
+  await seedRecordsM10(
     db,
     deps.operations?.store ?? getObjectStore(),
     signal,

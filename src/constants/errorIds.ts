@@ -58,6 +58,8 @@ export const ErrorIds = {
 
   ENF_INVARIANT: 'E_ENF_001',
 
+  RTK_INVARIANT: 'E_RTK_001',
+
   ANON_INTAKE_FAILED: 'E_ANON_001',
 } as const
 

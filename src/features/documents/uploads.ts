@@ -109,6 +109,8 @@ export async function mayUploadTo(
     return await mayUploadToInspection(db, actor, target.id, signal, now)
   }
   if (target.kind === 'enforcement_case') return await mayUploadToCase(db, actor, signal)
+  if (target.kind === 'rtk_request')
+    return await hasCapability(db, actor.userId, 'rtk.manage', signal)
   if (await hasCapability(db, actor.userId, 'document.manage', signal)) return true
   if (target.kind === 'parcel' || hasFullRecordAccess(actor)) return false
   if (target.kind === 'project') {
