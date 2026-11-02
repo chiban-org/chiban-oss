@@ -40,6 +40,12 @@ function href(params: Record<string, string | undefined>): string {
   return `/staff/counter?${query.toString()}`
 }
 
+function SearchNotice({ q, hitCount }: { q: string; hitCount: number }) {
+  const length = q.trim().length
+  if (length === 0 || (length >= 2 && hitCount > 0)) return null
+  return <p>{length < 2 ? 'Enter at least two characters.' : 'No parcels match that search.'}</p>
+}
+
 export default async function CounterPage({ searchParams }: Props) {
   const { q = '', parcel, type } = await searchParams
   const ctx = await requireStaffContext()
@@ -110,11 +116,7 @@ export default async function CounterPage({ searchParams }: Props) {
             Selected parcel: <strong>{display.get(parcelId) ?? 'No map-lot ID'}</strong>
           </p>
         )}
-        {q.trim() === '' ? null : q.trim().length < 2 ? (
-          <p>Enter at least two characters.</p>
-        ) : hits.length === 0 ? (
-          <p>No parcels match that search.</p>
-        ) : null}
+        <SearchNotice q={q} hitCount={hits.length} />
         <ul className="space-y-1">
           {hits.map((hit) => (
             <li key={hit.parcelId}>
