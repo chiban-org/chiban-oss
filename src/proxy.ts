@@ -1,12 +1,18 @@
 import { type NextRequest, NextResponse } from 'next/server'
+import { ANONYMOUS_PREFIXES } from '@/constants/anonymousRoutes'
 import { CSRF_COOKIE, CSRF_COOKIE_OPTIONS } from '@/constants/cookies'
 import { mintCsrfToken } from '@/features/auth/csrf'
 
 export const config = {
-  matcher: ['/((?!_next/|api/tiles/|.*\\.[a-zA-Z0-9]+$).*)'],
+  matcher: ['/((?!_next/|api/tiles/|report-anonymously|intake/anonymous|.*\\.[a-zA-Z0-9]+$).*)'],
 }
 
-const SKIPPED_PREFIXES = ['/_next/', '/api/tiles/', '/api/payments/webhooks/']
+const SKIPPED_PREFIXES = [
+  '/_next/',
+  '/api/tiles/',
+  '/api/payments/webhooks/',
+  ...ANONYMOUS_PREFIXES,
+]
 
 export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl

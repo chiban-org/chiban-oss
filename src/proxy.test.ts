@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { describe, expect, it } from 'vitest'
-import { proxy } from '@/proxy'
+import { ANONYMOUS_PREFIXES } from '@/constants/anonymousRoutes'
+import { config, proxy } from '@/proxy'
 
 function get(path: string, cookie?: string): NextRequest {
   return new NextRequest(`https://alderpond.example${path}`, {
@@ -41,5 +42,20 @@ describe('proxy payment webhooks', () => {
   it('skips /api/payments/webhooks/x', () => {
     const res = proxy(get('/api/payments/webhooks/x'))
     expect(res.headers.get('set-cookie')).toBeNull()
+  })
+})
+
+describe('proxy anonymous paths', () => {
+  it.each(ANONYMOUS_PREFIXES)('anonymous paths get no csrf cookie: %s', (prefix) => {
+    for (const path of [prefix, `${prefix}/received`]) {
+      const res = proxy(get(path))
+      expect(res.headers.get('set-cookie')).toBeNull()
+      expect(forwardedCookie(res)).toBeNull()
+    }
+  })
+
+  it.each(ANONYMOUS_PREFIXES)('the matcher excludes %s', (prefix) => {
+    const matcher = config.matcher[0] ?? ''
+    expect(matcher).toContain(prefix.slice(1))
   })
 })
