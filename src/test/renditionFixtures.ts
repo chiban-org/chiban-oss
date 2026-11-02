@@ -1,5 +1,6 @@
 import { and, eq, isNull } from 'drizzle-orm'
 import { env } from '@/config/env'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import { documentVersions, renditionApprovals } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
@@ -41,9 +42,11 @@ export async function redactedVersionOf(
     },
     signal,
   )
-  if (!requested.ok) throw new Error(`redaction request failed: ${requested.error}`)
+  if (!requested.ok)
+    throw new AppError(ErrorIds.DB_INVARIANT, `redaction request failed: ${requested.error}`)
   const ran = await runRedactionJob(db, store, converter, { jobId: requested.value.jobId }, signal)
-  if (!ran.ok || ran.value !== 'complete') throw new Error('redaction did not complete')
+  if (!ran.ok || ran.value !== 'complete')
+    throw new AppError(ErrorIds.DB_INVARIANT, 'redaction did not complete')
   const [version] = await db
     .select({ id: documentVersions.id })
     .from(documentVersions)
@@ -78,6 +81,7 @@ export async function approvePublic(
     { versionId, purpose: 'public', reviewStatement: 'Fixture approval after staff review.' },
     signal,
   )
-  if (!approved.ok) throw new Error(`fixture approval failed: ${approved.error}`)
+  if (!approved.ok)
+    throw new AppError(ErrorIds.DB_INVARIANT, `fixture approval failed: ${approved.error}`)
   return approved.value.approvalId
 }

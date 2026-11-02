@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { PDFDocument, StandardFonts } from 'pdf-lib'
 import { env } from '@/config/env'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import { parcels, redactionJobs } from '@/db/schema'
 import { must } from '@/features/demo/seedPermitSupport'
 import type { RtkSeedContext } from '@/features/demo/seedRtk'
@@ -30,7 +31,7 @@ export async function seedLetterDocument(
   title: string,
 ): Promise<{ documentId: string; versionId: string }> {
   const [parcel] = await ctx.db.select({ id: parcels.id }).from(parcels).limit(1)
-  if (parcel === undefined) throw new Error('Demo seed needs a parcel')
+  if (parcel === undefined) throw new AppError(ErrorIds.DB_INVARIANT, 'Demo seed needs a parcel')
   return await ctx.db.transaction(async (tx) => {
     const stored = await storeGeneratedBytes(
       tx,
@@ -96,7 +97,8 @@ export async function seedRedactedVersion(
     await runRedactionJob(ctx.db, ctx.store, converter, { jobId: requested.jobId }, ctx.signal),
     'run a demo redaction',
   )
-  if (ran !== 'complete') throw new Error('Demo redaction did not complete')
+  if (ran !== 'complete')
+    throw new AppError(ErrorIds.DB_INVARIANT, 'Demo redaction did not complete')
   const [job] = await ctx.db
     .select({ versionId: redactionJobs.resultVersionId })
     .from(redactionJobs)

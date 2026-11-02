@@ -90,7 +90,7 @@ describe('requesting a redaction', () => {
   it('box without an exemption is unknown_exemption', async () => {
     const r = await request([pdfBox({ exemptionKey: '' })])
     expect(r).toEqual({ ok: false, error: 'unknown_exemption' })
-    const missing = await request([{ pdf: LETTER_PHONE_BOX, explanation: EXPLANATION } as never])
+    const missing = await request([{ pdf: LETTER_PHONE_BOX, explanation: EXPLANATION }])
     expect(missing.ok).toBe(false)
   })
 
@@ -183,10 +183,11 @@ describe('running a redaction', () => {
   it('failed verification creates no version', async () => {
     const jobId = await queuedJob()
     const ran = await runRedactionJob(handle.db, store, converter, { jobId }, signal, {
-      redactPdf: async () => ({
-        ok: false,
-        error: { reason: 'verification_failed', detail: 'Removed text is still present' },
-      }),
+      redactPdf: () =>
+        Promise.resolve({
+          ok: false,
+          error: { reason: 'verification_failed', detail: 'Removed text is still present' },
+        }),
     })
     expect(ran).toEqual({ ok: true, value: 'failed' })
     expect(await versionsOf(letter.documentId)).toHaveLength(1)

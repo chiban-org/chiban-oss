@@ -17,8 +17,11 @@ const EXCLUDED_ZERO = {
 
 export function wholeDollars(raw: unknown): number | null {
   const text = typeof raw === 'number' ? String(raw) : typeof raw === 'string' ? raw.trim() : ''
-  const match = /^(\d+)(?:\.\d+)?$/.exec(text.replaceAll(',', ''))
-  return match === null ? null : Number(match[1])
+  const [whole = '', fraction, ...rest] = text.replaceAll(',', '').split('.')
+  const digits = /^\d+$/
+  if (rest.length > 0 || !digits.test(whole)) return null
+  if (fraction !== undefined && !digits.test(fraction)) return null
+  return Number(whole)
 }
 
 function categoryFor(units: number): CensusInput['category'] {

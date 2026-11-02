@@ -64,6 +64,52 @@ function publicCopyText(doc: PanelDocument): string | null {
   return doc.approvedRole === 'public_redacted' ? 'Public copy: redacted' : 'Public copy: original'
 }
 
+function ApprovalControls({ doc, actions }: { doc: PanelDocument; actions: DocumentPanelActions }) {
+  return (
+    <>
+      {actions.approve !== undefined && doc.rendition !== 'approved' ? (
+        <ActionForm action={actions.approve} submitLabel="Approve for the public">
+          <input type="hidden" name="purpose" value="public" />
+          <label className="block text-sm font-medium">
+            Version to approve
+            <select
+              name="versionId"
+              className="mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-sm"
+            >
+              {doc.approvable.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {VERSION_LABELS[v.role]}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-sm font-medium">
+            What you checked before approving
+            <input
+              name="reviewStatement"
+              required
+              className="mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-sm"
+            />
+          </label>
+        </ActionForm>
+      ) : null}
+      {actions.revoke !== undefined && doc.approvalId !== null ? (
+        <ActionForm action={actions.revoke} submitLabel="Revoke the approval">
+          <input type="hidden" name="approvalId" value={doc.approvalId} />
+          <label className="block text-sm font-medium">
+            Why it is being revoked
+            <input
+              name="reason"
+              required
+              className="mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-sm"
+            />
+          </label>
+        </ActionForm>
+      ) : null}
+    </>
+  )
+}
+
 function DocumentRow({ doc, props }: { doc: PanelDocument; props: Props }) {
   const chip = PRESERVATION_CHIP[doc.preservation]
   const publicCopy = publicCopyText(doc)
@@ -130,45 +176,7 @@ function DocumentRow({ doc, props }: { doc: PanelDocument; props: Props }) {
               Public
             </label>
           </ActionForm>
-          {props.actions.approve !== undefined && doc.rendition !== 'approved' ? (
-            <ActionForm action={props.actions.approve} submitLabel="Approve for the public">
-              <input type="hidden" name="purpose" value="public" />
-              <label className="block text-sm font-medium">
-                Version to approve
-                <select
-                  name="versionId"
-                  className="mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-sm"
-                >
-                  {doc.approvable.map((v) => (
-                    <option key={v.id} value={v.id}>
-                      {VERSION_LABELS[v.role]}
-                    </option>
-                  ))}
-                </select>
-              </label>
-              <label className="block text-sm font-medium">
-                What you checked before approving
-                <input
-                  name="reviewStatement"
-                  required
-                  className="mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-sm"
-                />
-              </label>
-            </ActionForm>
-          ) : null}
-          {props.actions.revoke !== undefined && doc.approvalId !== null ? (
-            <ActionForm action={props.actions.revoke} submitLabel="Revoke the approval">
-              <input type="hidden" name="approvalId" value={doc.approvalId} />
-              <label className="block text-sm font-medium">
-                Why it is being revoked
-                <input
-                  name="reason"
-                  required
-                  className="mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-sm"
-                />
-              </label>
-            </ActionForm>
-          ) : null}
+          <ApprovalControls doc={doc} actions={props.actions} />
           <RedactedUploader
             documentId={doc.documentId}
             target={props.target}

@@ -1,6 +1,7 @@
 import { civilDateSchema } from '@packs/nh/schema'
 import { and, asc, eq, type SQL, sql } from 'drizzle-orm'
 import { z } from 'zod'
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import {
   RTK_RECEIVED_VIA,
@@ -34,7 +35,8 @@ const LogSchema = z.object({
 
 export function responseRule() {
   const rule = ruleByKey(loadPack(), 'nh.rtk.response')
-  if (rule.kind !== 'clock') throw new Error('nh.rtk.response is not a clock')
+  if (rule.kind !== 'clock')
+    throw new AppError(ErrorIds.RTK_INVARIANT, 'nh.rtk.response is not a clock')
   return rule
 }
 
@@ -189,10 +191,9 @@ const NO_DUE = '9999-12-31'
 function decodeCursor(cursor: string | undefined): { due: string; id: string } | null {
   if (cursor === undefined) return null
   try {
-    const parsed = z
+    return z
       .object({ due: z.string(), id: z.string().uuid() })
       .parse(JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')))
-    return parsed
   } catch {
     return null
   }

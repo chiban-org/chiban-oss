@@ -80,7 +80,7 @@ export async function loadReleaseCandidates(db: Db, actor: Actor): Promise<Relea
 }
 
 export async function loadRequestApprovals(db: Db, requestId: string): Promise<RequestApproval[]> {
-  const rows = await db
+  return await db
     .select({
       approvalId: renditionApprovals.id,
       documentId: renditionApprovals.documentId,
@@ -99,7 +99,6 @@ export async function loadRequestApprovals(db: Db, requestId: string): Promise<R
       ),
     )
     .orderBy(asc(renditionApprovals.approvedAt))
-  return rows
 }
 
 export async function loadReleases(db: Db, requestId: string): Promise<ReleaseSummary[]> {

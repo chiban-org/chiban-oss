@@ -71,7 +71,7 @@ async function parcelOf(documentId: string): Promise<string | null> {
   return link?.parcelId ?? null
 }
 
-async function publicFile(): Promise<string | 'not_found'> {
+async function publicFile(): Promise<string> {
   const r = await resolveRendition(handle.db, null, doc.documentId, signal)
   return r.ok ? r.value.versionId : 'not_found'
 }

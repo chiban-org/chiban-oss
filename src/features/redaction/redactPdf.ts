@@ -95,11 +95,19 @@ function stripEverythingElse(doc: mupdf.PDFDocument): void {
   }
 }
 
-export async function redactPdf(
+export function redactPdf(
   input: Uint8Array,
   boxes: PdfBox[],
   signal: AbortSignal,
 ): Promise<Result<RedactionResult, PdfRedactionFailure>> {
+  return Promise.resolve(redactPdfNow(input, boxes, signal))
+}
+
+function redactPdfNow(
+  input: Uint8Array,
+  boxes: PdfBox[],
+  signal: AbortSignal,
+): Result<RedactionResult, PdfRedactionFailure> {
   signal.throwIfAborted()
   const doc = openPdf(input)
   if (doc === null) return fail('unreadable', 'The file is not a readable PDF')

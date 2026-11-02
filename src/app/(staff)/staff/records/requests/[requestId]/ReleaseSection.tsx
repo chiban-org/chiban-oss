@@ -107,11 +107,7 @@ export function ReleaseSection({ request, releases, approvals, candidates, today
                 defaultValue={today}
                 required
               />
-              <SelectField
-                label="How"
-                name="method"
-                options={Object.entries(RTK_METHOD_LABELS) as [string, string][]}
-              />
+              <SelectField label="How" name="method" options={Object.entries(RTK_METHOD_LABELS)} />
               <TextField label="Email address, for a link" name="recipientEmail" type="email" />
             </ActionForm>
           )}

@@ -137,7 +137,7 @@ export default async function RightToKnowLogPage({
           <SelectField
             label="How it arrived"
             name="receivedVia"
-            options={Object.entries(RTK_VIA_LABELS) as [string, string][]}
+            options={Object.entries(RTK_VIA_LABELS)}
           />
           <TextField label="Requester name" name="requesterName" />
           <TextField label="Requester email, phone, or address" name="requesterContact" />

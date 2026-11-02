@@ -202,7 +202,7 @@ export default async function CensusPage({
                     label="Kind of structure"
                     name="category"
                     defaultValue={suggestion.category}
-                    options={Object.entries(CENSUS_CATEGORY_LABELS) as [string, string][]}
+                    options={Object.entries<string>(CENSUS_CATEGORY_LABELS)}
                   />
                   <SelectField
                     label="If left out of the count, why"
@@ -219,7 +219,7 @@ export default async function CensusPage({
                     label="Phase"
                     name="phase"
                     defaultValue={suggestion.phase}
-                    options={Object.entries(CENSUS_PHASE_LABELS) as [string, string][]}
+                    options={Object.entries<string>(CENSUS_PHASE_LABELS)}
                   />
                   <TextField
                     label="Buildings"

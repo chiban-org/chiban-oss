@@ -1,3 +1,4 @@
+import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { openCase } from '@/features/enforcement/cases'
@@ -30,7 +31,7 @@ export async function eligibleCase(
     signal,
     DISPOSITION_NOW,
   )
-  if (!opened.ok) throw new Error('case')
+  if (!opened.ok) throw new AppError(ErrorIds.DB_INVARIANT, 'case')
   const documentIds: string[] = []
   const versionIds: string[] = []
   for (let i = 0; i < documents; i += 1) {
@@ -51,11 +52,11 @@ export async function eligibleCase(
     {
       target: { caseId: opened.value.caseId },
       kind: 'appeal_period_expired',
-      occurredOn: eventOn as CivilDate,
+      occurredOn: eventOn,
     },
     signal,
     DISPOSITION_NOW,
   )
-  if (!recorded.ok) throw new Error('event')
+  if (!recorded.ok) throw new AppError(ErrorIds.DB_INVARIANT, 'event')
   return { caseId: opened.value.caseId, documentIds, versionIds }
 }

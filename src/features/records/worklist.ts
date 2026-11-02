@@ -105,6 +105,58 @@ async function titlesFor(db: Db, refs: WorklistRow['ref'][]): Promise<Map<string
   return titles
 }
 
+type Matched = Omit<WorklistRow, 'title' | 'eventTarget'>
+type Cursor = z.infer<typeof CursorSchema>
+
+function permanentKeys(): string[] {
+  return loadPack()
+    .recordSeries.filter((s) => s.retention.kind === 'permanent')
+    .map((s) => s.key)
+}
+
+async function nextBatch(db: Db, permanent: string[], after: Cursor | null): Promise<Cursor[]> {
+  return await db
+    .select({ kind: retentionAssignments.recordKind, id: retentionAssignments.recordId })
+    .from(retentionAssignments)
+    .where(
+      and(
+        isNull(retentionAssignments.supersededAt),
+        permanent.length === 0 ? undefined : notInArray(retentionAssignments.seriesKey, permanent),
+        after === null
+          ? undefined
+          : sql`(${retentionAssignments.recordKind}, ${retentionAssignments.recordId}) > (${after.kind}, ${after.id}::uuid)`,
+      ),
+    )
+    .orderBy(asc(retentionAssignments.recordKind), asc(retentionAssignments.recordId))
+    .limit(BATCH)
+}
+
+async function matchIn(
+  db: Db,
+  batch: Cursor[],
+  input: { asOf: CivilDate; state: WorklistState },
+  room: number,
+  signal: AbortSignal,
+): Promise<Matched[]> {
+  const out: Matched[] = []
+  for (const ref of batch) {
+    if (out.length >= room) break
+    const found = await retentionFor(db, ref, signal)
+    if (found === null || stateOf(found, input.asOf) !== input.state) continue
+    out.push({
+      ref,
+      series: {
+        key: found.series.key,
+        label: found.series.label,
+        citation: found.series.citation,
+      },
+      status: found.status,
+      holds: found.holds.length,
+    })
+  }
+  return out
+}
+
 export async function retentionWorklist(
   db: Db,
   actor: Actor,
@@ -117,44 +169,13 @@ export async function retentionWorklist(
     (await hasCapability(db, actor.userId, 'disposition.propose', signal))
   if (!mayView) return { rows: [], nextCursor: null }
   const limit = Math.min(Math.max(Math.trunc(input.limit), 1), 200)
-  const permanent = loadPack()
-    .recordSeries.filter((s) => s.retention.kind === 'permanent')
-    .map((s) => s.key)
+  const permanent = permanentKeys()
   let after = decodeCursor(input.cursor)
-  const matched: Omit<WorklistRow, 'title' | 'eventTarget'>[] = []
+  const matched: Matched[] = []
   for (;;) {
     signal.throwIfAborted()
-    const batch = await db
-      .select({ kind: retentionAssignments.recordKind, id: retentionAssignments.recordId })
-      .from(retentionAssignments)
-      .where(
-        and(
-          isNull(retentionAssignments.supersededAt),
-          permanent.length === 0
-            ? undefined
-            : notInArray(retentionAssignments.seriesKey, permanent),
-          after === null
-            ? undefined
-            : sql`(${retentionAssignments.recordKind}, ${retentionAssignments.recordId}) > (${after.kind}, ${after.id}::uuid)`,
-        ),
-      )
-      .orderBy(asc(retentionAssignments.recordKind), asc(retentionAssignments.recordId))
-      .limit(BATCH)
-    for (const ref of batch) {
-      const found = await retentionFor(db, ref, signal)
-      if (found === null || stateOf(found, input.asOf) !== input.state) continue
-      matched.push({
-        ref,
-        series: {
-          key: found.series.key,
-          label: found.series.label,
-          citation: found.series.citation,
-        },
-        status: found.status,
-        holds: found.holds.length,
-      })
-      if (matched.length > limit) break
-    }
+    const batch = await nextBatch(db, permanent, after)
+    matched.push(...(await matchIn(db, batch, input, limit + 1 - matched.length, signal)))
     const last = batch.at(-1)
     if (matched.length > limit || last === undefined || batch.length < BATCH) break
     after = { kind: last.kind, id: last.id }
@@ -164,7 +185,6 @@ export async function retentionWorklist(
     db,
     page.map((r) => r.ref),
   )
-  const lastRow = page.at(-1)
   const rows: WorklistRow[] = []
   for (const r of page) {
     rows.push({
@@ -173,6 +193,7 @@ export async function retentionWorklist(
       eventTarget: await eventTargetFor(db, r.ref),
     })
   }
+  const lastRow = page.at(-1)
   return {
     rows,
     nextCursor: matched.length > limit && lastRow !== undefined ? encodeCursor(lastRow.ref) : null,

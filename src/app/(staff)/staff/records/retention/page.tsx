@@ -92,7 +92,7 @@ export default async function RetentionPage({
               <p className="m-0 font-medium">{row.title}</p>
               <p className="m-0">
                 {row.series.label}{' '}
-                <a href={row.series.citation.url ?? undefined} className="text-action underline">
+                <a href={row.series.citation.url} className="text-action underline">
                   {row.series.citation.label}
                 </a>
                 {`. ${retentionText(row.status)}`}

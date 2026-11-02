@@ -33,6 +33,72 @@ const PRESERVATION: Record<string, PreservationState> = {
   pending: 'pending',
 }
 
+type RenditionFields = Pick<
+  PanelDocument,
+  'rendition' | 'approvalId' | 'approvedRole' | 'originalVersionId' | 'approvable'
+>
+
+function stateOf(
+  isPublic: boolean,
+  active: boolean,
+  hasRedacted: boolean,
+  anyRevoked: boolean,
+): RenditionState {
+  if (active) return 'approved'
+  if (isPublic) return 'public_no_copy'
+  if (hasRedacted) return 'redacted_waiting'
+  return anyRevoked ? 'revoked' : 'none'
+}
+
+async function renditionDetails(
+  db: DbOrTx,
+  ids: string[],
+): Promise<(row: DocumentListRow) => RenditionFields> {
+  if (ids.length === 0) {
+    return () => ({
+      rendition: 'none',
+      approvalId: null,
+      approvedRole: null,
+      originalVersionId: null,
+      approvable: [],
+    })
+  }
+  const versions = await db
+    .select({
+      id: documentVersions.id,
+      documentId: documentVersions.documentId,
+      role: documentVersions.role,
+    })
+    .from(documentVersions)
+    .where(inArray(documentVersions.documentId, ids))
+  const approvals = await db
+    .select()
+    .from(renditionApprovals)
+    .where(
+      and(inArray(renditionApprovals.documentId, ids), eq(renditionApprovals.purpose, 'public')),
+    )
+    .orderBy(desc(renditionApprovals.approvedAt))
+  return (row) => {
+    const mine = versions.filter((v) => v.documentId === row.documentId)
+    const own = approvals.filter((a) => a.documentId === row.documentId)
+    const active = own.find((a) => a.revokedAt === null)
+    return {
+      rendition: stateOf(
+        row.isPublic,
+        active !== undefined,
+        mine.some((v) => v.role === 'public_redacted'),
+        own.some((a) => a.revokedAt !== null),
+      ),
+      approvalId: active?.id ?? null,
+      approvedRole: mine.find((v) => v.id === active?.versionId)?.role ?? null,
+      originalVersionId: mine.find((v) => v.role === 'original')?.id ?? null,
+      approvable: mine.flatMap((v) =>
+        v.role === 'original' || v.role === 'public_redacted' ? [{ id: v.id, role: v.role }] : [],
+      ),
+    }
+  }
+}
+
 export async function loadPanelDocuments(
   db: DbOrTx,
   actor: Actor,
@@ -58,58 +124,14 @@ export async function loadPanelDocuments(
           .where(inArray(documentVersions.documentId, ids))
   const out: PanelDocument[] = []
   const canRedact = await hasCapability(db, actor.userId, 'redaction.create', signal)
-  const versions =
-    ids.length === 0
-      ? []
-      : await db
-          .select({
-            id: documentVersions.id,
-            documentId: documentVersions.documentId,
-            role: documentVersions.role,
-          })
-          .from(documentVersions)
-          .where(inArray(documentVersions.documentId, ids))
-  const approvals =
-    ids.length === 0
-      ? []
-      : await db
-          .select()
-          .from(renditionApprovals)
-          .where(
-            and(
-              inArray(renditionApprovals.documentId, ids),
-              eq(renditionApprovals.purpose, 'public'),
-            ),
-          )
-          .orderBy(desc(renditionApprovals.approvedAt))
+  const details = await renditionDetails(db, ids)
   for (const row of listed.rows) {
-    const mine = versions.filter((v) => v.documentId === row.documentId)
-    const active = approvals.find((a) => a.documentId === row.documentId && a.revokedAt === null)
-    const anyRevoked = approvals.some(
-      (a) => a.documentId === row.documentId && a.revokedAt !== null,
-    )
-    const hasRedacted = mine.some((v) => v.role === 'public_redacted')
-    const rendition: RenditionState =
-      active !== undefined
-        ? 'approved'
-        : row.isPublic
-          ? 'public_no_copy'
-          : hasRedacted
-            ? 'redacted_waiting'
-            : anyRevoked
-              ? 'revoked'
-              : 'none'
+    const rendition = details(row)
     const rec = records.find((r) => r.documentId === row.documentId)
     const retention = await retentionFor(db, { kind: 'document', id: row.documentId }, signal)
     out.push({
       ...row,
-      rendition,
-      approvalId: active?.id ?? null,
-      approvedRole: mine.find((v) => v.id === active?.versionId)?.role ?? null,
-      originalVersionId: mine.find((v) => v.role === 'original')?.id ?? null,
-      approvable: mine.flatMap((v) =>
-        v.role === 'original' || v.role === 'public_redacted' ? [{ id: v.id, role: v.role }] : [],
-      ),
+      ...rendition,
       canRedact,
       preservation: PRESERVATION[rec?.status ?? 'not_required'] ?? 'not_required',
       preservationRecordId: rec?.id ?? null,

@@ -69,7 +69,7 @@ export function ResponseSection({ request, today }: { request: RtkRequestView; t
             <SelectField
               label="Response"
               name="kind"
-              options={Object.entries(RTK_RESPONSE_LABELS) as [string, string][]}
+              options={Object.entries<string>(RTK_RESPONSE_LABELS)}
             />
             <TextField
               label="Date of response"
