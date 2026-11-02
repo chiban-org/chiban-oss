@@ -93,7 +93,7 @@ async function draft(
   findingIds: string[],
   overrides: Partial<Parameters<typeof draftOrder>[2]> = {},
 ) {
-  const drafted = await draftOrder(
+  return await draftOrder(
     handle.db,
     staff,
     {
@@ -107,7 +107,6 @@ async function draft(
     signal,
     NOW,
   )
-  return drafted
 }
 
 describe('findings and notices of violation', () => {
