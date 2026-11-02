@@ -2,7 +2,7 @@ import type { NextConfig } from 'next'
 import { ANONYMOUS_PREFIXES } from './src/constants/anonymousRoutes'
 
 const nextConfig: NextConfig = {
-  serverExternalPackages: ['pg', 'pg-boss', 'better-sqlite3'],
+  serverExternalPackages: ['pg', 'pg-boss', 'better-sqlite3', 'mupdf'],
   poweredByHeader: false,
   experimental: { globalNotFound: true },
   headers() {

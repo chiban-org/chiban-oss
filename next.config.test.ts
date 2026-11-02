@@ -42,6 +42,12 @@ describe('next config headers', () => {
 
   it('keeps the existing server settings', () => {
     expect(nextConfig.poweredByHeader).toBe(false)
-    expect(nextConfig.serverExternalPackages).toEqual(['pg', 'pg-boss', 'better-sqlite3'])
+    expect(nextConfig.serverExternalPackages).toEqual(['pg', 'pg-boss', 'better-sqlite3', 'mupdf'])
+  })
+})
+
+describe('next config externals', () => {
+  it('keeps the WebAssembly redaction engine out of the server bundle', () => {
+    expect(nextConfig.serverExternalPackages).toContain('mupdf')
   })
 })
