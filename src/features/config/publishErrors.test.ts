@@ -1,7 +1,27 @@
+import { NH_STARTERS } from '@packs/nh/starters'
 import { describe, expect, it } from 'vitest'
 import { fieldErrorsFor } from '@/features/config/publishErrors'
+import { validateBody } from '@/features/config/store'
 
 describe('fieldErrorsFor', () => {
+  it('a workflow step with no name asks to name every step, once', () => {
+    const type = NH_STARTERS.find((s) => s.applicationType.workflow.substeps.length > 0)
+    if (type === undefined) throw new Error('no starter with steps')
+    const body = {
+      ...type.applicationType,
+      workflow: {
+        ...type.applicationType.workflow,
+        substeps: [
+          ...type.applicationType.workflow.substeps,
+          { state: 'under_review', key: '', label: '' },
+        ],
+      },
+    }
+    const checked = validateBody('application_type', body)
+    const issues = checked.ok ? [] : checked.issues
+    expect(fieldErrorsFor({ invalid: issues }).workflow).toBe('Name every step.')
+  })
+
   it('puts missing bindings next to the bindings field and names them', () => {
     const e = fieldErrorsFor({ missingBindings: ['nh.bp.decision'] })
     expect(e.bindings).toContain('nh.bp.decision')

@@ -19,6 +19,7 @@ function fromIssues(issues: { path: string; message: string }[]): FieldErrors {
     const first = issue.path.split('.')[0] ?? ''
     const field = first === '' ? FORM_FIELD : first
     const held = out[field]
+    if (held?.includes(issue.message) === true) continue
     out[field] = held === undefined ? issue.message : `${held} ${issue.message}`
   }
   return out
