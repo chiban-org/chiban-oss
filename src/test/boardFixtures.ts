@@ -2,10 +2,12 @@ import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
+import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
 import type { Actor } from '@/features/auth/actor'
 import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettings'
 import { scheduleMeeting } from '@/features/boards/meetings'
-import { type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
+import { recordRegionalImpactDetermination } from '@/features/building/regionalImpact'
+import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { appTypeBody, saveAndPublish } from '@/test/configFixtures'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -118,4 +120,73 @@ export async function setupBoardWorld(
     await scheduleMeetings(db, world.staff, 'zba', options.zbaMeetings)
   }
   return { ...world, pbTypeKey, zbaTypeKey }
+}
+
+export async function submitBoardApplication(
+  db: Db,
+  world: BoardWorld,
+  typeKey: string,
+  receivedOn: string,
+): Promise<string> {
+  const now = new Date(`${receivedOn}T16:00:00Z`)
+  const made = await makeApplication(db, world, {}, now, typeKey)
+  const type = boardTypeBody('nh.pb_site_plan', typeKey, typeKey)
+  const submitted = await submitApplication(
+    db,
+    world.applicant,
+    {
+      applicationId: made.applicationId,
+      values: { classification: 'residential' },
+      attestation: { statementSha256: attestationHash(type.attestationText) },
+    },
+    signal,
+    now,
+  )
+  if (!submitted.ok) {
+    throw new AppError(ErrorIds.DB_INVARIANT, `submit failed: ${JSON.stringify(submitted.error)}`)
+  }
+  return made.applicationId
+}
+
+export async function recordNoRegionalImpact(
+  db: Db,
+  world: BoardWorld,
+  applicationId: string,
+  determination: 'yes' | 'no' = 'no',
+): Promise<void> {
+  const recorded = await recordRegionalImpactDetermination(
+    db,
+    world.staff,
+    { applicationId, determination, determinedOn: '2027-03-01' as CivilDate },
+    signal,
+  )
+  if (!recorded.ok) throw new AppError(ErrorIds.DB_INVARIANT, 'determination failed')
+}
+
+export const ALDER_POND_CONTACTS = {
+  key: 'default',
+  commission: {
+    name: 'Alder Valley Regional Planning Commission',
+    mailingAddress: '18 Commission Way, Alder Valley NH 03999',
+  },
+  municipalities: [
+    {
+      key: 'pine_river',
+      name: 'Town of Pine River',
+      mailingAddress: '4 Town Hall Road, Pine River NH 03000',
+    },
+    {
+      key: 'dunmore',
+      name: 'Town of Dunmore',
+      mailingAddress: '9 Common Street, Dunmore NH 03001',
+    },
+  ],
+  nhDes: {
+    name: 'NH Department of Environmental Services',
+    mailingAddress: '1 Example Way, Concord NH 03301',
+  },
+}
+
+export async function publishRegionalContacts(db: Db, world: BoardWorld): Promise<void> {
+  await saveAndPublish(db, world.admin, 'regional_contacts', 'default', ALDER_POND_CONTACTS)
 }

@@ -17,6 +17,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import { hasCapability } from '@/features/authz/capabilities'
 import { evaluateGates, type GateResult } from '@/features/gates/evaluateGates'
 import { queueForParties } from '@/features/notifications/queue'
+import { loadPack } from '@/features/packs/loadPack'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
 import { applyOutcomeSeries } from '@/features/records/assignments'
 import { townToday } from '@/features/town/today'
@@ -29,7 +30,11 @@ export interface TransitionInput {
   substep?: string
   expectedRowVersion: number
   onDate?: CivilDate
-  closureReason?: 'final_inspection_passed' | 'certificate_of_occupancy'
+  closureReason?:
+    | 'final_inspection_passed'
+    | 'certificate_of_occupancy'
+    | 'not_accepted_incomplete'
+    | 'notice_costs_unpaid'
   cutover?: boolean
 }
 
@@ -50,6 +55,13 @@ export interface TransitionOutcome {
 }
 
 const NEEDS_ISSUE_CAPABILITY: readonly CoreState[] = ['issued', 'decided', 'denied']
+const BOARD_RECORD_STATES: readonly CoreState[] = ['under_review', 'decided', 'denied']
+
+function boardOf(app: ApplicationContext): 'planning_board' | 'zba' | null {
+  return (
+    loadPack().classifications.find((c) => c.key === app.typeBody.classification)?.board ?? null
+  )
+}
 
 async function isAllowedActor(
   tx: Tx,
@@ -63,6 +75,9 @@ async function isAllowedActor(
   if (cutover) return await hasCapability(tx, actor.userId, 'cutover.import', signal)
   if (to === 'expired' || to === 'suspended') return false
   if (app.state === 'suspended' && to === 'issued') return false
+  if (boardOf(app) !== null && BOARD_RECORD_STATES.includes(to)) {
+    return await hasCapability(tx, actor.userId, 'board.record', signal)
+  }
   if (NEEDS_ISSUE_CAPABILITY.includes(to)) {
     return await hasCapability(tx, actor.userId, 'permit.issue', signal)
   }

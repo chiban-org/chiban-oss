@@ -1,4 +1,4 @@
-import { date, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { date, index, pgTable, primaryKey, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { applications } from './projects'
 
 export const regionalImpactDeterminations = pgTable('regional_impact_determinations', {
@@ -31,4 +31,15 @@ export const regionalImpactNotices = pgTable(
     recordedAt: timestamp('recorded_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('regional_impact_notices_application_idx').on(t.applicationId)],
+)
+
+export const regionalImpactParties = pgTable(
+  'regional_impact_parties',
+  {
+    applicationId: uuid('application_id')
+      .notNull()
+      .references(() => applications.id),
+    municipalityKey: text('municipality_key').notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.applicationId, t.municipalityKey] })],
 )

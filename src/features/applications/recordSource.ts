@@ -29,7 +29,14 @@ const CHIPS: Record<CoreState, Chip> = {
   suspended: 'overdue',
 }
 
-function statusLabel(state: CoreState, certificateIssuedOn: string | undefined): string {
+export const NOT_ACCEPTED_REASON = 'not_accepted_incomplete'
+
+function statusLabel(
+  state: CoreState,
+  certificateIssuedOn: string | undefined,
+  closureReason: string | null,
+): string {
+  if (state === 'denied' && closureReason === NOT_ACCEPTED_REASON) return 'Not accepted as complete'
   return state === 'closed' && certificateIssuedOn !== undefined
     ? `Certificate of occupancy issued ${formatCivilDate(certificateIssuedOn)}`
     : stateLabel(state)
@@ -68,7 +75,11 @@ export async function summarizeApplications(
       title: (type?.body as ApplicationTypeBody | undefined)?.label ?? row.applicationTypeKey,
       number: row.number,
       status: {
-        label: statusLabel(state, certificates.find((c) => c.applicationId === row.id)?.issuedOn),
+        label: statusLabel(
+          state,
+          certificates.find((c) => c.applicationId === row.id)?.issuedOn,
+          row.closureReason,
+        ),
         chip: CHIPS[state],
       },
       date: (row.issuedOn ?? row.receivedDate) as CivilDate | null,

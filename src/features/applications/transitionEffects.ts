@@ -20,7 +20,7 @@ const INSPECTION_CANCEL_REASON: Partial<Record<CoreState, PermitStateReason>> = 
   withdrawn: 'permit_closed',
 }
 
-const DECISION_CLOCK_KEY = 'nh.bp.decision'
+const DECISION_CLOCK_KEYS = ['nh.bp.decision', 'nh.pb.decision', 'nh.zba.decision']
 
 export async function assessForTransition(
   tx: Tx,
@@ -68,7 +68,7 @@ export async function runTransitionEffects(
   if (to === 'submitted') await startClocksFor(tx, app.id, 'application_received', today, signal)
   const issuedDirectly = to === 'issued' && app.state === 'submitted'
   if (to === 'decided' || to === 'denied' || issuedDirectly) {
-    await markClockMet(tx, app.id, DECISION_CLOCK_KEY, today, signal)
+    for (const key of DECISION_CLOCK_KEYS) await markClockMet(tx, app.id, key, today, signal)
   }
   if (to === 'issued' && app.state !== 'suspended') {
     await startClocksFor(tx, app.id, 'permit_issued', today, signal)

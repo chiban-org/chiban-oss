@@ -4,6 +4,7 @@ import type { Tx } from '@/db/client'
 import { clocks } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { boardMeetingCalendar } from '@/features/boards/calendar'
+import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import { meetingBoundSpec } from '@/features/clocks/meetingBound'
 import { meetingBoundTiming } from '@/features/clocks/meetingBoundTiming'
 import { createClock } from '@/features/clocks/startClocks'
@@ -52,7 +53,7 @@ export async function recomputeMeetingBoundClocks(
       {
         applicationId: clock.applicationId,
         rule: rule as ClockRule,
-        facts: app.facts,
+        facts: await factsWithDeterminations(tx, clock.applicationId, app.facts),
         event: clock.startEvent as ClockRule['startEvent'],
         onDate: clock.startDate as CivilDate,
         pack,

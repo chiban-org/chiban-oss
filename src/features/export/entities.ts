@@ -37,6 +37,7 @@ interface Spec {
 }
 
 const SPECS: Spec[] = [
+  { table: t.acceptanceSchedules },
   { table: t.aliasOverrides },
   { table: t.appeals },
   { table: t.applicationConditions },
@@ -59,6 +60,7 @@ const SPECS: Spec[] = [
   { table: t.certificatesOfOccupancy },
   { table: t.clockAdjustments },
   { table: t.clocks },
+  { table: t.completenessVotes },
   { table: t.codeEditionRecords },
   { table: t.configVersions },
   { table: t.contractorClaims, omit: ['token_hash'], fill: { token_hash: RANDOM_HASH } },
@@ -158,6 +160,7 @@ const SPECS: Spec[] = [
   { table: t.refundRequests },
   { table: t.regionalImpactDeterminations },
   { table: t.regionalImpactNotices },
+  { table: t.regionalImpactParties },
   { table: t.remediationTasks },
   {
     table: t.retentionAssignments,
@@ -173,6 +176,7 @@ const SPECS: Spec[] = [
   { table: t.reviewComments },
   { table: t.roleCapabilities, importMode: 'replace' },
   { table: t.ruleTransitionsApplied },
+  { table: t.selectmenCertifications },
   { table: t.townSettings, importMode: 'replace' },
   { table: t.userRoles },
   {

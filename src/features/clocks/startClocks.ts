@@ -5,6 +5,7 @@ import { clocks } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { boardMeetingCalendar, type MeetingCalendar } from '@/features/boards/calendar'
 import type { DueResult } from '@/features/clocks/computeDue'
+import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import { describeCounting } from '@/features/clocks/describeCounting'
 import { describeMeetingBound, meetingBoundTiming } from '@/features/clocks/meetingBoundTiming'
 import {
@@ -46,6 +47,7 @@ export async function startClocksFor(
   signal.throwIfAborted()
   const app = await loadApplicationContext(tx, applicationId, signal)
   if (app === null) return
+  const facts = await factsWithDeterminations(tx, applicationId, app.facts)
   const bound = new Set(effectiveBindings(app.typeBody, pack))
   const rules = rulesForEvent(pack.rules, event, bound)
   const running = await tx
@@ -55,11 +57,7 @@ export async function startClocksFor(
   const runningKeys = new Set(running.map((c) => c.ruleKey))
   for (const rule of rules) {
     if (runningKeys.has(rule.key)) continue
-    await createClock(
-      tx,
-      { applicationId, rule, facts: app.facts, event, onDate, pack, calendar },
-      signal,
-    )
+    await createClock(tx, { applicationId, rule, facts, event, onDate, pack, calendar }, signal)
   }
 }
 
@@ -71,6 +69,7 @@ export interface NewClockInput {
   onDate: CivilDate
   pack: Pack
   calendar?: MeetingCalendar
+  lengthOverrideDays?: number
 }
 
 export async function createClock(
@@ -79,7 +78,11 @@ export async function createClock(
   signal: AbortSignal,
 ): Promise<string> {
   const { applicationId, rule, event, onDate, pack } = input
-  const length = await resolveClockLength(tx, rule, input.facts, pack, signal)
+  const resolved = await resolveClockLength(tx, rule, input.facts, pack, signal)
+  const length: ResolvedLength =
+    input.lengthOverrideDays === undefined
+      ? resolved
+      : { ...resolved, value: input.lengthOverrideDays, source: 'town_setting' }
   const holidays = packHolidayCalendar()
   const bound = await meetingBoundTiming(
     { rule, length, onDate, pack, calendar: input.calendar ?? boardMeetingCalendar(tx) },

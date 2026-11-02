@@ -1,0 +1,33 @@
+import { eq } from 'drizzle-orm'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { clocks } from '@/db/schema'
+import { type BoardWorld, setupBoardWorld, submitBoardApplication } from '@/test/boardFixtures'
+import { makeTestDb, type TestDb } from '@/test/db'
+
+let handle: TestDb
+let world: BoardWorld
+
+beforeEach(async () => {
+  handle = await makeTestDb()
+  world = await setupBoardWorld(handle.db)
+})
+afterEach(async () => {
+  await handle.drop()
+})
+
+describe('zba submission', () => {
+  it('zba submission received 2027-03-02 starts hearing due 2027-04-16 and decision due 2027-05-31', async () => {
+    const id = await submitBoardApplication(handle.db, world, world.zbaTypeKey, '2027-03-02')
+    const rows = await handle.db.select().from(clocks).where(eq(clocks.applicationId, id))
+    const due = Object.fromEntries(rows.map((c) => [c.ruleKey, c.currentDue]))
+    expect(due['nh.zba.hearing']).toBe('2027-04-16')
+    expect(due['nh.zba.decision']).toBe('2027-05-31')
+    expect(due['nh.pb.completeness']).toBeUndefined()
+  })
+
+  it('a planning board submission starts the completeness clock and no zba clock', async () => {
+    const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')
+    const rows = await handle.db.select().from(clocks).where(eq(clocks.applicationId, id))
+    expect(rows.map((c) => c.ruleKey)).toEqual(['nh.pb.completeness'])
+  })
+})
