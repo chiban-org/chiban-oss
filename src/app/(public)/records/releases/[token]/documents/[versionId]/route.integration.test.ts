@@ -44,7 +44,7 @@ afterAll(async () => {
 })
 
 describe('release document route', () => {
-  it('redirects while the version is released, then answers 410 once revoked, 404 for strangers', async () => {
+  it('streams while the version is released, then answers 410 once revoked, 404 for strangers', async () => {
     const logged = await logRequest(
       handle.db,
       custodian,
@@ -98,7 +98,7 @@ describe('release document route', () => {
         params: Promise.resolve({ token: t, versionId: v }),
       })
     const ok = await call(token, redacted)
-    expect(ok.status).toBe(302)
+    expect(ok.status).toBe(200)
     expect(ok.headers.get('cache-control')).toBe('no-store')
     expect((await call('unknown-token', redacted)).status).toBe(404)
     expect((await call(token, doc.versionId)).status).toBe(404)

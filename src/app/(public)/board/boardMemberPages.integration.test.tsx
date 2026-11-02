@@ -22,9 +22,10 @@ import type { CivilDate } from '@/types/civilDate'
 interface MockState {
   db: unknown
   actor: Actor | null
+  store: unknown
 }
 
-const state = vi.hoisted((): MockState => ({ db: null, actor: null }))
+const state = vi.hoisted((): MockState => ({ db: null, actor: null, store: null }))
 
 vi.mock('@/db/client', () => ({
   get db() {
@@ -32,6 +33,10 @@ vi.mock('@/db/client', () => ({
   },
 }))
 vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
+vi.mock('@/features/storage/objectStore', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/storage/objectStore')>()),
+  getObjectStore: () => state.store,
+}))
 vi.mock('next/navigation', () => ({
   redirect: (url: string) => {
     throw new Error(`NEXT_REDIRECT:${url}`)
@@ -72,6 +77,7 @@ beforeAll(async () => {
   state.db = handle.db
   world = await setupBoardWorld(handle.db, { zbaMeetings: ['2027-04-15'] })
   const { store } = await makeTestStore()
+  state.store = store
   zba = await member('zba.member@alderpond.example', 'zba')
   pb = await member('pb.member@alderpond.example', 'planning_board')
   const id = await submitBoardApplication(handle.db, world, world.zbaTypeKey, '2027-03-02')
@@ -172,10 +178,11 @@ describe('board member document route', () => {
     })
   }
 
-  it('redirects a member to the stored file', async () => {
+  it('streams the stored file to a member under a sandbox policy', async () => {
     const response = await call(zba)
-    expect(response.status).toBe(302)
-    expect(response.headers.get('location')).toMatch(/^http/)
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-security-policy')).toContain('sandbox')
+    expect((await response.arrayBuffer()).byteLength).toBeGreaterThan(0)
   })
 
   it('answers 401 when signed out and 404 for the other board and unknown versions', async () => {

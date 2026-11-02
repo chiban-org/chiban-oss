@@ -81,7 +81,7 @@ describe('board packet document route', () => {
       GET(new Request('https://alderpond.example/x'), {
         params: Promise.resolve({ token, versionId: redacted }),
       })
-    expect((await call()).status).toBe(302)
+    expect((await call()).status).toBe(200)
     await revokeApproval(
       handle.db,
       staff,

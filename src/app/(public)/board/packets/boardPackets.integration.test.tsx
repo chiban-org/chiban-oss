@@ -10,12 +10,16 @@ import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/minio'
 import type { CivilDate } from '@/types/civilDate'
 
-const state = vi.hoisted((): { db: unknown } => ({ db: null }))
+const state = vi.hoisted((): { db: unknown; store: unknown } => ({ db: null, store: null }))
 
 vi.mock('@/db/client', () => ({
   get db() {
     return state.db
   },
+}))
+vi.mock('@/features/storage/objectStore', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/storage/objectStore')>()),
+  getObjectStore: () => state.store,
 }))
 vi.mock('next/navigation', () => ({
   notFound: () => {
@@ -36,6 +40,7 @@ beforeAll(async () => {
   state.db = handle.db
   const world: PermitWorld = await setupPermitWorld(handle.db)
   const { store } = await makeTestStore()
+  state.store = store
   const app = await makeApplication(handle.db, world)
   const up = await uploadAs(
     handle.db,
@@ -102,10 +107,11 @@ describe('board packet page and route', () => {
     expect((await call('unknown', versionId)).status).toBe(404)
   })
 
-  it('the document route redirects to storage for a packet version and serves a cover pdf', async () => {
+  it('the document route streams a packet version and serves a cover pdf', async () => {
     const res = await call(token, versionId)
-    expect(res.status).toBe(302)
-    expect(res.headers.get('location')).toContain('X-Amz-Signature')
+    expect(res.status).toBe(200)
+    expect(res.headers.get('location')).toBeNull()
+    expect(res.headers.get('content-security-policy')).toContain('sandbox')
     const cover = await call(token, 'cover')
     expect(cover.status).toBe(200)
     expect(cover.headers.get('content-type')).toContain('application/pdf')
