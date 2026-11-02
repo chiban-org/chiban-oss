@@ -286,6 +286,20 @@ describe('records screens with the demo seed', () => {
     await expect(html(RequestsPage(search()))).rejects.toThrow('NEXT_REDIRECT')
   })
 
+  it('the withholding form starts on no exemption rather than the first one', async () => {
+    await actAs('records')
+    const [request] = await handle.db
+      .select()
+      .from(rtkRequests)
+      .where(eq(rtkRequests.status, 'open'))
+    const page = await html(
+      RequestPage({ params: Promise.resolve({ requestId: request?.id ?? '' }) }),
+    )
+    expect(page).toMatch(
+      /<select name="exemptionKey"[^>]*><option value="" selected="">Choose an exemption<\/option>/,
+    )
+  })
+
   it('a malformed request id is not found', async () => {
     await actAs('records')
     await expect(

@@ -14,7 +14,13 @@ import { recordFirstResponse } from '@/features/rtk/responses'
 import { recordWithholding } from '@/features/rtk/withholdings'
 import { getObjectStore } from '@/features/storage/objectStore'
 import type { ActionResult } from '@/server/actionRunner'
-import { dateField, optionalField, runRecords, uuidField } from '@/server/recordsAction'
+import {
+  dateField,
+  optionalField,
+  RECORDS_COPY,
+  runRecords,
+  uuidField,
+} from '@/server/recordsAction'
 
 const CENTS_PER_DOLLAR = 100
 
@@ -118,6 +124,7 @@ export async function withholdingAction(formData: FormData): Promise<ActionResul
         signal,
       ),
     'Withholding recorded.',
+    { exemptionKey: RECORDS_COPY.unknown_exemption ?? '' },
   )
 }
 

@@ -9,6 +9,7 @@ import type { CivilDate } from '@/types/civilDate'
 import { closeRequestAction, firstResponseAction, withholdingAction } from '../actions'
 
 const EXEMPTION_OPTIONS: [string, string][] = [
+  ['', 'Choose an exemption'],
   ...NH_RTK_EXEMPTIONS.map((e) => [e.key, `${e.citation.label}: ${e.label}`] as [string, string]),
   [OTHER_LAW_EXEMPTION_KEY, 'Made confidential by another law'],
 ]
@@ -54,7 +55,13 @@ export function ResponseSection({ request, today }: { request: RtkRequestView; t
               ]}
             />
             <TextField label="Which record" name="recordDescription" required />
-            <SelectField label="Exemption" name="exemptionKey" options={EXEMPTION_OPTIONS} />
+            <SelectField
+              label="Exemption"
+              name="exemptionKey"
+              options={EXEMPTION_OPTIONS}
+              defaultValue=""
+              required
+            />
             <TextField label="Law, if made confidential by another law" name="otherCitation" />
             <AreaField
               label="How the exemption applies (a sentence or two)"

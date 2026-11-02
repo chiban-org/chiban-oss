@@ -193,6 +193,18 @@ describe('records server actions', () => {
       ok: false,
       error: expect.stringContaining('at least 20 characters'),
     })
+    expect(
+      await requestActions.withholdingAction(
+        form({
+          ...base,
+          exemptionKey: '',
+          explanation: 'The email is a confidential communication seeking legal advice.',
+        }),
+      ),
+    ).toEqual({
+      ok: false,
+      error: 'Choose an exemption from the list for every withheld or redacted record.',
+    })
   })
 
   it('a release with no record ticked says to tick one', async () => {
