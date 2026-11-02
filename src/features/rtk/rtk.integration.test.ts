@@ -240,7 +240,7 @@ describe('first responses', () => {
     expect(r).toEqual({ ok: false, error: 'website_url_required' })
   })
 
-  it('records made available close the response clock', async () => {
+  it('records made available with nothing released is release_required and the clock keeps running', async () => {
     const requestId = await loggedId()
     const r = await recordFirstResponse(
       handle.db,
@@ -249,16 +249,45 @@ describe('first responses', () => {
       { requestId, kind: 'made_available', respondedOn: d('2027-07-09') },
       signal,
     )
+    expect(r).toEqual({ ok: false, error: 'release_required' })
+    const [row] = await handle.db.select().from(rtkRequests)
+    expect(row).toMatchObject({ status: 'open', firstResponseKind: null, firstResponseOn: null })
+    const letters = await handle.db
+      .select({ id: documents.id })
+      .from(documents)
+      .where(eq(documents.recordId, requestId))
+    expect(letters).toHaveLength(0)
+  })
+
+  it('a website reference closes the response clock', async () => {
+    const requestId = await loggedId()
+    const r = await recordFirstResponse(
+      handle.db,
+      store,
+      staff,
+      {
+        requestId,
+        kind: 'website_reference',
+        websiteUrl: 'https://alderpond.example/permits',
+        respondedOn: d('2027-07-09'),
+      },
+      signal,
+    )
     expect(r.ok).toBe(true)
     const [row] = await handle.db.select().from(rtkRequests)
     expect(row?.status).toBe('responded')
     expect(row?.openDueOn).toBeNull()
-    expect(row?.firstResponseKind).toBe('made_available')
+    expect(row?.firstResponseKind).toBe('website_reference')
     const again = await recordFirstResponse(
       handle.db,
       store,
       staff,
-      { requestId, kind: 'made_available', respondedOn: d('2027-07-10') },
+      {
+        requestId,
+        kind: 'website_reference',
+        websiteUrl: 'https://alderpond.example/permits',
+        respondedOn: d('2027-07-10'),
+      },
       signal,
     )
     expect(again).toEqual({ ok: false, error: 'already_responded' })
@@ -270,7 +299,12 @@ describe('first responses', () => {
       handle.db,
       store,
       staff,
-      { requestId, kind: 'made_available', respondedOn: d('2027-07-13') },
+      {
+        requestId,
+        kind: 'website_reference',
+        websiteUrl: 'https://alderpond.example/permits',
+        respondedOn: d('2027-07-13'),
+      },
       signal,
     )
     expect(r.ok).toBe(true)
@@ -288,7 +322,12 @@ describe('first responses', () => {
       handle.db,
       store,
       staff,
-      { requestId, kind: 'made_available', respondedOn: d('2027-07-12') },
+      {
+        requestId,
+        kind: 'website_reference',
+        websiteUrl: 'https://alderpond.example/permits',
+        respondedOn: d('2027-07-12'),
+      },
       signal,
     )
     const view = await rtkRequestView(handle.db, staff, requestId, d('2027-07-14'), signal)
@@ -359,7 +398,12 @@ describe('who can see a request', () => {
       handle.db,
       store,
       custodian,
-      { requestId, kind: 'made_available', respondedOn: d('2027-07-09') },
+      {
+        requestId,
+        kind: 'website_reference',
+        websiteUrl: 'https://alderpond.example/permits',
+        respondedOn: d('2027-07-09'),
+      },
       signal,
     )
     if (!r.ok) throw new Error('response failed')

@@ -24,6 +24,8 @@ export const RECORDS_COPY: Record<string, string> = {
     'Record at least one withheld record with its exemption before denying a request.',
   stated_date_required: 'Enter a date on or after the response date for the time the town needs.',
   website_url_required: 'Enter the web address where the records are posted.',
+  release_required:
+    'Nothing has been released yet. Approve and release the records under Releases; the first release records the response.',
   unknown_exemption: 'Choose an exemption from the list for every withheld or redacted record.',
   citation_required: 'Enter the law that makes the record confidential.',
   explanation_required:

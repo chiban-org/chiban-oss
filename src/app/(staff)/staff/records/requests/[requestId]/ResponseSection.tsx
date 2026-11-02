@@ -13,6 +13,10 @@ const EXEMPTION_OPTIONS: [string, string][] = [
   [OTHER_LAW_EXEMPTION_KEY, 'Made confidential by another law'],
 ]
 
+const FORM_RESPONSE_OPTIONS = Object.entries<string>(RTK_RESPONSE_LABELS).filter(
+  ([kind]) => kind !== 'made_available',
+)
+
 function Hidden({ name, value }: { name: string; value: string | number }) {
   return <input type="hidden" name={name} value={String(value)} />
 }
@@ -66,11 +70,11 @@ export function ResponseSection({ request, today }: { request: RtkRequestView; t
         {request.firstResponseKind === null ? (
           <ActionForm action={firstResponseAction} submitLabel="Record response">
             <Hidden name="requestId" value={request.id} />
-            <SelectField
-              label="Response"
-              name="kind"
-              options={Object.entries<string>(RTK_RESPONSE_LABELS)}
-            />
+            <p className="m-0">
+              To make records available, approve and release them under Releases. The first
+              release records the response.
+            </p>
+            <SelectField label="Response" name="kind" options={FORM_RESPONSE_OPTIONS} />
             <TextField
               label="Date of response"
               name="respondedOn"
