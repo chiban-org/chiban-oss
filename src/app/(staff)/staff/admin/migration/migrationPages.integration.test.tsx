@@ -141,6 +141,14 @@ describe('migration batch page', () => {
     expect(html).not.toContain('Publish this batch')
   })
 
+  it('tells someone who may not publish that a staff member who may publish documents finishes the review', async () => {
+    state.actor = importer
+    const html = renderToStaticMarkup(await BatchPage(params(batchId)))
+    expect(html).toContain(
+      'Review the files above, then ask a staff member who may publish documents to publish this batch. Until then every file in it stays private.',
+    )
+  })
+
   it('offers the publish action only to someone who may publish', async () => {
     state.actor = publisher
     const html = renderToStaticMarkup(await BatchPage(params(batchId)))
