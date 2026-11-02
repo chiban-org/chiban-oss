@@ -21,7 +21,6 @@ import { LIST_NOW, type ListWorld, prepareListWorld } from '@/test/listFixtures'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
-const d = (s: string) => s as CivilDate
 let handle: TestDb
 let world: BoardWorld
 let lw: ListWorld
