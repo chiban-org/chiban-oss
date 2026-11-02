@@ -7,4 +7,5 @@ export const M10_SPECS: Spec[] = [
   { table: t.rtkWithholdings },
   { table: t.redactionJobs },
   { table: t.redactionBoxes },
+  { table: t.renditionApprovals },
 ]

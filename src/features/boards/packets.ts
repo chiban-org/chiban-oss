@@ -1,6 +1,12 @@
-import { asc, desc, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { boardPacketItems, boardPackets, documents, documentVersions } from '@/db/schema'
+import {
+  boardPacketItems,
+  boardPackets,
+  documents,
+  documentVersions,
+  renditionApprovals,
+} from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -26,13 +32,14 @@ interface Versioned {
 function frozenVersion(
   doc: { audiences: string[]; isPublic: boolean },
   versions: Versioned[],
+  approvedPublicVersionId: string | null,
 ): string | null {
   const latest = (role: string) =>
     versions
       .filter((v) => v.role === role)
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())[0]
   if (doc.audiences.includes('board')) return latest('original')?.id ?? null
-  if (doc.isPublic) return (latest('public_redacted') ?? latest('original'))?.id ?? null
+  if (doc.isPublic) return approvedPublicVersionId
   return null
 }
 
@@ -50,6 +57,17 @@ export async function createPacket(
     .select()
     .from(documentVersions)
     .where(inArray(documentVersions.documentId, input.documentIds))
+  const approvals = await db
+    .select({ documentId: renditionApprovals.documentId, versionId: renditionApprovals.versionId })
+    .from(renditionApprovals)
+    .where(
+      and(
+        inArray(renditionApprovals.documentId, input.documentIds),
+        eq(renditionApprovals.purpose, 'public'),
+        isNull(renditionApprovals.revokedAt),
+      ),
+    )
+  const approvedFor = new Map(approvals.map((a) => [a.documentId, a.versionId]))
   const picked = input.documentIds.map((id) => {
     const doc = docs.find((d) => d.id === id)
     const versionId =
@@ -58,6 +76,7 @@ export async function createPacket(
         : frozenVersion(
             doc,
             versions.filter((v) => v.documentId === id),
+            approvedFor.get(id) ?? null,
           )
     return { id, versionId }
   })

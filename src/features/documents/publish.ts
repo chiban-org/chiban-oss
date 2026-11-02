@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { documents, documentVersions } from '@/db/schema'
+import { documents, documentVersions, renditionApprovals } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -15,11 +15,24 @@ export async function setPublic(
   actor: Actor,
   input: { documentId: string; isPublic: boolean },
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden' | 'not_found'>> {
+): Promise<Result<void, 'forbidden' | 'not_found' | 'approval_required'>> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'document.publish', signal)
   if (!allowed.ok) return err('forbidden')
-  return await transactionResult(db, async (tx) => {
+  return await transactionResult<void, 'not_found' | 'approval_required'>(db, async (tx) => {
+    if (input.isPublic) {
+      const [approval] = await tx
+        .select({ id: renditionApprovals.id })
+        .from(renditionApprovals)
+        .where(
+          and(
+            eq(renditionApprovals.documentId, input.documentId),
+            eq(renditionApprovals.purpose, 'public'),
+            isNull(renditionApprovals.revokedAt),
+          ),
+        )
+      if (approval === undefined) return err('approval_required')
+    }
     const changed = await tx
       .update(documents)
       .set({ isPublic: input.isPublic, publicChangedBy: actor.userId, publicChangedAt: new Date() })

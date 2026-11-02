@@ -27,6 +27,7 @@ import { renderPdf } from '@/features/pdf/renderPdf'
 import { createGhostscriptConverter, type PdfaConverter } from '@/features/preservation/ghostscript'
 import { processPreservation } from '@/features/preservation/preserve'
 import { placeHold } from '@/features/records/holds'
+import { approveRendition } from '@/features/renditions/approvals'
 import { addReviewComment, assignReviewer } from '@/features/reviews/assignments'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 
@@ -108,7 +109,6 @@ async function seedParcelFiles(ctx: Context, parcelId: string): Promise<{ docume
 }
 
 async function seedRedactedCopy(ctx: Context, documentId: string): Promise<void> {
-  must(await setPublic(ctx.db, ctx.staff, { documentId, isPublic: true }, ctx.signal), 'publish')
   const stored = await storeGeneratedBytes(
     ctx.db,
     ctx.store,
@@ -116,14 +116,31 @@ async function seedRedactedCopy(ctx: Context, documentId: string): Promise<void>
     'application/pdf',
     ctx.signal,
   )
-  await ctx.db.insert(documentVersions).values({
-    documentId,
-    role: 'public_redacted',
-    fileSha256: stored.sha256,
-    filename: 'Panel schedule (public).pdf',
-    contentType: 'application/pdf',
-    createdBy: ctx.staff.userId,
-  })
+  const [version] = await ctx.db
+    .insert(documentVersions)
+    .values({
+      documentId,
+      role: 'public_redacted',
+      fileSha256: stored.sha256,
+      filename: 'Panel schedule (public).pdf',
+      contentType: 'application/pdf',
+      createdBy: ctx.staff.userId,
+    })
+    .returning({ id: documentVersions.id })
+  must(
+    await approveRendition(
+      ctx.db,
+      ctx.staff,
+      {
+        versionId: version?.id ?? '',
+        purpose: 'public',
+        reviewStatement: 'Contact details removed from the public copy and checked by staff.',
+      },
+      ctx.signal,
+    ),
+    'approve the public copy',
+  )
+  must(await setPublic(ctx.db, ctx.staff, { documentId, isPublic: true }, ctx.signal), 'publish')
 }
 
 async function claimBoth(ctx: Context, contractor: Actor, projectIds: string[]): Promise<void> {

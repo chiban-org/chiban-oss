@@ -8,6 +8,7 @@ import { createUploadIntent } from '@/features/documents/uploads'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { createGhostscriptConverter } from '@/features/preservation/ghostscript'
 import { processPreservation } from '@/features/preservation/preserve'
+import { approveRendition } from '@/features/renditions/approvals'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { uploadAs } from '@/test/documentFixtures'
 
@@ -47,6 +48,18 @@ export async function uploadText(
     ...(options.seriesKey === undefined ? {} : { seriesKey: options.seriesKey }),
   })
   if (options.publish !== undefined) {
+    await indexText(db, store)
+    const approved = await approveRendition(
+      db,
+      options.publish,
+      {
+        versionId: up.versionId,
+        purpose: 'public',
+        reviewStatement: 'Fixture approval of the original.',
+      },
+      signal,
+    )
+    if (!approved.ok) throw new AppError(ErrorIds.DB_INVARIANT, `approve ${approved.error}`)
     await setPublic(db, options.publish, { documentId: up.documentId, isPublic: true }, signal)
   }
   return { documentId: up.documentId, versionId: up.versionId }
@@ -89,6 +102,17 @@ export async function addRedactedCopy(
     signal,
   )
   if (!done.ok) throw new AppError(ErrorIds.DB_INVARIANT, `redacted ${done.error}`)
+  const approved = await approveRendition(
+    db,
+    staff,
+    {
+      versionId: done.value.versionId,
+      purpose: 'public',
+      reviewStatement: 'Fixture approval of the redacted copy.',
+    },
+    signal,
+  )
+  if (!approved.ok) throw new AppError(ErrorIds.DB_INVARIANT, `approve ${approved.error}`)
 }
 
 export async function indexText(db: Db, store: ObjectStore): Promise<void> {

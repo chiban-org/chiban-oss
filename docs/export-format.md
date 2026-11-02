@@ -1464,6 +1464,28 @@ File: `data/remediation_tasks.ndjson`. Ordered by id.
 References:
 - `application_id` refers to `applications`
 
+### rendition_approvals
+
+File: `data/rendition_approvals.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `document_id`: uuid
+- `version_id`: uuid
+- `purpose`: text
+- `rtk_request_id`: uuid, nullable
+- `approved_by_kind`: text
+- `approved_by`: uuid, nullable
+- `approved_at`: timestamp with time zone
+- `review_statement`: text
+- `revoked_at`: timestamp with time zone, nullable
+- `revoked_by`: uuid, nullable
+- `revoke_reason`: text, nullable
+
+References:
+- `document_id` refers to `documents`
+- `version_id` refers to `document_versions`
+- `rtk_request_id` refers to `rtk_requests`
+
 ### restraining_orders
 
 File: `data/restraining_orders.ndjson`. Ordered by id.

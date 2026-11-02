@@ -22,6 +22,7 @@ import { linkRecordToParcel } from '@/features/parcels/recordLinks'
 import { createPreservationRecord } from '@/features/preservation/preserve'
 import { assignSeries } from '@/features/records/assignments'
 import { defaultSeriesKey, requireSeries } from '@/features/records/series'
+import { insertSystemApproval } from '@/features/renditions/approvals'
 
 export interface AttachInput {
   target: RecordRef
@@ -125,6 +126,13 @@ export async function attachDocument(
       createdBy: createdById(actor),
     })
     .returning({ id: documentVersions.id })
+  if (input.isPublic ?? defaults.isPublic) {
+    await insertSystemApproval(tx, {
+      documentId,
+      versionId: version?.id ?? '',
+      statement: 'Published when the file was attached, under the town default for this record.',
+    })
+  }
   const parcelId = await parcelOf(tx, input.target)
   if (parcelId !== null) {
     await linkRecordToParcel(tx, { recordKind: 'document', recordId: documentId, parcelId }, signal)

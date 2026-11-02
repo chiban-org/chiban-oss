@@ -7,6 +7,7 @@ import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/appl
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/minio'
+import { approvePublic } from '@/test/renditionFixtures'
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -34,6 +35,7 @@ describe('hasRedactedCopy on document list rows', () => {
     const without = await uploadAs(handle.db, store, world.staff, appRef(), pdfBytes('without'), {
       title: 'Without copy',
     })
+    await approvePublic(handle.db, world.staff, withCopy.versionId, store)
     await setPublic(
       handle.db,
       world.staff,

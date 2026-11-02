@@ -19,6 +19,7 @@ import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeUser } from '@/test/factories'
 import { makeTestStore } from '@/test/minio'
 import { staffActor } from '@/test/parcels'
+import { approvePublic } from '@/test/renditionFixtures'
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -223,6 +224,7 @@ describe('documents', () => {
       pdfBytes('original with phone'),
       { title: 'Application packet' },
     )
+    await approvePublic(handle.db, world.staff, doc.versionId, store)
     await setPublic(handle.db, world.staff, { documentId: doc.documentId, isPublic: true }, signal)
     const before = await resolveRendition(handle.db, null, doc.documentId, signal)
     expect(before.ok && before.value.role).toBe('original')
@@ -253,6 +255,9 @@ describe('documents', () => {
       signal,
     )
     expect(redacted.ok).toBe(true)
+    const beforeApproval = await resolveRendition(handle.db, null, doc.documentId, signal)
+    expect(beforeApproval.ok && beforeApproval.value.role).toBe('original')
+    await approvePublic(handle.db, world.staff, redacted.ok ? redacted.value.versionId : '', store)
     const publicView = await resolveRendition(handle.db, null, doc.documentId, signal)
     expect(publicView.ok && publicView.value.role).toBe('public_redacted')
   })
@@ -265,6 +270,7 @@ describe('documents', () => {
       appRef(appId),
       pdfBytes('party original'),
     )
+    await approvePublic(handle.db, world.staff, doc.versionId, store)
     await setPublic(handle.db, world.staff, { documentId: doc.documentId, isPublic: true }, signal)
     const intent = await createUploadIntent(
       handle.db,
@@ -285,13 +291,14 @@ describe('documents', () => {
       headers: intent.value.headers,
       body: new Blob([pdfBytes('party redacted')]),
     })
-    await uploadRedactedCopy(
+    const copy = await uploadRedactedCopy(
       handle.db,
       store,
       world.staff,
       { documentId: doc.documentId, intentId: intent.value.intentId },
       signal,
     )
+    await approvePublic(handle.db, world.staff, copy.ok ? copy.value.versionId : '', store)
     const party = await resolveRendition(handle.db, world.applicant, doc.documentId, signal)
     expect(party.ok && party.value.role).toBe('original')
     const stranger = await resolveRendition(handle.db, rival, doc.documentId, signal)

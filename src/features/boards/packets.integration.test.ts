@@ -24,6 +24,7 @@ import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/minio'
 import { staffActor } from '@/test/parcels'
+import { approvePublic } from '@/test/renditionFixtures'
 import { addRedactedCopy } from '@/test/searchFixtures'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -114,6 +115,7 @@ describe('board packets', () => {
 
   it('packet freezes the version: a later redacted upload does not change what the board receives', async () => {
     const doc = await boardDocument('Septic design')
+    await approvePublic(handle.db, world.staff, doc.versionId, store)
     await setPublic(handle.db, world.staff, { documentId: doc.documentId, isPublic: true }, signal)
     const packetId = await packetWith([doc.documentId])
     const { token } = await link(packetId)
@@ -133,6 +135,7 @@ describe('board packets', () => {
     const up = await uploadAs(handle.db, store, world.applicant, appRef, pdfBytes('public only'), {
       title: 'Public',
     })
+    await approvePublic(handle.db, world.staff, up.versionId, store)
     await setPublic(handle.db, world.staff, { documentId: up.documentId, isPublic: true }, signal)
     await addRedactedCopy(handle.db, store, world.staff, appRef, up.documentId, 'public copy')
     const packetId = await packetWith([up.documentId])

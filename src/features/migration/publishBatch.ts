@@ -1,10 +1,11 @@
 import { and, eq, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { documents, migrationBatches } from '@/db/schema'
+import { documents, documentVersions, migrationBatches } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { insertSystemApproval } from '@/features/renditions/approvals'
 import { err, ok, type Result } from '@/types/result'
 
 export type PublishError = 'forbidden' | 'not_found' | 'not_staged'
@@ -40,6 +41,17 @@ export async function publishMigrationBatch(
       )
       .returning({ id: documents.id })
     for (const doc of changed) {
+      const [original] = await tx
+        .select({ id: documentVersions.id })
+        .from(documentVersions)
+        .where(and(eq(documentVersions.documentId, doc.id), eq(documentVersions.role, 'original')))
+      if (original !== undefined) {
+        await insertSystemApproval(tx, {
+          documentId: doc.id,
+          versionId: original.id,
+          statement: `Published with migration batch ${batchId} after staff review.`,
+        })
+      }
       await writeAudit(
         tx,
         {
