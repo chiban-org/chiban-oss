@@ -4,6 +4,7 @@ import { abutterListCandidates, abutterLists, remediationTasks } from '@/db/sche
 import { setApplicantParcels } from '@/features/abutters/applicantParcels'
 import { issueList } from '@/features/abutters/issue'
 import { generateList, selectParcel } from '@/features/abutters/lists'
+import { hasOpenRegeneration } from '@/features/abutters/staleList'
 import { deriveNoticeItems } from '@/features/notices/deriveItems'
 import { type BoardWorld, publishRegionalContacts, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -113,5 +114,15 @@ describe('changing the applicant parcels', () => {
     expect(tasks.map((t) => t.description)).toContain(
       'Regenerate the abutter list: the applicant parcels changed',
     )
+  })
+  it('issuing a new list clears the reminder to regenerate', async () => {
+    const listId = await draft()
+    await issueList(handle.db, world.staff, { listId }, signal, LIST_NOW)
+    await setParcels('A', 'M6')
+    const next = await draft()
+    expect((await issueList(handle.db, world.staff, { listId: next }, signal, LIST_NOW)).ok).toBe(
+      true,
+    )
+    expect(await hasOpenRegeneration(handle.db, lw.applicationId)).toBe(false)
   })
 })

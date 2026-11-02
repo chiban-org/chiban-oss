@@ -1,10 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { setAcceptanceMeeting } from '@/features/boards/acceptance'
+import { recordDesDetermination } from '@/features/boards/des500'
 import { scheduleMeeting } from '@/features/boards/meetings'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import { type BoardWorld, setupBoardWorld, submitBoardApplication } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { issueFixtureList } from '@/test/listFixtures'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -61,5 +63,20 @@ describe('meeting choices', () => {
     expect(panel).toMatchObject({ acceptanceMeetingId: april?.id, acceptanceDate: '2027-04-14' })
     const hearings = await loadApplicationHearingsPanel(handle.db, world.staff, id, signal)
     expect(hearings?.scheduleMeetings.map((m) => m.text)).not.toContain('January 8, 2025')
+  })
+})
+
+describe('issued list currency', () => {
+  it('an issued list reads as out of date after a determination changes', async () => {
+    const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')
+    await issueFixtureList(handle.db, world, id, '2027-03-24')
+    await recordDesDetermination(
+      handle.db,
+      world.staff,
+      { applicationId: id, determination: 'not_applicable', reason: 'No water body anywhere near' },
+      signal,
+    )
+    const panel = await loadBoardPanel(handle.db, world.staff, id, signal)
+    expect(panel?.lists[0]?.statusText).toBe('Issued, out of date. Draw and issue a new list.')
   })
 })

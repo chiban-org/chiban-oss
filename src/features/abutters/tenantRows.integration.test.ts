@@ -1,5 +1,10 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { decideTenant, generateList } from '@/features/abutters/lists'
+import {
+  correctRecipient,
+  decideTenant,
+  excludeCandidate,
+  generateList,
+} from '@/features/abutters/lists'
 import { loadListView } from '@/features/abutters/listView'
 import { upsertPark } from '@/features/rosters/parks'
 import { type BoardWorld, publishRegionalContacts, setupBoardWorld } from '@/test/boardFixtures'
@@ -74,5 +79,69 @@ describe('a decided park tenant', () => {
       needsDecision: false,
       decisionText: 'Counts as an abutter: Roster shows unit 4 adjoins the lot',
     })
+  })
+})
+
+describe('drawing the list again', () => {
+  it('keeps the parcels staff left off and the addresses staff corrected', async () => {
+    const first = await generateList(
+      handle.db,
+      world.staff,
+      { applicationId: lw.applicationId },
+      signal,
+      LIST_NOW,
+    )
+    if (!first.ok) throw new Error('generate')
+    const candidates = await handle.db.query.abutterListCandidates.findMany({
+      where: (c, { eq }) => eq(c.listId, first.value.listId),
+    })
+    const leftOff = candidates[0]?.parcelId ?? ''
+    await excludeCandidate(
+      handle.db,
+      world.staff,
+      { listId: first.value.listId, parcelId: leftOff, reason: 'Common land owned by the town' },
+      signal,
+      LIST_NOW,
+    )
+    const rows = await handle.db.query.abutterListRecipients.findMany({
+      where: (r, { eq }) => eq(r.listId, first.value.listId),
+    })
+    const owner = rows.find(
+      (r) => !r.excluded && (r.data as { roles: string[] }).roles.includes('abutter_owner'),
+    )
+    await correctRecipient(
+      handle.db,
+      world.staff,
+      {
+        listId: first.value.listId,
+        recipientId: owner?.id ?? '',
+        name: 'Wren Holdings',
+        mailingAddress: '3 Wren Way, Alder Pond NH 03999',
+        reason: 'Owner wrote with a new address',
+      },
+      signal,
+      LIST_NOW,
+    )
+    const second = await generateList(
+      handle.db,
+      world.staff,
+      { applicationId: lw.applicationId },
+      signal,
+      LIST_NOW,
+    )
+    if (!second.ok) throw new Error('generate')
+    const redrawn = await handle.db.query.abutterListCandidates.findMany({
+      where: (c, { eq }) => eq(c.listId, second.value.listId),
+    })
+    expect(redrawn.find((c) => c.parcelId === leftOff)).toMatchObject({
+      excluded: true,
+      exclusionReason: 'Common land owned by the town',
+    })
+    const recipients = await handle.db.query.abutterListRecipients.findMany({
+      where: (r, { eq }) => eq(r.listId, second.value.listId),
+    })
+    expect(recipients.map((r) => (r.data as { mailingAddress: string }).mailingAddress)).toContain(
+      '3 Wren Way, Alder Pond NH 03999',
+    )
   })
 })

@@ -14,6 +14,7 @@ import {
 import { applicantParcelIds } from '@/features/abutters/applicantParcels'
 import { type NoticeCostSummary, noticeCostSummary } from '@/features/abutters/noticeCosts'
 import { listVersions } from '@/features/abutters/queries'
+import { hasOpenRegeneration } from '@/features/abutters/staleList'
 import { hasFullRecordAccess } from '@/features/access/roles'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
@@ -79,6 +80,8 @@ const DES_TEXT = {
   not_within: 'Not within the distance of a water body',
   not_applicable: 'The notice to NH DES does not apply',
 } as const
+
+const STALE_ISSUED = 'Issued, out of date. Draw and issue a new list.'
 
 const LIST_STATUS = {
   draft: 'Draft',
@@ -159,6 +162,7 @@ export async function loadBoardPanel(
     : { state: 'unknown' as const }
   const text = suggestionText(suggested, distanceFt)
   const versions = await listVersions(db, applicationId, signal)
+  const stale = await hasOpenRegeneration(db, applicationId)
   const people = await db
     .select()
     .from(applicationProfessionals)
@@ -221,7 +225,7 @@ export async function loadBoardPanel(
     lists: versions.map((v) => ({
       id: v.id,
       version: v.version,
-      statusText: LIST_STATUS[v.status],
+      statusText: v.status === 'issued' && stale ? STALE_ISSUED : LIST_STATUS[v.status],
       drawnText: formatCivilDate(v.drawnOn),
       issued: v.status === 'issued',
     })),

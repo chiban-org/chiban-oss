@@ -19,6 +19,7 @@ import { err, ok, type Result } from '@/types/result'
 import { applicantParcelIds } from './applicantParcels'
 import { finalRecipients, openIncomplete, refreshRecipients } from './draft'
 import { getList, type ListSnapshot } from './queries'
+import { closeRegeneration } from './staleList'
 import type { Candidate, IncompleteReason } from './types'
 
 export type IssueError =
@@ -101,6 +102,7 @@ export async function issueList(
         snapshotSha256: sha256,
       })
       .where(eq(abutterLists.id, list.id))
+    await closeRegeneration(tx, list.applicationId)
     const assessed = await assessFees(tx, list.applicationId, 'at_notice', actor, signal)
     if (!assessed.ok) return err('fees_incomplete')
     await writeAudit(
