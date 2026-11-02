@@ -87,4 +87,14 @@ describe('nh enforcement rules', () => {
       expect(rule.extension.allowed).toBe(false)
     }
   })
+
+  it('judgment appeal consequence states only the 15 day appeal right', () => {
+    for (const key of ['nh.enf.judgment_appeal_zoning', 'nh.enf.judgment_appeal_building']) {
+      const rule = ruleByKey(loadPack(), key)
+      if (rule.kind !== 'clock') throw new Error('not a clock rule')
+      expect(rule.consequence.text).toBe(
+        'A party aggrieved by the judgment may appeal to the superior court within 15 days after it is rendered.',
+      )
+    }
+  })
 })

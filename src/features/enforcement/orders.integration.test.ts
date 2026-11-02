@@ -380,8 +380,12 @@ describe('cease and desist orders', () => {
     const text = await documentText(result.value.documentId)
     expect(text).toContain('CD-2027-0001')
     expect(text).toContain('February 26, 2027')
+    expect(text).toContain(ORDER_MOTION_NOTICE)
     expect(text).toContain(
-      'Unless corrective action is taken or an answer is filed within 20 days of service',
+      'Unless the corrective action is taken within the time this order provides',
+    )
+    expect(ORDER_LIEN_WARNING).toContain(
+      'If you do not take the corrective action or file an answer',
     )
     expect(text).toContain(ORDER_LIEN_WARNING)
     expect(text).toContain(ORDER_CEASE_SENTENCE)

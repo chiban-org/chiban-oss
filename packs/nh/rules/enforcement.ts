@@ -10,7 +10,7 @@ const RSA_676_6 = 'https://gc.nh.gov/rsa/html/LXIV/676/676-6.htm'
 const ANSWER_CONSEQUENCE =
   'If no answer is served, the enforcement official may move the district court to enforce the order.'
 const APPEAL_CONSEQUENCE =
-  'After this date the district court judgment can no longer be appealed to the superior court.'
+  'A party aggrieved by the judgment may appeal to the superior court within 15 days after it is rendered.'
 
 function ceaseAndDesist(
   suffix: 'zoning' | 'building',
