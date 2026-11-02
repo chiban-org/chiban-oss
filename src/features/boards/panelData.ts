@@ -14,6 +14,7 @@ import {
 import { applicantParcelIds } from '@/features/abutters/applicantParcels'
 import { type NoticeCostSummary, noticeCostSummary } from '@/features/abutters/noticeCosts'
 import { listVersions } from '@/features/abutters/queries'
+import { hasFullRecordAccess } from '@/features/access/roles'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -110,6 +111,7 @@ export async function loadBoardPanel(
   signal: AbortSignal,
 ): Promise<BoardPanelData | null> {
   signal.throwIfAborted()
+  if (!hasFullRecordAccess(actor)) return null
   const app = await loadApplicationContext(db, applicationId, signal)
   if (app === null) return null
   const board = boardOfApplication(app)
