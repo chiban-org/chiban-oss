@@ -1,11 +1,15 @@
 import { NH_STARTERS } from '@packs/nh/starters'
 import { and, eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { configVersions } from '@/db/schema'
+import { applications, clocks, configVersions, recordEvents } from '@/db/schema'
+import { startClocksFor } from '@/features/clocks/startClocks'
 import { adoptStarter } from '@/features/config/adoptStarter'
 import { pinCurrent } from '@/features/config/bindings'
+import { expireLapsedPermits } from '@/jobs/clocksDaily'
+import { makeApplication, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
+import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -83,5 +87,74 @@ describe('adoptStarter', () => {
       ok: false,
       error: 'unknown_starter',
     })
+  })
+})
+
+describe('registration and temporary clocks', () => {
+  async function issued(typeKey: string, starterId: string, issuedOn: string) {
+    const world = await setupPermitWorld(handle.db, { starters: [starterId] })
+    const app = await makeApplication(
+      handle.db,
+      world,
+      { state: 'issued', issuedOn },
+      new Date('2027-03-02T15:00:00Z'),
+      typeKey,
+    )
+    await handle.db.transaction((tx) =>
+      startClocksFor(tx, app.applicationId, 'permit_issued', issuedOn as CivilDate, signal),
+    )
+    return app
+  }
+
+  it('alarm registration issued 2027-05-01 expires 2028-05-01 and records registration_expired', async () => {
+    const app = await issued('AR', 'nh.starter.alarm_registration', '2027-05-01')
+    const [clock] = await handle.db
+      .select()
+      .from(clocks)
+      .where(eq(clocks.applicationId, app.applicationId))
+    expect(clock?.ruleKey).toBe('town.registration.expiration')
+    expect(clock?.currentDue).toBe('2028-05-01')
+    await handle.db.transaction((tx) => expireLapsedPermits(tx, '2028-05-02' as CivilDate, signal))
+    const [row] = await handle.db
+      .select()
+      .from(applications)
+      .where(eq(applications.id, app.applicationId))
+    expect(row?.state).toBe('expired')
+    const events = await handle.db
+      .select()
+      .from(recordEvents)
+      .where(eq(recordEvents.applicationId, app.applicationId))
+    expect(events.map((e) => [e.kind, e.occurredOn])).toEqual([
+      ['registration_expired', '2028-05-02'],
+    ])
+  })
+
+  it('temporary structure issued 2027-05-01 with the 180-day default lapses 2027-10-28', async () => {
+    const app = await issued('TS', 'nh.starter.temporary_structure', '2027-05-01')
+    const [clock] = await handle.db
+      .select()
+      .from(clocks)
+      .where(eq(clocks.applicationId, app.applicationId))
+    expect(clock?.ruleKey).toBe('town.temporary.expiration')
+    expect(clock).toMatchObject({ lengthValue: 180, lengthUnit: 'days', currentDue: '2027-10-28' })
+  })
+
+  it('a driveway document defaults to the driveway series and a sign to the unscheduled series', async () => {
+    const { defaultSeriesForApplication } = await import('@/features/documents/attach')
+    const world = await setupPermitWorld(handle.db, {
+      starters: ['nh.starter.driveway', 'nh.starter.sign'],
+    })
+    const dw = await makeApplication(handle.db, world, {}, undefined, 'DW')
+    const sg = await makeApplication(handle.db, world, {}, undefined, 'SG')
+    expect(
+      await handle.db.transaction((tx) =>
+        defaultSeriesForApplication(tx, dw.applicationId, signal),
+      ),
+    ).toBe('nh.rs.driveway_permits')
+    expect(
+      await handle.db.transaction((tx) =>
+        defaultSeriesForApplication(tx, sg.applicationId, signal),
+      ),
+    ).toBe('nh.rs.unscheduled_permanent')
   })
 })

@@ -20,6 +20,8 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     label: 'Trade permit',
     mandatoryRuleKeys: ['nh.appeal.suspension'],
   },
+  { key: 'nh.local_zoning_permit', label: 'Local zoning permit', mandatoryRuleKeys: [] },
+  { key: 'nh.local_permit_other', label: 'Local permit or registration', mandatoryRuleKeys: [] },
   {
     key: 'nh.enforcement_zoning',
     label: 'Land use enforcement',

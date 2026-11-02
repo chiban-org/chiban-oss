@@ -129,7 +129,8 @@ export async function defaultSeriesForApplication(
 ): Promise<string | null> {
   const app = await loadApplicationContext(tx, applicationId, signal)
   const classification = app?.typeBody.classification
-  return classification === undefined ? null : defaultSeriesKey(classification)
+  if (app === null || classification === undefined) return null
+  return defaultSeriesKey(classification, app.typeBody.key)
 }
 
 async function assignInitialSeries(

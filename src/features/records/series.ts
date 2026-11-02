@@ -12,6 +12,8 @@ export function requireSeries(key: string): RecordSeries {
   return found
 }
 
-export function defaultSeriesKey(classification: string): string | null {
-  return loadPack().recordSeriesDefaults.byClassification[classification] ?? null
+export function defaultSeriesKey(classification: string, typeKey?: string): string | null {
+  const defaults = loadPack().recordSeriesDefaults
+  const byType = typeKey === undefined ? undefined : defaults.byApplicationType[typeKey]
+  return byType ?? defaults.byClassification[classification] ?? null
 }

@@ -10,8 +10,13 @@ import { unknownMergeFields } from '@/features/templates/mergeFields'
 import { TemplateBodySchema } from '@/features/templates/templateSchema'
 
 describe('NH starters', () => {
-  it('ships building, electrical, plumbing, and mechanical/gas', () => {
-    expect(NH_STARTERS.map((s) => s.applicationType.prefix)).toEqual(['BP', 'EL', 'PL', 'MG'])
+  it('ships building, electrical, plumbing, and mechanical/gas first', () => {
+    expect(NH_STARTERS.slice(0, 4).map((s) => s.applicationType.prefix)).toEqual([
+      'BP',
+      'EL',
+      'PL',
+      'MG',
+    ])
   })
 
   it('no starter template prefixes the town name field with the word Town', () => {
@@ -105,19 +110,23 @@ describe('NH starters', () => {
     for (const s of NH_STARTERS.filter(
       (x) => x.applicationType.classification === 'nh.trade_permit',
     )) {
+      expect(s.checklists.map((c) => c.inspectionType)).toContain('final')
       expect(s.applicationType).toMatchObject({
         payTiming: 'at_intake',
         workflow: { allowsDirectIssue: true, closesOn: 'final_inspection_passed' },
       })
       expect(s.form.fields.find((f) => f.key === 'contractor_license_number')?.required).toBe(true)
+    }
+    for (const s of NH_STARTERS.slice(1, 4)) {
       expect(s.checklists.map((c) => c.inspectionType)).toEqual(['rough', 'final'])
     }
   })
 
-  it('every starter names exactly one final checklist', () => {
+  it('starters with checklists name exactly one final checklist', () => {
     for (const s of NH_STARTERS) {
-      expect(s.checklists.filter((c) => c.final)).toHaveLength(1)
-      expect(s.checklists.find((c) => c.final)?.inspectionType).toBe('final')
+      const needsFinal = s.checklists.length > 0
+      expect(s.checklists.filter((c) => c.final)).toHaveLength(needsFinal ? 1 : 0)
+      if (needsFinal) expect(s.checklists.find((c) => c.final)?.inspectionType).toBe('final')
     }
   })
 })

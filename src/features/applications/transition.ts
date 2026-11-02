@@ -29,7 +29,7 @@ export interface TransitionInput {
   substep?: string
   expectedRowVersion: number
   onDate?: CivilDate
-  closureReason?: 'final_inspection_passed' | 'certificate_of_occupancy'
+  closureReason?: 'final_inspection_passed' | 'certificate_of_occupancy' | 'issuance'
   cutover?: boolean
 }
 

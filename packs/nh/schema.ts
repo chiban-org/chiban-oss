@@ -242,6 +242,9 @@ export const RecordEventKindSchema = z.enum([
   'application_withdrawn',
   'application_denied',
   'building_removed',
+  'registration_expired',
+  'septic_replaced_or_removed',
+  'appeal_period_expired',
 ])
 export type RecordEventKind = z.infer<typeof RecordEventKindSchema>
 
@@ -281,7 +284,10 @@ export const PackManifestSchema = z
     classifications: z.array(ProceedingClassificationSchema).min(1),
     codeEditions: z.array(CodeEditionEntrySchema).min(1),
     recordSeries: z.array(RecordSeriesSchema).min(1),
-    recordSeriesDefaults: z.object({ byClassification: z.record(z.string(), z.string()) }),
+    recordSeriesDefaults: z.object({
+      byClassification: z.record(z.string(), z.string()),
+      byApplicationType: z.record(z.string(), z.string()),
+    }),
   })
   .superRefine((m, ctx) => {
     const keys = new Set(m.rules.map((r) => r.key))

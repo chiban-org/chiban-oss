@@ -11,11 +11,12 @@ import {
   retentionAssignments,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import type { DocumentActor } from '@/features/documents/types'
-import { findSeries, requireSeries } from '@/features/records/series'
+import { defaultSeriesKey, findSeries, requireSeries } from '@/features/records/series'
 import { outcomeSeriesKey, type SeriesOutcome } from '@/features/records/seriesSummary'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -60,6 +61,28 @@ export async function assignSeries(
 
 const SYSTEM_ACTOR = { kind: 'system', job: 'records.outcome' } as const
 
+async function recordRegistrationExpiry(
+  tx: Tx,
+  applicationId: string,
+  projectId: string,
+  onDate: CivilDate,
+  signal: AbortSignal,
+): Promise<void> {
+  const context = await loadApplicationContext(tx, applicationId, signal)
+  const classification = context?.typeBody.classification
+  if (context === null || classification === undefined) return
+  const key = defaultSeriesKey(classification, context.typeBody.key)
+  const retention = key === null ? null : requireSeries(key).retention
+  if (retention?.kind !== 'event' || !retention.events.includes('registration_expired')) return
+  await tx.insert(recordEvents).values({
+    projectId,
+    applicationId,
+    kind: 'registration_expired',
+    occurredOn: onDate,
+    recordedByKind: 'system',
+  })
+}
+
 export async function applyOutcomeSeries(
   tx: Tx,
   applicationId: string,
@@ -82,6 +105,8 @@ export async function applyOutcomeSeries(
       recordedByKind: 'system',
     })
   }
+  if (outcome === 'expired')
+    await recordRegistrationExpiry(tx, applicationId, app.projectId, onDate, signal)
   const inspectionIds = (
     await tx
       .select({ id: inspections.id })
