@@ -317,4 +317,4 @@ implementation notes described above while executing an already-approved spec.
 
 **Stack:** Next.js App Router, TypeScript, Drizzle + Postgres/PostGIS, tRPC + TanStack Query, server actions for mutations, shadcn/ui + Tailwind, pg-boss, MinIO, pnpm, Docker Compose behind Caddy, Vitest with a real Postgres. Conventions follow warpdrive.
 
-**License:** AGPL-3.0. This folder is the future public repository; specs, research, pricing, and ops material stay in the parent repo's `docs/` and never move in here.
+**License:** AGPL-3.0. This is the public product repository. Specs, plans, research, pricing, and ops material never land here.
