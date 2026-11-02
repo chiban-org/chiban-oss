@@ -190,7 +190,6 @@ File: `data/board_packet_access.ndjson`. Ordered by id.
 
 References:
 - `link_id` refers to `board_packet_links`
-- `version_id` refers to `document_versions`
 
 ### board_packet_items
 
@@ -198,7 +197,8 @@ File: `data/board_packet_items.ndjson`. Ordered by packet_id, document_id.
 
 - `packet_id`: uuid
 - `document_id`: uuid
-- `version_id`: uuid
+- `version_id`: uuid, nullable
+- `former_version_id`: uuid, nullable
 - `position`: integer
 - `approval_id`: uuid, nullable
 - `withdrawn_at`: timestamp with time zone, nullable
@@ -489,6 +489,57 @@ File: `data/cutover_rows.ndjson`. Ordered by legacy_number.
 References:
 - `application_id` refers to `applications`
 
+### disposition_batches
+
+File: `data/disposition_batches.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `as_of`: date
+- `status`: text
+- `proposed_by`: uuid
+- `proposed_at`: timestamp with time zone
+- `approved_by`: uuid, nullable
+- `approved_at`: timestamp with time zone, nullable
+- `executed_at`: timestamp with time zone, nullable
+- `cancelled_at`: timestamp with time zone, nullable
+
+### disposition_items
+
+File: `data/disposition_items.ndjson`. Ordered by batch_id, record_kind, record_id.
+
+- `batch_id`: uuid
+- `record_kind`: text
+- `record_id`: uuid
+- `series_key`: text
+- `series_version`: text
+- `eligible_on`: date
+- `outcome`: text, nullable
+
+References:
+- `batch_id` refers to `disposition_batches`
+
+### disposition_tombstones
+
+File: `data/disposition_tombstones.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `batch_id`: uuid
+- `record_kind`: text
+- `record_id`: uuid
+- `title`: text
+- `series_key`: text
+- `series_version`: text
+- `series_citation`: jsonb
+- `retention_basis`: jsonb
+- `version_ids`: uuid[]
+- `file_sha256s`: text[]
+- `proposed_by`: uuid
+- `approved_by`: uuid
+- `executed_at`: timestamp with time zone
+
+References:
+- `batch_id` refers to `disposition_batches`
+
 ### document_text
 
 File: `data/document_text.ndjson`. Ordered by version_id.
@@ -539,6 +590,8 @@ File: `data/documents.ndjson`. Ordered by id.
 - `created_by_kind`: text
 - `created_by`: uuid, nullable
 - `migration_batch_id`: uuid, nullable
+- `disposed_at`: timestamp with time zone, nullable
+- `disposed_tombstone_id`: uuid, nullable
 - `created_at`: timestamp with time zone
 
 References:
@@ -1567,7 +1620,8 @@ File: `data/rtk_release_items.ndjson`. Ordered by release_id, document_id.
 - `release_id`: uuid
 - `document_id`: uuid
 - `version_id`: uuid, nullable
-- `approval_id`: uuid
+- `former_version_id`: uuid, nullable
+- `approval_id`: uuid, nullable
 - `position`: integer
 - `withdrawn_at`: timestamp with time zone, nullable
 - `withdrawn_reason`: text, nullable

@@ -1,7 +1,8 @@
-import { and, eq, lt, sql } from 'drizzle-orm'
+import { and, eq, inArray, lt, sql } from 'drizzle-orm'
 import { JOB_NAMES } from '@/constants/jobNames'
 import type { Db } from '@/db/client'
 import {
+  dispositionBatches,
   exportsTable,
   jobRuns,
   notificationOutbox,
@@ -16,6 +17,7 @@ import { clocksDailyJob } from './clocksDaily'
 import type { JobDefinition } from './defineJob'
 import { exportsBuildJob } from './exportsBuild'
 import { notificationsSendJob } from './notificationsSend'
+import { recordsDisposeJob } from './recordsDispose'
 import { recordsPreserveJob } from './recordsPreserve'
 import { redactionRunJob } from './redactionRun'
 import { renditionsDeriveJob } from './renditionsDerive'
@@ -147,6 +149,24 @@ const redactionTarget: SweepTarget = {
   },
 }
 
+const DISPOSE_OVERDUE_MINUTES = 5
+
+const disposeTarget: SweepTarget = {
+  name: JOB_NAMES.RECORDS_DISPOSE,
+  async findOverdue(db, now) {
+    const stuck = await db
+      .select({ id: dispositionBatches.id })
+      .from(dispositionBatches)
+      .where(
+        and(
+          inArray(dispositionBatches.status, ['approved', 'executing']),
+          lt(dispositionBatches.approvedAt, minutesBefore(now, DISPOSE_OVERDUE_MINUTES)),
+        ),
+      )
+    return stuck.map((row) => ({ job: recordsDisposeJob, payload: { batchId: row.id } }))
+  },
+}
+
 const DERIVE_OVERDUE_MINUTES = 30
 const DERIVE_BATCH = 25
 
@@ -178,6 +198,7 @@ const targets: SweepTarget[] = [
   exportsBuildTarget,
   redactionTarget,
   renditionsTarget,
+  disposeTarget,
 ]
 
 export const SWEEP_TARGETS: readonly SweepTarget[] = targets

@@ -56,7 +56,7 @@ function publicDocument(): SQL {
 }
 
 export function documentVisibleTo(actor: Actor | null): SQL {
-  return sql`(${publicDocument()} or ${documentPrivateAccess(actor)})`
+  return sql`(${documents.disposedAt} is null and (${publicDocument()} or ${documentPrivateAccess(actor)}))`
 }
 
 export type Rendition = 'default' | 'pdfa'

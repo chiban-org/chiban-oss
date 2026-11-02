@@ -1,4 +1,4 @@
-import { and, asc, eq } from 'drizzle-orm'
+import { and, asc, eq, or } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
   documents,
@@ -70,22 +70,23 @@ export async function openRelease(
   const rows = await db
     .select({
       versionId: rtkReleaseItems.versionId,
+      formerVersionId: rtkReleaseItems.formerVersionId,
       title: documents.title,
       filename: documentVersions.filename,
       withdrawnAt: rtkReleaseItems.withdrawnAt,
     })
     .from(rtkReleaseItems)
     .innerJoin(documents, eq(documents.id, rtkReleaseItems.documentId))
-    .innerJoin(documentVersions, eq(documentVersions.id, rtkReleaseItems.versionId))
+    .leftJoin(documentVersions, eq(documentVersions.id, rtkReleaseItems.versionId))
     .where(eq(rtkReleaseItems.releaseId, release.id))
     .orderBy(asc(rtkReleaseItems.position))
   const items = await Promise.all(
     rows.map(async (row) => {
       const withdrawnAt = row.withdrawnAt
       return {
-        versionId: row.versionId ?? '',
+        versionId: row.versionId ?? row.formerVersionId ?? '',
         title: row.title,
-        filename: row.filename,
+        filename: row.filename ?? '',
         withdrawnOn: withdrawnAt === null ? null : await townDate(db, withdrawnAt, signal),
       }
     }),
@@ -122,13 +123,16 @@ export async function openReleaseVersion(
       approvalRevokeReason: renditionApprovals.revokeReason,
     })
     .from(rtkReleaseItems)
-    .innerJoin(documentVersions, eq(documentVersions.id, rtkReleaseItems.versionId))
-    .innerJoin(files, eq(files.sha256, documentVersions.fileSha256))
-    .innerJoin(renditionApprovals, eq(renditionApprovals.id, rtkReleaseItems.approvalId))
+    .leftJoin(documentVersions, eq(documentVersions.id, rtkReleaseItems.versionId))
+    .leftJoin(files, eq(files.sha256, documentVersions.fileSha256))
+    .leftJoin(renditionApprovals, eq(renditionApprovals.id, rtkReleaseItems.approvalId))
     .where(
       and(
         eq(rtkReleaseItems.releaseId, resolved.value.id),
-        eq(rtkReleaseItems.versionId, versionId),
+        or(
+          eq(rtkReleaseItems.versionId, versionId),
+          eq(rtkReleaseItems.formerVersionId, versionId),
+        ),
       ),
     )
   if (row === undefined) return err('not_found')
@@ -137,6 +141,9 @@ export async function openReleaseVersion(
   }
   if (row.approvalRevokedAt !== null && row.approvalRevokeReason !== 'superseded') {
     return err({ withdrawnOn: await townDate(db, row.approvalRevokedAt, signal) })
+  }
+  if (row.storageKey === null || row.filename === null || row.contentType === null) {
+    return err('not_found')
   }
   const url = await store.presignGet(row.storageKey, {
     expiresSeconds: DOWNLOAD_SECONDS,

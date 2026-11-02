@@ -93,7 +93,12 @@ export async function retentionFor(
   db: DbOrTx,
   ref: DispositionRef,
   signal: AbortSignal,
-): Promise<{ series: RecordSeries; status: RetentionStatus; holds: LegalHoldRow[] } | null> {
+): Promise<{
+  series: RecordSeries
+  status: RetentionStatus
+  holds: LegalHoldRow[]
+  events: { kind: string; occurredOn: CivilDate }[]
+} | null> {
   signal.throwIfAborted()
   const [assignment] = await db
     .select()
@@ -140,7 +145,12 @@ export async function retentionFor(
     recordDate: todayInTimeZone(zone, createdAt),
     events: events.map((e) => ({ kind: e.kind, occurredOn: e.occurredOn as CivilDate })),
   })
-  return { series, status, holds: await holdsCovering(db, ref, signal) }
+  return {
+    series,
+    status,
+    holds: await holdsCovering(db, ref, signal),
+    events: events.map((e) => ({ kind: e.kind, occurredOn: e.occurredOn as CivilDate })),
+  }
 }
 
 export type DispositionBlock =

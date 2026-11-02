@@ -45,6 +45,7 @@ export async function placeHold(
         targetId: input.target.id,
         reason,
         placedBy: actor.userId,
+        placedAt: sql`clock_timestamp()`,
       })
       .returning({ id: legalHolds.id })
     await writeAudit(

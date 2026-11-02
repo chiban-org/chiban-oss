@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { and, asc, desc, eq } from 'drizzle-orm'
+import { and, asc, desc, eq, or } from 'drizzle-orm'
 import { env } from '@/config/env'
 import type { Db } from '@/db/client'
 import {
@@ -147,13 +147,14 @@ export async function openPacket(
   const items = await db
     .select({
       versionId: boardPacketItems.versionId,
+      formerVersionId: boardPacketItems.formerVersionId,
       title: documents.title,
       filename: documentVersions.filename,
       withdrawnAt: boardPacketItems.withdrawnAt,
     })
     .from(boardPacketItems)
     .innerJoin(documents, eq(documents.id, boardPacketItems.documentId))
-    .innerJoin(documentVersions, eq(documentVersions.id, boardPacketItems.versionId))
+    .leftJoin(documentVersions, eq(documentVersions.id, boardPacketItems.versionId))
     .where(eq(boardPacketItems.packetId, packet.id))
     .orderBy(asc(boardPacketItems.position))
   await db.insert(boardPacketAccess).values({ linkId: link.id, versionId: null, accessedAt: now })
@@ -164,8 +165,10 @@ export async function openPacket(
     meetingDate: packet.meetingDate as CivilDate,
     expiresAt: link.expiresAt.toISOString(),
     items: await Promise.all(
-      items.map(async ({ withdrawnAt, ...item }) => ({
-        ...item,
+      items.map(async ({ withdrawnAt, formerVersionId, ...item }) => ({
+        title: item.title,
+        versionId: item.versionId ?? formerVersionId ?? '',
+        filename: item.filename ?? '',
         withdrawnOn: withdrawnAt === null ? null : await townDateOf(db, withdrawnAt, signal),
       })),
     ),
@@ -194,14 +197,23 @@ export async function openPacketVersion(
       withdrawnAt: boardPacketItems.withdrawnAt,
     })
     .from(boardPacketItems)
-    .innerJoin(documentVersions, eq(documentVersions.id, boardPacketItems.versionId))
-    .innerJoin(files, eq(files.sha256, documentVersions.fileSha256))
+    .leftJoin(documentVersions, eq(documentVersions.id, boardPacketItems.versionId))
+    .leftJoin(files, eq(files.sha256, documentVersions.fileSha256))
     .where(
-      and(eq(boardPacketItems.packetId, link.packetId), eq(boardPacketItems.versionId, versionId)),
+      and(
+        eq(boardPacketItems.packetId, link.packetId),
+        or(
+          eq(boardPacketItems.versionId, versionId),
+          eq(boardPacketItems.formerVersionId, versionId),
+        ),
+      ),
     )
   if (row === undefined) return err('not_found')
   if (row.withdrawnAt !== null) {
     return err({ withdrawnOn: await townDateOf(db, row.withdrawnAt, signal) })
+  }
+  if (row.storageKey === null || row.filename === null || row.contentType === null) {
+    return err('not_found')
   }
   await db.insert(boardPacketAccess).values({ linkId: link.id, versionId, accessedAt: now })
   const url = await store.presignGet(row.storageKey, {

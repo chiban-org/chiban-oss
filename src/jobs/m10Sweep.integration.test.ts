@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { JOB_NAMES } from '@/constants/jobNames'
-import { redactionJobs, renditionApprovals } from '@/db/schema'
+import { dispositionBatches, redactionJobs, renditionApprovals } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { deriveRenditions } from '@/features/renditions/derive'
 import { SWEEP_TARGETS } from '@/jobs/sweepTargets'
@@ -70,5 +70,31 @@ describe('records sweep targets', () => {
       .where(eq(renditionApprovals.documentId, fresh.documentId))
     const items = await target(JOB_NAMES.RENDITIONS_DERIVE).findOverdue(handle.db, NOW, signal)
     expect(items.map((i) => i.payload)).toEqual([{ versionId: stale.versionId }])
+  })
+
+  it('an approved batch left unexecuted for 5 minutes is re-enqueued and a recent one is not', async () => {
+    const [stale] = await handle.db
+      .insert(dispositionBatches)
+      .values({
+        asOf: '2027-03-01',
+        status: 'approved',
+        proposedBy: staff.userId,
+        approvedAt: minutesAgo(6),
+      })
+      .returning({ id: dispositionBatches.id })
+    await handle.db.insert(dispositionBatches).values({
+      asOf: '2027-03-01',
+      status: 'approved',
+      proposedBy: staff.userId,
+      approvedAt: minutesAgo(1),
+    })
+    await handle.db.insert(dispositionBatches).values({
+      asOf: '2027-03-01',
+      status: 'executed',
+      proposedBy: staff.userId,
+      approvedAt: minutesAgo(90),
+    })
+    const items = await target(JOB_NAMES.RECORDS_DISPOSE).findOverdue(handle.db, NOW, signal)
+    expect(items.map((i) => i.payload)).toEqual([{ batchId: stale?.id }])
   })
 })

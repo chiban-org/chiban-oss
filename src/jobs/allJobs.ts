@@ -9,6 +9,7 @@ import { healthCheckJob } from './healthCheck'
 import { heartbeatJob } from './heartbeat'
 import { notificationsSendJob } from './notificationsSend'
 import { paymentsReconcileJob } from './paymentsReconcile'
+import { recordsDisposeJob } from './recordsDispose'
 import { recordsPreserveJob } from './recordsPreserve'
 import { redactionRunJob } from './redactionRun'
 import { renditionsDeriveJob } from './renditionsDerive'
@@ -32,4 +33,5 @@ export const ALL_JOBS: JobDefinition<object>[] = [
   jobsSweepJob,
   redactionRunJob,
   renditionsDeriveJob,
+  recordsDisposeJob,
 ]
