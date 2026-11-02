@@ -3,7 +3,13 @@ import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
-import { enforcementCases, enforcementOrders, users, violationFindings } from '@/db/schema'
+import {
+  type EnforcementStatus,
+  enforcementCases,
+  enforcementOrders,
+  users,
+  violationFindings,
+} from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -103,6 +109,8 @@ export async function draftOrder(
   })
 }
 
+const ORDERABLE_STATUSES: readonly EnforcementStatus[] = ['violation_found', 'order_issued']
+
 export function issuerAuthorized(rule: CeaseAndDesistRule, designated: boolean): boolean {
   return designated || !rule.issuerMustBeDesignated
 }
@@ -155,7 +163,7 @@ export async function issueOrder(
       .for('update')
     if (caseRow === undefined) return err('not_found')
     if ((await stayFor(tx, caseRow.id, value.issuedOn, signal)).stayed) return err('stayed')
-    if (caseRow.status !== 'violation_found') return err('case_not_ready')
+    if (!ORDERABLE_STATUSES.includes(caseRow.status)) return err('case_not_ready')
     const rule = ruleByKey(loadPack(), order.ruleKey, order.ruleVersion)
     if (rule.kind !== 'cease_and_desist') {
       throw new AppError(ErrorIds.ENF_INVARIANT, 'Order rule is not a cease and desist rule', {

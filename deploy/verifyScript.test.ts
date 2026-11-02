@@ -7,7 +7,10 @@ import { readDeployFile } from './composeText'
 
 const script = readDeployFile('verify-anonymous-intake.sh')
 
-function run(args: string[]): { status: number; stderr: string; calls: string } {
+function run(
+  args: string[],
+  options: { passphrase?: string; dotEnv?: string } = {},
+): { status: number; stderr: string; calls: string } {
   const dir = mkdtempSync(path.join(tmpdir(), 'chiban-verify-script-'))
   const bin = path.join(dir, 'bin')
   const deployDir = path.join(dir, 'deploy')
@@ -18,10 +21,16 @@ function run(args: string[]): { status: number; stderr: string; calls: string } 
   })
   writeFileSync(path.join(deployDir, 'verify-anonymous-intake.sh'), script, { mode: 0o755 })
   writeFileSync(path.join(deployDir, 'Caddyfile'), 'x\n')
+  if (options.dotEnv !== undefined) writeFileSync(path.join(deployDir, '.env'), options.dotEnv)
   const calls = path.join(dir, 'calls.log')
   writeFileSync(calls, '')
   const result = spawnSync('bash', [path.join(deployDir, 'verify-anonymous-intake.sh'), ...args], {
-    env: { ...process.env, PATH: `${bin}:${process.env.PATH ?? ''}`, STUB_CALLS: calls },
+    env: {
+      ...process.env,
+      PATH: `${bin}:${process.env.PATH ?? ''}`,
+      STUB_CALLS: calls,
+      BACKUP_PASSPHRASE: options.passphrase ?? '',
+    },
     encoding: 'utf8',
   })
   return {
@@ -32,15 +41,17 @@ function run(args: string[]): { status: number; stderr: string; calls: string } 
 }
 
 describe('verify-anonymous-intake.sh', () => {
+  const PASSPHRASE = 'correct horse battery staple'
+
   it('script refuses to run without a backup dir', () => {
-    const result = run([])
+    const result = run([], { passphrase: PASSPHRASE })
     expect(result.status).toBe(2)
     expect(result.stderr).toContain('backup_missing')
     expect(result.calls).toBe('')
   })
 
   it('a backup dir that is not a folder fails before touching docker', () => {
-    const result = run(['--backup-dir', '/nonexistent/backups'])
+    const result = run(['--backup-dir', '/nonexistent/backups'], { passphrase: PASSPHRASE })
     expect(result.status).toBe(1)
     expect(result.stderr).toContain('backup_missing')
     expect(result.calls).toBe('')
@@ -66,5 +77,22 @@ describe('verify-anonymous-intake.sh', () => {
 
   it('the check refuses a run whose control request is not in the access log', () => {
     expect(script).toContain('logging was off during the run')
+  })
+
+  it('script refuses to run without the backup passphrase', () => {
+    const result = run(['--backup-dir', '/tmp'])
+    expect(result.status).toBe(1)
+    expect(result.stderr).toContain('BACKUP_PASSPHRASE is empty')
+    expect(result.calls).toBe('')
+  })
+
+  it('the passphrase is read from the env file like backup.sh does', () => {
+    const result = run(['--backup-dir', '/tmp'], { dotEnv: `BACKUP_PASSPHRASE=${PASSPHRASE}\n` })
+    expect(result.stderr).not.toContain('BACKUP_PASSPHRASE is empty')
+  })
+
+  it('the check step hands the passphrase to the container', () => {
+    const checkStep = script.slice(script.indexOf('anonymous-intake-verify.mjs check') - 400)
+    expect(checkStep).toContain('-e BACKUP_PASSPHRASE')
   })
 })

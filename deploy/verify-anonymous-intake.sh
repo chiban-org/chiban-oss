@@ -3,6 +3,13 @@ set -euo pipefail
 
 cd "$(dirname "$0")"
 
+ENV_FILE=.env
+
+read_env() {
+  [ -f "$ENV_FILE" ] || return 0
+  { grep -E "^$1=" "$ENV_FILE" || true; } | tail -n 1 | cut -d= -f2-
+}
+
 usage() {
   echo "usage: verify-anonymous-intake.sh --backup-dir <folder holding the nightly backups>" >&2
   exit 2
@@ -29,6 +36,16 @@ if [ ! -d "$backup_dir" ]; then
   exit 1
 fi
 backup_dir=$(cd "$backup_dir" && pwd)
+
+passphrase="${BACKUP_PASSPHRASE:-}"
+if [ -z "$passphrase" ]; then
+  passphrase=$(read_env BACKUP_PASSPHRASE)
+fi
+if [ -z "$passphrase" ]; then
+  echo "BACKUP_PASSPHRASE is empty. Set it in the environment or in $ENV_FILE. The check decrypts the newest backup with it." >&2
+  exit 1
+fi
+export BACKUP_PASSPHRASE="$passphrase"
 
 sha256_of() {
   if command -v sha256sum >/dev/null 2>&1; then
@@ -59,6 +76,7 @@ fi
 grep -vF "$control" "$work/all.log" > "$work/logs.txt" || true
 
 docker compose run --rm --no-deps -T \
+  -e BACKUP_PASSPHRASE \
   -v "$work:/srv/probe:ro" \
   -v "$backup_dir:/srv/backups:ro" \
   app node dist/anonymous-intake-verify.mjs check \

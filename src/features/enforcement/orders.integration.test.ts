@@ -256,6 +256,49 @@ describe('cease and desist orders', () => {
     })
   })
 
+  it('a split pair of zoning and building orders can both be issued on one case', async () => {
+    const { caseId, findingId } = await caseWithFinding('zoning_ordinance')
+    const building = await recordFinding(
+      handle.db,
+      staff,
+      {
+        caseId,
+        provisionKind: 'building_code',
+        provisionRef: 'IRC R105.1',
+        facts: 'No permit',
+        inspectionDate: d('2027-02-26'),
+      },
+      signal,
+      NOW,
+    )
+    if (!building.ok) throw new Error('finding')
+    await designate()
+    const zoningOrder = await draft(caseId, [findingId])
+    const buildingOrder = await draft(caseId, [building.value.findingId])
+    if (!zoningOrder.ok || !buildingOrder.ok) throw new Error('draft')
+    for (const drafted of [zoningOrder, buildingOrder]) {
+      const result = await issueOrder(
+        handle.db,
+        store,
+        staff,
+        { orderId: drafted.value.orderId, issuedOn: d('2027-03-02'), expectedRowVersion: 1 },
+        signal,
+        NOW,
+      )
+      expect(result.ok).toBe(true)
+    }
+    const rows = await handle.db
+      .select()
+      .from(enforcementOrders)
+      .where(eq(enforcementOrders.caseId, caseId))
+    expect(rows.map((r) => r.ruleKey).sort()).toEqual(['nh.enf.cd_building', 'nh.enf.cd_zoning'])
+    const [kase] = await handle.db
+      .select()
+      .from(enforcementCases)
+      .where(eq(enforcementCases.id, caseId))
+    expect(kase?.status).toBe('order_issued')
+  })
+
   it('issue without a designation covering the issue date is not_designated', async () => {
     const { caseId, findingId } = await caseWithFinding()
     const drafted = await draft(caseId, [findingId])
