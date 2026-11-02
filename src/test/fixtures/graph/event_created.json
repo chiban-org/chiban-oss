@@ -1,0 +1,10 @@
+{
+  "@odata.context": "https://graph.microsoft.com/v1.0/$metadata#users('inspector%40alderpond.example')/events/$entity",
+  "id": "AAMkAGI2THVSAAA=",
+  "subject": "Final inspection, EL-2027-0001",
+  "showAs": "busy",
+  "isCancelled": false,
+  "start": { "dateTime": "2027-11-08T14:30:00.0000000", "timeZone": "UTC" },
+  "end": { "dateTime": "2027-11-08T15:30:00.0000000", "timeZone": "UTC" },
+  "location": { "displayName": "12 Elm Road" }
+}

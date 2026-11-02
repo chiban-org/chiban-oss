@@ -78,6 +78,7 @@ async function buildBooking(
   push: CalendarPushRow,
   attendeeEmail: string,
   attendeeName: string,
+  targetUserRef: string,
   now: Date,
   signal: AbortSignal,
 ): Promise<CalendarBooking | null> {
@@ -117,6 +118,7 @@ async function buildBooking(
     organizerEmail: env.MAIL_FROM,
     attendeeEmail,
     attendeeName,
+    targetUserRef,
   }
 }
 
@@ -173,6 +175,7 @@ export async function deliverPush(
     claimed,
     calendar?.email ?? account.email,
     account.name,
+    calendar?.graphUserId ?? calendar?.email ?? account.email,
     deps.now,
     signal,
   )

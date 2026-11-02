@@ -9,6 +9,7 @@ export interface CalendarBooking {
   organizerEmail: string
   attendeeEmail: string
   attendeeName: string
+  targetUserRef?: string | null
 }
 
 export type IcsMethod = 'REQUEST' | 'CANCEL'
