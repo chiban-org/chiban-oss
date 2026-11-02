@@ -9,6 +9,7 @@ import {
   rtkReleases,
   rtkRequests,
 } from '@/db/schema'
+import { releaseFilename } from '@/features/rtk/releaseFilename'
 import { hashReleaseToken } from '@/features/rtk/releases'
 import type { StoredObject } from '@/features/storage/delivery'
 import { getTownSettings } from '@/features/town/settings'
@@ -24,6 +25,7 @@ export interface ReleaseView {
     versionId: string
     title: string
     filename: string
+    downloadName: string
     withdrawnOn: CivilDate | null
   }[]
 }
@@ -85,6 +87,7 @@ export async function openRelease(
         versionId: row.versionId ?? row.formerVersionId ?? '',
         title: row.title,
         filename: row.filename ?? '',
+        downloadName: releaseFilename(row.title, row.filename ?? ''),
         withdrawnOn: withdrawnAt === null ? null : await townDate(db, withdrawnAt, signal),
       }
     }),
@@ -111,6 +114,7 @@ export async function openReleaseVersion(
   const [row] = await db
     .select({
       storageKey: files.storageKey,
+      title: documents.title,
       filename: documentVersions.filename,
       contentType: documentVersions.contentType,
       withdrawnAt: rtkReleaseItems.withdrawnAt,
@@ -118,6 +122,7 @@ export async function openReleaseVersion(
       approvalRevokeReason: renditionApprovals.revokeReason,
     })
     .from(rtkReleaseItems)
+    .innerJoin(documents, eq(documents.id, rtkReleaseItems.documentId))
     .leftJoin(documentVersions, eq(documentVersions.id, rtkReleaseItems.versionId))
     .leftJoin(files, eq(files.sha256, documentVersions.fileSha256))
     .leftJoin(renditionApprovals, eq(renditionApprovals.id, rtkReleaseItems.approvalId))
@@ -140,5 +145,9 @@ export async function openReleaseVersion(
   if (row.storageKey === null || row.filename === null || row.contentType === null) {
     return err('not_found')
   }
-  return ok({ storageKey: row.storageKey, filename: row.filename, contentType: row.contentType })
+  return ok({
+    storageKey: row.storageKey,
+    filename: releaseFilename(row.title, row.filename),
+    contentType: row.contentType,
+  })
 }

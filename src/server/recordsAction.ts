@@ -6,6 +6,7 @@ import {
   errorCopy,
   runStaffAction,
 } from '@/server/actionRunner'
+import { type FieldCopy, invalidFieldCopy } from '@/server/fieldCopy'
 import type { Result } from '@/types/result'
 
 export const uuidField = z.string().uuid()
@@ -24,6 +25,8 @@ export const RECORDS_COPY: Record<string, string> = {
     'Record at least one withheld record with its exemption before denying a request.',
   stated_date_required: 'Enter a date on or after the response date for the time the town needs.',
   website_url_required: 'Enter the web address where the records are posted.',
+  release_required:
+    'Nothing has been released yet. Approve and release the records under Releases; the first release records the response.',
   unknown_exemption: 'Choose an exemption from the list for every withheld or redacted record.',
   citation_required: 'Enter the law that makes the record confidential.',
   explanation_required:
@@ -47,6 +50,7 @@ export const RECORDS_COPY: Record<string, string> = {
   kind_not_for_target: 'That event does not apply to this kind of record.',
   nothing_eligible: 'No records are eligible on that date.',
   not_proposed: 'That batch is no longer waiting for approval.',
+  own_proposal: 'You proposed this batch, so another records custodian has to approve it.',
   not_cancellable: 'That batch can no longer be cancelled.',
   not_approved: 'That batch is not approved.',
   stale_version: 'This record changed since you opened it. Reload the page and try again.',
@@ -83,10 +87,16 @@ export async function runRecords<S extends z.ZodType>(
   schema: S,
   call: (ctx: ActionContext, input: z.output<S>) => Promise<Result<unknown, unknown>>,
   message: string,
+  fieldCopy: FieldCopy = {},
 ): Promise<ActionResult> {
   return await runStaffAction(formData, async (ctx) => {
     const parsed = schema.safeParse(formStrings(formData))
-    if (!parsed.success) return { ok: false, error: recordsError('invalid') }
+    if (!parsed.success) {
+      return {
+        ok: false,
+        error: invalidFieldCopy(parsed.error, fieldCopy) ?? recordsError('invalid'),
+      }
+    }
     const result = await call(ctx, parsed.data)
     return result.ok ? { ok: true, message } : { ok: false, error: recordsError(result.error) }
   })

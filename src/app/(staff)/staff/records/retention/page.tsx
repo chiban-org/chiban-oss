@@ -107,6 +107,16 @@ export default async function RetentionPage({
           </Link>
         ))}
       </nav>
+      {state === 'on_hold' ? (
+        <p className="m-0">
+          Records kept permanently are not listed here, since they are never disposed of. Every
+          hold, including holds on them, is on the{' '}
+          <Link href="/staff/records/holds" className="text-action underline">
+            Legal holds
+          </Link>{' '}
+          page.
+        </p>
+      ) : null}
       {list.rows.length === 0 ? (
         <p>No records are in this list.</p>
       ) : (
@@ -159,6 +169,12 @@ export default async function RetentionPage({
       )}
       <section aria-labelledby="propose" className="space-y-3 border-t pt-4">
         <h2 id="propose">Disposition batches</h2>
+        <p className="m-0">
+          <Link href="/staff/records/disposed" className="text-action underline">
+            Disposed records
+          </Link>{' '}
+          lists every record already disposed of, with its tombstone.
+        </p>
         <ActionForm action={proposeDispositionAction} submitLabel="Propose a batch">
           <TextField
             label="Records eligible on or before"

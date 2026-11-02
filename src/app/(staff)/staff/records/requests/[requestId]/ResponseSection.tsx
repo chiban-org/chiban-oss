@@ -9,9 +9,14 @@ import type { CivilDate } from '@/types/civilDate'
 import { closeRequestAction, firstResponseAction, withholdingAction } from '../actions'
 
 const EXEMPTION_OPTIONS: [string, string][] = [
+  ['', 'Choose an exemption'],
   ...NH_RTK_EXEMPTIONS.map((e) => [e.key, `${e.citation.label}: ${e.label}`] as [string, string]),
   [OTHER_LAW_EXEMPTION_KEY, 'Made confidential by another law'],
 ]
+
+const FORM_RESPONSE_OPTIONS = Object.entries<string>(RTK_RESPONSE_LABELS).filter(
+  ([kind]) => kind !== 'made_available',
+)
 
 function Hidden({ name, value }: { name: string; value: string | number }) {
   return <input type="hidden" name={name} value={String(value)} />
@@ -50,7 +55,13 @@ export function ResponseSection({ request, today }: { request: RtkRequestView; t
               ]}
             />
             <TextField label="Which record" name="recordDescription" required />
-            <SelectField label="Exemption" name="exemptionKey" options={EXEMPTION_OPTIONS} />
+            <SelectField
+              label="Exemption"
+              name="exemptionKey"
+              options={EXEMPTION_OPTIONS}
+              defaultValue=""
+              required
+            />
             <TextField label="Law, if made confidential by another law" name="otherCitation" />
             <AreaField
               label="How the exemption applies (a sentence or two)"
@@ -66,11 +77,11 @@ export function ResponseSection({ request, today }: { request: RtkRequestView; t
         {request.firstResponseKind === null ? (
           <ActionForm action={firstResponseAction} submitLabel="Record response">
             <Hidden name="requestId" value={request.id} />
-            <SelectField
-              label="Response"
-              name="kind"
-              options={Object.entries<string>(RTK_RESPONSE_LABELS)}
-            />
+            <p className="m-0">
+              To make records available, approve and release them under Releases. The first release
+              records the response.
+            </p>
+            <SelectField label="Response" name="kind" options={FORM_RESPONSE_OPTIONS} />
             <TextField
               label="Date of response"
               name="respondedOn"

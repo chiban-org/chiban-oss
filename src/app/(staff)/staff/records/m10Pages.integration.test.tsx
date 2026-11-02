@@ -1,4 +1,4 @@
-import { count } from 'drizzle-orm'
+import { count, eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
@@ -61,6 +61,7 @@ const { default: RetentionPage } = await import('@/app/(staff)/staff/records/ret
 const { default: BatchPage } = await import(
   '@/app/(staff)/staff/records/disposition/[batchId]/page'
 )
+const { default: DisposedPage } = await import('@/app/(staff)/staff/records/disposed/page')
 const { default: CensusPage } = await import('@/app/(staff)/staff/reports/census/page')
 const { default: RedactPage } = await import('@/app/(staff)/staff/records/redact/[versionId]/page')
 
@@ -179,6 +180,12 @@ describe('records screens with the demo seed', () => {
     const waiting = visibleText(await html(RetentionPage(search({ state: 'awaiting_event' }))))
     expect(waiting).toContain('Open complaint photo log')
     expect(waiting).toContain('The appeal period ended')
+    const held = visibleText(await html(RetentionPage(search({ state: 'on_hold' }))))
+    expect(held).toContain('Records kept permanently are not listed here')
+    expect(held).toContain('Legal holds')
+    expect(visibleText(await html(RetentionPage(search({ state: 'eligible' }))))).not.toContain(
+      'Records kept permanently are not listed here',
+    )
   })
 
   it('the release picker lists nothing until searched, then only matching documents named with their record', async () => {
@@ -229,6 +236,40 @@ describe('records screens with the demo seed', () => {
     expect(page).toContain('The original is never changed')
   })
 
+  it('the redact page says where each kind of copy is approved and links there', async () => {
+    await actAs('records')
+    const jobs = await handle.db
+      .select({
+        purpose: redactionJobs.purpose,
+        rtkRequestId: redactionJobs.rtkRequestId,
+        sourceVersionId: redactionJobs.sourceVersionId,
+        recordKind: documents.recordKind,
+        recordId: documents.recordId,
+      })
+      .from(redactionJobs)
+      .innerJoin(documentVersions, eq(documentVersions.id, redactionJobs.sourceVersionId))
+      .innerJoin(documents, eq(documents.id, documentVersions.documentId))
+    const forPublic = jobs.find((j) => j.purpose === 'public')
+    const forRequest = jobs.find((j) => j.rtkRequestId !== null)
+    expect(forPublic?.recordKind).toBe('parcel')
+    const publicPage = await html(
+      RedactPage({
+        params: Promise.resolve({ versionId: forPublic?.sourceVersionId ?? '' }),
+        ...search(),
+      }),
+    )
+    expect(publicPage).toContain(`href="/staff/parcels/${forPublic?.recordId}"`)
+    expect(visibleText(publicPage)).toContain('permission to publish documents')
+    const requestPage = await html(
+      RedactPage({
+        params: Promise.resolve({ versionId: forRequest?.sourceVersionId ?? '' }),
+        ...search({ request: forRequest?.rtkRequestId ?? '' }),
+      }),
+    )
+    expect(requestPage).toContain(`href="/staff/records/requests/${forRequest?.rtkRequestId}"`)
+    expect(visibleText(requestPage)).toContain('is approved under Releases on the')
+  })
+
   it('a reviewer gets the permission page or not-found and a resident is sent to sign in', async () => {
     await actAs('reviewer')
     expect(await html(RequestsPage(search()))).toContain('You do not have permission')
@@ -246,10 +287,64 @@ describe('records screens with the demo seed', () => {
     await expect(html(RequestsPage(search()))).rejects.toThrow('NEXT_REDIRECT')
   })
 
+  it('the withholding form starts on no exemption rather than the first one', async () => {
+    await actAs('records')
+    const [request] = await handle.db
+      .select()
+      .from(rtkRequests)
+      .where(eq(rtkRequests.status, 'open'))
+    const page = await html(
+      RequestPage({ params: Promise.resolve({ requestId: request?.id ?? '' }) }),
+    )
+    expect(page).toMatch(
+      /<select name="exemptionKey"[^>]*><option value="" selected="">Choose an exemption<\/option>/,
+    )
+  })
+
+  it('the disposed records page lists each tombstone read-only and is closed to reviewers', async () => {
+    await actAs('records')
+    const [batch] = await handle.db
+      .select()
+      .from(dispositionBatches)
+      .where(eq(dispositionBatches.status, 'executed'))
+    const markup = await html(DisposedPage(search()))
+    const page = visibleText(markup)
+    expect(page).toContain('Disposed records')
+    expect(page).toContain('Closed complaint photo log')
+    expect(markup).toContain(`href="/staff/records/disposition/${batch?.id}"`)
+    expect(markup).not.toContain('<form')
+    expectHuman(page)
+    expect(visibleText(await html(RetentionPage(search())))).toContain('Disposed records')
+    await actAs('reviewer')
+    expect(await html(DisposedPage(search()))).toContain('You do not have permission')
+  })
+
   it('a malformed request id is not found', async () => {
     await actAs('records')
     await expect(
       html(RequestPage({ params: Promise.resolve({ requestId: 'nope' }) })),
     ).rejects.toThrow('NOT_FOUND')
+  })
+
+  it('a proposed batch says who may approve it instead of offering approval to its proposer', async () => {
+    const proposer = await handle.db.query.users.findFirst({
+      where: (u, { eq: is }) => is(u.email, 'records@alderpond.example'),
+    })
+    const [batch] = await handle.db
+      .insert(dispositionBatches)
+      .values({ asOf: '2026-10-01', proposedBy: proposer?.id ?? '' })
+      .returning({ id: dispositionBatches.id })
+    const render = async () =>
+      visibleText(await html(BatchPage({ params: Promise.resolve({ batchId: batch?.id ?? '' }) })))
+    try {
+      await actAs('records')
+      const own = await render()
+      expect(own).toContain('You proposed this batch, so another records custodian approves it.')
+      expect(own).not.toContain('Approve and carry out')
+      await actAs('staff')
+      expect(await render()).toContain('A records custodian approves it.')
+    } finally {
+      await handle.db.delete(dispositionBatches).where(eq(dispositionBatches.id, batch?.id ?? ''))
+    }
   })
 })

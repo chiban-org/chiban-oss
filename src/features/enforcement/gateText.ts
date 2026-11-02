@@ -11,7 +11,7 @@ export function motionGateText(gate: OrderDetail['gate'], motionFiledOn: CivilDa
   const reasons = gate.blocks.map((b) =>
     typeof b === 'string'
       ? MOTION_BLOCK_TEXT[b]
-      : `The motion cannot be filed until ${formatCivilDate(b.filingLeadUntil)}, five days after filing with the clerk.`,
+      : `The motion can be filed no earlier than ${formatCivilDate(b.filingLeadUntil)}, five days after filing with the clerk.`,
   )
   return `The motion to enforce cannot be filed yet. ${reasons.join(' ')}`
 }

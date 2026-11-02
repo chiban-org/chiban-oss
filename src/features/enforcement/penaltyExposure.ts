@@ -4,6 +4,8 @@ import { type CivilDate, daysBetween } from '@/types/civilDate'
 
 export const PENALTY_EXPOSURE_LABEL =
   'Estimated statutory exposure for counsel. Nothing is owed unless a court imposes it.'
+export const PENALTY_EXPOSURE_AFTER_FINE_LABEL =
+  'Estimated statutory exposure for counsel. Only the fines a court imposed, listed above, are owed.'
 
 export interface PenaltyExposure {
   fromDate: CivilDate | null

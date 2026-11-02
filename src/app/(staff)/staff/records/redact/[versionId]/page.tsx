@@ -10,6 +10,8 @@ import { getObjectStore } from '@/features/storage/objectStore'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { requestRedactionAction } from '../actions'
+import { ApprovalHint } from './ApprovalHint'
+import { staffRecordHref } from './recordHref'
 
 export const dynamic = 'force-dynamic'
 
@@ -48,6 +50,8 @@ export default async function RedactPage({
   }
   const { documentId, title, mode, pages } = source.value
   const forRequest = request !== undefined && isUuid(request) ? request : undefined
+  const recordHref = await staffRecordHref(ctx.db, ctx.actor, documentId, ctx.signal)
+  const canPublish = await hasCapability(ctx.db, ctx.actor.userId, 'document.publish', ctx.signal)
   return (
     <main className="space-y-6">
       <h1>{`Redact: ${title}`}</h1>
@@ -76,6 +80,7 @@ export default async function RedactPage({
         />
         <BoxEditor pages={pages} exemptions={EXEMPTIONS} mode={mode} />
       </ActionForm>
+      <ApprovalHint requestId={forRequest} recordHref={recordHref} canPublish={canPublish} />
     </main>
   )
 }

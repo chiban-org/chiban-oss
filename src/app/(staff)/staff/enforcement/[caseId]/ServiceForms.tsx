@@ -31,10 +31,10 @@ export function ServiceForms({ order, detail }: { order: OrderDetail; detail: Ca
     ...proofs.map((d) => [d.documentId, d.title] as [string, string]),
   ]
   const recipients: [string, string][] = [
-    ['', 'Posting or publication'],
     ...order.service.recipients.map(
       (r) => [r.id, `${r.name}, ${ROLE_LABELS[r.role]}`] as [string, string],
     ),
+    ['', 'No one person: posting or publication'],
   ]
   const answerDocs: [string, string][] = detail.documents.map((d) => [d.documentId, d.title])
   const answerRecipients: [string, string][] = order.service.recipients.map((r) => [r.id, r.name])

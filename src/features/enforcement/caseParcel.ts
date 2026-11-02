@@ -1,6 +1,6 @@
 import { and, eq, sql } from 'drizzle-orm'
 import type { Db, DbOrTx } from '@/db/client'
-import { enforcementCases, parcels } from '@/db/schema'
+import { documents, enforcementCases, parcels } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -73,6 +73,19 @@ export async function setCaseParcel(
       { recordKind: 'enforcement_case', recordId: input.caseId, parcelId: parcel.value },
       signal,
     )
+    const caseDocuments = await tx
+      .select({ id: documents.id })
+      .from(documents)
+      .where(
+        and(eq(documents.recordKind, 'enforcement_case'), eq(documents.recordId, input.caseId)),
+      )
+    for (const doc of caseDocuments) {
+      await linkRecordToParcel(
+        tx,
+        { recordKind: 'document', recordId: doc.id, parcelId: parcel.value },
+        signal,
+      )
+    }
     await writeAudit(
       tx,
       {

@@ -6,7 +6,7 @@ import { missingOrderContent } from '@/features/enforcement/orderPdf'
 import { issuerAuthorized } from '@/features/enforcement/orders'
 import { penaltyExposure } from '@/features/enforcement/penaltyExposure'
 import { enforcementRulesFor } from '@/features/enforcement/ruleLinks'
-import { serverRoleAllowed } from '@/features/enforcement/service'
+import { serverRoleAllowed } from '@/features/enforcement/serviceEvents'
 import {
   type ServiceCheck,
   type ServiceEvent,

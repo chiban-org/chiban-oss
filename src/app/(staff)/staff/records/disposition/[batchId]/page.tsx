@@ -121,7 +121,10 @@ export default async function DispositionBatchPage({
       {batch.status === 'executed' ? (
         <p className="m-0">{`Carried out ${batch.executedAt === null ? '' : formatInstantDate(batch.executedAt, zone)}. A tombstone records each disposed record, its retention series, and who approved it.`}</p>
       ) : null}
-      {mayApprove && batch.status === 'proposed' ? (
+      {batch.status === 'proposed' ? (
+        <p className="m-0">{approvalNote(mayApprove, batch.proposedBy === ctx.actor.userId)}</p>
+      ) : null}
+      {mayApprove && batch.status === 'proposed' && batch.proposedBy !== ctx.actor.userId ? (
         <ActionForm action={approveDispositionAction} submitLabel="Approve and carry out">
           <input type="hidden" name="batchId" value={batch.id} />
           <p className="m-0">
@@ -137,4 +140,13 @@ export default async function DispositionBatchPage({
       ) : null}
     </main>
   )
+}
+
+function approvalNote(mayApprove: boolean, proposedByViewer: boolean): string {
+  if (proposedByViewer && mayApprove) {
+    return 'You proposed this batch, so another records custodian approves it.'
+  }
+  return mayApprove
+    ? 'A records custodian other than the one who proposed it approves it.'
+    : 'A records custodian approves it.'
 }

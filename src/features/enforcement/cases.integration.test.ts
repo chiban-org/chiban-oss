@@ -90,6 +90,108 @@ describe('enforcement cases', () => {
     expect(row).toMatchObject({ status: 'closed', closedOn: '2027-03-02' })
   })
 
+  it('closing a case with a blank reason is reason_required and leaves it open', async () => {
+    const { staff, caseId } = await open()
+    let version = 1
+    for (const to of ['investigating', 'no_violation'] as const) {
+      const moved = await setCaseStatus(
+        handle.db,
+        staff,
+        { caseId, to, expectedRowVersion: version },
+        signal,
+        NOW,
+      )
+      if (!moved.ok) throw new Error(JSON.stringify(moved.error))
+      version = moved.value.rowVersion
+    }
+    for (const reason of [undefined, '', '   ']) {
+      const closed = await setCaseStatus(
+        handle.db,
+        staff,
+        {
+          caseId,
+          to: 'closed',
+          expectedRowVersion: version,
+          ...(reason === undefined ? {} : { reason }),
+        },
+        signal,
+        NOW,
+      )
+      expect(closed).toEqual({ ok: false, error: 'reason_required' })
+    }
+    const closed = await setCaseStatus(
+      handle.db,
+      staff,
+      {
+        caseId,
+        to: 'closed',
+        expectedRowVersion: version,
+        reason: '  No violation on inspection  ',
+      },
+      signal,
+      NOW,
+    )
+    expect(closed.ok).toBe(true)
+    const [row] = await handle.db
+      .select()
+      .from(enforcementCases)
+      .where(eq(enforcementCases.id, caseId))
+    expect(row).toMatchObject({ status: 'closed', closureReason: 'No violation on inspection' })
+  })
+
+  it('a case cannot be marked violation found without a recorded finding', async () => {
+    const { staff, caseId } = await open()
+    const investigating = await setCaseStatus(
+      handle.db,
+      staff,
+      { caseId, to: 'investigating', expectedRowVersion: 1 },
+      signal,
+      NOW,
+    )
+    if (!investigating.ok) throw new Error(JSON.stringify(investigating.error))
+    const found = await setCaseStatus(
+      handle.db,
+      staff,
+      { caseId, to: 'violation_found', expectedRowVersion: investigating.value.rowVersion },
+      signal,
+      NOW,
+    )
+    expect(found).toEqual({ ok: false, error: 'finding_required' })
+    const [row] = await handle.db
+      .select()
+      .from(enforcementCases)
+      .where(eq(enforcementCases.id, caseId))
+    expect(row?.status).toBe('investigating')
+  })
+
+  it('order issued and in court come only from issuing an order and recording a court step', async () => {
+    const { staff, caseId } = await open()
+    await handle.db
+      .update(enforcementCases)
+      .set({ status: 'violation_found' })
+      .where(eq(enforcementCases.id, caseId))
+    const issued = await setCaseStatus(
+      handle.db,
+      staff,
+      { caseId, to: 'order_issued', expectedRowVersion: 1 },
+      signal,
+      NOW,
+    )
+    expect(issued).toEqual({ ok: false, error: 'invalid_transition' })
+    await handle.db
+      .update(enforcementCases)
+      .set({ status: 'order_issued' })
+      .where(eq(enforcementCases.id, caseId))
+    const court = await setCaseStatus(
+      handle.db,
+      staff,
+      { caseId, to: 'in_court', expectedRowVersion: 1 },
+      signal,
+      NOW,
+    )
+    expect(court).toEqual({ ok: false, error: 'invalid_transition' })
+  })
+
   it('a stale row version is stale_version', async () => {
     const { staff, caseId } = await open()
     const result = await setCaseStatus(

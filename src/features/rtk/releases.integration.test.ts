@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
+  documents,
   documentVersions,
   files,
   rtkReleaseItems,
@@ -395,6 +396,15 @@ describe('release links', () => {
     expect(opened.ok && opened.value.items.map((i) => i.versionId)).toEqual([doc.redactedId])
     const own = await openReleaseVersion(handle.db, token, doc.redactedId, NOW, signal)
     expect(own).toMatchObject({ ok: true, value: { contentType: 'application/pdf' } })
+    await handle.db
+      .update(documents)
+      .set({ title: 'Letter from the owner' })
+      .where(eq(documents.id, doc.documentId))
+    const readable = 'Letter from the owner.pdf'
+    const reopened = await openRelease(handle.db, token, NOW, signal)
+    const ownAgain = await openReleaseVersion(handle.db, token, doc.redactedId, NOW, signal)
+    expect(reopened.ok && reopened.value.items.map((i) => i.downloadName)).toEqual([readable])
+    expect(ownAgain.ok && ownAgain.value.filename).toBe(readable)
     const original = await openReleaseVersion(handle.db, token, doc.originalId, NOW, signal)
     expect(original).toEqual({ ok: false, error: 'not_found' })
     const other = await releasable()

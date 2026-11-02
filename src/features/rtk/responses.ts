@@ -2,8 +2,14 @@ import { civilDateSchema } from '@packs/nh/schema'
 import { count, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { AppError, ErrorIds } from '@/constants/errorIds'
-import type { Db } from '@/db/client'
-import { RTK_RESPONSE_KINDS, rtkRequests, rtkTimeStatements, rtkWithholdings } from '@/db/schema'
+import type { Db, Tx } from '@/db/client'
+import {
+  RTK_RESPONSE_KINDS,
+  rtkReleases,
+  rtkRequests,
+  rtkTimeStatements,
+  rtkWithholdings,
+} from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -49,6 +55,7 @@ export type FirstResponseError =
   | 'withholding_required'
   | 'stated_date_required'
   | 'website_url_required'
+  | 'release_required'
 
 function statedTimeRule() {
   const rule = ruleByKey(loadPack(), 'nh.rtk.stated_time')
@@ -61,6 +68,36 @@ export function statedDueFor(respondedOn: CivilDate, statedDate: CivilDate): Sub
   return computeSubjectDue(statedTimeRule(), respondedOn, rtkDueContext(), {
     statedDue: statedDate,
   })
+}
+
+async function countFor(
+  tx: Tx,
+  table: typeof rtkReleases | typeof rtkWithholdings,
+  requestId: string,
+): Promise<number> {
+  const [row] = await tx.select({ n: count() }).from(table).where(eq(table.requestId, requestId))
+  return row?.n ?? 0
+}
+
+async function kindPrecondition(
+  tx: Tx,
+  requestId: string,
+  value: z.output<typeof ResponseSchema>,
+): Promise<FirstResponseError | null> {
+  switch (value.kind) {
+    case 'made_available':
+      return (await countFor(tx, rtkReleases, requestId)) === 0 ? 'release_required' : null
+    case 'website_reference':
+      return value.websiteUrl === undefined ? 'website_url_required' : null
+    case 'denied':
+      return (await countFor(tx, rtkWithholdings, requestId)) === 0 ? 'withholding_required' : null
+    case 'time_statement': {
+      const statement = value.timeStatement
+      const valid =
+        statement !== undefined && daysBetween(value.respondedOn, statement.statedDate) >= 0
+      return valid ? null : 'stated_date_required'
+    }
+  }
 }
 
 export async function recordFirstResponse(
@@ -92,15 +129,11 @@ export async function recordFirstResponse(
       if (daysBetween(request.receivedOn as CivilDate, value.respondedOn) < 0) {
         return err('before_received')
       }
-      if (value.kind === 'website_reference' && value.websiteUrl === undefined) {
-        return err('website_url_required')
-      }
+      const refused = await kindPrecondition(tx, request.id, value)
+      if (refused !== null) return err(refused)
       let statedDue: SubjectDue | null = null
-      if (value.kind === 'time_statement') {
-        const statement = value.timeStatement
-        if (statement === undefined || daysBetween(value.respondedOn, statement.statedDate) < 0) {
-          return err('stated_date_required')
-        }
+      const statement = value.timeStatement
+      if (value.kind === 'time_statement' && statement !== undefined) {
         statedDue = statedDueFor(value.respondedOn, statement.statedDate)
         await tx.insert(rtkTimeStatements).values({
           requestId: request.id,
@@ -109,13 +142,6 @@ export async function recordFirstResponse(
           delayReason: statement.delayReason,
           costEstimate: statement.costEstimate,
         })
-      }
-      if (value.kind === 'denied') {
-        const [held] = await tx
-          .select({ n: count() })
-          .from(rtkWithholdings)
-          .where(eq(rtkWithholdings.requestId, request.id))
-        if ((held?.n ?? 0) === 0) return err('withholding_required')
       }
       await tx
         .update(rtkRequests)

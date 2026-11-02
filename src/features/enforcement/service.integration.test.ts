@@ -1,12 +1,8 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { enforcementOrders, orderServiceEvents } from '@/db/schema'
-import {
-  listRecipient,
-  loadServiceState,
-  recordRoleCheck,
-  recordServiceEvent,
-} from '@/features/enforcement/service'
+import { listRecipient, loadServiceState, recordRoleCheck } from '@/features/enforcement/service'
+import { recordServiceEvent } from '@/features/enforcement/serviceEvents'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import {

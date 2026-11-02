@@ -65,6 +65,6 @@ export async function requestRedactionAction(formData: FormData): Promise<Action
       if (!ran.ok || ran.value === 'failed') return err('redaction_failed')
       return ok(undefined)
     },
-    'Redacted copy made. Review it, then approve it.',
+    'Redacted copy made. Nothing is released or public until it is approved, as described below.',
   )
 }
