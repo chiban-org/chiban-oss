@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm'
-import type { Tx } from '@/db/client'
+import type { DbOrTx, Tx } from '@/db/client'
 import { ledgerEntries, paymentAttempts } from '@/db/schema'
 import type { LedgerActor, LedgerEntryType } from '@/features/ledger/types'
 
@@ -16,7 +16,7 @@ export function ledgerActorFor(source: ReconcileSource): LedgerActor {
 }
 
 export async function findProcessorEntry(
-  tx: Tx,
+  tx: DbOrTx,
   accountId: string,
   objectId: string,
   entryType: LedgerEntryType,

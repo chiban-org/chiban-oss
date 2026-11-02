@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
-import type { Tx } from '@/db/client'
+import type { DbOrTx, Tx } from '@/db/client'
 import { applications, ledgerAllocations, ledgerEntries } from '@/db/schema'
 import { assessedLines, lineKey, paidByLine } from '@/features/ledger/lineTotals'
 import { allocationKey, netAllocations } from '@/features/ledger/reversalAllocations'
@@ -62,8 +62,8 @@ async function exceedsDue(tx: Tx, allocations: AllocationInput[]): Promise<boole
   return false
 }
 
-async function exceedsNetPaid(
-  tx: Tx,
+export async function exceedsNetPaid(
+  tx: DbOrTx,
   reversesEntryId: string,
   allocations: AllocationInput[],
 ): Promise<boolean> {

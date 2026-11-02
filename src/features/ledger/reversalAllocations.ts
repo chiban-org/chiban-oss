@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import type { Tx } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import { prorate } from '@/features/ledger/prorate'
 import type { AllocationInput, AllocationTarget, FeeStageKey } from '@/features/ledger/types'
 
@@ -22,7 +22,7 @@ interface NetRow extends Record<string, unknown> {
   net: number
 }
 
-export async function netAllocations(tx: Tx, entryId: string): Promise<NetAllocation[]> {
+export async function netAllocations(tx: DbOrTx, entryId: string): Promise<NetAllocation[]> {
   const result = await tx.execute<NetRow>(sql`
     with recursive tree as (
       select id from ledger_entries where id = ${entryId}
@@ -54,7 +54,7 @@ export interface ReversalAllocation {
 }
 
 export async function allocateReversal(
-  tx: Tx,
+  tx: DbOrTx,
   entryId: string,
   amountCents: number,
 ): Promise<ReversalAllocation> {
