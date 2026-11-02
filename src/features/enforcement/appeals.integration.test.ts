@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { orderServiceRecipients } from '@/db/schema'
+import { enforcementOrders, orderServiceRecipients } from '@/db/schema'
 import {
   certifyImminentPeril,
   dissolveRestrainingOrder,
@@ -315,5 +315,25 @@ describe('stay on appeal', () => {
       signal,
     )
     expect(result).toEqual({ ok: false, error: 'target_not_found' })
+  })
+
+  it('an appeal that annuls the order marks it annulled and blocks any court step', async () => {
+    await readyForMotion()
+    const appealId = await appeal()
+    await resolveEnforcementAppeal(
+      handle.db,
+      world.staff,
+      { appealId, resolvedOn: d('2027-05-10'), outcome: 'annulled' },
+      signal,
+    )
+    const [row] = await handle.db
+      .select()
+      .from(enforcementOrders)
+      .where(eq(enforcementOrders.id, order.orderId))
+    expect(row?.status).toBe('annulled')
+    expect(await step('filed_with_clerk', '2027-05-11')).toEqual({
+      ok: false,
+      error: 'order_not_active',
+    })
   })
 })

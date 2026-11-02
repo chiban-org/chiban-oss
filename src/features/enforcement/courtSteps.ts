@@ -43,11 +43,15 @@ export type CourtStepError =
   | 'invalid'
   | 'not_found'
   | 'order_not_issued'
+  | 'order_not_active'
+  | 'date_before_motion'
   | 'date_in_future'
   | 'proof_required'
   | 'filing_needs_complete_service'
   | 'motion_required'
   | MotionBlock
+
+const INACTIVE_STATUSES: readonly string[] = ['annulled', 'withdrawn', 'complied']
 
 const STEP_ORDER_STATUS = {
   filed_with_clerk: 'filed_with_court',
@@ -128,6 +132,7 @@ export async function recordCourtStep(
       .for('update')
     if (order === undefined) return err('not_found')
     if (order.status === 'draft') return err('order_not_issued')
+    if (INACTIVE_STATUSES.includes(order.status)) return err('order_not_active')
     if (value.occurredOn > (await townToday(tx, now, signal))) return err('date_in_future')
     if (!(await validCourtDocument(tx, order.caseId, value.documentId)))
       return err('proof_required')
@@ -159,8 +164,10 @@ export async function recordCourtStep(
       })
       if (block !== undefined) return err(block)
     }
-    if (value.kind === 'judgment' && !steps.some((s) => s.kind === 'motion_to_enforce')) {
-      return err('motion_required')
+    const motion = steps.find((s) => s.kind === 'motion_to_enforce')
+    if (value.kind === 'judgment' && motion === undefined) return err('motion_required')
+    if (value.kind === 'judgment' && motion !== undefined && value.occurredOn < motion.occurredOn) {
+      return err('date_before_motion')
     }
     const appealDue =
       value.kind === 'judgment'

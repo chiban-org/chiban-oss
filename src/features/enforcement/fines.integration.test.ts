@@ -1,6 +1,12 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { auditLog, enforcementFines, ledgerAllocations, ledgerEntries } from '@/db/schema'
+import {
+  auditLog,
+  enforcementFines,
+  enforcementOrders,
+  ledgerAllocations,
+  ledgerEntries,
+} from '@/db/schema'
 import { recordCounterPayment } from '@/features/counter/counterPayment'
 import { recordEnforcementAppeal } from '@/features/enforcement/appeals'
 import { fineBalance, recordFine } from '@/features/enforcement/fines'
@@ -169,6 +175,31 @@ describe('fines on the ledger', () => {
       NOW,
     )
     expect(result).toEqual({ ok: false, error: 'forbidden' })
+  })
+
+  it('a judgment that was later annulled by the order status no longer supports a fine', async () => {
+    const step = await judgmentFor(handle.db, store, world, order)
+    await handle.db
+      .update(enforcementOrders)
+      .set({ status: 'annulled' })
+      .where(eq(enforcementOrders.id, order.orderId))
+    expect(await fine(step)).toEqual({ ok: false, error: 'judgment_required' })
+  })
+
+  it('the fine row on the cash report never shares a bucket with a fee code named fine', async () => {
+    const recorded = await fine(await judgmentFor(handle.db, store, world, order))
+    if (!recorded.ok) throw new Error(recorded.error)
+    await pay(recorded.value.fineId, 20000)
+    const report = await cashReceiptsReport(
+      handle.db,
+      world.finance,
+      { date: d('2027-07-20') },
+      signal,
+    )
+    if (!report.ok) throw new Error(report.error)
+    const fineRows = report.value.rows.filter((r) => r.label === 'Court-imposed fine')
+    expect(fineRows).toHaveLength(1)
+    expect(fineRows[0]?.feeCode).not.toBe('fine')
   })
 
   it('a fine step from another case is judgment_required', async () => {

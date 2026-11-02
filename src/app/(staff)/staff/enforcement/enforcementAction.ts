@@ -24,10 +24,13 @@ const COPY: Record<string, string> = {
   not_a_draft: 'That order has already been issued.',
   case_not_ready: 'The case needs a violation finding before an order can be issued.',
   not_designated:
-    'You are not on record as a designated enforcement officer on the issue date. An administrator can add the designation under settings.',
+    'You are not on record as a designated enforcement officer on the issue date. An administrator can add it under Admin, Enforcement officers.',
   deadline_before_issue: 'The corrective action deadline is before the issue date.',
   stayed:
     'Enforcement is stayed by an appeal. Notes, photos, service, and answers can still be recorded.',
+  order_not_active:
+    'That order was annulled, withdrawn, or complied with, so no more court steps can be recorded.',
+  date_before_motion: 'The judgment cannot be dated before the motion to enforce.',
   order_not_issued: 'The order has not been issued yet.',
   recipient_not_found: 'That recipient is not on this order.',
   proof_required:

@@ -141,8 +141,11 @@ function ownerMissing(
   const listedOwners = input.recipients.filter((r) => rule.ownerRoles.includes(r.role))
   const personallyServed =
     listedOwners.length > 0 && listedOwners.every((r) => own[r.id] !== undefined)
-  if (personallyServed || fallbackCompletedOn !== null) return []
   const role = rule.ownerRoles[0] ?? 'record_owner'
+  const fallbackCarries =
+    fallbackCompletedOn !== null && input.recipients.some((r) => r.role === 'record_owner')
+  if (personallyServed || fallbackCarries) return []
+  if (fallbackCompletedOn !== null) return [{ role, reason: 'unserved' }]
   const ownerCheck = input.checks.find((c) => c.role === 'record_owner')
   if (ownerCheck?.outcome === 'owner_not_found') return [{ role, reason: 'publication_incomplete' }]
   if (ownerCheck === undefined && listedOwners.length === 0) return [{ role, reason: 'no_check' }]

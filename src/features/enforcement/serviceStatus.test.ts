@@ -42,6 +42,7 @@ const personal = (recipientId: string, on: string): ServiceEvent => ({
   servedOn: d(on),
 })
 
+const weekly = ['2027-03-04', '2027-03-11', '2027-03-18', '2027-03-25'].map(insertion)
 const OWNER_NOT_FOUND: ServiceCheck = { role: 'record_owner', outcome: 'owner_not_found' }
 
 describe('serviceStatus', () => {
@@ -250,5 +251,19 @@ describe('serviceStatus', () => {
       ],
     })
     expect(status.servedOn['r-owner']).toBe('2027-03-01')
+  })
+
+  it('posting and publication without a listed owner leave the answer clock with nowhere to start', () => {
+    const status = serviceStatus(rule, {
+      checks: [
+        OWNER_NOT_FOUND,
+        { role: 'taxpayer', outcome: 'same_as_owner' },
+        ...noneExist(OTHER_ROLES),
+      ],
+      recipients: [],
+      events: [posting('2027-03-02'), ...weekly],
+    })
+    expect(status.complete).toBe(false)
+    expect(status.missing).toEqual([{ role: 'record_owner', reason: 'unserved' }])
   })
 })

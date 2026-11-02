@@ -37,23 +37,20 @@ export function DocumentsSection({
           </li>
         ))}
       </ul>
-      {can.manage || can.service
-        ? KINDS.map(([kind, label]) => (
-            <details key={kind}>
-              <summary className="cursor-pointer font-medium">{`Upload: ${label}`}</summary>
-              <CaseUploader
-                caseId={caseId}
-                docKind={kind}
-                label={label}
-                maxBytes={env.MAX_UPLOAD_BYTES}
-                actions={{
-                  createIntent: createCaseUploadIntentAction,
-                  finalize: finalizeCaseUploadAction,
-                }}
-              />
-            </details>
-          ))
-        : null}
+      {can.manage || can.service ? (
+        <details>
+          <summary className="cursor-pointer font-medium">Upload a document or photo</summary>
+          <CaseUploader
+            caseId={caseId}
+            kinds={KINDS}
+            maxBytes={env.MAX_UPLOAD_BYTES}
+            actions={{
+              createIntent: createCaseUploadIntentAction,
+              finalize: finalizeCaseUploadAction,
+            }}
+          />
+        </details>
+      ) : null}
     </Section>
   )
 }

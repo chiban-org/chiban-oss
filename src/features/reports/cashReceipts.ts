@@ -62,7 +62,7 @@ async function returnedCheckIds(db: Db, entryIds: string[]): Promise<Set<string>
   return new Set(rows.flatMap((r) => (r.reverses === null ? [] : [r.reverses])))
 }
 
-const FINE_CODE = 'fine'
+const FINE_CODE = '\u0000court-imposed-fine'
 
 export async function cashReceiptsReport(
   db: Db,

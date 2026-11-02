@@ -76,4 +76,19 @@ describe('court judgment', () => {
       error: 'motion_required',
     })
   })
+
+  it('a judgment dated before the motion is date_before_motion', async () => {
+    expect(await step('judgment', '2027-03-01', { judgmentOutcome: 'affirmed' })).toEqual({
+      ok: false,
+      error: 'date_before_motion',
+    })
+  })
+
+  it('an annulled order accepts no further court step', async () => {
+    await step('judgment', '2027-06-18', { judgmentOutcome: 'annulled' })
+    expect(await step('filed_with_clerk', '2027-06-20')).toEqual({
+      ok: false,
+      error: 'order_not_active',
+    })
+  })
 })

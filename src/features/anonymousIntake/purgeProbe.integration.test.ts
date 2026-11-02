@@ -4,11 +4,13 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { env } from '@/config/env'
 import {
   anonymousIntakeProbeTokens,
+  anonymousIntakeVerifications,
   complaints,
   documents,
   documentVersions,
   enforcementCases,
   files,
+  townSettings,
 } from '@/db/schema'
 import { handleAnonymousIntake } from '@/features/anonymousIntake/handler'
 import { purgeProbes } from '@/features/anonymousIntake/purgeProbe'
@@ -66,6 +68,14 @@ describe('probe submissions', () => {
     expect((await submit({ 'x-chiban-probe': token })).status).toBe(303)
     const [row] = await handle.db.select().from(complaints)
     expect(row?.isProbe).toBe(true)
+  })
+
+  it('a live probe token is accepted while intake is closed, so the first verification can run', async () => {
+    await handle.db.update(townSettings).set({ anonymousIntakeEnabled: false })
+    await handle.db.delete(anonymousIntakeVerifications)
+    const token = await issueProbeToken(handle.db, NOW)
+    expect((await submit({ 'x-chiban-probe': token })).status).toBe(303)
+    expect((await submit()).status).toBe(404)
   })
 
   it('an unknown or expired probe token does not mark the complaint', async () => {

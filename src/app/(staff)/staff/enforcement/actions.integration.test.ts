@@ -49,6 +49,7 @@ const appeals = await import('@/app/(staff)/staff/enforcement/appealActions')
 const money = await import('@/app/(staff)/staff/enforcement/moneyActions')
 const uploads = await import('@/app/(staff)/staff/enforcement/uploadActions')
 const admin = await import('@/app/(staff)/staff/admin/anonymous-intake/actions')
+const officers = await import('@/app/(staff)/staff/admin/enforcement-officers/actions')
 
 let handle: TestDb
 let world: EnforcementWorld
@@ -105,6 +106,7 @@ const ALL = {
   outcomeAction: money.outcomeAction,
   createCaseUploadIntentAction: uploads.createCaseUploadIntentAction,
   finalizeCaseUploadAction: uploads.finalizeCaseUploadAction,
+  designateOfficerAction: officers.designateOfficerAction,
   enableAnonymousIntakeAction: admin.enableAnonymousIntakeAction,
   disableAnonymousIntakeAction: admin.disableAnonymousIntakeAction,
 }

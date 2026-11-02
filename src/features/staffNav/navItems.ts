@@ -63,6 +63,11 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
   { href: '/staff/admin/health', label: 'Health', access: any('config.edit') },
   { href: '/staff/admin/cutover', label: 'Cutover', access: any('cutover.import') },
   {
+    href: '/staff/admin/enforcement-officers',
+    label: 'Enforcement officers',
+    access: any('config.edit'),
+  },
+  {
     href: '/staff/admin/anonymous-intake',
     label: 'Anonymous intake',
     access: any('anonymous_intake.enable'),

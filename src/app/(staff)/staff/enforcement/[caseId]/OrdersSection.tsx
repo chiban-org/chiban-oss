@@ -3,26 +3,23 @@ import { DueLine } from '@/components/enforcement/DueLine'
 import { ServiceChecklist } from '@/components/enforcement/ServiceChecklist'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import type { CaseDetail, OrderDetail } from '@/features/enforcement/caseDetail'
+import { motionGateText } from '@/features/enforcement/gateText'
 import {
   MOTION_BLOCK_TEXT,
   ORDER_STATUS_LABELS,
   PROVISION_KIND_LABELS,
 } from '@/features/enforcement/labels'
 import { formatCivilDate } from '@/lib/formatDate'
+import type { CivilDate } from '@/types/civilDate'
 import { draftOrderAction, issueOrderAction } from '../actions'
 import { CourtForms } from './CourtForms'
 import type { Can } from './can'
 import { Hidden, Section } from './Section'
 import { ServiceForms } from './ServiceForms'
 
-function gateText(order: OrderDetail): string {
-  if (order.gate.open) return 'The motion to enforce can be filed.'
-  const reasons = order.gate.blocks.map((b) =>
-    typeof b === 'string'
-      ? MOTION_BLOCK_TEXT[b]
-      : `The motion cannot be filed until ${formatCivilDate(b.filingLeadUntil)}, five days after filing with the clerk.`,
-  )
-  return `The motion to enforce cannot be filed yet. ${reasons.join(' ')}`
+function motionFiledOn(order: OrderDetail): CivilDate | null {
+  const step = order.steps.find((s) => s.kind === 'motion_to_enforce')
+  return (step?.occurredOn ?? null) as CivilDate | null
 }
 
 function OrderBlock({ order, detail, can }: { order: OrderDetail; detail: CaseDetail; can: Can }) {
@@ -36,7 +33,7 @@ function OrderBlock({ order, detail, can }: { order: OrderDetail; detail: CaseDe
         <a href={order.rule.citation.url ?? undefined} className="text-action underline">
           {order.rule.citation.label}
         </a>
-        {`). Corrective action: ${row.correctiveAction === '' ? 'not written yet' : row.correctiveAction}`}
+        {`). Corrective action: ${row.correctiveAction === '' ? 'not written yet' : row.correctiveAction.replace(/\.$/, '')}`}
         {row.correctiveDeadline === null ? '' : `, due ${formatCivilDate(row.correctiveDeadline)}`}
         {row.ceaseImmediately ? '. The order requires the activity to stop immediately' : ''}
         {row.issuedOn === null
@@ -80,7 +77,7 @@ function OrderBlock({ order, detail, can }: { order: OrderDetail; detail: CaseDe
             </div>
           ))}
           <h4>Court</h4>
-          <p className="m-0 font-medium">{gateText(order)}</p>
+          <p className="m-0 font-medium">{motionGateText(order.gate, motionFiledOn(order))}</p>
           {order.appealDue === null ? null : (
             <div>
               <p className="m-0 font-medium">Appeal of the judgment</p>

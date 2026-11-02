@@ -1,5 +1,5 @@
 import { civilDateSchema } from '@packs/nh/schema'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db, DbOrTx } from '@/db/client'
 import {
@@ -119,6 +119,12 @@ export async function resolveEnforcementAppeal(
       .update(enforcementAppeals)
       .set({ resolvedOn: value.resolvedOn, outcome: value.outcome })
       .where(eq(enforcementAppeals.id, value.appealId))
+    if (value.outcome === 'annulled' && appeal.targetKind === 'order') {
+      await tx
+        .update(enforcementOrders)
+        .set({ status: 'annulled', rowVersion: sql`${enforcementOrders.rowVersion} + 1` })
+        .where(eq(enforcementOrders.id, appeal.targetId))
+    }
     await writeAudit(
       tx,
       {

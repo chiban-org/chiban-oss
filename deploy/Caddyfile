@@ -7,7 +7,7 @@
 }
 
 {$APP_DOMAIN} {
-	@anonymousIntake path /report-anonymously* /intake/anonymous*
+	@anonymousIntake path /report-anonymously* /intake/anonymous* /_next/*
 	log {
 		output stdout
 	}

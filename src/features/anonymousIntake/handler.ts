@@ -49,12 +49,7 @@ interface Parsed {
   probe: boolean
 }
 
-async function parse(
-  request: Request,
-  db: Db,
-  now: Date,
-  signal: AbortSignal,
-): Promise<Parsed | null> {
+async function parse(request: Request, probe: boolean): Promise<Parsed | null> {
   let form: FormData
   try {
     form = await request.formData()
@@ -75,7 +70,6 @@ async function parse(
     if (!clean.ok) return null
     photos.push({ bytes: clean.value.bytes, type: clean.value.contentType })
   }
-  const probe = await isLiveProbeToken(db, request.headers.get('x-chiban-probe'), now, signal)
   return { ...fields.data, photos, probe }
 }
 
@@ -122,7 +116,13 @@ async function processIntake(
   request: Request,
   signal: AbortSignal,
 ): Promise<Response> {
-  if (!(await intakeOpen(deps.db, deps.imageRef, deps.appVersion, signal))) {
+  const probe = await isLiveProbeToken(
+    deps.db,
+    request.headers.get('x-chiban-probe'),
+    deps.now(),
+    signal,
+  )
+  if (!probe && !(await intakeOpen(deps.db, deps.imageRef, deps.appVersion, signal))) {
     return new Response('Not found', { status: 404, headers: SAFE_HEADERS })
   }
   if (!sameOrigin(request))
@@ -137,7 +137,7 @@ async function processIntake(
     )
   }
   deps.limiter.recordFailure(key)
-  const parsed = await parse(request, deps.db, deps.now(), signal)
+  const parsed = await parse(request, probe)
   if (parsed === null) {
     return page(
       400,

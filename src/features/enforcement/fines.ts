@@ -54,7 +54,11 @@ async function judgmentSupports(tx: Tx, value: z.output<typeof FineSchema>): Pro
   if (value.judgmentStepId !== undefined) {
     if (value.orderId === undefined) return false
     const [step] = await tx
-      .select({ kind: orderCourtSteps.kind, outcome: orderCourtSteps.judgmentOutcome })
+      .select({
+        kind: orderCourtSteps.kind,
+        outcome: orderCourtSteps.judgmentOutcome,
+        orderStatus: enforcementOrders.status,
+      })
       .from(orderCourtSteps)
       .innerJoin(enforcementOrders, eq(enforcementOrders.id, orderCourtSteps.orderId))
       .where(
@@ -64,7 +68,9 @@ async function judgmentSupports(tx: Tx, value: z.output<typeof FineSchema>): Pro
           eq(enforcementOrders.caseId, value.caseId),
         ),
       )
-    return step?.kind === 'judgment' && step.outcome !== 'annulled'
+    return (
+      step?.kind === 'judgment' && step.outcome !== 'annulled' && step.orderStatus !== 'annulled'
+    )
   }
   if (value.counselOutcomeId === undefined) return false
   const [outcome] = await tx

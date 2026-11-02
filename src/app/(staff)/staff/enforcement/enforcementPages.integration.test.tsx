@@ -48,6 +48,10 @@ const { default: AnonymousAdminPage } = await import(
   '@/app/(staff)/staff/admin/anonymous-intake/page'
 )
 
+const { default: OfficersPage } = await import(
+  '@/app/(staff)/staff/admin/enforcement-officers/page'
+)
+
 const signal = new AbortController().signal
 let handle: TestDb
 let caseIds: { id: string; number: string }[] = []
@@ -237,5 +241,15 @@ describe('enforcement queue and case pages', () => {
     expect(page).toContain('Anonymous complaints are not being accepted')
     expect(page).toContain('no passing retention check')
     expect(page).toContain('No retention check has been recorded.')
+  })
+
+  it('administrators can see and add designated enforcement officers, staff cannot', async () => {
+    await actAs('staff')
+    expect(await html(OfficersPage())).toContain('You do not have permission')
+    await actAs('admin')
+    const page = visibleText(await html(OfficersPage()))
+    expect(page).toContain('Sam Clerk, Code Enforcement Officer. Designated by Select Board on')
+    expect(findIsoDates(page)).toEqual([])
+    expect(findUuids(page)).toEqual([])
   })
 })
