@@ -172,6 +172,21 @@ describe('board pages show words, not keys or dates', () => {
     expect(boards).toContain('October 25, 2026 (overdue)')
   })
 
+  it('the rosters page shows the regional notice contacts it asks staff to review', async () => {
+    await actAs('staff')
+    const staffView = await page(RostersPage())
+    expect(staffView).toContain('Regional notice contacts')
+    expect(staffView).toContain(
+      'Alder Valley Regional Planning Commission, 18 Commission Way, Alder Valley NH 03999',
+    )
+    expect(staffView).toContain('Town of Pine River, 4 Town Hall Road, Pine River NH 03000')
+    expect(staffView).toContain('NH Department of Environmental Services')
+    expect(staffView).toContain('An administrator changes these in Settings.')
+    await actAs('admin')
+    const adminView = renderToStaticMarkup((await RostersPage()) as never)
+    expect(adminView).toContain('href="/staff/settings/regional_contacts"')
+  })
+
   it('the issued list shows provenance, source age, and the labels links', async () => {
     await actAs('staff')
     const body = await page(ListPage({ params: Promise.resolve({ listId: issuedListId }) }))
