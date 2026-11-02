@@ -103,6 +103,7 @@ export const ClockRuleSchema = z
       }),
     ]),
     waivable: z.boolean(),
+    relianceFloorMonths: z.number().int().positive().optional(),
     overridePolicy: OverridePolicySchema,
   })
   .refine(

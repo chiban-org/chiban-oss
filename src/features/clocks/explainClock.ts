@@ -11,6 +11,9 @@ export const START_EVENT_LABELS: Record<string, string> = {
   application_completed: 'Application completed',
   permit_issued: 'Permit issued',
   regional_impact_notice_mailed: 'Regional impact notice mailed',
+  acceptance_meeting_set: 'Meeting set',
+  application_accepted: 'Application accepted as complete',
+  final_approval: 'Final approval',
 }
 
 export interface ClockExplanation {
@@ -55,9 +58,11 @@ export function allowedAdjustmentKinds(rule: ClockRule): AdjustmentKind[] {
 
 export function extensionPolicyText(rule: ClockRule): string {
   if (!rule.extension.allowed) return rule.extension.note
-  return rule.extension.by === 'applicant_consent'
-    ? 'May be extended with the applicant consent.'
-    : 'May be extended by renewal.'
+  if (rule.extension.by === 'applicant_consent')
+    return 'May be extended with the applicant consent.'
+  if (rule.extension.by === 'board_good_cause')
+    return 'May be extended by the board for good cause.'
+  return 'May be extended by renewal.'
 }
 
 function currentDueOf(clock: ClockRow, adjusted: boolean): Sourced<CivilDate> {

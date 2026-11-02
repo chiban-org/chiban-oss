@@ -14,6 +14,7 @@ const KIND_LABEL: Record<string, string> = {
   waiver: 'Waiver',
   renewal: 'Renewal',
   tolling: 'Tolling',
+  statutory_floor: 'Statutory minimum',
   statutory_exception: 'Statutory exception',
 }
 

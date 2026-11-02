@@ -3,6 +3,7 @@ import type { clocks } from '@/db/schema'
 import { checkAdjustment } from '@/features/clocks/adjustClock'
 import { explainClock, START_EVENT_LABELS } from '@/features/clocks/explainClock'
 import { meetingBoundSpec } from '@/features/clocks/meetingBound'
+import { relianceFloorDue } from '@/features/clocks/relianceFloor'
 import { computeRuleDue, resolveRuleLength, rulesForEvent } from '@/features/clocks/ruleEngine'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import { packHolidayCalendar } from '@/features/packs/holidays'
@@ -72,6 +73,7 @@ function observeClock(rule: ClockRule, original: ClockRule): unknown {
     townLength: attempt(() =>
       resolveRuleLength(rule, FACT_SETS[1] as ProjectFacts, settingRule, 18),
     ),
+    relianceFloors: ['2028-01-10', '2029-02-01'].map((on) => relianceFloorDue(rule, d(on))),
     meetingBound: attempt(() => meetingBoundSpec(rule, loadPack())),
     started: EVENTS.map((e) => rulesForEvent([rule], e, new Set([original.key])).length),
     adjustments: [
@@ -192,6 +194,10 @@ export function clockProbes(): Record<string, FieldProbe> {
     'clock.extension.by': clockProbe('town.bp.expiration', (r) => ({
       ...r,
       extension: { allowed: true, by: 'applicant_consent' },
+    })),
+    'clock.relianceFloorMonths': clockProbe('nh.zba.exercise', (r) => ({
+      ...r,
+      relianceFloorMonths: 3,
     })),
     'clock.waivable': clockProbe(DECISION, (r) => ({ ...r, waivable: true })),
   }

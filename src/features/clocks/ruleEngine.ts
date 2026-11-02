@@ -50,7 +50,19 @@ export function resolveRuleLength(
     const value = hit?.value ?? length.otherwise
     return { unit: length.unit, value, source: 'pack_rule', packDefault: value }
   }
+  if (townValue !== undefined && hasLocalBound(rule)) {
+    return {
+      unit: length.unit,
+      value: townValue,
+      source: 'town_setting',
+      packDefault: length.value,
+    }
+  }
   return { unit: length.unit, value: length.value, source: 'pack_rule', packDefault: length.value }
+}
+
+export function hasLocalBound(rule: ClockRule): boolean {
+  return rule.overridePolicy.policy === 'minimum' || rule.overridePolicy.policy === 'maximum'
 }
 
 export function computeRuleDue(

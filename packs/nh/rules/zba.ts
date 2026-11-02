@@ -81,6 +81,7 @@ export const ZBA_RULES: PackRule[] = [
     },
     extension: { allowed: true, by: 'board_good_cause' },
     waivable: false,
+    relianceFloorMonths: 6,
     overridePolicy: { policy: 'minimum', floor: 24 },
   },
 ]

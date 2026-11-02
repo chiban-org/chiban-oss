@@ -10,6 +10,7 @@ import { ok } from '@/types/result'
 import { defineJob, failKeepingWrites } from './defineJob'
 
 const SECONDS_PER_DAY = 86_400
+const EXPIRABLE = ['issued', 'decided']
 const SYSTEM_ACTOR = { kind: 'system', job: JOB_NAMES.CLOCKS_DAILY } as const
 
 interface DailyPayload {
@@ -43,7 +44,12 @@ async function stillLapsed(
     .for('update')
   const [live] = await tx.select().from(clocks).where(eq(clocks.id, clockId)).for('update')
   const [app] = await tx.select().from(applications).where(eq(applications.id, applicationId))
-  return live?.status === 'running' && live.currentDue < today && app?.state === 'issued'
+  return (
+    live?.status === 'running' &&
+    live.currentDue < today &&
+    app !== undefined &&
+    EXPIRABLE.includes(app.state)
+  )
 }
 
 export async function expireLapsedPermits(
@@ -61,7 +67,8 @@ export async function expireLapsedPermits(
   const failures: string[] = []
   for (const { clock, state, rowVersion } of past) {
     const rule = ruleByKey(pack, clock.ruleKey, clock.ruleVersion)
-    if (rule.kind !== 'clock' || rule.clockType !== 'exercise_by' || state !== 'issued') continue
+    if (rule.kind !== 'clock' || rule.clockType !== 'exercise_by' || !EXPIRABLE.includes(state))
+      continue
     if (!(await stillLapsed(tx, clock.id, clock.applicationId, today))) continue
     await tx.update(clocks).set({ status: 'lapsed' }).where(eq(clocks.id, clock.id))
     const moved = await move(

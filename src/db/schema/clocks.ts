@@ -55,7 +55,7 @@ export const clockAdjustments = pgTable(
       .notNull()
       .references(() => clocks.id),
     kind: text('kind', {
-      enum: ['extension', 'waiver', 'renewal', 'tolling', 'statutory_exception'],
+      enum: ['extension', 'waiver', 'renewal', 'tolling', 'statutory_exception', 'statutory_floor'],
     }).notNull(),
     days: integer('days'),
     newDue: date('new_due', { mode: 'string' }),

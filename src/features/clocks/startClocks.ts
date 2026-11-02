@@ -10,6 +10,7 @@ import { describeCounting } from '@/features/clocks/describeCounting'
 import { describeMeetingBound, meetingBoundTiming } from '@/features/clocks/meetingBoundTiming'
 import {
   computeRuleDue,
+  hasLocalBound,
   type ResolvedLength,
   resolveRuleLength,
   rulesForEvent,
@@ -28,7 +29,12 @@ export async function resolveClockLength(
   pack: Pack,
   signal: AbortSignal,
 ): Promise<ResolvedLength> {
-  if (!('fromSetting' in rule.length)) return resolveRuleLength(rule, facts, null, undefined)
+  if (!('fromSetting' in rule.length)) {
+    if (!hasLocalBound(rule)) return resolveRuleLength(rule, facts, null, undefined)
+    const published = await getPublished(tx, 'town_rule_setting', rule.key, signal)
+    const townValue = (published?.body as { value: number } | undefined)?.value
+    return resolveRuleLength(rule, facts, null, townValue)
+  }
   const setting = ruleByKey(pack, rule.length.fromSetting)
   const published = await getPublished(tx, 'town_rule_setting', rule.length.fromSetting, signal)
   const townValue = (published?.body as { value: number } | undefined)?.value

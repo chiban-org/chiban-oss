@@ -30,6 +30,10 @@ describe('core states', () => {
     expect(isTransitionAllowed('under_review', 'decided', { allowsDirectIssue: false })).toBe(true)
   })
 
+  it('a decided board approval can lapse when unexercised', () => {
+    expect(CORE_TRANSITIONS.decided).toContain('expired')
+  })
+
   it('issued can be suspended and a suspended permit can return to issued or close', () => {
     expect(CORE_TRANSITIONS.issued).toEqual(['closed', 'expired', 'suspended'])
     expect(CORE_TRANSITIONS.suspended).toEqual(['issued', 'closed'])

@@ -34,7 +34,7 @@ export type AdjustError =
   | 'due_required'
 
 export interface RecordedAdjustment {
-  kind: 'extension' | 'waiver' | 'renewal' | 'tolling' | 'statutory_exception'
+  kind: 'extension' | 'waiver' | 'renewal' | 'tolling' | 'statutory_exception' | 'statutory_floor'
   days: number | null
   newDue: CivilDate | null
   reason: string
@@ -108,15 +108,23 @@ export async function adjustClock(
   pack: Pack = loadPack(),
 ): Promise<Result<void, AdjustError>> {
   signal.throwIfAborted()
+  const [clock] = await db.select().from(clocks).where(eq(clocks.id, input.clockId))
+  const rule = clock === undefined ? null : ruleByKey(pack, clock.ruleKey, clock.ruleVersion)
+  const goodCause =
+    input.kind === 'extension' &&
+    rule?.kind === 'clock' &&
+    rule.extension.allowed &&
+    rule.extension.by === 'board_good_cause'
   const capability =
-    input.kind === 'statutory_exception' ? 'gate.record_statutory_exception' : 'clock.adjust'
+    input.kind === 'statutory_exception'
+      ? 'gate.record_statutory_exception'
+      : goodCause
+        ? 'board.record'
+        : 'clock.adjust'
   if (!(await hasCapability(db, actor.userId, capability, signal))) return err('forbidden')
   const reason = input.reason.trim()
   if (reason === '') return err('reason_required')
-  const [clock] = await db.select().from(clocks).where(eq(clocks.id, input.clockId))
-  if (clock === undefined) return err('not_found')
-  const rule = ruleByKey(pack, clock.ruleKey, clock.ruleVersion)
-  if (rule.kind !== 'clock') return err('not_found')
+  if (clock === undefined || rule?.kind !== 'clock') return err('not_found')
   const ruleError = checkAdjustment(rule, input)
   if (ruleError !== null) return err(ruleError)
   const citation = input.legalAuthority?.citation.trim() ?? ''

@@ -161,6 +161,7 @@ const SPECS: Spec[] = [
   { table: t.regionalImpactDeterminations },
   { table: t.regionalImpactNotices },
   { table: t.regionalImpactParties },
+  { table: t.relianceLinks },
   { table: t.remediationTasks },
   {
     table: t.retentionAssignments,

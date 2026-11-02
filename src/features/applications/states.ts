@@ -32,7 +32,7 @@ export const CORE_TRANSITIONS: Record<CoreState, readonly CoreState[]> = {
   draft: ['submitted', 'withdrawn'],
   submitted: ['under_review', 'issued', 'denied', 'withdrawn'],
   under_review: ['decided', 'denied', 'withdrawn'],
-  decided: ['issued', 'withdrawn'],
+  decided: ['issued', 'expired', 'withdrawn'],
   issued: ['closed', 'expired', 'suspended'],
   suspended: ['issued', 'closed'],
   closed: [],
