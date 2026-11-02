@@ -65,6 +65,13 @@ describe('ScheduleBoard', () => {
     expect(screen.getByRole('button', { name: /10:30 AM/ })).toBeTruthy()
   })
 
+  it('each slot button names its day and inspector, not only the time', () => {
+    setup()
+    expect(
+      screen.getByRole('button', { name: '9:30 AM, July 7, 2027, Ines Inspector' }),
+    ).toBeTruthy()
+  })
+
   it('pressing s schedules the selected request into the focused slot', () => {
     const onSchedule = setup()
     fireEvent.keyDown(document, { key: 'j' })
