@@ -260,7 +260,7 @@ export async function seedGrantedVariance(
       recordFinalApproval(
         tx,
         cast.staff,
-        { applicationId: s.applicationId, finalOn: d('2026-05-13') as CivilDate },
+        { applicationId: s.applicationId, finalOn: d('2026-05-13') },
         signal,
       ),
     ),
