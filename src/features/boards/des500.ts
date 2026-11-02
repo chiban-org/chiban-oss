@@ -30,6 +30,14 @@ export function desRule(): ProximityRule {
   return rule
 }
 
+async function anyUnmapped(db: DbOrTx, parcelIds: string[]): Promise<boolean> {
+  const result = await db.execute<{ unmapped: number }>(sql`
+    select count(*)::int as unmapped from parcels
+    where id = any(${uuidArray(parcelIds)}) and geom is null
+  `)
+  return (result.rows[0]?.unmapped ?? 0) > 0
+}
+
 export async function suggestDesProximity(
   db: DbOrTx,
   applicationId: string,
@@ -52,6 +60,7 @@ export async function suggestDesProximity(
   `)
   const feet = result.rows[0]?.feet ?? null
   const verdict = proximityVerdict(rule, feet)
+  if (!verdict.within && (await anyUnmapped(db, parcelIds))) return { state: 'unknown' }
   return honestFromLayer(status, { within: verdict.within, withinFt: feet })
 }
 

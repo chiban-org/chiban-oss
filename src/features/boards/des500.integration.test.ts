@@ -1,4 +1,6 @@
+import { inArray } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { parcels } from '@/db/schema'
 import { setApplicantParcels } from '@/features/abutters/applicantParcels'
 import { recordDesDetermination, suggestDesProximity } from '@/features/boards/des500'
 import { importScenario } from '@/test/abutterWorld'
@@ -71,6 +73,51 @@ describe('suggestDesProximity', () => {
     )
     const suggestion = await suggestDesProximity(handle.db, id, NOW, signal)
     expect(suggestion.state === 'known' && suggestion.value.within).toBe(true)
+  })
+})
+
+describe('an applicant parcel without geometry', () => {
+  beforeEach(async () => {
+    ids = await importScenario(handle.db, world.staff)
+  })
+
+  async function unmap(...names: string[]) {
+    await handle.db
+      .update(parcels)
+      .set({ geom: null })
+      .where(
+        inArray(
+          parcels.id,
+          names.map((n) => ids[n] ?? ''),
+        ),
+      )
+  }
+
+  it('an unmapped applicant parcel suggests unknown and not_within needs a reason', async () => {
+    const id = await applicationOn('M4')
+    await unmap('M4')
+    expect(await suggestDesProximity(handle.db, id, NOW, signal)).toEqual({ state: 'unknown' })
+    expect(
+      await recordDesDetermination(
+        handle.db,
+        world.staff,
+        { applicationId: id, determination: 'not_within', reason: '' },
+        signal,
+        NOW,
+      ),
+    ).toEqual({ ok: false, error: 'reason_required' })
+  })
+
+  it('a far mapped parcel beside an unmapped one suggests unknown', async () => {
+    const id = await applicationOn('M6')
+    await setApplicantParcels(
+      handle.db,
+      world.staff,
+      { applicationId: id, parcelIds: [ids.M6 ?? '', ids.M4 ?? ''] },
+      signal,
+    )
+    await unmap('M4')
+    expect(await suggestDesProximity(handle.db, id, NOW, signal)).toEqual({ state: 'unknown' })
   })
 })
 
