@@ -117,3 +117,14 @@ export async function searchParcels(
   add(await textHits(db, 'owner_name', q, limit), 'owner')
   return [...hits.values()].slice(0, limit)
 }
+
+export const PARCEL_PAGE_SIZE = DEFAULT_LIMIT
+
+export async function searchParcelPage(
+  db: DbOrTx,
+  q: string,
+  signal: AbortSignal,
+): Promise<{ hits: ParcelSearchHit[]; more: boolean }> {
+  const found = await searchParcels(db, { q, limit: PARCEL_PAGE_SIZE + 1 }, signal)
+  return { hits: found.slice(0, PARCEL_PAGE_SIZE), more: found.length > PARCEL_PAGE_SIZE }
+}

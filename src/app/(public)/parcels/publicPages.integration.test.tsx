@@ -3,7 +3,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { runImport } from '@/features/gis/import/runImport'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { configureLayer, loadGeoJsonFixture, PARCEL_MAPPING } from '@/test/gisFixtures'
-import { seedParcelWorld, staffActor } from '@/test/parcels'
+import { makeParcel, seedParcelWorld, staffActor } from '@/test/parcels'
 
 interface MockState {
   db: unknown
@@ -39,6 +39,7 @@ vi.mock('next/headers', () => ({
 }))
 
 const { default: PublicParcelPage } = await import('@/app/(public)/parcels/[parcelId]/page')
+const { default: PublicParcelsPage } = await import('@/app/(public)/parcels/page')
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -90,5 +91,26 @@ describe('public parcel page', () => {
     const withCookie = await render()
     expect(withCookie).toBe(without)
     expect(state.cookieReads).not.toContain('chiban_sid')
+  })
+})
+
+describe('public parcel search', () => {
+  const search = async (q: string) =>
+    renderToStaticMarkup(await PublicParcelsPage({ searchParams: Promise.resolve({ q }) }))
+
+  it('says when it shows only the first matches', async () => {
+    for (let i = 0; i < 25; i += 1) {
+      await makeParcel(handle.db, [], { siteAddress: `${i} Quarry Ledge Road` })
+    }
+    const html = await search('Quarry Ledge')
+    expect(html).toContain(
+      'Showing the first 20 matches. Add more of the address, owner, or parcel ID to narrow the search.',
+    )
+  })
+
+  it('says nothing about a cap when every match is shown', async () => {
+    const html = await search('12 Heron Cove')
+    expect(html).toContain('12 Heron Cove Road')
+    expect(html).not.toContain('Showing the first')
   })
 })
