@@ -1,0 +1,24 @@
+{
+	servers {
+		timeouts {
+			idle 45s
+		}
+	}
+}
+
+{$APP_DOMAIN} {
+	header Strict-Transport-Security "max-age=31536000"
+	request_body {
+		max_size 80MB
+	}
+	reverse_proxy app:3000
+}
+
+s3.{$APP_DOMAIN} {
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Content-Security-Policy "sandbox; default-src 'none'; frame-ancestors 'none'"
+	}
+	reverse_proxy minio:9000
+}
