@@ -4,6 +4,7 @@ import { db } from '@/db/client'
 import { pendingTotpUri } from '@/features/auth/totpEnrollment'
 import { getActor } from '@/server/getActor'
 import { BeginTotpForm, ConfirmTotpForm } from '../TotpForms'
+import { EnrollmentDetails } from './EnrollmentDetails'
 
 export default async function TotpPage() {
   const signal = AbortSignal.timeout(10_000)
@@ -15,16 +16,11 @@ export default async function TotpPage() {
   return (
     <main className="mx-auto max-w-md p-6">
       <h1>Authenticator</h1>
-      {qr === null ? (
+      {uri === null || qr === null ? (
         <BeginTotpForm />
       ) : (
         <>
-          <img
-            src={qr}
-            alt="Scan this QR code with your authenticator app"
-            width={224}
-            height={224}
-          />
+          <EnrollmentDetails uri={uri} qr={qr} />
           <ConfirmTotpForm />
         </>
       )}
