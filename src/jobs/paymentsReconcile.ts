@@ -71,10 +71,10 @@ async function checkOne(
     await record(tx, attempt.id, error, now)
     return
   }
-  await tx.transaction(async (savepoint) => {
-    await reconcileAttempt(savepoint, attempt.id, state.value, SYSTEM_SOURCE, signal, now)
-  })
-  await record(tx, attempt.id, null, now)
+  const reconciled = await tx.transaction((savepoint) =>
+    reconcileAttempt(savepoint, attempt.id, state.value, SYSTEM_SOURCE, signal, now),
+  )
+  await record(tx, attempt.id, reconciled.ok ? null : reconciled.error, now)
 }
 
 async function processorFor(

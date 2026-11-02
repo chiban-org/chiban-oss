@@ -76,6 +76,18 @@ describe('payments.reconcile', () => {
     expect((await stateOf(fine))?.state).toBe('captured')
   })
 
+  it('a payment object from another processor account is recorded as foreign_object, not as a clean check', async () => {
+    const id = await attemptIn('authorized', 'pi_foreign')
+    fake.setState(
+      'pi_foreign',
+      processorState({ objectId: 'pi_foreign', accountRef: 'acct_other' }),
+    )
+    await run()
+    const row = await stateOf(id)
+    expect(row?.state).toBe('authorized')
+    expect(row?.lastCheckError).toBe('foreign_object')
+  })
+
   it('an object the processor does not know is recorded as not_found', async () => {
     const id = await attemptIn('authorized', 'pi_gone')
     await run()
