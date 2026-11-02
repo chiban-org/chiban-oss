@@ -519,6 +519,13 @@
       "when": 1793641245704,
       "tag": "0073_m9_m10_schema",
       "breakpoints": true
+    },
+    {
+      "idx": 74,
+      "version": "7",
+      "when": 1793641311013,
+      "tag": "0074_m9_enforcement_notes_immutable",
+      "breakpoints": true
     }
   ]
 }
