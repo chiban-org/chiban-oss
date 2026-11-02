@@ -10,6 +10,7 @@ import { markHearingHeld, markProperlyNoticed, scheduleHearing } from '@/feature
 import { renderNoticeLetters } from '@/features/hearings/noticeLetters'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import {
+  BOARD_FIXTURE_NOW,
   type BoardWorld,
   boardTypeBody,
   recordNoRegionalImpact,
@@ -210,6 +211,7 @@ describe('proper notice and holding', () => {
       world.staff,
       { hearingId, heldOn: d('2027-04-15') },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     expect(result).toEqual({ ok: false, error: 'not_properly_noticed' })
     expect((await hearingRow(hearingId)).status).toBe('scheduled')
@@ -227,6 +229,7 @@ describe('proper notice and holding', () => {
       world.staff,
       { hearingId, heldOn: d('2027-04-15') },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     expect(held.ok).toBe(true)
     expect(await hearingRow(hearingId)).toMatchObject({ status: 'held', heldOn: '2027-04-15' })
@@ -257,6 +260,7 @@ describe('proper notice and holding', () => {
       world.staff,
       { hearingId, heldOn: d('2027-04-15') },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     expect(held).toEqual({ ok: false, error: 'not_properly_noticed' })
   })
@@ -274,6 +278,7 @@ describe('proper notice and holding', () => {
         world.reviewer,
         { hearingId, heldOn: d('2027-04-15') },
         signal,
+        BOARD_FIXTURE_NOW,
       ),
     ).toEqual({ ok: false, error: 'forbidden' })
   })

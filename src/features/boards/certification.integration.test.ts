@@ -8,6 +8,7 @@ import { recordSelectmenCertification } from '@/features/boards/certification'
 import { scheduleMeeting } from '@/features/boards/meetings'
 import { adjustClock } from '@/features/clocks/adjustClock'
 import {
+  BOARD_FIXTURE_NOW,
   type BoardWorld,
   recordNoRegionalImpact,
   setupBoardWorld,
@@ -69,6 +70,7 @@ async function accept(applicationId: string, meeting: string, votedOn = meeting)
       outcome: 'accepted',
     },
     signal,
+    BOARD_FIXTURE_NOW,
   )
 }
 

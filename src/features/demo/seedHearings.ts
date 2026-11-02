@@ -173,7 +173,7 @@ async function holdNoticed(
     await markProperlyNoticed(db, cast.staff, hearingId, signal, now),
     `properly noticed ${hearingId}`,
   )
-  must(await markHearingHeld(db, cast.staff, { hearingId, heldOn: d(heldOn) }, signal), 'held')
+  must(await markHearingHeld(db, cast.staff, { hearingId, heldOn: d(heldOn) }, signal, now), 'held')
 }
 
 async function issueDraftList(db: Db, cast: Cast, s: Scenario, now: Date) {
@@ -482,6 +482,7 @@ async function seedDeniedVariance(
       cast.staff,
       { parentId: node?.id ?? '', kind: 'rehearing_motion', occurredOn: d('2026-11-02') },
       signal,
+      now,
     ),
     'rehearing motion',
   )

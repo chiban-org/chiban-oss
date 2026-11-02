@@ -4,7 +4,7 @@ import { generateList } from '@/features/abutters/lists'
 import { loadApplicationContext } from '@/features/applications/context'
 import { recordCompletenessVote, setAcceptanceMeeting } from '@/features/boards/acceptance'
 import { evaluateGates, type GateResult } from '@/features/gates/evaluateGates'
-import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
+import { BOARD_FIXTURE_NOW, type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { type ListWorld, prepareListWorld } from '@/test/listFixtures'
 import type { CivilDate } from '@/types/civilDate'
@@ -81,6 +81,7 @@ describe('abutter list freshness at filing', () => {
         outcome: 'accepted',
       },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     expect(vote.ok).toBe(false)
     expect(JSON.stringify(vote)).toContain('nh.pb.abutter_list_fresh')
@@ -109,6 +110,7 @@ describe('abutter list freshness at filing', () => {
         outcome: 'accepted',
       },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     expect(vote.ok).toBe(true)
   })

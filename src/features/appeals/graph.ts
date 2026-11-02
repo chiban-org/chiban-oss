@@ -13,6 +13,7 @@ import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { isAfterTownToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -22,6 +23,7 @@ export type AppealError =
   | 'route_not_allowed'
   | 'not_issued'
   | 'wrong_outcome'
+  | 'future_date'
 
 export interface AddNodeInput {
   parentId: string
@@ -223,9 +225,11 @@ export async function addAppealNode(
   actor: Actor,
   input: AddNodeInput,
   signal: AbortSignal,
+  now: Date = new Date(),
 ): Promise<Result<{ nodeId: string }, AppealError>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
+  if (await isAfterTownToday(db, input.occurredOn, now, signal)) return err('future_date')
   const [parent] = await db.select().from(appealNodes).where(eq(appealNodes.id, input.parentId))
   if (parent === undefined) return err('not_found')
   const route = chooseRoute(parent, input)

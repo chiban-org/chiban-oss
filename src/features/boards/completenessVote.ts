@@ -29,6 +29,7 @@ import { effectiveBindings } from '@/features/config/bindings'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { isAfterTownToday } from '@/features/town/today'
 import { addDays, type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -44,6 +45,7 @@ export type VoteError =
   | 'reason_required'
   | 'not_submitted'
   | 'invalid_state'
+  | 'future_date'
   | { gateBlocked: GateResult[] }
 
 async function checkVoteMeeting(
@@ -85,11 +87,13 @@ export async function recordCompletenessVote(
     reason?: string
   },
   signal: AbortSignal,
+  now: Date = new Date(),
 ): Promise<Result<void, VoteError>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
   const reason = input.reason?.trim() ?? ''
   if (input.outcome === 'not_accepted' && reason === '') return err('reason_required')
+  if (await isAfterTownToday(db, input.votedOn, now, signal)) return err('future_date')
   return await transactionResult<void, VoteError>(db, async (tx) => {
     await tx
       .select({ id: applications.id })

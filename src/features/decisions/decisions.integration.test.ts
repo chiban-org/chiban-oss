@@ -7,7 +7,7 @@ import {
 } from '@/features/decisions/decisionDocuments'
 import { type RecordDecisionInput, recordDecision } from '@/features/decisions/recordDecision'
 import type { ObjectStore } from '@/features/storage/objectStore'
-import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
+import { BOARD_FIXTURE_NOW, type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import {
   type HeldHearing,
@@ -64,7 +64,13 @@ function input(
 }
 
 async function record(held: HeldHearing, overrides: Partial<RecordDecisionInput> = {}) {
-  return await recordDecision(handle.db, world.staff, input(held, overrides), signal)
+  return await recordDecision(
+    handle.db,
+    world.staff,
+    input(held, overrides),
+    signal,
+    BOARD_FIXTURE_NOW,
+  )
 }
 
 async function clockRows(applicationId: string) {
@@ -131,7 +137,9 @@ describe('recordDecision required fields', () => {
 
   it('a reviewer recording a decision is forbidden', async () => {
     const held = await heldZbaHearing(handle.db, world)
-    expect(await recordDecision(handle.db, world.reviewer, input(held), signal)).toEqual({
+    expect(
+      await recordDecision(handle.db, world.reviewer, input(held), signal, BOARD_FIXTURE_NOW),
+    ).toEqual({
       ok: false,
       error: 'forbidden',
     })

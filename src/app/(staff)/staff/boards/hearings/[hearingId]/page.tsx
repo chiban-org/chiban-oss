@@ -14,13 +14,9 @@ import { loadHearingView } from '@/features/hearings/views'
 import { PROOF_METHOD_LABELS, PROOF_METHODS } from '@/features/notices/proofMethods'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
-import {
-  continueHearingAction,
-  markHeldAction,
-  markProperlyNoticedAction,
-  recordProofAction,
-} from '../actions'
+import { continueHearingAction, markProperlyNoticedAction, recordProofAction } from '../actions'
 import { recordDecisionAction } from '../decisionActions'
+import { HeldForm } from './heldForm'
 
 export const dynamic = 'force-dynamic'
 
@@ -164,22 +160,12 @@ export default async function HearingPage({ params }: { params: Promise<{ hearin
         </details>
       ) : null}
       {scheduled && view.properlyNoticed && view.noticedOn !== null ? (
-        <ActionForm
-          action={markHeldAction}
-          submitLabel="Mark the hearing held"
-          variant="default"
-          className="max-w-md"
-        >
-          <input type="hidden" name="hearingId" value={view.hearingId} />
-          <TextField
-            label="Date held"
-            name="heldOn"
-            type="date"
-            defaultValue={view.defaultHeldOn}
-            min={view.defaultHeldOn}
-            required
-          />
-        </ActionForm>
+        <HeldForm
+          hearingId={view.hearingId}
+          meetingDate={view.defaultHeldOn}
+          meetingText={view.meetingText}
+          today={today}
+        />
       ) : null}
       {view.status === 'held' && view.decision === null ? (
         <section className="space-y-3">
@@ -198,6 +184,7 @@ export default async function HearingPage({ params }: { params: Promise<{ hearin
               type="date"
               defaultValue={view.defaultVotedOn}
               min={view.defaultVotedOn}
+              max={today}
               required
             />
             <SelectField label="Outcome" name="outcome" options={OUTCOMES} />

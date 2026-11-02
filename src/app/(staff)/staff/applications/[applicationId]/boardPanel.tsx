@@ -25,33 +25,39 @@ function MeetingSelect({ data }: { data: BoardPanelData }) {
   )
 }
 
-function VoteForm({ data }: { data: BoardPanelData }) {
+export function VoteForm({ data }: { data: BoardPanelData }) {
   const planning = data.board === 'planning_board'
+  const upcoming = data.acceptanceDate !== null && data.acceptanceDate > data.today
   return (
     <details>
       <summary>{planning ? 'Record the completeness vote' : 'Open the hearing'}</summary>
-      <ActionForm action={completenessVoteAction} submitLabel="Record vote" className="max-w-md">
-        <input type="hidden" name="applicationId" value={data.applicationId} />
-        <input type="hidden" name="meetingId" value={data.acceptanceMeetingId ?? ''} />
-        <p>{`Meeting: ${data.acceptanceText ?? ''}`}</p>
-        <TextField
-          label="Date of the vote"
-          name="votedOn"
-          type="date"
-          defaultValue={data.acceptanceDate ?? data.today}
-          min={data.acceptanceDate ?? undefined}
-          required
-        />
-        <SelectField
-          label="Outcome"
-          name="outcome"
-          options={[
-            ['accepted', planning ? 'Accepted as complete' : 'Accepted for hearing'],
-            ['not_accepted', planning ? 'Not accepted as complete' : 'Not accepted'],
-          ]}
-        />
-        <TextField label="Reason, if not accepted" name="reason" />
-      </ActionForm>
+      {upcoming ? (
+        <p>{`Record the vote once the meeting on ${data.acceptanceText ?? ''} has happened.`}</p>
+      ) : (
+        <ActionForm action={completenessVoteAction} submitLabel="Record vote" className="max-w-md">
+          <input type="hidden" name="applicationId" value={data.applicationId} />
+          <input type="hidden" name="meetingId" value={data.acceptanceMeetingId ?? ''} />
+          <p>{`Meeting: ${data.acceptanceText ?? ''}`}</p>
+          <TextField
+            label="Date of the vote"
+            name="votedOn"
+            type="date"
+            defaultValue={data.acceptanceDate ?? data.today}
+            min={data.acceptanceDate ?? undefined}
+            max={data.today}
+            required
+          />
+          <SelectField
+            label="Outcome"
+            name="outcome"
+            options={[
+              ['accepted', planning ? 'Accepted as complete' : 'Accepted for hearing'],
+              ['not_accepted', planning ? 'Not accepted as complete' : 'Not accepted'],
+            ]}
+          />
+          <TextField label="Reason, if not accepted" name="reason" />
+        </ActionForm>
+      )}
     </details>
   )
 }

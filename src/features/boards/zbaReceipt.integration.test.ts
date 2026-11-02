@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { clocks } from '@/db/schema'
 import { recordCompletenessVote, setAcceptanceMeeting } from '@/features/boards/acceptance'
 import {
+  BOARD_FIXTURE_NOW,
   type BoardWorld,
   recordNoRegionalImpact,
   scheduleMeetings,
@@ -56,6 +57,7 @@ describe('zba hearing opened', () => {
       world.staff,
       { applicationId: id, meetingId, votedOn: '2027-04-07' as CivilDate, outcome: 'accepted' },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     expect(vote.ok).toBe(true)
     const rows = await handle.db.select().from(clocks).where(eq(clocks.applicationId, id))

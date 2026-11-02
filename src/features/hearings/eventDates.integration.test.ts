@@ -3,6 +3,7 @@ import { recordDecision } from '@/features/decisions/recordDecision'
 import { markHearingHeld, markProperlyNoticed, scheduleHearing } from '@/features/hearings/hearings'
 import { loadHearingView } from '@/features/hearings/views'
 import {
+  BOARD_FIXTURE_NOW,
   type BoardWorld,
   recordNoRegionalImpact,
   setupBoardWorld,
@@ -55,7 +56,13 @@ describe('dates before the meeting', () => {
   it('a hearing cannot be marked held before its meeting', async () => {
     const hearingId = await noticedHearing()
     expect(
-      await markHearingHeld(handle.db, world.staff, { hearingId, heldOn: d('2027-04-14') }, signal),
+      await markHearingHeld(
+        handle.db,
+        world.staff,
+        { hearingId, heldOn: d('2027-04-14') },
+        signal,
+        BOARD_FIXTURE_NOW,
+      ),
     ).toEqual({ ok: false, error: 'before_meeting' })
   })
 
@@ -74,6 +81,7 @@ describe('dates before the meeting', () => {
         findings: 'The proposal meets each criterion.',
       },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     expect(result).toEqual({ ok: false, error: 'before_meeting' })
   })

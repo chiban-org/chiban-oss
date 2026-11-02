@@ -22,6 +22,7 @@ import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import { requiredDecisionFields } from '@/features/decisions/requiredFields'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { isAfterTownToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -44,6 +45,7 @@ export type DecisionError =
   | 'votes_inconsistent'
   | 'invalid_state'
   | 'before_meeting'
+  | 'future_date'
   | { missingFields: string[] }
   | { gateBlocked: GateResult[] }
 
@@ -115,9 +117,11 @@ export async function recordDecision(
   actor: Actor,
   input: RecordDecisionInput,
   signal: AbortSignal,
+  now: Date = new Date(),
 ): Promise<Result<{ decisionId: string }, DecisionError>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
+  if (await isAfterTownToday(db, input.votedOn, now, signal)) return err('future_date')
   return await transactionResult<{ decisionId: string }, DecisionError>(db, async (tx) => {
     await tx
       .select({ id: applications.id })

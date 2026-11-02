@@ -54,6 +54,7 @@ async function noticeAndHold(
     world.staff,
     { hearingId: hearing.hearingId, heldOn: d(heldOn) },
     signal,
+    now,
   )
   if (!held.ok) throw new AppError(ErrorIds.DB_INVARIANT, `not held: ${held.error}`)
   return {
@@ -129,6 +130,7 @@ export async function heldPbHearing(
       outcome: 'accepted',
     },
     signal,
+    new Date('2027-04-14T16:00:00Z'),
   )
   if (!accepted.ok)
     throw new AppError(ErrorIds.DB_INVARIANT, `vote: ${JSON.stringify(accepted.error)}`)
@@ -178,19 +180,21 @@ export async function decidedZba(
 ): Promise<HeldHearing & { decisionId: string }> {
   await publishBoardTemplates(db, world)
   const held = await heldZbaHearing(db, world, { regional: options.regional ?? 'no' })
+  const votedOn = options.votedOn ?? '2027-04-15'
   const decided = await recordDecision(
     db,
     world.staff,
     {
       applicationId: held.applicationId,
       hearingId: held.hearingId,
-      votedOn: d(options.votedOn ?? '2027-04-15'),
+      votedOn: d(votedOn),
       outcome: 'approved',
       motion: 'Move to approve as presented.',
       votes: FIXTURE_VOTES,
       findings: 'The proposal meets each criterion of the ordinance.',
     },
     signal,
+    new Date(`${votedOn}T16:00:00Z`),
   )
   if (!decided.ok)
     throw new AppError(ErrorIds.DB_INVARIANT, `decision: ${JSON.stringify(decided.error)}`)

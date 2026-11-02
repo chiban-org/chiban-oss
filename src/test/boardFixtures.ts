@@ -13,6 +13,8 @@ import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 
+export const BOARD_FIXTURE_NOW = new Date('2028-01-03T16:00:00Z')
+
 export const PB_MEETINGS = [
   '2027-03-10',
   '2027-03-24',
