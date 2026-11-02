@@ -107,6 +107,16 @@ export default async function RetentionPage({
           </Link>
         ))}
       </nav>
+      {state === 'on_hold' ? (
+        <p className="m-0">
+          Records kept permanently are not listed here, since they are never disposed of. Every
+          hold, including holds on them, is on the{' '}
+          <Link href="/staff/records/holds" className="text-action underline">
+            Legal holds
+          </Link>{' '}
+          page.
+        </p>
+      ) : null}
       {list.rows.length === 0 ? (
         <p>No records are in this list.</p>
       ) : (

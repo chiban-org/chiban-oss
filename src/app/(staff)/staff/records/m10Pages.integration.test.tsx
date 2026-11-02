@@ -179,6 +179,12 @@ describe('records screens with the demo seed', () => {
     const waiting = visibleText(await html(RetentionPage(search({ state: 'awaiting_event' }))))
     expect(waiting).toContain('Open complaint photo log')
     expect(waiting).toContain('The appeal period ended')
+    const held = visibleText(await html(RetentionPage(search({ state: 'on_hold' }))))
+    expect(held).toContain('Records kept permanently are not listed here')
+    expect(held).toContain('Legal holds')
+    expect(visibleText(await html(RetentionPage(search({ state: 'eligible' }))))).not.toContain(
+      'Records kept permanently are not listed here',
+    )
   })
 
   it('the release picker lists nothing until searched, then only matching documents named with their record', async () => {
