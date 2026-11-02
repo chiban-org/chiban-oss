@@ -7,8 +7,8 @@ import { resolveDevCheckout } from '@/features/payments/simulatedCheckout'
 import { startOnlinePayment } from '@/features/payments/startPayment'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { setupTradeWorld, submittedTrade, type TradeFixture } from '@/test/ledgerFixtures'
-import { setupPayments } from '@/test/paymentFixtures'
 import { staffActor } from '@/test/parcels'
+import { setupPayments } from '@/test/paymentFixtures'
 
 const signal = new AbortController().signal
 const deps = { now: new Date('2027-03-02T17:00:00Z'), enabled: true }
@@ -65,15 +65,17 @@ describe('payment return access', () => {
   it('the creating user sees the details and the receipt', async () => {
     const details = await paymentReturnDetails(handle.db, creatorOnly, attemptId, signal)
     expect(details.status).toBe('received')
-    expect((await attemptReceiptPdfResponse(handle.db, creatorOnly, attemptId, signal)).status).toBe(
-      200,
-    )
+    expect(
+      (await attemptReceiptPdfResponse(handle.db, creatorOnly, attemptId, signal)).status,
+    ).toBe(200)
   })
 
   it('finance staff see the details and the receipt', async () => {
     const details = await paymentReturnDetails(handle.db, finance, attemptId, signal)
     expect(details.status).toBe('received')
-    expect((await attemptReceiptPdfResponse(handle.db, finance, attemptId, signal)).status).toBe(200)
+    expect((await attemptReceiptPdfResponse(handle.db, finance, attemptId, signal)).status).toBe(
+      200,
+    )
   })
 
   it.each([

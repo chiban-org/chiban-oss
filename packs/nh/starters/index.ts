@@ -12,3 +12,5 @@ export const NH_STARTERS: StarterBundle[] = [
   PLUMBING_STARTER,
   MECHANICAL_GAS_STARTER,
 ]
+
+export { NH_INSPECTION_SETTINGS_DEFAULT } from '@packs/nh/starters/inspectionSettings'

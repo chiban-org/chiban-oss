@@ -10,4 +10,5 @@ export const KIND_LABELS: Record<ConfigKind, string> = {
   town_rule_setting: 'Town rule settings',
   local_code_amendment: 'Local code amendments',
   payment_settings: 'Payment settings',
+  inspection_settings: 'Inspection settings',
 }

@@ -6,6 +6,7 @@ import { ConditionLibraryBodySchema } from '@/features/conditions/conditionSchem
 import { FeeScheduleBodySchema } from '@/features/fees/feeSchema'
 import { FormBodySchema } from '@/features/forms/formSchema'
 import { ChecklistBodySchema } from '@/features/inspections/checklistSchema'
+import { InspectionSettingsBodySchema } from '@/features/inspections/settingsSchema'
 import { PaymentSettingsBodySchema } from '@/features/payments/settingsSchema'
 import { TemplateBodySchema } from '@/features/templates/templateSchema'
 
@@ -19,6 +20,7 @@ export const CONFIG_KINDS = [
   'town_rule_setting',
   'local_code_amendment',
   'payment_settings',
+  'inspection_settings',
 ] as const
 export type ConfigKind = (typeof CONFIG_KINDS)[number]
 
@@ -49,6 +51,7 @@ export const CONFIG_SCHEMAS: Record<ConfigKind, ZodType> = {
   town_rule_setting: TownRuleSettingBodySchema,
   local_code_amendment: LocalCodeAmendmentBodySchema,
   payment_settings: PaymentSettingsBodySchema,
+  inspection_settings: InspectionSettingsBodySchema,
 }
 
 const CONFIG_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/

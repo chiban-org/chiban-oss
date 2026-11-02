@@ -1,3 +1,4 @@
+import { NH_INSPECTION_SETTINGS_DEFAULT } from '@packs/nh/starters'
 import type { ConfigKind } from '@/features/config/kinds'
 
 export function skeletonBody(kind: ConfigKind, key: string): unknown {
@@ -46,6 +47,8 @@ export function skeletonBody(kind: ConfigKind, key: string): unknown {
         receiptFooter: '',
         checksPayableTo: 'the Town',
       }
+    case 'inspection_settings':
+      return NH_INSPECTION_SETTINGS_DEFAULT
     case 'application_type':
       return {
         key,

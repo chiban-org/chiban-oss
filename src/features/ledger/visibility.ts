@@ -6,7 +6,7 @@ import type { Actor } from '@/features/auth/actor'
 const SEES_ALL_ROLES = ['staff', 'admin', 'finance', 'records_custodian'] as const
 
 export function seesWholeLedger(actor: Actor | null): boolean {
-  return actor !== null && actor.roles.some((r) => (SEES_ALL_ROLES as readonly string[]).includes(r))
+  return actor?.roles.some((r) => (SEES_ALL_ROLES as readonly string[]).includes(r)) === true
 }
 
 export function ledgerEntryVisibleTo(actor: Actor | null): SQL {
