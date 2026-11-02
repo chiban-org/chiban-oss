@@ -1,9 +1,19 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { clocks } from '@/db/schema'
-import { type BoardWorld, setupBoardWorld, submitBoardApplication } from '@/test/boardFixtures'
+import { recordCompletenessVote, setAcceptanceMeeting } from '@/features/boards/acceptance'
+import {
+  type BoardWorld,
+  recordNoRegionalImpact,
+  scheduleMeetings,
+  setupBoardWorld,
+  submitBoardApplication,
+} from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { issueFixtureList } from '@/test/listFixtures'
+import type { CivilDate } from '@/types/civilDate'
 
+const signal = new AbortController().signal
 let handle: TestDb
 let world: BoardWorld
 
@@ -29,5 +39,30 @@ describe('zba submission', () => {
     const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')
     const rows = await handle.db.select().from(clocks).where(eq(clocks.applicationId, id))
     expect(rows.map((c) => c.ruleKey)).toEqual(['nh.pb.completeness'])
+  })
+})
+
+describe('zba hearing opened', () => {
+  it('opening the hearing marks the hearing deadline met', async () => {
+    const id = await submitBoardApplication(handle.db, world, world.zbaTypeKey, '2027-03-02')
+    await recordNoRegionalImpact(handle.db, world, id)
+    await issueFixtureList(handle.db, world, id, '2027-03-02')
+    await scheduleMeetings(handle.db, world.staff, 'zba', ['2027-04-07'])
+    const meetings = await handle.db.query.boardMeetings.findMany()
+    const meetingId = meetings.find((m) => m.board === 'zba')?.id ?? ''
+    await setAcceptanceMeeting(handle.db, world.staff, { applicationId: id, meetingId }, signal)
+    const vote = await recordCompletenessVote(
+      handle.db,
+      world.staff,
+      { applicationId: id, meetingId, votedOn: '2027-04-07' as CivilDate, outcome: 'accepted' },
+      signal,
+    )
+    expect(vote.ok).toBe(true)
+    const rows = await handle.db.select().from(clocks).where(eq(clocks.applicationId, id))
+    expect(rows.find((c) => c.ruleKey === 'nh.zba.hearing')).toMatchObject({
+      status: 'met',
+      metOn: '2027-04-07',
+    })
+    expect(rows.find((c) => c.ruleKey === 'nh.zba.decision')?.status).toBe('running')
   })
 })

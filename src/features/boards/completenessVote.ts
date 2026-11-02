@@ -80,6 +80,7 @@ export async function recordCompletenessVote(
     if (meeting === null) return err('not_found')
     if (meeting.board !== board) return err('wrong_board')
     await markClockMet(tx, app.id, COMPLETENESS_KEY, input.votedOn, signal)
+    if (board === 'zba') await markClockMet(tx, app.id, 'nh.zba.hearing', input.votedOn, signal)
     const moved = await transitionApplication(
       tx,
       actor,

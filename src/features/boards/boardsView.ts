@@ -50,6 +50,7 @@ const OPEN_STATES: CoreState[] = ['submitted', 'under_review', 'decided']
 async function applicationLines(
   db: Db,
   board: Board,
+  today: string,
   signal: AbortSignal,
 ): Promise<BoardApplicationLine[]> {
   const rows = await db
@@ -84,7 +85,7 @@ async function applicationLines(
       deadlineText:
         clock === undefined || rule === null
           ? null
-          : `${rule.label}: ${formatCivilDate(clock.currentDue)}${clock.status === 'overdue' ? ' (overdue)' : ''}`,
+          : `${rule.label}: ${formatCivilDate(clock.currentDue)}${clock.status === 'overdue' || clock.currentDue < today ? ' (overdue)' : ''}`,
     })
   }
   return lines
@@ -118,7 +119,7 @@ export async function loadBoardsView(
         cancelReason: m.cancelReason,
         past: m.meetingDate < today,
       })),
-      applications: await applicationLines(db, board, signal),
+      applications: await applicationLines(db, board, today, signal),
     })
   }
   return { today, sections }

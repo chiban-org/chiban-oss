@@ -169,6 +169,7 @@ describe('board pages show words, not keys or dates', () => {
     const boards = await page(BoardsPage())
     expect(boards).toContain('Alder Pond Planning Board')
     expect(boards).toContain('November 25, 2026')
+    expect(boards).toContain('October 25, 2026 (overdue)')
   })
 
   it('the issued list shows provenance, source age, and the labels links', async () => {
