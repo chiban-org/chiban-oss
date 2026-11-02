@@ -31,15 +31,26 @@ export async function dueLayerKeys(db: Db, now: Date, signal: AbortSignal): Prom
     .map((l) => l.key)
 }
 
-export const gisRefreshLayerJob = defineJob<RefreshPayload>({
-  name: JOB_NAMES.GIS_REFRESH_LAYER,
-  dedupKey: (p) => `${p.layerKey}:${Math.floor(Date.now() / MS_PER_HOUR)}`,
-  handler: async (payload, ctx) => {
-    if (!LAYER_KEYS.includes(payload.layerKey)) return err('unknown layer')
-    const result = await refreshLayer(ctx.db, SYSTEM_ACTOR, payload.layerKey, { fetch }, ctx.signal)
-    return result.ok ? ok(undefined) : err(result.error)
-  },
-})
+export function makeGisRefreshLayerJob(fetchImpl: typeof fetch) {
+  return defineJob<RefreshPayload>({
+    name: JOB_NAMES.GIS_REFRESH_LAYER,
+    dedupKey: (p) => `${p.layerKey}:${Math.floor(Date.now() / MS_PER_HOUR)}`,
+    handler: async (payload, ctx) => {
+      if (!LAYER_KEYS.includes(payload.layerKey)) return err('unknown layer')
+      const result = await refreshLayer(
+        ctx.db,
+        SYSTEM_ACTOR,
+        payload.layerKey,
+        { fetch: fetchImpl },
+        ctx.signal,
+      )
+      if (result.ok || result.error === 'import_failed') return ok(undefined)
+      return err(result.error)
+    },
+  })
+}
+
+export const gisRefreshLayerJob = makeGisRefreshLayerJob((input, init) => fetch(input, init))
 
 export const gisScheduleRefreshesJob = defineJob<Record<string, never>>({
   name: JOB_NAMES.GIS_SCHEDULE_REFRESHES,
