@@ -36,7 +36,7 @@ export default async function BoardMeetingPage({
         {packet.value.items.map((item) => (
           <li key={item.versionId}>
             <Link href={`${base}/${item.versionId}`} className={LINK}>
-              {`${item.title} (${item.filename})`}
+              {item.title}
             </Link>
           </li>
         ))}

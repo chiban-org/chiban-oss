@@ -14,8 +14,8 @@ export async function packetCoverPdf(view: PacketView, townName: string): Promis
       { kind: 'heading', text: 'Contents' },
       {
         kind: 'table',
-        columns: ['Item', 'Document', 'File'],
-        rows: view.items.map((item, i) => [String(i + 1), item.title, item.filename]),
+        columns: ['Item', 'Document'],
+        rows: view.items.map((item, i) => [String(i + 1), item.title]),
       },
     ],
   })

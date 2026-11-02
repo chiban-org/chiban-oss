@@ -143,6 +143,7 @@ describe('board member meeting page', () => {
     expect(html).toContain('Meeting packet for April 15, 2027')
     expect(html).toContain(`/documents/${versionId}`)
     expect(findUuids(html.replace(/href="[^"]*"/g, ''))).toEqual([])
+    expect(html).not.toMatch(/\.pdf\)/)
   })
 
   it('is not found for a member of the other board', async () => {
