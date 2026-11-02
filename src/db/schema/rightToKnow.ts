@@ -126,9 +126,8 @@ export const rtkReleaseItems = pgTable(
       .notNull()
       .references(() => documents.id),
     versionId: uuid('version_id').references(() => documentVersions.id),
-    approvalId: uuid('approval_id')
-      .notNull()
-      .references(() => renditionApprovals.id),
+    formerVersionId: uuid('former_version_id'),
+    approvalId: uuid('approval_id').references(() => renditionApprovals.id),
     position: integer('position').notNull(),
     withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
     withdrawnReason: text('withdrawn_reason', { enum: ['revoked', 'disposed'] }),

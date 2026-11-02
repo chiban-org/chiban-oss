@@ -30,9 +30,8 @@ export const boardPacketItems = pgTable(
     documentId: uuid('document_id')
       .notNull()
       .references(() => documents.id),
-    versionId: uuid('version_id')
-      .notNull()
-      .references(() => documentVersions.id),
+    versionId: uuid('version_id').references(() => documentVersions.id),
+    formerVersionId: uuid('former_version_id'),
     position: integer('position').notNull(),
     approvalId: uuid('approval_id').references(() => renditionApprovals.id),
     withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
@@ -66,7 +65,7 @@ export const boardPacketAccess = pgTable(
     linkId: uuid('link_id')
       .notNull()
       .references(() => boardPacketLinks.id),
-    versionId: uuid('version_id').references(() => documentVersions.id),
+    versionId: uuid('version_id'),
     accessedAt: timestamp('accessed_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [index('board_packet_access_link_idx').on(t.linkId)],
