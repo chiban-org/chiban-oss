@@ -202,7 +202,7 @@ async function issueDraftList(db: Db, cast: Cast, s: Scenario, now: Date) {
   must(await issueList(db, cast.staff, { listId }, s.signal, now), 'issue list')
 }
 
-async function seedMembers(db: Db, cast: Cast, signal: AbortSignal) {
+export async function seedMembers(db: Db, cast: Cast, signal: AbortSignal) {
   for (const [local, name, board] of [
     ...PB_SEATS.map(([l, n]) => [l, n, 'planning_board'] as const),
     ...ZBA_SEATS.map(([l, n]) => [l, n, 'zba'] as const),
@@ -358,6 +358,62 @@ async function seedSitePlanDecision(
   must(
     await recordRegionalTransmittal(db, cast.staff, decision.decisionId, signal, now),
     'transmittal',
+  )
+}
+
+export async function decideGrantedVariance(
+  db: Db,
+  store: ObjectStore,
+  cast: Cast,
+  applicationId: string,
+  signal: AbortSignal,
+  now: Date,
+): Promise<void> {
+  const { hearingId, setId } = await schedule(db, cast, applicationId, 'zba', '2026-04-15', signal)
+  await proveChannels(db, store, cast, applicationId, setId, [], d('2026-04-01'), signal, now)
+  await holdNoticed(db, cast, hearingId, '2026-04-15', signal, now)
+  const decision = must(
+    await recordDecision(
+      db,
+      cast.staff,
+      {
+        applicationId,
+        hearingId,
+        votedOn: d('2026-04-15'),
+        outcome: 'approved',
+        motion: 'Move to grant the frontage variance.',
+        votes: ZBA_VOTES,
+        findings: 'The variance meets each of the five criteria of RSA 674:33 I(a)(2).',
+      },
+      signal,
+      now,
+    ),
+    'variance granted',
+  )
+  must(
+    await generateDecisionDocuments(db, store, cast.staff, decision.decisionId, signal),
+    'variance decision documents',
+  )
+  must(
+    await fileDecision(
+      db,
+      cast.staff,
+      {
+        decisionId: decision.decisionId,
+        filedOn: d('2026-04-20'),
+        minutesDocumentId: await demoDocument(
+          db,
+          store,
+          cast,
+          applicationId,
+          'Minutes of April 15',
+          signal,
+        ),
+      },
+      signal,
+      now,
+    ),
+    'file variance decision',
   )
 }
 
@@ -561,7 +617,6 @@ export async function seedHearings(
   signal: AbortSignal,
   now: Date,
 ): Promise<void> {
-  await seedMembers(db, cast, signal)
   await seedSitePlanDecision(db, store, cast, signal, now)
   await seedContinuedVariance(db, store, cast, values, signal, now)
   await seedDeniedVariance(db, store, cast, signal, now, values)

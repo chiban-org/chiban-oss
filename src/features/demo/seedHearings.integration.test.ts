@@ -3,10 +3,12 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   agendas,
   appealNodes,
+  applications,
   boardDecisions,
   boardMemberships,
   hearings,
   noticeItems,
+  projects,
   trcRoutings,
   users,
 } from '@/db/schema'
@@ -42,6 +44,28 @@ async function member(local: string) {
 }
 
 describe('hearing demo data', () => {
+  it('the granted variance has an approved, filed decision voted at its hearing', async () => {
+    const [found] = await handle.db
+      .select({ app: applications })
+      .from(applications)
+      .innerJoin(projects, eq(projects.id, applications.projectId))
+      .where(eq(projects.title, 'Demo permit: Bittern Meadow frontage variance'))
+    const app = found?.app
+    expect(app?.state).toBe('decided')
+    const rows = await handle.db
+      .select()
+      .from(boardDecisions)
+      .where(eq(boardDecisions.applicationId, app?.id ?? ''))
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({ outcome: 'approved', votedOn: '2026-04-15' })
+    expect(rows[0]?.filedOn).not.toBeNull()
+    const [hearing] = await handle.db
+      .select()
+      .from(hearings)
+      .where(eq(hearings.id, rows[0]?.hearingId ?? ''))
+    expect(hearing).toMatchObject({ status: 'held', heldOn: '2026-04-15' })
+  })
+
   it('seats five members on each board, with public accounts', async () => {
     const rows = await handle.db.select().from(boardMemberships)
     expect(rows.filter((r) => r.board === 'planning_board')).toHaveLength(5)

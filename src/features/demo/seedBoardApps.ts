@@ -1,15 +1,12 @@
-import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { applications } from '@/db/schema'
 import { issueList } from '@/features/abutters/issue'
 import { generateList } from '@/features/abutters/lists'
-import { transitionApplication } from '@/features/applications/transition'
 import { recordCompletenessVote, setAcceptanceMeeting } from '@/features/boards/acceptance'
 import { recordSelectmenCertification } from '@/features/boards/certification'
 import { recordDesDetermination } from '@/features/boards/des500'
 import { linkReliance, recordFinalApproval } from '@/features/boards/exercise'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
-import { type Cast, d, must, noon, open, type Scenario } from '@/features/demo/seedPermitSupport'
+import { type Cast, d, must, open, type Scenario } from '@/features/demo/seedPermitSupport'
 import { addProfessional } from '@/features/rosters/professionals'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -204,6 +201,7 @@ export async function seedGrantedVariance(
   signal: AbortSignal,
   now: Date,
   planning: Scenario,
+  decide: (applicationId: string) => Promise<void>,
 ) {
   const s = await open(db, cast, signal, {
     parcel: '009017000000',
@@ -238,24 +236,7 @@ export async function seedGrantedVariance(
     ),
     'hearing opened',
   )
-  const [row] = await db.select().from(applications).where(eq(applications.id, s.applicationId))
-  must(
-    await db.transaction((tx) =>
-      transitionApplication(
-        tx,
-        cast.staff,
-        {
-          applicationId: s.applicationId,
-          to: 'decided',
-          expectedRowVersion: row?.rowVersion ?? 0,
-          onDate: d('2026-05-13'),
-        },
-        signal,
-        noon('2026-05-13'),
-      ),
-    ),
-    'variance granted',
-  )
+  await decide(s.applicationId)
   must(
     await db.transaction((tx) =>
       recordFinalApproval(
