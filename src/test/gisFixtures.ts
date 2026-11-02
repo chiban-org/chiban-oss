@@ -25,7 +25,7 @@ export function loadGeoJsonFixture(name: string): SourceFeature[] {
   const collection = JSON.parse(raw) as GeoJSON.FeatureCollection
   return collection.features.map((f, i) => ({
     rowRef: String(i),
-    properties: (f.properties ?? {}),
+    properties: f.properties ?? {},
     geometry: f.geometry,
   }))
 }
