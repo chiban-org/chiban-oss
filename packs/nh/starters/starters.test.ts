@@ -14,6 +14,12 @@ describe('NH starters', () => {
     expect(NH_STARTERS.map((s) => s.applicationType.prefix)).toEqual(['BP', 'EL', 'PL', 'MG'])
   })
 
+  it('no starter template prefixes the town name field with the word Town', () => {
+    for (const s of NH_STARTERS) {
+      for (const t of s.templates) expect(t.body).not.toMatch(/Town of \{\{town\.name\}\}/)
+    }
+  })
+
   it('every starter body passes its schema', () => {
     for (const s of NH_STARTERS) {
       expect(FormBodySchema.safeParse(s.form).success).toBe(true)

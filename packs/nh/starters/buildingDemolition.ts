@@ -156,7 +156,7 @@ export const BUILDING_DEMOLITION_STARTER: StarterBundle = {
       key: 'bp-permit',
       label: 'Building permit',
       kind: 'permit',
-      body: 'Town of {{town.name}} Building Permit {{application.number}}. Parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Owner {{parcel.ownerName}}. Project {{project.title}}. Issued {{application.issuedOn}}, exercise by {{application.expiresOn}}. State building code: {{codeEdition.label}}. Conditions: {{conditions.list}}. Fees: {{fees.totalFormatted}}.',
+      body: '{{town.name}} Building Permit {{application.number}}. Parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Owner {{parcel.ownerName}}. Project {{project.title}}. Issued {{application.issuedOn}}, exercise by {{application.expiresOn}}. State building code: {{codeEdition.label}}. Conditions: {{conditions.list}}. Fees: {{fees.totalFormatted}}.',
     },
   ],
   applicationType: {

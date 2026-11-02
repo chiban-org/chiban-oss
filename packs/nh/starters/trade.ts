@@ -82,7 +82,7 @@ export function tradeStarter(input: TradeInput): StarterBundle {
         key: `${slug}-permit`,
         label: `${label} permit`,
         kind: 'permit',
-        body: `Town of {{town.name}} ${label} Permit {{application.number}}. Parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Contractor {{party.contractor.name}}. Issued {{application.issuedOn}}. Conditions: {{conditions.list}}. Fees: {{fees.totalFormatted}}.`,
+        body: `{{town.name}} ${label} Permit {{application.number}}. Parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Contractor {{party.contractor.name}}. Issued {{application.issuedOn}}. Conditions: {{conditions.list}}. Fees: {{fees.totalFormatted}}.`,
       },
     ],
     applicationType: {
