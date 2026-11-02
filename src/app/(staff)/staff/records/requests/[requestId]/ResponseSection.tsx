@@ -71,8 +71,8 @@ export function ResponseSection({ request, today }: { request: RtkRequestView; t
           <ActionForm action={firstResponseAction} submitLabel="Record response">
             <Hidden name="requestId" value={request.id} />
             <p className="m-0">
-              To make records available, approve and release them under Releases. The first
-              release records the response.
+              To make records available, approve and release them under Releases. The first release
+              records the response.
             </p>
             <SelectField label="Response" name="kind" options={FORM_RESPONSE_OPTIONS} />
             <TextField
