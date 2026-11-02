@@ -12,6 +12,7 @@ export const CAPABILITIES = {
   'parcel.manage':
     'Record lineage, override parcel IDs, carry records forward, resolve unresolved records, and disposition import exceptions',
   'gis.import': 'Run GIS layer imports',
+  'fee.override': 'Waive or set a fee amount with a recorded reason',
 } as const
 
 export type Capability = keyof typeof CAPABILITIES

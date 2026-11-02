@@ -11,6 +11,7 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'config.edit',
     'parcel.manage',
     'gis.import',
+    'fee.override',
   ],
   staff: [
     'permit.issue',
@@ -20,6 +21,7 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'application.amend_after_review',
     'parcel.manage',
     'gis.import',
+    'fee.override',
   ],
   finance: ['payment.refund_void_correct'],
   records_custodian: ['hold.place_release', 'disposition.approve'],
