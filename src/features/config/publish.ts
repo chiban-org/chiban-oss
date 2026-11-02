@@ -85,6 +85,51 @@ export async function publishConfig(
   })
 }
 
+export interface NewVersionInput {
+  kind: ConfigKind
+  key: string
+  body: unknown
+  rolledBackFrom?: number
+  upstream?: { id: string; version: number }
+}
+
+export async function publishNewVersion(
+  tx: Tx,
+  actor: Actor,
+  input: NewVersionInput,
+  action: 'config.publish' | 'config.rollback',
+  signal: AbortSignal,
+): Promise<Result<{ version: number; versionId: string }, PublishError>> {
+  await lockConfigKey(tx, input.kind, input.key)
+  await tx
+    .delete(configVersions)
+    .where(
+      and(
+        eq(configVersions.kind, input.kind),
+        eq(configVersions.key, input.key),
+        eq(configVersions.status, 'draft'),
+      ),
+    )
+  const version = await nextVersionNumber(tx, input.kind, input.key)
+  const [created] = await tx
+    .insert(configVersions)
+    .values({
+      kind: input.kind,
+      key: input.key,
+      version,
+      status: 'draft',
+      body: input.body,
+      rolledBackFrom: input.rolledBackFrom ?? null,
+      upstreamTemplateId: input.upstream?.id ?? null,
+      upstreamTemplateVersion: input.upstream?.version ?? null,
+      createdBy: actor.userId,
+    })
+    .returning()
+  if (created === undefined) return err({ invalid: [{ path: '', message: 'insert failed' }] })
+  const published = await publishRow(tx, actor, created, action, signal)
+  return published.ok ? ok({ version: published.value.version, versionId: created.id }) : published
+}
+
 export async function rollbackConfig(
   db: Db,
   actor: Actor,
@@ -97,7 +142,6 @@ export async function rollbackConfig(
   return await transactionResult<{ version: number }, PublishError | 'no_such_version'>(
     db,
     async (tx) => {
-      await lockConfigKey(tx, input.kind, input.key)
       const [old] = await tx
         .select()
         .from(configVersions)
@@ -109,32 +153,23 @@ export async function rollbackConfig(
           ),
         )
       if (old === undefined) return err('no_such_version')
-      await tx
-        .delete(configVersions)
-        .where(
-          and(
-            eq(configVersions.kind, input.kind),
-            eq(configVersions.key, input.key),
-            eq(configVersions.status, 'draft'),
-          ),
-        )
-      const version = await nextVersionNumber(tx, input.kind, input.key)
-      const [created] = await tx
-        .insert(configVersions)
-        .values({
+      const result = await publishNewVersion(
+        tx,
+        actor,
+        {
           kind: input.kind,
           key: input.key,
-          version,
-          status: 'draft',
           body: old.body,
           rolledBackFrom: old.version,
-          upstreamTemplateId: old.upstreamTemplateId,
-          upstreamTemplateVersion: old.upstreamTemplateVersion,
-          createdBy: actor.userId,
-        })
-        .returning()
-      if (created === undefined) return err('no_such_version')
-      return await publishRow(tx, actor, created, 'config.rollback', signal)
+          upstream:
+            old.upstreamTemplateId === null || old.upstreamTemplateVersion === null
+              ? undefined
+              : { id: old.upstreamTemplateId, version: old.upstreamTemplateVersion },
+        },
+        'config.rollback',
+        signal,
+      )
+      return result.ok ? ok({ version: result.value.version }) : result
     },
   )
 }
