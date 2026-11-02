@@ -269,11 +269,7 @@ export function BoxEditor({ pages, exemptions, mode, onChange }: BoxEditorProps)
           ))}
         </ul>
       ) : null}
-      <input
-        type="hidden"
-        name="boxes"
-        value={problems.length === 0 ? serializeBoxes(boxes, mode) : '[]'}
-      />
+      <input type="hidden" name="boxes" value={serializeBoxes(boxes, mode)} />
     </div>
   )
 }

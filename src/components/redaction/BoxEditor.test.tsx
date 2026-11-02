@@ -76,8 +76,6 @@ describe('BoxEditor', () => {
     render(<BoxEditor pages={[geometry]} exemptions={EXEMPTIONS} mode="pdf" />)
     fireEvent.click(screen.getByRole('button', { name: 'Add a box to page 1' }))
     expect(screen.getByRole('alert').textContent).toContain('Box 1 on page 1: choose an exemption.')
-    const hidden = document.querySelector('input[name="boxes"]') as HTMLInputElement
-    expect(hidden.value).toBe('[]')
   })
 
   it('a complete box fills the hidden field and clears the alert', () => {
@@ -121,5 +119,16 @@ describe('BoxEditor page navigation', () => {
     expect(screen.queryByText('Box 1 on page 13')).not.toBeNull()
     fireEvent.click(screen.getByRole('button', { name: 'Show pages 25 to 30' }))
     expect(screen.queryByText('Page 30')).not.toBeNull()
+  })
+})
+
+describe('BoxEditor submission', () => {
+  it('an unfinished box is still sent, so the server never answers that no box was drawn', () => {
+    const { container } = render(
+      <BoxEditor pages={[geometry]} exemptions={EXEMPTIONS} mode="pdf" />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Add a box to page 1' }))
+    const hidden = container.querySelector('input[name="boxes"]') as HTMLInputElement
+    expect(JSON.parse(hidden.value)).toHaveLength(1)
   })
 })
