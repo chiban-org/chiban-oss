@@ -11,8 +11,9 @@ import {
   type RecordRef,
 } from '@/features/documents/types'
 import { linkRecordToParcel } from '@/features/parcels/recordLinks'
+import { createPreservationRecord } from '@/features/preservation/preserve'
 import { assignSeries } from '@/features/records/assignments'
-import { defaultSeriesKey } from '@/features/records/series'
+import { defaultSeriesKey, requireSeries } from '@/features/records/series'
 
 export interface AttachInput {
   target: RecordRef
@@ -89,7 +90,12 @@ export async function attachDocument(
   if (parcelId !== null) {
     await linkRecordToParcel(tx, { recordKind: 'document', recordId: documentId, parcelId }, signal)
   }
-  await assignInitialSeries(tx, actor, documentId, input, signal)
+  const seriesKey = await assignInitialSeries(tx, actor, documentId, input, signal)
+  await createPreservationRecord(
+    tx,
+    version?.id ?? '',
+    seriesKey !== null && requireSeries(seriesKey).preservation === 'pdfa',
+  )
   await writeAudit(
     tx,
     {
@@ -120,13 +126,14 @@ async function assignInitialSeries(
   documentId: string,
   input: AttachInput,
   signal: AbortSignal,
-): Promise<void> {
+): Promise<string | null> {
   const ref = { kind: 'document', id: documentId } as const
   if (input.seriesKey !== undefined) {
     await assignSeries(tx, ref, input.seriesKey, 'staff', actor, signal)
-    return
+    return input.seriesKey
   }
-  if (input.target.kind !== 'application') return
+  if (input.target.kind !== 'application') return null
   const key = await defaultSeriesForApplication(tx, input.target.id, signal)
   if (key !== null) await assignSeries(tx, ref, key, 'default', actor, signal)
+  return key
 }

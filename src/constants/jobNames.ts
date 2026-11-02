@@ -5,6 +5,7 @@ export const JOB_NAMES = {
   EXPIRE_ALIAS_OVERRIDES: 'parcels.expireAliasOverrides',
   CLOCKS_DAILY: 'clocks.daily',
   PAYMENTS_RECONCILE: 'payments.reconcile',
+  RECORDS_PRESERVE: 'records.preserve',
 } as const
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES]
