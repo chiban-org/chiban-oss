@@ -33,16 +33,23 @@ type Item = typeof dispositionItems.$inferSelect
 type Batch = typeof dispositionBatches.$inferSelect
 
 async function setOutcome(tx: Tx, item: Item, outcome: DispositionOutcome): Promise<void> {
-  await tx
-    .update(dispositionItems)
-    .set({ outcome })
-    .where(
-      and(
-        eq(dispositionItems.batchId, item.batchId),
-        eq(dispositionItems.recordKind, item.recordKind),
-        eq(dispositionItems.recordId, item.recordId),
-      ),
-    )
+  await tx.update(dispositionItems).set({ outcome }).where(itemKey(item))
+}
+
+function itemKey(item: Item) {
+  return and(
+    eq(dispositionItems.batchId, item.batchId),
+    eq(dispositionItems.recordKind, item.recordKind),
+    eq(dispositionItems.recordId, item.recordId),
+  )
+}
+
+async function settledOutcome(tx: Tx, item: Item): Promise<DispositionOutcome | null> {
+  const [current] = await tx
+    .select({ outcome: dispositionItems.outcome })
+    .from(dispositionItems)
+    .where(itemKey(item))
+  return current?.outcome ?? null
 }
 
 async function titleOf(tx: Tx, item: Item): Promise<string> {
@@ -108,6 +115,8 @@ async function disposeOne(
   signal: AbortSignal,
 ): Promise<DispositionOutcome> {
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext('records.disposition'))`)
+  const settled = await settledOutcome(tx, item)
+  if (settled !== null) return settled
   const ref = { kind: item.recordKind, id: item.recordId }
   const checked = await checkDisposition(tx, ref, batch.asOf as CivilDate, signal)
   if (!checked.ok) {
