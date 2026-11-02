@@ -7,6 +7,7 @@ Open-source land-use software for small US towns: building and trade permits, in
 - Node.js 24 or newer
 - pnpm 9
 - Docker with Compose (Postgres with PostGIS, MinIO, and Mailpit run in containers)
+- Ghostscript 10 on the PATH for PDF/A preservation (`brew install ghostscript` or `apt-get install ghostscript`)
 
 ## Getting started
 
@@ -26,6 +27,7 @@ Start the backing services, apply migrations, seed the fictional Town of Alder P
 ```bash
 docker compose -f docker-compose.dev.yml up -d
 pnpm db:migrate
+pnpm storage:init
 pnpm db:seed:demo
 pnpm dev
 ```

@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 
-const DB_MARKER = /@\/test\/db|makeTestDb|withTestDb|testHarness|@testcontainers\//
+const DB_MARKER = /@\/test\/db|@\/test\/minio|makeTestDb|withTestDb|testHarness|@testcontainers\//
 
 const SKIPPED_DIRS = new Set(['node_modules', '.next', '.git', '.claude', '.worktrees'])
 

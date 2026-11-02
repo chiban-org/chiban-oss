@@ -25,12 +25,15 @@
     "staff:create": "tsx --env-file .env scripts/createStaffUser.ts",
     "rules:migrate": "tsx --env-file .env src/entrypoints/rulesMigrate.ts",
     "worker": "tsx --env-file .env src/entrypoints/worker.ts",
+    "storage:init": "tsx --env-file .env scripts/storageInit.ts",
     "db:seed:demo": "tsx --env-file .env scripts/seedDemo.ts",
     "clover:fake": "tsx scripts/cloverFake.ts",
     "term-gate": "tsx --env-file-if-exists=.env scripts/termGate.ts",
     "prepare": "git config core.hooksPath .githooks"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1161.0",
+    "@aws-sdk/s3-request-presigner": "^3.1161.0",
     "@fontsource-variable/mulish": "^5.3.0",
     "@fontsource-variable/source-serif-4": "^5.3.1",
     "@hookform/resolvers": "^7.0.1",
@@ -70,6 +73,7 @@
     "@eslint-community/eslint-plugin-eslint-comments": "^4.8.1",
     "@mapbox/vector-tile": "^3.0.0",
     "@tailwindcss/postcss": "^4.3.3",
+    "@testcontainers/minio": "12.2.1",
     "@testcontainers/postgresql": "^12.2.1",
     "@testing-library/jest-dom": "^7.0.1",
     "@testing-library/react": "^16.3.3",
