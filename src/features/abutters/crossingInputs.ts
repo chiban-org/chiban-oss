@@ -34,6 +34,20 @@ export function exteriorRings(geometry: GeoJsonGeometry): Pt[][] {
   }
 }
 
+export function allRings(geometry: GeoJsonGeometry): Pt[][] {
+  switch (geometry.type) {
+    case 'Polygon':
+      return geometry.coordinates.map(toPoints)
+    case 'MultiPolygon':
+      return geometry.coordinates.flatMap((polygon) => polygon.map(toPoints))
+    case 'GeometryCollection':
+      return geometry.geometries.flatMap(allRings)
+    case 'LineString':
+    case 'MultiLineString':
+      return []
+  }
+}
+
 function linePaths(geometry: GeoJsonGeometry): Pt[][] {
   switch (geometry.type) {
     case 'LineString':
@@ -99,12 +113,10 @@ export async function loadCrossingInputs(
   const applicantJson = applicant.rows[0]?.gj
   return {
     applicantRings:
-      applicantJson === undefined
-        ? []
-        : exteriorRings(JSON.parse(applicantJson) as GeoJsonGeometry),
+      applicantJson === undefined ? [] : allRings(JSON.parse(applicantJson) as GeoJsonGeometry),
     others: nearby.rows.map((r) => ({
       parcelId: r.id,
-      rings: exteriorRings(JSON.parse(r.gj) as GeoJsonGeometry),
+      rings: allRings(JSON.parse(r.gj) as GeoJsonGeometry),
     })),
     features: features.rows.flatMap((r) => {
       const f = featureOf(r)

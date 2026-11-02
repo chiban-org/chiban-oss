@@ -12,6 +12,16 @@ export interface PathFoot {
   atPathEnd: boolean
 }
 
+function sharesEndpoint(paths: Pt[][], owner: Pt[], end: Pt): boolean {
+  return paths.some(
+    (other) =>
+      other !== owner &&
+      [other[0], other[other.length - 1]].some(
+        (o) => o !== undefined && Math.hypot(o[0] - end[0], o[1] - end[1]) <= SAME_POINT_FT,
+      ),
+  )
+}
+
 export function closestPointOnPaths(paths: Pt[][], c: Pt): PathFoot {
   let best = Number.POSITIVE_INFINITY
   let foot: PathFoot = { point: c, segmentDirection: [1, 0], atPathEnd: false }
@@ -25,7 +35,9 @@ export function closestPointOnPaths(paths: Pt[][], c: Pt): PathFoot {
       const first = path[0] as Pt
       const last = path[path.length - 1] as Pt
       const atEnd = [first, last].some(
-        (end) => Math.hypot(hit.point[0] - end[0], hit.point[1] - end[1]) <= SAME_POINT_FT,
+        (end) =>
+          Math.hypot(hit.point[0] - end[0], hit.point[1] - end[1]) <= SAME_POINT_FT &&
+          !sharesEndpoint(paths, path, end),
       )
       foot = { point: hit.point, segmentDirection: unit(sub(b, a)), atPathEnd: atEnd }
     }

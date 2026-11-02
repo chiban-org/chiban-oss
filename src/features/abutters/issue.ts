@@ -16,7 +16,7 @@ import { assessFees } from '@/features/fees/assess'
 import { loadPack } from '@/features/packs/loadPack'
 import { mayManageAbutters } from '@/features/rosters/manage'
 import { err, ok, type Result } from '@/types/result'
-import { finalRecipients, openIncomplete } from './draft'
+import { finalRecipients, openIncomplete, refreshRecipients } from './draft'
 import { getList, type ListSnapshot } from './queries'
 import type { Candidate, IncompleteReason } from './types'
 
@@ -37,14 +37,19 @@ export async function issueList(
   signal.throwIfAborted()
   if (!(await mayManageAbutters(db, actor.userId, signal))) return err('forbidden')
   return await transactionResult<{ sha256: string }, IssueError>(db, async (tx) => {
-    const list = await getList(tx, input.listId, signal)
-    if (list === null) return err('not_found')
+    const peek = await getList(tx, input.listId, signal)
+    if (peek === null) return err('not_found')
     await tx
       .select({ id: applications.id })
       .from(applications)
-      .where(eq(applications.id, list.applicationId))
+      .where(eq(applications.id, peek.applicationId))
       .for('update')
+    const list = await getList(tx, input.listId, signal)
+    if (list === null) return err('not_found')
     if (list.status !== 'draft') return err('not_draft')
+    const owner = await loadApplicationContext(tx, list.applicationId, signal)
+    if (owner === null) return err('not_found')
+    await refreshRecipients(tx, list, owner.typeBody.classification, now, signal)
     const open = await openIncomplete(tx, list.id)
     if (open.length > 0) return err({ incomplete: open })
     const app = await loadApplicationContext(tx, list.applicationId, signal)

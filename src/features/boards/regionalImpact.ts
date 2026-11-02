@@ -1,6 +1,6 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import { clocks, regionalImpactParties } from '@/db/schema'
+import { clockAdjustments, clocks, regionalImpactParties } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { flagIssuedListStale } from '@/features/abutters/staleList'
 import { loadApplicationContext } from '@/features/applications/context'
@@ -17,7 +17,7 @@ import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import { createClock } from '@/features/clocks/startClocks'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { townToday } from '@/features/town/today'
-import type { CivilDate } from '@/types/civilDate'
+import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 export const REGIONAL_IMPACT_DETERMINED = 'regional_impact_determined'
@@ -73,6 +73,17 @@ async function recomputeDecisionClock(tx: Tx, applicationId: string, signal: Abo
       supersededReason: REGIONAL_IMPACT_DETERMINED,
     })
     .where(eq(clocks.id, running.id))
+  if (fresh !== undefined && running.currentDue !== running.computedDue) {
+    await tx
+      .update(clockAdjustments)
+      .set({ clockId: freshId })
+      .where(eq(clockAdjustments.clockId, running.id))
+    const shift = daysBetween(running.computedDue as CivilDate, fresh.computedDue as CivilDate)
+    await tx
+      .update(clocks)
+      .set({ currentDue: addDays(running.currentDue as CivilDate, shift) })
+      .where(eq(clocks.id, freshId))
+  }
 }
 
 export async function recordBoardRegionalImpact(

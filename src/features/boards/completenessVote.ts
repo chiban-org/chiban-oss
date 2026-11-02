@@ -1,3 +1,4 @@
+import type { Board } from '@packs/nh/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
@@ -38,10 +39,28 @@ export type VoteError =
   | 'forbidden'
   | 'not_found'
   | 'wrong_board'
+  | 'meeting_not_set'
   | 'reason_required'
   | 'not_submitted'
   | 'invalid_state'
   | { gateBlocked: GateResult[] }
+
+async function checkVoteMeeting(
+  tx: Tx,
+  applicationId: string,
+  board: Board,
+  meetingId: string,
+  signal: AbortSignal,
+): Promise<Result<NonNullable<Awaited<ReturnType<typeof getMeeting>>>, VoteError>> {
+  const meeting = await getMeeting(tx, meetingId, signal)
+  if (meeting === null) return err('not_found')
+  if (meeting.board !== board) return err('wrong_board')
+  const [scheduled] = await tx
+    .select({ meetingId: acceptanceSchedules.meetingId })
+    .from(acceptanceSchedules)
+    .where(eq(acceptanceSchedules.applicationId, applicationId))
+  return scheduled?.meetingId === meeting.id ? ok(meeting) : err('meeting_not_set')
+}
 
 function voteErrorFrom(error: TransitionError): VoteError {
   if (typeof error !== 'string') return error
@@ -76,9 +95,9 @@ export async function recordCompletenessVote(
     const board = boardOfApplication(app)
     if (board === null) return err('wrong_board')
     if (app.state !== 'submitted') return err('not_submitted')
-    const meeting = await getMeeting(tx, input.meetingId, signal)
-    if (meeting === null) return err('not_found')
-    if (meeting.board !== board) return err('wrong_board')
+    const checked = await checkVoteMeeting(tx, app.id, board, input.meetingId, signal)
+    if (!checked.ok) return checked
+    const meeting = checked.value
     await markClockMet(tx, app.id, COMPLETENESS_KEY, input.votedOn, signal)
     if (board === 'zba') await markClockMet(tx, app.id, 'nh.zba.hearing', input.votedOn, signal)
     const moved = await transitionApplication(
@@ -88,6 +107,7 @@ export async function recordCompletenessVote(
         ? {
             applicationId: app.id,
             to: 'under_review',
+            boardVote: true,
             expectedRowVersion: app.rowVersion,
             onDate: input.votedOn,
           }

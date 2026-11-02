@@ -1,7 +1,7 @@
-import { and, eq, lt } from 'drizzle-orm'
+import { and, eq, isNull, lt } from 'drizzle-orm'
 import { JOB_NAMES } from '@/constants/jobNames'
 import type { Tx } from '@/db/client'
-import { applications, clocks } from '@/db/schema'
+import { applications, clocks, relianceLinks } from '@/db/schema'
 import { transitionApplication } from '@/features/applications/transition'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { townToday } from '@/features/town/today'
@@ -52,6 +52,17 @@ async function stillLapsed(
   )
 }
 
+async function hasUnresolvedReliance(tx: Tx, applicationId: string): Promise<boolean> {
+  const [open] = await tx
+    .select({ id: relianceLinks.planningApplicationId })
+    .from(relianceLinks)
+    .where(
+      and(eq(relianceLinks.varianceApplicationId, applicationId), isNull(relianceLinks.resolvedOn)),
+    )
+    .limit(1)
+  return open !== undefined
+}
+
 export async function expireLapsedPermits(
   tx: Tx,
   today: CivilDate,
@@ -69,6 +80,7 @@ export async function expireLapsedPermits(
     const rule = ruleByKey(pack, clock.ruleKey, clock.ruleVersion)
     if (rule.kind !== 'clock' || rule.clockType !== 'exercise_by' || !EXPIRABLE.includes(state))
       continue
+    if (await hasUnresolvedReliance(tx, clock.applicationId)) continue
     if (!(await stillLapsed(tx, clock.id, clock.applicationId, today))) continue
     await tx.update(clocks).set({ status: 'lapsed' }).where(eq(clocks.id, clock.id))
     const moved = await move(

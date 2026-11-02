@@ -124,9 +124,15 @@ export async function openIncomplete(tx: Tx, listId: string): Promise<Incomplete
 export function finalRecipients(rows: RecipientRow[]): Recipient[] {
   const kept = rows
     .filter((r) => !r.excluded)
-    .filter((r) => (r.data as Recipient).status !== 'needs_decision' || r.qualifies === true)
     .sort((a, b) => a.position - b.position)
-    .map((r) => ({ ...(r.data as Recipient), status: 'ok' as const }))
+    .flatMap((r) => {
+      const data = r.data as Recipient
+      if (data.status !== 'needs_decision' || r.qualifies === true) {
+        return [{ ...data, status: 'ok' as const }]
+      }
+      const roles = data.roles.filter((role) => role !== 'mhp_tenant')
+      return roles.length === 0 ? [] : [{ ...data, roles, status: 'ok' as const }]
+    })
   return mergeRecipients(kept)
 }
 

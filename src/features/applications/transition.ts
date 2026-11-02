@@ -36,6 +36,7 @@ export interface TransitionInput {
     | 'not_accepted_incomplete'
     | 'notice_costs_unpaid'
   cutover?: boolean
+  boardVote?: boolean
 }
 
 export const CUTOVER_GATE_NOTE = 'Status carried from the prior system; gates not evaluated'
@@ -191,6 +192,9 @@ export async function transitionApplication(
   if (!(await isAllowedActor(tx, actor, app, input.to, input.cutover === true, signal))) {
     return err('forbidden')
   }
+  const needsVote =
+    boardOf(app) !== null && app.state === 'submitted' && input.to === 'under_review'
+  if (needsVote && input.boardVote !== true) return err('invalid_transition')
   return await applyTransition(tx, actor, input, signal, now)
 }
 
