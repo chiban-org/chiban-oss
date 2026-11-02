@@ -50,6 +50,7 @@ export function parseQuickIssue(data: FormData): Result<QuickIssueInput, 'invali
     licenseType !== '' &&
     field(data, 'typeKey') !== ''
   if (!fieldsOk || payment === null) return err('invalid_input')
+  const retry = field(data, 'applicationId')
   const email = field(data, 'contractorEmail')
   const note = field(data, 'licenseNote')
   return ok({
@@ -60,5 +61,6 @@ export function parseQuickIssue(data: FormData): Result<QuickIssueInput, 'invali
     licenseCheck: { result: result as LicenseResult, ...(note === '' ? {} : { note }) },
     payerName: field(data, 'payerName') || name,
     payment,
+    ...(isUuid(retry) ? { applicationId: retry } : {}),
   })
 }

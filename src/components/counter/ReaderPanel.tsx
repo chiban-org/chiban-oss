@@ -16,6 +16,7 @@ interface Props {
   simulated: boolean
   actions: CounterActions
   onIssued: (outcome: CounterOutcome) => void
+  onDeclined?: () => void
 }
 
 type Phase = 'waiting' | 'unknown' | 'declined' | 'issuing' | 'done'
@@ -27,7 +28,14 @@ function payload(csrf: string, fields: Record<string, string>): FormData {
   return data
 }
 
-export function ReaderPanel({ attemptId, applicationId, simulated, actions, onIssued }: Props) {
+export function ReaderPanel({
+  attemptId,
+  applicationId,
+  simulated,
+  actions,
+  onIssued,
+  onDeclined,
+}: Props) {
   const csrf = useCsrfToken()
   const [phase, setPhase] = useState<Phase>('waiting')
   const [pending, setPending] = useState(false)
@@ -56,7 +64,10 @@ export function ReaderPanel({ attemptId, applicationId, simulated, actions, onIs
     else if (status.state === 'captured' || status.state === 'settled') await finish()
     else if (status.state === 'declined' || status.state === 'voided') {
       setPhase('declined')
-      setMessage('Card declined. The permit is not issued.')
+      setMessage(
+        'Card declined. The permit is not issued. Try the card again or choose another way to pay.',
+      )
+      onDeclined?.()
     } else setPhase('waiting')
   }
 

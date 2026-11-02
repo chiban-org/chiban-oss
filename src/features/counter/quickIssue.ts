@@ -1,5 +1,5 @@
 import { NH_LICENSE_LOOKUP } from '@packs/nh/links'
-import { desc, eq } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import type { Db, DbOrTx, Tx } from '@/db/client'
 import {
   applications,
@@ -8,16 +8,19 @@ import {
   ledgerEntries,
   licenseChecks,
   parcels,
+  projects,
   receipts,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
-import { createApplication } from '@/features/applications/createApplication'
-import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
 import { transitionApplication } from '@/features/applications/transition'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { getPublished } from '@/features/config/store'
+import {
+  createCounterApplication,
+  retryableApplication,
+} from '@/features/counter/counterApplication'
 import { recordCounterPayment } from '@/features/counter/counterPayment'
 import { assessFees } from '@/features/fees/assess'
 import type { FieldError } from '@/features/forms/validateSubmission'
@@ -41,6 +44,7 @@ export interface QuickIssueInput {
   contractor: { name: string; email?: string; licenseNumber: string; licenseType: string }
   licenseCheck: { result: LicenseResult; note?: string }
   payerName: string
+  applicationId?: string
   payment:
     | { method: 'cash'; tenderedCents?: number }
     | { method: 'check'; checkNumber: string }
@@ -153,16 +157,6 @@ async function collectPayment(
   return paid.ok ? ok(paid.value.receiptNumber) : err(paid.error)
 }
 
-async function counterTitle(tx: Tx, typeLabel: string, parcelId: string): Promise<string> {
-  const [parcel] = await tx
-    .select({ siteAddress: parcels.siteAddress })
-    .from(parcels)
-    .where(eq(parcels.id, parcelId))
-  const display = await displayIdsFor(tx, [parcelId])
-  const where = parcel?.siteAddress ?? display.get(parcelId) ?? 'parcel on file'
-  return `${typeLabel}, ${where}`
-}
-
 export async function quickIssue(
   db: Db,
   actor: Actor,
@@ -182,57 +176,13 @@ export async function quickIssue(
     return err('not_configured')
   }
   const created = await transactionResult<QuickIssueResult, QuickIssueError>(db, async (tx) => {
-    const project = await createProject(
-      tx,
-      actor,
-      { parcelId: input.parcelId, title: await counterTitle(tx, typeBody.label, input.parcelId) },
-      signal,
-    )
-    if (!project.ok) return err(project.error)
-    const party = await addParty(
-      tx,
-      actor,
-      {
-        projectId: project.value.projectId,
-        role: 'contractor',
-        name: input.contractor.name,
-        email: input.contractor.email,
-      },
-      signal,
-    )
-    if (!party.ok) return err(party.error)
-    const application = await createApplication(
-      tx,
-      actor,
-      { projectId: project.value.projectId, applicationTypeKey: input.applicationTypeKey },
-      signal,
-      now,
-    )
-    if (!application.ok) return err(application.error)
-    const applicationId = application.value.applicationId
-    const submitted = await submitApplication(
-      tx,
-      actor,
-      {
-        applicationId,
-        values: { ...input.values, contractor_license_number: input.contractor.licenseNumber },
-        attestation: { statementSha256: attestationHash(typeBody.attestationText) },
-      },
-      signal,
-      now,
-    )
-    if (!submitted.ok) return err(submitted.error)
-    await tx.insert(licenseChecks).values({
-      applicationId,
-      licenseNumber: input.contractor.licenseNumber,
-      licenseType: input.contractor.licenseType,
-      result: input.licenseCheck.result,
-      note: input.licenseCheck.note ?? null,
-      lookupUrl: NH_LICENSE_LOOKUP.url,
-      checkedBy: actor.userId,
-      checkedAt: now,
-    })
-    const base = { applicationId, number: application.value.number, attemptId: null }
+    const target =
+      input.applicationId === undefined
+        ? await createCounterApplication(tx, actor, { input, typeBody }, signal, now)
+        : await retryableApplication(tx, input, input.applicationId)
+    if (!target.ok) return err(target.error)
+    const { applicationId } = target.value
+    const base = { applicationId, number: target.value.number, attemptId: null }
     if (input.payment.method === 'card') {
       return ok({ ...base, state: 'submitted' as const, receiptNumber: null })
     }

@@ -59,6 +59,7 @@ export function QuickIssueForm(props: Props) {
   const [method, setMethod] = useState<Method>('cash')
   const [pending, setPending] = useState(false)
   const [outcome, setOutcome] = useState<CounterOutcome | null>(null)
+  const [declinedApplicationId, setDeclinedApplicationId] = useState<string | null>(null)
   useMethodHotkeys(props.cardAvailable, setMethod)
 
   const channel = method === 'card' ? 'card_present' : method
@@ -73,12 +74,15 @@ export function QuickIssueForm(props: Props) {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
     data.set('csrf_token', csrf)
+    if (declinedApplicationId !== null) data.set('applicationId', declinedApplicationId)
+    setDeclinedApplicationId(null)
     const result = await attempt(() => props.actions.issue(data), setPending)
     show(result.ok ? result.value : { ok: false, error: result.error })
   }
 
   const issued = outcome?.ok === true && outcome.state === 'issued' ? outcome : null
   const waiting = outcome?.ok === true && outcome.state === 'submitted' ? outcome : null
+  const readerBusy = waiting !== null && declinedApplicationId === null
 
   return (
     <form onSubmit={(event) => void submit(event)} className="space-y-6">
@@ -98,7 +102,7 @@ export function QuickIssueForm(props: Props) {
         readerSimulated={props.readerSimulated}
       />
       <div className="flex items-center gap-3">
-        <Button type="submit" disabled={pending || outcome?.ok === true}>
+        <Button type="submit" disabled={pending || issued !== null || readerBusy}>
           Issue and print
         </Button>
         {outcome?.ok === false ? <p role="alert">{outcome.error}</p> : null}
@@ -106,11 +110,13 @@ export function QuickIssueForm(props: Props) {
       {issued === null ? null : <IssuedNotice outcome={issued} />}
       {waiting?.attemptId == null ? null : (
         <ReaderPanel
+          key={waiting.attemptId}
           attemptId={waiting.attemptId}
           applicationId={waiting.applicationId}
           simulated={props.readerSimulated}
           actions={props.actions}
           onIssued={show}
+          onDeclined={() => setDeclinedApplicationId(waiting.applicationId)}
         />
       )}
     </form>

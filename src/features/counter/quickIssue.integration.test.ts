@@ -256,6 +256,72 @@ describe('quickIssue card', () => {
     expect(await handle.db.select().from(ledgerEntries)).toHaveLength(0)
   })
 
+  async function decline(started: { attemptId: string | null }) {
+    await resolveSimulatedReader(
+      handle.db,
+      world.staff,
+      { attemptId: started.attemptId ?? '', outcome: 'declined' },
+      signal,
+      deps,
+    )
+  }
+
+  it('after a decline staff retry with cash on the same application and number', async () => {
+    const started = await startCard()
+    await decline(started)
+    const retry = await quickIssue(
+      handle.db,
+      world.staff,
+      input({ applicationId: started.applicationId }),
+      signal,
+      deps,
+    )
+    expect(retry.ok && retry.value).toMatchObject({
+      applicationId: started.applicationId,
+      number: started.number,
+      state: 'issued',
+    })
+    expect(await handle.db.select().from(applications)).toHaveLength(baseline.applications + 1)
+    expect(await handle.db.select().from(projects)).toHaveLength(baseline.projects + 1)
+    expect(await handle.db.select().from(ledgerEntries)).toMatchObject([
+      { method: 'cash', amountCents: 4500 },
+    ])
+  })
+
+  it('after a decline staff retry with the card on the same application', async () => {
+    const started = await startCard()
+    await decline(started)
+    const retry = await quickIssue(
+      handle.db,
+      world.staff,
+      input({ payment: { method: 'card' }, applicationId: started.applicationId }),
+      signal,
+      deps,
+    )
+    expect(retry.ok && retry.value).toMatchObject({
+      applicationId: started.applicationId,
+      number: started.number,
+      state: 'submitted',
+    })
+    expect(retry.ok && retry.value.attemptId).not.toBe(started.attemptId)
+    expect(retry.ok && retry.value.attemptId).not.toBeNull()
+    expect(await handle.db.select().from(applications)).toHaveLength(baseline.applications + 1)
+  })
+
+  it('a retry for an application that is not a submitted one on that parcel is refused', async () => {
+    const started = await startCard()
+    await decline(started)
+    await handle.db.update(applications).set({ state: 'withdrawn' })
+    const retry = await quickIssue(
+      handle.db,
+      world.staff,
+      input({ applicationId: started.applicationId }),
+      signal,
+      deps,
+    )
+    expect(retry).toEqual({ ok: false, error: 'not_found' })
+  })
+
   it('unknown reader outcome leaves the permit unissued and no ledger entry', async () => {
     const started = await startCard()
     await resolveSimulatedReader(

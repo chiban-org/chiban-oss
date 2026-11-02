@@ -235,4 +235,65 @@ describe('ReaderPanel', () => {
     )
     expect(screen.queryByRole('button', { name: 'Approve' })).toBeNull()
   })
+  describe('after a declined card', () => {
+    const waiting = {
+      ok: true as const,
+      state: 'submitted' as const,
+      number: 'EL-2027-0001',
+      applicationId: 'app-1',
+      attemptId: 'att-1',
+      links: null,
+    }
+
+    async function declineCard(issue: CounterActions['issue']) {
+      form({
+        ...idle,
+        issue,
+        reader: () => Promise.resolve({ ok: true, state: 'declined', outcomeUnknown: false }),
+      })
+      fillRequired()
+      fireEvent.click(screen.getByLabelText('Card'))
+      fireEvent.click(screen.getByRole('button', { name: 'Issue and print' }))
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Decline' })).toBeTruthy())
+      fireEvent.click(screen.getByRole('button', { name: 'Decline' }))
+      await waitFor(() => expect(screen.getByText(/Card declined/)).toBeTruthy())
+    }
+
+    it('re-enables Issue and print so staff can switch to cash without reloading', async () => {
+      await declineCard(() => Promise.resolve(waiting))
+      fireEvent.click(screen.getByLabelText('Cash'))
+      expect(
+        screen.getByRole<HTMLButtonElement>('button', { name: 'Issue and print' }).disabled,
+      ).toBe(false)
+    })
+
+    it('retries on the same application instead of creating another', async () => {
+      const sent: FormData[] = []
+      await declineCard((data) => {
+        sent.push(data)
+        return Promise.resolve(
+          sent.length === 1
+            ? waiting
+            : { ...waiting, state: 'issued' as const, attemptId: null, links: null },
+        )
+      })
+      fireEvent.click(screen.getByLabelText('Cash'))
+      fireEvent.click(screen.getByRole('button', { name: 'Issue and print' }))
+      await waitFor(() => expect(sent).toHaveLength(2))
+      expect(sent[0]?.get('applicationId')).toBeNull()
+      expect(sent[1]?.get('applicationId')).toBe('app-1')
+      expect(sent[1]?.get('method')).toBe('cash')
+    })
+
+    it('keeps Issue and print disabled while the reader is still waiting', async () => {
+      form({ ...idle, issue: () => Promise.resolve(waiting) })
+      fillRequired()
+      fireEvent.click(screen.getByLabelText('Card'))
+      fireEvent.click(screen.getByRole('button', { name: 'Issue and print' }))
+      await waitFor(() => expect(screen.getByRole('button', { name: 'Approve' })).toBeTruthy())
+      expect(
+        screen.getByRole<HTMLButtonElement>('button', { name: 'Issue and print' }).disabled,
+      ).toBe(true)
+    })
+  })
 })

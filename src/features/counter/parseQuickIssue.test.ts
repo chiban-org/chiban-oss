@@ -81,4 +81,14 @@ describe('parseQuickIssue', () => {
       })
     }
   })
+
+  it('carries a retry application id only when it is a uuid', () => {
+    const id = '00000000-0000-4000-8000-0000000000aa'
+    expect(parseQuickIssue(form({ ...BASE, applicationId: id }))).toMatchObject({
+      ok: true,
+      value: { applicationId: id },
+    })
+    const bad = parseQuickIssue(form({ ...BASE, applicationId: 'not-a-uuid' }))
+    expect(bad.ok && 'applicationId' in bad.value).toBe(false)
+  })
 })
