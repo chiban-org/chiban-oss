@@ -1,6 +1,7 @@
 import type { PgBoss } from 'pg-boss'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
+import { calendarPushJob, calendarSweepJob } from './calendarPush'
 import { clocksDailyJob } from './clocksDaily'
 import { cronForInterval } from './cron'
 import { type JobDefinition, runJob } from './defineJob'
@@ -40,4 +41,6 @@ export async function registerAllJobs(boss: PgBoss, db: Db): Promise<void> {
   await registerJob(boss, db, paymentsReconcileJob)
   await registerJob(boss, db, recordsPreserveJob)
   await registerJob(boss, db, notificationsSendJob)
+  await registerJob(boss, db, calendarPushJob)
+  await registerJob(boss, db, calendarSweepJob)
 }
