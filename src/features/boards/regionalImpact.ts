@@ -2,6 +2,7 @@ import { and, eq, inArray } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { clocks, regionalImpactParties } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { flagIssuedListStale } from '@/features/abutters/staleList'
 import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -125,6 +126,7 @@ export async function recordBoardRegionalImpact(
         )
     }
     await recomputeDecisionClock(tx, input.applicationId, signal)
+    await flagIssuedListStale(tx, input.applicationId, signal)
     await writeAudit(
       tx,
       {

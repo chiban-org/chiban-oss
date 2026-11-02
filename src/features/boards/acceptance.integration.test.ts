@@ -15,6 +15,7 @@ import {
 } from '@/test/boardFixtures'
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { issueFixtureList } from '@/test/listFixtures'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -40,6 +41,7 @@ async function meetingIdOn(date: string, board: 'planning_board' | 'zba' = 'plan
 async function filed(received: string) {
   const applicationId = await submitBoardApplication(handle.db, world, world.pbTypeKey, received)
   await recordNoRegionalImpact(handle.db, world, applicationId)
+  await issueFixtureList(handle.db, world, applicationId, received)
   return applicationId
 }
 
@@ -114,6 +116,25 @@ describe('setAcceptanceMeeting', () => {
       value: { lastFilingDay: '2027-03-31' },
     })
     expect((await clockOf(id, 'nh.pb.filing_lead'))?.source).toBe('town_setting')
+  })
+
+  it('a town rule setting of 14 days is the lead when board settings leave it blank', async () => {
+    await saveAndPublish(handle.db, world.admin, 'town_rule_setting', 'nh.pb.filing_lead', {
+      ruleKey: 'nh.pb.filing_lead',
+      value: 14,
+      adoptingAuthority: 'Planning Board',
+      adoptedOn: '2027-01-12',
+    })
+    const id = await filed('2027-03-31')
+    expect(await setMeeting(id, '2027-04-14')).toEqual({
+      ok: true,
+      value: { lastFilingDay: '2027-03-31' },
+    })
+    expect(await clockOf(id, 'nh.pb.filing_lead')).toMatchObject({
+      source: 'town_setting',
+      lengthValue: 14,
+      currentDue: '2027-03-31',
+    })
   })
 
   it('zba meeting for a planning board application is wrong_board', async () => {
@@ -281,6 +302,7 @@ describe('recordCompletenessVote', () => {
   it('regional impact yes accepted at the meeting starts a 95-day clock', async () => {
     const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')
     await recordNoRegionalImpact(handle.db, world, id, 'yes')
+    await issueFixtureList(handle.db, world, id, '2027-03-24')
     await setMeeting(id, '2027-04-14')
     await accept(id, '2027-04-14')
     expect((await clockOf(id, 'nh.pb.decision'))?.currentDue).toBe('2027-07-18')

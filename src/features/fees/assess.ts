@@ -2,6 +2,7 @@ import { and, eq, isNull, sql } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Tx } from '@/db/client'
 import { applications, feeAssessments, feeOverrides } from '@/db/schema'
+import { issuedRecipientCount } from '@/features/abutters/queries'
 import { type AnyActor, actorLabel, toAuditActor } from '@/features/audit/actorRef'
 import { writeAudit } from '@/features/audit/writeAudit'
 import { getVersion } from '@/features/config/store'
@@ -11,15 +12,13 @@ import type { FieldValue, ProjectFacts } from '@/features/forms/validateSubmissi
 import type { HonestValue } from '@/features/honest/honest'
 import { err, ok, type Result } from '@/types/result'
 
-const NO_ABUTTER_LIST: HonestValue<number> = { state: 'unknown' }
-
 export async function assessFees(
   tx: Tx,
   applicationId: string,
   stage: FeeStage,
   actor: AnyActor,
   signal: AbortSignal,
-  counts: { abutters: HonestValue<number> } = { abutters: NO_ABUTTER_LIST },
+  counts?: { abutters: HonestValue<number> },
 ): Promise<Result<{ assessmentId: string; totalCents: number }, 'incomplete'>> {
   signal.throwIfAborted()
   const [app] = await tx.select().from(applications).where(eq(applications.id, applicationId))
@@ -40,7 +39,7 @@ export async function assessFees(
   const computation = computeFees(schedule.body as FeeScheduleBody, {
     values: app.values as Record<string, FieldValue>,
     facts: app.facts as ProjectFacts,
-    counts,
+    counts: counts ?? { abutters: await issuedRecipientCount(tx, applicationId, signal) },
     stage,
     overrides: overrides.map((o) => ({
       feeCode: o.feeCode,

@@ -32,6 +32,16 @@ export const BOARD_FEES = {
       due: 'at_intake',
       expr: { op: 'flat', cents: 10000 },
     },
+    {
+      code: 'notice_mail',
+      label: 'Mailed notice to abutters',
+      due: 'at_notice',
+      expr: {
+        op: 'per_unit',
+        source: { kind: 'count_of', what: 'abutters_on_issued_list' },
+        centsPerUnit: 1000,
+      },
+    },
   ],
 }
 

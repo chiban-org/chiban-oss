@@ -7,6 +7,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { uuidArray } from '@/db/uuidList'
 import { applicantParcelIds } from '@/features/abutters/applicantParcels'
 import { proximityVerdict } from '@/features/abutters/proximityRule'
+import { flagIssuedListStale } from '@/features/abutters/staleList'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { getLayerStatus } from '@/features/gis/layerStatus'
@@ -91,6 +92,7 @@ export async function recordDesDetermination(
       .insert(desProximityDeterminations)
       .values(values)
       .onConflictDoUpdate({ target: desProximityDeterminations.applicationId, set: values })
+    await flagIssuedListStale(tx, input.applicationId, signal)
     await writeAudit(
       tx,
       {

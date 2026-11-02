@@ -47,7 +47,10 @@ export function mergeRecipients(recipients: Recipient[]): Recipient[] {
   for (const recipient of recipients) {
     if (recipient.mailingAddress === null) {
       order.push(unmerged.length)
-      unmerged.push(recipient)
+      unmerged.push({
+        ...recipient,
+        key: `unmerged:${recipient.parcelIds.join('+')}:${recipient.roles.join('+')}:${recipient.name}`,
+      })
       continue
     }
     const key = dedupeKey(recipient.name, recipient.mailingAddress)

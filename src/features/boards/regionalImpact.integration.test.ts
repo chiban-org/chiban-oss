@@ -13,6 +13,7 @@ import {
   submitBoardApplication,
 } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { issueFixtureList } from '@/test/listFixtures'
 import { staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -34,6 +35,7 @@ afterEach(async () => {
 async function acceptedApplication() {
   const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')
   await recordNoRegionalImpact(handle.db, world, id)
+  await issueFixtureList(handle.db, world, id, '2027-03-24')
   const meetings = await handle.db.query.boardMeetings.findMany()
   const meetingId = meetings.find((m) => m.meetingDate === '2027-04-14')?.id ?? ''
   await setAcceptanceMeeting(handle.db, world.staff, { applicationId: id, meetingId }, signal)

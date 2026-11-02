@@ -18,7 +18,12 @@ import { nextRegularMeeting } from '@/features/boards/calendar'
 import { getMeeting } from '@/features/boards/meetings'
 import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
-import { createClock, markClockMet, startClocksFor } from '@/features/clocks/startClocks'
+import {
+  createClock,
+  markClockMet,
+  resolveClockLength,
+  startClocksFor,
+} from '@/features/clocks/startClocks'
 import { effectiveBindings } from '@/features/config/bindings'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { packHolidayCalendar } from '@/features/packs/holidays'
@@ -119,9 +124,17 @@ export async function setAcceptanceMeeting(
       let lastFilingDay: CivilDate | null = null
       const bound = effectiveBindings(app.typeBody, loadPack()).includes(FILING_LEAD_KEY)
       if (bound) {
-        const { rule, packDays } = filingLeadRule()
+        const { rule } = filingLeadRule()
         const settings = await getBoardSettings(tx, signal)
-        const leadDays = settings.boards.find((b) => b.board === board)?.filingLeadDays ?? packDays
+        const resolved = await resolveClockLength(
+          tx,
+          rule,
+          await factsWithDeterminations(tx, app.id, app.facts),
+          loadPack(),
+          signal,
+        )
+        const leadDays =
+          settings.boards.find((b) => b.board === board)?.filingLeadDays ?? resolved.value
         lastFilingDay = computeRuleDue(
           rule,
           { unit: 'days', value: leadDays },

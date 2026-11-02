@@ -37,6 +37,9 @@ interface Spec {
 }
 
 const SPECS: Spec[] = [
+  { table: t.abutterListCandidates },
+  { table: t.abutterListRecipients },
+  { table: t.abutterLists },
   { table: t.acceptanceSchedules },
   { table: t.aliasOverrides },
   { table: t.applicationParcels },
