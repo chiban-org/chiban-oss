@@ -28,6 +28,8 @@ export type RequestInspectionError =
   | 'portal_requests_disabled'
   | 'reinspection_not_failed'
   | 'reinspection_open'
+  | 'reinspection_exists'
+  | 'reinspection_superseded'
   | 'preferred_date_unavailable'
 
 export const PORTAL_PARTY_ROLES = ['applicant', 'owner', 'agent', 'contractor'] as const

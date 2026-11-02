@@ -7,6 +7,8 @@ export const INSPECTION_ERROR_COPY: Record<string, string> = {
   portal_requests_disabled: 'Online inspection requests are turned off. Call the land use office.',
   reinspection_not_failed: 'Only a failed inspection can be inspected again.',
   reinspection_open: 'A reinspection is already requested for that failure.',
+  reinspection_exists: 'That failure already has a reinspection.',
+  reinspection_superseded: 'A newer failed inspection of this type needs the reinspection instead.',
   preferred_date_unavailable:
     'The town does not inspect on that day. Choose one of the listed days.',
   not_an_inspector: 'Choose an inspector.',

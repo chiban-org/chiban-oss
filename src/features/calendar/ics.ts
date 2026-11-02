@@ -37,6 +37,13 @@ function escapeParam(value: string): string {
   return value.replace(/[";:,]/g, ' ')
 }
 
+function parseMailbox(value: string): { name: string; address: string } {
+  const match = /^\s*(.*?)\s*<([^<>]+)>\s*$/.exec(value)
+  if (match === null) return { name: ORGANIZER_NAME, address: value.trim() }
+  const name = (match[1] ?? '').replace(/^"|"$/g, '').trim()
+  return { name: name === '' ? ORGANIZER_NAME : name, address: (match[2] ?? '').trim() }
+}
+
 export function foldLine(line: string): string[] {
   const out: string[] = []
   let current = ''
@@ -59,6 +66,7 @@ export function foldLine(line: string): string[] {
 
 export function buildIcs(booking: CalendarBooking, method: IcsMethod, now: Date): string {
   const status = method === 'CANCEL' ? 'CANCELLED' : 'CONFIRMED'
+  const organizer = parseMailbox(booking.organizerEmail)
   const attendee = `ATTENDEE;CN=${escapeParam(booking.attendeeName)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=FALSE:mailto:${booking.attendeeEmail}`
   const lines = [
     'BEGIN:VCALENDAR',
@@ -75,7 +83,7 @@ export function buildIcs(booking: CalendarBooking, method: IcsMethod, now: Date)
     `SUMMARY:${escapeText(booking.summary)}`,
     `DESCRIPTION:${escapeText(booking.description)}`,
     `LOCATION:${escapeText(booking.location)}`,
-    `ORGANIZER;CN=${ORGANIZER_NAME}:mailto:${booking.organizerEmail}`,
+    `ORGANIZER;CN=${escapeParam(organizer.name)}:mailto:${organizer.address}`,
     attendee,
     `STATUS:${status}`,
     'END:VEVENT',

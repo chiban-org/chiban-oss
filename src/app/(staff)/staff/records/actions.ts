@@ -6,7 +6,7 @@ import { AUDIENCES, type Audience } from '@/features/documents/types'
 import { createUploadIntent, finalizeUpload } from '@/features/documents/uploads'
 import { retryPreservation } from '@/features/preservation/preserve'
 import { recordBuildingRemoved, setDocumentSeries } from '@/features/records/assignments'
-import { placeHold, releaseHold } from '@/features/records/holds'
+import { placeHoldByReference, releaseHold } from '@/features/records/holds'
 import { getObjectStore } from '@/features/storage/objectStore'
 import {
   type ActionResult,
@@ -23,7 +23,8 @@ const invalid = (): ActionResult => ({ ok: false, error: errorCopy('invalid_inpu
 const HOLD_COPY = {
   forbidden: errorCopy('forbidden'),
   reason_required: 'Enter a reason of at least 10 characters.',
-  not_found: errorCopy('not_found'),
+  not_found: 'No record was found with that reference.',
+  ambiguous: 'More than one record has that name. Use the application number.',
 } as const
 
 const DOC_COPY = {
@@ -36,6 +37,7 @@ const DOC_COPY = {
 const UPLOAD_COPY = {
   forbidden: errorCopy('forbidden'),
   too_large: 'That file is too large.',
+  empty: 'That file is empty. Choose a file with content.',
   type_not_allowed: 'Upload a PDF, JPEG, or PNG file.',
   series_required: 'Choose a record series for a parcel file.',
   unknown_series: 'Choose a record series from the list.',
@@ -113,13 +115,12 @@ export async function retryPreservationAction(formData: FormData): Promise<Actio
 export async function placeHoldAction(formData: FormData): Promise<ActionResult> {
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
     const kind = text(formData, 'targetKind')
-    const id = text(formData, 'targetId')
-    if ((kind !== 'project' && kind !== 'application' && kind !== 'document') || !isUuid(id))
-      return invalid()
-    const result = await placeHold(
+    if (kind !== 'project' && kind !== 'application' && kind !== 'document') return invalid()
+    const reference = text(formData, 'targetRef') || text(formData, 'targetId')
+    const result = await placeHoldByReference(
       db,
       actor,
-      { target: { kind, id }, reason: text(formData, 'reason') },
+      { kind, reference, reason: text(formData, 'reason') },
       signal,
     )
     if (!result.ok) return { ok: false, error: HOLD_COPY[result.error] }

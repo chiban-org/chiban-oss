@@ -7,6 +7,7 @@ import type { Actor } from '@/features/auth/actor'
 import { inspectableTypes } from '@/features/inspections/eligibility'
 import { type InspectionHistoryRow, listInspectionHistory } from '@/features/inspections/history'
 import { getInspectionSettings } from '@/features/inspections/inspectionSettings'
+import { reinspectableFailureIds } from '@/features/inspections/lookup'
 import { describePhoneHours } from '@/features/inspections/phoneHours'
 import { schedulingDates } from '@/features/inspections/slots'
 import { PORTAL_PARTY_ROLES } from '@/features/inspections/types'
@@ -24,6 +25,7 @@ export interface PortalInspectionsView {
   dates: string[]
   phoneHoursText: string
   history: InspectionHistoryRow[]
+  reinspectableIds: string[]
 }
 
 export async function loadPortalInspections(
@@ -53,5 +55,6 @@ export async function loadPortalInspections(
     dates: schedulingDates(settings, packHolidayCalendar(), today),
     phoneHoursText: describePhoneHours(settings),
     history: await listInspectionHistory(db, actor, applicationId, signal),
+    reinspectableIds: [...(await reinspectableFailureIds(db, applicationId))],
   })
 }

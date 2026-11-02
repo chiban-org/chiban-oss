@@ -96,6 +96,17 @@ describe('upload intents', () => {
     expect(result).toEqual({ ok: false, error: 'too_large' })
   })
 
+  it('a zero-byte upload is empty, not too_large', async () => {
+    const result = await createUploadIntent(
+      handle.db,
+      store,
+      world.applicant,
+      intentInput(applicationId, 0),
+      signal,
+    )
+    expect(result).toEqual({ ok: false, error: 'empty' })
+  })
+
   it('a type outside the allowed list is type_not_allowed', async () => {
     const result = await createUploadIntent(
       handle.db,

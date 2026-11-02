@@ -38,6 +38,7 @@ const MAX_PHOTO_MB = 25
 const INTENT_COPY = {
   forbidden: PHOTO_FORBIDDEN,
   too_large: `That photo is larger than ${MAX_PHOTO_MB} MB.`,
+  empty: 'That file is empty. Choose a file with content.',
   type_not_allowed: 'Use a JPEG or PNG photo.',
   series_required: PHOTO_FORBIDDEN,
   unknown_series: PHOTO_FORBIDDEN,

@@ -1,8 +1,10 @@
 import { NH_LICENSE_LOOKUP } from '@packs/nh/links'
+import { eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { ParcelSearchHotkey } from '@/components/counter/ParcelSearchHotkey'
 import { QuickIssueForm } from '@/components/counter/QuickIssueForm'
 import { Button } from '@/components/ui/button'
+import { parcels } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
 import { loadCounterFormData } from '@/features/counter/counterFormData'
 import { listDirectIssueTypes } from '@/features/counter/directIssueTypes'
@@ -71,6 +73,14 @@ export default async function CounterPage({ searchParams }: Props) {
     ...(parcelId === undefined ? [] : [parcelId]),
   ])
 
+  const [selectedParcel] =
+    parcelId === undefined
+      ? []
+      : await ctx.db
+          .select({ siteAddress: parcels.siteAddress })
+          .from(parcels)
+          .where(eq(parcels.id, parcelId))
+
   const formData =
     parcelId !== undefined && selectedType !== undefined
       ? await loadCounterFormData(ctx.db, selectedType.key, ctx.signal)
@@ -116,6 +126,7 @@ export default async function CounterPage({ searchParams }: Props) {
         {parcelId === undefined ? null : (
           <p>
             Selected parcel: <strong>{display.get(parcelId) ?? 'No map-lot ID'}</strong>
+            {`, ${selectedParcel?.siteAddress ?? 'No site address'}`}
           </p>
         )}
         <SearchNotice q={q} hitCount={hits.length} />
@@ -128,7 +139,7 @@ export default async function CounterPage({ searchParams }: Props) {
               >
                 {hit.displayId ?? 'No map-lot ID'}
               </Link>{' '}
-              {hit.siteAddress ?? ''}
+              {hit.siteAddress ?? 'No site address'}
               {hit.ownerName === null ? '' : `, ${hit.ownerName}`}
             </li>
           ))}

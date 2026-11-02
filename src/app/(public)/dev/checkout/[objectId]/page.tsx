@@ -5,6 +5,7 @@ import { env } from '@/config/env'
 import { db } from '@/db/client'
 import { loadDevCheckout } from '@/features/payments/simulatedCheckout'
 import { formatCents } from '@/lib/money'
+import { portalActorOrNull } from '@/server/requirePortal'
 import { approveCheckoutAction, declineCheckoutAction } from './actions'
 
 export const dynamic = 'force-dynamic'
@@ -15,11 +16,13 @@ export default async function DevCheckoutPage({
   params: Promise<{ objectId: string }>
 }) {
   const { objectId } = await params
+  const signal = AbortSignal.timeout(10_000)
+  const actor = await portalActorOrNull(signal)
   const view = await loadDevCheckout(
     db,
     objectId,
-    { enabled: env.ENABLE_SIMULATED_PAYMENTS },
-    AbortSignal.timeout(10_000),
+    { enabled: env.ENABLE_SIMULATED_PAYMENTS, actor },
+    signal,
   )
   if (view === null) notFound()
   return (

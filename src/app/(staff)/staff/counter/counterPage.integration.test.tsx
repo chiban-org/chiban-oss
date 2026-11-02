@@ -1,5 +1,7 @@
+import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { parcels } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import type { PermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -66,5 +68,28 @@ describe('counter parcel search', () => {
       await CounterPage({ searchParams: Promise.resolve({ q: 'a' }) }),
     )
     expect(html).toContain('Enter at least two characters')
+  })
+
+  it('shows the site address next to the selected parcel ID', async () => {
+    await handle.db
+      .update(parcels)
+      .set({ siteAddress: '12 Elm Road' })
+      .where(eq(parcels.id, world.parcelId))
+    const html = renderToStaticMarkup(
+      await CounterPage({ searchParams: Promise.resolve({ parcel: world.parcelId }) }),
+    )
+    expect(html).toContain('12 Elm Road')
+  })
+
+  it('says a hit has no site address instead of leaving a bare ID', async () => {
+    const [other] = await handle.db
+      .insert(parcels)
+      .values({ siteAddress: null, ownerName: 'Zed Nameless' })
+      .returning({ id: parcels.id })
+    const html = renderToStaticMarkup(
+      await CounterPage({ searchParams: Promise.resolve({ q: 'Nameless' }) }),
+    )
+    expect(other).toBeDefined()
+    expect(html).toContain('No site address')
   })
 })

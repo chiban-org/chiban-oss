@@ -39,6 +39,16 @@ describe('buildIcs', () => {
     )
   })
 
+  it('writes a clean mailto when the organizer is a display name with angle brackets', () => {
+    const ics = buildIcs(
+      { ...booking, organizerEmail: 'Town of Alder Pond <noreply@alderpond.example>' },
+      'REQUEST',
+      NOW,
+    )
+    expect(ics).toContain('ORGANIZER;CN=Town of Alder Pond:mailto:noreply@alderpond.example\r\n')
+    expect(ics).not.toContain('<')
+  })
+
   it('cancel ics has METHOD:CANCEL and STATUS:CANCELLED with the same UID', () => {
     const ics = buildIcs({ ...booking, sequence: 1 }, 'CANCEL', NOW)
     expect(ics).toContain('METHOD:CANCEL')

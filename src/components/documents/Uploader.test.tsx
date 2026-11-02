@@ -104,4 +104,28 @@ describe('Uploader', () => {
     expect(input.getAttribute('accept')).toBe('image/jpeg,image/png')
     expect(input.getAttribute('capture')).toBe('environment')
   })
+
+  it('says an empty file is empty, not too large', () => {
+    const createIntent = vi.fn()
+    setup({ createIntent, finalize: vi.fn() })
+    choose(file('blank.pdf', 0))
+    expect(screen.getByText('That file is empty. Choose a file with content.')).toBeTruthy()
+    expect(screen.queryByText(/larger than/)).toBeNull()
+    expect(createIntent).not.toHaveBeenCalled()
+  })
+
+  it('clears an earlier error and the chosen file after a successful upload', async () => {
+    const createIntent = vi.fn(() =>
+      Promise.resolve({ ok: true as const, intentId: 'i1', url: 'u', headers: {} }),
+    )
+    const finalize = vi.fn(() => Promise.resolve({ ok: true as const }))
+    const { onUploaded } = setup({ createIntent, finalize })
+    choose(file('huge.pdf', 11 * MB))
+    expect(screen.getByText('That file is larger than 10 MB.')).toBeTruthy()
+    const before = screen.getByLabelText('File')
+    choose(file('plans.pdf', 100))
+    await waitFor(() => expect(onUploaded).toHaveBeenCalled())
+    expect(screen.queryByText(/larger than/)).toBeNull()
+    expect(screen.getByLabelText('File')).not.toBe(before)
+  })
 })

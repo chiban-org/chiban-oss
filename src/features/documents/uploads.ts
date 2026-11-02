@@ -114,14 +114,14 @@ export async function createUploadIntent(
 ): Promise<
   Result<
     { intentId: string; url: string; headers: Record<string, string> },
-    'forbidden' | 'too_large' | 'type_not_allowed' | 'series_required' | 'unknown_series'
+    'forbidden' | 'too_large' | 'empty' | 'type_not_allowed' | 'series_required' | 'unknown_series'
   >
 > {
   signal.throwIfAborted()
   if (!(await mayUploadTo(db, actor, input.target, signal, now))) return err('forbidden')
   if (!isAllowedType(input.contentType)) return err('type_not_allowed')
   if (input.sizeBytes > env.MAX_UPLOAD_BYTES) return err('too_large')
-  if (input.sizeBytes < 1) return err('too_large')
+  if (input.sizeBytes < 1) return err('empty')
   if (input.target.kind === 'parcel') {
     if (input.seriesKey === undefined) return err('series_required')
     if (findSeries(input.seriesKey) === null) return err('unknown_series')

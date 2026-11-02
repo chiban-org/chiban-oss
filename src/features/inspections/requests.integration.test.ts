@@ -5,6 +5,7 @@ import { loadActor } from '@/features/auth/actor'
 import { publishConfig } from '@/features/config/publish'
 import { saveDraft } from '@/features/config/store'
 import { inspectableTypes } from '@/features/inspections/eligibility'
+import { describeIntakeBlock, reinspectableFailureIds } from '@/features/inspections/lookup'
 import { requestInspection } from '@/features/inspections/requestInspection'
 import { listVisibleInspections } from '@/features/inspections/visibility'
 import { makeApplication } from '@/test/applicationFixtures'
@@ -182,6 +183,107 @@ describe('inspection requests', () => {
     })
     expect(first.ok).toBe(true)
     expect(second).toEqual({ ok: false, error: 'reinspection_open' })
+  })
+
+  it('a failure that already has a passed reinspection is reinspection_exists', async () => {
+    const permit = await newIssuedPermit(handle.db, w, 'EL')
+    const failed = await insertInspection(handle.db, permit.applicationId, 'rough', {
+      status: 'failed',
+    })
+    await insertInspection(handle.db, permit.applicationId, 'rough', {
+      status: 'passed',
+      reinspectionOf: failed,
+    })
+    const r = await request(w.world.staff, permit.applicationId, 'rough', {
+      reinspectionOf: failed,
+    })
+    expect(r).toEqual({ ok: false, error: 'reinspection_exists' })
+  })
+
+  it('a reinspection of an older failure is reinspection_superseded when a newer failure exists', async () => {
+    const permit = await newIssuedPermit(handle.db, w, 'EL')
+    const older = await insertInspection(handle.db, permit.applicationId, 'rough', {
+      status: 'failed',
+      requestedAt: new Date('2027-06-01T12:00:00Z'),
+    })
+    const newer = await insertInspection(handle.db, permit.applicationId, 'rough', {
+      status: 'failed',
+      requestedAt: new Date('2027-06-20T12:00:00Z'),
+    })
+    const stale = await request(w.world.staff, permit.applicationId, 'rough', {
+      reinspectionOf: older,
+    })
+    const latest = await request(
+      w.world.applicant,
+      permit.applicationId,
+      'rough',
+      {
+        reinspectionOf: newer,
+      },
+      'portal',
+    )
+    expect(stale).toEqual({ ok: false, error: 'reinspection_superseded' })
+    expect(latest.ok).toBe(true)
+  })
+
+  it('a cancelled reinspection does not block a new one', async () => {
+    const permit = await newIssuedPermit(handle.db, w, 'EL')
+    const failed = await insertInspection(handle.db, permit.applicationId, 'rough', {
+      status: 'failed',
+    })
+    await insertInspection(handle.db, permit.applicationId, 'rough', {
+      status: 'cancelled',
+      reinspectionOf: failed,
+    })
+    const r = await request(w.world.staff, permit.applicationId, 'rough', {
+      reinspectionOf: failed,
+    })
+    expect(r.ok).toBe(true)
+  })
+
+  it('the reinspectable failures are only the latest failure per type without a follow-up', async () => {
+    const permit = await newIssuedPermit(handle.db, w, 'EL')
+    const first = await insertInspection(handle.db, permit.applicationId, 'rough', {
+      status: 'failed',
+      requestedAt: new Date('2027-06-01T12:00:00Z'),
+    })
+    await insertInspection(handle.db, permit.applicationId, 'rough', {
+      status: 'passed',
+      reinspectionOf: first,
+      requestedAt: new Date('2027-06-05T12:00:00Z'),
+    })
+    const second = await insertInspection(handle.db, permit.applicationId, 'rough', {
+      status: 'failed',
+      requestedAt: new Date('2027-06-20T12:00:00Z'),
+    })
+    const ids = await reinspectableFailureIds(handle.db, permit.applicationId)
+    expect([...ids]).toEqual([second])
+  })
+
+  it('the intake copy for a suspended permit is the appeal copy, not not-issued', async () => {
+    const permit = await newIssuedPermit(handle.db, w, 'BP')
+    await recordAppeal(
+      handle.db,
+      w.world.staff,
+      {
+        applicationId: permit.applicationId,
+        filedOn: civil('2027-06-30'),
+        appellantName: 'Neighbor',
+      },
+      signal,
+    )
+    const copy = await describeIntakeBlock(
+      handle.db,
+      { id: permit.applicationId, number: 'BP-1', state: 'issued' },
+      signal,
+    )
+    expect(copy).toBe('Inspections are paused while this permit is under appeal.')
+    const other = await describeIntakeBlock(
+      handle.db,
+      { id: w.trade.applicationId, number: 'BP-2', state: 'submitted' },
+      signal,
+    )
+    expect(other).toBe('BP-2 is not issued, so it cannot be inspected yet.')
   })
 
   it('preferred date on a Tuesday is preferred_date_unavailable', async () => {

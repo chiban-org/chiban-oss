@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { documents, legalHolds } from '@/db/schema'
+import { documents, legalHolds, projects } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { holdSubjects } from '@/features/records/holds'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
@@ -129,6 +130,60 @@ describe('records actions', () => {
         form({ holdId: row?.id ?? '', reason: 'Case closed in court' }),
       ),
     ).toMatchObject({ ok: true })
+  })
+
+  it('placeHoldAction resolves an application number and a project title; an unknown reference is refused', async () => {
+    state.actor = await staffActor(handle.db, 'records_custodian')
+    const made = await makeApplication(handle.db, world)
+    const reason = 'Litigation pending on site'
+    expect(
+      await actions.placeHoldAction(
+        form({ targetKind: 'application', targetRef: made.number, reason }),
+      ),
+    ).toMatchObject({ ok: true })
+    const held = await handle.db
+      .select()
+      .from(legalHolds)
+      .where(eq(legalHolds.targetId, made.applicationId))
+    expect(held).toHaveLength(1)
+    expect(
+      await actions.placeHoldAction(
+        form({ targetKind: 'application', targetRef: 'NOPE-0000', reason }),
+      ),
+    ).toMatchObject({ ok: false, error: expect.stringContaining('No record was found') })
+    const [project] = await handle.db
+      .select({ title: projects.title })
+      .from(projects)
+      .where(eq(projects.id, projectId))
+    expect(
+      await actions.placeHoldAction(
+        form({ targetKind: 'project', targetRef: project?.title ?? '', reason }),
+      ),
+    ).toMatchObject({ ok: true })
+  })
+
+  it('placeHoldAction by reference is still forbidden for staff without the hold capability', async () => {
+    state.actor = world.staff
+    const made = await makeApplication(handle.db, world)
+    expect(
+      await actions.placeHoldAction(
+        form({
+          targetKind: 'application',
+          targetRef: made.number,
+          reason: 'Litigation pending on site',
+        }),
+      ),
+    ).toMatchObject({ ok: false, error: expect.stringContaining('permission') })
+  })
+
+  it('holdSubjects names an application hold by its number and a project hold by its title', async () => {
+    const rows = await handle.db.select().from(legalHolds)
+    const subjects = await holdSubjects(handle.db, rows)
+    const appHold = rows.find((r) => r.targetKind === 'application')
+    expect(appHold).toBeDefined()
+    expect(subjects.get(appHold?.id ?? '')).toMatch(/^[A-Z]+-/)
+    const projectHold = rows.find((r) => r.targetKind === 'project')
+    expect(subjects.get(projectHold?.id ?? '')).toBeTruthy()
   })
 
   it('a series can be chosen from the pack and an unknown one is refused', async () => {

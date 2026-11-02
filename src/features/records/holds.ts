@@ -1,4 +1,4 @@
-import { and, desc, eq, isNull, or } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, or, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
   applicationSnapshots,
@@ -6,6 +6,7 @@ import {
   documents,
   type LegalHoldRow,
   legalHolds,
+  projects,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -13,6 +14,7 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { applicationIdOfRecord } from '@/features/records/ancestry'
 import { err, ok, type Result } from '@/types/result'
+import { isUuid } from '@/utils/uuid'
 
 const MIN_REASON = 10
 
@@ -55,6 +57,91 @@ export async function placeHold(
     )
     return ok({ holdId: row?.id ?? '' })
   })
+}
+
+async function resolveHoldReference(
+  db: DbOrTx,
+  kind: HoldTarget['kind'],
+  reference: string,
+): Promise<Result<string, 'not_found' | 'ambiguous'>> {
+  const ref = reference.trim()
+  if (ref === '') return err('not_found')
+  if (isUuid(ref)) return ok(ref)
+  const matches: string[] =
+    kind === 'application'
+      ? (
+          await db
+            .select({ id: applications.id })
+            .from(applications)
+            .where(sql`lower(${applications.number}) = lower(${ref})`)
+        ).map((r) => r.id)
+      : kind === 'project'
+        ? (
+            await db
+              .select({ id: projects.id })
+              .from(projects)
+              .where(sql`lower(${projects.title}) = lower(${ref})`)
+          ).map((r) => r.id)
+        : (
+            await db
+              .select({ id: documents.id })
+              .from(documents)
+              .where(sql`lower(${documents.title}) = lower(${ref})`)
+          ).map((r) => r.id)
+  if (matches.length > 1) return err('ambiguous')
+  const [only] = matches
+  return only === undefined ? err('not_found') : ok(only)
+}
+
+export async function placeHoldByReference(
+  db: DbOrTx,
+  actor: Actor,
+  input: { kind: HoldTarget['kind']; reference: string; reason: string },
+  signal: AbortSignal,
+): Promise<
+  Result<{ holdId: string }, 'forbidden' | 'reason_required' | 'not_found' | 'ambiguous'>
+> {
+  signal.throwIfAborted()
+  const allowed = await requireCapability(db, actor.userId, 'hold.place_release', signal)
+  if (!allowed.ok) return err('forbidden')
+  const resolved = await resolveHoldReference(db, input.kind, input.reference)
+  if (!resolved.ok) return resolved
+  return await placeHold(
+    db,
+    actor,
+    { target: { kind: input.kind, id: resolved.value }, reason: input.reason },
+    signal,
+  )
+}
+
+export async function holdSubjects(
+  db: DbOrTx,
+  holds: LegalHoldRow[],
+): Promise<Map<string, string>> {
+  const idsOf = (kind: HoldTarget['kind']) =>
+    holds.filter((h) => h.targetKind === kind).map((h) => h.targetId)
+  const [apps, projs, docs] = await Promise.all([
+    idsOf('application').length === 0
+      ? []
+      : db
+          .select({ id: applications.id, label: applications.number })
+          .from(applications)
+          .where(inArray(applications.id, idsOf('application'))),
+    idsOf('project').length === 0
+      ? []
+      : db
+          .select({ id: projects.id, label: projects.title })
+          .from(projects)
+          .where(inArray(projects.id, idsOf('project'))),
+    idsOf('document').length === 0
+      ? []
+      : db
+          .select({ id: documents.id, label: documents.title })
+          .from(documents)
+          .where(inArray(documents.id, idsOf('document'))),
+  ])
+  const labels = new Map([...apps, ...projs, ...docs].map((r) => [r.id, r.label]))
+  return new Map(holds.map((h) => [h.id, labels.get(h.targetId) ?? h.targetId]))
 }
 
 export async function releaseHold(

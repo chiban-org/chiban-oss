@@ -9,6 +9,11 @@ interface Deps {
   now?: () => Date
 }
 
+function subjectFor(booking: CalendarBooking, method: IcsMethod): string {
+  if (method === 'CANCEL') return `Cancelled: ${booking.summary}`
+  return booking.sequence > 0 ? `Updated: ${booking.summary}` : booking.summary
+}
+
 export function createIcsEmailPublisher(deps: Deps): CalendarPublisher {
   const now = deps.now ?? (() => new Date())
   async function send(
@@ -16,7 +21,7 @@ export function createIcsEmailPublisher(deps: Deps): CalendarPublisher {
     method: IcsMethod,
     signal: AbortSignal,
   ): Promise<Result<void, CalendarError>> {
-    const subject = method === 'CANCEL' ? `Cancelled: ${booking.summary}` : booking.summary
+    const subject = subjectFor(booking, method)
     const text = `${subject}\n\n${booking.description}\n`
     const sent = await deps.mail.send(
       {

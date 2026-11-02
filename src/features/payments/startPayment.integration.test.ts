@@ -176,11 +176,36 @@ describe('online payment', () => {
   it('dev checkout page is unavailable when the flag is off', async () => {
     const { attempt } = await startOnline()
     const objectId = attempt?.processorObjectId ?? ''
-    expect(await loadDevCheckout(handle.db, objectId, { enabled: false }, signal)).toBeNull()
-    expect(await loadDevCheckout(handle.db, objectId, { enabled: true }, signal)).toMatchObject({
+    const payerActor = trade.world.applicant
+    expect(
+      await loadDevCheckout(handle.db, objectId, { enabled: false, actor: payerActor }, signal),
+    ).toBeNull()
+    expect(
+      await loadDevCheckout(handle.db, objectId, { enabled: true, actor: payerActor }, signal),
+    ).toMatchObject({
       amountCents: 4635,
       status: 'pending',
     })
+  })
+
+  it('dev checkout page is 404 for a signed-out visitor and for a stranger, open to the payer', async () => {
+    const { attempt } = await startOnline()
+    const objectId = attempt?.processorObjectId ?? ''
+    const stranger = await staffActor(handle.db, 'applicant')
+    expect(
+      await loadDevCheckout(handle.db, objectId, { enabled: true, actor: null }, signal),
+    ).toBeNull()
+    expect(
+      await loadDevCheckout(handle.db, objectId, { enabled: true, actor: stranger }, signal),
+    ).toBeNull()
+    expect(
+      await loadDevCheckout(
+        handle.db,
+        objectId,
+        { enabled: true, actor: trade.world.applicant },
+        signal,
+      ),
+    ).not.toBeNull()
   })
 
   it('resolving a checkout while the flag is off changes nothing', async () => {

@@ -1,9 +1,11 @@
 import { randomUUID } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { env } from '@/config/env'
 import type { Db } from '@/db/client'
 import { paymentAttempts, simulatedProcessorObjects } from '@/db/schema'
+import type { Actor } from '@/features/auth/actor'
 import { handleWebhook } from '@/features/payments/handleWebhook'
+import { attemptVisibleTo } from '@/features/payments/paymentReturn'
 import { getProcessorAccount } from '@/features/payments/processorAccounts'
 import {
   SIMULATED_ACCOUNT_REF,
@@ -27,6 +29,7 @@ export interface DevCheckoutDeps {
 async function viewOf(
   db: Db,
   objectId: string,
+  visibleTo?: Actor | null,
 ): Promise<(DevCheckoutView & { accountId: string }) | null> {
   const [row] = await db
     .select({
@@ -37,19 +40,24 @@ async function viewOf(
     })
     .from(simulatedProcessorObjects)
     .innerJoin(paymentAttempts, eq(paymentAttempts.processorObjectId, simulatedProcessorObjects.id))
-    .where(eq(simulatedProcessorObjects.id, objectId))
+    .where(
+      and(
+        eq(simulatedProcessorObjects.id, objectId),
+        visibleTo === undefined ? undefined : attemptVisibleTo(visibleTo),
+      ),
+    )
   return row === undefined ? null : { objectId, ...row }
 }
 
 export async function loadDevCheckout(
   db: Db,
   objectId: string,
-  options: { enabled: boolean },
+  options: { enabled: boolean; actor: Actor | null },
   signal: AbortSignal,
 ): Promise<DevCheckoutView | null> {
   signal.throwIfAborted()
   if (!options.enabled) return null
-  const view = await viewOf(db, objectId)
+  const view = await viewOf(db, objectId, options.actor)
   return view === null
     ? null
     : { objectId, amountCents: view.amountCents, status: view.status, attemptId: view.attemptId }

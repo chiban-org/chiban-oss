@@ -208,7 +208,7 @@ describe('portal receipt route', () => {
     const view = await loadDevCheckout(
       handle.db,
       objectId,
-      { enabled: true },
+      { enabled: true, actor: world.applicant },
       new AbortController().signal,
     )
     expect(view).not.toBeNull()

@@ -10,6 +10,7 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { inspectableTypes } from '@/features/inspections/eligibility'
 import { getInspectionSettings } from '@/features/inspections/inspectionSettings'
+import { reinspectableFailureIds } from '@/features/inspections/lookup'
 import { schedulingDates } from '@/features/inspections/slots'
 import {
   PORTAL_PARTY_ROLES,
@@ -42,9 +43,12 @@ async function checkReinspection(
     .select({ status: inspections.status })
     .from(inspections)
     .where(eq(inspections.reinspectionOf, previous.id))
-  return followUps.some((r) => r.status === 'requested' || r.status === 'scheduled')
-    ? 'reinspection_open'
-    : null
+  if (followUps.some((r) => r.status === 'requested' || r.status === 'scheduled')) {
+    return 'reinspection_open'
+  }
+  if (followUps.some((r) => r.status !== 'cancelled')) return 'reinspection_exists'
+  const latest = await reinspectableFailureIds(tx, input.applicationId)
+  return latest.has(previous.id) ? null : 'reinspection_superseded'
 }
 
 export async function requestInspection(

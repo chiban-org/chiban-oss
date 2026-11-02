@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label'
 import { loadScheduleBoard } from '@/features/inspections/boardData'
 import { inspectableTypes } from '@/features/inspections/eligibility'
 import {
+  describeIntakeBlock,
   findIssuedApplicationByNumber,
   findReinspectionTarget,
 } from '@/features/inspections/lookup'
@@ -34,6 +35,7 @@ export default async function ScheduleBoardPage({
     number.trim() === ''
       ? null
       : await findIssuedApplicationByNumber(ctx.db, ctx.actor, number, ctx.signal)
+  const blockedCopy = target === null ? null : await describeIntakeBlock(ctx.db, target, ctx.signal)
   const types = target === null ? [] : await inspectableTypes(ctx.db, target.id, ctx.signal)
   const reinspection =
     target === null
@@ -69,11 +71,10 @@ export default async function ScheduleBoardPage({
           </Button>
         </form>
         {number.trim() !== '' && target === null ? <p>No permit has that number.</p> : null}
-        {target !== null && target.state !== 'issued' ? (
-          <p>{`${target.number} is not issued, so it cannot be inspected yet.`}</p>
-        ) : null}
-        {target !== null && target.state === 'issued' ? (
+        {blockedCopy === null ? null : <p>{blockedCopy}</p>}
+        {target !== null && blockedCopy === null ? (
           <RequestForm
+            submitLabel="Record request"
             applicationId={target.id}
             types={(reinspection === null ? types : [reinspection]).map((t) => ({
               checklistVersionId: t.checklistVersionId,

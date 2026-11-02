@@ -91,6 +91,7 @@ export type FinalizeResponse = { ok: true } | { ok: false; error: string }
 const INTENT_COPY = {
   forbidden: 'You cannot add files here.',
   too_large: `That file is larger than ${Math.floor(env.MAX_UPLOAD_BYTES / MB)} MB.`,
+  empty: 'That file is empty. Choose a file with content.',
   type_not_allowed: 'Upload a PDF, JPEG, or PNG file.',
   series_required: 'You cannot add files here.',
   unknown_series: 'You cannot add files here.',

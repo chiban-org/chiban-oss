@@ -74,6 +74,7 @@ export function Uploader({
   const [pending, setPending] = useState(false)
   const [progress, setProgress] = useState<number | null>(null)
   const [message, setMessage] = useState<string | null>(null)
+  const [pickerKey, setPickerKey] = useState(0)
 
   const intentForm = (chosen: File): FormData => {
     const data = new FormData()
@@ -101,12 +102,15 @@ export function Uploader({
     if (!finalized.ok) return setMessage(finalized.error)
     setMessage('Uploaded.')
     setFile(null)
+    setPickerKey((key) => key + 1)
     setTitle('')
     onUploaded()
   }
 
   const submit = async () => {
+    setMessage(null)
     if (file === null) return setMessage('Choose a file first.')
+    if (file.size === 0) return setMessage('That file is empty. Choose a file with content.')
     if (file.size > maxBytes) return setMessage(tooLargeCopy(maxBytes))
     setMessage(null)
     const result = await attempt(() => run(file), setPending)
@@ -121,6 +125,7 @@ export function Uploader({
           {fileLabel}
         </Label>
         <Input
+          key={pickerKey}
           id="upload-file"
           type="file"
           accept={accept}

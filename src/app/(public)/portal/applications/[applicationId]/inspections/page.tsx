@@ -3,6 +3,7 @@ import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { RequestForm } from '@/components/inspections/RequestForm'
 import { StatusChip } from '@/components/StatusChip'
+import { INSPECTION_ERROR_COPY } from '@/features/inspections/errorCopy'
 import { findReinspectionTarget } from '@/features/inspections/lookup'
 import { loadPortalInspections } from '@/features/inspections/portalInspections'
 import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
@@ -60,7 +61,7 @@ export default async function PortalInspectionsPage({
       </p>
       {view.paused ? (
         <p role="status" className="rounded-md bg-highlight px-3 py-2">
-          Inspections are paused while this permit is under appeal.
+          {INSPECTION_ERROR_COPY.permit_suspended}
         </p>
       ) : null}
       {!view.paused && !view.requestsEnabled ? (
@@ -97,7 +98,9 @@ export default async function PortalInspectionsPage({
               {row.resultNotes === null ? null : (
                 <p className="m-0">{`Notes: ${row.resultNotes}`}</p>
               )}
-              {row.status === 'failed' && view.canRequest ? (
+              {row.status === 'failed' &&
+              view.canRequest &&
+              view.reinspectableIds.includes(row.id) ? (
                 <Link
                   href={`/portal/applications/${applicationId}/inspections?reinspect=${row.id}`}
                   className="tap-target inline-flex items-center underline"

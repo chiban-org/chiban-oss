@@ -1,5 +1,6 @@
 import { ActionForm } from '@/components/ActionForm'
 import { listPreservationIncomplete } from '@/features/preservation/preserve'
+import { preservationReasonLabel } from '@/features/preservation/reasonCopy'
 import { requireStaffContext } from '@/server/requireStaff'
 import { retryPreservationAction } from '../actions'
 
@@ -39,8 +40,13 @@ export default async function PreservationQueuePage() {
             >
               {row.title}
             </a>
-            <p className="m-0">{`Tried ${row.attempts} ${row.attempts === 1 ? 'time' : 'times'}. ${row.reason?.replaceAll('_', ' ') ?? ''}`}</p>
-            <p className="m-0 text-muted-foreground">{row.detail ?? ''}</p>
+            <p className="m-0">{`Tried ${row.attempts} ${row.attempts === 1 ? 'time' : 'times'}. ${preservationReasonLabel(row.reason)}`}</p>
+            {row.detail === null || row.detail === '' ? null : (
+              <details>
+                <summary className="cursor-pointer text-muted-foreground">Technical detail</summary>
+                <pre className="whitespace-pre-wrap text-muted-foreground">{row.detail}</pre>
+              </details>
+            )}
             <ActionForm action={retryPreservationAction} submitLabel="Retry preservation">
               <input type="hidden" name="recordId" value={row.recordId} />
             </ActionForm>
