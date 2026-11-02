@@ -63,7 +63,7 @@ export function ImportUploadForm({ layerKey, primary }: ImportUploadFormProps) {
   }
 
   return (
-    <form onSubmit={onSubmit} className="max-w-md space-y-3">
+    <form onSubmit={(event) => void onSubmit(event)} className="max-w-md space-y-3">
       <CsrfField />
       <input type="hidden" name="layerKey" value={layerKey} />
       <SelectField label="File format" name="adapter" options={ADAPTERS} />

@@ -77,5 +77,5 @@ export function fixtureFetch(dir: string, opts: FixtureFetchOptions = {}): Fixtu
       json(JSON.parse(readFileSync(path.join(FIXTURE_DIR, dir, `page-${page}.json`), 'utf8'))),
     )
   }
-  return { fetch: impl as typeof fetch, calls }
+  return { fetch: impl, calls }
 }

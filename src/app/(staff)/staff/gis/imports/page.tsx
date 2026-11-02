@@ -25,6 +25,8 @@ const ADAPTER_OPTIONS = [
   ['axisgis', 'AxisGIS'],
 ] as const
 
+const adapterStatus: string = AXISGIS_ADAPTER_STATUS
+
 export default async function StaffImportsPage() {
   const ctx = await createContext()
   const actor = ctx.actor
@@ -65,7 +67,7 @@ export default async function StaffImportsPage() {
             {layer.lastError === null || status.state !== 'import_failed' ? null : (
               <p role="alert">{`Error: ${layer.lastError}`}</p>
             )}
-            {layer.adapter === 'axisgis' && AXISGIS_ADAPTER_STATUS === 'stubbed' ? (
+            {layer.adapter === 'axisgis' && adapterStatus === 'stubbed' ? (
               <p className="my-2 rounded-md bg-highlight px-3 py-2 text-sm">
                 {AXISGIS_STUB_NOTICE}
               </p>

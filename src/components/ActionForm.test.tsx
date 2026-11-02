@@ -20,7 +20,7 @@ describe('ActionForm', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Save' }))
     await waitFor(() => expect(screen.getByText('A reason is required.')).toBeTruthy())
-    expect((screen.getByRole('button', { name: 'Save' }) as HTMLButtonElement).disabled).toBe(false)
+    expect(screen.getByRole<HTMLButtonElement>('button', { name: 'Save' }).disabled).toBe(false)
   })
 
   it('carries the csrf token in a hidden field', () => {

@@ -6,9 +6,9 @@ import { describe, expect, it } from 'vitest'
 import { readGeoJson } from '@/features/gis/readers/geojson'
 import { readGeoPackage } from '@/features/gis/readers/geopackage'
 import { readShapefileZip } from '@/features/gis/readers/shapefile'
-import { buildLots, NH_STATE_PLANE_FEET_PROJ4 } from '../../../../scripts/alderPondGrid'
-import { buildGeoPackage } from '../../../../scripts/geopackageWriter'
-import { buildShapefileZip } from '../../../../scripts/shapefileWriter'
+import { buildLots, NH_STATE_PLANE_FEET_PROJ4 } from '@/test/fixtureBuilders/alderPondGrid'
+import { buildGeoPackage } from '@/test/fixtureBuilders/geopackageWriter'
+import { buildShapefileZip } from '@/test/fixtureBuilders/shapefileWriter'
 
 const signal = new AbortController().signal
 const FIXTURES = path.resolve(import.meta.dirname, '../../../test/fixtures/gis')
@@ -45,8 +45,7 @@ describe('shapefile reader', () => {
   })
 
   it('missing shp fails with missing_part', async () => {
-    const files = unzipSync(bytes('alder-pond-stateplane.zip'))
-    delete files['alder-pond.shp']
+    const { 'alder-pond.shp': _shp, ...files } = unzipSync(bytes('alder-pond-stateplane.zip'))
     const r = await readShapefileZip(zipSync(files), signal)
     expect(r).toMatchObject({ ok: false, error: { kind: 'missing_part' } })
   })

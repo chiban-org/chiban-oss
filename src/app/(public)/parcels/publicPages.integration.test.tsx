@@ -5,11 +5,19 @@ import { makeTestDb, type TestDb } from '@/test/db'
 import { configureLayer, loadGeoJsonFixture, PARCEL_MAPPING } from '@/test/gisFixtures'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 
-const state = vi.hoisted(() => ({
-  db: null as unknown,
-  cookieReads: [] as string[],
-  sessionCookie: null as string | null,
-}))
+interface MockState {
+  db: unknown
+  cookieReads: string[]
+  sessionCookie: string | null
+}
+
+const state = vi.hoisted(
+  (): MockState => ({
+    db: null,
+    cookieReads: [],
+    sessionCookie: null,
+  }),
+)
 
 vi.mock('@/db/client', () => ({
   get db() {

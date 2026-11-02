@@ -49,11 +49,11 @@ export async function readShapefileZip(
     })
   }
   const wkt = new TextDecoder().decode(prj)
-  let collection: GeoJSON.FeatureCollection
+  let collection: GeoJSON.FeatureCollection<GeoJSON.Geometry | null>
   try {
-    collection = (await shapefile.read(toArrayBuffer(shp), toArrayBuffer(dbf), {
+    collection = await shapefile.read(toArrayBuffer(shp), toArrayBuffer(dbf), {
       encoding: encodingOf(findPart(files, '.cpg')),
-    })) as GeoJSON.FeatureCollection
+    })
   } catch (e) {
     return err({
       kind: 'malformed',
@@ -70,7 +70,7 @@ export async function readShapefileZip(
     }
     out.push({
       rowRef: String(i),
-      properties: (f.properties ?? {}) as SourceFeature['properties'],
+      properties: f.properties ?? {},
       geometry,
     })
   }

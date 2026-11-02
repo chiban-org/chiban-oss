@@ -89,8 +89,8 @@ export function buildLots(): GridLot[] {
 }
 
 export function toLonLat(pointFt: [number, number]): [number, number] {
-  const [lon, lat] = proj4(NH_STATE_PLANE_FEET_PROJ4, 'EPSG:4326', pointFt)
-  return [Number(lon?.toFixed(9)), Number(lat?.toFixed(9))]
+  const [lon = 0, lat = 0] = proj4(NH_STATE_PLANE_FEET_PROJ4, 'EPSG:4326', pointFt)
+  return [Number(lon.toFixed(9)), Number(lat.toFixed(9))]
 }
 
 export function ringToLonLat(ring: Ring): Ring {

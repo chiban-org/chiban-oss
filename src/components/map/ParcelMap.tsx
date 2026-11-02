@@ -12,7 +12,7 @@ export interface ParcelMapProps {
   selectedParcelId?: string
   bbox?: Bbox
   layers: ('roads' | 'water')[]
-  onSelect(parcelId: string): void
+  onSelect: (parcelId: string) => void
   basemapRasterUrl?: string | null
   basemapAttribution?: string | null
 }
@@ -55,14 +55,15 @@ export function ParcelMap(props: ParcelMapProps) {
       map.addControl(new maplibre.NavigationControl({ showCompass: false }), 'top-right')
       map.on('click', (event) => {
         const hit = map.queryRenderedFeatures(event.point, { layers: ['parcel-fill'] })[0]
-        const id = hit?.properties.parcel_id
+        const id: unknown = hit?.properties.parcel_id
         if (typeof id === 'string') onSelect.current(id)
       })
+      const canvas = map.getCanvas()
       map.on('mouseenter', 'parcel-fill', () => {
-        map.getCanvas().style.cursor = 'pointer'
+        canvas.style.cursor = 'pointer'
       })
       map.on('mouseleave', 'parcel-fill', () => {
-        map.getCanvas().style.cursor = ''
+        canvas.style.cursor = ''
       })
       if (props.bbox !== undefined)
         map.fitBounds(props.bbox, { padding: FIT_PADDING_PX, animate: false })
@@ -73,14 +74,7 @@ export function ParcelMap(props: ParcelMapProps) {
       mapRef.current?.remove()
       mapRef.current = null
     }
-  }, [
-    layerKey,
-    props.basemapRasterUrl,
-    props.basemapAttribution,
-    props.bbox,
-    props.layers,
-    props.selectedParcelId,
-  ])
+  }, [layerKey, bboxKey, props.basemapRasterUrl, props.basemapAttribution])
 
   useEffect(() => {
     const map = mapRef.current

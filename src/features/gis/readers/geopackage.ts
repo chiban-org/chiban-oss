@@ -27,45 +27,71 @@ function decodeGeometry(blob: Buffer): GeoJSON.Geometry | null | 'bad' {
   }
 }
 
+interface GeometryColumn {
+  column_name: string
+  srs_id: number
+}
+
+function sourceDefinition(
+  db: Database.Database,
+  srsId: number,
+): Result<string | null, ReaderError> {
+  if (srsId === WGS84_SRS_ID) return ok(null)
+  const srs = db
+    .prepare('SELECT definition FROM gpkg_spatial_ref_sys WHERE srs_id = ?')
+    .get(srsId) as { definition: string } | undefined
+  if (srs === undefined || srs.definition === 'undefined') {
+    return err({
+      kind: 'missing_projection',
+      detail: `Spatial reference ${srsId} has no definition`,
+    })
+  }
+  return ok(srs.definition)
+}
+
+function rowFeature(
+  row: Record<string, unknown>,
+  index: number,
+  col: GeometryColumn,
+  definition: string | null,
+): Result<SourceFeature, ReaderError> {
+  const raw = row[col.column_name]
+  let geometry: GeoJSON.Geometry | null = null
+  if (Buffer.isBuffer(raw)) {
+    const decoded = decodeGeometry(raw)
+    if (decoded === 'bad')
+      return err({ kind: 'malformed', detail: `Row ${index} has an unreadable geometry` })
+    geometry = decoded
+  }
+  if (geometry !== null && definition !== null) {
+    const moved = reprojectTo4326(geometry, definition)
+    if (!moved.ok) return moved
+    geometry = moved.value
+  }
+  const properties: SourceFeature['properties'] = {}
+  for (const [key, value] of Object.entries(row)) {
+    if (key === col.column_name || Buffer.isBuffer(value)) continue
+    properties[key] = typeof value === 'bigint' ? Number(value) : (value as string | number | null)
+  }
+  const fid = row.fid
+  const rowRef = typeof fid === 'number' || typeof fid === 'string' ? String(fid) : String(index)
+  return ok({ rowRef, properties, geometry })
+}
+
 function readTable(db: Database.Database, table: string): Result<SourceFeature[], ReaderError> {
   const col = db
     .prepare('SELECT column_name, srs_id FROM gpkg_geometry_columns WHERE table_name = ?')
-    .get(table) as { column_name: string; srs_id: number } | undefined
+    .get(table) as GeometryColumn | undefined
   if (col === undefined)
     return err({ kind: 'malformed', detail: `Table ${table} has no geometry column` })
-  const srs = db
-    .prepare('SELECT definition FROM gpkg_spatial_ref_sys WHERE srs_id = ?')
-    .get(col.srs_id) as { definition: string } | undefined
-  const needsReprojection = col.srs_id !== WGS84_SRS_ID
-  if (needsReprojection && (srs === undefined || srs.definition === 'undefined')) {
-    return err({
-      kind: 'missing_projection',
-      detail: `Spatial reference ${col.srs_id} has no definition`,
-    })
-  }
+  const definition = sourceDefinition(db, col.srs_id)
+  if (!definition.ok) return definition
   const rows = db.prepare(`SELECT * FROM "${table}"`).all() as Record<string, unknown>[]
   const out: SourceFeature[] = []
   for (const [i, row] of rows.entries()) {
-    const raw = row[col.column_name]
-    let geometry: GeoJSON.Geometry | null = null
-    if (Buffer.isBuffer(raw)) {
-      const decoded = decodeGeometry(raw)
-      if (decoded === 'bad')
-        return err({ kind: 'malformed', detail: `Row ${i} has an unreadable geometry` })
-      geometry = decoded
-    }
-    if (geometry !== null && needsReprojection) {
-      const moved = reprojectTo4326(geometry, srs?.definition ?? '')
-      if (!moved.ok) return moved
-      geometry = moved.value
-    }
-    const properties: SourceFeature['properties'] = {}
-    for (const [key, value] of Object.entries(row)) {
-      if (key === col.column_name || Buffer.isBuffer(value)) continue
-      properties[key] =
-        typeof value === 'bigint' ? Number(value) : (value as string | number | null)
-    }
-    out.push({ rowRef: String(row.fid ?? i), properties, geometry })
+    const feature = rowFeature(row, i, col, definition.value)
+    if (!feature.ok) return feature
+    out.push(feature.value)
   }
   return ok(out)
 }
@@ -91,12 +117,10 @@ function pickTable(
   return err({ kind: 'multiple_tables', detail: `Choose one of: ${tables.join(', ')}` })
 }
 
-export async function readGeoPackage(
+function readFromBytes(
   bytes: Uint8Array,
-  signal: AbortSignal,
-  opts: { table?: string } = {},
-): Promise<Result<SourceFeature[], ReaderError>> {
-  signal.throwIfAborted()
+  opts: { table?: string },
+): Result<SourceFeature[], ReaderError> {
   const dir = mkdtempSync(path.join(os.tmpdir(), 'chiban-gpkg-'))
   try {
     const file = path.join(dir, 'upload.gpkg')
@@ -119,4 +143,13 @@ export async function readGeoPackage(
   } finally {
     rmSync(dir, { recursive: true, force: true })
   }
+}
+
+export function readGeoPackage(
+  bytes: Uint8Array,
+  signal: AbortSignal,
+  opts: { table?: string } = {},
+): Promise<Result<SourceFeature[], ReaderError>> {
+  signal.throwIfAborted()
+  return Promise.resolve(readFromBytes(bytes, opts))
 }

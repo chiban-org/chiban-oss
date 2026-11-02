@@ -63,11 +63,15 @@ export function parseGeoJsonValue(raw: unknown): Result<SourceFeature[], ReaderE
   )
 }
 
-export async function readGeoJson(
+export function readGeoJson(
   bytes: Uint8Array,
   signal: AbortSignal,
 ): Promise<Result<SourceFeature[], ReaderError>> {
   signal.throwIfAborted()
+  return Promise.resolve(parseBytes(bytes))
+}
+
+function parseBytes(bytes: Uint8Array): Result<SourceFeature[], ReaderError> {
   let raw: unknown
   try {
     raw = JSON.parse(new TextDecoder('utf-8', { fatal: true }).decode(bytes))

@@ -1,9 +1,14 @@
 import { mkdirSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { buildLots, parcelFeatures, roadFeatures, waterFeatures } from './alderPondGrid.ts'
-import { writeEsriFixtures } from './esriFixtureWriter.ts'
-import { buildGeoPackage } from './geopackageWriter.ts'
-import { buildShapefileZip } from './shapefileWriter.ts'
+import {
+  buildLots,
+  parcelFeatures,
+  roadFeatures,
+  waterFeatures,
+} from '../src/test/fixtureBuilders/alderPondGrid.ts'
+import { writeEsriFixtures } from '../src/test/fixtureBuilders/esriFixtureWriter.ts'
+import { buildGeoPackage } from '../src/test/fixtureBuilders/geopackageWriter.ts'
+import { buildShapefileZip } from '../src/test/fixtureBuilders/shapefileWriter.ts'
 
 const TEST_DIR = path.resolve('src/test/fixtures/gis')
 const DEMO_DIR = path.resolve('src/features/demo/fixtures')

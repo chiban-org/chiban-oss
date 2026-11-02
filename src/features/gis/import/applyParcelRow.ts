@@ -136,59 +136,65 @@ async function createParcel(
   return { outcome: 'created' }
 }
 
-async function updateParcel(
+interface StoredParcel {
+  row: typeof parcels.$inferSelect
+  sameGeometry: boolean
+  geometryBefore: unknown
+}
+
+async function loadStored(
   ctx: ImportContext,
-  row: PreparedRow,
   parcelId: string,
   geometry: Geometry,
-): Promise<RowResult> {
+): Promise<StoredParcel> {
   const res = await ctx.tx.execute<{ same: boolean; geom_json: string | null }>(sql`
     SELECT COALESCE(ST_Equals(geom, ST_SetSRID(ST_GeomFromGeoJSON(${JSON.stringify(geometry)}), 4326)), false) AS same,
            ST_AsGeoJSON(geom, 15) AS geom_json
     FROM parcels WHERE id = ${parcelId}::uuid FOR UPDATE`)
-  const sameGeometry = res.rows[0]?.same === true
-  const [stored] = await ctx.tx.select().from(parcels).where(eq(parcels.id, parcelId))
-  if (stored === undefined)
+  const [row] = await ctx.tx.select().from(parcels).where(eq(parcels.id, parcelId))
+  if (row === undefined)
     throw new AppError(ErrorIds.DB_INVARIANT, 'Resolved parcel vanished', { parcelId })
+  const json = res.rows[0]?.geom_json ?? null
+  return {
+    row,
+    sameGeometry: res.rows[0]?.same === true,
+    geometryBefore: json === null ? null : (JSON.parse(json) as unknown),
+  }
+}
+
+function isHeld(stored: typeof parcels.$inferSelect, row: PreparedRow): boolean {
   const ownerHeld = stored.ownerName !== null && row.ownerName !== stored.ownerName
   const mailingHeld = stored.mailingAddress !== null && row.mailingAddress !== stored.mailingAddress
-  if (ownerHeld || mailingHeld) {
-    return await except(
-      ctx,
-      row,
-      'owner_changed',
-      'Owner or mailing address differs from the stored value',
-      {
-        parcelId,
-        current: { ownerName: stored.ownerName, mailingAddress: stored.mailingAddress },
-        proposed: {
-          siteAddress: row.siteAddress,
-          ownerName: row.ownerName,
-          mailingAddress: row.mailingAddress,
-          geometry,
-        },
-      },
-    )
-  }
-  const existingIds = await ctx.tx
+  return ownerHeld || mailingHeld
+}
+
+function buildPatch(
+  current: StoredParcel,
+  row: PreparedRow,
+  geometry: Geometry,
+): Partial<typeof parcels.$inferInsert> {
+  const patch: Partial<typeof parcels.$inferInsert> = {}
+  if (!current.sameGeometry) patch.geom = geometry
+  if (row.siteAddress !== null && row.siteAddress !== current.row.siteAddress)
+    patch.siteAddress = row.siteAddress
+  if (current.row.ownerName === null && row.ownerName !== null) patch.ownerName = row.ownerName
+  if (current.row.mailingAddress === null && row.mailingAddress !== null)
+    patch.mailingAddress = row.mailingAddress
+  return patch
+}
+
+async function addMissingExtras(
+  ctx: ImportContext,
+  parcelId: string,
+  row: PreparedRow,
+): Promise<IdValue[]> {
+  const existing = await ctx.tx
     .select({ format: parcelAliases.format, value: parcelAliases.value })
     .from(parcelAliases)
     .where(and(eq(parcelAliases.parcelId, parcelId), eq(parcelAliases.status, 'active')))
   const missing = row.extras.filter(
-    (e) => !existingIds.some((x) => x.format === e.format && x.value === e.value),
+    (e) => !existing.some((x) => x.format === e.format && x.value === e.value),
   )
-  const patch: Partial<typeof parcels.$inferInsert> = {}
-  if (!sameGeometry) patch.geom = geometry
-  if (row.siteAddress !== null && row.siteAddress !== stored.siteAddress)
-    patch.siteAddress = row.siteAddress
-  if (stored.ownerName === null && row.ownerName !== null) patch.ownerName = row.ownerName
-  if (stored.mailingAddress === null && row.mailingAddress !== null)
-    patch.mailingAddress = row.mailingAddress
-  if (Object.keys(patch).length === 0 && missing.length === 0) return { outcome: 'unchanged' }
-  await ctx.tx
-    .update(parcels)
-    .set({ ...patch, updatedAt: new Date() })
-    .where(eq(parcels.id, parcelId))
   for (const id of missing) {
     const added = await addAlias(
       ctx.tx,
@@ -199,6 +205,44 @@ async function updateParcel(
     if (!added.ok)
       throw new AppError(ErrorIds.DB_INVARIANT, 'Alias taken after conflict check', { ...id })
   }
+  return missing
+}
+
+async function updateParcel(
+  ctx: ImportContext,
+  row: PreparedRow,
+  parcelId: string,
+  geometry: Geometry,
+): Promise<RowResult> {
+  const current = await loadStored(ctx, parcelId, geometry)
+  if (isHeld(current.row, row)) {
+    return await except(
+      ctx,
+      row,
+      'owner_changed',
+      'Owner or mailing address differs from the stored value',
+      {
+        parcelId,
+        current: { ownerName: current.row.ownerName, mailingAddress: current.row.mailingAddress },
+        proposed: {
+          siteAddress: row.siteAddress,
+          ownerName: row.ownerName,
+          mailingAddress: row.mailingAddress,
+          geometry,
+        },
+      },
+    )
+  }
+  const patch = buildPatch(current, row, geometry)
+  const hasExtras = row.extras.length > 0
+  if (Object.keys(patch).length > 0) {
+    await ctx.tx
+      .update(parcels)
+      .set({ ...patch, updatedAt: new Date() })
+      .where(eq(parcels.id, parcelId))
+  }
+  const added = hasExtras ? await addMissingExtras(ctx, parcelId, row) : []
+  if (Object.keys(patch).length === 0 && added.length === 0) return { outcome: 'unchanged' }
   await writeAudit(
     ctx.tx,
     {
@@ -207,13 +251,12 @@ async function updateParcel(
       entityType: 'parcel',
       entityId: parcelId,
       before: {
-        siteAddress: stored.siteAddress,
-        ownerName: stored.ownerName,
-        mailingAddress: stored.mailingAddress,
-        geometry:
-          res.rows[0]?.geom_json === null ? null : JSON.parse(res.rows[0]?.geom_json ?? 'null'),
+        siteAddress: current.row.siteAddress,
+        ownerName: current.row.ownerName,
+        mailingAddress: current.row.mailingAddress,
+        geometry: current.geometryBefore,
       },
-      after: { ...patch, addedIds: missing },
+      after: { ...patch, addedIds: added },
     },
     ctx.signal,
   )

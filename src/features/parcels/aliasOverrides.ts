@@ -196,15 +196,16 @@ export async function expireAliasOverrides(
     .where(and(lt(aliasOverrides.expiresOn, today), isNull(aliasOverrides.supersededBy)))
   let retired = 0
   for (const o of due) {
-    const done = await db.transaction(async (tx) =>
-      retireAlias(
-        tx,
-        { format: o.format, value: o.value, parcelId: o.parcelId, source: 'override' },
-        'expired',
-        today,
-        { kind: 'system', job: 'parcels.expireAliasOverrides' },
-        signal,
-      ),
+    const done = await db.transaction(
+      async (tx) =>
+        await retireAlias(
+          tx,
+          { format: o.format, value: o.value, parcelId: o.parcelId, source: 'override' },
+          'expired',
+          today,
+          { kind: 'system', job: 'parcels.expireAliasOverrides' },
+          signal,
+        ),
     )
     if (done !== null) retired += 1
   }

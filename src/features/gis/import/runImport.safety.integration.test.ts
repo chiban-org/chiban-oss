@@ -32,21 +32,9 @@ function input(features: SourceFeature[], fullLayer = true): ImportInput {
   return { layerKey: 'parcels', adapter: 'file_geojson', features, fullLayer }
 }
 
-function expectInvariant(r: ImportRunReport): void {
-  expect(r.countIn).toBe(r.countCreated + r.countApplied + r.countUnchanged + r.countExcepted)
-}
-
 async function userActor() {
   const actor = await staffActor(handle.db)
   return { actor, importer: { kind: 'user' as const, userId: actor.userId } }
-}
-
-async function runOk(features: SourceFeature[], fullLayer = true): Promise<ImportRunReport> {
-  const { importer } = await userActor()
-  const r = await runImport(handle.db, importer, input(features, fullLayer), signal)
-  if (!r.ok) throw new Error(`import failed: ${r.error}`)
-  expectInvariant(r.value)
-  return r.value
 }
 
 describe('runImport safety', () => {
@@ -105,7 +93,7 @@ describe('runImport safety', () => {
           }
         }
         const value: unknown = Reflect.get(target, prop)
-        return typeof value === 'function' ? value.bind(target) : value
+        return typeof value === 'function' ? (value.bind(target) as unknown) : value
       },
     })
     const r = await runImport(
