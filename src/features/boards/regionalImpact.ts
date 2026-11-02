@@ -30,6 +30,7 @@ export type BoardRegionalImpactError =
   | 'municipality_required'
   | 'unknown_municipality'
   | 'board_ref_required'
+  | 'after_issuance'
 
 async function recomputeDecisionClock(tx: Tx, applicationId: string, signal: AbortSignal) {
   const [running] = await tx

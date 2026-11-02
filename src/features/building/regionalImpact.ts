@@ -1,10 +1,16 @@
 import { and, desc, eq, inArray, ne } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import { clocks, regionalImpactDeterminations, regionalImpactNotices } from '@/db/schema'
+import {
+  applications,
+  clocks,
+  regionalImpactDeterminations,
+  regionalImpactNotices,
+} from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { REGIONAL_IMPACT_OPEN_STATES } from '@/features/building/regionalImpactStates'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -13,6 +19,15 @@ export const COMMENT_CLOCK_KEY = 'nh.bp.regional_impact_comment'
 const CERTIFIED_KINDS = ['regional_planning_commission', 'affected_municipality'] as const
 
 export type Determination = 'yes' | 'no' | 'previously_determined'
+
+async function stillBeforeIssuance(tx: Tx, applicationId: string): Promise<boolean> {
+  const [row] = await tx
+    .select({ state: applications.state })
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+    .for('update')
+  return row !== undefined && REGIONAL_IMPACT_OPEN_STATES.includes(row.state)
+}
 
 export async function recordRegionalImpactDetermination(
   db: Db,
@@ -24,7 +39,7 @@ export async function recordRegionalImpactDetermination(
     determinedOn: CivilDate
   },
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden' | 'board_ref_required'>> {
+): Promise<Result<void, 'forbidden' | 'board_ref_required' | 'after_issuance'>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'regional_impact.determine', signal))) {
     return err('forbidden')
@@ -33,6 +48,7 @@ export async function recordRegionalImpactDetermination(
   if (input.determination === 'previously_determined' && ref === '')
     return err('board_ref_required')
   return await transactionResult(db, async (tx) => {
+    if (!(await stillBeforeIssuance(tx, input.applicationId))) return err('after_issuance')
     const values = {
       applicationId: input.applicationId,
       determination: input.determination,
@@ -131,7 +147,9 @@ export async function recordRegionalImpactNotice(
   actor: Actor,
   input: NoticeInput,
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden' | 'certified_mail_required' | 'no_yes_determination'>> {
+): Promise<
+  Result<void, 'forbidden' | 'certified_mail_required' | 'no_yes_determination' | 'after_issuance'>
+> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'regional_impact.determine', signal))) {
     return err('forbidden')
@@ -139,6 +157,7 @@ export async function recordRegionalImpactNotice(
   const needsCertified = (CERTIFIED_KINDS as readonly string[]).includes(input.recipientKind)
   if (needsCertified && input.method !== 'certified_mail') return err('certified_mail_required')
   return await transactionResult(db, async (tx) => {
+    if (!(await stillBeforeIssuance(tx, input.applicationId))) return err('after_issuance')
     const [determination] = await tx
       .select()
       .from(regionalImpactDeterminations)

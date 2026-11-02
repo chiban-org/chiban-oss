@@ -56,6 +56,7 @@ export const ERROR_COPY: Record<string, string> = {
   authority_required: 'Enter the legal authority: a citation and an explanation.',
   unknown_gate: 'That gate does not exist.',
   unknown_condition: "That condition is not in the application's condition library.",
+  application_closed: 'This application is closed, so its conditions can no longer change.',
   not_extendable: 'This clock cannot be extended.',
   not_waivable: 'This clock cannot be waived.',
   consent_required: "This extension needs the applicant's consent.",
@@ -65,6 +66,8 @@ export const ERROR_COPY: Record<string, string> = {
   certified_mail_required:
     'The regional planning commission and affected municipalities must be notified by certified mail.',
   no_yes_determination: 'Record a determination of regional impact first.',
+  after_issuance:
+    'The regional impact record is fixed once the permit is issued or the application is closed.',
   not_issued: 'The permit is not issued.',
   no_open_appeal: 'There is no open appeal on this application.',
   before_filing: 'The resolution date cannot be before the appeal was filed.',

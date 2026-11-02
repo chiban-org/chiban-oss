@@ -2,7 +2,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
-import { STATE_LABELS } from '@/features/applications/states'
+import { STATE_LABELS, TERMINAL_STATES } from '@/features/applications/states'
 import type { AdjustmentKind } from '@/features/clocks/explainClock'
 import { partyLine } from '@/features/projects/partyRoleLabels'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -146,6 +146,7 @@ export function ClockAdjustForm({
 }
 
 export function ConditionsPanel({ view }: { view: StaffApplicationView }) {
+  const editable = view.permissions.canIssue && !TERMINAL_STATES.includes(view.state)
   return (
     <section aria-label="Conditions">
       <h2>Conditions</h2>
@@ -167,7 +168,7 @@ export function ConditionsPanel({ view }: { view: StaffApplicationView }) {
                 }
                 label={c.status === 'unmet' ? 'Unmet' : c.status === 'met' ? 'Met' : 'Waived'}
               />
-              {c.status === 'unmet' ? (
+              {editable && c.status === 'unmet' ? (
                 <ActionForm action={setConditionStatusAction} submitLabel="Mark met">
                   <input type="hidden" name="conditionId" value={c.id} />
                   <input type="hidden" name="status" value="met" />
@@ -177,7 +178,7 @@ export function ConditionsPanel({ view }: { view: StaffApplicationView }) {
           </li>
         ))}
       </ul>
-      {view.conditionLibrary.length === 0 ? null : (
+      {!editable || view.conditionLibrary.length === 0 ? null : (
         <ActionForm action={applyConditionAction} submitLabel="Apply condition">
           <input type="hidden" name="applicationId" value={view.id} />
           <SelectField
