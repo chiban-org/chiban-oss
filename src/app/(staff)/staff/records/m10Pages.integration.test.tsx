@@ -61,6 +61,7 @@ const { default: RetentionPage } = await import('@/app/(staff)/staff/records/ret
 const { default: BatchPage } = await import(
   '@/app/(staff)/staff/records/disposition/[batchId]/page'
 )
+const { default: DisposedPage } = await import('@/app/(staff)/staff/records/disposed/page')
 const { default: CensusPage } = await import('@/app/(staff)/staff/reports/census/page')
 const { default: RedactPage } = await import('@/app/(staff)/staff/records/redact/[versionId]/page')
 
@@ -298,6 +299,24 @@ describe('records screens with the demo seed', () => {
     expect(page).toMatch(
       /<select name="exemptionKey"[^>]*><option value="" selected="">Choose an exemption<\/option>/,
     )
+  })
+
+  it('the disposed records page lists each tombstone read-only and is closed to reviewers', async () => {
+    await actAs('records')
+    const [batch] = await handle.db
+      .select()
+      .from(dispositionBatches)
+      .where(eq(dispositionBatches.status, 'executed'))
+    const markup = await html(DisposedPage(search()))
+    const page = visibleText(markup)
+    expect(page).toContain('Disposed records')
+    expect(page).toContain('Closed complaint photo log')
+    expect(markup).toContain(`href="/staff/records/disposition/${batch?.id}"`)
+    expect(markup).not.toContain('<form')
+    expectHuman(page)
+    expect(visibleText(await html(RetentionPage(search())))).toContain('Disposed records')
+    await actAs('reviewer')
+    expect(await html(DisposedPage(search()))).toContain('You do not have permission')
   })
 
   it('a malformed request id is not found', async () => {
