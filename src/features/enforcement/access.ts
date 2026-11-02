@@ -57,7 +57,7 @@ export function publicCaseView(
   }
 }
 
-async function publicExtras(
+export async function publicExtras(
   db: DbOrTx,
   caseId: string,
 ): Promise<Pick<PublicCaseView, 'approvedComplaintText' | 'provisions' | 'orders'>> {

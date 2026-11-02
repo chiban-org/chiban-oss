@@ -1,13 +1,14 @@
 import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { complaints, enforcementCases, violationFindings } from '@/db/schema'
+import { complaints, enforcementCases, enforcementOrders, violationFindings } from '@/db/schema'
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { draftOrder } from '@/features/enforcement/orders'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { getPublicParcelView } from '@/features/parcels/publicParcelView'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
+import { formatCivilDate } from '@/lib/formatDate'
 import { makeTestDb, type TestDb } from '@/test/db'
 import {
   ENFORCEMENT_ENUM_KEYS,
@@ -207,6 +208,31 @@ describe('enforcement queue and case pages', () => {
     expect(serialized).toContain(
       'A business is reported to be operating from a residential garage.',
     )
+  })
+
+  it('the public case on the parcel page carries its dates, provisions, and issued order numbers', async () => {
+    const parcel = await resolveParcelId(handle.db, { value: '007001000000' }, signal)
+    if (!parcel.ok) throw new Error('parcel')
+    const publicView = await getPublicParcelView(
+      handle.db,
+      parcel.value.parcelId,
+      new Date(),
+      signal,
+    )
+    const publicCase = (await handle.db.select().from(enforcementCases)).find((c) => c.isPublic)
+    if (publicCase === undefined) throw new Error('no public case')
+    const text = JSON.stringify(publicView)
+    expect(text).toContain(`Opened ${formatCivilDate(publicCase.openedOn)}`)
+    const findings = await handle.db
+      .select()
+      .from(violationFindings)
+      .where(eq(violationFindings.caseId, publicCase.id))
+    for (const f of findings) expect(text).toContain(f.provisionRef)
+    const orders = await handle.db
+      .select()
+      .from(enforcementOrders)
+      .where(eq(enforcementOrders.caseId, publicCase.id))
+    for (const o of orders.filter((x) => x.issuedOn !== null)) expect(text).toContain(o.number)
   })
 
   it('the public parcel page lists the public case and not the private ones', async () => {
