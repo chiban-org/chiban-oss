@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { gisLayers, parcels } from '@/db/schema'
+import { gisLayers, jobEffects, jobRuns, parcels } from '@/db/schema'
 import { getLayerStatus } from '@/features/gis/layerStatus'
 import { runJob } from '@/jobs/defineJob'
 import { dueLayerKeys, gisRefreshLayerJob, makeGisRefreshLayerJob } from '@/jobs/gisRefreshLayer'
@@ -86,6 +86,32 @@ describe('gis refresh job through the transactional runner', () => {
       expect((await getLayerStatus(local.db, 'parcels', new Date(), signal)).state).toBe(
         'import_failed',
       )
+    } finally {
+      await local.drop()
+    }
+  })
+
+  it('a failed import is a failed job run, keeps the layer record, and releases the dedup claim', async () => {
+    const local = await makeTestDb()
+    try {
+      await seedParcelWorld(local.db)
+      await configureLayer(local.db, 'parcels', PARCEL_MAPPING, {
+        adapter: 'esri_rest',
+        sourceUrl: LAYER_URL,
+      })
+      const failing = makeGisRefreshLayerJob(fixtureFetch('esri', { failOnPage: 1 }).fetch)
+      const outcome = await runJob(local.db, failing, { layerKey: 'parcels' }, signal)
+      expect(outcome.ok).toBe(false)
+      const [run] = await local.db.select().from(jobRuns)
+      expect(run?.lastFailureAt).not.toBeNull()
+      expect(run?.lastSuccessAt).toBeNull()
+      expect(await local.db.select().from(jobEffects)).toHaveLength(0)
+      expect((await getLayerStatus(local.db, 'parcels', new Date(), signal)).state).toBe(
+        'import_failed',
+      )
+      const working = makeGisRefreshLayerJob(fixtureFetch('esri').fetch)
+      expect((await runJob(local.db, working, { layerKey: 'parcels' }, signal)).ok).toBe(true)
+      expect(await local.db.select().from(parcels)).toHaveLength(36)
     } finally {
       await local.drop()
     }

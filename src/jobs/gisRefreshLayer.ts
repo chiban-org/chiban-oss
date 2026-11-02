@@ -5,7 +5,7 @@ import { gisLayers } from '@/db/schema'
 import { LAYER_KEYS, type LayerKey } from '@/features/gis/exceptionKinds'
 import { refreshLayer } from '@/features/gis/refreshLayer'
 import { err, ok } from '@/types/result'
-import { defineJob, enqueue } from './defineJob'
+import { defineJob, enqueue, failKeepingWrites } from './defineJob'
 
 const MS_PER_HOUR = 3_600_000
 const SCHEDULER_INTERVAL_SECONDS = 3600
@@ -44,7 +44,8 @@ export function makeGisRefreshLayerJob(fetchImpl: typeof fetch) {
         { fetch: fetchImpl },
         ctx.signal,
       )
-      if (result.ok || result.error === 'import_failed') return ok(undefined)
+      if (result.ok) return ok(undefined)
+      if (result.error === 'import_failed') return failKeepingWrites('import_failed')
       return err(result.error)
     },
   })

@@ -1,4 +1,4 @@
-import { sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import type { JobName } from '@/constants/jobNames'
 import type { Db, Tx } from '@/db/client'
 import { jobEffects, jobRuns } from '@/db/schema'
@@ -10,11 +10,27 @@ export interface JobContext {
   signal: AbortSignal
 }
 
+export interface CommittedFailure {
+  ok: false
+  error: string
+  commitWrites: true
+}
+
+export type JobOutcome = Result<void, string> | CommittedFailure
+
+export function failKeepingWrites(error: string): CommittedFailure {
+  return { ok: false, error, commitWrites: true }
+}
+
+function isCommittedFailure(outcome: JobOutcome): outcome is CommittedFailure {
+  return !outcome.ok && 'commitWrites' in outcome
+}
+
 export interface JobDefinition<P> {
   name: JobName
   intervalSeconds?: number
   dedupKey(payload: P): string
-  handler(payload: P, ctx: JobContext): Promise<Result<void, string>>
+  handler(payload: P, ctx: JobContext): Promise<JobOutcome>
 }
 
 export function defineJob<P>(definition: JobDefinition<P>): JobDefinition<P> {
@@ -48,11 +64,7 @@ async function recordRun(db: Db, name: JobName, outcome: Result<void, string>): 
     })
 }
 
-async function execute<P>(
-  job: JobDefinition<P>,
-  payload: P,
-  ctx: JobContext,
-): Promise<Result<void, string>> {
+async function execute<P>(job: JobDefinition<P>, payload: P, ctx: JobContext): Promise<JobOutcome> {
   try {
     return await job.handler(payload, ctx)
   } catch (e) {
@@ -85,6 +97,14 @@ async function runClaimed<P>(
         .returning({ key: jobEffects.dedupKey })
       if (claimed.length === 0) return ok(undefined)
       const outcome = await execute(job, payload, { db: tx, signal })
+      if (isCommittedFailure(outcome)) {
+        await tx
+          .delete(jobEffects)
+          .where(
+            and(eq(jobEffects.jobName, job.name), eq(jobEffects.dedupKey, job.dedupKey(payload))),
+          )
+        return err(outcome.error)
+      }
       if (!outcome.ok) throw new ClaimRolledBack(outcome)
       return outcome
     })
