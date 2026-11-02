@@ -160,7 +160,7 @@ async function tollStoppedClocks(
     await recordAdjustment(
       tx,
       actor,
-      clock,
+      { ...clock, status: 'running' },
       {
         kind: 'tolling',
         days,
