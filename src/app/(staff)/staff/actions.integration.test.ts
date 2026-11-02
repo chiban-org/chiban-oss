@@ -126,6 +126,19 @@ describe('staff actions', () => {
     expect(await handle.db.select().from(parcelLineageEvents)).toHaveLength(1)
   })
 
+  it('an override value in the wrong shape names what the format expects', async () => {
+    const parcelId = await makeParcel(handle.db, [{ format: 'gis12', value: '007030000000' }])
+    state.actor = await staffActor(handle.db)
+    const result = await parcelActions.createAliasOverrideAction(
+      form({ format: 'cama15', value: '12345', parcelId, reason: 'Assessor typo' }),
+    )
+    expect(result).toEqual({
+      ok: false,
+      error:
+        'The ID does not match the selected format. CAMA number: exactly 15 digits, counting leading zeros.',
+    })
+  })
+
   it('a parent that does not exist is named in the error', async () => {
     state.actor = await staffActor(handle.db)
     const result = await parcelActions.recordLineageAction(

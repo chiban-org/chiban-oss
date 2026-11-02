@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { parcelIdFormats } from '@/db/schema'
-import { searchParcels } from '@/features/parcels/searchParcels'
+import { searchParcelPage, searchParcels } from '@/features/parcels/searchParcels'
 import { makeTestCaller } from '@/server/testCaller'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeParcel, seedParcelWorld, staffActor } from '@/test/parcels'
@@ -107,6 +107,15 @@ describe('searchParcels', () => {
     const hits = await searchParcels(handle.db, { q: 'Birch Hollow', limit: 500 }, signal)
     expect(hits).toHaveLength(50)
     expect(await searchParcels(handle.db, { q: 'Birch Hollow' }, signal)).toHaveLength(20)
+  })
+
+  it('a page of results says when more parcels match than it shows', async () => {
+    const page = await searchParcelPage(handle.db, 'Birch Hollow', signal)
+    expect(page.hits).toHaveLength(20)
+    expect(page.more).toBe(true)
+    const narrow = await searchParcelPage(handle.db, '12 Heron Cove', signal)
+    expect(narrow.hits.map((h) => h.parcelId)).toContain(heron)
+    expect(narrow.more).toBe(false)
   })
 
   it('query of one character returns nothing', async () => {

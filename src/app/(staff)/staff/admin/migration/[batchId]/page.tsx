@@ -14,6 +14,9 @@ const REASON_COPY: Record<string, string> = {
   read_error: 'The file could not be read or changed after the scan',
 }
 
+const ASK_PUBLISHER_COPY =
+  'Review the files above, then ask a staff member who may publish documents to publish this batch. Until then every file in it stays private.'
+
 const OCR_COPY: Record<string, string> = {
   encrypted: 'The PDF is password protected',
   bad_input: 'The file could not be read as a scan',
@@ -58,9 +61,9 @@ export default async function MigrationBatchPage({
     )
   }
   const { batch, report, exceptions } = loaded.value
+  const staged = batch.status === 'staged'
   const mayPublish =
-    batch.status === 'staged' &&
-    (await hasCapability(ctx.db, ctx.actor.userId, 'document.publish', ctx.signal))
+    staged && (await hasCapability(ctx.db, ctx.actor.userId, 'document.publish', ctx.signal))
   const rows: [string, number][] =
     report === null
       ? []
@@ -133,6 +136,7 @@ export default async function MigrationBatchPage({
           </p>
         </ActionForm>
       ) : null}
+      {staged && !mayPublish ? <p role="note">{ASK_PUBLISHER_COPY}</p> : null}
     </main>
   )
 }

@@ -1,13 +1,14 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import { startApplication } from '@/features/portal/drafts'
+import { RETIRED_PARCEL_COPY, startApplication } from '@/features/portal/drafts'
 import { type ActionResult, errorCopy, text } from '@/server/actionRunner'
 import { withPortalActor } from '@/server/portalAction'
 import { isUuid } from '@/utils/uuid'
 
 const START_COPY = {
   unknown_parcel: 'That parcel was not found.',
+  retired_parcel: RETIRED_PARCEL_COPY,
   not_published: 'That kind of application is not available online.',
   config_inconsistent: 'That application is not ready yet. Ask the land use office.',
   forbidden: 'You cannot start this application.',

@@ -1,6 +1,7 @@
 import Link from 'next/link'
+import { MoreMatchesNotice } from '@/components/parcels/MoreMatchesNotice'
 import { Button } from '@/components/ui/button'
-import { searchParcels } from '@/features/parcels/searchParcels'
+import { searchParcelPage } from '@/features/parcels/searchParcels'
 import { requireStaffContext } from '@/server/requireStaff'
 
 interface ParcelsPageProps {
@@ -17,7 +18,7 @@ const MATCH_LABEL = {
 export default async function StaffParcelsPage({ searchParams }: ParcelsPageProps) {
   const { q = '' } = await searchParams
   const ctx = await requireStaffContext()
-  const hits = await searchParcels(ctx.db, { q }, ctx.signal)
+  const { hits, more } = await searchParcelPage(ctx.db, q, ctx.signal)
   return (
     <main>
       <h1>Parcels</h1>
@@ -39,39 +40,42 @@ export default async function StaffParcelsPage({ searchParams }: ParcelsPageProp
       ) : hits.length === 0 ? (
         <p>No parcels match that search.</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left">
-              <th className="py-2">Parcel</th>
-              <th>Address</th>
-              <th>Owner</th>
-              <th>Matched on</th>
-            </tr>
-          </thead>
-          <tbody>
-            {hits.map((hit) => (
-              <tr key={hit.parcelId} className="border-b">
-                <td className="py-2">
-                  <Link
-                    href={`/staff/parcels/${hit.parcelId}`}
-                    className="font-semibold text-action underline"
-                  >
-                    {hit.displayId ?? 'No map-lot ID'}
-                  </Link>
-                  {hit.status === 'retired' ? <span className="ml-2">Retired</span> : null}
-                </td>
-                <td>{hit.siteAddress ?? 'Unknown'}</td>
-                <td>{hit.ownerName ?? 'Unknown'}</td>
-                <td>
-                  {MATCH_LABEL[hit.matchedOn]}
-                  {hit.matchedAlias === null
-                    ? null
-                    : ` (${hit.matchedAlias.value}${hit.matchedAlias.status === 'retired' ? ', retired ID' : ''})`}
-                </td>
+        <>
+          <MoreMatchesNotice more={more} />
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b text-left">
+                <th className="py-2">Parcel</th>
+                <th>Address</th>
+                <th>Owner</th>
+                <th>Matched on</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {hits.map((hit) => (
+                <tr key={hit.parcelId} className="border-b">
+                  <td className="py-2">
+                    <Link
+                      href={`/staff/parcels/${hit.parcelId}`}
+                      className="font-semibold text-action underline"
+                    >
+                      {hit.displayId ?? 'No map-lot ID'}
+                    </Link>
+                    {hit.status === 'retired' ? <span className="ml-2">Retired</span> : null}
+                  </td>
+                  <td>{hit.siteAddress ?? 'Unknown'}</td>
+                  <td>{hit.ownerName ?? 'Unknown'}</td>
+                  <td>
+                    {MATCH_LABEL[hit.matchedOn]}
+                    {hit.matchedAlias === null
+                      ? null
+                      : ` (${hit.matchedAlias.value}${hit.matchedAlias.status === 'retired' ? ', retired ID' : ''})`}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </>
       )}
     </main>
   )

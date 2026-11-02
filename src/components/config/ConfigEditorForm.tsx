@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { useHydrated } from '@/components/useHydrated'
 import type { EditorContext } from '@/features/config/editorContext'
 import type { ConfigKind } from '@/features/config/kinds'
+import { words } from '@/lib/words'
 import type { ActionResult } from '@/server/actionRunner'
 
 interface Props {
@@ -19,6 +20,12 @@ interface Props {
   context: EditorContext
   saveAction: (formData: FormData) => Promise<ActionResult>
   publishAction: (formData: FormData) => Promise<ActionResult>
+}
+
+function statusText(pending: boolean, result: ActionResult | null): string | null {
+  if (pending) return 'Working'
+  if (result === null) return null
+  return result.ok ? result.message : result.error
 }
 
 export function ConfigEditorForm({
@@ -46,6 +53,7 @@ export function ConfigEditorForm({
   const hydrated = useHydrated()
   const Editor = CONFIG_EDITORS[kind]
   const errors: FieldErrors = result !== null && !result.ok ? (result.fieldErrors ?? {}) : {}
+  const listed = Object.entries(errors).filter(([path]) => path !== '_form')
   return (
     <form action={run} className="max-w-4xl">
       <CsrfField />
@@ -74,9 +82,16 @@ export function ConfigEditorForm({
           Save draft
         </Button>
         <p role="status" className="text-sm">
-          {result === null ? null : result.ok ? result.message : result.error}
+          {statusText(pending, result)}
         </p>
       </div>
+      {listed.length === 0 ? null : (
+        <ul role="alert" className="mt-2 list-disc pl-5 text-sm text-status-failed-fg">
+          {listed.map(([path, message]) => (
+            <li key={path}>{`${words(path)}: ${message}`}</li>
+          ))}
+        </ul>
+      )}
     </form>
   )
 }

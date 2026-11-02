@@ -7,7 +7,7 @@ const STEP_NAME_REQUIRED = 'Name every step.'
 export const ApplicationTypeBodySchema = z.object({
   key: z.string().min(1),
   label: z.string().min(1),
-  prefix: z.string().regex(/^[A-Z]{1,4}$/),
+  prefix: z.string().regex(/^[A-Z]{1,4}$/, 'Use one to four capital letters, such as BP.'),
   classification: z
     .enum(CLASSIFICATION_KEYS)
     .exclude(['nh.enforcement_zoning', 'nh.enforcement_building_code'])

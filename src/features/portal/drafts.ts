@@ -36,7 +36,15 @@ export async function listPortalTypes(db: Db, signal: AbortSignal): Promise<Port
     .sort((a, b) => a.label.localeCompare(b.label))
 }
 
-export type StartError = 'unknown_parcel' | 'not_published' | 'config_inconsistent' | 'forbidden'
+export const RETIRED_PARCEL_COPY =
+  'That parcel was retired, for example by a subdivision or merger, and takes no new applications. Search for the parcel that replaced it.'
+
+export type StartError =
+  | 'unknown_parcel'
+  | 'retired_parcel'
+  | 'not_published'
+  | 'config_inconsistent'
+  | 'forbidden'
 
 export async function startApplication(
   db: Db,
@@ -54,10 +62,11 @@ export async function startApplication(
     StartError
   >(db, async (tx) => {
     const [parcel] = await tx
-      .select({ siteAddress: parcels.siteAddress })
+      .select({ siteAddress: parcels.siteAddress, status: parcels.status })
       .from(parcels)
       .where(eq(parcels.id, input.parcelId))
     if (parcel === undefined) return err('unknown_parcel')
+    if (parcel.status === 'retired') return err('retired_parcel')
     const display = await displayIdsFor(tx, [input.parcelId])
     const where = parcel.siteAddress ?? display.get(input.parcelId) ?? 'parcel on file'
     const project = await createProject(

@@ -5,6 +5,7 @@ import { claimProjectAction } from './actions'
 export const dynamic = 'force-dynamic'
 
 const TIMEOUT_MS = 10_000
+const LINK = 'tap-target inline-flex items-center text-action underline'
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{20,100}$/
 
 export default async function ClaimPage({ params }: { params: Promise<{ token: string }> }) {
@@ -15,6 +16,26 @@ export default async function ClaimPage({ params }: { params: Promise<{ token: s
       <main className="mx-auto max-w-md p-6">
         <h1>Claim your project</h1>
         <p role="alert">This link is no longer valid. Ask the person who sent it for a new one.</p>
+        <ul className="mt-4 space-y-2">
+          {actor === null ? (
+            <li>
+              <a href="/sign-in" className={LINK}>
+                Sign in
+              </a>
+            </li>
+          ) : (
+            <li>
+              <a href="/portal/contractor" className={LINK}>
+                Your contractor projects
+              </a>
+            </li>
+          )}
+          <li>
+            <a href="/" className={LINK}>
+              Go to the home page
+            </a>
+          </li>
+        </ul>
       </main>
     )
   }

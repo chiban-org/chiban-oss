@@ -3,6 +3,9 @@ import { configuredOverlayLayers, parcelExtent } from '@/features/gis/extent'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
 
+const KEYBOARD_HINT =
+  'The map is a visual aid. Use parcel search, linked below, to find a parcel with the keyboard.'
+
 export default async function StaffMapPage() {
   const ctx = await requireStaffContext()
   const town = await getTownSettings(ctx.db, ctx.signal)
@@ -20,6 +23,7 @@ export default async function StaffMapPage() {
         layers={overlays}
         basemapRasterUrl={town.ok ? town.value.basemapRasterUrl : null}
         basemapAttribution={town.ok ? town.value.basemapAttribution : null}
+        hint={KEYBOARD_HINT}
       />
       <p className="mt-3">
         Select a parcel on the map to open its record, or{' '}

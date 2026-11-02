@@ -48,4 +48,11 @@ describe('settings page', () => {
     expect(text).not.toContain('nh.bp.decision')
     expect(text).not.toContain('town.bp.expiration')
   })
+
+  it('links to starter updates from the starter templates section', async () => {
+    const html = renderToStaticMarkup(await SettingsPage())
+    expect(html).toMatch(
+      /<a [^>]*href="\/staff\/settings\/starters"[^>]*>Check adopted starters for updates<\/a>/,
+    )
+  })
 })

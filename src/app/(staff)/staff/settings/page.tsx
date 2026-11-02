@@ -67,6 +67,11 @@ export default async function SettingsPage() {
         and an application type into your configuration. The fee amounts are examples for the
         fictional Town of Alder Pond. Change them to your own schedule before you use them.
       </p>
+      <p>
+        <Link href="/staff/settings/starters" className="text-action underline">
+          Check adopted starters for updates
+        </Link>
+      </p>
       {NH_STARTERS.map((starter) => (
         <div
           key={starter.id}

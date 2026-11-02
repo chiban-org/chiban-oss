@@ -1,6 +1,7 @@
 import { loadPack } from '@/features/packs/loadPack'
 import { policyText, ruleSummary } from '@/features/packs/ruleSummary'
 import { MERGE_FIELDS } from '@/features/templates/mergeFields'
+import { lowerFirst, words } from '@/lib/words'
 
 export interface EditorContext {
   packRules: { key: string; label: string }[]
@@ -23,6 +24,35 @@ export interface EditorContext {
   >
 }
 
+interface PackRuleLabelSource {
+  key: string
+  kind: string
+  label: string
+  citation: { label: string }
+}
+
+function duplicated(labels: string[]): (label: string) => boolean {
+  const counts = new Map<string, number>()
+  for (const label of labels) counts.set(label, (counts.get(label) ?? 0) + 1)
+  return (label) => (counts.get(label) ?? 0) > 1
+}
+
+function distinctRuleLabels(rules: PackRuleLabelSource[]): EditorContext['packRules'] {
+  const sharedName = duplicated(rules.map((r) => r.label))
+  const cited = rules.map((r) =>
+    sharedName(r.label) ? `${r.label} (${r.citation.label})` : r.label,
+  )
+  const sharedCitation = duplicated(cited)
+  return rules.map((rule, i) => {
+    const label = cited[i] ?? rule.label
+    if (!sharedCitation(label)) return { key: rule.key, label }
+    return {
+      key: rule.key,
+      label: `${rule.label} (${rule.citation.label}, ${lowerFirst(words(rule.kind))})`,
+    }
+  })
+}
+
 export function editorContext(reviewers: { id: string; name: string }[] = []): EditorContext {
   const pack = loadPack()
   const townRules: EditorContext['townRules'] = {}
@@ -37,7 +67,7 @@ export function editorContext(reviewers: { id: string; name: string }[] = []): E
     }
   }
   return {
-    packRules: pack.rules.map((r) => ({ key: r.key, label: r.label })),
+    packRules: distinctRuleLabels(pack.rules),
     classifications: pack.classifications.map((c) => ({
       key: c.key,
       label: c.label,

@@ -13,8 +13,12 @@ interface ActionFormProps {
   submitLabel: string
   variant?: 'default' | 'outline'
   className?: string
+  checkBeforeSubmit?: (form: HTMLFormElement) => string | null
   children: ReactNode
 }
+
+const UNSENT_COPY =
+  'The form could not be sent. Check your connection and any attached files, then try again.'
 
 const TEXT_NODE = 3
 
@@ -28,13 +32,34 @@ function labelOf(element: Element): string {
     .trim()
 }
 
-function missingFields(form: HTMLFormElement): string[] {
-  return Array.from(form.elements)
-    .filter(
-      (el) =>
-        el instanceof HTMLElement && 'validity' in el && !(el as HTMLInputElement).validity.valid,
-    )
-    .map(labelOf)
+function invalidFields(form: HTMLFormElement): Element[] {
+  return Array.from(form.elements).filter(
+    (el) =>
+      el instanceof HTMLElement && 'validity' in el && !(el as HTMLInputElement).validity.valid,
+  )
+}
+
+function problemMessage(invalid: Element[]): string | null {
+  if (invalid.length === 0) return null
+  const empty = invalid.filter((el) => (el as HTMLInputElement).validity.valueMissing)
+  const wrong = invalid.filter((el) => !(el as HTMLInputElement).validity.valueMissing)
+  return [
+    empty.length > 0 ? `Fill in: ${empty.map(labelOf).join(', ')}.` : '',
+    wrong.length > 0 ? `Check: ${wrong.map(labelOf).join(', ')}.` : '',
+  ]
+    .filter((part) => part !== '')
+    .join(' ')
+}
+
+async function sendOrExplain(
+  action: (formData: FormData) => Promise<ActionResult>,
+  formData: FormData,
+): Promise<ActionResult> {
+  try {
+    return await action(formData)
+  } catch {
+    return { ok: false, error: UNSENT_COPY }
+  }
 }
 
 function isFailure(result: ActionResult | null): boolean {
@@ -46,6 +71,7 @@ export function ActionForm({
   submitLabel,
   variant = 'outline',
   className,
+  checkBeforeSubmit,
   children,
 }: ActionFormProps) {
   const {
@@ -53,35 +79,32 @@ export function ActionForm({
     pending,
     formProps,
   } = useFormAction<ActionResult | null>(
-    async (_previous, formData) => await action(formData),
+    async (_previous, formData) => await sendOrExplain(action, formData),
     null,
     isFailure,
   )
   const hydrated = useHydrated()
-  const [missing, setMissing] = useState<string[]>([])
+  const [problem, setProblem] = useState<string | null>(null)
   const [edited, setEdited] = useState(false)
   const onInput = () => {
-    setMissing([])
+    setProblem(null)
     setEdited(true)
   }
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
-    const empty = missingFields(event.currentTarget)
-    setMissing(empty)
+    const found =
+      problemMessage(invalidFields(event.currentTarget)) ??
+      checkBeforeSubmit?.(event.currentTarget) ??
+      null
+    setProblem(found)
     setEdited(false)
-    if (empty.length > 0) {
+    if (found !== null) {
       event.preventDefault()
       return
     }
     formProps.onSubmit(event)
   }
-  const message =
-    missing.length > 0
-      ? `Fill in: ${missing.join(', ')}.`
-      : result === null || edited
-        ? null
-        : result.ok
-          ? result.message
-          : result.error
+  const answer = result === null || edited ? null : result.ok ? result.message : result.error
+  const message = problem ?? answer
   return (
     <form {...formProps} onSubmit={onSubmit} onInput={onInput} noValidate className={className}>
       <CsrfField />
