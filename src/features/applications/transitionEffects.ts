@@ -4,10 +4,21 @@ import { type CoreState, TERMINAL_STATES } from '@/features/applications/states'
 import type { AnyActor } from '@/features/audit/actorRef'
 import { markClockMet, startClocksFor, stopRunningClocks } from '@/features/clocks/startClocks'
 import { assessFees } from '@/features/fees/assess'
+import {
+  cancelOpenInspections,
+  type PermitStateReason,
+} from '@/features/inspections/permitStateEffect'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import { queueForParties } from '@/features/notifications/queue'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
+
+const INSPECTION_CANCEL_REASON: Partial<Record<CoreState, PermitStateReason>> = {
+  suspended: 'permit_suspended',
+  expired: 'permit_expired',
+  closed: 'permit_closed',
+  withdrawn: 'permit_closed',
+}
 
 const DECISION_CLOCK_KEY = 'nh.bp.decision'
 
@@ -63,4 +74,8 @@ export async function runTransitionEffects(
     await startClocksFor(tx, app.id, 'permit_issued', today, signal)
   }
   if (TERMINAL_STATES.includes(to)) await stopRunningClocks(tx, app.id, signal)
+  const inspectionReason = INSPECTION_CANCEL_REASON[to]
+  if (inspectionReason !== undefined) {
+    await cancelOpenInspections(tx, app.id, inspectionReason, signal)
+  }
 }

@@ -18,6 +18,9 @@ export const NOTIFICATION_EVENTS = [
   'application_issued',
   'application_denied',
   'review_assigned',
+  'inspection_scheduled',
+  'inspection_cancelled',
+  'inspection_result',
 ] as const
 
 export const notificationOutbox = pgTable(

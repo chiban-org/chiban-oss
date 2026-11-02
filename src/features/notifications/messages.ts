@@ -68,6 +68,30 @@ export const MESSAGES: Record<NotificationEvent, Builder> = {
       [`Application ${c.payload.number} was denied. Open the application for the details.`],
       portalLink(c.applicationId),
     ),
+  inspection_scheduled: (c) =>
+    compose(
+      `Inspection scheduled: ${c.payload.number}, ${c.payload.inspectionLabel ?? ''} on ${c.payload.onDate ?? ''} at ${c.payload.atTime ?? ''}`,
+      [
+        `An inspection for ${c.payload.number} is scheduled for ${c.payload.onDate ?? ''} at ${c.payload.atTime ?? ''}. Someone should be at the site.`,
+      ],
+      portalLink(c.applicationId),
+    ),
+  inspection_cancelled: (c) =>
+    compose(
+      `Inspection cancelled: ${c.payload.number}, ${c.payload.inspectionLabel ?? ''}`,
+      [
+        `The ${c.payload.inspectionLabel ?? ''} inspection for ${c.payload.number} was cancelled. Open the application for the details.`,
+      ],
+      portalLink(c.applicationId),
+    ),
+  inspection_result: (c) =>
+    compose(
+      `Inspection ${c.payload.result ?? ''}: ${c.payload.number}, ${c.payload.inspectionLabel ?? ''}`,
+      [
+        `The ${c.payload.inspectionLabel ?? ''} inspection for ${c.payload.number} ${c.payload.result ?? 'was recorded'}. Open the application for the details.`,
+      ],
+      portalLink(c.applicationId),
+    ),
   review_assigned: (c) =>
     compose(
       `Review requested: ${c.payload.number}`,

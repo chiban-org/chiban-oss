@@ -13,6 +13,10 @@ export interface NotificationPayload {
   amountCents?: number
   receiptNumber?: string
   assignmentId?: string
+  inspectionLabel?: string
+  onDate?: string
+  atTime?: string
+  result?: string
 }
 
 export interface QueueInput {
@@ -24,8 +28,15 @@ export interface QueueInput {
 }
 
 const PARTY_ROLES = ['applicant', 'owner', 'agent'] as const
+export const INSPECTION_PARTY_ROLES = ['applicant', 'owner', 'agent', 'contractor'] as const
 
-export async function partyRecipients(tx: Tx, applicationId: string): Promise<string[]> {
+type RecipientRole = 'applicant' | 'owner' | 'agent' | 'contractor'
+
+export async function partyRecipients(
+  tx: Tx,
+  applicationId: string,
+  roles: readonly RecipientRole[] = PARTY_ROLES,
+): Promise<string[]> {
   const rows = await tx
     .select({ userId: projectParties.userId })
     .from(applications)
@@ -35,7 +46,7 @@ export async function partyRecipients(tx: Tx, applicationId: string): Promise<st
         eq(applications.id, applicationId),
         isNull(projectParties.removedAt),
         isNotNull(projectParties.userId),
-        inArray(projectParties.role, [...PARTY_ROLES]),
+        inArray(projectParties.role, [...roles]),
       ),
     )
   return [...new Set(rows.flatMap((r) => (r.userId === null ? [] : [r.userId])))]
@@ -73,12 +84,13 @@ export async function queueNotification(
 
 export async function queueForParties(
   tx: Tx,
-  input: Omit<QueueInput, 'recipientUserIds'>,
+  input: Omit<QueueInput, 'recipientUserIds'> & { roles?: readonly RecipientRole[] },
   signal: AbortSignal,
 ): Promise<void> {
+  const { roles, ...rest } = input
   await queueNotification(
     tx,
-    { ...input, recipientUserIds: await partyRecipients(tx, input.applicationId) },
+    { ...rest, recipientUserIds: await partyRecipients(tx, input.applicationId, roles) },
     signal,
   )
 }
