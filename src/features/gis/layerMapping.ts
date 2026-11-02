@@ -1,4 +1,6 @@
 import { z } from 'zod'
+import { camaMappingSchema } from '@/features/cama/mapping'
+import type { LayerKey } from '@/features/gis/exceptionKinds'
 
 export const idFieldSchema = z.object({
   field: z.string().min(1),
@@ -25,3 +27,9 @@ export const featureMappingSchema = z.object({
 })
 
 export type FeatureMapping = z.infer<typeof featureMappingSchema>
+
+export function mappingSchemaFor(key: LayerKey): z.ZodType {
+  if (key === 'parcels') return layerMappingSchema
+  if (key === 'cama') return camaMappingSchema
+  return featureMappingSchema
+}

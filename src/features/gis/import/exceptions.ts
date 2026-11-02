@@ -71,7 +71,7 @@ interface HeldPayload {
     siteAddress: string | null
     ownerName: string | null
     mailingAddress: string | null
-    geometry: GeoJSON.MultiPolygon
+    geometry?: GeoJSON.MultiPolygon
     extraIds?: { format: string; value: string }[]
   }
 }
@@ -113,7 +113,7 @@ async function applyHeld(
   await tx
     .update(parcels)
     .set({
-      geom: proposed.geometry,
+      ...(proposed.geometry === undefined ? {} : { geom: proposed.geometry }),
       siteAddress: proposed.siteAddress ?? parcel.siteAddress,
       ownerName: proposed.ownerName,
       mailingAddress: proposed.mailingAddress,

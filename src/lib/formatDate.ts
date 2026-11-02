@@ -23,3 +23,12 @@ export function formatInstant(instant: Date, timeZone: string): string {
     .format(instant)
     .replace(NARROW_NO_BREAK_SPACE, ' ')
 }
+
+export function formatInstantDate(instant: Date, timeZone: string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone,
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(instant)
+}

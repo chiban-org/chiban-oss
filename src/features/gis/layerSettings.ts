@@ -6,7 +6,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { LAYER_ADAPTERS, LAYER_KEYS } from '@/features/gis/exceptionKinds'
-import { featureMappingSchema, layerMappingSchema } from '@/features/gis/layerMapping'
+import { layerMappingSchema, mappingSchemaFor } from '@/features/gis/layerMapping'
 import { err, ok, type Result } from '@/types/result'
 
 const MAX_STALE_DAYS = 3650
@@ -22,7 +22,20 @@ const schema = z.object({
 })
 
 export type LayerSettingsInput = z.input<typeof schema>
-export type LayerSettingsError = 'forbidden' | 'invalid_settings' | 'invalid_mapping'
+export type LayerSettingsError =
+  | 'forbidden'
+  | 'invalid_settings'
+  | 'invalid_mapping'
+  | 'owner_source_conflict'
+
+async function camaOwnsOwnerData(db: Db, mapping: unknown): Promise<boolean> {
+  const parcelMapping = layerMappingSchema.safeParse(mapping)
+  if (!parcelMapping.success) return false
+  const { ownerName, mailingAddress } = parcelMapping.data
+  if (ownerName === undefined && mailingAddress === undefined) return false
+  const [cama] = await db.select().from(gisLayers).where(eq(gisLayers.key, 'cama'))
+  return cama?.adapter != null
+}
 
 export async function updateLayerSettings(
   db: Db,
@@ -41,9 +54,11 @@ export async function updateLayerSettings(
   } catch {
     return err('invalid_mapping')
   }
-  const mappingSchema = parsed.data.key === 'parcels' ? layerMappingSchema : featureMappingSchema
-  const checked = mappingSchema.safeParse(mapping)
+  const checked = mappingSchemaFor(parsed.data.key).safeParse(mapping)
   if (!checked.success) return err('invalid_mapping')
+  if (parsed.data.key === 'parcels' && (await camaOwnsOwnerData(db, checked.data))) {
+    return err('owner_source_conflict')
+  }
   await db.transaction(async (tx) => {
     const [before] = await tx.select().from(gisLayers).where(eq(gisLayers.key, parsed.data.key))
     await tx

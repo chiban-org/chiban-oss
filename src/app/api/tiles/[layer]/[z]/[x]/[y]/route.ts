@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { db } from '@/db/client'
-import { LAYER_KEYS, type LayerKey } from '@/features/gis/exceptionKinds'
+import { GEOMETRY_LAYER_KEYS } from '@/features/gis/exceptionKinds'
 import { tileFor } from '@/features/gis/tiles'
 
 export const runtime = 'nodejs'
@@ -15,8 +15,8 @@ interface TileParams {
   y: string
 }
 
-function isLayer(value: string): value is LayerKey {
-  return (LAYER_KEYS as readonly string[]).includes(value)
+function isLayer(value: string): value is (typeof GEOMETRY_LAYER_KEYS)[number] {
+  return (GEOMETRY_LAYER_KEYS as readonly string[]).includes(value)
 }
 
 export async function GET(

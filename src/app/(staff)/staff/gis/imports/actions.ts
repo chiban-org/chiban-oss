@@ -7,6 +7,8 @@ import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/act
 const COPY = {
   invalid_settings: 'Check the adapter, source URL, and numbers.',
   invalid_mapping: 'The mapping is not valid JSON for this layer.',
+  owner_source_conflict:
+    'Owner name and mailing address come from the CAMA file. Remove them from the parcels mapping.',
 } as const
 
 export async function updateLayerSettingsAction(formData: FormData): Promise<ActionResult> {

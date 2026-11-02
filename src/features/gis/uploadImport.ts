@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import type { Db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
-import { LAYER_KEYS } from '@/features/gis/exceptionKinds'
+import { GEOMETRY_LAYER_KEYS } from '@/features/gis/exceptionKinds'
 import { runImport } from '@/features/gis/import/runImport'
 import type { SourceFeature } from '@/features/gis/import/types'
 import { readGeoJson } from '@/features/gis/readers/geojson'
@@ -15,7 +15,7 @@ export const UPLOAD_LIMIT_BYTES = 100 * 1024 * 1024
 const FILE_ADAPTERS = ['file_geojson', 'file_shapefile', 'file_geopackage'] as const
 
 const fieldsSchema = z.object({
-  layerKey: z.enum(LAYER_KEYS),
+  layerKey: z.enum(GEOMETRY_LAYER_KEYS),
   adapter: z.enum(FILE_ADAPTERS),
   table: z.string().min(1).optional(),
 })

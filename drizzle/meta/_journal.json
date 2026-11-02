@@ -351,6 +351,13 @@
       "when": 1793611447555,
       "tag": "0049_health",
       "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1793612468780,
+      "tag": "0050_cama_layer",
+      "breakpoints": true
     }
   ]
 }

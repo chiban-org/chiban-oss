@@ -11,7 +11,8 @@ import { getLayerStatus } from '@/features/gis/layerStatus'
 import { getTownSettings } from '@/features/town/settings'
 import { formatInstant } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
-import { runLayerRefreshAction, updateLayerSettingsAction } from './actions'
+import { updateLayerSettingsAction } from './actions'
+import { LayerImportAction } from './LayerImportAction'
 
 const STATE_WORDS = {
   not_configured: 'Not configured',
@@ -25,6 +26,11 @@ const ADAPTER_OPTIONS = [
   ['', 'None (upload a file)'],
   ['esri_rest', 'Esri REST feature service'],
   ['axisgis', 'AxisGIS'],
+] as const
+
+const CAMA_ADAPTER_OPTIONS = [
+  ['', 'None'],
+  ['file_cama_csv', 'CAMA CSV file'],
 ] as const
 
 const adapterStatus: string = AXISGIS_ADAPTER_STATUS
@@ -62,7 +68,7 @@ export default async function StaffImportsPage() {
             aria-labelledby={`layer-${key}`}
           >
             <h2 id={`layer-${key}`} className="capitalize">
-              {key}
+              {key === 'cama' ? 'CAMA' : key}
             </h2>
             <p>
               {STATE_WORDS[status.state]}
@@ -77,19 +83,7 @@ export default async function StaffImportsPage() {
                 {AXISGIS_STUB_NOTICE}
               </p>
             ) : null}
-            {canImport ? (
-              remote ? (
-                <ActionForm
-                  action={runLayerRefreshAction}
-                  submitLabel="Run import"
-                  variant={key === 'parcels' ? 'default' : 'outline'}
-                >
-                  <input type="hidden" name="key" value={key} />
-                </ActionForm>
-              ) : (
-                <ImportUploadForm layerKey={key} primary={key === 'parcels'} />
-              )
-            ) : null}
+            {canImport ? <LayerImportAction layerKey={key} remote={remote} /> : null}
             {canConfigure ? (
               <details className="mt-4">
                 <summary className="cursor-pointer font-medium">Layer settings</summary>
@@ -103,7 +97,7 @@ export default async function StaffImportsPage() {
                     label="Source"
                     name="adapter"
                     defaultValue={layer.adapter ?? ''}
-                    options={ADAPTER_OPTIONS}
+                    options={key === 'cama' ? CAMA_ADAPTER_OPTIONS : ADAPTER_OPTIONS}
                   />
                   <TextField
                     label="Source URL"

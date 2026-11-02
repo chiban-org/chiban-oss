@@ -3,6 +3,7 @@ import { eq, sql } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { gisLayers, importRuns, parcelIdFormats } from '@/db/schema'
 import { requireCapability } from '@/features/authz/capabilities'
+import { camaMappingSchema } from '@/features/cama/mapping'
 import { type ImportExceptionKind, LAYER_ADAPTERS } from '@/features/gis/exceptionKinds'
 import { applyFeatureRow, prepareFeatureRows } from '@/features/gis/import/applyFeatureRow'
 import { applyParcelRow, type RowResult } from '@/features/gis/import/applyParcelRow'
@@ -11,13 +12,18 @@ import { resolveCleanedExceptions } from '@/features/gis/import/exceptions'
 import { hashJson } from '@/features/gis/import/hash'
 import { reportMissingFromLayer } from '@/features/gis/import/missingFromLayer'
 import { prepareRows } from '@/features/gis/import/prepareRows'
+import { processCamaRows } from '@/features/gis/import/processCama'
 import type {
   ImportActor,
   ImportError,
   ImportInput,
   ImportRunReport,
 } from '@/features/gis/import/types'
-import { featureMappingSchema, layerMappingSchema } from '@/features/gis/layerMapping'
+import {
+  featureMappingSchema,
+  layerMappingSchema,
+  mappingSchemaFor,
+} from '@/features/gis/layerMapping'
 import type { IdFormat } from '@/features/parcels/idFormats'
 import { retryUnresolvedLinks } from '@/features/parcels/recordLinks'
 import { err, ok, type Result } from '@/types/result'
@@ -50,6 +56,17 @@ async function processRows(
   mapping: unknown,
   t: Tally,
 ): Promise<{ keys: string[]; primaryValues: Set<string>; format: string | null }> {
+  if (input.layerKey === 'cama') {
+    const parsed = camaMappingSchema.parse(mapping)
+    const done = await processCamaRows(
+      ctx,
+      input.features,
+      parsed.id.format,
+      await loadFormats(ctx.tx),
+    )
+    for (const r of done.results) tally(t, r)
+    return { keys: done.keys, primaryValues: done.seenIds, format: done.format }
+  }
   if (input.layerKey === 'parcels') {
     const parsed = layerMappingSchema.parse(mapping)
     const rows = prepareRows(input.features, parsed, await loadFormats(ctx.tx))
@@ -171,7 +188,7 @@ export async function runImport(
   }
   const [layer] = await db.select().from(gisLayers).where(eq(gisLayers.key, input.layerKey))
   if (layer === undefined) return err('layer_not_configured')
-  const schema = input.layerKey === 'parcels' ? layerMappingSchema : featureMappingSchema
+  const schema = mappingSchemaFor(input.layerKey)
   if (!schema.safeParse(layer.mapping).success) return err('invalid_mapping')
   const runId = randomUUID()
   try {
