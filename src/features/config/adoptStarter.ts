@@ -14,7 +14,7 @@ import { err, ok, type Result } from '@/types/result'
 
 export type AdoptError = 'forbidden' | 'already_adopted' | 'unknown_starter' | PublishError
 
-function membersInOrder(starter: StarterBundle): Omit<NewVersionInput, 'upstream'>[] {
+export function membersInOrder(starter: StarterBundle): Omit<NewVersionInput, 'upstream'>[] {
   return [
     { kind: 'form', key: starter.form.key, body: starter.form },
     { kind: 'fee_schedule', key: starter.feeSchedule.key, body: starter.feeSchedule },

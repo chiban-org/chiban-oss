@@ -1,0 +1,118 @@
+'use client'
+
+import { ApplicationTypeEditor } from '@/components/config/ApplicationTypeEditor'
+import { useEditorContext } from '@/components/config/EditorContextProvider'
+import { FeeLinesEditor } from '@/components/config/FeeLinesEditor'
+import { FormFieldsEditor } from '@/components/config/FormFieldsEditor'
+import { InspectionSettingsEditor } from '@/components/config/InspectionSettingsEditor'
+import { PaymentSettingsEditor } from '@/components/config/PaymentSettingsEditor'
+import type { FieldErrors } from '@/components/config/primitives'
+import {
+  ChecklistEditor,
+  ConditionsEditor,
+  LocalAmendmentEditor,
+  TemplateEditor,
+} from '@/components/config/SimpleEditors'
+import { TownRuleEditor } from '@/components/config/TownRuleEditor'
+import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
+import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
+import type {
+  ConfigIssue,
+  LocalCodeAmendmentBody,
+  TownRuleSettingBody,
+} from '@/features/config/kinds'
+import type { FeeScheduleBody } from '@/features/fees/feeSchema'
+import type { FormBody } from '@/features/forms/formSchema'
+import type { ChecklistBody } from '@/features/inspections/checklistSchema'
+import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
+import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
+import type { TemplateBody } from '@/features/templates/templateSchema'
+
+export interface EditorProps {
+  body: unknown
+  onChange: (body: unknown) => void
+  issues: ConfigIssue[]
+}
+
+function errorsOf(issues: ConfigIssue[]): FieldErrors {
+  return Object.fromEntries(issues.map((i) => [i.path, i.message]))
+}
+
+export function FormAdapter({ body, onChange, issues }: EditorProps) {
+  return <FormFieldsEditor body={body as FormBody} onChange={onChange} errors={errorsOf(issues)} />
+}
+
+export function FeeAdapter({ body, onChange, issues }: EditorProps) {
+  return (
+    <FeeLinesEditor body={body as FeeScheduleBody} onChange={onChange} errors={errorsOf(issues)} />
+  )
+}
+
+export function TemplateAdapter({ body, onChange, issues }: EditorProps) {
+  const { mergeFields } = useEditorContext()
+  return (
+    <TemplateEditor
+      body={body as TemplateBody}
+      onChange={onChange}
+      errors={errorsOf(issues)}
+      mergeFields={mergeFields}
+    />
+  )
+}
+
+export function ConditionsAdapter({ body, onChange, issues }: EditorProps) {
+  return (
+    <ConditionsEditor
+      body={body as ConditionLibraryBody}
+      onChange={onChange}
+      errors={errorsOf(issues)}
+    />
+  )
+}
+
+export function ChecklistAdapter({ body, onChange, issues }: EditorProps) {
+  return (
+    <ChecklistEditor body={body as ChecklistBody} onChange={onChange} errors={errorsOf(issues)} />
+  )
+}
+
+export function PaymentAdapter({ body, onChange }: EditorProps) {
+  return <PaymentSettingsEditor body={body as PaymentSettingsBody} onChange={onChange} />
+}
+
+export function InspectionAdapter({ body, onChange, issues }: EditorProps) {
+  return (
+    <InspectionSettingsEditor
+      body={body as InspectionSettingsBody}
+      onChange={onChange}
+      errors={errorsOf(issues)}
+    />
+  )
+}
+
+export function AmendmentAdapter({ body, onChange }: EditorProps) {
+  return <LocalAmendmentEditor body={body as LocalCodeAmendmentBody} onChange={onChange} />
+}
+
+export function TownRuleAdapter({ body, onChange, issues }: EditorProps) {
+  const { townRules } = useEditorContext()
+  const typed = body as TownRuleSettingBody
+  const rule = townRules[typed.ruleKey]
+  if (rule === undefined) {
+    return <p role="alert">This rule is not a town setting in the jurisdiction pack.</p>
+  }
+  return <TownRuleEditor body={typed} onChange={onChange} errors={errorsOf(issues)} rule={rule} />
+}
+
+export function ApplicationTypeAdapter({ body, onChange, issues }: EditorProps) {
+  const { packRules, classifications } = useEditorContext()
+  return (
+    <ApplicationTypeEditor
+      body={body as ApplicationTypeBody}
+      onChange={onChange}
+      errors={errorsOf(issues)}
+      packRules={packRules}
+      classifications={classifications}
+    />
+  )
+}

@@ -38,6 +38,9 @@ export const ERROR_COPY: Record<string, string> = {
   unknown_format: 'Unknown ID format.',
   already_adopted: 'This starter has already been adopted.',
   unknown_starter: 'Unknown starter.',
+  not_adopted: 'That starter has not been adopted.',
+  unknown_path:
+    'One of the selected changes is no longer in the upstream difference. Reload the page.',
   no_such_version: 'That version does not exist.',
   not_found: 'That record was not found.',
   config_inconsistent:
