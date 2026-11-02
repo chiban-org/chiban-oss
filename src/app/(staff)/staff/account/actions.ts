@@ -34,7 +34,7 @@ export async function confirmTotpAction(_prev: TotpState, formData: FormData): P
   if (!parsed.success) return { error: 'Enter the 6-digit code.' }
   const result = await confirmTotpEnrollment(db, guard.value.userId, parsed.data.code, signal)
   if (!result.ok) return { error: 'That code did not match. Try the next one.' }
-  redirect('/staff/account')
+  redirect('/staff/account?totp=enabled')
 }
 
 export async function signOutAction(formData: FormData): Promise<void> {

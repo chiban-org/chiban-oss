@@ -11,10 +11,10 @@ export function PreviewTable({ preview }: { preview: CamaPreview }) {
   return (
     <div className="my-4 overflow-x-auto">
       <p className="text-sm">{`Showing ${preview.rows.length} of ${preview.totalRows} rows.`}</p>
-      <table className="w-full text-sm">
+      <table className="w-full border-separate border-spacing-x-4 text-sm">
         <thead>
           <tr className="border-b text-left">
-            <th className="py-2">Line</th>
+            <th className="py-2 pl-0">Line</th>
             <th>Composed ID</th>
             <th>Status</th>
             <th>Owner</th>
