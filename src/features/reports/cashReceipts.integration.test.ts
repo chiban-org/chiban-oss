@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { feeAssessments } from '@/db/schema'
+import { recordReturnedCheck } from '@/features/ledger/otherReversals'
 import { postEntry } from '@/features/ledger/postEntry'
 import type { AllocationInput, PostEntryInput } from '@/features/ledger/types'
 import { cashReceiptsReport } from '@/features/reports/cashReceipts'
@@ -13,6 +14,7 @@ import {
   submittedTrade,
   type TradeFixture,
 } from '@/test/ledgerFixtures'
+import { staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -151,6 +153,38 @@ describe('cashReceiptsReport', () => {
     expect((await report()).checks).toEqual([
       { number: '1042', payerName: 'Pat Contractor', amountCents: 4500 },
     ])
+  })
+
+  it('a returned check no longer appears in the checks for deposit', async () => {
+    const returned = await post(
+      entry({
+        method: 'check',
+        checkNumber: '1042',
+        amountCents: 4500,
+        allocations: [lineAllocation(trade, 4500)],
+      }),
+    )
+    await post(
+      entry({
+        method: 'check',
+        checkNumber: '1043',
+        amountCents: 4500,
+        allocations: [lineAllocation(second, 4500)],
+      }),
+    )
+    const result = await recordReturnedCheck(
+      handle.db,
+      await staffActor(handle.db, 'finance'),
+      {
+        entryId: returned,
+        reason: 'Insufficient funds notice',
+        returnedOn: '2027-03-05' as CivilDate,
+      },
+      signal,
+      { now: new Date('2027-03-06T15:00:00Z') },
+    )
+    expect(result.ok).toBe(true)
+    expect((await report()).checks.map((c) => c.number)).toEqual(['1043'])
   })
 
   it('reviewer is forbidden', async () => {

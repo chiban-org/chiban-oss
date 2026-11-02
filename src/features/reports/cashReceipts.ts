@@ -1,4 +1,4 @@
-import { eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { feeAssessments, ledgerAllocations, ledgerEntries } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
@@ -48,6 +48,20 @@ async function labelsFor(db: Db, assessmentIds: string[]): Promise<Map<string, s
   return labels
 }
 
+async function returnedCheckIds(db: Db, entryIds: string[]): Promise<Set<string>> {
+  if (entryIds.length === 0) return new Set()
+  const rows = await db
+    .select({ reverses: ledgerEntries.reversesEntryId })
+    .from(ledgerEntries)
+    .where(
+      and(
+        eq(ledgerEntries.entryType, 'returned_check'),
+        inArray(ledgerEntries.reversesEntryId, entryIds),
+      ),
+    )
+  return new Set(rows.flatMap((r) => (r.reverses === null ? [] : [r.reverses])))
+}
+
 export async function cashReceiptsReport(
   db: Db,
   actor: Actor,
@@ -73,6 +87,10 @@ export async function cashReceiptsReport(
               entries.map((e) => e.id),
             ),
           )
+  const returned = await returnedCheckIds(
+    db,
+    entries.map((e) => e.id),
+  )
   const methodByEntry = new Map(entries.map((e) => [e.id, methodOf(e)]))
   const totalsByMethod = zeroes()
   for (const e of entries) totalsByMethod[methodOf(e)] += e.amountCents
@@ -112,7 +130,7 @@ export async function cashReceiptsReport(
     grandTotalCents: entries.reduce((sum, e) => sum + e.amountCents, 0),
     entryCount: entries.length,
     checks: entries
-      .filter((e) => e.entryType === 'payment' && e.method === 'check')
+      .filter((e) => e.entryType === 'payment' && e.method === 'check' && !returned.has(e.id))
       .map((e) => ({
         number: e.checkNumber ?? '',
         payerName: e.payerName,
