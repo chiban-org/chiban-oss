@@ -47,6 +47,9 @@ export const ErrorIds = {
   PAY_UNKNOWN_PROCESSOR: 'E_PAY_003',
 
   INSP_SLOT_INVARIANT: 'E_INSP_001',
+
+  EXPORT_REF_CYCLE: 'E_EXP_001',
+  EXPORT_ARCHIVE_INVALID: 'E_EXP_002',
 } as const
 
 export type ErrorId = (typeof ErrorIds)[keyof typeof ErrorIds]
