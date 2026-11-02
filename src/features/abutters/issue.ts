@@ -16,6 +16,7 @@ import { assessFees } from '@/features/fees/assess'
 import { loadPack } from '@/features/packs/loadPack'
 import { mayManageAbutters } from '@/features/rosters/manage'
 import { err, ok, type Result } from '@/types/result'
+import { applicantParcelIds } from './applicantParcels'
 import { finalRecipients, openIncomplete, refreshRecipients } from './draft'
 import { getList, type ListSnapshot } from './queries'
 import type { Candidate, IncompleteReason } from './types'
@@ -72,6 +73,7 @@ export async function issueList(
         typeKey: app.typeBody.key,
         receivedDate: app.receivedDate,
       },
+      applicantParcelIds: await applicantParcelIds(tx, app.id, signal),
       drawnOn: list.drawnOn,
       strategy: { key: list.strategyKey, version: list.strategyVersion, params },
       resolver: { key: list.resolverKey, version: list.resolverVersion },

@@ -1,4 +1,4 @@
-import { and, desc, eq, ne } from 'drizzle-orm'
+import { and, desc, eq } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import {
   abutterListCandidates,
@@ -66,7 +66,7 @@ export async function generateList(
     const [latest] = await tx
       .select()
       .from(abutterLists)
-      .where(and(eq(abutterLists.applicationId, app.id), ne(abutterLists.status, 'discarded')))
+      .where(eq(abutterLists.applicationId, app.id))
       .orderBy(desc(abutterLists.version))
       .limit(1)
     const carried =

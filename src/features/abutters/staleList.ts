@@ -4,11 +4,13 @@ import { abutterLists, remediationTasks } from '@/db/schema'
 
 export const STALE_LIST_TASK_KIND = 'regenerate_abutter_list'
 const STALE_LIST_TRANSITION = 'abutter_list:determination_changed'
+const DETERMINATION_CHANGED = 'determination changed'
 
 export async function flagIssuedListStale(
   db: DbOrTx,
   applicationId: string,
   signal: AbortSignal,
+  cause: string = DETERMINATION_CHANGED,
 ): Promise<void> {
   signal.throwIfAborted()
   const [issued] = await db
@@ -30,7 +32,7 @@ export async function flagIssuedListStale(
   await db.insert(remediationTasks).values({
     applicationId,
     kind: STALE_LIST_TASK_KIND,
-    description: 'Regenerate the abutter list: determination changed',
+    description: `Regenerate the abutter list: ${cause}`,
     transitionId: STALE_LIST_TRANSITION,
   })
 }

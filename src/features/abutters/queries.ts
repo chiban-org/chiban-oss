@@ -9,6 +9,7 @@ export type ListRow = typeof abutterLists.$inferSelect
 
 export interface ListSnapshot {
   application: { id: string; number: string; typeKey: string; receivedDate: string | null }
+  applicantParcelIds?: string[]
   drawnOn: string
   strategy: { key: string; version: number; params: unknown }
   resolver: { key: string; version: number }

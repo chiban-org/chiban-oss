@@ -2,7 +2,7 @@
 
 import { BoardSchema } from '@packs/nh/schema'
 import { certificationInput, completenessVoteInput } from '@/app/(staff)/staff/boards/parse'
-import { applicantParcelIds, setApplicantParcels } from '@/features/abutters/applicantParcels'
+import { addApplicantParcel } from '@/features/abutters/applicantParcels'
 import { terminateForUnpaidNoticeCosts } from '@/features/abutters/noticeCosts'
 import { recordCompletenessVote, setAcceptanceMeeting } from '@/features/boards/acceptance'
 import { errorOrOk } from '@/features/boards/actionResult'
@@ -157,12 +157,11 @@ export async function addApplicantParcelAction(formData: FormData): Promise<Acti
     const applicationId = text(formData, 'applicationId')
     const found = await resolveParcelId(db, { value: text(formData, 'parcelRef') }, signal)
     if (!found.ok) return { ok: false, error: boardErrorCopy('unknown_parcel') }
-    const existing = await applicantParcelIds(db, applicationId, signal)
     return errorOrOk(
-      await setApplicantParcels(
+      await addApplicantParcel(
         db,
         actor,
-        { applicationId, parcelIds: [...existing, found.value.parcelId] },
+        { applicationId, parcelId: found.value.parcelId },
         signal,
       ),
       'Parcels for this application updated.',

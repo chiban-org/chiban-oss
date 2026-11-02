@@ -7,6 +7,7 @@ import {
   noticeSets,
   regionalImpactDeterminations,
 } from '@/db/schema'
+import { drawnForCurrentParcels } from '@/features/abutters/listCurrency'
 import { currentIssuedList } from '@/features/abutters/queries'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { BoardSettingsBody } from '@/features/boards/boardSettingsSchema'
@@ -129,6 +130,7 @@ async function loadContext(
   if (classification === undefined) return err('not_found')
   const list = await currentIssuedList(tx, applicationId, signal)
   if (list === null) return err('no_issued_list')
+  if (!(await drawnForCurrentParcels(tx, list, signal))) return err('list_out_of_date')
   const all = classification.noticeRequirementKeys.flatMap((key) => {
     const rule = pack.rules.find((r) => r.key === key)
     return rule?.kind === 'notice_requirement' ? [rule] : []
