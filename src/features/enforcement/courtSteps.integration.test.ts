@@ -277,6 +277,7 @@ describe('answer periods and the motion gate', () => {
     )
     if (!owner.ok) throw new Error('owner')
     expect(await recipientDue(owner.value.recipientId)).toMatchObject({ due: '2027-04-14' })
+    expect(await orderStatus()).toBe('served')
     expect((await step('filed_with_clerk', '2027-03-26')).ok).toBe(true)
     expect(await step('motion_to_enforce', '2027-04-10')).toEqual({
       ok: false,

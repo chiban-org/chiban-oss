@@ -89,6 +89,22 @@ export function statusOf(rule: CeaseAndDesistRule, state: ServiceState): Service
   return serviceStatus(rule, state)
 }
 
+async function settleService(
+  tx: Tx,
+  order: typeof enforcementOrders.$inferSelect,
+  signal: AbortSignal,
+): Promise<ServiceStatus> {
+  const status = statusOf(orderRule(order), await loadServiceState(tx, order.id, signal))
+  if (status.complete && order.status === 'issued') {
+    await tx
+      .update(enforcementOrders)
+      .set({ status: 'served', rowVersion: order.rowVersion + 1 })
+      .where(eq(enforcementOrders.id, order.id))
+  }
+  await refreshAnswerDues(tx, order.id, signal)
+  return status
+}
+
 async function issuedOrderForUpdate(tx: Tx, orderId: string) {
   const [order] = await tx
     .select()
@@ -134,7 +150,7 @@ export async function listRecipient(
         source: value.source,
       })
       .returning({ id: orderServiceRecipients.id })
-    await refreshAnswerDues(tx, value.orderId, signal)
+    await settleService(tx, order, signal)
     await writeAudit(
       tx,
       {
@@ -205,6 +221,7 @@ export async function recordRoleCheck(
         target: [orderServiceRoleChecks.orderId, orderServiceRoleChecks.role],
         set: values,
       })
+    await settleService(tx, order, signal)
     await writeAudit(
       tx,
       {
@@ -305,15 +322,7 @@ export async function recordServiceEvent(
           recordedBy: actor.userId,
         })
         .returning({ id: orderServiceEvents.id })
-      const state = await loadServiceState(tx, value.orderId, signal)
-      const status = statusOf(rule, state)
-      if (status.complete && order.status === 'issued') {
-        await tx
-          .update(enforcementOrders)
-          .set({ status: 'served', rowVersion: order.rowVersion + 1 })
-          .where(eq(enforcementOrders.id, order.id))
-      }
-      await refreshAnswerDues(tx, value.orderId, signal)
+      const status = await settleService(tx, order, signal)
       await writeAudit(
         tx,
         {

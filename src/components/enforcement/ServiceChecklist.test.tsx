@@ -57,6 +57,42 @@ const state: ServiceState = {
 }
 
 describe('ServiceChecklist', () => {
+  it('after posting and publication it asks staff to list the owner so the answer period can start', () => {
+    const fallback: ServiceState = {
+      checks: [
+        { role: 'record_owner', outcome: 'owner_not_found' },
+        { role: 'taxpayer', outcome: 'same_as_owner' },
+        { role: 'occupying_tenant', outcome: 'none_exist' },
+        { role: 'person_in_control', outcome: 'none_exist' },
+        { role: 'mortgagee_of_record', outcome: 'none_exist' },
+      ],
+      recipients: [],
+      events: [
+        { ...eventRow('p', null, '2027-03-02'), method: 'posting_on_property' as const },
+        ...['2027-03-04', '2027-03-11', '2027-03-18', '2027-03-25'].map((on) => ({
+          ...eventRow(`n-${on}`, null, on),
+          method: 'newspaper_publication' as const,
+        })),
+      ],
+    }
+    render(<ServiceChecklist rule={rule} status={serviceStatus(rule, fallback)} state={fallback} />)
+    expect(
+      screen.queryByText(
+        'List the owner of record by name, with the address as unknown, so the answer period can start.',
+      ),
+    ).not.toBeNull()
+  })
+
+  it('every role with no check yet says so, the owner agent included', () => {
+    const empty: ServiceState = { checks: [], recipients: [], events: [] }
+    const { container } = render(
+      <ServiceChecklist rule={rule} status={serviceStatus(rule, empty)} state={empty} />,
+    )
+    const rows = Array.from(container.querySelectorAll(':scope > div > ul > li'))
+    expect(rows.length).toBe(rule.recipientRoles.length)
+    expect(rows.every((li) => li.textContent.includes('Not yet checked'))).toBe(true)
+  })
+
   it('ServiceChecklist marks the unserved tenant with a text label', () => {
     const status = serviceStatus(rule, state)
     const { container } = render(<ServiceChecklist rule={rule} status={status} state={state} />)

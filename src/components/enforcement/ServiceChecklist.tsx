@@ -17,23 +17,20 @@ function Missing({ children }: { children: string }) {
 
 function RoleRow({
   role,
-  rule,
   status,
   state,
 }: {
   role: CeaseAndDesistRule['recipientRoles'][number]
-  rule: CeaseAndDesistRule
   status: ServiceStatus
   state: ServiceState
 }) {
   const check = state.checks.find((c) => c.role === role)
   const listed = state.recipients.filter((r) => r.role === role)
-  const isOwner = rule.ownerRoles.includes(role)
   const gap = status.missing.find((m) => m.role === role)
   return (
     <li className="space-y-1 rounded-md border p-3">
       <p className="m-0 font-medium">{ROLE_LABELS[role]}</p>
-      {check === undefined && !isOwner ? (
+      {check === undefined && listed.length === 0 ? (
         <p className="m-0">
           <Missing>Not yet checked</Missing>
         </p>
@@ -56,6 +53,14 @@ function RoleRow({
           })}
         </ul>
       )}
+      {role === 'record_owner' && status.fallbackCompletedOn !== null && listed.length === 0 ? (
+        <p className="m-0">
+          <Missing>
+            List the owner of record by name, with the address as unknown, so the answer period can
+            start.
+          </Missing>
+        </p>
+      ) : null}
       {gap?.reason === 'publication_incomplete' ? (
         <p className="m-0">
           <Missing>Posting and publication not complete</Missing>
@@ -81,7 +86,7 @@ export function ServiceChecklist({
       </p>
       <ul className="m-0 list-none space-y-2 p-0">
         {rule.recipientRoles.map((role) => (
-          <RoleRow key={role} role={role} rule={rule} status={status} state={state} />
+          <RoleRow key={role} role={role} status={status} state={state} />
         ))}
       </ul>
       {status.fallbackCompletedOn === null ? null : (
