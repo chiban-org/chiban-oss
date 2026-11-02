@@ -2,9 +2,9 @@ import { ActionForm } from '@/components/ActionForm'
 import { type ExportTargetView, listTargets } from '@/features/export/targets/manageTargets'
 import { ONEDRIVE_STUB_NOTE } from '@/features/export/targets/oneDrive'
 import { getTownSettings } from '@/features/town/settings'
-import { formatCivilDate } from '@/lib/formatDate'
+import { DEFAULT_TIME_ZONE } from '@/features/town/timeZone'
+import { formatInstantLong } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
-import { todayInTimeZone } from '@/types/civilDate'
 import { runTargetNowAction, saveTargetAction, setTargetActiveAction } from './actions'
 import { TargetFields } from './TargetFields'
 
@@ -83,9 +83,8 @@ export default async function ExportTargetsPage() {
     )
   }
   const town = await getTownSettings(ctx.db, ctx.signal)
-  const zone = town.ok ? town.value.timeZone : 'UTC'
-  const day = (instant: Date | null) =>
-    instant === null ? '' : formatCivilDate(todayInTimeZone(zone, instant))
+  const zone = town.ok ? town.value.timeZone : DEFAULT_TIME_ZONE
+  const day = (instant: Date | null) => (instant === null ? '' : formatInstantLong(instant, zone))
   return (
     <main>
       <h1>Copy exports to your own storage</h1>

@@ -63,7 +63,8 @@ describe('admin health page', () => {
   it('shows job health, the firing alert, channel readiness and a long-form town date', async () => {
     state.actor = admin
     const html = renderToStaticMarkup(await HealthPage())
-    expect(html).toContain('system.heartbeat')
+    expect(html).toContain('System heartbeat')
+    expect(html).not.toContain('system.heartbeat')
     expect(html).toContain('Disk /data is 85% full')
     expect(html).toContain('November 2, 2026')
     expect(html).toContain('Never tested')

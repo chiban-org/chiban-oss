@@ -4,11 +4,12 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { configuredChannelKinds } from '@/features/health/channels/configured'
 import { PAGER_STUB_NOTICE } from '@/features/health/channels/pagerChannel'
 import { jobHealth } from '@/features/health/jobHealth'
+import { jobLabel } from '@/features/health/jobLabels'
 import { alertReadiness, type ReadinessStatus } from '@/features/health/syntheticAlert'
 import { getTownSettings } from '@/features/town/settings'
-import { formatCivilDate } from '@/lib/formatDate'
+import { DEFAULT_TIME_ZONE } from '@/features/town/timeZone'
+import { formatInstantOrNever } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
-import { todayInTimeZone } from '@/types/civilDate'
 
 export const dynamic = 'force-dynamic'
 
@@ -38,9 +39,8 @@ export default async function HealthPage() {
     alertReadiness(ctx.db, kinds, now, ctx.signal),
     getTownSettings(ctx.db, ctx.signal),
   ])
-  const zone = town.ok ? town.value.timeZone : 'UTC'
-  const day = (instant: Date | null) =>
-    instant === null ? 'Never' : formatCivilDate(todayInTimeZone(zone, instant))
+  const zone = town.ok ? town.value.timeZone : DEFAULT_TIME_ZONE
+  const day = (instant: Date | null) => formatInstantOrNever(instant, zone)
   return (
     <main>
       <h1>System health</h1>
@@ -61,7 +61,7 @@ export default async function HealthPage() {
         <ul className="m-0 list-none space-y-2 p-0">
           {jobs.map((job) => (
             <li key={job.name} className="rounded-md border p-3">
-              <p className="m-0 font-medium">{job.name}</p>
+              <p className="m-0 font-medium">{jobLabel(job.name)}</p>
               <p className="m-0">
                 Last success: {day(job.lastSuccessAt)}
                 {job.stale ? '. This job is overdue.' : ''}

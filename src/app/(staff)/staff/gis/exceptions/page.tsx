@@ -3,7 +3,7 @@ import { TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
 import { IMPORT_EXCEPTION_KINDS, type ImportExceptionKind } from '@/features/gis/exceptionKinds'
 import { listExceptions } from '@/features/gis/exceptionsList'
-import { exceptionDetailText } from '@/features/gis/import/runText'
+import { exceptionDetailText, exceptionTitle } from '@/features/gis/import/runText'
 import { townTimeZone } from '@/features/town/timeZone'
 import { requireStaffContext } from '@/server/requireStaff'
 import { acceptAllOwnerChangesAction, acceptHeldRowAction, dismissExceptionAction } from './actions'
@@ -88,7 +88,7 @@ export default async function StaffExceptionsPage({ searchParams }: ExceptionsPa
         <ul className="divide-y">
           {rows.map((row) => (
             <li key={row.id} className="py-4">
-              <p className="font-semibold">{`${row.kind.replaceAll('_', ' ')}: ${row.rowKey}`}</p>
+              <p className="font-semibold">{exceptionTitle(row.kind, row.rowKey)}</p>
               <p className="text-sm text-muted-foreground">
                 {exceptionDetailText(row.detail, row.createdAt, timeZone)}
               </p>

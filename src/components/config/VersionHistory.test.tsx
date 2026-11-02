@@ -49,7 +49,7 @@ describe('VersionHistory', () => {
     render(<VersionHistory rows={ROWS} timeZone="America/New_York" />)
     const row1 = screen.getByText('Version 1').closest('tr') as HTMLElement
     expect(within(row1).getByText('Superseded')).toBeTruthy()
-    expect(within(row1).getByText('nh.starter.building version 1')).toBeTruthy()
+    expect(within(row1).getByText('Building or demolition permit starter, version 1')).toBeTruthy()
     expect(within(row1).getByText(/Alex Admin/)).toBeTruthy()
     const row4 = screen.getByText('Version 4').closest('tr') as HTMLElement
     expect(within(row4).getByText('Draft')).toBeTruthy()
@@ -69,7 +69,7 @@ describe('VersionHistory', () => {
         rollbackSlot={(row) => <button type="button">{`Restore ${row.version}`}</button>}
       />,
     )
-    expect(screen.getByText(/2027-03-02 10:00/)).toBeTruthy()
+    expect(screen.getByText(/March 2, 2027, 10:00 AM/)).toBeTruthy()
     expect(screen.queryByRole('button', { name: 'Restore 3' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Restore 4' })).toBeNull()
     expect(screen.getByRole('button', { name: 'Restore 2' })).toBeTruthy()

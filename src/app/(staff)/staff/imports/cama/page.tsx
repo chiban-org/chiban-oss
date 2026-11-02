@@ -1,6 +1,6 @@
 import { desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { gisLayers, importRuns } from '@/db/schema'
+import { gisLayers, importRuns, parcelIdFormats } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
 import {
   CAMA_ADAPTER_STATUS,
@@ -11,7 +11,8 @@ import {
 } from '@/features/cama/mapping'
 import { getLayerStatus } from '@/features/gis/layerStatus'
 import { getTownSettings } from '@/features/town/settings'
-import { formatInstantDate } from '@/lib/formatDate'
+import { formatInstantLong } from '@/lib/formatDate'
+import { words } from '@/lib/words'
 import { requireStaffContext } from '@/server/requireStaff'
 import { CamaImportPanel } from './CamaImportPanel'
 
@@ -49,6 +50,9 @@ export default async function CamaImportPage() {
     .limit(RECENT_RUNS)
   const town = await getTownSettings(ctx.db, ctx.signal)
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
+  const formats = await ctx.db
+    .select({ key: parcelIdFormats.key, label: parcelIdFormats.label })
+    .from(parcelIdFormats)
   const saved = camaMappingSchema.safeParse(layer?.mapping)
   return (
     <main>
@@ -62,10 +66,10 @@ export default async function CamaImportPage() {
         {STATE_WORDS[status.state]}
         {status.lastSuccessAt === null
           ? ''
-          : `. Last success ${formatInstantDate(new Date(status.lastSuccessAt), zone)}`}
+          : `. Last success ${formatInstantLong(new Date(status.lastSuccessAt), zone)}`}
         {status.lastFailureAt === null
           ? ''
-          : `. Last failure ${formatInstantDate(new Date(status.lastFailureAt), zone)}`}
+          : `. Last failure ${formatInstantLong(new Date(status.lastFailureAt), zone)}`}
         .
       </p>
       <p>
@@ -78,7 +82,10 @@ export default async function CamaImportPage() {
       </p>
       <h2>Chiban CAMA CSV v1 layout</h2>
       <p>{`The default layout has these columns, in this order: ${DEFAULT_CAMA_COLUMNS.join(', ')}.`}</p>
-      <CamaImportPanel saved={saved.success ? saved.data : DEFAULT_CAMA_MAPPING} />
+      <CamaImportPanel
+        saved={saved.success ? saved.data : DEFAULT_CAMA_MAPPING}
+        formats={formats}
+      />
       <h2>Recent runs</h2>
       {runs.length === 0 ? (
         <p>No CAMA imports have run yet.</p>
@@ -87,7 +94,7 @@ export default async function CamaImportPage() {
           {runs.map((run) => (
             <li key={run.id}>
               <Link href={`/staff/gis/imports/${run.id}`} className="text-action underline">
-                {`${formatInstantDate(run.startedAt, zone)}, ${run.status}`}
+                {`${formatInstantLong(run.startedAt, zone)}, ${words(run.status)}`}
               </Link>
             </li>
           ))}

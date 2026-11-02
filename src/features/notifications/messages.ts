@@ -1,6 +1,7 @@
 import { env } from '@/config/env'
 import type { NotificationEvent } from '@/db/schema'
 import type { NotificationPayload } from '@/features/notifications/queue'
+import { humanizeIsoDates } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 
 export interface Rendered {
@@ -12,6 +13,10 @@ export interface Rendered {
 interface Context {
   applicationId: string
   payload: NotificationPayload
+}
+
+function longDate(onDate: string | undefined): string {
+  return humanizeIsoDates(onDate ?? '')
 }
 
 function portalLink(applicationId: string): string {
@@ -70,9 +75,9 @@ export const MESSAGES: Record<NotificationEvent, Builder> = {
     ),
   inspection_scheduled: (c) =>
     compose(
-      `Inspection scheduled: ${c.payload.number}, ${c.payload.inspectionLabel ?? ''} on ${c.payload.onDate ?? ''} at ${c.payload.atTime ?? ''}`,
+      `Inspection scheduled: ${c.payload.number}, ${c.payload.inspectionLabel ?? ''} on ${longDate(c.payload.onDate)} at ${c.payload.atTime ?? ''}`,
       [
-        `An inspection for ${c.payload.number} is scheduled for ${c.payload.onDate ?? ''} at ${c.payload.atTime ?? ''}. Someone should be at the site.`,
+        `An inspection for ${c.payload.number} is scheduled for ${longDate(c.payload.onDate)} at ${c.payload.atTime ?? ''}. Someone should be at the site.`,
       ],
       portalLink(c.applicationId),
     ),

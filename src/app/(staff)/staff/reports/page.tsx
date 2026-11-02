@@ -3,6 +3,7 @@ import { permitVolumeReport } from '@/features/reports/permitVolume'
 import { processingTimeReport } from '@/features/reports/processingTime'
 import { resolveRange } from '@/features/reports/rangeInput'
 import { revenueReport } from '@/features/reports/revenue'
+import { applicationTypeLabels } from '@/features/reports/typeLabels'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -41,6 +42,14 @@ export default async function ReportsPage({
       </main>
     )
   }
+  const typeLabels = await applicationTypeLabels(
+    ctx.db,
+    [
+      ...(volume.ok ? volume.value.map((r) => r.type) : []),
+      ...(processing.ok ? processing.value.map((r) => r.type) : []),
+    ],
+    ctx.signal,
+  )
   const query = `from=${range.from}&to=${range.to}`
   return (
     <main>
@@ -100,7 +109,7 @@ export default async function ReportsPage({
               {volume.value.map((r) => (
                 <tr key={`${r.month}-${r.type}`} className="border-b">
                   <td className="py-2">{monthLabel(r.month)}</td>
-                  <td>{r.type}</td>
+                  <td>{typeLabels.get(r.type) ?? r.type}</td>
                   <td className="text-right">{r.received}</td>
                   <td className="text-right">{r.issued}</td>
                   <td className="text-right">{r.closed}</td>
@@ -138,7 +147,7 @@ export default async function ReportsPage({
             <tbody>
               {processing.value.map((r) => (
                 <tr key={r.type} className="border-b">
-                  <td className="py-2">{r.type}</td>
+                  <td className="py-2">{typeLabels.get(r.type) ?? r.type}</td>
                   <td className="text-right">{r.issued}</td>
                   <td className="text-right">{days(r.medianReceivedToIssued)}</td>
                   <td className="text-right">{days(r.p90ReceivedToIssued)}</td>
