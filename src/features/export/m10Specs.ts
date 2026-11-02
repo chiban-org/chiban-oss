@@ -15,4 +15,5 @@ export const M10_SPECS: Spec[] = [
   { table: t.dispositionBatches },
   { table: t.dispositionItems },
   { table: t.dispositionTombstones },
+  { table: t.fileTombstones },
 ]

@@ -2,7 +2,8 @@ import { createHash } from 'node:crypto'
 import { createReadStream } from 'node:fs'
 import { eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { files } from '@/db/schema'
+import { fileDeletions, files } from '@/db/schema'
+import { withFileLock } from '@/features/files/fileLock'
 import { blobKey } from '@/features/files/ingest'
 import { matchContentType, type SignatureTable, SNIFF_BYTES } from '@/features/files/sniff'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -42,23 +43,26 @@ export async function ingestLocalFile(
     const digest = await digestFile(path, signal)
     const contentType = matchContentType(allowed, digest.head)
     if (contentType === null) return err('type_not_allowed')
-    const [known] = await db
-      .select({ sha: files.sha256 })
-      .from(files)
-      .where(eq(files.sha256, digest.sha256))
-    if (known !== undefined) return ok({ sha256: digest.sha256, contentType, created: false })
-    await store.upload(blobKey(digest.sha256), createReadStream(path), contentType, signal)
-    const inserted = await db
-      .insert(files)
-      .values({
-        sha256: digest.sha256,
-        sizeBytes: digest.size,
-        contentType,
-        storageKey: blobKey(digest.sha256),
-      })
-      .onConflictDoNothing()
-      .returning({ sha: files.sha256 })
-    return ok({ sha256: digest.sha256, contentType, created: inserted.length > 0 })
+    return await withFileLock(db, digest.sha256, signal, async (tx) => {
+      const [known] = await tx
+        .select({ sha: files.sha256 })
+        .from(files)
+        .where(eq(files.sha256, digest.sha256))
+      if (known !== undefined) return ok({ sha256: digest.sha256, contentType, created: false })
+      await store.upload(blobKey(digest.sha256), createReadStream(path), contentType, signal)
+      const inserted = await tx
+        .insert(files)
+        .values({
+          sha256: digest.sha256,
+          sizeBytes: digest.size,
+          contentType,
+          storageKey: blobKey(digest.sha256),
+        })
+        .onConflictDoNothing()
+        .returning({ sha: files.sha256 })
+      await tx.delete(fileDeletions).where(eq(fileDeletions.sha256, digest.sha256))
+      return ok({ sha256: digest.sha256, contentType, created: inserted.length > 0 })
+    })
   } catch (e) {
     if (e instanceof Error && e.name === 'AbortError') throw e
     return err('read_error')

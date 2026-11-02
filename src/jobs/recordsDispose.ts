@@ -1,5 +1,7 @@
 import { JOB_NAMES } from '@/constants/jobNames'
 import { executeDisposition } from '@/features/disposition/execute'
+import { finishDisposition } from '@/features/files/releaseFile'
+import { getObjectStore } from '@/features/storage/objectStore'
 import { err, ok } from '@/types/result'
 import { defineJob } from './defineJob'
 
@@ -12,6 +14,8 @@ export const recordsDisposeJob = defineJob<DisposePayload>({
   dedupKey: (p) => `${JOB_NAMES.RECORDS_DISPOSE}:${p.batchId}`,
   handler: async (payload, ctx) => {
     const ran = await executeDisposition(ctx.root, { batchId: payload.batchId }, ctx.signal)
-    return ran.ok || ran.error === 'not_approved' ? ok(undefined) : err(ran.error)
+    if (!ran.ok && ran.error !== 'not_approved') return err(ran.error)
+    await finishDisposition(ctx.root, getObjectStore(), payload.batchId, ctx.signal)
+    return ok(undefined)
   },
 })

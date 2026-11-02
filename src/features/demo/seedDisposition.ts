@@ -6,6 +6,7 @@ import { proposeDisposition } from '@/features/disposition/propose'
 import { attachDocument } from '@/features/documents/attach'
 import { openCase } from '@/features/enforcement/cases'
 import { storeGeneratedBytes } from '@/features/files/ingest'
+import { finishDisposition } from '@/features/files/releaseFile'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { recordRetentionEvent } from '@/features/records/recordEvents'
 import { addDays } from '@/types/civilDate'
@@ -64,6 +65,7 @@ export async function seedDispositionDemo(ctx: RtkSeedContext): Promise<void> {
     'approve the demo disposition',
   )
   must(await executeDisposition(ctx.db, { batchId: proposed.batchId }, ctx.signal), 'execute it')
+  await finishDisposition(ctx.db, ctx.store, proposed.batchId, ctx.signal)
   await caseWithPhoto(ctx, 'Pine Hill Road', 'Open complaint photo log')
   const eligible = await caseWithPhoto(ctx, 'Cedar Court', 'Resolved complaint photo log')
   must(

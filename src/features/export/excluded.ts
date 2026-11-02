@@ -11,4 +11,5 @@ export const EXCLUDED_TABLES: Record<string, string> = {
   worker_state: 'operational state',
   anonymous_intake_probe_tokens: 'short-lived probe secret',
   document_renditions: 'regenerable from the version',
+  file_deletions: 'operational queue',
 }

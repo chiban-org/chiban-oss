@@ -763,6 +763,19 @@ File: `data/fee_overrides.ndjson`. Ordered by id.
 References:
 - `application_id` refers to `applications`
 
+### file_tombstones
+
+File: `data/file_tombstones.ndjson`. Ordered by sha256.
+
+- `sha256`: text
+- `size_bytes`: bigint
+- `content_type`: text
+- `deleted_at`: timestamp with time zone
+- `batch_id`: uuid
+
+References:
+- `batch_id` refers to `disposition_batches`
+
 ### files
 
 File: `data/files.ndjson`. Ordered by sha256.

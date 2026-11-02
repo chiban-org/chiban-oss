@@ -1,7 +1,8 @@
 import { createHash } from 'node:crypto'
 import { eq, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { documentVersions, files } from '@/db/schema'
+import { documentVersions, fileDeletions, files } from '@/db/schema'
+import { withFileLock } from '@/features/files/fileLock'
 import { type AllowedType, SNIFF_BYTES, sniffMatches } from '@/features/files/sniff'
 import { isPreconditionFailure, type ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
@@ -50,6 +51,7 @@ async function recordFile(
     .values({ ...input, storageKey: blobKey(input.sha256) })
     .onConflictDoNothing()
     .returning({ sha256: files.sha256 })
+  await db.delete(fileDeletions).where(eq(fileDeletions.sha256, input.sha256))
   return inserted.length > 0
 }
 
@@ -70,25 +72,27 @@ export async function ingestTempObject(
     if (!stream.ok) return err('not_found')
     const digest = await digestStream(stream.value, signal)
     if (!sniffMatches(input.declaredType, digest.head)) return err('type_mismatch')
-    const known = await db
-      .select({ sha: files.sha256 })
-      .from(files)
-      .where(eq(files.sha256, digest.sha256))
-    if (known.length > 0) return ok({ sha256: digest.sha256, created: false })
-    try {
-      await store.copy(input.tempKey, blobKey(digest.sha256), signal, {
-        ...(head.value.etag === null ? {} : { ifMatch: head.value.etag }),
+    return await withFileLock(db, digest.sha256, signal, async (tx) => {
+      const known = await tx
+        .select({ sha: files.sha256 })
+        .from(files)
+        .where(eq(files.sha256, digest.sha256))
+      if (known.length > 0) return ok({ sha256: digest.sha256, created: false })
+      try {
+        await store.copy(input.tempKey, blobKey(digest.sha256), signal, {
+          ...(head.value.etag === null ? {} : { ifMatch: head.value.etag }),
+        })
+      } catch (e) {
+        if (isPreconditionFailure(e)) return err('size_mismatch')
+        throw e
+      }
+      const created = await recordFile(tx, {
+        sha256: digest.sha256,
+        sizeBytes: input.declaredSize,
+        contentType: input.declaredType,
       })
-    } catch (e) {
-      if (isPreconditionFailure(e)) return err('size_mismatch')
-      throw e
-    }
-    const created = await recordFile(db, {
-      sha256: digest.sha256,
-      sizeBytes: input.declaredSize,
-      contentType: input.declaredType,
+      return ok({ sha256: digest.sha256, created })
     })
-    return ok({ sha256: digest.sha256, created })
   } finally {
     await store.delete(input.tempKey, signal)
   }
@@ -103,8 +107,10 @@ export async function storeGeneratedBytes(
 ): Promise<{ sha256: string }> {
   signal.throwIfAborted()
   const sha256 = sha256Hex(bytes)
-  await store.putBytes(blobKey(sha256), bytes, contentType, signal)
-  await recordFile(db, { sha256, sizeBytes: bytes.length, contentType })
+  await withFileLock(db, sha256, signal, async (tx) => {
+    await store.putBytes(blobKey(sha256), bytes, contentType, signal)
+    await recordFile(tx, { sha256, sizeBytes: bytes.length, contentType })
+  })
   return { sha256 }
 }
 

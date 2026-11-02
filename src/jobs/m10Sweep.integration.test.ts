@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { JOB_NAMES } from '@/constants/jobNames'
-import { dispositionBatches, redactionJobs, renditionApprovals } from '@/db/schema'
+import { dispositionBatches, fileDeletions, redactionJobs, renditionApprovals } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { deriveRenditions } from '@/features/renditions/derive'
 import { SWEEP_TARGETS } from '@/jobs/sweepTargets'
@@ -96,5 +96,18 @@ describe('records sweep targets', () => {
     })
     const items = await target(JOB_NAMES.RECORDS_DISPOSE).findOverdue(handle.db, NOW, signal)
     expect(items.map((i) => i.payload)).toEqual([{ batchId: stale?.id }])
+  })
+
+  it('a pending file deletion older than 10 minutes is re-enqueued and a fresh one is not', async () => {
+    const [batch] = await handle.db
+      .insert(dispositionBatches)
+      .values({ asOf: '2027-03-01', status: 'executed', proposedBy: staff.userId })
+      .returning({ id: dispositionBatches.id })
+    await handle.db.insert(fileDeletions).values([
+      { sha256: 'a'.repeat(64), batchId: batch?.id ?? '', queuedAt: minutesAgo(11) },
+      { sha256: 'b'.repeat(64), batchId: batch?.id ?? '', queuedAt: minutesAgo(2) },
+    ])
+    const items = await target(JOB_NAMES.FILES_DELETE).findOverdue(handle.db, NOW, signal)
+    expect(items.map((i) => i.payload)).toEqual([{ sha256: 'a'.repeat(64) }])
   })
 })
