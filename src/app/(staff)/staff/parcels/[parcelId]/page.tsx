@@ -149,6 +149,7 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
       <div className="mt-6">
         <RecordsSection
           history={view.history}
+          parcelHrefBase="/staff/parcels/"
           renderAction={(record) =>
             record.linkId === undefined ? null : (
               <ActionForm action={carryForwardAction} submitLabel="Carry forward to this parcel">

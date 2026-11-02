@@ -43,9 +43,9 @@ describe('RecordsSection', () => {
     }
     render(<RecordsSection history={history} />)
     expect(screen.getByText('Deck permit')).toBeTruthy()
-    expect(
-      screen.getByText('from parent lot 007020000000, before the 2027 subdivision'),
-    ).toBeTruthy()
+    expect(screen.getByRole('heading', { level: 3 }).textContent).toBe(
+      'from parent lot 007020000000, before the 2027 subdivision',
+    )
     expect(screen.getByText('Old shed permit')).toBeTruthy()
     expect(screen.getAllByText('Issued')).toHaveLength(2)
   })
@@ -57,7 +57,9 @@ describe('RecordsSection', () => {
       sourcesRegistered: 1,
     }
     render(<RecordsSection history={history} />)
-    expect(screen.getByText('Carried forward from parcel 007020000000')).toBeTruthy()
+    expect(screen.getByText(/Carried forward from parcel/).textContent).toBe(
+      'Carried forward from parcel 007020000000',
+    )
   })
 
   it('renders a record with no page as plain text, not a link', () => {
@@ -68,5 +70,27 @@ describe('RecordsSection', () => {
     }
     render(<RecordsSection history={history} />)
     expect(screen.getByText('Deck permit').closest('a')).toBeNull()
+  })
+
+  it('links the parent lot in an ancestral heading and the source of a carried-forward record', () => {
+    const history: ParcelHistory = {
+      own: [{ ...record, carriedFrom: { parcelId: 'src', displayId: '007030000000' } }],
+      ancestral: [
+        {
+          parcelId: 'par',
+          displayId: '007020000000',
+          label: 'from parent lot 007020000000, before the 2027 subdivision',
+          records: [{ ...record, recordId: 'r2', title: 'Old shed permit' }],
+        },
+      ],
+      sourcesRegistered: 1,
+    }
+    render(<RecordsSection history={history} parcelHrefBase="/staff/parcels/" />)
+    expect(screen.getByRole('link', { name: '007020000000' }).getAttribute('href')).toBe(
+      '/staff/parcels/par',
+    )
+    expect(screen.getByRole('link', { name: '007030000000' }).getAttribute('href')).toBe(
+      '/staff/parcels/src',
+    )
   })
 })
