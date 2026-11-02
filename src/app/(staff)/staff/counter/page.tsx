@@ -110,6 +110,11 @@ export default async function CounterPage({ searchParams }: Props) {
             Selected parcel: <strong>{display.get(parcelId) ?? 'No map-lot ID'}</strong>
           </p>
         )}
+        {q.trim() === '' ? null : q.trim().length < 2 ? (
+          <p>Enter at least two characters.</p>
+        ) : hits.length === 0 ? (
+          <p>No parcels match that search.</p>
+        ) : null}
         <ul className="space-y-1">
           {hits.map((hit) => (
             <li key={hit.parcelId}>
