@@ -34,6 +34,79 @@ are restored without them and must be set up again.
 
 ## Entities
 
+### abutter_list_candidates
+
+File: `data/abutter_list_candidates.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `list_id`: uuid
+- `parcel_id`: uuid
+- `reasons`: jsonb
+- `excluded`: boolean
+- `exclusion_reason`: text, nullable
+
+References:
+- `list_id` refers to `abutter_lists`
+- `parcel_id` refers to `parcels`
+
+### abutter_list_recipients
+
+File: `data/abutter_list_recipients.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `list_id`: uuid
+- `origin_key`: text
+- `position`: integer
+- `data`: jsonb
+- `excluded`: boolean
+- `exclusion_reason`: text, nullable
+- `qualifies`: boolean, nullable
+- `decision_reason`: text, nullable
+
+References:
+- `list_id` refers to `abutter_lists`
+
+### abutter_lists
+
+File: `data/abutter_lists.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `application_id`: uuid
+- `version`: integer
+- `status`: text
+- `strategy_key`: text
+- `strategy_version`: integer
+- `resolver_key`: text
+- `resolver_version`: integer
+- `drawn_on`: date
+- `layers`: jsonb
+- `incomplete`: jsonb
+- `crossings_attested_by`: uuid, nullable
+- `crossings_attested_at`: timestamp with time zone, nullable
+- `issued_by`: uuid, nullable
+- `issued_at`: timestamp with time zone, nullable
+- `snapshot`: jsonb, nullable
+- `snapshot_sha256`: text, nullable
+- `superseded_by`: uuid, nullable
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+
+### acceptance_schedules
+
+File: `data/acceptance_schedules.ndjson`. Ordered by application_id.
+
+- `application_id`: uuid
+- `meeting_id`: uuid
+- `set_by`: uuid
+- `set_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+- `meeting_id` refers to `board_meetings`
+
 ### alias_overrides
 
 File: `data/alias_overrides.ndjson`. Ordered by id.
@@ -95,6 +168,35 @@ File: `data/application_number_counters.ndjson`. Ordered by prefix, year.
 - `year`: integer
 - `last`: integer
 
+### application_parcels
+
+File: `data/application_parcels.ndjson`. Ordered by application_id, parcel_id.
+
+- `application_id`: uuid
+- `parcel_id`: uuid
+- `added_by`: uuid
+- `added_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+- `parcel_id` refers to `parcels`
+
+### application_professionals
+
+File: `data/application_professionals.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `application_id`: uuid
+- `name`: text
+- `profession`: text
+- `business_address`: text
+- `seal_on_plat`: boolean
+- `added_by`: uuid
+- `added_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+
 ### application_snapshots
 
 File: `data/application_snapshots.ndjson`. Ordered by id.
@@ -138,6 +240,21 @@ File: `data/applications.ndjson`. Ordered by id.
 References:
 - `project_id` refers to `projects`
 
+### association_rosters
+
+File: `data/association_rosters.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `parcel_id`: uuid
+- `association_name`: text
+- `officers`: jsonb
+- `as_of`: date
+- `updated_by`: uuid
+- `updated_at`: timestamp with time zone
+
+References:
+- `parcel_id` refers to `parcels`
+
 ### attestations
 
 File: `data/attestations.ndjson`. Ordered by id.
@@ -166,6 +283,21 @@ File: `data/audit_log.ndjson`. Ordered by id.
 - `entity_id`: text
 - `before`: jsonb, nullable
 - `after`: jsonb, nullable
+
+### board_meetings
+
+File: `data/board_meetings.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `board`: text
+- `meeting_date`: date
+- `kind`: text
+- `status`: text
+- `location`: text
+- `starts_at_minute`: integer
+- `cancel_reason`: text, nullable
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
 
 ### board_packet_access
 
@@ -347,6 +479,23 @@ File: `data/code_edition_records.ndjson`. Ordered by application_id.
 References:
 - `application_id` refers to `applications`
 
+### completeness_votes
+
+File: `data/completeness_votes.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `application_id`: uuid
+- `meeting_id`: uuid
+- `voted_on`: date
+- `outcome`: text
+- `reason`: text, nullable
+- `recorded_by`: uuid
+- `recorded_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+- `meeting_id` refers to `board_meetings`
+
 ### config_versions
 
 File: `data/config_versions.ndjson`. Ordered by id.
@@ -408,6 +557,20 @@ File: `data/cutover_rows.ndjson`. Ordered by legacy_number.
 - `imported_by`: uuid
 - `imported_at`: timestamp with time zone
 - `source_sha256`: text
+
+References:
+- `application_id` refers to `applications`
+
+### des_proximity_determinations
+
+File: `data/des_proximity_determinations.ndjson`. Ordered by application_id.
+
+- `application_id`: uuid
+- `suggested`: jsonb
+- `determination`: text
+- `reason`: text
+- `determined_by`: uuid
+- `determined_on`: date
 
 References:
 - `application_id` refers to `applications`
@@ -923,6 +1086,23 @@ File: `data/parcels.ndjson`. Ordered by id.
 - `created_at`: timestamp with time zone
 - `updated_at`: timestamp with time zone
 
+### park_rosters
+
+File: `data/park_rosters.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `parcel_id`: uuid
+- `park_name`: text
+- `owner_name`: text
+- `owner_mailing_address`: text
+- `tenants`: jsonb
+- `as_of`: date
+- `updated_by`: uuid
+- `updated_at`: timestamp with time zone
+
+References:
+- `parcel_id` refers to `parcels`
+
 ### payment_attempt_transitions
 
 File: `data/payment_attempt_transitions.ndjson`. Ordered by id.
@@ -1131,6 +1311,28 @@ File: `data/regional_impact_notices.ndjson`. Ordered by id.
 References:
 - `application_id` refers to `applications`
 
+### regional_impact_parties
+
+File: `data/regional_impact_parties.ndjson`. Ordered by application_id, municipality_key.
+
+- `application_id`: uuid
+- `municipality_key`: text
+
+References:
+- `application_id` refers to `applications`
+
+### reliance_links
+
+File: `data/reliance_links.ndjson`. Ordered by variance_application_id, planning_application_id.
+
+- `variance_application_id`: uuid
+- `planning_application_id`: uuid
+- `resolved_on`: date, nullable
+
+References:
+- `variance_application_id` refers to `applications`
+- `planning_application_id` refers to `applications`
+
 ### remediation_tasks
 
 File: `data/remediation_tasks.ndjson`. Ordered by id.
@@ -1145,6 +1347,23 @@ File: `data/remediation_tasks.ndjson`. Ordered by id.
 
 References:
 - `application_id` refers to `applications`
+
+### restriction_holdings
+
+File: `data/restriction_holdings.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `parcel_id`: uuid
+- `holder_name`: text
+- `holder_mailing_address`: text
+- `restriction_kind`: text
+- `recorded_reference`: text
+- `ended_on`: date, nullable
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `parcel_id` refers to `parcels`
 
 ### retention_assignments
 
@@ -1199,6 +1418,16 @@ File: `data/role_capabilities.ndjson`. Ordered by role, capability.
 - `role`: text
 - `capability`: text
 
+### roster_reviews
+
+File: `data/roster_reviews.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `kind`: text
+- `reviewed_on`: date
+- `reviewed_by`: uuid
+- `recorded_at`: timestamp with time zone
+
 ### rule_transitions_applied
 
 File: `data/rule_transitions_applied.ndjson`. Ordered by id.
@@ -1207,6 +1436,21 @@ File: `data/rule_transitions_applied.ndjson`. Ordered by id.
 - `applied_at`: timestamp with time zone
 - `applied_by`: text
 - `affected`: integer
+
+### selectmen_certifications
+
+File: `data/selectmen_certifications.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `application_id`: uuid
+- `requested_on`: date
+- `outcome`: text
+- `decided_on`: date, nullable
+- `recorded_by`: uuid
+- `recorded_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
 
 ### town_settings
 

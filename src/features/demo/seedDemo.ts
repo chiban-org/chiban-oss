@@ -6,6 +6,7 @@ import { townSettings, userRoles, users } from '@/db/schema'
 import { seedDefaultGrants } from '@/features/authz/defaultGrants'
 
 import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { seedBoards } from '@/features/demo/seedBoards'
 import { seedCama } from '@/features/demo/seedCama'
 import { seedCutover } from '@/features/demo/seedCutover'
 import { seedBusinessExport, seedExportTarget } from '@/features/demo/seedExports'
@@ -81,6 +82,7 @@ export interface SeedDemoDeps {
   records?: SeedRecordsDeps
   inspections?: SeedInspectionsDeps
   operations?: SeedOperationsDeps
+  boards?: { now?: Date }
 }
 
 const DEFAULT_EXPORT_DIR = './.data/exports'
@@ -96,6 +98,7 @@ export interface SeedReport {
   recordsSeeded: boolean
   inspectionsSeeded: boolean
   operationsSeeded: boolean
+  boardsSeeded: boolean
 }
 
 export async function seedDemo(
@@ -148,6 +151,7 @@ export async function seedDemo(
   const paymentsSeeded = await seedPayments(db, signal)
   const recordsSeeded = await seedRecords(db, signal, deps.records)
   const inspectionsSeeded = await seedInspections(db, signal, deps.inspections)
+  const boardsSeeded = await seedBoards(db, signal, deps.boards?.now)
   const operationsSeeded = await seedOperations(db, signal, deps.operations ?? {})
   return {
     ...base,
@@ -157,6 +161,7 @@ export async function seedDemo(
     recordsSeeded,
     inspectionsSeeded,
     operationsSeeded,
+    boardsSeeded,
   }
 }
 

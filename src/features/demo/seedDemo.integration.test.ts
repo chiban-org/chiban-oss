@@ -174,9 +174,9 @@ describe('seedDemo', () => {
     expect(report.usersCreated).toBe(0)
   })
 
-  it('seeds 36 imported parcels, two placeholder children, and one retired parent', async () => {
+  it('seeds 36 imported parcels, 24 board scenario parcels, two placeholder children, and one retired parent', async () => {
     const all = await handle.db.select().from(parcels)
-    expect(all).toHaveLength(38)
+    expect(all).toHaveLength(62)
     expect(all.filter((p) => p.status === 'retired')).toHaveLength(1)
     expect(all.filter((p) => p.geom === null)).toHaveLength(2)
   })
@@ -232,7 +232,7 @@ describe('seedDemo', () => {
     await seedDemo(handle.db, signal, SEED_DEPS)
     await seedDemo(handle.db, signal, SEED_DEPS)
     expect(await counts()).toEqual(before)
-    expect(before.applications).toBe(15)
+    expect(before.applications).toBe(19)
     expect(before.inspections).toBeGreaterThan(5)
     expect(before.certificates).toBe(1)
     expect(before.config_versions).toBeGreaterThan(30)
@@ -260,6 +260,7 @@ describe('seedDemo', () => {
     const byState = Object.fromEntries(rows.map((r) => [r.number, r.state]))
     expect(Object.values(byState).sort()).toEqual([
       'closed',
+      'decided',
       'issued',
       'issued',
       'issued',
@@ -267,10 +268,13 @@ describe('seedDemo', () => {
       'issued',
       'issued',
       'issued',
+      'submitted',
+      'submitted',
       'submitted',
       'submitted',
       'submitted',
       'suspended',
+      'under_review',
       'under_review',
       'under_review',
       'under_review',
