@@ -52,7 +52,7 @@ export default async function RightToKnowLogPage({
   const pageLink = (offset: number | null) =>
     offset === null ? null : pageHref(REQUESTS_PATH, params, String(offset))
   return (
-    <main className="space-y-6">
+    <main data-wide="" className="space-y-6">
       <h1>Right-to-Know requests</h1>
       <div className="toolbar">
         <QuickFilters

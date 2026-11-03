@@ -87,7 +87,7 @@ export default async function BoardsPage({
   const links = sortLinks(BOARDS_PATH, params, BOARD_SORT, sort)
   const clear = clearHref(BOARDS_PATH, params, BOARD_FILTER_PARAMS)
   return (
-    <main className="space-y-8">
+    <main data-wide="" className="space-y-8">
       <h1>Boards</h1>
       <p>
         <Link href="/staff/boards/meetings" className="text-action underline">

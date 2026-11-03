@@ -25,7 +25,12 @@ export function queueChipGroups(
       options: labeledOptions(ASSIGNED_LABELS, facets.assigned),
     },
     { param: 'type', label: 'Type', options: facets.types },
-    { param: 'flag', label: 'Money and flags', options: labeledOptions(flags, facets.flags) },
+    {
+      param: 'flag',
+      label: 'Flags',
+      options: labeledOptions(flags, facets.flags),
+      display: 'menu',
+    },
   ]
   return chipGroups(QUEUE_PATH, params, groups)
 }

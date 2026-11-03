@@ -21,11 +21,18 @@ import type { WorkQueueFilters } from '@/features/queue/workQueue'
 
 export const QUEUE_PATH = '/staff/queue'
 
-export type QueueSortKey = 'number' | 'status' | 'due' | 'fees' | 'reviewers'
+export type QueueSortKey = 'number' | 'parcel' | 'status' | 'due' | 'fees' | 'reviewers'
 
 export const QUEUE_SORT: SortConfig<QueueSortKey> = {
   defaultKey: 'due',
-  columns: { number: 'asc', status: 'asc', due: 'asc', fees: 'desc', reviewers: 'asc' },
+  columns: {
+    number: 'asc',
+    parcel: 'asc',
+    status: 'asc',
+    due: 'asc',
+    fees: 'desc',
+    reviewers: 'asc',
+  },
 }
 
 export const DUE_FILTERS = ['overdue', 'week', 'none'] as const

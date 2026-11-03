@@ -5,7 +5,13 @@ import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { ApplicationStatusChip } from '@/components/ApplicationStatusChip'
 import { SortBar, SortHeader } from '@/components/dataTable/SortHeader'
 import { AssignReviewerDialog, type QueueReviewer } from '@/components/queue/AssignReviewerDialog'
-import { ApplicationCell, DueCell, FeesCell, ReviewersCell } from '@/components/queue/QueueCells'
+import {
+  ApplicationCell,
+  DueCell,
+  FeesCell,
+  ParcelCell,
+  ReviewersCell,
+} from '@/components/queue/QueueCells'
 import { useQueueKeys } from '@/components/queue/useQueueKeys'
 import type { SortLink } from '@/features/dataTable/sort'
 import type { QueueSortKey } from '@/features/queue/queueParams'
@@ -26,6 +32,7 @@ interface Props {
 function sortOptions(sort: Record<QueueSortKey, SortLink>) {
   return [
     { label: 'Number', link: sort.number },
+    { label: 'Parcel', link: sort.parcel },
     { label: 'Status', link: sort.status },
     { label: 'Due', link: sort.due },
     { label: 'Fees', link: sort.fees },
@@ -38,6 +45,7 @@ function QueueHead({ sort }: { sort: Record<QueueSortKey, SortLink> | undefined 
     <thead className="max-md:hidden">
       <tr>
         <SortHeader label="Application" link={sort?.number} />
+        <SortHeader label="Parcel" link={sort?.parcel} />
         <SortHeader label="Status" link={sort?.status} />
         <SortHeader label="Due" link={sort?.due} />
         <SortHeader label="Fees" link={sort?.fees} className="md:text-right" />
@@ -108,6 +116,7 @@ export function QueueTable({ rows, reviewers, assign, navigate, empty, sort }: P
                 className={ROW_CLASS}
               >
                 <ApplicationCell row={row} edgeClass={SELECTED_EDGE} />
+                <ParcelCell row={row} />
                 <td
                   data-label="Status"
                   className="max-md:block max-md:max-w-44 max-md:justify-self-end max-md:p-0"

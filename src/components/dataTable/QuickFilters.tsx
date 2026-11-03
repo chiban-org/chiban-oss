@@ -1,31 +1,66 @@
-import { Check } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import Link from 'next/link'
 import type { ChipGroupView, ChipView } from '@/features/dataTable/quickFilters'
 import { cn } from '@/lib/utils'
+import { FilterMenu } from './FilterMenu'
 
-const CHIP =
-  'inline-flex items-center gap-1.5 rounded-md border bg-surface px-2.5 py-1 text-sm no-underline'
-
-function Chip({ chip }: { chip: ChipView }) {
+function Segment({ chip }: { chip: ChipView }) {
   return (
     <Link
       href={chip.href}
       aria-current={chip.active ? 'true' : undefined}
       className={cn(
-        CHIP,
+        'inline-flex h-9 items-center gap-1.5 px-3 text-sm whitespace-nowrap no-underline transition-colors',
         chip.active
-          ? 'border-action font-semibold text-action'
+          ? 'bg-action/10 font-semibold text-action'
           : chip.count === 0
-            ? 'border-dashed border-hairline bg-transparent text-muted-foreground hover:border-control-border'
-            : 'border-hairline text-ink hover:border-control-border',
+            ? 'text-muted-foreground hover:bg-canvas'
+            : 'text-ink hover:bg-canvas',
       )}
     >
       {chip.active ? <Check aria-hidden={true} className="size-3.5 shrink-0" /> : null}
       {chip.label}
       {chip.count === undefined ? null : (
-        <span className="font-normal tabular-nums text-muted-foreground">{chip.count}</span>
+        <span className="font-normal text-muted-foreground tabular-nums">{chip.count}</span>
       )}
     </Link>
+  )
+}
+
+function InlineGroup({ group }: { group: ChipGroupView }) {
+  return (
+    <div
+      role="group"
+      aria-label={group.label}
+      className="inline-flex divide-x divide-hairline overflow-hidden rounded-md border border-hairline bg-surface"
+    >
+      {group.chips.map((chip) => (
+        <Segment key={chip.href} chip={chip} />
+      ))}
+    </div>
+  )
+}
+
+function ActiveMenuChips({ groups }: { groups: ChipGroupView[] }) {
+  const active = groups
+    .filter((group) => group.display === 'menu')
+    .flatMap((group) => group.chips.filter((chip) => chip.active).map((chip) => ({ group, chip })))
+  if (active.length === 0) return null
+  return (
+    <ul className="flex w-full flex-wrap items-center gap-2" aria-label="Active filters">
+      {active.map(({ group, chip }) => (
+        <li key={chip.href}>
+          <Link
+            href={chip.href}
+            aria-label={`Remove ${group.label} filter ${chip.label}`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-action/40 bg-action/10 py-0.5 pr-1.5 pl-3 text-sm text-action no-underline hover:border-action"
+          >
+            {chip.label}
+            <X aria-hidden={true} className="size-3.5" />
+          </Link>
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -40,34 +75,26 @@ export function QuickFilters({
   clearHref: string | null
   className?: string
 }) {
+  const shown = groups.filter((group) => group.chips.length > 0)
   return (
     <div
       role="group"
       aria-label={label}
-      className={cn('flex flex-wrap items-start gap-x-6 gap-y-3', className)}
+      className={cn('flex flex-wrap items-center gap-2', className)}
     >
-      {groups
-        .filter((group) => group.chips.length > 0)
-        .map((group) => (
-          <div
-            key={group.label}
-            role="group"
-            aria-label={group.label}
-            className="flex flex-wrap items-center gap-2"
-          >
-            <span aria-hidden={true} className="text-sm font-semibold text-muted-foreground">
-              {group.label}
-            </span>
-            {group.chips.map((chip) => (
-              <Chip key={chip.href} chip={chip} />
-            ))}
-          </div>
-        ))}
+      {shown.map((group) =>
+        group.display === 'menu' ? (
+          <FilterMenu key={group.label} group={group} />
+        ) : (
+          <InlineGroup key={group.label} group={group} />
+        ),
+      )}
       {clearHref === null ? null : (
-        <Link href={clearHref} className="self-center text-sm text-action underline">
-          Clear filters
+        <Link href={clearHref} className="ml-1 text-sm text-action underline">
+          Clear all
         </Link>
       )}
+      <ActiveMenuChips groups={shown} />
     </div>
   )
 }

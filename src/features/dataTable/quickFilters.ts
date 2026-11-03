@@ -6,10 +6,15 @@ export interface FilterOption {
   count?: number
 }
 
+export type GroupDisplay = 'inline' | 'menu'
+
+export const INLINE_GROUP_MAX = 3
+
 export interface FilterGroup {
   param: string
   label: string
   options: readonly FilterOption[]
+  display?: GroupDisplay
 }
 
 export interface ChipView {
@@ -21,7 +26,12 @@ export interface ChipView {
 
 export interface ChipGroupView {
   label: string
+  display: GroupDisplay
   chips: ChipView[]
+}
+
+function displayOf(group: FilterGroup): GroupDisplay {
+  return group.display ?? (group.options.length <= INLINE_GROUP_MAX ? 'inline' : 'menu')
 }
 
 export function filterValues<V extends string>(
@@ -69,6 +79,7 @@ export function chipGroups(
     const active = paramValues(params, group.param)
     return {
       label: group.label,
+      display: displayOf(group),
       chips: withActiveExtras(group, active).map((option) => ({
         label: option.label,
         href: tableHref(path, params, { [group.param]: toggled(active, option.value) }),

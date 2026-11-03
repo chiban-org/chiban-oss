@@ -58,7 +58,7 @@ export default async function QueuePage({
   const reviewers = canAssign ? await listReviewerChoices(ctx.db) : []
   const labels = activeFilterLabels(params, new Map(facets.types.map((t) => [t.value, t.label])))
   return (
-    <main>
+    <main data-wide="">
       <h1>Work queue</h1>
       <QueueSummary total={queue.total} filters={labels} />
       <KeyHints canAssign={reviewers.length > 0} />

@@ -86,7 +86,7 @@ export default async function DispositionBatchPage({
   const town = await getTownSettings(ctx.db, ctx.signal)
   const zone = town.ok ? town.value.timeZone : 'America/New_York'
   return (
-    <main className="space-y-6">
+    <main data-wide="" className="space-y-6">
       <h1>{`Disposition batch as of ${formatCivilDate(batch.asOf)}`}</h1>
       <p className="m-0">{STATUS[batch.status]}</p>
       <p className="m-0">

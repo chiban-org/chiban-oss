@@ -56,7 +56,7 @@ export default async function ReportsPage({
   ])
   if (!volume.ok && volume.error === 'forbidden') {
     return (
-      <main>
+      <main data-wide="">
         <h1>Reports</h1>
         <p role="alert">You do not have permission to view reports.</p>
       </main>
@@ -73,7 +73,7 @@ export default async function ReportsPage({
   const query = `from=${range.from}&to=${range.to}`
   const typeLabel = (type: string) => typeLabels.get(type) ?? type
   return (
-    <main>
+    <main data-wide="">
       <h1>Reports</h1>
       <form method="get" className="no-print my-3 flex flex-wrap items-end gap-3">
         <label className="block text-sm font-medium">

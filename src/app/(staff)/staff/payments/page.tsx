@@ -36,7 +36,7 @@ export default async function PaymentsPage({
   )
   if (!result.ok) {
     return (
-      <main>
+      <main data-wide="">
         <h1>Payments</h1>
         <p role="alert">You do not have permission to view payments.</p>
       </main>
@@ -46,7 +46,7 @@ export default async function PaymentsPage({
   const links = sortLinks(PAYMENTS_PATH, params, ENTRY_SORT, sort)
   const clear = clearHref(PAYMENTS_PATH, params, ENTRY_FILTER_PARAMS)
   return (
-    <main>
+    <main data-wide="">
       <h1>Payments</h1>
       <section aria-label="Outcome unknown">
         <h2>Card payments with an unknown outcome</h2>

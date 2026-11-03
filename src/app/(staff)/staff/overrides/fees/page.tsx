@@ -41,7 +41,7 @@ export default async function FeeOverridesPage({
   const links = sortLinks(FEE_OVERRIDES_PATH, view.params, FEE_SORT, view.sort)
   const clear = clearHref(FEE_OVERRIDES_PATH, view.params, FEE_FILTER_PARAMS)
   return (
-    <main>
+    <main data-wide="">
       <OverridesTabs current="/staff/overrides/fees" />
       <h1>Fee overrides</h1>
       <p className="text-muted-foreground">

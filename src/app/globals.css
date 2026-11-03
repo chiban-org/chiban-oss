@@ -31,6 +31,7 @@
   --space-base: 4px;
   --card-padding: 24px;
   --content-max-width: 1200px;
+  --list-max-width: 1760px;
   --public-min-body: 16px;
   --public-min-tap-target: 44px;
 
@@ -417,6 +418,10 @@
   :where(main) :where(tbody tr + tr) {
     border-top: 1px solid var(--hairline);
   }
+}
+
+.staff-content:has(> main[data-wide]) {
+  max-width: var(--list-max-width);
 }
 
 .attention {

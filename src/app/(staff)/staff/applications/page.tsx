@@ -101,7 +101,7 @@ export default async function StaffApplicationsPage({ searchParams }: Props) {
   const pageLink = (offset: number | null) =>
     offset === null ? null : pageHref(APPLICATIONS_PATH, params, String(offset))
   return (
-    <main>
+    <main data-wide="">
       <h1>Applications</h1>
       <p className="mb-5">
         Every application, newest first until you sort by a column. To search by number, use the{' '}

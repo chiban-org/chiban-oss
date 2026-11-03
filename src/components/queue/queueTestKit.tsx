@@ -15,6 +15,7 @@ export function row(overrides: Partial<WorkQueueRow>): WorkQueueRow {
     state: 'submitted',
     substep: null,
     substepLabel: null,
+    parcelId: 'p1',
     parcelDisplayId: '007001000000',
     nextDue: null,
     nextDueLabel: null,

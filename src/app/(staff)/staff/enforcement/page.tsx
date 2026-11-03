@@ -57,7 +57,7 @@ export default async function EnforcementQueuePage({
     ...CASE_FILTER_PARAMS.map((name) => (params.get(name) ?? []).join(',')),
   ].join('|')
   return (
-    <main className="space-y-6">
+    <main data-wide="" className="space-y-6">
       <h1>Code enforcement</h1>
       <p>Keys: j and k to move, Enter to open a case.</p>
       <div className="toolbar">

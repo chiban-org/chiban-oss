@@ -64,6 +64,7 @@ describe('QuickFilters', () => {
   const groups = [
     {
       label: 'Deadline',
+      display: 'inline' as const,
       chips: [
         { label: 'Overdue', href: '/q', active: true, count: 2 },
         { label: 'Due this week', href: '/q?due=overdue&due=week', active: false, count: 0 },
@@ -79,19 +80,40 @@ describe('QuickFilters', () => {
     expect(active.textContent).toContain('2')
     const idle = within(group).getByRole('link', { name: /Due this week/ })
     expect(idle.hasAttribute('aria-current')).toBe(false)
-    expect(screen.getByRole('link', { name: 'Clear filters' }).getAttribute('href')).toBe('/q')
+    expect(screen.getByRole('link', { name: 'Clear all' }).getAttribute('href')).toBe('/q')
   })
 
   it('mutes a chip that would match nothing, but keeps it clickable', () => {
     render(<QuickFilters label="Quick filters" groups={groups} clearHref={null} />)
     const empty = screen.getByRole('link', { name: /Due this week/ })
-    expect(empty.className).toContain('border-dashed')
-    expect(screen.getByRole('link', { name: /Overdue/ }).className).not.toContain('border-dashed')
+    expect(empty.className).toContain('text-muted-foreground')
+    expect(screen.getByRole('link', { name: /Overdue/ }).className).not.toContain(
+      'text-muted-foreground hover',
+    )
+  })
+
+  it('puts a long group behind a menu button and lists its active values as removable chips', () => {
+    const menu = [
+      {
+        label: 'Type',
+        display: 'menu' as const,
+        chips: [
+          { label: 'Building permit', href: '/q', active: true, count: 3 },
+          { label: 'Electrical permit', href: '/q?type=b&type=e', active: false, count: 1 },
+        ],
+      },
+    ]
+    render(<QuickFilters label="Quick filters" groups={menu} clearHref="/q" />)
+    const button = screen.getByRole('button', { name: /Type/ })
+    expect(button.textContent).toContain('1')
+    const remove = screen.getByRole('link', { name: 'Remove Type filter Building permit' })
+    expect(remove.getAttribute('href')).toBe('/q')
+    expect(screen.queryByRole('link', { name: /Electrical permit/ })).toBeNull()
   })
 
   it('has no clear link when nothing is filtered', () => {
     render(<QuickFilters label="Quick filters" groups={groups} clearHref={null} />)
-    expect(screen.queryByRole('link', { name: 'Clear filters' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Clear all' })).toBeNull()
   })
 })
 

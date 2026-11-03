@@ -46,7 +46,7 @@ export default async function SettingsKindPage({ params, searchParams }: Props) 
   const clear = clearHref(path, view.params, KEY_FILTER_PARAMS)
   const townRules = loadPack().rules.filter((r) => r.kind === 'town_setting')
   return (
-    <main>
+    <main data-wide="">
       <p>
         <Link href="/staff/settings" className="text-action underline">
           Settings

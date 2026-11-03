@@ -43,7 +43,7 @@ export default async function CashReceiptsPage({
   const result = await cashReceiptsReport(ctx.db, ctx.actor, { date: day }, ctx.signal)
   if (!result.ok) {
     return (
-      <main>
+      <main data-wide="">
         <h1>Daily cash receipts</h1>
         <p role="alert">You do not have permission to view this report.</p>
       </main>
@@ -51,7 +51,7 @@ export default async function CashReceiptsPage({
   }
   const report = result.value
   return (
-    <main>
+    <main data-wide="">
       <h1>Daily cash receipts</h1>
       <p>{report.townName}</p>
       <form method="get" className="no-print my-3 flex items-end gap-3">

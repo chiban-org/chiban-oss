@@ -82,15 +82,15 @@ describe('staff application pages', () => {
       /<th scope="col"[^>]*><a[^>]*href="\/staff\/applications\?sort=number&amp;dir=asc"/,
     )
     expect(page).not.toContain('aria-sort')
-    expect(page).toContain('role="group" aria-label="Type"')
-    expect(page).not.toContain('Clear filters')
+    expect(page).toMatch(/<button[^>]*aria-haspopup="menu"[^>]*>Type</)
+    expect(page).not.toContain('Clear all')
     const sorted = await html(
       ApplicationsPage({ searchParams: Promise.resolve({ sort: 'number', stage: 'issued' }) }),
     )
     expect(sorted).toMatch(
       /aria-sort="ascending"[^>]*><a[^>]*href="\/staff\/applications\?sort=number&amp;stage=issued&amp;dir=desc"/,
     )
-    expect(sorted).toMatch(/<a[^>]*href="\/staff\/applications\?sort=number"[^>]*>Clear filters</)
+    expect(sorted).toMatch(/<a[^>]*href="\/staff\/applications\?sort=number"[^>]*>Clear all</)
     const numbers = [...sorted.matchAll(/href="\/staff\/applications\/[^"]+"[^>]*>([^<]+)</g)].map(
       (m) => m[1],
     )

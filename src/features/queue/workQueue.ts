@@ -50,6 +50,7 @@ export interface WorkQueueRow {
   state: CoreState
   substep: string | null
   substepLabel: string | null
+  parcelId: string
   parcelDisplayId: string | null
   nextDue: CivilDate | null
   nextDueLabel: string | null
@@ -212,6 +213,7 @@ export async function listWorkQueue(
         state: r.state as CoreState,
         substep: r.substep,
         substepLabel: r.substep === null ? null : substepLabel(r.substep, type?.substeps ?? []),
+        parcelId: r.parcelId,
         parcelDisplayId: display.get(r.parcelId) ?? null,
         nextDue,
         nextDueLabel: r.nextDueRuleKey === null ? null : ruleLabel(r.nextDueRuleKey),

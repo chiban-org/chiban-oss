@@ -15,8 +15,22 @@ function days(count: number): string {
   return `${count} ${count === 1 ? 'day' : 'days'}`
 }
 
+export function ParcelCell({ row }: { row: WorkQueueRow }) {
+  return (
+    <td data-label="Parcel" className={STACKED_CELL}>
+      {row.parcelDisplayId === null ? (
+        <span className="text-muted-foreground">No map-lot ID</span>
+      ) : (
+        <Link href={`/staff/parcels/${row.parcelId}`} className="whitespace-nowrap tabular-nums">
+          {row.parcelDisplayId}
+        </Link>
+      )}
+    </td>
+  )
+}
+
 export function ApplicationCell({ row, edgeClass }: { row: WorkQueueRow; edgeClass: string }) {
-  const detail = `${row.typeLabel}${row.parcelDisplayId === null ? '' : `, ${row.parcelDisplayId}`}`
+  const detail = row.typeLabel
   return (
     <td data-label="Application" className={cn(CARD_CELL, edgeClass)}>
       <Link

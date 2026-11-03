@@ -108,8 +108,16 @@ const FIRST_REVIEWER = sql`(select min(${users.displayName}) from ${reviewAssign
   where ${reviewAssignments.applicationId} = ${applications.id}
     and ${reviewAssignments.removedAt} is null)`
 
+const PARCEL_DISPLAY_ID = sql`(
+  select a.value from parcel_aliases a
+  join parcel_id_formats f on f.key = a.format and f.is_display
+  join projects pr on pr.parcel_id = a.parcel_id
+  where pr.id = ${applications.projectId}
+  order by (a.status = 'active') desc, a.value limit 1)`
+
 export const QUEUE_SORT_COLUMNS: Readonly<Record<QueueSortKey, SQLWrapper>> = {
   number: applications.number,
+  parcel: PARCEL_DISPLAY_ID,
   status: STATUS_ORDER,
   due: NEXT_DUE,
   fees: FEES_DUE,

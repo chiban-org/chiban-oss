@@ -94,7 +94,7 @@ export default async function CensusPage({
     }),
   )
   return (
-    <main className="space-y-6">
+    <main data-wide="" className="space-y-6">
       <h1>Census building permits report</h1>
       <p className="m-0">
         Counts of new housing units from permits issued, in the categories of Census Bureau Form

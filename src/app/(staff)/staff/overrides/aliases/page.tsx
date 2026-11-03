@@ -43,7 +43,7 @@ export default async function StaffAliasOverridesPage({
   const links = sortLinks(ALIAS_OVERRIDES_PATH, view.params, ALIAS_SORT, view.sort)
   const clear = clearHref(ALIAS_OVERRIDES_PATH, view.params, ALIAS_FILTER_PARAMS)
   return (
-    <main>
+    <main data-wide="">
       <OverridesTabs current="/staff/overrides/aliases" />
       <h1>Parcel ID overrides</h1>
       <p className="text-muted-foreground">

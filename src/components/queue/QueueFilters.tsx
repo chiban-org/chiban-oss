@@ -21,30 +21,31 @@ interface Props {
 
 export function QueueFilters({ search, state, carried, chips, clearHref }: Props) {
   return (
-    <div className="toolbar mb-5 flex flex-col gap-4">
+    <div className="toolbar mb-5 flex flex-wrap items-center gap-x-3 gap-y-3">
       <form
         method="get"
         role="search"
         aria-label="Filter the work queue"
         onChange={submitOnChange}
-        className="flex flex-wrap items-end gap-x-4 gap-y-3"
+        className="flex flex-wrap items-center gap-2"
       >
-        <label className="flex flex-col gap-1 text-sm">
-          Search by number
+        <label className="text-sm">
+          <span className="sr-only">Search by number</span>
           <input
             id={QUEUE_SEARCH_ID}
             type="search"
             name="q"
             defaultValue={search}
-            className="h-10 w-44 rounded-md border bg-surface px-3"
+            placeholder="Search by number"
+            className="h-9 w-48 rounded-md border bg-surface px-3"
           />
         </label>
-        <label className="flex flex-col gap-1 text-sm">
-          Status
+        <label className="text-sm">
+          <span className="sr-only">Status</span>
           <select
             name="state"
             defaultValue={state}
-            className="h-10 rounded-md border bg-surface px-3"
+            className="h-9 rounded-md border bg-surface px-3"
           >
             {stateFilterOptions().map(([value, label]) => (
               <option key={value} value={value}>
@@ -60,12 +61,7 @@ export function QueueFilters({ search, state, carried, chips, clearHref }: Props
           Search
         </button>
       </form>
-      <QuickFilters
-        label="Quick filters"
-        groups={chips}
-        clearHref={clearHref}
-        className="border-t border-hairline pt-4"
-      />
+      <QuickFilters label="Quick filters" groups={chips} clearHref={clearHref} />
     </div>
   )
 }

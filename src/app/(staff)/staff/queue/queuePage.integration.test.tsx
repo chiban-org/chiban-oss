@@ -73,12 +73,12 @@ describe('/staff/queue page', () => {
   })
 
   it('names the active filters next to the count with a way to clear them', async () => {
-    expect(await render({})).not.toContain('Clear filters')
+    expect(await render({})).not.toContain('Clear all')
     const html = await render({ state: 'all', type: 'BP', sort: 'number' })
     expect(html).toContain('· All but draft')
     expect(html).toContain('· Building permit')
-    expect(html).toMatch(/<a[^>]*href="\/staff\/queue\?sort=number"[^>]*>Clear filters<\/a>/)
-    expect(html.match(/>Clear filters</g)).toHaveLength(1)
+    expect(html).toMatch(/<a[^>]*href="\/staff\/queue\?sort=number"[^>]*>Clear all<\/a>/)
+    expect(html.match(/>Clear all</g)).toHaveLength(1)
   })
 
   it('says what matched nothing inside the panel, with a way back', async () => {
@@ -109,7 +109,7 @@ describe('/staff/queue page', () => {
     expect(chip('Building permit')).toContain(
       'href="/staff/queue?sort=number&amp;due=overdue&amp;type=BP"',
     )
-    expect(html).toContain('role="group" aria-label="Money and flags"')
+    expect(html).toMatch(/<button[^>]*aria-haspopup="menu"[^>]*>Flags</)
     expect(html).toContain('<input type="hidden" name="due" value="overdue"/>')
     expect(html).toContain('<input type="hidden" name="sort" value="number"/>')
     expect(html).not.toContain('name="cursor"')

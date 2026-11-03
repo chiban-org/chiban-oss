@@ -53,7 +53,7 @@ export default async function StaffParcelsPage({ searchParams }: ParcelsPageProp
   const clear = clearHref(PARCELS_PATH, params, HIT_FILTER_PARAMS)
   const searched = q.trim().length >= 2 && hits.length > 0 ? q.trim() : null
   return (
-    <main>
+    <main data-wide="">
       <h1>Parcels</h1>
       <form method="get" role="search" className="mt-4 mb-3 flex gap-3">
         <label className="flex-1 text-sm font-medium">

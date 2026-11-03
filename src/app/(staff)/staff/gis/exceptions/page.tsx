@@ -55,7 +55,7 @@ export default async function StaffExceptionsPage({ searchParams }: ExceptionsPa
     ...new Set(rows.filter((r) => r.kind === 'owner_changed').map((r) => r.lastSeenRunId)),
   ]
   return (
-    <main>
+    <main data-wide="">
       <h1>Import exceptions</h1>
       <form method="get" className="my-4 flex flex-wrap items-end gap-3">
         {params.has('sort') ? (

@@ -66,7 +66,7 @@ describe('staff parcel search page', () => {
     expect(html).toContain('name="dir" value="desc"')
     expect(html).toContain('name="matched" value="address"')
     expect(html).toContain('Quick filters')
-    expect(html).toContain('Clear filters')
+    expect(html).toContain('Clear all')
   })
 
   it('says so when the filters hide every hit', async () => {

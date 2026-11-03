@@ -73,7 +73,7 @@ export default async function StaffImportsPage({
   )
 
   return (
-    <main>
+    <main data-wide="">
       <h1>Imports</h1>
       {LAYER_KEYS.map((key, i) => {
         const layer = layers.find((l) => l.key === key)

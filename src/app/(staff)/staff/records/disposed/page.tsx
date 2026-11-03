@@ -69,7 +69,7 @@ export default async function DisposedRecordsPage({
   const town = await getTownSettings(ctx.db, ctx.signal)
   const zone = town.ok ? town.value.timeZone : 'America/New_York'
   return (
-    <main className="space-y-6">
+    <main data-wide="" className="space-y-6">
       <h1>Disposed records</h1>
       <p className="m-0">
         Each record disposed of under its retention schedule leaves a tombstone: what it was, the
