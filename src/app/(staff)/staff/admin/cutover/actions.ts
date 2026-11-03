@@ -20,6 +20,12 @@ const COPY = {
     'The file could not be read. Download the template and keep the header row, including legacy_number, application_type_key, parcel_id, state, and received_date.',
 } as const
 
+const SIGN_OFF_COPY = {
+  forbidden: COPY.forbidden,
+  not_found: errorCopy('not_found'),
+  already_signed_off: 'This comparison is already signed off.',
+} as const
+
 export async function importCutoverAction(formData: FormData): Promise<ActionResult> {
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
     const bytes = await fileBytes(formData)
@@ -52,7 +58,7 @@ export async function reconcileCutoverAction(formData: FormData): Promise<Action
     const extra = r.importedNotInList.slice(0, MAX_LISTED_ERRORS).join(', ')
     return {
       ok: true,
-      message: `Reconciliation ${result.value.id}: ${r.inListAndImported.length} matched. On the list but not imported: ${missing === '' ? 'none' : missing}. Imported but not on the list: ${extra === '' ? 'none' : extra}.`,
+      message: `Compared: ${r.inListAndImported.length} matched. On the list but not imported: ${missing === '' ? 'none' : missing}. Imported but not on the list: ${extra === '' ? 'none' : extra}.`,
     }
   })
 }
@@ -65,12 +71,7 @@ export async function signOffReconciliationAction(formData: FormData): Promise<A
       text(formData, 'reconciliationId'),
       signal,
     )
-    if (!signed.ok) {
-      return {
-        ok: false,
-        error: signed.error === 'forbidden' ? COPY.forbidden : errorCopy('not_found'),
-      }
-    }
+    if (!signed.ok) return { ok: false, error: SIGN_OFF_COPY[signed.error] }
     return { ok: true, message: 'Reconciliation signed off.' }
   })
 }

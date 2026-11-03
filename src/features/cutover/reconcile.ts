@@ -1,7 +1,7 @@
 import { createHash } from 'node:crypto'
 import { parse } from 'csv-parse/sync'
-import { eq, sql } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import { and, desc, eq, isNull, sql } from 'drizzle-orm'
+import type { Db, DbOrTx } from '@/db/client'
 import { cutoverReconciliations, cutoverRows } from '@/db/schema'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -67,21 +67,71 @@ export async function reconcileCutover(
   return ok({ id: saved?.id ?? '', report })
 }
 
+async function missingOrSigned(
+  db: DbOrTx,
+  reconciliationId: string,
+): Promise<'not_found' | 'already_signed_off'> {
+  const [row] = await db
+    .select({ id: cutoverReconciliations.id })
+    .from(cutoverReconciliations)
+    .where(eq(cutoverReconciliations.id, reconciliationId))
+  return row === undefined ? 'not_found' : 'already_signed_off'
+}
+
+export interface ReconciliationSummary {
+  id: string
+  createdAt: Date
+  matched: number
+  missing: number
+  extra: number
+  signedOffAt: Date | null
+}
+
+export const RECENT_RECONCILIATIONS = 10
+
+export async function listRecentReconciliations(
+  db: DbOrTx,
+  signal: AbortSignal,
+): Promise<ReconciliationSummary[]> {
+  signal.throwIfAborted()
+  const rows = await db
+    .select()
+    .from(cutoverReconciliations)
+    .orderBy(desc(cutoverReconciliations.createdAt), desc(cutoverReconciliations.id))
+    .limit(RECENT_RECONCILIATIONS)
+  return rows.map((row) => {
+    const report = row.report as ReconciliationReport
+    return {
+      id: row.id,
+      createdAt: row.createdAt,
+      matched: report.inListAndImported.length,
+      missing: report.inListNotImported.length,
+      extra: report.importedNotInList.length,
+      signedOffAt: row.signedOffAt,
+    }
+  })
+}
+
 export async function signOffReconciliation(
   db: Db,
   actor: Actor,
   reconciliationId: string,
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden' | 'not_found'>> {
+): Promise<Result<void, 'forbidden' | 'not_found' | 'already_signed_off'>> {
   signal.throwIfAborted()
   if (!actor.roles.includes('admin')) return err('forbidden')
   if (!isUuid(reconciliationId)) return err('not_found')
   const updated = await db
     .update(cutoverReconciliations)
     .set({ signedOffBy: actor.userId, signedOffAt: new Date() })
-    .where(eq(cutoverReconciliations.id, reconciliationId))
+    .where(
+      and(
+        eq(cutoverReconciliations.id, reconciliationId),
+        isNull(cutoverReconciliations.signedOffAt),
+      ),
+    )
     .returning({ id: cutoverReconciliations.id })
-  if (updated.length === 0) return err('not_found')
+  if (updated.length === 0) return err(await missingOrSigned(db, reconciliationId))
   await writeAudit(
     db,
     {

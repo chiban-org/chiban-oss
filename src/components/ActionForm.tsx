@@ -8,9 +8,16 @@ import { useFormAction } from '@/components/useFormAction'
 import { useHydrated } from '@/components/useHydrated'
 import type { ActionResult } from '@/server/actionRunner'
 
+interface AlternateSubmit {
+  label: string
+  name: string
+  value: string
+}
+
 interface ActionFormProps {
   action: (formData: FormData) => Promise<ActionResult>
   submitLabel: string
+  alternate?: AlternateSubmit
   variant?: 'default' | 'outline' | 'destructive'
   className?: string
   compact?: boolean
@@ -88,9 +95,43 @@ function clearInvalid(form: HTMLFormElement | null): void {
   }
 }
 
+function SubmitButtons({
+  label,
+  variant,
+  alternate,
+  disabled,
+  pending,
+}: {
+  label: string
+  variant: NonNullable<ActionFormProps['variant']>
+  alternate: AlternateSubmit | undefined
+  disabled: boolean
+  pending: boolean
+}) {
+  return (
+    <>
+      <Button type="submit" variant={variant} disabled={disabled}>
+        {pending ? 'Working' : label}
+      </Button>
+      {alternate === undefined ? null : (
+        <Button
+          type="submit"
+          variant="outline"
+          name={alternate.name}
+          value={alternate.value}
+          disabled={disabled}
+        >
+          {alternate.label}
+        </Button>
+      )}
+    </>
+  )
+}
+
 export function ActionForm({
   action,
   submitLabel,
+  alternate,
   variant = 'outline',
   className,
   compact = false,
@@ -145,9 +186,13 @@ export function ActionForm({
       <CsrfField />
       {children}
       <div className={`${compact ? '' : 'mt-3 '}flex flex-wrap items-center gap-x-3 gap-y-1`}>
-        <Button type="submit" variant={variant} disabled={pending || !hydrated}>
-          {pending ? 'Working' : submitLabel}
-        </Button>
+        <SubmitButtons
+          label={submitLabel}
+          variant={variant}
+          alternate={alternate}
+          disabled={pending || !hydrated}
+          pending={pending}
+        />
         <p
           id={messageId}
           role="status"

@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Actor } from '@/features/auth/actor'
 import { adoptStarter } from '@/features/config/adoptStarter'
+import { reconcileCutover, signOffReconciliation } from '@/features/cutover/reconcile'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 
@@ -51,14 +52,37 @@ afterAll(async () => {
 })
 
 describe('cutover page', () => {
-  it('shows staff the import forms and only an admin the sign-off form', async () => {
+  it('shows staff one file picker with a check and an import button', async () => {
     state.actor = staff
     const asStaff = renderToStaticMarkup(await CutoverPage())
     expect(asStaff).toContain('Download the CSV template')
     expect(asStaff).toContain('An amount such as 45.00 is not accepted')
+    expect(asStaff).not.toContain('Gates are not evaluated')
+    expect(asStaff).toContain('Check the file')
+    const importButton = asStaff.match(/<button[^>]*>Import the file</)?.[0] ?? ''
+    expect(importButton).toContain('name="mode"')
+    expect(importButton).toContain('value="import"')
+    expect(asStaff.match(/<input type="file"/g)?.length).toBe(2)
+    expect(asStaff).toContain('No comparisons yet.')
+  })
+
+  it('lists comparisons and offers Sign off only to an admin, only until it is signed', async () => {
+    const list = new TextEncoder().encode('legacy_number\nL-1\nL-2\n')
+    const made = await reconcileCutover(handle.db, staff, { listBytes: list }, signal)
+    if (!made.ok) throw new Error(made.error)
+    state.actor = staff
+    const asStaff = renderToStaticMarkup(await CutoverPage())
     expect(asStaff).not.toContain('Reconciliation number')
+    expect(asStaff).not.toContain('>Sign off<')
+    expect(asStaff).toContain('Waiting for an administrator')
     state.actor = admin
-    expect(renderToStaticMarkup(await CutoverPage())).toContain('Reconciliation number')
+    const asAdmin = renderToStaticMarkup(await CutoverPage())
+    expect(asAdmin).toContain('>Sign off<')
+    expect(asAdmin).toContain(`name="reconciliationId" value="${made.value.id}"`)
+    expect((await signOffReconciliation(handle.db, admin, made.value.id, signal)).ok).toBe(true)
+    const signed = renderToStaticMarkup(await CutoverPage())
+    expect(signed).not.toContain('>Sign off<')
+    expect(signed).toContain('Signed off')
   })
 
   it('refuses a reviewer on the page and on the template', async () => {

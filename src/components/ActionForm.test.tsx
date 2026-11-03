@@ -154,4 +154,27 @@ describe('ActionForm', () => {
     fireEvent.input(screen.getByRole('textbox'), { target: { value: 'Because' } })
     expect(screen.getByRole('status').textContent).toBe('')
   })
+
+  it('tells the action which of its two buttons was pressed', async () => {
+    const modes: (string | null)[] = []
+    render(
+      <CsrfProvider token="t1">
+        <ActionForm
+          action={(formData) => {
+            modes.push(formData.get('mode') as string | null)
+            return Promise.resolve({ ok: true as const, message: `Done ${modes.length}` })
+          }}
+          submitLabel="Check"
+          alternate={{ label: 'Import', name: 'mode', value: 'import' }}
+        >
+          <span />
+        </ActionForm>
+      </CsrfProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Import' }))
+    await waitFor(() => expect(screen.getByText('Done 1')).toBeTruthy())
+    fireEvent.click(screen.getByRole('button', { name: 'Check' }))
+    await waitFor(() => expect(screen.getByText('Done 2')).toBeTruthy())
+    expect(modes).toEqual(['import', null])
+  })
 })
