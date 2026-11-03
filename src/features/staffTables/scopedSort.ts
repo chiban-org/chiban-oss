@@ -1,11 +1,11 @@
 import type { TableParams } from '@/features/dataTable/params'
 import {
   DIR_PARAM,
+  parseSort,
   SORT_PARAM,
   type SortConfig,
   type SortLink,
   type SortState,
-  parseSort,
   sortLinks,
 } from '@/features/dataTable/sort'
 

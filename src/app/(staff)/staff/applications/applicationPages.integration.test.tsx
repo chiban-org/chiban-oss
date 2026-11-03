@@ -168,7 +168,7 @@ describe('staff application pages', () => {
 
   it('the clock and fee override views list the seeded adjustment and waiver', async () => {
     expect(await html(ClockOverridesPage())).toContain('renewal')
-    const fees = await html(FeeOverridesPage())
+    const fees = await html(FeeOverridesPage({ searchParams: Promise.resolve({}) }))
     expect(fees).toContain('Waived')
     expect(fees).toContain('Applied')
   })
