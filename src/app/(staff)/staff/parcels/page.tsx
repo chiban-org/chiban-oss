@@ -72,39 +72,52 @@ export default async function StaffParcelsPage({ searchParams }: ParcelsPageProp
       ) : (
         <>
           <MoreMatchesNotice more={more} />
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b text-left">
-                <th className="py-2">Parcel</th>
-                <th>Address</th>
-                <th>Owner</th>
-                <th>Matched on</th>
-              </tr>
-            </thead>
-            <tbody>
-              {hits.map((hit) => (
-                <tr key={hit.parcelId} className="border-b">
-                  <td className="py-2">
-                    <Link
-                      href={`/staff/parcels/${hit.parcelId}`}
-                      className="font-semibold text-action underline"
-                    >
-                      {hit.displayId ?? 'No map-lot ID'}
-                    </Link>
-                    {hit.status === 'retired' ? <span className="ml-2">Retired</span> : null}
-                  </td>
-                  <td>{hit.siteAddress ?? 'Unknown'}</td>
-                  <td>{hit.ownerName ?? 'Unknown'}</td>
-                  <td>
-                    {MATCH_LABEL[hit.matchedOn]}
-                    {hit.matchedAlias === null
-                      ? null
-                      : ` (${hit.matchedAlias.value}${hit.matchedAlias.status === 'retired' ? ', retired ID' : ''})`}
-                  </td>
+          <div className="table-panel">
+            <table className="w-full text-sm">
+              <thead>
+                <tr>
+                  <th>Parcel</th>
+                  <th>Address</th>
+                  <th>Owner</th>
+                  <th>Matched on</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {hits.map((hit) => (
+                  <tr key={hit.parcelId}>
+                    <td>
+                      <Link
+                        href={`/staff/parcels/${hit.parcelId}`}
+                        className="font-semibold tabular-nums"
+                      >
+                        {hit.displayId ?? 'No map-lot ID'}
+                      </Link>
+                      {hit.status === 'retired' ? <span className="ml-2">Retired</span> : null}
+                    </td>
+                    <td>{hit.siteAddress ?? 'Unknown'}</td>
+                    <td>
+                      {hit.ownerName === null ? (
+                        'Unknown'
+                      ) : (
+                        <Link
+                          href={`/staff/parcels?q=${encodeURIComponent(hit.ownerName)}`}
+                          aria-label={`Search parcels owned by ${hit.ownerName}`}
+                        >
+                          {hit.ownerName}
+                        </Link>
+                      )}
+                    </td>
+                    <td>
+                      {MATCH_LABEL[hit.matchedOn]}
+                      {hit.matchedAlias === null
+                        ? null
+                        : ` (${hit.matchedAlias.value}${hit.matchedAlias.status === 'retired' ? ', retired ID' : ''})`}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </>
       )}
     </main>

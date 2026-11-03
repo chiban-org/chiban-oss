@@ -81,19 +81,41 @@ function escapeLike(q: string): string {
   return q.replace(/[\\%_]/g, (c) => `\\${c}`)
 }
 
+interface TextRow extends HitRow {
+  address_contains: boolean
+  owner_contains: boolean
+  address_similarity: number
+  owner_similarity: number
+}
+
+function textMatchedOn(row: TextRow): MatchedOn {
+  if (row.owner_contains !== row.address_contains) return row.owner_contains ? 'owner' : 'address'
+  return row.owner_similarity > row.address_similarity ? 'owner' : 'address'
+}
+
 async function textHits(
   db: DbOrTx,
-  column: 'site_address' | 'owner_name',
   q: string,
   limit: number,
-): Promise<HitRow[]> {
-  const col = sql.raw(`p.${column}`)
-  const res = await db.execute<HitRow>(sql`
-    ${BASE}, NULL AS alias_format, NULL AS alias_value, NULL AS alias_status
-    FROM parcels p
-    WHERE ${col} ILIKE ${`%${escapeLike(q)}%`} OR ${col} % ${q}
-    ORDER BY similarity(${col}, ${q}) DESC, p.id LIMIT ${limit}`)
-  return [...res.rows].sort(byDisplayId)
+): Promise<{ row: HitRow; matchedOn: MatchedOn }[]> {
+  const pattern = `%${escapeLike(q)}%`
+  const res = await db.execute<TextRow>(sql`
+    SELECT * FROM (
+      ${BASE}, NULL AS alias_format, NULL AS alias_value, NULL AS alias_status,
+        COALESCE(p.site_address ILIKE ${pattern}, false) AS address_contains,
+        COALESCE(p.owner_name ILIKE ${pattern}, false) AS owner_contains,
+        COALESCE(similarity(p.site_address, ${q}), 0) AS address_similarity,
+        COALESCE(similarity(p.owner_name, ${q}), 0) AS owner_similarity
+      FROM parcels p
+      WHERE p.site_address ILIKE ${pattern} OR p.owner_name ILIKE ${pattern}
+        OR p.site_address % ${q} OR p.owner_name % ${q}
+    ) t
+    ORDER BY (address_contains OR owner_contains) DESC,
+      GREATEST(address_similarity, owner_similarity) DESC, parcel_id
+    LIMIT ${limit}`)
+  const rows = [...res.rows]
+  const exact = rows.filter((r) => r.address_contains || r.owner_contains)
+  return (exact.length > 0 ? exact : rows).map((row) => ({ row, matchedOn: textMatchedOn(row) }))
 }
 
 export async function searchParcels(
@@ -113,8 +135,7 @@ export async function searchParcels(
   }
   if (norm.length >= MIN_QUERY_CHARS) add(await aliasHits(db, norm, false, limit), 'alias_exact')
   if (norm.length >= MIN_PREFIX_CHARS) add(await aliasHits(db, norm, true, limit), 'alias_prefix')
-  add(await textHits(db, 'site_address', q, limit), 'address')
-  add(await textHits(db, 'owner_name', q, limit), 'owner')
+  for (const { row, matchedOn } of await textHits(db, q, limit)) add([row], matchedOn)
   return [...hits.values()].slice(0, limit)
 }
 
