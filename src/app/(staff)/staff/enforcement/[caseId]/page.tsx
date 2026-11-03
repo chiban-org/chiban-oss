@@ -1,6 +1,11 @@
 import { notFound } from 'next/navigation'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { RecordLayout } from '@/components/layout/RecordLayout'
+import { splitPanels } from '@/components/layout/splitPanels'
+import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { loadCaseDetail } from '@/features/enforcement/caseDetail'
+import { caseChipStatus } from '@/features/enforcement/chipStatus'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
@@ -9,8 +14,7 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { AppealsSection } from './AppealsSection'
-import { CaseParcel } from './CaseParcel'
-import { CaseStatusForm } from './CaseStatusForm'
+import { CaseRail } from './CaseRail'
 import { ComplaintsSection } from './ComplaintsSection'
 import { CounselSection } from './CounselSection'
 import { loadCan } from './can'
@@ -34,28 +38,58 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
   const detail = loaded.value
   const can = await loadCan(ctx.db, ctx.actor, ctx.signal)
   const { row } = detail.staff
+  const sections = splitPanels([
+    {
+      empty: detail.staff.complaints.length === 0,
+      node: <ComplaintsSection key="complaints" detail={detail} can={can} />,
+    },
+    {
+      empty: detail.staff.notes.length === 0,
+      node: <NotesSection key="notes" detail={detail} can={can} />,
+    },
+    {
+      empty: detail.findings.length === 0 && detail.notices.length === 0,
+      node: <FindingsSection key="findings" detail={detail} can={can} />,
+    },
+    {
+      empty: detail.orders.length === 0,
+      node: <OrdersSection key="orders" detail={detail} can={can} />,
+    },
+    {
+      empty: detail.appeals.length === 0,
+      node: <AppealsSection key="appeals" detail={detail} can={can} />,
+    },
+    {
+      empty: detail.fines.length === 0 && detail.exposure === null,
+      node: <MoneySection key="money" detail={detail} can={can} />,
+    },
+    {
+      empty: detail.referrals.length === 0,
+      node: <CounselSection key="counsel" detail={detail} can={can} />,
+    },
+    {
+      empty: detail.documents.length === 0,
+      node: <DocumentsSection key="documents" detail={detail} can={can} />,
+    },
+  ])
   return (
-    <main className="space-y-6">
-      <h1>{`Case ${row.number}`}</h1>
-      <p className="m-0">{`${row.locationText}. ${CASE_STATUS_LABELS[row.status]}. Opened ${formatCivilDate(row.openedOn)}${row.closedOn === null ? '' : `, closed ${formatCivilDate(row.closedOn)}`}. ${row.isPublic ? 'This case is public.' : 'This case is private to town staff.'}`}</p>
-      {row.closureReason === null || row.closureReason === '' ? null : (
-        <p className="m-0">{`Reason for closing: ${row.closureReason}`}</p>
-      )}
+    <main>
+      <PageHeader
+        kicker="Code enforcement case"
+        title={row.number}
+        status={
+          <StatusChip status={caseChipStatus(row.status)} label={CASE_STATUS_LABELS[row.status]} />
+        }
+        lead={`${row.locationText}. Opened ${formatCivilDate(row.openedOn)}${row.closedOn === null ? '' : `, closed ${formatCivilDate(row.closedOn)}`}.`}
+      />
       {detail.banner === null ? null : (
-        <p role="status" className="m-0 rounded-md bg-highlight p-3 font-semibold">
+        <p role="status" className="mb-6 rounded-md bg-highlight p-3 font-semibold">
           {detail.banner}
         </p>
       )}
-      <CaseParcel detail={detail} can={can} />
-      {can.manage ? <CaseStatusForm detail={detail} /> : null}
-      <ComplaintsSection detail={detail} can={can} />
-      <NotesSection detail={detail} can={can} />
-      <FindingsSection detail={detail} can={can} />
-      <OrdersSection detail={detail} can={can} />
-      <AppealsSection detail={detail} can={can} />
-      <MoneySection detail={detail} can={can} />
-      <CounselSection detail={detail} can={can} />
-      <DocumentsSection detail={detail} can={can} />
+      <RecordLayout rail={<CaseRail detail={detail} can={can} />} empty={sections.empty}>
+        {sections.filled}
+      </RecordLayout>
     </main>
   )
 }

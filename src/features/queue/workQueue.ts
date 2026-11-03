@@ -170,6 +170,25 @@ async function reviewersFor(db: DbOrTx, applicationIds: string[]) {
   return byApp
 }
 
+export async function countWorkQueue(
+  db: DbOrTx,
+  actor: Actor,
+  filters: readonly WorkQueueFilters[],
+  today: CivilDate,
+  signal: AbortSignal,
+): Promise<number[]> {
+  signal.throwIfAborted()
+  return await Promise.all(
+    filters.map(async (f) => {
+      const [count] = await db
+        .select({ n: sql<number>`count(*)::int` })
+        .from(applications)
+        .where(and(...filterClauses(actor, f, today)))
+      return count?.n ?? 0
+    }),
+  )
+}
+
 export async function listWorkQueue(
   db: DbOrTx,
   actor: Actor,

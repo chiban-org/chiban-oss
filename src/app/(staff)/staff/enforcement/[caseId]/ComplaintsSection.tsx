@@ -13,7 +13,7 @@ export function ComplaintsSection({ detail, can }: { detail: CaseDetail; can: Ca
     <Section id="complaints" title="Complaints">
       {complaints.length === 0 ? <p>No complaint is linked to this case.</p> : null}
       {complaints.map((c) => (
-        <article key={c.id} className="space-y-2 rounded-md border p-3">
+        <article key={c.id} className="record-item space-y-2">
           <p className="m-0 font-medium">{`${c.number}, ${CHANNEL_LABELS[c.channel]}, received ${formatCivilDate(c.receivedOn)}`}</p>
           {c.channel === 'anonymous_web' ? (
             <p className="m-0">Anonymous. The town does not know who sent this.</p>
@@ -31,16 +31,19 @@ export function ComplaintsSection({ detail, can }: { detail: CaseDetail; can: Ca
             </div>
           </div>
           {can.manage ? (
-            <ActionForm action={complaintPublicTextAction} submitLabel="Save public text">
-              <Hidden name="complaintId" value={c.id} />
-              <AreaField
-                label="Public text. Remove anything that could identify the complainant."
-                name="text"
-                rows={3}
-                defaultValue={c.descriptionPublic ?? ''}
-                required
-              />
-            </ActionForm>
+            <details>
+              <summary>Write the public text</summary>
+              <ActionForm action={complaintPublicTextAction} submitLabel="Save public text">
+                <Hidden name="complaintId" value={c.id} />
+                <AreaField
+                  label="Public text. Remove anything that could identify the complainant."
+                  name="text"
+                  rows={3}
+                  defaultValue={c.descriptionPublic ?? ''}
+                  required
+                />
+              </ActionForm>
+            </details>
           ) : null}
         </article>
       ))}
@@ -53,15 +56,18 @@ export function ComplaintsSection({ detail, can }: { detail: CaseDetail; can: Ca
             </ActionForm>
           </div>
         ) : (
-          <ActionForm action={publishCaseAction} submitLabel="Make case public">
-            <Hidden name="caseId" value={row.id} />
-            <TextField label="Public summary" name="summary" required />
-            <p className="m-0">
-              The public sees the case number, status, dates, summary, public complaint text, the
-              provisions cited, and issued order numbers. Photos stay private until you publish them
-              one by one.
-            </p>
-          </ActionForm>
+          <details>
+            <summary>Make the case public</summary>
+            <ActionForm action={publishCaseAction} submitLabel="Make case public">
+              <Hidden name="caseId" value={row.id} />
+              <TextField label="Public summary" name="summary" required />
+              <p className="m-0">
+                The public sees the case number, status, dates, summary, public complaint text, the
+                provisions cited, and issued order numbers. Photos stay private until you publish
+                them one by one.
+              </p>
+            </ActionForm>
+          </details>
         )
       ) : null}
     </Section>

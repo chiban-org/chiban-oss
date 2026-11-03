@@ -1,16 +1,14 @@
 import { asc, eq } from 'drizzle-orm'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ActionForm } from '@/components/ActionForm'
 import { ClockCard } from '@/components/clocks/ClockCard'
 import { DocumentPanel } from '@/components/documents/DocumentPanel'
 import { FeeTable } from '@/components/fees/FeeTable'
 import { GatePanel } from '@/components/gates/GatePanel'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
+import { splitPanels } from '@/components/layout/splitPanels'
 import { StatusChip } from '@/components/StatusChip'
 import { BalanceDueNotice } from '@/components/staff/BalanceDueNotice'
-import { AreaField, TextField } from '@/components/staff/fields'
 import { applicationSnapshots, cutoverRows } from '@/db/schema'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
 import {
@@ -22,29 +20,22 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { loadPanelDocuments } from '@/features/documents/panelData'
 import type { FeeComputation } from '@/features/fees/computeFees'
-import type { GateResult } from '@/features/gates/evaluateGates'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import { returnedCheckNotices } from '@/features/ledger/balanceNotice'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
 import { applicationHolds } from '@/features/records/holds'
 import { listApplicationReviewers, listReviewerChoices } from '@/features/reviews/reviewerView'
 import { getTownSettings } from '@/features/town/settings'
-import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { PANEL_ACTIONS } from '../../records/panelActions'
-import { overrideGateAction, revokeOverrideAction, statutoryExceptionAction } from './actions'
+import { ApplicationRail } from './applicationRail'
 import { BoardPanel } from './boardPanel'
 import { AppealPanel, CodeEditionPanel, RegionalImpactPanel } from './buildingPanels'
 import { FeeOverrideForm } from './feePanels'
+import { GateControls } from './gateControls'
 import { HearingsPanel } from './hearingsPanel'
 import { InspectionsPanel, loadInspectionsPanelData } from './inspectionsPanel'
-import {
-  ClockAdjustForm,
-  CompletenessPanel,
-  ConditionsPanel,
-  PartiesPanel,
-  TransitionBar,
-} from './panels'
+import { ClockAdjustForm, CompletenessPanel, ConditionsPanel, PartiesPanel } from './panels'
 import { PaymentsPanel } from './paymentsPanel'
 import { loadRecordsData } from './recordsData'
 import { RecordsPanel } from './recordsPanels'
@@ -54,65 +45,6 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 interface Props {
   params: Promise<{ applicationId: string }>
-}
-
-function PrintLinks({ applicationId }: { applicationId: string }) {
-  return (
-    <p className="flex gap-6">
-      <Link
-        href={`/staff/applications/${applicationId}/permit.pdf`}
-        className="text-action underline"
-      >
-        Print permit
-      </Link>{' '}
-      <Link
-        href={`/staff/applications/${applicationId}/placard.pdf`}
-        className="text-action underline"
-      >
-        Print placard
-      </Link>
-    </p>
-  )
-}
-
-function GateControls({ view, result }: { view: StaffApplicationView; result: GateResult }) {
-  const { canOverrideGate, canRecordStatutoryException } = view.permissions
-  if (result.override !== null) {
-    const allowed =
-      result.override.kind === 'statutory_exception' ? canRecordStatutoryException : canOverrideGate
-    return allowed ? (
-      <ActionForm action={revokeOverrideAction} submitLabel="Revoke override">
-        <input type="hidden" name="overrideId" value={result.override.id} />
-      </ActionForm>
-    ) : null
-  }
-  if (result.effective === 'pass') return null
-  if (result.kind === 'administrative' && canOverrideGate) {
-    return (
-      <details>
-        <summary>Override this gate</summary>
-        <ActionForm action={overrideGateAction} submitLabel="Override with reason">
-          <input type="hidden" name="applicationId" value={view.id} />
-          <input type="hidden" name="gateKey" value={result.key} />
-          <TextField label="Reason (at least 10 characters)" name="reason" required />
-        </ActionForm>
-      </details>
-    )
-  }
-  if (result.kind === 'statutory' && canRecordStatutoryException) {
-    return (
-      <details>
-        <summary>Record a statutory exception</summary>
-        <ActionForm action={statutoryExceptionAction} submitLabel="Record exception">
-          <input type="hidden" name="applicationId" value={view.id} />
-          <input type="hidden" name="gateKey" value={result.key} />
-          <TextField label="Legal authority: citation" name="citation" required />
-          <AreaField label="Legal authority: explanation" name="explanation" required />
-        </ActionForm>
-      </details>
-    )
-  }
-  return null
 }
 
 export default async function StaffApplicationPage({ params }: Props) {
@@ -137,59 +69,30 @@ export default async function StaffApplicationPage({ params }: Props) {
     .select({ legacyNumber: cutoverRows.legacyNumber })
     .from(cutoverRows)
     .where(eq(cutoverRows.applicationId, applicationId))
-  return (
-    <main>
-      <PageHeader
-        kicker={view.typeLabel}
-        title={view.number}
-        status={
-          <StatusChip
-            status={applicationChipStatus(view.state)}
-            label={applicationStatusText(view.state, view.substep, view.substeps)}
-          />
-        }
-        lead={view.projectTitle}
-        facts={[
-          {
-            label: 'Parcel',
-            value: (
-              <Link href={`/staff/parcels/${view.parcelId}`} className="text-action underline">
-                {view.parcelDisplayId}
-              </Link>
-            ),
-          },
-          {
-            label: 'Received',
-            value:
-              view.receivedDate === null ? 'Not yet submitted' : formatCivilDate(view.receivedDate),
-          },
-          ...(view.issuedOn === null
-            ? []
-            : [{ label: 'Issued', value: formatCivilDate(view.issuedOn) }]),
-          ...(imported === undefined
-            ? []
-            : [{ label: 'Number in the prior system', value: imported.legacyNumber }]),
-        ]}
-        actions={
-          <div className="flex flex-col gap-4 empty:hidden">
-            <BalanceDueNotice notices={balanceNotices} />
-            <TransitionBar view={view} />
-            {view.state === 'issued' ? <PrintLinks applicationId={view.id} /> : null}
-          </div>
-        }
-      />
-      <RecordLayout>
+  const parts = splitPanels([
+    {
+      empty: records.reviewers.length === 0,
+      node: (
         <ReviewersPanel
+          key="reviewers"
           applicationId={view.id}
           reviewers={records.reviewers}
           choices={records.choices}
           canAssign={records.canAssign}
         />
-        <PartiesPanel view={view} />
-        {board === null ? null : <BoardPanel data={board} />}
-        <HearingsPanel data={hearings} />
-        <CompletenessPanel view={view} />
-        <section aria-label="Clocks">
+      ),
+    },
+    { empty: false, node: board === null ? null : <BoardPanel key="board" data={board} /> },
+    { empty: false, node: <HearingsPanel key="hearings" data={hearings} /> },
+    {
+      empty: false,
+      node:
+        view.completedDate === null ? <CompletenessPanel key="completeness" view={view} /> : null,
+    },
+    {
+      empty: view.clocks.length === 0,
+      node: (
+        <section key="clocks" aria-label="Clocks">
           <h2>Clocks</h2>
           {view.clocks.length === 0 ? <p>No clock is running on this application.</p> : null}
           {view.clocks.map((clock) => (
@@ -205,15 +108,25 @@ export default async function StaffApplicationPage({ params }: Props) {
             </div>
           ))}
         </section>
-        <section aria-label="Gates">
+      ),
+    },
+    {
+      empty: view.gates.length === 0,
+      node: (
+        <section key="gates" aria-label="Gates">
           <h2>Gates</h2>
           <GatePanel
             groups={view.gates}
             renderControls={(result) => <GateControls view={view} result={result} />}
           />
         </section>
-        <ConditionsPanel view={view} />
-        <section aria-label="Fees">
+      ),
+    },
+    { empty: view.conditions.length === 0, node: <ConditionsPanel key="conditions" view={view} /> },
+    {
+      empty: view.fees.assessments.length === 0 && view.fees.preview === null,
+      node: (
+        <section key="fees" aria-label="Fees">
           <h2>Fees</h2>
           {view.fees.assessments.map((a) => (
             <FeeTable
@@ -227,16 +140,46 @@ export default async function StaffApplicationPage({ params }: Props) {
           )}
           <FeeOverrideForm view={view} />
         </section>
-        <PaymentsPanel payments={payments} />
-        <InspectionsPanel data={inspections} applicationId={applicationId} number={view.number} />
+      ),
+    },
+    {
+      empty:
+        payments !== null && payments.balance.lines.length === 0 && payments.entries.length === 0,
+      node: <PaymentsPanel key="payments" payments={payments} />,
+    },
+    {
+      empty: inspections.history.length === 0,
+      node: (
+        <InspectionsPanel
+          key="inspections"
+          data={inspections}
+          applicationId={applicationId}
+          number={view.number}
+        />
+      ),
+    },
+    {
+      empty: records.documents.length === 0,
+      node: (
         <DocumentPanel
+          key="documents"
           documents={records.documents}
           canPublish={records.canPublish}
           canManage={records.canManageDocuments}
           actions={PANEL_ACTIONS}
           target={{ kind: 'application', id: applicationId }}
         />
+      ),
+    },
+    { empty: view.parties.length === 0, node: <PartiesPanel key="parties" view={view} /> },
+    { empty: false, node: <CodeEditionPanel key="edition" view={view} /> },
+    { empty: false, node: <RegionalImpactPanel key="regional" view={view} /> },
+    { empty: view.appeals.length === 0, node: <AppealPanel key="appeals" view={view} /> },
+    {
+      empty: false,
+      node: (
         <RecordsPanel
+          key="records"
           applicationId={applicationId}
           projectId={view.projectId}
           snapshots={records.snapshots}
@@ -245,9 +188,33 @@ export default async function StaffApplicationPage({ params }: Props) {
           canManage={records.canManageDocuments}
           zone={records.zone}
         />
-        <CodeEditionPanel view={view} />
-        <RegionalImpactPanel view={view} />
-        <AppealPanel view={view} />
+      ),
+    },
+  ])
+  return (
+    <main>
+      <PageHeader
+        kicker={view.typeLabel}
+        title={view.number}
+        status={
+          <StatusChip
+            status={applicationChipStatus(view.state)}
+            label={applicationStatusText(view.state, view.substep, view.substeps)}
+          />
+        }
+        lead={view.projectTitle}
+      />
+      <RecordLayout
+        rail={
+          <ApplicationRail
+            view={view}
+            notice={<BalanceDueNotice notices={balanceNotices} />}
+            legacyNumber={imported?.legacyNumber ?? null}
+          />
+        }
+        empty={parts.empty}
+      >
+        {parts.filled}
       </RecordLayout>
     </main>
   )

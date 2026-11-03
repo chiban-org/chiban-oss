@@ -48,9 +48,9 @@ export function GatePanel({ groups, renderControls }: GatePanelProps) {
         <section key={group.to} aria-label={`Gates for ${STATE_LABELS[group.to]}`} className="my-3">
           <h3>{`Before ${STATE_LABELS[group.to].toLowerCase()}`}</h3>
           {group.results.length === 0 ? <p>No gates apply to this step.</p> : null}
-          <ul className="list-none p-0">
+          <ul className="list-none divide-y p-0">
             {group.results.map((result) => (
-              <li key={result.key} className="my-2 rounded-lg border bg-surface p-3">
+              <li key={result.key} className="py-2.5">
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <strong>{result.label}</strong>
                   <span className="flex items-center gap-2">

@@ -108,27 +108,29 @@ export function PaymentsPanel({ payments }: { payments: ApplicationPayments | nu
   return (
     <section aria-label="Payments">
       <h2>Payments</h2>
-      <table className="my-2 w-full text-sm">
-        <thead>
-          <tr className="border-b text-left">
-            <th className="py-1">Fee</th>
-            <th className="text-right">Assessed</th>
-            <th className="text-right">Paid</th>
-            <th className="text-right">Due</th>
-          </tr>
-        </thead>
-        <tbody>
-          {balance.lines.map((line) => (
-            <tr key={`${line.stage}-${line.feeCode}`} className="border-b">
-              <td className="py-1">{line.label}</td>
-              <td className="text-right">{formatCents(line.assessedCents)}</td>
-              <td className="text-right">{formatCents(line.paidCents)}</td>
-              <td className="text-right">{formatCents(line.dueCents)}</td>
+      {balance.lines.length === 0 ? null : (
+        <table className="my-2 w-full text-sm">
+          <thead>
+            <tr className="border-b text-left">
+              <th className="py-1">Fee</th>
+              <th className="text-right">Assessed</th>
+              <th className="text-right">Paid</th>
+              <th className="text-right">Due</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
-      <p>{`Balance due ${formatCents(balance.dueCents)}.`}</p>
+          </thead>
+          <tbody>
+            {balance.lines.map((line) => (
+              <tr key={`${line.stage}-${line.feeCode}`} className="border-b">
+                <td className="py-1">{line.label}</td>
+                <td className="text-right">{formatCents(line.assessedCents)}</td>
+                <td className="text-right">{formatCents(line.paidCents)}</td>
+                <td className="text-right">{formatCents(line.dueCents)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+      {balance.lines.length === 0 ? null : <p>{`Balance due ${formatCents(balance.dueCents)}.`}</p>}
       {balance.unknownAttempts > 0 ? (
         <p role="alert">A card payment outcome is unknown. See Payments.</p>
       ) : null}

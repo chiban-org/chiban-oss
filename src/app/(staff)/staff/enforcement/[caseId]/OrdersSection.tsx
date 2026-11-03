@@ -92,7 +92,7 @@ function OrderBlock({ order, detail, can }: { order: OrderDetail; detail: CaseDe
   const { row } = order
   const issued = row.issuedOn !== null
   return (
-    <article className="space-y-4 rounded-md border p-4">
+    <article className="record-item space-y-4">
       <h3 className="m-0">{`${row.number}, ${ORDER_STATUS_LABELS[row.status]}`}</h3>
       <OrderSummary order={order} detail={detail} />
       {row.status === 'draft' && can.manage ? <DraftForms order={order} /> : null}
@@ -151,27 +151,35 @@ export function OrdersSection({ detail, can }: { detail: CaseDetail; can: Can })
         <OrderBlock key={o.row.id} order={o} detail={detail} can={can} />
       ))}
       {can.manage && open.length > 0 ? (
-        <ActionForm action={draftOrderAction} submitLabel="Draft order">
-          <Hidden name="caseId" value={detail.staff.row.id} />
-          <fieldset className="space-y-1">
-            <legend className="font-medium">Findings the order is based on</legend>
-            {open.map((f) => (
-              <label key={f.id} className="flex items-center gap-2">
-                <input type="checkbox" name="findingIds" value={f.id} />
-                {`${PROVISION_KIND_LABELS[f.provisionKind]}: ${f.provisionRef}`}
-              </label>
-            ))}
-          </fieldset>
-          <AreaField label="Corrective action required" name="correctiveAction" rows={3} />
-          <TextField label="Corrective action due" name="correctiveDeadline" type="date" required />
-          <label className="flex items-center gap-2">
-            <input type="checkbox" name="ceaseImmediately" value="true" />
-            The activity must stop immediately
-          </label>
-          <p className="m-0">
-            Only an officer on record as designated by the town can issue the order.
-          </p>
-        </ActionForm>
+        <details>
+          <summary>Draft an order</summary>
+          <ActionForm action={draftOrderAction} submitLabel="Draft order">
+            <Hidden name="caseId" value={detail.staff.row.id} />
+            <fieldset className="space-y-1">
+              <legend className="font-medium">Findings the order is based on</legend>
+              {open.map((f) => (
+                <label key={f.id} className="flex items-center gap-2">
+                  <input type="checkbox" name="findingIds" value={f.id} />
+                  {`${PROVISION_KIND_LABELS[f.provisionKind]}: ${f.provisionRef}`}
+                </label>
+              ))}
+            </fieldset>
+            <AreaField label="Corrective action required" name="correctiveAction" rows={3} />
+            <TextField
+              label="Corrective action due"
+              name="correctiveDeadline"
+              type="date"
+              required
+            />
+            <label className="flex items-center gap-2">
+              <input type="checkbox" name="ceaseImmediately" value="true" />
+              The activity must stop immediately
+            </label>
+            <p className="m-0">
+              Only an officer on record as designated by the town can issue the order.
+            </p>
+          </ActionForm>
+        </details>
       ) : null}
     </Section>
   )

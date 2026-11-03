@@ -3,8 +3,9 @@ import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { DocumentPanel } from '@/components/documents/DocumentPanel'
 import { ParcelFileUploader } from '@/components/documents/ParcelFileUploader'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { FactList, PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
+import { splitPanels } from '@/components/layout/splitPanels'
 import { LinkedParcelMap } from '@/components/map/LinkedParcelMap'
 import { HonestText } from '@/components/parcels/HonestText'
 import { RecordsSection } from '@/components/parcels/RecordsSection'
@@ -77,58 +78,17 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
     fresh: '',
   }[view.layer.state]
 
-  return (
-    <main>
-      <PageHeader
-        kicker="Parcel"
-        title={displayId}
-        status={
-          view.status === 'retired' ? (
-            <StatusChip status="neutral" label={retiredText(view.retiredOn)} />
-          ) : undefined
-        }
-        lead={<HonestText value={view.siteAddress} timeZone={timeZone} />}
-        facts={[
-          { label: 'Owner', value: <HonestText value={view.owner} timeZone={timeZone} /> },
-          {
-            label: 'Mailing address',
-            value: <HonestText value={view.mailingAddress} timeZone={timeZone} />,
-          },
-          {
-            label: 'Area',
-            value: (
-              <HonestText value={view.areaAcres} format={(n) => `${n} acres`} timeZone={timeZone} />
-            ),
-          },
-          {
-            label: 'Open exceptions',
-            value:
-              view.openExceptions === 0 ? (
-                'None'
-              ) : (
-                <Link href="/staff/gis/exceptions" className="text-action underline">
-                  {`${view.openExceptions} open`}
-                </Link>
-              ),
-          },
-        ]}
-        actions={
-          <div className="flex flex-col items-start gap-4">
-            <BalanceDueNotice notices={balanceNotices} linkApplications />
-            <LayerBanner state={view.layer.state} text={layerText} />
-            {canManageParcel ? (
-              <Button asChild>
-                <Link href={`/staff/parcels/lineage/new?parent=${encodeURIComponent(displayId)}`}>
-                  Record lineage event
-                </Link>
-              </Button>
-            ) : null}
-          </div>
-        }
-      />
-      <RecordLayout>
-        {geometry === null ? null : (
+  const lineage = [
+    ...view.lineage.parents.map((p) => ({ ...p, rel: 'Parent' })),
+    ...view.lineage.children.map((c) => ({ ...c, rel: 'Child' })),
+  ]
+  const parts = splitPanels([
+    {
+      empty: false,
+      node:
+        geometry === null ? null : (
           <LinkedParcelMap
+            key="map"
             hrefBase="/staff/parcels/"
             selectedParcelId={parcelId}
             bbox={bboxOfGeometry(geometry)}
@@ -136,8 +96,13 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
             basemapRasterUrl={town.ok ? town.value.basemapRasterUrl : null}
             basemapAttribution={town.ok ? town.value.basemapAttribution : null}
           />
-        )}
+        ),
+    },
+    {
+      empty: false,
+      node: (
         <RecordsSection
+          key="records"
           history={view.history}
           parcelHrefBase="/staff/parcels/"
           renderAction={(record) =>
@@ -149,39 +114,48 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
             )
           }
         />
+      ),
+    },
+    {
+      empty: parcelDocuments.length === 0,
+      node: (
         <DocumentPanel
+          key="documents"
           documents={parcelDocuments}
           canPublish={canPublish}
           canManage={canManage}
           actions={PANEL_ACTIONS}
           target={{ kind: 'parcel', id: parcelId }}
-        />
-        {canManage ? (
-          <section aria-label="Add a parcel file">
-            <h2>Add a parcel file</h2>
-            <ParcelFileUploader
-              parcelId={parcelId}
-              series={series}
-              actions={{
-                createIntent: createStaffUploadIntentAction,
-                finalize: finalizeStaffUploadAction,
-              }}
-            />
-          </section>
-        ) : null}
-        <section aria-label="Lineage">
+        >
+          {canManage ? (
+            <details>
+              <summary>Add a parcel file</summary>
+              <ParcelFileUploader
+                parcelId={parcelId}
+                series={series}
+                actions={{
+                  createIntent: createStaffUploadIntentAction,
+                  finalize: finalizeStaffUploadAction,
+                }}
+              />
+            </details>
+          ) : null}
+        </DocumentPanel>
+      ),
+    },
+    {
+      empty: lineage.length === 0,
+      node: (
+        <section key="lineage" aria-label="Lineage">
           <h2>Lineage</h2>
-          {view.lineage.parents.length + view.lineage.children.length === 0 ? (
+          {lineage.length === 0 ? (
             <p>No lineage events for this parcel.</p>
           ) : (
             <ul>
-              {[
-                ...view.lineage.parents.map((p) => ({ ...p, rel: 'Parent' })),
-                ...view.lineage.children.map((c) => ({ ...c, rel: 'Child' })),
-              ].map((l) => (
+              {lineage.map((l) => (
                 <li key={`${l.eventId}:${l.parcelId}`}>
                   {`${l.rel} lot `}
-                  <Link href={`/staff/parcels/${l.parcelId}`} className="text-action underline">
+                  <Link href={`/staff/parcels/${l.parcelId}`}>
                     {l.displayId ?? 'No map-lot ID'}
                   </Link>
                   {`, ${lineageEventText(l.eventKind, l.effectiveDate)}`}
@@ -190,7 +164,12 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
             </ul>
           )}
         </section>
-        <section aria-label="IDs">
+      ),
+    },
+    {
+      empty: false,
+      node: (
+        <section key="ids" aria-label="IDs">
           <h2>IDs</h2>
           <table className="text-sm">
             <thead>
@@ -212,28 +191,89 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
               ))}
             </tbody>
           </table>
+          {canManageParcel ? (
+            <details>
+              <summary>Override an ID</summary>
+              <ActionForm action={createAliasOverrideAction} submitLabel="Save override">
+                <input type="hidden" name="parcelRef" value={displayId} />
+                <TextField
+                  label="Format key"
+                  name="format"
+                  required
+                  hint="For example cama15 or gis12."
+                />
+                <TextField label="ID value" name="value" required />
+                <TextField label="Reason" name="reason" required />
+                <TextField label="Expires on" name="expiresOn" type="date" />
+              </ActionForm>
+            </details>
+          ) : null}
         </section>
-        {canManageParcel ? (
-          <section aria-label="Override an ID">
-            <h2>Override an ID</h2>
-            <ActionForm
-              action={createAliasOverrideAction}
-              submitLabel="Save override"
-              className="max-w-md"
-            >
-              <input type="hidden" name="parcelRef" value={displayId} />
-              <TextField
-                label="Format key"
-                name="format"
-                required
-                hint="For example cama15 or gis12."
+      ),
+    },
+  ])
+  return (
+    <main>
+      <PageHeader
+        kicker="Parcel"
+        title={displayId}
+        status={
+          view.status === 'retired' ? (
+            <StatusChip status="neutral" label={retiredText(view.retiredOn)} />
+          ) : undefined
+        }
+        lead={<HonestText value={view.siteAddress} timeZone={timeZone} />}
+      />
+      <RecordLayout
+        rail={
+          <>
+            <div className="rail-card empty:hidden">
+              <BalanceDueNotice notices={balanceNotices} linkApplications />
+              <LayerBanner state={view.layer.state} text={layerText} />
+              {canManageParcel ? (
+                <Button asChild className="w-full">
+                  <Link href={`/staff/parcels/lineage/new?parent=${encodeURIComponent(displayId)}`}>
+                    Record lineage event
+                  </Link>
+                </Button>
+              ) : null}
+            </div>
+            <div className="rail-card">
+              <FactList
+                stacked
+                facts={[
+                  { label: 'Owner', value: <HonestText value={view.owner} timeZone={timeZone} /> },
+                  {
+                    label: 'Mailing address',
+                    value: <HonestText value={view.mailingAddress} timeZone={timeZone} />,
+                  },
+                  {
+                    label: 'Area',
+                    value: (
+                      <HonestText
+                        value={view.areaAcres}
+                        format={(n) => `${n} acres`}
+                        timeZone={timeZone}
+                      />
+                    ),
+                  },
+                  {
+                    label: 'Open exceptions',
+                    value:
+                      view.openExceptions === 0 ? (
+                        'None'
+                      ) : (
+                        <Link href="/staff/gis/exceptions">{`${view.openExceptions} open`}</Link>
+                      ),
+                  },
+                ]}
               />
-              <TextField label="ID value" name="value" required />
-              <TextField label="Reason" name="reason" required />
-              <TextField label="Expires on" name="expiresOn" type="date" />
-            </ActionForm>
-          </section>
-        ) : null}
+            </div>
+          </>
+        }
+        empty={parts.empty}
+      >
+        {parts.filled}
       </RecordLayout>
     </main>
   )

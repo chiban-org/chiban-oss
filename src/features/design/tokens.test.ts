@@ -60,6 +60,10 @@ describe('design tokens', () => {
     }
   })
 
+  it('ties dark utilities to a class so an OS dark setting cannot restyle the light-only theme', () => {
+    expect(css).toContain('@custom-variant dark (&:where(.dark, .dark *));')
+  })
+
   it('declares shape and layout tokens', () => {
     expect(css).toContain('--radius: 10px;')
     expect(css).toContain('--space-base: 4px;')

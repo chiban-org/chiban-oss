@@ -1,8 +1,8 @@
 import Link from 'next/link'
+import { ApplicationStatusChip } from '@/components/ApplicationStatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { listApplicationsForViewer } from '@/features/applications/listForViewer'
 import type { CoreState } from '@/features/applications/states'
-import { applicationStatusText } from '@/features/applications/statusText'
 import { substepLabelsFor } from '@/features/applications/substepLabels'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { mayOpen } from '@/features/staffNav/navItems'
@@ -39,7 +39,7 @@ export default async function StaffApplicationsPage({ searchParams }: Props) {
   return (
     <main>
       <h1>Applications</h1>
-      <p className="my-2">
+      <p className="mb-6">
         Every application, newest first. To search by number or filter by state, use the{' '}
         <Link href="/staff/queue" className="text-action underline">
           work queue
@@ -49,42 +49,42 @@ export default async function StaffApplicationsPage({ searchParams }: Props) {
       {page.rows.length === 0 ? (
         <p className="my-4">No applications yet.</p>
       ) : (
-        <table className="my-4 w-full text-sm">
-          <thead>
-            <tr className="border-b text-left">
-              <th className="py-2">Number</th>
-              <th>Project</th>
-              <th>Parcel</th>
-              <th>State</th>
-            </tr>
-          </thead>
-          <tbody>
-            {page.rows.map((row) => (
-              <tr key={row.id} className="border-b">
-                <td className="py-2">
-                  <Link href={`/staff/applications/${row.id}`} className="text-action underline">
-                    {row.number}
-                  </Link>
-                </td>
-                <td>{row.projectTitle}</td>
-                <td>
-                  <Link href={`/staff/parcels/${row.parcelId}`} className="text-action underline">
-                    {display.get(row.parcelId) ?? 'No map-lot ID'}
-                  </Link>
-                </td>
-                <td>
-                  {applicationStatusText(
-                    row.state as CoreState,
-                    row.substep,
-                    row.substep === null
-                      ? []
-                      : [{ key: row.substep, label: substepLabels.get(row.id) ?? '' }],
-                  )}
-                </td>
+        <div className="table-panel">
+          <table className="w-full text-sm">
+            <thead>
+              <tr>
+                <th>Number</th>
+                <th>Project</th>
+                <th>Parcel</th>
+                <th>State</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {page.rows.map((row) => (
+                <tr key={row.id}>
+                  <td>
+                    <Link href={`/staff/applications/${row.id}`} className="font-semibold">
+                      {row.number}
+                    </Link>
+                  </td>
+                  <td>{row.projectTitle}</td>
+                  <td>
+                    <Link href={`/staff/parcels/${row.parcelId}`} className="tabular-nums">
+                      {display.get(row.parcelId) ?? 'No map-lot ID'}
+                    </Link>
+                  </td>
+                  <td>
+                    <ApplicationStatusChip
+                      state={row.state as CoreState}
+                      substep={row.substep}
+                      substepLabel={row.substep === null ? null : (substepLabels.get(row.id) ?? '')}
+                    />
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
       {page.nextCursor === null ? null : (
         <Link

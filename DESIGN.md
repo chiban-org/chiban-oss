@@ -33,8 +33,14 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 ## Layout pieces
 
 - `PageHeader` (`src/components/layout/PageHeader.tsx`): kicker, serif title with status chip, lead line, a fact list, and the page's actions. Use it for every record page.
-- `RecordLayout` (`src/components/layout/RecordLayout.tsx`): wraps a record's sections and adds an "On this page" index on wide screens once there are four or more panels.
+- `RecordLayout` (`src/components/layout/RecordLayout.tsx`): a record page body with a sticky right rail. The rail holds the next step (the one filled action), the key facts as a stacked `FactList`, and an "On this page" index once there are four or more panels. Below 1024px the rail comes first, above the panels.
+- `splitPanels` (`src/components/layout/splitPanels.ts`): the page decides which panels have nothing on file. Filled panels keep their order; empty ones collect at the end under "Nothing recorded yet" as one-line rows, with any add action as a disclosure on the right.
+- Forms that add something (assign, apply, record, refer) sit behind a `<details>` disclosure named for the action. Forms that are the page's next step stay open in the rail.
+- Lists of records inside a panel use `record-item` dividers, never bordered boxes inside a bordered panel.
+- Data tables sit in a `table-panel`; filter bars above them in a `toolbar`. Status columns use `StatusChip`, and empty cells read in muted text.
 - Staff navigation is grouped by the `group` field on each entry in `src/features/staffNav/navItems.ts` and marks the current page.
+- The staff home (`/staff`) shows what needs attention and the next deadlines, with a parcel search. Inspectors who hold only that role land on their day list instead.
+- The theme is light only. Tailwind's `dark:` variant is bound to a `.dark` class that nothing sets, so an operating system dark setting cannot restyle controls.
 
 ## Type and shape
 

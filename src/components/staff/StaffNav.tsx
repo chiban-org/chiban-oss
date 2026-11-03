@@ -42,7 +42,7 @@ function NavSections({
   )
 }
 
-export function StaffNav({ items }: { items: NavItem[] }) {
+export function StaffNav({ items, town }: { items: NavItem[]; town: string | null }) {
   const active = activeNavHref(usePathname(), items)
   return (
     <>
@@ -56,7 +56,12 @@ export function StaffNav({ items }: { items: NavItem[] }) {
       </details>
       <nav aria-label="Staff" className="hidden w-60 shrink-0 border-r bg-surface md:block">
         <div className="sticky top-0 max-h-screen overflow-y-auto px-3 py-5">
-          <p className="mb-6 px-2 font-serif text-2xl font-semibold text-ink">Chiban</p>
+          <Link href="/staff" className="mb-6 block px-2 text-ink no-underline">
+            <span className="block font-serif text-2xl font-semibold">Chiban</span>
+            {town === null ? null : (
+              <span className="block text-sm text-muted-foreground">{town}</span>
+            )}
+          </Link>
           <NavSections items={items} active={active} linkClassName="block py-1.5 text-sm" />
         </div>
       </nav>

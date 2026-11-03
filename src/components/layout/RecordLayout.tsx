@@ -38,7 +38,7 @@ function collectSections(body: HTMLElement): FoundSection[] {
   const taken = new Set<string>()
   const found: FoundSection[] = []
   for (const element of body.querySelectorAll<HTMLElement>('section:not([data-plain])')) {
-    if (element.parentElement?.closest('section') !== null) continue
+    if (element.parentElement?.closest('section, [data-empty-group]') !== null) continue
     const label = labelOf(element)
     if (label === '') continue
     if (element.id === '' || taken.has(element.id)) element.id = uniqueId(slug(label), taken)
@@ -52,7 +52,7 @@ function entriesKey(list: readonly IndexEntry[]): string {
   return list.map((e) => `${e.id}|${e.label}`).join('\n')
 }
 
-export function RecordLayout({ children }: { children: ReactNode }) {
+function useSectionIndex() {
   const body = useRef<HTMLDivElement>(null)
   const [entries, setEntries] = useState<IndexEntry[]>([])
   const [active, setActive] = useState<string | null>(null)
@@ -74,6 +74,7 @@ export function RecordLayout({ children }: { children: ReactNode }) {
       for (const section of found) visibility.observe(section.element)
       const next = found.map(({ id, label }) => ({ id, label }))
       setEntries((previous) => (entriesKey(previous) === entriesKey(next) ? previous : next))
+      setActive((current) => (next.some((e) => e.id === current) ? current : null))
     }
     const mutations = new MutationObserver(() => {
       cancelAnimationFrame(frame)
@@ -88,31 +89,54 @@ export function RecordLayout({ children }: { children: ReactNode }) {
     }
   }, [])
 
+  return { body, entries, active }
+}
+
+function SectionIndex({ entries, active }: { entries: IndexEntry[]; active: string | null }) {
+  if (entries.length < 4) return null
   return (
-    <div className="xl:grid xl:grid-cols-[minmax(0,1fr)_11rem] xl:gap-10">
-      <div ref={body} className="min-w-0">
+    <nav aria-label="On this page" className="no-print hidden lg:block">
+      <p className="mb-2 text-xs font-semibold text-muted-foreground">On this page</p>
+      <ul className="flex flex-col border-l">
+        {entries.map((entry) => (
+          <li key={entry.id}>
+            <a
+              href={`#${entry.id}`}
+              aria-current={entry.id === active ? 'location' : undefined}
+              className="-ml-px block border-l-2 border-transparent py-1 pl-3 text-sm text-muted-foreground no-underline hover:text-ink aria-[current=location]:border-action aria-[current=location]:font-semibold aria-[current=location]:text-ink"
+            >
+              {entry.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
+}
+
+interface RecordLayoutProps {
+  children: ReactNode
+  rail?: ReactNode
+  empty?: ReactNode[]
+}
+
+export function RecordLayout({ children, rail, empty }: RecordLayoutProps) {
+  const { body, entries, active } = useSectionIndex()
+  return (
+    <div className="record-layout lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-8">
+      <aside className="record-rail mb-6 flex flex-col gap-6 lg:sticky lg:top-6 lg:order-2 lg:mb-0 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+        {rail}
+        <SectionIndex entries={entries} active={active} />
+      </aside>
+      <div ref={body} className="record-body flex min-w-0 flex-col gap-5">
         {children}
-      </div>
-      {entries.length < 4 ? null : (
-        <nav aria-label="On this page" className="no-print hidden xl:block">
-          <div className="sticky top-10">
-            <p className="mb-2 text-xs font-semibold text-muted-foreground">On this page</p>
-            <ul className="flex flex-col border-l">
-              {entries.map((entry) => (
-                <li key={entry.id}>
-                  <a
-                    href={`#${entry.id}`}
-                    aria-current={entry.id === active ? 'location' : undefined}
-                    className="-ml-px block border-l-2 border-transparent py-1 pl-3 text-sm text-muted-foreground no-underline hover:text-ink aria-[current=location]:border-action aria-[current=location]:font-semibold aria-[current=location]:text-ink"
-                  >
-                    {entry.label}
-                  </a>
-                </li>
-              ))}
-            </ul>
+        {empty === undefined ? null : (
+          <div data-empty-group="" className="record-empty">
+            <p className="record-empty-title">Nothing recorded yet</p>
+            {empty}
           </div>
-        </nav>
-      )}
+        )}
+      </div>
     </div>
   )
 }

@@ -40,14 +40,14 @@ function nextQuery(params: SearchParams, cursor: string): string {
 
 function Filters({ params }: { params: SearchParams }) {
   return (
-    <form method="get" className="mb-4 flex flex-wrap items-end gap-4">
+    <form method="get" className="toolbar mb-5 flex flex-wrap items-end gap-x-5 gap-y-3">
       <label className="flex flex-col gap-1 text-sm">
         Search by number
         <input
           id="queue-search"
           name="q"
           defaultValue={params.q ?? ''}
-          className="rounded-md border px-3 py-2"
+          className="h-10 w-44 rounded-md border bg-surface px-3"
         />
       </label>
       <label className="flex flex-col gap-1 text-sm">
@@ -55,7 +55,7 @@ function Filters({ params }: { params: SearchParams }) {
         <select
           name="state"
           defaultValue={params.state ?? ''}
-          className="rounded-md border px-3 py-2"
+          className="h-10 rounded-md border bg-surface px-3"
         >
           <option value="">Not draft</option>
           {stateFilterOptions().map(([value, label]) => (
@@ -65,19 +65,22 @@ function Filters({ params }: { params: SearchParams }) {
           ))}
         </select>
       </label>
-      <label className="flex items-center gap-2 text-sm">
+      <label className="flex h-10 items-center gap-2 text-sm">
         <input type="checkbox" name="mine" value="1" defaultChecked={params.mine === '1'} />
         Assigned to me
       </label>
-      <label className="flex items-center gap-2 text-sm">
+      <label className="flex h-10 items-center gap-2 text-sm">
         <input type="checkbox" name="overdue" value="1" defaultChecked={params.overdue === '1'} />
         Overdue only
       </label>
-      <label className="flex items-center gap-2 text-sm">
+      <label className="flex h-10 items-center gap-2 text-sm">
         <input type="checkbox" name="unpaid" value="1" defaultChecked={params.unpaid === '1'} />
         Fees due
       </label>
-      <button type="submit" className="rounded-md border px-4 py-2 text-sm">
+      <button
+        type="submit"
+        className="ml-auto h-10 rounded-md border border-control-border bg-surface px-4 text-sm font-medium hover:bg-canvas"
+      >
         Apply filters
       </button>
     </form>
@@ -112,7 +115,7 @@ export default async function QueuePage({ searchParams }: { searchParams: Promis
   return (
     <main>
       <h1>Work queue</h1>
-      <p>{`${queue.total} ${queue.total === 1 ? 'application' : 'applications'}. Keys: j and k to move, Enter to open, a to assign a reviewer, / to search.`}</p>
+      <p className="mb-5">{`${queue.total} ${queue.total === 1 ? 'application' : 'applications'}. Keys: j and k to move, Enter to open, a to assign a reviewer, / to search.`}</p>
       <Filters params={params} />
       <QueueTable rows={queue.rows} reviewers={reviewers} assign={assignReviewerAction} />
       {queue.nextCursor === null ? null : (

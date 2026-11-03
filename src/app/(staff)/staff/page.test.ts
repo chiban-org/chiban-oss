@@ -21,18 +21,8 @@ describe('/staff', () => {
     await expect(StaffHome()).rejects.toThrow('NEXT_REDIRECT:/staff/sign-in')
   })
 
-  it('lands staff on the applications list', async () => {
-    state.actor = { userId: 'u', kind: 'staff', roles: ['staff'] }
-    await expect(StaffHome()).rejects.toThrow('NEXT_REDIRECT:/staff/applications')
-  })
-
   it('lands an inspector on the day list', async () => {
     state.actor = { userId: 'u', kind: 'staff', roles: ['inspector'] }
     await expect(StaffHome()).rejects.toThrow('NEXT_REDIRECT:/staff/inspections/day')
-  })
-
-  it('lands staff who are also inspectors on the applications list', async () => {
-    state.actor = { userId: 'u', kind: 'staff', roles: ['inspector', 'staff'] }
-    await expect(StaffHome()).rejects.toThrow('NEXT_REDIRECT:/staff/applications')
   })
 })

@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { TextField } from '@/components/staff/fields'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
@@ -8,25 +7,25 @@ import { Hidden } from './Section'
 
 export function CaseParcel({ detail, can }: { detail: CaseDetail; can: Can }) {
   const { row } = detail.staff
+  const linked = row.parcelId !== null
   return (
-    <div className="space-y-2">
-      {row.parcelId === null ? (
-        <p className="m-0">No parcel is linked, so the case is not on any parcel page.</p>
-      ) : (
-        <p className="m-0">
-          <Link href={`/staff/parcels/${row.parcelId}`} className="text-action underline">
-            Open the linked parcel
-          </Link>
+    <div className="space-y-3">
+      {linked ? null : (
+        <p className="m-0 text-sm text-muted-foreground">
+          No parcel is linked, so the case is not on any parcel page.
         </p>
       )}
       {can.manage ? (
-        <ActionForm
-          action={setCaseParcelAction}
-          submitLabel={row.parcelId === null ? 'Link the case to a parcel' : 'Change the parcel'}
-        >
-          <Hidden name="caseId" value={row.id} />
-          <TextField label="Parcel number or site address" name="parcelRef" required />
-        </ActionForm>
+        <details>
+          <summary>{linked ? 'Change the parcel' : 'Link a parcel'}</summary>
+          <ActionForm
+            action={setCaseParcelAction}
+            submitLabel={linked ? 'Change the parcel' : 'Link the case to a parcel'}
+          >
+            <Hidden name="caseId" value={row.id} />
+            <TextField label="Parcel number or site address" name="parcelRef" required />
+          </ActionForm>
+        </details>
       ) : null}
     </div>
   )

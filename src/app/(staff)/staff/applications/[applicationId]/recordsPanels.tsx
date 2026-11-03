@@ -37,17 +37,28 @@ export function RecordsPanel(props: Props) {
         ))}
       </ul>
       {props.canHold ? (
-        <ActionForm action={placeHoldAction} submitLabel="Place hold on this application">
-          <input type="hidden" name="targetKind" value="application" />
-          <input type="hidden" name="targetId" value={props.applicationId} />
-          <TextField label="Reason (at least 10 characters)" name="reason" required />
-        </ActionForm>
+        <details>
+          <summary>Place a legal hold</summary>
+          <ActionForm action={placeHoldAction} submitLabel="Place hold on this application">
+            <input type="hidden" name="targetKind" value="application" />
+            <input type="hidden" name="targetId" value={props.applicationId} />
+            <TextField label="Reason (at least 10 characters)" name="reason" required />
+          </ActionForm>
+        </details>
       ) : null}
       {props.canManage ? (
-        <ActionForm action={recordBuildingRemovedAction} submitLabel="Record building removed">
-          <input type="hidden" name="projectId" value={props.projectId} />
-          <TextField label="Date the building was removed" name="occurredOn" type="date" required />
-        </ActionForm>
+        <details>
+          <summary>Record the building removed</summary>
+          <ActionForm action={recordBuildingRemovedAction} submitLabel="Record building removed">
+            <input type="hidden" name="projectId" value={props.projectId} />
+            <TextField
+              label="Date the building was removed"
+              name="occurredOn"
+              type="date"
+              required
+            />
+          </ActionForm>
+        </details>
       ) : null}
     </section>
   )

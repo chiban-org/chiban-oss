@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import { ActionForm } from '@/components/ActionForm'
+import { ApplicationStatusChip } from '@/components/ApplicationStatusChip'
 import { StatusChip } from '@/components/StatusChip'
 import { SelectField } from '@/components/staff/fields'
 import {
@@ -13,7 +14,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { applicationStatusText } from '@/features/applications/statusText'
 import type { WorkQueueRow } from '@/features/queue/workQueue'
 import { reviewStatusLabel } from '@/features/reviews/statusLabels'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -48,7 +48,7 @@ function DueChip({ row }: { row: WorkQueueRow }) {
     )
   }
   return row.nextDue === null ? (
-    <span>No clock running</span>
+    <span className="text-muted-foreground">No clock running</span>
   ) : (
     <span>{formatCivilDate(row.nextDue)}</span>
   )
@@ -107,66 +107,69 @@ export function QueueTable({ rows, reviewers, assign, navigate }: Props) {
   if (rows.length === 0) return <p>Nothing matches these filters.</p>
   return (
     <>
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="border-b text-left">
-            <th className="py-2">Application</th>
-            <th>Status</th>
-            <th>Due</th>
-            <th>Fees</th>
-            <th>Reviewers</th>
-            <th>Flags</th>
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((row, index) => (
-            <tr
-              key={row.applicationId}
-              aria-selected={index === selected}
-              className={`border-b align-top ${index === selected ? 'bg-highlight' : ''}`}
-            >
-              <td className="py-2">
-                <Link
-                  href={`/staff/applications/${row.applicationId}`}
-                  className="text-action underline"
-                >
-                  {row.number}
-                </Link>
-                <span className="block text-muted-foreground">
-                  {`${row.typeLabel}${row.parcelDisplayId === null ? '' : `, ${row.parcelDisplayId}`}`}
-                </span>
-              </td>
-              <td>
-                {applicationStatusText(
-                  row.state,
-                  row.substep,
-                  row.substep === null || row.substepLabel === null
-                    ? []
-                    : [{ key: row.substep, label: row.substepLabel }],
-                )}
-              </td>
-              <td>
-                <DueChip row={row} />
-                <BoardDates row={row} />
-              </td>
-              <td>{row.feesDueCents > 0 ? `${formatCents(row.feesDueCents)} due` : ''}</td>
-              <td>
-                {row.reviewers.length === 0
-                  ? 'Unassigned'
-                  : row.reviewers
-                      .map((r) => `${r.name} (${reviewStatusLabel(r.status)})`)
-                      .join(', ')}
-              </td>
-              <td className="space-y-1">
-                {row.unknownPayment ? <span className="block">Payment outcome unknown</span> : null}
-                {row.preservationIncomplete ? (
-                  <span className="block">Preservation incomplete</span>
-                ) : null}
-              </td>
+      <div className="table-panel">
+        <table className="w-full text-sm">
+          <thead>
+            <tr>
+              <th>Application</th>
+              <th>Status</th>
+              <th>Due</th>
+              <th>Fees</th>
+              <th>Reviewers</th>
+              <th>Flags</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {rows.map((row, index) => (
+              <tr
+                key={row.applicationId}
+                aria-selected={index === selected}
+                className={index === selected ? 'bg-highlight' : undefined}
+              >
+                <td>
+                  <Link href={`/staff/applications/${row.applicationId}`} className="font-semibold">
+                    {row.number}
+                  </Link>
+                  <span className="block text-muted-foreground">
+                    {`${row.typeLabel}${row.parcelDisplayId === null ? '' : `, ${row.parcelDisplayId}`}`}
+                  </span>
+                </td>
+                <td>
+                  <ApplicationStatusChip
+                    state={row.state}
+                    substep={row.substep}
+                    substepLabel={row.substepLabel}
+                  />
+                </td>
+                <td>
+                  <DueChip row={row} />
+                  <BoardDates row={row} />
+                </td>
+                <td className="whitespace-nowrap tabular-nums">
+                  {row.feesDueCents > 0 ? `${formatCents(row.feesDueCents)} due` : ''}
+                </td>
+                <td className={row.reviewers.length === 0 ? 'text-muted-foreground' : undefined}>
+                  {row.reviewers.length === 0
+                    ? 'Unassigned'
+                    : row.reviewers
+                        .map((r) => `${r.name} (${reviewStatusLabel(r.status)})`)
+                        .join(', ')}
+                </td>
+                <td>
+                  <span className="flex flex-col items-start gap-1">
+                    {row.unknownPayment ? (
+                      <StatusChip status="overdue" label="Payment outcome unknown" />
+                    ) : null}
+                    {row.preservationIncomplete ? (
+                      <StatusChip status="overdue" label="Preservation incomplete" />
+                    ) : null}
+                  </span>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <Dialog
         open={assigning !== null}
         onOpenChange={(open) => (open ? undefined : setAssigning(null))}

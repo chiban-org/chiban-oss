@@ -66,17 +66,22 @@ export function CodeEditionPanel({ view }: { view: StaffApplicationView }) {
         </>
       )}
       {view.state === 'draft' || view.permissions.canIssue === false ? null : (
-        <ActionForm
-          action={recordCodeEditionAction}
-          submitLabel={edition === null ? 'Record code edition' : 'Record again'}
-        >
-          <input type="hidden" name="applicationId" value={view.id} />
-          <SelectField
-            label="Applicant election, only inside the overlap period"
-            name="election"
-            options={[ELECTION_NONE, ...electionOptions()]}
-          />
-        </ActionForm>
+        <details>
+          <summary>
+            {edition === null ? 'Record the code edition' : 'Record the edition again'}
+          </summary>
+          <ActionForm
+            action={recordCodeEditionAction}
+            submitLabel={edition === null ? 'Record code edition' : 'Record again'}
+          >
+            <input type="hidden" name="applicationId" value={view.id} />
+            <SelectField
+              label="Applicant election, only inside the overlap period"
+              name="election"
+              options={[ELECTION_NONE, ...electionOptions()]}
+            />
+          </ActionForm>
+        </details>
       )}
     </section>
   )
@@ -96,18 +101,25 @@ export function RegionalImpactPanel({ view }: { view: StaffApplicationView }) {
           : `Determination: ${lowerFirst(labelFor(DETERMINATION_OPTIONS, r.determination.determination))} on ${formatCivilDate(r.determination.determinedOn)}${r.determination.previousBoardRef === null ? '' : ` (board reference ${r.determination.previousBoardRef})`}.`}
       </p>
       {editable ? (
-        <ActionForm action={regionalImpactAction} submitLabel="Record determination">
-          <input type="hidden" name="applicationId" value={view.id} />
-          <SelectField label="Determination" name="determination" options={DETERMINATION_OPTIONS} />
-          <TextField label="Board reference (if previously determined)" name="previousBoardRef" />
-          <TextField
-            label="Determined on"
-            name="determinedOn"
-            type="date"
-            defaultValue={view.today}
-            required
-          />
-        </ActionForm>
+        <details>
+          <summary>Record a determination</summary>
+          <ActionForm action={regionalImpactAction} submitLabel="Record determination">
+            <input type="hidden" name="applicationId" value={view.id} />
+            <SelectField
+              label="Determination"
+              name="determination"
+              options={DETERMINATION_OPTIONS}
+            />
+            <TextField label="Board reference (if previously determined)" name="previousBoardRef" />
+            <TextField
+              label="Determined on"
+              name="determinedOn"
+              type="date"
+              defaultValue={view.today}
+              required
+            />
+          </ActionForm>
+        </details>
       ) : null}
       {r.notices.length === 0 ? null : (
         <ul>
@@ -119,20 +131,23 @@ export function RegionalImpactPanel({ view }: { view: StaffApplicationView }) {
         </ul>
       )}
       {r.determination?.determination === 'yes' && editable ? (
-        <ActionForm action={regionalNoticeAction} submitLabel="Record notice">
-          <input type="hidden" name="applicationId" value={view.id} />
-          <SelectField label="Recipient" name="recipientKind" options={RECIPIENT_KIND_OPTIONS} />
-          <TextField label="Recipient name" name="recipientName" required />
-          <SelectField label="Method" name="method" options={NOTICE_METHOD_OPTIONS} />
-          <TextField
-            label="Mailed on"
-            name="mailedOn"
-            type="date"
-            defaultValue={view.today}
-            required
-          />
-          <TextField label="Reference (tracking number)" name="reference" />
-        </ActionForm>
+        <details>
+          <summary>Record a notice</summary>
+          <ActionForm action={regionalNoticeAction} submitLabel="Record notice">
+            <input type="hidden" name="applicationId" value={view.id} />
+            <SelectField label="Recipient" name="recipientKind" options={RECIPIENT_KIND_OPTIONS} />
+            <TextField label="Recipient name" name="recipientName" required />
+            <SelectField label="Method" name="method" options={NOTICE_METHOD_OPTIONS} />
+            <TextField
+              label="Mailed on"
+              name="mailedOn"
+              type="date"
+              defaultValue={view.today}
+              required
+            />
+            <TextField label="Reference (tracking number)" name="reference" />
+          </ActionForm>
+        </details>
       ) : null}
     </section>
   )
@@ -153,41 +168,50 @@ export function AppealPanel({ view }: { view: StaffApplicationView }) {
       </ul>
       {view.state === 'issued' && view.permissions.canIssue ? (
         <>
-          <ActionForm action={recordAppealAction} submitLabel="Record appeal">
-            <input type="hidden" name="applicationId" value={view.id} />
-            <TextField label="Appellant" name="appellantName" required />
-            <TextField
-              label="Filed on"
-              name="filedOn"
-              type="date"
-              defaultValue={view.today}
-              required
-            />
-          </ActionForm>
-          <ActionForm action={renewAction} submitLabel="Renew permit">
-            <input type="hidden" name="applicationId" value={view.id} />
-            <TextField
-              label="Renewed on"
-              name="renewedOn"
-              type="date"
-              defaultValue={view.today}
-              required
-            />
-          </ActionForm>
+          <details>
+            <summary>Record an appeal</summary>
+            <ActionForm action={recordAppealAction} submitLabel="Record appeal">
+              <input type="hidden" name="applicationId" value={view.id} />
+              <TextField label="Appellant" name="appellantName" required />
+              <TextField
+                label="Filed on"
+                name="filedOn"
+                type="date"
+                defaultValue={view.today}
+                required
+              />
+            </ActionForm>
+          </details>
+          <details>
+            <summary>Renew the permit</summary>
+            <ActionForm action={renewAction} submitLabel="Renew permit">
+              <input type="hidden" name="applicationId" value={view.id} />
+              <TextField
+                label="Renewed on"
+                name="renewedOn"
+                type="date"
+                defaultValue={view.today}
+                required
+              />
+            </ActionForm>
+          </details>
         </>
       ) : null}
       {open !== undefined && view.permissions.canIssue ? (
-        <ActionForm action={resolveAppealAction} submitLabel="Resolve appeal">
-          <input type="hidden" name="applicationId" value={view.id} />
-          <SelectField label="Outcome" name="outcome" options={APPEAL_OUTCOME_OPTIONS} />
-          <TextField
-            label="Resolved on"
-            name="resolvedOn"
-            type="date"
-            defaultValue={view.today}
-            required
-          />
-        </ActionForm>
+        <details>
+          <summary>Resolve the appeal</summary>
+          <ActionForm action={resolveAppealAction} submitLabel="Resolve appeal">
+            <input type="hidden" name="applicationId" value={view.id} />
+            <SelectField label="Outcome" name="outcome" options={APPEAL_OUTCOME_OPTIONS} />
+            <TextField
+              label="Resolved on"
+              name="resolvedOn"
+              type="date"
+              defaultValue={view.today}
+              required
+            />
+          </ActionForm>
+        </details>
       ) : null}
     </section>
   )

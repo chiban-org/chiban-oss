@@ -45,6 +45,7 @@ beforeAll(async () => {
     storageKey: 'exports/x/chiban-export-2026-11-02.tar',
     sizeBytes: 2048,
     requestedBy: admin.userId,
+    requestedAt: new Date('2026-11-03T01:00:00Z'),
     finishedAt: new Date('2026-11-03T02:00:00Z'),
     expiresAt: new Date('2026-11-10T02:00:00Z'),
   })

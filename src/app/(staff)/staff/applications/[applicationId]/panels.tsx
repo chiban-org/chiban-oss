@@ -1,4 +1,5 @@
 import { ActionForm } from '@/components/ActionForm'
+import { NextStep } from '@/components/layout/NextStep'
 import { StatusChip } from '@/components/StatusChip'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
@@ -22,7 +23,7 @@ export function TransitionBar({ view }: { view: StaffApplicationView }) {
   )
   if (allowed.length === 0 && view.substeps.length === 0) return null
   return (
-    <section aria-label="Next step" data-plain className="flex flex-wrap items-end gap-3">
+    <NextStep>
       {allowed.map((to, index) => (
         <ActionForm
           key={to}
@@ -47,7 +48,7 @@ export function TransitionBar({ view }: { view: StaffApplicationView }) {
           />
         </ActionForm>
       )}
-    </section>
+    </NextStep>
   )
 }
 
@@ -179,14 +180,17 @@ export function ConditionsPanel({ view }: { view: StaffApplicationView }) {
         ))}
       </ul>
       {!editable || view.conditionLibrary.length === 0 ? null : (
-        <ActionForm action={applyConditionAction} submitLabel="Apply condition">
-          <input type="hidden" name="applicationId" value={view.id} />
-          <SelectField
-            label="Condition"
-            name="code"
-            options={view.conditionLibrary.map((c): [string, string] => [c.code, c.text])}
-          />
-        </ActionForm>
+        <details>
+          <summary>Apply a condition</summary>
+          <ActionForm action={applyConditionAction} submitLabel="Apply condition">
+            <input type="hidden" name="applicationId" value={view.id} />
+            <SelectField
+              label="Condition"
+              name="code"
+              options={view.conditionLibrary.map((c): [string, string] => [c.code, c.text])}
+            />
+          </ActionForm>
+        </details>
       )}
     </section>
   )

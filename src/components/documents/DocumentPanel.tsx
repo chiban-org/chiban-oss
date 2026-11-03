@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { ActionForm } from '@/components/ActionForm'
 import { RedactedUploader } from '@/components/documents/RedactedUploader'
 import type { UploaderActions } from '@/components/documents/Uploader'
@@ -28,6 +29,10 @@ interface Props {
   canManage: boolean
   actions: DocumentPanelActions
   target: RecordRef
+  title?: string
+  intro?: ReactNode
+  emptyText?: string
+  children?: ReactNode
 }
 
 const AUDIENCE_LABELS: Record<Audience, string> = {
@@ -230,14 +235,19 @@ function DocumentRow({ doc, props }: { doc: PanelDocument; props: Props }) {
 
 export function DocumentPanel(props: Props) {
   return (
-    <section aria-label="Documents">
-      <h2>Documents</h2>
-      {props.documents.length === 0 ? <p>No documents are attached.</p> : null}
+    <section aria-label={props.title ?? 'Documents'}>
+      <h2>{props.title ?? 'Documents'}</h2>
+      {props.documents.length === 0 ? (
+        <p>{props.emptyText ?? 'No documents are attached.'}</p>
+      ) : (
+        props.intro
+      )}
       <ul className="m-0 list-none divide-y p-0">
         {props.documents.map((doc) => (
           <DocumentRow key={doc.documentId} doc={doc} props={props} />
         ))}
       </ul>
+      {props.children}
     </section>
   )
 }

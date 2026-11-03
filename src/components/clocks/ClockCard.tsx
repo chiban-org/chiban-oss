@@ -74,7 +74,7 @@ function dueNote(clock: ClockExplanation): string | null {
 export function ClockCard({ clock }: { clock: ClockExplanation & { clockId: string } }) {
   const note = dueNote(clock)
   return (
-    <article className="my-3 rounded-lg border bg-surface p-4" aria-label={clock.ruleLabel}>
+    <article className="py-2" aria-label={clock.ruleLabel}>
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h3 className="text-base font-semibold">{clock.ruleLabel}</h3>
         {statusChip(clock)}

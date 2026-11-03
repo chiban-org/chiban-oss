@@ -97,16 +97,16 @@ export function ScheduleBoard({
   }, [])
 
   return (
-    <div className="grid gap-6 md:grid-cols-[22rem_1fr]">
+    <div className="grid items-start gap-6 md:grid-cols-[22rem_1fr] [&>section]:m-0">
       <section aria-label="Requests and bookings" className="space-y-3">
-        <h2 className="m-0 text-lg">Requests and bookings</h2>
+        <h2 className="m-0 text-xl">Requests and bookings</h2>
         <input
           ref={search}
           type="search"
           aria-label="Search requests"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="w-full rounded-md border bg-surface px-2 py-1.5"
+          className="h-10 w-full rounded-md border bg-surface px-3"
         />
         {visible.length === 0 ? (
           <p className="m-0">No requests are waiting.</p>
@@ -126,7 +126,7 @@ export function ScheduleBoard({
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') setSelected(index)
                 }}
-                className={`rounded-md border p-2 ${index === selected ? 'border-ring bg-highlight' : ''}`}
+                className={`rounded-md border p-3 ${index === selected ? 'border-ring bg-highlight' : 'border-hairline'}`}
               >
                 <p className="m-0 font-semibold">{`${request.applicationNumber}, ${request.typeLabel}`}</p>
                 <p className="m-0">{request.address}</p>
@@ -148,18 +148,18 @@ export function ScheduleBoard({
         )}
       </section>
       <section aria-label="Open slots" className="space-y-3">
-        <h2 className="m-0 text-lg">Open slots</h2>
-        <p className="m-0">
+        <h2 className="m-0 text-xl">Open slots</h2>
+        <p className="m-0 text-muted-foreground">
           Press j or k to choose a request, focus a slot, then press s to schedule it. Press / to
           search.
         </p>
         {message === null ? null : <p role="status">{message}</p>}
         {days.length === 0 ? <p className="m-0">No inspection days in this range.</p> : null}
         {days.map((day) => (
-          <div key={`${day.date}-${day.inspectorUserId}`} className="rounded-md border p-2">
+          <div key={`${day.date}-${day.inspectorUserId}`} className="border-t pt-3">
             <p className="m-0 font-semibold">{formatCivilDate(day.date)}</p>
-            <p className="m-0">{day.inspectorName}</p>
-            <div className="mt-1 flex flex-wrap gap-2">
+            <p className="m-0 text-muted-foreground">{day.inspectorName}</p>
+            <div className="mt-2 flex flex-wrap gap-2">
               {day.freeStarts.length === 0 ? <span>Full</span> : null}
               {day.freeStarts.map((start) => (
                 <button
@@ -184,7 +184,7 @@ export function ScheduleBoard({
                       inspectorUserId: day.inspectorUserId,
                     })
                   }}
-                  className="rounded-md border px-3 py-1.5"
+                  className="rounded-md border border-control-border px-3 py-1.5 tabular-nums hover:bg-canvas"
                 >
                   {minutesToClock(start)}
                 </button>

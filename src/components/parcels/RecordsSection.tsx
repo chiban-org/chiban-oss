@@ -33,17 +33,17 @@ function RecordRow({
 }) {
   const carried = 'carriedFrom' in record ? record.carriedFrom : undefined
   return (
-    <li className="flex flex-wrap items-center justify-between gap-3 border-b py-3">
+    <li className="flex items-start gap-4 border-b py-3 last:border-b-0">
       {record.thumbnailHref === undefined || record.thumbnailHref === null ? null : (
         <img
           src={record.thumbnailHref}
           alt={`First page of ${record.title}`}
-          width={96}
+          width={48}
           loading="lazy"
-          className="h-auto w-24 border"
+          className="h-16 w-12 shrink-0 overflow-hidden border object-cover object-top text-[0px]"
         />
       )}
-      <div>
+      <div className="min-w-0 flex-1">
         {record.href === null ? (
           <span className="font-semibold">{record.title}</span>
         ) : (
@@ -64,7 +64,7 @@ function RecordRow({
           </p>
         )}
       </div>
-      <div className="flex items-center gap-3">
+      <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
         <StatusChip status={record.status.chip} label={record.status.label} />
         {children}
       </div>

@@ -14,9 +14,15 @@ interface PageHeaderProps {
   actions?: ReactNode
 }
 
-export function FactList({ facts }: { facts: readonly Fact[] }) {
+export function FactList({
+  facts,
+  stacked = false,
+}: {
+  facts: readonly Fact[]
+  stacked?: boolean
+}) {
   return (
-    <dl className="flex flex-wrap gap-x-10 gap-y-3">
+    <dl className={stacked ? 'flex flex-col gap-3' : 'flex flex-wrap gap-x-10 gap-y-3'}>
       {facts.map((fact) => (
         <div key={fact.label} className="flex flex-col gap-0.5">
           <dt className="text-xs font-semibold text-muted-foreground">{fact.label}</dt>

@@ -48,7 +48,7 @@ export function MoneySection({ detail, can }: { detail: CaseDetail; can: Can }) 
       ) : null}
       {detail.fines.length === 0 ? <p>No fine has been imposed by a court.</p> : null}
       {detail.fines.map((f) => (
-        <article key={f.row.id} className="space-y-2 rounded-md border p-3">
+        <article key={f.row.id} className="record-item space-y-2">
           <p className="m-0 font-medium">{`${FINE_KIND_LABELS[f.row.kind]}, ${formatCents(f.row.amountCents)}, imposed ${formatCivilDate(f.row.imposedOn)} by ${f.row.court}, docket ${f.row.docket}`}</p>
           <p className="m-0">{`Paid ${formatCents(f.paidCents)}. Balance due ${formatCents(f.dueCents)}.`}</p>
           {can.collect && f.dueCents > 0 ? (
@@ -70,7 +70,7 @@ export function MoneySection({ detail, can }: { detail: CaseDetail; can: Can }) 
         </article>
       ))}
       {detail.exposure === null ? null : (
-        <div className="rounded-md border p-3">
+        <div className="record-item">
           <p className="m-0 font-medium">
             {detail.fines.length === 0 ? detail.exposure.label : PENALTY_EXPOSURE_AFTER_FINE_LABEL}
           </p>

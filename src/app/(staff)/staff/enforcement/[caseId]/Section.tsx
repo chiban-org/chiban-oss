@@ -10,7 +10,7 @@ export function Section({
   children: ReactNode
 }) {
   return (
-    <section aria-labelledby={id} className="space-y-3 border-t pt-4">
+    <section aria-labelledby={id}>
       <h2 id={id}>{title}</h2>
       {children}
     </section>

@@ -41,7 +41,7 @@ export function AppealsSection({ detail, can }: { detail: CaseDetail; can: Can }
     <Section id="appeals" title="Appeals to the zoning board of adjustment">
       {detail.appeals.length === 0 ? <p>No appeal has been filed.</p> : null}
       {detail.appeals.map((a) => (
-        <article key={a.row.id} className="space-y-2 rounded-md border p-3">
+        <article key={a.row.id} className="record-item space-y-2">
           <p className="m-0 font-medium">
             {`${APPEAL_TARGET_LABELS[a.row.targetKind]} appealed by ${a.row.appellantName} on ${formatCivilDate(a.row.filedOn)}. `}
             {a.row.resolvedOn === null

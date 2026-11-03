@@ -21,7 +21,7 @@ export function CounselSection({ detail, can }: { detail: CaseDetail; can: Can }
     <Section id="counsel" title="Town counsel">
       {detail.referrals.length === 0 ? <p>This case has not been referred to counsel.</p> : null}
       {detail.referrals.map((r) => (
-        <article key={r.row.id} className="space-y-2 rounded-md border p-3">
+        <article key={r.row.id} className="record-item space-y-2">
           <p className="m-0 font-medium">
             {`Referred to ${r.row.counselName} on ${formatCivilDate(r.row.referredOn)} for ${COUNSEL_PURPOSE_LABELS[r.row.purpose].toLowerCase()}. `}
             <a href={`/api/documents/${r.row.packetDocumentId}`} className="text-action underline">
@@ -58,22 +58,25 @@ export function CounselSection({ detail, can }: { detail: CaseDetail; can: Can }
         </article>
       ))}
       {can.counsel ? (
-        <ActionForm action={referAction} submitLabel="Refer to counsel">
-          <Hidden name="caseId" value={detail.staff.row.id} />
-          <TextField label="Counsel" name="counselName" required />
-          <SelectField label="Purpose" name="purpose" options={PURPOSES} />
-          <TextField
-            label="Date referred"
-            name="referredOn"
-            type="date"
-            defaultValue={detail.today}
-            required
-          />
-          <p className="m-0">
-            The packet lists the findings, orders, service with proof, answer dates, court steps,
-            appeals, and the estimated penalty exposure.
-          </p>
-        </ActionForm>
+        <details>
+          <summary>Refer to counsel</summary>
+          <ActionForm action={referAction} submitLabel="Refer to counsel">
+            <Hidden name="caseId" value={detail.staff.row.id} />
+            <TextField label="Counsel" name="counselName" required />
+            <SelectField label="Purpose" name="purpose" options={PURPOSES} />
+            <TextField
+              label="Date referred"
+              name="referredOn"
+              type="date"
+              defaultValue={detail.today}
+              required
+            />
+            <p className="m-0">
+              The packet lists the findings, orders, service with proof, answer dates, court steps,
+              appeals, and the estimated penalty exposure.
+            </p>
+          </ActionForm>
+        </details>
       ) : null}
     </Section>
   )

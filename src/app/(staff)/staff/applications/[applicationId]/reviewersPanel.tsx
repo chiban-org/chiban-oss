@@ -31,14 +31,17 @@ export function ReviewersPanel({ applicationId, reviewers, choices, canAssign }:
         ))}
       </ul>
       {canAssign && offered.length > 0 ? (
-        <ActionForm action={assignReviewerAction} submitLabel="Assign reviewer">
-          <input type="hidden" name="applicationId" value={applicationId} />
-          <SelectField
-            label="Reviewer"
-            name="reviewerUserId"
-            options={offered.map((c): [string, string] => [c.id, c.name])}
-          />
-        </ActionForm>
+        <details>
+          <summary>Assign a reviewer</summary>
+          <ActionForm action={assignReviewerAction} submitLabel="Assign reviewer">
+            <input type="hidden" name="applicationId" value={applicationId} />
+            <SelectField
+              label="Reviewer"
+              name="reviewerUserId"
+              options={offered.map((c): [string, string] => [c.id, c.name])}
+            />
+          </ActionForm>
+        </details>
       ) : null}
     </section>
   )
