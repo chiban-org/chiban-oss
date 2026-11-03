@@ -1,5 +1,16 @@
 import Link from 'next/link'
+import { QuickFilters } from '@/components/dataTable/QuickFilters'
+import { SortHeader } from '@/components/dataTable/SortHeader'
 import { StatusChip } from '@/components/StatusChip'
+import { clearHref, type RawSearchParams } from '@/features/dataTable/params'
+import { sortLinks } from '@/features/dataTable/sort'
+import { entryChipGroups } from '@/features/payments/entryListChips'
+import {
+  ENTRY_FILTER_PARAMS,
+  ENTRY_SORT,
+  PAYMENTS_PATH,
+  readEntriesView,
+} from '@/features/payments/entryListParams'
 import { entryTypeLabel, methodLabel } from '@/features/payments/labels'
 import { loadPaymentsOverview } from '@/features/payments/overview'
 import { townToday } from '@/features/town/today'
@@ -9,10 +20,20 @@ import { requireStaffContext } from '@/server/requireStaff'
 
 export const dynamic = 'force-dynamic'
 
-export default async function PaymentsPage() {
+export default async function PaymentsPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>
+}) {
+  const { params, sort, filters } = readEntriesView(await searchParams)
   const ctx = await requireStaffContext()
   const today = await townToday(ctx.db, new Date(), ctx.signal)
-  const result = await loadPaymentsOverview(ctx.db, ctx.actor, { date: today }, ctx.signal)
+  const result = await loadPaymentsOverview(
+    ctx.db,
+    ctx.actor,
+    { date: today, entries: { filters, sort } },
+    ctx.signal,
+  )
   if (!result.ok) {
     return (
       <main>
@@ -21,7 +42,9 @@ export default async function PaymentsPage() {
       </main>
     )
   }
-  const { unknownAttempts, anomalies, overpayments, todaysEntries } = result.value
+  const { unknownAttempts, anomalies, overpayments, todaysEntries, entryFacets } = result.value
+  const links = sortLinks(PAYMENTS_PATH, params, ENTRY_SORT, sort)
+  const clear = clearHref(PAYMENTS_PATH, params, ENTRY_FILTER_PARAMS)
   return (
     <main>
       <h1>Payments</h1>
@@ -75,35 +98,50 @@ export default async function PaymentsPage() {
       </section>
       <section aria-label="Today">
         <h2>{`Entries for ${formatCivilDate(today)}`}</h2>
-        {todaysEntries.length === 0 ? <p>No money has moved today.</p> : null}
-        <table className="my-2 w-full text-sm">
-          <thead>
-            <tr className="border-b text-left">
-              <th className="py-1">Entry</th>
-              <th className="px-3 text-right">Amount</th>
-              <th className="px-3">Payer</th>
-              <th className="px-3">Application</th>
-              <th className="px-3">Receipt</th>
-            </tr>
-          </thead>
-          <tbody>
-            {todaysEntries.map((e) => (
-              <tr key={e.id} className="border-b">
-                <td className="py-1">{`${entryTypeLabel(e.entryType)}, ${methodLabel(e.method).toLowerCase()}`}</td>
-                <td className="px-3 text-right">{formatCents(e.amountCents)}</td>
-                <td className="px-3">{e.payerName}</td>
-                <td className="px-3">{e.applicationNumbers.join(', ')}</td>
-                <td className="px-3">
-                  {e.receiptId === null ? null : (
-                    <Link href={`/staff/receipts/${e.receiptId}`} className="text-action underline">
-                      {`Receipt ${e.receiptNumber ?? ''}`}
-                    </Link>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <div className="toolbar my-3">
+          <QuickFilters
+            label="Quick filters"
+            groups={entryChipGroups(params, entryFacets)}
+            clearHref={clear}
+          />
+        </div>
+        {todaysEntries.length === 0 ? (
+          <p>{clear === null ? 'No money has moved today.' : 'No entries match these filters.'}</p>
+        ) : (
+          <div className="table-panel my-3">
+            <table className="w-full min-w-[40rem] text-sm">
+              <thead>
+                <tr>
+                  <SortHeader label="Entry" link={links.entry} />
+                  <SortHeader label="Amount" link={links.amount} className="text-right" />
+                  <SortHeader label="Payer" link={links.payer} />
+                  <SortHeader label="Application" link={links.application} />
+                  <SortHeader label="Receipt" link={links.receipt} />
+                </tr>
+              </thead>
+              <tbody>
+                {todaysEntries.map((e) => (
+                  <tr key={e.id}>
+                    <td>{`${entryTypeLabel(e.entryType)}, ${methodLabel(e.method).toLowerCase()}`}</td>
+                    <td className="text-right tabular-nums">{formatCents(e.amountCents)}</td>
+                    <td>{e.payerName}</td>
+                    <td>{e.applicationNumbers.join(', ')}</td>
+                    <td>
+                      {e.receiptId === null ? null : (
+                        <Link
+                          href={`/staff/receipts/${e.receiptId}`}
+                          className="text-action underline"
+                        >
+                          {`Receipt ${e.receiptNumber ?? ''}`}
+                        </Link>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
         <p>
           <Link href="/staff/reports/cash-receipts" className="text-action underline">
             Daily cash receipts report
