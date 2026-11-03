@@ -60,39 +60,55 @@ describe('NoticeChecklist', () => {
     expect(within(row).getByText(/RR-0042/)).toBeTruthy()
   })
 
-  it('disables Mark properly noticed and shows the count of items that are not on time', () => {
+  it('scrolls the table inside its own panel', () => {
+    const { container } = render(<NoticeChecklist items={ITEMS} noticedOn={null} />)
+    expect(container.querySelector('.table-panel > table')).not.toBeNull()
+  })
+
+  it('lists missing and late items before the ones proved on time', () => {
     render(<NoticeChecklist items={ITEMS} noticedOn={null} />)
-    const button = screen.getByRole('button', { name: 'Mark properly noticed' })
-    expect((button as HTMLButtonElement).disabled).toBe(true)
-    expect(screen.getByText('2 items still need timely proof.')).toBeTruthy()
+    const names = screen
+      .getAllByRole('row')
+      .slice(1)
+      .map((r) => r.textContent)
+    expect(names[0]).toContain('Alder Pond Ledger')
+    expect(names[1]).toContain('Pine River')
+    expect(names[2]).toContain('Pat Heron')
   })
 
-  it('shows no mark button at all when the checklist is not for a hearing', () => {
-    render(<NoticeChecklist items={ITEMS} noticedOn={null} showMark={false} />)
-    expect(screen.queryByRole('button', { name: 'Mark properly noticed' })).toBeNull()
-    expect(screen.queryByText(/still need/)).toBeNull()
+  it('states a shared due date once instead of on every row', () => {
+    const shared = ITEMS.map((i) => ({ ...i, dueOn: 'April 4, 2027' }))
+    render(<NoticeChecklist items={shared} noticedOn={null} />)
+    expect(screen.getByText('All due April 4, 2027.')).toBeTruthy()
+    expect(screen.queryByRole('columnheader', { name: 'Due' })).toBeNull()
+    expect(screen.queryAllByText('April 4, 2027')).toHaveLength(0)
   })
 
-  it('says it once when exactly one item is outstanding', () => {
-    render(<NoticeChecklist items={ITEMS.slice(0, 2)} noticedOn={null} />)
-    expect(screen.getByText('1 item still needs timely proof.')).toBeTruthy()
+  it('keeps the due column when the dates differ', () => {
+    render(<NoticeChecklist items={ITEMS} noticedOn={null} />)
+    expect(screen.getByRole('columnheader', { name: 'Due' })).toBeTruthy()
   })
 
-  it('shows the mark slot instead of the disabled button when every item is on time', () => {
-    render(
-      <NoticeChecklist
-        items={ITEMS.slice(0, 1)}
-        noticedOn={null}
-        markSlot={<button type="button">Mark properly noticed now</button>}
-      />,
+  it('folds a list proved on time to one line with the date it was marked noticed', () => {
+    const { container } = render(
+      <NoticeChecklist items={ITEMS.slice(0, 1)} noticedOn="April 2, 2027" />,
     )
-    expect(screen.getByRole('button', { name: 'Mark properly noticed now' })).toBeTruthy()
-    expect(screen.queryByText(/still needs? timely proof/)).toBeNull()
+    const summary = container.querySelector('details > summary')
+    expect(summary?.textContent).toBe('The notice was proved on time, marked noticed April 2, 2027')
+    expect(container.querySelector('details')?.hasAttribute('open')).toBe(false)
   })
 
-  it('says when the hearing was marked properly noticed', () => {
-    render(<NoticeChecklist items={ITEMS.slice(0, 1)} noticedOn="April 2, 2027" />)
-    expect(screen.getByText('Marked properly noticed on April 2, 2027.')).toBeTruthy()
+  it('folds without a marked date when there is none', () => {
+    const twice = [ITEMS[0], { ...ITEMS[0], itemId: '4' }] as ChecklistItem[]
+    const { container } = render(<NoticeChecklist items={twice} noticedOn={null} />)
+    expect(container.querySelector('details > summary')?.textContent).toBe(
+      'All 2 notices proved on time',
+    )
+  })
+
+  it('keeps an open list unfolded', () => {
+    const { container } = render(<NoticeChecklist items={ITEMS} noticedOn={null} />)
+    expect(container.querySelector('details')).toBeNull()
   })
 
   it('shows no iso dates, ids, or raw keys', () => {

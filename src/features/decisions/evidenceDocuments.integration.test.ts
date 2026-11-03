@@ -87,7 +87,13 @@ describe('documents filed as minutes or proof', () => {
       .innerJoin(hearings, eq(hearings.noticeSetId, noticeItems.setId))
       .where(eq(hearings.id, made.hearingId))
     const proofDocumentId = proof?.documentId ?? ''
-    const view = await loadDecisionView(handle.db, world.staff, made.decisionId, signal)
+    const view = await loadDecisionView(
+      handle.db,
+      world.staff,
+      made.decisionId,
+      signal,
+      '2027-05-01',
+    )
     expect(view?.minutesChoices.map((c) => c.id)).not.toContain(proofDocumentId)
     expect(view?.proofChoices.map((c) => c.id)).toContain(proofDocumentId)
     const result = await fileDecision(
@@ -147,7 +153,13 @@ describe('the decision page for an approval', () => {
       .update(boardDecisions)
       .set({ reasonsForDisapproval: '' })
       .where(eq(boardDecisions.id, made.decisionId))
-    const view = await loadDecisionView(handle.db, world.staff, made.decisionId, signal)
+    const view = await loadDecisionView(
+      handle.db,
+      world.staff,
+      made.decisionId,
+      signal,
+      '2027-05-01',
+    )
     expect(view?.reasons).toBeNull()
   })
 })

@@ -1,7 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { agendaBlocks } from '@/features/agendas/agendaPdf'
 import { buildAgenda, publishAgenda } from '@/features/agendas/agendas'
-import { loadMeetingView } from '@/features/hearings/views'
+import { createMeetingPacket } from '@/features/agendas/meetingPacket'
+import { agendaStatusText, loadMeetingView } from '@/features/hearings/meetingView'
 import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba } from '@/test/hearingFixtures'
@@ -31,9 +32,23 @@ describe('the meeting agenda', () => {
     await publishAgenda(handle.db, store, world.staff, made.meetingId, signal)
     const view = await loadMeetingView(handle.db, world.staff, made.meetingId, signal)
     expect(view?.agenda?.items[0]?.line).toMatch(/^Public hearing: VAR VAR-\d{4}-\d{4}$/)
-    expect(view?.agenda?.statusText).toMatch(
-      /^Published on the public site on [A-Z][a-z]+ \d{1,2}, \d{4}\. Revision 1\.$/,
-    )
+    expect(
+      view?.agenda === null || view?.agenda === undefined ? '' : agendaStatusText(view.agenda),
+    ).toMatch(/^Published on the public site on [A-Z][a-z]+ \d{1,2}, \d{4}\. Revision 1\.$/)
+  })
+
+  it('offers the packet once and then links to the one made', async () => {
+    const { store } = await makeTestStore()
+    const made = await decidedZba(handle.db, world, store, { documents: false })
+    await buildAgenda(handle.db, world.staff, made.meetingId, signal)
+    await publishAgenda(handle.db, store, world.staff, made.meetingId, signal)
+    const before = await loadMeetingView(handle.db, world.staff, made.meetingId, signal)
+    expect(before?.packetId).toBeNull()
+    expect(before?.canManagePackets).toBe(true)
+    const packet = await createMeetingPacket(handle.db, store, world.staff, made.meetingId, signal)
+    if (!packet.ok) throw new Error(JSON.stringify(packet.error))
+    const after = await loadMeetingView(handle.db, world.staff, made.meetingId, signal)
+    expect(after?.packetId).toBe(packet.value.packetId)
   })
 
   it('agenda details lines are tied to their item without repeating the number', () => {

@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { agendaItems, agendas, boardPacketItems, documents } from '@/db/schema'
+import { agendaItems, agendas, boardPacketItems, boardPackets, documents } from '@/db/schema'
 import { agendaBlocks } from '@/features/agendas/agendaPdf'
 import {
   addAgendaItem,
@@ -315,6 +315,7 @@ describe('meeting packet', () => {
     const meetingId = await zbaMeetingId()
     await routeToTrc(handle.db, world.staff, { applicationId, meetingId }, signal)
     await buildAgenda(handle.db, world.staff, meetingId, signal)
+    await publishAgenda(handle.db, store, world.staff, meetingId, signal)
     const packet = await createMeetingPacket(handle.db, store, world.staff, meetingId, signal)
     if (!packet.ok) throw new Error(JSON.stringify(packet.error))
     const items = await handle.db
@@ -332,6 +333,37 @@ describe('meeting packet', () => {
       ok: false,
       error: 'empty',
     })
+  })
+
+  it('a draft agenda gets no packet', async () => {
+    await scheduled()
+    const meetingId = await zbaMeetingId()
+    await buildAgenda(handle.db, world.staff, meetingId, signal)
+    expect(await createMeetingPacket(handle.db, store, world.staff, meetingId, signal)).toEqual({
+      ok: false,
+      error: 'agenda_not_published',
+    })
+  })
+
+  it('a meeting gets one packet and a second request adds no documents', async () => {
+    const { applicationId } = await scheduled()
+    const meetingId = await zbaMeetingId()
+    await buildAgenda(handle.db, world.staff, meetingId, signal)
+    await publishAgenda(handle.db, store, world.staff, meetingId, signal)
+    const boardDoc = await proofDocument(handle.db, world, applicationId)
+    await handle.db
+      .update(documents)
+      .set({ audiences: ['board'] })
+      .where(eq(documents.id, boardDoc))
+    const first = await createMeetingPacket(handle.db, store, world.staff, meetingId, signal)
+    if (!first.ok) throw new Error(JSON.stringify(first.error))
+    const before = await handle.db.select({ id: documents.id }).from(documents)
+    expect(await createMeetingPacket(handle.db, store, world.staff, meetingId, signal)).toEqual({
+      ok: false,
+      error: 'packet_exists',
+    })
+    expect(await handle.db.select({ id: documents.id }).from(documents)).toHaveLength(before.length)
+    expect(await handle.db.select().from(boardPackets)).toHaveLength(1)
   })
 
   it('a reviewer cannot create a meeting packet', async () => {

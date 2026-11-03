@@ -1,6 +1,7 @@
-import { and, eq, inArray, or, sql } from 'drizzle-orm'
+import type { Board } from '@packs/nh/schema'
+import { and, asc, eq, inArray, or, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { agendaItems, agendas, boardMeetings, documents, hearings } from '@/db/schema'
+import { agendaItems, agendas, boardMeetings, boardPackets, documents, hearings } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { createPacket } from '@/features/boards/packets'
@@ -12,9 +13,29 @@ import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
-export type MeetingPacketError = 'forbidden' | 'not_found' | 'empty' | { notForBoard: string[] }
+export type MeetingPacketError =
+  | 'forbidden'
+  | 'not_found'
+  | 'empty'
+  | 'agenda_not_published'
+  | 'packet_exists'
+  | { notForBoard: string[] }
 
 const BOARD_OR_PUBLIC = sql`('board' = any(${documents.audiences}) or ${documents.isPublic})`
+
+export async function meetingPacketId(
+  db: Db,
+  board: Board,
+  meetingDate: string,
+): Promise<string | null> {
+  const [row] = await db
+    .select({ id: boardPackets.id })
+    .from(boardPackets)
+    .where(and(eq(boardPackets.board, board), eq(boardPackets.meetingDate, meetingDate)))
+    .orderBy(asc(boardPackets.createdAt), asc(boardPackets.id))
+    .limit(1)
+  return row?.id ?? null
+}
 
 export async function createMeetingPacket(
   db: Db,
@@ -29,6 +50,10 @@ export async function createMeetingPacket(
   if (meeting === undefined) return err('not_found')
   const [agenda] = await db.select().from(agendas).where(eq(agendas.meetingId, meetingId))
   if (agenda === undefined) return err('empty')
+  if (agenda.status !== 'published') return err('agenda_not_published')
+  if ((await meetingPacketId(db, meeting.board, meeting.meetingDate)) !== null) {
+    return err('packet_exists')
+  }
   const applicationRows = await db
     .selectDistinct({ applicationId: hearings.applicationId })
     .from(agendaItems)

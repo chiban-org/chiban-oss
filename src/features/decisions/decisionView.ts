@@ -56,7 +56,7 @@ export interface DecisionView {
   reasons: string | null
   documentsGenerated: boolean
   filedText: string | null
-  filingDueText: string | null
+  filingDue: FilingDue | null
   minutesChoices: { id: string; label: string }[]
   proofChoices: { id: string; label: string }[]
   regional: boolean
@@ -69,16 +69,24 @@ export interface DecisionView {
   nodeChoices: { id: string; label: string }[]
 }
 
-async function filingDue(db: Db, applicationId: string): Promise<string | null> {
+export interface FilingDue {
+  text: string
+  overdue: boolean
+}
+
+async function filingDue(db: Db, applicationId: string, today: string): Promise<FilingDue | null> {
   const [clock] = await db
-    .select({ currentDue: clocks.currentDue })
+    .select({ currentDue: clocks.currentDue, status: clocks.status })
     .from(clocks)
     .where(
       and(eq(clocks.applicationId, applicationId), eq(clocks.ruleKey, 'nh.board.decision_filing')),
     )
     .orderBy(desc(clocks.createdAt))
     .limit(1)
-  return clock === undefined ? null : formatCivilDate(clock.currentDue)
+  if (clock === undefined) return null
+  const overdue =
+    clock.status === 'overdue' || (clock.status === 'running' && clock.currentDue < today)
+  return { text: formatCivilDate(clock.currentDue), overdue }
 }
 
 function windowOf(node: typeof appealNodes.$inferSelect): GraphNode['window'] {
@@ -139,6 +147,7 @@ export async function loadDecisionView(
   actor: Actor,
   decisionId: string,
   signal: AbortSignal,
+  today: string,
 ): Promise<DecisionView | null> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return null
@@ -188,7 +197,7 @@ export async function loadDecisionView(
     reasons: blankToNull(decision.reasonsForDisapproval),
     documentsGenerated: decision.writtenDecisionDocumentId !== null,
     filedText: decision.filedOn === null ? null : formatCivilDate(decision.filedOn),
-    filingDueText: await filingDue(db, decision.applicationId),
+    filingDue: await filingDue(db, decision.applicationId, today),
     minutesChoices: docs
       .filter((d) => !proofDocs.has(d.id))
       .map((d) => ({ id: d.id, label: d.title })),

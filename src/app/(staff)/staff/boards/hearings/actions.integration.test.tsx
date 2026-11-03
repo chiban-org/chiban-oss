@@ -246,7 +246,8 @@ describe('staff and public pages', () => {
     expect(html).toContain('>Choose an uploaded file</option>')
     expect(html).not.toContain(', snapshot 1')
     expect(html).toContain('Missing')
-    expect(html).toContain('Mark properly noticed')
+    expect(html).toContain('3 notices still need proof')
+    expect(html).not.toContain('>Mark properly noticed<')
     expect(findUuids(html)).toEqual([])
     expect(findIsoDates(html.replace(/defaultValue|value/g, ''))).toEqual([])
     expect(
@@ -266,7 +267,7 @@ describe('staff and public pages', () => {
     const html = renderToStaticMarkup(await HearingPage({ params: Promise.resolve({ hearingId }) }))
     expect(html).toContain('Notice checklist')
     expect(html).not.toContain('Mark properly noticed')
-    expect(html).not.toContain('still need timely proof')
+    expect(html).not.toContain('still need proof')
   })
 
   it('the hearing page shows the permission page to a reviewer and is not found for a stranger id', async () => {
@@ -290,7 +291,8 @@ describe('staff and public pages', () => {
         await MeetingPage({ params: Promise.resolve({ meetingId: decided.meetingId }) }),
       ),
     )
-    expect(html).toContain('Zoning Board of Adjustment, April 15, 2027')
+    expect(html).toContain('Zoning Board of Adjustment meeting')
+    expect(html).toContain('<h1>April 15, 2027</h1>')
     expect(html).toContain('Add the scheduled hearings')
     expect(findUuids(html)).toEqual([])
   })
