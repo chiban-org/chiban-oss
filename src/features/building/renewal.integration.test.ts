@@ -69,6 +69,21 @@ describe('renewPermit', () => {
     })
   })
 
+  it('two renewals sent at once assess one renewal fee and refuse the other', async () => {
+    const app = await issued()
+    const results = await Promise.all([
+      renew(app.applicationId, '2028-03-01'),
+      renew(app.applicationId, '2028-03-01'),
+    ])
+    expect(results.filter((r) => r.ok)).toHaveLength(1)
+    expect(results.find((r) => !r.ok)).toEqual({ ok: false, error: 'renewal_fee_due' })
+    const fees = await handle.db
+      .select()
+      .from(feeAssessments)
+      .where(eq(feeAssessments.applicationId, app.applicationId))
+    expect(fees.filter((f) => f.stage === 'at_renewal')).toHaveLength(1)
+  })
+
   it('renewal after the due date is already_lapsed', async () => {
     const app = await issued()
     expect(await renew(app.applicationId, '2028-03-16')).toEqual({

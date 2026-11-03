@@ -1,6 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { clocks } from '@/db/schema'
+import { applications, clocks } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
@@ -30,6 +30,11 @@ export async function renewPermit(
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'permit.issue', signal))) return err('forbidden')
   return await transactionResult(db, async (tx) => {
+    await tx
+      .select({ id: applications.id })
+      .from(applications)
+      .where(eq(applications.id, input.applicationId))
+      .for('update')
     const app = await loadApplicationContext(tx, input.applicationId, signal)
     if (app?.state !== 'issued') return err('not_issued')
     const [clock] = await tx
