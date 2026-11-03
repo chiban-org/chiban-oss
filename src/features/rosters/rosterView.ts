@@ -23,10 +23,24 @@ export interface RosterKindView {
 export interface RostersView {
   today: string
   kinds: RosterKindView[]
-  associations: { parcel: string; name: string; officers: string[]; asOfText: string }[]
-  parks: { parcel: string; name: string; owner: string; tenants: string[]; asOfText: string }[]
+  associations: {
+    parcelId: string
+    parcel: string
+    name: string
+    officers: string[]
+    asOfText: string
+  }[]
+  parks: {
+    parcelId: string
+    parcel: string
+    name: string
+    owner: string
+    tenants: string[]
+    asOfText: string
+  }[]
   restrictions: {
     id: string
+    parcelId: string
     parcel: string
     holder: string
     kindText: string
@@ -103,12 +117,14 @@ export async function loadRostersView(
     today,
     kinds,
     associations: associations.map((a) => ({
+      parcelId: a.parcelId,
       parcel: label(a.parcelId),
       name: a.associationName,
       officers: a.officers.map((o) => `${o.name}, ${o.title}`),
       asOfText: formatCivilDate(a.asOf),
     })),
     parks: parks.map((p) => ({
+      parcelId: p.parcelId,
       parcel: label(p.parcelId),
       name: p.parkName,
       owner: p.ownerName,
@@ -117,6 +133,7 @@ export async function loadRostersView(
     })),
     restrictions: holdings.map((h) => ({
       id: h.id,
+      parcelId: h.parcelId,
       parcel: label(h.parcelId),
       holder: h.holderName,
       kindText: RESTRICTION_LABELS[h.restrictionKind],

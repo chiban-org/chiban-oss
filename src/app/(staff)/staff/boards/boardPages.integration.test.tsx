@@ -209,6 +209,16 @@ describe('board pages show words, not keys or dates', () => {
     expect(zba).not.toContain('November 12, 2026')
   })
 
+  it('the rosters page links each parcel and the park owner in their own columns', async () => {
+    await actAs('staff')
+    const html = renderToStaticMarkup((await RostersPage()) as never)
+    expect(html).toMatch(/href="\/staff\/parcels\/[0-9a-f-]{36}"/)
+    expect(html).toMatch(/href="\/staff\/parcels\?q=[^"]+"/)
+    expect(text(html)).not.toMatch(/, parcel \d/)
+    expect(text(html)).not.toMatch(/ on parcel \d/)
+    expect(html).toMatch(/<th[^>]*>(<[^>]*>)*Parcel/)
+  })
+
   it('the rosters page shows the regional notice contacts it asks staff to review', async () => {
     await actAs('staff')
     const staffView = await page(RostersPage())
