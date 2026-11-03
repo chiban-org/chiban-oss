@@ -3,22 +3,42 @@ import Link from 'next/link'
 import { adoptStarterAction } from '@/app/(staff)/staff/settings/actions'
 import { ActionForm } from '@/components/ActionForm'
 import { CodeEditionTable } from '@/components/config/CodeEditionTable'
+import { SortHeader } from '@/components/dataTable/SortHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { KIND_LABELS } from '@/features/config/kindLabels'
+import {
+  KIND_SORT,
+  KIND_TABLE_SCOPE,
+  RULE_SORT,
+  RULE_TABLE_SCOPE,
+  SETTINGS_PATH,
+  sortKindSummaries,
+  sortRuleSummaries,
+} from '@/features/config/settingsTableView'
 import { listKeysOfKind, summarizeKinds } from '@/features/config/settingsViews'
+import { type RawSearchParams, readTableParams } from '@/features/dataTable/params'
 import { loadPack } from '@/features/packs/loadPack'
 import { packInfo } from '@/features/packs/packInfo'
 import { classificationSummary, ruleSummary } from '@/features/packs/ruleSummary'
+import { scopedSort } from '@/features/staffTables/scopedSort'
 import { recordStaffContext } from '@/server/requireStaff'
 
-export default async function SettingsPage() {
+export default async function SettingsPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>
+}) {
+  const params = readTableParams(await searchParams)
   const ctx = await recordStaffContext()
   if (ctx === null) return <NoPermission title="Settings" action="change settings" />
-  const kinds = await summarizeKinds(ctx.db, ctx.signal)
+  const kindSort = scopedSort(SETTINGS_PATH, params, KIND_SORT, KIND_TABLE_SCOPE)
+  const ruleSort = scopedSort(SETTINGS_PATH, params, RULE_SORT, RULE_TABLE_SCOPE)
+  const kinds = sortKindSummaries(await summarizeKinds(ctx.db, ctx.signal), kindSort.state)
   const adopted = new Set(
     (await listKeysOfKind(ctx.db, 'application_type', ctx.signal)).map((k) => k.key),
   )
   const pack = loadPack()
+  const rules = sortRuleSummaries(pack.rules.map(ruleSummary), ruleSort.state)
   const info = packInfo()
   return (
     <main>
@@ -29,26 +49,28 @@ export default async function SettingsPage() {
         change is a new version. Applications already open keep the versions they started under.
       </p>
       <h2>Configuration</h2>
-      <table className="my-3 w-full text-sm">
-        <thead>
-          <tr className="border-b text-left">
-            <th className="py-1">Kind</th>
-            <th>Items</th>
-          </tr>
-        </thead>
-        <tbody>
-          {kinds.map((k) => (
-            <tr key={k.kind} className="border-b">
-              <td className="py-1">
-                <Link href={`/staff/settings/${k.kind}`} className="text-action underline">
-                  {KIND_LABELS[k.kind]}
-                </Link>
-              </td>
-              <td>{k.keys}</td>
+      <div className="table-panel my-3">
+        <table className="w-full text-sm">
+          <thead>
+            <tr>
+              <SortHeader label="Kind" link={kindSort.links.kind} />
+              <SortHeader label="Items" link={kindSort.links.items} />
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {kinds.map((k) => (
+              <tr key={k.kind}>
+                <td>
+                  <Link href={`/staff/settings/${k.kind}`} className="text-action underline">
+                    {KIND_LABELS[k.kind]}
+                  </Link>
+                </td>
+                <td>{k.keys}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <h2>Card payments</h2>
       <p>
         <Link href="/staff/settings/payments" className="text-action underline">
@@ -92,20 +114,19 @@ export default async function SettingsPage() {
       ))}
       <h2>Jurisdiction pack</h2>
       <p className="text-muted-foreground">{`Pack ${info.id} version ${info.version}, fingerprint ${info.hash.slice(0, 12)}. The rules below come from state law. The town can change only what the policy column allows.`}</p>
-      <table className="my-3 w-full text-sm">
-        <thead>
-          <tr className="border-b text-left">
-            <th className="py-1">Rule</th>
-            <th>Citation</th>
-            <th>What the town can change</th>
-          </tr>
-        </thead>
-        <tbody>
-          {pack.rules.map((rule) => {
-            const summary = ruleSummary(rule)
-            return (
-              <tr key={`${rule.key}-${rule.version}`} className="border-b align-top">
-                <td className="py-1">
+      <div className="table-panel my-3">
+        <table className="w-full min-w-[40rem] text-sm">
+          <thead>
+            <tr>
+              <SortHeader label="Rule" link={ruleSort.links.rule} />
+              <SortHeader label="Citation" link={ruleSort.links.citation} />
+              <SortHeader label="What the town can change" link={ruleSort.links.policy} />
+            </tr>
+          </thead>
+          <tbody>
+            {rules.map((summary) => (
+              <tr key={`${summary.key}-${summary.version}`} className="align-top">
+                <td>
                   {summary.label}
                   <span className="block text-muted-foreground">{`Version ${summary.version}`}</span>
                 </td>
@@ -120,10 +141,10 @@ export default async function SettingsPage() {
                 </td>
                 <td>{summary.policy}</td>
               </tr>
-            )
-          })}
-        </tbody>
-      </table>
+            ))}
+          </tbody>
+        </table>
+      </div>
       <h3>Required rules by classification</h3>
       <ul>
         {pack.classifications.map((c) => {

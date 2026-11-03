@@ -168,7 +168,7 @@ describe('staff application pages', () => {
 
   it('the clock and fee override views list the seeded adjustment and waiver', async () => {
     expect(await html(ClockOverridesPage())).toContain('renewal')
-    const fees = await html(FeeOverridesPage())
+    const fees = await html(FeeOverridesPage({ searchParams: Promise.resolve({}) }))
     expect(fees).toContain('Waived')
     expect(fees).toContain('Applied')
   })
@@ -176,7 +176,7 @@ describe('staff application pages', () => {
 
 describe('staff settings pages', () => {
   it('the settings page lists kinds, adopted starters, rules, and the unverified edition', async () => {
-    const page = await html(SettingsPage())
+    const page = await html(SettingsPage({ searchParams: Promise.resolve({}) }))
     expect(page).toContain('Application types')
     expect(page).toContain('Adopted')
     expect(page).toContain('Edition not verified (before July 1, 2024)')
@@ -187,7 +187,10 @@ describe('staff settings pages', () => {
 
   it('a kind page lists its items and a key page shows the editor and version history', async () => {
     const kind = await html(
-      SettingsKindPage({ params: Promise.resolve({ kind: 'application_type' }) }),
+      SettingsKindPage({
+        params: Promise.resolve({ kind: 'application_type' }),
+        searchParams: Promise.resolve({}),
+      }),
     )
     expect(kind).toContain('/staff/settings/application_type/BP')
     const clerk = state.actor
@@ -206,8 +209,11 @@ describe('staff settings pages', () => {
   })
 
   it('an unknown kind is not found', async () => {
-    await expect(SettingsKindPage({ params: Promise.resolve({ kind: 'bogus' }) })).rejects.toThrow(
-      'NOT_FOUND',
-    )
+    await expect(
+      SettingsKindPage({
+        params: Promise.resolve({ kind: 'bogus' }),
+        searchParams: Promise.resolve({}),
+      }),
+    ).rejects.toThrow('NOT_FOUND')
   })
 })

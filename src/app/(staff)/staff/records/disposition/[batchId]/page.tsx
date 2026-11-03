@@ -1,15 +1,20 @@
-import { asc, eq, inArray } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
+import { QuickFilters } from '@/components/dataTable/QuickFilters'
+import { SortHeader } from '@/components/dataTable/SortHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
-import {
-  dispositionBatches,
-  dispositionItems,
-  dispositionTombstones,
-  documents,
-  users,
-} from '@/db/schema'
+import { dispositionBatches, users } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
+import { clearHref, type RawSearchParams } from '@/features/dataTable/params'
+import { sortLinks } from '@/features/dataTable/sort'
+import { batchItemChipGroups } from '@/features/disposition/batchItemChips'
+import {
+  BATCH_ITEM_FILTER_PARAMS,
+  BATCH_ITEM_SORT,
+  readBatchItemView,
+} from '@/features/disposition/batchItemParams'
+import { batchItemFacets, listBatchItems } from '@/features/disposition/batchItems'
 import { findSeries } from '@/features/records/series'
 import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate, formatInstantDate } from '@/lib/formatDate'
@@ -41,11 +46,13 @@ function seriesText(key: string, citation: { label: string } | null): string {
 }
 
 export default async function DispositionBatchPage({
-  params,
+  params: routeParams,
+  searchParams,
 }: {
   params: Promise<{ batchId: string }>
+  searchParams: Promise<RawSearchParams>
 }) {
-  const { batchId } = await params
+  const { batchId } = await routeParams
   if (!isUuid(batchId)) notFound()
   const ctx = await requireStaffContext()
   const mayView =
@@ -63,22 +70,14 @@ export default async function DispositionBatchPage({
     'disposition.approve',
     ctx.signal,
   )
-  const items = await ctx.db
-    .select({
-      kind: dispositionItems.recordKind,
-      recordId: dispositionItems.recordId,
-      seriesKey: dispositionItems.seriesKey,
-      eligibleOn: dispositionItems.eligibleOn,
-      outcome: dispositionItems.outcome,
-      title: dispositionTombstones.title,
-      documentTitle: documents.title,
-      citation: dispositionTombstones.seriesCitation,
-    })
-    .from(dispositionItems)
-    .leftJoin(dispositionTombstones, eq(dispositionTombstones.recordId, dispositionItems.recordId))
-    .leftJoin(documents, eq(documents.id, dispositionItems.recordId))
-    .where(eq(dispositionItems.batchId, batchId))
-    .orderBy(asc(dispositionItems.recordKind), asc(dispositionItems.recordId))
+  const { params, sort, filters } = readBatchItemView(await searchParams)
+  const path = `/staff/records/disposition/${batchId}`
+  const [items, facets] = await Promise.all([
+    listBatchItems(ctx.db, batchId, { sort, filters }),
+    batchItemFacets(ctx.db, batchId, { filters }),
+  ])
+  const links = sortLinks(path, params, BATCH_ITEM_SORT, sort)
+  const clear = clearHref(path, params, BATCH_ITEM_FILTER_PARAMS)
   const people = await ctx.db
     .select({ id: users.id, name: users.displayName })
     .from(users)
@@ -96,28 +95,41 @@ export default async function DispositionBatchPage({
           ? ''
           : ` Approved by ${nameOf(batch.approvedBy)} on ${formatInstantDate(batch.approvedAt, zone)}.`}
       </p>
-      <table className="w-full text-left">
-        <thead>
-          <tr>
-            <th scope="col">Record</th>
-            <th scope="col">Kind</th>
-            <th scope="col">Retention series</th>
-            <th scope="col">Eligible on</th>
-            <th scope="col">Result</th>
-          </tr>
-        </thead>
-        <tbody>
-          {items.map((i) => (
-            <tr key={`${i.kind}-${i.recordId}`}>
-              <td>{i.title ?? i.documentTitle ?? 'Application snapshot'}</td>
-              <td>{KIND[i.kind]}</td>
-              <td>{seriesText(i.seriesKey, i.citation)}</td>
-              <td>{formatCivilDate(i.eligibleOn)}</td>
-              <td>{i.outcome === null ? 'Not yet carried out' : OUTCOME[i.outcome]}</td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
+      <div className="toolbar mt-4">
+        <QuickFilters
+          label="Quick filters"
+          groups={batchItemChipGroups(path, params, facets)}
+          clearHref={clear}
+        />
+      </div>
+      <div className="table-panel">
+        {items.length === 0 ? (
+          <p className="px-5 py-8">No record in this batch matches these filters.</p>
+        ) : (
+          <table className="w-full min-w-[44rem] text-left">
+            <thead>
+              <tr>
+                <SortHeader label="Record" link={links.record} />
+                <SortHeader label="Kind" link={links.kind} />
+                <SortHeader label="Retention series" link={links.series} />
+                <SortHeader label="Eligible on" link={links.eligible} />
+                <SortHeader label="Result" link={links.result} />
+              </tr>
+            </thead>
+            <tbody>
+              {items.map((i) => (
+                <tr key={`${i.kind}-${i.recordId}`}>
+                  <td>{i.title ?? i.documentTitle ?? 'Application snapshot'}</td>
+                  <td>{KIND[i.kind]}</td>
+                  <td>{seriesText(i.seriesKey, i.citation)}</td>
+                  <td>{formatCivilDate(i.eligibleOn)}</td>
+                  <td>{i.outcome === null ? 'Not yet carried out' : OUTCOME[i.outcome]}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
+      </div>
       {batch.status === 'executed' ? (
         <p className="m-0">{`Carried out ${batch.executedAt === null ? '' : formatInstantDate(batch.executedAt, zone)}. A tombstone records each disposed record, its retention series, and who approved it.`}</p>
       ) : null}

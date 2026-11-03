@@ -60,17 +60,18 @@ afterAll(async () => {
 })
 
 const NO_PERMISSION = 'You do not have permission'
+const SEARCH = { searchParams: Promise.resolve({}) }
 const CASES: [string, unknown][] = [
-  ['gis/imports', undefined],
+  ['gis/imports', SEARCH],
   ['gis/imports/[runId]', { params: Promise.resolve({ runId: '' }) }],
   ['gis/exceptions', { searchParams: Promise.resolve({}) }],
   ['parcels/unresolved', undefined],
-  ['overrides/aliases', undefined],
-  ['overrides/fees', undefined],
+  ['overrides/aliases', SEARCH],
+  ['overrides/fees', SEARCH],
   ['overrides/clocks', undefined],
-  ['settings', undefined],
+  ['settings', SEARCH],
   ['settings/payments', undefined],
-  ['settings/[kind]', { params: Promise.resolve({ kind: 'fee_schedule' }) }],
+  ['settings/[kind]', { params: Promise.resolve({ kind: 'fee_schedule' }), ...SEARCH }],
   [
     'settings/[kind]/[key]',
     { params: Promise.resolve({ kind: 'fee_schedule', key: 'building-fees' }) },
@@ -88,8 +89,8 @@ describe('record administration pages', () => {
 
   it('staff still reach the settings and overrides pages', async () => {
     await actAs('staff')
-    expect(await html((await page('settings'))(undefined))).not.toContain(NO_PERMISSION)
-    expect(await html((await page('overrides/aliases'))(undefined))).not.toContain(NO_PERMISSION)
+    expect(await html((await page('settings'))(SEARCH))).not.toContain(NO_PERMISSION)
+    expect(await html((await page('overrides/aliases'))(SEARCH))).not.toContain(NO_PERMISSION)
   })
 
   it('only configuration editors get the settings editor, others see the permission page first', async () => {

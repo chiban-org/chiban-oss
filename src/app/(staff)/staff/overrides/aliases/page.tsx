@@ -1,9 +1,20 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { QuickFilters } from '@/components/dataTable/QuickFilters'
+import { SortHeader } from '@/components/dataTable/SortHeader'
 import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { OverridesTabs } from '@/components/staff/OverridesTabs'
+import { clearHref, type RawSearchParams } from '@/features/dataTable/params'
+import { sortLinks } from '@/features/dataTable/sort'
+import {
+  ALIAS_FILTER_PARAMS,
+  ALIAS_OVERRIDES_PATH,
+  ALIAS_SORT,
+  arrangeAliasOverrides,
+  readAliasOverrideView,
+} from '@/features/overrides/aliasOverrideView'
 import { listAliasOverrides, type OverrideStatus } from '@/features/parcels/aliasOverrides'
 import { formatCivilDate } from '@/lib/formatDate'
 import { recordStaffContext } from '@/server/requireStaff'
@@ -19,10 +30,18 @@ const CHIP: Record<
   expired: { chip: 'neutral', label: 'Expired' },
 }
 
-export default async function StaffAliasOverridesPage() {
+export default async function StaffAliasOverridesPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>
+}) {
+  const view = readAliasOverrideView(await searchParams)
   const ctx = await recordStaffContext()
   if (ctx === null) return <NoPermission title="Parcel ID overrides" action="see overrides" />
-  const rows = await listAliasOverrides(ctx.db, new Date(), ctx.signal)
+  const all = await listAliasOverrides(ctx.db, new Date(), ctx.signal)
+  const { rows, chips } = arrangeAliasOverrides(all, view)
+  const links = sortLinks(ALIAS_OVERRIDES_PATH, view.params, ALIAS_SORT, view.sort)
+  const clear = clearHref(ALIAS_OVERRIDES_PATH, view.params, ALIAS_FILTER_PARAMS)
   return (
     <main>
       <OverridesTabs current="/staff/overrides/aliases" />
@@ -31,43 +50,57 @@ export default async function StaffAliasOverridesPage() {
         An override points a town ID at a parcel. Imports never overwrite an override; they send the
         conflict to the exception queue.
       </p>
-      {rows.length === 0 ? (
+      {all.length === 0 ? (
         <p className="my-4">No overrides are in force.</p>
       ) : (
-        <table className="my-4 w-full text-sm">
-          <thead>
-            <tr className="border-b text-left">
-              <th className="py-2">ID</th>
-              <th>Points to</th>
-              <th>Replaced</th>
-              <th>Reason</th>
-              <th>Expires</th>
-              <th>Status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((row) => (
-              <tr key={row.id} className="border-b">
-                <td className="py-2">{`${row.format}: ${row.value}`}</td>
-                <td>
-                  <Link href={`/staff/parcels/${row.parcelId}`} className="text-action underline">
-                    {row.parcelDisplayId ?? 'No map-lot ID'}
-                  </Link>
-                </td>
-                <td>
-                  {row.replaced === null
-                    ? 'Nothing'
-                    : row.replaced.displayId || row.replaced.parcelId}
-                </td>
-                <td>{row.reason}</td>
-                <td>{row.expiresOn === null ? 'Never' : formatCivilDate(row.expiresOn)}</td>
-                <td>
-                  <StatusChip status={CHIP[row.status].chip} label={CHIP[row.status].label} />
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+        <>
+          <div className="toolbar my-4">
+            <QuickFilters label="Quick filters" groups={chips} clearHref={clear} />
+          </div>
+          <div className="table-panel my-4">
+            {rows.length === 0 ? (
+              <p className="px-5 py-8">No override matches these filters.</p>
+            ) : (
+              <table className="w-full min-w-[44rem] text-sm">
+                <thead>
+                  <tr>
+                    <SortHeader label="ID" link={links.id} />
+                    <SortHeader label="Points to" link={links.parcel} />
+                    <SortHeader label="Replaced" link={links.replaced} />
+                    <SortHeader label="Reason" link={links.reason} />
+                    <SortHeader label="Expires" link={links.expires} />
+                    <SortHeader label="Status" link={links.status} />
+                  </tr>
+                </thead>
+                <tbody>
+                  {rows.map((row) => (
+                    <tr key={row.id}>
+                      <td>{`${row.format}: ${row.value}`}</td>
+                      <td>
+                        <Link
+                          href={`/staff/parcels/${row.parcelId}`}
+                          className="text-action underline"
+                        >
+                          {row.parcelDisplayId ?? 'No map-lot ID'}
+                        </Link>
+                      </td>
+                      <td>
+                        {row.replaced === null
+                          ? 'Nothing'
+                          : row.replaced.displayId || row.replaced.parcelId}
+                      </td>
+                      <td>{row.reason}</td>
+                      <td>{row.expiresOn === null ? 'Never' : formatCivilDate(row.expiresOn)}</td>
+                      <td>
+                        <StatusChip status={CHIP[row.status].chip} label={CHIP[row.status].label} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
+          </div>
+        </>
       )}
       <h2>Add an override</h2>
       <ActionForm

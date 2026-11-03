@@ -56,16 +56,12 @@ describe('the list of disposed records', () => {
     const first = await listTombstones(handle.db, custodian, { limit: 2 }, signal)
     if (!first.ok) throw new Error(first.error)
     expect(first.value.rows).toHaveLength(2)
-    expect(first.value.nextCursor).not.toBeNull()
-    const second = await listTombstones(
-      handle.db,
-      custodian,
-      { limit: 2, cursor: first.value.nextCursor ?? '' },
-      signal,
-    )
+    expect(first.value.nextOffset).toBe(2)
+    expect(first.value.total).toBe(3)
+    const second = await listTombstones(handle.db, custodian, { limit: 2, offset: 2 }, signal)
     if (!second.ok) throw new Error(second.error)
     expect(second.value.rows).toHaveLength(1)
-    expect(second.value.nextCursor).toBeNull()
+    expect(second.value.nextOffset).toBeNull()
     const rows = [...first.value.rows, ...second.value.rows]
     expect(rows.map((r) => r.title).sort()).toEqual([
       'complaint photo 0',
