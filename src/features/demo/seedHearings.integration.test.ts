@@ -69,9 +69,22 @@ describe('hearing demo data', () => {
 
   it('seats five members on each board, with public accounts', async () => {
     const rows = await handle.db.select().from(boardMemberships)
-    expect(rows.filter((r) => r.board === 'planning_board')).toHaveLength(5)
-    expect(rows.filter((r) => r.board === 'zba')).toHaveLength(5)
+    const bea = await member('board')
+    const seats = rows.filter((r) => r.userId !== bea.userId)
+    expect(seats.filter((r) => r.board === 'planning_board')).toHaveLength(5)
+    expect(seats.filter((r) => r.board === 'zba')).toHaveLength(5)
     expect((await member('pb.member')).kind).toBe('public')
+  })
+
+  it('seats the staff board member Bea Board on the ZBA once, even when seeded again', async () => {
+    const bea = await member('board')
+    expect(bea.kind).toBe('staff')
+    await seedDemo(handle.db, signal, await demoSeedDeps())
+    const seats = await handle.db
+      .select({ board: boardMemberships.board })
+      .from(boardMemberships)
+      .where(eq(boardMemberships.userId, bea.userId))
+    expect(seats).toEqual([{ board: 'zba' }])
   })
 
   it('has one published agenda', async () => {

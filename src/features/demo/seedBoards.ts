@@ -18,6 +18,7 @@ import {
 } from '@/features/demo/seedBoardData'
 import { decideGrantedVariance, seedHearings, seedMembers } from '@/features/demo/seedHearings'
 import { actorFor, type Cast, must } from '@/features/demo/seedPermitSupport'
+import { seatStaffBoardMember } from '@/features/demo/seedStaffSeat'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { todayInTimeZone } from '@/types/civilDate'
@@ -41,13 +42,14 @@ export async function seedBoards(
   store: ObjectStore = getObjectStore(),
 ): Promise<boolean> {
   signal.throwIfAborted()
-  const existing = await db.select({ id: boardMeetings.id }).from(boardMeetings).limit(1)
-  if (existing.length > 0) return false
   const cast: Cast = {
     admin: await actorFor(db, 'admin', signal),
     staff: await actorFor(db, 'staff', signal),
     applicant: await actorFor(db, 'applicant', signal),
   }
+  await seatStaffBoardMember(db, cast, signal)
+  const existing = await db.select({ id: boardMeetings.id }).from(boardMeetings).limit(1)
+  if (existing.length > 0) return false
   for (const starter of NH_STARTERS) {
     const adopted = await adoptStarter(db, cast.admin, starter.id, signal)
     if (!adopted.ok && adopted.error !== 'already_adopted') must(adopted, `adopt ${starter.id}`)

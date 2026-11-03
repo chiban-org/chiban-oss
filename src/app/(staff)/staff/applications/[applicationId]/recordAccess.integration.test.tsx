@@ -1,7 +1,6 @@
-import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { applications, boardMemberships, users } from '@/db/schema'
+import { applications } from '@/db/schema'
 import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
@@ -74,19 +73,6 @@ beforeAll(async () => {
   ids = new Map(rows.map((r) => [r.number, r.id]))
 })
 
-async function seatOnZba(local: string): Promise<void> {
-  const [user] = await handle.db
-    .select({ id: users.id })
-    .from(users)
-    .where(eq(users.email, `${local}@alderpond.example`))
-  await handle.db.insert(boardMemberships).values({
-    userId: user?.id ?? '',
-    board: 'zba',
-    title: 'member',
-    termStart: '2026-01-01',
-    createdBy: user?.id ?? '',
-  })
-}
 afterAll(async () => {
   await handle.drop()
 })
@@ -112,16 +98,7 @@ describe('reviewer access to the record page', () => {
 })
 
 describe('board member access to the record page', () => {
-  it('a staff board member with no seat gets the permission message', async () => {
-    await actAs('board')
-    const html = await page('VAR-2026-0003')
-    expect(html).toContain(NO_PERMISSION)
-    expect(html).not.toContain('VAR-2026-0003')
-    expect(html).not.toContain('may have moved')
-  })
-
-  it('a seated member sees the hearing on a published agenda and its packet link', async () => {
-    await seatOnZba('board')
+  it('the demo-seeded ZBA seat shows Bea the hearing on a published agenda', async () => {
     await actAs('board')
     const html = await page('VAR-2026-0003')
     expect(html).toContain('VAR-2026-0003')
