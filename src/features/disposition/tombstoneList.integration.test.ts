@@ -93,7 +93,7 @@ describe('disposed records sorting', () => {
   it('sorts by record title, case-insensitively by collation of the database', async () => {
     const rows = (await titles({ sort: { key: 'record', dir: 'asc' } })).rows
     expect(rows.map((r) => r.title.toLowerCase())).toEqual(['apple', 'apple', 'banana', 'cherry'])
-    expect(rows[0]?.id && rows[1]?.id && rows[0].id > rows[1].id).toBe(true)
+    expect((rows[0]?.id ?? '') > (rows[1]?.id ?? '')).toBe(true)
   })
 
   it('sorts by kind and then by the series label, with the newest first inside a tie', async () => {
