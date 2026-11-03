@@ -158,8 +158,7 @@ export async function loadPanelDocuments(
           .where(inArray(documentVersions.documentId, ids))
   const out: PanelDocument[] = []
   const canRedact = await hasCapability(db, actor.userId, 'redaction.create', signal)
-  const details = await renditionDetails(db, ids)
-  const uploadedBy = await uploaders(db, ids)
+  const [details, uploadedBy] = await Promise.all([renditionDetails(db, ids), uploaders(db, ids)])
   for (const row of listed.rows) {
     const rendition = details(row)
     const rec = records.find((r) => r.documentId === row.documentId)

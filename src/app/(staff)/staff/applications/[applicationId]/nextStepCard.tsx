@@ -1,7 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { NextStep } from '@/components/layout/NextStep'
 import { SelectField, TextField } from '@/components/staff/fields'
-import { type Blocker, planNextStep } from '@/features/applications/nextStep'
+import { type Blocker, type NextStepPlan, planNextStep } from '@/features/applications/nextStep'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { type CoreState, STATE_LABELS } from '@/features/applications/states'
 import { setSubstepAction, transitionAction } from './actions'
@@ -121,14 +121,14 @@ function SubstepForm({ view }: { view: StaffApplicationView }) {
   )
 }
 
-export function nextStepPlan(view: StaffApplicationView) {
+export function nextStepPlan(view: StaffApplicationView): NextStepPlan {
   const allowed = view.nextTransitions.filter(
     (to) => view.permissions.canIssue || !DECISION_MOVES.includes(to),
   )
   return planNextStep(allowed, view.gates)
 }
 
-function LeadStatus({ plan }: { plan: ReturnType<typeof nextStepPlan> }) {
+export function LeadStatus({ plan }: { plan: NextStepPlan }) {
   const { lead } = plan
   if (lead === null || plan.primary !== null) return null
   if (lead.blockers.length > 0) return <BlockerList to={lead.to} blockers={lead.blockers} />
@@ -137,20 +137,24 @@ function LeadStatus({ plan }: { plan: ReturnType<typeof nextStepPlan> }) {
   )
 }
 
-export function NextStepCard({ view }: { view: StaffApplicationView }) {
-  const plan = nextStepPlan(view)
+export function PrimaryMove({ view, plan }: { view: StaffApplicationView; plan: NextStepPlan }) {
+  if (plan.primary === null) return null
+  return (
+    <MoveForm
+      view={view}
+      to={plan.primary}
+      label={`Move to ${moveLabel(plan.primary)}`}
+      variant="default"
+    />
+  )
+}
+
+export function NextStepCard({ view, plan }: { view: StaffApplicationView; plan: NextStepPlan }) {
   const empty = plan.lead === null && plan.terminal.length === 0 && view.substeps.length === 0
   if (empty && !(view.state === 'issued' && view.permissions.canIssue)) return null
   return (
     <NextStep>
-      {plan.primary === null ? null : (
-        <MoveForm
-          view={view}
-          to={plan.primary}
-          label={`Move to ${moveLabel(plan.primary)}`}
-          variant="default"
-        />
-      )}
+      <PrimaryMove view={view} plan={plan} />
       <LeadStatus plan={plan} />
       {plan.secondary.map((to) => (
         <MoveForm

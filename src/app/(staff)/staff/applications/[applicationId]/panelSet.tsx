@@ -124,13 +124,17 @@ function conditionsOffered(view: StaffApplicationView): boolean {
 function recordPanels(input: RecordPanelsInput): Panel[] {
   const { view, records, payments, inspections, hearings } = input
   const graph = hearings?.graph ?? []
-  const money = feeRowsOf(view, payments).length > 0 || (payments?.entries.length ?? 0) > 0
+  const rows = feeRowsOf(view, payments)
+  const money = rows.length > 0 || (payments?.entries.length ?? 0) > 0
   return [
     {
       empty: view.conditions.length === 0,
       node: conditionsOffered(view) ? <ConditionsPanel key="conditions" view={view} /> : null,
     },
-    { empty: !money, node: <FeesPaymentsPanel key="fees" view={view} payments={payments} /> },
+    {
+      empty: !money,
+      node: <FeesPaymentsPanel key="fees" view={view} payments={payments} rows={rows} />,
+    },
     {
       empty: inspections.history.length === 0,
       node:

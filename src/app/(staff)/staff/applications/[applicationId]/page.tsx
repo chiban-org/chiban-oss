@@ -24,6 +24,7 @@ import { requireStaffContext, type StaffContext } from '@/server/requireStaff'
 import { ApplicationFacts, ApplicationRail, StatusStrip } from './applicationRail'
 import { loadInspectionsPanelData } from './inspectionsPanel'
 import { LimitedRecord } from './limitedRecord'
+import { nextStepPlan } from './nextStepCard'
 import { applicationPanels } from './panelSet'
 import { loadRecordsData } from './recordsData'
 
@@ -82,6 +83,7 @@ export default async function StaffApplicationPage({ params }: Props) {
   if (loaded === null) notFound()
   const { view, balanceNotices, legacyNumber } = loaded
   const parts = applicationPanels(loaded)
+  const plan = nextStepPlan(view)
   const status = (
     <StatusChip
       status={headerStatus(view)}
@@ -98,10 +100,16 @@ export default async function StaffApplicationPage({ params }: Props) {
         lead={view.projectTitle}
       />
       <RecordLayout
-        rail={<ApplicationRail view={view} notice={notice} />}
+        rail={<ApplicationRail view={view} plan={plan} notice={notice} />}
         railFooter={<ApplicationFacts view={view} legacyNumber={legacyNumber} />}
         strip={
-          <StatusStrip view={view} status={status} notice={notice} legacyNumber={legacyNumber} />
+          <StatusStrip
+            view={view}
+            plan={plan}
+            status={status}
+            notice={notice}
+            legacyNumber={legacyNumber}
+          />
         }
         empty={parts.empty}
       >

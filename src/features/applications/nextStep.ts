@@ -1,7 +1,5 @@
 import type { GateResult } from '@/features/gates/evaluateGates'
-import type { CoreState } from './states'
-
-export const TERMINAL_MOVES: readonly CoreState[] = ['withdrawn', 'denied', 'closed', 'expired']
+import { type CoreState, TERMINAL_STATES } from './states'
 
 const GATE_PANELS: ReadonlyMap<string, string> = new Map([
   ['fees.paid', 'fees-and-payments'],
@@ -56,12 +54,12 @@ export function planNextStep(
   transitions: readonly CoreState[],
   gates: readonly GateGroup[],
 ): NextStepPlan {
-  const forward = transitions.filter((to) => !TERMINAL_MOVES.includes(to))
-  const terminal = transitions.filter((to) => TERMINAL_MOVES.includes(to))
+  const forward = transitions.filter((to) => !TERMINAL_STATES.includes(to))
+  const terminal = transitions.filter((to) => TERMINAL_STATES.includes(to))
   const leadTo = leadingMove(forward, terminal)
   const lead = leadTo === null ? null : { to: leadTo, blockers: blockersOf(gates, leadTo) }
   const primary =
-    lead !== null && lead.blockers.length === 0 && !TERMINAL_MOVES.includes(lead.to)
+    lead !== null && lead.blockers.length === 0 && !TERMINAL_STATES.includes(lead.to)
       ? lead.to
       : null
   return {

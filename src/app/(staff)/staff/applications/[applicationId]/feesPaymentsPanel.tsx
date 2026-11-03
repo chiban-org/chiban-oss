@@ -134,11 +134,12 @@ function Balance({ payments, rows }: { payments: ApplicationPayments; rows: FeeR
 export function FeesPaymentsPanel({
   view,
   payments,
+  rows,
 }: {
   view: StaffApplicationView
   payments: ApplicationPayments | null
+  rows: FeeRow[]
 }) {
-  const rows = feeRowsOf(view, payments)
   return (
     <section aria-label="Fees and payments" id="fees-and-payments">
       <h2>Fees and payments</h2>

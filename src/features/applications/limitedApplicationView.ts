@@ -12,10 +12,8 @@ import type { CoreState } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { listDocuments } from '@/features/documents/listDocuments'
 import type { DocumentListRow } from '@/features/documents/types'
-import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
-import { HEARING_STATUS_LABELS } from '@/features/hearings/views'
+import { hearingText } from '@/features/hearings/views'
 import { displayIdsFor } from '@/features/parcels/displayId'
-import { formatCivilDate } from '@/lib/formatDate'
 
 export interface LimitedApplicationView {
   id: string
@@ -27,7 +25,7 @@ export interface LimitedApplicationView {
   projectTitle: string
   parcelDisplayId: string
   assignments: { assignmentId: string; status: string }[]
-  hearings: { id: string; meetingId: string; text: string }[]
+  hearings: { id: string; meetingId: string; text: string; hasPacket: boolean }[]
   documents: DocumentListRow[]
 }
 
@@ -58,7 +56,11 @@ async function memberHearings(db: Db, actor: Actor, applicationId: string) {
     )
   if (visible === undefined) return []
   const rows = await db
-    .select({ hearing: hearings, meeting: boardMeetings })
+    .select({
+      hearing: hearings,
+      meeting: boardMeetings,
+      hasPacket: sql<boolean>`exists (select 1 from board_packets bp where bp.board = ${boardMeetings.board} and bp.meeting_date = ${boardMeetings.meetingDate})`,
+    })
     .from(hearings)
     .innerJoin(boardMeetings, eq(boardMeetings.id, hearings.meetingId))
     .where(
@@ -69,10 +71,11 @@ async function memberHearings(db: Db, actor: Actor, applicationId: string) {
       ),
     )
     .orderBy(asc(boardMeetings.meetingDate))
-  return rows.map(({ hearing, meeting }) => ({
+  return rows.map(({ hearing, meeting, hasPacket }) => ({
     id: hearing.id,
     meetingId: meeting.id,
-    text: `${HEARING_KIND_LABELS[hearing.kind]}, ${formatCivilDate(meeting.meetingDate)}. ${HEARING_STATUS_LABELS[hearing.status]}.`,
+    hasPacket,
+    text: hearingText(hearing.kind, meeting.meetingDate, hearing.status),
   }))
 }
 
@@ -83,8 +86,10 @@ export async function getLimitedApplicationView(
   signal: AbortSignal,
 ): Promise<LimitedApplicationView | null> {
   signal.throwIfAborted()
-  const assignments = await ownAssignments(db, actor, applicationId)
-  const heard = await memberHearings(db, actor, applicationId)
+  const [assignments, heard] = await Promise.all([
+    ownAssignments(db, actor, applicationId),
+    memberHearings(db, actor, applicationId),
+  ])
   if (assignments.length === 0 && heard.length === 0) return null
   const app = await loadApplicationContext(db, applicationId, signal)
   if (app === null) return null
@@ -93,13 +98,15 @@ export async function getLimitedApplicationView(
     .from(projects)
     .where(eq(projects.id, app.projectId))
   if (project === undefined) return null
-  const display = await displayIdsFor(db, [project.parcelId])
-  const documents = await listDocuments(
-    db,
-    actor,
-    { record: { kind: 'application', id: applicationId }, limit: 100 },
-    signal,
-  )
+  const [display, documents] = await Promise.all([
+    displayIdsFor(db, [project.parcelId]),
+    listDocuments(
+      db,
+      actor,
+      { record: { kind: 'application', id: applicationId }, limit: 100 },
+      signal,
+    ),
+  ])
   return {
     id: app.id,
     number: app.number,

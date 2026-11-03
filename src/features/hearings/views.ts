@@ -39,6 +39,14 @@ export const HEARING_STATUS_LABELS = {
   cancelled: 'Cancelled',
 } as const
 
+export function hearingText(
+  kind: keyof typeof HEARING_KIND_LABELS,
+  meetingDate: string,
+  status: keyof typeof HEARING_STATUS_LABELS,
+): string {
+  return `${HEARING_KIND_LABELS[kind]}, ${formatCivilDate(meetingDate)}. ${HEARING_STATUS_LABELS[status]}.`
+}
+
 export interface HearingView {
   hearingId: string
   applicationId: string

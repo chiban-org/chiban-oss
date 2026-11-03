@@ -57,7 +57,7 @@ export function DecisionSection({ data }: { data: BoardPanelData }) {
           </p>
           {data.canRecord &&
           data.exerciseText === null &&
-          ['decided', 'issued'].includes(data.state) ? (
+          AWAITING_FINAL_APPROVAL.includes(data.state) ? (
             <ActionForm
               action={finalApprovalAction}
               submitLabel="Record final approval"

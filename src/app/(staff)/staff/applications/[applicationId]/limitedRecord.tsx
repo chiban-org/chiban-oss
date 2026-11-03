@@ -35,7 +35,11 @@ function HearingSection({ view }: { view: LimitedApplicationView }) {
         {view.hearings.map((h) => (
           <li key={h.id} className="record-item flex flex-wrap items-center gap-3">
             <span>{h.text}</span>
-            <Link href={`/board/meetings/${h.meetingId}`}>Open the meeting packet</Link>
+            {h.hasPacket ? (
+              <Link href={`/board/meetings/${h.meetingId}`}>Open the meeting packet</Link>
+            ) : (
+              <span className="text-muted-foreground">The meeting packet is not ready yet.</span>
+            )}
           </li>
         ))}
       </ul>

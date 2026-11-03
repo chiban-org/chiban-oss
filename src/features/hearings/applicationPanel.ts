@@ -10,7 +10,7 @@ import { boardOfApplication } from '@/features/boards/boardOf'
 import { toGraphNodes } from '@/features/decisions/decisionView'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
-import { HEARING_STATUS_LABELS, loadApplicationAppealNodes } from '@/features/hearings/views'
+import { hearingText, loadApplicationAppealNodes } from '@/features/hearings/views'
 import { type TrcDepartmentSummary, trcSummary } from '@/features/reviews/trcSummary'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -79,7 +79,7 @@ export async function loadApplicationHearingsPanel(
     scheduleKinds: kinds,
     hearings: held.map(({ hearing, meeting }) => ({
       id: hearing.id,
-      text: `${HEARING_KIND_LABELS[hearing.kind]}, ${formatCivilDate(meeting.meetingDate)}. ${HEARING_STATUS_LABELS[hearing.status]}.`,
+      text: hearingText(hearing.kind, meeting.meetingDate, hearing.status),
     })),
     decisions: decisions.map((d) => ({
       id: d.id,

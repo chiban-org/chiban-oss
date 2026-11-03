@@ -1,17 +1,11 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { type Fact, FactList } from '@/components/layout/PageHeader'
+import type { NextStepPlan } from '@/features/applications/nextStep'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { dueNext, overdueCount } from '@/features/clocks/clockSummary'
 import { formatCivilDate } from '@/lib/formatDate'
-import {
-  BlockerList,
-  MoreActions,
-  MoveForm,
-  moveLabel,
-  NextStepCard,
-  nextStepPlan,
-} from './nextStepCard'
+import { LeadStatus, MoreActions, NextStepCard, PrimaryMove } from './nextStepCard'
 
 function PrintLinks({ applicationId }: { applicationId: string }) {
   return (
@@ -26,8 +20,9 @@ function days(n: number): string {
   return `${n} ${n === 1 ? 'day' : 'days'}`
 }
 
-export function DueNext({ view }: { view: StaffApplicationView }) {
-  const clock = dueNext(view.clocks)
+type Clock = StaffApplicationView['clocks'][number]
+
+function DueNext({ clock }: { clock: Clock | null }) {
   if (clock === null) return null
   return (
     <span>
@@ -43,8 +38,9 @@ export function DueNext({ view }: { view: StaffApplicationView }) {
 
 function deadlineFacts(view: StaffApplicationView): Fact[] {
   const late = overdueCount(view.clocks)
+  const clock = dueNext(view.clocks)
   const next: Fact[] =
-    dueNext(view.clocks) === null ? [] : [{ label: 'Due next', value: <DueNext view={view} /> }]
+    clock === null ? [] : [{ label: 'Due next', value: <DueNext clock={clock} /> }]
   return late === 0 ? next : [...next, { label: 'Overdue clocks', value: String(late) }]
 }
 
@@ -80,16 +76,18 @@ function applicationFacts(view: StaffApplicationView, legacyNumber: string | nul
 
 export function ApplicationRail({
   view,
+  plan,
   notice,
 }: {
   view: StaffApplicationView
+  plan: NextStepPlan
   notice: ReactNode
 }) {
   return (
     <div className="rail-card empty:hidden">
       {notice}
       <Deadlines view={view} />
-      <NextStepCard view={view} />
+      <NextStepCard view={view} plan={plan} />
       {view.state === 'issued' ? <PrintLinks applicationId={view.id} /> : null}
     </div>
   )
@@ -111,33 +109,26 @@ export function ApplicationFacts({
 
 export function StatusStrip({
   view,
+  plan,
   status,
   notice,
   legacyNumber,
 }: {
   view: StaffApplicationView
+  plan: NextStepPlan
   status: ReactNode
   notice: ReactNode
   legacyNumber: string | null
 }) {
-  const plan = nextStepPlan(view)
-  const blocked = plan.lead !== null && plan.lead.blockers.length > 0 ? plan.lead : null
   return (
     <section aria-label="Status" data-plain className="rail-card flex flex-col gap-3 [&>*]:m-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         {status}
-        <DueNext view={view} />
+        <DueNext clock={dueNext(view.clocks)} />
       </div>
       {notice}
-      {plan.primary === null ? null : (
-        <MoveForm
-          view={view}
-          to={plan.primary}
-          label={`Move to ${moveLabel(plan.primary)}`}
-          variant="default"
-        />
-      )}
-      {blocked === null ? null : <BlockerList to={blocked.to} blockers={blocked.blockers} />}
+      <PrimaryMove view={view} plan={plan} />
+      <LeadStatus plan={plan} />
       <details>
         <summary className="text-sm">Facts and more actions</summary>
         <div className="flex flex-col gap-4">
