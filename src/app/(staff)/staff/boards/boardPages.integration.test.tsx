@@ -228,7 +228,7 @@ describe('board pages show words, not keys or dates', () => {
     expect(html).toMatch(/href="\/staff\/parcels\?q=[^"]+"/)
     expect(text(html)).not.toMatch(/, parcel \d/)
     expect(text(html)).not.toMatch(/ on parcel \d/)
-    expect(html).toMatch(/<th[^>]*>(<[^>]*>)*Parcel/)
+    expect(html).toContain('<th scope="col">Parcel</th>')
   })
 
   it('the rosters page shows the regional notice contacts it asks staff to review', async () => {
