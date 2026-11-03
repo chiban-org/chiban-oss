@@ -1,17 +1,22 @@
-import { desc } from 'drizzle-orm'
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import { ImportUploadForm } from '@/components/staff/ImportUploadForm'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { gisLayers, importRuns } from '@/db/schema'
+import { gisLayers } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
 import type { RawSearchParams } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
 import { AXISGIS_ADAPTER_STATUS, AXISGIS_STUB_NOTICE } from '@/features/gis/adapters/axisGis'
 import { LAYER_KEYS } from '@/features/gis/exceptionKinds'
-import { IMPORTS_PATH, RUN_SORT, readRunView, sortRuns } from '@/features/gis/import/runSort'
+import {
+  IMPORTS_PATH,
+  listRecentRuns,
+  RECENT_RUN_LIMIT,
+  RUN_SORT,
+  readRunView,
+} from '@/features/gis/import/runSort'
 import { adapterLabel, layerLabel } from '@/features/gis/import/runText'
 import { getLayerStatus } from '@/features/gis/layerStatus'
 import { getTownSettings } from '@/features/town/settings'
@@ -57,12 +62,7 @@ export default async function StaffImportsPage({
     hasCapability(ctx.db, actor.userId, 'config.edit', ctx.signal),
   ])
   const layers = await ctx.db.select().from(gisLayers)
-  const recentRuns = await ctx.db
-    .select()
-    .from(importRuns)
-    .orderBy(desc(importRuns.startedAt))
-    .limit(20)
-  const runs = sortRuns(recentRuns, sort)
+  const runs = await listRecentRuns(ctx.db, sort, ctx.signal)
   const links = sortLinks(IMPORTS_PATH, params, RUN_SORT, sort)
   const now = new Date()
   const town = await getTownSettings(ctx.db, ctx.signal)
@@ -153,36 +153,35 @@ export default async function StaffImportsPage({
       {runs.length === 0 ? (
         <p>No imports have run yet.</p>
       ) : (
-        <div className="table-panel">
-          <table className="w-full min-w-[40rem] text-sm">
-            <thead>
-              <tr>
-                <SortHeader label="Started" link={links.started} />
-                <SortHeader label="Layer" link={links.layer} />
-                <SortHeader label="Source" link={links.source} />
-                <SortHeader label="Status" link={links.status} />
-                <th scope="col">
-                  <span className="sr-only">Report</span>
-                </th>
-              </tr>
-            </thead>
-            <tbody>
-              {runs.map((run) => (
-                <tr key={run.id}>
-                  <td>{formatInstantLong(run.startedAt, zone)}</td>
-                  <td>{layerLabel(run.layerKey)}</td>
-                  <td>{adapterLabel(run.adapter)}</td>
-                  <td>{words(run.status)}</td>
-                  <td>
-                    <Link href={`/staff/gis/imports/${run.id}`} className="text-action underline">
-                      Report
-                    </Link>
-                  </td>
+        <>
+          <p className="text-muted-foreground">{`Newest first, up to ${RECENT_RUN_LIMIT} runs. Open a run to see its report.`}</p>
+          <div className="table-panel">
+            <table className="w-full min-w-[40rem] text-sm">
+              <thead>
+                <tr>
+                  <SortHeader label="Started" link={links.started} />
+                  <SortHeader label="Layer" link={links.layer} />
+                  <SortHeader label="Source" link={links.source} />
+                  <SortHeader label="Status" link={links.status} />
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {runs.map((run) => (
+                  <tr key={run.id}>
+                    <td>
+                      <Link href={`/staff/gis/imports/${run.id}`} className="text-action underline">
+                        {formatInstantLong(run.startedAt, zone)}
+                      </Link>
+                    </td>
+                    <td>{layerLabel(run.layerKey)}</td>
+                    <td>{adapterLabel(run.adapter)}</td>
+                    <td>{words(run.status)}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </>
       )}
     </main>
   )
