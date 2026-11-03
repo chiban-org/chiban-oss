@@ -78,13 +78,15 @@ export default async function StaffApplicationsPage({ searchParams }: Props) {
   if (!mayOpen(APPLICATIONS_PATH, await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
     return <NoPermission title="Applications" action="see applications" />
   }
-  const page = await listStaffApplications(
-    ctx.db,
-    ctx.actor,
-    { filters, sort, limit: PAGE_SIZE, offset: readOffset(params) },
-    ctx.signal,
-  )
-  const facets = await staffApplicationFacets(ctx.db, ctx.actor, { filters }, ctx.signal)
+  const [page, facets] = await Promise.all([
+    listStaffApplications(
+      ctx.db,
+      ctx.actor,
+      { filters, sort, limit: PAGE_SIZE, offset: readOffset(params) },
+      ctx.signal,
+    ),
+    staffApplicationFacets(ctx.db, ctx.actor, { filters }, ctx.signal),
+  ])
   const display = await displayIdsFor(
     ctx.db,
     page.rows.map((r) => r.parcelId),

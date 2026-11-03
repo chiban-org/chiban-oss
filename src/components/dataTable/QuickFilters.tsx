@@ -57,7 +57,7 @@ export function QuickFilters({
               {group.label}
             </span>
             {group.chips.map((chip) => (
-              <Chip key={chip.label} chip={chip} />
+              <Chip key={chip.href} chip={chip} />
             ))}
           </div>
         ))}

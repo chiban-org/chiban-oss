@@ -1,13 +1,20 @@
 import { isValidConfigKey } from '@/features/config/kinds'
 import {
   firstParam,
+  PAGE_PARAM,
   paramValues,
   type RawSearchParams,
   readTableParams,
   type TableParams,
 } from '@/features/dataTable/params'
 import { filterValues, whenAny } from '@/features/dataTable/quickFilters'
-import { parseSort, type SortConfig, type SortState } from '@/features/dataTable/sort'
+import {
+  DIR_PARAM,
+  parseSort,
+  SORT_PARAM,
+  type SortConfig,
+  type SortState,
+} from '@/features/dataTable/sort'
 import { stateFilterOptions } from '@/features/queue/stateFilterOptions'
 import { statesForParam } from '@/features/queue/stateScopes'
 import type { WorkQueueFilters } from '@/features/queue/workQueue'
@@ -103,7 +110,7 @@ export function activeFilterLabels(
 }
 
 export function filterKey(params: TableParams): string {
-  return ['sort', 'dir', 'cursor', ...QUEUE_FILTER_PARAMS]
+  return [SORT_PARAM, DIR_PARAM, PAGE_PARAM, ...QUEUE_FILTER_PARAMS]
     .map((name) => paramValues(params, name).join(','))
     .join('|')
 }
