@@ -6,6 +6,7 @@ import type { BoardPanelData } from '@/features/boards/panelData'
 
 vi.mock('../../boards/actions', () => ({ completenessVoteAction: vi.fn() }))
 vi.mock('./boardPanelSections', () => ({}))
+vi.mock('./boardDecisionSection', () => ({}))
 
 const { VoteForm } = await import('./boardPanel')
 

@@ -91,10 +91,12 @@ describe('section pages refuse with one permission page', () => {
     expect(await html(PaymentsPage())).toContain(NO_PERMISSION)
   })
 
-  it('a record by id stays a missing page for someone who may not see it', async () => {
+  it('a record by id gives the permission page, and none of the record, to someone who may not see it', async () => {
     await actAs('board')
-    await expect(
-      html(ApplicationPage({ params: Promise.resolve({ applicationId }) })),
-    ).rejects.toThrow('NOT_FOUND')
+    const body = await html(ApplicationPage({ params: Promise.resolve({ applicationId }) }))
+    expect(body).toContain(NO_PERMISSION)
+    expect(body).not.toContain('may have moved')
+    const [row] = await handle.db.select().from(applications)
+    expect(body).not.toContain(row?.number ?? 'missing')
   })
 })

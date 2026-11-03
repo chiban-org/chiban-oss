@@ -2,12 +2,8 @@ import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import { completenessVoteAction, setAcceptanceMeetingAction } from '../../boards/actions'
-import {
-  CostSection,
-  DecisionSection,
-  DeterminationSection,
-  ListSection,
-} from './boardPanelSections'
+import { DecisionSection } from './boardDecisionSection'
+import { CostSection, DeterminationSection, ListSection } from './boardPanelSections'
 
 function MeetingSelect({ data }: { data: BoardPanelData }) {
   const chosen = data.meetings.some((m) => m.id === data.acceptanceMeetingId)
@@ -62,23 +58,26 @@ export function VoteForm({ data }: { data: BoardPanelData }) {
   )
 }
 
-function acceptanceSummary(data: BoardPanelData): string {
+const FILING_STATES: readonly string[] = ['draft', 'submitted']
+
+function acceptanceSummary(data: BoardPanelData, hearings: readonly string[]): string {
   const planning = data.board === 'planning_board'
+  if (!planning && hearings.length > 0) return `Hearings: ${hearings.join(' ')}`
   if (data.acceptanceText === null) {
-    return planning ? 'No acceptance meeting is set.' : 'No hearing meeting is set.'
+    return planning ? 'No acceptance meeting is set.' : 'No hearing is scheduled.'
   }
   return `${planning ? 'Acceptance meeting' : 'Hearing meeting'}: ${data.acceptanceText}.`
 }
 
-function AcceptanceSection({ data }: { data: BoardPanelData }) {
+function AcceptanceSection({ data, hearings }: { data: BoardPanelData; hearings: string[] }) {
   const planning = data.board === 'planning_board'
   const open = data.canRecord && data.state === 'submitted'
   return (
     <section aria-label={planning ? 'Acceptance' : 'Hearing'} className="space-y-3">
       <h3>{planning ? 'Filing and acceptance' : 'Hearing'}</h3>
       <p>
-        {acceptanceSummary(data)}
-        {data.hasFilingLead
+        {acceptanceSummary(data, hearings)}
+        {data.hasFilingLead && FILING_STATES.includes(data.state)
           ? ' The application must be filed before the deadline shown on the clocks.'
           : ''}
       </p>
@@ -97,11 +96,11 @@ function AcceptanceSection({ data }: { data: BoardPanelData }) {
   )
 }
 
-export function BoardPanel({ data }: { data: BoardPanelData }) {
+export function BoardPanel({ data, hearings }: { data: BoardPanelData; hearings: string[] }) {
   return (
-    <section aria-label="Board" className="space-y-4">
+    <section aria-label="Board" id="board" className="space-y-4">
       <h2>{data.boardName}</h2>
-      <AcceptanceSection data={data} />
+      <AcceptanceSection data={data} hearings={hearings} />
       <DeterminationSection data={data} />
       <ListSection data={data} />
       <CostSection data={data} />

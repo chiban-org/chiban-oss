@@ -13,7 +13,8 @@ vi.mock('../../reviews/actions', () => ({
   removeReviewerAction: () => Promise.resolve({ ok: true, message: '' }),
 }))
 
-const { AppealPanel, RegionalImpactPanel } = await import('./buildingPanels')
+const { RegionalImpactPanel } = await import('./buildingPanels')
+const { AppealsPanel } = await import('./appealsPanel')
 const { CompletenessPanel, PartiesPanel } = await import('./panels')
 const { ReviewersPanel } = await import('./reviewersPanel')
 
@@ -90,7 +91,8 @@ describe('staff application panels', () => {
 
   it('appeals show filed and resolved dates and the outcome in words', () => {
     const text = textOf(
-      <AppealPanel
+      <AppealsPanel
+        graph={[]}
         view={view({
           appeals: [
             {

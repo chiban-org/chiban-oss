@@ -3,6 +3,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
 import { loadApplicationContext } from '@/features/applications/context'
+import { TERMINAL_STATES } from '@/features/applications/states'
 import { hasCapability } from '@/features/authz/capabilities'
 import type { InspectionHistoryRow } from '@/features/inspections/history'
 import { listInspectionHistory } from '@/features/inspections/history'
@@ -37,6 +38,7 @@ export interface InspectionsPanelData {
   rowVersion: number
   today: string
   reinspectableIds: string[]
+  takesRequests: boolean
 }
 
 export async function loadInspectionsPanelData(
@@ -67,6 +69,11 @@ export async function loadInspectionsPanelData(
     rowVersion: app?.rowVersion ?? 1,
     today: await townToday(ctx.db, new Date(), ctx.signal),
     reinspectableIds: [...(await reinspectableFailureIds(ctx.db, applicationId))],
+    takesRequests:
+      app !== null &&
+      app.pins.checklists.length > 0 &&
+      app.state !== 'draft' &&
+      !TERMINAL_STATES.includes(app.state),
   }
 }
 
@@ -81,12 +88,12 @@ export function InspectionsPanel({
 }) {
   const { history, canSchedule, certificateReady, rowVersion, today, reinspectableIds } = data
   return (
-    <section aria-label="Inspections">
+    <section aria-label="Inspections" id="inspections">
       <h2>Inspections</h2>
       {history.length === 0 ? <p>No inspections have been requested.</p> : null}
-      <ul className="m-0 list-none space-y-3 p-0">
+      <ul className="m-0 list-none p-0">
         {history.map((row) => (
-          <li key={row.id} className="rounded-md border p-3">
+          <li key={row.id} className="record-item pb-3">
             <div className="flex flex-wrap items-center gap-3">
               <Link href={`/staff/inspections/${row.id}`} className="text-action underline">
                 {`${inspectionTypeLabel(row.inspectionType)} inspection`}
@@ -118,7 +125,7 @@ export function InspectionsPanel({
           </li>
         ))}
       </ul>
-      {canSchedule ? (
+      {canSchedule && data.takesRequests ? (
         <p>
           <Link
             href={`/staff/inspections?number=${encodeURIComponent(number)}`}

@@ -1,12 +1,30 @@
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
+import type { CoreState } from '@/features/applications/states'
 import { type FeeLineLike, feeChoices } from '@/features/fees/feeChoices'
 import { formatCents } from '@/lib/money'
 import { feeOverrideAction } from './clockFeeActions'
 
-export function FeeOverrideForm({ view }: { view: StaffApplicationView }) {
+const PAST_DECISION: readonly CoreState[] = [
+  'decided',
+  'issued',
+  'suspended',
+  'closed',
+  'denied',
+  'withdrawn',
+  'expired',
+]
+
+export function FeeOverrideForm({
+  view,
+  dueCents,
+}: {
+  view: StaffApplicationView
+  dueCents: number | null
+}) {
   if (!view.permissions.canOverrideFee) return null
+  if (PAST_DECISION.includes(view.state) && dueCents !== null && dueCents <= 0) return null
   const choices = feeChoices(
     view.fees.preview?.lines ?? null,
     view.fees.assessments.map((a) => a.computation as { lines: FeeLineLike[] }),

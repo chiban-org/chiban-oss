@@ -1,6 +1,5 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
-import { AppealGraph } from '@/components/appeals/AppealGraph'
 import { SelectField } from '@/components/staff/fields'
 import type { ApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import { reviewStatusLabel } from '@/features/reviews/statusLabels'
@@ -10,7 +9,7 @@ import { routeToTrcAction, scheduleHearingAction } from '../../boards/hearings/a
 export function HearingsPanel({ data }: { data: ApplicationHearingsPanel | null }) {
   if (data === null) return null
   return (
-    <section aria-label="Hearings and decisions" className="space-y-4">
+    <section aria-label="Hearings and decisions" id="hearings" className="space-y-4">
       <h2>Hearings and decisions</h2>
       {data.hearings.length === 0 ? <p>No hearing is scheduled yet.</p> : null}
       <ul className="m-0 list-none space-y-1 p-0">
@@ -29,28 +28,24 @@ export function HearingsPanel({ data }: { data: ApplicationHearingsPanel | null 
           </li>
         ))}
       </ul>
-      <details>
-        <summary>Schedule a hearing</summary>
-        <ActionForm
-          action={scheduleHearingAction}
-          submitLabel="Schedule hearing"
-          className="max-w-md"
-        >
-          <input type="hidden" name="applicationId" value={data.applicationId} />
-          <SelectField
-            label="Meeting"
-            name="meetingId"
-            options={data.scheduleMeetings.map((m): [string, string] => [m.id, m.text])}
-          />
-          <SelectField label="Kind" name="kind" options={data.scheduleKinds} />
-        </ActionForm>
-      </details>
-      {data.graph.length === 0 ? null : (
-        <div className="space-y-2">
-          <h3>Appeals</h3>
-          <AppealGraph nodes={data.graph} />
-        </div>
-      )}
+      {data.canSchedule ? (
+        <details>
+          <summary>Schedule a hearing</summary>
+          <ActionForm
+            action={scheduleHearingAction}
+            submitLabel="Schedule hearing"
+            className="max-w-md"
+          >
+            <input type="hidden" name="applicationId" value={data.applicationId} />
+            <SelectField
+              label="Meeting"
+              name="meetingId"
+              options={data.scheduleMeetings.map((m): [string, string] => [m.id, m.text])}
+            />
+            <SelectField label="Kind" name="kind" options={data.scheduleKinds} />
+          </ActionForm>
+        </details>
+      ) : null}
       <div className="space-y-2">
         <h3>Technical Review Committee</h3>
         {data.trc.length === 0 ? <p>No departments have been asked to review.</p> : null}

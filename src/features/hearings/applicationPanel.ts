@@ -3,6 +3,7 @@ import type { GraphNode } from '@/components/appeals/AppealGraph'
 import type { Db } from '@/db/client'
 import { boardDecisions, boardMeetings, hearings } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
+import { TERMINAL_STATES } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
@@ -18,6 +19,7 @@ export interface ApplicationHearingsPanel {
   applicationId: string
   canRecord: boolean
   canRoute: boolean
+  canSchedule: boolean
   scheduleMeetings: { id: string; text: string }[]
   scheduleKinds: [string, string][]
   hearings: { id: string; text: string }[]
@@ -39,7 +41,8 @@ export async function loadApplicationHearingsPanel(
   if (board === null) return null
   const canRecord = await hasCapability(db, actor.userId, 'board.record', signal)
   if (!canRecord) return null
-  const canRoute = await hasCapability(db, actor.userId, 'review.assign', signal)
+  const finished = TERMINAL_STATES.includes(app.state)
+  const canRoute = !finished && (await hasCapability(db, actor.userId, 'review.assign', signal))
   const today = await townToday(db, new Date(), signal)
   const meetings = await db
     .select()
@@ -69,6 +72,7 @@ export async function loadApplicationHearingsPanel(
     applicationId,
     canRecord,
     canRoute,
+    canSchedule: !finished,
     scheduleMeetings: meetings
       .filter((m) => m.status === 'scheduled' && m.meetingDate >= today)
       .map((m) => ({ id: m.id, text: formatCivilDate(m.meetingDate) })),

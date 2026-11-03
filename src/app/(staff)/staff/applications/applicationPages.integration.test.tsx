@@ -99,7 +99,8 @@ describe('staff application pages', () => {
       ApplicationPage({ params: Promise.resolve({ applicationId: review?.id ?? id ?? '' }) }),
     )
     expect(page).toContain('Building permit decision deadline')
-    expect(page).toContain('Move to decided')
+    expect(page).toContain('Before decided')
+    expect(page).toMatch(/assigned reviews? (is|are) not signed off|No reviewer is assigned/)
     expect(page).toContain('Waived (was $')
   })
 

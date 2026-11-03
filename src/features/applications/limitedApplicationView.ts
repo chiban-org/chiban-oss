@@ -1,0 +1,118 @@
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
+import type { Db } from '@/db/client'
+import { applications, boardMeetings, hearings, projects, reviewAssignments } from '@/db/schema'
+import {
+  isBoardMember,
+  memberCanSeeApplication,
+  memberCanSeeMeeting,
+} from '@/features/access/predicates'
+import { isReviewer } from '@/features/access/roles'
+import { loadApplicationContext } from '@/features/applications/context'
+import type { CoreState } from '@/features/applications/states'
+import type { Actor } from '@/features/auth/actor'
+import { listDocuments } from '@/features/documents/listDocuments'
+import type { DocumentListRow } from '@/features/documents/types'
+import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
+import { HEARING_STATUS_LABELS } from '@/features/hearings/views'
+import { displayIdsFor } from '@/features/parcels/displayId'
+import { formatCivilDate } from '@/lib/formatDate'
+
+export interface LimitedApplicationView {
+  id: string
+  number: string
+  typeLabel: string
+  state: CoreState
+  substep: string | null
+  substeps: { key: string; label: string }[]
+  projectTitle: string
+  parcelDisplayId: string
+  assignments: { assignmentId: string; status: string }[]
+  hearings: { id: string; meetingId: string; text: string }[]
+  documents: DocumentListRow[]
+}
+
+async function ownAssignments(db: Db, actor: Actor, applicationId: string) {
+  if (!isReviewer(actor)) return []
+  return await db
+    .select({ assignmentId: reviewAssignments.id, status: reviewAssignments.status })
+    .from(reviewAssignments)
+    .where(
+      and(
+        eq(reviewAssignments.applicationId, applicationId),
+        eq(reviewAssignments.reviewerUserId, actor.userId),
+        isNull(reviewAssignments.removedAt),
+      ),
+    )
+}
+
+async function memberHearings(db: Db, actor: Actor, applicationId: string) {
+  if (!isBoardMember(actor)) return []
+  const [visible] = await db
+    .select({ id: applications.id })
+    .from(applications)
+    .where(
+      and(
+        eq(applications.id, applicationId),
+        memberCanSeeApplication(actor.userId, sql`${applications.id}`),
+      ),
+    )
+  if (visible === undefined) return []
+  const rows = await db
+    .select({ hearing: hearings, meeting: boardMeetings })
+    .from(hearings)
+    .innerJoin(boardMeetings, eq(boardMeetings.id, hearings.meetingId))
+    .where(
+      and(
+        eq(hearings.applicationId, applicationId),
+        inArray(hearings.status, ['scheduled', 'held']),
+        memberCanSeeMeeting(actor.userId, sql`${boardMeetings.id}`),
+      ),
+    )
+    .orderBy(asc(boardMeetings.meetingDate))
+  return rows.map(({ hearing, meeting }) => ({
+    id: hearing.id,
+    meetingId: meeting.id,
+    text: `${HEARING_KIND_LABELS[hearing.kind]}, ${formatCivilDate(meeting.meetingDate)}. ${HEARING_STATUS_LABELS[hearing.status]}.`,
+  }))
+}
+
+export async function getLimitedApplicationView(
+  db: Db,
+  actor: Actor,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<LimitedApplicationView | null> {
+  signal.throwIfAborted()
+  const assignments = await ownAssignments(db, actor, applicationId)
+  const heard = await memberHearings(db, actor, applicationId)
+  if (assignments.length === 0 && heard.length === 0) return null
+  const app = await loadApplicationContext(db, applicationId, signal)
+  if (app === null) return null
+  const [project] = await db
+    .select({ title: projects.title, parcelId: projects.parcelId })
+    .from(projects)
+    .where(eq(projects.id, app.projectId))
+  if (project === undefined) return null
+  const display = await displayIdsFor(db, [project.parcelId])
+  const documents = await listDocuments(
+    db,
+    actor,
+    { record: { kind: 'application', id: applicationId }, limit: 100 },
+    signal,
+  )
+  return {
+    id: app.id,
+    number: app.number,
+    typeLabel: app.typeBody.label,
+    state: app.state,
+    substep: app.substep,
+    substeps: app.typeBody.workflow.substeps
+      .filter((s) => s.state === app.state)
+      .map((s) => ({ key: s.key, label: s.label })),
+    projectTitle: project.title,
+    parcelDisplayId: display.get(project.parcelId) ?? 'No map-lot ID',
+    assignments,
+    hearings: heard,
+    documents: documents.rows,
+  }
+}

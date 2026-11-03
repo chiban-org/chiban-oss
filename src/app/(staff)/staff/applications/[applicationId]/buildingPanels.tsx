@@ -4,7 +4,6 @@ import { SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { componentsNotInLabel } from '@/features/building/codeEdition'
 import {
-  APPEAL_OUTCOME_OPTIONS,
   DETERMINATION_OPTIONS,
   labelFor,
   NOTICE_METHOD_OPTIONS,
@@ -15,13 +14,7 @@ import { loadPack } from '@/features/packs/loadPack'
 import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 import { lowerFirst } from '@/lib/words'
 import { recordCodeEditionAction } from './actions'
-import {
-  recordAppealAction,
-  regionalImpactAction,
-  regionalNoticeAction,
-  renewAction,
-  resolveAppealAction,
-} from './buildingActions'
+import { regionalImpactAction, regionalNoticeAction } from './buildingActions'
 
 const ELECTION_NONE: [string, string] = ['', 'No election: use the edition in force']
 
@@ -35,7 +28,7 @@ export function CodeEditionPanel({ view }: { view: StaffApplicationView }) {
   const edition = view.codeEdition
   if (view.classification !== 'nh.building_permit') return null
   return (
-    <section aria-label="Code edition">
+    <section aria-label="Code edition" id="code-edition">
       <h2>State building code edition</h2>
       {edition === null ? (
         <p>No code edition is recorded. Issuance is blocked until one is.</p>
@@ -55,7 +48,7 @@ export function CodeEditionPanel({ view }: { view: StaffApplicationView }) {
               {humanizeIsoDates(label)}
             </p>
           ))}
-          <dl className="grid grid-cols-[12rem_1fr] gap-x-4 text-sm">
+          <dl className="grid grid-cols-1 gap-x-4 text-sm sm:grid-cols-[12rem_1fr]">
             {edition.rows.map((r) => (
               <div key={r.field} className="contents">
                 <dt className="font-medium">{r.field}</dt>
@@ -93,7 +86,7 @@ export function RegionalImpactPanel({ view }: { view: StaffApplicationView }) {
   const editable =
     view.permissions.canDetermineRegionalImpact && REGIONAL_IMPACT_OPEN_STATES.includes(view.state)
   return (
-    <section aria-label="Regional impact">
+    <section aria-label="Regional impact" id="regional-impact">
       <h2>Regional impact</h2>
       <p>
         {r.determination === null
@@ -146,70 +139,6 @@ export function RegionalImpactPanel({ view }: { view: StaffApplicationView }) {
               required
             />
             <TextField label="Reference (tracking number)" name="reference" />
-          </ActionForm>
-        </details>
-      ) : null}
-    </section>
-  )
-}
-
-export function AppealPanel({ view }: { view: StaffApplicationView }) {
-  const open = view.appeals.find((a) => a.resolvedOn === null)
-  return (
-    <section aria-label="Appeals and renewal">
-      <h2>Appeals and renewal</h2>
-      {view.appeals.length === 0 ? <p>No appeal has been filed.</p> : null}
-      <ul>
-        {view.appeals.map((a) => (
-          <li
-            key={a.id}
-          >{`Filed ${formatCivilDate(a.filedOn)} by ${a.appellantName}. ${a.resolvedOn === null ? 'Open.' : `Resolved ${formatCivilDate(a.resolvedOn)}: ${lowerFirst(labelFor(APPEAL_OUTCOME_OPTIONS, a.outcome ?? ''))}.`}`}</li>
-        ))}
-      </ul>
-      {view.state === 'issued' && view.permissions.canIssue ? (
-        <>
-          <details>
-            <summary>Record an appeal</summary>
-            <ActionForm action={recordAppealAction} submitLabel="Record appeal">
-              <input type="hidden" name="applicationId" value={view.id} />
-              <TextField label="Appellant" name="appellantName" required />
-              <TextField
-                label="Filed on"
-                name="filedOn"
-                type="date"
-                defaultValue={view.today}
-                required
-              />
-            </ActionForm>
-          </details>
-          <details>
-            <summary>Renew the permit</summary>
-            <ActionForm action={renewAction} submitLabel="Renew permit">
-              <input type="hidden" name="applicationId" value={view.id} />
-              <TextField
-                label="Renewed on"
-                name="renewedOn"
-                type="date"
-                defaultValue={view.today}
-                required
-              />
-            </ActionForm>
-          </details>
-        </>
-      ) : null}
-      {open !== undefined && view.permissions.canIssue ? (
-        <details>
-          <summary>Resolve the appeal</summary>
-          <ActionForm action={resolveAppealAction} submitLabel="Resolve appeal">
-            <input type="hidden" name="applicationId" value={view.id} />
-            <SelectField label="Outcome" name="outcome" options={APPEAL_OUTCOME_OPTIONS} />
-            <TextField
-              label="Resolved on"
-              name="resolvedOn"
-              type="date"
-              defaultValue={view.today}
-              required
-            />
           </ActionForm>
         </details>
       ) : null}

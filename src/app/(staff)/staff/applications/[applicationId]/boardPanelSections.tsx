@@ -2,16 +2,11 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import type { BoardPanelData } from '@/features/boards/panelData'
-import { formatCents } from '@/lib/money'
 import { addProfessionalAction, generateListAction } from '../../abutters/actions'
 import {
   addApplicantParcelAction,
   boardRegionalImpactAction,
-  certificationAction,
-  completenessVoteAction,
   desDeterminationAction,
-  finalApprovalAction,
-  setAcceptanceMeetingAction,
   terminateUnpaidAction,
 } from '../../boards/actions'
 
@@ -179,98 +174,34 @@ export function ListSection({ data }: { data: BoardPanelData }) {
 
 export function CostSection({ data }: { data: BoardPanelData }) {
   const { notice } = data
+  const ending =
+    data.canRecord && notice.dueCents > 0 && ['submitted', 'under_review'].includes(data.state)
   return (
     <section aria-label="Notice costs" className="space-y-3">
       <h3>Notice costs</h3>
       {notice.mailings === null ? (
         <p>The cost is worked out when a list is issued.</p>
       ) : (
-        <p>{`${notice.mailings} ${notice.mailings === 1 ? 'mailing' : 'mailings'} on the issued list.`}</p>
+        <p>{`${notice.mailings} ${notice.mailings === 1 ? 'mailing' : 'mailings'} on the issued list. The cost is in Fees and payments.`}</p>
       )}
-      {notice.lines.map((l) => (
-        <p
-          key={l.code}
-        >{`${l.label}: ${formatCents(l.assessedCents)} assessed, ${formatCents(l.dueCents)} still due.`}</p>
-      ))}
-      {data.canRecord &&
-      notice.dueCents > 0 &&
-      ['submitted', 'under_review'].includes(data.state) ? (
+      {ending ? (
         <details>
-          <summary>End this application for unpaid notice costs</summary>
+          <summary className="text-status-failed-fg">
+            End this application for unpaid notice costs
+          </summary>
           <ActionForm
             action={terminateUnpaidAction}
             submitLabel="End the application"
+            variant="destructive"
             className="max-w-md"
           >
             <input type="hidden" name="applicationId" value={data.applicationId} />
+            <p className="m-0 text-sm">
+              Ending the application for unpaid notice costs cannot be undone.
+            </p>
             <TextField label="Reason" name="reason" required />
           </ActionForm>
         </details>
-      ) : null}
-    </section>
-  )
-}
-
-export function DecisionSection({ data }: { data: BoardPanelData }) {
-  if (!data.certification.offered && data.certification.history.length === 0 && !data.hasExercise)
-    return null
-  return (
-    <section aria-label="Decision follow-up" className="space-y-3">
-      <h3>Decision follow-up</h3>
-      {data.certification.history.map((line) => (
-        <p key={line}>{line}</p>
-      ))}
-      {data.canRecord && data.certification.offered ? (
-        <details>
-          <summary>Record a request to the selectmen</summary>
-          <ActionForm action={certificationAction} submitLabel="Record" className="max-w-md">
-            <input type="hidden" name="applicationId" value={data.applicationId} />
-            <TextField
-              label="Date requested"
-              name="requestedOn"
-              type="date"
-              defaultValue={data.today}
-              required
-            />
-            <SelectField
-              label="Outcome"
-              name="outcome"
-              options={[
-                ['pending', 'Requested, waiting'],
-                ['certified', 'Certified by the selectmen'],
-                ['refused', 'The selectmen refused'],
-              ]}
-            />
-            <TextField label="Date decided, if certified" name="decidedOn" type="date" />
-          </ActionForm>
-        </details>
-      ) : null}
-      {data.hasExercise ? (
-        <>
-          <p>
-            {data.exerciseText === null
-              ? 'The deadline to exercise the approval starts when final approval is recorded.'
-              : `The approval must be exercised by ${data.exerciseText}.`}
-          </p>
-          {data.canRecord &&
-          data.exerciseText === null &&
-          ['decided', 'issued'].includes(data.state) ? (
-            <ActionForm
-              action={finalApprovalAction}
-              submitLabel="Record final approval"
-              className="max-w-md"
-            >
-              <input type="hidden" name="applicationId" value={data.applicationId} />
-              <TextField
-                label="Date of final approval"
-                name="finalOn"
-                type="date"
-                defaultValue={data.today}
-                required
-              />
-            </ActionForm>
-          ) : null}
-        </>
       ) : null}
     </section>
   )

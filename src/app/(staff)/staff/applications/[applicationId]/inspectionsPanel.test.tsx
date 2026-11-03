@@ -39,6 +39,7 @@ function data(history: InspectionHistoryRow[], reinspectableIds: string[]): Insp
     rowVersion: 1,
     today: '2026-11-02',
     reinspectableIds,
+    takesRequests: true,
   }
 }
 

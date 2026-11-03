@@ -1,60 +1,17 @@
 import { ActionForm } from '@/components/ActionForm'
-import { NextStep } from '@/components/layout/NextStep'
 import { StatusChip } from '@/components/StatusChip'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
-import { STATE_LABELS, TERMINAL_STATES } from '@/features/applications/states'
+import { TERMINAL_STATES } from '@/features/applications/states'
 import type { AdjustmentKind } from '@/features/clocks/explainClock'
 import { partyLine } from '@/features/projects/partyRoleLabels'
 import { formatCivilDate } from '@/lib/formatDate'
-import {
-  applyConditionAction,
-  markCompleteAction,
-  setConditionStatusAction,
-  setSubstepAction,
-  transitionAction,
-} from './actions'
+import { applyConditionAction, markCompleteAction, setConditionStatusAction } from './actions'
 import { adjustClockAction } from './clockFeeActions'
-
-export function TransitionBar({ view }: { view: StaffApplicationView }) {
-  const mayIssue = view.permissions.canIssue
-  const allowed = view.nextTransitions.filter(
-    (to) => mayIssue || !['issued', 'decided', 'denied'].includes(to),
-  )
-  if (allowed.length === 0 && view.substeps.length === 0) return null
-  return (
-    <NextStep>
-      {allowed.map((to, index) => (
-        <ActionForm
-          key={to}
-          action={transitionAction}
-          submitLabel={`Move to ${STATE_LABELS[to].toLowerCase()}`}
-          variant={index === 0 ? 'default' : 'outline'}
-        >
-          <input type="hidden" name="applicationId" value={view.id} />
-          <input type="hidden" name="to" value={to} />
-          <input type="hidden" name="expectedRowVersion" value={view.rowVersion} />
-        </ActionForm>
-      ))}
-      {view.substeps.length === 0 ? null : (
-        <ActionForm action={setSubstepAction} submitLabel="Set step">
-          <input type="hidden" name="applicationId" value={view.id} />
-          <input type="hidden" name="expectedRowVersion" value={view.rowVersion} />
-          <SelectField
-            label="Step"
-            name="substep"
-            defaultValue={view.substep ?? ''}
-            options={view.substeps.map((s): [string, string] => [s.key, s.label])}
-          />
-        </ActionForm>
-      )}
-    </NextStep>
-  )
-}
 
 export function PartiesPanel({ view }: { view: StaffApplicationView }) {
   return (
-    <section aria-label="Parties">
+    <section aria-label="Parties" id="parties">
       <h2>Parties</h2>
       {view.parties.length === 0 ? <p>No parties are on this project.</p> : null}
       <ul>
@@ -74,13 +31,18 @@ export function PartiesPanel({ view }: { view: StaffApplicationView }) {
   )
 }
 
-export function CompletenessPanel({ view }: { view: StaffApplicationView }) {
-  const applies =
+export function completenessApplies(view: StaffApplicationView): boolean {
+  return (
     view.classification === 'nh.building_permit' &&
     view.completedDate === null &&
     ['submitted', 'under_review'].includes(view.state)
+  )
+}
+
+export function CompletenessPanel({ view }: { view: StaffApplicationView }) {
+  const applies = completenessApplies(view)
   return (
-    <section aria-label="Completeness">
+    <section aria-label="Completeness" id="completeness">
       <h2>Completeness</h2>
       <p>
         {view.completedDate === null
@@ -149,14 +111,14 @@ export function ClockAdjustForm({
 export function ConditionsPanel({ view }: { view: StaffApplicationView }) {
   const editable = view.permissions.canIssue && !TERMINAL_STATES.includes(view.state)
   return (
-    <section aria-label="Conditions">
+    <section aria-label="Conditions" id="conditions">
       <h2>Conditions</h2>
       {view.conditions.length === 0 ? <p>No conditions are applied.</p> : null}
-      <ul className="list-none p-0">
+      <ul className="m-0 list-none p-0">
         {view.conditions.map((c) => (
           <li
             key={c.id}
-            className="my-2 flex flex-wrap items-center justify-between gap-3 rounded-lg border bg-surface p-3"
+            className="record-item flex flex-wrap items-center justify-between gap-3 pb-3"
           >
             <span>
               {`${c.textSnapshot}${c.blocksIssuance ? ' (blocks issuance)' : ''}`}
