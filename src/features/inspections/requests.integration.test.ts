@@ -110,6 +110,7 @@ describe('inspection requests', () => {
         appellantName: 'Neighbor',
       },
       signal,
+      { now: new Date('2027-12-31T17:00:00Z') },
     )
     expect(appeal.ok).toBe(true)
     const r = await request(w.world.staff, permit.applicationId, 'footing')
@@ -294,6 +295,7 @@ describe('inspection requests', () => {
         appellantName: 'Neighbor',
       },
       signal,
+      { now: new Date('2027-12-31T17:00:00Z') },
     )
     const copy = await describeIntakeBlock(
       handle.db,

@@ -324,6 +324,7 @@ describe('permit state effects', () => {
         appellantName: 'Neighbor',
       },
       signal,
+      { now: new Date('2027-12-31T17:00:00Z') },
     )
     expect(appeal.ok).toBe(true)
     for (const id of [a, b]) {

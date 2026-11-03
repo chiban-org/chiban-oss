@@ -239,6 +239,7 @@ describe('recording results', () => {
         appellantName: 'Neighbor',
       },
       signal,
+      { now: new Date('2027-12-31T17:00:00Z') },
     )
     await handle.db
       .update(inspections)

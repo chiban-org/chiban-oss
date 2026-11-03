@@ -165,6 +165,7 @@ describe('certificate of occupancy', () => {
         appellantName: 'Neighbor',
       },
       signal,
+      { now: new Date('2027-12-31T17:00:00Z') },
     )
     expect(await issue(permit.applicationId)).toEqual({ ok: false, error: 'permit_suspended' })
   })

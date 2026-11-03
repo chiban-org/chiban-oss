@@ -189,6 +189,7 @@ describe('portal inspection requests', () => {
         appellantName: 'Neighbor',
       },
       new AbortController().signal,
+      { now: new Date('2027-12-31T17:00:00Z') },
     )
     const html = await render(permit.applicationId)
     expect(html).toContain('Inspections are paused while this permit is under appeal.')
