@@ -1,10 +1,9 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { ActionForm } from '@/components/ActionForm'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
-import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { hasCapability } from '@/features/authz/capabilities'
 import { KIND_LABELS } from '@/features/config/kindLabels'
 import { isConfigKind } from '@/features/config/kinds'
 import {
@@ -16,17 +15,8 @@ import {
 import { listKeysOfKind } from '@/features/config/settingsViews'
 import { clearHref, type RawSearchParams } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
-import { loadPack } from '@/features/packs/loadPack'
 import { recordStaffContext } from '@/server/requireStaff'
-import { startDraftAction } from '../actions'
-
-const SINGLETON_KINDS = [
-  'payment_settings',
-  'inspection_settings',
-  'board_settings',
-  'regional_contacts',
-  'review_routes',
-]
+import { StartDraft } from './StartDraft'
 
 interface Props {
   params: Promise<{ kind: string }>
@@ -39,12 +29,15 @@ export default async function SettingsKindPage({ params, searchParams }: Props) 
   if (!isConfigKind(kind)) notFound()
   const ctx = await recordStaffContext()
   if (ctx === null) return <NoPermission title="Settings" action="change settings" />
-  const all = await listKeysOfKind(ctx.db, kind, ctx.signal)
+  const [all, canEdit] = await Promise.all([
+    listKeysOfKind(ctx.db, kind, ctx.signal),
+    hasCapability(ctx.db, ctx.actor.userId, 'config.edit', ctx.signal),
+  ])
+  const named = all.some((row) => row.label !== null)
   const path = `/staff/settings/${kind}`
   const { rows, chips } = arrangeKeyRows(path, all, view)
   const links = sortLinks(path, view.params, KEY_SORT, view.sort)
   const clear = clearHref(path, view.params, KEY_FILTER_PARAMS)
-  const townRules = loadPack().rules.filter((r) => r.kind === 'town_setting')
   return (
     <main data-wide="">
       <p>
@@ -56,6 +49,7 @@ export default async function SettingsKindPage({ params, searchParams }: Props) 
       {all.length === 0 ? <p>Nothing is configured here yet.</p> : null}
       {all.length === 0 ? null : (
         <>
+          <p className="text-muted-foreground">By key, A to Z.</p>
           <div className="toolbar my-3">
             <QuickFilters label="Quick filters" groups={chips} clearHref={clear} />
           </div>
@@ -67,6 +61,7 @@ export default async function SettingsKindPage({ params, searchParams }: Props) 
                 <thead>
                   <tr>
                     <SortHeader label="Key" link={links.key} />
+                    {named ? <SortHeader label="Name" link={links.label} /> : null}
                     <SortHeader label="Published" link={links.published} />
                     <SortHeader label="Draft" link={links.draft} />
                   </tr>
@@ -82,6 +77,7 @@ export default async function SettingsKindPage({ params, searchParams }: Props) 
                           {row.key}
                         </Link>
                       </td>
+                      {named ? <td>{row.label}</td> : null}
                       <td>
                         {row.publishedVersion === null
                           ? 'Not published'
@@ -96,26 +92,7 @@ export default async function SettingsKindPage({ params, searchParams }: Props) 
           </div>
         </>
       )}
-      <h2>Start a new one</h2>
-      <ActionForm action={startDraftAction} submitLabel="Start a draft" className="max-w-md">
-        <input type="hidden" name="kind" value={kind} />
-        {kind === 'town_rule_setting' ? (
-          <SelectField
-            label="Rule"
-            name="key"
-            options={townRules.map((r): [string, string] => [r.key, r.label])}
-          />
-        ) : SINGLETON_KINDS.includes(kind) ? (
-          <input type="hidden" name="key" value="default" />
-        ) : (
-          <TextField
-            label="Key"
-            name="key"
-            required
-            hint="Letters, numbers, hyphens, underscores, and dots. Other items refer to it by this key."
-          />
-        )}
-      </ActionForm>
+      {canEdit ? <StartDraft kind={kind} /> : null}
     </main>
   )
 }

@@ -3,6 +3,7 @@ import type { DbOrTx } from '@/db/client'
 import { configVersions, users } from '@/db/schema'
 import { CONFIG_KINDS, type ConfigKind } from '@/features/config/kinds'
 import { skeletonBody } from '@/features/config/skeletons'
+import { loadPack } from '@/features/packs/loadPack'
 
 export interface KindSummary {
   kind: ConfigKind
@@ -24,8 +25,21 @@ export async function summarizeKinds(db: DbOrTx, signal: AbortSignal): Promise<K
 
 export interface KeyRow {
   key: string
+  label: string | null
   publishedVersion: number | null
   hasDraft: boolean
+}
+
+function stringField(body: unknown, field: string): string | null {
+  if (typeof body !== 'object' || body === null) return null
+  const value: unknown = new Map(Object.entries(body)).get(field)
+  return typeof value === 'string' && value !== '' ? value : null
+}
+
+export function labelOfBody(kind: ConfigKind, body: unknown): string | null {
+  if (kind !== 'town_rule_setting') return stringField(body, 'label')
+  const ruleKey = stringField(body, 'ruleKey')
+  return loadPack().rules.find((r) => r.key === ruleKey)?.label ?? null
 }
 
 export async function listKeysOfKind(
@@ -41,9 +55,15 @@ export async function listKeysOfKind(
     .orderBy(asc(configVersions.key), asc(configVersions.version))
   const byKey = new Map<string, KeyRow>()
   for (const row of rows) {
-    const held = byKey.get(row.key) ?? { key: row.key, publishedVersion: null, hasDraft: false }
+    const held = byKey.get(row.key) ?? {
+      key: row.key,
+      label: null,
+      publishedVersion: null,
+      hasDraft: false,
+    }
     if (row.status === 'published') held.publishedVersion = row.version
     if (row.status === 'draft') held.hasDraft = true
+    if (row.status !== 'superseded') held.label ??= labelOfBody(kind, row.body)
     byKey.set(row.key, held)
   }
   return [...byKey.values()]

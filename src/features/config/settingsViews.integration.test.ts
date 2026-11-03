@@ -1,6 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { adoptStarter } from '@/features/config/adoptStarter'
-import { getEditorState, listKeysOfKind, summarizeKinds } from '@/features/config/settingsViews'
+import {
+  getEditorState,
+  labelOfBody,
+  listKeysOfKind,
+  summarizeKinds,
+} from '@/features/config/settingsViews'
 import { saveDraft } from '@/features/config/store'
 import { FORM_BODY, saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -40,9 +45,31 @@ describe('settings views', () => {
     await saveDraft(handle.db, admin, { kind: 'form', key: 'b-form', body: FORM_BODY }, signal)
     const keys = await listKeysOfKind(handle.db, 'form', signal)
     expect(keys).toEqual([
-      { key: 'a-form', publishedVersion: 1, hasDraft: true },
-      { key: 'b-form', publishedVersion: null, hasDraft: true },
+      { key: 'a-form', label: 'Building permit form', publishedVersion: 1, hasDraft: true },
+      { key: 'b-form', label: 'Building permit form', publishedVersion: null, hasDraft: true },
     ])
+  })
+
+  it('names a town rule setting by the pack rule it sets and leaves an unnamed key blank', async () => {
+    const admin = await staffActor(handle.db, 'admin')
+    await adoptStarter(handle.db, admin, 'nh.starter.electrical', signal)
+    const [type] = await listKeysOfKind(handle.db, 'application_type', signal)
+    expect(type?.label).toBe('Electrical permit')
+    await saveDraft(
+      handle.db,
+      admin,
+      {
+        kind: 'town_rule_setting',
+        key: 'town.bp.expiration',
+        body: { ruleKey: 'town.bp.expiration', value: 2 },
+      },
+      signal,
+    )
+    const [rule] = await listKeysOfKind(handle.db, 'town_rule_setting', signal)
+    expect(rule?.label).not.toBeNull()
+    expect(rule?.label).not.toBe('town.bp.expiration')
+    expect(labelOfBody('town_rule_setting', { ruleKey: 'no.such.rule', value: 1 })).toBeNull()
+    expect(labelOfBody('fee_schedule', { lines: [] })).toBeNull()
   })
 
   it('editor state prefers the draft, then the published body, then a skeleton', async () => {

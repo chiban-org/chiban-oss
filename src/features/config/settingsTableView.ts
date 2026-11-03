@@ -8,8 +8,8 @@ import {
 import {
   type ChipGroupView,
   chipGroups,
-  filterValues,
   labeledOptions,
+  singleValue,
 } from '@/features/dataTable/quickFilters'
 import { parseSort, type SortConfig, type SortState } from '@/features/dataTable/sort'
 import type { RuleSummary } from '@/features/packs/ruleSummary'
@@ -50,10 +50,10 @@ export function sortRuleSummaries(rows: readonly RuleSummary[], state: SortState
   })
 }
 
-export type KeySortKey = 'order' | 'key' | 'published' | 'draft'
+export type KeySortKey = 'order' | 'key' | 'label' | 'published' | 'draft'
 export const KEY_SORT: SortConfig<KeySortKey> = {
   defaultKey: 'order',
-  columns: { order: 'asc', key: 'asc', published: 'desc', draft: 'desc' },
+  columns: { order: 'asc', key: 'asc', label: 'asc', published: 'desc', draft: 'desc' },
 }
 
 export const KEY_FILTER_PARAMS = ['published', 'draft'] as const
@@ -82,8 +82,8 @@ export function readKeyListView(raw: RawSearchParams): KeyListView {
   return {
     params,
     sort: parseSort(KEY_SORT, params),
-    published: filterValues(params, 'published', PUBLISHED_VALUES),
-    draft: filterValues(params, 'draft', DRAFT_VALUES),
+    published: singleValue(params, 'published', PUBLISHED_VALUES),
+    draft: singleValue(params, 'draft', DRAFT_VALUES),
   }
 }
 
@@ -102,6 +102,7 @@ export function arrangeKeyRows(
   const visible = sortRows(filterRows(rows, groups), view.sort, {
     order: null,
     key: (r) => r.key,
+    label: (r) => r.label,
     published: (r) => r.publishedVersion,
     draft: (r) => (r.hasDraft ? 1 : 0),
   })
@@ -114,8 +115,14 @@ export function arrangeKeyRows(
       param: 'published',
       label: 'Published',
       options: labeledOptions(PUBLISHED_LABELS, counts.get('published')),
+      single: true,
     },
-    { param: 'draft', label: 'Draft', options: labeledOptions(DRAFT_LABELS, counts.get('draft')) },
+    {
+      param: 'draft',
+      label: 'Draft',
+      options: labeledOptions(DRAFT_LABELS, counts.get('draft')),
+      single: true,
+    },
   ])
   return { rows: visible, chips }
 }

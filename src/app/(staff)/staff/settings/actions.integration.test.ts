@@ -2,6 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { configVersions } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { publishConfig } from '@/features/config/publish'
+import { listKeysOfKind } from '@/features/config/settingsViews'
 import { getPublished, listVersions } from '@/features/config/store'
 import { appTypeBody, FORM_BODY } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -105,6 +106,14 @@ describe('settings actions', () => {
       fieldErrors: { _form: expect.stringContaining('permission') },
     })
     expect(await getPublished(handle.db, 'form', 'staff-form', signal)).toBeNull()
+  })
+
+  it('starting a draft as staff without config.edit is forbidden and saves nothing', async () => {
+    state.actor = await staffActor(handle.db, 'staff')
+    const result = await actions.startDraftAction(form({ kind: 'template', key: 'staff-letter' }))
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining('permission') })
+    const keys = (await listKeysOfKind(handle.db, 'template', signal)).map((k) => k.key)
+    expect(keys).not.toContain('staff-letter')
   })
 
   it('publish action without csrf token is refused', async () => {
