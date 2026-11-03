@@ -151,7 +151,7 @@ describe('/staff/applications page', () => {
     expect(byDue).toMatch(
       /<th scope="col" aria-sort="ascending"[^>]*><a[^>]*href="\/staff\/applications\?sort=due&amp;dir=desc"/,
     )
-    for (const key of ['number', 'project', 'parcel', 'status', 'fees', 'reviewers', 'received']) {
+    for (const key of ['number', 'parcel', 'status', 'fees', 'reviewers', 'received']) {
       expect(byDue).toContain(`href="/staff/applications?sort=${key}&amp;dir=`)
     }
     const byNumber = await render({ sort: 'number', dir: 'desc' })

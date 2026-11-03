@@ -37,31 +37,18 @@ function HeaderLink({ label, link }: { label: string; link: SortLink | undefined
   )
 }
 
-export interface SecondarySort {
-  label: string
-  link?: SortLink | undefined
-}
-
 export function SortHeader({
   label,
   link,
   className,
-  secondary,
 }: {
   label: string
   link?: SortLink | undefined
   className?: string
-  secondary?: SecondarySort
 }) {
-  const direction = link?.direction ?? secondary?.link?.direction ?? null
   return (
-    <th scope="col" aria-sort={ariaSort(direction)} className={className}>
+    <th scope="col" aria-sort={ariaSort(link?.direction ?? null)} className={className}>
       <HeaderLink label={label} link={link} />
-      {secondary === undefined ? null : (
-        <span className="mt-0.5 block font-normal">
-          <HeaderLink label={secondary.label} link={secondary.link} />
-        </span>
-      )}
     </th>
   )
 }

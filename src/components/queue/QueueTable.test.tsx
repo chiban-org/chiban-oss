@@ -1,8 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { CsrfProvider } from '@/components/CsrfProvider'
+import { QueueTable } from '@/components/queue/QueueTable'
 import { d, key, row, selectedNumber, setup } from '@/components/queue/queueTestKit'
 import { findIsoDates } from '@/test/leaks'
+
+const noopAssign = () => Promise.resolve({ ok: true as const, message: 'Assigned.' })
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ push: vi.fn() }) }))
 
@@ -45,6 +49,27 @@ describe('QueueTable cells', () => {
     expect(screen.getByText('Feb 10, 2027')).toBeTruthy()
     expect(screen.getByText('Not received')).toBeTruthy()
     expect(screen.queryByRole('columnheader', { name: /^Project/ })).toBeNull()
+  })
+
+  it('gives the Application heading a single sort link', () => {
+    const link = (key: string) => ({ href: `/staff/applications?sort=${key}`, direction: null })
+    const sort = Object.fromEntries(
+      ['number', 'project', 'parcel', 'status', 'due', 'fees', 'reviewers', 'received'].map((k) => [
+        k,
+        link(k),
+      ]),
+    ) as unknown as Parameters<typeof QueueTable>[0]['sort']
+    render(
+      <CsrfProvider token="t1">
+        <QueueTable rows={[row({})]} reviewers={[]} assign={noopAssign} sort={sort} />
+      </CsrfProvider>,
+    )
+    const heading = screen.getByRole('columnheader', { name: /^Application/ })
+    expect(
+      within(heading)
+        .getAllByRole('link')
+        .map((a) => a.textContent),
+    ).toEqual(['Application'])
   })
 
   it('gives the parcel its own column linking to the parcel page', () => {

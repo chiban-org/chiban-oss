@@ -33,7 +33,6 @@ interface Props {
 function sortOptions(sort: Record<QueueSortKey, SortLink>) {
   return [
     { label: 'Number', link: sort.number },
-    { label: 'Project', link: sort.project },
     { label: 'Parcel', link: sort.parcel },
     { label: 'Status', link: sort.status },
     { label: 'Due', link: sort.due },
@@ -47,11 +46,7 @@ function QueueHead({ sort }: { sort: Record<QueueSortKey, SortLink> | undefined 
   return (
     <thead className="max-md:hidden">
       <tr>
-        <SortHeader
-          label="Application"
-          link={sort?.number}
-          secondary={{ label: 'Project', link: sort?.project }}
-        />
+        <SortHeader label="Application" link={sort?.number} />
         <SortHeader label="Parcel" link={sort?.parcel} />
         <SortHeader label="Status" link={sort?.status} />
         <SortHeader label="Due" link={sort?.due} />
