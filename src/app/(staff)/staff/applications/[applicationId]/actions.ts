@@ -4,6 +4,8 @@ import type { Db } from '@/db/client'
 import { loadApplicationContext } from '@/features/applications/context'
 import { CORE_STATES, type CoreState } from '@/features/applications/states'
 import { setSubstep, transitionApplication } from '@/features/applications/transition'
+import type { Actor } from '@/features/auth/actor'
+import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { recordCodeEdition } from '@/features/building/codeEdition'
 import { markComplete } from '@/features/building/completeness'
@@ -22,11 +24,13 @@ const BOARD_DECISION_ONLY =
 
 async function isBareBoardDecision(
   db: Db,
+  actor: Actor,
   applicationId: string,
   to: string,
   signal: AbortSignal,
 ): Promise<boolean> {
   if (to !== 'decided' && to !== 'denied') return false
+  if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return false
   const app = await loadApplicationContext(db, applicationId, signal)
   return app !== null && boardOfApplication(app) !== null
 }
@@ -43,7 +47,7 @@ export async function transitionAction(formData: FormData): Promise<ActionResult
     ) {
       return INVALID
     }
-    if (await isBareBoardDecision(db, applicationId, to, signal)) {
+    if (await isBareBoardDecision(db, actor, applicationId, to, signal)) {
       return { ok: false, error: BOARD_DECISION_ONLY }
     }
     const result =

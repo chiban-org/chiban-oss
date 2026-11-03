@@ -5,6 +5,7 @@ import { getStaffApplicationView } from '@/features/applications/staffApplicatio
 import { makeApplication } from '@/test/applicationFixtures'
 import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { staffActor } from '@/test/parcels'
 
 interface MockState {
   db: unknown
@@ -90,5 +91,22 @@ describe('board application decisions', () => {
     )
     expect(view?.nextTransitions).not.toContain('decided')
     expect(view?.nextTransitions).not.toContain('denied')
+  })
+
+  it('a reviewer without board access gets the same refusal for a board application as for any other', async () => {
+    const board = await makeApplication(
+      handle.db,
+      world,
+      { state: 'under_review' },
+      undefined,
+      'SPR',
+    )
+    const plain = await makeApplication(handle.db, world, { state: 'under_review' })
+    state.actor = await staffActor(handle.db, 'reviewer')
+    const send = (applicationId: string) =>
+      transitionAction(form({ applicationId, to: 'decided', expectedRowVersion: '1' }))
+    const onBoard = await send(board.applicationId)
+    expect(onBoard.ok).toBe(false)
+    expect(onBoard).toEqual(await send(plain.applicationId))
   })
 })
