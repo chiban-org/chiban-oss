@@ -110,12 +110,20 @@ export async function endMembership(
   membershipId: string,
   signal: AbortSignal,
   now: Date = new Date(),
-): Promise<Result<void, 'forbidden' | 'not_found'>> {
+): Promise<Result<void, 'forbidden' | 'not_found' | 'already_ended' | 'not_started'>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.manage_members', signal))) {
     return err('forbidden')
   }
-  const yesterday = addDays(await townToday(db, now, signal), -1)
+  const today = await townToday(db, now, signal)
+  const yesterday = addDays(today, -1)
+  const [current] = await db
+    .select({ termStart: boardMemberships.termStart, termEnd: boardMemberships.termEnd })
+    .from(boardMemberships)
+    .where(eq(boardMemberships.id, membershipId))
+  if (current === undefined) return err('not_found')
+  if (current.termEnd !== null && current.termEnd < today) return err('already_ended')
+  if (current.termStart > today) return err('not_started')
   const ended = await db
     .update(boardMemberships)
     .set({ termEnd: yesterday })

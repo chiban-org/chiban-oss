@@ -74,6 +74,8 @@ const COPY: Record<string, string> = {
     'The email could not be sent. The record was saved, so check the address and try again.',
   empty: 'There is nothing to include yet.',
   agenda_not_published: 'Publish the agenda before making the meeting packet.',
+  already_ended: 'That membership has already ended.',
+  not_started: 'That term has not started yet.',
   packet_exists: 'This meeting already has a packet. Send it from Board packets.',
   already_published: 'This agenda is already published. Reopen it to change it.',
 }

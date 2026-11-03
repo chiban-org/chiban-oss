@@ -1,85 +1,119 @@
-import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
-import { SelectField, TextField } from '@/components/staff/fields'
+import { FilterTabs } from '@/components/dataTable/FilterTabs'
+import { SortHeader } from '@/components/dataTable/SortHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { loadMembersView } from '@/features/boards/membersView'
+import {
+  MEMBER_SORT,
+  MEMBERS_PATH,
+  type MemberSortKey,
+  readMembersView,
+} from '@/features/boards/membersParams'
+import { loadMembersView, type MemberRow } from '@/features/boards/membersView'
+import type { RawSearchParams } from '@/features/dataTable/params'
+import { filterTabs } from '@/features/dataTable/quickFilters'
+import { type SortLink, sortLinks } from '@/features/dataTable/sort'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
-import { endMembershipAction, inviteMemberAction } from './actions'
+import { endMembershipAction } from './actions'
+import { AddMember } from './MemberForm'
 
 export const dynamic = 'force-dynamic'
 
-export default async function BoardMembersPage() {
+function MembersTable({
+  rows,
+  links,
+  ending,
+}: {
+  rows: MemberRow[]
+  links: Record<MemberSortKey, SortLink>
+  ending: boolean
+}) {
+  return (
+    <table className="w-full min-w-[48rem] text-sm">
+      <caption className="sr-only">Board members</caption>
+      <thead>
+        <tr>
+          <SortHeader label="Name" link={links.name} />
+          <SortHeader label="Email" link={links.email} />
+          <SortHeader label="Board" link={links.board} />
+          <SortHeader label="Role" link={links.role} />
+          <SortHeader label="Term" link={links.term} />
+          <SortHeader label="Status" link={links.status} />
+          {ending ? (
+            <th scope="col">
+              <span className="sr-only">End membership</span>
+            </th>
+          ) : null}
+        </tr>
+      </thead>
+      <tbody>
+        {rows.map((row) => (
+          <tr key={row.membershipId} className="align-top">
+            <td className="font-semibold">{row.name}</td>
+            <td>{row.email}</td>
+            <td>{row.boardName}</td>
+            <td>{row.titleText}</td>
+            <td>{row.termText}</td>
+            <td>{row.statusText}</td>
+            {ending ? (
+              <td>
+                {row.active ? (
+                  <ActionForm action={endMembershipAction} submitLabel="End membership" compact>
+                    <input type="hidden" name="membershipId" value={row.membershipId} />
+                  </ActionForm>
+                ) : null}
+              </td>
+            ) : null}
+          </tr>
+        ))}
+      </tbody>
+    </table>
+  )
+}
+
+export default async function BoardMembersPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>
+}) {
+  const { params, tab, sort } = readMembersView(await searchParams)
   const ctx = await requireStaffContext()
   const today = await townToday(ctx.db, new Date(), ctx.signal)
-  const view = await loadMembersView(ctx.db, ctx.actor, ctx.signal, today)
+  const view = await loadMembersView(ctx.db, ctx.actor, { today, tab, sort }, ctx.signal)
   if (view === null) return <NoPermission title="Board members" action="manage board members" />
+  const tabs = filterTabs(MEMBERS_PATH, params, {
+    param: 'tab',
+    label: 'Members',
+    defaultTab: 'active',
+    options: [
+      { value: 'active', label: 'Active', count: view.counts.get('active') ?? 0 },
+      { value: 'ended', label: 'Ended', count: view.counts.get('ended') ?? 0 },
+    ],
+  })
   return (
-    <main className="space-y-6">
-      <p>
-        <Link href="/staff/boards" className="text-action underline">
-          Boards
-        </Link>
-      </p>
+    <main data-wide="" className="space-y-6">
       <h1>Board members</h1>
-      <p className="max-w-prose text-muted-foreground">
+      <p className="max-w-prose">
         Members sign in with a link sent to their email. They see only their own board&apos;s
-        meetings, and only after the agenda is published.
+        meetings, and only after the agenda is published. Listed by board, then name.
       </p>
-      {view.rows.length === 0 ? <p>No board members have been added yet.</p> : null}
-      <ul className="m-0 list-none space-y-2 p-0">
-        {view.rows.map((row) => (
-          <li key={row.membershipId} className="flex flex-wrap items-end gap-4 border-b pb-2">
-            <p className="m-0 min-w-72 flex-1">
-              {`${row.name} (${row.email}), ${row.titleText}, ${row.boardName}. ${row.termText}. ${row.active ? 'Active' : 'Not active'}.`}
-            </p>
-            {row.active ? (
-              <ActionForm action={endMembershipAction} submitLabel="End membership">
-                <input type="hidden" name="membershipId" value={row.membershipId} />
-              </ActionForm>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-      <details>
-        <summary>Add a board member</summary>
-        <ActionForm action={inviteMemberAction} submitLabel="Add member" className="max-w-md">
-          <TextField label="Name" name="displayName" required />
-          <TextField label="Email address" name="email" type="email" required />
-          <SelectField
-            label="Board"
-            name="board"
-            options={[
-              ['planning_board', 'Planning Board'],
-              ['zba', 'Zoning Board of Adjustment'],
-            ]}
+      <FilterTabs label="Members" tabs={tabs} />
+      <div className="table-panel">
+        {view.rows.length === 0 ? (
+          <p className="px-5 py-8">
+            {tab === 'active'
+              ? 'No board members yet. Add the first one below.'
+              : 'No membership has ended yet.'}
+          </p>
+        ) : (
+          <MembersTable
+            rows={view.rows}
+            links={sortLinks(MEMBERS_PATH, params, MEMBER_SORT, sort)}
+            ending={tab === 'active'}
           />
-          <SelectField
-            label="Role on the board"
-            name="title"
-            options={[
-              ['member', 'Member'],
-              ['chair', 'Chair'],
-              ['vice_chair', 'Vice chair'],
-              ['alternate', 'Alternate'],
-              ['clerk', 'Clerk'],
-            ]}
-          />
-          <TextField
-            label="Term starts"
-            name="termStart"
-            type="date"
-            defaultValue={today}
-            required
-          />
-          <TextField
-            label="Term ends"
-            name="termEnd"
-            type="date"
-            hint="Leave blank if there is no end date."
-          />
-        </ActionForm>
-      </details>
+        )}
+      </div>
+      <AddMember today={today} />
     </main>
   )
 }

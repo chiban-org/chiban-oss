@@ -361,13 +361,15 @@ describe('staff and public pages', () => {
 
   it('the members page is for staff with board.manage_members only', async () => {
     state.actor = world.staff
-    const members = renderToStaticMarkup(await MembersPage())
+    const noSearch = { searchParams: Promise.resolve({}) }
+    const members = renderToStaticMarkup(await MembersPage(noSearch))
     expect(members).toContain('Add a board member')
-    expect(members).toContain(
-      'Avery Stone (member1@alderpond.example), Member, Alder Pond Planning Board.',
+    expect(members).toMatch(
+      /<td[^>]*>Avery Stone<\/td><td>member1@alderpond\.example<\/td><td>Alder Pond Planning Board<\/td><td>Member<\/td>/,
     )
+    expect(members.match(/aria-sort=/g)?.length).toBe(1)
     state.actor = await staffActor(handle.db, 'inspector')
-    expect(renderToStaticMarkup(await MembersPage())).toContain(
+    expect(renderToStaticMarkup(await MembersPage(noSearch))).toContain(
       'You do not have permission to manage board members.',
     )
   })
