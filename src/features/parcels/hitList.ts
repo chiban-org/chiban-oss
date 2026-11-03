@@ -6,15 +6,14 @@ import {
   PARCEL_STATUSES,
 } from '@/features/parcels/hitListParams'
 import type { ParcelSearchHit } from '@/features/parcels/searchParcels'
+import { type SortValue, sortRanked } from '@/lib/sortRanked'
 
 export interface HitFacets {
   statuses: ReadonlyMap<string, number>
   matched: ReadonlyMap<string, number>
 }
 
-type Keyed = string | number | null
-
-function sortKey(hit: ParcelSearchHit, key: HitSortKey): Keyed {
+function sortValue(hit: ParcelSearchHit, key: HitSortKey): SortValue {
   switch (key) {
     case 'relevance':
       return 0
@@ -26,28 +25,6 @@ function sortKey(hit: ParcelSearchHit, key: HitSortKey): Keyed {
       return hit.ownerName
     case 'matched':
       return MATCHED_ON_ORDER.indexOf(hit.matchedOn)
-  }
-}
-
-function compareKeys(a: string | number, b: string | number): number {
-  if (typeof a === 'number' || typeof b === 'number') return Number(a) - Number(b)
-  return a.localeCompare(b, 'en', { numeric: true, sensitivity: 'base' })
-}
-
-function compareHits(
-  state: SortState<HitSortKey>,
-): (
-  a: { hit: ParcelSearchHit; rank: number },
-  b: { hit: ParcelSearchHit; rank: number },
-) => number {
-  const sign = state.dir === 'asc' ? 1 : -1
-  return (a, b) => {
-    const left = sortKey(a.hit, state.key)
-    const right = sortKey(b.hit, state.key)
-    if (left === null && right !== null) return 1
-    if (right === null && left !== null) return -1
-    const order = left === null || right === null ? 0 : sign * compareKeys(left, right)
-    return order === 0 ? a.rank - b.rank : order
   }
 }
 
@@ -64,11 +41,11 @@ export function arrangeHits(
   sort: SortState<HitSortKey>,
   filters: HitFilters,
 ): ParcelSearchHit[] {
-  return hits
-    .map((hit, rank) => ({ hit, rank }))
-    .filter(({ hit }) => matches(hit, filters))
-    .sort(compareHits(sort))
-    .map(({ hit }) => hit)
+  return sortRanked(
+    hits.filter((hit) => matches(hit, filters)),
+    sort.dir,
+    (hit) => sortValue(hit, sort.key),
+  )
 }
 
 export function hitFacets(hits: readonly ParcelSearchHit[], filters: HitFilters): HitFacets {

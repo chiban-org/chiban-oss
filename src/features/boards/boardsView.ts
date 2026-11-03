@@ -31,6 +31,12 @@ export interface BoardApplicationLine {
   filedText: string
   meetingText: string | null
   deadlineText: string | null
+  typeKey: string
+  state: CoreState
+  filedOn: string | null
+  meetingOn: string | null
+  deadlineOn: string | null
+  deadlineOverdue: boolean
 }
 
 export interface BoardSection {
@@ -75,7 +81,15 @@ async function applicationLines(
       .limit(1)
     const rule =
       clock === undefined ? null : ruleByKey(loadPack(), clock.ruleKey, clock.ruleVersion)
+    const deadlineOverdue =
+      clock !== undefined && (clock.status === 'overdue' || clock.currentDue < today)
     lines.push({
+      typeKey: row.applicationTypeKey,
+      state: app.state,
+      filedOn: row.receivedDate,
+      meetingOn: schedule?.date ?? null,
+      deadlineOn: clock?.currentDue ?? null,
+      deadlineOverdue,
       id: row.id,
       number: row.number,
       typeLabel: app.typeBody.label,
@@ -85,7 +99,7 @@ async function applicationLines(
       deadlineText:
         clock === undefined || rule === null
           ? null
-          : `${rule.label}: ${formatCivilDate(clock.currentDue)}${clock.status === 'overdue' || clock.currentDue < today ? ' (overdue)' : ''}`,
+          : `${rule.label}: ${formatCivilDate(clock.currentDue)}${deadlineOverdue ? ' (overdue)' : ''}`,
     })
   }
   return lines
