@@ -13,7 +13,7 @@ export function LayerImportAction({ layerKey, remote }: LayerImportActionProps) 
   if (layerKey === 'cama') {
     return (
       <p>
-        <Link href="/staff/imports/cama" className="text-action underline">
+        <Link href="/staff/gis/imports/cama" className="text-action underline">
           Open the CAMA owner import
         </Link>
       </p>

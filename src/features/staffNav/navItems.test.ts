@@ -116,6 +116,10 @@ describe('staff navigation', () => {
     expect(sections.at(-1)?.key).toBe('account')
   })
 
+  it('marks Imports active on the CAMA owner import page', () => {
+    expect(activeNavHref('/staff/gis/imports/cama', STAFF_NAV_ITEMS)).toBe('/staff/gis/imports')
+  })
+
   it('marks the most specific nav entry for a nested page as active', () => {
     expect(activeNavHref('/staff/inspections/day', STAFF_NAV_ITEMS)).toBe('/staff/inspections/day')
     expect(activeNavHref('/staff/inspections/123', STAFF_NAV_ITEMS)).toBe('/staff/inspections')

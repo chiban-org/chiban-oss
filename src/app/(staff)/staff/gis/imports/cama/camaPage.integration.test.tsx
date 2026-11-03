@@ -24,6 +24,9 @@ vi.mock('next/navigation', () => ({
   redirect: (url: string) => {
     throw new Error(`NEXT_REDIRECT:${url}`)
   },
+  permanentRedirect: (url: string) => {
+    throw new Error(`NEXT_PERMANENT_REDIRECT:${url}`)
+  },
   useRouter: () => ({ refresh: () => undefined }),
 }))
 vi.mock('./actions', () => ({
@@ -31,13 +34,14 @@ vi.mock('./actions', () => ({
   saveCamaMappingAction: () => Promise.resolve({ ok: true, message: '' }),
   runCamaImportAction: () => Promise.resolve({ ok: false, error: '' }),
 }))
-vi.mock('../../gis/imports/actions', () => ({
+vi.mock('../actions', () => ({
   updateLayerSettingsAction: () => Promise.resolve({ ok: true, message: '' }),
   runLayerRefreshAction: () => Promise.resolve({ ok: true, message: '' }),
 }))
 
 const { default: CamaPage } = await import('./page')
-const { default: ImportsPage } = await import('../../gis/imports/page')
+const { default: ImportsPage } = await import('../page')
+const { default: OldCamaPath } = await import('@/app/(staff)/staff/imports/cama/page')
 
 const NOTICE =
   "The Avitar export layout has not been checked against a real Avitar file. The columns below are the Chiban CSV layout. Match your own file's columns with the pickers before you run an import."
@@ -112,7 +116,11 @@ describe('CAMA import page', () => {
   it('is reachable from the Imports page', async () => {
     state.actor = staff
     const html = renderToStaticMarkup(await ImportsPage({ searchParams: Promise.resolve({}) }))
-    expect(html).toContain('href="/staff/imports/cama"')
+    expect(html).toContain('href="/staff/gis/imports/cama"')
     expect(html).not.toContain('name="layerKey" value="cama"')
+  })
+
+  it('sends the old address to the page under Imports', () => {
+    expect(() => OldCamaPath()).toThrow('NEXT_PERMANENT_REDIRECT:/staff/gis/imports/cama')
   })
 })
