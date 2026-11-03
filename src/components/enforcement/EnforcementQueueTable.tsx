@@ -68,9 +68,17 @@ export function EnforcementQueueTable({
             <td>{row.statusLabel}</td>
             <td>{formatCivilDate(row.openedOn)}</td>
             <td>
-              {row.nextDue === null
-                ? 'None running'
-                : `${row.nextDue.label} ${formatCivilDate(row.nextDue.date)}`}
+              {row.nextDue === null ? (
+                <span className="text-muted-foreground">None running</span>
+              ) : (
+                <span
+                  className={
+                    row.nextDue.label === 'Answer overdue' ? 'attention font-semibold' : undefined
+                  }
+                >
+                  {`${row.nextDue.label} ${formatCivilDate(row.nextDue.date)}`}
+                </span>
+              )}
             </td>
             <td>
               {row.stay.stayed ? (

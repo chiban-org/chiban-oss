@@ -32,7 +32,13 @@ export async function listCaseQueue(
   for (const row of page.rows) {
     rows.push({
       ...row,
-      nextDue: row.nextDueOn === null ? null : { date: row.nextDueOn, label: 'Answer due' },
+      nextDue:
+        row.nextDueOn === null
+          ? null
+          : {
+              date: row.nextDueOn,
+              label: row.nextDueOn < today ? 'Answer overdue' : 'Answer due',
+            },
       stay: await stayFor(db, row.caseId, today, signal),
     })
   }

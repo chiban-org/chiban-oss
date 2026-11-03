@@ -46,11 +46,11 @@ type ListGroup = 'statuses' | 'due' | 'assigned'
 
 const ANSWER_DATE = sql`(r.answer_due->>'due')::date`
 
-function nextAnswerDue(today: CivilDate): SQL {
+function nextAnswerDue(): SQL {
   return sql`(select min(${ANSWER_DATE}) from order_service_recipients r
     join enforcement_orders o on o.id = r.order_id
     where o.case_id = ${enforcementCases.id} and r.answer_due is not null
-      and ${ANSWER_DATE} >= ${today}::date)`
+      and r.answered_on is null)`
 }
 
 function unansweredPastDue(today: CivilDate): SQL {
@@ -83,7 +83,7 @@ function sortColumns(today: CivilDate): Readonly<Record<CaseSortKey, SQLWrapper>
     where: enforcementCases.locationText,
     status: STATUS_ORDER,
     opened: enforcementCases.openedOn,
-    next: nextAnswerDue(today),
+    next: nextAnswerDue(),
     stay: stayedOn(today),
   }
 }
@@ -95,9 +95,9 @@ function dueClause(value: DueFilter, today: CivilDate): SQL {
     case 'overdue':
       return unansweredPastDue(today)
     case 'week':
-      return sql`(${nextAnswerDue(today)} <= ${addDays(today, DUE_WEEK_DAYS)}::date)`
+      return sql`(${nextAnswerDue()} between ${today}::date and ${addDays(today, DUE_WEEK_DAYS)}::date)`
     case 'none':
-      return sql`${nextAnswerDue(today)} is null`
+      return sql`${nextAnswerDue()} is null`
   }
 }
 
@@ -153,7 +153,7 @@ export async function listCasePage(
       status: enforcementCases.status,
       locationText: enforcementCases.locationText,
       openedOn: enforcementCases.openedOn,
-      nextDueOn: sql<string | null>`${nextAnswerDue(today)}::text`,
+      nextDueOn: sql<string | null>`${nextAnswerDue()}::text`,
     })
     .from(enforcementCases)
     .where(where)

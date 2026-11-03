@@ -144,9 +144,9 @@ describe('enforcement case list sorting', () => {
     expect(await ids(by('opened', 'asc'))).toEqual([cedar, birch, dune, alder, elm])
   })
 
-  it('sorts by the next answer date with cases that have none last both ways', async () => {
-    expect(await ids(by('next', 'asc'))).toEqual([birch, dune, elm, cedar, alder])
-    expect(await ids(by('next', 'desc'))).toEqual([dune, birch, elm, cedar, alder])
+  it('sorts by the next answer date, overdue first, with cases that have none last both ways', async () => {
+    expect(await ids(by('next', 'asc'))).toEqual([dune, birch, elm, cedar, alder])
+    expect(await ids(by('next', 'desc'))).toEqual([birch, dune, elm, cedar, alder])
   })
 
   it('sorts stayed cases first on the first click and last on the second', async () => {
@@ -216,8 +216,22 @@ describe('enforcement case queue rows', () => {
       TODAY,
       signal,
     )
-    expect(queue.rows[0]?.nextDue).toEqual({ date: '2027-03-05', label: 'Answer due' })
+    expect(queue.rows[0]?.nextDue?.label).toBe('Answer overdue')
+    expect(queue.rows[1]?.nextDue).toEqual({ date: '2027-03-05', label: 'Answer due' })
     expect(queue.rows.at(-1)?.nextDue).toBeNull()
+  })
+
+  it('shows an unanswered past answer date as overdue instead of none running', async () => {
+    const queue = await listCaseQueue(
+      handle.db,
+      staff,
+      { filters: { due: ['overdue'] }, limit: 25, offset: 0 },
+      TODAY,
+      signal,
+    )
+    const row = queue.rows.find((r) => r.caseId === dune)
+    expect(row?.nextDue?.label).toBe('Answer overdue')
+    expect(row?.nextDue?.date !== undefined && row.nextDue.date < TODAY).toBe(true)
   })
 
   it('agrees with the stay lookup on which cases are stayed', async () => {
