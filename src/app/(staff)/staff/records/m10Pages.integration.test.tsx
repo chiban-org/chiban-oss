@@ -139,7 +139,7 @@ describe('records screens with the demo seed', () => {
     }
     const [batch] = await handle.db.select().from(dispositionBatches)
     const batchPage = await html(
-      BatchPage({ params: Promise.resolve({ batchId: batch?.id ?? '' }) }),
+      BatchPage({ params: Promise.resolve({ batchId: batch?.id ?? '' }), ...search() }),
     )
     expect(batchPage).toContain('Disposed of')
     expectHuman(batchPage)
@@ -149,7 +149,7 @@ describe('records screens with the demo seed', () => {
     await actAs('records')
     const [batch] = await handle.db.select().from(dispositionBatches)
     const page = visibleText(
-      await html(BatchPage({ params: Promise.resolve({ batchId: batch?.id ?? '' }) })),
+      await html(BatchPage({ params: Promise.resolve({ batchId: batch?.id ?? '' }), ...search() })),
     )
     expect(page).toContain('Retention series')
     expect(page).toMatch(/Proposed by [A-Z][a-z]+ [A-Z][a-z]+ on [A-Z][a-z]+ \d{1,2}, \d{4}/)
@@ -335,7 +335,11 @@ describe('records screens with the demo seed', () => {
       .values({ asOf: '2026-10-01', proposedBy: proposer?.id ?? '' })
       .returning({ id: dispositionBatches.id })
     const render = async () =>
-      visibleText(await html(BatchPage({ params: Promise.resolve({ batchId: batch?.id ?? '' }) })))
+      visibleText(
+        await html(
+          BatchPage({ params: Promise.resolve({ batchId: batch?.id ?? '' }), ...search() }),
+        ),
+      )
     try {
       await actAs('records')
       const own = await render()
