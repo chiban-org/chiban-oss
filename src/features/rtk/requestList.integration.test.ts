@@ -46,7 +46,7 @@ beforeAll(async () => {
   oldest = await log('2027-06-20', 'Zoning minutes')
   middle = await log('2027-07-02', 'Birch Lane permits')
   recent = await log('2027-07-12', 'Culvert survey')
-  responded = await log('2027-07-05', 'Assessor cards')
+  responded = await log('2027-07-06', 'Assessor cards')
   closed = await log('2027-07-01', 'Old petition')
   await handle.db
     .update(rtkRequests)
