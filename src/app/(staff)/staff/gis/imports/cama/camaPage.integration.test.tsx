@@ -120,7 +120,10 @@ describe('CAMA import page', () => {
     expect(html).not.toContain('name="layerKey" value="cama"')
   })
 
-  it('sends the old address to the page under Imports', () => {
-    expect(() => OldCamaPath()).toThrow('NEXT_PERMANENT_REDIRECT:/staff/gis/imports/cama')
+  it('sends the old address to the page under Imports', async () => {
+    state.actor = staff
+    await expect(OldCamaPath()).rejects.toThrow('NEXT_PERMANENT_REDIRECT:/staff/gis/imports/cama')
+    state.actor = null
+    await expect(OldCamaPath()).rejects.toThrow('NEXT_REDIRECT:/staff/sign-in')
   })
 })
