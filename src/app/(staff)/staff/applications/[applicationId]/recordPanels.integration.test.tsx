@@ -110,6 +110,12 @@ describe('panels fit the application type and state', () => {
     expect(await page('SPR-2026-0002')).not.toContain('Take an inspection request')
   })
 
+  it('offers an inspection request only where the intake would take one', async () => {
+    expect(await page('BP-2025-0001')).toContain('Take an inspection request')
+    expect(await page('BP-2026-0001')).not.toContain('Take an inspection request')
+    expect(await page('BP-2026-0003')).not.toContain('Take an inspection request')
+  })
+
   it('treats a review stage with nobody assigned as a filled Reviewers panel, not an empty row', async () => {
     const html = await page('BP-2026-0002')
     const reviewers = sectionOf(html, 'Reviewers') ?? ''

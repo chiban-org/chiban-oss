@@ -3,11 +3,10 @@ import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
 import { loadApplicationContext } from '@/features/applications/context'
-import { TERMINAL_STATES } from '@/features/applications/states'
 import { hasCapability } from '@/features/authz/capabilities'
 import type { InspectionHistoryRow } from '@/features/inspections/history'
 import { listInspectionHistory } from '@/features/inspections/history'
-import { reinspectableFailureIds } from '@/features/inspections/lookup'
+import { describeIntakeBlock, reinspectableFailureIds } from '@/features/inspections/lookup'
 import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
 import { minutesToClock } from '@/features/inspections/zonedTime'
 import { townToday } from '@/features/town/today'
@@ -72,8 +71,7 @@ export async function loadInspectionsPanelData(
     takesRequests:
       app !== null &&
       app.pins.checklists.length > 0 &&
-      app.state !== 'draft' &&
-      !TERMINAL_STATES.includes(app.state),
+      (await describeIntakeBlock(ctx.db, app, ctx.signal)) === null,
   }
 }
 
