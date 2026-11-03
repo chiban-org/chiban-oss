@@ -202,11 +202,12 @@
   font-size: var(--public-min-body);
 }
 
-.public-shell :is(button, [role="button"], input, select, textarea, a.tap-target) {
+.public-shell
+  :is(button:not([role="radio"]), [role="button"], input, select, textarea, a.tap-target) {
   min-height: var(--public-min-tap-target);
 }
 
-.public-shell :is(button, [role="button"], a.tap-target) {
+.public-shell :is(button:not([role="radio"]), [role="button"], a.tap-target) {
   min-width: var(--public-min-tap-target);
 }
 

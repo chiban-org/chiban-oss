@@ -54,6 +54,16 @@ describe('public shell type size', () => {
     expect(offenders).toEqual([])
   })
 
+  it('leaves radio dots out of the tap-target size, since their label is the target', () => {
+    const sized = css
+      .split('}')
+      .filter(
+        (rule) => rule.includes('.public-shell') && rule.includes('var(--public-min-tap-target)'),
+      )
+    expect(sized.length).toBeGreaterThan(0)
+    for (const rule of sized) expect(rule).toContain('button:not([role="radio"])')
+  })
+
   it('raises the small utility sizes to the public minimum body size', () => {
     const body = ruleBody('.public-shell :is(.text-sm, .text-xs')
     expect(body).toContain('font-size: var(--public-min-body)')
