@@ -27,7 +27,7 @@ function Step({ view, kind }: { view: DecisionView; kind: StepKind }) {
     return (
       <ActionForm
         action={generateDecisionDocumentsAction}
-        submitLabel="Create the Notice of Decision and letter"
+        submitLabel="Create the Notice of Decision"
         variant="default"
       >
         <input type="hidden" name="decisionId" value={view.decisionId} />
@@ -48,8 +48,11 @@ function FilingDue({ due }: { due: NonNullable<DecisionView['filingDue']> }) {
       <p className="m-0 text-sm font-semibold text-muted-foreground">
         Minutes and written decision
       </p>
-      <p className="m-0">{`Due ${due.text}${due.overdue ? ' (overdue)' : ''}`}</p>
-      {due.overdue ? <StatusChip status="overdue" label="Overdue" /> : null}
+      {due.overdue ? (
+        <StatusChip status="overdue" label={`Due ${due.text} (overdue)`} />
+      ) : (
+        <p className="m-0">{`Due ${due.text}`}</p>
+      )}
     </div>
   )
 }
