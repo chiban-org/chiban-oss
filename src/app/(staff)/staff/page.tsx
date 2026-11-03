@@ -25,13 +25,13 @@ interface Attention {
 }
 
 const ATTENTION: readonly Attention[] = [
-  { label: 'Past a deadline', href: '/staff/queue?overdue=1', filters: { overdueOnly: true } },
+  { label: 'Past a deadline', href: '/staff/queue?due=overdue', filters: { due: ['overdue'] } },
   {
     label: 'Assigned to you for review',
-    href: '/staff/queue?mine=1',
-    filters: { assignedToMe: true },
+    href: '/staff/queue?assigned=me',
+    filters: { assigned: ['me'] },
   },
-  { label: 'Waiting on fees', href: '/staff/queue?unpaid=1', filters: { awaitingPayment: true } },
+  { label: 'Waiting on fees', href: '/staff/queue?flag=fees', filters: { flags: ['fees'] } },
   {
     label: 'Submitted and not yet started',
     href: '/staff/queue?state=submitted',

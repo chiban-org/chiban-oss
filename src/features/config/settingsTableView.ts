@@ -1,0 +1,121 @@
+import { KIND_LABELS } from '@/features/config/kindLabels'
+import type { KeyRow, KindSummary } from '@/features/config/settingsViews'
+import {
+  type RawSearchParams,
+  readTableParams,
+  type TableParams,
+} from '@/features/dataTable/params'
+import {
+  type ChipGroupView,
+  chipGroups,
+  filterValues,
+  labeledOptions,
+} from '@/features/dataTable/quickFilters'
+import { parseSort, type SortConfig, type SortState } from '@/features/dataTable/sort'
+import type { RuleSummary } from '@/features/packs/ruleSummary'
+import { countGroups, filterRows } from '@/features/staffTables/listFilters'
+import { sortRows } from '@/features/staffTables/sortRows'
+
+export const SETTINGS_PATH = '/staff/settings'
+
+export const KIND_TABLE_SCOPE = 'kinds'
+export const RULE_TABLE_SCOPE = 'rules'
+
+export type KindSortKey = 'order' | 'kind' | 'items'
+export const KIND_SORT: SortConfig<KindSortKey> = {
+  defaultKey: 'order',
+  columns: { order: 'asc', kind: 'asc', items: 'desc' },
+}
+
+export type RuleSortKey = 'order' | 'rule' | 'citation' | 'policy'
+export const RULE_SORT: SortConfig<RuleSortKey> = {
+  defaultKey: 'order',
+  columns: { order: 'asc', rule: 'asc', citation: 'asc', policy: 'asc' },
+}
+
+export function sortKindSummaries(rows: readonly KindSummary[], state: SortState<KindSortKey>) {
+  return sortRows(rows, state, {
+    order: null,
+    kind: (r) => KIND_LABELS[r.kind],
+    items: (r) => r.keys,
+  })
+}
+
+export function sortRuleSummaries(rows: readonly RuleSummary[], state: SortState<RuleSortKey>) {
+  return sortRows(rows, state, {
+    order: null,
+    rule: (r) => r.label,
+    citation: (r) => r.citation.label,
+    policy: (r) => r.policy,
+  })
+}
+
+export type KeySortKey = 'order' | 'key' | 'published' | 'draft'
+export const KEY_SORT: SortConfig<KeySortKey> = {
+  defaultKey: 'order',
+  columns: { order: 'asc', key: 'asc', published: 'desc', draft: 'desc' },
+}
+
+export const KEY_FILTER_PARAMS = ['published', 'draft'] as const
+
+const PUBLISHED_VALUES = ['published', 'unpublished'] as const
+const DRAFT_VALUES = ['draft', 'none'] as const
+
+const PUBLISHED_LABELS: ReadonlyMap<string, string> = new Map([
+  ['published', 'Published'],
+  ['unpublished', 'Not published'],
+])
+const DRAFT_LABELS: ReadonlyMap<string, string> = new Map([
+  ['draft', 'Has an unpublished draft'],
+  ['none', 'No draft'],
+])
+
+export interface KeyListView {
+  params: TableParams
+  sort: SortState<KeySortKey>
+  published: (typeof PUBLISHED_VALUES)[number][]
+  draft: (typeof DRAFT_VALUES)[number][]
+}
+
+export function readKeyListView(raw: RawSearchParams): KeyListView {
+  const params = readTableParams(raw)
+  return {
+    params,
+    sort: parseSort(KEY_SORT, params),
+    published: filterValues(params, 'published', PUBLISHED_VALUES),
+    draft: filterValues(params, 'draft', DRAFT_VALUES),
+  }
+}
+
+export function arrangeKeyRows(
+  path: string,
+  rows: readonly KeyRow[],
+  view: KeyListView,
+): { rows: KeyRow[]; chips: ChipGroupView[] } {
+  const groups = {
+    published: {
+      value: (r: KeyRow) => (r.publishedVersion === null ? 'unpublished' : 'published'),
+      selected: view.published,
+    },
+    draft: { value: (r: KeyRow) => (r.hasDraft ? 'draft' : 'none'), selected: view.draft },
+  }
+  const visible = sortRows(filterRows(rows, groups), view.sort, {
+    order: null,
+    key: (r) => r.key,
+    published: (r) => r.publishedVersion,
+    draft: (r) => (r.hasDraft ? 1 : 0),
+  })
+  const counts = countGroups(rows, groups, {
+    published: PUBLISHED_VALUES,
+    draft: DRAFT_VALUES,
+  })
+  const chips = chipGroups(path, view.params, [
+    {
+      param: 'published',
+      label: 'Published',
+      options: labeledOptions(PUBLISHED_LABELS, counts.get('published')),
+    },
+    { param: 'draft', label: 'Draft', options: labeledOptions(DRAFT_LABELS, counts.get('draft')) },
+  ])
+  return { rows: visible, chips }
+}

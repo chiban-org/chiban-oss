@@ -42,7 +42,9 @@ afterAll(async () => {
 
 describe('settings page', () => {
   it('lists pack rules by name and version without their keys', async () => {
-    const text = renderToStaticMarkup(await SettingsPage()).replace(/<[^>]+>/g, ' ')
+    const text = renderToStaticMarkup(
+      await SettingsPage({ searchParams: Promise.resolve({}) }),
+    ).replace(/<[^>]+>/g, ' ')
     expect(text).toContain('Building permit decision deadline')
     expect(text).toContain('Version 1')
     expect(text).not.toContain('nh.bp.decision')
@@ -50,7 +52,7 @@ describe('settings page', () => {
   })
 
   it('links to starter updates from the starter templates section', async () => {
-    const html = renderToStaticMarkup(await SettingsPage())
+    const html = renderToStaticMarkup(await SettingsPage({ searchParams: Promise.resolve({}) }))
     expect(html).toMatch(
       /<a [^>]*href="\/staff\/settings\/starters"[^>]*>Check adopted starters for updates<\/a>/,
     )

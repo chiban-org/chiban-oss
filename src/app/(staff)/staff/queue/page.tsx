@@ -1,15 +1,28 @@
+import { TablePager } from '@/components/dataTable/TablePager'
 import { QueueFilters } from '@/components/queue/QueueFilters'
-import { KeyHints, NoMatches, QueuePager, QueueSummary } from '@/components/queue/QueueSummary'
+import { KeyHints, NoMatches, QueueSummary } from '@/components/queue/QueueSummary'
 import { QueueTable } from '@/components/queue/QueueTable'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { hasFullRecordAccess } from '@/features/access/roles'
 import { hasCapability } from '@/features/authz/capabilities'
+import {
+  clearHref,
+  firstParam,
+  PAGE_PARAM,
+  pageHref,
+  type RawSearchParams,
+} from '@/features/dataTable/params'
+import { sortLinks } from '@/features/dataTable/sort'
+import { carriedParams, queueChipGroups } from '@/features/queue/queueChips'
+import { queueFacets } from '@/features/queue/queueFacets'
 import {
   activeFilterLabels,
   filterKey,
-  type QueueSearchParams,
-  queueHref,
+  QUEUE_FILTER_PARAMS,
+  QUEUE_PATH,
+  QUEUE_SORT,
+  readQueueView,
 } from '@/features/queue/queueParams'
-import { statesForParam } from '@/features/queue/stateScopes'
 import { listWorkQueue } from '@/features/queue/workQueue'
 import { listReviewerChoices } from '@/features/reviews/reviewerView'
 import { mayOpen } from '@/features/staffNav/navItems'
@@ -21,59 +34,55 @@ export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 25
 
-function present(value: string | undefined): value is string {
-  return value !== undefined && value !== ''
-}
-
 export default async function QueuePage({
   searchParams,
 }: {
-  searchParams: Promise<QueueSearchParams>
+  searchParams: Promise<RawSearchParams>
 }) {
-  const params = await searchParams
+  const { params, sort, filters } = readQueueView(await searchParams)
   const ctx = await requireStaffContext()
-  if (!mayOpen('/staff/queue', await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
+  if (!mayOpen(QUEUE_PATH, await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
     return <NoPermission title="Work queue" action="see the work queue" />
   }
-  const states = statesForParam(params.state)
-  const queue = await listWorkQueue(
-    ctx.db,
-    ctx.actor,
-    {
-      filters: {
-        ...(states === undefined ? {} : { states }),
-        ...(present(params.q) ? { numberContains: params.q } : {}),
-        assignedToMe: params.mine === '1',
-        overdueOnly: params.overdue === '1',
-        awaitingPayment: params.unpaid === '1',
-      },
-      limit: PAGE_SIZE,
-      ...(params.cursor === undefined ? {} : { cursor: params.cursor }),
-    },
-    ctx.signal,
-  )
+  const cursor = firstParam(params, PAGE_PARAM)
+  const [queue, facets] = await Promise.all([
+    listWorkQueue(
+      ctx.db,
+      ctx.actor,
+      { filters, sort, limit: PAGE_SIZE, ...(cursor === undefined ? {} : { cursor }) },
+      ctx.signal,
+    ),
+    queueFacets(ctx.db, ctx.actor, { filters }, ctx.signal),
+  ])
   const canAssign = await hasCapability(ctx.db, ctx.actor.userId, 'review.assign', ctx.signal)
   const reviewers = canAssign ? await listReviewerChoices(ctx.db) : []
-  const filters = activeFilterLabels(params)
+  const labels = activeFilterLabels(params, new Map(facets.types.map((t) => [t.value, t.label])))
   return (
-    <main>
+    <main data-wide="">
       <h1>Work queue</h1>
-      <QueueSummary total={queue.total} filters={filters} />
+      <QueueSummary total={queue.total} filters={labels} />
       <KeyHints canAssign={reviewers.length > 0} />
-      <QueueFilters params={params} />
+      <QueueFilters
+        search={firstParam(params, 'q') ?? ''}
+        state={firstParam(params, 'state') ?? ''}
+        carried={carriedParams(params)}
+        chips={queueChipGroups(params, facets, hasFullRecordAccess(ctx.actor))}
+        clearHref={clearHref(QUEUE_PATH, params, QUEUE_FILTER_PARAMS)}
+      />
       <QueueTable
         key={filterKey(params)}
         rows={queue.rows}
         reviewers={reviewers}
         assign={assignReviewerAction}
-        empty={<NoMatches filters={filters} />}
+        sort={sortLinks(QUEUE_PATH, params, QUEUE_SORT, sort)}
+        empty={<NoMatches filters={labels} />}
       />
-      <QueuePager
+      <TablePager
         offset={queue.offset}
         shown={queue.rows.length}
         total={queue.total}
-        prevHref={queue.prevCursor === null ? null : queueHref(params, queue.prevCursor)}
-        nextHref={queue.nextCursor === null ? null : queueHref(params, queue.nextCursor)}
+        prevHref={queue.prevCursor === null ? null : pageHref(QUEUE_PATH, params, queue.prevCursor)}
+        nextHref={queue.nextCursor === null ? null : pageHref(QUEUE_PATH, params, queue.nextCursor)}
       />
     </main>
   )

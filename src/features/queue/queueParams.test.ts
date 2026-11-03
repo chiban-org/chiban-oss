@@ -1,33 +1,73 @@
 import { describe, expect, it } from 'vitest'
-import { activeFilterLabels, queueHref } from '@/features/queue/queueParams'
+import { readTableParams } from '@/features/dataTable/params'
+import { activeFilterLabels, filterKey, readQueueView } from '@/features/queue/queueParams'
 
 describe('activeFilterLabels', () => {
   it('names nothing for the default needs action view', () => {
-    expect(activeFilterLabels({})).toEqual([])
-    expect(activeFilterLabels({ state: '', q: '' })).toEqual([])
+    expect(activeFilterLabels(readTableParams({}))).toEqual([])
+    expect(activeFilterLabels(readTableParams({ state: '', q: '' }))).toEqual([])
   })
 
   it('names each filter in the order of the filter bar', () => {
-    expect(
-      activeFilterLabels({ q: '0042', state: 'denied', mine: '1', overdue: '1', unpaid: '1' }),
-    ).toEqual(['Number contains 0042', 'Denied', 'Assigned to me', 'Overdue only', 'Fees due'])
+    const params = readTableParams({
+      q: '0042',
+      state: 'denied',
+      due: 'overdue',
+      assigned: 'me',
+      type: 'EL',
+      flag: ['fees', 'payment'],
+    })
+    expect(activeFilterLabels(params, new Map([['EL', 'Electrical permit']]))).toEqual([
+      'Number contains 0042',
+      'Denied',
+      'Overdue',
+      'Mine',
+      'Electrical permit',
+      'Fees due',
+      'Payment outcome unknown',
+    ])
   })
 
-  it('names the wide view and ignores an unknown status', () => {
-    expect(activeFilterLabels({ state: 'all' })).toEqual(['All but draft'])
-    expect(activeFilterLabels({ state: 'bogus' })).toEqual([])
+  it('names the wide view and ignores an unknown status or chip value', () => {
+    expect(activeFilterLabels(readTableParams({ state: 'all' }))).toEqual(['All but draft'])
+    expect(activeFilterLabels(readTableParams({ state: 'bogus', due: 'later' }))).toEqual([])
   })
 })
 
-describe('queueHref', () => {
-  it('keeps the filters, drops empty values, and adds the cursor', () => {
-    expect(queueHref({ q: '', state: 'all', overdue: '1', cursor: '25' }, '50')).toBe(
-      '/staff/queue?state=all&overdue=1&cursor=50',
-    )
+describe('readQueueView', () => {
+  it('reads chips, scope, search and sort from the address', () => {
+    const view = readQueueView({
+      state: 'all',
+      q: '12',
+      due: ['week', 'none'],
+      assigned: 'none',
+      type: ['BP', 'not a key!'],
+      flag: 'preservation',
+      sort: 'fees',
+    })
+    expect(view.filters).toEqual({
+      states: expect.arrayContaining(['submitted', 'denied']) as unknown,
+      numberContains: '12',
+      typeKeys: ['BP'],
+      due: ['week', 'none'],
+      assigned: ['none'],
+      flags: ['preservation'],
+    })
+    expect(view.sort).toEqual({ key: 'fees', dir: 'desc' })
   })
 
-  it('drops the cursor for the first page', () => {
-    expect(queueHref({ mine: '1', cursor: '25' }, '0')).toBe('/staff/queue?mine=1')
-    expect(queueHref({}, null)).toBe('/staff/queue')
+  it('opens on the needs action scope sorted by due date', () => {
+    const view = readQueueView({ sort: 'priority' })
+    expect(view.filters).toEqual({})
+    expect(view.sort).toEqual({ key: 'due', dir: 'asc' })
+  })
+})
+
+describe('filterKey', () => {
+  it('changes when the sort, a chip, or the page changes', () => {
+    const key = (raw: Record<string, string>) => filterKey(readTableParams(raw))
+    expect(key({})).not.toBe(key({ sort: 'number' }))
+    expect(key({})).not.toBe(key({ due: 'overdue' }))
+    expect(key({})).not.toBe(key({ cursor: '25' }))
   })
 })

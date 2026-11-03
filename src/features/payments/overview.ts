@@ -11,16 +11,22 @@ import {
 } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import {
+  type EntryFacets,
+  type EntryView,
+  entryFacetsOn,
+  listEntriesOn,
+} from '@/features/payments/entryList'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 const ATTEMPT_LIMIT = 50
-const ENTRY_LIMIT = 100
 
 export interface PaymentsOverview {
   unknownAttempts: (typeof paymentAttempts.$inferSelect)[]
   anomalies: (typeof paymentAttempts.$inferSelect)[]
   overpayments: { applicationId: string; applicationNumber: string; amountCents: number }[]
+  entryFacets: EntryFacets
   todaysEntries: {
     id: string
     entryType: string
@@ -66,7 +72,7 @@ async function entryApplications(db: Db, entryIds: string[]): Promise<Map<string
 export async function loadPaymentsOverview(
   db: Db,
   actor: Actor,
-  input: { date: CivilDate },
+  input: { date: CivilDate; entries?: EntryView },
   signal: AbortSignal,
 ): Promise<Result<PaymentsOverview, 'forbidden'>> {
   signal.throwIfAborted()
@@ -94,21 +100,8 @@ export async function loadPaymentsOverview(
     .where(eq(ledgerAllocations.targetKind, 'overpayment'))
     .groupBy(ledgerAllocations.applicationId, applications.number)
     .having(sql`sum(${ledgerAllocations.amountCents}) > 0`)
-  const entries = await db
-    .select({
-      id: ledgerEntries.id,
-      entryType: ledgerEntries.entryType,
-      method: ledgerEntries.method,
-      amountCents: ledgerEntries.amountCents,
-      payerName: ledgerEntries.payerName,
-      receiptId: ledgerEntries.receiptId,
-      receiptNumber: receipts.number,
-    })
-    .from(ledgerEntries)
-    .leftJoin(receipts, eq(receipts.id, ledgerEntries.receiptId))
-    .where(and(eq(ledgerEntries.businessDate, input.date)))
-    .orderBy(desc(ledgerEntries.postedAt))
-    .limit(ENTRY_LIMIT)
+  const view = input.entries ?? { filters: {} }
+  const entries = await listEntriesOn(db, input.date, view)
   const numbers = await entryApplications(
     db,
     entries.map((e) => e.id),
@@ -119,6 +112,7 @@ export async function loadPaymentsOverview(
     overpayments: overpaid.flatMap((o) =>
       o.applicationId === null ? [] : [{ ...o, applicationId: o.applicationId }],
     ),
+    entryFacets: await entryFacetsOn(db, input.date, view.filters),
     todaysEntries: entries.map((e) => ({ ...e, applicationNumbers: numbers.get(e.id) ?? [] })),
   })
 }

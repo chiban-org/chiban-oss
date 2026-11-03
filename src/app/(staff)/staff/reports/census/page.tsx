@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { SortHeader } from '@/components/dataTable/SortHeader'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { CENSUS_EXCLUDED_REASONS } from '@/db/schema'
@@ -11,6 +12,14 @@ import {
   CENSUS_REASON_LABELS,
 } from '@/features/census/labels'
 import { type CensusSuggestion, suggestCensus } from '@/features/census/suggest'
+import { firstParam, type RawSearchParams, readTableParams } from '@/features/dataTable/params'
+import {
+  CENSUS_PATH,
+  LARGE_PERMIT_SORT,
+  LARGE_SCOPE,
+  sortLargePermits,
+} from '@/features/reports/reportSorts'
+import { activeSortFields, scopedSort } from '@/features/staffTables/scopedSort'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
 import { classifyCensusAction } from './actions'
@@ -52,14 +61,16 @@ function Hidden({ name, value }: { name: string; value: string | number }) {
 export default async function CensusPage({
   searchParams,
 }: {
-  searchParams: Promise<{ year?: string; month?: string }>
+  searchParams: Promise<RawSearchParams>
 }) {
-  const params = await searchParams
+  const tableParams = readTableParams(await searchParams)
+  const yearParam = firstParam(tableParams, 'year')
+  const monthParam = firstParam(tableParams, 'month')
+  const largeSort = scopedSort(CENSUS_PATH, tableParams, LARGE_PERMIT_SORT, LARGE_SCOPE)
   const ctx = await requireStaffContext()
   const today = await townToday(ctx.db, new Date(), ctx.signal)
-  const year = numberParam(params.year, Number(today.slice(0, 4)))
-  const month =
-    params.month === 'year' ? null : numberParam(params.month, Number(today.slice(5, 7)))
+  const year = numberParam(yearParam, Number(today.slice(0, 4)))
+  const month = monthParam === 'year' ? null : numberParam(monthParam, Number(today.slice(5, 7)))
   const report = await censusBpsReport(ctx.db, ctx.actor, { year, month }, ctx.signal)
   if (!report.ok) return <NoPermission title="Census report" action="see the Census report" />
   const r = report.value
@@ -83,7 +94,7 @@ export default async function CensusPage({
     }),
   )
   return (
-    <main className="space-y-6">
+    <main data-wide="" className="space-y-6">
       <h1>Census building permits report</h1>
       <p className="m-0">
         Counts of new housing units from permits issued, in the categories of Census Bureau Form
@@ -108,6 +119,9 @@ export default async function CensusPage({
             ...MONTHS.map((m, i) => [String(i + 1), m] as [string, string]),
           ]}
         />
+        {activeSortFields(tableParams, [LARGE_SCOPE]).map(([name, value]) => (
+          <Hidden key={name} name={name} value={value} />
+        ))}
         <button type="submit" className="rounded-md border px-4 py-2 text-sm">
           Show report
         </button>
@@ -149,32 +163,34 @@ export default async function CensusPage({
         {r.largePermits.length === 0 ? (
           <p>No permit this period is valued at $1,000,000 or more.</p>
         ) : (
-          <table className="w-full text-left">
-            <thead>
-              <tr>
-                <th scope="col">Permit</th>
-                <th scope="col">Description</th>
-                <th scope="col">Site address</th>
-                <th scope="col">Owner or builder</th>
-                <th scope="col">Buildings</th>
-                <th scope="col">Housing units</th>
-                <th scope="col">Valuation in dollars</th>
-              </tr>
-            </thead>
-            <tbody>
-              {r.largePermits.map((p) => (
-                <tr key={p.number}>
-                  <td>{p.number}</td>
-                  <td>{p.description}</td>
-                  <td>{p.siteAddress}</td>
-                  <td>{p.ownerOrBuilder}</td>
-                  <td>{p.buildings}</td>
-                  <td>{p.housingUnits}</td>
-                  <td>{p.valuationDollars.toLocaleString('en-US')}</td>
+          <div className="table-panel">
+            <table className="w-full min-w-[44rem] text-left">
+              <thead>
+                <tr>
+                  <SortHeader label="Permit" link={largeSort.links.permit} />
+                  <SortHeader label="Description" link={largeSort.links.description} />
+                  <SortHeader label="Site address" link={largeSort.links.address} />
+                  <SortHeader label="Owner or builder" link={largeSort.links.owner} />
+                  <SortHeader label="Buildings" link={largeSort.links.buildings} />
+                  <SortHeader label="Housing units" link={largeSort.links.units} />
+                  <SortHeader label="Valuation in dollars" link={largeSort.links.valuation} />
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {sortLargePermits(r.largePermits, largeSort.state).map((p) => (
+                  <tr key={p.number}>
+                    <td>{p.number}</td>
+                    <td>{p.description}</td>
+                    <td>{p.siteAddress}</td>
+                    <td>{p.ownerOrBuilder}</td>
+                    <td>{p.buildings}</td>
+                    <td>{p.housingUnits}</td>
+                    <td>{p.valuationDollars.toLocaleString('en-US')}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
       {r.complete ? (

@@ -49,4 +49,32 @@ describe('staff parcel search page', () => {
     expect(html).toContain('href="/staff/parcels?q=Quillfeather%2C%20Odessa"')
     expect(html).toContain('Search parcels owned by Quillfeather, Odessa')
   })
+
+  it('sorts by a column header and carries the sort and filters through the search form', async () => {
+    const html = renderToStaticMarkup(
+      await StaffParcelsPage({
+        searchParams: Promise.resolve({
+          q: 'Lane',
+          sort: 'owner',
+          dir: 'desc',
+          matched: 'address',
+        }),
+      }),
+    )
+    expect(html).toContain('aria-sort="descending"')
+    expect(html).toContain('name="sort" value="owner"')
+    expect(html).toContain('name="dir" value="desc"')
+    expect(html).toContain('name="matched" value="address"')
+    expect(html).toContain('Quick filters')
+    expect(html).toContain('Clear all')
+  })
+
+  it('says so when the filters hide every hit', async () => {
+    const html = renderToStaticMarkup(
+      await StaffParcelsPage({
+        searchParams: Promise.resolve({ q: 'Larkspur Lane', status: 'retired' }),
+      }),
+    )
+    expect(html).toContain('No parcels match these filters.')
+  })
 })

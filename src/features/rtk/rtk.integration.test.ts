@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { documents, documentVersions, files, rtkRequests, rtkWithholdings } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { documentVisibleTo } from '@/features/documents/visibility'
-import { listRtkRequests, logRequest, rtkRequestView } from '@/features/rtk/requests'
+import { logRequest, rtkRequestView } from '@/features/rtk/requests'
 import { recordFirstResponse as recordAt } from '@/features/rtk/responses'
 import { recordWithholding } from '@/features/rtk/withholdings'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -418,35 +418,5 @@ describe('who can see a request', () => {
     expect(await visibleTo(reviewer)).toBe(0)
     expect(await visibleTo(applicant)).toBe(0)
     expect(await visibleTo(null)).toBe(0)
-  })
-
-  it('list with 30 requests and a cap of 25 shows only requests the viewer may see', async () => {
-    for (let i = 0; i < 30; i += 1) await loggedId('2027-07-02')
-    const page = await listRtkRequests(handle.db, staff, { filters: {}, limit: 25 }, signal)
-    expect(page.rows).toHaveLength(25)
-    expect(page.nextCursor).not.toBeNull()
-    const rest = await listRtkRequests(
-      handle.db,
-      staff,
-      { filters: {}, limit: 25, cursor: page.nextCursor ?? undefined },
-      signal,
-    )
-    expect(rest.rows).toHaveLength(5)
-    expect(rest.nextCursor).toBeNull()
-    const hidden = await listRtkRequests(handle.db, reviewer, { filters: {}, limit: 25 }, signal)
-    expect(hidden.rows).toEqual([])
-    expect(hidden.nextCursor).toBeNull()
-  })
-
-  it('overdue only lists open requests past their due date', async () => {
-    await loggedId('2027-07-02')
-    await loggedId('2027-07-12')
-    const overdue = await listRtkRequests(
-      handle.db,
-      staff,
-      { filters: { overdueOnly: true }, limit: 25, today: d('2027-07-14') },
-      signal,
-    )
-    expect(overdue.rows.map((r) => r.number)).toEqual(['RK-2027-0001'])
   })
 })

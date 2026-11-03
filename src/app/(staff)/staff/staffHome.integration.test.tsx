@@ -47,6 +47,7 @@ describe('/staff home', () => {
     expect(html).toContain('Needs attention')
     expect(html).toContain('Submitted and not yet started')
     expect(html).toContain('href="/staff/queue?state=submitted"')
+    expect(html).toContain('href="/staff/queue?flag=fees"')
     expect(html).toContain('Find a parcel')
   })
 

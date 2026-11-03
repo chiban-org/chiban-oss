@@ -38,7 +38,7 @@ describe('QueueTable selection and keys', () => {
   it('clicking a row selects it and Enter then opens it', () => {
     const b = row({ number: 'BP-2027-0002', typeLabel: 'Plumbing permit' })
     const navigate = setup([row({ number: 'BP-2027-0001' }), b])
-    fireEvent.click(screen.getByText('Plumbing permit, 007001000000'))
+    fireEvent.click(screen.getByText('Plumbing permit'))
     expect(selectedNumber()).toBe('BP-2027-0002')
     key('Enter')
     expect(navigate).toHaveBeenCalledWith(`/staff/applications/${b.applicationId}`)

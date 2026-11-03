@@ -35,6 +35,13 @@ describe('QueueTable cells', () => {
     expect(screen.getByText('Filing overdue, due Apr 22, 2027')).toBeTruthy()
   })
 
+  it('gives the parcel its own column linking to the parcel page', () => {
+    setup([row({ parcelId: 'p9', parcelDisplayId: '007009000000' })])
+    const link = screen.getByRole('link', { name: '007009000000' })
+    expect(link.getAttribute('href')).toBe('/staff/parcels/p9')
+    expect(screen.queryByText(/Building permit, 007009000000/)).toBeNull()
+  })
+
   it('does not repeat the filing date when it is already the next deadline', () => {
     setup([row({ nextDue: d('2027-04-22'), filingDue: d('2027-04-22') })])
     expect(screen.queryByText(/Filing (due|overdue)/)).toBeNull()
@@ -106,11 +113,6 @@ describe('QueueTable cells', () => {
   it('reads no fees as none rather than a blank', () => {
     setup([row({})])
     expect(document.querySelector('td[data-label="Fees"]')?.textContent).toContain('None')
-  })
-
-  it('puts the type and parcel on one line after the number', () => {
-    setup([row({})])
-    expect(screen.getByText('Building permit, 007001000000')).toBeTruthy()
   })
 
   it('scopes every column header', () => {

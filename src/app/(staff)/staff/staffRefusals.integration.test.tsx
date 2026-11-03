@@ -88,7 +88,7 @@ describe('section pages refuse with one permission page', () => {
 
   it('an inspector gets the permission page on payments', async () => {
     await actAs('inspector')
-    expect(await html(PaymentsPage())).toContain(NO_PERMISSION)
+    expect(await html(PaymentsPage(noSearch))).toContain(NO_PERMISSION)
   })
 
   it('a record by id gives the permission page, and none of the record, to someone who may not see it', async () => {

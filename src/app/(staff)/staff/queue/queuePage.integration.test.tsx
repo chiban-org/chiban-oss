@@ -45,7 +45,7 @@ afterAll(async () => {
   await handle.drop()
 })
 
-const render = async (params: Record<string, string>) =>
+const render = async (params: Record<string, string | string[]>) =>
   renderToStaticMarkup(await QueuePage({ searchParams: Promise.resolve(params) }))
 
 describe('/staff/queue page', () => {
@@ -73,11 +73,12 @@ describe('/staff/queue page', () => {
   })
 
   it('names the active filters next to the count with a way to clear them', async () => {
-    expect(await render({})).not.toContain('Clear filters')
-    const html = await render({ state: 'all', mine: '1' })
-    expect(html).toContain('All but draft')
-    expect(html).toContain('Assigned to me')
-    expect(html).toMatch(/<a[^>]*href="\/staff\/queue"[^>]*>Clear filters<\/a>/)
+    expect(await render({})).not.toContain('Clear all')
+    const html = await render({ state: 'all', type: 'BP', sort: 'number' })
+    expect(html).toContain('· All but draft')
+    expect(html).toContain('· Building permit')
+    expect(html).toMatch(/<a[^>]*href="\/staff\/queue\?sort=number"[^>]*>Clear all<\/a>/)
+    expect(html.match(/>Clear all</g)).toHaveLength(1)
   })
 
   it('says what matched nothing inside the panel, with a way back', async () => {
@@ -90,5 +91,44 @@ describe('/staff/queue page', () => {
     const html = await render({})
     expect(html).toContain('<kbd')
     expect(html).not.toContain('Apply filters')
+  })
+
+  it('replaces the checkboxes with chip links that reset paging and keep the sort', async () => {
+    const html = await render({ cursor: '25', sort: 'number', due: 'overdue' })
+    const chip = (label: string) => {
+      const end = html.indexOf(`>${label}<`)
+      return end < 0 ? '' : html.slice(html.lastIndexOf('<a ', end), end)
+    }
+    expect(html).not.toContain('type="checkbox"')
+    expect(chip('Overdue')).toContain('aria-current="true"')
+    expect(chip('Overdue')).toContain('href="/staff/queue?sort=number"')
+    expect(chip('Due this week')).not.toContain('aria-current')
+    expect(chip('Due this week')).toContain(
+      'href="/staff/queue?sort=number&amp;due=overdue&amp;due=week"',
+    )
+    expect(chip('Building permit')).toContain(
+      'href="/staff/queue?sort=number&amp;due=overdue&amp;type=BP"',
+    )
+    expect(html).toMatch(/<button[^>]*aria-haspopup="menu"[^>]*>Flags</)
+    expect(html).toContain('<input type="hidden" name="due" value="overdue"/>')
+    expect(html).toContain('<input type="hidden" name="sort" value="number"/>')
+    expect(html).not.toContain('name="cursor"')
+  })
+
+  it('sorts from the column headers with aria-sort and keeps the sort while paging', async () => {
+    const byDue = await render({})
+    expect(byDue).toMatch(
+      /<th scope="col" aria-sort="ascending"[^>]*><a[^>]*href="\/staff\/queue\?sort=due&amp;dir=desc"/,
+    )
+    expect(byDue).toMatch(
+      /<th scope="col"[^>]*><a[^>]*href="\/staff\/queue\?sort=number&amp;dir=asc"/,
+    )
+    const byNumber = await render({ sort: 'number', dir: 'desc' })
+    expect(byNumber).toMatch(
+      /aria-sort="descending"[^>]*><a[^>]*href="\/staff\/queue\?sort=number&amp;dir=asc"/,
+    )
+    expect(byNumber).toContain('href="/staff/queue?sort=number&amp;dir=desc&amp;cursor=25"')
+    const numbers = [...byNumber.matchAll(/>([A-Z]+-\d{4}-\d{4})</g)].map((m) => m[1])
+    expect(numbers).toEqual([...numbers].sort().reverse())
   })
 })

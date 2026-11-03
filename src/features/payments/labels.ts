@@ -52,3 +52,6 @@ export function transitionSentence(from: string, to: string, source: string): st
   const how = SOURCES[source] ?? lowerFirst(words(source))
   return `Moved from ${lowerFirst(attemptStateLabel(from))} to ${lowerFirst(attemptStateLabel(to))}, ${how}.`
 }
+
+export const ENTRY_TYPE_LABELS: ReadonlyMap<string, string> = new Map(Object.entries(ENTRY_TYPES))
+export const METHOD_LABELS: ReadonlyMap<string, string> = new Map(Object.entries(METHODS))

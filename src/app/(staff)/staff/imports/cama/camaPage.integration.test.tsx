@@ -111,7 +111,7 @@ describe('CAMA import page', () => {
 
   it('is reachable from the Imports page', async () => {
     state.actor = staff
-    const html = renderToStaticMarkup(await ImportsPage())
+    const html = renderToStaticMarkup(await ImportsPage({ searchParams: Promise.resolve({}) }))
     expect(html).toContain('href="/staff/imports/cama"')
     expect(html).not.toContain('name="layerKey" value="cama"')
   })

@@ -1,11 +1,10 @@
 import { civilDateSchema } from '@packs/nh/schema'
-import { and, asc, eq, type SQL, sql } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import {
   RTK_RECEIVED_VIA,
-  RTK_STATUSES,
   type RtkStatus,
   rtkRequests,
   rtkTimeStatements,
@@ -164,92 +163,6 @@ export async function rtkRequestView(
     timeStatements,
     withholdings,
   })
-}
-
-const ListSchema = z.object({
-  filters: z.object({
-    status: z.enum(RTK_STATUSES).optional(),
-    overdueOnly: z.boolean().optional(),
-  }),
-  limit: z.number().int().min(1).max(100),
-  cursor: z.string().max(200).optional(),
-  today: civilDateSchema.optional(),
-})
-
-export interface RtkListRow {
-  id: string
-  number: string
-  receivedOn: CivilDate
-  description: string
-  status: RtkStatus
-  dueOn: CivilDate | null
-  requesterName: string | null
-}
-
-const NO_DUE = '9999-12-31'
-
-function decodeCursor(cursor: string | undefined): { due: string; id: string } | null {
-  if (cursor === undefined) return null
-  try {
-    return z
-      .object({ due: z.string(), id: z.string().uuid() })
-      .parse(JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')))
-  } catch {
-    return null
-  }
-}
-
-export async function listRtkRequests(
-  db: Db,
-  actor: Actor,
-  input: z.input<typeof ListSchema>,
-  signal: AbortSignal,
-  now: Date = new Date(),
-): Promise<{ rows: RtkListRow[]; nextCursor: string | null }> {
-  signal.throwIfAborted()
-  const parsed = ListSchema.safeParse(input)
-  if (!parsed.success) return { rows: [], nextCursor: null }
-  const { filters, limit, cursor } = parsed.data
-  const today = parsed.data.today ?? (await townToday(db, now, signal))
-  const dueKey = sql`coalesce(${rtkRequests.openDueOn}, ${NO_DUE}::date)`
-  const conditions: SQL[] = [rtkRequestVisibleTo(actor)]
-  if (filters.status !== undefined) conditions.push(eq(rtkRequests.status, filters.status))
-  if (filters.overdueOnly === true) {
-    conditions.push(sql`${rtkRequests.openDueOn} < ${today}::date`)
-    conditions.push(sql`${rtkRequests.status} in ('open', 'awaiting_decision')`)
-  }
-  const after = decodeCursor(cursor)
-  if (after !== null)
-    conditions.push(sql`(${dueKey}, ${rtkRequests.id}) > (${after.due}::date, ${after.id}::uuid)`)
-  const rows = await db
-    .select({
-      id: rtkRequests.id,
-      number: rtkRequests.number,
-      receivedOn: rtkRequests.receivedOn,
-      description: rtkRequests.description,
-      status: rtkRequests.status,
-      dueOn: rtkRequests.openDueOn,
-      requesterName: rtkRequests.requesterName,
-      dueKey: sql<string>`${dueKey}::text`,
-    })
-    .from(rtkRequests)
-    .where(and(...conditions))
-    .orderBy(asc(dueKey), asc(rtkRequests.id))
-    .limit(limit + 1)
-  const page = rows.slice(0, limit)
-  const last = page.at(-1)
-  const nextCursor =
-    rows.length > limit && last !== undefined
-      ? Buffer.from(JSON.stringify({ due: last.dueKey, id: last.id })).toString('base64url')
-      : null
-  return {
-    rows: page.map(({ dueKey: _k, ...r }) => ({
-      ...r,
-      receivedOn: r.receivedOn as CivilDate,
-      dueOn: r.dueOn as CivilDate | null,
-    })),
-    nextCursor,
-  }
 }
 
 export async function closeRequest(

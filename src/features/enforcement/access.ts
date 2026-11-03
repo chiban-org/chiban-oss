@@ -1,8 +1,7 @@
-import { and, asc, desc, eq, lt, type SQL, sql } from 'drizzle-orm'
+import { and, asc, eq, type SQL, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
   complaints,
-  type EnforcementStatus,
   enforcementCases,
   enforcementNotes,
   enforcementOrders,
@@ -117,55 +116,4 @@ export async function getCase(
       .orderBy(asc(enforcementNotes.createdAt)),
   ])
   return ok({ kind: 'staff', row, complaints: caseComplaints, notes })
-}
-
-export interface CaseListFilters {
-  status?: EnforcementStatus
-}
-
-export interface CaseListRow {
-  caseId: string
-  number: string
-  statusLabel: string
-  locationText: string
-  openedOn: CivilDate
-  isPublic: boolean
-  summary: string | null
-}
-
-export async function listCases(
-  db: DbOrTx,
-  actor: Actor | null,
-  input: { filters: CaseListFilters; limit: number; cursor?: string },
-  signal: AbortSignal,
-): Promise<{ rows: CaseListRow[]; nextCursor: string | null }> {
-  signal.throwIfAborted()
-  const rows = await db
-    .select()
-    .from(enforcementCases)
-    .where(
-      and(
-        enforcementCaseVisibleTo(actor),
-        input.filters.status === undefined
-          ? undefined
-          : eq(enforcementCases.status, input.filters.status),
-        input.cursor === undefined ? undefined : lt(enforcementCases.number, input.cursor),
-      ),
-    )
-    .orderBy(desc(enforcementCases.number))
-    .limit(input.limit + 1)
-  const page = rows.slice(0, input.limit)
-  const last = page.at(-1)
-  return {
-    rows: page.map((r) => ({
-      caseId: r.id,
-      number: r.number,
-      statusLabel: CASE_STATUS_LABELS[r.status],
-      locationText: r.locationText,
-      openedOn: r.openedOn as CivilDate,
-      isPublic: r.isPublic,
-      summary: r.publicSummary,
-    })),
-    nextCursor: rows.length > input.limit && last !== undefined ? last.number : null,
-  }
 }

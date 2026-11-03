@@ -1,11 +1,20 @@
-import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { QuickFilters } from '@/components/dataTable/QuickFilters'
+import { TablePager } from '@/components/dataTable/TablePager'
 import { EnforcementQueueTable } from '@/components/enforcement/EnforcementQueueTable'
 import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { ENFORCEMENT_STATUSES, type EnforcementStatus } from '@/db/schema'
+import { clearHref, pageHref, type RawSearchParams, readOffset } from '@/features/dataTable/params'
+import { sortLinks } from '@/features/dataTable/sort'
+import { caseListFacets } from '@/features/enforcement/caseList'
+import { caseChipGroups } from '@/features/enforcement/caseListChips'
+import {
+  CASE_FILTER_PARAMS,
+  CASE_SORT,
+  CASES_PATH,
+  readCasesView,
+} from '@/features/enforcement/caseListParams'
 import { listCaseQueue } from '@/features/enforcement/caseQueue'
-import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
@@ -16,71 +25,58 @@ export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 25
 
-interface SearchParams {
-  status?: string
-  cursor?: string
-}
-
-function statusOf(value: string | undefined): EnforcementStatus | undefined {
-  return ENFORCEMENT_STATUSES.find((s) => s === value)
-}
-
 export default async function EnforcementQueuePage({
   searchParams,
 }: {
-  searchParams: Promise<SearchParams>
+  searchParams: Promise<RawSearchParams>
 }) {
-  const params = await searchParams
+  const { params, sort, filters } = readCasesView(await searchParams)
   const ctx = await requireStaffContext()
-  if (!mayOpen('/staff/enforcement', await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
+  if (!mayOpen(CASES_PATH, await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
     return <NoPermission title="Code enforcement" action="see code enforcement cases" />
   }
-  const status = statusOf(params.status)
   const today = await townToday(ctx.db, new Date(), ctx.signal)
-  const queue = await listCaseQueue(
-    ctx.db,
-    ctx.actor,
-    {
-      filters: status === undefined ? {} : { status },
-      limit: PAGE_SIZE,
-      ...(params.cursor === undefined ? {} : { cursor: params.cursor }),
-    },
-    today,
-    ctx.signal,
-  )
+  const [queue, facets] = await Promise.all([
+    listCaseQueue(
+      ctx.db,
+      ctx.actor,
+      { filters, sort, limit: PAGE_SIZE, offset: readOffset(params) },
+      today,
+      ctx.signal,
+    ),
+    caseListFacets(ctx.db, ctx.actor, { filters }, today, ctx.signal),
+  ])
+  const links = sortLinks(CASES_PATH, params, CASE_SORT, sort)
+  const clear = clearHref(CASES_PATH, params, CASE_FILTER_PARAMS)
+  const pageLink = (offset: number | null) =>
+    offset === null ? null : pageHref(CASES_PATH, params, String(offset))
+  const tableKey = [
+    sort.key,
+    sort.dir,
+    queue.offset,
+    ...CASE_FILTER_PARAMS.map((name) => (params.get(name) ?? []).join(',')),
+  ].join('|')
   return (
-    <main className="space-y-6">
+    <main data-wide="" className="space-y-6">
       <h1>Code enforcement</h1>
       <p>Keys: j and k to move, Enter to open a case.</p>
-      <form method="get" className="flex flex-wrap items-end gap-4">
-        <label className="flex flex-col gap-1 text-sm">
-          Status
-          <select
-            name="status"
-            defaultValue={params.status ?? ''}
-            className="rounded-md border px-3 py-2"
-          >
-            <option value="">All</option>
-            {ENFORCEMENT_STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {CASE_STATUS_LABELS[s]}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button type="submit" className="rounded-md border px-4 py-2 text-sm">
-          Apply filter
-        </button>
-      </form>
-      <EnforcementQueueTable rows={queue.rows} />
-      {queue.nextCursor === null ? null : (
-        <Link
-          href={`/staff/enforcement?cursor=${encodeURIComponent(queue.nextCursor)}${status === undefined ? '' : `&status=${status}`}`}
-          className="inline-block text-action underline"
-        >
-          Next page
-        </Link>
-      )}
+      <div className="toolbar">
+        <QuickFilters
+          label="Quick filters"
+          groups={caseChipGroups(params, facets)}
+          clearHref={clear}
+        />
+      </div>
+      <div className="table-panel">
+        <EnforcementQueueTable key={tableKey} rows={queue.rows} links={links} />
+      </div>
+      <TablePager
+        offset={queue.offset}
+        shown={queue.rows.length}
+        total={queue.total}
+        prevHref={pageLink(queue.prevOffset)}
+        nextHref={pageLink(queue.nextOffset)}
+      />
       <section aria-labelledby="open-case" className="space-y-2">
         <h2 id="open-case">Open a case</h2>
         <ActionForm action={openCaseAction} submitLabel="Open case" variant="default">

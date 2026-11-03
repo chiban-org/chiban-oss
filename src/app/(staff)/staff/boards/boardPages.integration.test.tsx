@@ -48,6 +48,7 @@ const { default: ApplicationPage } = await import(
 )
 
 const signal = new AbortController().signal
+const noSearch = { searchParams: Promise.resolve({}) }
 const NO_PERMISSION = 'You do not have permission'
 let handle: TestDb
 let issuedListId = ''
@@ -121,14 +122,14 @@ afterAll(async () => {
 describe('board section pages refuse with the permission page', () => {
   it('a reviewer gets the permission page on boards, meetings, and rosters', async () => {
     await actAs('reviewer')
-    expect(await page(BoardsPage())).toContain(NO_PERMISSION)
+    expect(await page(BoardsPage(noSearch))).toContain(NO_PERMISSION)
     expect(await page(MeetingsPage())).toContain(NO_PERMISSION)
     expect(await page(RostersPage())).toContain(NO_PERMISSION)
   })
 
   it('an inspector gets the permission page on boards and rosters', async () => {
     await actAs('inspector')
-    expect(await page(BoardsPage())).toContain(NO_PERMISSION)
+    expect(await page(BoardsPage(noSearch))).toContain(NO_PERMISSION)
     expect(await page(RostersPage())).toContain(NO_PERMISSION)
   })
 
@@ -150,7 +151,7 @@ describe('board section pages refuse with the permission page', () => {
 
   it('a signed-out visitor is sent to sign in', async () => {
     state.actor = null
-    await expect(page(BoardsPage())).rejects.toThrow('NEXT_REDIRECT:/staff/sign-in')
+    await expect(page(BoardsPage(noSearch))).rejects.toThrow('NEXT_REDIRECT:/staff/sign-in')
     await expect(page(RostersPage())).rejects.toThrow('NEXT_REDIRECT:/staff/sign-in')
   })
 })
@@ -159,17 +160,34 @@ describe('board pages show words, not keys or dates', () => {
   it('boards, meetings, and rosters', async () => {
     await actAs('staff')
     for (const body of [
-      await page(BoardsPage()),
+      await page(BoardsPage(noSearch)),
       await page(MeetingsPage()),
       await page(RostersPage()),
     ]) {
       expect(findIsoDates(body)).toEqual([])
       expect(findRawKeys(body, RAW_KEYS)).toEqual([])
     }
-    const boards = await page(BoardsPage())
+    const boards = await page(BoardsPage(noSearch))
     expect(boards).toContain('Alder Pond Planning Board')
     expect(boards).toContain('November 25, 2026')
     expect(boards).toContain('October 25, 2026 (overdue)')
+  })
+
+  it('boards share one sort and one set of quick filters across both tables', async () => {
+    await actAs('staff')
+    const sorted = renderToStaticMarkup(
+      (await BoardsPage({
+        searchParams: Promise.resolve({ sort: 'deadline', dir: 'desc' }),
+      })) as never,
+    )
+    expect(sorted.match(/aria-sort="descending"/g)?.length).toBe(
+      sorted.match(/<table/g)?.length ?? 0,
+    )
+    expect(sorted).toContain('Quick filters')
+    const overdue = await page(BoardsPage({ searchParams: Promise.resolve({ due: 'overdue' }) }))
+    expect(overdue).toContain('October 25, 2026 (overdue)')
+    const none = await page(BoardsPage({ searchParams: Promise.resolve({ due: 'none' }) }))
+    expect(none).not.toContain('(overdue)')
   })
 
   it('the rosters page shows the regional notice contacts it asks staff to review', async () => {
