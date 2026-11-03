@@ -35,6 +35,7 @@ export const NAV_ICONS = [
   'payments',
   'enforcement',
   'boards',
+  'meetings',
   'members',
   'rosters',
   'packets',
@@ -152,6 +153,13 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
     label: 'Board applications',
     group: 'boards',
     icon: 'boards',
+    access: any('board.record'),
+  },
+  {
+    href: '/staff/boards/meetings',
+    label: 'Meetings',
+    group: 'boards',
+    icon: 'meetings',
     access: any('board.record'),
   },
   {

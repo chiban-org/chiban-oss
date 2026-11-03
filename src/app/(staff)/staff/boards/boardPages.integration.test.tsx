@@ -123,7 +123,7 @@ describe('board section pages refuse with the permission page', () => {
   it('a reviewer gets the permission page on boards, meetings, and rosters', async () => {
     await actAs('reviewer')
     expect(await page(BoardsPage(noSearch))).toContain(NO_PERMISSION)
-    expect(await page(MeetingsPage())).toContain(NO_PERMISSION)
+    expect(await page(MeetingsPage(noSearch))).toContain(NO_PERMISSION)
     expect(await page(RostersPage())).toContain(NO_PERMISSION)
   })
 
@@ -161,13 +161,16 @@ describe('board pages show words, not keys or dates', () => {
     await actAs('staff')
     for (const body of [
       await page(BoardsPage(noSearch)),
-      await page(MeetingsPage()),
+      await page(MeetingsPage(noSearch)),
       await page(RostersPage()),
     ]) {
       expect(findIsoDates(body)).toEqual([])
       expect(findRawKeys(body, RAW_KEYS)).toEqual([])
     }
     const boards = await page(BoardsPage(noSearch))
+    expect(boards).toContain('Board applications')
+    expect(boards).toContain('oldest filing first')
+    expect(boards).not.toContain('Meeting calendar')
     expect(boards).toContain('Alder Pond Planning Board')
     expect(boards).toContain('November 25, 2026')
     expect(boards).toContain('October 25, 2026 (overdue)')
@@ -188,6 +191,22 @@ describe('board pages show words, not keys or dates', () => {
     expect(overdue).toContain('October 25, 2026 (overdue)')
     const none = await page(BoardsPage({ searchParams: Promise.resolve({ due: 'none' }) }))
     expect(none).not.toContain('(overdue)')
+  })
+
+  it('the meeting calendar opens on upcoming meetings, soonest first, with tab counts', async () => {
+    await actAs('staff')
+    const upcoming = await page(MeetingsPage(noSearch))
+    expect(upcoming).toMatch(/Upcoming \d+/)
+    expect(upcoming).toMatch(/Past \d+/)
+    expect(upcoming).not.toContain('July 8, 2026')
+    expect(upcoming.indexOf('November 12, 2026')).toBeLessThan(upcoming.indexOf('December 9, 2026'))
+    expect(upcoming.split('Alder Pond Town Hall, Meeting Room 2').length).toBeLessThanOrEqual(2)
+    const past = await page(MeetingsPage({ searchParams: Promise.resolve({ when: 'past' }) }))
+    expect(past).toContain('July 8, 2026')
+    expect(past.indexOf('October 28, 2026')).toBeLessThan(past.indexOf('July 8, 2026'))
+    const zba = await page(MeetingsPage({ searchParams: Promise.resolve({ board: 'zba' }) }))
+    expect(zba).toContain('November 17, 2026')
+    expect(zba).not.toContain('November 12, 2026')
   })
 
   it('the rosters page shows the regional notice contacts it asks staff to review', async () => {

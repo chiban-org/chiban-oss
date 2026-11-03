@@ -51,7 +51,9 @@ describe('staff navigation', () => {
 
   it('shows the boards and rosters pages to staff and admin only', () => {
     for (const role of ['staff', 'admin'] as const) {
-      expect(labelsFor(role)).toEqual(expect.arrayContaining(['Board applications', 'Rosters']))
+      expect(labelsFor(role)).toEqual(
+        expect.arrayContaining(['Board applications', 'Meetings', 'Rosters']),
+      )
     }
     for (const role of [
       'reviewer',
@@ -62,6 +64,7 @@ describe('staff navigation', () => {
     ] as const) {
       const labels = labelsFor(role)
       expect(labels).not.toContain('Board applications')
+      expect(labels).not.toContain('Meetings')
       expect(labels).not.toContain('Rosters')
     }
   })
@@ -124,6 +127,9 @@ describe('staff navigation', () => {
     expect(activeNavHref('/staff/inspections/day', STAFF_NAV_ITEMS)).toBe('/staff/inspections/day')
     expect(activeNavHref('/staff/inspections/123', STAFF_NAV_ITEMS)).toBe('/staff/inspections')
     expect(activeNavHref('/staff/boards/members', STAFF_NAV_ITEMS)).toBe('/staff/boards/members')
+    expect(activeNavHref('/staff/boards/meetings/123', STAFF_NAV_ITEMS)).toBe(
+      '/staff/boards/meetings',
+    )
     expect(activeNavHref('/staff/applicationsx', STAFF_NAV_ITEMS)).toBeNull()
   })
 

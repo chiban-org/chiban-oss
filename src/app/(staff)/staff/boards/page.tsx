@@ -81,27 +81,18 @@ export default async function BoardsPage({
   const { params, sort, filters } = readBoardsListView(await searchParams)
   const ctx = await requireStaffContext()
   const view = await loadBoardsView(ctx.db, ctx.actor, ctx.signal)
-  if (view === null) return <NoPermission title="Boards" action="work with the boards" />
+  if (view === null)
+    return <NoPermission title="Board applications" action="work with the boards" />
   const today = view.today as CivilDate
   const allLines = view.sections.flatMap((section) => section.applications)
   const links = sortLinks(BOARDS_PATH, params, BOARD_SORT, sort)
   const clear = clearHref(BOARDS_PATH, params, BOARD_FILTER_PARAMS)
   return (
     <main data-wide="" className="space-y-8">
-      <h1>Boards</h1>
+      <h1>Board applications</h1>
       <p>
-        <Link href="/staff/boards/meetings" className="text-action underline">
-          Meeting calendar
-        </Link>{' '}
-        <Link href="/staff/boards/packets" className="text-action underline">
-          Board packets
-        </Link>{' '}
-        <Link href="/staff/rosters" className="text-action underline">
-          Rosters
-        </Link>{' '}
-        <Link href="/staff/boards/members" className="text-action underline">
-          Board members
-        </Link>
+        Applications before each board that are submitted, under review, or decided, oldest filing
+        first.
       </p>
       {allLines.length === 0 ? null : (
         <div className="toolbar">
