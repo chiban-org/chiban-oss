@@ -8,6 +8,7 @@ const nextConfig: NextConfig = {
   experimental: {
     globalNotFound: true,
     serverActions: { bodySizeLimit: `${SERVER_ACTION_BODY_LIMIT_MB}mb` },
+    proxyClientMaxBodySize: `${SERVER_ACTION_BODY_LIMIT_MB}mb`,
   },
   headers() {
     return Promise.resolve([

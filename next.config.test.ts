@@ -55,6 +55,12 @@ describe('next config server actions', () => {
     )
   })
 
+  it('lets the request proxy pass the same body size, so large uploads are not cut at its 10 MB default', () => {
+    expect(nextConfig.experimental?.proxyClientMaxBodySize).toBe(
+      `${SERVER_ACTION_BODY_LIMIT_MB}mb`,
+    )
+  })
+
   it('stays under the request body cap the reverse proxy enforces', () => {
     const caddyfile = readFileSync(new URL('./deploy/Caddyfile', import.meta.url), 'utf8')
     const proxyCapMb = Number(/max_size (\d+)MB/.exec(caddyfile)?.[1])
