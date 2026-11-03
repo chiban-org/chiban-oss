@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 
-export const QUEUE_SEARCH_ID = 'queue-search'
+export const QUEUE_SEARCH_ID = 'applications-search'
 
 const NON_TEXT_INPUTS = new Set([
   'checkbox',

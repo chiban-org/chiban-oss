@@ -41,13 +41,15 @@ afterAll(async () => {
 })
 
 describe('/staff home', () => {
-  it('shows a clerk what needs attention with links into the queue', async () => {
+  it('shows a clerk what needs attention with links into the application list', async () => {
     state.actor = world.staff
     const html = renderToStaticMarkup(await StaffHome())
     expect(html).toContain('Needs attention')
     expect(html).toContain('Submitted and not yet started')
-    expect(html).toContain('href="/staff/queue?state=submitted"')
-    expect(html).toContain('href="/staff/queue?flag=fees"')
+    expect(html).toContain('href="/staff/applications?stage=open"')
+    expect(html).toContain('href="/staff/applications?flag=fees"')
+    expect(html).toContain('href="/staff/applications"')
+    expect(html.toLowerCase()).not.toContain('queue')
     expect(html).toContain('Find a parcel')
   })
 
@@ -55,6 +57,11 @@ describe('/staff home', () => {
     state.actor = world.staff
     const html = renderToStaticMarkup(await StaffHome())
     expect(html).toMatch(/>1<\/span><span[^>]*>Submitted and not yet started</)
+  })
+
+  it('sends someone who may not open the application list to the parcel search', async () => {
+    state.actor = await staffActor(handle.db, 'board_member')
+    await expect(StaffHome()).rejects.toThrow('NEXT_REDIRECT:/staff/parcels')
   })
 
   it('keeps staff who are also inspectors on the home page', async () => {

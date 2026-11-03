@@ -25,16 +25,24 @@ interface Attention {
 }
 
 const ATTENTION: readonly Attention[] = [
-  { label: 'Past a deadline', href: '/staff/queue?due=overdue', filters: { due: ['overdue'] } },
+  {
+    label: 'Past a deadline',
+    href: '/staff/applications?due=overdue',
+    filters: { due: ['overdue'] },
+  },
   {
     label: 'Assigned to you for review',
-    href: '/staff/queue?assigned=me',
+    href: '/staff/applications?assigned=me',
     filters: { assigned: ['me'] },
   },
-  { label: 'Waiting on fees', href: '/staff/queue?flag=fees', filters: { flags: ['fees'] } },
+  {
+    label: 'Waiting on fees',
+    href: '/staff/applications?flag=fees',
+    filters: { flags: ['fees'] },
+  },
   {
     label: 'Submitted and not yet started',
-    href: '/staff/queue?state=submitted',
+    href: '/staff/applications?stage=open',
     filters: { states: ['submitted'] },
   },
 ]
@@ -54,7 +62,7 @@ function AttentionList({ counts }: { counts: number[] }) {
                 {count}
               </span>
               <span className="flex-1">{item.label}</span>
-              {count === 0 ? null : <Link href={item.href}>Open in the queue</Link>}
+              {count === 0 ? null : <Link href={item.href}>Open in applications</Link>}
             </li>
           )
         })}
@@ -106,7 +114,7 @@ function DueSoon({ rows }: { rows: WorkQueueRow[] }) {
           </li>
         ))}
       </ul>
-      <Link href="/staff/queue">Open the work queue</Link>
+      <Link href="/staff/applications">Open applications</Link>
     </section>
   )
 }
@@ -135,8 +143,8 @@ export default async function StaffHome() {
   const inspectorOnly = actor.roles.length > 0 && actor.roles.every((role) => role === 'inspector')
   if (inspectorOnly) redirect('/staff/inspections/day')
   const ctx = await requireStaffContext()
-  if (!mayOpen('/staff/queue', await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
-    redirect('/staff/applications')
+  if (!mayOpen('/staff/applications', await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
+    redirect('/staff/parcels')
   }
   const today = await townToday(ctx.db, new Date(), ctx.signal)
   const [counts, soon] = await Promise.all([

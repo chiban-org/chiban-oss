@@ -35,6 +35,18 @@ describe('QueueTable cells', () => {
     expect(screen.getByText('Filing overdue, due Apr 22, 2027')).toBeTruthy()
   })
 
+  it('puts the project under the number and shows the received date or its absence', () => {
+    setup([
+      row({ number: 'BP-2027-0001', projectTitle: 'Barn loft', receivedDate: d('2027-02-10') }),
+      row({ number: 'BP-2027-0002', projectTitle: 'Shed', receivedDate: null }),
+    ])
+    const first = screen.getByRole('link', { name: 'BP-2027-0001' }).closest('td')
+    expect(first?.textContent).toContain('Barn loft')
+    expect(screen.getByText('Feb 10, 2027')).toBeTruthy()
+    expect(screen.getByText('Not received')).toBeTruthy()
+    expect(screen.queryByRole('columnheader', { name: /^Project/ })).toBeNull()
+  })
+
   it('gives the parcel its own column linking to the parcel page', () => {
     setup([row({ parcelId: 'p9', parcelDisplayId: '007009000000' })])
     const link = screen.getByRole('link', { name: '007009000000' })

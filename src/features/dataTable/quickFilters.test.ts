@@ -145,6 +145,42 @@ describe('filterTabs', () => {
   })
 })
 
+describe('filterTabs with a named default tab', () => {
+  const group = {
+    param: 'stage',
+    label: 'Status',
+    defaultTab: 'action',
+    options: [
+      { value: 'action', label: 'Needs action', count: 3 },
+      { value: 'open', label: 'Open', count: 4 },
+      { value: 'all', label: 'All', count: 9 },
+    ],
+  }
+
+  it('makes the default tab active with no param and links it without the param', () => {
+    const tabs = filterTabs('/a', readTableParams({ sort: 'number', cursor: '25' }), group)
+    expect(tabs).toEqual([
+      { label: 'Needs action', href: '/a?sort=number', active: true, count: 3 },
+      { label: 'Open', href: '/a?sort=number&stage=open', active: false, count: 4 },
+      { label: 'All', href: '/a?sort=number&stage=all', active: false, count: 9 },
+    ])
+  })
+
+  it('adds no synthetic All tab and keeps the given counts', () => {
+    const tabs = filterTabs('/a', readTableParams({ stage: 'all' }), group)
+    expect(tabs.map((t) => [t.label, t.href, t.active, t.count])).toEqual([
+      ['Needs action', '/a', false, 3],
+      ['Open', '/a?stage=open', false, 4],
+      ['All', '/a?stage=all', true, 9],
+    ])
+  })
+
+  it('falls back to the default tab for an unknown value', () => {
+    const tabs = filterTabs('/a', readTableParams({ stage: 'bogus' }), group)
+    expect(tabs.filter((t) => t.active).map((t) => t.label)).toEqual(['Needs action'])
+  })
+})
+
 describe('labeledOptions', () => {
   it('turns labels into options and attaches counts when given', () => {
     const labels = new Map([

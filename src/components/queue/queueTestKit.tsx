@@ -11,6 +11,8 @@ export function row(overrides: Partial<WorkQueueRow>): WorkQueueRow {
   return {
     applicationId: crypto.randomUUID(),
     number: 'BP-2027-0001',
+    projectTitle: 'Garage addition',
+    receivedDate: null,
     typeLabel: 'Building permit',
     state: 'submitted',
     substep: null,

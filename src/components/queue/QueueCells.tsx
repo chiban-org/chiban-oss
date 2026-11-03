@@ -29,8 +29,19 @@ export function ParcelCell({ row }: { row: WorkQueueRow }) {
   )
 }
 
+export function ReceivedCell({ row }: { row: WorkQueueRow }) {
+  return (
+    <td data-label="Received" className={cn(STACKED_CELL, 'whitespace-nowrap tabular-nums')}>
+      {row.receivedDate === null ? (
+        <span className="text-muted-foreground">Not received</span>
+      ) : (
+        formatCivilDateShort(row.receivedDate)
+      )}
+    </td>
+  )
+}
+
 export function ApplicationCell({ row, edgeClass }: { row: WorkQueueRow; edgeClass: string }) {
-  const detail = row.typeLabel
   return (
     <td data-label="Application" className={cn(CARD_CELL, edgeClass)}>
       <Link
@@ -39,8 +50,11 @@ export function ApplicationCell({ row, edgeClass }: { row: WorkQueueRow; edgeCla
       >
         {row.number}
       </Link>
-      <span className="block max-w-72 truncate text-muted-foreground" title={detail}>
-        {detail}
+      <span className="block max-w-72 truncate text-muted-foreground" title={row.projectTitle}>
+        {row.projectTitle}
+      </span>
+      <span className="block max-w-72 truncate text-xs text-muted-foreground" title={row.typeLabel}>
+        {row.typeLabel}
       </span>
       {row.unknownPayment || row.preservationIncomplete ? (
         <span className="mt-1.5 flex flex-wrap gap-1">

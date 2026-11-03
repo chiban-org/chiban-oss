@@ -33,7 +33,6 @@ vi.mock('next/navigation', () => ({
   },
 }))
 
-const { default: QueuePage } = await import('@/app/(staff)/staff/queue/page')
 const { default: ApplicationsPage } = await import('@/app/(staff)/staff/applications/page')
 const { default: ReviewsPage } = await import('@/app/(staff)/staff/reviews/page')
 const { default: InspectionsPage } = await import('@/app/(staff)/staff/inspections/page')
@@ -73,9 +72,8 @@ const NO_PERMISSION = 'You do not have permission'
 const noSearch = { searchParams: Promise.resolve({}) }
 
 describe('section pages refuse with one permission page', () => {
-  it('a board member gets the permission page on the queue and application list', async () => {
+  it('a board member gets the permission page on the application list', async () => {
     await actAs('board')
-    expect(await html(QueuePage(noSearch))).toContain(NO_PERMISSION)
     expect(await html(ApplicationsPage(noSearch))).toContain(NO_PERMISSION)
     expect(await html(ReviewsPage())).toContain(NO_PERMISSION)
   })

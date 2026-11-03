@@ -93,7 +93,7 @@ describe('QueueTable selection and keys', () => {
   it('Escape in the search box gives focus back to the page', () => {
     setup([row({})])
     const search = document.createElement('input')
-    search.id = 'queue-search'
+    search.id = 'applications-search'
     document.body.append(search)
     search.focus()
     key('Escape', search)
@@ -104,7 +104,7 @@ describe('QueueTable selection and keys', () => {
   it('/ moves focus to the search box', () => {
     setup([row({})])
     const search = document.createElement('input')
-    search.id = 'queue-search'
+    search.id = 'applications-search'
     document.body.append(search)
     key('/')
     expect(document.activeElement).toBe(search)

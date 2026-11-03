@@ -7,6 +7,7 @@ import {
   groupNavItems,
   isNested,
   NAV_GROUPS,
+  NAV_ICONS,
   navItemsFor,
   STAFF_NAV_ITEMS,
 } from '@/features/staffNav/navItems'
@@ -41,7 +42,7 @@ describe('staff navigation', () => {
 
   it('shows a board member only the pages that are not record workflows', () => {
     const labels = labelsFor('board_member')
-    for (const hidden of ['Queue', 'Applications', 'Reviews', 'Payments', 'Counter', 'Reports']) {
+    for (const hidden of ['Applications', 'Reviews', 'Payments', 'Counter', 'Reports']) {
       expect(labels).not.toContain(hidden)
     }
     expect(labels).toContain('Parcels')
@@ -65,11 +66,10 @@ describe('staff navigation', () => {
     }
   })
 
-  it('shows a reviewer reviews, applications and the queue but not the day list', () => {
+  it('shows a reviewer reviews and applications but not the day list', () => {
     const labels = labelsFor('reviewer')
     expect(labels).toContain('Reviews')
     expect(labels).toContain('Applications')
-    expect(labels).toContain('Queue')
     expect(labels).not.toContain('My day')
     for (const hidden of ['Imports', 'Exceptions', 'Unresolved records', 'Overrides', 'Settings']) {
       expect(labels).not.toContain(hidden)
@@ -136,6 +136,14 @@ describe('staff navigation', () => {
       'data',
       'admin',
     ])
+  })
+
+  it('lists applications once and no separate queue', () => {
+    expect(STAFF_NAV_ITEMS.some((i) => i.href === '/staff/queue' || i.label === 'Queue')).toBe(
+      false,
+    )
+    expect(STAFF_NAV_ITEMS.filter((i) => i.href === '/staff/applications')).toHaveLength(1)
+    expect(NAV_ICONS).not.toContain('queue')
   })
 
   it('gives every nav entry its own icon', () => {

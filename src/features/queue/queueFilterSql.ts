@@ -1,5 +1,5 @@
 import { inArray, type SQL, type SQLWrapper, sql } from 'drizzle-orm'
-import { applications, reviewAssignments, users } from '@/db/schema'
+import { applications, projects, reviewAssignments, users } from '@/db/schema'
 import { applicationVisibleTo } from '@/features/access/predicates'
 import { CORE_STATES } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
@@ -18,7 +18,7 @@ import {
   preservationIncompleteFor,
   UNKNOWN_PAYMENT,
 } from '@/features/queue/queueSql'
-import { NEEDS_ACTION_STATES } from '@/features/queue/stateScopes'
+import { NEEDS_ACTION_STATES, type StatusTab, statesForTab } from '@/features/queue/stateScopes'
 import type { WorkQueueFilters } from '@/features/queue/workQueue'
 import { addDays, type CivilDate } from '@/types/civilDate'
 
@@ -59,21 +59,27 @@ export function flagClause(value: FlagFilter, actor: Actor): SQL {
   }
 }
 
+function statesClause(states: readonly string[] | undefined): SQL {
+  return states === undefined ? NEEDS_ACTION : inArray(applications.state, [...states])
+}
+
+export function tabClause(tab: StatusTab): SQL {
+  return statesClause(statesForTab(tab))
+}
+
 function escapeLike(text: string): string {
   return text.replace(/[\\%_]/g, (c) => `\\${c}`)
 }
 
 export function scopeClauses(actor: Actor, filters: WorkQueueFilters): (SQL | undefined)[] {
-  const states = filters.states
   const search = filters.numberContains ?? ''
   return [
     applicationVisibleTo(actor),
-    states === undefined ? NEEDS_ACTION : inArray(applications.state, states),
     search === '' ? undefined : sql`${applications.number} ilike ${`%${escapeLike(search)}%`}`,
   ]
 }
 
-export type QueueGroup = 'due' | 'assigned' | 'types' | 'flags'
+export type QueueGroup = 'stage' | 'due' | 'assigned' | 'types' | 'flags'
 
 export function groupClauses(
   actor: Actor,
@@ -82,6 +88,7 @@ export function groupClauses(
 ): ReadonlyMap<QueueGroup, SQL | undefined> {
   const types = filters.typeKeys ?? []
   return new Map<QueueGroup, SQL | undefined>([
+    ['stage', statesClause(filters.states)],
     ['due', anyOf((filters.due ?? []).map((v) => dueClause(v, today)))],
     ['assigned', anyOf((filters.assigned ?? []).map((v) => assignedClause(v, actor)))],
     ['types', types.length === 0 ? undefined : inArray(applications.applicationTypeKey, types)],
@@ -117,11 +124,13 @@ const PARCEL_DISPLAY_ID = sql`(
 
 export const QUEUE_SORT_COLUMNS: Readonly<Record<QueueSortKey, SQLWrapper>> = {
   number: applications.number,
+  project: projects.title,
   parcel: PARCEL_DISPLAY_ID,
   status: STATUS_ORDER,
   due: NEXT_DUE,
   fees: FEES_DUE,
   reviewers: FIRST_REVIEWER,
+  received: applications.receivedDate,
 }
 
 export const QUEUE_TIEBREAK: readonly SQL[] = [

@@ -67,13 +67,13 @@ afterAll(async () => {
 })
 
 describe('staff application pages', () => {
-  it('the application list shows every seeded application with a link', async () => {
-    const page = await html(ApplicationsPage({ searchParams: Promise.resolve({}) }))
+  it('the application list shows every seeded application with a link on the All tab', async () => {
+    const page = await html(ApplicationsPage({ searchParams: Promise.resolve({ stage: 'all' }) }))
     const seeded = await handle.db.select().from(applications)
     expect(page.match(/href="\/staff\/applications\//g)).toHaveLength(seeded.length)
     expect(page).toContain('Under review')
     expect(page).toContain('Suspended by appeal (RSA 676:6)')
-    expect(page).toContain('href="/staff/queue"')
+    expect(page).not.toContain('/staff/queue')
   })
 
   it('the application list sorts from its headers and filters with chips', async () => {
@@ -81,7 +81,9 @@ describe('staff application pages', () => {
     expect(page).toMatch(
       /<th scope="col"[^>]*><a[^>]*href="\/staff\/applications\?sort=number&amp;dir=asc"/,
     )
-    expect(page).not.toContain('aria-sort')
+    expect(page).toMatch(
+      /aria-sort="ascending"[^>]*><a[^>]*href="\/staff\/applications\?sort=due&amp;dir=desc"/,
+    )
     expect(page).toMatch(/<button[^>]*aria-haspopup="menu"[^>]*>Type</)
     expect(page).not.toContain('Clear all')
     const sorted = await html(
@@ -92,7 +94,10 @@ describe('staff application pages', () => {
     )
     expect(sorted).not.toContain('Clear all')
     expect(sorted).toMatch(/<nav[^>]*aria-label="Status"/)
-    expect(sorted).toMatch(/<a[^>]*href="\/staff\/applications\?sort=number"[^>]*>All</)
+    expect(sorted).toMatch(/<a[^>]*href="\/staff\/applications\?sort=number"[^>]*>Needs action</)
+    expect(sorted).toMatch(
+      /<a[^>]*href="\/staff\/applications\?sort=number&amp;stage=all"[^>]*>All</,
+    )
     expect(sorted).toMatch(
       /<a aria-current="page"[^>]*href="\/staff\/applications\?sort=number&amp;stage=issued">Issued or suspended</,
     )

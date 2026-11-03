@@ -10,6 +10,7 @@ import {
   DueCell,
   FeesCell,
   ParcelCell,
+  ReceivedCell,
   ReviewersCell,
 } from '@/components/queue/QueueCells'
 import { useQueueKeys } from '@/components/queue/useQueueKeys'
@@ -32,11 +33,13 @@ interface Props {
 function sortOptions(sort: Record<QueueSortKey, SortLink>) {
   return [
     { label: 'Number', link: sort.number },
+    { label: 'Project', link: sort.project },
     { label: 'Parcel', link: sort.parcel },
     { label: 'Status', link: sort.status },
     { label: 'Due', link: sort.due },
     { label: 'Fees', link: sort.fees },
     { label: 'Reviewers', link: sort.reviewers },
+    { label: 'Received', link: sort.received },
   ]
 }
 
@@ -44,12 +47,17 @@ function QueueHead({ sort }: { sort: Record<QueueSortKey, SortLink> | undefined 
   return (
     <thead className="max-md:hidden">
       <tr>
-        <SortHeader label="Application" link={sort?.number} />
+        <SortHeader
+          label="Application"
+          link={sort?.number}
+          secondary={{ label: 'Project', link: sort?.project }}
+        />
         <SortHeader label="Parcel" link={sort?.parcel} />
         <SortHeader label="Status" link={sort?.status} />
         <SortHeader label="Due" link={sort?.due} />
         <SortHeader label="Fees" link={sort?.fees} className="md:text-right" />
         <SortHeader label="Reviewers" link={sort?.reviewers} />
+        <SortHeader label="Received" link={sort?.received} />
       </tr>
     </thead>
   )
@@ -130,6 +138,7 @@ export function QueueTable({ rows, reviewers, assign, navigate, empty, sort }: P
                 <DueCell row={row} />
                 <FeesCell cents={row.feesDueCents} />
                 <ReviewersCell row={row} onAssign={canAssign ? () => assignRow(index) : null} />
+                <ReceivedCell row={row} />
               </tr>
             ))}
           </tbody>

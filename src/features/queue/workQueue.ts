@@ -46,6 +46,8 @@ export type DueStatus = 'overdue' | 'warning' | 'ok' | 'none'
 export interface WorkQueueRow {
   applicationId: string
   number: string
+  projectTitle: string
+  receivedDate: CivilDate | null
   typeLabel: string
   state: CoreState
   substep: string | null
@@ -170,6 +172,8 @@ export async function listWorkQueue(
     .select({
       id: applications.id,
       number: applications.number,
+      projectTitle: projects.title,
+      receivedDate: applications.receivedDate,
       state: applications.state,
       substep: applications.substep,
       configPins: applications.configPins,
@@ -209,6 +213,8 @@ export async function listWorkQueue(
       return {
         applicationId: r.id,
         number: r.number,
+        projectTitle: r.projectTitle,
+        receivedDate: r.receivedDate as CivilDate | null,
         typeLabel: type?.label ?? '',
         state: r.state as CoreState,
         substep: r.substep,

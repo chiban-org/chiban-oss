@@ -15,23 +15,32 @@ import {
   type SortConfig,
   type SortState,
 } from '@/features/dataTable/sort'
-import { stateFilterOptions } from '@/features/queue/stateFilterOptions'
-import { statesForParam } from '@/features/queue/stateScopes'
+import { readStatusTab, STATUS_TAB_PARAM, statesForTab } from '@/features/queue/stateScopes'
 import type { WorkQueueFilters } from '@/features/queue/workQueue'
 
-export const QUEUE_PATH = '/staff/queue'
+export const APPLICATIONS_PATH = '/staff/applications'
 
-export type QueueSortKey = 'number' | 'parcel' | 'status' | 'due' | 'fees' | 'reviewers'
+export type QueueSortKey =
+  | 'number'
+  | 'project'
+  | 'parcel'
+  | 'status'
+  | 'due'
+  | 'fees'
+  | 'reviewers'
+  | 'received'
 
 export const QUEUE_SORT: SortConfig<QueueSortKey> = {
   defaultKey: 'due',
   columns: {
     number: 'asc',
+    project: 'asc',
     parcel: 'asc',
     status: 'asc',
     due: 'asc',
     fees: 'desc',
     reviewers: 'asc',
+    received: 'desc',
   },
 }
 
@@ -61,7 +70,7 @@ export const FLAG_LABELS: ReadonlyMap<FlagFilter, string> = new Map([
   ['preservation', 'Preservation incomplete'],
 ])
 
-export const QUEUE_FILTER_PARAMS = ['q', 'state', 'due', 'assigned', 'type', 'flag'] as const
+export const QUEUE_FILTER_PARAMS = ['q', 'due', 'assigned', 'type', 'flag'] as const
 
 export interface QueueView {
   params: TableParams
@@ -70,7 +79,7 @@ export interface QueueView {
 }
 
 export function queueFilters(params: TableParams): WorkQueueFilters {
-  const states = statesForParam(firstParam(params, 'state'))
+  const states = statesForTab(readStatusTab(params))
   const q = firstParam(params, 'q')
   return {
     ...(states === undefined ? {} : { states }),
@@ -87,11 +96,6 @@ export function readQueueView(raw: RawSearchParams): QueueView {
   return { params, sort: parseSort(QUEUE_SORT, params), filters: queueFilters(params) }
 }
 
-function stateLabelFor(state: string | undefined): string | null {
-  if (state === undefined) return null
-  return stateFilterOptions().find(([value]) => value === state)?.[1] ?? null
-}
-
 function labelsOf<V extends string>(
   values: readonly V[] | undefined,
   labels: ReadonlyMap<V, string>,
@@ -105,10 +109,8 @@ export function activeFilterLabels(
 ): string[] {
   const filters = queueFilters(params)
   const q = firstParam(params, 'q')
-  const state = stateLabelFor(firstParam(params, 'state'))
   return [
     ...(q === undefined ? [] : [`Number contains ${q}`]),
-    ...(state === null ? [] : [state]),
     ...labelsOf(filters.due, DUE_LABELS),
     ...labelsOf(filters.assigned, ASSIGNED_LABELS),
     ...labelsOf(filters.typeKeys, typeLabels),
@@ -117,7 +119,7 @@ export function activeFilterLabels(
 }
 
 export function filterKey(params: TableParams): string {
-  return [SORT_PARAM, DIR_PARAM, PAGE_PARAM, ...QUEUE_FILTER_PARAMS]
+  return [SORT_PARAM, DIR_PARAM, PAGE_PARAM, STATUS_TAB_PARAM, ...QUEUE_FILTER_PARAMS]
     .map((name) => paramValues(params, name).join(','))
     .join('|')
 }

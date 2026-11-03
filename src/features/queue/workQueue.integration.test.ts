@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { clocks } from '@/db/schema'
-import { ALL_BUT_DRAFT_STATES } from '@/features/queue/stateScopes'
+import { statesForTab } from '@/features/queue/stateScopes'
 import { listWorkQueue, type WorkQueueFilters } from '@/features/queue/workQueue'
 import { assignReviewer } from '@/features/reviews/assignments'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
@@ -77,7 +77,7 @@ describe('work queue', () => {
     expect(second).toMatchObject({ offset: 25, prevCursor: '0', nextCursor: null })
   })
 
-  it('lists only applications that need action unless asked for all but draft', async () => {
+  it('lists only applications that need action unless asked for the finished tab', async () => {
     const open = await makeApplication(handle.db, world, { state: 'submitted' })
     const issued = await makeApplication(handle.db, world, { state: 'issued' })
     const denied = await makeApplication(handle.db, world, { state: 'denied' })
@@ -88,11 +88,10 @@ describe('work queue', () => {
     expect(byDefault).not.toContain(denied.applicationId)
     expect(byDefault).not.toContain(closed.applicationId)
     expect(byDefault).not.toContain(draft.applicationId)
-    const wide = await list({ states: [...ALL_BUT_DRAFT_STATES] })
-    expect(wide.rows.map((r) => r.applicationId)).toEqual(
-      expect.arrayContaining([denied.applicationId, closed.applicationId]),
+    const finished = await list({ states: statesForTab('finished') ?? [] })
+    expect(finished.rows.map((r) => r.applicationId).sort()).toEqual(
+      [denied.applicationId, closed.applicationId].sort(),
     )
-    expect(wide.total).toBe(4)
   })
 
   it('an applicant gets no staff queue rows', async () => {

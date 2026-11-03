@@ -1,163 +1,113 @@
-import Link from 'next/link'
-import { ApplicationStatusChip } from '@/components/ApplicationStatusChip'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
-import { QuickFilters } from '@/components/dataTable/QuickFilters'
-import { SortHeader } from '@/components/dataTable/SortHeader'
 import { TablePager } from '@/components/dataTable/TablePager'
+import { QueueFilters } from '@/components/queue/QueueFilters'
+import { KeyHints, NoMatches, QueueSummary } from '@/components/queue/QueueSummary'
+import { QueueTable } from '@/components/queue/QueueTable'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { hasFullRecordAccess } from '@/features/access/roles'
+import { hasCapability } from '@/features/authz/capabilities'
 import {
-  listStaffApplications,
-  type StaffApplicationRow,
-  staffApplicationFacets,
-} from '@/features/applications/staffList'
-import {
-  applicationChipGroups,
-  applicationStatusTabs,
-} from '@/features/applications/staffListChips'
-import {
-  APPLICATION_FILTER_PARAMS,
-  APPLICATION_SORT,
-  APPLICATIONS_PATH,
-  readApplicationsView,
-} from '@/features/applications/staffListParams'
-import type { CoreState } from '@/features/applications/states'
-import { substepLabelsFor } from '@/features/applications/substepLabels'
-import { clearHref, pageHref, type RawSearchParams, readOffset } from '@/features/dataTable/params'
+  clearHref,
+  firstParam,
+  PAGE_PARAM,
+  pageHref,
+  type RawSearchParams,
+} from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
-import { displayIdsFor } from '@/features/parcels/displayId'
+import { carriedParams, queueChipGroups, statusTabs } from '@/features/queue/queueChips'
+import { queueFacets } from '@/features/queue/queueFacets'
+import {
+  APPLICATIONS_PATH,
+  activeFilterLabels,
+  filterKey,
+  QUEUE_FILTER_PARAMS,
+  QUEUE_SORT,
+  readQueueView,
+} from '@/features/queue/queueParams'
+import { readStatusTab, type StatusTab } from '@/features/queue/stateScopes'
+import { listWorkQueue } from '@/features/queue/workQueue'
+import { listReviewerChoices } from '@/features/reviews/reviewerView'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
-import { formatCivilDateShort } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
+import { assignReviewerAction } from '../reviews/actions'
+
+export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 25
 
-interface Props {
-  searchParams: Promise<RawSearchParams>
+const EMPTY_TAB: Readonly<Record<StatusTab, string>> = {
+  action: 'Nothing needs action right now.',
+  open: 'No open applications.',
+  issued: 'No issued or suspended permits.',
+  finished: 'No closed, denied, withdrawn or expired applications.',
+  all: 'No applications yet.',
 }
 
-function Row({
-  row,
-  parcel,
-  substepLabel,
+export default async function ApplicationsPage({
+  searchParams,
 }: {
-  row: StaffApplicationRow
-  parcel: string | undefined
-  substepLabel: string | undefined
+  searchParams: Promise<RawSearchParams>
 }) {
-  return (
-    <tr>
-      <td>
-        <Link href={`/staff/applications/${row.id}`} className="whitespace-nowrap font-semibold">
-          {row.number}
-        </Link>
-      </td>
-      <td>{row.projectTitle}</td>
-      <td>
-        <Link href={`/staff/parcels/${row.parcelId}`} className="tabular-nums">
-          {parcel ?? 'No map-lot ID'}
-        </Link>
-      </td>
-      <td>
-        <ApplicationStatusChip
-          state={row.state as CoreState}
-          substep={row.substep}
-          substepLabel={row.substep === null ? null : (substepLabel ?? '')}
-        />
-      </td>
-      <td className="whitespace-nowrap tabular-nums">
-        {row.receivedDate === null ? (
-          <span className="text-muted-foreground">Not received</span>
-        ) : (
-          formatCivilDateShort(row.receivedDate)
-        )}
-      </td>
-    </tr>
-  )
-}
-
-export default async function StaffApplicationsPage({ searchParams }: Props) {
-  const { params, sort, filters } = readApplicationsView(await searchParams)
+  const { params, sort, filters } = readQueueView(await searchParams)
   const ctx = await requireStaffContext()
   if (!mayOpen(APPLICATIONS_PATH, await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
     return <NoPermission title="Applications" action="see applications" />
   }
+  const cursor = firstParam(params, PAGE_PARAM)
   const [page, facets] = await Promise.all([
-    listStaffApplications(
+    listWorkQueue(
       ctx.db,
       ctx.actor,
-      { filters, sort, limit: PAGE_SIZE, offset: readOffset(params) },
+      { filters, sort, limit: PAGE_SIZE, ...(cursor === undefined ? {} : { cursor }) },
       ctx.signal,
     ),
-    staffApplicationFacets(ctx.db, ctx.actor, { filters }, ctx.signal),
+    queueFacets(ctx.db, ctx.actor, { filters }, ctx.signal),
   ])
-  const display = await displayIdsFor(
-    ctx.db,
-    page.rows.map((r) => r.parcelId),
-  )
-  const substepLabels = await substepLabelsFor(
-    ctx.db,
-    page.rows.map((r) => r.id),
-    ctx.signal,
-  )
-  const links = sortLinks(APPLICATIONS_PATH, params, APPLICATION_SORT, sort)
-  const clear = clearHref(APPLICATIONS_PATH, params, APPLICATION_FILTER_PARAMS)
-  const pageLink = (offset: number | null) =>
-    offset === null ? null : pageHref(APPLICATIONS_PATH, params, String(offset))
+  const canAssign = await hasCapability(ctx.db, ctx.actor.userId, 'review.assign', ctx.signal)
+  const reviewers = canAssign ? await listReviewerChoices(ctx.db) : []
+  const labels = activeFilterLabels(params, new Map(facets.types.map((t) => [t.value, t.label])))
+  const clear = clearHref(APPLICATIONS_PATH, params, QUEUE_FILTER_PARAMS)
   return (
     <main data-wide="">
       <h1>Applications</h1>
       <p className="mb-5">
-        Every application, newest first until you sort by a column. To search by number, use the{' '}
-        <Link href="/staff/queue" className="text-action underline">
-          work queue
-        </Link>
-        .
+        Needs action lists open applications and any with a deadline still running, soonest due
+        first. The other tabs show the rest, drafts included.
       </p>
-      <FilterTabs label="Status" tabs={applicationStatusTabs(params, facets)} />
-      <div className="toolbar mb-5">
-        <QuickFilters
-          label="Quick filters"
-          groups={applicationChipGroups(params, facets)}
-          clearHref={clear}
-        />
-      </div>
-      <p className="mb-3 font-semibold text-ink">{`${page.total} ${page.total === 1 ? 'application' : 'applications'}`}</p>
-      <div className="table-panel">
-        {page.rows.length === 0 ? (
-          <p className="px-5 py-8">
-            {clear === null ? 'No applications yet.' : 'No applications match these filters.'}
-          </p>
-        ) : (
-          <table className="w-full min-w-[44rem] text-sm">
-            <thead>
-              <tr>
-                <SortHeader label="Number" link={links.number} />
-                <SortHeader label="Project" link={links.project} />
-                <SortHeader label="Parcel" link={links.parcel} />
-                <SortHeader label="State" link={links.state} />
-                <SortHeader label="Received" link={links.received} />
-              </tr>
-            </thead>
-            <tbody>
-              {page.rows.map((row) => (
-                <Row
-                  key={row.id}
-                  row={row}
-                  parcel={display.get(row.parcelId)}
-                  substepLabel={substepLabels.get(row.id)}
-                />
-              ))}
-            </tbody>
-          </table>
-        )}
-      </div>
+      <FilterTabs label="Status" tabs={statusTabs(params, facets)} />
+      <QueueFilters
+        search={firstParam(params, 'q') ?? ''}
+        carried={carriedParams(params)}
+        chips={queueChipGroups(params, facets, hasFullRecordAccess(ctx.actor))}
+        clearHref={clear}
+      />
+      <QueueSummary total={page.total} filters={labels} />
+      <KeyHints canAssign={reviewers.length > 0} />
+      <QueueTable
+        key={filterKey(params)}
+        rows={page.rows}
+        reviewers={reviewers}
+        assign={assignReviewerAction}
+        sort={sortLinks(APPLICATIONS_PATH, params, QUEUE_SORT, sort)}
+        empty={
+          <NoMatches
+            filters={labels}
+            clearHref={clear}
+            emptyText={EMPTY_TAB[readStatusTab(params)]}
+          />
+        }
+      />
       <TablePager
         offset={page.offset}
         shown={page.rows.length}
         total={page.total}
-        prevHref={pageLink(page.prevOffset)}
-        nextHref={pageLink(page.nextOffset)}
+        prevHref={
+          page.prevCursor === null ? null : pageHref(APPLICATIONS_PATH, params, page.prevCursor)
+        }
+        nextHref={
+          page.nextCursor === null ? null : pageHref(APPLICATIONS_PATH, params, page.nextCursor)
+        }
       />
     </main>
   )

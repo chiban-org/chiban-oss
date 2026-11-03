@@ -1,11 +1,16 @@
 import { describe, expect, it } from 'vitest'
+import { CORE_STATES } from '@/features/applications/states'
+import { readTableParams } from '@/features/dataTable/params'
 import {
-  ALL_BUT_DRAFT_STATES,
   NEEDS_ACTION_STATES,
-  statesForParam,
+  readStatusTab,
+  STATUS_TAB_STATES,
+  STATUS_TABS,
+  statesForTab,
+  tabForState,
 } from '@/features/queue/stateScopes'
 
-describe('queue state scopes', () => {
+describe('application status tabs', () => {
   it('needs action leaves out drafts and finished applications but keeps issued permits', () => {
     for (const state of ['draft', 'closed', 'denied', 'withdrawn', 'expired'] as const) {
       expect(NEEDS_ACTION_STATES).not.toContain(state)
@@ -15,16 +20,38 @@ describe('queue state scopes', () => {
     )
   })
 
-  it('all but draft keeps the finished applications', () => {
-    expect(ALL_BUT_DRAFT_STATES).not.toContain('draft')
-    expect(ALL_BUT_DRAFT_STATES).toEqual(expect.arrayContaining(['closed', 'denied', 'expired']))
+  it('offers needs action first and all last', () => {
+    expect(STATUS_TABS).toEqual(['action', 'open', 'issued', 'finished', 'all'])
   })
 
-  it('maps the status parameter to the states to list', () => {
-    expect(statesForParam(undefined)).toBeUndefined()
-    expect(statesForParam('')).toBeUndefined()
-    expect(statesForParam('all')).toEqual(ALL_BUT_DRAFT_STATES)
-    expect(statesForParam('denied')).toEqual(['denied'])
-    expect(statesForParam('bogus')).toBeUndefined()
+  it('keeps drafts in open and in all, and nowhere else', () => {
+    expect(statesForTab('open')).toEqual(['draft', 'submitted', 'under_review', 'decided'])
+    expect(statesForTab('issued')).toEqual(['issued', 'suspended'])
+    expect(statesForTab('finished')).toEqual(['closed', 'denied', 'withdrawn', 'expired'])
+    expect(statesForTab('all')).toEqual([...CORE_STATES])
+    expect(statesForTab('action')).toBeUndefined()
+  })
+
+  it('puts every core state in exactly one of the three state groups', () => {
+    const grouped = (['open', 'issued', 'finished'] as const).flatMap(
+      (tab) => STATUS_TAB_STATES.get(tab) ?? [],
+    )
+    expect([...grouped].sort()).toEqual([...CORE_STATES].sort())
+  })
+
+  it('reads the tab from the stage param and falls back to needs action', () => {
+    expect(readStatusTab(readTableParams({}))).toBe('action')
+    expect(readStatusTab(readTableParams({ stage: 'issued' }))).toBe('issued')
+    expect(readStatusTab(readTableParams({ stage: 'bogus' }))).toBe('action')
+  })
+
+  it('maps an old queue state param to the tab that holds it', () => {
+    expect(tabForState(undefined)).toBe('action')
+    expect(tabForState('all')).toBe('all')
+    expect(tabForState('draft')).toBe('open')
+    expect(tabForState('submitted')).toBe('open')
+    expect(tabForState('suspended')).toBe('issued')
+    expect(tabForState('denied')).toBe('finished')
+    expect(tabForState('bogus')).toBe('action')
   })
 })

@@ -111,14 +111,49 @@ function totalOf(options: readonly FilterOption[]): number | undefined {
   return total
 }
 
-export function filterTabs(
+export interface TabGroup extends FilterGroup {
+  defaultTab?: string
+}
+
+function tabView(path: string, params: TableParams, param: string, option: FilterOption) {
+  return (value: readonly string[] | null, active: boolean): ChipView => ({
+    label: option.label,
+    href: tableHref(path, params, { [param]: value }),
+    active,
+    ...(option.count === undefined ? {} : { count: option.count }),
+  })
+}
+
+function chosenTab(params: TableParams, group: FilterGroup): string | undefined {
+  const chosen = paramValues(params, group.param)[0]
+  return group.options.some((o) => o.value === chosen) ? chosen : undefined
+}
+
+function defaultedTabs(
   path: string,
   params: TableParams,
   group: FilterGroup,
+  defaultTab: string,
+): ChipView[] {
+  const active = chosenTab(params, group) ?? defaultTab
+  return group.options.map((option) =>
+    tabView(
+      path,
+      params,
+      group.param,
+      option,
+    )(option.value === defaultTab ? null : [option.value], option.value === active),
+  )
+}
+
+export function filterTabs(
+  path: string,
+  params: TableParams,
+  group: TabGroup,
   allLabel = 'All',
 ): ChipView[] {
-  const chosen = paramValues(params, group.param)[0]
-  const active = group.options.some((o) => o.value === chosen) ? chosen : undefined
+  if (group.defaultTab !== undefined) return defaultedTabs(path, params, group, group.defaultTab)
+  const active = chosenTab(params, group)
   const total = totalOf(group.options)
   const all: ChipView = {
     label: allLabel,
@@ -128,11 +163,8 @@ export function filterTabs(
   }
   return [
     all,
-    ...group.options.map((option) => ({
-      label: option.label,
-      href: tableHref(path, params, { [group.param]: [option.value] }),
-      active: option.value === active,
-      ...(option.count === undefined ? {} : { count: option.count }),
-    })),
+    ...group.options.map((option) =>
+      tabView(path, params, group.param, option)([option.value], option.value === active),
+    ),
   ]
 }

@@ -41,12 +41,20 @@ export function KeyHints({ canAssign }: { canAssign: boolean }) {
   )
 }
 
-export function NoMatches({ filters }: { filters: string[] }) {
-  if (filters.length === 0) return <p>Nothing needs action right now.</p>
+export function NoMatches({
+  filters,
+  clearHref,
+  emptyText,
+}: {
+  filters: string[]
+  clearHref: string | null
+  emptyText: string
+}) {
+  if (filters.length === 0 || clearHref === null) return <p>{emptyText}</p>
   return (
     <p>
       {`No applications match ${filters.join(', ')}. `}
-      <Link href="/staff/queue">Clear filters</Link>
+      <Link href={clearHref}>Clear filters</Link>
     </p>
   )
 }

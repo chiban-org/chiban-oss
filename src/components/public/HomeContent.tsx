@@ -27,7 +27,7 @@ function AccountTask({ audience }: { audience: HomeAudience }) {
   if (audience === 'staff') {
     return (
       <Task href="/staff" title="Open the staff site">
-        The counter, the work queue, boards, inspections, and records.
+        The counter, applications, boards, inspections, and records.
       </Task>
     )
   }

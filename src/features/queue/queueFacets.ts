@@ -12,12 +12,15 @@ import {
   type QueueGroup,
   queueWhere,
   scopeClauses,
+  tabClause,
 } from '@/features/queue/queueFilterSql'
 import { ASSIGNED_FILTERS, DUE_FILTERS, FLAG_FILTERS } from '@/features/queue/queueParams'
+import { STATUS_TABS } from '@/features/queue/stateScopes'
 import type { WorkQueueFilters } from '@/features/queue/workQueue'
 import { townToday } from '@/features/town/today'
 
 export interface QueueFacets {
+  stages: ReadonlyMap<string, number>
   due: ReadonlyMap<string, number>
   assigned: ReadonlyMap<string, number>
   flags: ReadonlyMap<string, number>
@@ -39,12 +42,14 @@ export async function queueFacets(
     scope,
     others,
     facets: [
+      facet('stage', STATUS_TABS, tabClause),
       facet('due', DUE_FILTERS, (v) => dueClause(v, today)),
       facet('assigned', ASSIGNED_FILTERS, (v) => assignedClause(v, actor)),
       facet('flags', FLAG_FILTERS, (v) => flagClause(v, actor)),
     ],
   })
   return {
+    stages: counts.get('stage') ?? new Map(),
     due: counts.get('due') ?? new Map(),
     assigned: counts.get('assigned') ?? new Map(),
     flags: counts.get('flags') ?? new Map(),

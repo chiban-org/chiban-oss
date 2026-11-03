@@ -44,7 +44,7 @@ vi.mock('next/navigation', () => ({
 vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
 
 const actions = await import('./actions')
-const { default: QueuePage } = await import('@/app/(staff)/staff/queue/page')
+const { default: ApplicationsPage } = await import('@/app/(staff)/staff/applications/page')
 const { default: ReviewsPage } = await import('./page')
 const { default: ReviewPage } = await import('./[assignmentId]/page')
 
@@ -87,9 +87,9 @@ describe('reviewer assignment actions and pages', () => {
     }
   })
 
-  it('the reviewer queue shows only the 2 assigned of 4, and the review page is theirs alone', async () => {
+  it('the reviewer application list shows only the 2 assigned of 4, and the review page is theirs alone', async () => {
     state.actor = world.reviewer
-    const html = renderToStaticMarkup(await QueuePage({ searchParams: Promise.resolve({}) }))
+    const html = renderToStaticMarkup(await ApplicationsPage({ searchParams: Promise.resolve({}) }))
     expect(html).toContain('2 applications')
     const mine = renderToStaticMarkup(await ReviewsPage())
     const assignmentId = /reviews\/([0-9a-f-]{36})/.exec(mine)?.[1] ?? ''
@@ -108,9 +108,9 @@ describe('reviewer assignment actions and pages', () => {
     expect(signOff).toMatchObject({ ok: false })
   })
 
-  it('an applicant cannot open the staff queue', async () => {
+  it('an applicant cannot open the staff application list', async () => {
     state.actor = world.applicant
-    await expect(QueuePage({ searchParams: Promise.resolve({}) })).rejects.toThrow(
+    await expect(ApplicationsPage({ searchParams: Promise.resolve({}) })).rejects.toThrow(
       'NEXT_REDIRECT:/staff/sign-in',
     )
   })

@@ -28,7 +28,6 @@ export const NAV_ICONS = [
   'parcels',
   'map',
   'counter',
-  'queue',
   'reviews',
   'applications',
   'inspections',
@@ -111,13 +110,6 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
     group: 'work',
     icon: 'counter',
     access: { kind: 'allCapabilities', capabilities: ['permit.issue', 'payment.collect'] },
-  },
-  {
-    href: '/staff/queue',
-    label: 'Queue',
-    group: 'work',
-    icon: 'queue',
-    access: { kind: 'fullRecordAccessOrReviewer' },
   },
   {
     href: '/staff/reviews',

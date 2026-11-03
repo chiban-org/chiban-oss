@@ -21,31 +21,46 @@ function SortIcon({ direction }: { direction: SortDir | null }) {
   return <Arrow aria-hidden={true} className="size-3.5 shrink-0 text-action" />
 }
 
+function HeaderLink({ label, link }: { label: string; link: SortLink | undefined }) {
+  if (link === undefined) return label
+  return (
+    <Link
+      href={link.href}
+      className={cn(
+        'group inline-flex items-center gap-1 rounded-sm text-ink no-underline hover:text-action',
+        link.direction === null ? '' : 'text-action',
+      )}
+    >
+      {label}
+      <SortIcon direction={link.direction} />
+    </Link>
+  )
+}
+
+export interface SecondarySort {
+  label: string
+  link?: SortLink | undefined
+}
+
 export function SortHeader({
   label,
   link,
   className,
+  secondary,
 }: {
   label: string
   link?: SortLink | undefined
   className?: string
+  secondary?: SecondarySort
 }) {
-  const direction = link?.direction ?? null
+  const direction = link?.direction ?? secondary?.link?.direction ?? null
   return (
     <th scope="col" aria-sort={ariaSort(direction)} className={className}>
-      {link === undefined ? (
-        label
-      ) : (
-        <Link
-          href={link.href}
-          className={cn(
-            'group inline-flex items-center gap-1 rounded-sm text-ink no-underline hover:text-action',
-            direction === null ? '' : 'text-action',
-          )}
-        >
-          {label}
-          <SortIcon direction={direction} />
-        </Link>
+      <HeaderLink label={label} link={link} />
+      {secondary === undefined ? null : (
+        <span className="mt-0.5 block font-normal">
+          <HeaderLink label={secondary.label} link={secondary.link} />
+        </span>
       )}
     </th>
   )
