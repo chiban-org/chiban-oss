@@ -63,7 +63,7 @@ describe('abutter lists on the board panel', () => {
       lists: [
         { id: 'l1', version: 1, statusText: 'Issued', drawnText: 'October 2, 2026', issued: true },
       ],
-    } as unknown as BoardPanelData
+    }
   }
 
   it('links each version to its list for a viewer who can open lists', () => {

@@ -10,7 +10,7 @@ function source(patch: Partial<Provenance>): Provenance {
     ageDays: 0,
     state: 'fresh',
     ...patch,
-  } as Provenance
+  }
 }
 
 describe('provenanceText', () => {
