@@ -26,7 +26,7 @@ async function log(receivedOn: string, description: string): Promise<string> {
     handle.db,
     staff,
     {
-      receivedOn: receivedOn as CivilDate,
+      receivedOn: receivedOn,
       receivedVia: 'email',
       requesterName: 'Jordan Reyes',
       description,
