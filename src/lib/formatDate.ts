@@ -11,6 +11,15 @@ export function formatCivilDate(date: CivilDate | string): string {
   }).format(new Date(`${date}T00:00:00Z`))
 }
 
+export function formatCivilDateShort(date: CivilDate | string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  }).format(new Date(`${date}T00:00:00Z`))
+}
+
 const ISO_DATE_IN_TEXT = /\b\d{4}-\d{2}-\d{2}\b/g
 
 export function humanizeIsoDates(text: string): string {

@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { clocks } from '@/db/schema'
+import { ALL_BUT_DRAFT_STATES } from '@/features/queue/stateScopes'
 import { listWorkQueue, type WorkQueueFilters } from '@/features/queue/workQueue'
 import { assignReviewer } from '@/features/reviews/assignments'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
@@ -70,6 +71,28 @@ describe('work queue', () => {
     expect(all.total).toBe(30)
     expect(all.rows).toHaveLength(25)
     expect(all.nextCursor).not.toBeNull()
+    expect(all).toMatchObject({ offset: 0, prevCursor: null })
+    const second = await list({}, world.staff, 25, all.nextCursor ?? '')
+    expect(second.rows).toHaveLength(5)
+    expect(second).toMatchObject({ offset: 25, prevCursor: '0', nextCursor: null })
+  })
+
+  it('lists only applications that need action unless asked for all but draft', async () => {
+    const open = await makeApplication(handle.db, world, { state: 'submitted' })
+    const issued = await makeApplication(handle.db, world, { state: 'issued' })
+    const denied = await makeApplication(handle.db, world, { state: 'denied' })
+    const closed = await makeApplication(handle.db, world, { state: 'closed' })
+    const draft = await makeApplication(handle.db, world, { state: 'draft' })
+    const byDefault = (await list()).rows.map((r) => r.applicationId)
+    expect(byDefault).toEqual(expect.arrayContaining([open.applicationId, issued.applicationId]))
+    expect(byDefault).not.toContain(denied.applicationId)
+    expect(byDefault).not.toContain(closed.applicationId)
+    expect(byDefault).not.toContain(draft.applicationId)
+    const wide = await list({ states: [...ALL_BUT_DRAFT_STATES] })
+    expect(wide.rows.map((r) => r.applicationId)).toEqual(
+      expect.arrayContaining([denied.applicationId, closed.applicationId]),
+    )
+    expect(wide.total).toBe(4)
   })
 
   it('an applicant gets no staff queue rows', async () => {
@@ -100,8 +123,13 @@ describe('work queue', () => {
       late.applicationId,
       none.applicationId,
     ])
-    expect(page.rows[0]).toMatchObject({ nextDue: '2027-03-10', dueStatus: 'ok', daysUntilDue: 8 })
-    expect(page.rows[2]).toMatchObject({ nextDue: null, dueStatus: 'none' })
+    expect(page.rows[0]).toMatchObject({
+      nextDue: '2027-03-10',
+      nextDueLabel: 'Building permit decision deadline',
+      dueStatus: 'ok',
+      daysUntilDue: 8,
+    })
+    expect(page.rows[2]).toMatchObject({ nextDue: null, nextDueLabel: null, dueStatus: 'none' })
   })
 
   it('overdue filter returns only applications with an overdue clock, and warning is within 5 days', async () => {

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   formatCivilDate,
+  formatCivilDateShort,
   formatInstant,
   formatInstantDate,
   formatInstantOrNever,
@@ -31,6 +32,13 @@ describe('humanizeIsoDates', () => {
 describe('formatCivilDate', () => {
   it('writes the month in words without shifting the day', () => {
     expect(formatCivilDate('2027-05-20')).toBe('May 20, 2027')
+  })
+})
+
+describe('formatCivilDateShort', () => {
+  it('abbreviates the month without shifting the day', () => {
+    expect(formatCivilDateShort('2026-11-01')).toBe('Nov 1, 2026')
+    expect(formatCivilDateShort('2027-05-20')).toBe('May 20, 2027')
   })
 })
 

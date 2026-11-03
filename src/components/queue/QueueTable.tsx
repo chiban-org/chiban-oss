@@ -1,198 +1,116 @@
 'use client'
 
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { ActionForm } from '@/components/ActionForm'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { ApplicationStatusChip } from '@/components/ApplicationStatusChip'
-import { StatusChip } from '@/components/StatusChip'
-import { SelectField } from '@/components/staff/fields'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
+import { AssignReviewerDialog, type QueueReviewer } from '@/components/queue/AssignReviewerDialog'
+import { ApplicationCell, DueCell, FeesCell, ReviewersCell } from '@/components/queue/QueueCells'
+import { useQueueKeys } from '@/components/queue/useQueueKeys'
 import type { WorkQueueRow } from '@/features/queue/workQueue'
-import { reviewStatusLabel } from '@/features/reviews/statusLabels'
-import { formatCivilDate } from '@/lib/formatDate'
-import { formatCents } from '@/lib/money'
 import type { ActionResult } from '@/server/actionRunner'
 
-export interface QueueReviewer {
-  id: string
-  name: string
-}
+export type { QueueReviewer } from '@/components/queue/AssignReviewerDialog'
 
 interface Props {
   rows: WorkQueueRow[]
   reviewers: QueueReviewer[]
   assign: (formData: FormData) => Promise<ActionResult>
   navigate?: (url: string) => void
+  empty?: ReactNode
 }
 
-const TEXT_ENTRY = new Set(['INPUT', 'TEXTAREA', 'SELECT'])
+const ROW_CLASS =
+  'cursor-pointer md:aria-selected:bg-canvas max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-2 max-md:px-4 max-md:py-3'
 
-function typingInField(target: EventTarget | null): boolean {
+const SELECTED_EDGE = 'md:[[aria-selected=true]>&]:shadow-[inset_3px_0_0_var(--action)]'
+
+function EmptyQueue({ children }: { children: ReactNode }) {
   return (
-    target instanceof HTMLElement && (TEXT_ENTRY.has(target.tagName) || target.isContentEditable)
+    <div className="table-panel">
+      <div className="px-5 py-8">{children}</div>
+    </div>
   )
 }
 
-function DueChip({ row }: { row: WorkQueueRow }) {
-  if (row.dueStatus === 'overdue') return <StatusChip status="overdue" label="Overdue" />
-  if (row.dueStatus === 'warning') {
-    return (
-      <span className="rounded-md bg-highlight px-2 py-1 font-semibold">{`Due in ${row.daysUntilDue} days`}</span>
-    )
-  }
-  return row.nextDue === null ? (
-    <span className="text-muted-foreground">No clock running</span>
-  ) : (
-    <span>{formatCivilDate(row.nextDue)}</span>
-  )
-}
-
-function BoardDates({ row }: { row: WorkQueueRow }) {
-  return (
-    <>
-      {row.noticeDue === null ? null : (
-        <span className="block">{`Notice due ${formatCivilDate(row.noticeDue)}`}</span>
-      )}
-      {row.filingDue === null ? null : (
-        <span className="block">{`Filing due ${formatCivilDate(row.filingDue)}`}</span>
-      )}
-    </>
-  )
-}
-
-function useQueueKeys(
-  rows: WorkQueueRow[],
-  selected: number,
-  setSelected: (next: (current: number) => number) => void,
-  open: (id: string) => void,
-  onAssign: () => void,
-) {
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      if (typingInField(event.target) || event.metaKey || event.ctrlKey || event.altKey) return
-      if (event.key === 'j') setSelected((c) => Math.min(rows.length - 1, c + 1))
-      else if (event.key === 'k') setSelected((c) => Math.max(0, c - 1))
-      else if (event.key === 'Enter' && rows[selected] !== undefined)
-        open(rows[selected].applicationId)
-      else if (event.key === 'a' && rows[selected] !== undefined) onAssign()
-      else if (event.key === '/') {
-        event.preventDefault()
-        document.getElementById('queue-search')?.focus()
-      }
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [rows, selected, setSelected, open, onAssign])
-}
-
-export function QueueTable({ rows, reviewers, assign, navigate }: Props) {
+export function QueueTable({ rows, reviewers, assign, navigate, empty }: Props) {
   const router = useRouter()
-  const [selected, setSelected] = useState(-1)
+  const body = useRef<HTMLTableSectionElement>(null)
+  const [selected, setSelected] = useState(0)
   const [assigning, setAssigning] = useState<WorkQueueRow | null>(null)
   const go = navigate ?? ((url: string) => router.push(url))
-  useQueueKeys(
-    rows,
+  const canAssign = reviewers.length > 0
+  const assignRow = (index: number) => setAssigning(rows.at(index) ?? null)
+  const scrollPending = useRef(false)
+  useEffect(() => {
+    if (!scrollPending.current) return
+    scrollPending.current = false
+    body.current?.rows.item(selected)?.scrollIntoView({ block: 'nearest' })
+  }, [selected])
+  useQueueKeys({
+    count: rows.length,
     selected,
-    setSelected,
-    (id) => go(`/staff/applications/${id}`),
-    () => setAssigning(rows[selected] ?? null),
-  )
-  if (rows.length === 0) return <p>Nothing matches these filters.</p>
+    paused: assigning !== null,
+    step: (delta) => {
+      scrollPending.current = true
+      setSelected((current) => Math.min(rows.length - 1, Math.max(0, current + delta)))
+    },
+    open: (index) => {
+      const row = rows.at(index)
+      if (row !== undefined) go(`/staff/applications/${row.applicationId}`)
+    },
+    assign: canAssign ? assignRow : null,
+  })
+  if (rows.length === 0) {
+    return <EmptyQueue>{empty ?? <p>Nothing matches these filters.</p>}</EmptyQueue>
+  }
   return (
     <>
       <div className="table-panel">
-        <table className="w-full text-sm">
-          <thead>
+        <table className="w-full text-sm max-md:block">
+          <thead className="max-md:sr-only">
             <tr>
-              <th>Application</th>
-              <th>Status</th>
-              <th>Due</th>
-              <th>Fees</th>
-              <th>Reviewers</th>
-              <th>Flags</th>
+              <th scope="col">Application</th>
+              <th scope="col">Status</th>
+              <th scope="col">Due</th>
+              <th scope="col" className="md:text-right">
+                Fees
+              </th>
+              <th scope="col">Reviewers</th>
             </tr>
           </thead>
-          <tbody>
+          <tbody ref={body} className="max-md:block">
             {rows.map((row, index) => (
               <tr
                 key={row.applicationId}
                 aria-selected={index === selected}
-                className={index === selected ? 'bg-highlight' : undefined}
+                onClick={() => setSelected(index)}
+                className={ROW_CLASS}
               >
-                <td>
-                  <Link href={`/staff/applications/${row.applicationId}`} className="font-semibold">
-                    {row.number}
-                  </Link>
-                  <span className="block text-muted-foreground">
-                    {`${row.typeLabel}${row.parcelDisplayId === null ? '' : `, ${row.parcelDisplayId}`}`}
-                  </span>
-                </td>
-                <td>
+                <ApplicationCell row={row} edgeClass={SELECTED_EDGE} />
+                <td
+                  data-label="Status"
+                  className="max-md:block max-md:max-w-44 max-md:justify-self-end max-md:p-0"
+                >
                   <ApplicationStatusChip
                     state={row.state}
                     substep={row.substep}
                     substepLabel={row.substepLabel}
                   />
                 </td>
-                <td>
-                  <DueChip row={row} />
-                  <BoardDates row={row} />
-                </td>
-                <td className="whitespace-nowrap tabular-nums">
-                  {row.feesDueCents > 0 ? `${formatCents(row.feesDueCents)} due` : ''}
-                </td>
-                <td className={row.reviewers.length === 0 ? 'text-muted-foreground' : undefined}>
-                  {row.reviewers.length === 0
-                    ? 'Unassigned'
-                    : row.reviewers
-                        .map((r) => `${r.name} (${reviewStatusLabel(r.status)})`)
-                        .join(', ')}
-                </td>
-                <td>
-                  <span className="flex flex-col items-start gap-1">
-                    {row.unknownPayment ? (
-                      <StatusChip status="overdue" label="Payment outcome unknown" />
-                    ) : null}
-                    {row.preservationIncomplete ? (
-                      <StatusChip status="overdue" label="Preservation incomplete" />
-                    ) : null}
-                  </span>
-                </td>
+                <DueCell row={row} />
+                <FeesCell cents={row.feesDueCents} />
+                <ReviewersCell row={row} onAssign={canAssign ? () => assignRow(index) : null} />
               </tr>
             ))}
           </tbody>
         </table>
       </div>
-      <Dialog
-        open={assigning !== null}
-        onOpenChange={(open) => (open ? undefined : setAssigning(null))}
-      >
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Assign a reviewer</DialogTitle>
-            <DialogDescription>
-              {assigning === null ? '' : `Application ${assigning.number}`}
-            </DialogDescription>
-          </DialogHeader>
-          {assigning === null ? null : (
-            <ActionForm action={assign} submitLabel="Assign" variant="default">
-              <input type="hidden" name="applicationId" value={assigning.applicationId} />
-              <SelectField
-                label="Reviewer"
-                name="reviewerUserId"
-                options={reviewers.map((r): [string, string] => [r.id, r.name])}
-              />
-            </ActionForm>
-          )}
-        </DialogContent>
-      </Dialog>
+      <AssignReviewerDialog
+        row={assigning}
+        reviewers={reviewers}
+        assign={assign}
+        onClose={() => setAssigning(null)}
+      />
     </>
   )
 }

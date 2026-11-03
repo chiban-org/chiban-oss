@@ -21,4 +21,10 @@ describe('StatusChip', () => {
     const { container } = render(<StatusChip status="failed" label="Failed" />)
     expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
   })
+
+  it('pins the icon to the first line when a long label wraps', () => {
+    const { container } = render(<StatusChip status="neutral" label="Submitted, meeting set" />)
+    expect(container.firstElementChild?.className).toContain('items-start')
+    expect(container.querySelector('svg')?.getAttribute('class')).toContain('mt-0.5')
+  })
 })

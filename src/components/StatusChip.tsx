@@ -28,11 +28,11 @@ export function StatusChip({ status, label }: StatusChipProps) {
     <span
       data-status={status}
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-sm font-semibold',
+        'inline-flex items-start gap-1.5 rounded-lg px-2.5 py-1 text-sm font-semibold',
         CLASSES[status],
       )}
     >
-      <Icon className="size-4" aria-hidden={true} />
+      <Icon className="mt-0.5 size-4 shrink-0" aria-hidden={true} />
       {label}
     </span>
   )

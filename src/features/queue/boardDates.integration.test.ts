@@ -25,8 +25,8 @@ afterAll(async () => {
   await handle.drop()
 })
 
-async function rowFor(applicationId: string) {
-  const queue = await listWorkQueue(handle.db, world.staff, { filters: {}, limit: 50 }, signal, NOW)
+async function rowFor(applicationId: string, now = NOW) {
+  const queue = await listWorkQueue(handle.db, world.staff, { filters: {}, limit: 50 }, signal, now)
   return queue.rows.find((r) => r.applicationId === applicationId)
 }
 
@@ -45,7 +45,11 @@ describe('board dates on the work queue', () => {
       signal,
     )
     expect(scheduled.ok).toBe(true)
-    expect(await rowFor(id)).toMatchObject({ noticeDue: '2027-04-10', filingDue: null })
+    expect(await rowFor(id)).toMatchObject({
+      noticeDue: '2027-04-10',
+      noticeOverdue: false,
+      filingDue: null,
+    })
   })
 
   it('a decision awaiting filing shows the filing due date and no notice date once noticed', async () => {
@@ -54,6 +58,11 @@ describe('board dates on the work queue', () => {
     expect(await rowFor(decided.applicationId)).toMatchObject({
       noticeDue: null,
       filingDue: '2027-04-22',
+      filingOverdue: false,
+    })
+    expect(await rowFor(decided.applicationId, new Date('2027-04-26T16:00:00Z'))).toMatchObject({
+      filingDue: '2027-04-22',
+      filingOverdue: true,
     })
   })
 })

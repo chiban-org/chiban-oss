@@ -1,15 +1,24 @@
-import { and, asc, eq, inArray, isNull, ne, type SQL, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, type SQL, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { applications, projects, reviewAssignments, users } from '@/db/schema'
 import { applicationVisibleTo } from '@/features/access/predicates'
-import { hasFullRecordAccess } from '@/features/access/roles'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { CoreState } from '@/features/applications/states'
 import { substepLabel } from '@/features/applications/statusText'
 import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
-import { FILING_CLOCK_KEY } from '@/features/decisions/fileDecision'
+import { ruleLabel } from '@/features/packs/ruleLabel'
 import { displayIdsFor } from '@/features/parcels/displayId'
+import {
+  FEES_DUE,
+  FILING_DUE,
+  NEXT_DUE,
+  NEXT_DUE_RULE_KEY,
+  NOTICE_DUE,
+  preservationIncompleteFor,
+  UNKNOWN_PAYMENT,
+} from '@/features/queue/queueSql'
+import { NEEDS_ACTION_STATES } from '@/features/queue/stateScopes'
 import { townToday } from '@/features/town/today'
 import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
 
@@ -35,63 +44,17 @@ export interface WorkQueueRow {
   substepLabel: string | null
   parcelDisplayId: string | null
   nextDue: CivilDate | null
+  nextDueLabel: string | null
   daysUntilDue: number | null
   dueStatus: DueStatus
   noticeDue: CivilDate | null
+  noticeOverdue: boolean
   filingDue: CivilDate | null
+  filingOverdue: boolean
   feesDueCents: number
   unknownPayment: boolean
   reviewers: { name: string; status: string }[]
   preservationIncomplete: boolean
-}
-
-const NEXT_DUE = sql<string | null>`(
-  select min(c.current_due) from clocks c
-  where c.application_id = ${applications.id} and c.status = 'running')`
-
-const NOTICE_DUE = sql<string | null>`(
-  select min(i.due_on) from notice_items i
-  join hearings h on h.notice_set_id = i.set_id and h.status = 'scheduled'
-  where h.application_id = ${applications.id}
-    and not exists (select 1 from notice_proofs p where p.item_id = i.id))`
-
-const FILING_DUE = sql<string | null>`(
-  select min(c.current_due) from clocks c
-  where c.application_id = ${applications.id} and c.rule_key = ${FILING_CLOCK_KEY}
-    and c.status in ('running', 'overdue'))`
-
-const FEES_DUE = sql<number>`(
-  select coalesce(sum(greatest(0, l.amt - coalesce(p.paid, 0))), 0)::int
-  from (
-    select distinct on (fa.stage) fa.stage, fa.computation
-    from fee_assessments fa where fa.application_id = ${applications.id}
-    order by fa.stage, fa.sequence desc
-  ) latest
-  cross join lateral (
-    select e->>'code' as code, (e->'amount'->>'value')::int as amt
-    from jsonb_array_elements(latest.computation->'lines') e
-    where e->'amount' ? 'value'
-  ) l
-  left join (
-    select la.stage, la.fee_code, sum(la.amount_cents) as paid
-    from ledger_allocations la
-    where la.application_id = ${applications.id} and la.target_kind = 'fee_assessment_line'
-    group by la.stage, la.fee_code
-  ) p on p.stage = latest.stage and p.fee_code = l.code)`
-
-const UNKNOWN_PAYMENT = sql<boolean>`exists (
-  select 1 from payment_attempts pa
-  where pa.outcome_unknown and pa.state in ('pending', 'authorized')
-    and pa.planned_allocations @> jsonb_build_array(jsonb_build_object('applicationId', ${applications.id}::text)))`
-
-function preservationIncompleteFor(actor: Actor) {
-  if (!hasFullRecordAccess(actor)) return sql<boolean>`false`
-  return sql<boolean>`exists (
-  select 1 from documents d
-  join document_versions dv on dv.document_id = d.id
-  join preservation_records pr on pr.original_version_id = dv.id
-  where d.record_kind = 'application' and d.record_id = ${applications.id}
-    and pr.status = 'incomplete')`
 }
 
 function dueStatusOf(nextDue: CivilDate | null, today: CivilDate): DueStatus {
@@ -108,7 +71,7 @@ function filterClauses(
   const states = filters.states
   return [
     applicationVisibleTo(actor),
-    states === undefined ? ne(applications.state, 'draft') : inArray(applications.state, states),
+    inArray(applications.state, states ?? [...NEEDS_ACTION_STATES]),
     filters.typeKeys === undefined || filters.typeKeys.length === 0
       ? undefined
       : inArray(applications.applicationTypeKey, filters.typeKeys),
@@ -189,13 +152,25 @@ export async function countWorkQueue(
   )
 }
 
+export interface WorkQueuePage {
+  rows: WorkQueueRow[]
+  offset: number
+  prevCursor: string | null
+  nextCursor: string | null
+  total: number
+}
+
+function isPast(date: CivilDate | null, today: CivilDate): boolean {
+  return date !== null && date < today
+}
+
 export async function listWorkQueue(
   db: DbOrTx,
   actor: Actor,
   input: { filters: WorkQueueFilters; limit: number; cursor?: string },
   signal: AbortSignal,
   now: Date = new Date(),
-): Promise<{ rows: WorkQueueRow[]; nextCursor: string | null; total: number }> {
+): Promise<WorkQueuePage> {
   signal.throwIfAborted()
   const today = await townToday(db, now, signal)
   const where = and(...filterClauses(actor, input.filters, today))
@@ -210,6 +185,7 @@ export async function listWorkQueue(
       configPins: applications.configPins,
       parcelId: projects.parcelId,
       nextDue: NEXT_DUE,
+      nextDueRuleKey: NEXT_DUE_RULE_KEY,
       noticeDue: NOTICE_DUE,
       filingDue: FILING_DUE,
       feesDue: FEES_DUE,
@@ -253,16 +229,21 @@ export async function listWorkQueue(
         substepLabel: r.substep === null ? null : substepLabel(r.substep, type?.substeps ?? []),
         parcelDisplayId: display.get(r.parcelId) ?? null,
         nextDue,
+        nextDueLabel: r.nextDueRuleKey === null ? null : ruleLabel(r.nextDueRuleKey),
         daysUntilDue: nextDue === null ? null : daysBetween(today, nextDue),
         dueStatus: dueStatusOf(nextDue, today),
         noticeDue: r.noticeDue as CivilDate | null,
+        noticeOverdue: isPast(r.noticeDue as CivilDate | null, today),
         filingDue: r.filingDue as CivilDate | null,
+        filingOverdue: isPast(r.filingDue as CivilDate | null, today),
         feesDueCents: r.feesDue,
         unknownPayment: r.unknownPayment,
         reviewers: reviewers.get(r.id) ?? [],
         preservationIncomplete: r.preservationIncomplete,
       }
     }),
+    offset,
+    prevCursor: offset === 0 ? null : String(Math.max(0, offset - input.limit)),
     nextCursor: rows.length > input.limit ? String(offset + input.limit) : null,
     total: count?.n ?? 0,
   }

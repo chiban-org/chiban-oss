@@ -8,4 +8,11 @@ describe('stateFilterOptions', () => {
     expect(options).toContainEqual(['draft', 'Draft'])
     expect(options.map(([, label]) => label)).not.toContain('under review')
   })
+
+  it('leads with needs action as the default and all but draft as the wide view', () => {
+    expect(stateFilterOptions().slice(0, 2)).toEqual([
+      ['', 'Needs action'],
+      ['all', 'All but draft'],
+    ])
+  })
 })
