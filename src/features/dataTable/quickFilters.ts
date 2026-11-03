@@ -36,6 +36,20 @@ export function filterValues<V extends string>(
   return [...new Set(paramValues(params, param).filter(accepts))] as V[]
 }
 
+export function labeledOptions(
+  labels: ReadonlyMap<string, string>,
+  counts?: ReadonlyMap<string, number>,
+): FilterOption[] {
+  return [...labels].map(([value, label]) => {
+    const count = counts?.get(value)
+    return count === undefined ? { value, label } : { value, label, count }
+  })
+}
+
+export function whenAny<K extends string, V>(key: K, values: V[]): Partial<Record<K, V[]>> {
+  return values.length === 0 ? {} : ({ [key]: values } as Partial<Record<K, V[]>>)
+}
+
 function toggled(values: readonly string[], value: string): string[] {
   return values.includes(value) ? values.filter((v) => v !== value) : [...values, value]
 }

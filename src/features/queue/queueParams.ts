@@ -6,7 +6,7 @@ import {
   readTableParams,
   type TableParams,
 } from '@/features/dataTable/params'
-import { filterValues } from '@/features/dataTable/quickFilters'
+import { filterValues, whenAny } from '@/features/dataTable/quickFilters'
 import { parseSort, type SortConfig, type SortState } from '@/features/dataTable/sort'
 import { stateFilterOptions } from '@/features/queue/stateFilterOptions'
 import { statesForParam } from '@/features/queue/stateScopes'
@@ -55,20 +55,16 @@ export interface QueueView {
   filters: WorkQueueFilters
 }
 
-function nonEmpty<K extends string, V>(key: K, values: V[]): Partial<Record<K, V[]>> {
-  return values.length === 0 ? {} : ({ [key]: values } as Partial<Record<K, V[]>>)
-}
-
 export function queueFilters(params: TableParams): WorkQueueFilters {
   const states = statesForParam(firstParam(params, 'state'))
   const q = firstParam(params, 'q')
   return {
     ...(states === undefined ? {} : { states }),
     ...(q === undefined ? {} : { numberContains: q }),
-    ...nonEmpty('typeKeys', filterValues(params, 'type', isValidConfigKey)),
-    ...nonEmpty('due', filterValues(params, 'due', DUE_FILTERS)),
-    ...nonEmpty('assigned', filterValues(params, 'assigned', ASSIGNED_FILTERS)),
-    ...nonEmpty('flags', filterValues(params, 'flag', FLAG_FILTERS)),
+    ...whenAny('typeKeys', filterValues(params, 'type', isValidConfigKey)),
+    ...whenAny('due', filterValues(params, 'due', DUE_FILTERS)),
+    ...whenAny('assigned', filterValues(params, 'assigned', ASSIGNED_FILTERS)),
+    ...whenAny('flags', filterValues(params, 'flag', FLAG_FILTERS)),
   }
 }
 

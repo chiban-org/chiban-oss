@@ -76,6 +76,29 @@ describe('staff application pages', () => {
     expect(page).toContain('href="/staff/queue"')
   })
 
+  it('the application list sorts from its headers and filters with chips', async () => {
+    const page = await html(ApplicationsPage({ searchParams: Promise.resolve({}) }))
+    expect(page).toMatch(
+      /<th scope="col"[^>]*><a[^>]*href="\/staff\/applications\?sort=number&amp;dir=asc"/,
+    )
+    expect(page).not.toContain('aria-sort')
+    expect(page).toContain('role="group" aria-label="Type"')
+    expect(page).not.toContain('Clear filters')
+    const sorted = await html(
+      ApplicationsPage({ searchParams: Promise.resolve({ sort: 'number', stage: 'issued' }) }),
+    )
+    expect(sorted).toMatch(
+      /aria-sort="ascending"[^>]*><a[^>]*href="\/staff\/applications\?sort=number&amp;stage=issued&amp;dir=desc"/,
+    )
+    expect(sorted).toMatch(/<a[^>]*href="\/staff\/applications\?sort=number"[^>]*>Clear filters</)
+    const numbers = [...sorted.matchAll(/href="\/staff\/applications\/[^"]+"[^>]*>([^<]+)</g)].map(
+      (m) => m[1],
+    )
+    expect(numbers.length).toBeGreaterThan(0)
+    expect(numbers).toEqual([...numbers].sort())
+    expect(sorted).not.toContain('>Draft<')
+  })
+
   it('seeded application page renders every clock with a non-empty consequence', async () => {
     const rows = await handle.db.select().from(applications)
     for (const row of rows) {

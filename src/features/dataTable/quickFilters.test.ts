@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest'
 import { readTableParams } from '@/features/dataTable/params'
-import { chipGroups, filterValues } from '@/features/dataTable/quickFilters'
+import {
+  chipGroups,
+  filterValues,
+  labeledOptions,
+  whenAny,
+} from '@/features/dataTable/quickFilters'
 
 describe('filterValues', () => {
   const params = readTableParams({ due: ['overdue', 'bogus', 'week', 'overdue'], type: 'BP' })
@@ -53,5 +58,29 @@ describe('chipGroups', () => {
       ['Building', false, '/q?type=EL&type=BP'],
       ['EL', true, '/q'],
     ])
+  })
+})
+
+describe('labeledOptions', () => {
+  it('turns labels into options and attaches counts when given', () => {
+    const labels = new Map([
+      ['overdue', 'Overdue'],
+      ['week', 'Due this week'],
+    ])
+    expect(labeledOptions(labels)).toEqual([
+      { value: 'overdue', label: 'Overdue' },
+      { value: 'week', label: 'Due this week' },
+    ])
+    expect(labeledOptions(labels, new Map([['overdue', 4]]))).toEqual([
+      { value: 'overdue', label: 'Overdue', count: 4 },
+      { value: 'week', label: 'Due this week' },
+    ])
+  })
+})
+
+describe('whenAny', () => {
+  it('adds the key only when there is at least one value', () => {
+    expect({ ...whenAny('due', ['week']) }).toEqual({ due: ['week'] })
+    expect({ ...whenAny('due', []) }).toEqual({})
   })
 })

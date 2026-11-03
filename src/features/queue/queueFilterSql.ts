@@ -1,8 +1,9 @@
-import { and, inArray, or, type SQL, type SQLWrapper, sql } from 'drizzle-orm'
+import { inArray, type SQL, type SQLWrapper, sql } from 'drizzle-orm'
 import { applications, reviewAssignments, users } from '@/db/schema'
 import { applicationVisibleTo } from '@/features/access/predicates'
 import { CORE_STATES } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
+import { anyOf, whereAll } from '@/features/dataTable/facets'
 import type {
   AssignedFilter,
   DueFilter,
@@ -58,10 +59,6 @@ export function flagClause(value: FlagFilter, actor: Actor): SQL {
   }
 }
 
-export function anyOf(clauses: SQL[]): SQL | undefined {
-  return clauses.length === 0 ? undefined : or(...clauses)
-}
-
 function escapeLike(text: string): string {
   return text.replace(/[\\%_]/g, (c) => `\\${c}`)
 }
@@ -98,13 +95,10 @@ export function queueWhere(
   today: CivilDate,
   except?: QueueGroup,
 ): SQL {
-  const groups = [...groupClauses(actor, filters, today)]
-    .filter(([group]) => group !== except)
-    .map(([, clause]) => clause)
-  return and(...scopeClauses(actor, filters), ...groups) ?? sql`true`
+  return whereAll(scopeClauses(actor, filters), groupClauses(actor, filters, today), except)
 }
 
-const STATUS_ORDER = sql`array_position(array[${sql.join(
+export const STATUS_ORDER = sql`array_position(array[${sql.join(
   CORE_STATES.map((state) => sql`${state}`),
   sql`, `,
 )}]::text[], ${applications.state})`
