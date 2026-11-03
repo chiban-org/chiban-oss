@@ -32,6 +32,7 @@ vi.mock('next/navigation', () => ({
 
 const { default: ExceptionsPage } = await import('./exceptions/page')
 const { default: ImportsPage } = await import('./imports/page')
+const { default: RunPage } = await import('./imports/[runId]/page')
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -126,5 +127,19 @@ describe('imports page', () => {
     expect(html).toMatch(new RegExp(`<a [^>]*href="/staff/gis/imports/${run?.id}"[^>]*>[A-Z]`))
     expect(html).not.toMatch(/>Report</)
     expect(html).toContain('Newest first')
+  })
+})
+
+describe('import run page', () => {
+  it('names the layer in the title and links back to imports', async () => {
+    await actAs('staff')
+    const run = await handle.db.query.importRuns.findFirst({
+      where: (r, { eq }) => eq(r.layerKey, 'cama'),
+    })
+    const html = renderToStaticMarkup(
+      await RunPage({ params: Promise.resolve({ runId: run?.id ?? '' }) }),
+    )
+    expect(html).toMatch(/<h1>CAMA owner data import, [A-Z][a-z]+ \d+, \d{4}/)
+    expect(html).toMatch(/<a [^>]*href="\/staff\/gis\/imports"[^>]*>Imports<\/a>/)
   })
 })

@@ -5,6 +5,7 @@ import {
   exceptionDetailText,
   exceptionTitle,
   importRunSummary,
+  importRunTitle,
   layerLabel,
 } from '@/features/gis/import/runText'
 import { findIsoDates } from '@/test/leaks'
@@ -32,20 +33,17 @@ describe('gis import text', () => {
     expect(layerLabel('parcels')).toBe('Parcels')
   })
 
-  it('summarizes a run with a town-zone time and a labelled status', () => {
-    const text = importRunSummary(
-      {
-        layerKey: 'parcels',
-        adapter: 'file_shapefile',
-        startedAt: new Date('2026-11-02T15:30:00Z'),
-        status: 'completed_with_errors',
-      },
-      'America/New_York',
-    )
-    expect(text).toBe(
-      'Parcels from Shapefile, started November 2, 2026, 10:30 AM. Status: Completed with errors.',
-    )
-    expect(findIsoDates(text)).toEqual([])
+  it('titles a run with its layer and town-zone start time and summarizes the rest', () => {
+    const run = {
+      layerKey: 'parcels',
+      adapter: 'file_shapefile',
+      startedAt: new Date('2026-11-02T15:30:00Z'),
+      status: 'completed_with_errors',
+    }
+    const title = importRunTitle(run, 'America/New_York')
+    expect(title).toBe('Parcels import, November 2, 2026, 10:30 AM')
+    expect(findIsoDates(title)).toEqual([])
+    expect(importRunSummary(run)).toBe('From Shapefile. Status: Completed with errors.')
   })
 
   it('writes the first-seen time in the town zone', () => {

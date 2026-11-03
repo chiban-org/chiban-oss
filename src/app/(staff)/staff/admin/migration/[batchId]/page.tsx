@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -73,20 +74,26 @@ export default async function MigrationBatchPage({
           ['Duplicates linked', report.duplicateLinked],
           ['Set aside', report.excepted],
           ['Skipped', report.skipped],
-          ['OCR failed', report.ocrFailed],
+          ['Text recognition failed', report.ocrFailed],
           ['Parcel not found', report.unresolvedParcel],
         ]
   return (
     <main>
-      <h1>{batch.name}</h1>
       <p>
-        {STATUS_COPY[batch.status]}. Source: <code>{batch.sourceRoot}</code>
+        <Link href="/staff/admin/migration" className="text-action underline">
+          Scanned property files
+        </Link>
       </p>
+      <h1>{batch.name}</h1>
+      <p>{`${STATUS_COPY[batch.status]}.`}</p>
+      <details className="text-sm">
+        <summary className="cursor-pointer">Where the files came from</summary>
+        <code>{batch.sourceRoot}</code>
+      </details>
       {report === null ? <p>This batch has not been run yet.</p> : null}
       {report === null ? null : (
         <section aria-labelledby="report-heading">
           <h2 id="report-heading">Run report</h2>
-          <p>Source files equal imported plus duplicates linked plus set aside plus skipped.</p>
           <dl className="m-0 grid max-w-md grid-cols-[1fr_auto] gap-x-6 gap-y-1">
             {rows.map(([label, value]) => (
               <div key={label} className="contents">

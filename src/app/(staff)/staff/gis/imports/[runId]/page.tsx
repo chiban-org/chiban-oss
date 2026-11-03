@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { RunReport } from '@/components/staff/RunReport'
 import { importRuns } from '@/db/schema'
-import { importRunSummary } from '@/features/gis/import/runText'
+import { importRunSummary, importRunTitle } from '@/features/gis/import/runText'
 import type { ImportRunReport } from '@/features/gis/import/types'
 import { townTimeZone } from '@/features/town/timeZone'
 import { recordStaffContext } from '@/server/requireStaff'
@@ -22,10 +22,16 @@ export default async function StaffRunReportPage({ params }: RunPageProps) {
   if (ctx === null) return <NoPermission title="Import run" action="see layer imports" />
   const [run] = await ctx.db.select().from(importRuns).where(eq(importRuns.id, runId))
   if (run === undefined) notFound()
+  const timeZone = await townTimeZone(ctx.db, ctx.signal)
   return (
     <main>
-      <h1>Import run</h1>
-      <p>{importRunSummary(run, await townTimeZone(ctx.db, ctx.signal))}</p>
+      <p>
+        <Link href="/staff/gis/imports" className="text-action underline">
+          Imports
+        </Link>
+      </p>
+      <h1>{importRunTitle(run, timeZone)}</h1>
+      <p>{importRunSummary(run)}</p>
       {run.status === 'failed' ? <p role="alert">{`Error: ${run.error ?? 'Unknown'}`}</p> : null}
       {run.report === null ? null : <RunReport report={run.report as ImportRunReport} />}
       <p className="mt-4">

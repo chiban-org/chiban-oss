@@ -42,11 +42,15 @@ export function layerLabel(layerKey: string): string {
   return LAYER_LABELS.get(layerKey) ?? words(layerKey)
 }
 
-export function importRunSummary(
-  run: { layerKey: string; adapter: string; startedAt: Date; status: string },
+export function importRunTitle(
+  run: { layerKey: string; startedAt: Date },
   timeZone: string,
 ): string {
-  return `${layerLabel(run.layerKey)} from ${adapterLabel(run.adapter)}, started ${formatInstantLong(run.startedAt, timeZone)}. Status: ${words(run.status)}.`
+  return `${layerLabel(run.layerKey)} import, ${formatInstantLong(run.startedAt, timeZone)}`
+}
+
+export function importRunSummary(run: { adapter: string; status: string }): string {
+  return `From ${adapterLabel(run.adapter)}. Status: ${words(run.status)}.`
 }
 
 export function exceptionDetailText(detail: string, createdAt: Date, timeZone: string): string {
