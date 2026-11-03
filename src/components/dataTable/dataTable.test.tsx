@@ -82,6 +82,13 @@ describe('QuickFilters', () => {
     expect(screen.getByRole('link', { name: 'Clear filters' }).getAttribute('href')).toBe('/q')
   })
 
+  it('mutes a chip that would match nothing, but keeps it clickable', () => {
+    render(<QuickFilters label="Quick filters" groups={groups} clearHref={null} />)
+    const empty = screen.getByRole('link', { name: /Due this week/ })
+    expect(empty.className).toContain('border-dashed')
+    expect(screen.getByRole('link', { name: /Overdue/ }).className).not.toContain('border-dashed')
+  })
+
   it('has no clear link when nothing is filtered', () => {
     render(<QuickFilters label="Quick filters" groups={groups} clearHref={null} />)
     expect(screen.queryByRole('link', { name: 'Clear filters' })).toBeNull()

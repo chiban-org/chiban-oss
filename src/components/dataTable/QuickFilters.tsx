@@ -15,7 +15,9 @@ function Chip({ chip }: { chip: ChipView }) {
         CHIP,
         chip.active
           ? 'border-action font-semibold text-action'
-          : 'border-hairline text-ink hover:border-control-border',
+          : chip.count === 0
+            ? 'border-dashed border-hairline bg-transparent text-muted-foreground hover:border-control-border'
+            : 'border-hairline text-ink hover:border-control-border',
       )}
     >
       {chip.active ? <Check aria-hidden={true} className="size-3.5 shrink-0" /> : null}
