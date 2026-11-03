@@ -1,4 +1,4 @@
-import { and, asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { inspections } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
@@ -91,4 +91,27 @@ export async function getDayList(
     })
   }
   return ok(out)
+}
+
+export async function nextDayWithInspections(
+  db: DbOrTx,
+  actor: Actor,
+  input: { inspectorUserId: string; date: CivilDate },
+  signal: AbortSignal,
+): Promise<CivilDate | null> {
+  signal.throwIfAborted()
+  const [row] = await db
+    .select({ date: inspections.scheduledDate })
+    .from(inspections)
+    .where(
+      and(
+        eq(inspections.inspectorUserId, input.inspectorUserId),
+        gt(inspections.scheduledDate, input.date),
+        inArray(inspections.status, ['scheduled', 'passed', 'failed']),
+        inspectionVisibleTo(actor),
+      ),
+    )
+    .orderBy(asc(inspections.scheduledDate))
+    .limit(1)
+  return (row?.date ?? null) as CivilDate | null
 }

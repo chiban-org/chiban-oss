@@ -77,16 +77,38 @@ function Stop({ stop }: { stop: DayListRow }) {
   )
 }
 
+export interface NextBusyDay {
+  date: string
+  href: string
+}
+
+function EmptyDay({ nextBusy }: { nextBusy: NextBusyDay | null }) {
+  return (
+    <div className="space-y-1">
+      <p className="m-0">No inspections on this day.</p>
+      {nextBusy === null ? null : (
+        <Link href={nextBusy.href} className={LINK}>
+          {`Go to ${formatCivilDate(nextBusy.date)}, the next day with inspections`}
+        </Link>
+      )}
+    </div>
+  )
+}
+
 export function DayList({
   date,
   stops,
   previousHref,
   nextHref,
+  whose = null,
+  nextBusy = null,
 }: {
   date: string
   stops: DayListRow[]
   previousHref: string
   nextHref: string
+  whose?: string | null
+  nextBusy?: NextBusyDay | null
 }) {
   return (
     <div className="space-y-4">
@@ -94,13 +116,16 @@ export function DayList({
         <Link href={previousHref} aria-label="Previous day" className={LINK}>
           <ChevronLeft className="size-6" aria-hidden={true} />
         </Link>
-        <h1 className="m-0 text-center text-2xl">{formatCivilDate(date)}</h1>
+        <div className="text-center">
+          {whose === null ? null : <p className="m-0 font-medium text-muted-foreground">{whose}</p>}
+          <h1 className="m-0 text-2xl">{formatCivilDate(date)}</h1>
+        </div>
         <Link href={nextHref} aria-label="Next day" className={LINK}>
           <ChevronRight className="size-6" aria-hidden={true} />
         </Link>
       </div>
       {stops.length === 0 ? (
-        <p>No inspections on this day.</p>
+        <EmptyDay nextBusy={nextBusy} />
       ) : (
         <ul className="m-0 space-y-3 p-0">
           {stops.map((stop) => (

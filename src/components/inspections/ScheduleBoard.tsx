@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
 import { minutesToClock } from '@/features/inspections/zonedTime'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -35,6 +36,73 @@ export interface ScheduleChoice {
 
 const CHANNEL_LABEL = { phone: 'Phone', counter: 'Counter', portal: 'Portal' } as const
 
+const OPEN_DAYS = 3
+
+type SlotPick = (day: BoardDay, start: number) => void
+
+function SlotButtons({
+  day,
+  onFocusSlot,
+  onPick,
+}: {
+  day: BoardDay
+  onFocusSlot: SlotPick
+  onPick: SlotPick
+}) {
+  return (
+    <div className="mt-2 flex flex-wrap gap-2">
+      {day.freeStarts.length === 0 ? <span>Full</span> : null}
+      {day.freeStarts.map((start) => (
+        <button
+          key={start}
+          type="button"
+          aria-label={`${minutesToClock(start)}, ${formatCivilDate(day.date)}, ${day.inspectorName}`}
+          onFocus={() => onFocusSlot(day, start)}
+          onClick={() => onPick(day, start)}
+          className="rounded-md border border-control-border px-3 py-1.5 tabular-nums hover:bg-canvas"
+        >
+          {minutesToClock(start)}
+        </button>
+      ))}
+    </div>
+  )
+}
+
+function openText(day: BoardDay): string {
+  return day.freeStarts.length === 0 ? 'full' : `${day.freeStarts.length} open`
+}
+
+function SlotDay({
+  day,
+  folded,
+  onFocusSlot,
+  onPick,
+}: {
+  day: BoardDay
+  folded: boolean
+  onFocusSlot: SlotPick
+  onPick: SlotPick
+}) {
+  const slots = <SlotButtons day={day} onFocusSlot={onFocusSlot} onPick={onPick} />
+  if (folded) {
+    return (
+      <details className="border-t pt-3">
+        <summary className="font-semibold">
+          {`${formatCivilDate(day.date)}, ${day.inspectorName}, ${openText(day)}`}
+        </summary>
+        {slots}
+      </details>
+    )
+  }
+  return (
+    <div className="border-t pt-3">
+      <p className="m-0 font-semibold">{formatCivilDate(day.date)}</p>
+      <p className="m-0 text-muted-foreground">{day.inspectorName}</p>
+      {slots}
+    </div>
+  )
+}
+
 function isTyping(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false
   return ['INPUT', 'TEXTAREA', 'SELECT'].includes(target.tagName) || target.isContentEditable
@@ -67,6 +135,24 @@ export function ScheduleBoard({
   const visible = requests.filter((r) => matches(r, query))
   const state = useRef({ visible, selected, onSchedule })
   state.current = { visible, selected, onSchedule }
+  const focusSlot: SlotPick = (day, start) => {
+    focusedSlot.current = {
+      date: day.date,
+      inspectorUserId: day.inspectorUserId,
+      startMinute: start,
+    }
+  }
+  const pick: SlotPick = (day, start) => {
+    const request = visible[selected]
+    if (request === undefined) return
+    onSchedule({
+      inspectionId: request.inspectionId,
+      rowVersion: request.rowVersion,
+      date: day.date,
+      startMinute: start,
+      inspectorUserId: day.inspectorUserId,
+    })
+  }
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -100,10 +186,14 @@ export function ScheduleBoard({
     <div className="grid items-start gap-6 md:grid-cols-[22rem_1fr] [&>section]:m-0">
       <section aria-label="Requests and bookings" className="space-y-3">
         <h2 className="m-0 text-xl">Requests and bookings</h2>
+        <label htmlFor="request-search" className="block font-medium">
+          Search requests
+        </label>
         <input
           ref={search}
+          id="request-search"
           type="search"
-          aria-label="Search requests"
+          placeholder="Permit number, address or contact"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
           className="h-10 w-full rounded-md border bg-surface px-3"
@@ -128,7 +218,11 @@ export function ScheduleBoard({
                 }}
                 className={`rounded-md border p-3 ${index === selected ? 'border-ring bg-highlight' : 'border-hairline'}`}
               >
-                <p className="m-0 font-semibold">{`${request.applicationNumber}, ${request.typeLabel}`}</p>
+                <p className="m-0 font-semibold">
+                  <Link href={`/staff/inspections/${request.inspectionId}`}>
+                    {`${request.applicationNumber}, ${request.typeLabel}`}
+                  </Link>
+                </p>
                 <p className="m-0">{request.address}</p>
                 <p className="m-0 flex flex-wrap gap-2">
                   <span>{CHANNEL_LABEL[request.channel]}</span>
@@ -155,42 +249,14 @@ export function ScheduleBoard({
         </p>
         {message === null ? null : <p role="status">{message}</p>}
         {days.length === 0 ? <p className="m-0">No inspection days in this range.</p> : null}
-        {days.map((day) => (
-          <div key={`${day.date}-${day.inspectorUserId}`} className="border-t pt-3">
-            <p className="m-0 font-semibold">{formatCivilDate(day.date)}</p>
-            <p className="m-0 text-muted-foreground">{day.inspectorName}</p>
-            <div className="mt-2 flex flex-wrap gap-2">
-              {day.freeStarts.length === 0 ? <span>Full</span> : null}
-              {day.freeStarts.map((start) => (
-                <button
-                  key={start}
-                  type="button"
-                  aria-label={`${minutesToClock(start)}, ${formatCivilDate(day.date)}, ${day.inspectorName}`}
-                  onFocus={() => {
-                    focusedSlot.current = {
-                      date: day.date,
-                      inspectorUserId: day.inspectorUserId,
-                      startMinute: start,
-                    }
-                  }}
-                  onClick={() => {
-                    const request = visible[selected]
-                    if (request === undefined) return
-                    onSchedule({
-                      inspectionId: request.inspectionId,
-                      rowVersion: request.rowVersion,
-                      date: day.date,
-                      startMinute: start,
-                      inspectorUserId: day.inspectorUserId,
-                    })
-                  }}
-                  className="rounded-md border border-control-border px-3 py-1.5 tabular-nums hover:bg-canvas"
-                >
-                  {minutesToClock(start)}
-                </button>
-              ))}
-            </div>
-          </div>
+        {days.map((day, index) => (
+          <SlotDay
+            key={`${day.date}-${day.inspectorUserId}`}
+            day={day}
+            folded={index >= OPEN_DAYS}
+            onFocusSlot={focusSlot}
+            onPick={pick}
+          />
         ))}
       </section>
     </div>

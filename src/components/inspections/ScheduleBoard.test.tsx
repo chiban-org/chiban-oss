@@ -126,4 +126,40 @@ describe('ScheduleBoard', () => {
     render(<ScheduleBoard requests={[]} days={days} onSchedule={vi.fn()} message={null} />)
     expect(screen.getByText('No requests are waiting.')).toBeTruthy()
   })
+
+  it('links each request card to its inspection', () => {
+    setup()
+    const item = screen.getByRole('option', { name: /EL-2027-0001/ })
+    expect(
+      within(item).getByRole('link', { name: 'EL-2027-0001, Rough' }).getAttribute('href'),
+    ).toBe('/staff/inspections/i1')
+  })
+
+  it('labels the search where it can be seen and says what it searches', () => {
+    setup()
+    expect(screen.getByText('Search requests', { selector: 'label' })).toBeTruthy()
+    expect(
+      screen.getByRole('searchbox', { name: 'Search requests' }).getAttribute('placeholder'),
+    ).toBe('Permit number, address or contact')
+  })
+
+  it('keeps the first slot days open and folds the rest to one line each', () => {
+    const many: BoardDay[] = ['2027-07-07', '2027-07-08', '2027-07-09', '2027-07-12'].map(
+      (date) => ({
+        date,
+        inspectorUserId: 'u1',
+        inspectorName: 'Ines Inspector',
+        freeStarts: [570],
+        booked: 0,
+      }),
+    )
+    const { container } = render(
+      <ScheduleBoard requests={requests} days={many} onSchedule={vi.fn()} message={null} />,
+    )
+    const folded = container.querySelectorAll('details')
+    expect(folded).toHaveLength(1)
+    expect(folded[0]?.querySelector('summary')?.textContent).toBe(
+      'July 12, 2027, Ines Inspector, 1 open',
+    )
+  })
 })
