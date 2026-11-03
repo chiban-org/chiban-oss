@@ -1,21 +1,29 @@
 import Link from 'next/link'
+import { QuickFilters } from '@/components/dataTable/QuickFilters'
+import { SortHeader } from '@/components/dataTable/SortHeader'
 import { MoreMatchesNotice } from '@/components/parcels/MoreMatchesNotice'
 import { RecentParcelSearches } from '@/components/parcels/RecentParcelSearches'
 import { Button } from '@/components/ui/button'
+import { clearHref, paramValues, type RawSearchParams } from '@/features/dataTable/params'
+import { DIR_PARAM, SORT_PARAM, sortLinks } from '@/features/dataTable/sort'
+import { arrangeHits, hitFacets } from '@/features/parcels/hitList'
+import { hitChipGroups } from '@/features/parcels/hitListChips'
+import {
+  HIT_FILTER_PARAMS,
+  HIT_SORT,
+  MATCH_LABELS,
+  PARCELS_PATH,
+  readHitsView,
+} from '@/features/parcels/hitListParams'
 import { type SearchExample, searchExample } from '@/features/parcels/searchExample'
 import { searchParcelPage } from '@/features/parcels/searchParcels'
 import { requireStaffContext } from '@/server/requireStaff'
 
 interface ParcelsPageProps {
-  searchParams: Promise<{ q?: string }>
+  searchParams: Promise<RawSearchParams>
 }
 
-const MATCH_LABEL = {
-  alias_exact: 'ID match',
-  alias_prefix: 'ID starts with',
-  address: 'Address',
-  owner: 'Owner',
-} as const
+const CARRIED_PARAMS = [SORT_PARAM, DIR_PARAM, ...HIT_FILTER_PARAMS]
 
 function SearchExamples({ example }: { example: SearchExample | null }) {
   if (example === null) return null
@@ -34,12 +42,15 @@ function SearchExamples({ example }: { example: SearchExample | null }) {
 }
 
 export default async function StaffParcelsPage({ searchParams }: ParcelsPageProps) {
-  const { q = '' } = await searchParams
+  const { q, params, sort, filters } = readHitsView(await searchParams)
   const ctx = await requireStaffContext()
   const [{ hits, more }, example] = await Promise.all([
     searchParcelPage(ctx.db, q, ctx.signal),
     searchExample(ctx.db, ctx.signal),
   ])
+  const shown = arrangeHits(hits, sort, filters)
+  const links = sortLinks(PARCELS_PATH, params, HIT_SORT, sort)
+  const clear = clearHref(PARCELS_PATH, params, HIT_FILTER_PARAMS)
   const searched = q.trim().length >= 2 && hits.length > 0 ? q.trim() : null
   return (
     <main>
@@ -53,6 +64,11 @@ export default async function StaffParcelsPage({ searchParams }: ParcelsPageProp
             className="mt-1 block w-full rounded-md border bg-surface px-3 py-2"
           />
         </label>
+        {CARRIED_PARAMS.flatMap((name) =>
+          paramValues(params, name).map((value) => (
+            <input key={`${name}:${value}`} type="hidden" name={name} value={value} />
+          )),
+        )}
         <Button type="submit" className="self-end">
           Search
         </Button>
@@ -72,51 +88,62 @@ export default async function StaffParcelsPage({ searchParams }: ParcelsPageProp
       ) : (
         <>
           <MoreMatchesNotice more={more} />
+          <div className="toolbar mb-5">
+            <QuickFilters
+              label="Quick filters"
+              groups={hitChipGroups(params, hitFacets(hits, filters))}
+              clearHref={clear}
+            />
+          </div>
           <div className="table-panel">
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <th>Parcel</th>
-                  <th>Address</th>
-                  <th>Owner</th>
-                  <th>Matched on</th>
-                </tr>
-              </thead>
-              <tbody>
-                {hits.map((hit) => (
-                  <tr key={hit.parcelId}>
-                    <td>
-                      <Link
-                        href={`/staff/parcels/${hit.parcelId}`}
-                        className="font-semibold tabular-nums"
-                      >
-                        {hit.displayId ?? 'No map-lot ID'}
-                      </Link>
-                      {hit.status === 'retired' ? <span className="ml-2">Retired</span> : null}
-                    </td>
-                    <td>{hit.siteAddress ?? 'Unknown'}</td>
-                    <td>
-                      {hit.ownerName === null ? (
-                        'Unknown'
-                      ) : (
-                        <Link
-                          href={`/staff/parcels?q=${encodeURIComponent(hit.ownerName)}`}
-                          aria-label={`Search parcels owned by ${hit.ownerName}`}
-                        >
-                          {hit.ownerName}
-                        </Link>
-                      )}
-                    </td>
-                    <td>
-                      {MATCH_LABEL[hit.matchedOn]}
-                      {hit.matchedAlias === null
-                        ? null
-                        : ` (${hit.matchedAlias.value}${hit.matchedAlias.status === 'retired' ? ', retired ID' : ''})`}
-                    </td>
+            {shown.length === 0 ? (
+              <p className="px-5 py-8">No parcels match these filters.</p>
+            ) : (
+              <table className="w-full text-sm">
+                <thead>
+                  <tr>
+                    <SortHeader label="Parcel" link={links.parcel} />
+                    <SortHeader label="Address" link={links.address} />
+                    <SortHeader label="Owner" link={links.owner} />
+                    <SortHeader label="Matched on" link={links.matched} />
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {shown.map((hit) => (
+                    <tr key={hit.parcelId}>
+                      <td>
+                        <Link
+                          href={`/staff/parcels/${hit.parcelId}`}
+                          className="font-semibold tabular-nums"
+                        >
+                          {hit.displayId ?? 'No map-lot ID'}
+                        </Link>
+                        {hit.status === 'retired' ? <span className="ml-2">Retired</span> : null}
+                      </td>
+                      <td>{hit.siteAddress ?? 'Unknown'}</td>
+                      <td>
+                        {hit.ownerName === null ? (
+                          'Unknown'
+                        ) : (
+                          <Link
+                            href={`/staff/parcels?q=${encodeURIComponent(hit.ownerName)}`}
+                            aria-label={`Search parcels owned by ${hit.ownerName}`}
+                          >
+                            {hit.ownerName}
+                          </Link>
+                        )}
+                      </td>
+                      <td>
+                        {MATCH_LABELS.get(hit.matchedOn)}
+                        {hit.matchedAlias === null
+                          ? null
+                          : ` (${hit.matchedAlias.value}${hit.matchedAlias.status === 'retired' ? ', retired ID' : ''})`}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            )}
           </div>
         </>
       )}
