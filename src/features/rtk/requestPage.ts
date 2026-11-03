@@ -179,3 +179,19 @@ export async function loadRequestLetters(db: Db, requestId: string) {
     .where(and(eq(documents.recordKind, 'rtk_request'), eq(documents.recordId, requestId)))
     .orderBy(asc(documents.seq))
 }
+
+export async function releaseSearchExample(db: Db, actor: Actor): Promise<string | null> {
+  const [row] = await db
+    .select({ number: RECORD_NUMBER })
+    .from(documents)
+    .where(
+      and(
+        isNull(documents.disposedAt),
+        rtkRequestVisibleTo(actor),
+        sql`${RECORD_NUMBER} is not null`,
+      ),
+    )
+    .orderBy(desc(documents.seq))
+    .limit(1)
+  return row?.number ?? null
+}

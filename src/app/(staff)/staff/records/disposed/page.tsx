@@ -74,7 +74,7 @@ export default async function DisposedRecordsPage({
       <p className="m-0">
         Each record disposed of under its retention schedule leaves a tombstone: what it was, the
         series that allowed it, and who proposed and approved it. The record itself is gone, so this
-        list is read-only.
+        list is read-only. Most recently disposed first.
       </p>
       <div className="toolbar mt-4">
         <QuickFilters
@@ -98,7 +98,8 @@ export default async function DisposedRecordsPage({
                 <SortHeader label="Kind" link={links.kind} />
                 <SortHeader label="Retention series" link={links.series} />
                 <SortHeader label="Disposed of" link={links.disposed} />
-                <SortHeader label="Proposed and approved by" />
+                <SortHeader label="Proposed by" link={links.proposer} />
+                <SortHeader label="Approved by" link={links.approver} />
               </tr>
             </thead>
             <tbody>
@@ -118,7 +119,8 @@ export default async function DisposedRecordsPage({
                       {formatInstantDate(r.executedAt, zone)}
                     </Link>
                   </td>
-                  <td>{`${nameOf(r.proposedBy)}, ${nameOf(r.approvedBy)}`}</td>
+                  <td>{nameOf(r.proposedBy)}</td>
+                  <td>{nameOf(r.approvedBy)}</td>
                 </tr>
               ))}
             </tbody>

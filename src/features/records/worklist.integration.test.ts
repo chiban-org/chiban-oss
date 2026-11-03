@@ -271,10 +271,11 @@ describe('retention worklist', () => {
       ),
     ).toEqual({ ok: false, error: 'forbidden' })
     const empty = await worklist('awaiting_event', '2027-03-01', world.reviewer)
-    expect(empty).toEqual({ rows: [], nextCursor: null })
+    expect(empty.rows).toEqual([])
+    expect(empty.total).toBe(0)
   })
 
-  it('worklist under a cap of 25 with 40 eligible returns 25 and a cursor', async () => {
+  it('worklist under a cap of 25 with 40 eligible returns 25, a count of 40, and a next page', async () => {
     const opened = await openCase(
       handle.db,
       world.staff,
@@ -306,7 +307,9 @@ describe('retention worklist', () => {
     )
     const first = await worklist('eligible', '2027-03-02')
     expect(first.rows).toHaveLength(25)
-    expect(first.nextCursor).not.toBeNull()
+    expect(first.total).toBe(40)
+    expect(first.counts.get('eligible')).toBe(40)
+    expect(first.nextOffset).toBe(25)
     const second = await retentionWorklist(
       handle.db,
       custodian,
@@ -314,12 +317,12 @@ describe('retention worklist', () => {
         asOf: d('2027-03-02'),
         state: 'eligible',
         limit: 25,
-        cursor: first.nextCursor ?? undefined,
+        offset: first.nextOffset ?? 0,
       },
       signal,
     )
     expect(second.rows).toHaveLength(15)
-    expect(second.nextCursor).toBeNull()
+    expect(second.nextOffset).toBeNull()
     const seen = new Set([...first.rows, ...second.rows].map((r) => r.ref.id))
     expect(seen.size).toBe(40)
   })

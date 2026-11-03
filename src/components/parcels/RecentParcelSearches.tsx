@@ -4,8 +4,8 @@ import Link from 'next/link'
 import { useEffect, useState } from 'react'
 import { parseRecent, rememberSearch } from '@/features/parcels/recentSearches'
 
-function storageKey(userId: string): string {
-  return `chiban.recentParcelSearches.${userId}`
+function storageKey(userId: string, list: string): string {
+  return `chiban.${list}.${userId}`
 }
 
 function load(key: string): string[] {
@@ -29,18 +29,22 @@ export function RecentParcelSearches({
   userId,
   record,
   hrefBase,
+  param = 'q',
+  list = 'recentParcelSearches',
 }: {
   userId: string
   record: string | null
   hrefBase: string
+  param?: string
+  list?: string
 }) {
   const [recent, setRecent] = useState<string[] | null>(null)
   useEffect(() => {
-    const key = storageKey(userId)
+    const key = storageKey(userId, list)
     const next = record === null ? load(key) : rememberSearch(load(key), record)
     save(key, next)
     setRecent(next)
-  }, [userId, record])
+  }, [userId, record, list])
   if (recent === null || recent.length === 0) return null
   return (
     <div className="flex flex-wrap items-center gap-2 text-sm">
@@ -48,7 +52,7 @@ export function RecentParcelSearches({
       {recent.map((q) => (
         <Link
           key={q}
-          href={`${hrefBase}?q=${encodeURIComponent(q)}`}
+          href={`${hrefBase}?${param}=${encodeURIComponent(q)}`}
           className="rounded-md border border-hairline bg-surface px-2.5 py-1 text-ink no-underline hover:border-control-border"
         >
           {q}
@@ -57,7 +61,7 @@ export function RecentParcelSearches({
       <button
         type="button"
         onClick={() => {
-          save(storageKey(userId), [])
+          save(storageKey(userId, list), [])
           setRecent([])
         }}
         className="cursor-pointer px-1 text-muted-foreground underline hover:text-ink"

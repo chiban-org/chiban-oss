@@ -10,7 +10,6 @@ import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
-import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { AppealsSection } from './AppealsSection'
@@ -80,7 +79,7 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
         status={
           <StatusChip status={caseChipStatus(row.status)} label={CASE_STATUS_LABELS[row.status]} />
         }
-        lead={`${row.locationText}. Opened ${formatCivilDate(row.openedOn)}${row.closedOn === null ? '' : `, closed ${formatCivilDate(row.closedOn)}`}.`}
+        lead={row.locationText}
       />
       {detail.banner === null ? null : (
         <p role="status" className="mb-6 rounded-md bg-highlight p-3 font-semibold">

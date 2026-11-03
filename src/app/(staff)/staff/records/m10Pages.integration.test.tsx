@@ -152,12 +152,11 @@ describe('records screens with the demo seed', () => {
       await html(BatchPage({ params: Promise.resolve({ batchId: batch?.id ?? '' }), ...search() })),
     )
     expect(page).toContain('Retention series')
-    expect(page).toMatch(/Proposed by [A-Z][a-z]+ [A-Z][a-z]+ on [A-Z][a-z]+ \d{1,2}, \d{4}/)
-    expect(page).toMatch(/Approved by [A-Z][a-z]+ [A-Z][a-z]+ on [A-Z][a-z]+ \d{1,2}, \d{4}/)
-    const list = visibleText(await html(RetentionPage(search())))
-    expect(list).toMatch(
-      /Batch as of [A-Z][a-z]+ \d{1,2}, \d{4}, proposed [A-Z][a-z]+ \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M/,
-    )
+    expect(page).toMatch(/Proposed\s+[A-Z][a-z]+ [A-Z][a-z]+, [A-Z][a-z]+ \d{1,2}, \d{4}/)
+    expect(page).toMatch(/Approved\s+[A-Z][a-z]+ [A-Z][a-z]+, [A-Z][a-z]+ \d{1,2}, \d{4}/)
+    const list = await html(RetentionPage(search()))
+    expect(list).toContain(`href="/staff/records/disposition/${batch?.id}"`)
+    expect(visibleText(list)).toMatch(/[A-Z][a-z]+ \d{1,2}, \d{4}, \d{1,2}:\d{2} [AP]M/)
   })
 
   it('the request log shows the five business day clock, a late-free open request, and an overdue one', async () => {
@@ -201,7 +200,7 @@ describe('records screens with the demo seed', () => {
   it('a registration waiting to expire offers no unrelated events and says Chiban records the expiry', async () => {
     await actAs('records')
     const markup = await html(RetentionPage(search({ state: 'awaiting_event' })))
-    const row = markup.split('<li').find((part) => part.includes('AR-2026-0001')) ?? ''
+    const row = markup.split('<tr').find((part) => part.includes('AR-2026-0001')) ?? ''
     expect(row).not.toBe('')
     expect(row).not.toContain('The building was removed')
     expect(visibleText(row)).toContain('Chiban records this when the registration expires.')

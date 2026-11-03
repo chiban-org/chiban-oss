@@ -1,17 +1,26 @@
 import type { RecordSeries } from '@packs/nh/schema'
-import { and, asc, eq, inArray, isNull, notInArray, sql } from 'drizzle-orm'
-import { z } from 'zod'
+import { type SQL, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { applicationSnapshots, applications, documents, retentionAssignments } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { loadPack } from '@/features/packs/loadPack'
-import { applicationIdOfRecord } from '@/features/records/ancestry'
+import type { SortConfig, SortState } from '@/features/dataTable/sort'
+import { orderBySql } from '@/features/dataTable/sortSql'
 import type { RetentionStatus } from '@/features/records/computeRetention'
-import { retentionFor } from '@/features/records/disposition'
+import { requireSeries } from '@/features/records/series'
+import { staffRecordHref } from '@/features/records/staffRecordLinks'
+import { classifiedRecords } from '@/features/records/worklistSql'
+import { getTownSettings } from '@/features/town/settings'
 import type { CivilDate } from '@/types/civilDate'
 
-export type WorklistState = 'eligible' | 'awaiting_event' | 'on_hold'
+export const WORKLIST_STATES = ['eligible', 'awaiting_event', 'on_hold'] as const
+export type WorklistState = (typeof WORKLIST_STATES)[number]
+
+export type WorklistSortKey = 'record' | 'kind' | 'series' | 'eligible'
+
+export const WORKLIST_SORT: SortConfig<WorklistSortKey> = {
+  defaultKey: 'eligible',
+  columns: { record: 'asc', kind: 'asc', series: 'asc', eligible: 'asc' },
+}
 
 export interface EventTarget {
   kind: 'case' | 'project'
@@ -21,182 +30,124 @@ export interface EventTarget {
 export interface WorklistRow {
   ref: { kind: 'document' | 'application_snapshot'; id: string }
   title: string
+  owner: string | null
+  href: string | null
   eventTarget: EventTarget | null
   series: { key: string; label: string; citation: RecordSeries['citation'] }
   status: RetentionStatus
   holds: number
 }
 
-const BATCH = 100
-const CursorSchema = z.object({
-  kind: z.enum(['document', 'application_snapshot']),
-  id: z.string().uuid(),
-})
+export interface WorklistPage {
+  rows: WorklistRow[]
+  counts: ReadonlyMap<WorklistState, number>
+  total: number
+  offset: number
+  prevOffset: number | null
+  nextOffset: number | null
+}
 
-function decodeCursor(cursor: string | undefined) {
-  if (cursor === undefined) return null
-  try {
-    return CursorSchema.parse(JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')))
-  } catch {
-    return null
+interface RawRow extends Record<string, unknown> {
+  kind: 'document' | 'application_snapshot'
+  id: string
+  series_key: string
+  title: string | null
+  owner_label: string | null
+  link_kind: string | null
+  link_id: string | null
+  event_kind: 'case' | 'project' | null
+  event_id: string | null
+  eligible_on: string | null
+  holds: number
+}
+
+const FALLBACK_ZONE = 'America/New_York'
+const MAX_LIMIT = 200
+
+const SORT_COLUMNS: Record<WorklistSortKey, SQL> = {
+  record: sql`lower(title)`,
+  kind: sql`kind`,
+  series: sql`lower(series_label)`,
+  eligible: sql`eligible_on`,
+}
+const TIEBREAK = [sql`lower(title) asc`, sql`kind asc`, sql`id asc`]
+
+const EMPTY: WorklistPage = {
+  rows: [],
+  counts: new Map(),
+  total: 0,
+  offset: 0,
+  prevOffset: null,
+  nextOffset: null,
+}
+
+function toRow(raw: RawRow): WorklistRow {
+  const series = requireSeries(raw.series_key)
+  const awaiting = series.retention.kind === 'event' ? series.retention.events : []
+  return {
+    ref: { kind: raw.kind, id: raw.id },
+    title: raw.title ?? raw.id,
+    owner: raw.owner_label,
+    href: staffRecordHref(raw.link_kind, raw.link_id),
+    eventTarget:
+      raw.event_kind === null || raw.event_id === null
+        ? null
+        : { kind: raw.event_kind, id: raw.event_id },
+    series: { key: series.key, label: series.label, citation: series.citation },
+    status:
+      raw.eligible_on === null
+        ? { state: 'not_yet_triggered', awaiting }
+        : { state: 'eligible_on', date: raw.eligible_on as CivilDate },
+    holds: raw.holds,
   }
 }
 
-function encodeCursor(ref: WorklistRow['ref']): string {
-  return Buffer.from(JSON.stringify(ref)).toString('base64url')
-}
-
-function stateOf(
-  found: NonNullable<Awaited<ReturnType<typeof retentionFor>>>,
-  asOf: CivilDate,
-): WorklistState | null {
-  const { status, holds } = found
-  if (status.state === 'permanent') return null
-  if (holds.length > 0) return 'on_hold'
-  if (status.state === 'not_yet_triggered') return 'awaiting_event'
-  return status.date <= asOf ? 'eligible' : null
-}
-
-async function eventTargetFor(db: Db, ref: WorklistRow['ref']): Promise<EventTarget | null> {
-  if (ref.kind === 'application_snapshot') {
-    const [row] = await db
-      .select({ projectId: applications.projectId })
-      .from(applicationSnapshots)
-      .innerJoin(applications, eq(applications.id, applicationSnapshots.applicationId))
-      .where(eq(applicationSnapshots.id, ref.id))
-    return row === undefined ? null : { kind: 'project', id: row.projectId }
-  }
-  const [doc] = await db.select().from(documents).where(eq(documents.id, ref.id))
-  if (doc === undefined) return null
-  if (doc.recordKind === 'enforcement_case') return { kind: 'case', id: doc.recordId }
-  if (doc.recordKind === 'project') return { kind: 'project', id: doc.recordId }
-  const applicationId = await applicationIdOfRecord(db, doc)
-  if (applicationId === null) return null
-  const [app] = await db
-    .select({ projectId: applications.projectId })
-    .from(applications)
-    .where(eq(applications.id, applicationId))
-  return app === undefined ? null : { kind: 'project', id: app.projectId }
-}
-
-async function titlesFor(db: Db, refs: WorklistRow['ref'][]): Promise<Map<string, string>> {
-  const titles = new Map<string, string>()
-  const docIds = refs.filter((r) => r.kind === 'document').map((r) => r.id)
-  const snapIds = refs.filter((r) => r.kind === 'application_snapshot').map((r) => r.id)
-  if (docIds.length > 0) {
-    const rows = await db
-      .select({ id: documents.id, title: documents.title })
-      .from(documents)
-      .where(inArray(documents.id, docIds))
-    for (const r of rows) titles.set(r.id, r.title)
-  }
-  if (snapIds.length > 0) {
-    const rows = await db
-      .select({
-        id: applicationSnapshots.id,
-        sequence: applicationSnapshots.sequence,
-        number: applications.number,
-      })
-      .from(applicationSnapshots)
-      .innerJoin(applications, eq(applications.id, applicationSnapshots.applicationId))
-      .where(inArray(applicationSnapshots.id, snapIds))
-    for (const r of rows) titles.set(r.id, `Application ${r.number}, snapshot ${r.sequence}`)
-  }
-  return titles
-}
-
-type Matched = Omit<WorklistRow, 'title' | 'eventTarget'>
-type Cursor = z.infer<typeof CursorSchema>
-
-function permanentKeys(): string[] {
-  return loadPack()
-    .recordSeries.filter((s) => s.retention.kind === 'permanent')
-    .map((s) => s.key)
-}
-
-async function nextBatch(db: Db, permanent: string[], after: Cursor | null): Promise<Cursor[]> {
-  return await db
-    .select({ kind: retentionAssignments.recordKind, id: retentionAssignments.recordId })
-    .from(retentionAssignments)
-    .where(
-      and(
-        isNull(retentionAssignments.supersededAt),
-        sql`not exists (select 1 from documents d where d.id = ${retentionAssignments.recordId} and d.disposed_at is not null)`,
-        permanent.length === 0 ? undefined : notInArray(retentionAssignments.seriesKey, permanent),
-        after === null
-          ? undefined
-          : sql`(${retentionAssignments.recordKind}, ${retentionAssignments.recordId}) > (${after.kind}, ${after.id}::uuid)`,
-      ),
-    )
-    .orderBy(asc(retentionAssignments.recordKind), asc(retentionAssignments.recordId))
-    .limit(BATCH)
-}
-
-async function matchIn(
-  db: Db,
-  batch: Cursor[],
-  input: { asOf: CivilDate; state: WorklistState },
-  room: number,
-  signal: AbortSignal,
-): Promise<Matched[]> {
-  const out: Matched[] = []
-  for (const ref of batch) {
-    if (out.length >= room) break
-    const found = await retentionFor(db, ref, signal)
-    if (found === null || stateOf(found, input.asOf) !== input.state) continue
-    out.push({
-      ref,
-      series: {
-        key: found.series.key,
-        label: found.series.label,
-        citation: found.series.citation,
-      },
-      status: found.status,
-      holds: found.holds.length,
-    })
-  }
-  return out
+async function mayView(db: Db, actor: Actor, signal: AbortSignal): Promise<boolean> {
+  return (
+    (await hasCapability(db, actor.userId, 'disposition.approve', signal)) ||
+    (await hasCapability(db, actor.userId, 'disposition.propose', signal))
+  )
 }
 
 export async function retentionWorklist(
   db: Db,
   actor: Actor,
-  input: { asOf: CivilDate; state: WorklistState; limit: number; cursor?: string },
+  input: {
+    asOf: CivilDate
+    state: WorklistState
+    limit: number
+    offset?: number
+    sort?: SortState<WorklistSortKey>
+  },
   signal: AbortSignal,
-): Promise<{ rows: WorklistRow[]; nextCursor: string | null }> {
+): Promise<WorklistPage> {
   signal.throwIfAborted()
-  const mayView =
-    (await hasCapability(db, actor.userId, 'disposition.approve', signal)) ||
-    (await hasCapability(db, actor.userId, 'disposition.propose', signal))
-  if (!mayView) return { rows: [], nextCursor: null }
-  const limit = Math.min(Math.max(Math.trunc(input.limit), 1), 200)
-  const permanent = permanentKeys()
-  let after = decodeCursor(input.cursor)
-  const matched: Matched[] = []
-  for (;;) {
-    signal.throwIfAborted()
-    const batch = await nextBatch(db, permanent, after)
-    matched.push(...(await matchIn(db, batch, input, limit + 1 - matched.length, signal)))
-    const last = batch.at(-1)
-    if (matched.length > limit || last === undefined || batch.length < BATCH) break
-    after = { kind: last.kind, id: last.id }
-  }
-  const page = matched.slice(0, limit)
-  const titles = await titlesFor(
-    db,
-    page.map((r) => r.ref),
-  )
-  const rows: WorklistRow[] = []
-  for (const r of page) {
-    rows.push({
-      ...r,
-      title: titles.get(r.ref.id) ?? r.ref.id,
-      eventTarget: await eventTargetFor(db, r.ref),
-    })
-  }
-  const lastRow = page.at(-1)
+  if (!(await mayView(db, actor, signal))) return EMPTY
+  const town = await getTownSettings(db, signal)
+  const classified = classifiedRecords(input.asOf, town.ok ? town.value.timeZone : FALLBACK_ZONE)
+  if (classified === null) return EMPTY
+  const limit = Math.min(Math.max(Math.trunc(input.limit), 1), MAX_LIMIT)
+  const offset = Math.max(Math.trunc(input.offset ?? 0), 0)
+  const sort = input.sort ?? { key: WORKLIST_SORT.defaultKey, dir: 'asc' }
+  const [tally, page] = await Promise.all([
+    db.execute<{ state: WorklistState; n: number }>(
+      sql`${classified} select state, count(*)::int as n from classified where state is not null group by state`,
+    ),
+    db.execute<RawRow>(sql`${classified}
+      select kind, id::text as id, series_key, title, owner_label, link_kind, link_id,
+        event_kind, event_id, eligible_on::text as eligible_on, holds
+      from classified where state = ${input.state}
+      order by ${sql.join(orderBySql(sort, SORT_COLUMNS, TIEBREAK), sql`, `)}
+      limit ${limit} offset ${offset}`),
+  ])
+  const counts = new Map(tally.rows.map((r) => [r.state, r.n]))
+  const total = counts.get(input.state) ?? 0
   return {
-    rows,
-    nextCursor: matched.length > limit && lastRow !== undefined ? encodeCursor(lastRow.ref) : null,
+    rows: page.rows.map(toRow),
+    counts,
+    total,
+    offset,
+    prevOffset: offset === 0 ? null : Math.max(0, offset - limit),
+    nextOffset: offset + limit < total ? offset + limit : null,
   }
 }

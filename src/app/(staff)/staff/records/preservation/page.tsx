@@ -1,13 +1,133 @@
+import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
-import { listPreservationIncomplete } from '@/features/preservation/preserve'
+import { NoPermission } from '@/components/staff/NoPermission'
+import { type IncompleteRow, listPreservationIncomplete } from '@/features/preservation/preserve'
 import { preservationReasonLabel } from '@/features/preservation/reasonCopy'
 import { listPreservationRetrying, type RetryingRow } from '@/features/preservation/retryQueue'
+import { documentRecordLinks } from '@/features/records/staffRecordLinks'
 import { requireStaffContext } from '@/server/requireStaff'
 import { retryPreservationAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 50
+
+function tries(attempts: number): string {
+  return `${attempts} ${attempts === 1 ? 'time' : 'times'}`
+}
+
+function DocumentCell({
+  title,
+  documentId,
+  href,
+}: {
+  title: string
+  documentId: string
+  href: string | undefined
+}) {
+  return (
+    <span className="flex flex-col">
+      {href === undefined ? title : <Link href={href}>{title}</Link>}
+      <a href={`/api/documents/${documentId}`} className="text-sm">
+        Download the file
+      </a>
+    </span>
+  )
+}
+
+function Problem({ row }: { row: IncompleteRow }) {
+  return (
+    <>
+      {preservationReasonLabel(row.reason)}
+      {row.detail === null || row.detail === '' ? null : (
+        <details>
+          <summary className="text-sm">Technical detail</summary>
+          <pre className="whitespace-pre-wrap text-muted-foreground">{row.detail}</pre>
+        </details>
+      )}
+    </>
+  )
+}
+
+function IncompleteTable({
+  rows,
+  links,
+}: {
+  rows: IncompleteRow[]
+  links: ReadonlyMap<string, string>
+}) {
+  return (
+    <div className="table-panel">
+      {rows.length === 0 ? (
+        <p className="px-5 py-8">Every document that needs an archival copy has one.</p>
+      ) : (
+        <table className="w-full min-w-[44rem] text-left">
+          <thead>
+            <tr>
+              <th scope="col">Document</th>
+              <th scope="col">Problem</th>
+              <th scope="col">Tries</th>
+              <th scope="col">
+                <span className="sr-only">Retry</span>
+              </th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((row) => (
+              <tr key={row.recordId}>
+                <td>
+                  <DocumentCell
+                    title={row.title}
+                    documentId={row.documentId}
+                    href={links.get(row.documentId)}
+                  />
+                </td>
+                <td>
+                  <Problem row={row} />
+                </td>
+                <td className="tabular-nums">{row.attempts}</td>
+                <td>
+                  <ActionForm action={retryPreservationAction} submitLabel="Retry">
+                    <input type="hidden" name="recordId" value={row.recordId} />
+                  </ActionForm>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </div>
+  )
+}
+
+function RetryingList({
+  rows,
+  links,
+}: {
+  rows: RetryingRow[]
+  links: ReadonlyMap<string, string>
+}) {
+  if (rows.length === 0) return null
+  return (
+    <section aria-labelledby="retrying" className="space-y-2">
+      <h2 id="retrying">Waiting to be tried again</h2>
+      <p className="m-0">
+        These come back to the list above if the next try fails, or drop off once preserved.
+      </p>
+      <ul className="m-0 list-none space-y-1 p-0">
+        {rows.map((row) => {
+          const href = links.get(row.documentId)
+          return (
+            <li key={row.recordId}>
+              {href === undefined ? row.title : <Link href={href}>{row.title}</Link>}
+              {` (tried ${tries(row.attempts)} so far)`}
+            </li>
+          )
+        })}
+      </ul>
+    </section>
+  )
+}
 
 export default async function PreservationQueuePage() {
   const ctx = await requireStaffContext()
@@ -17,67 +137,21 @@ export default async function PreservationQueuePage() {
     { limit: PAGE_SIZE },
     ctx.signal,
   )
-  const retrying = await listPreservationRetrying(ctx.db, ctx.actor, ctx.signal)
   if (!queue.ok) {
-    return (
-      <main>
-        <h1>Preservation incomplete</h1>
-        <p role="alert">You do not have permission to view this queue.</p>
-      </main>
-    )
+    return <NoPermission title="Preservation incomplete" action="see the preservation queue" />
   }
+  const retrying = await listPreservationRetrying(ctx.db, ctx.actor, ctx.signal)
+  const waiting = retrying.ok ? retrying.value : []
+  const links = await documentRecordLinks(ctx.db, [
+    ...queue.value.rows.map((r) => r.documentId),
+    ...waiting.map((r) => r.documentId),
+  ])
   return (
-    <main>
+    <main data-wide="" className="space-y-6">
       <h1>Preservation incomplete</h1>
       <p>These documents have no archival copy yet. Fix the file or try again.</p>
-      {queue.value.rows.length === 0 ? (
-        <p>Every document that needs an archival copy has one.</p>
-      ) : null}
-      <ul className="space-y-3">
-        {queue.value.rows.map((row) => (
-          <li key={row.recordId} className="rounded-md border p-3">
-            <a
-              href={`/api/documents/${row.documentId}`}
-              className="font-medium text-action underline"
-            >
-              {row.title}
-            </a>
-            <p className="m-0">{`Tried ${row.attempts} ${row.attempts === 1 ? 'time' : 'times'}. ${preservationReasonLabel(row.reason)}`}</p>
-            {row.detail === null || row.detail === '' ? null : (
-              <details>
-                <summary className="cursor-pointer text-muted-foreground">Technical detail</summary>
-                <pre className="whitespace-pre-wrap text-muted-foreground">{row.detail}</pre>
-              </details>
-            )}
-            <ActionForm action={retryPreservationAction} submitLabel="Retry preservation">
-              <input type="hidden" name="recordId" value={row.recordId} />
-            </ActionForm>
-          </li>
-        ))}
-      </ul>
-      {retrying.ok ? <RetryingList rows={retrying.value} /> : null}
+      <IncompleteTable rows={queue.value.rows} links={links} />
+      <RetryingList rows={waiting} links={links} />
     </main>
-  )
-}
-
-function RetryingList({ rows }: { rows: RetryingRow[] }) {
-  if (rows.length === 0) return null
-  return (
-    <section aria-labelledby="retrying" className="space-y-2">
-      <h2 id="retrying">Waiting to be tried again</h2>
-      <p className="m-0">
-        These come back to the list above if the next try fails, or drop off once preserved.
-      </p>
-      <ul className="m-0 list-none space-y-1 p-0">
-        {rows.map((row) => (
-          <li key={row.recordId}>
-            <a href={`/api/documents/${row.documentId}`} className="text-action underline">
-              {row.title}
-            </a>
-            {` (tried ${row.attempts} ${row.attempts === 1 ? 'time' : 'times'} so far)`}
-          </li>
-        ))}
-      </ul>
-    </section>
   )
 }

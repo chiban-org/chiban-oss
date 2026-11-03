@@ -3,16 +3,23 @@ import {
   readTableParams,
   type TableParams,
 } from '@/features/dataTable/params'
-import { filterValues, whenAny } from '@/features/dataTable/quickFilters'
+import { filterValues, singleValue, whenAny } from '@/features/dataTable/quickFilters'
 import { parseSort, type SortConfig, type SortState } from '@/features/dataTable/sort'
 
 export const TOMBSTONES_PATH = '/staff/records/disposed'
 
-export type TombstoneSortKey = 'record' | 'kind' | 'series' | 'disposed'
+export type TombstoneSortKey = 'record' | 'kind' | 'series' | 'disposed' | 'proposer' | 'approver'
 
 export const TOMBSTONE_SORT: SortConfig<TombstoneSortKey> = {
   defaultKey: 'disposed',
-  columns: { record: 'asc', kind: 'asc', series: 'asc', disposed: 'desc' },
+  columns: {
+    record: 'asc',
+    kind: 'asc',
+    series: 'asc',
+    disposed: 'desc',
+    proposer: 'asc',
+    approver: 'asc',
+  },
 }
 
 export const TOMBSTONE_KINDS = ['document', 'application_snapshot'] as const
@@ -52,7 +59,7 @@ export function readTombstoneView(raw: RawSearchParams): TombstoneView {
     sort: parseSort(TOMBSTONE_SORT, params),
     filters: {
       ...whenAny('kinds', filterValues(params, 'kind', TOMBSTONE_KINDS)),
-      ...whenAny('windows', filterValues(params, 'when', TOMBSTONE_WINDOWS)),
+      ...whenAny('windows', singleValue(params, 'when', TOMBSTONE_WINDOWS)),
       ...whenAny(
         'seriesKeys',
         filterValues(params, 'series', () => true),

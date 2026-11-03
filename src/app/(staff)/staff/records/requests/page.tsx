@@ -54,6 +54,7 @@ export default async function RightToKnowLogPage({
   return (
     <main data-wide="" className="space-y-6">
       <h1>Right-to-Know requests</h1>
+      <p>Soonest next date first. Requests with no date running come last.</p>
       <div className="toolbar">
         <QuickFilters
           label="Quick filters"
@@ -78,16 +79,11 @@ export default async function RightToKnowLogPage({
             <tbody>
               {list.rows.map((row) => (
                 <tr key={row.id}>
-                  <td>
-                    <Link
-                      href={`/staff/records/requests/${row.id}`}
-                      className="text-action underline"
-                    >
-                      {row.number}
-                    </Link>
+                  <td className="whitespace-nowrap">
+                    <Link href={`/staff/records/requests/${row.id}`}>{row.number}</Link>
                   </td>
                   <td>{row.description}</td>
-                  <td>{formatCivilDate(row.receivedOn)}</td>
+                  <td className="whitespace-nowrap">{formatCivilDate(row.receivedOn)}</td>
                   <td>{RTK_STATUS_LABELS[row.status]}</td>
                   <td>
                     {row.dueOn === null

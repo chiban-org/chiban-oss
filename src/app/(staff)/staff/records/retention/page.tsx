@@ -1,204 +1,137 @@
-import type { RecordEventKind } from '@packs/nh/schema'
 import { desc } from 'drizzle-orm'
 import Link from 'next/link'
-import { ActionForm } from '@/components/ActionForm'
-import { SelectField, TextField } from '@/components/staff/fields'
+import { FilterTabs } from '@/components/dataTable/FilterTabs'
+import { TablePager } from '@/components/dataTable/TablePager'
 import { NoPermission } from '@/components/staff/NoPermission'
+import type { Db } from '@/db/client'
 import { dispositionBatches } from '@/db/schema'
-import type { RetentionStatus } from '@/features/records/computeRetention'
-import { retentionText } from '@/features/records/retentionText'
-import { retentionWorklist, type WorklistState } from '@/features/records/worklist'
+import { hasCapability } from '@/features/authz/capabilities'
+import { pageHref, type RawSearchParams, tableHref } from '@/features/dataTable/params'
+import { filterTabs } from '@/features/dataTable/quickFilters'
+import { sortLinks } from '@/features/dataTable/sort'
+import { retentionWorklist, WORKLIST_SORT, type WorklistPage } from '@/features/records/worklist'
+import { RETENTION_PATH, readRetentionView } from '@/features/records/worklistParams'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { getTownSettings } from '@/features/town/settings'
 import { townToday } from '@/features/town/today'
-import { formatCivilDate, formatInstantLong } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
-import { proposeDispositionAction, recordRetentionEventAction } from './actions'
+import { BatchesSection } from './BatchesSection'
+import { WorklistTable } from './WorklistTable'
 
 export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 25
-const STATES: [WorklistState, string][] = [
-  ['eligible', 'Eligible now'],
-  ['awaiting_event', 'Waiting for an event'],
-  ['on_hold', 'On legal hold'],
-]
-const BATCH_LABELS = {
-  proposed: 'Waiting for approval',
-  approved: 'Approved',
-  executing: 'Being carried out',
-  executed: 'Carried out',
-  cancelled: 'Cancelled',
-} as const
-const EVENT_LABELS = {
-  case: [['appeal_period_expired', 'The appeal period ended']],
-  project: [
-    ['building_removed', 'The building was removed'],
-    ['septic_replaced_or_removed', 'The septic system was replaced or removed'],
-  ],
-} as const
+const BATCH_PREVIEW = 10
 
-const AUTOMATIC_EVENTS: Partial<Record<RecordEventKind, string>> = {
-  registration_expired: 'Chiban records this when the registration expires.',
-  application_withdrawn: 'Chiban records this when the application is withdrawn.',
-  application_denied: 'Chiban records this when the application is denied.',
-}
-
-function eventChoices(kind: 'case' | 'project', status: RetentionStatus): [string, string][] {
-  const awaiting: readonly string[] = status.state === 'not_yet_triggered' ? status.awaiting : []
-  return EVENT_LABELS[kind].filter(([event]) => awaiting.includes(event)).map(([k, l]) => [k, l])
-}
-
-function automaticNotes(status: RetentionStatus): string[] {
-  if (status.state !== 'not_yet_triggered') return []
-  return status.awaiting.flatMap((event) => {
-    const note = AUTOMATIC_EVENTS[event]
-    return note === undefined ? [] : [note]
+function stateTabs(view: ReturnType<typeof readRetentionView>, list: WorklistPage) {
+  const count = (state: 'eligible' | 'awaiting_event' | 'on_hold') => list.counts.get(state) ?? 0
+  return filterTabs(RETENTION_PATH, view.params, {
+    param: 'state',
+    label: 'Retention lists',
+    defaultTab: 'eligible',
+    options: [
+      { value: 'eligible', label: 'Eligible now', count: count('eligible') },
+      { value: 'awaiting_event', label: 'Waiting for an event', count: count('awaiting_event') },
+      { value: 'on_hold', label: 'On legal hold', count: count('on_hold') },
+    ],
   })
 }
 
-function stateOf(value: string | undefined): WorklistState {
-  return STATES.find(([s]) => s === value)?.[0] ?? 'eligible'
+function OnHoldNote({ holdsLink }: { holdsLink: boolean }) {
+  return (
+    <p>
+      Records kept permanently are not listed here, since they are never disposed of.{' '}
+      {holdsLink ? (
+        <>
+          Every hold, including holds on them, is on the{' '}
+          <Link href="/staff/records/holds">Legal holds</Link> page.
+        </>
+      ) : (
+        'A records custodian manages legal holds.'
+      )}
+    </p>
+  )
+}
+
+async function loadBatches(db: Db, all: boolean) {
+  const newest = db
+    .select()
+    .from(dispositionBatches)
+    .orderBy(desc(dispositionBatches.proposedAt), desc(dispositionBatches.id))
+    .$dynamic()
+  return all ? await newest : await newest.limit(BATCH_PREVIEW + 1)
+}
+
+function emptyText(state: string): string {
+  if (state === 'eligible') return 'No record can be disposed of yet.'
+  if (state === 'awaiting_event') return 'No record is waiting for an event.'
+  return 'No record is on legal hold.'
 }
 
 export default async function RetentionPage({
   searchParams,
 }: {
-  searchParams: Promise<{ state?: string; cursor?: string }>
+  searchParams: Promise<RawSearchParams>
 }) {
-  const params = await searchParams
+  const view = readRetentionView(await searchParams)
   const ctx = await requireStaffContext()
-  if (!mayOpen('/staff/records/retention', await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
+  const viewer = await loadNavViewer(ctx.db, ctx.actor, ctx.signal)
+  if (!mayOpen(RETENTION_PATH, viewer)) {
     return <NoPermission title="Retention" action="see the retention worklist" />
   }
-  const state = stateOf(params.state)
   const today = await townToday(ctx.db, new Date(), ctx.signal)
   const town = await getTownSettings(ctx.db, ctx.signal)
   const zone = town.ok ? town.value.timeZone : 'America/New_York'
-  const list = await retentionWorklist(
-    ctx.db,
-    ctx.actor,
-    {
-      asOf: today,
-      state,
-      limit: PAGE_SIZE,
-      ...(params.cursor === undefined ? {} : { cursor: params.cursor }),
-    },
-    ctx.signal,
-  )
-  const batches = await ctx.db
-    .select()
-    .from(dispositionBatches)
-    .orderBy(desc(dispositionBatches.proposedAt))
-    .limit(10)
+  const [list, mayRecord, batches] = await Promise.all([
+    retentionWorklist(
+      ctx.db,
+      ctx.actor,
+      { asOf: today, state: view.state, limit: PAGE_SIZE, offset: view.offset, sort: view.sort },
+      ctx.signal,
+    ),
+    hasCapability(ctx.db, ctx.actor.userId, 'document.manage', ctx.signal),
+    loadBatches(ctx.db, view.allBatches),
+  ])
+  const pageLink = (offset: number | null) =>
+    offset === null ? null : pageHref(RETENTION_PATH, view.params, String(offset))
   return (
-    <main className="space-y-6">
+    <main data-wide="" className="space-y-6">
       <h1>Retention</h1>
-      <nav aria-label="Retention lists" className="flex flex-wrap gap-4">
-        {STATES.map(([key, label]) => (
-          <Link
-            key={key}
-            href={`/staff/records/retention?state=${key}`}
-            aria-current={key === state ? 'page' : undefined}
-            className={key === state ? 'font-semibold underline' : 'text-action underline'}
-          >
-            {label}
-          </Link>
-        ))}
-      </nav>
-      {state === 'on_hold' ? (
-        <p className="m-0">
-          Records kept permanently are not listed here, since they are never disposed of. Every
-          hold, including holds on them, is on the{' '}
-          <Link href="/staff/records/holds" className="text-action underline">
-            Legal holds
-          </Link>{' '}
-          page.
-        </p>
+      <p>
+        Records under a retention schedule, by whether they can be disposed of now. Earliest
+        eligible date first.
+      </p>
+      <FilterTabs label="Retention lists" tabs={stateTabs(view, list)} />
+      {view.state === 'on_hold' ? (
+        <OnHoldNote holdsLink={mayOpen('/staff/records/holds', viewer)} />
       ) : null}
-      {list.rows.length === 0 ? (
-        <p>No records are in this list.</p>
-      ) : (
-        <ul className="m-0 list-none space-y-3 p-0">
-          {list.rows.map((row) => (
-            <li key={`${row.ref.kind}-${row.ref.id}`} className="space-y-2 rounded-md border p-3">
-              <p className="m-0 font-medium">{row.title}</p>
-              <p className="m-0">
-                {row.series.label}{' '}
-                <a href={row.series.citation.url} className="text-action underline">
-                  {row.series.citation.label}
-                </a>
-                {`. ${retentionText(row.status)}`}
-                {row.holds > 0
-                  ? ` On ${row.holds} legal ${row.holds === 1 ? 'hold' : 'holds'}.`
-                  : ''}
-              </p>
-              {state === 'awaiting_event'
-                ? automaticNotes(row.status).map((note) => (
-                    <p key={note} className="m-0">
-                      {note}
-                    </p>
-                  ))
-                : null}
-              {state === 'awaiting_event' &&
-              row.eventTarget !== null &&
-              eventChoices(row.eventTarget.kind, row.status).length > 0 ? (
-                <ActionForm action={recordRetentionEventAction} submitLabel="Record event">
-                  <input type="hidden" name="targetKind" value={row.eventTarget.kind} />
-                  <input type="hidden" name="targetId" value={row.eventTarget.id} />
-                  <SelectField
-                    label="What happened"
-                    name="kind"
-                    options={eventChoices(row.eventTarget.kind, row.status)}
-                  />
-                  <TextField label="Date it happened" name="occurredOn" type="date" required />
-                </ActionForm>
-              ) : null}
-            </li>
-          ))}
-        </ul>
-      )}
-      {list.nextCursor === null ? null : (
-        <Link
-          href={`/staff/records/retention?state=${state}&cursor=${encodeURIComponent(list.nextCursor)}`}
-          className="inline-block text-action underline"
-        >
-          Next page
-        </Link>
-      )}
-      <section aria-labelledby="propose" className="space-y-3 border-t pt-4">
-        <h2 id="propose">Disposition batches</h2>
-        <p className="m-0">
-          <Link href="/staff/records/disposed" className="text-action underline">
-            Disposed records
-          </Link>{' '}
-          lists every record already disposed of, with its tombstone.
-        </p>
-        <ActionForm action={proposeDispositionAction} submitLabel="Propose a batch">
-          <TextField
-            label="Records eligible on or before"
-            name="asOf"
-            type="date"
-            defaultValue={today}
-            required
-          />
-        </ActionForm>
-        {batches.length === 0 ? (
-          <p>No batches yet.</p>
+      <div className="table-panel">
+        {list.rows.length === 0 ? (
+          <p className="px-5 py-8">{emptyText(view.state)}</p>
         ) : (
-          <ul className="m-0 list-none space-y-1 p-0">
-            {batches.map((b) => (
-              <li key={b.id}>
-                <Link href={`/staff/records/disposition/${b.id}`} className="text-action underline">
-                  {`Batch as of ${formatCivilDate(b.asOf)}, proposed ${formatInstantLong(b.proposedAt, zone)}`}
-                </Link>
-                {`: ${BATCH_LABELS[b.status]}`}
-              </li>
-            ))}
-          </ul>
+          <WorklistTable
+            rows={list.rows}
+            state={view.state}
+            links={sortLinks(RETENTION_PATH, view.params, WORKLIST_SORT, view.sort)}
+            mayRecord={mayRecord}
+          />
         )}
-      </section>
+      </div>
+      <TablePager
+        offset={list.offset}
+        shown={list.rows.length}
+        total={list.total}
+        prevHref={pageLink(list.prevOffset)}
+        nextHref={pageLink(list.nextOffset)}
+      />
+      <BatchesSection
+        batches={view.allBatches ? batches : batches.slice(0, BATCH_PREVIEW)}
+        more={!view.allBatches && batches.length > BATCH_PREVIEW}
+        allHref={tableHref(RETENTION_PATH, view.params, { batches: 'all' })}
+        zone={zone}
+        today={today}
+      />
     </main>
   )
 }

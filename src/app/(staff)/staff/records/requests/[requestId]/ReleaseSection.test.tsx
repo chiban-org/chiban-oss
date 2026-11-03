@@ -3,7 +3,6 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { ReleaseCandidate } from '@/features/rtk/requestPage'
-import type { RtkRequestView } from '@/features/rtk/requests'
 import type { CivilDate } from '@/types/civilDate'
 import { ReleaseSection } from './ReleaseSection'
 
@@ -15,8 +14,6 @@ vi.mock('../../renditionActions', () => ({
 vi.mock('../actions', () => ({ createReleaseAction: vi.fn() }))
 
 afterEach(cleanup)
-
-const request = { id: 'r1', status: 'awaiting_decision' } as unknown as RtkRequestView
 
 const candidates: ReleaseCandidate[] = [
   {
@@ -50,12 +47,13 @@ function versionOptions(): string[] {
   render(
     <CsrfProvider token="t1">
       <ReleaseSection
-        request={request}
+        find={{ requestId: 'r1', find: 'site plan', userId: 'u1', example: null }}
         releases={[]}
         approvals={[]}
         candidates={candidates}
-        find="site plan"
         today={'2027-03-05' as CivilDate}
+        canManage={true}
+        working={true}
       />
     </CsrfProvider>,
   )

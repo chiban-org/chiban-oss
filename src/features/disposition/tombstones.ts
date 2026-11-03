@@ -1,4 +1,4 @@
-import { inArray, type SQL, sql } from 'drizzle-orm'
+import { inArray, type SQL, type SQLWrapper, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { dispositionTombstones as t } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
@@ -44,11 +44,16 @@ export interface TombstonePage {
 
 type TombstoneGroup = 'kinds' | 'windows' | 'series'
 
+const nameOf = (userId: SQLWrapper) =>
+  sql`(select lower(u.display_name) from users u where u.id = ${userId})`
+
 const SORT_COLUMNS = {
   record: t.title,
   kind: t.recordKind,
   series: seriesLabelSql(t.seriesKey),
   disposed: t.executedAt,
+  proposer: nameOf(t.proposedBy),
+  approver: nameOf(t.approvedBy),
 }
 
 const TIEBREAK: readonly SQL[] = [sql`${t.executedAt} desc`, sql`${t.id} desc`]

@@ -1,13 +1,16 @@
 import { eq, inArray } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
-import { ActionForm } from '@/components/ActionForm'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { RecordLayout } from '@/components/layout/RecordLayout'
+import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { dispositionBatches, users } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
 import { clearHref, type RawSearchParams } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
+import type { Status } from '@/features/design/tokens'
 import { batchItemChipGroups } from '@/features/disposition/batchItemChips'
 import {
   BATCH_ITEM_FILTER_PARAMS,
@@ -17,20 +20,27 @@ import {
 import { batchItemFacets, listBatchItems } from '@/features/disposition/batchItems'
 import { findSeries } from '@/features/records/series'
 import { getTownSettings } from '@/features/town/settings'
-import { formatCivilDate, formatInstantDate } from '@/lib/formatDate'
+import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
-import { approveDispositionAction, cancelDispositionAction } from '../../retention/actions'
+import { BatchRail } from './BatchRail'
 
 export const dynamic = 'force-dynamic'
 
 const STATUS = {
-  proposed: 'Waiting for a records custodian to approve it',
+  proposed: 'Waiting for approval',
   approved: 'Approved',
   executing: 'Being carried out',
   executed: 'Carried out',
   cancelled: 'Cancelled',
 } as const
+const BATCH_CHIP: Record<keyof typeof STATUS, Status> = {
+  proposed: 'neutral',
+  approved: 'neutral',
+  executing: 'neutral',
+  executed: 'passed',
+  cancelled: 'neutral',
+}
 const OUTCOME = {
   disposed: 'Disposed of',
   skipped_hold: 'Skipped: a legal hold was placed',
@@ -85,17 +95,9 @@ export default async function DispositionBatchPage({
   const nameOf = (id: string) => people.find((p) => p.id === id)?.name ?? 'Staff'
   const town = await getTownSettings(ctx.db, ctx.signal)
   const zone = town.ok ? town.value.timeZone : 'America/New_York'
-  return (
-    <main data-wide="" className="space-y-6">
-      <h1>{`Disposition batch as of ${formatCivilDate(batch.asOf)}`}</h1>
-      <p className="m-0">{STATUS[batch.status]}</p>
-      <p className="m-0">
-        {`Proposed by ${nameOf(batch.proposedBy)} on ${formatInstantDate(batch.proposedAt, zone)}.`}
-        {batch.approvedBy === null || batch.approvedAt === null
-          ? ''
-          : ` Approved by ${nameOf(batch.approvedBy)} on ${formatInstantDate(batch.approvedAt, zone)}.`}
-      </p>
-      <div className="toolbar mt-4">
+  const sections = (
+    <section aria-label="Records in the batch" data-plain className="space-y-4">
+      <div className="toolbar">
         <QuickFilters
           label="Quick filters"
           groups={batchItemChipGroups(path, params, facets)}
@@ -120,9 +122,9 @@ export default async function DispositionBatchPage({
               {items.map((i) => (
                 <tr key={`${i.kind}-${i.recordId}`}>
                   <td>{i.title ?? i.documentTitle ?? 'Application snapshot'}</td>
-                  <td>{KIND[i.kind]}</td>
+                  <td className="whitespace-nowrap">{KIND[i.kind]}</td>
                   <td>{seriesText(i.seriesKey, i.citation)}</td>
-                  <td>{formatCivilDate(i.eligibleOn)}</td>
+                  <td className="whitespace-nowrap">{formatCivilDate(i.eligibleOn)}</td>
                   <td>{i.outcome === null ? 'Not yet carried out' : OUTCOME[i.outcome]}</td>
                 </tr>
               ))}
@@ -130,35 +132,26 @@ export default async function DispositionBatchPage({
           </table>
         )}
       </div>
-      {batch.status === 'executed' ? (
-        <p className="m-0">{`Carried out ${batch.executedAt === null ? '' : formatInstantDate(batch.executedAt, zone)}. A tombstone records each disposed record, its retention series, and who approved it.`}</p>
-      ) : null}
-      {batch.status === 'proposed' ? (
-        <p className="m-0">{approvalNote(mayApprove, batch.proposedBy === ctx.actor.userId)}</p>
-      ) : null}
-      {mayApprove && batch.status === 'proposed' && batch.proposedBy !== ctx.actor.userId ? (
-        <ActionForm action={approveDispositionAction} submitLabel="Approve and carry out">
-          <input type="hidden" name="batchId" value={batch.id} />
-          <p className="m-0">
-            Approving permanently deletes these records. Holds placed since the proposal are
-            respected.
-          </p>
-        </ActionForm>
-      ) : null}
-      {batch.status === 'proposed' || batch.status === 'approved' ? (
-        <ActionForm action={cancelDispositionAction} submitLabel="Cancel the batch">
-          <input type="hidden" name="batchId" value={batch.id} />
-        </ActionForm>
-      ) : null}
+    </section>
+  )
+  return (
+    <main data-wide="">
+      <PageHeader
+        kicker="Disposition batch"
+        title={`As of ${formatCivilDate(batch.asOf)}`}
+        status={<StatusChip status={BATCH_CHIP[batch.status]} label={STATUS[batch.status]} />}
+        lead="The records this batch disposes of, grouped by kind."
+      />
+      <RecordLayout
+        rail={
+          <BatchRail
+            batch={batch}
+            viewer={{ userId: ctx.actor.userId, mayApprove, nameOf, zone }}
+          />
+        }
+      >
+        {sections}
+      </RecordLayout>
     </main>
   )
-}
-
-function approvalNote(mayApprove: boolean, proposedByViewer: boolean): string {
-  if (proposedByViewer && mayApprove) {
-    return 'You proposed this batch, so another records custodian approves it.'
-  }
-  return mayApprove
-    ? 'A records custodian other than the one who proposed it approves it.'
-    : 'A records custodian approves it.'
 }

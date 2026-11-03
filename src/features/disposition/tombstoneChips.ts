@@ -13,6 +13,7 @@ export function tombstoneChipGroups(params: TableParams, facets: TombstoneFacets
     {
       param: 'when',
       label: 'Disposed of',
+      single: true,
       options: labeledOptions(TOMBSTONE_WINDOW_LABELS, facets.windows),
     },
     { param: 'series', label: 'Retention series', options: facets.series },

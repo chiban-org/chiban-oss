@@ -1,29 +1,46 @@
 import { notFound } from 'next/navigation'
-import { DueLine } from '@/components/enforcement/DueLine'
-import { RTK_STATUS_LABELS, RTK_VIA_LABELS } from '@/features/rtk/labels'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { RecordLayout } from '@/components/layout/RecordLayout'
+import { splitPanels } from '@/components/layout/splitPanels'
+import { StatusChip } from '@/components/StatusChip'
+import { hasCapability } from '@/features/authz/capabilities'
+import { RTK_STATUS_LABELS } from '@/features/rtk/labels'
 import {
   loadReleaseCandidates,
   loadReleases,
   loadRequestApprovals,
   loadRequestLetters,
+  releaseSearchExample,
 } from '@/features/rtk/requestPage'
+import { isRequestOpen, requestChipStatus } from '@/features/rtk/requestStatus'
 import { rtkRequestView } from '@/features/rtk/requests'
 import { townToday } from '@/features/town/today'
-import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { ReleaseSection } from './ReleaseSection'
+import { RequestRail } from './RequestRail'
 import { ResponseSection } from './ResponseSection'
+import { WithholdingsSection } from './WithholdingsSection'
 
 export const dynamic = 'force-dynamic'
 
-function timelinessText(kind: string, dueOn: string, respondedOn: string | null): string | null {
-  if (kind === 'responded_late') {
-    return `Responded late: due ${formatCivilDate(dueOn)}, answered ${formatCivilDate(respondedOn ?? dueOn)}.`
-  }
-  if (kind === 'responded_on_time')
-    return `Answered on time, ${formatCivilDate(respondedOn ?? dueOn)}.`
-  return null
+function LettersSection({ letters }: { letters: { id: string; title: string }[] }) {
+  return (
+    <section aria-labelledby="letters">
+      <h2 id="letters">Letters</h2>
+      {letters.length === 0 ? (
+        <p>No letters yet.</p>
+      ) : (
+        <ul className="m-0 list-none space-y-1 p-0">
+          {letters.map((l) => (
+            <li key={l.id}>
+              <a href={`/api/documents/${l.id}`}>{l.title}</a>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  )
 }
 
 export default async function RequestPage({
@@ -41,69 +58,60 @@ export default async function RequestPage({
   const view = await rtkRequestView(ctx.db, ctx.actor, requestId, today, ctx.signal)
   if (!view.ok) notFound()
   const request = view.value
-  const [releases, approvals, candidates, letters] = await Promise.all([
+  const canManage = await hasCapability(ctx.db, ctx.actor.userId, 'rtk.manage', ctx.signal)
+  const working = canManage && isRequestOpen(request)
+  const [releases, approvals, candidates, letters, example] = await Promise.all([
     loadReleases(ctx.db, requestId),
     loadRequestApprovals(ctx.db, requestId),
-    loadReleaseCandidates(ctx.db, ctx.actor, find),
+    working ? loadReleaseCandidates(ctx.db, ctx.actor, find) : Promise.resolve([]),
     loadRequestLetters(ctx.db, requestId),
+    working ? releaseSearchExample(ctx.db, ctx.actor) : Promise.resolve(null),
   ])
-  const late = timelinessText(
-    request.timeliness.kind,
-    request.timeliness.dueOn,
-    'respondedOn' in request.timeliness ? request.timeliness.respondedOn : null,
-  )
+  const sections = splitPanels([
+    {
+      empty: request.firstResponseKind === null,
+      node: <ResponseSection key="response" request={request} today={today} working={working} />,
+    },
+    {
+      empty: request.withholdings.length === 0,
+      node: <WithholdingsSection key="withholdings" request={request} working={working} />,
+    },
+    {
+      empty: releases.length === 0 && approvals.length === 0,
+      node: (
+        <ReleaseSection
+          key="releases"
+          find={{ requestId, find, userId: ctx.actor.userId, example }}
+          releases={releases}
+          approvals={approvals}
+          candidates={candidates}
+          today={today}
+          canManage={canManage}
+          working={working}
+        />
+      ),
+    },
+    { empty: letters.length === 0, node: <LettersSection key="letters" letters={letters} /> },
+  ])
   return (
-    <main className="space-y-6">
-      <h1>{`Request ${request.number}`}</h1>
-      <p className="m-0">{request.description}</p>
-      <p className="m-0">
-        {`Received ${formatCivilDate(request.receivedOn)} by ${RTK_VIA_LABELS[request.receivedVia].toLowerCase()}. ${RTK_STATUS_LABELS[request.status]}.`}
-      </p>
-      {request.requesterName === null && request.requesterContact === null ? null : (
-        <p className="m-0">
-          {[request.requesterName, request.requesterContact].filter((x) => x !== null).join(', ')}
-        </p>
-      )}
-      <section aria-labelledby="clock" className="space-y-2 border-t pt-4">
-        <h2 id="clock">Response deadline</h2>
-        <DueLine due={request.responseDue} today={today} met={request.firstResponseOn !== null} />
-        {late === null ? null : <p role="status">{late}</p>}
-        {request.statedDue === null ? null : (
-          <>
-            <h3>Date the town stated</h3>
-            <DueLine
-              due={request.statedDue}
-              today={today}
-              met={request.status === 'closed' || request.status === 'withdrawn'}
-            />
-          </>
-        )}
-      </section>
-      <ResponseSection request={request} today={today} />
-      <ReleaseSection
-        request={request}
-        releases={releases}
-        approvals={approvals}
-        candidates={candidates}
-        find={find}
-        today={today}
+    <main>
+      <PageHeader
+        kicker="Right-to-Know request"
+        title={request.number}
+        status={
+          <StatusChip
+            status={requestChipStatus(request)}
+            label={RTK_STATUS_LABELS[request.status]}
+          />
+        }
+        lead={request.description}
       />
-      <section aria-labelledby="letters" className="space-y-2 border-t pt-4">
-        <h2 id="letters">Letters</h2>
-        {letters.length === 0 ? (
-          <p>No letters yet.</p>
-        ) : (
-          <ul className="m-0 list-none space-y-1 p-0">
-            {letters.map((l) => (
-              <li key={l.id}>
-                <a href={`/api/documents/${l.id}`} className="text-action underline">
-                  {l.title}
-                </a>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
+      <RecordLayout
+        rail={<RequestRail request={request} today={today} canManage={canManage} />}
+        empty={sections.empty}
+      >
+        {sections.filled}
+      </RecordLayout>
     </main>
   )
 }

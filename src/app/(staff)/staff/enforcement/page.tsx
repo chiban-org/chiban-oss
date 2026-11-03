@@ -4,6 +4,7 @@ import { TablePager } from '@/components/dataTable/TablePager'
 import { EnforcementQueueTable } from '@/components/enforcement/EnforcementQueueTable'
 import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { hasCapability } from '@/features/authz/capabilities'
 import { clearHref, pageHref, type RawSearchParams, readOffset } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
 import { caseListFacets } from '@/features/enforcement/caseList'
@@ -25,58 +26,9 @@ export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 25
 
-export default async function EnforcementQueuePage({
-  searchParams,
-}: {
-  searchParams: Promise<RawSearchParams>
-}) {
-  const { params, sort, filters } = readCasesView(await searchParams)
-  const ctx = await requireStaffContext()
-  if (!mayOpen(CASES_PATH, await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
-    return <NoPermission title="Code enforcement" action="see code enforcement cases" />
-  }
-  const today = await townToday(ctx.db, new Date(), ctx.signal)
-  const [queue, facets] = await Promise.all([
-    listCaseQueue(
-      ctx.db,
-      ctx.actor,
-      { filters, sort, limit: PAGE_SIZE, offset: readOffset(params) },
-      today,
-      ctx.signal,
-    ),
-    caseListFacets(ctx.db, ctx.actor, { filters }, today, ctx.signal),
-  ])
-  const links = sortLinks(CASES_PATH, params, CASE_SORT, sort)
-  const clear = clearHref(CASES_PATH, params, CASE_FILTER_PARAMS)
-  const pageLink = (offset: number | null) =>
-    offset === null ? null : pageHref(CASES_PATH, params, String(offset))
-  const tableKey = [
-    sort.key,
-    sort.dir,
-    queue.offset,
-    ...CASE_FILTER_PARAMS.map((name) => (params.get(name) ?? []).join(',')),
-  ].join('|')
+function NewCaseForms() {
   return (
-    <main data-wide="" className="space-y-6">
-      <h1>Code enforcement</h1>
-      <p>Keys: j and k to move, Enter to open a case.</p>
-      <div className="toolbar">
-        <QuickFilters
-          label="Quick filters"
-          groups={caseChipGroups(params, facets)}
-          clearHref={clear}
-        />
-      </div>
-      <div className="table-panel">
-        <EnforcementQueueTable key={tableKey} rows={queue.rows} links={links} />
-      </div>
-      <TablePager
-        offset={queue.offset}
-        shown={queue.rows.length}
-        total={queue.total}
-        prevHref={pageLink(queue.prevOffset)}
-        nextHref={pageLink(queue.nextOffset)}
-      />
+    <>
       <section aria-labelledby="open-case" className="space-y-2">
         <h2 id="open-case">Open a case</h2>
         <ActionForm action={openCaseAction} submitLabel="Open case" variant="default">
@@ -101,6 +53,64 @@ export default async function EnforcementQueuePage({
           />
         </ActionForm>
       </section>
+    </>
+  )
+}
+
+export default async function EnforcementQueuePage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>
+}) {
+  const { params, sort, filters } = readCasesView(await searchParams)
+  const ctx = await requireStaffContext()
+  if (!mayOpen(CASES_PATH, await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
+    return <NoPermission title="Code enforcement" action="see code enforcement cases" />
+  }
+  const today = await townToday(ctx.db, new Date(), ctx.signal)
+  const [queue, facets, canManage] = await Promise.all([
+    listCaseQueue(
+      ctx.db,
+      ctx.actor,
+      { filters, sort, limit: PAGE_SIZE, offset: readOffset(params) },
+      today,
+      ctx.signal,
+    ),
+    caseListFacets(ctx.db, ctx.actor, { filters }, today, ctx.signal),
+    hasCapability(ctx.db, ctx.actor.userId, 'enforcement.manage', ctx.signal),
+  ])
+  const links = sortLinks(CASES_PATH, params, CASE_SORT, sort)
+  const clear = clearHref(CASES_PATH, params, CASE_FILTER_PARAMS)
+  const pageLink = (offset: number | null) =>
+    offset === null ? null : pageHref(CASES_PATH, params, String(offset))
+  const tableKey = [
+    sort.key,
+    sort.dir,
+    queue.offset,
+    ...CASE_FILTER_PARAMS.map((name) => (params.get(name) ?? []).join(',')),
+  ].join('|')
+  return (
+    <main data-wide="" className="space-y-6">
+      <h1>Code enforcement</h1>
+      <p>Newest case first. Keys: j and k to move, Enter to open a case.</p>
+      <div className="toolbar">
+        <QuickFilters
+          label="Quick filters"
+          groups={caseChipGroups(params, facets)}
+          clearHref={clear}
+        />
+      </div>
+      <div className="table-panel">
+        <EnforcementQueueTable key={tableKey} rows={queue.rows} links={links} />
+      </div>
+      <TablePager
+        offset={queue.offset}
+        shown={queue.rows.length}
+        total={queue.total}
+        prevHref={pageLink(queue.prevOffset)}
+        nextHref={pageLink(queue.nextOffset)}
+      />
+      {canManage ? <NewCaseForms /> : null}
     </main>
   )
 }
