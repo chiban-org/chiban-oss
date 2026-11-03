@@ -189,7 +189,7 @@ describe('staff settings pages', () => {
   it('the settings page lists kinds, adopted starters, rules, and the unverified edition', async () => {
     const page = await html(SettingsPage({ searchParams: Promise.resolve({}) }))
     expect(page).toContain('Application types')
-    expect(page).toContain('Adopted')
+    expect(page).toMatch(/<summary[^>]*>\d+ starters? adopted<\/summary>/)
     expect(page).toContain('Edition not verified (before July 1, 2024)')
     expect(page).not.toContain('1970')
     expect(page).toContain('RSA 155-A:4 IX')

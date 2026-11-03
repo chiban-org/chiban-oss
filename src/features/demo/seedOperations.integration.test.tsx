@@ -62,7 +62,8 @@ describe('seeded operations screens', () => {
     expect(html).toContain('has not succeeded recently')
     expect(html).toContain('Acknowledged within the last 30 days')
     expect(html).toContain('Email')
-    expect(html).toContain('This job is overdue.')
+    expect(html).toContain('Needs attention')
+    expect(html).toMatch(/: Overdue<\/p>/)
   })
 
   it('seeded reports page renders nonzero volume, processing time, and revenue rows', async () => {
