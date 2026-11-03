@@ -40,14 +40,18 @@ function OverrideNote({ result }: { result: GateResult }) {
   return <p className="text-sm">{`Reason: ${o.reason ?? ''}`}</p>
 }
 
+function citationRepeatsLabel(result: GateResult): boolean {
+  return result.citation === null || result.label.includes(result.citation.label)
+}
+
 export function GatePanel({ groups, renderControls }: GatePanelProps) {
+  const shown = groups.filter((group) => group.results.length > 0)
   return (
     <div>
-      {groups.length === 0 ? <p>No gates apply: this application has no next step.</p> : null}
-      {groups.map((group) => (
+      {shown.length === 0 ? <p>No gates apply to the next step.</p> : null}
+      {shown.map((group) => (
         <section key={group.to} aria-label={`Gates for ${STATE_LABELS[group.to]}`} className="my-3">
           <h3>{`Before ${STATE_LABELS[group.to].toLowerCase()}`}</h3>
-          {group.results.length === 0 ? <p>No gates apply to this step.</p> : null}
           <ul className="list-none divide-y p-0">
             {group.results.map((result) => (
               <li key={result.key} className="py-2.5">
@@ -63,8 +67,8 @@ export function GatePanel({ groups, renderControls }: GatePanelProps) {
                 {result.outcome.status === 'pass' ? null : (
                   <p className="text-sm">{result.outcome.reason}</p>
                 )}
-                {result.citation === null ? null : (
-                  <p className="text-sm text-muted-foreground">{result.citation.label}</p>
+                {citationRepeatsLabel(result) ? null : (
+                  <p className="text-sm text-muted-foreground">{result.citation?.label}</p>
                 )}
                 <OverrideNote result={result} />
                 {renderControls?.(result)}

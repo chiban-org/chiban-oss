@@ -17,6 +17,7 @@ import {
 } from '@/test/applicationFixtures'
 import { appTypeBody, saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { signedOffReview } from '@/test/reviewFixtures'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -84,6 +85,12 @@ describe('building permit review flow', () => {
     })
   }
 
+  async function reviewedBuilding() {
+    const app = await building('under_review')
+    await signedOffReview(handle.db, world, app.applicationId, signal)
+    return app
+  }
+
   it('decided waits for every assigned reviewer to sign off', async () => {
     const app = await building('under_review')
     const assigned = await assignReviewer(
@@ -111,7 +118,7 @@ describe('building permit review flow', () => {
   })
 
   it('decided assesses at_approval fees once', async () => {
-    const app = await building('under_review')
+    const app = await reviewedBuilding()
     expect(await go(world.staff, app.applicationId, 'decided')).toMatchObject({ ok: true })
     expect(await go(world.staff, app.applicationId, 'decided', 1)).toEqual({
       ok: false,
@@ -142,6 +149,7 @@ describe('building permit review flow', () => {
       ],
     })
     const app = await makeApplication(handle.db, world, { state: 'under_review' })
+    await signedOffReview(handle.db, world, app.applicationId, signal)
     await handle.db.transaction((tx) =>
       startClocksFor(
         tx,
@@ -170,7 +178,7 @@ describe('building permit review flow', () => {
   })
 
   it('decided and denied mark the decision clock met', async () => {
-    const decided = await building('under_review')
+    const decided = await reviewedBuilding()
     const denied = await building('under_review')
     for (const a of [decided, denied]) {
       await handle.db.transaction((tx) =>

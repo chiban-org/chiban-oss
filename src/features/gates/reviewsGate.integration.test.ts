@@ -5,6 +5,7 @@ import { assignReviewer } from '@/features/reviews/assignments'
 import { makeApplication } from '@/test/applicationFixtures'
 import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { signedOffReview } from '@/test/reviewFixtures'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -50,5 +51,19 @@ describe('reviews gate', () => {
       signal,
     )
     expect((await reviewsGate(app.applicationId))?.effective).toBe('blocked')
+  })
+
+  it('a building permit in review with nobody assigned is blocked, not passed vacuously', async () => {
+    const app = await makeApplication(handle.db, world, { state: 'under_review' })
+    expect(await reviewsGate(app.applicationId)).toMatchObject({
+      effective: 'blocked',
+      outcome: { status: 'blocked', reason: 'No reviewer is assigned.' },
+    })
+  })
+
+  it('a building permit whose only reviewer signed off passes', async () => {
+    const app = await makeApplication(handle.db, world, { state: 'under_review' })
+    await signedOffReview(handle.db, world, app.applicationId, signal)
+    expect((await reviewsGate(app.applicationId))?.effective).toBe('pass')
   })
 })

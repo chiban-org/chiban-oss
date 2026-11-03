@@ -16,6 +16,7 @@ import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import { createProject } from '@/features/projects/projects'
+import { assignReviewer, signOffReview } from '@/features/reviews/assignments'
 import type { CivilDate } from '@/types/civilDate'
 
 export const TITLE_PREFIX = 'Demo permit:'
@@ -196,7 +197,25 @@ export async function completeAndReview(
   await s.step('under_review', reviewOn)
 }
 
+async function signedOffReview(s: Scenario): Promise<void> {
+  const reviewer = await actorFor(s.db, 'reviewer', s.signal)
+  const assigned = must(
+    await assignReviewer(
+      s.db,
+      s.cast.staff,
+      { applicationId: s.applicationId, reviewerUserId: reviewer.userId },
+      s.signal,
+    ),
+    'review assignment',
+  )
+  must(
+    await signOffReview(s.db, reviewer, { assignmentId: assigned.assignmentId }, s.signal),
+    'review sign-off',
+  )
+}
+
 export async function readyToIssue(s: Scenario, decidedOn: string): Promise<void> {
+  await signedOffReview(s)
   await s.step('decided', decidedOn)
   must(
     await recordCodeEdition(s.db, s.cast.staff, { applicationId: s.applicationId }, s.signal),

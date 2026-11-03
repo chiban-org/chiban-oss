@@ -1,4 +1,4 @@
-import { and, eq, isNull, ne } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import {
   applicationConditions,
@@ -21,16 +21,14 @@ registerGate({
   boundBy: null,
   evaluate: async (tx, app) => {
     if (boardOfApplication(app) !== null) return { status: 'pass' }
-    const open = await tx
-      .select({ id: reviewAssignments.id })
+    const active = await tx
+      .select({ status: reviewAssignments.status })
       .from(reviewAssignments)
-      .where(
-        and(
-          eq(reviewAssignments.applicationId, app.id),
-          isNull(reviewAssignments.removedAt),
-          ne(reviewAssignments.status, 'signed_off'),
-        ),
-      )
+      .where(and(eq(reviewAssignments.applicationId, app.id), isNull(reviewAssignments.removedAt)))
+    if (active.length === 0 && app.state === 'under_review') {
+      return { status: 'blocked', reason: 'No reviewer is assigned.' }
+    }
+    const open = active.filter((a) => a.status !== 'signed_off')
     if (open.length === 0) return { status: 'pass' }
     return {
       status: 'blocked',
@@ -110,7 +108,7 @@ registerGate({
     if (unmet.length === 0) return { status: 'pass' }
     return {
       status: 'blocked',
-      reason: `Unmet conditions block issuance: ${unmet.map((u) => u.text).join('; ')}.`,
+      reason: `Unmet conditions block issuance: ${unmet.map((u) => u.text.replace(/\.+$/, '')).join('; ')}.`,
     }
   },
 })

@@ -1,4 +1,6 @@
+import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { applicationConditions } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { applyCondition, setConditionStatus } from '@/features/conditions/applicationConditions'
 import { evaluateGates } from '@/features/gates/evaluateGates'
@@ -56,6 +58,19 @@ describe('conditions gate', () => {
     const reason = (await gates(app.applicationId)).find((r) => r.key === 'conditions.blocking_met')
     expect(reason?.outcome).toMatchObject({
       status: 'blocked',
+      reason: 'Unmet conditions block issuance: Approved septic design on file.',
+    })
+  })
+
+  it('a condition whose text ends in a period is not followed by a second one', async () => {
+    const app = await makeApplication(handle.db, world)
+    const id = await blockingCondition(app.applicationId)
+    await handle.db
+      .update(applicationConditions)
+      .set({ textSnapshot: 'Approved septic design on file.' })
+      .where(eq(applicationConditions.id, id))
+    const reason = (await gates(app.applicationId)).find((r) => r.key === 'conditions.blocking_met')
+    expect(reason?.outcome).toMatchObject({
       reason: 'Unmet conditions block issuance: Approved septic design on file.',
     })
   })

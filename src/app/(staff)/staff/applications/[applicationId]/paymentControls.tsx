@@ -1,0 +1,107 @@
+import {
+  chargebackAction,
+  correctAction,
+  recordPaymentAction,
+  refundAction,
+  returnedCheckAction,
+} from '@/app/(staff)/staff/payments/actions'
+import { ActionForm } from '@/components/ActionForm'
+import { SelectField, TextField } from '@/components/staff/fields'
+import type { ApplicationPayments } from '@/features/payments/applicationPayments'
+import { centsToDollarInput, formatCents } from '@/lib/money'
+
+type Entry = ApplicationPayments['entries'][number]
+
+export function EntryControls({
+  entry,
+  payments,
+}: {
+  entry: Entry
+  payments: ApplicationPayments
+}) {
+  if (!payments.canRefund || entry.entryType !== 'payment') return null
+  return (
+    <details>
+      <summary>Refund, correct, or reverse</summary>
+      <ActionForm action={refundAction} submitLabel="Refund">
+        <input type="hidden" name="entryId" value={entry.id} />
+        <input type="hidden" name="applicationId" value={payments.applicationId} />
+        <p className="m-0 font-medium">
+          A refund here reduces only these lines on this application:
+        </p>
+        {entry.refundable.length === 0 ? (
+          <p className="m-0">Nothing from this payment is left on this application to refund.</p>
+        ) : (
+          <ul className="m-0">
+            {entry.refundable.map((line) => (
+              <li key={line.label}>{`${line.label}, up to ${formatCents(line.cents)}`}</li>
+            ))}
+          </ul>
+        )}
+        <TextField label="Refund amount in dollars" name="amount" inputMode="decimal" required />
+        <TextField label="Reason (at least 10 characters)" name="reason" required />
+      </ActionForm>
+      {entry.method === 'check' ? (
+        <ActionForm action={returnedCheckAction} submitLabel="Record returned check">
+          <input type="hidden" name="entryId" value={entry.id} />
+          <TextField label="Returned on" name="returnedOn" type="date" required />
+          <TextField label="Reason (at least 10 characters)" name="reason" required />
+        </ActionForm>
+      ) : null}
+      {entry.method === 'card_online' || entry.method === 'card_present' ? (
+        <ActionForm action={chargebackAction} submitLabel="Record chargeback">
+          <input type="hidden" name="entryId" value={entry.id} />
+          <TextField label="Dispute reference" name="disputeRef" required />
+          <TextField label="Amount in dollars" name="amount" inputMode="decimal" required />
+          <TextField label="Reason (at least 10 characters)" name="reason" required />
+        </ActionForm>
+      ) : null}
+      {payments.targets.length === 0 ? null : (
+        <ActionForm action={correctAction} submitLabel="Move to another permit">
+          <input type="hidden" name="entryId" value={entry.id} />
+          <SelectField
+            label="Move to"
+            name="targetApplicationId"
+            options={payments.targets.map((t): [string, string] => [t.id, t.number])}
+          />
+          <TextField label="Amount in dollars" name="amount" inputMode="decimal" required />
+          <TextField label="Reason (at least 10 characters)" name="reason" required />
+        </ActionForm>
+      )}
+    </details>
+  )
+}
+
+export function RecordPaymentForm({ payments }: { payments: ApplicationPayments }) {
+  if (!payments.canCollect || payments.balance.dueCents <= 0) return null
+  return (
+    <details>
+      <summary>Record a cash or check payment</summary>
+      <ActionForm action={recordPaymentAction} submitLabel="Record payment">
+        <input type="hidden" name="applicationId" value={payments.applicationId} />
+        <SelectField
+          label="Paid by"
+          name="method"
+          options={[
+            ['check', 'Check'],
+            ['cash', 'Cash'],
+          ]}
+        />
+        <TextField
+          label="Amount in dollars"
+          name="amount"
+          inputMode="decimal"
+          defaultValue={centsToDollarInput(payments.balance.dueCents)}
+          required
+        />
+        <TextField label="Check number (checks only)" name="checkNumber" />
+        <TextField
+          label="Cash tendered in dollars (cash only, to work out change)"
+          name="tendered"
+          inputMode="decimal"
+        />
+        <TextField label="Payer name" name="payerName" required />
+      </ActionForm>
+    </details>
+  )
+}

@@ -92,7 +92,19 @@ describe('GatePanel', () => {
     )
     expect(screen.getByRole('button', { name: 'Act on nh.bp.regional_impact' })).toBeTruthy()
     cleanup()
+    render(
+      <GatePanel
+        groups={[
+          { to: 'under_review', results: [] },
+          { to: 'issued', results: [BLOCKED] },
+        ]}
+      />,
+    )
+    expect(screen.queryByText('No gates apply to this step.')).toBeNull()
+    expect(screen.queryByText('Before under review')).toBeNull()
+    expect(screen.getByText('Before issued')).toBeTruthy()
+    cleanup()
     render(<GatePanel groups={[{ to: 'under_review', results: [] }]} />)
-    expect(screen.getByText('No gates apply to this step.')).toBeTruthy()
+    expect(screen.getByText('No gates apply to the next step.')).toBeTruthy()
   })
 })
