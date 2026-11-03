@@ -11,6 +11,13 @@ import './globals.css'
 export const SITE_METADATA: Metadata = {
   title: 'Chiban',
   description: 'Land-use software for small towns.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: '16x16 32x32 48x48' },
+      { url: '/icon.png', type: 'image/png', sizes: '512x512' },
+    ],
+    apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
+  },
 }
 
 export async function SiteRoot({ children }: { children: ReactNode }) {
