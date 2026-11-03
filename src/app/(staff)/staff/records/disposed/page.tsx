@@ -76,7 +76,7 @@ export default async function DisposedRecordsPage({
         series that allowed it, and who proposed and approved it. The record itself is gone, so this
         list is read-only.
       </p>
-      <div className="toolbar">
+      <div className="toolbar mt-4">
         <QuickFilters
           label="Quick filters"
           groups={tombstoneChipGroups(params, facets)}

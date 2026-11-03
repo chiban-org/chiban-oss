@@ -95,7 +95,7 @@ export default async function DispositionBatchPage({
           ? ''
           : ` Approved by ${nameOf(batch.approvedBy)} on ${formatInstantDate(batch.approvedAt, zone)}.`}
       </p>
-      <div className="toolbar">
+      <div className="toolbar mt-4">
         <QuickFilters
           label="Quick filters"
           groups={batchItemChipGroups(path, params, facets)}
