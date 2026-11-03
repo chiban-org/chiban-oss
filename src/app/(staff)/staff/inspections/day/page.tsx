@@ -48,7 +48,7 @@ function InspectorLinks({
   date: CivilDate
   selected: string
 }) {
-  if (inspectors.length === 0) return null
+  if (inspectors.length < 2) return null
   return (
     <nav aria-label="Inspectors">
       <ul className="m-0 flex list-none flex-wrap gap-x-4 p-0">

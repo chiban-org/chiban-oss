@@ -6,6 +6,7 @@ import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { makeUser } from '@/test/factories'
 import { addDays, type CivilDate } from '@/types/civilDate'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
@@ -77,6 +78,14 @@ describe('the inspector day list', () => {
     await actAs('staff')
     const body = await html(DayPage({ searchParams: Promise.resolve({}) }))
     expect(body).toContain('Ira Inspector')
+    expect(body).not.toContain('Your day')
+    expect(body).not.toContain('aria-label="Inspectors"')
+  })
+
+  it('marks the chosen inspector when there is more than one to choose from', async () => {
+    await makeUser(handle.db, { role: 'inspector' })
+    await actAs('staff')
+    const body = await html(DayPage({ searchParams: Promise.resolve({}) }))
     expect(body).toMatch(/aria-current="page"[^>]*>Ira Inspector</)
   })
 

@@ -9,7 +9,6 @@ const RAIL_HEADING = 'font-sans text-sm font-semibold text-muted-foreground'
 
 function listFacts(view: ListView): Fact[] {
   return [
-    { label: 'Status', value: view.statusText },
     { label: 'Drawn', value: view.drawnText },
     ...(view.issuedText === null ? [] : [{ label: 'Issued', value: view.issuedText }]),
     ...(view.fingerprint === null
