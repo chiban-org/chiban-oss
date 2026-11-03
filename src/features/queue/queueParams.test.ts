@@ -56,7 +56,7 @@ describe('readQueueView', () => {
   })
 
   it('opens on the needs action scope sorted by due date', () => {
-    const view = readQueueView({ sort: 'priority', state: 'denied' })
+    const view = readQueueView({ sort: 'priority', state: 'bogus' })
     expect(view.filters).toEqual({})
     expect(view.sort).toEqual({ key: 'due', dir: 'asc' })
   })

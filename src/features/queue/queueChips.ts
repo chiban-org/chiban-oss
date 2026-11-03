@@ -4,6 +4,7 @@ import {
   type ChipView,
   chipGroups,
   type FilterGroup,
+  type FilterOption,
   filterTabs,
   labeledOptions,
 } from '@/features/dataTable/quickFilters'
@@ -12,6 +13,7 @@ import type { QueueFacets } from '@/features/queue/queueFacets'
 import {
   APPLICATIONS_PATH,
   ASSIGNED_LABELS,
+  CORE_STATE_LABELS,
   DUE_LABELS,
   FLAG_LABELS,
 } from '@/features/queue/queueParams'
@@ -22,7 +24,8 @@ import {
 } from '@/features/queue/stateScopes'
 
 export function statusTabs(params: TableParams, facets: QueueFacets): ChipView[] {
-  return filterTabs(APPLICATIONS_PATH, params, {
+  const withoutState = new Map([...params].filter(([name]) => name !== 'state'))
+  return filterTabs(APPLICATIONS_PATH, withoutState, {
     param: STATUS_TAB_PARAM,
     label: 'Status',
     defaultTab: DEFAULT_STATUS_TAB,
@@ -30,14 +33,18 @@ export function statusTabs(params: TableParams, facets: QueueFacets): ChipView[]
   })
 }
 
+function stateOptions(params: TableParams, facets: QueueFacets): FilterOption[] {
+  const chosen = paramValues(params, 'state')
+  return labeledOptions(CORE_STATE_LABELS, facets.states).filter(
+    (option) => (option.count ?? 0) > 0 || chosen.includes(option.value),
+  )
+}
+
 export function queueChipGroups(
   params: TableParams,
   facets: QueueFacets,
-  showPreservation: boolean,
+  fullRecordAccess: boolean,
 ): ChipGroupView[] {
-  const flags = new Map(
-    [...FLAG_LABELS].filter(([value]) => showPreservation || value !== 'preservation'),
-  )
   const groups: FilterGroup[] = [
     { param: 'due', label: 'Deadline', options: labeledOptions(DUE_LABELS, facets.due) },
     {
@@ -47,20 +54,22 @@ export function queueChipGroups(
       options: labeledOptions(ASSIGNED_LABELS, facets.assigned),
     },
     { param: 'type', label: 'Type', options: facets.types },
-    {
-      param: 'flag',
-      label: 'Flags',
-      options: labeledOptions(flags, facets.flags),
-      display: 'menu',
-    },
+    { param: 'state', label: 'Status', options: stateOptions(params, facets), display: 'menu' },
   ]
-  return chipGroups(APPLICATIONS_PATH, params, groups)
+  const flags: FilterGroup = {
+    param: 'flag',
+    label: 'Flags',
+    options: labeledOptions(FLAG_LABELS, facets.flags),
+    display: 'menu',
+  }
+  return chipGroups(APPLICATIONS_PATH, params, fullRecordAccess ? [...groups, flags] : groups)
 }
 
 const CARRIED = [
   STATUS_TAB_PARAM,
   SORT_PARAM,
   DIR_PARAM,
+  'state',
   'due',
   'assigned',
   'type',

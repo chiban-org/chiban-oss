@@ -111,6 +111,14 @@ describe('QuickFilters', () => {
     expect(screen.queryByRole('link', { name: /Electrical permit/ })).toBeNull()
   })
 
+  it('also offers each inline group as a menu for narrow screens', () => {
+    render(<QuickFilters label="Quick filters" groups={groups} clearHref={null} />)
+    const inline = screen.getByRole('group', { name: groups[0]?.label })
+    expect(inline.className).toContain('max-sm:hidden')
+    const phone = screen.getByRole('button', { name: new RegExp(`^${groups[0]?.label}`) })
+    expect(phone.closest('[data-phone-menu]')?.className).toContain('sm:hidden')
+  })
+
   it('has no clear link when nothing is filtered', () => {
     render(<QuickFilters label="Quick filters" groups={groups} clearHref={null} />)
     expect(screen.queryByRole('link', { name: 'Clear all' })).toBeNull()

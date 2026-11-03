@@ -79,7 +79,7 @@ export function scopeClauses(actor: Actor, filters: WorkQueueFilters): (SQL | un
   ]
 }
 
-export type QueueGroup = 'stage' | 'due' | 'assigned' | 'types' | 'flags'
+export type QueueGroup = 'stage' | 'state' | 'due' | 'assigned' | 'types' | 'flags'
 
 export function groupClauses(
   actor: Actor,
@@ -87,8 +87,10 @@ export function groupClauses(
   today: CivilDate,
 ): ReadonlyMap<QueueGroup, SQL | undefined> {
   const types = filters.typeKeys ?? []
+  const stateKeys = filters.stateKeys ?? []
   return new Map<QueueGroup, SQL | undefined>([
     ['stage', statesClause(filters.states)],
+    ['state', stateKeys.length === 0 ? undefined : inArray(applications.state, stateKeys)],
     ['due', anyOf((filters.due ?? []).map((v) => dueClause(v, today)))],
     ['assigned', anyOf((filters.assigned ?? []).map((v) => assignedClause(v, actor)))],
     ['types', types.length === 0 ? undefined : inArray(applications.applicationTypeKey, types)],

@@ -1,5 +1,6 @@
 import { Check, X } from 'lucide-react'
 import Link from 'next/link'
+import { Fragment } from 'react'
 import type { ChipGroupView, ChipView } from '@/features/dataTable/quickFilters'
 import { cn } from '@/lib/utils'
 import { FilterMenu } from './FilterMenu'
@@ -32,7 +33,7 @@ function InlineGroup({ group }: { group: ChipGroupView }) {
     <div
       role="group"
       aria-label={group.label}
-      className="inline-flex divide-x divide-hairline overflow-hidden rounded-md border border-hairline bg-surface"
+      className="inline-flex divide-x divide-hairline overflow-hidden rounded-md border border-hairline bg-surface max-sm:hidden"
     >
       {group.chips.map((chip) => (
         <Segment key={chip.href} chip={chip} />
@@ -86,7 +87,12 @@ export function QuickFilters({
         group.display === 'menu' ? (
           <FilterMenu key={group.label} group={group} />
         ) : (
-          <InlineGroup key={group.label} group={group} />
+          <Fragment key={group.label}>
+            <InlineGroup group={group} />
+            <span data-phone-menu="" className="sm:hidden">
+              <FilterMenu group={group} />
+            </span>
+          </Fragment>
         ),
       )}
       {clearHref === null ? null : (

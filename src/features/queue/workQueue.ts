@@ -34,6 +34,7 @@ const WARNING_DAYS = 5
 
 export interface WorkQueueFilters {
   states?: CoreState[]
+  stateKeys?: CoreState[]
   typeKeys?: string[]
   due?: DueFilter[]
   assigned?: AssignedFilter[]

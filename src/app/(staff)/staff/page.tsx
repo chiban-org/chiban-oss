@@ -42,8 +42,8 @@ const ATTENTION: readonly Attention[] = [
   },
   {
     label: 'Submitted and not yet started',
-    href: '/staff/applications?stage=open',
-    filters: { states: ['submitted'] },
+    href: '/staff/applications?state=submitted',
+    filters: { stateKeys: ['submitted'] },
   },
 ]
 

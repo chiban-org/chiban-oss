@@ -166,7 +166,9 @@ describe('/staff/applications page', () => {
   it('sends an old queue address to the matching tab with a permanent redirect', async () => {
     await expect(
       QueueRedirect({ searchParams: Promise.resolve({ state: 'denied', due: 'overdue' }) }),
-    ).rejects.toThrow('NEXT_PERMANENT_REDIRECT:/staff/applications?stage=finished&due=overdue')
+    ).rejects.toThrow(
+      'NEXT_PERMANENT_REDIRECT:/staff/applications?stage=finished&state=denied&due=overdue',
+    )
     await expect(QueueRedirect({ searchParams: Promise.resolve({}) })).rejects.toThrow(
       'NEXT_PERMANENT_REDIRECT:/staff/applications',
     )

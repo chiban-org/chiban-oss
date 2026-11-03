@@ -95,6 +95,25 @@ describe('application status tabs', () => {
     })
   })
 
+  it('narrows a tab to chosen states and counts states inside the tab only', async () => {
+    const page = await listWorkQueue(
+      handle.db,
+      world.staff,
+      { filters: tabFilters('all', { stateKeys: ['denied', 'draft'] }), limit: 50 },
+      signal,
+      NOW,
+    )
+    expect(page.total).toBe(3)
+    const facets = await queueFacets(
+      handle.db,
+      world.staff,
+      { filters: tabFilters('finished', { stateKeys: ['denied'] }), now: NOW },
+      signal,
+    )
+    expect(Object.fromEntries(facets.states)).toMatchObject({ closed: 1, denied: 2, draft: 0 })
+    expect(Object.fromEntries(facets.stages)).toMatchObject({ issued: 2, finished: 3, all: 7 })
+  })
+
   it('scopes every tab to what a reviewer is assigned', async () => {
     await assignReviewer(
       handle.db,

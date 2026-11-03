@@ -6,12 +6,18 @@ describe('queueRedirectHref', () => {
     expect(queueRedirectHref({})).toBe('/staff/applications')
   })
 
-  it('maps all to the All tab and a core state to the tab that holds it', () => {
+  it('maps all to the All tab and a core state to its tab with that state chosen', () => {
     expect(queueRedirectHref({ state: 'all' })).toBe('/staff/applications?stage=all')
-    expect(queueRedirectHref({ state: 'submitted' })).toBe('/staff/applications?stage=open')
-    expect(queueRedirectHref({ state: 'draft' })).toBe('/staff/applications?stage=open')
-    expect(queueRedirectHref({ state: 'suspended' })).toBe('/staff/applications?stage=issued')
-    expect(queueRedirectHref({ state: 'expired' })).toBe('/staff/applications?stage=finished')
+    expect(queueRedirectHref({ state: 'submitted' })).toBe(
+      '/staff/applications?stage=open&state=submitted',
+    )
+    expect(queueRedirectHref({ state: 'draft' })).toBe('/staff/applications?stage=open&state=draft')
+    expect(queueRedirectHref({ state: 'suspended' })).toBe(
+      '/staff/applications?stage=issued&state=suspended',
+    )
+    expect(queueRedirectHref({ state: 'expired' })).toBe(
+      '/staff/applications?stage=finished&state=expired',
+    )
     expect(queueRedirectHref({ state: 'bogus' })).toBe('/staff/applications')
   })
 
@@ -30,7 +36,7 @@ describe('queueRedirectHref', () => {
         other: 'x',
       }),
     ).toBe(
-      '/staff/applications?stage=finished&q=BP-2027&due=overdue&due=week&assigned=me&type=BP&flag=fees&sort=number&dir=desc',
+      '/staff/applications?stage=finished&state=denied&q=BP-2027&due=overdue&due=week&assigned=me&type=BP&flag=fees&sort=number&dir=desc',
     )
   })
 })

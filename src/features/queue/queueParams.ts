@@ -1,3 +1,4 @@
+import { CORE_STATES, type CoreState, STATE_LABELS } from '@/features/applications/states'
 import { isValidConfigKey } from '@/features/config/kinds'
 import {
   firstParam,
@@ -70,7 +71,11 @@ export const FLAG_LABELS: ReadonlyMap<FlagFilter, string> = new Map([
   ['preservation', 'Preservation incomplete'],
 ])
 
-export const QUEUE_FILTER_PARAMS = ['q', 'due', 'assigned', 'type', 'flag'] as const
+export const CORE_STATE_LABELS: ReadonlyMap<CoreState, string> = new Map(
+  CORE_STATES.map((state) => [state, STATE_LABELS[state]]),
+)
+
+export const QUEUE_FILTER_PARAMS = ['q', 'state', 'due', 'assigned', 'type', 'flag'] as const
 
 export interface QueueView {
   params: TableParams
@@ -84,6 +89,7 @@ export function queueFilters(params: TableParams): WorkQueueFilters {
   return {
     ...(states === undefined ? {} : { states }),
     ...(q === undefined ? {} : { numberContains: q }),
+    ...whenAny('stateKeys', filterValues(params, 'state', CORE_STATES)),
     ...whenAny('typeKeys', filterValues(params, 'type', isValidConfigKey)),
     ...whenAny('due', filterValues(params, 'due', DUE_FILTERS)),
     ...whenAny('assigned', singleValue(params, 'assigned', ASSIGNED_FILTERS)),
@@ -111,6 +117,7 @@ export function activeFilterLabels(
   const q = firstParam(params, 'q')
   return [
     ...(q === undefined ? [] : [`Number contains ${q}`]),
+    ...labelsOf(filters.stateKeys, CORE_STATE_LABELS),
     ...labelsOf(filters.due, DUE_LABELS),
     ...labelsOf(filters.assigned, ASSIGNED_LABELS),
     ...labelsOf(filters.typeKeys, typeLabels),

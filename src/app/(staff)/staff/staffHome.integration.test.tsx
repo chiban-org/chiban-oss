@@ -46,7 +46,7 @@ describe('/staff home', () => {
     const html = renderToStaticMarkup(await StaffHome())
     expect(html).toContain('Needs attention')
     expect(html).toContain('Submitted and not yet started')
-    expect(html).toContain('href="/staff/applications?stage=open"')
+    expect(html).toContain('href="/staff/applications?state=submitted"')
     expect(html).toContain('href="/staff/applications?flag=fees"')
     expect(html).toContain('href="/staff/applications"')
     expect(html.toLowerCase()).not.toContain('queue')
