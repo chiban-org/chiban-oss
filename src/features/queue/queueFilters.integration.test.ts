@@ -10,6 +10,7 @@ import {
   reviewAssignments,
 } from '@/db/schema'
 import type { SortState } from '@/features/dataTable/sort'
+import { FILING_CLOCK_KEY } from '@/features/decisions/fileDecision'
 import { queueFacets } from '@/features/queue/queueFacets'
 import type { QueueSortKey } from '@/features/queue/queueParams'
 import { listWorkQueue, type WorkQueueFilters } from '@/features/queue/workQueue'
@@ -32,10 +33,15 @@ afterEach(async () => {
   await handle.drop()
 })
 
-async function addClock(applicationId: string, due: string, status: 'running' | 'met' = 'running') {
+async function addClock(
+  applicationId: string,
+  due: string,
+  status: 'running' | 'met' | 'overdue' = 'running',
+  ruleKey = 'nh.bp.decision',
+) {
   await handle.db.insert(clocks).values({
     applicationId,
-    ruleKey: 'nh.bp.decision',
+    ruleKey,
     ruleVersion: 1,
     packVersion: '0.3.0',
     startEvent: 'application_completed',
@@ -132,6 +138,22 @@ describe('work queue quick filters', () => {
     expect(await ids({ due: ['week'] })).toEqual([today, lastDayOfWeek])
     expect(new Set(await ids({ due: ['none'] }))).toEqual(new Set([metOnly, none]))
     expect(await ids({ due: ['overdue', 'week'] })).toEqual([overdue, today, lastDayOfWeek])
+  })
+
+  it('counts an overdue filing deadline as overdue in the filter, the count and the due sort', async () => {
+    const filingLate = await app({ state: 'denied' }, 'EL')
+    const soon = await app()
+    const none = await app()
+    await addClock(filingLate, '2027-02-20', 'overdue', FILING_CLOCK_KEY)
+    await addClock(soon, '2027-03-05')
+    expect(await ids({ due: ['overdue'] })).toEqual([filingLate])
+    expect(await ids({ due: ['none'] })).toEqual([none])
+    const facets = await queueFacets(handle.db, world.staff, { filters: {}, now: NOW }, signal)
+    expect(facets.due.get('overdue')).toBe(1)
+    expect(await ids({ states: ['denied', 'submitted'] })).toEqual([filingLate, soon, none])
+    expect(
+      await ids({ states: ['denied', 'submitted'] }, world.staff, { key: 'due', dir: 'asc' }),
+    ).toEqual([filingLate, soon, none])
   })
 
   it('finds what is assigned to me and what has no reviewer', async () => {

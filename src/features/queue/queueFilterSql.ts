@@ -11,6 +11,7 @@ import type {
   QueueSortKey,
 } from '@/features/queue/queueParams'
 import {
+  EARLIEST_DUE,
   FEES_DUE,
   FILING_DUE,
   NEXT_DUE,
@@ -34,11 +35,11 @@ const ACTIVE_ASSIGNMENT = sql`select 1 from review_assignments ra
 export function dueClause(value: DueFilter, today: CivilDate): SQL {
   switch (value) {
     case 'overdue':
-      return sql`${NEXT_DUE} < ${today}::date`
+      return sql`${EARLIEST_DUE} < ${today}::date`
     case 'week':
-      return sql`(${NEXT_DUE} >= ${today}::date and ${NEXT_DUE} <= ${addDays(today, DUE_WEEK_DAYS)}::date)`
+      return sql`(${EARLIEST_DUE} >= ${today}::date and ${EARLIEST_DUE} <= ${addDays(today, DUE_WEEK_DAYS)}::date)`
     case 'none':
-      return sql`${NEXT_DUE} is null`
+      return sql`${EARLIEST_DUE} is null`
   }
 }
 
@@ -129,14 +130,14 @@ export const QUEUE_SORT_COLUMNS: Readonly<Record<QueueSortKey, SQLWrapper>> = {
   project: projects.title,
   parcel: PARCEL_DISPLAY_ID,
   status: STATUS_ORDER,
-  due: NEXT_DUE,
+  due: EARLIEST_DUE,
   fees: FEES_DUE,
   reviewers: FIRST_REVIEWER,
   received: applications.receivedDate,
 }
 
 export const QUEUE_TIEBREAK: readonly SQL[] = [
-  sql`${NEXT_DUE} asc nulls last`,
+  sql`${EARLIEST_DUE} asc nulls last`,
   sql`${applications.receivedDate} asc nulls last`,
   sql`${applications.id} asc`,
 ]

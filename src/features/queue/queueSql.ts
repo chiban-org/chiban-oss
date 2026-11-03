@@ -24,6 +24,8 @@ export const FILING_DUE = sql<string | null>`(
   where c.application_id = ${applications.id} and c.rule_key = ${FILING_CLOCK_KEY}
     and c.status in ('running', 'overdue'))`
 
+export const EARLIEST_DUE = sql<string | null>`least(${NEXT_DUE}, ${FILING_DUE}, ${NOTICE_DUE})`
+
 export const FEES_DUE = sql<number>`(
   select coalesce(sum(greatest(0, l.amt - coalesce(p.paid, 0))), 0)::int
   from (
