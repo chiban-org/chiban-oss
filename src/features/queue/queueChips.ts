@@ -45,6 +45,18 @@ export function queueChipGroups(
   facets: QueueFacets,
   fullRecordAccess: boolean,
 ): ChipGroupView[] {
+  const assigned: FilterGroup = {
+    param: 'assigned',
+    label: 'Assignment',
+    single: true,
+    options: labeledOptions(ASSIGNED_LABELS, facets.assigned),
+  }
+  const flags: FilterGroup = {
+    param: 'flag',
+    label: 'Flags',
+    options: labeledOptions(FLAG_LABELS, facets.flags),
+    display: 'menu',
+  }
   const groups: FilterGroup[] = [
     {
       param: 'due',
@@ -52,21 +64,10 @@ export function queueChipGroups(
       single: true,
       options: labeledOptions(DUE_LABELS, facets.due),
     },
-    {
-      param: 'assigned',
-      label: 'Assignment',
-      single: true,
-      options: labeledOptions(ASSIGNED_LABELS, facets.assigned),
-    },
+    ...(fullRecordAccess ? [assigned] : []),
     { param: 'type', label: 'Type', options: facets.types },
     { param: 'state', label: 'Status', options: stateOptions(params, facets), display: 'menu' },
   ]
-  const flags: FilterGroup = {
-    param: 'flag',
-    label: 'Flags',
-    options: labeledOptions(FLAG_LABELS, facets.flags),
-    display: 'menu',
-  }
   return chipGroups(APPLICATIONS_PATH, params, fullRecordAccess ? [...groups, flags] : groups)
 }
 

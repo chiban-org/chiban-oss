@@ -24,6 +24,13 @@ describe('queueChipGroups', () => {
     expect(labels(false)).not.toContain('Flags')
   })
 
+  it('leaves the Assignment group out for someone who only sees their own assignments', () => {
+    const labels = (full: boolean) =>
+      queueChipGroups(readTableParams({}), facets, full).map((g) => g.label)
+    expect(labels(true)).toContain('Assignment')
+    expect(labels(false)).not.toContain('Assignment')
+  })
+
   it('lets only one deadline be chosen at a time', () => {
     const deadline = queueChipGroups(readTableParams({ due: 'overdue' }), facets, true).find(
       (g) => g.label === 'Deadline',
