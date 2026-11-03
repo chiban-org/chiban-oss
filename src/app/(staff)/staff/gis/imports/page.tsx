@@ -1,13 +1,17 @@
 import { desc } from 'drizzle-orm'
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { SortHeader } from '@/components/dataTable/SortHeader'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import { ImportUploadForm } from '@/components/staff/ImportUploadForm'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { gisLayers, importRuns } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
+import type { RawSearchParams } from '@/features/dataTable/params'
+import { sortLinks } from '@/features/dataTable/sort'
 import { AXISGIS_ADAPTER_STATUS, AXISGIS_STUB_NOTICE } from '@/features/gis/adapters/axisGis'
 import { LAYER_KEYS } from '@/features/gis/exceptionKinds'
+import { IMPORTS_PATH, RUN_SORT, readRunView, sortRuns } from '@/features/gis/import/runSort'
 import { adapterLabel, layerLabel } from '@/features/gis/import/runText'
 import { getLayerStatus } from '@/features/gis/layerStatus'
 import { getTownSettings } from '@/features/town/settings'
@@ -39,7 +43,12 @@ const CAMA_ADAPTER_OPTIONS = [
 const adapterStatus: string = AXISGIS_ADAPTER_STATUS
 const DEFAULT_ZONE = 'America/New_York'
 
-export default async function StaffImportsPage() {
+export default async function StaffImportsPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>
+}) {
+  const { params, sort } = readRunView(await searchParams)
   const ctx = await recordStaffContext()
   if (ctx === null) return <NoPermission title="Imports" action="see layer imports" />
   const actor = ctx.actor
@@ -48,7 +57,13 @@ export default async function StaffImportsPage() {
     hasCapability(ctx.db, actor.userId, 'config.edit', ctx.signal),
   ])
   const layers = await ctx.db.select().from(gisLayers)
-  const runs = await ctx.db.select().from(importRuns).orderBy(desc(importRuns.startedAt)).limit(20)
+  const recentRuns = await ctx.db
+    .select()
+    .from(importRuns)
+    .orderBy(desc(importRuns.startedAt))
+    .limit(20)
+  const runs = sortRuns(recentRuns, sort)
+  const links = sortLinks(IMPORTS_PATH, params, RUN_SORT, sort)
   const now = new Date()
   const town = await getTownSettings(ctx.db, ctx.signal)
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
@@ -138,32 +153,36 @@ export default async function StaffImportsPage() {
       {runs.length === 0 ? (
         <p>No imports have run yet.</p>
       ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left">
-              <th className="py-2">Started</th>
-              <th>Layer</th>
-              <th>Source</th>
-              <th>Status</th>
-              <th />
-            </tr>
-          </thead>
-          <tbody>
-            {runs.map((run) => (
-              <tr key={run.id} className="border-b">
-                <td className="py-2">{formatInstantLong(run.startedAt, zone)}</td>
-                <td>{layerLabel(run.layerKey)}</td>
-                <td>{adapterLabel(run.adapter)}</td>
-                <td>{words(run.status)}</td>
-                <td>
-                  <Link href={`/staff/gis/imports/${run.id}`} className="text-action underline">
-                    Report
-                  </Link>
-                </td>
+        <div className="table-panel">
+          <table className="w-full min-w-[40rem] text-sm">
+            <thead>
+              <tr>
+                <SortHeader label="Started" link={links.started} />
+                <SortHeader label="Layer" link={links.layer} />
+                <SortHeader label="Source" link={links.source} />
+                <SortHeader label="Status" link={links.status} />
+                <th scope="col">
+                  <span className="sr-only">Report</span>
+                </th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {runs.map((run) => (
+                <tr key={run.id}>
+                  <td>{formatInstantLong(run.startedAt, zone)}</td>
+                  <td>{layerLabel(run.layerKey)}</td>
+                  <td>{adapterLabel(run.adapter)}</td>
+                  <td>{words(run.status)}</td>
+                  <td>
+                    <Link href={`/staff/gis/imports/${run.id}`} className="text-action underline">
+                      Report
+                    </Link>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </main>
   )
