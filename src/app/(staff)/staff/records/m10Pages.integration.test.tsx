@@ -162,7 +162,7 @@ describe('records screens with the demo seed', () => {
 
   it('the request log shows the five business day clock, a late-free open request, and an overdue one', async () => {
     await actAs('records')
-    const overdue = await html(RequestsPage(search({ overdue: '1' })))
+    const overdue = await html(RequestsPage(search({ due: 'overdue' })))
     expect(overdue.match(/RK-\d{4}-\d{4}/g)?.length).toBe(1)
     expect(overdue).toContain('past due')
     const [open] = (await handle.db.select().from(rtkRequests)).filter((r) => r.status === 'open')
