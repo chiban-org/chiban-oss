@@ -1,5 +1,6 @@
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { loadPacketsPage } from '@/features/boards/packetsPage'
 import { requireStaffContext } from '@/server/requireStaff'
 import { createPacketAction, revokePacketLinkAction, sendPacketLinkAction } from './actions'
@@ -14,14 +15,7 @@ const BOARDS: [string, string][] = [
 export default async function PacketsPage() {
   const ctx = await requireStaffContext()
   const page = await loadPacketsPage(ctx.db, ctx.actor, ctx.signal)
-  if (!page.ok) {
-    return (
-      <main>
-        <h1>Board packets</h1>
-        <p role="alert">You do not have permission to manage board packets.</p>
-      </main>
-    )
-  }
+  if (!page.ok) return <NoPermission title="Board packets" action="manage board packets" />
   const { packets, documents } = page.value
   return (
     <main className="space-y-6">
@@ -30,8 +24,8 @@ export default async function PacketsPage() {
         Seated board members read a packet on their board page once the meeting agenda is published.
         Sending to a seated member emails them a notice. Anyone else gets a link that expires.
       </p>
-      <section aria-label="New packet">
-        <h2>New packet</h2>
+      <details>
+        <summary>New packet</summary>
         <ActionForm action={createPacketAction} submitLabel="Create packet" variant="default">
           <TextField label="Title" name="title" required />
           <SelectField label="Board" name="board" options={BOARDS} />
@@ -49,7 +43,13 @@ export default async function PacketsPage() {
             ))}
           </fieldset>
         </ActionForm>
-      </section>
+      </details>
+      {packets.length === 0 ? (
+        <p>
+          No packets yet. Create one from a meeting page once its agenda is published, or add one
+          here.
+        </p>
+      ) : null}
       {packets.map((p) => (
         <section key={p.id} aria-label={p.heading}>
           <h2>{p.heading}</h2>
@@ -72,16 +72,19 @@ export default async function PacketsPage() {
               </li>
             ))}
           </ul>
-          <ActionForm action={sendPacketLinkAction} submitLabel="Send link">
-            <input type="hidden" name="packetId" value={p.id} />
-            <TextField label="Recipient name" name="recipientName" required />
-            <TextField label="Recipient email" name="recipientEmail" type="email" required />
-            <TextField
-              label="Days until a link expires (default 14, at most 30)"
-              name="days"
-              inputMode="numeric"
-            />
-          </ActionForm>
+          <details>
+            <summary>Send link</summary>
+            <ActionForm action={sendPacketLinkAction} submitLabel="Send link">
+              <input type="hidden" name="packetId" value={p.id} />
+              <TextField label="Recipient name" name="recipientName" required />
+              <TextField label="Recipient email" name="recipientEmail" type="email" required />
+              <TextField
+                label="Days until a link expires (default 14, at most 30)"
+                name="days"
+                inputMode="numeric"
+              />
+            </ActionForm>
+          </details>
         </section>
       ))}
     </main>

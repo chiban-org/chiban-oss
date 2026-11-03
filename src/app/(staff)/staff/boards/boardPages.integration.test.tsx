@@ -41,6 +41,7 @@ vi.mock('@/components/abutters/ProjectionMap', () => ({
 
 const { default: BoardsPage } = await import('@/app/(staff)/staff/boards/page')
 const { default: MeetingsPage } = await import('@/app/(staff)/staff/boards/meetings/page')
+const { default: PacketsPage } = await import('@/app/(staff)/staff/boards/packets/page')
 const { default: RostersPage } = await import('@/app/(staff)/staff/rosters/page')
 const { default: ListPage } = await import('@/app/(staff)/staff/abutters/[listId]/page')
 const { default: ApplicationPage } = await import(
@@ -207,6 +208,17 @@ describe('board pages show words, not keys or dates', () => {
     const zba = await page(MeetingsPage({ searchParams: Promise.resolve({ board: 'zba' }) }))
     expect(zba).toContain('November 17, 2026')
     expect(zba).not.toContain('November 12, 2026')
+  })
+
+  it('the packets page folds its forms and refuses with the shared permission page', async () => {
+    await actAs('staff')
+    const html = renderToStaticMarkup((await PacketsPage()) as never)
+    expect(html).toContain('<summary>New packet</summary>')
+    expect(html).toContain('<summary>Send link</summary>')
+    await actAs('reviewer')
+    const refused = renderToStaticMarkup((await PacketsPage()) as never)
+    expect(refused).toContain(NO_PERMISSION)
+    expect(refused).toContain('href="/staff"')
   })
 
   it('the rosters page links each parcel and the park owner in their own columns', async () => {
