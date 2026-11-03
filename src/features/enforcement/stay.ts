@@ -20,6 +20,10 @@ function stayRule() {
   return rule ?? null
 }
 
+export function stayRuleActive(): boolean {
+  return stayRule() !== null
+}
+
 async function appealStay(
   db: DbOrTx,
   appealId: string,

@@ -3,7 +3,10 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
+import { SortHeader } from '@/components/dataTable/SortHeader'
 import { StatusChip } from '@/components/StatusChip'
+import type { SortLink } from '@/features/dataTable/sort'
+import type { CaseSortKey } from '@/features/enforcement/caseListParams'
 import type { QueueRow } from '@/features/enforcement/caseQueue'
 import { formatCivilDate } from '@/lib/formatDate'
 
@@ -15,7 +18,13 @@ function typingInField(target: EventTarget | null): boolean {
   )
 }
 
-export function EnforcementQueueTable({ rows }: { rows: QueueRow[] }) {
+export function EnforcementQueueTable({
+  rows,
+  links,
+}: {
+  rows: QueueRow[]
+  links: Record<CaseSortKey, SortLink>
+}) {
   const router = useRouter()
   const [selected, setSelected] = useState(0)
   useEffect(() => {
@@ -30,17 +39,17 @@ export function EnforcementQueueTable({ rows }: { rows: QueueRow[] }) {
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [rows, selected, router])
-  if (rows.length === 0) return <p>No cases match.</p>
+  if (rows.length === 0) return <p className="px-5 py-8">No cases match.</p>
   return (
-    <table className="w-full text-left">
+    <table className="w-full min-w-[44rem] text-left">
       <thead>
         <tr>
-          <th scope="col">Case</th>
-          <th scope="col">Where</th>
-          <th scope="col">Status</th>
-          <th scope="col">Opened</th>
-          <th scope="col">Next date</th>
-          <th scope="col">Appeal stay</th>
+          <SortHeader label="Case" link={links.number} />
+          <SortHeader label="Where" link={links.where} />
+          <SortHeader label="Status" link={links.status} />
+          <SortHeader label="Opened" link={links.opened} />
+          <SortHeader label="Next date" link={links.next} />
+          <SortHeader label="Appeal stay" link={links.stay} />
         </tr>
       </thead>
       <tbody>

@@ -3,7 +3,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { documents, enforcementCases } from '@/db/schema'
 import { listDocuments } from '@/features/documents/listDocuments'
 import { createUploadIntent } from '@/features/documents/uploads'
-import { getCase, listCases } from '@/features/enforcement/access'
+import { getCase } from '@/features/enforcement/access'
+import { listCasePage } from '@/features/enforcement/caseList'
 import { openCase } from '@/features/enforcement/cases'
 import { recordComplaint } from '@/features/enforcement/complaints'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -11,9 +12,11 @@ import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/minio'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { approvePublic } from '@/test/renditionFixtures'
+import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 const NOW = new Date('2027-03-02T15:00:00Z')
+const TODAY = '2027-03-02' as CivilDate
 let handle: TestDb
 
 beforeEach(async () => {
@@ -60,13 +63,25 @@ describe('enforcement case access', () => {
         .set({ isPublic: true, publicSummary: 'Open violation' })
         .where(eq(enforcementCases.id, id ?? ''))
     }
-    const page = await listCases(handle.db, null, { filters: {}, limit: 25 }, signal)
+    const page = await listCasePage(
+      handle.db,
+      null,
+      { filters: {}, limit: 25, offset: 0 },
+      TODAY,
+      signal,
+    )
     expect(page.rows).toHaveLength(3)
-    expect(page.nextCursor).toBeNull()
+    expect(page.nextOffset).toBeNull()
     const staff = await staffActor(handle.db, 'staff')
-    const staffPage = await listCases(handle.db, staff, { filters: {}, limit: 25 }, signal)
+    const staffPage = await listCasePage(
+      handle.db,
+      staff,
+      { filters: {}, limit: 25, offset: 0 },
+      TODAY,
+      signal,
+    )
     expect(staffPage.rows).toHaveLength(25)
-    expect(staffPage.nextCursor).not.toBeNull()
+    expect(staffPage.nextOffset).toBe(25)
   })
 
   it('public view never includes description_original or complainant fields', async () => {
