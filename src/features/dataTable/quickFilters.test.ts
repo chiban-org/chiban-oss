@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { readTableParams } from '@/features/dataTable/params'
 import {
   chipGroups,
+  filterTabs,
   filterValues,
   labeledOptions,
   singleValue,
@@ -104,6 +105,43 @@ describe('singleValue', () => {
     const params = readTableParams({ assigned: ['bogus', 'unassigned', 'mine'] })
     expect(singleValue(params, 'assigned', ['mine', 'unassigned'])).toEqual(['unassigned'])
     expect(singleValue(params, 'missing', ['mine'])).toEqual([])
+  })
+})
+
+describe('filterTabs', () => {
+  const group = {
+    param: 'stage',
+    label: 'Status',
+    options: [
+      { value: 'open', label: 'Open', count: 4 },
+      { value: 'issued', label: 'Issued', count: 7 },
+    ],
+  }
+
+  it('puts an All tab first that is active when no value is chosen', () => {
+    const tabs = filterTabs('/a', readTableParams({ sort: 'number', cursor: '25' }), group)
+    expect(tabs).toEqual([
+      { label: 'All', href: '/a?sort=number', active: true, count: 11 },
+      { label: 'Open', href: '/a?sort=number&stage=open', active: false, count: 4 },
+      { label: 'Issued', href: '/a?sort=number&stage=issued', active: false, count: 7 },
+    ])
+  })
+
+  it('switches tabs and keeps the active tab linked to itself', () => {
+    const tabs = filterTabs('/a', readTableParams({ stage: ['issued', 'open'] }), group)
+    expect(tabs.map((t) => [t.href, t.active])).toEqual([
+      ['/a', false],
+      ['/a?stage=open', false],
+      ['/a?stage=issued', true],
+    ])
+  })
+
+  it('treats an unknown value as All and leaves the All count off when counts are missing', () => {
+    const tabs = filterTabs('/a', readTableParams({ stage: 'bogus' }), {
+      ...group,
+      options: [{ value: 'open', label: 'Open' }],
+    })
+    expect(tabs[0]).toEqual({ label: 'All', href: '/a', active: true })
   })
 })
 

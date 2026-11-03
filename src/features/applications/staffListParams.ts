@@ -45,7 +45,7 @@ export const STATE_GROUP_LABELS: ReadonlyMap<StateGroup, string> = new Map([
   ['finished', 'Closed, denied, withdrawn or expired'],
 ])
 
-export const APPLICATION_FILTER_PARAMS = ['type', 'stage', 'due', 'assigned'] as const
+export const APPLICATION_FILTER_PARAMS = ['type', 'due', 'assigned'] as const
 
 export interface StaffListFilters {
   typeKeys?: string[]
@@ -67,7 +67,7 @@ export function readApplicationsView(raw: RawSearchParams): ApplicationsView {
     sort: parseSort(APPLICATION_SORT, params),
     filters: {
       ...whenAny('typeKeys', filterValues(params, 'type', isValidConfigKey)),
-      ...whenAny('stateGroups', filterValues(params, 'stage', STATE_GROUPS)),
+      ...whenAny('stateGroups', singleValue(params, 'stage', STATE_GROUPS)),
       ...whenAny('due', filterValues(params, 'due', DUE_FILTERS)),
       ...whenAny('assigned', singleValue(params, 'assigned', ASSIGNED_FILTERS)),
     },

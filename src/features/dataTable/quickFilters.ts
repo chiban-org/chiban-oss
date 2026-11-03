@@ -101,3 +101,38 @@ export function chipGroups(
     }
   })
 }
+
+function totalOf(options: readonly FilterOption[]): number | undefined {
+  let total = 0
+  for (const option of options) {
+    if (option.count === undefined) return undefined
+    total += option.count
+  }
+  return total
+}
+
+export function filterTabs(
+  path: string,
+  params: TableParams,
+  group: FilterGroup,
+  allLabel = 'All',
+): ChipView[] {
+  const chosen = paramValues(params, group.param)[0]
+  const active = group.options.some((o) => o.value === chosen) ? chosen : undefined
+  const total = totalOf(group.options)
+  const all: ChipView = {
+    label: allLabel,
+    href: tableHref(path, params, { [group.param]: null }),
+    active: active === undefined,
+    ...(total === undefined ? {} : { count: total }),
+  }
+  return [
+    all,
+    ...group.options.map((option) => ({
+      label: option.label,
+      href: tableHref(path, params, { [group.param]: [option.value] }),
+      active: option.value === active,
+      ...(option.count === undefined ? {} : { count: option.count }),
+    })),
+  ]
+}

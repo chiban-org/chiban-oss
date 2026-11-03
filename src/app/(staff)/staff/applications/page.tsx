@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ApplicationStatusChip } from '@/components/ApplicationStatusChip'
+import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { TablePager } from '@/components/dataTable/TablePager'
@@ -9,7 +10,10 @@ import {
   type StaffApplicationRow,
   staffApplicationFacets,
 } from '@/features/applications/staffList'
-import { applicationChipGroups } from '@/features/applications/staffListChips'
+import {
+  applicationChipGroups,
+  applicationStatusTabs,
+} from '@/features/applications/staffListChips'
 import {
   APPLICATION_FILTER_PARAMS,
   APPLICATION_SORT,
@@ -110,6 +114,7 @@ export default async function StaffApplicationsPage({ searchParams }: Props) {
         </Link>
         .
       </p>
+      <FilterTabs label="Status" tabs={applicationStatusTabs(params, facets)} />
       <div className="toolbar mb-5">
         <QuickFilters
           label="Quick filters"

@@ -90,7 +90,12 @@ describe('staff application pages', () => {
     expect(sorted).toMatch(
       /aria-sort="ascending"[^>]*><a[^>]*href="\/staff\/applications\?sort=number&amp;stage=issued&amp;dir=desc"/,
     )
-    expect(sorted).toMatch(/<a[^>]*href="\/staff\/applications\?sort=number"[^>]*>Clear all</)
+    expect(sorted).not.toContain('Clear all')
+    expect(sorted).toMatch(/<nav[^>]*aria-label="Status"/)
+    expect(sorted).toMatch(/<a[^>]*href="\/staff\/applications\?sort=number"[^>]*>All</)
+    expect(sorted).toMatch(
+      /<a aria-current="page"[^>]*href="\/staff\/applications\?sort=number&amp;stage=issued">Issued or suspended</,
+    )
     const numbers = [...sorted.matchAll(/href="\/staff\/applications\/[^"]+"[^>]*>([^<]+)</g)].map(
       (m) => m[1],
     )
