@@ -14,6 +14,11 @@ export function requestChipGroups(params: TableParams, facets: RtkRequestFacets)
       label: 'Status',
       options: labeledOptions(STATUS_LABELS, facets.statuses),
     },
-    { param: 'due', label: 'Deadline', options: labeledOptions(DUE_LABELS, facets.due) },
+    {
+      param: 'due',
+      label: 'Deadline',
+      single: true,
+      options: labeledOptions(DUE_LABELS, facets.due),
+    },
   ])
 }

@@ -24,6 +24,17 @@ describe('queueChipGroups', () => {
     expect(labels(false)).not.toContain('Flags')
   })
 
+  it('lets only one deadline be chosen at a time', () => {
+    const deadline = queueChipGroups(readTableParams({ due: 'overdue' }), facets, true).find(
+      (g) => g.label === 'Deadline',
+    )
+    expect(deadline?.chips.map((c) => c.href)).toEqual([
+      '/staff/applications',
+      '/staff/applications?due=week',
+      '/staff/applications?due=none',
+    ])
+  })
+
   it('offers a Status menu of the states present in the tab, keeping a chosen empty one', () => {
     const status = queueChipGroups(readTableParams({ state: 'issued' }), facets, true).find(
       (g) => g.label === 'Status',

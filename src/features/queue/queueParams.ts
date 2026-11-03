@@ -91,7 +91,7 @@ export function queueFilters(params: TableParams): WorkQueueFilters {
     ...(q === undefined ? {} : { numberContains: q }),
     ...whenAny('stateKeys', filterValues(params, 'state', CORE_STATES)),
     ...whenAny('typeKeys', filterValues(params, 'type', isValidConfigKey)),
-    ...whenAny('due', filterValues(params, 'due', DUE_FILTERS)),
+    ...whenAny('due', singleValue(params, 'due', DUE_FILTERS)),
     ...whenAny('assigned', singleValue(params, 'assigned', ASSIGNED_FILTERS)),
     ...whenAny('flags', filterValues(params, 'flag', FLAG_FILTERS)),
   }

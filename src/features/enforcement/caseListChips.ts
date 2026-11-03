@@ -10,7 +10,12 @@ const STATUS_LABELS: ReadonlyMap<string, string> = new Map(Object.entries(CASE_S
 export function caseChipGroups(params: TableParams, facets: CaseListFacets): ChipGroupView[] {
   return chipGroups(CASES_PATH, params, [
     { param: 'status', label: 'Status', options: labeledOptions(STATUS_LABELS, facets.statuses) },
-    { param: 'due', label: 'Answer deadline', options: labeledOptions(DUE_LABELS, facets.due) },
+    {
+      param: 'due',
+      label: 'Answer deadline',
+      single: true,
+      options: labeledOptions(DUE_LABELS, facets.due),
+    },
     {
       param: 'assigned',
       label: 'Assignment',

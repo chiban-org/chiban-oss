@@ -50,7 +50,7 @@ export function readCasesView(raw: RawSearchParams): CasesView {
     sort: parseSort(CASE_SORT, params),
     filters: {
       ...whenAny('statuses', filterValues(params, 'status', ENFORCEMENT_STATUSES)),
-      ...whenAny('due', filterValues(params, 'due', DUE_FILTERS)),
+      ...whenAny('due', singleValue(params, 'due', DUE_FILTERS)),
       ...whenAny('assigned', singleValue(params, 'assigned', ASSIGNED_FILTERS)),
     },
   }

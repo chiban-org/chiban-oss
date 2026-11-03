@@ -137,7 +137,7 @@ describe('/staff/applications page', () => {
     expect(chip('Overdue')).toContain('aria-current="true"')
     expect(chip('Overdue')).toContain('href="/staff/applications?sort=number&amp;stage=open"')
     expect(chip('Due this week')).toContain(
-      'href="/staff/applications?sort=number&amp;due=overdue&amp;due=week&amp;stage=open"',
+      'href="/staff/applications?sort=number&amp;due=week&amp;stage=open"',
     )
     expect(html).toMatch(/<button[^>]*aria-haspopup="menu"[^>]*>Flags</)
     expect(html).toContain('<input type="hidden" name="stage" value="open"/>')

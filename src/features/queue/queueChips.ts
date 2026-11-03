@@ -46,7 +46,12 @@ export function queueChipGroups(
   fullRecordAccess: boolean,
 ): ChipGroupView[] {
   const groups: FilterGroup[] = [
-    { param: 'due', label: 'Deadline', options: labeledOptions(DUE_LABELS, facets.due) },
+    {
+      param: 'due',
+      label: 'Deadline',
+      single: true,
+      options: labeledOptions(DUE_LABELS, facets.due),
+    },
     {
       param: 'assigned',
       label: 'Assignment',

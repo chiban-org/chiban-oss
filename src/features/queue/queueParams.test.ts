@@ -48,7 +48,7 @@ describe('readQueueView', () => {
       states: expect.arrayContaining(['draft', 'submitted', 'denied']) as unknown,
       numberContains: '12',
       typeKeys: ['BP'],
-      due: ['week', 'none'],
+      due: ['week'],
       assigned: ['none'],
       flags: ['preservation'],
     })
@@ -77,5 +77,11 @@ describe('filterKey', () => {
     expect(key({})).not.toBe(key({ due: 'overdue' }))
     expect(key({})).not.toBe(key({ cursor: '25' }))
     expect(key({})).not.toBe(key({ stage: 'all' }))
+  })
+})
+
+describe('deadline filter', () => {
+  it('keeps only the first deadline value from a link that carries several', () => {
+    expect(readQueueView({ due: ['week', 'overdue'] }).filters.due).toEqual(['week'])
   })
 })

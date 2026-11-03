@@ -6,7 +6,12 @@ import { DUE_LABELS } from '@/features/queue/queueParams'
 
 export function boardChipGroups(params: TableParams, facets: BoardFacets): ChipGroupView[] {
   return chipGroups(BOARDS_PATH, params, [
-    { param: 'due', label: 'Deadline', options: labeledOptions(DUE_LABELS, facets.due) },
+    {
+      param: 'due',
+      label: 'Deadline',
+      single: true,
+      options: labeledOptions(DUE_LABELS, facets.due),
+    },
     { param: 'type', label: 'Type', options: facets.types },
   ])
 }
