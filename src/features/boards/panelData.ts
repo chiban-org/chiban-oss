@@ -26,6 +26,7 @@ import { desRule, suggestDesProximity } from '@/features/boards/des500'
 import { getRegionalContacts } from '@/features/boards/regionalContacts'
 import { loadPack } from '@/features/packs/loadPack'
 import { displayIdsFor } from '@/features/parcels/displayId'
+import { mayManageAbutters } from '@/features/rosters/manage'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 
@@ -36,6 +37,7 @@ export interface BoardPanelData {
   state: string
   canRecord: boolean
   canManage: boolean
+  canOpenLists: boolean
   canDetermine: boolean
   hasFilingLead: boolean
   acceptanceText: string | null
@@ -231,6 +233,7 @@ export async function loadBoardPanel(
     boardName: boardLabel(settings, board),
     state: app.state,
     ...(await changePermissions(db, actor, app.state, signal)),
+    canOpenLists: await mayManageAbutters(db, actor.userId, signal),
     hasFilingLead: classification?.mandatoryRuleKeys.includes('nh.pb.filing_lead') === true,
     acceptanceText: schedule === undefined ? null : formatCivilDate(schedule.date),
     acceptanceMeetingId: schedule?.id ?? null,

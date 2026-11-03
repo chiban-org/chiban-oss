@@ -7,7 +7,7 @@ import type { BoardPanelData } from '@/features/boards/panelData'
 vi.mock('../../abutters/actions', () => ({}))
 vi.mock('../../boards/actions', () => ({ desDeterminationAction: vi.fn() }))
 
-const { DeterminationSection } = await import('./boardPanelSections')
+const { DeterminationSection, ListSection } = await import('./boardPanelSections')
 
 afterEach(cleanup)
 
@@ -49,5 +49,33 @@ describe('NH DES determination form', () => {
     )
     expect(determination().value).toBe('')
     expect(determination().required).toBe(true)
+  })
+})
+
+describe('abutter lists on the board panel', () => {
+  function lists(canOpenLists: boolean): BoardPanelData {
+    return {
+      ...data(null),
+      canManage: false,
+      canOpenLists,
+      parcels: ['009001000000'],
+      professionals: [],
+      lists: [
+        { id: 'l1', version: 1, statusText: 'Issued', drawnText: 'October 2, 2026', issued: true },
+      ],
+    } as unknown as BoardPanelData
+  }
+
+  it('links each version to its list for a viewer who can open lists', () => {
+    render(<ListSection data={lists(true)} />)
+    expect(screen.getByRole('link', { name: 'Version 1' }).getAttribute('href')).toBe(
+      '/staff/abutters/l1',
+    )
+  })
+
+  it('shows the version as text for a viewer who cannot open lists', () => {
+    render(<ListSection data={lists(false)} />)
+    expect(screen.queryByRole('link', { name: 'Version 1' })).toBeNull()
+    expect(screen.getByText('Version 1, Issued, drawn October 2, 2026')).toBeTruthy()
   })
 })

@@ -104,14 +104,18 @@ export function ListSection({ data }: { data: BoardPanelData }) {
       </p>
       {data.lists.length === 0 ? <p>No list has been drawn.</p> : null}
       <ul className="m-0 list-none p-0">
-        {data.lists.map((l) => (
-          <li key={l.id}>
-            <Link href={`/staff/abutters/${l.id}`} className="text-action underline">
-              {`Version ${l.version}`}
-            </Link>
-            {`, ${l.statusText}, drawn ${l.drawnText}`}
-          </li>
-        ))}
+        {data.lists.map((l) =>
+          data.canOpenLists ? (
+            <li key={l.id}>
+              <Link href={`/staff/abutters/${l.id}`} className="text-action underline">
+                {`Version ${l.version}`}
+              </Link>
+              {`, ${l.statusText}, drawn ${l.drawnText}`}
+            </li>
+          ) : (
+            <li key={l.id}>{`Version ${l.version}, ${l.statusText}, drawn ${l.drawnText}`}</li>
+          ),
+        )}
       </ul>
       {data.canManage ? (
         <>
