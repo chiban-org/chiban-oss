@@ -2,6 +2,7 @@ import { asc, eq } from 'drizzle-orm'
 import type { Db, DbOrTx } from '@/db/client'
 import { applicationProfessionals } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { lockedAndFinished } from '@/features/applications/lockApplication'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { mayManageAbutters, nonEmpty } from '@/features/rosters/manage'
@@ -21,12 +22,18 @@ export async function addProfessional(
     sealOnPlat: boolean
   },
   signal: AbortSignal,
-): Promise<Result<{ professionalId: string }, 'forbidden' | 'address_required' | 'name_required'>> {
+): Promise<
+  Result<
+    { professionalId: string },
+    'forbidden' | 'address_required' | 'name_required' | 'application_closed'
+  >
+> {
   signal.throwIfAborted()
   if (!(await mayManageAbutters(db, actor.userId, signal))) return err('forbidden')
   if (!nonEmpty(input.name)) return err('name_required')
   if (!nonEmpty(input.businessAddress)) return err('address_required')
   return await transactionResult(db, async (tx) => {
+    if (await lockedAndFinished(tx, input.applicationId)) return err('application_closed')
     const [row] = await tx
       .insert(applicationProfessionals)
       .values({ ...input, addedBy: actor.userId })

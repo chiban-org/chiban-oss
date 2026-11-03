@@ -8,6 +8,7 @@ import { uuidArray } from '@/db/uuidList'
 import { applicantParcelIds } from '@/features/abutters/applicantParcels'
 import { proximityVerdict } from '@/features/abutters/proximityRule'
 import { flagIssuedListStale } from '@/features/abutters/staleList'
+import { lockedAndFinished } from '@/features/applications/lockApplication'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { getLayerStatus } from '@/features/gis/layerStatus'
@@ -74,17 +75,20 @@ function needsReason(determination: DesDetermination, suggestion: DesSuggestion)
   return !known
 }
 
+export type DesDeterminationError = 'forbidden' | 'reason_required' | 'application_closed'
+
 export async function recordDesDetermination(
   db: Db,
   actor: Actor,
   input: { applicationId: string; determination: DesDetermination; reason: string },
   signal: AbortSignal,
   now: Date = new Date(),
-): Promise<Result<void, 'forbidden' | 'reason_required'>> {
+): Promise<Result<void, DesDeterminationError>> {
   signal.throwIfAborted()
   if (!(await mayManageAbutters(db, actor.userId, signal))) return err('forbidden')
   const reason = input.reason.trim()
-  return await transactionResult<void, 'forbidden' | 'reason_required'>(db, async (tx) => {
+  return await transactionResult<void, DesDeterminationError>(db, async (tx) => {
+    if (await lockedAndFinished(tx, input.applicationId)) return err('application_closed')
     const suggested = await suggestDesProximity(tx, input.applicationId, now, signal)
     if (needsReason(input.determination, suggested) && reason.length < MIN_REASON_LENGTH) {
       return err('reason_required')

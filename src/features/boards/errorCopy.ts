@@ -22,6 +22,7 @@ const COPY: Record<string, string> = {
   clock_not_overdue: 'The board decision deadline has not passed on that date.',
   not_draft: 'This can only be changed while it is a draft.',
   not_board: 'This is not a board application.',
+  application_closed: 'This application is finished, so this can no longer be changed.',
   parcel_layer_unavailable:
     'The parcel layer has no usable import, so no list can be drawn. Import the parcel layer first.',
   officers_required: 'Enter at least one officer, each with a name and a mailing address.',

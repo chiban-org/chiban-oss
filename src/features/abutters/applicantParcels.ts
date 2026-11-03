@@ -3,13 +3,13 @@ import type { Db, DbOrTx, Tx } from '@/db/client'
 import { abutterLists, applicationParcels } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { flagIssuedListStale } from '@/features/abutters/staleList'
-import { lockApplication } from '@/features/applications/lockApplication'
+import { lockedAndFinished } from '@/features/applications/lockApplication'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { mayManageAbutters } from '@/features/rosters/manage'
 import { err, ok, type Result } from '@/types/result'
 
-export type ApplicantParcelError = 'forbidden' | 'parcel_required'
+export type ApplicantParcelError = 'forbidden' | 'parcel_required' | 'application_closed'
 
 const PARCELS_CHANGED = 'the applicant parcels changed'
 
@@ -75,7 +75,7 @@ export async function setApplicantParcels(
   const parcelIds = [...new Set(input.parcelIds)]
   if (parcelIds.length === 0) return err('parcel_required')
   return await transactionResult<void, ApplicantParcelError>(db, async (tx) => {
-    await lockApplication(tx, input.applicationId)
+    if (await lockedAndFinished(tx, input.applicationId)) return err('application_closed')
     await replaceParcels(tx, actor, input.applicationId, parcelIds, signal)
     return ok(undefined)
   })
@@ -90,7 +90,7 @@ export async function addApplicantParcel(
   signal.throwIfAborted()
   if (!(await mayManageAbutters(db, actor.userId, signal))) return err('forbidden')
   return await transactionResult<void, ApplicantParcelError>(db, async (tx) => {
-    await lockApplication(tx, input.applicationId)
+    if (await lockedAndFinished(tx, input.applicationId)) return err('application_closed')
     const existing = await applicantParcelIds(tx, input.applicationId, signal)
     const parcelIds = [...new Set([...existing, input.parcelId])]
     await replaceParcels(tx, actor, input.applicationId, parcelIds, signal)

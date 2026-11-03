@@ -8,6 +8,7 @@ import {
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { loadApplicationContext } from '@/features/applications/context'
+import { TERMINAL_STATES } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { getBoardSettings } from '@/features/boards/boardSettings'
@@ -49,7 +50,7 @@ export async function generateList(
 ): Promise<
   Result<
     { listId: string; version: number },
-    'forbidden' | 'not_found' | 'not_board' | 'parcel_layer_unavailable'
+    'forbidden' | 'not_found' | 'not_board' | 'parcel_layer_unavailable' | 'application_closed'
   >
 > {
   signal.throwIfAborted()
@@ -62,6 +63,7 @@ export async function generateList(
       .for('update')
     const app = await loadApplicationContext(tx, input.applicationId, signal)
     if (app === null) return err('not_found')
+    if (TERMINAL_STATES.includes(app.state)) return err('application_closed')
     const spec = classificationSpec(app.typeBody.classification)
     if (spec === null) return err('not_board')
     const [latest] = await tx
