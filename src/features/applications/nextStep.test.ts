@@ -15,10 +15,15 @@ function gate(key: string, blocked: boolean, reason = 'Not yet.'): GateResult {
   }
 }
 
-function plan(transitions: CoreState[], gates: Partial<Record<CoreState, GateResult[]>> = {}) {
+function plan(
+  transitions: CoreState[],
+  gates: Partial<Record<CoreState, GateResult[]>> = {},
+  allowed: CoreState[] = transitions,
+) {
   return planNextStep(
     transitions,
     transitions.map((to) => ({ to, results: gates[to] ?? [] })),
+    allowed,
   )
 }
 
@@ -80,6 +85,30 @@ describe('next step plan', () => {
     expect(plan(['closed'], { closed: [labelled] }).lead?.blockers[0]?.reason).toBe(
       'Resolve the appeal first.',
     )
+  })
+
+  it('plans the lead and its blockers from every move, even one this viewer may not make', () => {
+    const p = plan(
+      ['decided', 'withdrawn'],
+      { decided: [gate('reviews.signed_off', true, 'No reviewer is assigned.')] },
+      ['withdrawn'],
+    )
+    expect(p.lead?.to).toBe('decided')
+    expect(p.lead?.blockers.map((b) => b.anchor)).toEqual(['reviewers'])
+    expect(p.leadAllowed).toBe(false)
+    expect(p.terminal).toEqual(['withdrawn'])
+  })
+
+  it('offers only the moves this viewer may make', () => {
+    const p = plan(['under_review', 'issued', 'closed', 'withdrawn'], {}, ['withdrawn'])
+    expect(p.lead?.to).toBe('under_review')
+    expect(p.primary).toBeNull()
+    expect(p.secondary).toEqual([])
+    expect(p.terminal).toEqual(['withdrawn'])
+    const own = plan(['closed'], {}, [])
+    expect(own.lead?.to).toBe('closed')
+    expect(own.leadAllowed).toBe(false)
+    expect(own.terminal).toEqual([])
   })
 
   it('links each gate to the panel that clears it', () => {

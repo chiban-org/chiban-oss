@@ -83,7 +83,7 @@ export default async function StaffApplicationPage({ params }: Props) {
   if (loaded === null) notFound()
   const { view, balanceNotices, legacyNumber } = loaded
   const parts = applicationPanels(loaded)
-  const plan = nextStepPlan(view)
+  const plan = nextStepPlan(view, loaded.board)
   const status = (
     <StatusChip
       status={headerStatus(view)}

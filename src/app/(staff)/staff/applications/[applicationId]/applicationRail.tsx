@@ -1,11 +1,10 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { type Fact, FactList } from '@/components/layout/PageHeader'
-import type { NextStepPlan } from '@/features/applications/nextStep'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { dueNext, otherOverdue } from '@/features/clocks/clockSummary'
 import { formatCivilDate } from '@/lib/formatDate'
-import { LeadStatus, MoreActions, NextStepCard, PrimaryMove } from './nextStepCard'
+import { LeadStatus, MoreActions, NextStepCard, PrimaryMove, type RailPlan } from './nextStepCard'
 
 function PrintLinks({ applicationId }: { applicationId: string }) {
   return (
@@ -87,7 +86,7 @@ export function ApplicationRail({
   notice,
 }: {
   view: StaffApplicationView
-  plan: NextStepPlan
+  plan: RailPlan
   notice: ReactNode
 }) {
   return (
@@ -122,7 +121,7 @@ export function StatusStrip({
   legacyNumber,
 }: {
   view: StaffApplicationView
-  plan: NextStepPlan
+  plan: RailPlan
   status: ReactNode
   notice: ReactNode
   legacyNumber: string | null

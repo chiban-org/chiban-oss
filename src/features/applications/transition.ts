@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import type { Tx } from '@/db/client'
+import type { DbOrTx, Tx } from '@/db/client'
 import { applications } from '@/db/schema'
 import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import {
@@ -68,7 +68,7 @@ function boardOf(app: ApplicationContext): 'planning_board' | 'zba' | null {
 }
 
 async function isAllowedActor(
-  tx: Tx,
+  tx: DbOrTx,
   actor: AnyActor,
   app: ApplicationContext,
   to: CoreState,
@@ -93,6 +93,20 @@ async function isAllowedActor(
   }
   if (hasFullRecordAccess(actor)) return true
   return to === 'withdrawn' && (await isActiveParty(tx, actor.userId, app.projectId))
+}
+
+export async function actorMayMove(
+  db: DbOrTx,
+  actor: AnyActor,
+  app: ApplicationContext,
+  to: CoreState,
+  signal: AbortSignal,
+): Promise<boolean> {
+  return await isAllowedActor(db, actor, app, to, false, signal)
+}
+
+export function needsBoardVote(app: ApplicationContext, to: CoreState): boolean {
+  return boardOf(app) !== null && app.state === 'submitted' && to === 'under_review'
 }
 
 async function gateResultsFor(
@@ -198,9 +212,7 @@ export async function transitionApplication(
   if (!(await isAllowedActor(tx, actor, app, input.to, input.cutover === true, signal))) {
     return err('forbidden')
   }
-  const needsVote =
-    boardOf(app) !== null && app.state === 'submitted' && input.to === 'under_review'
-  if (needsVote && input.boardVote !== true) return err('invalid_transition')
+  if (needsBoardVote(app, input.to) && input.boardVote !== true) return err('invalid_transition')
   return await applyTransition(tx, actor, input, signal, now)
 }
 

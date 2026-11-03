@@ -109,4 +109,53 @@ describe('board application decisions', () => {
     expect(onBoard.ok).toBe(false)
     expect(onBoard).toEqual(await send(plain.applicationId))
   })
+
+  it('a submitted board application offers no bare move to under review, and the server refuses one', async () => {
+    const app = await makeApplication(handle.db, world, { state: 'submitted' }, undefined, 'SPR')
+    state.actor = world.staff
+    const view = await getStaffApplicationView(
+      handle.db,
+      world.staff,
+      app.applicationId,
+      new Date(),
+      signal,
+    )
+    expect(view?.nextTransitions).not.toContain('under_review')
+    expect(view?.allowedMoves).not.toContain('under_review')
+    const result = await transitionAction(
+      form({ applicationId: app.applicationId, to: 'under_review', expectedRowVersion: '1' }),
+    )
+    expect(result.ok).toBe(false)
+  })
+})
+
+describe('moves offered to each role', () => {
+  it('offers finance and admin no move to closed on an issued permit, and the server refuses it', async () => {
+    const app = await makeApplication(handle.db, world, { state: 'issued' })
+    for (const role of ['finance', 'admin'] as const) {
+      const actor = await staffActor(handle.db, role)
+      const view = await getStaffApplicationView(
+        handle.db,
+        actor,
+        app.applicationId,
+        new Date(),
+        signal,
+      )
+      expect(view?.nextTransitions).toContain('closed')
+      expect(view?.allowedMoves).not.toContain('closed')
+      state.actor = actor
+      const result = await transitionAction(
+        form({ applicationId: app.applicationId, to: 'closed', expectedRowVersion: '1' }),
+      )
+      expect(result.ok).toBe(false)
+    }
+    const staffView = await getStaffApplicationView(
+      handle.db,
+      world.staff,
+      app.applicationId,
+      new Date(),
+      signal,
+    )
+    expect(staffView?.allowedMoves).toContain('closed')
+  })
 })

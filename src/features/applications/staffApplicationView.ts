@@ -14,12 +14,13 @@ import {
   regionalImpactDeterminations,
   regionalImpactNotices,
 } from '@/db/schema'
-import { loadApplicationContext } from '@/features/applications/context'
+import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import {
   CORE_TRANSITIONS,
   type CoreState,
   isTransitionAllowed,
 } from '@/features/applications/states'
+import { actorMayMove, needsBoardVote } from '@/features/applications/transition'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
@@ -67,6 +68,7 @@ export interface StaffApplicationView {
   }[]
   clocks: (ClockExplanation & { clockId: string })[]
   nextTransitions: CoreState[]
+  allowedMoves: CoreState[]
   gates: { to: CoreState; results: GateResult[] }[]
   conditions: (typeof applicationConditions.$inferSelect)[]
   conditionLibrary: { code: string; text: string; blocksIssuance: boolean }[]
@@ -109,6 +111,26 @@ async function permissionsOf(db: Db, actor: Actor, signal: AbortSignal) {
   }
 }
 
+function offersMove(app: ApplicationContext, to: CoreState): boolean {
+  if (MANUAL_TARGETS_EXCLUDED.includes(to)) return false
+  if (app.state === 'suspended' && to === 'issued') return false
+  if (boardOfApplication(app) !== null && BOARD_DECISION_STATES.includes(to)) return false
+  if (needsBoardVote(app, to)) return false
+  return isTransitionAllowed(app.state, to, app.typeBody.workflow)
+}
+
+async function movesFor(
+  db: Db,
+  actor: Actor,
+  app: ApplicationContext,
+  moves: readonly CoreState[],
+  signal: AbortSignal,
+): Promise<CoreState[]> {
+  const allowed: CoreState[] = []
+  for (const to of moves) if (await actorMayMove(db, actor, app, to, signal)) allowed.push(to)
+  return allowed
+}
+
 async function clockExplanations(db: Db, applicationId: string, today: CivilDate) {
   const pack = loadPack()
   const rows = await db
@@ -145,13 +167,7 @@ export async function getStaffApplicationView(
   const [project] = await db.select().from(projects).where(eq(projects.id, app.projectId))
   if (project === undefined) return null
   const display = await displayIdsFor(db, [project.parcelId])
-  const nextTransitions = CORE_TRANSITIONS[app.state].filter(
-    (to) =>
-      !MANUAL_TARGETS_EXCLUDED.includes(to) &&
-      !(app.state === 'suspended' && to === 'issued') &&
-      !(boardOfApplication(app) !== null && BOARD_DECISION_STATES.includes(to)) &&
-      isTransitionAllowed(app.state, to, app.typeBody.workflow),
-  )
+  const nextTransitions = CORE_TRANSITIONS[app.state].filter((to) => offersMove(app, to))
   const gates = await db.transaction(async (tx) => {
     const out: StaffApplicationView['gates'] = []
     for (const to of nextTransitions)
@@ -215,6 +231,7 @@ export async function getStaffApplicationView(
     })),
     clocks: await clockExplanations(db, applicationId, today),
     nextTransitions,
+    allowedMoves: await movesFor(db, actor, app, nextTransitions, signal),
     gates,
     conditionLibrary: library,
     classification: app.typeBody.classification ?? null,

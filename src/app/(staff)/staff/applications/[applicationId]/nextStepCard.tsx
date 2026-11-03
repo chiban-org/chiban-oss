@@ -4,10 +4,14 @@ import { SelectField, TextField } from '@/components/staff/fields'
 import { type Blocker, type NextStepPlan, planNextStep } from '@/features/applications/nextStep'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { type CoreState, STATE_LABELS } from '@/features/applications/states'
+import type { BoardPanelData } from '@/features/boards/panelData'
 import { setSubstepAction, transitionAction } from './actions'
+import { type BoardStep, BoardStepLine, boardStepFor } from './boardStep'
 import { renewAction } from './buildingActions'
 
-const DECISION_MOVES: readonly CoreState[] = ['issued', 'decided', 'denied']
+export interface RailPlan extends NextStepPlan {
+  board: BoardStep | null
+}
 
 const MOVE_LABELS: ReadonlyMap<string, string> = new Map(
   Object.entries(STATE_LABELS).map(([state, label]) => [state, label.toLowerCase()]),
@@ -121,23 +125,30 @@ function SubstepForm({ view }: { view: StaffApplicationView }) {
   )
 }
 
-export function nextStepPlan(view: StaffApplicationView): NextStepPlan {
-  const allowed = view.nextTransitions.filter(
-    (to) => view.permissions.canIssue || !DECISION_MOVES.includes(to),
-  )
-  return planNextStep(allowed, view.gates)
+export function nextStepPlan(
+  view: StaffApplicationView,
+  board: BoardPanelData | null = null,
+): RailPlan {
+  return {
+    ...planNextStep(view.nextTransitions, view.gates, view.allowedMoves),
+    board: boardStepFor(board),
+  }
 }
 
-export function LeadStatus({ plan }: { plan: NextStepPlan }) {
+function clearLeadText(plan: NextStepPlan, to: CoreState): string {
+  return plan.leadAllowed
+    ? `Nothing blocks ${moveLabel(to)}. It is under More actions.`
+    : `Nothing blocks ${moveLabel(to)}. Your role cannot make this move.`
+}
+
+export function LeadStatus({ plan }: { plan: RailPlan }) {
   const { lead } = plan
-  if (lead === null || plan.primary !== null) return null
+  if (lead === null || plan.primary !== null) return <BoardStepLine step={plan.board} />
   if (lead.blockers.length > 0) return <BlockerList to={lead.to} blockers={lead.blockers} />
-  return (
-    <p className="text-sm">{`Nothing blocks ${moveLabel(lead.to)}. It is under More actions.`}</p>
-  )
+  return <p className="text-sm">{clearLeadText(plan, lead.to)}</p>
 }
 
-export function PrimaryMove({ view, plan }: { view: StaffApplicationView; plan: NextStepPlan }) {
+export function PrimaryMove({ view, plan }: { view: StaffApplicationView; plan: RailPlan }) {
   if (plan.primary === null) return null
   return (
     <MoveForm
@@ -149,8 +160,12 @@ export function PrimaryMove({ view, plan }: { view: StaffApplicationView; plan: 
   )
 }
 
-export function NextStepCard({ view, plan }: { view: StaffApplicationView; plan: NextStepPlan }) {
-  const empty = plan.lead === null && plan.terminal.length === 0 && view.substeps.length === 0
+export function NextStepCard({ view, plan }: { view: StaffApplicationView; plan: RailPlan }) {
+  const empty =
+    plan.lead === null &&
+    plan.board === null &&
+    plan.terminal.length === 0 &&
+    view.substeps.length === 0
   if (empty && !(view.state === 'issued' && view.permissions.canIssue)) return null
   return (
     <NextStep>

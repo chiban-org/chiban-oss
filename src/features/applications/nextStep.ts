@@ -28,6 +28,7 @@ export interface Blocker {
 
 export interface NextStepPlan {
   lead: { to: CoreState; blockers: Blocker[] } | null
+  leadAllowed: boolean
   primary: CoreState | null
   secondary: CoreState[]
   terminal: CoreState[]
@@ -54,19 +55,25 @@ function leadingMove(forward: CoreState[], terminal: CoreState[]): CoreState | n
 export function planNextStep(
   transitions: readonly CoreState[],
   gates: readonly GateGroup[],
+  allowed: readonly CoreState[] = transitions,
 ): NextStepPlan {
+  const may = (to: CoreState) => allowed.includes(to)
   const forward = transitions.filter((to) => !TERMINAL_STATES.includes(to))
   const terminal = transitions.filter((to) => TERMINAL_STATES.includes(to))
   const leadTo = leadingMove(forward, terminal)
   const lead = leadTo === null ? null : { to: leadTo, blockers: blockersOf(gates, leadTo) }
+  const leadAllowed = leadTo !== null && may(leadTo)
   const primary =
-    lead !== null && lead.blockers.length === 0 && !TERMINAL_STATES.includes(lead.to)
+    lead !== null && leadAllowed && lead.blockers.length === 0 && !TERMINAL_STATES.includes(lead.to)
       ? lead.to
       : null
   return {
     lead,
+    leadAllowed,
     primary,
-    secondary: forward.filter((to) => to !== leadTo && blockersOf(gates, to).length === 0),
-    terminal,
+    secondary: forward.filter(
+      (to) => to !== leadTo && may(to) && blockersOf(gates, to).length === 0,
+    ),
+    terminal: terminal.filter(may),
   }
 }
