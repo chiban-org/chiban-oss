@@ -221,6 +221,48 @@ describe('retention worklist', () => {
     expect(onHold.rows.find((r) => r.ref.id === documentId)?.holds).toBe(1)
   })
 
+  it('holds on a project, an application or a document put the record on hold, as checkDisposition does', async () => {
+    const snapshotId = await withdrawnSnapshot('2027-02-01')
+    const { applicationSnapshots } = await import('@/db/schema')
+    const { eq } = await import('drizzle-orm')
+    const [snap] = await handle.db
+      .select()
+      .from(applicationSnapshots)
+      .where(eq(applicationSnapshots.id, snapshotId))
+    const hold = async (kind: 'project' | 'application' | 'document', id: string) =>
+      expect(
+        (
+          await placeHold(
+            handle.db,
+            custodian,
+            { target: { kind, id }, reason: 'Pending litigation' },
+            signal,
+          )
+        ).ok,
+      ).toBe(true)
+    const holdsOn = async (id: string, asOf: string) =>
+      (await worklist('on_hold', asOf)).rows.find((r) => r.ref.id === id)?.holds
+    expect(await refsOf('eligible', '2028-02-01')).toContain(snapshotId)
+    await hold('project', world.projectId)
+    expect(await refsOf('eligible', '2028-02-01')).not.toContain(snapshotId)
+    expect(await holdsOn(snapshotId, '2028-02-01')).toBe(1)
+    await hold('application', snap?.applicationId ?? '')
+    expect(await holdsOn(snapshotId, '2028-02-01')).toBe(2)
+    expect(
+      await checkDisposition(
+        handle.db,
+        { kind: 'application_snapshot', id: snapshotId },
+        d('2028-02-01'),
+        signal,
+      ),
+    ).toEqual({ ok: false, error: 'on_hold' })
+    const { documentId } = await caseDocument()
+    expect(await refsOf('awaiting_event', '2027-03-01')).toContain(documentId)
+    await hold('document', documentId)
+    expect(await refsOf('awaiting_event', '2027-03-01')).not.toContain(documentId)
+    expect(await holdsOn(documentId, '2027-03-01')).toBe(1)
+  })
+
   it('appeal_period_expired on a project is kind_not_for_target', async () => {
     expect(
       await recordRetentionEvent(
