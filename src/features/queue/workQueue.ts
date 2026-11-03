@@ -63,6 +63,10 @@ function dueStatusOf(nextDue: CivilDate | null, today: CivilDate): DueStatus {
   return nextDue <= addDays(today, WARNING_DAYS) ? 'warning' : 'ok'
 }
 
+const NEEDS_ACTION = sql`(${inArray(applications.state, [...NEEDS_ACTION_STATES])}
+  or (${applications.state} <> 'draft'
+    and (${NEXT_DUE} is not null or ${FILING_DUE} is not null or ${NOTICE_DUE} is not null)))`
+
 function filterClauses(
   actor: Actor,
   filters: WorkQueueFilters,
@@ -71,7 +75,7 @@ function filterClauses(
   const states = filters.states
   return [
     applicationVisibleTo(actor),
-    inArray(applications.state, states ?? [...NEEDS_ACTION_STATES]),
+    states === undefined ? NEEDS_ACTION : inArray(applications.state, states),
     filters.typeKeys === undefined || filters.typeKeys.length === 0
       ? undefined
       : inArray(applications.applicationTypeKey, filters.typeKeys),

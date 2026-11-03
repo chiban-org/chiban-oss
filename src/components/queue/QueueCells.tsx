@@ -83,7 +83,7 @@ export function DueCell({ row }: { row: WorkQueueRow }) {
           {row.noticeDue === null ? null : (
             <BoardDate what="Notice" due={row.noticeDue} overdue={row.noticeOverdue} />
           )}
-          {row.filingDue === null ? null : (
+          {row.filingDue === null || row.filingDue === row.nextDue ? null : (
             <BoardDate what="Filing" due={row.filingDue} overdue={row.filingOverdue} />
           )}
         </div>

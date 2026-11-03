@@ -35,6 +35,11 @@ describe('QueueTable cells', () => {
     expect(screen.getByText('Filing overdue, due Apr 22, 2027')).toBeTruthy()
   })
 
+  it('does not repeat the filing date when it is already the next deadline', () => {
+    setup([row({ nextDue: d('2027-04-22'), filingDue: d('2027-04-22') })])
+    expect(screen.queryByText(/Filing (due|overdue)/)).toBeNull()
+  })
+
   it('writes the state, substep label, and reviewer status in words', () => {
     setup([
       row({

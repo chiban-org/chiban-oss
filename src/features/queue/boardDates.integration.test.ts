@@ -1,4 +1,6 @@
+import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { applications } from '@/db/schema'
 import { scheduleHearing } from '@/features/hearings/hearings'
 import { listWorkQueue } from '@/features/queue/workQueue'
 import {
@@ -63,6 +65,19 @@ describe('board dates on the work queue', () => {
     expect(await rowFor(decided.applicationId, new Date('2027-04-26T16:00:00Z'))).toMatchObject({
       filingDue: '2027-04-22',
       filingOverdue: true,
+    })
+  })
+
+  it('keeps a denied application in the default view while its filing deadline runs', async () => {
+    const { store } = await makeTestStore()
+    const decided = await decidedZba(handle.db, world, store, { documents: false })
+    await handle.db
+      .update(applications)
+      .set({ state: 'denied' })
+      .where(eq(applications.id, decided.applicationId))
+    expect(await rowFor(decided.applicationId)).toMatchObject({
+      state: 'denied',
+      filingDue: '2027-04-22',
     })
   })
 })
