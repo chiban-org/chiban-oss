@@ -13,7 +13,7 @@ import { openIncomplete } from '@/features/abutters/draft'
 import { type NoticeCostSummary, noticeCostSummary } from '@/features/abutters/noticeCosts'
 import { type Overlay, projectionOverlay } from '@/features/abutters/overlay'
 import { getList, type ListRow, type ListSnapshot } from '@/features/abutters/queries'
-import { provenanceText, reasonLines } from '@/features/abutters/reasonText'
+import { ageText, provenanceText, reasonLines } from '@/features/abutters/reasonText'
 import type { Recipient } from '@/features/abutters/resolution'
 import { RECIPIENT_ROLE_LABELS } from '@/features/abutters/roles'
 import type { Candidate } from '@/features/abutters/types'
@@ -97,11 +97,7 @@ function layerNote(name: string, status: LayerStatus, zone: string): string {
     return `${name} has no usable import`
   }
   const when = formatCivilDate(todayInTimeZone(zone, new Date(status.lastSuccessAt)))
-  const age =
-    status.ageDays === null
-      ? ''
-      : `, ${status.ageDays} ${status.ageDays === 1 ? 'day' : 'days'} old`
-  return `${name} imported ${when}${age}${status.state === 'stale' ? ', out of date' : ''}`
+  return `${name} imported ${when}${ageText(status.ageDays)}${status.state === 'stale' ? ', out of date' : ''}`
 }
 
 function boundsOf(overlay: Overlay): [number, number, number, number] | null {

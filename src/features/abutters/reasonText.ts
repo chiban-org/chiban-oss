@@ -26,16 +26,20 @@ const STATE_WORDS: Record<Provenance['state'], string> = {
   entered: '',
 }
 
+export function ageText(days: number | null): string {
+  if (days === null || days === 0) return ''
+  return `, ${days} ${days === 1 ? 'day' : 'days'} old`
+}
+
 function asOfText(label: string, p: Provenance): string {
   if (p.asOf === null) return label
-  const age = p.ageDays === null ? '' : `, ${p.ageDays} ${p.ageDays === 1 ? 'day' : 'days'} old`
-  return `${label} ${formatCivilDate(p.asOf)}${age}${STATE_WORDS[p.state]}`
+  return `${label} ${formatCivilDate(p.asOf)}${ageText(p.ageDays)}${STATE_WORDS[p.state]}`
 }
 
 export function provenanceText(p: Provenance): string {
   switch (p.source) {
     case 'parcel_record':
-      return asOfText('Parcel layer imported', p)
+      return `Parcel layer${STATE_WORDS[p.state]}`
     case 'association_roster':
       return asOfText('Association officer roster as of', p)
     case 'park_roster':
