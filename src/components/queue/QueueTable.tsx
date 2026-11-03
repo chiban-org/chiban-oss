@@ -3,9 +3,12 @@
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { ApplicationStatusChip } from '@/components/ApplicationStatusChip'
+import { SortBar, SortHeader } from '@/components/dataTable/SortHeader'
 import { AssignReviewerDialog, type QueueReviewer } from '@/components/queue/AssignReviewerDialog'
 import { ApplicationCell, DueCell, FeesCell, ReviewersCell } from '@/components/queue/QueueCells'
 import { useQueueKeys } from '@/components/queue/useQueueKeys'
+import type { SortLink } from '@/features/dataTable/sort'
+import type { QueueSortKey } from '@/features/queue/queueParams'
 import type { WorkQueueRow } from '@/features/queue/workQueue'
 import type { ActionResult } from '@/server/actionRunner'
 
@@ -17,6 +20,31 @@ interface Props {
   assign: (formData: FormData) => Promise<ActionResult>
   navigate?: (url: string) => void
   empty?: ReactNode
+  sort?: Record<QueueSortKey, SortLink>
+}
+
+function sortOptions(sort: Record<QueueSortKey, SortLink>) {
+  return [
+    { label: 'Number', link: sort.number },
+    { label: 'Status', link: sort.status },
+    { label: 'Due', link: sort.due },
+    { label: 'Fees', link: sort.fees },
+    { label: 'Reviewers', link: sort.reviewers },
+  ]
+}
+
+function QueueHead({ sort }: { sort: Record<QueueSortKey, SortLink> | undefined }) {
+  return (
+    <thead className="max-md:hidden">
+      <tr>
+        <SortHeader label="Application" link={sort?.number} />
+        <SortHeader label="Status" link={sort?.status} />
+        <SortHeader label="Due" link={sort?.due} />
+        <SortHeader label="Fees" link={sort?.fees} className="md:text-right" />
+        <SortHeader label="Reviewers" link={sort?.reviewers} />
+      </tr>
+    </thead>
+  )
 }
 
 const ROW_CLASS =
@@ -32,7 +60,7 @@ function EmptyQueue({ children }: { children: ReactNode }) {
   )
 }
 
-export function QueueTable({ rows, reviewers, assign, navigate, empty }: Props) {
+export function QueueTable({ rows, reviewers, assign, navigate, empty, sort }: Props) {
   const router = useRouter()
   const body = useRef<HTMLTableSectionElement>(null)
   const [selected, setSelected] = useState(0)
@@ -65,19 +93,12 @@ export function QueueTable({ rows, reviewers, assign, navigate, empty }: Props) 
   }
   return (
     <>
+      {sort === undefined ? null : (
+        <SortBar className="mb-3 md:hidden" options={sortOptions(sort)} />
+      )}
       <div className="table-panel">
         <table className="w-full text-sm max-md:block">
-          <thead className="max-md:sr-only">
-            <tr>
-              <th scope="col">Application</th>
-              <th scope="col">Status</th>
-              <th scope="col">Due</th>
-              <th scope="col" className="md:text-right">
-                Fees
-              </th>
-              <th scope="col">Reviewers</th>
-            </tr>
-          </thead>
+          <QueueHead sort={sort} />
           <tbody ref={body} className="max-md:block">
             {rows.map((row, index) => (
               <tr

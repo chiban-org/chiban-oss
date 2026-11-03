@@ -9,11 +9,6 @@ export function QueueSummary({ total, filters }: { total: number; filters: strin
           {`· ${label}`}
         </span>
       ))}
-      {filters.length === 0 ? null : (
-        <Link href="/staff/queue" className="text-action">
-          Clear filters
-        </Link>
-      )}
     </p>
   )
 }
@@ -43,25 +38,6 @@ export function KeyHints({ canAssign }: { canAssign: boolean }) {
         <Key>/</Key> search
       </span>
     </p>
-  )
-}
-
-interface PagerProps {
-  offset: number
-  shown: number
-  total: number
-  prevHref: string | null
-  nextHref: string | null
-}
-
-export function QueuePager({ offset, shown, total, prevHref, nextHref }: PagerProps) {
-  if (prevHref === null && nextHref === null) return null
-  return (
-    <nav aria-label="Pages" className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-sm">
-      <span className="tabular-nums text-muted-foreground">{`${offset + 1}-${offset + shown} of ${total}`}</span>
-      {prevHref === null ? null : <Link href={prevHref}>Previous page</Link>}
-      {nextHref === null ? null : <Link href={nextHref}>Next page</Link>}
-    </nav>
   )
 }
 

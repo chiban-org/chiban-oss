@@ -139,7 +139,7 @@ describe('work queue', () => {
     await addClock(overdue.applicationId, '2027-03-01')
     await addClock(warn.applicationId, '2027-03-05')
     await addClock(fine.applicationId, '2027-06-01')
-    const only = await list({ overdueOnly: true })
+    const only = await list({ due: ['overdue'] })
     expect(only.rows.map((r) => r.applicationId)).toEqual([overdue.applicationId])
     expect(only.total).toBe(1)
     const all = await list()
@@ -152,7 +152,7 @@ describe('work queue', () => {
   it('awaiting payment filter returns only applications with fees due', async () => {
     const trade = await submittedTrade(handle.db, world)
     await makeApplication(handle.db, world, { state: 'submitted' })
-    const due = await list({ awaitingPayment: true })
+    const due = await list({ flags: ['fees'] })
     expect(due.rows.map((r) => r.applicationId)).toEqual([trade.applicationId])
     expect(due.rows[0]?.feesDueCents).toBeGreaterThan(0)
   })
@@ -178,7 +178,7 @@ describe('work queue', () => {
       a.applicationId,
     ])
     expect((await list({ typeKeys: ['EL'] })).total).toBe(0)
-    expect((await list({ assignedToMe: true }, world.reviewer)).total).toBe(1)
-    expect((await list({ assignedToMe: true })).total).toBe(0)
+    expect((await list({ assigned: ['me'] }, world.reviewer)).total).toBe(1)
+    expect((await list({ assigned: ['me'] })).total).toBe(0)
   })
 })

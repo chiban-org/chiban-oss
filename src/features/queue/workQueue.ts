@@ -1,14 +1,23 @@
-import { and, asc, eq, inArray, isNull, type SQL, sql } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { applications, projects, reviewAssignments, users } from '@/db/schema'
-import { applicationVisibleTo } from '@/features/access/predicates'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { CoreState } from '@/features/applications/states'
 import { substepLabel } from '@/features/applications/statusText'
 import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
+import { defaultSort, type SortState } from '@/features/dataTable/sort'
+import { orderBySql } from '@/features/dataTable/sortSql'
 import { ruleLabel } from '@/features/packs/ruleLabel'
 import { displayIdsFor } from '@/features/parcels/displayId'
+import { QUEUE_SORT_COLUMNS, QUEUE_TIEBREAK, queueWhere } from '@/features/queue/queueFilterSql'
+import {
+  type AssignedFilter,
+  type DueFilter,
+  type FlagFilter,
+  QUEUE_SORT,
+  type QueueSortKey,
+} from '@/features/queue/queueParams'
 import {
   FEES_DUE,
   FILING_DUE,
@@ -18,7 +27,6 @@ import {
   preservationIncompleteFor,
   UNKNOWN_PAYMENT,
 } from '@/features/queue/queueSql'
-import { NEEDS_ACTION_STATES } from '@/features/queue/stateScopes'
 import { townToday } from '@/features/town/today'
 import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
 
@@ -27,9 +35,9 @@ const WARNING_DAYS = 5
 export interface WorkQueueFilters {
   states?: CoreState[]
   typeKeys?: string[]
-  assignedToMe?: boolean
-  overdueOnly?: boolean
-  awaitingPayment?: boolean
+  due?: DueFilter[]
+  assigned?: AssignedFilter[]
+  flags?: FlagFilter[]
   numberContains?: string
 }
 
@@ -61,35 +69,6 @@ function dueStatusOf(nextDue: CivilDate | null, today: CivilDate): DueStatus {
   if (nextDue === null) return 'none'
   if (nextDue < today) return 'overdue'
   return nextDue <= addDays(today, WARNING_DAYS) ? 'warning' : 'ok'
-}
-
-const NEEDS_ACTION = sql`(${inArray(applications.state, [...NEEDS_ACTION_STATES])}
-  or (${applications.state} <> 'draft'
-    and (${NEXT_DUE} is not null or ${FILING_DUE} is not null or ${NOTICE_DUE} is not null)))`
-
-function filterClauses(
-  actor: Actor,
-  filters: WorkQueueFilters,
-  today: CivilDate,
-): (SQL | undefined)[] {
-  const states = filters.states
-  return [
-    applicationVisibleTo(actor),
-    states === undefined ? NEEDS_ACTION : inArray(applications.state, states),
-    filters.typeKeys === undefined || filters.typeKeys.length === 0
-      ? undefined
-      : inArray(applications.applicationTypeKey, filters.typeKeys),
-    filters.assignedToMe === true
-      ? sql`exists (select 1 from review_assignments ra
-          where ra.application_id = ${applications.id}
-            and ra.reviewer_user_id = ${actor.userId} and ra.removed_at is null)`
-      : undefined,
-    filters.overdueOnly === true ? sql`${NEXT_DUE} < ${today}::date` : undefined,
-    filters.awaitingPayment === true ? sql`${FEES_DUE} > 0` : undefined,
-    filters.numberContains === undefined || filters.numberContains === ''
-      ? undefined
-      : sql`${applications.number} ilike ${`%${filters.numberContains.replace(/[\\%_]/g, (c) => `\\${c}`)}%`}`,
-  ]
 }
 
 interface TypeLabels {
@@ -150,7 +129,7 @@ export async function countWorkQueue(
       const [count] = await db
         .select({ n: sql<number>`count(*)::int` })
         .from(applications)
-        .where(and(...filterClauses(actor, f, today)))
+        .where(queueWhere(actor, f, today))
       return count?.n ?? 0
     }),
   )
@@ -171,13 +150,19 @@ function isPast(date: CivilDate | null, today: CivilDate): boolean {
 export async function listWorkQueue(
   db: DbOrTx,
   actor: Actor,
-  input: { filters: WorkQueueFilters; limit: number; cursor?: string },
+  input: {
+    filters: WorkQueueFilters
+    sort?: SortState<QueueSortKey>
+    limit: number
+    cursor?: string
+  },
   signal: AbortSignal,
   now: Date = new Date(),
 ): Promise<WorkQueuePage> {
   signal.throwIfAborted()
   const today = await townToday(db, now, signal)
-  const where = and(...filterClauses(actor, input.filters, today))
+  const where = queueWhere(actor, input.filters, today)
+  const sort = input.sort ?? defaultSort(QUEUE_SORT)
   const offset = Math.max(0, Number(input.cursor ?? '0') || 0)
   const [count] = await db.select({ n: sql<number>`count(*)::int` }).from(applications).where(where)
   const rows = await db
@@ -199,11 +184,7 @@ export async function listWorkQueue(
     .from(applications)
     .innerJoin(projects, eq(projects.id, applications.projectId))
     .where(where)
-    .orderBy(
-      sql`${NEXT_DUE} asc nulls last`,
-      sql`${applications.receivedDate} asc nulls last`,
-      asc(applications.id),
-    )
+    .orderBy(...orderBySql(sort, QUEUE_SORT_COLUMNS, QUEUE_TIEBREAK))
     .limit(input.limit + 1)
     .offset(offset)
   const page = rows.slice(0, input.limit)
