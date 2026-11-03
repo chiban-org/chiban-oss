@@ -4,12 +4,12 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { configuredChannelKinds } from '@/features/health/channels/configured'
 import { PAGER_STUB_NOTICE } from '@/features/health/channels/pagerChannel'
 import { jobHealth } from '@/features/health/jobHealth'
-import { jobLabel } from '@/features/health/jobLabels'
 import { alertReadiness, type ReadinessStatus } from '@/features/health/syntheticAlert'
 import { getTownSettings } from '@/features/town/settings'
 import { DEFAULT_TIME_ZONE } from '@/features/town/timeZone'
 import { formatInstantOrNever } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
+import { JobList } from './JobList'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,6 +21,9 @@ const READINESS_COPY: Record<ReadinessStatus, string> = {
 
 const NO_WORKER_COPY =
   'No background worker has started for this town. Until one runs, no job on this page runs: emails stay queued and exports stay waiting to start.'
+
+const NO_CHANNEL_COPY =
+  'No alert channel is configured, so nobody is told when a job fails. Set ALERT_EMAIL_TO on the server to send alerts by email, or PAGER_ROUTING_KEY to send them to a pager.'
 
 const CHANNEL_COPY = { email: 'Email', pager: 'Pager' } as const
 
@@ -67,24 +70,11 @@ export default async function HealthPage() {
         ) : (
           <p>The background worker last started {day(worker.startedAt)}.</p>
         )}
-        <ul className="m-0 list-none space-y-2 p-0">
-          {jobs.map((job) => (
-            <li key={job.name} className="rounded-md border p-3">
-              <p className="m-0 font-medium">{jobLabel(job.name)}</p>
-              <p className="m-0">
-                Last success: {day(job.lastSuccessAt)}
-                {job.stale ? '. This job is overdue.' : ''}
-              </p>
-              {job.lastFailureAt === null ? null : (
-                <p className="m-0">Last failure: {day(job.lastFailureAt)}</p>
-              )}
-            </li>
-          ))}
-        </ul>
+        <JobList jobs={jobs} day={day} />
       </section>
       <section aria-labelledby="channels-heading">
         <h2 id="channels-heading">Alert channels</h2>
-        {readiness.length === 0 ? <p>No alert channel is configured.</p> : null}
+        {readiness.length === 0 ? <p>{NO_CHANNEL_COPY}</p> : null}
         <ul className="m-0 list-none space-y-2 p-0">
           {readiness.map((row) => (
             <li key={row.channel} className="rounded-md border p-3">

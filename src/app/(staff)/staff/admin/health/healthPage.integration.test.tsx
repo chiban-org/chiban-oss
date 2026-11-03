@@ -1,6 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { healthAlerts, workerState } from '@/db/schema'
+import { healthAlerts, jobRuns, workerState } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { recordWorkerStart } from '@/features/health/workerState'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -101,6 +101,21 @@ describe('admin health page', () => {
     const html = renderToStaticMarkup(await HealthPage())
     expect(html).toContain('The background worker last started November 2, 2026')
     expect(html).not.toContain('No background worker has started')
+  })
+
+  it('opens failed jobs at the top and lists the rest one line each in a table', async () => {
+    state.actor = admin
+    await handle.db.insert(jobRuns).values([
+      { jobName: 'clocks.daily', lastFailureAt: new Date('2026-11-02T12:00:00Z') },
+      { jobName: 'system.heartbeat', lastSuccessAt: new Date() },
+    ])
+    const html = renderToStaticMarkup(await HealthPage())
+    const attention = html.slice(html.indexOf('Needs attention'), html.indexOf('<table'))
+    expect(attention).toContain('Daily clock check')
+    expect(attention).not.toContain('System heartbeat')
+    const table = html.slice(html.indexOf('<table'), html.indexOf('</table>'))
+    expect(table).toContain('System heartbeat')
+    expect(table).not.toContain('Daily clock check')
   })
 
   it('tells staff without the capability they cannot use it', async () => {
