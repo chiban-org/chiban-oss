@@ -45,6 +45,33 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 - The staff home (`/staff`) shows what needs attention and the next deadlines, with a parcel search. Inspectors who hold only that role land on their day list instead.
 - The theme is light only. Tailwind's `dark:` variant is bound to a `.dark` class that nothing sets, so an operating system dark setting cannot restyle controls.
 
+- A rail taller than the window scrolls with the page instead of sticking, so its bottom is never cut off.
+- In long lists on a record page, urgent items (the deadline due next, anything late) stay open and the rest fold to one line.
+
+## Lists and filters
+
+- One list per kind of record. Status or scope is a row of `FilterTabs` with counts above the filter bar, not a second page. Tabs pick one value, and "Clear all" leaves the chosen tab alone.
+- List pages use `<main data-wide>` so the table can use the wider list width. The lead line states the default order.
+- Every meaningful column sorts from its header with `SortHeader`, one sort link per header. Paged or growing lists sort and filter in SQL with a stable tiebreak. Narrow layouts get the same sorts through `SortBar`.
+- Quick filters come from `chipGroups` in `src/features/dataTable/quickFilters.ts`: two to four groups, counts from `countFacets`. Options that exclude each other (Mine and Unassigned, Overdue and Due this week) set `single: true` and are read with `singleValue`. Groups longer than three options, and anything not every viewer needs, go behind a `FilterMenu`.
+- Below 640px every filter group folds into a menu. No staff page scrolls sideways at 390px.
+- Identifiers link to their record: an application number to the application, a parcel ID to the parcel, an owner to a parcel search for that owner. An identifier gets its own column instead of sitting inside a sentence.
+- Keyboard-driven tables move with `j` and `k`, open the selected row with Enter, and always show focus.
+- Search forms offer recent searches and a one-click example under the field.
+
+## Actions and roles
+
+- An action appears only when the viewer can take it and it applies in the record's current state. A finished application shows no board, review or abutter actions; money, records and legal-deadline work stays available.
+- The server refuses the same action on the same grounds. Hiding a button is never the only check.
+- The staff menu lists only pages the viewer can open. A viewer with no list to work from lands on a page they can use, never on a bare permission refusal.
+- Reviewers and board members see read-only versions of records, without buttons they cannot use.
+
+## Copy
+
+- Plain words, no internal jargon, and no text repeated within one panel (a gate's label and its reason, for example).
+- A count appears only when it says something: "2 more overdue", never "0 overdue".
+- An empty state says what to do next.
+
 ## Type and shape
 
 - `h1` and `h2` use `Charter, "Source Serif 4 Variable", serif` (22px and up). `h3` and `h4` use the body face in bold.
