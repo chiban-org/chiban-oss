@@ -42,6 +42,7 @@ function doc(overrides: Partial<PanelDocument> = {}): PanelDocument {
     },
     retention: 'Permanent',
     holdCount: 0,
+    uploadedBy: 'Sam Clerk',
     rendition: 'approved',
     approvalId: 'ap1',
     approvedRole: 'original',
@@ -89,11 +90,13 @@ describe('DocumentPanel', () => {
 
   it('names the series with its citation, the retention, and a hold badge', () => {
     view([doc({ holdCount: 1, retention: 'Waiting for: building removed' })])
-    expect(screen.getByText('Building permits: applications and approvals')).toBeTruthy()
+    expect(
+      screen.getByText('Record series: Building permits: applications and approvals'),
+    ).toBeTruthy()
     expect(screen.getByRole('link', { name: 'RSA 33-A:3-a XV' }).getAttribute('href')).toContain(
       '33-A-3-a',
     )
-    expect(screen.getByText('Waiting for: building removed')).toBeTruthy()
+    expect(screen.getByText('Retention: Waiting for: building removed')).toBeTruthy()
     expect(screen.getByText('Legal hold')).toBeTruthy()
   })
 
@@ -128,7 +131,7 @@ describe('DocumentPanel', () => {
       }),
       doc({ documentId: 'd', title: 'D', rendition: 'revoked', isPublic: false, approvalId: null }),
     ])
-    expect(screen.getByText('Approved for public')).toBeTruthy()
+    expect(screen.getByText('Public copy: original')).toBeTruthy()
     expect(screen.getByText('Public, no approved copy')).toBeTruthy()
     expect(screen.getByText('Redacted, awaiting approval')).toBeTruthy()
     expect(screen.getByText('Revoked')).toBeTruthy()
@@ -176,5 +179,22 @@ describe('DocumentPanel', () => {
     expect(
       screen.queryByText('Approving another version replaces the current public copy.'),
     ).not.toBeNull()
+  })
+
+  it('shows the title, when and by whom it was added, and one public chip', () => {
+    view([doc({ isPublic: false, rendition: 'none', approvalId: null })])
+    expect(screen.getByText('Added March 2, 2027 by Sam Clerk')).toBeTruthy()
+    expect(screen.getByText('Not public')).toBeTruthy()
+    expect(screen.getByText('Preserved').closest('details')).not.toBeNull()
+  })
+
+  it('prints a series shared by every row once, and an unassigned series once', () => {
+    view([doc(), doc({ documentId: 'd2', title: 'Plans' })])
+    expect(
+      screen.getAllByText('Record series: Building permits: applications and approvals'),
+    ).toHaveLength(1)
+    cleanup()
+    view([doc({ series: null, retention: 'No record series assigned' })])
+    expect(screen.getAllByText(/No record series assigned/)).toHaveLength(1)
   })
 })

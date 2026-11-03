@@ -1,6 +1,12 @@
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { documentVersions, preservationRecords, renditionApprovals } from '@/db/schema'
+import {
+  documents,
+  documentVersions,
+  preservationRecords,
+  renditionApprovals,
+  users,
+} from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { listDocuments } from '@/features/documents/listDocuments'
@@ -25,6 +31,7 @@ export interface PanelDocument extends DocumentListRow {
   series: { label: string; citation: { label: string; url: string } } | null
   retention: string
   holdCount: number
+  uploadedBy: string
 }
 
 const PRESERVATION: Record<string, PreservationState> = {
@@ -111,6 +118,21 @@ async function renditionDetails(
   }
 }
 
+const SOURCE_NAMES: ReadonlyMap<string, string> = new Map([
+  ['system', 'Chiban'],
+  ['anonymous_public_intake', 'Public intake'],
+])
+
+async function uploaders(db: DbOrTx, ids: string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map()
+  const rows = await db
+    .select({ id: documents.id, kind: documents.createdByKind, name: users.displayName })
+    .from(documents)
+    .leftJoin(users, eq(users.id, documents.createdBy))
+    .where(inArray(documents.id, ids))
+  return new Map(rows.map((r) => [r.id, r.name ?? SOURCE_NAMES.get(r.kind) ?? 'Unknown']))
+}
+
 export async function loadPanelDocuments(
   db: DbOrTx,
   actor: Actor,
@@ -137,6 +159,7 @@ export async function loadPanelDocuments(
   const out: PanelDocument[] = []
   const canRedact = await hasCapability(db, actor.userId, 'redaction.create', signal)
   const details = await renditionDetails(db, ids)
+  const uploadedBy = await uploaders(db, ids)
   for (const row of listed.rows) {
     const rendition = details(row)
     const rec = records.find((r) => r.documentId === row.documentId)
@@ -153,6 +176,7 @@ export async function loadPanelDocuments(
           : { label: retention.series.label, citation: retention.series.citation },
       retention: retentionText(retention?.status ?? null),
       holdCount: retention?.holds.length ?? 0,
+      uploadedBy: uploadedBy.get(row.documentId) ?? 'Unknown',
     })
   }
   return out

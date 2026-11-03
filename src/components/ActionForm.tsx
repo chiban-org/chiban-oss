@@ -1,6 +1,6 @@
 'use client'
 
-import { type FormEvent, type ReactNode, useEffect, useState } from 'react'
+import { type FormEvent, type ReactNode, useEffect, useId, useState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
 import { SubmitButton } from '@/components/SubmitButton'
 import { Button } from '@/components/ui/button'
@@ -11,8 +11,9 @@ import type { ActionResult } from '@/server/actionRunner'
 interface ActionFormProps {
   action: (formData: FormData) => Promise<ActionResult>
   submitLabel: string
-  variant?: 'default' | 'outline'
+  variant?: 'default' | 'outline' | 'destructive'
   className?: string
+  compact?: boolean
   checkBeforeSubmit?: (form: HTMLFormElement) => string | null
   children: ReactNode
 }
@@ -66,11 +67,33 @@ function isFailure(result: ActionResult | null): boolean {
   return result !== null && !result.ok
 }
 
+function markInvalid(form: HTMLFormElement, invalid: Element[], messageId: string): void {
+  for (const el of form.querySelectorAll('[aria-invalid="true"]')) {
+    el.removeAttribute('aria-invalid')
+    el.removeAttribute('aria-describedby')
+  }
+  for (const el of invalid) {
+    el.setAttribute('aria-invalid', 'true')
+    el.setAttribute('aria-describedby', messageId)
+  }
+  const first = invalid[0]
+  if (first instanceof HTMLElement) first.focus()
+}
+
+function clearInvalid(form: HTMLFormElement | null): void {
+  if (form === null) return
+  for (const el of form.querySelectorAll('[aria-invalid="true"]')) {
+    el.removeAttribute('aria-invalid')
+    el.removeAttribute('aria-describedby')
+  }
+}
+
 export function ActionForm({
   action,
   submitLabel,
   variant = 'outline',
   className,
+  compact = false,
   checkBeforeSubmit,
   children,
 }: ActionFormProps) {
@@ -84,13 +107,15 @@ export function ActionForm({
     isFailure,
   )
   const hydrated = useHydrated()
+  const messageId = useId()
   const [problem, setProblem] = useState<string | null>(null)
   const [edited, setEdited] = useState(false)
+  const form = formProps.ref
   const onInput = () => {
     setProblem(null)
     setEdited(true)
+    clearInvalid(form.current)
   }
-  const form = formProps.ref
   useEffect(() => {
     const onOtherSubmit = (event: Event) => {
       if (event.target === form.current) return
@@ -101,10 +126,9 @@ export function ActionForm({
     return () => document.removeEventListener('submit', onOtherSubmit, true)
   }, [form])
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
-    const found =
-      problemMessage(invalidFields(event.currentTarget)) ??
-      checkBeforeSubmit?.(event.currentTarget) ??
-      null
+    const invalid = invalidFields(event.currentTarget)
+    markInvalid(event.currentTarget, invalid, messageId)
+    const found = problemMessage(invalid) ?? checkBeforeSubmit?.(event.currentTarget) ?? null
     setProblem(found)
     setEdited(false)
     if (found !== null) {
@@ -115,15 +139,21 @@ export function ActionForm({
   }
   const answer = result === null || edited ? null : result.ok ? result.message : result.error
   const message = problem ?? answer
+  const failed = problem !== null || (answer !== null && result?.ok === false)
   return (
     <form {...formProps} onSubmit={onSubmit} onInput={onInput} noValidate className={className}>
       <CsrfField />
       {children}
-      <div className="mt-3 flex items-center gap-3">
+      <div className={`${compact ? '' : 'mt-3 '}flex flex-wrap items-center gap-x-3 gap-y-1`}>
         <Button type="submit" variant={variant} disabled={pending || !hydrated}>
           {pending ? 'Working' : submitLabel}
         </Button>
-        <p role="status" className="text-sm">
+        <p
+          id={messageId}
+          role="status"
+          data-tone={failed ? 'failed' : undefined}
+          className="text-sm data-[tone=failed]:font-semibold data-[tone=failed]:text-status-failed-fg"
+        >
           {message}
         </p>
       </div>

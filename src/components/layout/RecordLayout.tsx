@@ -96,7 +96,7 @@ function SectionIndex({ entries, active }: { entries: IndexEntry[]; active: stri
   if (entries.length < 4) return null
   return (
     <nav aria-label="On this page" className="no-print hidden lg:block">
-      <p className="mb-2 text-xs font-semibold text-muted-foreground">On this page</p>
+      <p className="mb-2 text-sm font-semibold text-muted-foreground">On this page</p>
       <ul className="flex flex-col border-l">
         {entries.map((entry) => (
           <li key={entry.id}>
@@ -114,21 +114,54 @@ function SectionIndex({ entries, active }: { entries: IndexEntry[]; active: stri
   )
 }
 
+function JumpMenu({ entries }: { entries: IndexEntry[] }) {
+  if (entries.length < 4) return null
+  return (
+    <nav aria-label="Jump to a section" className="no-print lg:hidden">
+      <label className="flex flex-col gap-1 text-sm font-semibold text-muted-foreground">
+        On this page
+        <select
+          value=""
+          onChange={(event) => document.getElementById(event.target.value)?.scrollIntoView()}
+          className="rounded-md border border-control-border bg-surface px-3 py-2 font-normal text-ink"
+        >
+          <option value="">Choose a section</option>
+          {entries.map((entry) => (
+            <option key={entry.id} value={entry.id}>
+              {entry.label}
+            </option>
+          ))}
+        </select>
+      </label>
+    </nav>
+  )
+}
+
 interface RecordLayoutProps {
   children: ReactNode
   rail?: ReactNode
+  railFooter?: ReactNode
+  strip?: ReactNode
   empty?: ReactNode[]
 }
 
-export function RecordLayout({ children, rail, empty }: RecordLayoutProps) {
+export function RecordLayout({ children, rail, railFooter, strip, empty }: RecordLayoutProps) {
   const { body, entries, active } = useSectionIndex()
+  const collapsed = strip !== undefined
   return (
     <div className="record-layout lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-8">
-      <aside className="record-rail mb-6 flex flex-col gap-6 lg:sticky lg:top-6 lg:order-2 lg:mb-0 lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto">
+      {collapsed ? (
+        <div className="record-strip mb-5 flex flex-col gap-4 lg:hidden">{strip}</div>
+      ) : null}
+      <aside
+        className={`record-rail mb-6 flex-col gap-6 lg:sticky lg:top-6 lg:order-2 lg:mb-0 lg:flex lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto ${collapsed ? 'hidden' : 'flex'}`}
+      >
         {rail}
         <SectionIndex entries={entries} active={active} />
+        {railFooter}
       </aside>
       <div ref={body} className="record-body flex min-w-0 flex-col gap-5">
+        <JumpMenu entries={entries} />
         {children}
         {empty === undefined ? null : (
           <div data-empty-group="" className="record-empty">

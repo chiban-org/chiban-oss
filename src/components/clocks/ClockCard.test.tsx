@@ -53,11 +53,12 @@ const BASE: ClockExplanation & { clockId: string } = {
 }
 
 describe('ClockCard', () => {
-  it('shows rule, version, start event, counting method, consequence, and each adjustment', () => {
+  it('shows rule, start event, counting method, consequence, and each adjustment', () => {
     render(<ClockCard clock={BASE} />)
     const card = screen.getByRole('article')
     expect(within(card).getByText('Building permit decision deadline')).toBeTruthy()
-    expect(within(card).getByText(/Building permit decision deadline, version 1/)).toBeTruthy()
+    expect(card.textContent).not.toMatch(/version 1|pack /)
+    expect(card.textContent.match(/Building permit decision deadline/g)).toHaveLength(1)
     expect(card.textContent).not.toContain('nh.bp.decision')
     expect(within(card).getByText(/Application completed/)).toBeTruthy()
     expect(within(card).getByText(/30 calendar days after March 1, 2027/)).toBeTruthy()
@@ -68,6 +69,16 @@ describe('ClockCard', () => {
     expect(
       within(card).getByRole('link', { name: 'RSA 155-A:4 IX' }).getAttribute('href'),
     ).toContain('155-A-4')
+  })
+
+  it('folds a met clock to one line that opens to the details', () => {
+    render(<ClockCard clock={{ ...BASE, status: 'met', metOn: d('2027-03-20') }} />)
+    const card = screen.getByRole('article')
+    expect(card.hasAttribute('data-collapsed')).toBe(true)
+    const summary = card.querySelector('summary')
+    expect(summary?.textContent).toContain('Building permit decision deadline')
+    expect(summary?.textContent).toContain('Met')
+    expect(summary?.textContent).toContain('Due April 14, 2027')
   })
 
   it('shows the adjusted due date next to the date it replaced', () => {

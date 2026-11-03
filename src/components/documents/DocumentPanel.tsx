@@ -1,13 +1,10 @@
 import type { ReactNode } from 'react'
 import { ActionForm } from '@/components/ActionForm'
+import { RecordKeeping, SeriesLine, sharedSeries } from '@/components/documents/RecordKeeping'
 import { RedactedUploader } from '@/components/documents/RedactedUploader'
 import type { UploaderActions } from '@/components/documents/Uploader'
 import { StatusChip } from '@/components/StatusChip'
-import type {
-  PanelDocument,
-  PreservationState,
-  RenditionState,
-} from '@/features/documents/panelData'
+import type { PanelDocument, RenditionState } from '@/features/documents/panelData'
 import { AUDIENCES, type Audience, type RecordRef } from '@/features/documents/types'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { ActionResult } from '@/server/actionRunner'
@@ -41,34 +38,26 @@ const AUDIENCE_LABELS: Record<Audience, string> = {
   board: 'Board',
 }
 
-const PRESERVATION_CHIP: Record<
-  PreservationState,
-  { status: 'passed' | 'failed' | 'overdue' | 'neutral'; label: string }
-> = {
-  preserved: { status: 'passed', label: 'Preserved' },
-  incomplete: { status: 'failed', label: 'Preservation incomplete' },
-  not_required: { status: 'neutral', label: 'Preservation not required' },
-  pending: { status: 'overdue', label: 'Preservation pending' },
-}
+type Chip = { status: 'passed' | 'failed' | 'overdue' | 'neutral'; label: string }
 
-const RENDITION_CHIP: Record<
-  RenditionState,
-  { status: 'passed' | 'failed' | 'overdue' | 'neutral'; label: string } | null
-> = {
-  approved: { status: 'passed', label: 'Approved for public' },
+const RENDITION_CHIP: Record<Exclude<RenditionState, 'approved'>, Chip> = {
   public_no_copy: { status: 'failed', label: 'Public, no approved copy' },
   redacted_waiting: { status: 'overdue', label: 'Redacted, awaiting approval' },
   revoked: { status: 'failed', label: 'Revoked' },
-  none: null,
+  none: { status: 'neutral', label: 'Not public' },
+}
+
+function publicChip(doc: PanelDocument): Chip {
+  if (doc.rendition !== 'approved') return RENDITION_CHIP[doc.rendition]
+  if (!doc.isPublic) return { status: 'neutral', label: 'Approved, not public' }
+  return {
+    status: 'passed',
+    label:
+      doc.approvedRole === 'public_redacted' ? 'Public copy: redacted' : 'Public copy: original',
+  }
 }
 
 const VERSION_LABELS = { original: 'Original', public_redacted: 'Redacted copy' } as const
-
-function publicCopyText(doc: PanelDocument): string | null {
-  if (!doc.isPublic) return null
-  if (doc.rendition !== 'approved') return null
-  return doc.approvedRole === 'public_redacted' ? 'Public copy: redacted' : 'Public copy: original'
-}
 
 function versionLabel(v: PanelDocument['approvable'][number]): string {
   const day = formatCivilDate(v.createdAt.slice(0, 10))
@@ -128,12 +117,20 @@ function ApprovalControls({ doc, actions }: { doc: PanelDocument; actions: Docum
   )
 }
 
-function ManageControls({ doc, props }: { doc: PanelDocument; props: Props }) {
-  if (!props.canManage && !props.canPublish && !doc.canRedact) return null
+function ManageControls({
+  doc,
+  props,
+  seriesShown,
+}: {
+  doc: PanelDocument
+  props: Props
+  seriesShown: boolean
+}) {
   return (
     <details>
-      <summary className="text-sm">Manage sharing and approval</summary>
+      <summary className="text-sm">Manage</summary>
       <div className="mt-3 space-y-4 rounded-md bg-canvas p-4">
+        <RecordKeeping doc={doc} seriesShown={seriesShown} />
         {props.canManage ? (
           <ActionForm action={props.actions.setAudiences} submitLabel="Save audiences">
             <input type="hidden" name="documentId" value={doc.documentId} />
@@ -189,9 +186,16 @@ function ManageControls({ doc, props }: { doc: PanelDocument; props: Props }) {
   )
 }
 
-function DocumentRow({ doc, props }: { doc: PanelDocument; props: Props }) {
-  const chip = PRESERVATION_CHIP[doc.preservation]
-  const publicCopy = publicCopyText(doc)
+function DocumentRow({
+  doc,
+  props,
+  seriesShown,
+}: {
+  doc: PanelDocument
+  props: Props
+  seriesShown: boolean
+}) {
+  const chip = publicChip(doc)
   return (
     <li className="space-y-2 py-4 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-center gap-3">
@@ -200,40 +204,17 @@ function DocumentRow({ doc, props }: { doc: PanelDocument; props: Props }) {
         </a>
         <StatusChip status={chip.status} label={chip.label} />
         {doc.holdCount > 0 ? <StatusChip status="overdue" label="Legal hold" /> : null}
-        {RENDITION_CHIP[doc.rendition] === null ? null : (
-          <StatusChip
-            status={RENDITION_CHIP[doc.rendition]?.status ?? 'neutral'}
-            label={RENDITION_CHIP[doc.rendition]?.label ?? ''}
-          />
-        )}
-        {doc.isPublic ? (
-          publicCopy === null ? null : (
-            <span>{publicCopy}</span>
-          )
-        ) : (
-          <span>Not public</span>
-        )}
       </div>
       <p className="m-0 text-sm text-muted-foreground">
-        {doc.series === null ? (
-          'No record series assigned'
-        ) : (
-          <>
-            <span>{doc.series.label}</span>{' '}
-            <a href={doc.series.citation.url} className="text-action underline">
-              {doc.series.citation.label}
-            </a>
-          </>
-        )}
-        {`. `}
-        <span>{doc.retention}</span>
+        {`Added ${formatCivilDate(doc.createdAt.slice(0, 10))} by ${doc.uploadedBy}`}
       </p>
-      <ManageControls doc={doc} props={props} />
+      <ManageControls doc={doc} props={props} seriesShown={seriesShown} />
     </li>
   )
 }
 
 export function DocumentPanel(props: Props) {
+  const series = sharedSeries(props.documents)
   return (
     <section aria-label={props.title ?? 'Documents'}>
       <h2>{props.title ?? 'Documents'}</h2>
@@ -242,9 +223,19 @@ export function DocumentPanel(props: Props) {
       ) : (
         props.intro
       )}
+      {series === undefined ? null : (
+        <p className="text-sm text-muted-foreground">
+          <SeriesLine series={series} />
+        </p>
+      )}
       <ul className="m-0 list-none divide-y p-0">
         {props.documents.map((doc) => (
-          <DocumentRow key={doc.documentId} doc={doc} props={props} />
+          <DocumentRow
+            key={doc.documentId}
+            doc={doc}
+            props={props}
+            seriesShown={series !== undefined}
+          />
         ))}
       </ul>
       {props.children}

@@ -1,16 +1,6 @@
-import type { FeeComputation, FeeLineResult } from '@/features/fees/computeFees'
+import type { FeeComputation } from '@/features/fees/computeFees'
+import { amountText } from '@/features/fees/feeRows'
 import { formatCents } from '@/lib/money'
-
-function amountText(line: FeeLineResult): string {
-  const { amount } = line
-  if ('pending' in amount) return `Pending: ${amount.pending}`
-  if (amount.source === 'manual_override' && amount.replaced !== null) {
-    return amount.value === 0
-      ? `Waived (was ${formatCents(amount.replaced.value)})`
-      : `${formatCents(amount.value)} (was ${formatCents(amount.replaced.value)})`
-  }
-  return formatCents(amount.value)
-}
 
 export function FeeTable({ title, computation }: { title: string; computation: FeeComputation }) {
   return (

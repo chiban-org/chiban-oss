@@ -25,7 +25,9 @@ export function FactList({
     <dl className={stacked ? 'flex flex-col gap-3' : 'flex flex-wrap gap-x-10 gap-y-3'}>
       {facts.map((fact) => (
         <div key={fact.label} className="flex flex-col gap-0.5">
-          <dt className="text-xs font-semibold text-muted-foreground">{fact.label}</dt>
+          <dt className={`${stacked ? 'text-sm' : 'text-xs'} font-semibold text-muted-foreground`}>
+            {fact.label}
+          </dt>
           <dd className="text-ink">{fact.value}</dd>
         </div>
       ))}

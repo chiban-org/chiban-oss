@@ -1,6 +1,5 @@
 import { StatusChip } from '@/components/StatusChip'
 import type { ClockExplanation } from '@/features/clocks/explainClock'
-import { ruleLabel } from '@/features/packs/ruleLabel'
 import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 import { daysBetween } from '@/types/civilDate'
 
@@ -71,25 +70,25 @@ function dueNote(clock: ClockExplanation): string | null {
   return null
 }
 
-export function ClockCard({ clock }: { clock: ClockExplanation & { clockId: string } }) {
+const COLLAPSED: readonly ClockExplanation['status'][] = ['met', 'stopped', 'superseded']
+
+type ClockProps = { clock: ClockExplanation & { clockId: string } }
+
+function Citation({ clock }: ClockProps) {
+  return clock.citation.url === null ? (
+    clock.citation.label
+  ) : (
+    <a href={clock.citation.url} className="text-action underline">
+      {clock.citation.label}
+    </a>
+  )
+}
+
+function ClockDetails({ clock }: ClockProps) {
   const note = dueNote(clock)
   return (
-    <article className="py-2" aria-label={clock.ruleLabel}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-base font-semibold">{clock.ruleLabel}</h3>
-        {statusChip(clock)}
-      </div>
-      <p className="text-sm text-muted-foreground">
-        {`${ruleLabel(clock.ruleKey)}, version ${clock.ruleVersion}, pack ${clock.packVersion}. `}
-        {clock.citation.url === null ? (
-          clock.citation.label
-        ) : (
-          <a href={clock.citation.url} className="text-action underline">
-            {clock.citation.label}
-          </a>
-        )}
-      </p>
-      <dl className="mt-2 grid grid-cols-[10rem_1fr] gap-x-4 gap-y-1 text-sm">
+    <>
+      <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-[10rem_1fr]">
         <dt className="font-medium">Starts</dt>
         <dd>{`${clock.startEvent} on ${formatCivilDate(clock.startDate)}`}</dd>
         <dt className="font-medium">Counting</dt>
@@ -121,6 +120,42 @@ export function ClockCard({ clock }: { clock: ClockExplanation & { clockId: stri
           ))}
         </ul>
       )}
+    </>
+  )
+}
+
+function CollapsedClock({ clock }: ClockProps) {
+  return (
+    <article className="py-2" aria-label={clock.ruleLabel} data-collapsed="">
+      <details>
+        <summary className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 font-normal text-ink">
+          <span className="font-semibold">{clock.ruleLabel}</span>
+          {statusChip(clock)}
+          <span className="text-sm text-muted-foreground">
+            {`Due ${formatCivilDate(clock.currentDue.value)}`}
+          </span>
+        </summary>
+        <p className="m-0 text-sm text-muted-foreground">
+          <Citation clock={clock} />
+        </p>
+        <ClockDetails clock={clock} />
+      </details>
+    </article>
+  )
+}
+
+export function ClockCard({ clock }: ClockProps) {
+  if (COLLAPSED.includes(clock.status)) return <CollapsedClock clock={clock} />
+  return (
+    <article className="py-2" aria-label={clock.ruleLabel}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h3 className="text-base font-semibold">{clock.ruleLabel}</h3>
+        {statusChip(clock)}
+      </div>
+      <p className="text-sm text-muted-foreground">
+        <Citation clock={clock} />
+      </p>
+      <ClockDetails clock={clock} />
     </article>
   )
 }
