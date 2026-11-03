@@ -1,7 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { importExceptions, parcels } from '@/db/schema'
-import { acceptHeldRow, dismissException } from '@/features/gis/import/exceptions'
+import {
+  acceptAllOwnerChanges,
+  acceptHeldRow,
+  dismissException,
+} from '@/features/gis/import/exceptions'
 import { runImport } from '@/features/gis/import/runImport'
 import type { SourceFeature } from '@/features/gis/import/types'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -60,6 +64,20 @@ describe('exception dispositions', () => {
       ok: false,
       error: 'forbidden',
     })
+  })
+
+  it('the records custodian cannot dismiss, apply or accept a run', async () => {
+    const custodian = await staffActor(handle.db, 'records_custodian')
+    const report = await run(loadGeoJsonFixture('alder-pond-parcels-dirty.geojson'))
+    const [row] = await handle.db.select().from(importExceptions)
+    const refused = { ok: false, error: 'forbidden' }
+    expect(await dismissException(handle.db, custodian, row?.id ?? '', 'x', signal)).toEqual(
+      refused,
+    )
+    expect(await acceptHeldRow(handle.db, custodian, row?.id ?? '', signal)).toEqual(refused)
+    expect(await acceptAllOwnerChanges(handle.db, custodian, report.runId, signal)).toEqual(refused)
+    const [after] = await handle.db.select().from(importExceptions)
+    expect(after?.status).toBe('open')
   })
 
   it('a clean rerun resolves the exception', async () => {

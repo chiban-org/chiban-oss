@@ -1,3 +1,4 @@
+import { exceptionKindLabel } from '@/features/gis/exceptionLabels'
 import { formatInstantLong } from '@/lib/formatDate'
 import { words } from '@/lib/words'
 
@@ -23,12 +24,14 @@ const ROW_KEY_PREFIXES = new Map<string, string>([
   ['src', 'source feature'],
 ])
 
-export function exceptionTitle(kind: string, rowKey: string): string {
+export function exceptionSubject(rowKey: string): string {
   const colon = rowKey.indexOf(':')
   const prefix = ROW_KEY_PREFIXES.get(rowKey.slice(0, Math.max(colon, 0)))
-  const subject =
-    colon < 0 || prefix === undefined ? rowKey : `${prefix} ${rowKey.slice(colon + 1)}`
-  return `${words(kind)}: ${subject}`
+  return colon < 0 || prefix === undefined ? rowKey : `${prefix} ${rowKey.slice(colon + 1)}`
+}
+
+export function exceptionTitle(kind: string, rowKey: string): string {
+  return `${exceptionKindLabel(kind)}: ${exceptionSubject(rowKey)}`
 }
 
 export function adapterLabel(adapter: string): string {

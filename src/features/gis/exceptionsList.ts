@@ -1,14 +1,16 @@
 import { and, eq, type SQL, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { importExceptions } from '@/db/schema'
+import { countFacets, facet } from '@/features/dataTable/facets'
 import { defaultSort, type SortState } from '@/features/dataTable/sort'
 import { orderBySql } from '@/features/dataTable/sortSql'
-import type { ImportExceptionKind } from '@/features/gis/exceptionKinds'
+import { IMPORT_EXCEPTION_KINDS, type ImportExceptionKind } from '@/features/gis/exceptionKinds'
+import { EXCEPTION_STATUSES, type ExceptionStatus } from '@/features/gis/exceptionLabels'
 import { EXCEPTION_SORT, type ExceptionSortKey } from '@/features/gis/exceptionSort'
 
 export interface ExceptionFilter {
   kind?: ImportExceptionKind
-  status?: 'open' | 'accepted' | 'dismissed' | 'resolved_by_rerun'
+  status?: ExceptionStatus
   sort?: SortState<ExceptionSortKey>
   limit?: number
 }
@@ -37,4 +39,30 @@ export async function listExceptions(db: DbOrTx, filter: ExceptionFilter, signal
     .where(conditions.length === 0 ? undefined : and(...conditions))
     .orderBy(...orderBySql(filter.sort ?? defaultSort(EXCEPTION_SORT), SORT_COLUMNS, TIEBREAK))
     .limit(filter.limit ?? DEFAULT_LIMIT)
+}
+
+export interface ExceptionFacets {
+  status: ReadonlyMap<string, number>
+  kind: ReadonlyMap<string, number>
+}
+
+export async function exceptionFacets(
+  db: DbOrTx,
+  chosen: { status: ExceptionStatus; kind: readonly ImportExceptionKind[] },
+  signal: AbortSignal,
+): Promise<ExceptionFacets> {
+  signal.throwIfAborted()
+  const [kind] = chosen.kind
+  const kindClause = kind === undefined ? sql`true` : eq(importExceptions.kind, kind)
+  const counts = await countFacets(db, {
+    table: importExceptions,
+    scope: sql`true`,
+    others: (group) =>
+      group === 'status' ? kindClause : eq(importExceptions.status, chosen.status),
+    facets: [
+      facet('status', EXCEPTION_STATUSES, (v) => eq(importExceptions.status, v)),
+      facet('kind', IMPORT_EXCEPTION_KINDS, (v) => eq(importExceptions.kind, v)),
+    ],
+  })
+  return { status: counts.get('status') ?? new Map(), kind: counts.get('kind') ?? new Map() }
 }

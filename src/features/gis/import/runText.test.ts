@@ -15,10 +15,10 @@ describe('gis import text', () => {
       'Owner changed: parcel ID 007001000000',
     )
     expect(exceptionTitle('missing_required_field', 'line:12')).toBe(
-      'Missing required field: line 12',
+      'Required field is empty: line 12',
     )
     expect(exceptionTitle('invalid_geometry', 'src:abc')).toBe(
-      'Invalid geometry: source feature abc',
+      'Shape is not valid: source feature abc',
     )
   })
 

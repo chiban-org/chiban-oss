@@ -1,3 +1,4 @@
+import { exceptionKindLabel } from '@/features/gis/exceptionLabels'
 import type { ImportRunReport } from '@/features/gis/import/types'
 
 const ROWS = [
@@ -28,10 +29,7 @@ export function RunReport({ report }: { report: ImportRunReport }) {
           <h3 className="mt-4 text-base font-semibold">Exceptions by kind</h3>
           <ul>
             {kinds.map(([kind, count]) => (
-              <li key={kind}>
-                <span>{kind.replaceAll('_', ' ')}</span>
-                {`: ${count}`}
-              </li>
+              <li key={kind}>{`${exceptionKindLabel(kind)}: ${count}`}</li>
             ))}
           </ul>
         </>

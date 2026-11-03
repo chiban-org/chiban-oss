@@ -1,7 +1,8 @@
+import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { importExceptions, importRuns } from '@/db/schema'
-import type { ExceptionSortKey } from '@/features/gis/exceptionSort'
-import { listExceptions } from '@/features/gis/exceptionsList'
+import { type ExceptionSortKey, readExceptionView } from '@/features/gis/exceptionSort'
+import { exceptionFacets, listExceptions } from '@/features/gis/exceptionsList'
 import { makeTestDb, type TestDb } from '@/test/db'
 
 const signal = new AbortController().signal
@@ -69,5 +70,38 @@ describe('import exception sorting', () => {
 
   it('sorts by row with the newest first inside a tie', async () => {
     expect(await order('row', 'asc')).toEqual(['b', 'c', 'd', 'a'])
+  })
+})
+
+describe('import exception filters', () => {
+  it('opens on open exceptions and keeps one kind at a time', () => {
+    expect(readExceptionView({}).status).toBe('open')
+    expect(readExceptionView({ status: 'dismissed' }).status).toBe('dismissed')
+    expect(readExceptionView({ status: 'nonsense' }).status).toBe('open')
+    expect(readExceptionView({ kind: ['owner_changed', 'alias_conflict'] }).kind).toEqual([
+      'owner_changed',
+    ])
+    expect(readExceptionView({ kind: 'nonsense' }).kind).toEqual([])
+  })
+
+  it('counts each status inside the chosen kind and each kind inside the chosen status', async () => {
+    await handle.db
+      .update(importExceptions)
+      .set({ status: 'dismissed' })
+      .where(eq(importExceptions.id, ids.a ?? ''))
+    const all = await exceptionFacets(handle.db, { status: 'open', kind: [] }, signal)
+    expect(all.status.get('open')).toBe(3)
+    expect(all.status.get('dismissed')).toBe(1)
+    expect(all.kind.get('owner_changed')).toBe(1)
+    expect(all.kind.get('invalid_geometry')).toBe(1)
+    const owners = await exceptionFacets(
+      handle.db,
+      { status: 'dismissed', kind: ['owner_changed'] },
+      signal,
+    )
+    expect(owners.status.get('open')).toBe(1)
+    expect(owners.status.get('dismissed')).toBe(1)
+    expect(owners.kind.get('owner_changed')).toBe(1)
+    expect(owners.kind.get('invalid_geometry')).toBe(0)
   })
 })

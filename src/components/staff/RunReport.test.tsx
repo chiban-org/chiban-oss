@@ -38,8 +38,8 @@ describe('RunReport', () => {
     }
   })
 
-  it('lists exceptions by kind', () => {
+  it('lists exceptions by kind in plain words', () => {
     render(<RunReport report={report} />)
-    expect(screen.getByText('invalid geometry')).toBeTruthy()
+    expect(screen.getByText('Shape is not valid: 1')).toBeTruthy()
   })
 })

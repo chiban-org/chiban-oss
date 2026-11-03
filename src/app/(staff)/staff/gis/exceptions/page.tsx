@@ -1,140 +1,105 @@
-import { ActionForm } from '@/components/ActionForm'
+import { inArray } from 'drizzle-orm'
+import { FilterTabs } from '@/components/dataTable/FilterTabs'
+import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortBar } from '@/components/dataTable/SortHeader'
-import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { Button } from '@/components/ui/button'
-import { firstParam, type RawSearchParams } from '@/features/dataTable/params'
+import { importRuns } from '@/db/schema'
+import { hasCapability } from '@/features/authz/capabilities'
+import { clearHref, type RawSearchParams } from '@/features/dataTable/params'
+import { chipGroups, filterTabs, labeledOptions } from '@/features/dataTable/quickFilters'
 import { sortLinks } from '@/features/dataTable/sort'
-import { IMPORT_EXCEPTION_KINDS, type ImportExceptionKind } from '@/features/gis/exceptionKinds'
+import { EXCEPTION_KIND_LABELS, EXCEPTION_STATUS_LABELS } from '@/features/gis/exceptionLabels'
 import {
+  DEFAULT_EXCEPTION_STATUS,
   EXCEPTION_SORT,
   EXCEPTION_SORT_LABELS,
   EXCEPTIONS_PATH,
-  readExceptionSort,
+  type ExceptionView,
+  readExceptionView,
 } from '@/features/gis/exceptionSort'
-import { listExceptions } from '@/features/gis/exceptionsList'
-import { exceptionDetailText, exceptionTitle } from '@/features/gis/import/runText'
+import { exceptionFacets, listExceptions } from '@/features/gis/exceptionsList'
 import { townTimeZone } from '@/features/town/timeZone'
 import { recordStaffContext } from '@/server/requireStaff'
-import { acceptAllOwnerChangesAction, acceptHeldRowAction, dismissExceptionAction } from './actions'
-import { ExceptionFacts } from './ExceptionFacts'
+import { ExceptionRow } from './ExceptionRow'
+import { HeldRunAccept } from './HeldRunAccept'
 
 interface ExceptionsPageProps {
   searchParams: Promise<RawSearchParams>
 }
 
-const STATUSES = ['open', 'accepted', 'dismissed', 'resolved_by_rerun'] as const
+type Facets = Awaited<ReturnType<typeof exceptionFacets>>
 
-function isKind(v: string | undefined): v is ImportExceptionKind {
-  return IMPORT_EXCEPTION_KINDS.some((k) => k === v)
-}
-
-function isStatus(v: string | undefined): v is (typeof STATUSES)[number] {
-  return STATUSES.some((s) => s === v)
-}
-
-export default async function StaffExceptionsPage({ searchParams }: ExceptionsPageProps) {
-  const { params, sort } = readExceptionSort(await searchParams)
-  const kindParam = firstParam(params, 'kind')
-  const statusParam = firstParam(params, 'status')
-  const ctx = await recordStaffContext()
-  if (ctx === null) return <NoPermission title="Import exceptions" action="see import exceptions" />
-  const status = isStatus(statusParam) ? statusParam : 'open'
-  const rows = await listExceptions(
-    ctx.db,
-    { status, sort, ...(isKind(kindParam) ? { kind: kindParam } : {}) },
-    ctx.signal,
-  )
-  const links = sortLinks(EXCEPTIONS_PATH, params, EXCEPTION_SORT, sort)
+function filterViews(view: ExceptionView, facets: Facets) {
+  const tabs = filterTabs(EXCEPTIONS_PATH, view.params, {
+    param: 'status',
+    label: 'Status',
+    options: labeledOptions(EXCEPTION_STATUS_LABELS, facets.status),
+    defaultTab: DEFAULT_EXCEPTION_STATUS,
+  })
+  const chips = chipGroups(EXCEPTIONS_PATH, view.params, [
+    {
+      param: 'kind',
+      label: 'Kind',
+      options: labeledOptions(EXCEPTION_KIND_LABELS, facets.kind),
+      display: 'menu',
+      single: true,
+    },
+  ])
+  const links = sortLinks(EXCEPTIONS_PATH, view.params, EXCEPTION_SORT, view.sort)
   const sortOptions = (Object.keys(EXCEPTION_SORT_LABELS) as (keyof typeof links)[]).map((key) => ({
     label: EXCEPTION_SORT_LABELS[key],
     link: links[key],
   }))
-  const timeZone = await townTimeZone(ctx.db, ctx.signal)
-  const heldRuns = [
-    ...new Set(rows.filter((r) => r.kind === 'owner_changed').map((r) => r.lastSeenRunId)),
-  ]
+  return { tabs, chips, sortOptions, clear: clearHref(EXCEPTIONS_PATH, view.params, ['kind']) }
+}
+
+export default async function StaffExceptionsPage({ searchParams }: ExceptionsPageProps) {
+  const view = readExceptionView(await searchParams)
+  const ctx = await recordStaffContext()
+  if (ctx === null) return <NoPermission title="Import exceptions" action="see import exceptions" />
+  const [kind] = view.kind
+  const [rows, facets, canManage, timeZone] = await Promise.all([
+    listExceptions(
+      ctx.db,
+      { status: view.status, sort: view.sort, ...(kind === undefined ? {} : { kind }) },
+      ctx.signal,
+    ),
+    exceptionFacets(ctx.db, view, ctx.signal),
+    hasCapability(ctx.db, ctx.actor.userId, 'parcel.manage', ctx.signal),
+    townTimeZone(ctx.db, ctx.signal),
+  ])
+  const held = rows.filter((r) => r.kind === 'owner_changed' && r.status === 'open')
+  const heldRunIds = canManage ? [...new Set(held.map((r) => r.lastSeenRunId))] : []
+  const heldRuns =
+    heldRunIds.length === 0
+      ? []
+      : await ctx.db.select().from(importRuns).where(inArray(importRuns.id, heldRunIds))
+  const { tabs, chips, sortOptions, clear } = filterViews(view, facets)
   return (
     <main data-wide="">
       <h1>Import exceptions</h1>
-      <form method="get" className="my-4 flex flex-wrap items-end gap-3">
-        {params.has('sort') ? (
-          <>
-            <input type="hidden" name="sort" value={sort.key} />
-            <input type="hidden" name="dir" value={sort.dir} />
-          </>
-        ) : null}
-        <label className="text-sm font-medium">
-          Kind
-          <select
-            name="kind"
-            defaultValue={kindParam ?? ''}
-            className="mt-1 block rounded-md border bg-surface px-3 py-2"
-          >
-            <option value="">All kinds</option>
-            {IMPORT_EXCEPTION_KINDS.map((k) => (
-              <option key={k} value={k}>
-                {k.replaceAll('_', ' ')}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label className="text-sm font-medium">
-          Status
-          <select
-            name="status"
-            defaultValue={status}
-            className="mt-1 block rounded-md border bg-surface px-3 py-2"
-          >
-            {STATUSES.map((s) => (
-              <option key={s} value={s}>
-                {s.replaceAll('_', ' ')}
-              </option>
-            ))}
-          </select>
-        </label>
-        <Button type="submit" variant="outline">
-          Filter
-        </Button>
-      </form>
-      <SortBar options={sortOptions} className="mb-4" />
-      {heldRuns.map((runId) => (
-        <ActionForm
-          key={runId}
-          action={acceptAllOwnerChangesAction}
-          submitLabel="Accept all owner changes from this run"
-          className="mb-4"
-        >
-          <input type="hidden" name="runId" value={runId} />
-        </ActionForm>
+      <p className="text-muted-foreground">
+        Rows an import could not apply on its own. Newest first.
+      </p>
+      <FilterTabs label="Status" tabs={tabs} />
+      <div className="toolbar my-3 flex flex-wrap items-center justify-between gap-3">
+        <QuickFilters label="Quick filters" groups={chips} clearHref={clear} />
+        <SortBar options={sortOptions} />
+      </div>
+      {heldRuns.map((run) => (
+        <HeldRunAccept
+          key={run.id}
+          run={run}
+          held={held.filter((r) => r.lastSeenRunId === run.id).length}
+          timeZone={timeZone}
+        />
       ))}
       {rows.length === 0 ? (
-        <p>No exceptions match.</p>
+        <p>No exceptions match. Pick another status or kind.</p>
       ) : (
         <ul className="divide-y">
           {rows.map((row) => (
-            <li key={row.id} className="py-4">
-              <p className="font-semibold">{exceptionTitle(row.kind, row.rowKey)}</p>
-              <p className="text-sm text-muted-foreground">
-                {exceptionDetailText(row.detail, row.createdAt, timeZone)}
-              </p>
-              <ExceptionFacts payload={row.payload} />
-              {row.status !== 'open' ? (
-                <p className="text-sm">{`Status: ${row.status.replaceAll('_', ' ')}${row.dispositionReason === null ? '' : `. Reason: ${row.dispositionReason}`}`}</p>
-              ) : (
-                <div className="mt-2 flex flex-wrap gap-6">
-                  {row.kind === 'owner_changed' ? (
-                    <ActionForm action={acceptHeldRowAction} submitLabel="Apply held row">
-                      <input type="hidden" name="exceptionId" value={row.id} />
-                    </ActionForm>
-                  ) : null}
-                  <ActionForm action={dismissExceptionAction} submitLabel="Dismiss">
-                    <input type="hidden" name="exceptionId" value={row.id} />
-                    <TextField label="Reason" name="reason" required />
-                  </ActionForm>
-                </div>
-              )}
-            </li>
+            <ExceptionRow key={row.id} row={row} timeZone={timeZone} canManage={canManage} />
           ))}
         </ul>
       )}
