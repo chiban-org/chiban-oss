@@ -4,6 +4,7 @@ import {
   chipGroups,
   filterValues,
   labeledOptions,
+  singleValue,
   whenAny,
 } from '@/features/dataTable/quickFilters'
 
@@ -58,6 +59,51 @@ describe('chipGroups', () => {
       ['Building', false, '/q?type=EL&type=BP'],
       ['EL', true, '/q'],
     ])
+  })
+})
+
+describe('chipGroups for a pick-one group', () => {
+  const groups = chipGroups('/q', readTableParams({ assigned: 'mine' }), [
+    {
+      param: 'assigned',
+      label: 'Assignment',
+      single: true,
+      options: [
+        { value: 'mine', label: 'Mine' },
+        { value: 'unassigned', label: 'Unassigned' },
+      ],
+    },
+  ])
+
+  it('switches to the other value instead of adding it', () => {
+    expect(groups[0]?.chips[1]).toMatchObject({ href: '/q?assigned=unassigned', active: false })
+  })
+
+  it('still turns the active value off', () => {
+    expect(groups[0]?.chips[0]).toMatchObject({ href: '/q', active: true })
+  })
+
+  it('treats only the first value as active when a link carries several', () => {
+    const both = chipGroups('/q', readTableParams({ assigned: ['mine', 'unassigned'] }), [
+      {
+        param: 'assigned',
+        label: 'Assignment',
+        single: true,
+        options: [
+          { value: 'mine', label: 'Mine' },
+          { value: 'unassigned', label: 'Unassigned' },
+        ],
+      },
+    ])
+    expect(both[0]?.chips.map((c) => c.active)).toEqual([true, false])
+  })
+})
+
+describe('singleValue', () => {
+  it('keeps only the first allowed value', () => {
+    const params = readTableParams({ assigned: ['bogus', 'unassigned', 'mine'] })
+    expect(singleValue(params, 'assigned', ['mine', 'unassigned'])).toEqual(['unassigned'])
+    expect(singleValue(params, 'missing', ['mine'])).toEqual([])
   })
 })
 

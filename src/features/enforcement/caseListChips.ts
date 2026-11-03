@@ -14,6 +14,7 @@ export function caseChipGroups(params: TableParams, facets: CaseListFacets): Chi
     {
       param: 'assigned',
       label: 'Assignment',
+      single: true,
       options: labeledOptions(ASSIGNED_LABELS, facets.assigned),
     },
   ])

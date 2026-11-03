@@ -4,7 +4,7 @@ import {
   readTableParams,
   type TableParams,
 } from '@/features/dataTable/params'
-import { filterValues, whenAny } from '@/features/dataTable/quickFilters'
+import { filterValues, singleValue, whenAny } from '@/features/dataTable/quickFilters'
 import { parseSort, type SortConfig, type SortState } from '@/features/dataTable/sort'
 import {
   ASSIGNED_FILTERS,
@@ -51,7 +51,7 @@ export function readCasesView(raw: RawSearchParams): CasesView {
     filters: {
       ...whenAny('statuses', filterValues(params, 'status', ENFORCEMENT_STATUSES)),
       ...whenAny('due', filterValues(params, 'due', DUE_FILTERS)),
-      ...whenAny('assigned', filterValues(params, 'assigned', ASSIGNED_FILTERS)),
+      ...whenAny('assigned', singleValue(params, 'assigned', ASSIGNED_FILTERS)),
     },
   }
 }

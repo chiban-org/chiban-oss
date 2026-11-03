@@ -15,6 +15,7 @@ export interface FilterGroup {
   label: string
   options: readonly FilterOption[]
   display?: GroupDisplay
+  single?: boolean
 }
 
 export interface ChipView {
@@ -46,6 +47,14 @@ export function filterValues<V extends string>(
   return [...new Set(paramValues(params, param).filter(accepts))] as V[]
 }
 
+export function singleValue<V extends string>(
+  params: TableParams,
+  param: string,
+  allowed: readonly V[],
+): V[] {
+  return filterValues(params, param, allowed).slice(0, 1)
+}
+
 export function labeledOptions(
   labels: ReadonlyMap<string, string>,
   counts?: ReadonlyMap<string, number>,
@@ -60,8 +69,9 @@ export function whenAny<K extends string, V>(key: K, values: V[]): Partial<Recor
   return values.length === 0 ? {} : ({ [key]: values } as Partial<Record<K, V[]>>)
 }
 
-function toggled(values: readonly string[], value: string): string[] {
-  return values.includes(value) ? values.filter((v) => v !== value) : [...values, value]
+function toggled(values: readonly string[], value: string, single: boolean): string[] {
+  if (values.includes(value)) return values.filter((v) => v !== value)
+  return single ? [value] : [...values, value]
 }
 
 function withActiveExtras(group: FilterGroup, active: readonly string[]): FilterOption[] {
@@ -76,13 +86,15 @@ export function chipGroups(
   groups: readonly FilterGroup[],
 ): ChipGroupView[] {
   return groups.map((group) => {
-    const active = paramValues(params, group.param)
+    const given = paramValues(params, group.param)
+    const single = group.single === true
+    const active = single ? given.slice(0, 1) : given
     return {
       label: group.label,
       display: displayOf(group),
       chips: withActiveExtras(group, active).map((option) => ({
         label: option.label,
-        href: tableHref(path, params, { [group.param]: toggled(active, option.value) }),
+        href: tableHref(path, params, { [group.param]: toggled(active, option.value, single) }),
         active: active.includes(option.value),
         ...(option.count === undefined ? {} : { count: option.count }),
       })),

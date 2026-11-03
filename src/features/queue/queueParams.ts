@@ -7,7 +7,7 @@ import {
   readTableParams,
   type TableParams,
 } from '@/features/dataTable/params'
-import { filterValues, whenAny } from '@/features/dataTable/quickFilters'
+import { filterValues, singleValue, whenAny } from '@/features/dataTable/quickFilters'
 import {
   DIR_PARAM,
   parseSort,
@@ -77,7 +77,7 @@ export function queueFilters(params: TableParams): WorkQueueFilters {
     ...(q === undefined ? {} : { numberContains: q }),
     ...whenAny('typeKeys', filterValues(params, 'type', isValidConfigKey)),
     ...whenAny('due', filterValues(params, 'due', DUE_FILTERS)),
-    ...whenAny('assigned', filterValues(params, 'assigned', ASSIGNED_FILTERS)),
+    ...whenAny('assigned', singleValue(params, 'assigned', ASSIGNED_FILTERS)),
     ...whenAny('flags', filterValues(params, 'flag', FLAG_FILTERS)),
   }
 }

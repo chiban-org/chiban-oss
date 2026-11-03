@@ -18,6 +18,7 @@ export function applicationChipGroups(
     {
       param: 'assigned',
       label: 'Assignment',
+      single: true,
       options: labeledOptions(ASSIGNED_LABELS, facets.assigned),
     },
     { param: 'type', label: 'Type', options: facets.types },
