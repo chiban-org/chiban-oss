@@ -1,5 +1,7 @@
 import Link from 'next/link'
-import { PageHeader } from '@/components/layout/PageHeader'
+import { FactList, PageHeader } from '@/components/layout/PageHeader'
+import { RecordLayout } from '@/components/layout/RecordLayout'
+import { splitPanels } from '@/components/layout/splitPanels'
 import { StatusChip } from '@/components/StatusChip'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
 import type { LimitedApplicationView } from '@/features/applications/limitedApplicationView'
@@ -7,22 +9,41 @@ import { applicationStatusText } from '@/features/applications/statusText'
 import { reviewStatusLabel } from '@/features/reviews/statusLabels'
 import { formatCivilDate } from '@/lib/formatDate'
 
-function ReviewSection({ view }: { view: LimitedApplicationView }) {
+function ReviewCard({ view }: { view: LimitedApplicationView }) {
   if (view.assignments.length === 0) return null
   return (
-    <section aria-label="Your review" id="your-review">
-      <h2>Your review</h2>
-      <ul className="m-0 list-none p-0">
+    <section aria-label="Your review" id="your-review" data-plain className="rail-card">
+      <h2 className="font-sans text-sm font-semibold text-muted-foreground">Your review</h2>
+      <ul className="m-0 flex list-none flex-col gap-2 p-0">
         {view.assignments.map((a) => (
-          <li key={a.assignmentId} className="record-item flex flex-wrap items-center gap-3">
-            <Link href={`/staff/reviews/${a.assignmentId}`} className="font-medium">
+          <li key={a.assignmentId} className="flex flex-col gap-1">
+            <Link href={`/staff/reviews/${a.assignmentId}`} className="font-semibold">
               Open your review
             </Link>
-            <span className="text-muted-foreground">{reviewStatusLabel(a.status)}</span>
+            <span className="text-sm text-muted-foreground">{reviewStatusLabel(a.status)}</span>
           </li>
         ))}
       </ul>
     </section>
+  )
+}
+
+function LimitedRail({ view }: { view: LimitedApplicationView }) {
+  return (
+    <>
+      <ReviewCard view={view} />
+      <section aria-label="Key facts" data-plain className="rail-card">
+        <FactList
+          facts={[
+            {
+              label: 'Parcel',
+              value: <Link href={`/staff/parcels/${view.parcelId}`}>{view.parcelDisplayId}</Link>,
+            },
+          ]}
+          stacked
+        />
+      </section>
+    </>
   )
 }
 
@@ -70,6 +91,10 @@ function DocumentSection({ view }: { view: LimitedApplicationView }) {
 
 export function LimitedRecord({ view }: { view: LimitedApplicationView }) {
   const why = view.assignments.length > 0 ? 'your review' : 'your board work'
+  const sections = splitPanels([
+    { empty: false, node: <HearingSection key="hearings" view={view} /> },
+    { empty: view.documents.length === 0, node: <DocumentSection key="documents" view={view} /> },
+  ])
   return (
     <main>
       <PageHeader
@@ -82,14 +107,11 @@ export function LimitedRecord({ view }: { view: LimitedApplicationView }) {
           />
         }
         lead={view.projectTitle}
-        facts={[{ label: 'Parcel', value: view.parcelDisplayId }]}
       />
-      <div className="flex flex-col gap-5">
+      <RecordLayout rail={<LimitedRail view={view} />} empty={sections.empty}>
         <p className="text-muted-foreground">{`This page shows the parts of the record ${why} needs.`}</p>
-        <ReviewSection view={view} />
-        <HearingSection view={view} />
-        <DocumentSection view={view} />
-      </div>
+        {sections.filled}
+      </RecordLayout>
     </main>
   )
 }

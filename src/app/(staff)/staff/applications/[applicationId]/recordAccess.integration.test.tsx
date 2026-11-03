@@ -86,6 +86,9 @@ describe('reviewer access to the record page', () => {
     expect(html).toContain('Your review')
     expect(html).not.toContain(NO_PERMISSION)
     expectNoFullRecord(html)
+    const rail = html.slice(html.indexOf('<aside'), html.indexOf('</aside>'))
+    expect(rail).toContain('href="/staff/reviews/')
+    expect(html).toMatch(/href="\/staff\/parcels\/[0-9a-f-]{36}"/)
   })
 
   it('a reviewer who is not assigned gets the permission message, not a missing page', async () => {

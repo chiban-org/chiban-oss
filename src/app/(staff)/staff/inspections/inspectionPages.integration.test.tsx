@@ -32,6 +32,9 @@ vi.mock('next/navigation', () => ({
 
 const { default: InspectionsPage } = await import('@/app/(staff)/staff/inspections/page')
 const { default: DayPage } = await import('@/app/(staff)/staff/inspections/day/page')
+const { default: InspectionPage } = await import(
+  '@/app/(staff)/staff/inspections/[inspectionId]/page'
+)
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -103,5 +106,22 @@ describe('the inspection board', () => {
     expect(body.indexOf('aria-label="Take a request"')).toBeLessThan(
       body.indexOf('aria-label="Requests and bookings"'),
     )
+  })
+})
+
+describe('an inspection', () => {
+  it('links its permit number to the permit, once', async () => {
+    await actAs('staff')
+    const [row] = await handle.db
+      .select({ id: inspections.id, applicationId: inspections.applicationId })
+      .from(inspections)
+      .where(eq(inspections.inspectorUserId, inspectorId))
+    const body = await html(
+      InspectionPage({ params: Promise.resolve({ inspectionId: row?.id ?? '' }) }),
+    )
+    expect(body).toMatch(
+      new RegExp(`href="/staff/applications/${row?.applicationId}"[^>]*>[A-Z]+-\\d{4}-\\d{4}<`),
+    )
+    expect(body).not.toContain('Open the permit')
   })
 })

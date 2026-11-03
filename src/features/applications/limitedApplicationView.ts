@@ -23,6 +23,7 @@ export interface LimitedApplicationView {
   substep: string | null
   substeps: { key: string; label: string }[]
   projectTitle: string
+  parcelId: string
   parcelDisplayId: string
   assignments: { assignmentId: string; status: string }[]
   hearings: { id: string; meetingId: string; text: string; hasPacket: boolean }[]
@@ -117,6 +118,7 @@ export async function getLimitedApplicationView(
       .filter((s) => s.state === app.state)
       .map((s) => ({ key: s.key, label: s.label })),
     projectTitle: project.title,
+    parcelId: project.parcelId,
     parcelDisplayId: display.get(project.parcelId) ?? 'No map-lot ID',
     assignments,
     hearings: heard,

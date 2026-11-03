@@ -44,7 +44,11 @@ export default async function InspectionPage({
         <h1 className="m-0 text-2xl">{`${view.typeLabel} inspection`}</h1>
         <StatusChip status={status.chip} label={status.label} />
       </div>
-      <p className="m-0 font-medium">{view.applicationNumber}</p>
+      <p className="m-0 font-medium">
+        <Link href={`/staff/applications/${inspection.applicationId}`} className={LINK}>
+          {view.applicationNumber}
+        </Link>
+      </p>
       <p className="m-0">{address}</p>
       {inspection.scheduledDate !== null && inspection.startMinute !== null ? (
         <p className="m-0">{`${formatCivilDate(inspection.scheduledDate)} at ${minutesToClock(inspection.startMinute)}`}</p>
@@ -105,9 +109,6 @@ export default async function InspectionPage({
         )}
         {view.canAddPhotos ? <InspectionPhotoUploader inspectionId={inspection.id} /> : null}
       </section>
-      <Link href={`/staff/applications/${inspection.applicationId}`} className={LINK}>
-        Open the permit
-      </Link>
     </main>
   )
 }

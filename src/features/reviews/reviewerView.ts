@@ -52,6 +52,7 @@ export interface AssignmentView {
   status: string
   projectTitle: string
   typeLabel: string
+  parcelId: string
   parcelDisplayId: string | null
   commentDue: string | null
   comments: { body: string; createdAt: Date }[]
@@ -101,11 +102,10 @@ export async function getAssignmentView(
   )
   const context = await loadApplicationContext(db, row.applicationId, signal)
   const display = await displayIdsFor(db, [row.parcelId])
-  const { parcelId, ...rest } = row
   return {
-    ...rest,
+    ...row,
     typeLabel: context?.typeBody.label ?? '',
-    parcelDisplayId: display.get(parcelId) ?? null,
+    parcelDisplayId: display.get(row.parcelId) ?? null,
     comments,
     documents: documents.rows,
   }

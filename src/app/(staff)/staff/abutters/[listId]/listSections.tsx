@@ -3,7 +3,6 @@ import { CandidateTable } from '@/components/abutters/CandidateTable'
 import { RecipientTable } from '@/components/abutters/RecipientTable'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import type { CandidateRow, ListView, RecipientView } from '@/features/abutters/listView'
-import { formatCents } from '@/lib/money'
 import {
   attestCrossingsAction,
   correctRecipientAction,
@@ -128,36 +127,5 @@ export function RecipientsSection({ view }: { view: ListView }) {
           : {})}
       />
     </section>
-  )
-}
-
-export function CostSection({ view }: { view: ListView }) {
-  return (
-    <section aria-label="Notice cost">
-      <h2>Notice cost</h2>
-      <p>{`${view.mailings} ${view.mailings === 1 ? 'mailing' : 'mailings'} on this list.`}</p>
-      {view.notice.lines.map((line) => (
-        <p key={line.code}>
-          {`${line.label}: ${formatCents(line.assessedCents)}, ${formatCents(line.dueCents)} still due.`}
-        </p>
-      ))}
-      {view.notice.lines.length === 0 ? <p>The cost is worked out when a list is issued.</p> : null}
-    </section>
-  )
-}
-
-export function LabelLinks({ listId }: { listId: string }) {
-  return (
-    <p>
-      <a href={`/staff/abutters/${listId}/labels`} className="text-action underline">
-        Print mailing labels (Avery 5160)
-      </a>{' '}
-      <a
-        href={`/staff/abutters/${listId}/labels?sheet=avery_5163`}
-        className="text-action underline"
-      >
-        Print mailing labels (Avery 5163)
-      </a>
-    </p>
   )
 }

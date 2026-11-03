@@ -30,6 +30,7 @@ export interface CandidateRow {
   parcelId: string
   parcelLabel: string
   owner: string
+  ownerOnRecord: boolean
   noticeTo: string | null
   reasons: string[]
   staffSelected: boolean
@@ -175,7 +176,9 @@ async function candidateRows(tx: Tx, listId: string): Promise<CandidateRow[]> {
           .select({ id: parcels.id, owner: parcels.ownerName })
           .from(parcels)
           .where(inArray(parcels.id, ids))
-  const ownerOf = new Map(owners.map((o) => [o.id, o.owner ?? 'Owner not on record']))
+  const ownerOf = new Map(
+    owners.flatMap((o): [string, string][] => (o.owner === null ? [] : [[o.id, o.owner]])),
+  )
   const parks =
     ids.length === 0
       ? []
@@ -190,6 +193,7 @@ async function candidateRows(tx: Tx, listId: string): Promise<CandidateRow[]> {
       parcelId: r.parcelId,
       parcelLabel: labels.get(r.parcelId) ?? 'Parcel',
       owner: ownerOf.get(r.parcelId) ?? 'Owner not on record',
+      ownerOnRecord: ownerOf.has(r.parcelId),
       noticeTo: parkOwnerOf.get(r.parcelId) ?? null,
       reasons: reasonLines(reasons),
       staffSelected: reasons.some((x) => x.kind === 'staff_selected'),

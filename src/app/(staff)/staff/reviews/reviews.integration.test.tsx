@@ -100,6 +100,12 @@ describe('reviewer assignment actions and pages', () => {
     expect(page).toContain('Sign off')
     expect(page).toContain('Garage addition')
     expect(page).toContain('007001000000')
+    const rail = page.slice(page.indexOf('<aside'), page.indexOf('</aside>'))
+    expect(rail).toContain('aria-label="Next step"')
+    expect(rail).toContain('>Sign off<')
+    expect(rail).toContain('Comments due')
+    expect(page).toContain(`href="/staff/parcels/${world.parcelId}"`)
+    expect(page).toMatch(/href="\/staff\/applications\/[0-9a-f-]{36}"/)
     state.actor = await staffActor(handle.db, 'reviewer')
     await expect(ReviewPage({ params: Promise.resolve({ assignmentId }) })).rejects.toThrow(
       'NEXT_NOT_FOUND',

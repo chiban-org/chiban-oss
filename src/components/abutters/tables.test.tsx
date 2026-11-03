@@ -12,6 +12,7 @@ const candidate = (overrides: Partial<CandidateRow>): CandidateRow => ({
   parcelId: 'p1',
   parcelLabel: '009002000000',
   owner: 'Wren, Isolde',
+  ownerOnRecord: true,
   noticeTo: null,
   reasons: ['Touches the property'],
   staffSelected: false,
@@ -54,6 +55,29 @@ describe('CandidateTable', () => {
         'Notice goes to Heron Park LLC, the park owner named on the manufactured housing park roster.',
       ),
     ).not.toBeNull()
+  })
+
+  it('links each parcel to its page and a known owner to a parcel search for that owner', () => {
+    render(
+      <CandidateTable
+        rows={[
+          candidate({}),
+          candidate({
+            parcelId: 'p2',
+            parcelLabel: '009003000000',
+            owner: 'Owner not on record',
+            ownerOnRecord: false,
+          }),
+        ]}
+      />,
+    )
+    expect(screen.getByRole('link', { name: '009002000000' }).getAttribute('href')).toBe(
+      '/staff/parcels/p1',
+    )
+    expect(screen.getByRole('link', { name: 'Wren, Isolde' }).getAttribute('href')).toBe(
+      '/staff/parcels?q=Wren%2C%20Isolde',
+    )
+    expect(screen.queryByRole('link', { name: 'Owner not on record' })).toBeNull()
   })
 
   it('CandidateTable lists staff selections first', () => {

@@ -258,6 +258,21 @@ describe('board pages show words, not keys or dates', () => {
     expect(body).not.toContain('Fingerprint')
   })
 
+  it('the list page keeps status, check code, cost and labels in the rail and links each parcel', async () => {
+    await actAs('staff')
+    const markup = renderToStaticMarkup(
+      (await ListPage({ params: Promise.resolve({ listId: issuedListId }) })) as never,
+    )
+    const rail = markup.slice(markup.indexOf('<aside'), markup.indexOf('</aside>'))
+    expect(rail).toContain('Check code')
+    expect(rail).toContain('aria-label="Notice cost"')
+    expect(rail).toContain('>Avery 5160<')
+    expect(rail).toContain('>Avery 5163<')
+    const considered = markup.slice(markup.indexOf('aria-label="Parcels considered"'))
+    expect(considered).toMatch(/href="\/staff\/parcels\/[0-9a-f-]{36}"/)
+    expect(considered).toContain('href="/staff/parcels?q=')
+  })
+
   it('the draft list shows an undecided tenant, a reason in words, and one filled action', async () => {
     await actAs('staff')
     const element = await ListPage({ params: Promise.resolve({ listId: draftListId }) })

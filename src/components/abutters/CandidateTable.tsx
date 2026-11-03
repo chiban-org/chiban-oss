@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { CandidateRow } from '@/features/abutters/listView'
 
@@ -58,9 +59,15 @@ function CandidateLine({
 }) {
   return (
     <tr className="border-b align-top">
-      <td className="py-2">{row.parcelLabel}</td>
+      <td className="py-2">
+        <Link href={`/staff/parcels/${row.parcelId}`}>{row.parcelLabel}</Link>
+      </td>
       <td>
-        {row.owner}
+        {row.ownerOnRecord ? (
+          <Link href={`/staff/parcels?q=${encodeURIComponent(row.owner)}`}>{row.owner}</Link>
+        ) : (
+          row.owner
+        )}
         {row.noticeTo === null ? null : (
           <p className="m-0 text-muted-foreground">
             {`Notice goes to ${row.noticeTo}, the park owner named on the manufactured housing park roster.`}
