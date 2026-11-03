@@ -98,17 +98,15 @@ export default async function AnonymousIntakePage() {
         >
           <p className="m-0">Turning it off takes effect immediately.</p>
         </ActionForm>
-      ) : (
+      ) : verified ? (
         <ActionForm
           action={enableAnonymousIntakeAction}
           submitLabel="Turn anonymous intake on"
           variant="default"
         >
-          <p className="m-0">
-            Turning it on needs a passing retention check for the running version.
-          </p>
+          <p className="m-0">It takes effect immediately.</p>
         </ActionForm>
-      )}
+      ) : null}
     </main>
   )
 }
