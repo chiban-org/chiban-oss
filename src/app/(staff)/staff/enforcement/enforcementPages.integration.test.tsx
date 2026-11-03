@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
@@ -353,9 +353,15 @@ describe('enforcement queue and case pages', () => {
     const [photo] = await handle.db
       .select()
       .from(documents)
-      .where(eq(documents.recordKind, 'enforcement_case'))
+      .where(
+        and(
+          eq(documents.recordKind, 'enforcement_case'),
+          eq(documents.docKind, 'enforcement_photo'),
+        ),
+      )
+      .orderBy(documents.createdAt, documents.id)
       .limit(1)
-    if (photo === undefined) throw new Error('no case document')
+    if (photo === undefined) throw new Error('no case photo')
     const page = visibleText(
       await html(CasePage({ params: Promise.resolve({ caseId: photo.recordId }) })),
     )

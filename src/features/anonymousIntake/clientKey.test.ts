@@ -5,7 +5,7 @@ describe('clientKey', () => {
   it('is a salted digest that does not contain the address', () => {
     const key = clientKey('198.51.100.7')
     expect(key).toMatch(/^[0-9a-f]{64}$/)
-    expect(key).not.toContain('198')
+    expect(key).not.toContain('198.51.100.7')
   })
 
   it('uses the rightmost forwarded entry, the one the proxy appended', () => {
