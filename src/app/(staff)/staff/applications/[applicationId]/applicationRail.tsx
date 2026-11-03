@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import { type Fact, FactList } from '@/components/layout/PageHeader'
 import type { NextStepPlan } from '@/features/applications/nextStep'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
-import { dueNext, overdueCount } from '@/features/clocks/clockSummary'
+import { dueNext, otherOverdue } from '@/features/clocks/clockSummary'
 import { formatCivilDate } from '@/lib/formatDate'
 import { LeadStatus, MoreActions, NextStepCard, PrimaryMove } from './nextStepCard'
 
@@ -37,11 +37,18 @@ function DueNext({ clock }: { clock: Clock | null }) {
 }
 
 function deadlineFacts(view: StaffApplicationView): Fact[] {
-  const late = overdueCount(view.clocks)
   const clock = dueNext(view.clocks)
-  const next: Fact[] =
-    clock === null ? [] : [{ label: 'Due next', value: <DueNext clock={clock} /> }]
-  return late === 0 ? next : [...next, { label: 'Overdue clocks', value: String(late) }]
+  if (clock === null) return []
+  const more = otherOverdue(view.clocks)
+  const value = (
+    <>
+      <DueNext clock={clock} />
+      {more === 0 ? null : (
+        <span className="block font-semibold text-status-overdue-fg">{`${more} more overdue`}</span>
+      )}
+    </>
+  )
+  return [{ label: 'Due next', value }]
 }
 
 function Deadlines({ view }: { view: StaffApplicationView }) {

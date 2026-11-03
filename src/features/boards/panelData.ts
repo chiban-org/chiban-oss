@@ -17,6 +17,7 @@ import { listVersions } from '@/features/abutters/queries'
 import { hasOpenRegeneration } from '@/features/abutters/staleList'
 import { hasFullRecordAccess } from '@/features/access/roles'
 import { loadApplicationContext } from '@/features/applications/context'
+import { type CoreState, TERMINAL_STATES } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
@@ -127,6 +128,18 @@ function suggestionText(
   }
 }
 
+async function changePermissions(db: Db, actor: Actor, state: CoreState, signal: AbortSignal) {
+  if (TERMINAL_STATES.includes(state)) {
+    return { canRecord: false, canManage: false, canDetermine: false }
+  }
+  const [canRecord, canManage, canDetermine] = await Promise.all([
+    hasCapability(db, actor.userId, 'board.record', signal),
+    hasCapability(db, actor.userId, 'abutters.manage', signal),
+    hasCapability(db, actor.userId, 'regional_impact.determine', signal),
+  ])
+  return { canRecord, canManage, canDetermine }
+}
+
 export async function loadBoardPanel(
   db: Db,
   actor: Actor,
@@ -217,9 +230,7 @@ export async function loadBoardPanel(
     board,
     boardName: boardLabel(settings, board),
     state: app.state,
-    canRecord: await hasCapability(db, actor.userId, 'board.record', signal),
-    canManage: await hasCapability(db, actor.userId, 'abutters.manage', signal),
-    canDetermine: await hasCapability(db, actor.userId, 'regional_impact.determine', signal),
+    ...(await changePermissions(db, actor, app.state, signal)),
     hasFilingLead: classification?.mandatoryRuleKeys.includes('nh.pb.filing_lead') === true,
     acceptanceText: schedule === undefined ? null : formatCivilDate(schedule.date),
     acceptanceMeetingId: schedule?.id ?? null,

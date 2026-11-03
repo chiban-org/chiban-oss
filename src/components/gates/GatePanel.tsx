@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { StatusChip } from '@/components/StatusChip'
 import { type CoreState, STATE_LABELS } from '@/features/applications/states'
 import type { GateResult } from '@/features/gates/evaluateGates'
+import { gateDetail } from '@/features/gates/gateDetail'
 
 interface GatePanelProps {
   groups: { to: CoreState; results: GateResult[] }[]
@@ -40,6 +41,12 @@ function OverrideNote({ result }: { result: GateResult }) {
   return <p className="text-sm">{`Reason: ${o.reason ?? ''}`}</p>
 }
 
+function Detail({ result }: { result: GateResult }) {
+  if (result.outcome.status === 'pass') return null
+  const detail = gateDetail(result.label, result.outcome.reason)
+  return detail === '' ? null : <p className="text-sm">{detail}</p>
+}
+
 function citationRepeatsLabel(result: GateResult): boolean {
   return result.citation === null || result.label.includes(result.citation.label)
 }
@@ -64,9 +71,7 @@ export function GatePanel({ groups, renderControls }: GatePanelProps) {
                     <Verdict result={result} />
                   </span>
                 </div>
-                {result.outcome.status === 'pass' ? null : (
-                  <p className="text-sm">{result.outcome.reason}</p>
-                )}
+                <Detail result={result} />
                 {citationRepeatsLabel(result) ? null : (
                   <p className="text-sm text-muted-foreground">{result.citation?.label}</p>
                 )}

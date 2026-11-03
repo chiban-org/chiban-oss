@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react'
 import { StatusChip } from '@/components/StatusChip'
 import type { ClockExplanation } from '@/features/clocks/explainClock'
 import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
@@ -74,6 +75,8 @@ const COLLAPSED: readonly ClockExplanation['status'][] = ['met', 'stopped', 'sup
 
 type ClockProps = { clock: ClockExplanation & { clockId: string } }
 
+type CardProps = ClockProps & { collapsed?: boolean; children?: ReactNode }
+
 function Citation({ clock }: ClockProps) {
   return clock.citation.url === null ? (
     clock.citation.label
@@ -124,7 +127,7 @@ function ClockDetails({ clock }: ClockProps) {
   )
 }
 
-function CollapsedClock({ clock }: ClockProps) {
+function CollapsedClock({ clock, children }: CardProps) {
   return (
     <article className="py-2" aria-label={clock.ruleLabel} data-collapsed="">
       <details>
@@ -139,13 +142,16 @@ function CollapsedClock({ clock }: ClockProps) {
           <Citation clock={clock} />
         </p>
         <ClockDetails clock={clock} />
+        {children}
       </details>
     </article>
   )
 }
 
-export function ClockCard({ clock }: ClockProps) {
-  if (COLLAPSED.includes(clock.status)) return <CollapsedClock clock={clock} />
+export function ClockCard({ clock, collapsed = false, children }: CardProps) {
+  if (collapsed || COLLAPSED.includes(clock.status)) {
+    return <CollapsedClock clock={clock}>{children}</CollapsedClock>
+  }
   return (
     <article className="py-2" aria-label={clock.ruleLabel}>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -156,6 +162,7 @@ export function ClockCard({ clock }: ClockProps) {
         <Citation clock={clock} />
       </p>
       <ClockDetails clock={clock} />
+      {children}
     </article>
   )
 }

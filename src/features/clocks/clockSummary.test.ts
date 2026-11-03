@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { dueNext, isLate, overdueCount, sortClocks } from './clockSummary'
+import {
+  dueNext,
+  expandedClocks,
+  isLate,
+  otherOverdue,
+  overdueCount,
+  sortClocks,
+} from './clockSummary'
 
 type Status = 'running' | 'overdue' | 'met' | 'stopped' | 'lapsed' | 'superseded'
 
@@ -47,5 +54,22 @@ describe('clock summary', () => {
       'near',
     )
     expect(dueNext([clock('met', 'met', 0)])).toBeNull()
+  })
+
+  it('counts only the overdue clocks beyond the one shown as due next', () => {
+    expect(otherOverdue([clock('late', 'overdue', -5), clock('near', 'running', 3)])).toBe(0)
+    expect(
+      otherOverdue([clock('a', 'overdue', -5), clock('b', 'running', -2), clock('c', 'met', 0)]),
+    ).toBe(1)
+    expect(otherOverdue([clock('near', 'running', 3)])).toBe(0)
+  })
+
+  it('opens only the clock due next and any late clock, so long lists stay short', () => {
+    const late = clock('late', 'overdue', -5)
+    const near = clock('near', 'running', 3)
+    const far = clock('far', 'running', 40)
+    const met = clock('met', 'met', 0)
+    expect([...expandedClocks([far, met, near, late])]).toEqual([late])
+    expect([...expandedClocks([far, near, met])]).toEqual([near])
   })
 })

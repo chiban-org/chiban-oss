@@ -77,6 +77,83 @@ export async function loadInspectionsPanelData(
   }
 }
 
+function whenText(row: InspectionHistoryRow): string | null {
+  if (row.scheduledDate === null || row.startMinute === null) return null
+  return `${formatCivilDate(row.scheduledDate)} at ${minutesToClock(row.startMinute)}`
+}
+
+function resultText(row: InspectionHistoryRow): string {
+  const photos =
+    row.photoCount === 0 ? '' : `${row.photoCount} ${row.photoCount === 1 ? 'photo' : 'photos'}`
+  return [row.resultNotes ?? '', photos].filter((part) => part !== '').join(' ')
+}
+
+function RowActions({
+  row,
+  data,
+  number,
+}: {
+  row: InspectionHistoryRow
+  data: InspectionsPanelData
+  number: string
+}) {
+  if (!data.canSchedule) return null
+  const reinspect =
+    data.takesRequests && row.status === 'failed' && data.reinspectableIds.includes(row.id)
+  const open = row.status === 'requested' || row.status === 'scheduled'
+  if (!reinspect && !open) return null
+  return (
+    <div className="flex flex-wrap items-start gap-x-4 text-sm">
+      {reinspect ? (
+        <Link href={`/staff/inspections?number=${encodeURIComponent(number)}&reinspect=${row.id}`}>
+          Request a reinspection
+        </Link>
+      ) : null}
+      {open ? (
+        <details>
+          <summary className="text-sm font-normal text-status-failed-fg">Cancel</summary>
+          <ActionForm
+            action={cancelInspectionAction}
+            submitLabel="Cancel this inspection"
+            variant="destructive"
+            compact
+          >
+            <input type="hidden" name="inspectionId" value={row.id} />
+            <input type="hidden" name="expectedRowVersion" value={row.rowVersion} />
+          </ActionForm>
+        </details>
+      ) : null}
+    </div>
+  )
+}
+
+function InspectionRow({
+  row,
+  data,
+  number,
+}: {
+  row: InspectionHistoryRow
+  data: InspectionsPanelData
+  number: string
+}) {
+  const when = whenText(row)
+  const result = resultText(row)
+  return (
+    <li className="record-item flex flex-col gap-1 pb-3">
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <Link href={`/staff/inspections/${row.id}`} className="font-medium">
+          {`${inspectionTypeLabel(row.inspectionType)} inspection`}
+        </Link>
+        <StatusChip status={CHIP[row.status]} label={LABEL[row.status]} />
+        {row.reinspectionOf === null ? null : <span className="text-sm">Reinspection</span>}
+        {when === null ? null : <span className="text-sm text-muted-foreground">{when}</span>}
+      </div>
+      {result === '' ? null : <p className="m-0 text-sm text-ink-secondary">{result}</p>}
+      <RowActions row={row} data={data} number={number} />
+    </li>
+  )
+}
+
 export function InspectionsPanel({
   data,
   applicationId,
@@ -86,43 +163,14 @@ export function InspectionsPanel({
   applicationId: string
   number: string
 }) {
-  const { history, canSchedule, certificateReady, rowVersion, today, reinspectableIds } = data
+  const { history, canSchedule, certificateReady, rowVersion, today } = data
   return (
     <section aria-label="Inspections" id="inspections">
       <h2>Inspections</h2>
       {history.length === 0 ? <p>No inspections have been requested.</p> : null}
       <ul className="m-0 list-none p-0">
         {history.map((row) => (
-          <li key={row.id} className="record-item pb-3">
-            <div className="flex flex-wrap items-center gap-3">
-              <Link href={`/staff/inspections/${row.id}`} className="text-action underline">
-                {`${inspectionTypeLabel(row.inspectionType)} inspection`}
-              </Link>
-              <StatusChip status={CHIP[row.status]} label={LABEL[row.status]} />
-              {row.reinspectionOf === null ? null : <span>Reinspection</span>}
-            </div>
-            {row.scheduledDate !== null && row.startMinute !== null ? (
-              <p className="m-0">{`${formatCivilDate(row.scheduledDate)} at ${minutesToClock(row.startMinute)}`}</p>
-            ) : null}
-            {row.resultNotes === null ? null : <p className="m-0">{`Notes: ${row.resultNotes}`}</p>}
-            {row.photoCount === 0 ? null : (
-              <p className="m-0">{`${row.photoCount} ${row.photoCount === 1 ? 'photo' : 'photos'}`}</p>
-            )}
-            {canSchedule && row.status === 'failed' && reinspectableIds.includes(row.id) ? (
-              <Link
-                href={`/staff/inspections?number=${encodeURIComponent(number)}&reinspect=${row.id}`}
-                className="text-action underline"
-              >
-                Request a reinspection
-              </Link>
-            ) : null}
-            {canSchedule && (row.status === 'requested' || row.status === 'scheduled') ? (
-              <ActionForm action={cancelInspectionAction} submitLabel="Cancel this inspection">
-                <input type="hidden" name="inspectionId" value={row.id} />
-                <input type="hidden" name="expectedRowVersion" value={row.rowVersion} />
-              </ActionForm>
-            ) : null}
-          </li>
+          <InspectionRow key={row.id} row={row} data={data} number={number} />
         ))}
       </ul>
       {canSchedule && data.takesRequests ? (

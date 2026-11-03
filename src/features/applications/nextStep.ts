@@ -1,4 +1,5 @@
 import type { GateResult } from '@/features/gates/evaluateGates'
+import { gateDetail } from '@/features/gates/gateDetail'
 import { type CoreState, TERMINAL_STATES } from './states'
 
 const GATE_PANELS: ReadonlyMap<string, string> = new Map([
@@ -41,7 +42,7 @@ function blockersOf(gates: readonly GateGroup[], to: CoreState): Blocker[] {
     .map((r) => ({
       key: r.key,
       label: r.label,
-      reason: r.outcome.status === 'pass' ? '' : r.outcome.reason,
+      reason: r.outcome.status === 'pass' ? '' : gateDetail(r.label, r.outcome.reason),
       anchor: gateAnchor(r.key),
     }))
 }

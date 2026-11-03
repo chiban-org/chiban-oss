@@ -145,8 +145,31 @@ interface RecordLayoutProps {
   empty?: ReactNode[]
 }
 
+const STICKY_MARGIN_PX = 48
+
+function useTallRail() {
+  const aside = useRef<HTMLElement>(null)
+  const [tall, setTall] = useState(false)
+  useEffect(() => {
+    const measure = () => {
+      const node = aside.current
+      if (node !== null) setTall(node.scrollHeight > window.innerHeight - STICKY_MARGIN_PX)
+    }
+    measure()
+    const resized = typeof ResizeObserver === 'undefined' ? null : new ResizeObserver(measure)
+    if (aside.current !== null) resized?.observe(aside.current)
+    window.addEventListener('resize', measure)
+    return () => {
+      resized?.disconnect()
+      window.removeEventListener('resize', measure)
+    }
+  }, [])
+  return { aside, tall }
+}
+
 export function RecordLayout({ children, rail, railFooter, strip, empty }: RecordLayoutProps) {
   const { body, entries, active } = useSectionIndex()
+  const { aside, tall } = useTallRail()
   const collapsed = strip !== undefined
   return (
     <div className="record-layout lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-8">
@@ -154,7 +177,9 @@ export function RecordLayout({ children, rail, railFooter, strip, empty }: Recor
         <div className="record-strip mb-5 flex flex-col gap-4 lg:hidden">{strip}</div>
       ) : null}
       <aside
-        className={`record-rail mb-6 flex-col gap-6 lg:sticky lg:top-6 lg:order-2 lg:mb-0 lg:flex lg:max-h-[calc(100vh-3rem)] lg:overflow-y-auto ${collapsed ? 'hidden' : 'flex'}`}
+        ref={aside}
+        data-tall={tall ? '' : undefined}
+        className={`record-rail mb-6 flex-col gap-6 lg:order-2 lg:mb-0 lg:sticky lg:top-6 lg:flex lg:data-tall:static ${collapsed ? 'hidden' : 'flex'}`}
       >
         {rail}
         <SectionIndex entries={entries} active={active} />

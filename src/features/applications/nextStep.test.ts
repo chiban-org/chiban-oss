@@ -70,6 +70,18 @@ describe('next step plan', () => {
     expect(plan(['issued'], { issued: [overridden] }).primary).toBe('issued')
   })
 
+  it('drops a gate label repeated at the start of its reason', () => {
+    const repeated = gate(
+      'nh.appeal.suspension',
+      true,
+      'Suspended by appeal (RSA 676:6). Resolve the appeal first.',
+    )
+    const labelled = { ...repeated, label: 'Suspended by appeal (RSA 676:6)' }
+    expect(plan(['closed'], { closed: [labelled] }).lead?.blockers[0]?.reason).toBe(
+      'Resolve the appeal first.',
+    )
+  })
+
   it('links each gate to the panel that clears it', () => {
     expect(gateAnchor('conditions.blocking_met')).toBe('conditions')
     expect(gateAnchor('closure.requirement_met')).toBe('inspections')

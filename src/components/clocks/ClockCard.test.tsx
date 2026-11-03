@@ -81,6 +81,17 @@ describe('ClockCard', () => {
     expect(summary?.textContent).toContain('Due April 14, 2027')
   })
 
+  it('folds a running clock to one line when asked, keeping its controls inside', () => {
+    render(
+      <ClockCard clock={BASE} collapsed>
+        <button type="button">Adjust</button>
+      </ClockCard>,
+    )
+    const card = screen.getByRole('article')
+    expect(card.hasAttribute('data-collapsed')).toBe(true)
+    expect(card.querySelector('details button')?.textContent).toBe('Adjust')
+  })
+
   it('shows the adjusted due date next to the date it replaced', () => {
     render(<ClockCard clock={BASE} />)
     expect(screen.getByText('April 14, 2027', { selector: 'strong' })).toBeTruthy()

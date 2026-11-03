@@ -127,6 +127,13 @@ describe('the next step follows the gates', () => {
     }
   })
 
+  it('does not repeat a gate label at the start of its detail', async () => {
+    const html = await page('BP-2026-0003')
+    expect(html).toContain('Suspended by appeal (RSA 676:6)')
+    expect(html).not.toContain('Suspended by appeal (RSA 676:6). Resolve')
+    expect(html).toContain('Resolve the appeal first.')
+  })
+
   it('puts terminal moves behind More actions with a confirmation step', async () => {
     const rail = nextStep(await page('BP-2026-0003'))
     const more = rail.slice(rail.indexOf('More actions'))
@@ -166,7 +173,8 @@ describe('deadlines above the fold', () => {
     )
     expect(facts).toContain('Due next')
     expect(facts).toMatch(/\d+ days? overdue/)
-    expect(facts).toContain('Overdue clocks')
+    expect(facts).not.toContain('Overdue clocks')
+    expect(facts).not.toContain('more overdue')
     const header = html.slice(0, html.indexOf('</header>'))
     expect(header).toContain('data-status="overdue"')
   })

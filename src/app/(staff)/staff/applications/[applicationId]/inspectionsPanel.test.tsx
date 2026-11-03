@@ -63,4 +63,32 @@ describe('InspectionsPanel', () => {
     renderPanel(data([row('a', { status: 'passed', photoCount: 1 })], []))
     expect(screen.getByText('1 photo')).toBeTruthy()
   })
+
+  it('keeps the type, result and date on one line, with notes and photos after it', () => {
+    renderPanel(
+      data(
+        [
+          row('a', {
+            status: 'passed',
+            scheduledDate: '2026-10-15',
+            startMinute: 690,
+            resultNotes: 'Box fill acceptable.',
+            photoCount: 2,
+          }),
+        ],
+        [],
+      ),
+    )
+    const heading = screen.getByRole('link', { name: 'Framing inspection' }).parentElement
+    expect(heading?.textContent).toContain('Passed')
+    expect(heading?.textContent).toContain('October 15, 2026 at 11:30 AM')
+    expect(screen.getByText('Box fill acceptable. 2 photos')).toBeTruthy()
+  })
+
+  it('offers cancelling an open inspection as a small text action', () => {
+    renderPanel(data([row('a', { status: 'requested' })], []))
+    const summary = screen.getByText('Cancel', { selector: 'summary' })
+    expect(summary).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Cancel this inspection' })).toBeTruthy()
+  })
 })

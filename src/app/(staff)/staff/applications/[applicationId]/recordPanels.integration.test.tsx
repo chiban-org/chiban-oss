@@ -119,6 +119,38 @@ describe('panels fit the application type and state', () => {
   })
 })
 
+describe('finished applications offer no actions that change them', () => {
+  it('the board panel on a denied variance keeps its facts and drops every change', async () => {
+    const board = sectionOf(await page('VAR-2026-0004'), 'Board') ?? ''
+    expect(board).toContain('Abutter lists')
+    expect(board).toContain('Regional impact')
+    for (const action of [
+      'Draw a new list',
+      'Add a parcel to this application',
+      'Add a professional whose seal is on the plat',
+      'Record the regional impact determination',
+      'Record the NH DES determination',
+      'End this application for unpaid notice costs',
+      'Record a request to the selectmen',
+      'Record final approval',
+    ]) {
+      expect(board).not.toContain(action)
+    }
+  })
+
+  it('a closed permit offers no reviewer or code edition changes but keeps records work', async () => {
+    const html = await page('BP-2026-0004')
+    expect(html).not.toContain('Assign a reviewer')
+    expect(html).not.toContain('Record the edition again')
+    expect(html).toContain('Record the building removed')
+  })
+
+  it('an application still in progress keeps the board actions', async () => {
+    const board = sectionOf(await page('VAR-2026-0003'), 'Board') ?? ''
+    expect(board).toContain('Draw a new list')
+  })
+})
+
 describe('money is shown once', () => {
   it('merges fees and payments into one table with assessed, paid and due', async () => {
     const html = await page('BP-2026-0003')

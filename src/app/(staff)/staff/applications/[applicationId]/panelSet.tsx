@@ -5,7 +5,7 @@ import { type Panel, splitPanels } from '@/components/layout/splitPanels'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { TERMINAL_STATES } from '@/features/applications/states'
 import type { BoardPanelData } from '@/features/boards/panelData'
-import { isOpen, sortClocks } from '@/features/clocks/clockSummary'
+import { expandedClocks, isOpen, sortClocks } from '@/features/clocks/clockSummary'
 import { REVIEWS_GATE_KEY } from '@/features/gates/coreGates'
 import type { ApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import type { ApplicationPayments } from '@/features/payments/applicationPayments'
@@ -44,13 +44,13 @@ function reviewRequired(view: StaffApplicationView): boolean {
 }
 
 function ClocksPanel({ view }: { view: StaffApplicationView }) {
+  const expanded = expandedClocks(view.clocks)
   return (
     <section aria-label="Clocks" id="clocks">
       <h2>Clocks</h2>
       {view.clocks.length === 0 ? <p>No clock is running on this application.</p> : null}
       {sortClocks(view.clocks).map((clock) => (
-        <div key={clock.clockId}>
-          <ClockCard clock={clock} />
+        <ClockCard key={clock.clockId} clock={clock} collapsed={!expanded.has(clock)}>
           {isOpen(clock) ? (
             <ClockAdjustForm
               view={view}
@@ -58,7 +58,7 @@ function ClocksPanel({ view }: { view: StaffApplicationView }) {
               allowedKinds={clock.allowedAdjustments}
             />
           ) : null}
-        </div>
+        </ClockCard>
       ))}
     </section>
   )
@@ -87,7 +87,7 @@ function workPanels({ view, records, board, hearings }: RecordPanelsInput): Pane
           applicationId={view.id}
           reviewers={records.reviewers}
           choices={records.choices}
-          canAssign={records.canAssign}
+          canAssign={records.canAssign && !TERMINAL_STATES.includes(view.state)}
           required={required}
         />
       ),

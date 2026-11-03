@@ -2,6 +2,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
+import { TERMINAL_STATES } from '@/features/applications/states'
 import { componentsNotInLabel } from '@/features/building/codeEdition'
 import {
   DETERMINATION_OPTIONS,
@@ -58,7 +59,9 @@ export function CodeEditionPanel({ view }: { view: StaffApplicationView }) {
           </dl>
         </>
       )}
-      {view.state === 'draft' || view.permissions.canIssue === false ? null : (
+      {view.state === 'draft' ||
+      TERMINAL_STATES.includes(view.state) ||
+      !view.permissions.canIssue ? null : (
         <details>
           <summary>
             {edition === null ? 'Record the code edition' : 'Record the edition again'}

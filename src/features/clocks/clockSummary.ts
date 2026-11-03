@@ -36,3 +36,14 @@ export function overdueCount(clocks: readonly ClockLike[]): number {
 export function dueNext<T extends ClockLike>(clocks: readonly T[]): T | null {
   return sortClocks(clocks.filter(isOpen))[0] ?? null
 }
+
+export function otherOverdue(clocks: readonly ClockLike[]): number {
+  const next = dueNext(clocks)
+  const late = overdueCount(clocks)
+  return next !== null && isLate(next) ? late - 1 : late
+}
+
+export function expandedClocks<T extends ClockLike>(clocks: readonly T[]): Set<T> {
+  const next = dueNext(clocks)
+  return new Set(clocks.filter((c) => isLate(c) || c === next))
+}
