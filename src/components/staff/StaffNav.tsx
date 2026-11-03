@@ -1,69 +1,129 @@
 'use client'
 
-import Link from 'next/link'
+import { Menu, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { STAFF_NAV_COOKIE } from '@/constants/cookies'
 import { activeNavHref, groupNavItems, type NavItem } from '@/features/staffNav/navItems'
+import { cn } from '@/lib/utils'
+import { BrandMark, NavFooter, NavSections, type NavUser } from './StaffNavBody'
 
-const LINK_BASE =
-  'rounded-md px-2 text-ink-secondary no-underline hover:bg-canvas aria-[current=page]:bg-canvas aria-[current=page]:font-bold aria-[current=page]:text-ink'
+const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60
 
-function NavSections({
-  items,
-  active,
-  linkClassName,
-}: {
+interface StaffNavProps {
   items: NavItem[]
-  active: string | null
-  linkClassName: string
+  town: string | null
+  user: NavUser
+  initialRail: boolean
+}
+
+function rememberRail(rail: boolean) {
+  document.cookie = `${STAFF_NAV_COOKIE}=${rail ? 'rail' : 'full'}; path=/staff; max-age=${ONE_YEAR_SECONDS}; samesite=lax`
+}
+
+function MobileNav({
+  town,
+  children,
+}: {
+  town: string | null
+  children: (close: () => void) => ReactNode
 }) {
+  const drawer = useRef<HTMLDialogElement>(null)
+  const [open, setOpen] = useState(false)
+  const close = () => drawer.current?.close()
+  useEffect(() => {
+    const wide = window.matchMedia('(min-width: 768px)')
+    const onChange = () => {
+      if (wide.matches) drawer.current?.close()
+    }
+    wide.addEventListener('change', onChange)
+    return () => wide.removeEventListener('change', onChange)
+  }, [])
   return (
-    <div className="flex flex-col gap-5">
-      {groupNavItems(items).map((section) => (
-        <div key={section.key}>
-          {section.label === null ? null : (
-            <p className="mb-1 px-2 text-xs font-semibold text-muted-foreground">{section.label}</p>
-          )}
-          <ul className="flex flex-col gap-px">
-            {section.items.map((item) => (
-              <li key={item.href}>
-                <Link
-                  href={item.href}
-                  aria-current={item.href === active ? 'page' : undefined}
-                  className={`${LINK_BASE} ${linkClassName}`}
-                >
-                  {item.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+    <div className="no-print sticky top-0 z-40 flex h-14 items-center justify-between border-b border-hairline bg-sidebar px-2 md:hidden">
+      <BrandMark town={town} />
+      <button
+        type="button"
+        aria-label="Open the menu"
+        onClick={() => {
+          setOpen(true)
+          drawer.current?.showModal()
+        }}
+        className="flex size-11 items-center justify-center rounded-md text-ink hover:bg-surface"
+      >
+        <Menu aria-hidden={true} className="size-5" />
+      </button>
+      <dialog
+        ref={drawer}
+        aria-label="Staff menu"
+        onClose={() => setOpen(false)}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) close()
+        }}
+        className="m-0 h-dvh max-h-dvh w-72 max-w-[85vw] border-r border-hairline bg-sidebar p-0 backdrop:bg-ink/40"
+      >
+        <div className="flex h-full flex-col">
+          <div className="flex items-center justify-between pr-2">
+            <BrandMark town={town} />
+            <button
+              type="button"
+              aria-label="Close the menu"
+              autoFocus
+              onClick={close}
+              className="flex size-11 items-center justify-center rounded-md text-ink hover:bg-surface"
+            >
+              <X aria-hidden={true} className="size-5" />
+            </button>
+          </div>
+          {open ? children(close) : null}
         </div>
-      ))}
+      </dialog>
     </div>
   )
 }
 
-export function StaffNav({ items, town }: { items: NavItem[]; town: string | null }) {
+export function StaffNav({ items, town, user, initialRail }: StaffNavProps) {
   const active = activeNavHref(usePathname(), items)
+  const [rail, setRail] = useState(initialRail)
+  const sections = groupNavItems(items).filter((section) => section.key !== 'account')
+  const toggleRail = () => {
+    rememberRail(!rail)
+    setRail(!rail)
+  }
+  const body = (isRail: boolean, onNavigate?: () => void, onToggleRail?: () => void) => (
+    <>
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <NavSections
+          sections={sections}
+          all={items}
+          active={active}
+          rail={isRail}
+          onNavigate={onNavigate}
+        />
+      </div>
+      <NavFooter
+        user={user}
+        active={active}
+        rail={isRail}
+        onToggleRail={onToggleRail}
+        onNavigate={onNavigate}
+      />
+    </>
+  )
   return (
     <>
-      <details className="no-print border-b bg-surface p-3 md:hidden">
-        <summary className="flex min-h-11 items-center font-serif text-xl font-semibold text-ink">
-          Chiban menu
-        </summary>
-        <div className="pt-2">
-          <NavSections items={items} active={active} linkClassName="flex min-h-11 items-center" />
+      <MobileNav town={town}>{(close) => body(false, close)}</MobileNav>
+      <nav
+        aria-label="Staff"
+        className={cn(
+          'no-print sticky top-0 hidden h-screen shrink-0 flex-col border-r border-hairline bg-sidebar transition-[width] duration-200 ease-out md:flex',
+          rail ? 'w-16' : 'w-64',
+        )}
+      >
+        <div className={cn('pt-3 pb-2', rail ? 'px-2' : 'px-3')}>
+          <BrandMark town={town} rail={rail} />
         </div>
-      </details>
-      <nav aria-label="Staff" className="hidden w-60 shrink-0 border-r bg-surface md:block">
-        <div className="sticky top-0 max-h-screen overflow-y-auto px-3 py-5">
-          <Link href="/staff" className="mb-6 block px-2 text-ink no-underline">
-            <span className="block font-serif text-2xl font-semibold">Chiban</span>
-            {town === null ? null : (
-              <span className="block text-sm text-muted-foreground">{town}</span>
-            )}
-          </Link>
-          <NavSections items={items} active={active} linkClassName="block py-1.5 text-sm" />
-        </div>
+        {body(rail, undefined, toggleRail)}
       </nav>
     </>
   )

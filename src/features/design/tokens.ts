@@ -19,6 +19,7 @@ export const TOKENS = {
   'map-road': '#5b6470',
   'map-water-fill': '#d9e7f2',
   hairline: '#d5dce3',
+  sidebar: '#e9eef2',
   'control-border': '#808a95',
 } as const
 

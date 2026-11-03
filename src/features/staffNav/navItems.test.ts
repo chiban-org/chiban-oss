@@ -5,6 +5,8 @@ import { DEFAULT_GRANTS } from '@/features/authz/defaultGrants'
 import {
   activeNavHref,
   groupNavItems,
+  isNested,
+  NAV_GROUPS,
   navItemsFor,
   STAFF_NAV_ITEMS,
 } from '@/features/staffNav/navItems'
@@ -22,7 +24,7 @@ describe('staff navigation', () => {
 
   it('shows the records custodian the records pages and not payments or the schedule board', () => {
     const labels = labelsFor('records_custodian')
-    expect(labels).toContain('Records')
+    expect(labels).toContain('Preservation')
     expect(labels).toContain('Legal holds')
     expect(labels).not.toContain('Payments')
     expect(labels).not.toContain('Board packets')
@@ -48,7 +50,7 @@ describe('staff navigation', () => {
 
   it('shows the boards and rosters pages to staff and admin only', () => {
     for (const role of ['staff', 'admin'] as const) {
-      expect(labelsFor(role)).toEqual(expect.arrayContaining(['Boards', 'Rosters']))
+      expect(labelsFor(role)).toEqual(expect.arrayContaining(['Board applications', 'Rosters']))
     }
     for (const role of [
       'reviewer',
@@ -58,7 +60,7 @@ describe('staff navigation', () => {
       'records_custodian',
     ] as const) {
       const labels = labelsFor(role)
-      expect(labels).not.toContain('Boards')
+      expect(labels).not.toContain('Board applications')
       expect(labels).not.toContain('Rosters')
     }
   })
@@ -119,5 +121,25 @@ describe('staff navigation', () => {
     expect(activeNavHref('/staff/inspections/123', STAFF_NAV_ITEMS)).toBe('/staff/inspections')
     expect(activeNavHref('/staff/boards/members', STAFF_NAV_ITEMS)).toBe('/staff/boards/members')
     expect(activeNavHref('/staff/applicationsx', STAFF_NAV_ITEMS)).toBeNull()
+  })
+
+  it('nests My day under Inspections only when the person also sees Inspections', () => {
+    const day = STAFF_NAV_ITEMS.find((i) => i.href === '/staff/inspections/day')
+    if (day === undefined) throw new Error('My day missing')
+    expect(isNested(day, STAFF_NAV_ITEMS)).toBe(true)
+    expect(isNested(day, [day])).toBe(false)
+  })
+
+  it('folds only the records, parcel data and administration groups', () => {
+    expect(NAV_GROUPS.filter((g) => g.collapsible).map((g) => g.key)).toEqual([
+      'records',
+      'data',
+      'admin',
+    ])
+  })
+
+  it('gives every nav entry its own icon', () => {
+    const icons = STAFF_NAV_ITEMS.map((i) => i.icon)
+    expect(new Set(icons).size).toBe(icons.length)
   })
 })

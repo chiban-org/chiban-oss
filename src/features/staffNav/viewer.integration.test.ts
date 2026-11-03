@@ -32,7 +32,7 @@ describe('loading the navigation viewer from stored grants', () => {
       expect.arrayContaining(['Export', 'Health', 'Cutover', 'Migration']),
     )
     const custodian = await labels('records_custodian')
-    expect(custodian).toEqual(expect.arrayContaining(['Records', 'Legal holds', 'Export']))
+    expect(custodian).toEqual(expect.arrayContaining(['Preservation', 'Legal holds', 'Export']))
     expect(custodian).not.toEqual(expect.arrayContaining(['Health', 'Cutover', 'Migration']))
     const board = await labels('board_member')
     expect(board).not.toEqual(expect.arrayContaining(['Queue', 'Export']))

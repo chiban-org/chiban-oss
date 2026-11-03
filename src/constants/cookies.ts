@@ -1,5 +1,6 @@
 export const SESSION_COOKIE = 'chiban_sid'
 export const CSRF_COOKIE = 'chiban_csrf'
+export const STAFF_NAV_COOKIE = 'chiban_staff_nav'
 
 export const CSRF_COOKIE_OPTIONS = {
   httpOnly: false,

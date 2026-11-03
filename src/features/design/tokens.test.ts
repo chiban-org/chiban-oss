@@ -32,6 +32,8 @@ describe('design tokens', () => {
     ['ink-secondary', 'canvas'],
     ['muted', 'canvas'],
     ['muted', 'surface'],
+    ['muted', 'sidebar'],
+    ['ink-secondary', 'sidebar'],
     ['action', 'surface'],
     ['surface', 'action'],
     ['status-passed-fg', 'status-passed-bg'],

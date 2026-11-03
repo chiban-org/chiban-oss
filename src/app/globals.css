@@ -24,6 +24,7 @@
   --map-road: #5b6470;
   --map-water-fill: #d9e7f2;
   --hairline: #d5dce3;
+  --sidebar: #e9eef2;
   --control-border: #808a95;
 
   --radius: 10px;
@@ -82,6 +83,7 @@
   --color-action: var(--action);
   --color-highlight: var(--highlight);
   --color-hairline: var(--hairline);
+  --color-sidebar: var(--sidebar);
   --color-control-border: var(--control-border);
   --color-status-passed-fg: var(--status-passed-fg);
   --color-status-passed-bg: var(--status-passed-bg);

@@ -38,7 +38,10 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 - Forms that add something (assign, apply, record, refer) sit behind a `<details>` disclosure named for the action. Forms that are the page's next step stay open in the rail.
 - Lists of records inside a panel use `record-item` dividers, never bordered boxes inside a bordered panel.
 - Data tables sit in a `table-panel`; filter bars above them in a `toolbar`. Status columns use `StatusChip`, and empty cells read in muted text.
-- Staff navigation is grouped by the `group` field on each entry in `src/features/staffNav/navItems.ts` and marks the current page.
+- Staff navigation lives on its own `sidebar` layer (`#e9eef2`), a step darker than the canvas. Entries are grouped by the `group` field in `src/features/staffNav/navItems.ts` and each carries an icon. The current page is a white row with a hairline edge.
+- Records and reports, Parcel data and Administration fold away unless the current page is inside them. An entry with a `parent` (My day under Inspections) is indented beneath it when both are visible.
+- The person's name, role, Account and Sign out are pinned to the bottom of the sidebar; only the entries scroll.
+- The sidebar collapses to an icon rail with tooltips. The choice is kept in the `chiban_staff_nav` cookie so the server renders the right width. Below 768px it becomes a top bar and a drawer.
 - The staff home (`/staff`) shows what needs attention and the next deadlines, with a parcel search. Inspectors who hold only that role land on their day list instead.
 - The theme is light only. Tailwind's `dark:` variant is bound to a `.dark` class that nothing sets, so an operating system dark setting cannot restyle controls.
 
