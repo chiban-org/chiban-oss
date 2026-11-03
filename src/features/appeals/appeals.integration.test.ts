@@ -34,12 +34,15 @@ async function issued() {
   return app
 }
 
+const NOW = new Date('2027-12-31T17:00:00Z')
+
 const appeal = (applicationId: string, filedOn = '2027-05-01', actor = world.staff) =>
   recordAppeal(
     handle.db,
     actor,
     { applicationId, filedOn: d(filedOn), appellantName: 'Abutter Smith' },
     signal,
+    { now: NOW },
   )
 
 const resolve = (
@@ -47,7 +50,14 @@ const resolve = (
   outcome: 'permit_upheld' | 'permit_revoked',
   resolvedOn = '2027-06-10',
   actor = world.staff,
-) => resolveAppeal(handle.db, actor, { applicationId, resolvedOn: d(resolvedOn), outcome }, signal)
+) =>
+  resolveAppeal(
+    handle.db,
+    actor,
+    { applicationId, resolvedOn: d(resolvedOn), outcome },
+    signal,
+    NOW,
+  )
 
 async function appRow(applicationId: string) {
   const [row] = await handle.db
@@ -63,6 +73,13 @@ async function expirationClock(applicationId: string) {
 }
 
 describe('recordAppeal', () => {
+  it('refuses a filing date after today and leaves the permit issued', async () => {
+    const app = await issued()
+    const result = await appeal(app.applicationId, '2028-01-01')
+    expect(result.ok ? null : result.error).toBe('future_date')
+    expect((await appRow(app.applicationId))?.state).toBe('issued')
+  })
+
   it('appeal moves issued to suspended and stops the expiration clock', async () => {
     const app = await issued()
     expect((await appeal(app.applicationId)).ok).toBe(true)
@@ -105,6 +122,14 @@ describe('recordAppeal', () => {
 })
 
 describe('resolveAppeal', () => {
+  it('refuses a resolution date after today and keeps the appeal open', async () => {
+    const app = await issued()
+    expect((await appeal(app.applicationId)).ok).toBe(true)
+    const result = await resolve(app.applicationId, 'permit_upheld', '2028-01-01')
+    expect(result.ok ? null : result.error).toBe('future_date')
+    expect((await appRow(app.applicationId))?.state).toBe('suspended')
+  })
+
   it('upheld appeal tolls expiration by suspended days', async () => {
     const app = await issued()
     expect((await expirationClock(app.applicationId))?.currentDue).toBe('2028-03-15')
@@ -194,7 +219,7 @@ describe('pack-driven suspension', () => {
         appellantName: 'Abutter Smith',
       },
       signal,
-      noEffect,
+      { pack: noEffect, now: NOW },
     )
     expect(r.ok).toBe(true)
     expect((await appRow(app.applicationId))?.state).toBe('issued')

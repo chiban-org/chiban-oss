@@ -222,13 +222,22 @@ describe('application building actions', () => {
   })
 
   it('an appeal suspends and an upheld resolution reinstates through server actions', async () => {
-    const app = await trade({ state: 'issued', issuedOn: '2027-03-15' })
+    const app = await trade({ state: 'issued', issuedOn: '2026-03-15' })
     state.actor = world.staff
     expect(
       await actions.recordAppealAction(
         form({
           applicationId: app.applicationId,
-          filedOn: '2027-05-01',
+          filedOn: '2999-01-01',
+          appellantName: 'Abutter Smith',
+        }),
+      ),
+    ).toEqual({ ok: false, error: 'The filing date cannot be in the future.' })
+    expect(
+      await actions.recordAppealAction(
+        form({
+          applicationId: app.applicationId,
+          filedOn: '2026-05-01',
           appellantName: 'Abutter Smith',
         }),
       ),
@@ -242,7 +251,7 @@ describe('application building actions', () => {
       await actions.resolveAppealAction(
         form({
           applicationId: app.applicationId,
-          resolvedOn: '2027-06-10',
+          resolvedOn: '2026-06-10',
           outcome: 'permit_upheld',
         }),
       ),

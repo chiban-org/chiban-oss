@@ -11,6 +11,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { recordAdjustment } from '@/features/clocks/adjustClock'
 import { effectiveBindings } from '@/features/config/bindings'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
+import { isAfterTownToday } from '@/features/town/today'
 import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -34,10 +35,11 @@ export async function recordAppeal(
   actor: Actor,
   input: { applicationId: string; filedOn: CivilDate; appellantName: string },
   signal: AbortSignal,
-  pack: Pack = loadPack(),
-): Promise<Result<void, 'forbidden' | 'not_issued'>> {
+  { pack = loadPack(), now = new Date() }: { pack?: Pack; now?: Date } = {},
+): Promise<Result<void, 'forbidden' | 'not_issued' | 'future_date'>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'permit.issue', signal))) return err('forbidden')
+  if (await isAfterTownToday(db, input.filedOn, now, signal)) return err('future_date')
   return await transactionResult(db, async (tx) => {
     const app = await loadApplicationContext(tx, input.applicationId, signal)
     if (app?.state !== 'issued') return err('not_issued')
@@ -83,7 +85,12 @@ export async function recordAppeal(
   })
 }
 
-type ResolveError = 'forbidden' | 'no_open_appeal' | 'before_filing' | 'not_suspended'
+type ResolveError =
+  | 'forbidden'
+  | 'no_open_appeal'
+  | 'before_filing'
+  | 'not_suspended'
+  | 'future_date'
 
 export async function resolveAppeal(
   db: Db,
@@ -94,9 +101,11 @@ export async function resolveAppeal(
     outcome: 'permit_upheld' | 'permit_revoked'
   },
   signal: AbortSignal,
+  now: Date = new Date(),
 ): Promise<Result<void, ResolveError>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'permit.issue', signal))) return err('forbidden')
+  if (await isAfterTownToday(db, input.resolvedOn, now, signal)) return err('future_date')
   return await transactionResult<void, ResolveError>(db, async (tx) => {
     const [open] = await tx
       .select()

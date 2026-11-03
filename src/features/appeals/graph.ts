@@ -63,9 +63,11 @@ export async function addAdministrativeDecision(
   actor: Actor,
   input: { applicationId: string; occurredOn: CivilDate },
   signal: AbortSignal,
+  now: Date = new Date(),
 ): Promise<Result<{ nodeId: string }, AppealError>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
+  if (await isAfterTownToday(db, input.occurredOn, now, signal)) return err('future_date')
   const app = await loadApplicationContext(db, input.applicationId, signal)
   if (app === null) return err('not_found')
   const [row] = await db
@@ -202,6 +204,7 @@ async function maybeSuspendIssuedPermit(
   parent: NodeRow,
   input: AddNodeInput,
   signal: AbortSignal,
+  now: Date,
 ): Promise<Result<void, AppealError>> {
   if (parent.kind !== 'administrative_decision' || input.kind !== 'zba_appeal') return ok(undefined)
   if (parent.applicationId === null) return ok(undefined)
@@ -216,6 +219,7 @@ async function maybeSuspendIssuedPermit(
       appellantName: input.appellantName ?? 'Appellant',
     },
     signal,
+    { now },
   )
   return recorded.ok ? ok(undefined) : err(recorded.error)
 }
@@ -241,7 +245,7 @@ export async function addAppealNode(
   ) {
     return err('wrong_outcome')
   }
-  const suspended = await maybeSuspendIssuedPermit(db, actor, parent, input, signal)
+  const suspended = await maybeSuspendIssuedPermit(db, actor, parent, input, signal, now)
   if (!suspended.ok) return suspended
   return await transactionResult<{ nodeId: string }, AppealError>(db, async (tx) => {
     const clockApplicationId = parent.applicationId

@@ -268,6 +268,18 @@ describe('planning board routes', () => {
 })
 
 describe('administrative decisions and issued permits', () => {
+  it('refuses an administrative decision dated after today', async () => {
+    const permit = await makeApplication(handle.db, world, { state: 'issued' })
+    const result = await addAdministrativeDecision(
+      handle.db,
+      world.staff,
+      { applicationId: permit.applicationId, occurredOn: d('2028-01-04') },
+      signal,
+      BOARD_FIXTURE_NOW,
+    )
+    expect(result.ok ? null : result.error).toBe('future_date')
+  })
+
   it('zba appeal of an issued building permit suspends it', async () => {
     const permit = await makeApplication(handle.db, world, { state: 'issued' })
     const root = await addAdministrativeDecision(
@@ -275,6 +287,7 @@ describe('administrative decisions and issued permits', () => {
       world.staff,
       { applicationId: permit.applicationId, occurredOn: d('2027-03-01') },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     if (!root.ok) throw new Error(root.error)
     const appeal = await add(root.value.nodeId, 'zba_appeal', '2027-03-20')
@@ -294,6 +307,7 @@ describe('administrative decisions and issued permits', () => {
       world.staff,
       { applicationId: permit.applicationId, occurredOn: d('2027-03-01') },
       signal,
+      BOARD_FIXTURE_NOW,
     )
     if (!root.ok) throw new Error(root.error)
     const appeal = await add(root.value.nodeId, 'zba_appeal', '2027-04-01')

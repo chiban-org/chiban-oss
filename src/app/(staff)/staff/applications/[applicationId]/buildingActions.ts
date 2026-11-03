@@ -68,21 +68,29 @@ export async function regionalNoticeAction(formData: FormData): Promise<ActionRe
   })
 }
 
+const FUTURE_FILING: ActionResult = {
+  ok: false,
+  error: 'The filing date cannot be in the future.',
+}
+const FUTURE_RESOLUTION: ActionResult = {
+  ok: false,
+  error: 'The resolution date cannot be in the future.',
+}
+
 export async function recordAppealAction(formData: FormData): Promise<ActionResult> {
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
     const applicationId = idOf(formData)
     const filedOn = dateOf(formData, 'filedOn')
     if (applicationId === null) return INVALID
     if (filedOn === null) return INVALID_DATE
-    return done(
-      await recordAppeal(
-        db,
-        actor,
-        { applicationId, filedOn, appellantName: text(formData, 'appellantName') },
-        signal,
-      ),
-      'Appeal recorded. The permit is suspended.',
+    const recorded = await recordAppeal(
+      db,
+      actor,
+      { applicationId, filedOn, appellantName: text(formData, 'appellantName') },
+      signal,
     )
+    if (!recorded.ok && recorded.error === 'future_date') return FUTURE_FILING
+    return done(recorded, 'Appeal recorded. The permit is suspended.')
   })
 }
 
@@ -94,10 +102,9 @@ export async function resolveAppealAction(formData: FormData): Promise<ActionRes
     if (applicationId === null || (outcome !== 'permit_upheld' && outcome !== 'permit_revoked'))
       return INVALID
     if (resolvedOn === null) return INVALID_DATE
-    return done(
-      await resolveAppeal(db, actor, { applicationId, resolvedOn, outcome }, signal),
-      'Appeal resolved.',
-    )
+    const resolved = await resolveAppeal(db, actor, { applicationId, resolvedOn, outcome }, signal)
+    if (!resolved.ok && resolved.error === 'future_date') return FUTURE_RESOLUTION
+    return done(resolved, 'Appeal resolved.')
   })
 }
 
