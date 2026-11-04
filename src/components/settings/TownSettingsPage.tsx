@@ -1,8 +1,11 @@
-import Link from 'next/link'
+import { rollbackAction } from '@/app/(staff)/staff/settings/actions'
+import { ActionForm } from '@/components/ActionForm'
 import { TownSectionForm } from '@/components/config/town/TownSectionForm'
+import { VersionHistory } from '@/components/config/VersionHistory'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
+import { getEditorState } from '@/features/config/settingsViews'
 import { type TownProfileSection, townProfileForEditing } from '@/features/town/profileSettings'
 import { getTownSettings } from '@/features/town/settings'
 import type { StaffContext } from '@/server/requireStaff'
@@ -18,9 +21,10 @@ export async function TownSettingsPage({ ctx, section, title, lead }: Props) {
   if (!(await hasCapability(ctx.db, ctx.actor.userId, 'config.edit', ctx.signal))) {
     return <NoPermission title={title} action="change town settings" />
   }
-  const [profile, town] = await Promise.all([
+  const [profile, town, history] = await Promise.all([
     townProfileForEditing(ctx.db, ctx.signal),
     getTownSettings(ctx.db, ctx.signal),
+    getEditorState(ctx.db, 'town_profile', 'default', ctx.signal),
   ])
   return (
     <main>
@@ -37,9 +41,20 @@ export async function TownSettingsPage({ ctx, section, title, lead }: Props) {
         resetKey={String(profile.version)}
         townName={town.ok ? town.value.name : ''}
       />
-      <p className="mt-8 text-sm">
-        <Link href="/staff/settings/town_profile/default">Version history</Link>
-      </p>
+      <details id="version-history" className="mt-8">
+        <summary>Version history</summary>
+        <VersionHistory
+          rows={history.versions}
+          timeZone={town.ok ? town.value.timeZone : 'America/New_York'}
+          rollbackSlot={(row) => (
+            <ActionForm action={rollbackAction} submitLabel={`Restore version ${row.version}`}>
+              <input type="hidden" name="kind" value="town_profile" />
+              <input type="hidden" name="key" value="default" />
+              <input type="hidden" name="toVersion" value={row.version} />
+            </ActionForm>
+          )}
+        />
+      </details>
     </main>
   )
 }

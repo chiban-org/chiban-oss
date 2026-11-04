@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
 import { VersionHistory } from '@/components/config/VersionHistory'
@@ -70,6 +70,7 @@ export default async function SettingsKeyPage({ params }: Props) {
   const { kind, key: rawKey } = await params
   const key = decodeURIComponent(rawKey)
   if (!isConfigKind(kind)) notFound()
+  if (kind === 'town_profile') redirect('/staff/settings/town-profile')
   const ctx = await recordStaffContext()
   if (ctx === null) return <NoPermission title="Settings" action="change settings" />
   if (!(await hasCapability(ctx.db, ctx.actor.userId, 'config.edit', ctx.signal))) {
