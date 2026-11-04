@@ -2,6 +2,9 @@ import Link from 'next/link'
 import { LinkedParcelMap } from '@/components/map/LinkedParcelMap'
 import { HonestText } from '@/components/parcels/HonestText'
 import { RecordsSection } from '@/components/parcels/RecordsSection'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import type { Bbox } from '@/features/gis/extent'
 import type { PublicParcelView } from '@/features/parcels/publicParcelView'
 import { formatCivilDate, formatInstantDate } from '@/lib/formatDate'
@@ -22,20 +25,20 @@ export function ParcelSearchBox({ defaultValue = '' }: { defaultValue?: string }
       role="search"
       className="mb-6 flex flex-col gap-3 sm:flex-row"
     >
-      <label className="flex-1 text-base font-medium">
-        Find a parcel by ID, address, or owner
-        <input
+      <div className="grid flex-1 gap-2">
+        <Label htmlFor="parcel-search" className="text-base">
+          Find a parcel by ID, address, or owner
+        </Label>
+        <Input
+          id="parcel-search"
           name="q"
           defaultValue={defaultValue}
-          className="tap-target mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-base"
+          className="h-11 text-base md:text-base"
         />
-      </label>
-      <button
-        type="submit"
-        className="tap-target rounded-md bg-primary px-5 py-2 text-base text-primary-foreground sm:self-end"
-      >
+      </div>
+      <Button type="submit" size="lg" className="h-11 text-base sm:self-end">
         Search
-      </button>
+      </Button>
     </form>
   )
 }

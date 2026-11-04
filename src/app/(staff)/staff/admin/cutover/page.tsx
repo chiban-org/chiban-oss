@@ -2,6 +2,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { hasCapability } from '@/features/authz/capabilities'
 import { listRecentReconciliations } from '@/features/cutover/reconcile'
 import { cutoverTemplateTypes } from '@/features/cutover/template'
@@ -40,19 +41,19 @@ export default async function CutoverPage() {
       </p>
       <form method="get" action="/staff/admin/cutover/template.csv" className="my-3 space-y-2">
         <Label htmlFor="cutover-template-type">Application type</Label>
-        <select
+        <NativeSelect
           id="cutover-template-type"
           name="type"
           defaultValue=""
-          className="block min-h-11 rounded-md border bg-surface px-3"
+          wrapperClassName="max-w-md"
         >
-          <option value="">Every adopted application type</option>
+          <NativeSelectOption value="">Every adopted application type</NativeSelectOption>
           {types.map((t) => (
-            <option key={t.key} value={t.key}>
+            <NativeSelectOption key={t.key} value={t.key}>
               {t.label}
-            </option>
+            </NativeSelectOption>
           ))}
-        </select>
+        </NativeSelect>
         <p className="m-0">
           The template lists the form fields of the type you pick, or of every adopted type.
         </p>

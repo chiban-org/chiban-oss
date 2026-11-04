@@ -11,6 +11,8 @@ import {
   resizeBox,
   serializeBoxes,
 } from '@/components/redaction/boxModel'
+import { AreaField, SelectField, TextField } from '@/components/staff/fields'
+import { Button } from '@/components/ui/button'
 
 export interface BoxEditorProps {
   pages: PageGeometry[]
@@ -49,16 +51,18 @@ function PageWindows({
         const label = `Show pages ${start + 1} to ${Math.min(start + PAGES_PER_VIEW, total)}`
         const current = start === first
         return (
-          <button
+          <Button
             key={start}
             type="button"
+            variant="outline"
+            size="sm"
             aria-current={current ? 'page' : undefined}
             disabled={current}
-            className="rounded-md border px-3 py-1 text-sm disabled:font-semibold"
+            className="disabled:font-semibold disabled:opacity-100"
             onClick={() => onShow(start)}
           >
             {label}
-          </button>
+          </Button>
         )
       })}
     </nav>
@@ -197,9 +201,9 @@ export function BoxEditor({ pages, exemptions, mode, onChange }: BoxEditorProps)
                 />
               ))}
           </div>
-          <button
+          <Button
             type="button"
-            className="rounded-md border px-4 py-2 text-sm"
+            variant="outline"
             onClick={() =>
               add(
                 geometry.page,
@@ -211,54 +215,43 @@ export function BoxEditor({ pages, exemptions, mode, onChange }: BoxEditorProps)
             }
           >
             {`Add a box to page ${geometry.page}`}
-          </button>
+          </Button>
         </div>
       ))}
       <ul className="m-0 list-none space-y-3 p-0">
         {boxes.map((b, index) => (
-          <li key={b.id} className="space-y-2 rounded-md border p-3">
+          <li key={b.id} className="space-y-4 rounded-md border p-4">
             <p className="m-0 font-medium">{`Box ${index + 1} on page ${b.page}`}</p>
-            <label className="block text-sm font-medium">
-              Exemption
-              <select
-                value={b.exemptionKey}
-                onChange={(event) => patch(b.id, { exemptionKey: event.target.value })}
-                className="mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-sm"
-              >
-                <option value="">Choose an exemption</option>
-                {exemptions.map((e) => (
-                  <option key={e.key} value={e.key}>
-                    {e.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <SelectField
+              label="Exemption"
+              value={b.exemptionKey}
+              onChange={(event) => patch(b.id, { exemptionKey: event.target.value })}
+              options={[
+                ['', 'Choose an exemption'],
+                ...exemptions.map((e) => [e.key, e.label] as const),
+              ]}
+            />
             {b.exemptionKey === OTHER_LAW ? (
-              <label className="block text-sm font-medium">
-                Law that makes it confidential
-                <input
-                  value={b.otherCitation}
-                  onChange={(event) => patch(b.id, { otherCitation: event.target.value })}
-                  className="mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-sm"
-                />
-              </label>
-            ) : null}
-            <label className="block text-sm font-medium">
-              How the exemption applies
-              <textarea
-                value={b.explanation}
-                rows={2}
-                onChange={(event) => patch(b.id, { explanation: event.target.value })}
-                className="mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-sm"
+              <TextField
+                label="Law that makes it confidential"
+                value={b.otherCitation}
+                onChange={(event) => patch(b.id, { otherCitation: event.target.value })}
               />
-            </label>
-            <button
+            ) : null}
+            <AreaField
+              label="How the exemption applies"
+              value={b.explanation}
+              rows={2}
+              onChange={(event) => patch(b.id, { explanation: event.target.value })}
+            />
+            <Button
               type="button"
-              className="rounded-md border px-3 py-1 text-sm"
+              variant="outline"
+              size="sm"
               onClick={() => update(boxes.filter((x) => x.id !== b.id))}
             >
               Remove this box
-            </button>
+            </Button>
           </li>
         ))}
       </ul>

@@ -39,7 +39,9 @@ export function PublicHeader({ signedIn, signOutAction }: PublicHeaderProps) {
             </a>
             <form action={signOutAction}>
               <CsrfField />
-              <SubmitButton className="tap-target text-action underline">Sign out</SubmitButton>
+              <SubmitButton variant="link" className="text-base underline">
+                Sign out
+              </SubmitButton>
             </form>
           </>
         ) : (

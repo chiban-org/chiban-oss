@@ -3,6 +3,7 @@
 import { Menu, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
 import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { STAFF_NAV_COOKIE } from '@/constants/cookies'
 import { activeNavHref, groupNavItems, type NavItem } from '@/features/staffNav/navItems'
 import { cn } from '@/lib/utils'
@@ -42,17 +43,19 @@ function MobileNav({
   return (
     <div className="no-print sticky top-0 z-40 flex h-14 items-center justify-between border-b border-hairline bg-sidebar px-2 md:hidden">
       <BrandMark town={town} />
-      <button
+      <Button
         type="button"
+        variant="ghost"
+        size="icon"
         aria-label="Open the menu"
         onClick={() => {
           setOpen(true)
           drawer.current?.showModal()
         }}
-        className="flex size-11 items-center justify-center rounded-md text-ink hover:bg-surface"
+        className="size-11 text-ink hover:bg-surface"
       >
         <Menu aria-hidden={true} className="size-5" />
-      </button>
+      </Button>
       <dialog
         ref={drawer}
         aria-label="Staff menu"
@@ -65,15 +68,17 @@ function MobileNav({
         <div className="flex h-full flex-col">
           <div className="flex items-center justify-between pr-2">
             <BrandMark town={town} />
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon"
               aria-label="Close the menu"
               autoFocus
               onClick={close}
-              className="flex size-11 items-center justify-center rounded-md text-ink hover:bg-surface"
+              className="size-11 text-ink hover:bg-surface"
             >
               <X aria-hidden={true} className="size-5" />
-            </button>
+            </Button>
           </div>
           {open ? children(close) : null}
         </div>

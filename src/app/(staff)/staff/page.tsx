@@ -5,6 +5,7 @@ import { RecentParcelSearches } from '@/components/parcels/RecentParcelSearches'
 import { SearchExamples } from '@/components/parcels/SearchExamples'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { isReviewer } from '@/features/access/roles'
 import { type SearchExample, searchExample } from '@/features/parcels/searchExample'
 import {
@@ -131,9 +132,9 @@ function ParcelSearch({ userId, example }: { userId: string; example: SearchExam
   return (
     <div className="flex max-w-2xl flex-col gap-3">
       <form role="search" method="get" action="/staff/parcels" className="flex gap-3">
-        <label htmlFor="home-parcel-search" className="sr-only">
+        <Label htmlFor="home-parcel-search" className="sr-only">
           Address, owner, or parcel ID
-        </label>
+        </Label>
         <Input
           id="home-parcel-search"
           name="q"

@@ -1,6 +1,7 @@
 import { Check, X } from 'lucide-react'
 import Link from 'next/link'
 import { Fragment } from 'react'
+import { Badge } from '@/components/ui/badge'
 import type { ChipGroupView, ChipView } from '@/features/dataTable/quickFilters'
 import { cn } from '@/lib/utils'
 import { FilterMenu } from './FilterMenu'
@@ -51,14 +52,16 @@ function ActiveMenuChips({ groups }: { groups: ChipGroupView[] }) {
     <ul className="flex w-full flex-wrap items-center gap-2" aria-label="Active filters">
       {active.map(({ group, chip }) => (
         <li key={chip.href}>
-          <Link
-            href={chip.href}
-            aria-label={`Remove ${group.label} filter ${chip.label}`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-action/40 bg-action/10 py-0.5 pr-1.5 pl-3 text-sm text-action no-underline hover:border-action"
+          <Badge
+            asChild
+            variant="outline"
+            className="gap-1.5 border-action/40 bg-action/10 py-0.5 pr-1.5 pl-3 text-sm font-normal text-action no-underline hover:border-action [a&]:hover:bg-action/10 [a&]:hover:text-action [&>svg]:size-3.5"
           >
-            {chip.label}
-            <X aria-hidden={true} className="size-3.5" />
-          </Link>
+            <Link href={chip.href} aria-label={`Remove ${group.label} filter ${chip.label}`}>
+              {chip.label}
+              <X aria-hidden={true} />
+            </Link>
+          </Badge>
         </li>
       ))}
     </ul>

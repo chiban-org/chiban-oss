@@ -1,6 +1,8 @@
 'use client'
 
 import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { Label } from '@/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 
 interface IndexEntry {
   id: string
@@ -124,21 +126,21 @@ function JumpMenu({ entries }: { entries: IndexEntry[] }) {
   if (entries.length < 4) return null
   return (
     <nav aria-label="Jump to a section" className="no-print lg:hidden">
-      <label className="flex flex-col gap-1 text-sm font-semibold text-muted-foreground">
+      <Label className="flex-col items-stretch gap-2 font-semibold text-muted-foreground">
         On this page
-        <select
+        <NativeSelect
           value=""
           onChange={(event) => document.getElementById(event.target.value)?.scrollIntoView()}
-          className="rounded-md border border-control-border bg-surface px-3 py-2 font-normal text-ink"
+          className="font-normal"
         >
-          <option value="">Choose a section</option>
+          <NativeSelectOption value="">Choose a section</NativeSelectOption>
           {entries.map((entry) => (
-            <option key={entry.id} value={entry.id}>
+            <NativeSelectOption key={entry.id} value={entry.id}>
               {entry.label}
-            </option>
+            </NativeSelectOption>
           ))}
-        </select>
-      </label>
+        </NativeSelect>
+      </Label>
     </nav>
   )
 }

@@ -1,8 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { CsrfField } from '@/components/CsrfField'
+import { TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { listExports } from '@/features/export/requestExport'
 import { currentServiceState } from '@/features/town/serviceStatus'
 import { getTownSettings } from '@/features/town/settings'
@@ -129,40 +128,32 @@ export default async function ExportPage({ searchParams }: ExportPageProps = {})
           {recoveryError === undefined ? null : (
             <p role="alert">{RECOVERY_ERROR_COPY[recoveryError] ?? RECOVERY_ERROR_FALLBACK}</p>
           )}
-          <form method="post" action="/staff/admin/export/recovery" className="max-w-md space-y-3">
+          <form method="post" action="/staff/admin/export/recovery" className="max-w-md space-y-4">
             <CsrfField />
-            <div>
-              <Label htmlFor="recovery-password">Your password</Label>
-              <Input
-                id="recovery-password"
-                name="password"
-                type="password"
-                required
-                autoComplete="current-password"
-              />
-            </div>
-            <div>
-              <Label htmlFor="recovery-totp">Authenticator code</Label>
-              <Input
-                id="recovery-totp"
-                name="totp"
-                inputMode="numeric"
-                autoComplete="one-time-code"
-              />
-            </div>
-            <div>
-              <Label htmlFor="recovery-passphrase">
-                Passphrase for the file (at least 16 characters)
-              </Label>
-              <Input
-                id="recovery-passphrase"
-                name="passphrase"
-                type="password"
-                minLength={16}
-                required
-                autoComplete="new-password"
-              />
-            </div>
+            <TextField
+              id="recovery-password"
+              label="Your password"
+              name="password"
+              type="password"
+              required
+              autoComplete="current-password"
+            />
+            <TextField
+              id="recovery-totp"
+              label="Authenticator code"
+              name="totp"
+              inputMode="numeric"
+              autoComplete="one-time-code"
+            />
+            <TextField
+              id="recovery-passphrase"
+              label="Passphrase for the file (at least 16 characters)"
+              name="passphrase"
+              type="password"
+              minLength={16}
+              required
+              autoComplete="new-password"
+            />
             <Button type="submit">Download recovery export</Button>
           </form>
         </section>

@@ -1,5 +1,4 @@
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { TextField } from '@/components/staff/fields'
 import type { ExportTargetView } from '@/features/export/targets/manageTargets'
 
 interface Props {
@@ -29,18 +28,16 @@ function Field(props: {
   const value =
     props.secret === true ? '' : (props.defaultValue ?? settingOf(props.current, props.name))
   return (
-    <div>
-      <Label htmlFor={id}>{props.label}</Label>
-      <Input
-        id={id}
-        name={props.name}
-        type={props.type ?? 'text'}
-        defaultValue={value}
-        autoComplete="off"
-        required={props.required ?? props.current === undefined}
-        {...(props.placeholder === undefined ? {} : { placeholder: props.placeholder })}
-      />
-    </div>
+    <TextField
+      id={id}
+      label={props.label}
+      name={props.name}
+      type={props.type ?? 'text'}
+      defaultValue={value}
+      autoComplete="off"
+      required={props.required ?? props.current === undefined}
+      {...(props.placeholder === undefined ? {} : { placeholder: props.placeholder })}
+    />
   )
 }
 
@@ -49,7 +46,7 @@ export function TargetFields({ kind, idPrefix, current }: Props) {
   const keep = editing ? 'Leave blank to keep the saved value' : undefined
   const base = { idPrefix, current }
   return (
-    <div className="max-w-md space-y-3">
+    <div className="max-w-md space-y-4">
       <input type="hidden" name="kind" value={kind} />
       {editing ? <input type="hidden" name="id" value={current.id} /> : null}
       <Field {...base} name="name" label="Name" required defaultValue={current?.name ?? ''} />

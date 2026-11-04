@@ -2,6 +2,8 @@
 
 import { Check, ChevronDown } from 'lucide-react'
 import Link from 'next/link'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,21 +17,24 @@ export function FilterMenu({ group }: { group: ChipGroupView }) {
   const activeCount = group.chips.filter((chip) => chip.active).length
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger
-        className={cn(
-          'inline-flex h-9 cursor-pointer items-center gap-1.5 rounded-md border bg-surface px-3 text-sm',
-          activeCount > 0
-            ? 'border-action font-semibold text-action'
-            : 'border-hairline text-ink hover:border-control-border',
-        )}
-      >
-        {group.label}
-        {activeCount > 0 ? (
-          <span className="rounded-full bg-action px-1.5 text-xs leading-5 font-semibold text-white tabular-nums">
-            {activeCount}
-          </span>
-        ) : null}
-        <ChevronDown aria-hidden={true} className="size-4 text-muted-foreground" />
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="outline"
+          className={cn(
+            'gap-1.5 px-3 has-[>svg]:px-3',
+            activeCount > 0
+              ? 'border-action font-semibold text-action'
+              : 'border-hairline font-normal hover:border-control-border hover:bg-surface',
+          )}
+        >
+          {group.label}
+          {activeCount > 0 ? (
+            <Badge className="px-1.5 py-0 leading-5 font-semibold tabular-nums">
+              {activeCount}
+            </Badge>
+          ) : null}
+          <ChevronDown aria-hidden={true} className="size-4 text-muted-foreground" />
+        </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="start" className="min-w-64 bg-surface">
         {group.chips.map((chip) => (

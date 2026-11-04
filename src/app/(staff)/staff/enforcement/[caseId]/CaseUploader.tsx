@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Uploader, type UploaderActions } from '@/components/documents/Uploader'
 import { Label } from '@/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 
 export function CaseUploader({
   caseId,
@@ -24,18 +25,18 @@ export function CaseUploader({
         <Label htmlFor="upload-kind" className="text-base font-medium">
           What kind of document
         </Label>
-        <select
+        <NativeSelect
           id="upload-kind"
           value={docKind}
           onChange={(e) => setDocKind(e.target.value)}
-          className="block min-h-11 w-full rounded-md border bg-surface px-3 py-2 text-base"
+          className="min-h-11 text-base md:text-base"
         >
           {kinds.map(([value, label]) => (
-            <option key={value} value={value}>
+            <NativeSelectOption key={value} value={value}>
               {label}
-            </option>
+            </NativeSelectOption>
           ))}
-        </select>
+        </NativeSelect>
       </div>
       <Uploader
         target={{ kind: 'enforcement_case', id: caseId }}

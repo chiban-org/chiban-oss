@@ -2,6 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
+import { Button } from '@/components/ui/button'
 import { parseRecent, rememberSearch, searchHref } from '@/features/parcels/recentSearches'
 
 function storageKey(userId: string, list: string): string {
@@ -52,13 +53,15 @@ export function RecentParcelSearches({
     <div className="flex flex-wrap items-center gap-2 text-sm">
       <span className="font-semibold text-muted-foreground">Recent</span>
       {recent.map((q) => (
-        <Link
+        <Button
           key={q}
-          href={searchHref(hrefBase, param, q, query)}
-          className="rounded-md border border-hairline bg-surface px-2.5 py-1 text-ink no-underline hover:border-control-border"
+          asChild
+          variant="outline"
+          size="xs"
+          className="text-sm font-normal no-underline"
         >
-          {q}
-        </Link>
+          <Link href={searchHref(hrefBase, param, q, query)}>{q}</Link>
+        </Button>
       ))}
       <button
         type="button"

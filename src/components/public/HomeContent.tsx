@@ -1,5 +1,8 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 
 export type HomeAudience = 'visitor' | 'resident' | 'staff'
 
@@ -48,21 +51,18 @@ export function HomeContent({ audience }: { audience: HomeAudience }) {
           Find a parcel, see its permits and applications, and track what the town has on file.
         </p>
         <form action="/parcels" method="get" role="search" className="mt-6 flex flex-wrap gap-3">
-          <label htmlFor="home-parcel-search" className="sr-only">
+          <Label htmlFor="home-parcel-search" className="sr-only">
             Address, owner, or parcel ID
-          </label>
-          <input
+          </Label>
+          <Input
             id="home-parcel-search"
             name="q"
             placeholder="Address, owner, or parcel ID"
-            className="min-w-0 flex-1 rounded-md border bg-surface px-4 text-base"
+            className="h-11 flex-1 px-4 text-base md:text-base"
           />
-          <button
-            type="submit"
-            className="rounded-md bg-primary px-6 font-semibold text-primary-foreground"
-          >
+          <Button type="submit" size="lg" className="h-11 text-base font-semibold">
             Search parcels
-          </button>
+          </Button>
         </form>
       </div>
       <ul className="mt-10 divide-y">

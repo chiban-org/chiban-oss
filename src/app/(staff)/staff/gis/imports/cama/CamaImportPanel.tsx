@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useRef, useState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
-import { SelectField, TextField } from '@/components/staff/fields'
+import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
 import {
   CAMA_DELIMITERS,
@@ -94,17 +94,9 @@ export function CamaImportPanel({
   const setParts = (parts: CamaIdPart[]) => setMapping({ ...mapping, id: { ...mapping.id, parts } })
 
   return (
-    <form ref={formRef} onSubmit={(e) => e.preventDefault()} className="max-w-3xl space-y-3">
+    <form ref={formRef} onSubmit={(e) => e.preventDefault()} className="max-w-3xl space-y-4">
       <CsrfField />
-      <label className="block text-sm font-medium">
-        CAMA file
-        <input
-          type="file"
-          name="file"
-          accept=".csv,.txt,text/csv"
-          className="mt-1 block w-full text-sm"
-        />
-      </label>
+      <TextField label="CAMA file" type="file" name="file" accept=".csv,.txt,text/csv" />
       <div className="flex flex-wrap gap-4">
         <SelectField
           label="Encoding"
@@ -165,10 +157,11 @@ export function CamaImportPanel({
         onChange={(columns) => setMapping({ ...mapping, siteAddress: { columns } })}
       />
       {preview === null ? null : <PreviewTable preview={preview} />}
-      <label className="flex items-center gap-2 text-sm">
-        <input type="checkbox" name="fullLayer" defaultChecked />
-        This file lists every parcel. Report parcels that are missing from it.
-      </label>
+      <CheckField
+        label="This file lists every parcel. Report parcels that are missing from it."
+        name="fullLayer"
+        defaultChecked
+      />
       <div className="flex flex-wrap gap-3">
         <Button type="button" variant="outline" disabled={pending} onClick={() => void onSave()}>
           Save mapping

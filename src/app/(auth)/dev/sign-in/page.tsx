@@ -33,7 +33,7 @@ export default async function DevSignInPage() {
               <CsrfField />
               <input type="hidden" name="email" value={row.email} />
               <input type="hidden" name="kind" value={row.kind} />
-              <SubmitButton>
+              <SubmitButton variant="outline">
                 {row.name} ({row.role})
               </SubmitButton>
             </form>

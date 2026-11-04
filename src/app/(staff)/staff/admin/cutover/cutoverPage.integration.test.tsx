@@ -102,7 +102,7 @@ describe('cutover page', () => {
     const html = renderToStaticMarkup(await CutoverPage())
     expect(html).toMatch(/<form[^>]*action="\/staff\/admin\/cutover\/template\.csv"/)
     expect(html).toMatch(/<select[^>]*name="type"/)
-    expect(html).toContain('<option value="EL">Electrical permit</option>')
+    expect(html).toMatch(/<option[^>]*value="EL"[^>]*>Electrical permit<\/option>/)
   })
 
   it('serves a lowercase type key and refuses an unknown one', async () => {

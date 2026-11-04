@@ -1,6 +1,9 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import type { CamaIdPart } from '@/features/cama/mapping'
 
 interface IdPartsEditorProps {
@@ -30,25 +33,25 @@ export function IdPartsEditor({ parts, headers, onChange }: IdPartsEditorProps) 
       {parts.map((part, index) => {
         const options = [...new Set([...headers, ...('column' in part ? [part.column] : [])])]
         return (
-          <div key={`part-${index.toString()}`} className="mt-1 flex flex-wrap items-center gap-2">
-            <select
+          <div key={`part-${index.toString()}`} className="mt-2 flex flex-wrap items-center gap-2">
+            <NativeSelect
               aria-label={`ID part ${index + 1} source`}
               value={selectionOf(part)}
               onChange={(e) => choose(index, e.target.value)}
-              className="block rounded-md border bg-surface px-3 py-2 text-sm"
+              wrapperClassName="w-auto"
             >
-              <option value="">Choose a column</option>
+              <NativeSelectOption value="">Choose a column</NativeSelectOption>
               {options.map((h) => (
-                <option key={h} value={h}>
+                <NativeSelectOption key={h} value={h}>
                   {h}
-                </option>
+                </NativeSelectOption>
               ))}
-              <option value={FIXED_DIGITS}>Fixed digits</option>
-            </select>
+              <NativeSelectOption value={FIXED_DIGITS}>Fixed digits</NativeSelectOption>
+            </NativeSelect>
             {'column' in part ? (
-              <label className="text-sm">
+              <Label className="font-normal">
                 Width
-                <input
+                <Input
                   type="number"
                   min={1}
                   max={15}
@@ -56,18 +59,18 @@ export function IdPartsEditor({ parts, headers, onChange }: IdPartsEditorProps) 
                   onChange={(e) =>
                     replaceAt(index, { column: part.column, width: Number(e.target.value) })
                   }
-                  className="ml-2 w-20 rounded-md border bg-surface px-2 py-2 text-sm"
+                  className="w-20"
                 />
-              </label>
+              </Label>
             ) : (
-              <label className="text-sm">
+              <Label className="font-normal">
                 Digits
-                <input
+                <Input
                   value={part.literal}
                   onChange={(e) => replaceAt(index, { literal: e.target.value })}
-                  className="ml-2 w-24 rounded-md border bg-surface px-2 py-2 text-sm"
+                  className="w-24"
                 />
-              </label>
+              </Label>
             )}
             {parts.length > 1 ? (
               <Button

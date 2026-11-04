@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { RecentParcelSearches } from '@/components/parcels/RecentParcelSearches'
 import { TextField } from '@/components/staff/fields'
+import { Button } from '@/components/ui/button'
 
 export interface FindContext {
   requestId: string
@@ -14,15 +15,15 @@ export function ReleaseFind({ requestId, find, userId, example }: FindContext) {
   const query = find.trim()
   return (
     <div className="space-y-2">
-      <form role="search" method="get" action={path} className="space-y-2">
+      <form role="search" method="get" action={path} className="space-y-4">
         <TextField
           label="Find a document by title or application or case number"
           name="find"
           defaultValue={find}
         />
-        <button type="submit" className="rounded-md border px-4 py-2 text-sm">
+        <Button type="submit" variant="outline">
           Find
-        </button>
+        </Button>
       </form>
       {example === null ? null : (
         <p className="m-0 flex flex-wrap items-center gap-2 text-sm">

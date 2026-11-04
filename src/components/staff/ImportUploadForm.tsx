@@ -4,7 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { type FormEvent, useState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
-import { SelectField } from '@/components/staff/fields'
+import { SelectField, TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
 import { attempt } from '@/lib/attempt'
 
@@ -66,14 +66,11 @@ export function ImportUploadForm({ layerKey, primary }: ImportUploadFormProps) {
   }
 
   return (
-    <form onSubmit={(event) => void onSubmit(event)} className="max-w-md space-y-3">
+    <form onSubmit={(event) => void onSubmit(event)} className="max-w-md space-y-4">
       <CsrfField />
       <input type="hidden" name="layerKey" value={layerKey} />
       <SelectField label="File format" name="adapter" options={ADAPTERS} />
-      <label className="block text-sm font-medium">
-        File
-        <input type="file" name="file" required className="mt-1 block w-full text-sm" />
-      </label>
+      <TextField label="File" type="file" name="file" required />
       <div className="flex items-center gap-3">
         <Button type="submit" variant={primary ? 'default' : 'outline'} disabled={pending}>
           {pending ? 'Importing' : 'Run import'}

@@ -2,6 +2,9 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
+import { Button } from '@/components/ui/button'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import { minutesToClock } from '@/features/inspections/zonedTime'
 import { formatCivilDate } from '@/lib/formatDate'
 
@@ -53,16 +56,18 @@ function SlotButtons({
     <div className="mt-2 flex flex-wrap gap-2">
       {day.freeStarts.length === 0 ? <span>Full</span> : null}
       {day.freeStarts.map((start) => (
-        <button
+        <Button
           key={start}
           type="button"
+          variant="outline"
+          size="sm"
           aria-label={`${minutesToClock(start)}, ${formatCivilDate(day.date)}, ${day.inspectorName}`}
           onFocus={() => onFocusSlot(day, start)}
           onClick={() => onPick(day, start)}
-          className="rounded-md border border-control-border px-3 py-1.5 tabular-nums hover:bg-canvas"
+          className="tabular-nums"
         >
           {minutesToClock(start)}
-        </button>
+        </Button>
       ))}
     </div>
   )
@@ -186,17 +191,14 @@ export function ScheduleBoard({
     <div className="grid items-start gap-6 md:grid-cols-[22rem_1fr] [&>section]:m-0">
       <section aria-label="Requests and bookings" className="space-y-3">
         <h2 className="m-0 text-xl">Requests and bookings</h2>
-        <label htmlFor="request-search" className="block font-medium">
-          Search requests
-        </label>
-        <input
+        <Label htmlFor="request-search">Search requests</Label>
+        <Input
           ref={search}
           id="request-search"
           type="search"
           placeholder="Permit number, address or contact"
           value={query}
           onChange={(e) => setQuery(e.target.value)}
-          className="h-10 w-full rounded-md border bg-surface px-3"
         />
         {visible.length === 0 ? (
           <p className="m-0">No requests are waiting.</p>

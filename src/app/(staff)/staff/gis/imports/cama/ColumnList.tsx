@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@/components/ui/button'
+import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 
 interface ColumnListProps {
   label: string
@@ -20,20 +21,20 @@ export function ColumnList({ label, columns, headers, onChange, maxColumns }: Co
     <fieldset className="my-3">
       <legend className="text-sm font-medium">{label}</legend>
       {columns.map((column, index) => (
-        <div key={`${label}-${index.toString()}`} className="mt-1 flex items-center gap-2">
-          <select
+        <div key={`${label}-${index.toString()}`} className="mt-2 flex items-center gap-2">
+          <NativeSelect
             aria-label={`${label} column ${index + 1}`}
             value={column}
             onChange={(e) => replaceAt(index, e.target.value)}
-            className="block rounded-md border bg-surface px-3 py-2 text-sm"
+            wrapperClassName="w-auto"
           >
-            <option value={EMPTY_CHOICE}>Choose a column</option>
+            <NativeSelectOption value={EMPTY_CHOICE}>Choose a column</NativeSelectOption>
             {options.map((h) => (
-              <option key={h} value={h}>
+              <NativeSelectOption key={h} value={h}>
                 {h}
-              </option>
+              </NativeSelectOption>
             ))}
-          </select>
+          </NativeSelect>
           {columns.length > 1 ? (
             <Button
               type="button"

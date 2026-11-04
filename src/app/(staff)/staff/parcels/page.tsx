@@ -4,6 +4,7 @@ import { SortHeader } from '@/components/dataTable/SortHeader'
 import { MoreMatchesNotice } from '@/components/parcels/MoreMatchesNotice'
 import { RecentParcelSearches } from '@/components/parcels/RecentParcelSearches'
 import { SearchExamples } from '@/components/parcels/SearchExamples'
+import { TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
 import { clearHref, paramValues, type RawSearchParams } from '@/features/dataTable/params'
 import { DIR_PARAM, SORT_PARAM, sortLinks } from '@/features/dataTable/sort'
@@ -41,14 +42,9 @@ export default async function StaffParcelsPage({ searchParams }: ParcelsPageProp
     <main data-wide="">
       <h1>Parcels</h1>
       <form method="get" role="search" className="mt-4 mb-3 flex gap-3">
-        <label className="flex-1 text-sm font-medium">
-          Search by parcel ID, address, or owner
-          <input
-            name="q"
-            defaultValue={q}
-            className="mt-1 block w-full rounded-md border bg-surface px-3 py-2"
-          />
-        </label>
+        <div className="flex-1">
+          <TextField label="Search by parcel ID, address, or owner" name="q" defaultValue={q} />
+        </div>
         {CARRIED_PARAMS.flatMap((name) =>
           paramValues(params, name).map((value) => (
             <input key={`${name}:${value}`} type="hidden" name={name} value={value} />

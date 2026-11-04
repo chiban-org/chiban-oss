@@ -3,6 +3,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { Button } from '@/components/ui/button'
 import { CENSUS_EXCLUDED_REASONS } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { censusBpsReport, incompleteCopy } from '@/features/census/bpsReport'
@@ -122,9 +123,9 @@ export default async function CensusPage({
         {activeSortFields(tableParams, [LARGE_SCOPE]).map(([name, value]) => (
           <Hidden key={name} name={name} value={value} />
         ))}
-        <button type="submit" className="rounded-md border px-4 py-2 text-sm">
+        <Button type="submit" variant="outline">
           Show report
-        </button>
+        </Button>
       </form>
       <h2>{`${r.townName}, ${r.period}`}</h2>
       {r.noPermits ? <p role="status">No permits issued.</p> : null}

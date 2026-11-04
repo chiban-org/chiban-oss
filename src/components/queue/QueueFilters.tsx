@@ -3,6 +3,8 @@
 import type { ChangeEvent } from 'react'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { QUEUE_SEARCH_ID } from '@/components/queue/useQueueKeys'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
 import type { ChipGroupView } from '@/features/dataTable/quickFilters'
 
 function submitOnChange(event: ChangeEvent<HTMLFormElement>) {
@@ -27,17 +29,17 @@ export function QueueFilters({ search, carried, chips, clearHref }: Props) {
         onChange={submitOnChange}
         className="flex flex-wrap items-center gap-2"
       >
-        <label className="text-sm">
-          <span className="sr-only">Search by number</span>
-          <input
-            id={QUEUE_SEARCH_ID}
-            type="search"
-            name="q"
-            defaultValue={search}
-            placeholder="Search by number"
-            className="h-9 w-48 rounded-md border bg-surface px-3"
-          />
-        </label>
+        <Label htmlFor={QUEUE_SEARCH_ID} className="sr-only">
+          Search by number
+        </Label>
+        <Input
+          id={QUEUE_SEARCH_ID}
+          type="search"
+          name="q"
+          defaultValue={search}
+          placeholder="Search by number"
+          className="w-48"
+        />
         {carried.map(([name, value]) => (
           <input key={`${name}=${value}`} type="hidden" name={name} value={value} />
         ))}

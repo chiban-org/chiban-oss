@@ -53,7 +53,7 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
       <form action={confirmMagicLinkAction}>
         <CsrfField />
         <input type="hidden" name="token" value={token} />
-        <SubmitButton className="tap-target rounded-md bg-primary px-5 py-2 text-base text-primary-foreground">
+        <SubmitButton size="lg" className="text-base">
           {`Continue as ${link.email}`}
         </SubmitButton>
       </form>

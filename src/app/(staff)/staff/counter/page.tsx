@@ -6,6 +6,7 @@ import { QuickIssueForm } from '@/components/counter/QuickIssueForm'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecentParcelSearches } from '@/components/parcels/RecentParcelSearches'
 import { SearchExamples } from '@/components/parcels/SearchExamples'
+import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { Button } from '@/components/ui/button'
 import { parcels } from '@/db/schema'
@@ -179,14 +180,13 @@ export default async function CounterPage({ searchParams }: Props) {
         <h2 id="parcel">Parcel</h2>
         <form method="get" role="search" className="flex max-w-3xl gap-3">
           <input type="hidden" name="type" value={selectedType?.key ?? ''} />
-          <label className="flex-1 text-sm font-medium">
-            Search by parcel ID, address, or owner (press / to search)
-            <input
+          <div className="flex-1">
+            <TextField
+              label="Search by parcel ID, address, or owner (press / to search)"
               name="q"
               defaultValue={q}
-              className="mt-1 block w-full rounded-md border bg-surface px-3 py-2"
             />
-          </label>
+          </div>
           <Button type="submit" className="self-end">
             Search
           </Button>
@@ -216,13 +216,18 @@ export default async function CounterPage({ searchParams }: Props) {
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {types.map((t) => (
             <li key={t.key}>
-              <Link
-                href={href({ q, parcel: parcelId, type: t.key })}
-                aria-current={t.key === selectedType?.key ? 'true' : undefined}
-                className="flex min-h-11 items-center rounded-md border border-control-border bg-surface px-4 py-2 text-ink no-underline hover:border-action hover:bg-canvas aria-[current=true]:border-2 aria-[current=true]:border-action aria-[current=true]:bg-canvas aria-[current=true]:font-semibold"
+              <Button
+                asChild
+                variant="outline"
+                className="h-auto min-h-11 w-full justify-start font-normal whitespace-normal no-underline hover:border-action aria-[current=true]:border-2 aria-[current=true]:border-action aria-[current=true]:bg-canvas aria-[current=true]:font-semibold"
               >
-                {t.label}
-              </Link>
+                <Link
+                  href={href({ q, parcel: parcelId, type: t.key })}
+                  aria-current={t.key === selectedType?.key ? 'true' : undefined}
+                >
+                  {t.label}
+                </Link>
+              </Button>
             </li>
           ))}
         </ul>

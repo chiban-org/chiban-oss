@@ -1,4 +1,5 @@
 import { ActionForm } from '@/components/ActionForm'
+import { Button } from '@/components/ui/button'
 import { portalActorOrNull } from '@/server/requirePortal'
 import { claimProjectAction } from './actions'
 
@@ -44,12 +45,9 @@ export default async function ClaimPage({ params }: { params: Promise<{ token: s
       <h1>Claim your project</h1>
       <p>Claiming the project lets you follow its permits and inspections in one place.</p>
       {actor === null ? (
-        <a
-          href={`/sign-in?next=${encodeURIComponent(`/claim/${token}`)}`}
-          className="tap-target inline-flex items-center rounded-md bg-primary px-5 py-2 text-primary-foreground"
-        >
-          Sign in to claim
-        </a>
+        <Button asChild size="lg" className="tap-target text-base no-underline">
+          <a href={`/sign-in?next=${encodeURIComponent(`/claim/${token}`)}`}>Sign in to claim</a>
+        </Button>
       ) : (
         <ActionForm action={claimProjectAction} submitLabel="Claim this project" variant="default">
           <input type="hidden" name="token" value={token} />

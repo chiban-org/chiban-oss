@@ -2,6 +2,7 @@
 
 import { CsrfField } from '@/components/CsrfField'
 import { SubmitButton } from '@/components/SubmitButton'
+import { TextField } from '@/components/staff/fields'
 import { useFormAction } from '@/components/useFormAction'
 import { type SignInState, signInAction } from './actions'
 
@@ -17,37 +18,26 @@ export function SignInForm() {
   return (
     <form {...formProps} className="flex flex-col gap-4">
       <CsrfField />
-      <label className="flex flex-col gap-1">
-        <span>Email</span>
-        <input name="email" type="email" autoComplete="username" required className="border p-2" />
-      </label>
-      <label className="flex flex-col gap-1">
-        <span>Password</span>
-        <input
-          name="password"
-          type="password"
-          autoComplete="current-password"
-          required
-          className="border p-2"
-        />
-      </label>
+      <TextField label="Email" name="email" type="email" autoComplete="username" required />
+      <TextField
+        label="Password"
+        name="password"
+        type="password"
+        autoComplete="current-password"
+        required
+      />
       {state.needTotp ? (
-        <label className="flex flex-col gap-1">
-          <span>6-digit code from your authenticator</span>
-          <input
-            name="totp"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            pattern="[0-9]{6}"
-            required
-            className="border p-2"
-          />
-        </label>
+        <TextField
+          label="6-digit code from your authenticator"
+          name="totp"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          pattern="[0-9]{6}"
+          required
+        />
       ) : null}
       {state.error === null ? null : <p role="alert">{state.error}</p>}
-      <SubmitButton className="p-2">
-        {state.needTotp ? 'Verify and sign in' : 'Sign in'}
-      </SubmitButton>
+      <SubmitButton>{state.needTotp ? 'Verify and sign in' : 'Sign in'}</SubmitButton>
     </form>
   )
 }
