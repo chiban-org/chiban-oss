@@ -33,7 +33,11 @@ export function CaseStatusForm({ detail }: { detail: CaseDetail }) {
         <Hidden name="caseId" value={row.id} />
         <Hidden name="expectedRowVersion" value={row.rowVersion} />
         <SelectField label="Move the case to" name="to" options={options} />
-        <TextField label="Reason (needed to close)" name="reason" />
+        <TextField
+          label="Reason (needed to close)"
+          name="reason"
+          required={next.includes('closed')}
+        />
       </ActionForm>
     </NextStep>
   )
