@@ -427,7 +427,7 @@
   }
 }
 
-.staff-content:has(> main[data-wide]) {
+.staff-content:has(main[data-wide]) {
   max-width: var(--list-max-width);
 }
 

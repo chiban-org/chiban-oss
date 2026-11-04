@@ -1,5 +1,6 @@
 import { and, desc, eq } from 'drizzle-orm'
 import { ActionForm } from '@/components/ActionForm'
+import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { enforcementDesignations, roleCapabilities, userRoles, users } from '@/db/schema'
@@ -50,11 +51,10 @@ export default async function EnforcementOfficersPage() {
     .orderBy(users.displayName)
   return (
     <main className="space-y-6">
-      <h1>Enforcement officers</h1>
-      <p>
-        A cease and desist order can be issued only by an officer the town has designated. Record
-        the designation the board adopted.
-      </p>
+      <SettingsHeader
+        title="Enforcement officers"
+        lead="Who may issue a cease and desist order. Record each designation the board adopts."
+      />
       {designations.length === 0 ? <p>No officer has been designated.</p> : null}
       <ul className="m-0 list-none space-y-2 p-0">
         {designations.map((d) => (

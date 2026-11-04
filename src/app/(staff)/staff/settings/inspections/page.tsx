@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
 import { GraphStubNotice } from '@/components/inspections/GraphStubNotice'
+import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { hasCapability } from '@/features/authz/capabilities'
 import { editorContext } from '@/features/config/editorContext'
@@ -25,10 +26,13 @@ export default async function InspectionSettingsPage() {
   const tenant = await connectedTenant(ctx.db, ctx.signal)
   return (
     <main className="space-y-6">
-      <h1>Inspection settings</h1>
+      <SettingsHeader
+        title="Inspection schedule"
+        lead="When inspections can be booked, and where each inspector's calendar invites go."
+      />
       <p>
         <Link href="/staff/inspections" className="text-action underline">
-          Back to the schedule board
+          Open the schedule board
         </Link>
       </p>
       {canEdit ? (

@@ -1,3 +1,5 @@
+import { SettingsHeader } from '@/components/settings/SettingsHeader'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { listBatches } from '@/features/migration/batchQueries'
 import { getTownSettings } from '@/features/town/settings'
 import { formatInstantDate } from '@/lib/formatDate'
@@ -10,22 +12,20 @@ export default async function MigrationPage() {
   const ctx = await requireStaffContext()
   const listed = await listBatches(ctx.db, ctx.actor, ctx.signal)
   if (!listed.ok) {
-    return (
-      <main>
-        <h1>Scanned property files</h1>
-        <p role="alert">You do not have permission to migrate scanned files.</p>
-      </main>
-    )
+    return <NoPermission title="Scanned property files" action="migrate scanned files" />
   }
   const town = await getTownSettings(ctx.db, ctx.signal)
   const zone = town.ok ? town.value.timeZone : 'UTC'
   return (
     <main>
-      <h1>Scanned property files</h1>
+      <SettingsHeader
+        title="Scanned property files"
+        lead="Batches of old scanned property files brought into Chiban. Nothing in a batch is public until someone with permission publishes it."
+      />
       <p>
         Each batch is one folder of scanned files that an operator scanned and ran with the legacy
         documents command. Originals are kept as they are, and a searchable PDF/A copy is stored
-        alongside. Nothing in a batch is public until someone with permission publishes it.
+        alongside.
       </p>
       {listed.value.length === 0 ? <p>No batches have been scanned yet.</p> : null}
       <ul className="m-0 list-none space-y-3 p-0">

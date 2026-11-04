@@ -1,5 +1,4 @@
-import { KIND_LABELS } from '@/features/config/kindLabels'
-import type { KeyRow, KindSummary } from '@/features/config/settingsViews'
+import type { KeyRow } from '@/features/config/settingsViews'
 import {
   type RawSearchParams,
   readTableParams,
@@ -16,29 +15,14 @@ import type { RuleSummary } from '@/features/packs/ruleSummary'
 import { countGroups, filterRows } from '@/features/staffTables/listFilters'
 import { sortRows } from '@/features/staffTables/sortRows'
 
-export const SETTINGS_PATH = '/staff/settings'
+export const STATE_LAW_PATH = '/staff/settings/state-law'
 
-export const KIND_TABLE_SCOPE = 'kinds'
 export const RULE_TABLE_SCOPE = 'rules'
-
-export type KindSortKey = 'order' | 'kind' | 'items'
-export const KIND_SORT: SortConfig<KindSortKey> = {
-  defaultKey: 'order',
-  columns: { order: 'asc', kind: 'asc', items: 'desc' },
-}
 
 export type RuleSortKey = 'order' | 'rule' | 'citation' | 'policy'
 export const RULE_SORT: SortConfig<RuleSortKey> = {
   defaultKey: 'order',
   columns: { order: 'asc', rule: 'asc', citation: 'asc', policy: 'asc' },
-}
-
-export function sortKindSummaries(rows: readonly KindSummary[], state: SortState<KindSortKey>) {
-  return sortRows(rows, state, {
-    order: null,
-    kind: (r) => KIND_LABELS[r.kind],
-    items: (r) => r.keys,
-  })
 }
 
 export function sortRuleSummaries(rows: readonly RuleSummary[], state: SortState<RuleSortKey>) {

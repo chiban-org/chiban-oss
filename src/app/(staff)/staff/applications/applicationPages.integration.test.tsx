@@ -40,7 +40,11 @@ const { default: ApplicationsPage } = await import('@/app/(staff)/staff/applicat
 const { default: ClockOverridesPage } = await import('@/app/(staff)/staff/overrides/clocks/page')
 const { default: FeeOverridesPage } = await import('@/app/(staff)/staff/overrides/fees/page')
 const { default: AliasOverridesPage } = await import('@/app/(staff)/staff/overrides/aliases/page')
-const { default: SettingsPage } = await import('@/app/(staff)/staff/settings/page')
+const { default: StateLawPage } = await import('@/app/(staff)/staff/settings/state-law/page')
+const { default: CodeEditionsPage } = await import(
+  '@/app/(staff)/staff/settings/code-editions/page'
+)
+const { default: StartersPage } = await import('@/app/(staff)/staff/settings/starters/page')
 const { default: SettingsKindPage } = await import('@/app/(staff)/staff/settings/[kind]/page')
 const { default: SettingsKeyPage } = await import('@/app/(staff)/staff/settings/[kind]/[key]/page')
 
@@ -213,20 +217,21 @@ describe('staff application pages', () => {
 })
 
 describe('staff settings pages', () => {
-  it('the settings page lists kinds, adopted starters, rules, and the unverified edition', async () => {
+  it('the settings pages show adopted starters, state law rules, and the unverified edition', async () => {
     const clerk = state.actor
     const admin = await handle.db.query.users.findFirst({
       where: (u, { eq }) => eq(u.email, 'admin@alderpond.example'),
     })
     state.actor = await loadActor(handle.db, admin?.id ?? '', signal)
-    const page = await html(SettingsPage({ searchParams: Promise.resolve({}) }))
+    const starters = await html(StartersPage())
+    const law = await html(StateLawPage({ searchParams: Promise.resolve({}) }))
+    const editions = await html(CodeEditionsPage())
     state.actor = clerk
-    expect(page).toContain('Application types')
-    expect(page).toMatch(/<summary[^>]*>\d+ starters? adopted<\/summary>/)
-    expect(page).toContain('Edition not verified (before July 1, 2024)')
-    expect(page).not.toContain('1970')
-    expect(page).toContain('RSA 155-A:4 IX')
-    expect(page).toContain('Fixed by statute')
+    expect(starters).toMatch(/<h2[^>]*>Adopted<\/h2>/)
+    expect(editions).toContain('Edition not verified (before July 1, 2024)')
+    expect(editions).not.toContain('1970')
+    expect(law).toContain('RSA 155-A:4 IX')
+    expect(law).toContain('Fixed by statute')
   })
 
   it('a kind page lists its items and a key page shows the editor and version history', async () => {

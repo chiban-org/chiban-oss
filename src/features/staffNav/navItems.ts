@@ -1,6 +1,6 @@
 import { CAPABILITY_KEYS, type Capability } from '@/constants/capabilities'
-import type { Role } from '@/constants/roles'
-import { FULL_RECORD_ROLES } from '@/features/access/roles'
+import { SETTINGS_MENU_ITEMS, settingsMenuFor } from '@/features/settingsMenu/settingsMenu'
+import { accessAllows, accessCapabilities, activeHref } from '@/features/staffNav/access'
 import {
   NAV_GROUPS,
   type NavAccess,
@@ -32,9 +32,7 @@ export function isNested(item: NavItem, items: readonly NavItem[]): boolean {
 }
 
 export function activeNavHref(pathname: string, items: readonly NavItem[]): string | null {
-  const matches = items.filter((i) => pathname === i.href || pathname.startsWith(`${i.href}/`))
-  if (matches.length === 0) return null
-  return matches.reduce((best, i) => (i.href.length > best.href.length ? i : best)).href
+  return activeHref(pathname, items)
 }
 
 const open: NavAccess = { kind: 'open' }
@@ -203,83 +201,23 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
   {
     href: '/staff/settings',
     label: 'Settings',
-    group: 'admin',
+    group: 'settings',
     icon: 'settings',
-    access: any('config.edit'),
-  },
-  {
-    href: '/staff/admin/export',
-    label: 'Export',
-    group: 'admin',
-    icon: 'export',
-    access: any('export.download'),
-  },
-  {
-    href: '/staff/admin/health',
-    label: 'Health',
-    group: 'admin',
-    icon: 'health',
-    access: any('config.edit'),
-  },
-  {
-    href: '/staff/admin/cutover',
-    label: 'Move open applications over',
-    group: 'admin',
-    icon: 'cutover',
-    access: any('cutover.import'),
-  },
-  {
-    href: '/staff/admin/enforcement-officers',
-    label: 'Enforcement officers',
-    group: 'admin',
-    icon: 'officers',
-    access: any('config.edit'),
-  },
-  {
-    href: '/staff/admin/anonymous-intake',
-    label: 'Anonymous intake',
-    group: 'admin',
-    icon: 'intake',
-    access: any('anonymous_intake.enable'),
-  },
-  {
-    href: '/staff/admin/migration',
-    label: 'Scanned property files',
-    group: 'admin',
-    icon: 'migration',
-    access: { kind: 'allCapabilities', capabilities: ['document.manage', 'parcel.manage'] },
+    match: ['/staff/admin'],
+    access: { kind: 'settings' },
   },
   { href: '/staff/account', label: 'Account', group: 'account', icon: 'account', access: open },
 ]
 
+const NAV_ACCESS = [...STAFF_NAV_ITEMS, ...SETTINGS_MENU_ITEMS].map((item) => item.access)
+
 export const NAV_CAPABILITIES: readonly Capability[] = CAPABILITY_KEYS.filter((capability) =>
-  STAFF_NAV_ITEMS.some(
-    (item) =>
-      (item.access.kind === 'anyCapability' || item.access.kind === 'allCapabilities') &&
-      item.access.capabilities.includes(capability),
-  ),
+  NAV_ACCESS.some((access) => accessCapabilities(access).includes(capability)),
 )
 
-function hasRecordAccess(roles: readonly Role[]): boolean {
-  return roles.some((r) => (FULL_RECORD_ROLES as readonly string[]).includes(r))
-}
-
 export function mayUse(item: NavItem, viewer: NavViewer): boolean {
-  const { access } = item
-  switch (access.kind) {
-    case 'open':
-      return true
-    case 'anyCapability':
-      return access.capabilities.some((c) => viewer.capabilities.has(c))
-    case 'allCapabilities':
-      return access.capabilities.every((c) => viewer.capabilities.has(c))
-    case 'reviewer':
-      return viewer.roles.includes('reviewer')
-    case 'fullRecordAccess':
-      return hasRecordAccess(viewer.roles)
-    case 'boardMember':
-      return viewer.roles.includes('board_member')
-  }
+  if (item.access.kind === 'settings') return settingsMenuFor(viewer).length > 0
+  return accessAllows(item.access, viewer)
 }
 
 const BOARD_STAFF_CAPABILITIES: readonly Capability[] = [
@@ -299,5 +237,7 @@ export function navItemsFor(viewer: NavViewer): NavItem[] {
 
 export function mayOpen(href: string, viewer: NavViewer): boolean {
   const item = STAFF_NAV_ITEMS.find((i) => i.href === href)
-  return item === undefined ? false : mayUse(item, viewer)
+  if (item !== undefined) return mayUse(item, viewer)
+  const setting = SETTINGS_MENU_ITEMS.find((i) => i.href === href)
+  return setting === undefined ? false : accessAllows(setting.access, viewer)
 }

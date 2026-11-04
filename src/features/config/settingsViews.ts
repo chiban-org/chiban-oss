@@ -1,27 +1,9 @@
 import { asc, eq, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { configVersions, users } from '@/db/schema'
-import { CONFIG_KINDS, type ConfigKind } from '@/features/config/kinds'
+import type { ConfigKind } from '@/features/config/kinds'
 import { skeletonBody } from '@/features/config/skeletons'
 import { loadPack } from '@/features/packs/loadPack'
-
-export interface KindSummary {
-  kind: ConfigKind
-  keys: number
-}
-
-export async function summarizeKinds(db: DbOrTx, signal: AbortSignal): Promise<KindSummary[]> {
-  signal.throwIfAborted()
-  const rows = await db
-    .select({
-      kind: configVersions.kind,
-      keys: sql<number>`count(distinct ${configVersions.key})::int`,
-    })
-    .from(configVersions)
-    .groupBy(configVersions.kind)
-  const counts = new Map(rows.map((r) => [r.kind, r.keys]))
-  return CONFIG_KINDS.map((kind) => ({ kind, keys: counts.get(kind) ?? 0 }))
-}
 
 export interface KeyRow {
   key: string

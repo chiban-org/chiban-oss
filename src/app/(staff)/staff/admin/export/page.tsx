@@ -1,6 +1,8 @@
 import { ActionForm } from '@/components/ActionForm'
 import { CsrfField } from '@/components/CsrfField'
+import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { TextField } from '@/components/staff/fields'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { Button } from '@/components/ui/button'
 import { listExports } from '@/features/export/requestExport'
 import { currentServiceState } from '@/features/town/serviceStatus'
@@ -43,12 +45,7 @@ export default async function ExportPage({ searchParams }: ExportPageProps = {})
   const ctx = await requireStaffContext()
   const listed = await listExports(ctx.db, ctx.actor, ctx.signal)
   if (!listed.ok) {
-    return (
-      <main>
-        <h1>Export your records</h1>
-        <p role="alert">You do not have permission to export records.</p>
-      </main>
-    )
+    return <NoPermission title="Data export" action="export records" />
   }
   const [town, service] = await Promise.all([
     getTownSettings(ctx.db, ctx.signal),
@@ -57,12 +54,24 @@ export default async function ExportPage({ searchParams }: ExportPageProps = {})
   const zone = town.ok ? town.value.timeZone : DEFAULT_TIME_ZONE
   const day = (instant: Date | null) => (instant === null ? '' : formatInstantLong(instant, zone))
   return (
-    <main>
-      <h1>Export your records</h1>
+    <main className="space-y-4">
+      <SettingsHeader
+        title="Data export"
+        lead="One file with every record the town keeps in Chiban and every stored document, in open formats."
+        action={
+          service.mode === 'closed' ? undefined : (
+            <ActionForm
+              action={requestExportAction}
+              submitLabel="Request a new export"
+              variant="default"
+            >
+              {null}
+            </ActionForm>
+          )
+        }
+      />
       <p>
-        The export is one file with every record the town keeps in Chiban and every stored document,
-        in open formats. It is written from a single consistent snapshot. Each file stays available
-        for 7 days after it is ready.
+        {`It is written from a single consistent snapshot, and each file stays available for 7 days after it is ready. ${service.mode === 'active' ? 'Preparing an export does not interrupt anyone using Chiban.' : 'Nobody is using Chiban now, so preparing an export changes nothing for anyone.'}`}
       </p>
       {service.mode === 'export_only' && service.exportUntil !== null ? (
         <p role="status">
@@ -72,19 +81,7 @@ export default async function ExportPage({ searchParams }: ExportPageProps = {})
       ) : null}
       {service.mode === 'closed' ? (
         <p role="alert">The export window has ended. Contact the operator to arrange a copy.</p>
-      ) : (
-        <ActionForm
-          action={requestExportAction}
-          submitLabel="Request a new export"
-          variant="default"
-        >
-          <p className="m-0">
-            {service.mode === 'active'
-              ? 'Preparing an export does not interrupt anyone using Chiban.'
-              : 'Nobody is using Chiban now, so preparing an export changes nothing for anyone.'}
-          </p>
-        </ActionForm>
-      )}
+      ) : null}
       {ctx.actor.roles.includes('admin') ? (
         <p>
           <a className="text-action underline" href="/staff/admin/export/targets">

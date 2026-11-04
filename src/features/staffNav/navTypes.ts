@@ -6,7 +6,7 @@ export interface NavViewer {
   capabilities: ReadonlySet<Capability>
 }
 
-export type NavAccess =
+export type BaseNavAccess =
   | { kind: 'open' }
   | { kind: 'anyCapability'; capabilities: readonly Capability[] }
   | { kind: 'allCapabilities'; capabilities: readonly Capability[] }
@@ -14,12 +14,14 @@ export type NavAccess =
   | { kind: 'fullRecordAccess' }
   | { kind: 'boardMember' }
 
+export type NavAccess = BaseNavAccess | { kind: 'settings' }
+
 export const NAV_GROUPS = [
   { key: 'work', label: 'Daily work', collapsible: false },
   { key: 'boards', label: 'Boards', collapsible: false },
   { key: 'records', label: 'Records and reports', collapsible: true },
   { key: 'data', label: 'Parcel data', collapsible: true },
-  { key: 'admin', label: 'Administration', collapsible: true },
+  { key: 'settings', label: null, collapsible: false },
   { key: 'account', label: null, collapsible: false },
 ] as const
 
@@ -50,12 +52,6 @@ export const NAV_ICONS = [
   'unresolved',
   'overrides',
   'settings',
-  'export',
-  'health',
-  'cutover',
-  'officers',
-  'intake',
-  'migration',
   'account',
 ] as const
 
@@ -69,6 +65,7 @@ export interface NavItem {
   group: NavGroupKey
   icon: NavIcon
   parent?: string
+  match?: readonly string[]
   access: NavAccess
 }
 

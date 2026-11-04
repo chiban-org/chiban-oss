@@ -35,14 +35,19 @@ const { default: KindPage } = await import('./page')
 const signal = new AbortController().signal
 let handle: TestDb
 
-async function render(actor: Actor, query: Record<string, string> = {}): Promise<string> {
+async function render(
+  actor: Actor,
+  query: Record<string, string> = {},
+  kind = 'application_type',
+): Promise<string> {
   state.actor = actor
-  return renderToStaticMarkup(
-    await KindPage({
-      params: Promise.resolve({ kind: 'application_type' }),
-      searchParams: Promise.resolve(query),
-    }),
-  )
+  try {
+    return renderToStaticMarkup(
+      await KindPage({ params: Promise.resolve({ kind }), searchParams: Promise.resolve(query) }),
+    )
+  } catch (error) {
+    return (error as Error).message
+  }
 }
 
 beforeAll(async () => {
@@ -58,13 +63,52 @@ afterAll(async () => {
 })
 
 describe('settings kind page', () => {
-  it('offers Start a draft only to someone who may edit configuration', async () => {
+  it('offers New type only to someone who may edit configuration', async () => {
     for (const role of ['staff', 'records_custodian'] as const) {
       const html = await render(await staffActor(handle.db, role))
-      expect(html).not.toContain('Start a new one')
-      expect(html).not.toContain('Start a draft')
+      expect(html).not.toContain('New type')
     }
-    expect(await render(await staffActor(handle.db, 'admin'))).toContain('Start a draft')
+    expect(await render(await staffActor(handle.db, 'admin'))).toMatch(
+      /<button[^>]*>New type<\/button>/,
+    )
+  })
+
+  it('heads the page with its title, what it controls, and the versioning line', async () => {
+    const html = await render(await staffActor(handle.db, 'admin'))
+    expect(html).toContain('<h1 class="m-0 mb-1">Application types</h1>')
+    expect(html).toContain('The kinds of application the town accepts')
+    expect(html).toContain('Open applications keep the version they started under.')
+    expect(html).not.toContain('data-wide')
+  })
+
+  it('opens a single-record kind straight to its record', async () => {
+    const admin = await staffActor(handle.db, 'admin')
+    for (const kind of [
+      'payment_settings',
+      'inspection_settings',
+      'board_settings',
+      'regional_contacts',
+      'review_routes',
+    ]) {
+      expect(await render(admin, {}, kind)).toBe(`NEXT_REDIRECT:/staff/settings/${kind}/default`)
+    }
+  })
+
+  it('shows an empty kind as what it does with the add action, not a bare count', async () => {
+    const html = await render(await staffActor(handle.db, 'admin'), {}, 'local_code_amendment')
+    expect(html).toContain('No local amendments are on file')
+    expect(html).toContain('The state building code applies as written.')
+    expect(html).toMatch(/<button[^>]*>New amendment<\/button>/)
+    expect(html).not.toContain('<table')
+    expect(html.match(/>New amendment</g)).toHaveLength(1)
+    expect(html).not.toContain('Open applications keep the version')
+  })
+
+  it('tells someone who cannot add that an administrator can', async () => {
+    const html = await render(await staffActor(handle.db, 'staff'), {}, 'town_rule_setting')
+    expect(html).toContain('No town rules are set')
+    expect(html).toContain('An administrator can add one.')
+    expect(html).not.toContain('Set a town rule')
   })
 
   it('names each key and states the default order', async () => {

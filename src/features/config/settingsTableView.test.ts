@@ -1,37 +1,10 @@
 import { describe, expect, it } from 'vitest'
 import {
   arrangeKeyRows,
-  KIND_SORT,
   RULE_SORT,
   readKeyListView,
-  sortKindSummaries,
   sortRuleSummaries,
 } from '@/features/config/settingsTableView'
-
-const KINDS = [
-  { kind: 'application_type', keys: 2 },
-  { kind: 'form', keys: 7 },
-  { kind: 'fee_schedule', keys: 2 },
-] as const
-
-describe('settings kind table', () => {
-  it('keeps the configured order by default', () => {
-    expect(sortKindSummaries(KINDS, { key: KIND_SORT.defaultKey, dir: 'asc' })).toEqual(KINDS)
-  })
-
-  it('sorts by the label shown and by item count with ties in list order', () => {
-    expect(sortKindSummaries(KINDS, { key: 'kind', dir: 'asc' }).map((r) => r.kind)).toEqual([
-      'application_type',
-      'fee_schedule',
-      'form',
-    ])
-    expect(sortKindSummaries(KINDS, { key: 'items', dir: 'desc' }).map((r) => r.kind)).toEqual([
-      'form',
-      'application_type',
-      'fee_schedule',
-    ])
-  })
-})
 
 describe('settings rule table', () => {
   const rule = (label: string, citation: string, policy: string) => ({

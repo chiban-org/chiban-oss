@@ -7,6 +7,7 @@ import {
   boardMemberHome,
   groupNavItems,
   isNested,
+  NAV_CAPABILITIES,
   NAV_GROUPS,
   NAV_ICONS,
   navItemsFor,
@@ -102,11 +103,44 @@ describe('staff navigation', () => {
     )
   })
 
-  it('shows Settings only to admin', () => {
-    expect(labelsFor('admin')).toContain('Settings')
-    for (const role of ['staff', 'records_custodian', 'finance', 'inspector'] as const) {
+  it('shows Settings to anyone who can open at least one settings page', () => {
+    for (const role of ['admin', 'staff', 'records_custodian'] as const) {
+      expect(labelsFor(role)).toContain('Settings')
+    }
+    for (const role of ['finance', 'inspector', 'reviewer', 'board_member'] as const) {
       expect(labelsFor(role)).not.toContain('Settings')
     }
+  })
+
+  it('has no Administration group, only the single Settings entry', () => {
+    expect(NAV_GROUPS.map((g) => g.key)).not.toContain('admin')
+    for (const label of [
+      'Export',
+      'Health',
+      'Move open applications over',
+      'Enforcement officers',
+    ]) {
+      expect(STAFF_NAV_ITEMS.map((i) => i.label)).not.toContain(label)
+    }
+    expect(STAFF_NAV_ITEMS.filter((i) => i.label === 'Settings')).toHaveLength(1)
+  })
+
+  it('marks Settings current on the settings and administration pages', () => {
+    expect(activeNavHref('/staff/settings/form', STAFF_NAV_ITEMS)).toBe('/staff/settings')
+    expect(activeNavHref('/staff/admin/export/targets', STAFF_NAV_ITEMS)).toBe('/staff/settings')
+  })
+
+  it('loads every capability a settings page needs', () => {
+    expect(NAV_CAPABILITIES).toEqual(
+      expect.arrayContaining([
+        'config.edit',
+        'export.download',
+        'cutover.import',
+        'anonymous_intake.enable',
+        'document.manage',
+        'parcel.manage',
+      ]),
+    )
   })
 
   it('shows Unresolved records only to roles that can link parcels', () => {
@@ -118,12 +152,8 @@ describe('staff navigation', () => {
     }
   })
 
-  it('shows admin the administration pages and finance the payments page', () => {
-    expect(labelsFor('admin')).toEqual(
-      expect.arrayContaining(['Export', 'Health', 'Move open applications over']),
-    )
+  it('shows finance the payments page', () => {
     expect(labelsFor('finance')).toContain('Payments')
-    expect(labelsFor('finance')).not.toContain('Health')
   })
 
   it('every item is visible to at least one default role', () => {
@@ -172,12 +202,8 @@ describe('staff navigation', () => {
     expect(isNested(day, [day])).toBe(false)
   })
 
-  it('folds only the records, parcel data and administration groups', () => {
-    expect(NAV_GROUPS.filter((g) => g.collapsible).map((g) => g.key)).toEqual([
-      'records',
-      'data',
-      'admin',
-    ])
+  it('folds only the records and parcel data groups', () => {
+    expect(NAV_GROUPS.filter((g) => g.collapsible).map((g) => g.key)).toEqual(['records', 'data'])
   })
 
   it('lists applications once and no separate queue', () => {

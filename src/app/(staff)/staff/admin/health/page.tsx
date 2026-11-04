@@ -1,4 +1,6 @@
 import { eq } from 'drizzle-orm'
+import { SettingsHeader } from '@/components/settings/SettingsHeader'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { healthAlerts, workerState } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
 import { configuredChannelKinds } from '@/features/health/channels/configured'
@@ -30,12 +32,7 @@ const CHANNEL_COPY = { email: 'Email', pager: 'Pager' } as const
 export default async function HealthPage() {
   const ctx = await requireStaffContext()
   if (!(await hasCapability(ctx.db, ctx.actor.userId, 'config.edit', ctx.signal))) {
-    return (
-      <main>
-        <h1>System health</h1>
-        <p role="alert">You do not have permission to see system health.</p>
-      </main>
-    )
+    return <NoPermission title="Health" action="see system health" />
   }
   const now = new Date()
   const kinds = configuredChannelKinds()
@@ -50,7 +47,10 @@ export default async function HealthPage() {
   const day = (instant: Date | null) => formatInstantOrNever(instant, zone)
   return (
     <main>
-      <h1>System health</h1>
+      <SettingsHeader
+        title="Health"
+        lead="Whether background jobs are running, and whether anyone is told when one fails."
+      />
       <section aria-labelledby="alerts-heading">
         <h2 id="alerts-heading">Firing alerts</h2>
         {firing.length === 0 ? <p>No alerts are firing.</p> : null}

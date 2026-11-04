@@ -1,6 +1,6 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
+import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { hasCapability } from '@/features/authz/capabilities'
 import { loadBatchDetail } from '@/features/migration/batchQueries'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -79,13 +79,11 @@ export default async function MigrationBatchPage({
         ]
   return (
     <main>
-      <p>
-        <Link href="/staff/admin/migration" className="text-action underline">
-          Scanned property files
-        </Link>
-      </p>
-      <h1>{batch.name}</h1>
-      <p>{`${STATUS_COPY[batch.status]}.`}</p>
+      <SettingsHeader
+        title={batch.name}
+        lead={`${STATUS_COPY[batch.status]}.`}
+        back={{ href: '/staff/admin/migration', label: 'Scanned property files' }}
+      />
       <details className="text-sm">
         <summary className="cursor-pointer">Where the files came from</summary>
         <code>{batch.sourceRoot}</code>

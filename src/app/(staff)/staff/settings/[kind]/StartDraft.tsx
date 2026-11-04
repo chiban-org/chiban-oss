@@ -1,16 +1,10 @@
 import { ActionForm } from '@/components/ActionForm'
+import { NewItemDialog } from '@/components/settings/NewItemDialog'
 import { SelectField, TextField } from '@/components/staff/fields'
+import { KIND_DESCRIPTIONS, KIND_NEW_LABELS } from '@/features/config/kindLabels'
 import type { ConfigKind } from '@/features/config/kinds'
 import { loadPack } from '@/features/packs/loadPack'
 import { startDraftAction } from '../actions'
-
-const SINGLETON_KINDS: readonly string[] = [
-  'payment_settings',
-  'inspection_settings',
-  'board_settings',
-  'regional_contacts',
-  'review_routes',
-]
 
 function KeyField({ kind }: { kind: ConfigKind }) {
   if (kind === 'town_rule_setting') {
@@ -23,7 +17,6 @@ function KeyField({ kind }: { kind: ConfigKind }) {
       />
     )
   }
-  if (SINGLETON_KINDS.includes(kind)) return <input type="hidden" name="key" value="default" />
   return (
     <TextField
       label="Key"
@@ -34,14 +27,13 @@ function KeyField({ kind }: { kind: ConfigKind }) {
   )
 }
 
-export function StartDraft({ kind }: { kind: ConfigKind }) {
+export function NewConfigItem({ kind }: { kind: ConfigKind }) {
   return (
-    <>
-      <h2>Start a new one</h2>
-      <ActionForm action={startDraftAction} submitLabel="Start a draft" className="max-w-md">
+    <NewItemDialog label={KIND_NEW_LABELS[kind]} description={KIND_DESCRIPTIONS[kind]}>
+      <ActionForm action={startDraftAction} submitLabel="Start a draft" variant="default">
         <input type="hidden" name="kind" value={kind} />
         <KeyField kind={kind} />
       </ActionForm>
-    </>
+    </NewItemDialog>
   )
 }

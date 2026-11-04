@@ -1,4 +1,5 @@
 import { ActionForm } from '@/components/ActionForm'
+import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { type ExportTargetView, listTargets } from '@/features/export/targets/manageTargets'
 import { ONEDRIVE_STUB_NOTE } from '@/features/export/targets/oneDrive'
 import { getTownSettings } from '@/features/town/settings'
@@ -87,11 +88,12 @@ export default async function ExportTargetsPage() {
   const day = (instant: Date | null) => (instant === null ? '' : formatInstantLong(instant, zone))
   return (
     <main>
-      <h1>Copy exports to your own storage</h1>
-      <p>
-        Each month Chiban copies only what changed since the last copy to storage the town controls.
-        The first copy holds everything. Files are copied once and shared between months.
-      </p>
+      <SettingsHeader
+        title="Copy exports to your own storage"
+        lead="Each month Chiban copies what changed since the last copy to storage the town controls."
+        back={{ href: '/staff/admin/export', label: 'Data export' }}
+      />
+      <p>The first copy holds everything. Files are copied once and shared between months.</p>
       <h2>Your targets</h2>
       {listed.value.length === 0 ? <p>No targets yet.</p> : null}
       <ul className="m-0 list-none space-y-3 p-0">

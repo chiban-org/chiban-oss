@@ -1,11 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { adoptStarter } from '@/features/config/adoptStarter'
-import {
-  getEditorState,
-  labelOfBody,
-  listKeysOfKind,
-  summarizeKinds,
-} from '@/features/config/settingsViews'
+import { getEditorState, labelOfBody, listKeysOfKind } from '@/features/config/settingsViews'
 import { saveDraft } from '@/features/config/store'
 import { FORM_BODY, saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -23,16 +18,6 @@ afterEach(async () => {
 })
 
 describe('settings views', () => {
-  it('summarizes every kind with its key count', async () => {
-    const admin = await staffActor(handle.db, 'admin')
-    await adoptStarter(handle.db, admin, 'nh.starter.electrical', signal)
-    const summary = await summarizeKinds(handle.db, signal)
-    expect(summary.find((s) => s.kind === 'application_type')).toMatchObject({ keys: 1 })
-    expect(summary.find((s) => s.kind === 'inspection_checklist')).toMatchObject({ keys: 2 })
-    expect(summary.find((s) => s.kind === 'local_code_amendment')).toMatchObject({ keys: 0 })
-    expect(summary).toHaveLength(13)
-  })
-
   it('lists keys of a kind with published version and draft flag', async () => {
     const admin = await staffActor(handle.db, 'admin')
     await saveAndPublish(handle.db, admin, 'form', 'a-form', FORM_BODY)

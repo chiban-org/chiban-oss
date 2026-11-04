@@ -1,5 +1,6 @@
 import { desc, eq } from 'drizzle-orm'
 import { ActionForm } from '@/components/ActionForm'
+import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { APP_VERSION } from '@/config/appVersion'
 import { env } from '@/config/env'
@@ -59,7 +60,10 @@ export default async function AnonymousIntakePage() {
   const findings = (latest?.findings ?? []) as Finding[]
   return (
     <main className="space-y-6">
-      <h1>Anonymous intake</h1>
+      <SettingsHeader
+        title="Anonymous intake"
+        lead="Whether the public can report a possible violation without giving a name."
+      />
       <p>
         {open
           ? 'Anonymous complaints are being accepted at the report anonymously page.'

@@ -1,4 +1,6 @@
 import { ActionForm } from '@/components/ActionForm'
+import { SettingsHeader } from '@/components/settings/SettingsHeader'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,12 +18,7 @@ export const dynamic = 'force-dynamic'
 export default async function CutoverPage() {
   const ctx = await requireStaffContext()
   if (!(await hasCapability(ctx.db, ctx.actor.userId, 'cutover.import', ctx.signal))) {
-    return (
-      <main>
-        <h1>Move open applications over</h1>
-        <p role="alert">You do not have permission to import applications.</p>
-      </main>
-    )
+    return <NoPermission title="Move open applications over" action="import applications" />
   }
   const isAdmin = ctx.actor.roles.includes('admin')
   const [types, reconciliations, timeZone] = await Promise.all([
@@ -31,13 +28,14 @@ export default async function CutoverPage() {
   ])
   return (
     <main>
-      <h1>Move open applications over</h1>
+      <SettingsHeader
+        title="Move open applications over"
+        lead="Bring applications still open in the old system into Chiban, then compare them with the town's own list."
+      />
       <p>
-        Bring applications that are still open in the old system into Chiban, then compare them with
-        the town&apos;s own list. Imported applications keep their dates from the old system, and
-        nobody on them is sent a message. Each keeps the status it had there, without the checks
-        Chiban runs before a status change. Fees paid in the old system are recorded as waived, with
-        the old receipt number.
+        Imported applications keep their dates from the old system, and nobody on them is sent a
+        message. Each keeps the status it had there, without the checks Chiban runs before a status
+        change. Fees paid in the old system are recorded as waived, with the old receipt number.
       </p>
       <form method="get" action="/staff/admin/cutover/template.csv" className="my-3 space-y-2">
         <Label htmlFor="cutover-template-type">Application type</Label>

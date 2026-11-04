@@ -28,13 +28,22 @@ vi.mock('@/app/(staff)/staff/settings/actions', () => ({
 }))
 
 const { default: SettingsPage } = await import('./page')
+const { default: StateLawPage } = await import('./state-law/page')
+const { default: StartersPage } = await import('./starters/page')
 
 let handle: TestDb
 let admin: Actor
 const signal = new AbortController().signal
 
-async function page(): Promise<string> {
-  return renderToStaticMarkup(await SettingsPage({ searchParams: Promise.resolve({}) }))
+async function settingsFor(actor: Actor): Promise<string> {
+  state.actor = actor
+  try {
+    return renderToStaticMarkup(await SettingsPage())
+  } catch (error) {
+    return (error as Error).message
+  } finally {
+    state.actor = admin
+  }
 }
 
 beforeAll(async () => {
@@ -48,50 +57,68 @@ afterAll(async () => {
   await handle.drop()
 })
 
-describe('settings page', () => {
-  it('lists pack rules by name, folded, without their keys or a version on every row', async () => {
-    const html = await page()
+describe('settings index', () => {
+  it('opens the first settings page each role can use', async () => {
+    expect(await settingsFor(admin)).toBe('NEXT_REDIRECT:/staff/settings/application_type')
+    expect(await settingsFor(await staffActor(handle.db, 'staff'))).toBe(
+      'NEXT_REDIRECT:/staff/admin/cutover',
+    )
+    expect(await settingsFor(await staffActor(handle.db, 'records_custodian'))).toBe(
+      'NEXT_REDIRECT:/staff/admin/export',
+    )
+  })
+
+  it('refuses a viewer who can open no settings page', async () => {
+    const html = await settingsFor(await staffActor(handle.db, 'finance'))
+    expect(html).toContain('You do not have permission to change settings.')
+  })
+})
+
+describe('state law page', () => {
+  it('lists pack rules by name, without their keys or a version on every row', async () => {
+    const html = renderToStaticMarkup(await StateLawPage({ searchParams: Promise.resolve({}) }))
     const text = html.replace(/<[^>]+>/g, ' ')
     expect(text).toContain('Building permit decision deadline')
     expect(text).not.toContain('nh.bp.decision')
     expect(text).not.toContain('town.bp.expiration')
-    expect(html).toMatch(/<details[^>]*><summary[^>]*>Rules from state law<\/summary>/)
-    expect(html).toMatch(/<details[^>]*><summary[^>]*>Required rules by classification<\/summary>/)
+    expect(html).toMatch(/<summary[^>]*>Required rules by classification<\/summary>/)
     expect(html).not.toMatch(/<td>[^<]*<span[^>]*>Version \d+<\/span>/)
+    expect(html).toContain('href="/staff/settings/state-law?rules_sort=')
   })
 
-  it('folds adopted starters into one line and leaves the rest open', async () => {
+  it('refuses anyone without the right to edit configuration', async () => {
+    state.actor = await staffActor(handle.db, 'staff')
+    const html = renderToStaticMarkup(await StateLawPage({ searchParams: Promise.resolve({}) }))
+    state.actor = admin
+    expect(html).toContain('You do not have permission')
+  })
+})
+
+describe('starter templates page', () => {
+  it('lists adopted starters apart from the ones still to adopt', async () => {
     const adopted = await adoptStarter(handle.db, admin, 'nh.starter.electrical', signal)
     if (!adopted.ok) throw new Error(JSON.stringify(adopted.error))
-    state.actor = admin
-    const html = await page()
-    expect(html).toMatch(/<summary[^>]*>1 starter adopted<\/summary>/)
-    expect(html).not.toContain('>Adopted<')
-    expect(html).toContain('Adopt this starter')
+    const html = renderToStaticMarkup(await StartersPage())
+    const split = html.indexOf('>Adopted<')
+    expect(html.slice(split)).toContain('Electrical permit')
+    expect(html.slice(split)).not.toContain('Adopt this starter')
+    expect(html.slice(0, split)).toContain('Adopt this starter')
+  })
+
+  it('links to the starter updates page', async () => {
+    const html = renderToStaticMarkup(await StartersPage())
+    expect(html).toMatch(
+      /<a [^>]*href="\/staff\/settings\/starters\/updates"[^>]*>Check adopted starters for updates<\/a>/,
+    )
   })
 
   it('refuses anyone without the right to edit configuration', async () => {
     for (const role of ['staff', 'records_custodian'] as const) {
       state.actor = await staffActor(handle.db, role)
-      const html = await page()
+      const html = renderToStaticMarkup(await StartersPage())
       expect(html).toContain('You do not have permission')
       expect(html).not.toContain('Adopt this starter')
     }
     state.actor = admin
-  })
-
-  it('lists payment and inspection settings together under Other settings', async () => {
-    const html = await page()
-    expect(html).toContain('<h2>Other settings</h2>')
-    expect(html).not.toContain('<h2>Card payments</h2>')
-    expect(html).toContain('href="/staff/settings/payments"')
-    expect(html).toContain('href="/staff/settings/inspections"')
-  })
-
-  it('links to starter updates from the starter templates section', async () => {
-    const html = renderToStaticMarkup(await SettingsPage({ searchParams: Promise.resolve({}) }))
-    expect(html).toMatch(
-      /<a [^>]*href="\/staff\/settings\/starters"[^>]*>Check adopted starters for updates<\/a>/,
-    )
   })
 })

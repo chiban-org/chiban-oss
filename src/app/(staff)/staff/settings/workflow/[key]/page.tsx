@@ -1,9 +1,9 @@
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { VersionHistory } from '@/components/config/VersionHistory'
 import { WorkflowEditor } from '@/components/config/WorkflowEditor'
+import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { ApplicationTypeBodySchema } from '@/features/applications/applicationTypeSchema'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -40,15 +40,15 @@ export default async function WorkflowPage({ params }: Props) {
   const timeZone = town.ok ? town.value.timeZone : 'America/New_York'
   return (
     <main>
-      <p>
-        <Link
-          href={`/staff/settings/application_type/${encodeURIComponent(key)}`}
-          className="text-action underline"
-        >
-          {parsed.data.label}
-        </Link>
-      </p>
-      <h1>{`Workflow for ${parsed.data.label}`}</h1>
+      <SettingsHeader
+        title={`Workflow for ${parsed.data.label}`}
+        lead="The steps an application of this type goes through, in order."
+        versioned
+        back={{
+          href: `/staff/settings/application_type/${encodeURIComponent(key)}`,
+          label: parsed.data.label,
+        }}
+      />
       <WorkflowEditor
         typeKey={key}
         initialBody={parsed.data}

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { processorFormDefaults } from '@/features/payments/processorFormDefaults'
@@ -17,22 +18,18 @@ const ACTIVE_COPY = {
 
 export default async function PaymentSettingsPage() {
   const ctx = await recordStaffContext()
-  if (ctx === null) return <NoPermission title="Payment settings" action="change settings" />
+  if (ctx === null) return <NoPermission title="Card payments" action="change settings" />
   const result = await loadProcessorSettings(ctx.db, ctx.actor, ctx.signal)
-  if (!result.ok) {
-    return (
-      <main>
-        <h1>Payment settings</h1>
-        <p role="alert">You do not have permission to change payment settings.</p>
-      </main>
-    )
-  }
+  if (!result.ok) return <NoPermission title="Card payments" action="change payment settings" />
   const { accounts, active, settings, cloverStatus } = result.value
   const fee = settings.convenienceFee
   const current = processorFormDefaults(accounts)
   return (
     <main>
-      <h1>Payment settings</h1>
+      <SettingsHeader
+        title="Card payments"
+        lead="The card processor account, and the convenience fee and receipt wording for every payment."
+      />
       <section aria-labelledby="processor">
         <h2 id="processor">Processor</h2>
         <p role="status">{ACTIVE_COPY[active]}</p>

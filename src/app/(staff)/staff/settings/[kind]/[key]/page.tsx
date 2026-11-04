@@ -3,11 +3,17 @@ import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
 import { VersionHistory } from '@/components/config/VersionHistory'
+import { type SettingsBackLink, SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { editorContext } from '@/features/config/editorContext'
-import { KIND_LABELS } from '@/features/config/kindLabels'
-import { isConfigKind } from '@/features/config/kinds'
+import { KIND_DESCRIPTIONS, KIND_LABELS } from '@/features/config/kindLabels'
+import {
+  type ConfigKind,
+  isConfigKind,
+  isPinnedKind,
+  isSingletonKind,
+} from '@/features/config/kinds'
 import { getEditorState } from '@/features/config/settingsViews'
 import { listReviewerChoices } from '@/features/reviews/reviewerView'
 import { getTownSettings } from '@/features/town/settings'
@@ -16,6 +22,22 @@ import { publishAction, rollbackAction, saveDraftAction } from '../../actions'
 
 interface Props {
   params: Promise<{ kind: string; key: string }>
+}
+
+const SINGLETON_HOMES: Partial<Record<ConfigKind, SettingsBackLink>> = {
+  payment_settings: { href: '/staff/settings/payments', label: 'Card payments' },
+  inspection_settings: { href: '/staff/settings/inspections', label: 'Inspection schedule' },
+}
+
+function headerFor(kind: ConfigKind, key: string) {
+  if (isSingletonKind(kind)) {
+    return { title: KIND_LABELS[kind], lead: KIND_DESCRIPTIONS[kind], back: SINGLETON_HOMES[kind] }
+  }
+  return {
+    title: key,
+    lead: 'Edit the draft, then publish it when it is ready.',
+    back: { href: `/staff/settings/${kind}`, label: KIND_LABELS[kind] },
+  }
 }
 
 export default async function SettingsKeyPage({ params }: Props) {
@@ -32,12 +54,7 @@ export default async function SettingsKeyPage({ params }: Props) {
   const timeZone = town.ok ? town.value.timeZone : 'America/New_York'
   return (
     <main>
-      <p>
-        <Link href={`/staff/settings/${kind}`} className="text-action underline">
-          {KIND_LABELS[kind]}
-        </Link>
-      </p>
-      <h1>{key}</h1>
+      <SettingsHeader {...headerFor(kind, key)} versioned={isPinnedKind(kind)} />
       {kind === 'application_type' ? (
         <p>
           <Link
@@ -57,7 +74,7 @@ export default async function SettingsKeyPage({ params }: Props) {
         saveAction={saveDraftAction}
         publishAction={publishAction}
       />
-      <h2>Version history</h2>
+      <h2 className="mt-10">Version history</h2>
       <VersionHistory
         rows={state.versions}
         timeZone={timeZone}

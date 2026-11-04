@@ -39,7 +39,7 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 - Lists of records inside a panel use `record-item` dividers, never bordered boxes inside a bordered panel.
 - Data tables sit in a `table-panel`; filter bars above them in a `toolbar`. Status columns use `StatusChip`, and empty cells read in muted text.
 - Staff navigation lives on its own `sidebar` layer (`#e9eef2`), a step darker than the canvas. Entries are grouped by the `group` field in `src/features/staffNav/navItems.ts` and each carries an icon. The current page is a white row with a hairline edge.
-- Records and reports, Parcel data and Administration fold away unless the current page is inside them. An entry with a `parent` (My day under Inspections) is indented beneath it when both are visible.
+- Records and reports and Parcel data fold away unless the current page is inside them. Configuration and administration pages sit behind one Settings entry, shown to anyone who can open at least one settings page. An entry with a `parent` (My day under Inspections) is indented beneath it when both are visible.
 - The person's name, role, Account and Sign out are pinned to the bottom of the sidebar; only the entries scroll.
 - The sidebar collapses to an icon rail with tooltips. The choice is kept in the `chiban_staff_nav` cookie so the server renders the right width. Below 768px it becomes a top bar and a drawer.
 - The staff home (`/staff`) shows what needs attention and the next deadlines, with a parcel search. Inspectors who hold only that role land on their day list instead.
@@ -47,6 +47,16 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 
 - A rail taller than the window scrolls with the page instead of sticking, so its bottom is never cut off.
 - In long lists on a record page, urgent items (the deadline due next, anything late) stay open and the rest fold to one line.
+
+## Settings
+
+- Settings and administration pages (`/staff/settings/*` and `/staff/admin/*`) share one shell: a settings menu about 14rem wide on the left inside the content area, and one focused page on the right. The menu model lives in `src/features/settingsMenu/settingsMenu.ts`, grouped (Permits, Town rules, Boards, Money and inspections, Starters, Administration); add a page by adding an item there.
+- The menu lists only the pages the viewer can open, using each page's own access rule, and marks the current page like the main sidebar's current row. A filter box at the top narrows it. Below 768px it becomes a picker at the top of the page.
+- `/staff/settings` opens the first page the viewer can use. A viewer who can open none gets the permission refusal.
+- One page per setting, never a long hub. Every page starts with `SettingsHeader` (`src/components/settings/SettingsHeader.tsx`): the title, one plain line saying what the page controls, and the page's one filled action on the right (New type, Request a new export) where there is one. The versioning sentence joins that line only on kinds that open applications pin (application types, forms, fee schedules, templates, conditions, checklists).
+- Kinds that hold one record (payment, inspection and board settings, regional notice contacts, review committee routes) open straight to their form and version history instead of a one-row list.
+- An empty kind shows what it does and the add action in its place, never a bare 0.
+- Settings pages are not record pages: no `RecordLayout`, and `main[data-wide]` only when a table needs the width.
 
 ## Lists and filters
 
