@@ -1,7 +1,7 @@
 import { type Ring, ringToLonLat, toLonLat } from './alderPondGrid.ts'
 
-export const X0 = 1_010_000
-export const Y0 = 600_000
+export const X0 = 1_002_500
+export const Y0 = 501_000
 
 type RelPoint = [number, number]
 
