@@ -25,6 +25,11 @@ interface Props {
 }
 
 export function AssignReviewerDialog({ row, reviewers, assign, onClose }: Props) {
+  const assignThenClose = async (formData: FormData): Promise<ActionResult> => {
+    const result = await assign(formData)
+    if (result.ok) onClose()
+    return result
+  }
   return (
     <Dialog open={row !== null} onOpenChange={(open) => (open ? undefined : onClose())}>
       <DialogContent>
@@ -33,7 +38,7 @@ export function AssignReviewerDialog({ row, reviewers, assign, onClose }: Props)
           <DialogDescription>{row === null ? '' : `Application ${row.number}`}</DialogDescription>
         </DialogHeader>
         {row === null ? null : (
-          <ActionForm action={assign} submitLabel="Assign" variant="default">
+          <ActionForm action={assignThenClose} submitLabel="Assign" variant="default">
             <input type="hidden" name="applicationId" value={row.applicationId} />
             <SelectField
               label="Reviewer"
