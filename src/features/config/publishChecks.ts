@@ -9,7 +9,7 @@ import type { FormBody } from '@/features/forms/formSchema'
 import { type ChecklistBody, isFinalChecklist } from '@/features/inspections/checklistSchema'
 import { loadPack } from '@/features/packs/loadPack'
 import { checkTownValue } from '@/features/packs/overridePolicy'
-import { unknownMergeFields } from '@/features/templates/mergeFields'
+import { checkTemplate, unknownTemplateFields } from '@/features/templates/templateChecks'
 import type { TemplateBody } from '@/features/templates/templateSchema'
 import { checkTownProfile } from '@/features/town/profileChecks'
 import type { TownProfileBody } from '@/features/town/profileSchema'
@@ -25,6 +25,9 @@ export type PublishError =
   | { missingReferences: string[] }
   | { policyViolations: { ruleKey: string; error: string }[] }
   | { unknownMergeFields: string[] }
+  | { disallowedMergeFields: string[] }
+  | { missingLockedBlocks: string[] }
+  | { unknownBlocks: string[] }
   | { unknownFieldRefs: string[] }
   | { finalChecklistCount: number }
   | { workflowIssues: WorkflowIssue[] }
@@ -99,7 +102,7 @@ export async function checkApplicationType(
   const refs = (fee?.body as FeeScheduleBody).lines.flatMap((l) => exprFieldRefs(l.expr))
   const unknownFieldRefs = [...new Set(refs.filter((r) => !numeric.has(r)))]
   if (unknownFieldRefs.length > 0) return { unknownFieldRefs }
-  const merge = templates.flatMap((t) => unknownMergeFields((t?.body as TemplateBody).body))
+  const merge = templates.flatMap((t) => unknownTemplateFields(t?.body as TemplateBody))
   if (merge.length > 0) return { unknownMergeFields: [...new Set(merge)] }
   return null
 }
@@ -114,10 +117,7 @@ export async function runPublishChecks(
   if (kind === 'application_type') {
     return await checkApplicationType(tx, body as ApplicationTypeBody, signal)
   }
-  if (kind === 'template') {
-    const unknown = unknownMergeFields((body as TemplateBody).body)
-    return unknown.length > 0 ? { unknownMergeFields: unknown } : null
-  }
+  if (kind === 'template') return checkTemplate(body as TemplateBody)
   if (kind === 'town_rule_setting') return checkTownRule(body as TownRuleSettingBody, key)
   if (kind === 'board_settings') return checkBoardSettings(body as BoardSettingsBody)
   if (kind === 'town_profile') return checkTownProfile(body as TownProfileBody)

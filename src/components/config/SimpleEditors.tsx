@@ -13,7 +13,7 @@ import {
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import type { LocalCodeAmendmentBody } from '@/features/config/kinds'
 import { type ChecklistBody, isFinalChecklist } from '@/features/inspections/checklistSchema'
-import type { TemplateBody } from '@/features/templates/templateSchema'
+import type { TextTemplateBody } from '@/features/templates/templateSchema'
 
 interface EditorProps<T> {
   body: T
@@ -26,7 +26,7 @@ export function TemplateEditor({
   onChange,
   errors,
   mergeFields,
-}: EditorProps<TemplateBody> & { mergeFields: string[] }) {
+}: EditorProps<TextTemplateBody> & { mergeFields: string[] }) {
   return (
     <>
       <div className="grid grid-cols-2 gap-3">

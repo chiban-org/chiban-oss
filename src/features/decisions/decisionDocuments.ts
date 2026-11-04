@@ -8,52 +8,33 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
-import { getVersion } from '@/features/config/store'
 import { appealRightsFor } from '@/features/decisions/appealRights'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { attachDocument } from '@/features/documents/attach'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import { formatMinuteOfDay } from '@/features/hearings/labels'
 import { documentFrame } from '@/features/pdf/documentFrame'
-import type { DocumentFrame } from '@/features/pdf/frame'
-import { renderPdf } from '@/features/pdf/renderPdf'
 import { loadPermitData, mergeContextOf, NOT_APPLICABLE } from '@/features/permits/permitData'
 import type { ObjectStore } from '@/features/storage/objectStore'
-import { frameMergeContext } from '@/features/templates/frameFields'
-import { renderTemplateText } from '@/features/templates/renderTemplate'
-import type { TemplateBody } from '@/features/templates/templateSchema'
+import { pinnedTemplate } from '@/features/templates/findTemplate'
+import { type DocumentInput, renderDocument } from '@/features/templates/templateBlocks'
 import { formatCivilDate } from '@/lib/formatDate'
 import { err, ok, type Result } from '@/types/result'
 
 export type DocumentsError = 'forbidden' | 'not_found' | 'no_template' | 'already_generated'
 
-export interface DecisionTexts {
-  noticeOfDecision: string
-  letter: string
-  frame: DocumentFrame
-  noticeTitle: string
-  letterTitle: string
+export interface DecisionPdf {
+  title: string
+  bytes: Uint8Array
 }
 
-async function templateOfKind(
-  db: DbOrTx,
-  templateIds: string[],
-  kind: TemplateBody['kind'],
-  signal: AbortSignal,
-): Promise<TemplateBody | null> {
-  for (const id of templateIds) {
-    const version = await getVersion(db, id, signal)
-    const body = version?.body as TemplateBody | undefined
-    if (body?.kind === kind) return body
-  }
-  return null
-}
+const DECISION_KINDS = ['notice_of_decision', 'decision_letter'] as const
 
-export async function renderDecisionTexts(
+export async function decisionDocumentInput(
   db: DbOrTx,
   decisionId: string,
   signal: AbortSignal,
-): Promise<Result<DecisionTexts, 'not_found' | 'no_template'>> {
+): Promise<Result<{ input: DocumentInput; pins: string[] }, 'not_found'>> {
   signal.throwIfAborted()
   const [decision] = await db.select().from(boardDecisions).where(eq(boardDecisions.id, decisionId))
   if (decision === undefined) return err('not_found')
@@ -64,17 +45,15 @@ export async function renderDecisionTexts(
     .from(boardMeetings)
     .where(eq(boardMeetings.id, decision.meetingId))
   if (app === null || data === null || meeting === undefined) return err('not_found')
-  const notice = await templateOfKind(db, app.pins.templates, 'notice_of_decision', signal)
-  const letter = await templateOfKind(db, app.pins.templates, 'decision_letter', signal)
-  if (notice === null || letter === null) return err('no_template')
   const board = boardOfApplication(app)
   const settings = await getBoardSettings(db, signal)
   const frame = await documentFrame(db, { board }, signal)
   const reasonsText = decision.reasonsForDisapproval?.trim() ?? ''
   const reasons = reasonsText === '' ? null : reasonsText
-  const context = {
+  const conditions = decision.conditions.map((c) => c.text)
+  const appealRights = appealRightsFor(app.typeBody.classification ?? '')
+  const values = {
     ...mergeContextOf(data),
-    ...frameMergeContext(frame),
     'board.name': board === null ? '' : boardLabel(settings, board),
     'meeting.date': formatCivilDate(meeting.meetingDate),
     'meeting.location': meeting.location,
@@ -82,36 +61,38 @@ export async function renderDecisionTexts(
     'decision.outcome': OUTCOME_LABELS[decision.outcome],
     'decision.votedOn': formatCivilDate(decision.votedOn),
     'decision.findings': decision.findings,
-    'decision.conditions':
-      decision.conditions.length === 0
-        ? NOT_APPLICABLE
-        : decision.conditions.map((c) => c.text).join('; '),
+    'decision.conditions': conditions.length === 0 ? NOT_APPLICABLE : conditions.join('; '),
     'decision.reasons': reasons ?? NOT_APPLICABLE,
     'decision.conditionsSection':
-      decision.conditions.length === 0
-        ? ''
-        : `Conditions: ${decision.conditions.map((c) => c.text).join('; ')}`,
+      conditions.length === 0 ? '' : `Conditions: ${conditions.join('; ')}`,
     'decision.reasonsSection': reasons === null ? '' : `Reasons for disapproval: ${reasons}`,
-    'decision.appealRights': appealRightsFor(app.typeBody.classification ?? ''),
+    'decision.appealRights': appealRights,
   }
-  const noticeText = renderTemplateText(notice.body, context)
-  const letterText = renderTemplateText(letter.body, context)
-  if (!noticeText.ok || !letterText.ok) return err('no_template')
   return ok({
-    noticeOfDecision: noticeText.value,
-    letter: letterText.value,
-    frame,
-    noticeTitle: notice.label,
-    letterTitle: letter.label,
+    input: {
+      frame,
+      context: { values, conditions, locked: new Map([['decision.appealRights', appealRights]]) },
+    },
+    pins: app.pins.templates,
   })
 }
 
-function paragraphs(text: string) {
-  return text
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter((p) => p !== '')
-    .map((paragraph) => ({ kind: 'paragraph' as const, text: paragraph }))
+export async function renderDecisionPdfs(
+  db: DbOrTx,
+  decisionId: string,
+  signal: AbortSignal,
+): Promise<Result<DecisionPdf[], 'not_found' | 'no_template'>> {
+  const loaded = await decisionDocumentInput(db, decisionId, signal)
+  if (!loaded.ok) return loaded
+  const pdfs: DecisionPdf[] = []
+  for (const kind of DECISION_KINDS) {
+    const template = await pinnedTemplate(db, loaded.value.pins, kind, signal)
+    if (template === null) return err('no_template')
+    const rendered = await renderDocument(kind, template, loaded.value.input)
+    if (!rendered.ok) return err('no_template')
+    pdfs.push({ title: template.label, bytes: rendered.value })
+  }
+  return ok(pdfs)
 }
 
 export async function generateDecisionDocuments(
@@ -133,19 +114,10 @@ export async function generateDecisionDocuments(
         .for('update')
       if (decision === undefined) return err('not_found')
       if (decision.writtenDecisionDocumentId !== null) return err('already_generated')
-      const texts = await renderDecisionTexts(tx, decisionId, signal)
-      if (!texts.ok) return texts
+      const pdfs = await renderDecisionPdfs(tx, decisionId, signal)
+      if (!pdfs.ok) return pdfs
       const made: string[] = []
-      for (const [title, body] of [
-        [texts.value.noticeTitle, texts.value.noticeOfDecision],
-        [texts.value.letterTitle, texts.value.letter],
-      ] as const) {
-        const pdf = await renderPdf({
-          title,
-          frame: texts.value.frame,
-          scale: 'document',
-          blocks: paragraphs(body),
-        })
+      for (const { title, bytes: pdf } of pdfs.value) {
         const stored = await storeGeneratedBytes(tx, store, pdf, 'application/pdf', signal)
         const attached = await attachDocument(
           tx,

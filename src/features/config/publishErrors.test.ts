@@ -60,4 +60,14 @@ describe('fieldErrorsFor', () => {
     expect(fieldErrorsFor('forbidden')._form).toBeDefined()
     expect(fieldErrorsFor('not_draft')._form).toBeDefined()
   })
+
+  it('names template refusals in plain words', () => {
+    expect(fieldErrorsFor({ disallowedMergeFields: ['party.applicant.name'] }).body).toContain(
+      'Applicant name',
+    )
+    expect(fieldErrorsFor({ missingLockedBlocks: ['decision.appealRights'] }).body).toContain(
+      'Appeal rights',
+    )
+    expect(fieldErrorsFor({ unknownBlocks: ['order.lienWarning'] }).body).toContain('Lien warning')
+  })
 })

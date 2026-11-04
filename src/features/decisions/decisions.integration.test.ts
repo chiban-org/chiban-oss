@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { applicationConditions, applications, boardDecisions, clocks } from '@/db/schema'
 import {
   generateDecisionDocuments,
-  renderDecisionTexts,
+  renderDecisionPdfs,
 } from '@/features/decisions/decisionDocuments'
 import { type RecordDecisionInput, recordDecision } from '@/features/decisions/recordDecision'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -22,6 +22,7 @@ import {
 } from '@/test/hearingFixtures'
 import { findIsoDates, findRawKeys, findUuids } from '@/test/leaks'
 import { makeTestStore } from '@/test/minio'
+import { pdfText } from '@/test/pdfText'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -253,9 +254,10 @@ describe('decision documents', () => {
 
   it('notice of decision contains the findings and the RSA 677:2 appeal rights', async () => {
     const { decisionId } = await decided()
-    const texts = await renderDecisionTexts(handle.db, decisionId, signal)
-    if (!texts.ok) throw new Error(texts.error)
-    for (const text of [texts.value.noticeOfDecision, texts.value.letter]) {
+    const pdfs = await renderDecisionPdfs(handle.db, decisionId, signal)
+    if (!pdfs.ok) throw new Error(pdfs.error)
+    for (const pdf of pdfs.value) {
+      const text = (await pdfText(pdf.bytes)).replace(/\s+/g, ' ')
       expect(text).toContain('The proposal meets each criterion of the ordinance.')
       expect(text).toContain('RSA 677:2')
       expect(text).toContain('File a stamped boundary survey.')

@@ -65,6 +65,15 @@ const ZBA_WORKFLOW: ApplicationTypeBody['workflow'] = {
 export const PLANNING_BOARD_WORKFLOW = PLANNING_WORKFLOW
 export const ZBA_BOARD_WORKFLOW = ZBA_WORKFLOW
 
+export const HEARING_NOTICE_TEXT =
+  '{{town.name}}\n\n{{notice.recipientName}}\n\n{{notice.recipientAddress}}\n\nNotice of {{hearing.kind}} to {{notice.recipientName}}.\n\nThe {{board.name}} will hold a {{hearing.kind}} on {{meeting.date}} at {{meeting.time}}, {{meeting.location}}, on {{application.typeLabel}} {{application.number}}, {{project.title}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}.\n\nYou are receiving this notice because you may be an abutter or other party entitled to notice. The application is available for inspection at the town offices.'
+
+export const NOTICE_OF_DECISION_TEXT =
+  '{{town.name}}\n\nNotice of decision of the {{board.name}} on {{application.typeLabel}} {{application.number}}, {{project.title}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}.\n\nDecision: {{decision.outcome}}, voted {{decision.votedOn}}.\n\nFindings of fact: {{decision.findings}}\n\n{{decision.conditionsSection}}\n\n{{decision.reasonsSection}}\n\n{{decision.appealRights}}'
+
+export const DECISION_LETTER_TEXT =
+  '{{town.name}}\n\nDear {{party.applicant.name}}:\n\nOn {{decision.votedOn}} the {{board.name}} voted on {{application.typeLabel}} {{application.number}} for {{parcel.siteAddress}}. The decision is: {{decision.outcome}}.\n\nFindings of fact: {{decision.findings}}\n\n{{decision.conditionsSection}}\n\n{{decision.reasonsSection}}\n\n{{decision.appealRights}}'
+
 export function boardStarter(input: BoardStarterInput): StarterBundle {
   const { slug, prefix, label } = input
   const classification = NH_CLASSIFICATIONS.find((c) => c.key === input.classification)
@@ -112,19 +121,19 @@ export function boardStarter(input: BoardStarterInput): StarterBundle {
         key: `${slug}-hearing-notice`,
         label: `${label} hearing notice`,
         kind: 'hearing_notice',
-        body: `{{town.name}}\n\n{{notice.recipientName}}\n\n{{notice.recipientAddress}}\n\nNotice of {{hearing.kind}} to {{notice.recipientName}}.\n\nThe {{board.name}} will hold a {{hearing.kind}} on {{meeting.date}} at {{meeting.time}}, {{meeting.location}}, on {{application.typeLabel}} {{application.number}}, {{project.title}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}.\n\nYou are receiving this notice because you may be an abutter or other party entitled to notice. The application is available for inspection at the town offices.`,
+        body: HEARING_NOTICE_TEXT,
       },
       {
         key: `${slug}-notice-of-decision`,
         label: `${label} notice of decision`,
         kind: 'notice_of_decision',
-        body: `{{town.name}}\n\nNotice of decision of the {{board.name}} on {{application.typeLabel}} {{application.number}}, {{project.title}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}.\n\nDecision: {{decision.outcome}}, voted {{decision.votedOn}}.\n\nFindings of fact: {{decision.findings}}\n\n{{decision.conditionsSection}}\n\n{{decision.reasonsSection}}\n\n{{decision.appealRights}}`,
+        body: NOTICE_OF_DECISION_TEXT,
       },
       {
         key: `${slug}-decision-letter`,
         label: `${label} decision letter`,
         kind: 'decision_letter',
-        body: `{{town.name}}\n\nDear {{party.applicant.name}}:\n\nOn {{decision.votedOn}} the {{board.name}} voted on {{application.typeLabel}} {{application.number}} for {{parcel.siteAddress}}. The decision is: {{decision.outcome}}.\n\nFindings of fact: {{decision.findings}}\n\n{{decision.conditionsSection}}\n\n{{decision.reasonsSection}}\n\n{{decision.appealRights}}`,
+        body: DECISION_LETTER_TEXT,
       },
       {
         key: `${slug}-decision`,

@@ -63,6 +63,7 @@ export const ErrorIds = {
   ANON_INTAKE_FAILED: 'E_ANON_001',
 
   PDF_FRAME_MISSING: 'E_PDF_001',
+  PDF_DEFAULT_TEMPLATE_BROKEN: 'E_PDF_002',
 } as const
 
 export type ErrorId = (typeof ErrorIds)[keyof typeof ErrorIds]

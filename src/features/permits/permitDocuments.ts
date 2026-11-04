@@ -1,37 +1,37 @@
-import type { Db, DbOrTx } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import { documentFrame } from '@/features/pdf/documentFrame'
-import type { DocumentFrame } from '@/features/pdf/frame'
-import type { PdfBlock } from '@/features/pdf/renderPdf'
-import { renderPdf } from '@/features/pdf/renderPdf'
 import { loadPermitData, mergeContextOf, type PermitData } from '@/features/permits/permitData'
-import { frameMergeContext } from '@/features/templates/frameFields'
-import { renderTemplateText } from '@/features/templates/renderTemplate'
+import { townTemplate } from '@/features/templates/findTemplate'
+import { type DocumentInput, renderDocumentOrDefault } from '@/features/templates/templateBlocks'
 import { err, ok, type Result } from '@/types/result'
 
-const PLACARD_NOTICE =
-  'Post this placard where it can be seen from the street until the final inspection.'
+const NOT_RECORDED = 'Not recorded'
 
-function templateParagraphs(data: PermitData, frame: DocumentFrame): PdfBlock[] {
-  if (data.permitTemplate === null) return []
-  const rendered = renderTemplateText(data.permitTemplate.body, {
-    ...mergeContextOf(data),
-    ...frameMergeContext(frame),
-  })
-  if (!rendered.ok) return []
-  return rendered.value
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter((p) => p !== '')
-    .map((text) => ({ kind: 'paragraph', text }))
+function contractorWithLicense(data: PermitData): string {
+  return data.licenseNumber === ''
+    ? data.contractorName
+    : `${data.contractorName} (license ${data.licenseNumber})`
 }
 
-function conditionsBlock(data: PermitData): PdfBlock[] {
-  return data.conditions.length === 0
-    ? []
-    : [
-        { kind: 'heading', text: 'Conditions' },
-        { kind: 'table', columns: ['Condition'], rows: data.conditions.map((c) => [c]) },
-      ]
+export async function permitDocumentInput(
+  db: DbOrTx,
+  data: PermitData,
+  signal: AbortSignal,
+): Promise<DocumentInput> {
+  return {
+    title: data.application.typeBody.label,
+    subtitle: data.application.number,
+    frame: await documentFrame(db, {}, signal),
+    context: {
+      values: {
+        ...mergeContextOf(data),
+        'codeEdition.label': data.codeEdition === '' ? NOT_RECORDED : data.codeEdition,
+        'permit.contractorWithLicense': contractorWithLicense(data),
+        'fees.status': data.feeStatus,
+      },
+      conditions: data.conditions,
+    },
+  }
 }
 
 export async function buildPermitPdf(
@@ -41,69 +41,24 @@ export async function buildPermitPdf(
 ): Promise<Result<Uint8Array, 'not_issued'>> {
   const data = await loadPermitData(db, applicationId, signal)
   if (data?.application.state !== 'issued') return err('not_issued')
-  const frame = await documentFrame(db, {}, signal)
-  const contractor =
-    data.licenseNumber === ''
-      ? data.contractorName
-      : `${data.contractorName} (license ${data.licenseNumber})`
-  return ok(
-    await renderPdf({
-      title: data.application.typeBody.label,
-      subtitle: data.application.number,
-      frame,
-      scale: 'document',
-      blocks: [
-        ...templateParagraphs(data, frame),
-        {
-          kind: 'fields',
-          rows: [
-            { label: 'Number', value: data.application.number },
-            { label: 'Type', value: data.application.typeBody.label },
-            { label: 'Parcel', value: data.parcelDisplayId },
-            { label: 'Site address', value: data.siteAddress },
-            { label: 'Owner', value: data.ownerName },
-            { label: 'Contractor', value: contractor },
-            { label: 'Issued', value: data.issuedOn },
-            { label: 'Expires', value: data.expiresOn },
-            {
-              label: 'Code edition',
-              value: data.codeEdition === '' ? 'Not recorded' : data.codeEdition,
-            },
-            { label: 'Fees', value: data.feeStatus },
-          ],
-        },
-        ...conditionsBlock(data),
-        { kind: 'signature', role: 'building_official', label: 'Authorized signature' },
-      ],
-    }),
-  )
+  const input = await permitDocumentInput(db, data, signal)
+  return ok(await renderDocumentOrDefault('permit', data.permitTemplate, input))
 }
 
 export async function buildPlacardPdf(
-  db: Db,
+  db: DbOrTx,
   applicationId: string,
   signal: AbortSignal,
 ): Promise<Result<Uint8Array, 'not_issued'>> {
   const data = await loadPermitData(db, applicationId, signal)
   if (data?.application.state !== 'issued') return err('not_issued')
+  const input = await permitDocumentInput(db, data, signal)
+  const template = await townTemplate(db, 'placard', data.application.pins.templates, signal)
   return ok(
-    await renderPdf({
+    await renderDocumentOrDefault('placard', template, {
+      frame: input.frame,
+      context: input.context,
       title: data.application.typeBody.label.toUpperCase(),
-      frame: await documentFrame(db, {}, signal),
-      scale: 'placard',
-      blocks: [
-        {
-          kind: 'fields',
-          rows: [
-            { label: 'Number', value: data.application.number },
-            { label: 'Site address', value: data.siteAddress },
-            { label: 'Contractor', value: data.contractorName },
-            { label: 'Issued', value: data.issuedOn },
-            { label: 'Expires', value: data.expiresOn },
-          ],
-        },
-        { kind: 'notice', text: PLACARD_NOTICE },
-      ],
     }),
   )
 }

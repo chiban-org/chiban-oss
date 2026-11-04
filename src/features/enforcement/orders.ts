@@ -23,6 +23,7 @@ import { storeGeneratedBytes } from '@/features/files/ingest'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { documentFrame } from '@/features/pdf/documentFrame'
 import type { ObjectStore } from '@/features/storage/objectStore'
+import { publishedTemplate } from '@/features/templates/findTemplate'
 import { err, ok, type Result } from '@/types/result'
 
 const DraftSchema = z.object({
@@ -274,19 +275,23 @@ export async function issueOrder(
       return err('deadline_before_issue')
     }
     const [issuer] = await tx.select().from(users).where(eq(users.id, actor.userId))
-    const bytes = await renderOrderPdf({
-      frame: await documentFrame(tx, {}, signal, store),
-      number: order.number,
-      rule,
-      locationText: caseRow.locationText,
-      findings,
-      correctiveAction: order.correctiveAction,
-      correctiveDeadline: order.correctiveDeadline,
-      ceaseImmediately: order.ceaseImmediately,
-      issuedOn: value.issuedOn,
-      issuerName: issuer?.displayName ?? '',
-      issuerTitle: designation?.title ?? 'Enforcement officer',
-    })
+    const template = await publishedTemplate(tx, 'enforcement_order', signal)
+    const bytes = await renderOrderPdf(
+      {
+        frame: await documentFrame(tx, {}, signal, store),
+        number: order.number,
+        rule,
+        locationText: caseRow.locationText,
+        findings,
+        correctiveAction: order.correctiveAction,
+        correctiveDeadline: order.correctiveDeadline,
+        ceaseImmediately: order.ceaseImmediately,
+        issuedOn: value.issuedOn,
+        issuerName: issuer?.displayName ?? '',
+        issuerTitle: designation?.title ?? 'Enforcement officer',
+      },
+      template,
+    )
     const stored = await storeGeneratedBytes(tx, store, bytes, 'application/pdf', signal)
     const attached = await attachDocument(
       tx,

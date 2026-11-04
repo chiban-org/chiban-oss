@@ -1,0 +1,81 @@
+import { doc, fields, heading, locked, section, signature } from '@/features/templates/doc/build'
+import type { DocumentKindDef } from '@/features/templates/kinds/kindTypes'
+
+export const ENFORCEMENT_ORDER_KIND: DocumentKindDef = {
+  label: 'Cease and desist order',
+  title: 'Cease and desist order',
+  record: 'Enforcement order',
+  scale: 'document',
+  fields: [
+    'order.number',
+    'order.property',
+    'order.issuedOn',
+    'order.authority',
+    'order.correctiveAction',
+    'order.correctiveDeadline',
+    'order.issuerName',
+    'order.issuerTitle',
+  ],
+  sections: [
+    { name: 'order.provisions', label: 'Provisions violated' },
+    { name: 'order.facts', label: 'Facts found' },
+    { name: 'order.inspectionDates', label: 'Dates of inspection' },
+    { name: 'order.correctiveAction', label: 'Corrective action required' },
+    { name: 'order.correctiveDeadline', label: 'Corrective action due date' },
+  ],
+  locked: ['order.ceaseSentence', 'order.motionNotice', 'order.lienWarning'],
+  defaultDoc: doc(
+    fields([
+      ['Order number', 'order.number'],
+      ['Property', 'order.property'],
+      ['Issued', 'order.issuedOn'],
+      ['Authority', 'order.authority'],
+    ]),
+    locked('order.ceaseSentence'),
+    heading('Provisions violated'),
+    section('order.provisions'),
+    heading('Facts'),
+    section('order.facts'),
+    heading('Date of inspection'),
+    section('order.inspectionDates'),
+    heading('Corrective action required'),
+    section('order.correctiveAction'),
+    heading('Corrective action due'),
+    section('order.correctiveDeadline'),
+    heading('Notice of motion to enforce'),
+    locked('order.motionNotice'),
+    heading('Lien warning'),
+    locked('order.lienWarning'),
+    signature('code_enforcement_officer'),
+  ),
+}
+
+export const COUNSEL_PACKET_COVER_KIND: DocumentKindDef = {
+  label: 'Counsel packet',
+  title: 'Packet for town counsel',
+  record: 'Enforcement case referred to counsel',
+  scale: 'document',
+  fields: ['case.number', 'case.property', 'case.status', 'case.openedOn', 'case.referredOn'],
+  sections: [
+    { name: 'counsel.findings', label: 'Findings' },
+    { name: 'counsel.orders', label: 'Orders, service and court steps' },
+    { name: 'counsel.proof', label: 'Proof of service documents' },
+    { name: 'counsel.appeals', label: 'Appeals and stays' },
+    { name: 'counsel.penalty', label: 'Penalty exposure' },
+  ],
+  locked: [],
+  defaultDoc: doc(
+    fields([
+      ['Case', 'case.number'],
+      ['Property', 'case.property'],
+      ['Status', 'case.status'],
+      ['Opened', 'case.openedOn'],
+      ['Referred', 'case.referredOn'],
+    ]),
+    section('counsel.findings'),
+    section('counsel.orders'),
+    section('counsel.proof'),
+    section('counsel.appeals'),
+    section('counsel.penalty'),
+  ),
+}

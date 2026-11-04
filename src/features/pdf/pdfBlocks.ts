@@ -6,13 +6,17 @@ import {
   drawRule,
   drawText,
   INK,
+  LEADING,
   MARGIN,
   MUTED,
   wrapLines,
 } from '@/features/pdf/pdfLayout'
 import type { PageCursor } from '@/features/pdf/pdfPage'
+import { drawListItems, drawRuns } from '@/features/pdf/pdfRichText'
 import type { PdfBlock, PdfDocumentSpec, SignaturePerson } from '@/features/pdf/pdfSpec'
 import type { SignerRole } from '@/features/town/profileSchema'
+
+export { LEADING }
 
 export interface Sizes {
   title: number
@@ -26,7 +30,6 @@ export const SIZES: Record<PdfDocumentSpec['scale'], Sizes> = {
   placard: { title: 48, body: 16, value: 24, label: 12 },
 }
 
-export const LEADING = 1.3
 export const BLOCK_GAP = 12
 const LABEL_COLUMN = 130
 const SIGNATURE_BOX = { width: 180, height: 44 }
@@ -214,6 +217,14 @@ export function drawBlock(ctx: BlockContext, block: PdfBlock): void {
         layout.fonts.body,
         sizes.body,
       )
+      layout.y -= BLOCK_GAP / 2
+      return
+    case 'text':
+      drawRuns(layout, block.runs, sizes.body)
+      layout.y -= BLOCK_GAP / 2
+      return
+    case 'list':
+      drawListItems(layout, block.items, sizes.body)
       layout.y -= BLOCK_GAP / 2
       return
     case 'fields':

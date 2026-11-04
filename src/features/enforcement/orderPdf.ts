@@ -10,6 +10,8 @@ import type { violationFindings } from '@/db/schema'
 import { PROVISION_KIND_LABELS } from '@/features/enforcement/labels'
 import type { DocumentFrame } from '@/features/pdf/frame'
 import { type PdfBlock, renderPdf } from '@/features/pdf/renderPdf'
+import { type DocumentInput, renderDocumentOrDefault } from '@/features/templates/templateBlocks'
+import type { TemplateBody } from '@/features/templates/templateSchema'
 import { formatCivilDate } from '@/lib/formatDate'
 
 type Finding = typeof violationFindings.$inferSelect
@@ -48,64 +50,71 @@ export function missingOrderContent(
   return rule.contentFields.filter((field) => !present[field])
 }
 
-export async function renderOrderPdf(input: OrderPdfInput): Promise<Uint8Array> {
+const paragraph = (text: string): PdfBlock => ({ kind: 'paragraph', text })
+
+function orderSections(input: OrderPdfInput): Map<string, PdfBlock[]> {
   const wants = (field: OrderContentField) => input.rule.contentFields.includes(field)
-  const blocks: PdfBlock[] = [
-    {
-      kind: 'fields',
-      rows: [
-        { label: 'Order number', value: input.number },
-        { label: 'Property', value: input.locationText },
-        { label: 'Issued', value: formatCivilDate(input.issuedOn) },
-        { label: 'Authority', value: input.rule.citation.label },
-      ],
-    },
-  ]
-  if (input.ceaseImmediately) blocks.push({ kind: 'notice', text: ORDER_CEASE_SENTENCE })
-  if (wants('provisions')) {
-    blocks.push({ kind: 'heading', text: 'Provisions violated' })
-    for (const line of provisionLines(input.findings))
-      blocks.push({ kind: 'paragraph', text: line })
-  }
-  if (wants('facts')) {
-    blocks.push({ kind: 'heading', text: 'Facts' })
-    for (const f of input.findings) blocks.push({ kind: 'paragraph', text: f.facts })
-  }
-  if (wants('inspectionDate')) {
-    blocks.push({ kind: 'heading', text: 'Date of inspection' })
-    for (const date of new Set(input.findings.map((f) => f.inspectionDate))) {
-      blocks.push({ kind: 'paragraph', text: formatCivilDate(date) })
-    }
-  }
-  if (wants('correctiveAction')) {
-    blocks.push({ kind: 'heading', text: 'Corrective action required' })
-    blocks.push({ kind: 'paragraph', text: input.correctiveAction })
-  }
-  if (wants('correctiveDeadline') && input.correctiveDeadline !== null) {
-    blocks.push({ kind: 'heading', text: 'Corrective action due' })
-    blocks.push({ kind: 'paragraph', text: formatCivilDate(input.correctiveDeadline) })
-  }
-  if (wants('motionNotice')) {
-    blocks.push({ kind: 'heading', text: 'Notice of motion to enforce' })
-    blocks.push({ kind: 'paragraph', text: ORDER_MOTION_NOTICE })
-  }
-  if (wants('lienWarning')) {
-    blocks.push({ kind: 'heading', text: 'Lien warning' })
-    blocks.push({ kind: 'paragraph', text: ORDER_LIEN_WARNING })
-  }
-  blocks.push({
-    kind: 'signature',
-    role: 'code_enforcement_officer',
-    label: 'Enforcement officer signature',
-    person: { name: input.issuerName, title: input.issuerTitle },
-  })
-  return await renderPdf({
-    title: 'Cease and desist order',
+  const dates = [...new Set(input.findings.map((f) => f.inspectionDate))]
+  const deadline = input.correctiveDeadline
+  return new Map([
+    ['order.provisions', wants('provisions') ? provisionLines(input.findings).map(paragraph) : []],
+    ['order.facts', wants('facts') ? input.findings.map((f) => paragraph(f.facts)) : []],
+    [
+      'order.inspectionDates',
+      wants('inspectionDate') ? dates.map((d) => paragraph(formatCivilDate(d))) : [],
+    ],
+    [
+      'order.correctiveAction',
+      wants('correctiveAction') ? [paragraph(input.correctiveAction)] : [],
+    ],
+    [
+      'order.correctiveDeadline',
+      wants('correctiveDeadline') && deadline !== null
+        ? [paragraph(formatCivilDate(deadline))]
+        : [],
+    ],
+  ])
+}
+
+function orderLocked(input: OrderPdfInput): Map<string, string> {
+  const wants = (field: OrderContentField) => input.rule.contentFields.includes(field)
+  return new Map([
+    ['order.ceaseSentence', input.ceaseImmediately ? ORDER_CEASE_SENTENCE : ''],
+    ['order.motionNotice', wants('motionNotice') ? ORDER_MOTION_NOTICE : ''],
+    ['order.lienWarning', wants('lienWarning') ? ORDER_LIEN_WARNING : ''],
+  ])
+}
+
+export function orderDocumentInput(input: OrderPdfInput): DocumentInput {
+  return {
     subtitle: input.number,
     frame: input.frame,
-    scale: 'document',
-    blocks,
-  })
+    context: {
+      values: {
+        'order.number': input.number,
+        'order.property': input.locationText,
+        'order.issuedOn': formatCivilDate(input.issuedOn),
+        'order.authority': input.rule.citation.label,
+        'order.correctiveAction': input.correctiveAction,
+        'order.correctiveDeadline':
+          input.correctiveDeadline === null ? '' : formatCivilDate(input.correctiveDeadline),
+        'order.issuerName': input.issuerName,
+        'order.issuerTitle': input.issuerTitle,
+      },
+      sections: orderSections(input),
+      locked: orderLocked(input),
+      people: new Map([
+        ['code_enforcement_officer', { name: input.issuerName, title: input.issuerTitle }],
+      ]),
+    },
+  }
+}
+
+export async function renderOrderPdf(
+  input: OrderPdfInput,
+  template: TemplateBody | null = null,
+): Promise<Uint8Array> {
+  return await renderDocumentOrDefault('enforcement_order', template, orderDocumentInput(input))
 }
 
 export interface NoticePdfInput {

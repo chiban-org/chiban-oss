@@ -33,7 +33,7 @@ import type { ChecklistBody } from '@/features/inspections/checklistSchema'
 import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
 import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
 import type { ReviewRoutesBody } from '@/features/reviews/routesSchema'
-import type { TemplateBody } from '@/features/templates/templateSchema'
+import type { TextTemplateBody } from '@/features/templates/templateSchema'
 
 export interface EditorProps {
   body: unknown
@@ -67,7 +67,7 @@ export function TemplateAdapter({ body, onChange, issues }: EditorProps) {
   const { mergeFields } = useEditorContext()
   return (
     <TemplateEditor
-      body={body as TemplateBody}
+      body={body as TextTemplateBody}
       onChange={onChange}
       errors={errorsOf(issues)}
       mergeFields={mergeFields}

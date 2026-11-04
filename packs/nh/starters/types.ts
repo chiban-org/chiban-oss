@@ -3,7 +3,7 @@ import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema
 import type { FeeScheduleBody } from '@/features/fees/feeSchema'
 import type { FormBody } from '@/features/forms/formSchema'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
-import type { TemplateBody } from '@/features/templates/templateSchema'
+import type { TextTemplateBody } from '@/features/templates/templateSchema'
 
 export interface StarterBundle {
   id: string
@@ -13,7 +13,7 @@ export interface StarterBundle {
   feeSchedule: FeeScheduleBody
   conditionLibrary: ConditionLibraryBody
   checklists: ChecklistBody[]
-  templates: TemplateBody[]
+  templates: TextTemplateBody[]
 }
 
 export const ATTESTATION_TEXT =

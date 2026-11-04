@@ -6,6 +6,7 @@ export const PAGE_HEIGHT = 792
 export const MARGIN = 54
 export const CONTENT_WIDTH = PAGE_WIDTH - MARGIN * 2
 export const FOOTER_RESERVE = 36
+export const LEADING = 1.3
 
 export const INK = rgb(0.1, 0.1, 0.12)
 export const MUTED = rgb(0.36, 0.39, 0.44)

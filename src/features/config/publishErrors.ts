@@ -1,4 +1,6 @@
 import type { PublishError } from '@/features/config/publishChecks'
+import { lockedSource } from '@/features/templates/doc/lockedSources'
+import { MERGE_FIELD_LABELS } from '@/features/templates/mergeFieldLabels'
 import { workflowIssueText } from '@/features/workflow/issueText'
 
 export type FieldErrors = Record<string, string>
@@ -12,6 +14,16 @@ const POLICY_COPY: Record<string, string> = {
 }
 
 const FORM_FIELD = '_form'
+
+const FIELD_LABELS: ReadonlyMap<string, string> = new Map(Object.entries(MERGE_FIELD_LABELS))
+
+function fieldNames(names: string[]): string {
+  return names.map((n) => FIELD_LABELS.get(n) ?? n).join(', ')
+}
+
+function lockedNames(names: string[]): string {
+  return names.map((n) => lockedSource(n)?.label ?? n).join(', ')
+}
 
 function fromIssues(issues: { path: string; message: string }[]): FieldErrors {
   const out: FieldErrors = {}
@@ -57,6 +69,21 @@ function fromObjectError(error: ObjectError): FieldErrors {
   }
   if ('unknownMergeFields' in error) {
     return { body: `Unknown merge fields: ${error.unknownMergeFields.join(', ')}.` }
+  }
+  if ('disallowedMergeFields' in error) {
+    return {
+      body: `This kind of document cannot use these merge fields: ${fieldNames(error.disallowedMergeFields)}.`,
+    }
+  }
+  if ('missingLockedBlocks' in error) {
+    return {
+      body: `Put back the blocks state law requires: ${lockedNames(error.missingLockedBlocks)}.`,
+    }
+  }
+  if ('unknownBlocks' in error) {
+    return {
+      body: `These blocks do not belong in this kind of document: ${lockedNames(error.unknownBlocks)}.`,
+    }
   }
   if ('finalChecklistCount' in error) {
     return {
