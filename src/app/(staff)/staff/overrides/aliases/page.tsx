@@ -6,6 +6,7 @@ import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { OverridesTabs } from '@/components/staff/OverridesTabs'
+import { hasCapability } from '@/features/authz/capabilities'
 import { clearHref, type RawSearchParams } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
 import {
@@ -30,6 +31,30 @@ const CHIP: Record<
   expired: { chip: 'neutral', label: 'Expired' },
 }
 
+function AddAliasOverride() {
+  return (
+    <>
+      <h2>Add an override</h2>
+      <ActionForm
+        action={createAliasOverrideAction}
+        submitLabel="Save override"
+        className="max-w-md"
+      >
+        <TextField label="Format key" name="format" required hint="For example cama15 or gis12." />
+        <TextField label="ID value" name="value" required />
+        <TextField
+          label="Points to parcel"
+          name="parcelRef"
+          required
+          hint="Any current or retired parcel ID."
+        />
+        <TextField label="Reason" name="reason" required />
+        <TextField label="Expires on" name="expiresOn" type="date" />
+      </ActionForm>
+    </>
+  )
+}
+
 export default async function StaffAliasOverridesPage({
   searchParams,
 }: {
@@ -38,7 +63,10 @@ export default async function StaffAliasOverridesPage({
   const view = readAliasOverrideView(await searchParams)
   const ctx = await recordStaffContext()
   if (ctx === null) return <NoPermission title="Parcel ID overrides" action="see overrides" />
-  const all = await listAliasOverrides(ctx.db, new Date(), ctx.signal)
+  const [all, mayManage] = await Promise.all([
+    listAliasOverrides(ctx.db, new Date(), ctx.signal),
+    hasCapability(ctx.db, ctx.actor.userId, 'parcel.manage', ctx.signal),
+  ])
   const { rows, chips } = arrangeAliasOverrides(all, view)
   const links = sortLinks(ALIAS_OVERRIDES_PATH, view.params, ALIAS_SORT, view.sort)
   const clear = clearHref(ALIAS_OVERRIDES_PATH, view.params, ALIAS_FILTER_PARAMS)
@@ -57,6 +85,7 @@ export default async function StaffAliasOverridesPage({
           <div className="toolbar my-4">
             <QuickFilters label="Quick filters" groups={chips} clearHref={clear} />
           </div>
+          <p className="text-muted-foreground">Newest first. Click a column heading to sort.</p>
           <div className="table-panel my-4">
             {rows.length === 0 ? (
               <p className="px-5 py-8">No override matches these filters.</p>
@@ -102,23 +131,7 @@ export default async function StaffAliasOverridesPage({
           </div>
         </>
       )}
-      <h2>Add an override</h2>
-      <ActionForm
-        action={createAliasOverrideAction}
-        submitLabel="Save override"
-        className="max-w-md"
-      >
-        <TextField label="Format key" name="format" required hint="For example cama15 or gis12." />
-        <TextField label="ID value" name="value" required />
-        <TextField
-          label="Points to parcel"
-          name="parcelRef"
-          required
-          hint="Any current or retired parcel ID."
-        />
-        <TextField label="Reason" name="reason" required />
-        <TextField label="Expires on" name="expiresOn" type="date" />
-      </ActionForm>
+      {mayManage ? <AddAliasOverride /> : null}
     </main>
   )
 }

@@ -13,6 +13,7 @@ import { err, ok, type Result } from '@/types/result'
 
 export type FeeOverrideRow = typeof feeOverrides.$inferSelect & {
   applicationNumber: string
+  feeLabel: string
   status: OverrideStatus
 }
 
@@ -96,7 +97,7 @@ export async function createFeeOverride(
 function statusOf(
   row: typeof feeOverrides.$inferSelect,
   state: string,
-  scheduleCodes: Set<string>,
+  scheduleCodes: ReadonlyMap<string, string>,
 ): OverrideStatus {
   if (row.supersededBy !== null) return 'superseded'
   if ((TERMINAL_STATES as readonly string[]).includes(state)) return 'expired'
@@ -116,19 +117,24 @@ export async function listFeeOverrides(db: DbOrTx, signal: AbortSignal): Promise
     .from(feeOverrides)
     .innerJoin(applications, eq(applications.id, feeOverrides.applicationId))
     .orderBy(desc(feeOverrides.createdAt))
-  const codesByVersion = new Map<string, Set<string>>()
+  const labelsByVersion = new Map<string, Map<string, string>>()
   const out: FeeOverrideRow[] = []
   for (const { o, state, pins, number } of rows) {
     const versionId = (pins as { feeSchedule: string }).feeSchedule
-    let codes = codesByVersion.get(versionId)
-    if (codes === undefined) {
+    let labels = labelsByVersion.get(versionId)
+    if (labels === undefined) {
       const version = await getVersion(db, versionId, signal)
-      codes = new Set(
-        (version?.body as FeeScheduleBody | undefined)?.lines.map((l) => l.code) ?? [],
+      labels = new Map(
+        (version?.body as FeeScheduleBody | undefined)?.lines.map((l) => [l.code, l.label]) ?? [],
       )
-      codesByVersion.set(versionId, codes)
+      labelsByVersion.set(versionId, labels)
     }
-    out.push({ ...o, applicationNumber: number, status: statusOf(o, state, codes) })
+    out.push({
+      ...o,
+      applicationNumber: number,
+      feeLabel: labels.get(o.feeCode) ?? o.feeCode,
+      status: statusOf(o, state, labels),
+    })
   }
   return out
 }

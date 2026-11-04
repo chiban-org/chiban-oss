@@ -80,6 +80,14 @@ describe('parcel ID overrides view', () => {
   it('ignores unknown filter values', () => {
     expect(aliasIds({ status: 'bogus' })).toEqual(['3', '1', '2'])
   })
+
+  it('picks one expiry at a time', () => {
+    expect(aliasIds({ expiry: ['dated', 'never'] })).toEqual(['3'])
+    const { chips } = arrangeAliasOverrides(ALIASES, readAliasOverrideView({ expiry: 'dated' }))
+    const never = chips[1]?.chips.find((c) => c.label === 'Never expires')
+    expect(never?.href).toContain('expiry=never')
+    expect(never?.href).not.toContain('expiry=dated')
+  })
 })
 
 function fee(
@@ -91,6 +99,7 @@ function fee(
     applicationId: `app-${id}`,
     applicationNumber: `BP-${id}`,
     feeCode: 'plan_review',
+    feeLabel: 'Plan review',
     kind: 'waive',
     amountCents: null,
     reason: 'r',
@@ -101,8 +110,14 @@ function fee(
 }
 
 const FEES = [
-  fee('2', { status: 'applied', kind: 'set_amount', amountCents: 5000, feeCode: 'b_fee' }),
-  fee('1', { status: 'superseded', feeCode: 'a_fee' }),
+  fee('2', {
+    status: 'applied',
+    kind: 'set_amount',
+    amountCents: 5000,
+    feeCode: 'a_fee',
+    feeLabel: 'Building fee',
+  }),
+  fee('1', { status: 'superseded', feeCode: 'b_fee', feeLabel: 'Abutter notice' }),
   fee('3', { status: 'applied', kind: 'set_amount', amountCents: 100, reason: 'zz' }),
 ]
 const feeIds = (raw: Record<string, string | string[]>) =>
@@ -121,5 +136,18 @@ describe('fee overrides view', () => {
     expect(feeIds({ status: 'superseded' })).toEqual(['1'])
     expect(feeIds({ kind: 'set_amount' })).toEqual(['2', '3'])
     expect(feeIds({ kind: 'set_amount', status: 'superseded' })).toEqual([])
+  })
+
+  it('sorts the fee column by the fee name shown, not its code', () => {
+    expect(feeIds({ sort: 'fee' })).toEqual(['1', '2', '3'])
+    expect(feeIds({ sort: 'fee', dir: 'desc' })).toEqual(['3', '2', '1'])
+  })
+
+  it('picks one kind of override at a time', () => {
+    expect(feeIds({ kind: ['waive', 'set_amount'] })).toEqual(['1'])
+    const { chips } = arrangeFeeOverrides(FEES, readFeeOverrideView({ kind: 'waive' }))
+    const amount = chips[1]?.chips.find((c) => c.label === 'Set to an amount')
+    expect(amount?.href).toContain('kind=set_amount')
+    expect(amount?.href).not.toContain('kind=waive')
   })
 })

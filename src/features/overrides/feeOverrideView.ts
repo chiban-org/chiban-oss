@@ -8,6 +8,7 @@ import {
   chipGroups,
   filterValues,
   labeledOptions,
+  singleValue,
 } from '@/features/dataTable/quickFilters'
 import { parseSort, type SortConfig, type SortState } from '@/features/dataTable/sort'
 import type { FeeOverrideRow } from '@/features/fees/feeOverrides'
@@ -55,7 +56,7 @@ export function readFeeOverrideView(raw: RawSearchParams): FeeOverrideView {
     params,
     sort: parseSort(FEE_SORT, params),
     status: filterValues(params, 'status', OVERRIDE_STATUSES),
-    kind: filterValues(params, 'kind', FEE_OVERRIDE_KINDS),
+    kind: singleValue(params, 'kind', FEE_OVERRIDE_KINDS),
   }
 }
 
@@ -71,7 +72,7 @@ export function arrangeFeeOverrides(rows: readonly FeeOverrideRow[], view: FeeOv
   const visible = sortRows(filterRows(rows, groups), view.sort, {
     newest: null,
     application: (r) => r.applicationNumber,
-    fee: (r) => r.feeCode,
+    fee: (r) => r.feeLabel,
     override: (r) => (r.kind === 'waive' ? 0 : (r.amountCents ?? 0)),
     reason: (r) => r.reason,
     status: (r) => OVERRIDE_STATUS_LABELS.get(r.status) ?? r.status,
@@ -83,7 +84,12 @@ export function arrangeFeeOverrides(rows: readonly FeeOverrideRow[], view: FeeOv
       label: 'Status',
       options: labeledOptions(OVERRIDE_STATUS_LABELS, counts.get('status')),
     },
-    { param: 'kind', label: 'Override', options: labeledOptions(KIND_LABELS, counts.get('kind')) },
+    {
+      param: 'kind',
+      label: 'Override',
+      options: labeledOptions(KIND_LABELS, counts.get('kind')),
+      single: true,
+    },
   ])
   return { rows: visible, chips }
 }

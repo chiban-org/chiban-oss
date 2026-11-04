@@ -8,6 +8,7 @@ import {
   chipGroups,
   filterValues,
   labeledOptions,
+  singleValue,
 } from '@/features/dataTable/quickFilters'
 import { parseSort, type SortConfig, type SortState } from '@/features/dataTable/sort'
 import { OVERRIDE_STATUS_LABELS, OVERRIDE_STATUSES } from '@/features/overrides/overrideStatus'
@@ -55,7 +56,7 @@ export function readAliasOverrideView(raw: RawSearchParams): AliasOverrideView {
     params,
     sort: parseSort(ALIAS_SORT, params),
     status: filterValues(params, 'status', OVERRIDE_STATUSES),
-    expiry: filterValues(params, 'expiry', EXPIRY_VALUES),
+    expiry: singleValue(params, 'expiry', EXPIRY_VALUES),
   }
 }
 
@@ -94,6 +95,7 @@ export function arrangeAliasOverrides(rows: readonly AliasOverrideRow[], view: A
       param: 'expiry',
       label: 'Expiry',
       options: labeledOptions(EXPIRY_LABELS, counts.get('expiry')),
+      single: true,
     },
   ])
   return { rows: visible, chips }

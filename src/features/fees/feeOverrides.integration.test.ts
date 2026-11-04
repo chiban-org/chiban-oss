@@ -29,13 +29,15 @@ describe('fee overrides', () => {
     const app = await makeApplication(handle.db, world)
     await createFeeOverride(handle.db, world.staff, waive(app.applicationId, 'ghost'), signal)
     const rows = await listFeeOverrides(handle.db, signal)
-    expect(rows.map((r) => r.status)).toEqual(['no_match'])
+    expect(rows.map((r) => [r.status, r.feeLabel])).toEqual([['no_match', 'ghost']])
   })
 
-  it('an override on a real code lists as applied', async () => {
+  it('an override on a real code lists as applied under the fee name', async () => {
     const app = await makeApplication(handle.db, world)
     await createFeeOverride(handle.db, world.staff, waive(app.applicationId), signal)
-    expect((await listFeeOverrides(handle.db, signal)).map((r) => r.status)).toEqual(['applied'])
+    expect((await listFeeOverrides(handle.db, signal)).map((r) => [r.status, r.feeLabel])).toEqual([
+      ['applied', 'Building permit fee'],
+    ])
   })
 
   it('second override supersedes the first', async () => {

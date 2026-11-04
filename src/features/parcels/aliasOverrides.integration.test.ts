@@ -215,8 +215,8 @@ describe('alias overrides', () => {
     expect(r).toEqual({ ok: false, error: 'id_format_mismatch' })
   })
 
-  it('reviewer gets forbidden', async () => {
-    const actor = await staffActor(handle.db, 'reviewer')
+  it.each(['reviewer', 'finance'] as const)('%s gets forbidden', async (role) => {
+    const actor = await staffActor(handle.db, role)
     const { target } = await pair()
     const r = await createAliasOverride(
       handle.db,

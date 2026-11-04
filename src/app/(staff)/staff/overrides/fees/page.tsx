@@ -55,6 +55,7 @@ export default async function FeeOverridesPage({
           <div className="toolbar my-4">
             <QuickFilters label="Quick filters" groups={chips} clearHref={clear} />
           </div>
+          <p className="text-muted-foreground">Newest first. Click a column heading to sort.</p>
           <div className="table-panel my-4">
             {rows.length === 0 ? (
               <p className="px-5 py-8">No override matches these filters.</p>
@@ -80,7 +81,7 @@ export default async function FeeOverridesPage({
                           {row.applicationNumber}
                         </Link>
                       </td>
-                      <td>{row.feeCode}</td>
+                      <td>{row.feeLabel}</td>
                       <td>
                         {row.kind === 'waive'
                           ? 'Waived'
