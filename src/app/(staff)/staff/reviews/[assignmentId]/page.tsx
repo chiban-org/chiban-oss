@@ -4,7 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
 import { splitPanels } from '@/components/layout/splitPanels'
 import { AreaField } from '@/components/staff/fields'
-import { type AssignmentView, getAssignmentView } from '@/features/reviews/reviewerView'
+import { type AssignmentView, getAssignmentView, reviewOpen } from '@/features/reviews/reviewerView'
 import { getTownSettings } from '@/features/town/settings'
 import { formatInstant } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -46,10 +46,12 @@ function CommentsSection({ view, zone }: { view: AssignmentView; zone: string })
           </li>
         ))}
       </ul>
-      <ActionForm action={addReviewCommentAction} submitLabel="Add comment">
-        <input type="hidden" name="assignmentId" value={view.assignmentId} />
-        <AreaField label="Comment" name="body" required rows={4} />
-      </ActionForm>
+      {reviewOpen(view) ? (
+        <ActionForm action={addReviewCommentAction} submitLabel="Add comment">
+          <input type="hidden" name="assignmentId" value={view.assignmentId} />
+          <AreaField label="Comment" name="body" required rows={4} />
+        </ActionForm>
+      ) : null}
     </section>
   )
 }

@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { boardErrorCopy } from '@/features/boards/errorCopy'
 import {
   addReviewComment,
   assignReviewer,
@@ -14,6 +15,8 @@ const COPY = {
   forbidden: errorCopy('forbidden'),
   not_a_reviewer: 'That person does not have the reviewer role.',
   not_found: errorCopy('not_found'),
+  already_signed_off: errorCopy('already_signed_off'),
+  application_closed: boardErrorCopy('application_closed'),
 } as const
 
 const invalid = (): ActionResult => ({ ok: false, error: errorCopy('invalid_input') })

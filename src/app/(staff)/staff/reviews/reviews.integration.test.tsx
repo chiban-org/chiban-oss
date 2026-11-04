@@ -1,5 +1,7 @@
+import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { reviewAssignments } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -112,6 +114,50 @@ describe('reviewer assignment actions and pages', () => {
     )
     const signOff = await actions.signOffReviewAction(form({ assignmentId }))
     expect(signOff).toMatchObject({ ok: false })
+  })
+
+  it('a signed-off review or a finished application offers no comment form and no sign-off', async () => {
+    state.actor = world.staff
+    const closedApp = (await makeApplication(handle.db, world, { state: 'closed' })).applicationId
+    for (const id of [apps[2] ?? '', closedApp]) {
+      await actions.assignReviewerAction(
+        form({ applicationId: id, reviewerUserId: world.reviewer.userId }),
+      )
+    }
+    state.actor = world.reviewer
+    const idFor = async (applicationId: string) => {
+      const view = await handle.db
+        .select({ id: reviewAssignments.id })
+        .from(reviewAssignments)
+        .where(eq(reviewAssignments.applicationId, applicationId))
+      return view[0]?.id ?? ''
+    }
+    const signed = await idFor(apps[2] ?? '')
+    expect(await actions.signOffReviewAction(form({ assignmentId: signed }))).toMatchObject({
+      ok: true,
+    })
+    const again = await actions.signOffReviewAction(form({ assignmentId: signed }))
+    expect(again).toEqual({ ok: false, error: 'You have already signed off on this review.' })
+    const signedPage = renderToStaticMarkup(
+      await ReviewPage({ params: Promise.resolve({ assignmentId: signed }) }),
+    )
+    expect(signedPage).toContain('You signed off on this review.')
+    expect(signedPage).not.toContain('Add comment')
+    expect(signedPage).not.toContain('>Sign off<')
+    const closed = await idFor(closedApp)
+    const refused = await actions.addReviewCommentAction(
+      form({ assignmentId: closed, body: 'Late note' }),
+    )
+    expect(refused).toEqual({
+      ok: false,
+      error: 'This application is finished, so this can no longer be changed.',
+    })
+    const closedPage = renderToStaticMarkup(
+      await ReviewPage({ params: Promise.resolve({ assignmentId: closed }) }),
+    )
+    expect(closedPage).toContain('This application is finished, so the review is closed.')
+    expect(closedPage).not.toContain('Add comment')
+    expect(closedPage).not.toContain('>Sign off<')
   })
 
   it('an applicant cannot open the staff application list', async () => {

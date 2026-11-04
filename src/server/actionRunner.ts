@@ -50,6 +50,7 @@ export const ERROR_COPY: Record<string, string> = {
   invalid_transition: 'That step is not available from the current state.',
   not_submitted: 'The application has not been submitted yet.',
   already_complete: 'The application is already marked complete.',
+  already_signed_off: 'You have already signed off on this review.',
   before_receipt: 'The completeness date cannot be before the application was received.',
   statutory_requires_authority:
     'This gate comes from state law. Only a statutory exception with legal authority can clear it.',

@@ -11,6 +11,7 @@ import {
 } from '@/db/schema'
 import { isReviewer } from '@/features/access/roles'
 import { loadApplicationContext } from '@/features/applications/context'
+import { isTerminalState } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { listDocuments } from '@/features/documents/listDocuments'
 import type { DocumentListRow } from '@/features/documents/types'
@@ -55,8 +56,13 @@ export interface AssignmentView {
   parcelId: string
   parcelDisplayId: string | null
   commentDue: string | null
+  applicationClosed: boolean
   comments: { body: string; createdAt: Date }[]
   documents: DocumentListRow[]
+}
+
+export function reviewOpen(view: AssignmentView): boolean {
+  return !view.applicationClosed && view.status !== 'signed_off'
 }
 
 export async function getAssignmentView(
@@ -76,6 +82,7 @@ export async function getAssignmentView(
       projectTitle: projects.title,
       parcelId: projects.parcelId,
       commentDue: trcRoutings.commentDue,
+      applicationState: applications.state,
     })
     .from(reviewAssignments)
     .innerJoin(applications, eq(applications.id, reviewAssignments.applicationId))
@@ -102,8 +109,10 @@ export async function getAssignmentView(
   )
   const context = await loadApplicationContext(db, row.applicationId, signal)
   const display = await displayIdsFor(db, [row.parcelId])
+  const { applicationState, ...fields } = row
   return {
-    ...row,
+    ...fields,
+    applicationClosed: isTerminalState(applicationState),
     typeLabel: context?.typeBody.label ?? '',
     parcelDisplayId: display.get(row.parcelId) ?? null,
     comments,

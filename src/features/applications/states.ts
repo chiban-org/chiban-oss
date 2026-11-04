@@ -15,6 +15,10 @@ export type CoreState = (typeof CORE_STATES)[number]
 
 export const TERMINAL_STATES: readonly CoreState[] = ['closed', 'denied', 'withdrawn', 'expired']
 
+export function isTerminalState(state: string): boolean {
+  return TERMINAL_STATES.some((terminal) => terminal === state)
+}
+
 export const STATE_LABELS: Record<CoreState, string> = {
   draft: 'Draft',
   submitted: 'Submitted',

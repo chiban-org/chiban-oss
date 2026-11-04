@@ -3,6 +3,7 @@ import type { DbOrTx } from '@/db/client'
 import { applications, reviewAssignments, reviewComments, userRoles, users } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { isReviewer } from '@/features/access/roles'
+import { isTerminalState } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
@@ -127,15 +128,30 @@ export async function removeReviewer(
   })
 }
 
+export type ReviewLockError = 'forbidden' | 'already_signed_off' | 'application_closed'
+
+interface OwnAssignment {
+  id: string
+  applicationId: string
+  status: string
+  applicationState: string
+}
+
 async function ownActiveAssignment(
   db: DbOrTx,
   actor: Actor,
   assignmentId: string,
-): Promise<{ id: string; applicationId: string } | null> {
+): Promise<OwnAssignment | null> {
   if (!isReviewer(actor)) return null
   const [row] = await db
-    .select({ id: reviewAssignments.id, applicationId: reviewAssignments.applicationId })
+    .select({
+      id: reviewAssignments.id,
+      applicationId: reviewAssignments.applicationId,
+      status: reviewAssignments.status,
+      applicationState: applications.state,
+    })
     .from(reviewAssignments)
+    .innerJoin(applications, eq(applications.id, reviewAssignments.applicationId))
     .where(
       and(
         eq(reviewAssignments.id, assignmentId),
@@ -146,15 +162,28 @@ async function ownActiveAssignment(
   return row ?? null
 }
 
+async function openAssignment(
+  db: DbOrTx,
+  actor: Actor,
+  assignmentId: string,
+): Promise<Result<OwnAssignment, ReviewLockError>> {
+  const mine = await ownActiveAssignment(db, actor, assignmentId)
+  if (mine === null) return err('forbidden')
+  if (isTerminalState(mine.applicationState)) return err('application_closed')
+  if (mine.status === 'signed_off') return err('already_signed_off')
+  return ok(mine)
+}
+
 export async function addReviewComment(
   db: DbOrTx,
   actor: Actor,
   input: { assignmentId: string; body: string },
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden'>> {
+): Promise<Result<void, ReviewLockError>> {
   signal.throwIfAborted()
-  const mine = await ownActiveAssignment(db, actor, input.assignmentId)
-  if (mine === null) return err('forbidden')
+  const open = await openAssignment(db, actor, input.assignmentId)
+  if (!open.ok) return open
+  const mine = open.value
   return await transactionResult(db, async (tx) => {
     await tx.insert(reviewComments).values({ assignmentId: mine.id, body: input.body })
     await tx
@@ -181,10 +210,11 @@ export async function signOffReview(
   actor: Actor,
   input: { assignmentId: string },
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden'>> {
+): Promise<Result<void, ReviewLockError>> {
   signal.throwIfAborted()
-  const mine = await ownActiveAssignment(db, actor, input.assignmentId)
-  if (mine === null) return err('forbidden')
+  const open = await openAssignment(db, actor, input.assignmentId)
+  if (!open.ok) return open
+  const mine = open.value
   return await transactionResult(db, async (tx) => {
     await tx
       .update(reviewAssignments)
