@@ -11,7 +11,7 @@ import {
 } from 'drizzle-orm/pg-core'
 import { boardMeetings } from './boards'
 import { documents, documentVersions } from './documents'
-import { citext } from './identity'
+import { citext, users } from './identity'
 import { renditionApprovals } from './renditionApprovals'
 
 export const boardPackets = pgTable(
@@ -24,6 +24,8 @@ export const boardPackets = pgTable(
     meetingId: uuid('meeting_id').references(() => boardMeetings.id),
     createdBy: uuid('created_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    lastSentAt: timestamp('last_sent_at', { withTimezone: true }),
   },
   (t) => [uniqueIndex('board_packets_meeting_idx').on(t.meetingId)],
 )
@@ -43,6 +45,9 @@ export const boardPacketItems = pgTable(
     approvalId: uuid('approval_id').references(() => renditionApprovals.id),
     withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
     withdrawnReason: text('withdrawn_reason', { enum: ['revoked', 'disposed'] }),
+    sentAt: timestamp('sent_at', { withTimezone: true }),
+    removedAt: timestamp('removed_at', { withTimezone: true }),
+    replacesDocumentId: uuid('replaces_document_id'),
   },
   (t) => [primaryKey({ columns: [t.packetId, t.documentId] })],
 )
@@ -70,11 +75,30 @@ export const boardPacketAccess = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     linkId: uuid('link_id').references(() => boardPacketLinks.id),
+    packetId: uuid('packet_id').references(() => boardPackets.id),
     userId: uuid('user_id'),
     versionId: uuid('version_id'),
     accessedAt: timestamp('accessed_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [index('board_packet_access_link_idx').on(t.linkId)],
+  (t) => [
+    index('board_packet_access_link_idx').on(t.linkId),
+    index('board_packet_access_packet_idx').on(t.packetId, t.userId),
+  ],
+)
+
+export const boardPacketMembers = pgTable(
+  'board_packet_members',
+  {
+    packetId: uuid('packet_id')
+      .notNull()
+      .references(() => boardPackets.id),
+    userId: uuid('user_id')
+      .notNull()
+      .references(() => users.id),
+    sentAt: timestamp('sent_at', { withTimezone: true }).notNull(),
+    lastSentAt: timestamp('last_sent_at', { withTimezone: true }).notNull(),
+  },
+  (t) => [primaryKey({ columns: [t.packetId, t.userId] })],
 )
 
 export type BoardPacketRow = typeof boardPackets.$inferSelect
