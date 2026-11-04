@@ -18,3 +18,16 @@ export function parseRecent(raw: string | null): string[] {
     return []
   }
 }
+
+export function searchHref(
+  hrefBase: string,
+  param: string,
+  value: string,
+  query: Readonly<Record<string, string>> = {},
+): string {
+  const pairs: [string, string][] = [
+    ...Object.entries(query).filter(([key]) => key !== param),
+    [param, value],
+  ]
+  return `${hrefBase}?${pairs.map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join('&')}`
+}

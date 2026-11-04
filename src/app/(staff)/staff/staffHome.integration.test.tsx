@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { parcels } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import type { PermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -47,8 +48,8 @@ describe('/staff home', () => {
     expect(html).toContain('Needs attention')
     expect(html).toContain('Submitted and not yet started')
     expect(html).toContain('href="/staff/applications?state=submitted"')
-    expect(html).toContain('href="/staff/applications?flag=fees"')
     expect(html).toContain('href="/staff/applications"')
+    expect(html).not.toContain('Open in applications')
     expect(html.toLowerCase()).not.toContain('queue')
     expect(html).toContain('Find a parcel')
   })
@@ -56,7 +57,30 @@ describe('/staff home', () => {
   it('counts the submitted application as not yet started', async () => {
     state.actor = world.staff
     const html = renderToStaticMarkup(await StaffHome())
-    expect(html).toMatch(/>1<\/span><span[^>]*>Submitted and not yet started</)
+    expect(html).toMatch(
+      /<a[^>]*href="\/staff\/applications\?state=submitted"[^>]*><span[^>]*>1<\/span><span[^>]*>Submitted and not yet started<\/span><\/a>/,
+    )
+  })
+
+  it('leaves out rows with nothing in them', async () => {
+    state.actor = world.staff
+    const html = renderToStaticMarkup(await StaffHome())
+    expect(html).not.toContain('Past a deadline')
+    expect(html).not.toMatch(/>0<\/span>/)
+  })
+
+  it('says nothing needs attention when every count is zero', async () => {
+    state.actor = await staffActor(handle.db, 'reviewer')
+    const html = renderToStaticMarkup(await StaffHome())
+    expect(html).toContain('Nothing needs attention')
+    expect(html).not.toContain('Submitted and not yet started')
+  })
+
+  it('offers recent searches and an example under the parcel search', async () => {
+    await handle.db.insert(parcels).values({ siteAddress: '12 Heron Cove' })
+    state.actor = world.staff
+    const html = renderToStaticMarkup(await StaffHome())
+    expect(html).toMatch(/Try<\/span><a href="\/staff\/parcels\?q=/)
   })
 
   it('sends someone who may not open the application list to the parcel search', async () => {

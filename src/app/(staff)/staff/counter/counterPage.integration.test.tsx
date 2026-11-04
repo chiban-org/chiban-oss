@@ -81,6 +81,15 @@ describe('counter parcel search', () => {
     expect(html).toContain('12 Elm Road')
   })
 
+  it('offers a one-click example search that stays on the counter', async () => {
+    await handle.db
+      .update(parcels)
+      .set({ siteAddress: '12 Elm Road' })
+      .where(eq(parcels.id, world.parcelId))
+    const html = renderToStaticMarkup(await CounterPage({ searchParams: Promise.resolve({}) }))
+    expect(html).toMatch(/Try<\/span><a href="\/staff\/counter\?q=12%20Elm%20Road"/)
+  })
+
   it('says a hit has no site address instead of leaving a bare ID', async () => {
     const [other] = await handle.db
       .insert(parcels)

@@ -1,8 +1,11 @@
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { ApplicationStatusChip } from '@/components/ApplicationStatusChip'
+import { RecentParcelSearches } from '@/components/parcels/RecentParcelSearches'
+import { SearchExamples } from '@/components/parcels/SearchExamples'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { type SearchExample, searchExample } from '@/features/parcels/searchExample'
 import {
   countWorkQueue,
   listWorkQueue,
@@ -48,25 +51,28 @@ const ATTENTION: readonly Attention[] = [
 ]
 
 function AttentionList({ counts }: { counts: number[] }) {
+  const open = ATTENTION.map((item, index) => ({ item, count: counts[index] ?? 0 })).filter(
+    ({ count }) => count > 0,
+  )
   return (
     <section aria-label="Needs attention">
       <h2>Needs attention</h2>
-      <ul className="divide-y">
-        {ATTENTION.map((item, index) => {
-          const count = counts[index] ?? 0
-          return (
-            <li key={item.href} className="flex items-baseline gap-4 py-3">
-              <span
-                className={`w-10 text-right text-2xl font-semibold tabular-nums ${count === 0 ? 'text-muted-foreground' : 'text-ink'}`}
-              >
-                {count}
-              </span>
-              <span className="flex-1">{item.label}</span>
-              {count === 0 ? null : <Link href={item.href}>Open in applications</Link>}
+      {open.length === 0 ? (
+        <p className="text-muted-foreground">Nothing needs attention.</p>
+      ) : (
+        <ul className="divide-y">
+          {open.map(({ item, count }) => (
+            <li key={item.href} className="py-3">
+              <Link href={item.href} className="flex items-baseline gap-4">
+                <span className="w-10 text-right text-2xl font-semibold tabular-nums text-ink">
+                  {count}
+                </span>
+                <span className="flex-1">{item.label}</span>
+              </Link>
             </li>
-          )
-        })}
-      </ul>
+          ))}
+        </ul>
+      )}
     </section>
   )
 }
@@ -86,23 +92,23 @@ function DueSoon({ rows }: { rows: WorkQueueRow[] }) {
         {rows.map((row) => (
           <li
             key={row.applicationId}
-            className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4 gap-y-1 py-3 sm:grid-cols-[minmax(0,1fr)_auto_12rem]"
+            className="grid grid-cols-1 items-center justify-items-start gap-x-4 gap-y-1 py-3 sm:grid-cols-[minmax(10rem,1fr)_auto_12rem] sm:justify-items-stretch"
           >
-            <span className="flex min-w-0 flex-col">
+            <span className="flex flex-col">
               <Link
                 href={`/staff/applications/${row.applicationId}`}
                 className="whitespace-nowrap font-semibold"
               >
                 {row.number}
               </Link>
-              <span className="truncate text-sm text-muted-foreground">{row.typeLabel}</span>
+              <span className="text-sm text-muted-foreground">{row.typeLabel}</span>
             </span>
             <ApplicationStatusChip
               state={row.state}
               substep={row.substep}
               substepLabel={row.substepLabel}
             />
-            <span className="col-span-2 whitespace-nowrap text-sm sm:col-span-1 sm:text-right">
+            <span className="whitespace-nowrap text-sm sm:text-right">
               <span
                 className={
                   row.dueStatus === 'overdue' ? 'attention font-semibold' : 'text-muted-foreground'
@@ -119,22 +125,26 @@ function DueSoon({ rows }: { rows: WorkQueueRow[] }) {
   )
 }
 
-function ParcelSearch() {
+function ParcelSearch({ userId, example }: { userId: string; example: SearchExample | null }) {
   return (
-    <form role="search" method="get" action="/staff/parcels" className="flex max-w-2xl gap-3">
-      <label htmlFor="home-parcel-search" className="sr-only">
-        Address, owner, or parcel ID
-      </label>
-      <Input
-        id="home-parcel-search"
-        name="q"
-        placeholder="Address, owner, or parcel ID"
-        className="h-11 flex-1 text-base md:text-base"
-      />
-      <Button type="submit" size="lg" className="h-11 text-base">
-        Find a parcel
-      </Button>
-    </form>
+    <div className="flex max-w-2xl flex-col gap-3">
+      <form role="search" method="get" action="/staff/parcels" className="flex gap-3">
+        <label htmlFor="home-parcel-search" className="sr-only">
+          Address, owner, or parcel ID
+        </label>
+        <Input
+          id="home-parcel-search"
+          name="q"
+          placeholder="Address, owner, or parcel ID"
+          className="h-11 flex-1 text-base md:text-base"
+        />
+        <Button type="submit" size="lg" className="h-11 text-base">
+          Find a parcel
+        </Button>
+      </form>
+      <SearchExamples example={example} hrefBase="/staff/parcels" />
+      <RecentParcelSearches userId={userId} record={null} hrefBase="/staff/parcels" />
+    </div>
   )
 }
 
@@ -147,7 +157,7 @@ export default async function StaffHome() {
     redirect('/staff/parcels')
   }
   const today = await townToday(ctx.db, new Date(), ctx.signal)
-  const [counts, soon] = await Promise.all([
+  const [counts, soon, example] = await Promise.all([
     countWorkQueue(
       ctx.db,
       ctx.actor,
@@ -156,6 +166,7 @@ export default async function StaffHome() {
       ctx.signal,
     ),
     listWorkQueue(ctx.db, ctx.actor, { filters: {}, limit: DUE_SOON }, ctx.signal),
+    searchExample(ctx.db, ctx.signal),
   ])
   return (
     <main>
@@ -164,7 +175,7 @@ export default async function StaffHome() {
           <p className="text-sm font-semibold text-muted-foreground">{formatCivilDate(today)}</p>
           <h1>Today</h1>
         </div>
-        <ParcelSearch />
+        <ParcelSearch userId={ctx.actor.userId} example={example} />
       </header>
       <div className="grid gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start [&>section]:m-0">
         <AttentionList counts={counts} />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { parseRecent, RECENT_SEARCH_LIMIT, rememberSearch } from './recentSearches'
+import { parseRecent, RECENT_SEARCH_LIMIT, rememberSearch, searchHref } from './recentSearches'
 
 describe('rememberSearch', () => {
   it('puts the newest search first and drops a repeat regardless of case', () => {
@@ -27,5 +27,14 @@ describe('parseRecent', () => {
     expect(parseRecent('not json')).toEqual([])
     expect(parseRecent('{"q":1}')).toEqual([])
     expect(parseRecent(null)).toEqual([])
+  })
+})
+
+describe('searchHref', () => {
+  it('puts the search after any fixed query and encodes spaces as %20', () => {
+    expect(searchHref('/staff/parcels', 'q', 'Heron Cove')).toBe('/staff/parcels?q=Heron%20Cove')
+    expect(searchHref('/staff/counter', 'q', '12 Elm', { type: 'shed' })).toBe(
+      '/staff/counter?type=shed&q=12%20Elm',
+    )
   })
 })

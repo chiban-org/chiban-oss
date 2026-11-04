@@ -3,6 +3,7 @@ import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { MoreMatchesNotice } from '@/components/parcels/MoreMatchesNotice'
 import { RecentParcelSearches } from '@/components/parcels/RecentParcelSearches'
+import { SearchExamples } from '@/components/parcels/SearchExamples'
 import { Button } from '@/components/ui/button'
 import { clearHref, paramValues, type RawSearchParams } from '@/features/dataTable/params'
 import { DIR_PARAM, SORT_PARAM, sortLinks } from '@/features/dataTable/sort'
@@ -15,7 +16,7 @@ import {
   PARCELS_PATH,
   readHitsView,
 } from '@/features/parcels/hitListParams'
-import { type SearchExample, searchExample } from '@/features/parcels/searchExample'
+import { searchExample } from '@/features/parcels/searchExample'
 import { searchParcelPage } from '@/features/parcels/searchParcels'
 import { requireStaffContext } from '@/server/requireStaff'
 
@@ -24,22 +25,6 @@ interface ParcelsPageProps {
 }
 
 const CARRIED_PARAMS = [SORT_PARAM, DIR_PARAM, ...HIT_FILTER_PARAMS]
-
-function SearchExamples({ example }: { example: SearchExample | null }) {
-  if (example === null) return null
-  const tries = [example.address, example.displayId].filter((v): v is string => v !== null)
-  if (tries.length === 0) return null
-  return (
-    <p className="flex flex-wrap items-center gap-2 text-sm">
-      <span className="font-semibold text-muted-foreground">Try</span>
-      {tries.map((value) => (
-        <Link key={value} href={`/staff/parcels?q=${encodeURIComponent(value)}`}>
-          {value}
-        </Link>
-      ))}
-    </p>
-  )
-}
 
 export default async function StaffParcelsPage({ searchParams }: ParcelsPageProps) {
   const { q, params, sort, filters } = readHitsView(await searchParams)
@@ -74,7 +59,7 @@ export default async function StaffParcelsPage({ searchParams }: ParcelsPageProp
         </Button>
       </form>
       <div className="mb-6 flex flex-col gap-3">
-        <SearchExamples example={example} />
+        <SearchExamples example={example} hrefBase={PARCELS_PATH} />
         <RecentParcelSearches
           userId={ctx.actor.userId}
           record={searched}

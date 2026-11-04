@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useEffect, useState } from 'react'
-import { parseRecent, rememberSearch } from '@/features/parcels/recentSearches'
+import { parseRecent, rememberSearch, searchHref } from '@/features/parcels/recentSearches'
 
 function storageKey(userId: string, list: string): string {
   return `chiban.${list}.${userId}`
@@ -31,12 +31,14 @@ export function RecentParcelSearches({
   hrefBase,
   param = 'q',
   list = 'recentParcelSearches',
+  query,
 }: {
   userId: string
   record: string | null
   hrefBase: string
   param?: string
   list?: string
+  query?: Readonly<Record<string, string>>
 }) {
   const [recent, setRecent] = useState<string[] | null>(null)
   useEffect(() => {
@@ -52,7 +54,7 @@ export function RecentParcelSearches({
       {recent.map((q) => (
         <Link
           key={q}
-          href={`${hrefBase}?${param}=${encodeURIComponent(q)}`}
+          href={searchHref(hrefBase, param, q, query)}
           className="rounded-md border border-hairline bg-surface px-2.5 py-1 text-ink no-underline hover:border-control-border"
         >
           {q}
