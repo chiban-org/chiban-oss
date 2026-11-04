@@ -27,29 +27,70 @@ function ItemControls({ item }: { item: MeetingAgendaView['items'][number] }) {
   )
 }
 
-function DraftControls({ meetingId }: { meetingId: string }) {
+type FormVariant = 'default' | 'outline'
+
+export function AddHearingsForm({
+  meetingId,
+  variant,
+}: {
+  meetingId: string
+  variant?: FormVariant
+}) {
+  return (
+    <ActionForm
+      action={buildAgendaAction}
+      submitLabel="Add the scheduled hearings"
+      {...(variant === undefined ? {} : { variant })}
+    >
+      <input type="hidden" name="meetingId" value={meetingId} />
+    </ActionForm>
+  )
+}
+
+export function AddItemForm({
+  meetingId,
+  submitLabel,
+  variant,
+}: {
+  meetingId: string
+  submitLabel: string
+  variant?: FormVariant
+}) {
+  return (
+    <ActionForm
+      action={addAgendaItemAction}
+      submitLabel={submitLabel}
+      className="max-w-md"
+      {...(variant === undefined ? {} : { variant })}
+    >
+      <input type="hidden" name="meetingId" value={meetingId} />
+      <SelectField
+        label="Kind"
+        name="kind"
+        options={[
+          ['business', 'Business'],
+          ['minutes_approval', 'Minutes'],
+          ['other', 'Other'],
+        ]}
+      />
+      <TextField label="Title" name="title" required />
+      <AreaField label="Details" name="description" />
+    </ActionForm>
+  )
+}
+
+function DraftControls({ view }: { view: MeetingView }) {
+  const empty = view.agenda === null || view.agenda.items.length === 0
+  const hasHearings = view.hearings.length > 0
   return (
     <div className="space-y-3">
-      <ActionForm action={buildAgendaAction} submitLabel="Add the scheduled hearings">
-        <input type="hidden" name="meetingId" value={meetingId} />
-      </ActionForm>
-      <details>
-        <summary>Add an item</summary>
-        <ActionForm action={addAgendaItemAction} submitLabel="Add item" className="max-w-md">
-          <input type="hidden" name="meetingId" value={meetingId} />
-          <SelectField
-            label="Kind"
-            name="kind"
-            options={[
-              ['business', 'Business'],
-              ['minutes_approval', 'Minutes'],
-              ['other', 'Other'],
-            ]}
-          />
-          <TextField label="Title" name="title" required />
-          <AreaField label="Details" name="description" />
-        </ActionForm>
-      </details>
+      {hasHearings && !empty ? <AddHearingsForm meetingId={view.meetingId} /> : null}
+      {empty && !hasHearings ? null : (
+        <details>
+          <summary>Add an item</summary>
+          <AddItemForm meetingId={view.meetingId} submitLabel="Add item" />
+        </details>
+      )}
     </div>
   )
 }
@@ -57,7 +98,7 @@ function DraftControls({ meetingId }: { meetingId: string }) {
 function AgendaControls({ view, draft }: { view: MeetingView; draft: boolean }) {
   if (view.cancelled) return null
   return draft ? (
-    <DraftControls meetingId={view.meetingId} />
+    <DraftControls view={view} />
   ) : (
     <ActionForm action={reopenAgendaAction} submitLabel="Reopen the agenda">
       <input type="hidden" name="meetingId" value={view.meetingId} />

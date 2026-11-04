@@ -4,6 +4,7 @@ import { NextStep } from '@/components/layout/NextStep'
 import { FactList } from '@/components/layout/PageHeader'
 import { agendaStatusText, type MeetingView } from '@/features/hearings/meetingView'
 import { createMeetingPacketAction, publishAgendaAction } from '../../hearings/actions'
+import { AddHearingsForm, AddItemForm } from './AgendaSection'
 
 type StepKind = 'build' | 'publish' | 'packet' | 'packet_made'
 
@@ -19,10 +20,14 @@ function stepOf(view: MeetingView): StepKind | null {
 function Step({ view, kind }: { view: MeetingView; kind: StepKind }) {
   switch (kind) {
     case 'build':
-      return (
-        <p>
-          <a href="#agenda">Build the agenda</a>
-        </p>
+      return view.hearings.length > 0 ? (
+        <AddHearingsForm meetingId={view.meetingId} variant="default" />
+      ) : (
+        <AddItemForm
+          meetingId={view.meetingId}
+          submitLabel="Add the first agenda item"
+          variant="default"
+        />
       )
     case 'publish':
       return (
