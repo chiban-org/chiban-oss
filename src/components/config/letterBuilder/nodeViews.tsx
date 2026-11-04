@@ -26,7 +26,7 @@ export function MergeFieldView({ node, selected }: NodeViewProps) {
       as="span"
       data-merge-field={name}
       className={cn(
-        'rounded-sm bg-highlight px-1 py-px text-ink',
+        text === '' ? '' : 'rounded-sm bg-highlight px-1 py-px text-ink',
         selected ? 'ring-2 ring-action' : '',
       )}
     >

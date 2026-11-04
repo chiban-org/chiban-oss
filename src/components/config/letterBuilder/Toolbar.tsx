@@ -32,6 +32,7 @@ function ToolButton({ tool }: { tool: Tool }) {
       title={tool.label}
       {...(tool.active === undefined ? {} : { 'aria-pressed': tool.active })}
       disabled={tool.disabled}
+      onMouseDown={(e) => e.preventDefault()}
       onClick={tool.run}
     >
       <Icon aria-hidden="true" />

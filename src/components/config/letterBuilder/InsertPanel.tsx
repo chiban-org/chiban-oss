@@ -44,6 +44,7 @@ function InsertButton({
         size="sm"
         className="h-auto min-h-8 w-full justify-start gap-2 bg-surface py-1 text-left whitespace-normal"
         disabled={disabled}
+        onMouseDown={(e) => e.preventDefault()}
         onClick={onClick}
       >
         <Icon aria-hidden="true" className="size-4 shrink-0 text-muted-foreground" />
@@ -53,9 +54,17 @@ function InsertButton({
   )
 }
 
-function Group({ title, children }: { title: string; children: React.ReactNode }) {
+function Group({
+  title,
+  open = false,
+  children,
+}: {
+  title: string
+  open?: boolean
+  children: React.ReactNode
+}) {
   return (
-    <details className="group" open>
+    <details className="group" open={open}>
       <summary className="cursor-pointer py-1 text-xs font-bold text-muted-foreground">
         {title}
       </summary>
@@ -77,7 +86,7 @@ export function InsertPanel({ editor, kind, missingLocked, disabled }: Props) {
     <nav aria-label="Insert" className="grid min-w-0 content-start gap-3">
       <h2 className="m-0 font-sans text-sm font-bold text-muted-foreground">Insert</h2>
       {missingLocked.length === 0 ? null : (
-        <Group title="Required by state law">
+        <Group title="Required by state law" open>
           {missingLocked.map((source) => (
             <InsertButton
               key={source}
@@ -89,7 +98,7 @@ export function InsertPanel({ editor, kind, missingLocked, disabled }: Props) {
           ))}
         </Group>
       )}
-      <Group title="Blocks">
+      <Group title="Blocks" open>
         {blocks.map(([label, icon, content]) => (
           <InsertButton
             key={label}

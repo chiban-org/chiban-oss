@@ -95,8 +95,8 @@ export function LetterBuilder({ body, onChange, errors, data }: Props) {
         </div>
         <FieldError errors={errors} name="label" />
         <FieldError errors={errors} name="kind" />
-        <div className="mt-6 grid gap-6 @3xl:grid-cols-[minmax(0,1fr)_18rem] @6xl:grid-cols-[13rem_minmax(0,1fr)_18rem]">
-          <div className="@3xl:col-span-2 @6xl:col-span-1">
+        <div className="mt-6 grid gap-6 @3xl:grid-cols-[13rem_minmax(0,1fr)] @3xl:grid-rows-[auto_1fr] @6xl:grid-cols-[13rem_minmax(0,1fr)_18rem]">
+          <div className="@3xl:col-start-1 @3xl:row-start-1">
             {editor === null ? null : (
               <InsertPanel
                 editor={editor}
@@ -106,7 +106,7 @@ export function LetterBuilder({ body, onChange, errors, data }: Props) {
               />
             )}
           </div>
-          <div className="grid min-w-0 content-start gap-3 rounded-md bg-canvas p-3 @md:p-4">
+          <div className="grid min-w-0 content-start gap-3 rounded-md bg-canvas p-3 @md:p-4 @3xl:col-start-2 @3xl:row-span-2 @3xl:row-start-1 @6xl:row-span-1">
             {editor === null ? null : <Toolbar editor={editor} />}
             <PreviewBar
               kind={body.kind}
@@ -127,7 +127,7 @@ export function LetterBuilder({ body, onChange, errors, data }: Props) {
           <section
             aria-labelledby="block-settings-title"
             data-plain
-            className="grid min-w-0 content-start gap-3 self-start @3xl:sticky @3xl:top-4"
+            className="grid min-w-0 content-start gap-3 self-start @3xl:col-start-1 @3xl:row-start-2 @6xl:sticky @6xl:top-4 @6xl:col-start-3 @6xl:row-start-1"
           >
             <h2
               id="block-settings-title"
