@@ -1673,6 +1673,11 @@ File: `data/payment_attempts.ndjson`. Ordered by id.
 - `last_check_error`: text, nullable
 - `last_checked_at`: timestamp with time zone, nullable
 - `created_by_user_id`: uuid, nullable
+- `manual_outcome`: text, nullable
+- `manual_note`: text, nullable
+- `manual_by_user_id`: uuid, nullable
+- `manual_at`: timestamp with time zone, nullable
+- `processor_mismatch`: text, nullable
 - `created_at`: timestamp with time zone
 - `updated_at`: timestamp with time zone
 - `row_version`: integer
