@@ -13,6 +13,7 @@ import {
   WorkSection,
 } from '@/components/counter/QuickIssueSections'
 import { ReaderPanel } from '@/components/counter/ReaderPanel'
+import { type KeyHint, KeyHints } from '@/components/KeyHints'
 import { NEW_TAB } from '@/components/newTab'
 import { Button } from '@/components/ui/button'
 import { computeConvenienceFee } from '@/features/payments/convenienceFee'
@@ -33,6 +34,14 @@ interface Props {
 }
 
 const METHOD_KEYS: Record<string, Method> = { '1': 'cash', '2': 'check', '3': 'card' }
+
+function methodHints(cardAvailable: boolean): KeyHint[] {
+  return [
+    { keys: ['Alt', '1'], action: 'cash' },
+    { keys: ['Alt', '2'], action: 'check' },
+    ...(cardAvailable ? [{ keys: ['Alt', '3'], action: 'card' }] : []),
+  ]
+}
 
 function useMethodHotkeys(cardAvailable: boolean, setMethod: (m: Method) => void): void {
   useEffect(() => {
@@ -87,6 +96,7 @@ export function QuickIssueForm(props: Props) {
 
   return (
     <form onSubmit={(event) => void submit(event)} className="space-y-6">
+      <KeyHints hints={methodHints(props.cardAvailable)} />
       <input type="hidden" name="parcelId" value={props.parcelId} />
       <input type="hidden" name="typeKey" value={props.typeKey} />
       <ContractorSection defaultLicenseType={props.typeLabel} lookup={props.lookup} />

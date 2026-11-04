@@ -13,34 +13,6 @@ export function QueueSummary({ total, filters }: { total: number; filters: strin
   )
 }
 
-const KEY_CLASS =
-  'rounded border border-hairline bg-surface px-1.5 py-0.5 font-mono text-xs text-ink'
-
-function Key({ children }: { children: string }) {
-  return <kbd className={KEY_CLASS}>{children}</kbd>
-}
-
-export function KeyHints({ canAssign }: { canAssign: boolean }) {
-  return (
-    <p className="mb-5 hidden flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground md:flex">
-      <span>
-        <Key>j</Key> <Key>k</Key> move
-      </span>
-      <span>
-        <Key>Enter</Key> open
-      </span>
-      {canAssign ? (
-        <span>
-          <Key>a</Key> assign a reviewer
-        </span>
-      ) : null}
-      <span>
-        <Key>/</Key> search
-      </span>
-    </p>
-  )
-}
-
 export function NoMatches({
   filters,
   clearHref,

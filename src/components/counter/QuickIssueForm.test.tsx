@@ -69,6 +69,16 @@ describe('QuickIssueForm', () => {
     expect(screen.getByTestId('fee-total').textContent).toBe('$45.00')
   })
 
+  it('shows the method keys as shared key hints', () => {
+    const { container } = form()
+    const hints = container.querySelector('[data-slot="key-hints"]') as HTMLElement
+    expect([...hints.children].map((c) => c.textContent)).toEqual([
+      'Alt 1 cash',
+      'Alt 2 check',
+      'Alt 3 card',
+    ])
+  })
+
   it('Alt+1 to Alt+3 pick cash, check, and card', () => {
     form()
     fireEvent.keyDown(window, { key: '2', altKey: true })

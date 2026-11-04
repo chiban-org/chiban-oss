@@ -134,9 +134,7 @@ export function PaymentSection({
       <h2 id="payment">Payment</h2>
       <TextField label="Payer name (defaults to the contractor)" name="payerName" />
       <fieldset className="space-y-2">
-        <legend className="text-sm font-medium">
-          Method (Alt+1 cash, Alt+2 check, Alt+3 card)
-        </legend>
+        <legend className="text-sm font-medium">Method</legend>
         <RadioGroup
           name="method"
           value={method}

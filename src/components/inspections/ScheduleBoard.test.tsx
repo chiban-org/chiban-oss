@@ -57,6 +57,13 @@ describe('ScheduleBoard', () => {
     expect(within(item).getByText('Portal')).toBeTruthy()
   })
 
+  it('shows its keys as shared key hints', () => {
+    setup()
+    const hints = document.querySelector('[data-slot="key-hints"]') as HTMLElement
+    expect(hints.querySelectorAll('kbd').length).toBe(4)
+    expect(hints.textContent).toContain('choose a request')
+  })
+
   it('shows free slots by inspector and date in the long format', () => {
     setup()
     expect(screen.getByText('July 7, 2027')).toBeTruthy()

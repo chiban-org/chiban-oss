@@ -2,6 +2,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { TablePager } from '@/components/dataTable/TablePager'
 import { EnforcementQueueTable } from '@/components/enforcement/EnforcementQueueTable'
+import { KeyHints } from '@/components/KeyHints'
 import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -92,7 +93,7 @@ export default async function EnforcementQueuePage({
   return (
     <main data-wide="">
       <h1>Code enforcement</h1>
-      <p>Newest case first. Keys: j and k to move, Enter to open a case.</p>
+      <p>Newest case first.</p>
       <div className="toolbar">
         <QuickFilters
           label="Quick filters"
@@ -100,6 +101,12 @@ export default async function EnforcementQueuePage({
           clearHref={clear}
         />
       </div>
+      <KeyHints
+        hints={[
+          { keys: ['j', 'k'], action: 'move' },
+          { keys: ['Enter'], action: 'open' },
+        ]}
+      />
       <div className="table-panel">
         <EnforcementQueueTable key={tableKey} rows={queue.rows} links={links} />
       </div>

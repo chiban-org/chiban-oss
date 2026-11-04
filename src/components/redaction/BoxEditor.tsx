@@ -1,6 +1,7 @@
 'use client'
 
 import { type KeyboardEvent, type PointerEvent, useRef, useState } from 'react'
+import { KeyHints } from '@/components/KeyHints'
 import {
   boxProblems,
   clampBox,
@@ -132,10 +133,15 @@ export function BoxEditor({ pages, exemptions, mode, onChange }: BoxEditorProps)
   return (
     <div className="space-y-4">
       <p className="m-0">
-        Drag on a page to draw a box over what must be removed. Or add a box with the button, then
-        move it with the arrow keys, resize it with Shift and the arrow keys, and remove it with
-        Delete.
+        Drag on a page to draw a box over what must be removed, or add a box with the button.
       </p>
+      <KeyHints
+        hints={[
+          { keys: ['Arrows'], action: 'move a box' },
+          { keys: ['Shift', 'Arrows'], action: 'resize it' },
+          { keys: ['Delete'], action: 'remove it' },
+        ]}
+      />
       <PageWindows total={pages.length} first={first} onShow={setFirst} />
       {shown.map((geometry) => (
         <div key={geometry.page} className="space-y-2">

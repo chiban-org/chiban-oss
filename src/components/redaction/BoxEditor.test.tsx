@@ -90,6 +90,15 @@ describe('BoxEditor', () => {
     expect(JSON.parse(hidden.value)).toHaveLength(1)
   })
 
+  it('shows its keys as shared key hints', () => {
+    const { container } = render(
+      <BoxEditor pages={[geometry]} exemptions={EXEMPTIONS} mode="pdf" />,
+    )
+    const hints = container.querySelector('[data-slot="key-hints"]') as HTMLElement
+    expect(hints.textContent.replace(/\s+/g, ' ')).toContain('Delete remove it')
+    expect(hints.querySelectorAll('kbd').length).toBe(4)
+  })
+
   it('arrow keys move a focused box and Delete removes it', () => {
     render(<BoxEditor pages={[geometry]} exemptions={EXEMPTIONS} mode="pdf" />)
     fireEvent.click(screen.getByRole('button', { name: 'Add a box to page 1' }))

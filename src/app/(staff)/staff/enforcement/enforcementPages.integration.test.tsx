@@ -98,6 +98,12 @@ describe('enforcement queue and case pages', () => {
     expect(page).toContain('Answer due')
   })
 
+  it('shows the shared key hints above the table', async () => {
+    const page = await html(QueuePage(noSearch))
+    expect(page).toContain('data-slot="key-hints"')
+    expect(page).toContain('<kbd')
+  })
+
   it('board members and records custodians get the permission page on the queue and on a case by id', async () => {
     for (const who of ['board', 'records']) {
       await actAs(who)

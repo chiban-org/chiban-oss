@@ -3,6 +3,7 @@ import { eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { ParcelSearchHotkey } from '@/components/counter/ParcelSearchHotkey'
 import { QuickIssueForm } from '@/components/counter/QuickIssueForm'
+import { KeyHints } from '@/components/KeyHints'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecentParcelSearches } from '@/components/parcels/RecentParcelSearches'
 import { SearchExamples } from '@/components/parcels/SearchExamples'
@@ -176,16 +177,13 @@ export default async function CounterPage({ searchParams }: Props) {
     <main>
       <ParcelSearchHotkey />
       <PageHeader title="Counter" lead="Find the parcel, then choose the permit type." />
+      <KeyHints hints={[{ keys: ['/'], action: 'search for a parcel' }]} />
       <section aria-labelledby="parcel" className="space-y-3">
         <h2 id="parcel">Parcel</h2>
         <form method="get" role="search" className="flex max-w-3xl gap-3">
           <input type="hidden" name="type" value={selectedType?.key ?? ''} />
           <div className="flex-1">
-            <TextField
-              label="Search by parcel ID, address, or owner (press / to search)"
-              name="q"
-              defaultValue={q}
-            />
+            <TextField label="Search by parcel ID, address, or owner" name="q" defaultValue={q} />
           </div>
           <Button type="submit" className="self-end">
             Search

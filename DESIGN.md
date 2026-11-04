@@ -81,6 +81,7 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 - Below 640px every filter group folds into a menu. No staff page scrolls sideways at 390px.
 - Identifiers link to their record: an application number to the application, a parcel ID to the parcel, an owner to a parcel search for that owner. An identifier gets its own column instead of sitting inside a sentence.
 - Keyboard-driven tables move with `j` and `k`, open the selected row with Enter, and always show focus.
+- Every page with keyboard shortcuts lists them in one `KeyHints` row (`src/components/KeyHints.tsx`) directly above the table or tool, never in a sentence. Each key is a `Kbd` (`src/components/ui/kbd.tsx`), followed by a lowercase verb: "j k move", "Enter open", "/ search". The row is hidden below 640px. Do not draw keys any other way.
 - Search forms offer recent searches and a one-click example under the field.
 
 ## Actions and roles

@@ -125,6 +125,7 @@ describe('/staff/applications page', () => {
   it('shows the keys as their own line and submits filters without an apply button', async () => {
     const html = await render({})
     expect(html).toContain('<kbd')
+    expect(html).toContain('data-slot="key-hints"')
     expect(html).not.toContain('Apply filters')
   })
 

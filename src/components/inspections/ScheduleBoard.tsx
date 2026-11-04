@@ -2,11 +2,18 @@
 
 import Link from 'next/link'
 import { useEffect, useRef, useState } from 'react'
+import { KeyHints } from '@/components/KeyHints'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { minutesToClock } from '@/features/inspections/zonedTime'
 import { formatCivilDate } from '@/lib/formatDate'
+
+const BOARD_HINTS = [
+  { keys: ['j', 'k'], action: 'choose a request' },
+  { keys: ['s'], action: 'schedule it in the focused slot' },
+  { keys: ['/'], action: 'search' },
+]
 
 export interface BoardRequest {
   inspectionId: string
@@ -188,79 +195,78 @@ export function ScheduleBoard({
   }, [])
 
   return (
-    <div className="grid items-start gap-6 md:grid-cols-[22rem_1fr] [&>section]:m-0">
-      <section aria-label="Requests and bookings" className="space-y-3">
-        <h2 className="m-0 text-xl">Requests and bookings</h2>
-        <Label htmlFor="request-search">Search requests</Label>
-        <Input
-          ref={search}
-          id="request-search"
-          type="search"
-          placeholder="Permit number, address or contact"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-        />
-        {visible.length === 0 ? (
-          <p className="m-0">No requests are waiting.</p>
-        ) : (
-          <ul
-            role="listbox"
-            aria-label="Requests"
-            className="m-0 flex list-none flex-col gap-2 p-0"
-          >
-            {visible.map((request, index) => (
-              <li
-                key={request.inspectionId}
-                role="option"
-                aria-selected={index === selected}
-                tabIndex={0}
-                onClick={() => setSelected(index)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') setSelected(index)
-                }}
-                className={`rounded-md border p-3 ${index === selected ? 'border-ring bg-highlight' : 'border-hairline'}`}
-              >
-                <p className="m-0 font-semibold">
-                  <Link href={`/staff/inspections/${request.inspectionId}`}>
-                    {`${request.applicationNumber}, ${request.typeLabel}`}
-                  </Link>
-                </p>
-                <p className="m-0">{request.address}</p>
-                <p className="m-0 flex flex-wrap gap-2">
-                  <span>{CHANNEL_LABEL[request.channel]}</span>
-                  {request.isReinspection ? (
-                    <span className="font-semibold">Reinspection</span>
-                  ) : null}
-                  {request.scheduledFor === undefined ? null : (
-                    <span className="font-semibold">{`Booked ${request.scheduledFor}`}</span>
-                  )}
-                  {request.preferredDate === null ? null : (
-                    <span>{`Prefers ${formatCivilDate(request.preferredDate)}`}</span>
-                  )}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-      <section aria-label="Open slots" className="space-y-3">
-        <h2 className="m-0 text-xl">Open slots</h2>
-        <p className="m-0 text-muted-foreground">
-          Press j or k to choose a request, focus a slot, then press s to schedule it. Press / to
-          search.
-        </p>
-        {message === null ? null : <p role="status">{message}</p>}
-        {days.length === 0 ? <p className="m-0">No inspection days in this range.</p> : null}
-        {days.map((day, index) => (
-          <SlotDay
-            key={`${day.date}-${day.inspectorUserId}`}
-            day={day}
-            folded={index >= OPEN_DAYS}
-            onFocusSlot={focusSlot}
-            onPick={pick}
+    <>
+      <KeyHints hints={BOARD_HINTS} />
+      <div className="grid items-start gap-6 md:grid-cols-[22rem_1fr] [&>section]:m-0">
+        <section aria-label="Requests and bookings" className="space-y-3">
+          <h2 className="m-0 text-xl">Requests and bookings</h2>
+          <Label htmlFor="request-search">Search requests</Label>
+          <Input
+            ref={search}
+            id="request-search"
+            type="search"
+            placeholder="Permit number, address or contact"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
           />
-        ))}
-      </section>
-    </div>
+          {visible.length === 0 ? (
+            <p className="m-0">No requests are waiting.</p>
+          ) : (
+            <ul
+              role="listbox"
+              aria-label="Requests"
+              className="m-0 flex list-none flex-col gap-2 p-0"
+            >
+              {visible.map((request, index) => (
+                <li
+                  key={request.inspectionId}
+                  role="option"
+                  aria-selected={index === selected}
+                  tabIndex={0}
+                  onClick={() => setSelected(index)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') setSelected(index)
+                  }}
+                  className={`rounded-md border p-3 ${index === selected ? 'border-ring bg-highlight' : 'border-hairline'}`}
+                >
+                  <p className="m-0 font-semibold">
+                    <Link href={`/staff/inspections/${request.inspectionId}`}>
+                      {`${request.applicationNumber}, ${request.typeLabel}`}
+                    </Link>
+                  </p>
+                  <p className="m-0">{request.address}</p>
+                  <p className="m-0 flex flex-wrap gap-2">
+                    <span>{CHANNEL_LABEL[request.channel]}</span>
+                    {request.isReinspection ? (
+                      <span className="font-semibold">Reinspection</span>
+                    ) : null}
+                    {request.scheduledFor === undefined ? null : (
+                      <span className="font-semibold">{`Booked ${request.scheduledFor}`}</span>
+                    )}
+                    {request.preferredDate === null ? null : (
+                      <span>{`Prefers ${formatCivilDate(request.preferredDate)}`}</span>
+                    )}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+        <section aria-label="Open slots" className="space-y-3">
+          <h2 className="m-0 text-xl">Open slots</h2>
+          {message === null ? null : <p role="status">{message}</p>}
+          {days.length === 0 ? <p className="m-0">No inspection days in this range.</p> : null}
+          {days.map((day, index) => (
+            <SlotDay
+              key={`${day.date}-${day.inspectorUserId}`}
+              day={day}
+              folded={index >= OPEN_DAYS}
+              onFocusSlot={focusSlot}
+              onPick={pick}
+            />
+          ))}
+        </section>
+      </div>
+    </>
   )
 }
