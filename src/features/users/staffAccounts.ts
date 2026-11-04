@@ -75,6 +75,10 @@ export async function otherActiveAdminCount(tx: DbOrTx, userId: string): Promise
 
 export type ManageError = 'forbidden' | 'not_found'
 
+export async function lockStaffAccounts(tx: Tx): Promise<void> {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext('chiban.staff_accounts'))`)
+}
+
 export interface AdminContext {
   db: Db
   actor: Actor
@@ -94,7 +98,8 @@ export async function manageStaff<T, E>(
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'user.manage', signal))) return err('forbidden')
   return await transactionResult<T, E | ManageError>(db, async (tx) => {
-    await tx.execute(sql`select pg_advisory_xact_lock(hashtext('chiban.staff_accounts'))`)
+    await lockStaffAccounts(tx)
+    if (!(await hasCapability(tx, actor.userId, 'user.manage', signal))) return err('forbidden')
     const target = await loadStaffTarget(tx, userId)
     if (target === null) return err('not_found')
     return await fn(tx, target)

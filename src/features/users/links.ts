@@ -8,6 +8,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import { MIN_PASSWORD_LENGTH } from '@/features/auth/createStaffUser'
 import { hashPassword } from '@/features/auth/password'
 import { createSession, revokeAllSessions } from '@/features/auth/session'
+import { lockStaffAccounts } from '@/features/users/staffAccounts'
 import { err, ok, type Result } from '@/types/result'
 
 export type LinkPurpose = 'invite' | 'password_reset'
@@ -129,12 +130,12 @@ export async function completeStaffLink(
   signal: AbortSignal,
 ): Promise<Result<CompletedLink, CompleteError>> {
   signal.throwIfAborted()
-  if (password.length < MIN_PASSWORD_LENGTH) {
-    const dead = deadState(await findLink(db, token, false), now)
-    return err(dead ?? 'weak_password')
-  }
+  const precheck = deadState(await findLink(db, token, false), now)
+  if (precheck !== null) return err(precheck)
+  if (password.length < MIN_PASSWORD_LENGTH) return err('weak_password')
   const passwordHash = await hashPassword(password, signal)
   return await transactionResult<CompletedLink, CompleteError>(db, async (tx) => {
+    await lockStaffAccounts(tx)
     const row = await findLink(tx, token, true)
     const dead = deadState(row, now)
     if (dead !== null || row === undefined) return err(dead ?? 'invalid')
