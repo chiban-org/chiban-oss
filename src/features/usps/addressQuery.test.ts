@@ -59,6 +59,24 @@ describe('parseTypedAddress', () => {
     ])
   })
 
+  it('takes the street nearest the city line when an earlier line also starts with a number', () => {
+    expect(
+      parseTypedAddress(['2nd Floor, Town Hall', '1 Main Street', 'Alder Pond NH 03000']),
+    ).toEqual({
+      preamble: ['2nd Floor, Town Hall'],
+      query: { streetAddress: '1 Main Street', city: 'Alder Pond', state: 'NH', ZIPCode: '03000' },
+    })
+  })
+
+  it('keeps a numbered unit after the street on the same line as the secondary address', () => {
+    expect(parseTypedAddress(['1 Main St, 2nd Floor, Alder Pond NH'])?.query).toEqual({
+      streetAddress: '1 Main St',
+      secondaryAddress: '2nd Floor',
+      city: 'Alder Pond',
+      state: 'NH',
+    })
+  })
+
   it('reads a post office box as a street line', () => {
     expect(parseTypedAddress(['PO Box 7', 'Alder Pond NH 03000'])?.query.streetAddress).toBe(
       'PO Box 7',

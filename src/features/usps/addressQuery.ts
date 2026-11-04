@@ -74,6 +74,12 @@ function readLastLine(text: string): LastLine | null {
   return found
 }
 
+function findStreet(candidates: Segment[]): number {
+  const streetLike = candidates.filter((s) => startsLikeStreet(s.text))
+  const lastLine = streetLike.at(-1)?.line
+  return candidates.findIndex((s) => s.line === lastLine && startsLikeStreet(s.text))
+}
+
 function preambleOf(segments: Segment[], streetIndex: number): string[] {
   const before = segments.slice(0, streetIndex)
   const streetLine = segments.at(streetIndex)?.line ?? 0
@@ -105,8 +111,8 @@ export function parseTypedAddress(lines: readonly string[]): TypedAddress | null
   if (lastSegment === undefined) return null
   const parsedLast = readLastLine(lastSegment.text)
   if (parsedLast === null) return null
-  const streetIndex = segments.findIndex((s) => startsLikeStreet(s.text))
-  if (streetIndex < 0 || streetIndex >= segments.length - 1) return null
+  const streetIndex = findStreet(segments.slice(0, -1))
+  if (streetIndex < 0) return null
   const resolved = resolveCity(parsedLast, segments.slice(streetIndex + 1, -1))
   if (!isUsable(resolved.last)) return null
   const secondary = resolved.between.map((s) => s.text).join(' ')
