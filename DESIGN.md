@@ -63,6 +63,11 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 - The Town group (Town profile, Letterhead, Signers) edits one town profile. Each page publishes its part straight to a new version, with no draft step, and links to the version history on the town profile kind page. The Letterhead page shows a live preview of the header and footer next to its form.
 - An empty kind shows what it does and the add action in its place, never a bare 0.
 - Settings pages are not record pages: no `RecordLayout`, and `main[data-wide]` only when a table needs the width.
+- Settings editors speak in the town's terms. Items are listed, titled and picked by name; keys, codes, inspection types and fee formulas as data sit under a closed "Advanced" disclosure. A new item starts from a name, and its short name is made from it (`src/features/config/newItemKey.ts`).
+- The shared pieces live in `src/components/config/plainFields.tsx`: `NamePicker` and `CheckedNames` pick other configuration by name and store its key, `TextRows` edits a list one row per entry, `DollarsInput` and `PercentInput` show dollars and percent while storing cents and basis points. A choice list longer than ten folds behind "Choose from all N" under a "Chosen:" line.
+- Every field has a plain label, and a one-line hint when its meaning or unit is not obvious. Field grids are one column below 640px.
+- Each fee shows a worked example in a sentence ("For Finished area of 1,200 ..., this fee is $420.00."), worked out by the same calculation that charges applicants.
+- `PublishBar` explains Save draft and Publish once, above the buttons. Publish and Restore open a confirmation that says what changes: open applications keep their version on kinds they pin, everything else takes effect at once.
 
 ## Lists and filters
 
