@@ -18,6 +18,7 @@ import { FieldError, type FieldErrors, Input, RowButton } from '@/components/con
 import type { TemplateBuilderData } from '@/features/templates/builderData'
 import type { TemplateDoc } from '@/features/templates/doc/docSchema'
 import { defaultDoc, documentKind } from '@/features/templates/kinds/documentKinds'
+import { fitDocToKind } from '@/features/templates/kinds/fitToKind'
 import { templateUse } from '@/features/templates/templateChecks'
 import type { DocTemplateBody, TemplateKind } from '@/features/templates/templateSchema'
 
@@ -85,7 +86,11 @@ export function LetterBuilder({ body, onChange, errors, data }: Props) {
   const changeKind = (next: TemplateKind) => {
     const pristine = sameDoc(body.doc, defaultDoc(body.kind))
     setPreview(null)
-    onChange({ ...body, kind: next, doc: pristine ? defaultDoc(next) : body.doc })
+    onChange({
+      ...body,
+      kind: next,
+      doc: pristine ? defaultDoc(next) : fitDocToKind(body.doc, next),
+    })
   }
   return (
     <LetterViewProvider value={{ kind: body.kind, preview }}>

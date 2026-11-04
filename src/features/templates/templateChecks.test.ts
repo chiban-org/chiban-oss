@@ -60,4 +60,22 @@ describe('checkTemplate', () => {
       }),
     ).toBeNull()
   })
+
+  it('does not count a locked block buried inside a list', () => {
+    const nested = doc({
+      type: 'bulletList',
+      content: [
+        {
+          type: 'listItem',
+          content: [
+            { type: 'paragraph' },
+            { type: 'lockedBlock', attrs: { source: 'decision.appealRights' } },
+          ],
+        },
+      ],
+    })
+    expect(checkTemplate(docTemplate('decision_letter', nested))).toEqual({
+      missingLockedBlocks: ['decision.appealRights'],
+    })
+  })
 })

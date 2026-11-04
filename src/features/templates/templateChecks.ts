@@ -14,7 +14,6 @@ function docUse(template: Extract<TemplateBody, { format: 'doc' }>): TemplateUse
   const use: TemplateUse = { fields: [], locked: [], sections: [] }
   walkDoc(template.doc.content, (node) => {
     if (node.type === 'mergeField') use.fields.push(stringAttr(node, 'name'))
-    if (node.type === 'lockedBlock') use.locked.push(stringAttr(node, 'source'))
     if (node.type === 'recordSection') use.sections.push(stringAttr(node, 'name'))
     if (node.type === 'fieldTable') {
       const rows = node.attrs?.rows
@@ -25,6 +24,9 @@ function docUse(template: Extract<TemplateBody, { format: 'doc' }>): TemplateUse
       }
     }
   })
+  use.locked = template.doc.content
+    .filter((node) => node.type === 'lockedBlock')
+    .map((node) => stringAttr(node, 'source'))
   return use
 }
 

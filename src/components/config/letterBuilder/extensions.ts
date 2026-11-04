@@ -3,6 +3,14 @@ import StarterKit from '@tiptap/starter-kit'
 import { LockedGuard } from '@/components/config/letterBuilder/lockedGuard'
 import { BlockView, MergeFieldView } from '@/components/config/letterBuilder/nodeViews'
 
+const LETTER_BLOCK = 'letterBlock'
+
+const LetterDocument = Node.create({
+  name: 'doc',
+  topNode: true,
+  content: `(block | ${LETTER_BLOCK})+`,
+})
+
 function parseAttr(raw: string | null, fallback: unknown): unknown {
   if (raw === null) return fallback
   try {
@@ -15,7 +23,7 @@ function parseAttr(raw: string | null, fallback: unknown): unknown {
 function atomBlock(name: string, attrs: Record<string, unknown>) {
   return Node.create({
     name,
-    group: 'block',
+    group: LETTER_BLOCK,
     atom: true,
     selectable: true,
     draggable: false,
@@ -72,7 +80,7 @@ const MergeField = Node.create({
 
 const NoticeBox = Node.create({
   name: 'noticeBox',
-  group: 'block',
+  group: LETTER_BLOCK,
   content: 'inline*',
   defining: true,
   parseHTML() {
@@ -101,7 +109,9 @@ export function letterExtensions() {
       underline: false,
       link: false,
       heading: { levels: [2, 3] },
+      document: false,
     }),
+    LetterDocument,
     MergeField,
     NoticeBox,
     atomBlock('signature', { role: 'land_use_administrator' }),

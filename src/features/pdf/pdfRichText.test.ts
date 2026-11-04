@@ -81,4 +81,24 @@ describe('rich text and lists in PDFs', () => {
         .join(''),
     ).toBe('next line')
   })
+
+  it('splits a word wider than the line', async () => {
+    const doc = await PDFDocument.create()
+    const fonts = await embedFonts(doc)
+    const url = `https://example.org/${'segment'.repeat(30)}`
+    const lines = layoutRuns([{ text: `See ${url} now`, bold: true }], fonts, 10.5, 150)
+    for (const line of lines) {
+      const width = line.reduce(
+        (sum, p) => sum + p.font.widthOfTextAtSize(p.text.trimEnd(), 10.5),
+        0,
+      )
+      expect(width).toBeLessThanOrEqual(150)
+    }
+    expect(
+      lines
+        .map((l) => l.map((p) => p.text).join(''))
+        .join('')
+        .replaceAll(' ', ''),
+    ).toBe(`See${url}now`)
+  })
 })

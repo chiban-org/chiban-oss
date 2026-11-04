@@ -12,6 +12,7 @@ export interface Piece {
 interface Word {
   pieces: Piece[]
   hardBreak: boolean
+  glued?: boolean
 }
 
 const LIST_INDENT = 18
@@ -48,6 +49,26 @@ function runWords(runs: readonly TextRun[], fonts: Fonts): Word[] {
   return words
 }
 
+function splitPiece(piece: Piece, size: number, width: number): Piece[] {
+  const parts: Piece[] = []
+  let rest = piece.text
+  while (piece.font.widthOfTextAtSize(rest, size) > width && rest.length > 1) {
+    let cut = rest.length - 1
+    while (cut > 1 && piece.font.widthOfTextAtSize(rest.slice(0, cut), size) > width) cut -= 1
+    parts.push({ text: rest.slice(0, cut), font: piece.font })
+    rest = rest.slice(cut)
+  }
+  return [...parts, { text: rest, font: piece.font }]
+}
+
+function fitWords(words: Word[], size: number, width: number): Word[] {
+  return words.flatMap((word) => {
+    if (word.hardBreak || piecesWidth(word.pieces, size) <= width) return [word]
+    const chunks = word.pieces.flatMap((piece) => splitPiece(piece, size, width))
+    return chunks.map((chunk, i): Word => ({ pieces: [chunk], hardBreak: false, glued: i > 0 }))
+  })
+}
+
 const piecesWidth = (pieces: readonly Piece[], size: number) =>
   pieces.reduce((sum, p) => sum + p.font.widthOfTextAtSize(p.text, size), 0)
 
@@ -73,17 +94,18 @@ export function layoutRuns(
     line = []
     used = 0
   }
-  for (const word of runWords(runs, fonts)) {
+  for (const word of fitWords(runWords(runs, fonts), size, width)) {
     if (word.hardBreak) {
       push()
       continue
     }
     const wordWidth = piecesWidth(word.pieces, size)
     const last = line.at(-1)
-    const space = last === undefined ? 0 : last.font.widthOfTextAtSize(' ', size)
+    const space =
+      last === undefined || word.glued === true ? 0 : last.font.widthOfTextAtSize(' ', size)
     if (last !== undefined && used + space + wordWidth > width) push()
     const tail = line.at(-1)
-    if (tail !== undefined) {
+    if (tail !== undefined && word.glued !== true) {
       tail.text += ' '
       used += space
     }

@@ -129,4 +129,41 @@ describe('LetterBuilder', () => {
     })
     expect(JSON.stringify(state().doc)).toContain('decision.appealRights')
   })
+
+  it('keeps locked blocks out of lists', async () => {
+    render(<Harness initial={LETTER} builder={data()} />)
+    const dom = await mountedEditor()
+    act(() => {
+      dom.editor.chain().selectAll().toggleBulletList().run()
+    })
+    const top = dom.editor.getJSON().content.map((n) => n.type)
+    expect(top).toContain('lockedBlock')
+  })
+
+  it('swaps the locked blocks for the new kind when an edited letter changes kind', async () => {
+    render(<Harness initial={LETTER} builder={data()} />)
+    const dom = await mountedEditor()
+    act(() => {
+      dom.editor.chain().focus('start').insertContent('Our own words. ').run()
+    })
+    fireEvent.change(screen.getByLabelText('Kind of document'), {
+      target: { value: 'enforcement_order' },
+    })
+    await waitFor(() => expect(state().kind).toBe('enforcement_order'))
+    const text = JSON.stringify(state().doc)
+    expect(text).toContain('Our own words.')
+    expect(text).not.toContain('decision.appealRights')
+    for (const source of ['order.ceaseSentence', 'order.motionNotice', 'order.lienWarning']) {
+      expect(text).toContain(source)
+    }
+  })
 })
+
+async function mountedEditor() {
+  const page = await screen.findByRole('article', { name: 'Letter page' })
+  return await waitFor(() => {
+    const found = page.querySelector('.ProseMirror')
+    if (found === null) throw new Error('editor not mounted')
+    return found as HTMLElement & { editor: Editor }
+  })
+}
