@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { recordCounterPayment } from '@/features/counter/counterPayment'
 import { postEntry } from '@/features/ledger/postEntry'
-import type { EntryFilters, EntrySortKey } from '@/features/payments/entryListParams'
+import type { EntryFilters, EntryRange, EntrySortKey } from '@/features/payments/entryListParams'
 import { loadPaymentsOverview } from '@/features/payments/overview'
 import type { PermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -17,6 +17,8 @@ let cashPat = ''
 let checkAvery = ''
 let cardZed = ''
 let refundZed = ''
+let mondayLee = ''
+let lastWeekKim = ''
 
 beforeAll(async () => {
   handle = await makeTestDb()
@@ -93,13 +95,33 @@ beforeAll(async () => {
   )
   if (!refund.ok) throw new Error('refund failed')
   refundZed = refund.value.entryId
+  const earlier = async (postedAt: string, payerName: string, amountCents: number) => {
+    const t = await submittedTrade(handle.db, world)
+    const posted = await recordCounterPayment(
+      handle.db,
+      world.staff,
+      { method: 'cash', amountCents, payerName, allocations: [lineAllocation(t, amountCents)] },
+      signal,
+      new Date(postedAt),
+    )
+    if (!posted.ok) throw new Error(`earlier ${posted.error}`)
+    return posted.value.entryId
+  }
+  mondayLee = await earlier('2027-03-01T17:00:00Z', 'Lee Mason', 1500)
+  lastWeekKim = await earlier('2027-02-26T17:00:00Z', 'Kim Plumber', 800)
 })
 afterAll(async () => {
   await handle.drop()
 })
 
 async function overview(
-  view: { filters?: EntryFilters; sort?: { key: EntrySortKey; dir: 'asc' | 'desc' } } = {},
+  view: {
+    filters?: EntryFilters
+    sort?: { key: EntrySortKey; dir: 'asc' | 'desc' }
+    range?: EntryRange
+    offset?: number
+    limit?: number
+  } = {},
 ) {
   const result = await loadPaymentsOverview(
     handle.db,
@@ -109,6 +131,9 @@ async function overview(
       entries: {
         filters: view.filters ?? {},
         ...(view.sort === undefined ? {} : { sort: view.sort }),
+        ...(view.range === undefined ? {} : { range: view.range }),
+        ...(view.offset === undefined ? {} : { offset: view.offset }),
+        ...(view.limit === undefined ? {} : { limit: view.limit }),
       },
     },
     signal,
@@ -117,7 +142,7 @@ async function overview(
   return result.value
 }
 const ids = async (view?: Parameters<typeof overview>[0]) =>
-  (await overview(view)).todaysEntries.map((e) => e.id)
+  (await overview(view)).entries.map((e) => e.id)
 const by = (key: EntrySortKey, dir: 'asc' | 'desc') => ({ sort: { key, dir } })
 
 describe('payments entries sorting', () => {
@@ -174,5 +199,53 @@ describe('payments entries quick filters', () => {
     expect(narrowed.methods.get('card_online')).toBe(1)
     expect(narrowed.methods.get('cash')).toBe(0)
     expect(narrowed.types.get('payment')).toBe(3)
+  })
+})
+
+describe('payments entries ranges', () => {
+  it('lists only today by default', async () => {
+    expect(await ids()).not.toContain(mondayLee)
+    expect(await ids()).not.toContain(lastWeekKim)
+  })
+
+  it('lists entries since Monday for this week', async () => {
+    expect(await ids({ range: 'week' })).toEqual([
+      refundZed,
+      cardZed,
+      checkAvery,
+      cashPat,
+      mondayLee,
+    ])
+  })
+
+  it('lists every entry for all', async () => {
+    expect(await ids({ range: 'all' })).toEqual([
+      refundZed,
+      cardZed,
+      checkAvery,
+      cashPat,
+      mondayLee,
+      lastWeekKim,
+    ])
+  })
+
+  it('counts each tab with the quick filters applied', async () => {
+    expect((await overview()).rangeCounts).toEqual({ today: 4, week: 5, all: 6 })
+    const cash = (await overview({ filters: { methods: ['cash'] } })).rangeCounts
+    expect(cash).toEqual({ today: 1, week: 2, all: 3 })
+  })
+
+  it('counts chips inside the chosen tab', async () => {
+    const all = (await overview({ range: 'all' })).entryFacets
+    expect(all.methods.get('cash')).toBe(3)
+  })
+
+  it('pages with a stable order and reports the total', async () => {
+    const first = await overview({ range: 'all', limit: 4 })
+    expect(first.entries.map((e) => e.id)).toEqual([refundZed, cardZed, checkAvery, cashPat])
+    expect(first.entryPage).toEqual({ total: 6, offset: 0, prevOffset: null, nextOffset: 4 })
+    const second = await overview({ range: 'all', limit: 4, offset: 4 })
+    expect(second.entries.map((e) => e.id)).toEqual([mondayLee, lastWeekKim])
+    expect(second.entryPage).toEqual({ total: 6, offset: 4, prevOffset: 0, nextOffset: null })
   })
 })

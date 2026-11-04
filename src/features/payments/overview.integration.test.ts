@@ -52,7 +52,7 @@ describe('page loaders', () => {
     if (!overview.ok) throw new Error(overview.error)
     expect(overview.value.unknownAttempts.map((a) => a.id)).toContain(attemptId)
     expect(overview.value.anomalies.map((a) => a.id)).toContain(attemptId)
-    expect(overview.value.todaysEntries.length).toBeGreaterThan(0)
+    expect(overview.value.entries.length).toBeGreaterThan(0)
   })
 
   it('an open overpayment is listed with its application', async () => {

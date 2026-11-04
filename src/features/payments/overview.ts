@@ -16,7 +16,10 @@ import {
   type EntryView,
   entryFacetsOn,
   listEntriesOn,
+  type RangeCounts,
+  rangeCountsOn,
 } from '@/features/payments/entryList'
+import { ENTRY_PAGE_SIZE } from '@/features/payments/entryListParams'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -27,7 +30,9 @@ export interface PaymentsOverview {
   anomalies: (typeof paymentAttempts.$inferSelect)[]
   overpayments: { applicationId: string; applicationNumber: string; amountCents: number }[]
   entryFacets: EntryFacets
-  todaysEntries: {
+  rangeCounts: RangeCounts
+  entryPage: { total: number; offset: number; prevOffset: number | null; nextOffset: number | null }
+  entries: {
     id: string
     entryType: string
     method: string
@@ -102,6 +107,10 @@ export async function loadPaymentsOverview(
     .having(sql`sum(${ledgerAllocations.amountCents}) > 0`)
   const view = input.entries ?? { filters: {} }
   const entries = await listEntriesOn(db, input.date, view)
+  const rangeCounts = await rangeCountsOn(db, input.date, view.filters)
+  const total = rangeCounts[view.range ?? 'today']
+  const offset = Math.max(view.offset ?? 0, 0)
+  const limit = view.limit ?? ENTRY_PAGE_SIZE
   const numbers = await entryApplications(
     db,
     entries.map((e) => e.id),
@@ -112,7 +121,14 @@ export async function loadPaymentsOverview(
     overpayments: overpaid.flatMap((o) =>
       o.applicationId === null ? [] : [{ ...o, applicationId: o.applicationId }],
     ),
-    entryFacets: await entryFacetsOn(db, input.date, view.filters),
-    todaysEntries: entries.map((e) => ({ ...e, applicationNumbers: numbers.get(e.id) ?? [] })),
+    entryFacets: await entryFacetsOn(db, input.date, view.filters, view.range),
+    rangeCounts,
+    entryPage: {
+      total,
+      offset,
+      prevOffset: offset === 0 ? null : Math.max(0, offset - limit),
+      nextOffset: offset + limit < total ? offset + limit : null,
+    },
+    entries: entries.map((e) => ({ ...e, applicationNumbers: numbers.get(e.id) ?? [] })),
   })
 }

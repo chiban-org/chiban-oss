@@ -50,9 +50,12 @@ afterAll(async () => {
   await handle.drop()
 })
 
-async function page(actor: Actor = trade.world.staff): Promise<string> {
+async function page(
+  actor: Actor = trade.world.staff,
+  search: Record<string, string> = {},
+): Promise<string> {
   state.actor = actor
-  return renderToStaticMarkup(await PaymentsPage({ searchParams: Promise.resolve({}) }))
+  return renderToStaticMarkup(await PaymentsPage({ searchParams: Promise.resolve(search) }))
 }
 
 describe('payments page', () => {
@@ -76,6 +79,30 @@ describe('payments page', () => {
     expect(html).not.toContain('>Outcome unknown<')
     expect(html).not.toContain('Anomalies')
     expect(html).not.toContain('No card payment needs attention.')
+  })
+
+  it('opens on Today with Today, This week and All tabs that carry counts', async () => {
+    const html = await page()
+    expect(html).toContain('aria-label="Entry lists"')
+    expect(html).toMatch(/aria-current="page"[^>]*>Today</)
+    expect(html).toContain('>This week<')
+    expect(html).toContain('>All<')
+    expect(html).toContain('href="/staff/payments?range=week"')
+    expect(html).toContain('href="/staff/payments?range=all"')
+  })
+
+  it('says what to do next when a tab has no entries', async () => {
+    const html = await page(trade.world.staff, { range: 'today', method: 'check' })
+    expect(html).toContain('No entries match these filters.')
+    const empty = await page(trade.world.staff, { type: 'refund' })
+    expect(empty).toContain('No entries match these filters.')
+  })
+
+  it('shows the entry list inside a wide table panel', async () => {
+    const html = await page(trade.world.staff, { range: 'all' })
+    expect(html).toContain('data-wide=""')
+    expect(html).toContain('table-panel')
+    expect(html).toContain('Pat Contractor')
   })
 
   it("states the default order of today's entries", async () => {
