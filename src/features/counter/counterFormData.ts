@@ -3,12 +3,11 @@ import type { ApplicationTypeBody } from '@/features/applications/applicationTyp
 import { getPublished } from '@/features/config/store'
 import { computeFees } from '@/features/fees/computeFees'
 import type { FeeScheduleBody } from '@/features/fees/feeSchema'
+import { LICENSE_FIELD } from '@/features/forms/formReferences'
 import { type FormBody, type FormField, questionsOf } from '@/features/forms/formSchema'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
 import { getActiveProcessor } from '@/features/payments/processorAccounts'
 import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
-
-const LICENSE_FIELD = 'contractor_license_number'
 
 export interface CounterFormData {
   fields: FormField[]
