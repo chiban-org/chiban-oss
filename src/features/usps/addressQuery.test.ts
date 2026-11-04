@@ -77,6 +77,49 @@ describe('parseTypedAddress', () => {
     })
   })
 
+  it('reads an address typed with no commas, as CAMA imports join it', () => {
+    expect(parseTypedAddress(['1 Main St Alder Pond NH 03000'])?.query).toEqual({
+      streetAddress: '1 Main St',
+      city: 'Alder Pond',
+      state: 'NH',
+      ZIPCode: '03000',
+    })
+    expect(parseTypedAddress(['12 Birch Hollow Road Alder Pond NH'])?.query).toEqual({
+      streetAddress: '12 Birch Hollow Road',
+      city: 'Alder Pond',
+      state: 'NH',
+    })
+  })
+
+  it('splits the city off a street line when the state and ZIP have their own comma', () => {
+    expect(parseTypedAddress(['1 Main St Alder Pond, NH 03000'])?.query).toEqual({
+      streetAddress: '1 Main St',
+      city: 'Alder Pond',
+      state: 'NH',
+      ZIPCode: '03000',
+    })
+  })
+
+  it('sends the whole street with the ZIP when no street word marks where the city starts', () => {
+    expect(parseTypedAddress(['14 Birchwood 03000'])?.query).toEqual({
+      streetAddress: '14 Birchwood',
+      ZIPCode: '03000',
+    })
+  })
+
+  it('keeps a numbered floor line after the street as the secondary address', () => {
+    expect(parseTypedAddress(['1 Main St', '2nd Floor', 'Alder Pond NH 03000'])).toEqual({
+      preamble: [],
+      query: {
+        streetAddress: '1 Main St',
+        secondaryAddress: '2nd Floor',
+        city: 'Alder Pond',
+        state: 'NH',
+        ZIPCode: '03000',
+      },
+    })
+  })
+
   it('reads a post office box as a street line', () => {
     expect(parseTypedAddress(['PO Box 7', 'Alder Pond NH 03000'])?.query.streetAddress).toBe(
       'PO Box 7',
@@ -88,6 +131,7 @@ describe('parseTypedAddress', () => {
     expect(parseTypedAddress(['603-555-0100'])).toBeNull()
     expect(parseTypedAddress(['Alder Pond NH 03000'])).toBeNull()
     expect(parseTypedAddress(['12 Alder Lane'])).toBeNull()
+    expect(parseTypedAddress(['2nd Floor Alder Pond NH 03000'])).toBeNull()
     expect(parseTypedAddress(['12 Alder Lane, Alder Pond'])).toBeNull()
     expect(parseTypedAddress(['', '  '])).toBeNull()
   })

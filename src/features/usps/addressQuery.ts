@@ -1,3 +1,5 @@
+import { splitStreetAndCity, startsLikeStreet } from '@/features/usps/streetWords'
+
 export interface UspsQuery {
   streetAddress: string
   secondaryAddress?: string
@@ -25,13 +27,6 @@ function readZip(word: string): { ZIPCode: string; ZIPPlus4?: string } | null {
   if (digits.length === 5 && !word.includes('-')) return { ZIPCode: digits }
   if (digits.length === 9) return { ZIPCode: digits.slice(0, 5), ZIPPlus4: digits.slice(5) }
   return null
-}
-const BOX_PREFIXES = ['POBOX', 'POSTOFFICEBOX', 'RR', 'HC']
-
-function startsLikeStreet(text: string): boolean {
-  if (/^\d/.test(text)) return true
-  const squeezed = text.toUpperCase().replace(/[^A-Z0-9]/g, '')
-  return BOX_PREFIXES.some((prefix) => squeezed.startsWith(prefix) && /\d/.test(squeezed))
 }
 
 interface Segment {
@@ -74,6 +69,44 @@ function readLastLine(text: string): LastLine | null {
   return found
 }
 
+function lastLineText(last: LastLine, city: string): string {
+  const zip = last.ZIPPlus4 === undefined ? last.ZIPCode : `${last.ZIPCode ?? ''}-${last.ZIPPlus4}`
+  return [city, last.state, zip].filter((part) => part !== undefined && part !== '').join(' ')
+}
+
+function splitInto(segment: Segment, text: string): Segment[] {
+  const { street, city } = splitStreetAndCity(text)
+  return city === ''
+    ? [{ ...segment, text: street }]
+    : [
+        { ...segment, text: street },
+        { ...segment, text: city },
+      ]
+}
+
+function separateCity(segments: Segment[], last: LastLine): Segment[] {
+  const lastSegment = segments.at(-1)
+  const before = segments.slice(0, -1)
+  if (lastSegment === undefined) return segments
+  if (
+    last.city !== undefined &&
+    startsLikeStreet(last.city) &&
+    !before.some((s) => startsLikeStreet(s.text))
+  ) {
+    const { street, city } = splitStreetAndCity(last.city)
+    return [
+      ...before,
+      { ...lastSegment, text: street },
+      { ...lastSegment, text: lastLineText(last, city) },
+    ]
+  }
+  const previous = before.at(-1)
+  if (last.city === undefined && previous !== undefined && startsLikeStreet(previous.text)) {
+    return [...before.slice(0, -1), ...splitInto(previous, previous.text), lastSegment]
+  }
+  return segments
+}
+
 function findStreet(candidates: Segment[]): number {
   const streetLike = candidates.filter((s) => startsLikeStreet(s.text))
   const lastLine = streetLike.at(-1)?.line
@@ -105,12 +138,19 @@ function isUsable(last: LastLine): boolean {
   return last.ZIPCode !== undefined || (last.city !== undefined && last.state !== undefined)
 }
 
+function readSegments(lines: readonly string[]): { segments: Segment[]; last: LastLine } | null {
+  const typed = segmentsOf(lines)
+  const first = readLastLine(typed.at(-1)?.text ?? '')
+  if (first === null) return null
+  const segments = separateCity(typed, first)
+  const last = readLastLine(segments.at(-1)?.text ?? '')
+  return last === null ? null : { segments, last }
+}
+
 export function parseTypedAddress(lines: readonly string[]): TypedAddress | null {
-  const segments = segmentsOf(lines)
-  const lastSegment = segments.at(-1)
-  if (lastSegment === undefined) return null
-  const parsedLast = readLastLine(lastSegment.text)
-  if (parsedLast === null) return null
+  const read = readSegments(lines)
+  if (read === null) return null
+  const { segments, last: parsedLast } = read
   const streetIndex = findStreet(segments.slice(0, -1))
   if (streetIndex < 0) return null
   const resolved = resolveCity(parsedLast, segments.slice(streetIndex + 1, -1))
