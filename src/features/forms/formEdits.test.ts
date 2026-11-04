@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   addEntry,
   changeType,
+  indexAfterMove,
   moveEntry,
   orderIssues,
   relabel,
@@ -148,5 +149,15 @@ describe('changeType', () => {
     }
     expect(changeType(numbered, 0, 'decimal').fields[0]?.validation).toEqual({ min: 1 })
     expect(changeType(numbered, 0, 'text').fields[0]?.validation).toBeUndefined()
+  })
+})
+
+describe('indexAfterMove', () => {
+  it('keeps the selection on the same question after a move', () => {
+    expect(indexAfterMove(2, 2, 0)).toBe(0)
+    expect(indexAfterMove(0, 2, 0)).toBe(1)
+    expect(indexAfterMove(1, 0, 2)).toBe(0)
+    expect(indexAfterMove(3, 0, 2)).toBe(3)
+    expect(indexAfterMove(null, 0, 2)).toBeNull()
   })
 })

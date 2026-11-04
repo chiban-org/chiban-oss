@@ -5,7 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApplicationTypeEditor } from '@/components/config/ApplicationTypeEditor'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
 import { FeeLinesEditor } from '@/components/config/FeeLinesEditor'
-import { FormFieldsEditor } from '@/components/config/FormFieldsEditor'
+import { FormBuilder } from '@/components/config/formBuilder/FormBuilder'
 import {
   ChecklistEditor,
   ConditionsEditor,
@@ -16,6 +16,7 @@ import type { ApplicationTypeBody } from '@/features/applications/applicationTyp
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import { skeletonBody } from '@/features/config/skeletons'
 import type { FeeScheduleBody } from '@/features/fees/feeSchema'
+import { NO_FORM_BUILDER_DATA } from '@/features/forms/formReferences'
 import type { FormBody } from '@/features/forms/formSchema'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
 
@@ -70,9 +71,12 @@ describe('editors keep rows mounted while a key is typed', () => {
     render(
       <Stateful
         initial={skeletonBody('form', 'f') as FormBody}
-        render={(b, set) => <FormFieldsEditor body={b} onChange={set} errors={{}} />}
+        render={(b, set) => (
+          <FormBuilder body={b} onChange={set} errors={{}} data={NO_FORM_BUILDER_DATA} />
+        )}
       />,
     )
+    fireEvent.click(screen.getByRole('button', { name: 'Edit Description of work' }))
     const before = screen.getByLabelText('Key')
     fireEvent.change(before, { target: { value: 'renamed' } })
     expect(screen.getByLabelText('Key')).toBe(before)
@@ -131,47 +135,21 @@ describe('membership conditions', () => {
     render(
       <Stateful
         initial={form}
-        render={(b, set) => <FormFieldsEditor body={b} onChange={set} errors={{}} />}
+        render={(b, set) => (
+          <FormBuilder body={b} onChange={set} errors={{}} data={NO_FORM_BUILDER_DATA} />
+        )}
       />,
     )
-    const [, value = document.body] = screen.getAllByLabelText<HTMLInputElement>('Show if: value')
-    expect((value as HTMLInputElement).value).toBe('x, y')
+    fireEvent.click(screen.getByRole('button', { name: 'Edit B' }))
+    const show = screen.getByRole('group', { name: 'Show only when' })
+    const value = within(show).getByLabelText<HTMLInputElement>('Answer')
+    expect(value.value).toBe('x, y')
+    fireEvent.change(value, { target: { value: 'x, y, ' } })
+    expect(value.value).toBe('x, y, ')
     fireEvent.change(value, { target: { value: 'x, y, z' } })
     expect(
       stateOf<{ fields: { showIf: { value: string[] } }[] }>().fields[1]?.showIf.value,
     ).toEqual(['x', 'y', 'z'])
-  })
-})
-
-describe('select options input', () => {
-  it('keeps unfinished text so a second option can be typed', () => {
-    const form: FormBody = {
-      ...(skeletonBody('form', 'f') as FormBody),
-      fields: [
-        {
-          key: 'a',
-          label: 'A',
-          type: 'select',
-          required: false,
-          options: [{ value: 'x', label: 'X' }],
-        },
-      ],
-    }
-    render(
-      <Stateful
-        initial={form}
-        render={(b, set) => <FormFieldsEditor body={b} onChange={set} errors={{}} />}
-      />,
-    )
-    const input = screen.getByLabelText<HTMLInputElement>('Options (value:label, comma separated)')
-    fireEvent.change(input, { target: { value: 'x:X, ' } })
-    expect(input.value).toBe('x:X, ')
-    fireEvent.change(input, { target: { value: 'x:X, y:Y' } })
-    expect(
-      stateOf<{ fields: { options: { value: string }[] }[] }>().fields[0]?.options.map(
-        (o) => o.value,
-      ),
-    ).toEqual(['x', 'y'])
   })
 })
 
@@ -248,7 +226,7 @@ describe('ConfigEditorForm', () => {
         publishAction={noop}
       />,
     )
-    expect(screen.getByLabelText<HTMLInputElement>('Form label').value).toBe('First')
+    expect(screen.getByLabelText<HTMLInputElement>('Form title').value).toBe('First')
     rerender(
       <ConfigEditorForm
         kind="form"
@@ -260,7 +238,7 @@ describe('ConfigEditorForm', () => {
         publishAction={noop}
       />,
     )
-    expect(screen.getByLabelText<HTMLInputElement>('Form label').value).toBe('Restored')
+    expect(screen.getByLabelText<HTMLInputElement>('Form title').value).toBe('Restored')
     const hidden = document.querySelector('input[name="body"]') as HTMLInputElement
     expect(JSON.parse(hidden.value).label).toBe('Restored')
   })

@@ -1,3 +1,4 @@
+import type { FormBuilderData } from '@/features/forms/formReferences'
 import { loadPack } from '@/features/packs/loadPack'
 import { policyText, ruleSummary } from '@/features/packs/ruleSummary'
 import { MERGE_FIELDS } from '@/features/templates/mergeFields'
@@ -22,6 +23,7 @@ export interface EditorContext {
       citation: { label: string; url: string | null }
     }
   >
+  form?: FormBuilderData
 }
 
 interface PackRuleLabelSource {

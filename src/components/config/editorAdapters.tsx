@@ -4,7 +4,7 @@ import { ApplicationTypeEditor } from '@/components/config/ApplicationTypeEditor
 import { BoardSettingsEditor } from '@/components/config/BoardSettingsEditor'
 import { useEditorContext } from '@/components/config/EditorContextProvider'
 import { FeeLinesEditor } from '@/components/config/FeeLinesEditor'
-import { FormFieldsEditor } from '@/components/config/FormFieldsEditor'
+import { FormBuilder } from '@/components/config/formBuilder/FormBuilder'
 import { InspectionSettingsEditor } from '@/components/config/InspectionSettingsEditor'
 import { PaymentSettingsEditor } from '@/components/config/PaymentSettingsEditor'
 import type { FieldErrors } from '@/components/config/primitives'
@@ -27,6 +27,7 @@ import type {
   TownRuleSettingBody,
 } from '@/features/config/kinds'
 import type { FeeScheduleBody } from '@/features/fees/feeSchema'
+import { NO_FORM_BUILDER_DATA } from '@/features/forms/formReferences'
 import type { FormBody } from '@/features/forms/formSchema'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
 import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
@@ -45,7 +46,15 @@ function errorsOf(issues: ConfigIssue[]): FieldErrors {
 }
 
 export function FormAdapter({ body, onChange, issues }: EditorProps) {
-  return <FormFieldsEditor body={body as FormBody} onChange={onChange} errors={errorsOf(issues)} />
+  const { form } = useEditorContext()
+  return (
+    <FormBuilder
+      body={body as FormBody}
+      onChange={onChange}
+      errors={errorsOf(issues)}
+      data={form ?? NO_FORM_BUILDER_DATA}
+    />
+  )
 }
 
 export function FeeAdapter({ body, onChange, issues }: EditorProps) {

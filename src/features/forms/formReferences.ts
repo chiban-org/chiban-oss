@@ -14,6 +14,13 @@ export interface ExternalUse extends FieldReference {
   fieldKey: string
 }
 
+export interface FormBuilderData {
+  frozenKeys: string[]
+  externalUses: ExternalUse[]
+}
+
+export const NO_FORM_BUILDER_DATA: FormBuilderData = { frozenKeys: [], externalUses: [] }
+
 export interface FormUsingType {
   key: string
   label: string

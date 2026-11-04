@@ -15,6 +15,7 @@ import {
   isSingletonKind,
 } from '@/features/config/kinds'
 import { getEditorState } from '@/features/config/settingsViews'
+import { loadFormBuilderData } from '@/features/forms/formBuilderData'
 import { listReviewerChoices } from '@/features/reviews/reviewerView'
 import { getTownSettings } from '@/features/town/settings'
 import { recordStaffContext } from '@/server/requireStaff'
@@ -52,8 +53,10 @@ export default async function SettingsKeyPage({ params }: Props) {
   const state = await getEditorState(ctx.db, kind, key, ctx.signal)
   const town = await getTownSettings(ctx.db, ctx.signal)
   const timeZone = town.ok ? town.value.timeZone : 'America/New_York'
+  const context = editorContext(await listReviewerChoices(ctx.db))
+  const isForm = kind === 'form'
   return (
-    <main>
+    <main data-wide={isForm ? true : undefined}>
       <SettingsHeader {...headerFor(kind, key)} versioned={isPinnedKind(kind)} />
       {kind === 'application_type' ? (
         <p>
@@ -70,7 +73,11 @@ export default async function SettingsKeyPage({ params }: Props) {
         configKey={key}
         initialBody={state.body}
         resetKey={state.versions.map((v) => `${v.id}:${v.status}`).join(',')}
-        context={editorContext(await listReviewerChoices(ctx.db))}
+        context={
+          isForm
+            ? { ...context, form: await loadFormBuilderData(ctx.db, key, ctx.signal) }
+            : context
+        }
         saveAction={saveDraftAction}
         publishAction={publishAction}
       />

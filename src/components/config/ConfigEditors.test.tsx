@@ -5,7 +5,6 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApplicationTypeEditor } from '@/components/config/ApplicationTypeEditor'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
 import { FeeLinesEditor } from '@/components/config/FeeLinesEditor'
-import { FormFieldsEditor } from '@/components/config/FormFieldsEditor'
 import {
   ChecklistEditor,
   ConditionsEditor,
@@ -110,50 +109,6 @@ describe('ApplicationTypeEditor', () => {
     )
     const group = screen.getByRole('group', { name: 'Classification' })
     expect(within(group).getByRole('alert').textContent).toContain('Choose a classification')
-  })
-})
-
-describe('FormFieldsEditor', () => {
-  const FORM = skeletonBody('form', 'f') as FormBody
-
-  it('adds and removes fields', () => {
-    const onChange = vi.fn()
-    render(<FormFieldsEditor body={FORM} onChange={onChange} errors={{}} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Add field' }))
-    expect(onChange.mock.calls[0]?.[0].fields).toHaveLength(2)
-    fireEvent.click(screen.getByRole('button', { name: 'Remove field' }))
-    expect(onChange.mock.calls[1]?.[0].fields).toHaveLength(0)
-  })
-
-  it('changing a type, the required flag, and a validation maximum reports the new field', () => {
-    const onChange = vi.fn()
-    render(<FormFieldsEditor body={FORM} onChange={onChange} errors={{}} />)
-    fireEvent.change(screen.getByLabelText('Type'), { target: { value: 'integer' } })
-    expect(onChange.mock.calls[0]?.[0].fields[0].type).toBe('integer')
-    fireEvent.click(screen.getByLabelText('Staff only'))
-    expect(onChange.mock.calls[1]?.[0].fields[0].staffOnly).toBe(true)
-    fireEvent.change(screen.getByLabelText('Maximum'), { target: { value: '10000' } })
-    expect(onChange.mock.calls[2]?.[0].fields[0].validation.max).toBe(10000)
-  })
-
-  it('offers show-if only against earlier fields', () => {
-    const two: FormBody = {
-      ...FORM,
-      fields: [...FORM.fields, { key: 'b', label: 'B', type: 'text', required: false }],
-    }
-    render(<FormFieldsEditor body={two} onChange={vi.fn()} errors={{}} />)
-    const pickers = screen.getAllByLabelText<HTMLSelectElement>('Show if: field')
-    expect([...(pickers[0]?.options ?? [])].map((o) => o.value)).toEqual([''])
-    expect([...(pickers[1]?.options ?? [])].map((o) => o.value)).toEqual(['', 'description'])
-  })
-
-  it('shows the fields error next to the fields group', () => {
-    render(
-      <FormFieldsEditor body={FORM} onChange={vi.fn()} errors={{ fields: 'options required' }} />,
-    )
-    expect(
-      within(screen.getByRole('group', { name: 'Fields' })).getByRole('alert').textContent,
-    ).toBe('options required')
   })
 })
 

@@ -41,7 +41,7 @@ export function addEntry(
   return { body: { ...body, fields }, index }
 }
 
-function mapConditions(
+export function mapConditions(
   field: FormField,
   change: (condition: Condition) => Condition | undefined,
 ): FormField {
@@ -56,7 +56,7 @@ function mapConditions(
   return next
 }
 
-function mapLeaves(
+export function mapLeaves(
   condition: Condition,
   change: (leaf: Leaf) => Leaf | null,
 ): Condition | undefined {
@@ -140,4 +140,12 @@ export function orderIssues(body: FormBody): Record<number, string> {
     if (field.type !== 'section') earlier.add(field.key)
   })
   return issues
+}
+
+export function indexAfterMove(selected: number | null, from: number, to: number): number | null {
+  if (selected === null) return null
+  if (selected === from) return to
+  if (from < selected && to >= selected) return selected - 1
+  if (from > selected && to <= selected) return selected + 1
+  return selected
 }
