@@ -192,13 +192,15 @@ export function CostSection({ data }: { data: BoardPanelData }) {
           <ActionForm
             action={terminateUnpaidAction}
             submitLabel="End the application"
+            confirm={{
+              title: 'End this application for unpaid notice costs?',
+              body: 'The application ends with your reason. This cannot be undone.',
+              confirmLabel: 'End the application',
+            }}
             variant="destructive"
             className="max-w-md"
           >
             <input type="hidden" name="applicationId" value={data.applicationId} />
-            <p className="m-0 text-sm">
-              Ending the application for unpaid notice costs cannot be undone.
-            </p>
             <TextField label="Reason" name="reason" required />
           </ActionForm>
         </details>

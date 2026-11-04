@@ -30,6 +30,11 @@ function DisableBlock({ detail }: { detail: UserDetail }) {
       <ActionForm
         action={disableAction}
         submitLabel="Disable account"
+        confirm={{
+          title: `Disable ${detail.displayName}'s account?`,
+          body: 'They are signed out at once and cannot sign in until an administrator re-enables the account.',
+          confirmLabel: 'Disable the account',
+        }}
         variant="destructive"
         className="max-w-md"
       >
@@ -55,7 +60,16 @@ function CredentialBlock({ detail }: { detail: UserDetail }) {
         <p className="text-muted-foreground">
           Email a link that lets them set a new password. It works once for 24 hours.
         </p>
-        <ActionForm action={sendResetAction} submitLabel="Send password reset link">
+        <ActionForm
+          action={sendResetAction}
+          submitLabel="Send password reset link"
+          confirm={{
+            title: `Send ${detail.displayName} a password reset link?`,
+            body: 'They get an email with a link to set a new password. It works once for 24 hours.',
+            confirmLabel: 'Send the link',
+            tone: 'default',
+          }}
+        >
           <Hidden id={detail.id} />
         </ActionForm>
       </div>
@@ -66,7 +80,15 @@ function CredentialBlock({ detail }: { detail: UserDetail }) {
             <p className="text-muted-foreground">
               Clear it if they lost their phone. They set up a new one from Account.
             </p>
-            <ActionForm action={resetAuthenticatorAction} submitLabel="Reset authenticator">
+            <ActionForm
+              action={resetAuthenticatorAction}
+              submitLabel="Reset authenticator"
+              confirm={{
+                title: `Reset ${detail.displayName}'s authenticator?`,
+                body: 'Their current authenticator stops working. They set up a new one from Account.',
+                confirmLabel: 'Reset the authenticator',
+              }}
+            >
               <Hidden id={detail.id} />
             </ActionForm>
           </>
@@ -88,7 +110,15 @@ export function AccessPanel({ detail }: { detail: UserDetail }) {
           <p className="text-muted-foreground">
             Revoking stops the link from working and disables the account.
           </p>
-          <ActionForm action={revokeInviteAction} submitLabel="Revoke invite">
+          <ActionForm
+            action={revokeInviteAction}
+            submitLabel="Revoke invite"
+            confirm={{
+              title: `Revoke ${detail.displayName}'s invite?`,
+              body: 'The invite link stops working and the account is disabled.',
+              confirmLabel: 'Revoke the invite',
+            }}
+          >
             <Hidden id={detail.id} />
           </ActionForm>
         </div>

@@ -75,10 +75,17 @@ function DraftForms({ order }: { order: OrderDetail }) {
           defaultChecked={row.ceaseImmediately}
         />
       </ActionForm>
-      <ActionForm action={discardDraftOrderAction} submitLabel="Discard the draft">
+      <ActionForm
+        action={discardDraftOrderAction}
+        submitLabel="Discard the draft"
+        confirm={{
+          title: 'Discard this draft order?',
+          body: 'The draft is discarded. Its order number stays on record as discarded.',
+          confirmLabel: 'Discard the draft',
+        }}
+      >
         <Hidden name="orderId" value={row.id} />
         <Hidden name="expectedRowVersion" value={row.rowVersion} />
-        <p className="m-0">The order number stays on record as discarded.</p>
       </ActionForm>
     </>
   )

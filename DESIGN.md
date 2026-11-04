@@ -90,6 +90,9 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 - The server refuses the same action on the same grounds. Hiding a button is never the only check.
 - The staff menu lists only pages the viewer can open. A viewer with no list to work from lands on a page they can use, never on a bare permission refusal.
 - Reviewers and board members see read-only versions of records, without buttons they cannot use.
+- Every destructive action asks first in one shared dialog, `ConfirmDialog` (`src/components/ConfirmDialog.tsx`). Destructive means it deletes, removes, cancels, voids, withdraws, revokes, disables, dismisses, ends, denies, closes, rejects, unpublishes, resets, restores an older version over a newer one, or records an outcome that cannot be taken back (a payment outcome by hand, a refund, a returned check, a board decision). A form opts in with `ActionForm`'s `confirm` prop; `when` limits it to the choices that destroy (closing a case, unticking Public).
+- The dialog's title names the record and the action ("Cancel the November 20, 2026 Zoning Board meeting?") and its one line says what changes, in plain words. Cancel sits on the left and takes focus; the confirm button on the right names the action again and is destructive, except for publishing and recording a board vote or decision. A required reason is checked before the dialog opens, Escape and Cancel send nothing, and the server keeps its own checks. `src/components/destructiveActions.test.ts` fails when a form with a destructive label or action has no `confirm`.
+- Removing a row or block inside a settings editor changes only the unsaved draft and does not ask; Publish asks.
 
 ## Builders
 

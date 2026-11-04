@@ -113,6 +113,12 @@ function RowActions({
           <ActionForm
             action={cancelInspectionAction}
             submitLabel="Cancel this inspection"
+            confirm={{
+              title: 'Cancel this inspection?',
+              body: 'The inspection is cancelled. Request a new one if it is still needed.',
+              confirmLabel: 'Cancel the inspection',
+              cancelLabel: 'Keep the inspection',
+            }}
             variant="destructive"
             compact
           >

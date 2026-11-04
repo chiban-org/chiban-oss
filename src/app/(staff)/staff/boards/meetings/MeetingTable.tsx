@@ -13,11 +13,20 @@ import type { SortLink } from '@/features/dataTable/sort'
 import { formatCivilDate } from '@/lib/formatDate'
 import { cancelMeetingAction } from '../actions'
 
-function CancelMeeting({ meetingId }: { meetingId: string }) {
+function CancelMeeting({ meetingId, name }: { meetingId: string; name: string }) {
   return (
     <details>
       <summary>Cancel</summary>
-      <ActionForm action={cancelMeetingAction} submitLabel="Cancel meeting">
+      <ActionForm
+        action={cancelMeetingAction}
+        submitLabel="Cancel meeting"
+        confirm={{
+          title: `Cancel the ${name} meeting?`,
+          body: 'It is marked cancelled with your reason. A cancelled meeting cannot be brought back; add a new meeting instead.',
+          confirmLabel: 'Cancel the meeting',
+          cancelLabel: 'Keep the meeting',
+        }}
+      >
         <input type="hidden" name="meetingId" value={meetingId} />
         <TextField label="Reason" name="reason" required />
       </ActionForm>
@@ -75,7 +84,16 @@ export function MeetingTable({
             {showLocation ? <td>{r.location === usualLocation ? '' : r.location}</td> : null}
             <td className="tabular-nums">{r.hearings === 0 ? 'None' : r.hearings}</td>
             <td>{AGENDA_STATE_LABELS.get(r.agenda)}</td>
-            {upcoming ? <td>{r.cancelled ? null : <CancelMeeting meetingId={r.id} />}</td> : null}
+            {upcoming ? (
+              <td>
+                {r.cancelled ? null : (
+                  <CancelMeeting
+                    meetingId={r.id}
+                    name={`${formatCivilDate(r.meetingDate)} ${boardNames.get(r.board) ?? r.board}`}
+                  />
+                )}
+              </td>
+            ) : null}
           </tr>
         ))}
       </tbody>

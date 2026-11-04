@@ -14,7 +14,16 @@ function CloseForm({ request }: { request: RtkRequestView }) {
   return (
     <details>
       <summary>Close the request</summary>
-      <ActionForm action={closeRequestAction} submitLabel="Close request">
+      <ActionForm
+        action={closeRequestAction}
+        submitLabel="Close request"
+        confirm={{
+          title: 'Close this records request?',
+          body: 'It is closed, or marked withdrawn by the requester, as chosen above.',
+          confirmLabel: 'Close the request',
+          cancelLabel: 'Keep it open',
+        }}
+      >
         <input type="hidden" name="requestId" value={request.id} />
         <input type="hidden" name="expectedRowVersion" value={String(request.rowVersion)} />
         <SelectField

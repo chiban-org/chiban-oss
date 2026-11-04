@@ -65,7 +65,15 @@ export default async function EnforcementOfficersPage() {
                 {`${d.name}, ${d.title}. Designated by ${d.authority} on ${formatCivilDate(d.adoptedOn)}${d.endedOn === null ? '' : `, ended ${formatCivilDate(d.endedOn)}`}.`}
               </p>
               {d.endedOn === null ? (
-                <ActionForm action={endDesignationAction} submitLabel="End this designation">
+                <ActionForm
+                  action={endDesignationAction}
+                  submitLabel="End this designation"
+                  confirm={{
+                    title: `End ${d.name}'s designation?`,
+                    body: `${d.name} is no longer a designated enforcement officer after the last day you entered.`,
+                    confirmLabel: 'End the designation',
+                  }}
+                >
                   <input type="hidden" name="designationId" value={d.id} />
                   <TextField
                     label="Last day as officer"

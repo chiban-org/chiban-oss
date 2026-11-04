@@ -75,7 +75,15 @@ export default async function PacketsPage() {
               <li key={l.id}>
                 {l.text}
                 {l.revocable ? (
-                  <ActionForm action={revokePacketLinkAction} submitLabel="Revoke link">
+                  <ActionForm
+                    action={revokePacketLinkAction}
+                    submitLabel="Revoke link"
+                    confirm={{
+                      title: 'Revoke this packet link?',
+                      body: 'The link stops working for the person it was sent to.',
+                      confirmLabel: 'Revoke the link',
+                    }}
+                  >
                     <input type="hidden" name="linkId" value={l.id} />
                   </ActionForm>
                 ) : null}

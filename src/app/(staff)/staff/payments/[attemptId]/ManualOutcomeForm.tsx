@@ -14,7 +14,16 @@ const OUTCOME_OPTIONS = [
 
 export function ManualOutcomeForm({ attempt }: { attempt: Attempt }) {
   return (
-    <ActionForm action={recordOutcomeByHandAction} submitLabel="Record outcome" variant="default">
+    <ActionForm
+      action={recordOutcomeByHandAction}
+      submitLabel="Record outcome"
+      confirm={{
+        title: 'Record this outcome by hand?',
+        body: "Chiban records what you chose as the processor's final answer for this attempt. This cannot be undone.",
+        confirmLabel: 'Record the outcome',
+      }}
+      variant="default"
+    >
       <input type="hidden" name="attemptId" value={attempt.id} />
       <SelectField
         label="What the processor confirmed"

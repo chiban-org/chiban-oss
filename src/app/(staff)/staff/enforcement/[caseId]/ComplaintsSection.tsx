@@ -51,7 +51,15 @@ export function ComplaintsSection({ detail, can }: { detail: CaseDetail; can: Ca
         row.isPublic ? (
           <div className="space-y-2">
             <p className="m-0">{`This case is public. Summary: ${row.publicSummary ?? ''}`}</p>
-            <ActionForm action={unpublishCaseAction} submitLabel="Make case private">
+            <ActionForm
+              action={unpublishCaseAction}
+              submitLabel="Make case private"
+              confirm={{
+                title: 'Make this case private?',
+                body: 'The public site stops showing the case, its summary and its public complaint text.',
+                confirmLabel: 'Make it private',
+              }}
+            >
               <Hidden name="caseId" value={row.id} />
             </ActionForm>
           </div>

@@ -23,7 +23,15 @@ export function EntryControls({
   return (
     <details>
       <summary>Refund, correct, or reverse</summary>
-      <ActionForm action={refundAction} submitLabel="Refund">
+      <ActionForm
+        action={refundAction}
+        submitLabel="Refund"
+        confirm={{
+          title: 'Refund this payment?',
+          body: 'The amount you entered is refunded and taken off the lines above. A card payment is refunded through the processor. This cannot be undone.',
+          confirmLabel: 'Refund',
+        }}
+      >
         <input type="hidden" name="entryId" value={entry.id} />
         <input type="hidden" name="applicationId" value={payments.applicationId} />
         <p className="m-0 font-medium">
@@ -42,14 +50,30 @@ export function EntryControls({
         <TextField label="Reason (at least 10 characters)" name="reason" required />
       </ActionForm>
       {entry.method === 'check' ? (
-        <ActionForm action={returnedCheckAction} submitLabel="Record returned check">
+        <ActionForm
+          action={returnedCheckAction}
+          submitLabel="Record returned check"
+          confirm={{
+            title: 'Record this check as returned?',
+            body: 'The payment is reversed on this application. This cannot be undone.',
+            confirmLabel: 'Record returned check',
+          }}
+        >
           <input type="hidden" name="entryId" value={entry.id} />
           <TextField label="Returned on" name="returnedOn" type="date" required />
           <TextField label="Reason (at least 10 characters)" name="reason" required />
         </ActionForm>
       ) : null}
       {entry.method === 'card_online' || entry.method === 'card_present' ? (
-        <ActionForm action={chargebackAction} submitLabel="Record chargeback">
+        <ActionForm
+          action={chargebackAction}
+          submitLabel="Record chargeback"
+          confirm={{
+            title: 'Record this chargeback?',
+            body: 'The amount you entered is taken back from this payment on this application. This cannot be undone.',
+            confirmLabel: 'Record chargeback',
+          }}
+        >
           <input type="hidden" name="entryId" value={entry.id} />
           <TextField label="Dispute reference" name="disputeRef" required />
           <TextField label="Amount in dollars" name="amount" inputMode="decimal" required />

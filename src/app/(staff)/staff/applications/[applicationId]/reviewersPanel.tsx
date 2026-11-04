@@ -22,9 +22,13 @@ function RemoveReviewer({ reviewer }: { reviewer: ApplicationReviewer }) {
         submitLabel={`Remove ${reviewer.name}`}
         variant="destructive"
         compact
+        confirm={{
+          title: `Remove ${reviewer.name}?`,
+          body: `${reviewer.name} will no longer see this application.`,
+          confirmLabel: 'Remove the reviewer',
+        }}
       >
         <input type="hidden" name="assignmentId" value={reviewer.assignmentId} />
-        <p className="m-0 mb-2 text-sm">{`${reviewer.name} will no longer see this application.`}</p>
       </ActionForm>
     </details>
   )

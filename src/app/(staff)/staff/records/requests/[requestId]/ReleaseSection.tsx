@@ -80,7 +80,15 @@ function ApprovalList({
             {canManage && a.revokedAt === null ? (
               <details>
                 <summary>Revoke approval</summary>
-                <ActionForm action={revokeApprovalAction} submitLabel="Revoke approval">
+                <ActionForm
+                  action={revokeApprovalAction}
+                  submitLabel="Revoke approval"
+                  confirm={{
+                    title: 'Revoke this approval?',
+                    body: 'The approved version can no longer be released for this request until someone approves it again.',
+                    confirmLabel: 'Revoke the approval',
+                  }}
+                >
                   <Hidden name="approvalId" value={a.approvalId} />
                   <TextField label="Why it is being revoked" name="reason" required />
                 </ActionForm>
@@ -132,7 +140,15 @@ function ReleaseForm({
   return (
     <details>
       <summary>Release approved records</summary>
-      <ActionForm action={createReleaseAction} submitLabel="Release">
+      <ActionForm
+        action={createReleaseAction}
+        submitLabel="Release"
+        confirm={{
+          title: 'Release these records?',
+          body: 'The chosen records are sent to the requester. Once released they cannot be called back.',
+          confirmLabel: 'Release the records',
+        }}
+      >
         <Hidden name="requestId" value={requestId} />
         <fieldset className="space-y-2 border-0 p-0">
           <legend className="text-sm font-medium">Records in this release</legend>

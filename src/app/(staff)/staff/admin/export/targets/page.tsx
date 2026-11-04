@@ -55,6 +55,15 @@ function TargetCard({
         <ActionForm
           action={setTargetActiveAction}
           submitLabel={target.isActive ? 'Turn off' : 'Turn on'}
+          confirm={
+            target.isActive
+              ? {
+                  title: 'Turn off this export target?',
+                  body: 'Monthly copies stop going to it until you turn it on again.',
+                  confirmLabel: 'Turn it off',
+                }
+              : undefined
+          }
         >
           <input type="hidden" name="id" value={target.id} />
           <input type="hidden" name="active" value={target.isActive ? 'false' : 'true'} />

@@ -61,7 +61,16 @@ function MembersTable({
             {ending ? (
               <td>
                 {row.active ? (
-                  <ActionForm action={endMembershipAction} submitLabel="End membership" compact>
+                  <ActionForm
+                    action={endMembershipAction}
+                    submitLabel="End membership"
+                    confirm={{
+                      title: `End ${row.name}'s membership?`,
+                      body: `${row.name} is no longer seated on ${row.boardName}.`,
+                      confirmLabel: 'End membership',
+                    }}
+                    compact
+                  >
                     <input type="hidden" name="membershipId" value={row.membershipId} />
                   </ActionForm>
                 ) : null}

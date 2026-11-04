@@ -88,7 +88,15 @@ function ApprovalControls({ doc, actions }: { doc: PanelDocument; actions: Docum
         </ActionForm>
       ) : null}
       {actions.revoke !== undefined && doc.approvalId !== null ? (
-        <ActionForm action={actions.revoke} submitLabel="Revoke the approval">
+        <ActionForm
+          action={actions.revoke}
+          submitLabel="Revoke the approval"
+          confirm={{
+            title: `Revoke the approval of ${doc.title}?`,
+            body: 'The approved version is no longer cleared for the public until someone approves a version again.',
+            confirmLabel: 'Revoke the approval',
+          }}
+        >
           <input type="hidden" name="approvalId" value={doc.approvalId} />
           <TextField label="Why it is being revoked" name="reason" required />
         </ActionForm>
@@ -133,7 +141,20 @@ function ManageControls({
         ) : null}
         {props.canPublish ? (
           <>
-            <ActionForm action={props.actions.setPublic} submitLabel="Save public setting">
+            <ActionForm
+              action={props.actions.setPublic}
+              submitLabel="Save public setting"
+              confirm={
+                doc.isPublic
+                  ? {
+                      title: `Take ${doc.title} off the public site?`,
+                      body: 'With Public unticked, the public can no longer see or download this document.',
+                      confirmLabel: 'Make it private',
+                      when: { name: 'isPublic', oneOf: [''] },
+                    }
+                  : undefined
+              }
+            >
               <input type="hidden" name="documentId" value={doc.documentId} />
               <CheckField
                 label="Public"

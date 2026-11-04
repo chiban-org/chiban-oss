@@ -134,11 +134,10 @@ describe('the next step follows the gates', () => {
     expect(html).toContain('Resolve the appeal first.')
   })
 
-  it('puts terminal moves behind More actions with a confirmation step', async () => {
+  it('puts terminal moves behind More actions', async () => {
     const rail = nextStep(await page('BP-2026-0003'))
     const more = rail.slice(rail.indexOf('More actions'))
     expect(more).toContain('Move to closed')
-    expect(more).toContain('Yes, move to closed')
     expect(rail).toContain('href="#appeals"')
   })
 

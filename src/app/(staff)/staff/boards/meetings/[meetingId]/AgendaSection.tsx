@@ -20,7 +20,15 @@ function ItemControls({ item }: { item: MeetingAgendaView['items'][number] }) {
         <input type="hidden" name="itemId" value={item.id} />
         <input type="hidden" name="toPosition" value={item.position + 1} />
       </ActionForm>
-      <ActionForm action={removeAgendaItemAction} submitLabel="Remove">
+      <ActionForm
+        action={removeAgendaItemAction}
+        submitLabel="Remove"
+        confirm={{
+          title: 'Remove this item from the agenda?',
+          body: `“${item.text}” comes off this draft agenda. You can add it again before publishing.`,
+          confirmLabel: 'Remove the item',
+        }}
+      >
         <input type="hidden" name="itemId" value={item.id} />
       </ActionForm>
     </div>
@@ -100,7 +108,15 @@ function AgendaControls({ view, draft }: { view: MeetingView; draft: boolean }) 
   return draft ? (
     <DraftControls view={view} />
   ) : (
-    <ActionForm action={reopenAgendaAction} submitLabel="Reopen the agenda">
+    <ActionForm
+      action={reopenAgendaAction}
+      submitLabel="Reopen the agenda"
+      confirm={{
+        title: 'Reopen the published agenda?',
+        body: 'It goes back to a draft so you can change it. Publish it again when you are done.',
+        confirmLabel: 'Reopen the agenda',
+      }}
+    >
       <input type="hidden" name="meetingId" value={view.meetingId} />
     </ActionForm>
   )

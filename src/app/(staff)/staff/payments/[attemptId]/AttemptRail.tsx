@@ -81,7 +81,15 @@ function Actions({ attempt, viewer }: { attempt: Attempt; viewer: AttemptViewer 
         ) : null}
         {viewer.canRecordOutcome ? <ManualOutcomeForm attempt={attempt} /> : null}
         {mayVoid ? (
-          <ActionForm action={voidAttemptAction} submitLabel="Void this attempt">
+          <ActionForm
+            action={voidAttemptAction}
+            submitLabel="Void this attempt"
+            confirm={{
+              title: 'Void this payment attempt?',
+              body: 'It is marked void with your reason. This cannot be undone.',
+              confirmLabel: 'Void the attempt',
+            }}
+          >
             <input type="hidden" name="attemptId" value={attempt.id} />
             <TextField label="Reason (at least 10 characters)" name="reason" required />
           </ActionForm>

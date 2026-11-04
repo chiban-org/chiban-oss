@@ -114,6 +114,11 @@ export function RestrictionTable({
                   <ActionForm
                     action={endRestrictionAction}
                     submitLabel="Mark as ended today"
+                    confirm={{
+                      title: 'Mark this holding as ended today?',
+                      body: `${r.holder} is recorded as no longer holding it from today.`,
+                      confirmLabel: 'Mark as ended',
+                    }}
                     compact
                   >
                     <input type="hidden" name="holdingId" value={r.id} />

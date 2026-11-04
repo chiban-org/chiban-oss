@@ -45,7 +45,15 @@ function ReleaseHold({ holdId }: { holdId: string }) {
   return (
     <details>
       <summary>Release</summary>
-      <ActionForm action={releaseHoldAction} submitLabel="Release hold">
+      <ActionForm
+        action={releaseHoldAction}
+        submitLabel="Release hold"
+        confirm={{
+          title: 'Release this hold?',
+          body: 'The records it covers are no longer protected from disposal by this hold.',
+          confirmLabel: 'Release the hold',
+        }}
+      >
         <input type="hidden" name="holdId" value={holdId} />
         <TextField label="Release reason (at least 10 characters)" name="reason" required />
       </ActionForm>

@@ -30,7 +30,17 @@ export function VoteForm({ data }: { data: BoardPanelData }) {
       {upcoming ? (
         <p>{`Record the vote once the meeting on ${data.acceptanceText ?? ''} has happened.`}</p>
       ) : (
-        <ActionForm action={completenessVoteAction} submitLabel="Record vote" className="max-w-md">
+        <ActionForm
+          action={completenessVoteAction}
+          submitLabel="Record vote"
+          confirm={{
+            title: 'Record this vote?',
+            body: "The outcome you chose is recorded as the board's vote on whether this application goes ahead.",
+            confirmLabel: 'Record vote',
+            tone: 'default',
+          }}
+          className="max-w-md"
+        >
           <input type="hidden" name="applicationId" value={data.applicationId} />
           <input type="hidden" name="meetingId" value={data.acceptanceMeetingId ?? ''} />
           <p>{`Meeting: ${data.acceptanceText ?? ''}`}</p>

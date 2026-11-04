@@ -3,7 +3,7 @@ import { NextStep } from '@/components/layout/NextStep'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { type Blocker, type NextStepPlan, planNextStep } from '@/features/applications/nextStep'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
-import { type CoreState, STATE_LABELS } from '@/features/applications/states'
+import { type CoreState, isTerminalState, STATE_LABELS } from '@/features/applications/states'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import { setSubstepAction, transitionAction } from './actions'
 import { type BoardStep, BoardStepLine, boardStepFor } from './boardStep'
@@ -33,7 +33,21 @@ export function MoveForm({
   variant: 'default' | 'outline' | 'destructive'
 }) {
   return (
-    <ActionForm action={transitionAction} submitLabel={label} variant={variant} compact>
+    <ActionForm
+      action={transitionAction}
+      submitLabel={label}
+      variant={variant}
+      compact
+      confirm={
+        isTerminalState(to)
+          ? {
+              title: `Move ${view.number} to ${moveLabel(to)}?`,
+              body: `Moving to ${moveLabel(to)} ends this application. It cannot be undone.`,
+              confirmLabel: `Move to ${moveLabel(to)}`,
+            }
+          : undefined
+      }
+    >
       <input type="hidden" name="applicationId" value={view.id} />
       <input type="hidden" name="to" value={to} />
       <input type="hidden" name="expectedRowVersion" value={view.rowVersion} />
@@ -90,18 +104,13 @@ export function MoreActions({ view, moves }: { view: StaffApplicationView; moves
       <div className="flex flex-col gap-3">
         <RenewForm view={view} />
         {moves.map((to) => (
-          <details key={to}>
-            <summary className="text-sm">{`Move to ${moveLabel(to)}`}</summary>
-            <p className="m-0 mb-2 text-sm">
-              {`Moving to ${moveLabel(to)} ends this application. It cannot be undone.`}
-            </p>
-            <MoveForm
-              view={view}
-              to={to}
-              label={`Yes, move to ${moveLabel(to)}`}
-              variant="destructive"
-            />
-          </details>
+          <MoveForm
+            key={to}
+            view={view}
+            to={to}
+            label={`Move to ${moveLabel(to)}`}
+            variant="destructive"
+          />
         ))}
       </div>
     </details>

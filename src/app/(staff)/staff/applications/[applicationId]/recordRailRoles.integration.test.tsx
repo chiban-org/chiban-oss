@@ -83,7 +83,7 @@ describe('the rail offers only moves this viewer can make', () => {
   })
 
   it('offers no move to closed on an issued permit to finance or admin', async () => {
-    expect(await railAs('staff', 'BP-2025-0001')).toContain('Yes, move to closed')
+    expect(await railAs('staff', 'BP-2025-0001')).toContain('Move to closed')
     for (const role of ['finance', 'admin']) {
       const rail = await railAs(role, 'BP-2025-0001')
       expect(rail).not.toContain('move to closed')

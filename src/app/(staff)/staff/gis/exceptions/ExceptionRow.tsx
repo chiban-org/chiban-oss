@@ -31,7 +31,16 @@ function RowActions({ row }: { row: ExceptionRecord }) {
       ) : null}
       <details className="min-w-0 flex-1 basis-64">
         <summary>Dismiss</summary>
-        <ActionForm action={dismissExceptionAction} submitLabel="Dismiss" className="max-w-md">
+        <ActionForm
+          action={dismissExceptionAction}
+          submitLabel="Dismiss"
+          confirm={{
+            title: 'Dismiss this exception?',
+            body: 'It leaves the exceptions list with your reason, and the stored parcel data stays as it is.',
+            confirmLabel: 'Dismiss',
+          }}
+          className="max-w-md"
+        >
           <input type="hidden" name="exceptionId" value={row.id} />
           <TextField
             label="Reason"

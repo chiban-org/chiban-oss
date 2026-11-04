@@ -50,7 +50,15 @@ function Actions({ batch, viewer }: { batch: Batch; viewer: BatchViewer }) {
         <NextStep>
           <p>{approvalNote(viewer.mayApprove, ownProposal)}</p>
           {viewer.mayApprove && !ownProposal ? (
-            <ActionForm action={approveDispositionAction} submitLabel="Approve and carry out">
+            <ActionForm
+              action={approveDispositionAction}
+              submitLabel="Approve and carry out"
+              confirm={{
+                title: 'Delete the records in this batch?',
+                body: 'Approving permanently deletes these records. Records under a hold placed since the proposal are kept. This cannot be undone.',
+                confirmLabel: 'Approve and delete',
+              }}
+            >
               <input type="hidden" name="batchId" value={batch.id} />
               <p className="m-0">
                 Approving permanently deletes these records. Holds placed since the proposal are
@@ -62,7 +70,16 @@ function Actions({ batch, viewer }: { batch: Batch; viewer: BatchViewer }) {
       ) : null}
       <details>
         <summary>Cancel the batch</summary>
-        <ActionForm action={cancelDispositionAction} submitLabel="Cancel batch">
+        <ActionForm
+          action={cancelDispositionAction}
+          submitLabel="Cancel batch"
+          confirm={{
+            title: 'Cancel this disposition batch?',
+            body: 'The batch is cancelled and nothing in it is disposed of. To dispose of these records later, propose a new batch.',
+            confirmLabel: 'Cancel the batch',
+            cancelLabel: 'Keep the batch',
+          }}
+        >
           <input type="hidden" name="batchId" value={batch.id} />
           <p className="m-0">Nothing in the batch is disposed of.</p>
         </ActionForm>

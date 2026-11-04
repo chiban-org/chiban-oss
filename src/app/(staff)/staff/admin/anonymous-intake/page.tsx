@@ -98,6 +98,11 @@ export default async function AnonymousIntakePage() {
         <ActionForm
           action={disableAnonymousIntakeAction}
           submitLabel="Turn anonymous intake off"
+          confirm={{
+            title: 'Turn anonymous intake off?',
+            body: 'The public can no longer report a possible violation without giving a name. It takes effect at once.',
+            confirmLabel: 'Turn it off',
+          }}
           variant="default"
         >
           <p className="m-0">Turning it off takes effect immediately.</p>

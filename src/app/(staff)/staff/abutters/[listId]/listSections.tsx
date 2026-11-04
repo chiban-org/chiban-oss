@@ -16,7 +16,15 @@ function ExcludeControl({ listId, row }: { listId: string; row: CandidateRow }) 
   return (
     <details>
       <summary>Leave off</summary>
-      <ActionForm action={excludeCandidateAction} submitLabel="Leave off the list">
+      <ActionForm
+        action={excludeCandidateAction}
+        submitLabel="Leave off the list"
+        confirm={{
+          title: `Leave ${row.parcelLabel} off the list?`,
+          body: 'Its owner is not sent notice from this list. Your reason is kept with the list.',
+          confirmLabel: 'Leave it off',
+        }}
+      >
         <input type="hidden" name="listId" value={listId} />
         <input type="hidden" name="parcelId" value={row.parcelId} />
         <TextField label="Reason" name="reason" required />

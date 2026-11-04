@@ -24,6 +24,12 @@ export function RecordDecisionSection({ view, today }: { view: HearingView; toda
       <ActionForm
         action={recordDecisionAction}
         submitLabel="Record decision"
+        confirm={{
+          title: "Record the board's decision?",
+          body: 'The outcome, votes and findings become the decision of record for this application.',
+          confirmLabel: 'Record decision',
+          tone: 'default',
+        }}
         variant="default"
         className="max-w-2xl"
       >

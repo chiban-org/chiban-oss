@@ -16,7 +16,20 @@ export function CaseStatusForm({ detail }: { detail: CaseDetail }) {
   const options = next.map((s) => [s, CASE_STATUS_LABELS[s]] as [string, string])
   return (
     <NextStep>
-      <ActionForm action={setCaseStatusAction} submitLabel="Change status">
+      <ActionForm
+        action={setCaseStatusAction}
+        submitLabel="Change status"
+        confirm={
+          next.includes('closed')
+            ? {
+                title: 'Close this case?',
+                body: 'The case is closed with your reason. A closed case cannot be moved to another status.',
+                confirmLabel: 'Close the case',
+                when: { name: 'to', oneOf: ['closed'] },
+              }
+            : undefined
+        }
+      >
         <Hidden name="caseId" value={row.id} />
         <Hidden name="expectedRowVersion" value={row.rowVersion} />
         <SelectField label="Move the case to" name="to" options={options} />

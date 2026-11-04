@@ -1,9 +1,11 @@
 'use client'
 
 import { type FormEvent, type ReactNode, useEffect, useId, useState } from 'react'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { CsrfField } from '@/components/CsrfField'
 import { SubmitButton } from '@/components/SubmitButton'
 import { Button } from '@/components/ui/button'
+import { type ConfirmStep, useConfirmStep } from '@/components/useConfirmStep'
 import { useFormAction } from '@/components/useFormAction'
 import { useHydrated } from '@/components/useHydrated'
 import { cn } from '@/lib/utils'
@@ -23,6 +25,7 @@ interface ActionFormProps {
   className?: string
   compact?: boolean
   checkBeforeSubmit?: (form: HTMLFormElement) => string | null
+  confirm?: ConfirmStep
   children: ReactNode
 }
 
@@ -137,6 +140,7 @@ export function ActionForm({
   className,
   compact = false,
   checkBeforeSubmit,
+  confirm,
   children,
 }: ActionFormProps) {
   const {
@@ -149,6 +153,7 @@ export function ActionForm({
     isFailure,
   )
   const hydrated = useHydrated()
+  const step = useConfirmStep(confirm)
   const messageId = useId()
   const [problem, setProblem] = useState<string | null>(null)
   const [edited, setEdited] = useState(false)
@@ -177,38 +182,50 @@ export function ActionForm({
       event.preventDefault()
       return
     }
+    if (step.intercept(event)) return
     formProps.onSubmit(event)
   }
   const answer = result === null || edited ? null : result.ok ? result.message : result.error
   const message = problem ?? answer
   const failed = problem !== null || (answer !== null && result?.ok === false)
   return (
-    <form
-      {...formProps}
-      onSubmit={onSubmit}
-      onInput={onInput}
-      noValidate
-      className={cn(compact ? undefined : 'flex flex-col gap-4', className)}
-    >
-      <CsrfField />
-      {children}
-      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        <SubmitButtons
-          label={submitLabel}
-          variant={variant}
-          alternate={alternate}
-          disabled={pending || !hydrated}
-          pending={pending}
+    <>
+      <form
+        {...formProps}
+        onSubmit={onSubmit}
+        onInput={onInput}
+        noValidate
+        className={cn(compact ? undefined : 'flex flex-col gap-4', className)}
+      >
+        <CsrfField />
+        {children}
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+          <SubmitButtons
+            label={submitLabel}
+            variant={variant}
+            alternate={alternate}
+            disabled={pending || !hydrated}
+            pending={pending}
+          />
+          <p
+            id={messageId}
+            role="status"
+            data-tone={failed ? 'failed' : undefined}
+            className="text-sm data-[tone=failed]:font-semibold data-[tone=failed]:text-status-failed-fg"
+          >
+            {message}
+          </p>
+        </div>
+      </form>
+      {confirm === undefined ? null : (
+        <ConfirmDialog
+          open={step.open}
+          copy={confirm}
+          onConfirm={step.accept}
+          onCancel={step.dismiss}
+          returnFocusTo={step.returnFocusTo}
         />
-        <p
-          id={messageId}
-          role="status"
-          data-tone={failed ? 'failed' : undefined}
-          className="text-sm data-[tone=failed]:font-semibold data-[tone=failed]:text-status-failed-fg"
-        >
-          {message}
-        </p>
-      </div>
-    </form>
+      )}
+    </>
   )
 }

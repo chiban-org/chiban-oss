@@ -55,7 +55,15 @@ export function AppealsSection({ detail, can }: { detail: CaseDetail; can: Can }
             <p key={r.id} className="m-0">
               {`Restraining order from ${r.issuedBy === 'zba' ? 'the ZBA' : 'the superior court'}, issued ${formatCivilDate(r.issuedOn)}${r.dissolvedOn === null ? '' : `, dissolved ${formatCivilDate(r.dissolvedOn)}`}. `}
               {r.dissolvedOn === null && can.service ? (
-                <ActionForm action={dissolveRestrainingOrderAction} submitLabel="Mark dissolved">
+                <ActionForm
+                  action={dissolveRestrainingOrderAction}
+                  submitLabel="Mark dissolved"
+                  confirm={{
+                    title: 'Mark this restraining order dissolved?',
+                    body: 'It is recorded as dissolved on the date you entered.',
+                    confirmLabel: 'Mark dissolved',
+                  }}
+                >
                   <Hidden name="restrainingOrderId" value={r.id} />
                   <TextField
                     label="Date dissolved"

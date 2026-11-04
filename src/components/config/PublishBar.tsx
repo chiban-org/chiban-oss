@@ -1,15 +1,8 @@
 'use client'
 
 import { type ReactNode, useRef, useState } from 'react'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog'
 
 export const DRAFT_LINE =
   'Save draft keeps your changes without using them yet. Publish makes them the version Chiban uses.'
@@ -33,6 +26,7 @@ export function PublishBar({
 }) {
   const [open, setOpen] = useState(false)
   const submitter = useRef<HTMLButtonElement>(null)
+  const trigger = useRef<HTMLButtonElement>(null)
   const confirm = () => {
     setOpen(false)
     const button = submitter.current
@@ -42,7 +36,7 @@ export function PublishBar({
     <div className="mt-6 grid gap-2">
       <p className="m-0 max-w-[75ch] text-sm text-muted-foreground">{DRAFT_LINE}</p>
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" disabled={disabled} onClick={() => setOpen(true)}>
+        <Button ref={trigger} type="button" disabled={disabled} onClick={() => setOpen(true)}>
           Publish
         </Button>
         <button ref={submitter} type="submit" name="intent" value="publish" hidden tabIndex={-1} />
@@ -54,25 +48,19 @@ export function PublishBar({
           {status}
         </p>
       </div>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Publish these changes?</DialogTitle>
-            <DialogDescription>{publishImpact(pinned)}</DialogDescription>
-          </DialogHeader>
-          <p className="m-0 text-sm">
-            You can restore an earlier version from the version history later.
-          </p>
-          <DialogFooter>
-            <Button type="button" variant="outline" onClick={() => setOpen(false)}>
-              Keep editing
-            </Button>
-            <Button type="button" onClick={confirm}>
-              Publish now
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      <ConfirmDialog
+        open={open}
+        copy={{
+          title: 'Publish these changes?',
+          body: `${publishImpact(pinned)} You can restore an earlier version from the version history later.`,
+          confirmLabel: 'Publish now',
+          cancelLabel: 'Keep editing',
+          tone: 'default',
+        }}
+        onConfirm={confirm}
+        onCancel={() => setOpen(false)}
+        returnFocusTo={() => trigger.current}
+      />
     </div>
   )
 }

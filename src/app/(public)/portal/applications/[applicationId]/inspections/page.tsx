@@ -116,7 +116,16 @@ export default async function PortalInspectionsPage({
               {row.channel === 'portal' &&
               row.requestedByUserId === ctx.actor.userId &&
               (row.status === 'requested' || row.status === 'scheduled') ? (
-                <ActionForm action={portalCancelInspectionAction} submitLabel="Cancel this request">
+                <ActionForm
+                  action={portalCancelInspectionAction}
+                  submitLabel="Cancel this request"
+                  confirm={{
+                    title: 'Cancel this inspection request?',
+                    body: 'The inspection is cancelled. You can request a new one from this page.',
+                    confirmLabel: 'Cancel the request',
+                    cancelLabel: 'Keep the request',
+                  }}
+                >
                   <input type="hidden" name="applicationId" value={applicationId} />
                   <input type="hidden" name="inspectionId" value={row.id} />
                   <input type="hidden" name="expectedRowVersion" value={row.rowVersion} />
