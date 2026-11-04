@@ -89,6 +89,14 @@ describe('production compose', () => {
     expect(compose).toMatch(/^ {2}miniodata:/m)
   })
 
+  it('passes the optional USPS credentials to every app container, blank when unset', () => {
+    const anchor = compose.slice(0, compose.indexOf('\nservices:'))
+    expect(anchor).toContain('USPS_CLIENT_ID: ${USPS_CLIENT_ID:-}')
+    expect(anchor).toContain('USPS_CLIENT_SECRET: ${USPS_CLIENT_SECRET:-}')
+    expect(example.get('USPS_CLIENT_ID')).toBe('')
+    expect(example.get('USPS_CLIENT_SECRET')).toBe('')
+  })
+
   it('every variable has a value in the env example', () => {
     const missing = [...new Set(variableNames(compose))].filter((v) => !example.has(v))
     expect(missing).toEqual([])

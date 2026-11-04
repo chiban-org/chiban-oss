@@ -61,6 +61,19 @@ No live processor key is configured anywhere in the repository. Stripe runs agai
 
 Set `ENABLE_SIMULATED_PAYMENTS=true` to use the simulated processor, which backs the in-app checkout page and the counter card reader panel. Both state on screen that no live processor is connected. The Clover adapter runs against a local fake server (`pnpm clover:fake`) and is not verified against a live merchant account.
 
+## Address checks
+
+Mailing address fields check what was typed against the USPS Addresses API v3 and show the standardized address under the field, with a "Use this" button that fills it in. The check runs on the server; the browser never sees the credentials.
+
+| Setting | Meaning |
+|---|---|
+| `USPS_CLIENT_ID` | Consumer Key of an app registered at developers.usps.com. Set it together with `USPS_CLIENT_SECRET`. |
+| `USPS_CLIENT_SECRET` | Consumer Secret of the same app. |
+| `USPS_API_BASE` | Defaults to `https://apis.usps.com`. Use `https://apis-tem.usps.com` for the USPS testing environment. |
+| `USPS_STUB` | `true` answers from a local stand-in that capitalizes, shortens street words and adds a ZIP+4, so the suggestion can be tried without credentials. A street named Nowhere finds no match and a street named Slow runs past the timeout. Rejected when `NODE_ENV` is `production`. |
+
+With neither credential set, the fields work as plain text fields and nothing is sent anywhere. When USPS is slow (over 2 seconds), fails, or finds no match, no suggestion is shown. Each signed-in person can make 30 lookups a minute; repeated addresses are answered from a cache for a day.
+
 ## Checks
 
 ```bash
