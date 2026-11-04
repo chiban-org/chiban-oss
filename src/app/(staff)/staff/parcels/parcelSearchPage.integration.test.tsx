@@ -77,4 +77,22 @@ describe('staff parcel search page', () => {
     )
     expect(html).toContain('No parcels match these filters.')
   })
+
+  it('says the default order is best matches first', async () => {
+    const html = renderToStaticMarkup(
+      await StaffParcelsPage({ searchParams: Promise.resolve({ q: 'Larkspur Lane' }) }),
+    )
+    expect(html).toContain('Best matches first. Click a column heading to sort.')
+  })
+
+  it('treats active and retired as one choice', async () => {
+    const html = renderToStaticMarkup(
+      await StaffParcelsPage({
+        searchParams: Promise.resolve({ q: 'Larkspur Lane', status: ['active', 'retired'] }),
+      }),
+    )
+    expect(html).toContain('name="status" value="active"')
+    expect(html).not.toContain('name="status" value="retired"')
+    expect(html).not.toContain('No parcels match these filters.')
+  })
 })

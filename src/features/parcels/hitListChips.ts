@@ -5,7 +5,12 @@ import { MATCH_LABELS, PARCELS_PATH, STATUS_LABELS } from '@/features/parcels/hi
 
 export function hitChipGroups(params: TableParams, facets: HitFacets): ChipGroupView[] {
   return chipGroups(PARCELS_PATH, params, [
-    { param: 'status', label: 'Parcel', options: labeledOptions(STATUS_LABELS, facets.statuses) },
+    {
+      param: 'status',
+      label: 'Parcel',
+      single: true,
+      options: labeledOptions(STATUS_LABELS, facets.statuses),
+    },
     {
       param: 'matched',
       label: 'Matched on',

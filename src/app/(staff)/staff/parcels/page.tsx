@@ -72,6 +72,9 @@ export default async function StaffParcelsPage({ searchParams }: ParcelsPageProp
         <p>No parcels match that search.</p>
       ) : (
         <>
+          <p className="text-muted-foreground">
+            Best matches first. Click a column heading to sort.
+          </p>
           <MoreMatchesNotice more={more} />
           <div className="toolbar mb-5">
             <QuickFilters

@@ -4,7 +4,7 @@ import {
   readTableParams,
   type TableParams,
 } from '@/features/dataTable/params'
-import { filterValues, whenAny } from '@/features/dataTable/quickFilters'
+import { filterValues, singleValue, whenAny } from '@/features/dataTable/quickFilters'
 import { parseSort, type SortConfig, type SortState } from '@/features/dataTable/sort'
 import type { MatchedOn } from '@/features/parcels/searchParcels'
 
@@ -53,14 +53,23 @@ export interface HitsView {
   filters: HitFilters
 }
 
+function withOneStatus(params: TableParams, statuses: readonly ParcelStatus[]): TableParams {
+  const next = new Map(params)
+  next.delete('status')
+  if (statuses.length > 0) next.set('status', statuses)
+  return next
+}
+
 export function readHitsView(raw: RawSearchParams): HitsView {
-  const params = readTableParams(raw)
+  const read = readTableParams(raw)
+  const statuses = singleValue(read, 'status', PARCEL_STATUSES)
+  const params = withOneStatus(read, statuses)
   return {
     q: firstParam(params, 'q') ?? '',
     params,
     sort: parseSort(HIT_SORT, params),
     filters: {
-      ...whenAny('statuses', filterValues(params, 'status', PARCEL_STATUSES)),
+      ...whenAny('statuses', statuses),
       ...whenAny('matched', filterValues(params, 'matched', MATCHED_ON_ORDER)),
     },
   }
