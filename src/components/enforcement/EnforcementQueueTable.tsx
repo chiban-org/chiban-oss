@@ -60,12 +60,12 @@ export function EnforcementQueueTable({
             className={index === selected ? 'bg-highlight' : undefined}
           >
             <td>
-              <Link href={`/staff/enforcement/${row.caseId}`} className="text-action underline">
-                {row.number}
-              </Link>
+              <Link href={`/staff/enforcement/${row.caseId}`}>{row.number}</Link>
             </td>
             <td>{row.locationText}</td>
-            <td>{row.statusLabel}</td>
+            <td>
+              <StatusChip status={row.statusChip} label={row.statusLabel} />
+            </td>
             <td>{formatCivilDate(row.openedOn)}</td>
             <td>
               {row.nextDue === null ? (

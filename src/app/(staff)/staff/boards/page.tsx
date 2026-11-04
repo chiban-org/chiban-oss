@@ -1,7 +1,9 @@
 import Link from 'next/link'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
+import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { applicationChipStatus } from '@/features/applications/chipStatus'
 import { arrangeBoardLines, boardFacets } from '@/features/boards/boardApplicationList'
 import { boardChipGroups } from '@/features/boards/boardListChips'
 import {
@@ -55,13 +57,13 @@ function SectionApplications({
           {lines.map((a) => (
             <tr key={a.id} className="align-top">
               <td>
-                <Link href={`/staff/applications/${a.id}`} className="text-action underline">
-                  {a.number}
-                </Link>
+                <Link href={`/staff/applications/${a.id}`}>{a.number}</Link>
                 <br />
                 {a.typeLabel}
               </td>
-              <td>{a.stateText}</td>
+              <td>
+                <StatusChip status={applicationChipStatus(a.state)} label={a.stateText} />
+              </td>
               <td>{a.filedText}</td>
               <td>{a.meetingText ?? 'Not set'}</td>
               <td>{a.deadlineText ?? 'None running'}</td>
@@ -88,7 +90,7 @@ export default async function BoardsPage({
   const links = sortLinks(BOARDS_PATH, params, BOARD_SORT, sort)
   const clear = clearHref(BOARDS_PATH, params, BOARD_FILTER_PARAMS)
   return (
-    <main data-wide="" className="space-y-8">
+    <main data-wide="">
       <h1>Board applications</h1>
       <p>
         Applications before each board that are submitted, under review, or decided, oldest filing

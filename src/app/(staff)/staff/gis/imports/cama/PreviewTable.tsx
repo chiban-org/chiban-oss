@@ -1,3 +1,4 @@
+import { StatusChip } from '@/components/StatusChip'
 import type { CamaPreview, CamaRowStatus } from '@/features/cama/previewCama'
 
 const STATUS_WORDS: Record<CamaRowStatus, string> = {
@@ -13,8 +14,8 @@ export function PreviewTable({ preview }: { preview: CamaPreview }) {
       <p className="text-sm">{`Showing ${preview.rows.length} of ${preview.totalRows} rows.`}</p>
       <table className="w-full border-separate border-spacing-x-4 text-sm">
         <thead>
-          <tr className="border-b text-left">
-            <th className="py-2 pl-0">Line</th>
+          <tr>
+            <th className="pl-0">Line</th>
             <th>Composed ID</th>
             <th>Status</th>
             <th>Owner</th>
@@ -24,10 +25,15 @@ export function PreviewTable({ preview }: { preview: CamaPreview }) {
         </thead>
         <tbody>
           {preview.rows.map((row) => (
-            <tr key={row.line} className="border-b">
-              <td className="py-2">{row.line}</td>
+            <tr key={row.line}>
+              <td>{row.line}</td>
               <td>{row.id ?? 'None'}</td>
-              <td>{STATUS_WORDS[row.status]}</td>
+              <td>
+                <StatusChip
+                  status={row.status === 'resolves' ? 'passed' : 'failed'}
+                  label={STATUS_WORDS[row.status]}
+                />
+              </td>
               <td>{row.ownerName ?? 'Blank'}</td>
               <td>{row.mailingAddress ?? 'Blank'}</td>
               <td>{row.siteAddress ?? 'Blank'}</td>

@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { SortHeader } from '@/components/dataTable/SortHeader'
+import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import {
   MEMBER_SORT,
@@ -54,7 +55,9 @@ function MembersTable({
             <td>{row.boardName}</td>
             <td>{row.titleText}</td>
             <td>{row.termText}</td>
-            <td>{row.statusText}</td>
+            <td>
+              <StatusChip status={row.active ? 'passed' : 'neutral'} label={row.statusText} />
+            </td>
             {ending ? (
               <td>
                 {row.active ? (
@@ -91,9 +94,9 @@ export default async function BoardMembersPage({
     ],
   })
   return (
-    <main data-wide="" className="space-y-6">
+    <main data-wide="">
       <h1>Board members</h1>
-      <p className="max-w-prose">
+      <p>
         Members sign in with a link sent to their email. They see only their own board&apos;s
         meetings, and only after the agenda is published. Listed by board, then name.
       </p>

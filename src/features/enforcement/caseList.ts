@@ -5,9 +5,11 @@ import type { Actor } from '@/features/auth/actor'
 import { anyOf, countFacets, facet, whereAll } from '@/features/dataTable/facets'
 import { defaultSort, type SortState } from '@/features/dataTable/sort'
 import { orderBySql } from '@/features/dataTable/sortSql'
+import type { Status } from '@/features/design/tokens'
 import { enforcementCaseVisibleTo } from '@/features/enforcement/access'
 import type { CaseListFilters, CaseSortKey } from '@/features/enforcement/caseListParams'
 import { CASE_SORT } from '@/features/enforcement/caseListParams'
+import { caseChipStatus } from '@/features/enforcement/chipStatus'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
 import { stayRuleActive } from '@/features/enforcement/stay'
 import { DUE_WEEK_DAYS } from '@/features/queue/queueFilterSql'
@@ -23,6 +25,7 @@ export interface CaseListRow {
   caseId: string
   number: string
   statusLabel: string
+  statusChip: Status
   locationText: string
   openedOn: CivilDate
   nextDueOn: CivilDate | null
@@ -164,6 +167,7 @@ export async function listCasePage(
     rows: rows.slice(0, input.limit).map(({ status, ...row }) => ({
       ...row,
       statusLabel: CASE_STATUS_LABELS[status],
+      statusChip: caseChipStatus(status),
       openedOn: row.openedOn as CivilDate,
       nextDueOn: row.nextDueOn as CivilDate | null,
     })),

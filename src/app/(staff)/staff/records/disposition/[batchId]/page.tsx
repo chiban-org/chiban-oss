@@ -18,6 +18,7 @@ import {
   readBatchItemView,
 } from '@/features/disposition/batchItemParams'
 import { batchItemFacets, listBatchItems } from '@/features/disposition/batchItems'
+import { BATCH_CHIP, BATCH_STATUS_LABELS } from '@/features/disposition/batchStatus'
 import { findSeries } from '@/features/records/series'
 import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -27,20 +28,6 @@ import { BatchRail } from './BatchRail'
 
 export const dynamic = 'force-dynamic'
 
-const STATUS = {
-  proposed: 'Waiting for approval',
-  approved: 'Approved',
-  executing: 'Being carried out',
-  executed: 'Carried out',
-  cancelled: 'Cancelled',
-} as const
-const BATCH_CHIP: Record<keyof typeof STATUS, Status> = {
-  proposed: 'neutral',
-  approved: 'neutral',
-  executing: 'neutral',
-  executed: 'passed',
-  cancelled: 'neutral',
-}
 const OUTCOME = {
   disposed: 'Disposed of',
   skipped_hold: 'Skipped: a legal hold was placed',
@@ -139,7 +126,9 @@ export default async function DispositionBatchPage({
       <PageHeader
         kicker="Disposition batch"
         title={`As of ${formatCivilDate(batch.asOf)}`}
-        status={<StatusChip status={BATCH_CHIP[batch.status]} label={STATUS[batch.status]} />}
+        status={
+          <StatusChip status={BATCH_CHIP[batch.status]} label={BATCH_STATUS_LABELS[batch.status]} />
+        }
         lead="The records this batch disposes of, grouped by kind."
       />
       <RecordLayout

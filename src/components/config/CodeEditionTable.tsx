@@ -1,4 +1,5 @@
 import type { CodeEditionEntry } from '@packs/nh/schema'
+import { StatusChip } from '@/components/StatusChip'
 import { componentsNotInLabel, describeCodeEdition } from '@/features/building/codeEdition'
 import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
@@ -9,10 +10,10 @@ const FAR_FUTURE = '9999-12-31' as CivilDate
 export function CodeEditionTable({ editions }: { editions: CodeEditionEntry[] }) {
   const ordered = [...editions].sort((a, b) => (a.effectiveFrom < b.effectiveFrom ? 1 : -1))
   return (
-    <table className="my-3 w-full text-sm">
+    <table className="w-full text-sm">
       <thead>
-        <tr className="border-b text-left">
-          <th className="py-1">Edition</th>
+        <tr>
+          <th>Edition</th>
           <th>Effective from</th>
           <th>Status</th>
           <th>Detail</th>
@@ -22,14 +23,19 @@ export function CodeEditionTable({ editions }: { editions: CodeEditionEntry[] })
         {ordered.map((entry) => {
           const d = describeCodeEdition(entry, FAR_FUTURE)
           return (
-            <tr key={entry.key} className="border-b align-top">
-              <td className="py-1">{humanizeIsoDates(d.label)}</td>
+            <tr key={entry.key} className="align-top">
+              <td>{humanizeIsoDates(d.label)}</td>
               <td>
                 {entry.effectiveFrom === EPOCH
                   ? 'Start of records'
                   : formatCivilDate(entry.effectiveFrom)}
               </td>
-              <td>{d.status === 'verified' ? 'Verified' : 'Not verified'}</td>
+              <td>
+                <StatusChip
+                  status={d.status === 'verified' ? 'passed' : 'neutral'}
+                  label={d.status === 'verified' ? 'Verified' : 'Not verified'}
+                />
+              </td>
               <td>
                 {d.status === 'unverified' ? (
                   <p className="m-0">
@@ -48,9 +54,7 @@ export function CodeEditionTable({ editions }: { editions: CodeEditionEntry[] })
                     {humanizeIsoDates(label)}
                   </p>
                 ))}
-                <a href={d.citation.url} className="text-action underline">
-                  {d.citation.label}
-                </a>
+                <a href={d.citation.url}>{d.citation.label}</a>
               </td>
             </tr>
           )

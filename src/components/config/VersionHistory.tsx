@@ -1,5 +1,6 @@
 import { NH_STARTERS } from '@packs/nh/starters'
 import type { ReactNode } from 'react'
+import { StatusChip } from '@/components/StatusChip'
 import type { VersionRowView } from '@/features/config/settingsViews'
 import { formatInstantLong } from '@/lib/formatDate'
 import { words } from '@/lib/words'
@@ -27,10 +28,10 @@ export function VersionHistory({
   if (rows.length === 0) return <p>No versions yet.</p>
   return (
     <div className="max-w-full overflow-x-auto">
-      <table className="my-3 w-full text-sm">
+      <table className="w-full text-sm">
         <thead>
-          <tr className="border-b text-left">
-            <th className="py-1">Version</th>
+          <tr>
+            <th>Version</th>
             <th>Status</th>
             <th>Published</th>
             <th>Upstream template</th>
@@ -39,10 +40,13 @@ export function VersionHistory({
         </thead>
         <tbody>
           {rows.map((row) => (
-            <tr key={row.id} className="border-b align-top">
-              <td className="py-1">{`Version ${row.version}`}</td>
+            <tr key={row.id} className="align-top">
+              <td>{`Version ${row.version}`}</td>
               <td>
-                {STATUS_LABEL[row.status]}
+                <StatusChip
+                  status={row.status === 'published' ? 'passed' : 'neutral'}
+                  label={STATUS_LABEL[row.status]}
+                />
                 {row.rolledBackFrom === null ? null : (
                   <span className="block text-muted-foreground">{`Restored from version ${row.rolledBackFrom}`}</span>
                 )}

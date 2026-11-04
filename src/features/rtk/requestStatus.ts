@@ -10,9 +10,13 @@ export function isRequestOpen(request: Pick<RtkRequestView, 'status'>): boolean 
   return request.status !== 'closed' && request.status !== 'withdrawn'
 }
 
+export function requestRowChipStatus(status: RtkRequestView['status'], pastDue: boolean): Status {
+  if (pastDue) return 'overdue'
+  return status === 'responded' ? 'passed' : 'neutral'
+}
+
 export function requestChipStatus(request: RequestState): Status {
-  if (request.current?.kind === 'overdue') return 'overdue'
-  return request.status === 'responded' ? 'passed' : 'neutral'
+  return requestRowChipStatus(request.status, request.current?.kind === 'overdue')
 }
 
 export function requestNextStep(request: RequestState): string | null {

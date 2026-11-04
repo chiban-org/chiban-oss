@@ -3,9 +3,8 @@ import type { ReactNode } from 'react'
 import { SortBar, SortHeader } from '@/components/dataTable/SortHeader'
 import { StatusChip } from '@/components/StatusChip'
 import type { SortLink } from '@/features/dataTable/sort'
-import type { Status } from '@/features/design/tokens'
 import type { ReviewListRow, ReviewSortKey } from '@/features/reviews/reviewList'
-import { reviewStatusLabel } from '@/features/reviews/statusLabels'
+import { reviewChipStatus, reviewStatusLabel } from '@/features/reviews/statusLabels'
 import { formatCivilDateShort } from '@/lib/formatDate'
 
 const COLUMNS: readonly [ReviewSortKey, string][] = [
@@ -14,10 +13,6 @@ const COLUMNS: readonly [ReviewSortKey, string][] = [
   ['status', 'Status'],
   ['due', 'Comments due'],
 ]
-
-function chipStatus(status: string): Status {
-  return status === 'signed_off' ? 'passed' : 'neutral'
-}
 
 function DueCell({ due }: { due: string | null }) {
   if (due === null) return <span className="text-muted-foreground">No date set</span>
@@ -61,7 +56,10 @@ export function ReviewTable({
               </td>
               <td>{row.projectTitle}</td>
               <td>
-                <StatusChip status={chipStatus(row.status)} label={reviewStatusLabel(row.status)} />
+                <StatusChip
+                  status={reviewChipStatus(row.status)}
+                  label={reviewStatusLabel(row.status)}
+                />
               </td>
               <td className="whitespace-nowrap">
                 <DueCell due={row.commentDue} />

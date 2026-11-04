@@ -1,13 +1,15 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { SortHeader } from '@/components/dataTable/SortHeader'
+import { StatusChip } from '@/components/StatusChip'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import { ImportUploadForm } from '@/components/staff/ImportUploadForm'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { gisLayers } from '@/db/schema'
+import { gisLayers, type importRuns } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
 import type { RawSearchParams } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
+import type { Status } from '@/features/design/tokens'
 import { AXISGIS_ADAPTER_STATUS, AXISGIS_STUB_NOTICE } from '@/features/gis/adapters/axisGis'
 import { LAYER_KEYS } from '@/features/gis/exceptionKinds'
 import {
@@ -47,6 +49,11 @@ const CAMA_ADAPTER_OPTIONS = [
 
 const adapterStatus: string = AXISGIS_ADAPTER_STATUS
 const DEFAULT_ZONE = 'America/New_York'
+const RUN_CHIP: Record<(typeof importRuns.$inferSelect)['status'], Status> = {
+  running: 'neutral',
+  succeeded: 'passed',
+  failed: 'failed',
+}
 
 export default async function StaffImportsPage({
   searchParams,
@@ -169,13 +176,15 @@ export default async function StaffImportsPage({
                 {runs.map((run) => (
                   <tr key={run.id}>
                     <td>
-                      <Link href={`/staff/gis/imports/${run.id}`} className="text-action underline">
+                      <Link href={`/staff/gis/imports/${run.id}`}>
                         {formatInstantLong(run.startedAt, zone)}
                       </Link>
                     </td>
                     <td>{layerLabel(run.layerKey)}</td>
                     <td>{adapterLabel(run.adapter)}</td>
-                    <td>{words(run.status)}</td>
+                    <td>
+                      <StatusChip status={RUN_CHIP[run.status]} label={words(run.status)} />
+                    </td>
                   </tr>
                 ))}
               </tbody>

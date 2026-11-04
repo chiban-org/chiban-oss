@@ -3,6 +3,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { TablePager } from '@/components/dataTable/TablePager'
+import { StatusChip } from '@/components/StatusChip'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { clearHref, pageHref, type RawSearchParams, readOffset } from '@/features/dataTable/params'
@@ -16,6 +17,7 @@ import {
   REQUESTS_PATH,
   readRequestsView,
 } from '@/features/rtk/requestListParams'
+import { requestRowChipStatus } from '@/features/rtk/requestStatus'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
@@ -52,7 +54,7 @@ export default async function RightToKnowLogPage({
   const pageLink = (offset: number | null) =>
     offset === null ? null : pageHref(REQUESTS_PATH, params, String(offset))
   return (
-    <main data-wide="" className="space-y-6">
+    <main data-wide="">
       <h1>Right-to-Know requests</h1>
       <p>Soonest next date first. Requests with no date running come last.</p>
       <div className="toolbar">
@@ -84,7 +86,15 @@ export default async function RightToKnowLogPage({
                   </td>
                   <td>{row.description}</td>
                   <td className="whitespace-nowrap">{formatCivilDate(row.receivedOn)}</td>
-                  <td>{RTK_STATUS_LABELS[row.status]}</td>
+                  <td>
+                    <StatusChip
+                      status={requestRowChipStatus(
+                        row.status,
+                        row.dueOn !== null && row.dueOn < today,
+                      )}
+                      label={RTK_STATUS_LABELS[row.status]}
+                    />
+                  </td>
                   <td>
                     {row.dueOn === null
                       ? ''
@@ -103,8 +113,8 @@ export default async function RightToKnowLogPage({
         prevHref={pageLink(list.prevOffset)}
         nextHref={pageLink(list.nextOffset)}
       />
-      <section aria-labelledby="log-request" className="space-y-3 border-t pt-4">
-        <h2 id="log-request">Log a request</h2>
+      <details>
+        <summary>Log a request</summary>
         <ActionForm action={logRequestAction} submitLabel="Log request">
           <TextField
             label="Date received"
@@ -122,7 +132,7 @@ export default async function RightToKnowLogPage({
           <TextField label="Requester email, phone, or address" name="requesterContact" />
           <AreaField label="What was asked for" name="description" rows={3} required />
         </ActionForm>
-      </section>
+      </details>
     </main>
   )
 }

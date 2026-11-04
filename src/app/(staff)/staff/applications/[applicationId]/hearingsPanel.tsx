@@ -1,8 +1,9 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { StatusChip } from '@/components/StatusChip'
 import { SelectField } from '@/components/staff/fields'
 import type { ApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
-import { reviewStatusLabel } from '@/features/reviews/statusLabels'
+import { reviewChipStatus, reviewStatusLabel } from '@/features/reviews/statusLabels'
 import { formatCivilDate } from '@/lib/formatDate'
 import { routeToTrcAction, scheduleHearingAction } from '../../boards/hearings/actions'
 
@@ -15,16 +16,12 @@ export function HearingsPanel({ data }: { data: ApplicationHearingsPanel | null 
       <ul className="m-0 list-none space-y-1 p-0">
         {data.hearings.map((h) => (
           <li key={h.id}>
-            <Link href={`/staff/boards/hearings/${h.id}`} className="text-action underline">
-              {h.text}
-            </Link>
+            <Link href={`/staff/boards/hearings/${h.id}`}>{h.text}</Link>
           </li>
         ))}
         {data.decisions.map((d) => (
           <li key={d.id}>
-            <Link href={`/staff/boards/decisions/${d.id}`} className="text-action underline">
-              {`Decision: ${d.text}`}
-            </Link>
+            <Link href={`/staff/boards/decisions/${d.id}`}>{`Decision: ${d.text}`}</Link>
           </li>
         ))}
       </ul>
@@ -52,10 +49,8 @@ export function HearingsPanel({ data }: { data: ApplicationHearingsPanel | null 
         {data.trc.length === 0 ? null : (
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b text-left">
-                <th scope="col" className="py-2">
-                  Department
-                </th>
+              <tr>
+                <th scope="col">Department</th>
                 <th scope="col">Reviewer</th>
                 <th scope="col">Status</th>
                 <th scope="col">Comments due</th>
@@ -63,13 +58,18 @@ export function HearingsPanel({ data }: { data: ApplicationHearingsPanel | null 
             </thead>
             <tbody>
               {data.trc.map((d) => (
-                <tr key={d.departmentKey} className="border-b">
-                  <td className="py-2">{d.departmentLabel}</td>
+                <tr key={d.departmentKey}>
+                  <td>{d.departmentLabel}</td>
                   <td>{d.reviewerName}</td>
                   <td>
-                    {d.overdue
-                      ? `${reviewStatusLabel(d.status)}, overdue`
-                      : reviewStatusLabel(d.status)}
+                    <StatusChip
+                      status={reviewChipStatus(d.status, d.overdue)}
+                      label={
+                        d.overdue
+                          ? `${reviewStatusLabel(d.status)}, overdue`
+                          : reviewStatusLabel(d.status)
+                      }
+                    />
                   </td>
                   <td>{d.commentDue === null ? 'Not set' : formatCivilDate(d.commentDue)}</td>
                 </tr>

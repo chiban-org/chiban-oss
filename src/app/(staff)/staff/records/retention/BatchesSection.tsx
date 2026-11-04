@@ -1,18 +1,12 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
 import type { dispositionBatches } from '@/db/schema'
+import { BATCH_CHIP, BATCH_STATUS_LABELS } from '@/features/disposition/batchStatus'
 import { formatCivilDate, formatInstantLong } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 import { proposeDispositionAction } from './actions'
-
-const BATCH_LABELS = {
-  proposed: 'Waiting for approval',
-  approved: 'Approved',
-  executing: 'Being carried out',
-  executed: 'Carried out',
-  cancelled: 'Cancelled',
-} as const
 
 type Batch = typeof dispositionBatches.$inferSelect
 
@@ -68,7 +62,12 @@ export function BatchesSection({
                       {formatCivilDate(b.asOf)}
                     </Link>
                   </td>
-                  <td>{BATCH_LABELS[b.status]}</td>
+                  <td>
+                    <StatusChip
+                      status={BATCH_CHIP[b.status]}
+                      label={BATCH_STATUS_LABELS[b.status]}
+                    />
+                  </td>
                   <td className="whitespace-nowrap">{formatInstantLong(b.proposedAt, zone)}</td>
                 </tr>
               ))}
