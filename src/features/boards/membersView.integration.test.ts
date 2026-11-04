@@ -41,8 +41,8 @@ async function invite(name: string, board: 'planning_board' | 'zba', termEnd?: s
   return made.value.membershipId
 }
 
-function view(tab: 'active' | 'ended', sort = defaultSort(MEMBER_SORT)) {
-  return loadMembersView(handle.db, world.staff, { today: TODAY, tab, sort }, signal)
+function view(tab: 'active' | 'ended', sort = defaultSort(MEMBER_SORT), offset = 0, limit = 25) {
+  return loadMembersView(handle.db, world.staff, { today: TODAY, tab, sort, limit, offset }, signal)
 }
 
 describe('board members list', () => {
@@ -59,6 +59,16 @@ describe('board members list', () => {
     expect(active?.counts.get('active')).toBe((before?.counts.get('active') ?? 0) + 1)
     expect(active?.counts.get('ended')).toBe(1)
     expect(active?.rows).toHaveLength(active?.counts.get('active') ?? -1)
+  })
+
+  it('pages a long list and counts the whole tab', async () => {
+    for (const name of ['Ash', 'Birch', 'Cedar']) await invite(name, 'planning_board', '2021-01-31')
+    const first = await view('ended', defaultSort(MEMBER_SORT), 0, 2)
+    const second = await view('ended', defaultSort(MEMBER_SORT), 2, 2)
+    expect(first?.rows).toHaveLength(2)
+    expect(first).toMatchObject({ offset: 0, total: 3, prevOffset: null, nextOffset: 2 })
+    expect(second?.rows).toHaveLength(1)
+    expect(second).toMatchObject({ offset: 2, total: 3, prevOffset: 0, nextOffset: null })
   })
 
   it('sorts by name from the header in both directions', async () => {
@@ -102,7 +112,7 @@ describe('board members list', () => {
       await loadMembersView(
         handle.db,
         world.reviewer,
-        { today: TODAY, tab: 'active', sort: defaultSort(MEMBER_SORT) },
+        { today: TODAY, tab: 'active', sort: defaultSort(MEMBER_SORT), limit: 25, offset: 0 },
         signal,
       ),
     ).toBeNull()

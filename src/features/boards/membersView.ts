@@ -4,7 +4,9 @@ import { boardMemberships as bm, users } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
+import type { MemberTitle } from '@/features/boards/members'
 import type { MemberSortKey, MemberTab } from '@/features/boards/membersParams'
+import { type PageWindow, pageWindow } from '@/features/dataTable/pageSlice'
 import type { SortState } from '@/features/dataTable/sort'
 import { orderBySql } from '@/features/dataTable/sortSql'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -13,6 +15,10 @@ export interface MemberRow {
   membershipId: string
   name: string
   email: string
+  board: 'planning_board' | 'zba'
+  title: MemberTitle
+  termStart: string
+  termEnd: string | null
   boardName: string
   titleText: string
   termText: string
@@ -20,7 +26,7 @@ export interface MemberRow {
   active: boolean
 }
 
-export interface MembersView {
+export interface MembersView extends PageWindow {
   rows: MemberRow[]
   counts: ReadonlyMap<MemberTab, number>
 }
@@ -65,7 +71,13 @@ function termText(m: typeof bm.$inferSelect): string {
 export async function loadMembersView(
   db: Db,
   actor: Actor,
-  input: { today: string; tab: MemberTab; sort: SortState<MemberSortKey> },
+  input: {
+    today: string
+    tab: MemberTab
+    sort: SortState<MemberSortKey>
+    limit: number
+    offset: number
+  },
   signal: AbortSignal,
 ): Promise<MembersView | null> {
   signal.throwIfAborted()
@@ -83,7 +95,9 @@ export async function loadMembersView(
           sql`lower(${users.displayName})`,
           asc(bm.id),
         ]),
-      ),
+      )
+      .limit(input.limit)
+      .offset(input.offset),
     db
       .select({
         ended: sql<number>`(count(*) filter (where ${ended}))::int`,
@@ -91,20 +105,27 @@ export async function loadMembersView(
       })
       .from(bm),
   ])
+  const endedCount = tally?.ended ?? 0
+  const counts = new Map<MemberTab, number>([
+    ['active', (tally?.all ?? 0) - endedCount],
+    ['ended', endedCount],
+  ])
   return {
+    ...pageWindow(input.offset, input.limit, counts.get(input.tab) ?? 0),
     rows: rows.map(({ m, name, email }) => ({
       membershipId: m.id,
       name,
       email,
+      board: m.board,
+      title: m.title,
+      termStart: m.termStart,
+      termEnd: m.termEnd,
       boardName: boardLabel(settings, m.board),
       titleText: TITLE_TEXT[m.title],
       termText: termText(m),
       statusText: statusText(m, input.today),
       active: m.termStart <= input.today,
     })),
-    counts: new Map([
-      ['active', (tally?.all ?? 0) - (tally?.ended ?? 0)],
-      ['ended', tally?.ended ?? 0],
-    ]),
+    counts,
   }
 }

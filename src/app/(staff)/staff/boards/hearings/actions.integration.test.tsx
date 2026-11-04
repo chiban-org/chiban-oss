@@ -363,7 +363,9 @@ describe('staff and public pages', () => {
     state.actor = world.staff
     const noSearch = { searchParams: Promise.resolve({}) }
     const members = renderToStaticMarkup(await MembersPage(noSearch))
-    expect(members).toContain('Add a board member')
+    expect(members).toMatch(/>Add member<\/button>/)
+    expect(members.indexOf('>Add member<')).toBeLessThan(members.indexOf('<table'))
+    expect(members).toContain('aria-label="Edit Avery Stone"')
     expect(members).toMatch(
       /<td[^>]*>Avery Stone<\/td><td>member1@alderpond\.example<\/td><td>Alder Pond Planning Board<\/td><td>Member<\/td>/,
     )
