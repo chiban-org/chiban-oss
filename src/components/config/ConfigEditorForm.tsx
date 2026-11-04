@@ -22,6 +22,8 @@ interface Props {
   publishAction: (formData: FormData) => Promise<ActionResult>
 }
 
+const BUILDER_KINDS: ReadonlySet<ConfigKind> = new Set(['form', 'template'])
+
 function statusText(pending: boolean, result: ActionResult | null): string | null {
   if (pending) return 'Working'
   if (result === null) return null
@@ -57,8 +59,8 @@ export function ConfigEditorForm({
   return (
     <form
       action={run}
-      noValidate={kind === 'form'}
-      className={kind === 'form' ? undefined : 'max-w-4xl'}
+      noValidate={BUILDER_KINDS.has(kind)}
+      className={BUILDER_KINDS.has(kind) ? undefined : 'max-w-4xl'}
     >
       <CsrfField />
       <input type="hidden" name="kind" value={kind} />

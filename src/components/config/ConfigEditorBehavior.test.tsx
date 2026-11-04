@@ -6,11 +6,7 @@ import { ApplicationTypeEditor } from '@/components/config/ApplicationTypeEditor
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
 import { FeeLinesEditor } from '@/components/config/FeeLinesEditor'
 import { FormBuilder } from '@/components/config/formBuilder/FormBuilder'
-import {
-  ChecklistEditor,
-  ConditionsEditor,
-  TemplateEditor,
-} from '@/components/config/SimpleEditors'
+import { ChecklistEditor, ConditionsEditor } from '@/components/config/SimpleEditors'
 import { TownRuleEditor } from '@/components/config/TownRuleEditor'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'

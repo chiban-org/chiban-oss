@@ -3,10 +3,9 @@
 import type { Board } from '@packs/nh/boardSchema'
 import { useState } from 'react'
 import { Pick } from '@/components/config/primitives'
-import { townImageUrl } from '@/components/config/town/ImageUpload'
+import { LetterheadHeader } from '@/components/config/town/LetterheadHeader'
 import { buildFrame } from '@/features/pdf/frame'
 import { TOWN_BOARD_LABELS, type TownProfileBody } from '@/features/town/profileSchema'
-import { cn } from '@/lib/utils'
 
 interface Props {
   townName: string
@@ -22,7 +21,6 @@ function boardOf(value: string): Board | undefined {
 export function LetterheadPreview({ townName, body }: Props) {
   const [board, setBoard] = useState<Board | undefined>(undefined)
   const frame = buildFrame(townName, body, board, new Map())
-  const centered = frame.logoPosition === 'center'
   const sampleHref = board === undefined ? SAMPLE_PATH : `${SAMPLE_PATH}?board=${board}`
   return (
     <section aria-labelledby="letterhead-preview" data-plain className="grid gap-3">
@@ -43,26 +41,7 @@ export function LetterheadPreview({ townName, body }: Props) {
         className="mx-auto flex aspect-[8.5/11] w-full max-w-[34rem] flex-col rounded-sm border border-hairline bg-surface p-[6%] shadow-sm"
         aria-label="Letterhead preview"
       >
-        <div className={cn('flex gap-3', centered ? 'flex-col items-center text-center' : '')}>
-          {body.logo === null ? null : (
-            <img
-              src={townImageUrl(body.logo)}
-              alt="Town logo"
-              className="max-h-14 max-w-28 shrink-0 object-contain"
-            />
-          )}
-          <div className="min-w-0">
-            <p className="m-0 font-serif text-lg leading-tight font-semibold">{frame.townName}</p>
-            {frame.officeName === '' ? null : (
-              <p className="m-0 text-xs font-bold">{frame.officeName}</p>
-            )}
-            {frame.headerLines.map((line) => (
-              <p key={line} className="m-0 text-[0.65rem] text-muted-foreground">
-                {line}
-              </p>
-            ))}
-          </div>
-        </div>
+        <LetterheadHeader frame={frame} logo={body.logo} />
         <hr className="my-3 border-hairline" />
         <div aria-hidden className="grid flex-1 content-start gap-2 pt-2">
           <div className="h-3 w-1/2 rounded bg-canvas" />

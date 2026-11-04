@@ -13,60 +13,11 @@ import {
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import type { LocalCodeAmendmentBody } from '@/features/config/kinds'
 import { type ChecklistBody, isFinalChecklist } from '@/features/inspections/checklistSchema'
-import type { TextTemplateBody } from '@/features/templates/templateSchema'
 
 interface EditorProps<T> {
   body: T
   onChange: (next: T) => void
   errors: FieldErrors
-}
-
-export function TemplateEditor({
-  body,
-  onChange,
-  errors,
-  mergeFields,
-}: EditorProps<TextTemplateBody> & { mergeFields: string[] }) {
-  return (
-    <>
-      <div className="grid grid-cols-2 gap-3">
-        <Input
-          label="Label"
-          value={body.label}
-          onChange={(e) => onChange({ ...body, label: e.target.value })}
-        />
-        <Pick
-          label="Kind"
-          value={body.kind}
-          options={[
-            ['permit', 'Permit'],
-            ['placard', 'Placard'],
-            ['letter', 'Letter'],
-          ]}
-          onChange={(e) => onChange({ ...body, kind: e.target.value as 'permit' })}
-        />
-      </div>
-      <FieldGroup name="body" label="Template text" errors={errors}>
-        <Area
-          label="Text with merge fields"
-          rows={8}
-          value={body.body}
-          onChange={(e) => onChange({ ...body, body: e.target.value })}
-        />
-        <p className="mt-2 text-sm">Insert a merge field:</p>
-        <div className="flex flex-wrap gap-2">
-          {mergeFields.map((field) => (
-            <RowButton
-              key={field}
-              onClick={() => onChange({ ...body, body: `${body.body}{{${field}}}` })}
-            >
-              {field}
-            </RowButton>
-          ))}
-        </div>
-      </FieldGroup>
-    </>
-  )
 }
 
 export function ConditionsEditor({ body, onChange, errors }: EditorProps<ConditionLibraryBody>) {

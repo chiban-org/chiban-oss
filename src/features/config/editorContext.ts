@@ -1,6 +1,7 @@
 import type { FormBuilderData } from '@/features/forms/formReferences'
 import { loadPack } from '@/features/packs/loadPack'
 import { policyText, ruleSummary } from '@/features/packs/ruleSummary'
+import type { TemplateBuilderData } from '@/features/templates/builderData'
 import { MERGE_FIELDS } from '@/features/templates/mergeFields'
 import { lowerFirst, words } from '@/lib/words'
 
@@ -24,6 +25,7 @@ export interface EditorContext {
     }
   >
   form?: FormBuilderData
+  template?: TemplateBuilderData
 }
 
 interface PackRuleLabelSource {

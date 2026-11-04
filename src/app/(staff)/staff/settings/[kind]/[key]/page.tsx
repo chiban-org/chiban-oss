@@ -6,7 +6,7 @@ import { VersionHistory } from '@/components/config/VersionHistory'
 import { type SettingsBackLink, SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
-import { editorContext } from '@/features/config/editorContext'
+import { type EditorContext, editorContext } from '@/features/config/editorContext'
 import { KIND_DESCRIPTIONS, KIND_LABELS } from '@/features/config/kindLabels'
 import {
   type ConfigKind,
@@ -16,10 +16,12 @@ import {
 } from '@/features/config/kinds'
 import { getEditorState } from '@/features/config/settingsViews'
 import { loadFormBuilderData } from '@/features/forms/formBuilderData'
+import { loadTownProfile } from '@/features/pdf/documentFrame'
 import { listReviewerChoices } from '@/features/reviews/reviewerView'
 import { getTownSettings } from '@/features/town/settings'
-import { recordStaffContext } from '@/server/requireStaff'
+import { recordStaffContext, type StaffContext } from '@/server/requireStaff'
 import { publishAction, rollbackAction, saveDraftAction } from '../../actions'
+import { templatePreviewAction, templateSamplesAction } from '../../templateActions'
 
 interface Props {
   params: Promise<{ kind: string; key: string }>
@@ -42,6 +44,28 @@ function headerFor(kind: ConfigKind, key: string) {
   }
 }
 
+async function builderContextFor(
+  ctx: StaffContext,
+  kind: ConfigKind,
+  key: string,
+  options: { base: EditorContext; published: boolean; townName: string },
+): Promise<EditorContext> {
+  if (kind === 'form') {
+    return { ...options.base, form: await loadFormBuilderData(ctx.db, key, ctx.signal) }
+  }
+  if (kind !== 'template') return options.base
+  return {
+    ...options.base,
+    template: {
+      kindLocked: options.published,
+      townName: options.townName,
+      profile: await loadTownProfile(ctx.db, ctx.signal),
+      samplesAction: templateSamplesAction,
+      previewAction: templatePreviewAction,
+    },
+  }
+}
+
 export default async function SettingsKeyPage({ params }: Props) {
   const { kind, key: rawKey } = await params
   const key = decodeURIComponent(rawKey)
@@ -56,8 +80,13 @@ export default async function SettingsKeyPage({ params }: Props) {
   const timeZone = town.ok ? town.value.timeZone : 'America/New_York'
   const context = editorContext(await listReviewerChoices(ctx.db))
   const isForm = kind === 'form'
+  const builderContext = await builderContextFor(ctx, kind, key, {
+    base: context,
+    published: state.versions.some((v) => v.status !== 'draft'),
+    townName: town.ok ? town.value.name : '',
+  })
   return (
-    <main data-wide={isForm ? true : undefined}>
+    <main data-wide={isForm || kind === 'template' ? true : undefined}>
       <SettingsHeader {...headerFor(kind, key)} versioned={isPinnedKind(kind)} />
       {kind === 'application_type' ? (
         <p>
@@ -74,11 +103,7 @@ export default async function SettingsKeyPage({ params }: Props) {
         configKey={key}
         initialBody={state.body}
         resetKey={state.versions.map((v) => `${v.id}:${v.status}`).join(',')}
-        context={
-          isForm
-            ? { ...context, form: await loadFormBuilderData(ctx.db, key, ctx.signal) }
-            : context
-        }
+        context={builderContext}
         saveAction={saveDraftAction}
         publishAction={publishAction}
       />

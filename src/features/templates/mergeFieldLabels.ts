@@ -76,3 +76,9 @@ export const MERGE_FIELD_LABELS: Record<MergeField, string> = {
   'receipt.footer': 'Receipt footer from payment settings',
   'packet.title': 'Packet title',
 }
+
+const LABELS: ReadonlyMap<string, string> = new Map(Object.entries(MERGE_FIELD_LABELS))
+
+export function mergeFieldLabel(name: string): string {
+  return LABELS.get(name) ?? name
+}

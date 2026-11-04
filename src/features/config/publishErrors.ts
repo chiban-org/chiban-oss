@@ -1,6 +1,6 @@
 import type { PublishError } from '@/features/config/publishChecks'
 import { lockedSource } from '@/features/templates/doc/lockedSources'
-import { MERGE_FIELD_LABELS } from '@/features/templates/mergeFieldLabels'
+import { mergeFieldLabel } from '@/features/templates/mergeFieldLabels'
 import { workflowIssueText } from '@/features/workflow/issueText'
 
 export type FieldErrors = Record<string, string>
@@ -15,10 +15,8 @@ const POLICY_COPY: Record<string, string> = {
 
 const FORM_FIELD = '_form'
 
-const FIELD_LABELS: ReadonlyMap<string, string> = new Map(Object.entries(MERGE_FIELD_LABELS))
-
 function fieldNames(names: string[]): string {
-  return names.map((n) => FIELD_LABELS.get(n) ?? n).join(', ')
+  return names.map(mergeFieldLabel).join(', ')
 }
 
 function lockedNames(names: string[]): string {

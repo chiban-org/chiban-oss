@@ -5,11 +5,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApplicationTypeEditor } from '@/components/config/ApplicationTypeEditor'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
 import { FeeLinesEditor } from '@/components/config/FeeLinesEditor'
-import {
-  ChecklistEditor,
-  ConditionsEditor,
-  TemplateEditor,
-} from '@/components/config/SimpleEditors'
+import { ChecklistEditor, ConditionsEditor } from '@/components/config/SimpleEditors'
 import { TownRuleEditor } from '@/components/config/TownRuleEditor'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
@@ -172,25 +168,6 @@ describe('FeeLinesEditor', () => {
     expect(onChange.mock.calls[0]?.[0].lines).toHaveLength(2)
     fireEvent.click(screen.getByRole('button', { name: 'Remove line' }))
     expect(onChange.mock.calls[1]?.[0].lines).toHaveLength(0)
-  })
-})
-
-describe('TemplateEditor', () => {
-  it('inserts a merge field from the picker and shows the body error beside the text', () => {
-    const onChange = vi.fn()
-    render(
-      <TemplateEditor
-        body={{ key: 't', label: 'T', kind: 'permit', body: 'Permit' }}
-        onChange={onChange}
-        errors={{ body: 'Unknown merge fields: nope.' }}
-        mergeFields={['town.name', 'application.number']}
-      />,
-    )
-    fireEvent.click(screen.getByRole('button', { name: 'town.name' }))
-    expect(onChange.mock.calls[0]?.[0].body).toBe('Permit{{town.name}}')
-    expect(
-      within(screen.getByRole('group', { name: 'Template text' })).getByRole('alert').textContent,
-    ).toContain('nope')
   })
 })
 

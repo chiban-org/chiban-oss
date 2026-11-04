@@ -1,11 +1,13 @@
 'use client'
 
+import { useEffect, useMemo } from 'react'
 import { ApplicationTypeEditor } from '@/components/config/ApplicationTypeEditor'
 import { BoardSettingsEditor } from '@/components/config/BoardSettingsEditor'
 import { useEditorContext } from '@/components/config/EditorContextProvider'
 import { FeeLinesEditor } from '@/components/config/FeeLinesEditor'
 import { FormBuilder } from '@/components/config/formBuilder/FormBuilder'
 import { InspectionSettingsEditor } from '@/components/config/InspectionSettingsEditor'
+import { LetterBuilder } from '@/components/config/letterBuilder/LetterBuilder'
 import { PaymentSettingsEditor } from '@/components/config/PaymentSettingsEditor'
 import type { FieldErrors } from '@/components/config/primitives'
 import { RegionalContactsEditor } from '@/components/config/RegionalContactsEditor'
@@ -14,7 +16,6 @@ import {
   ChecklistEditor,
   ConditionsEditor,
   LocalAmendmentEditor,
-  TemplateEditor,
 } from '@/components/config/SimpleEditors'
 import { TownRuleEditor } from '@/components/config/TownRuleEditor'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
@@ -33,7 +34,8 @@ import type { ChecklistBody } from '@/features/inspections/checklistSchema'
 import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
 import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
 import type { ReviewRoutesBody } from '@/features/reviews/routesSchema'
-import type { TextTemplateBody } from '@/features/templates/templateSchema'
+import { asDocTemplate } from '@/features/templates/asDocTemplate'
+import type { TemplateBody } from '@/features/templates/templateSchema'
 
 export interface EditorProps {
   body: unknown
@@ -64,14 +66,14 @@ export function FeeAdapter({ body, onChange, issues }: EditorProps) {
 }
 
 export function TemplateAdapter({ body, onChange, issues }: EditorProps) {
-  const { mergeFields } = useEditorContext()
+  const { template } = useEditorContext()
+  const docBody = useMemo(() => asDocTemplate(body as TemplateBody), [body])
+  useEffect(() => {
+    if (docBody !== body) onChange(docBody)
+  }, [docBody, body, onChange])
+  if (template === undefined) return <p role="alert">The letter builder could not load.</p>
   return (
-    <TemplateEditor
-      body={body as TextTemplateBody}
-      onChange={onChange}
-      errors={errorsOf(issues)}
-      mergeFields={mergeFields}
-    />
+    <LetterBuilder body={docBody} onChange={onChange} errors={errorsOf(issues)} data={template} />
   )
 }
 

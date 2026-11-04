@@ -3,6 +3,7 @@ import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettings'
 import { EMPTY_REGIONAL_CONTACTS } from '@/features/boards/regionalContacts'
 import type { ConfigKind } from '@/features/config/kinds'
 import { EMPTY_REVIEW_ROUTES } from '@/features/reviews/routesSchema'
+import { defaultDoc } from '@/features/templates/kinds/documentKinds'
 import { TOWN_PROFILE_SKELETON } from '@/features/town/profileSchema'
 
 export function skeletonBody(kind: ConfigKind, key: string): unknown {
@@ -21,7 +22,7 @@ export function skeletonBody(kind: ConfigKind, key: string): unknown {
         lines: [{ code: 'fee', label: 'Fee', due: 'at_approval', expr: { op: 'flat', cents: 0 } }],
       }
     case 'template':
-      return { key, label: key, kind: 'permit', body: 'Permit {{application.number}}' }
+      return { key, label: key, kind: 'letter', format: 'doc', doc: defaultDoc('letter') }
     case 'condition_library':
       return {
         key,
