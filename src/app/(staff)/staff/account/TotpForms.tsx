@@ -3,6 +3,7 @@
 import { useActionState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
 import { SubmitButton } from '@/components/SubmitButton'
+import { buttonVariants } from '@/components/ui/button'
 import { useFormAction } from '@/components/useFormAction'
 import { beginTotpAction, confirmTotpAction, type TotpState } from './actions'
 
@@ -18,7 +19,9 @@ export function BeginTotpForm() {
     <form action={action} className="flex flex-col gap-3">
       <CsrfField />
       {state.error === null ? null : <p role="alert">{state.error}</p>}
-      <SubmitButton>Set up authenticator</SubmitButton>
+      <SubmitButton className={buttonVariants({ className: 'self-start' })}>
+        Set up authenticator
+      </SubmitButton>
     </form>
   )
 }
@@ -36,11 +39,11 @@ export function ConfirmTotpForm() {
           autoComplete="one-time-code"
           pattern="[0-9]{6}"
           required
-          className="border p-2"
+          className="max-w-48 rounded-md border border-control-border bg-surface px-3 py-2"
         />
       </label>
       {state.error === null ? null : <p role="alert">{state.error}</p>}
-      <SubmitButton>Confirm</SubmitButton>
+      <SubmitButton className={buttonVariants({ className: 'self-start' })}>Confirm</SubmitButton>
     </form>
   )
 }
