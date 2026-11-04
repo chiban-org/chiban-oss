@@ -183,6 +183,23 @@ describe('recording a card outcome by hand: approved', () => {
   })
 })
 
+describe('recording a card outcome by hand: one processor reference per payment', () => {
+  it('lets only one of two attempts claim the same reference at once', async () => {
+    const first = await stuck(null)
+    const second = await stuck(null)
+    const results = await Promise.all([
+      record('approved', { id: first, processorRef: 'pi_shared' }),
+      record('approved', { id: second, processorRef: 'pi_shared' }),
+    ])
+    expect(results.filter((r) => r.ok)).toHaveLength(1)
+    expect(results.filter((r) => !r.ok)).toEqual([{ ok: false, error: 'reference_in_use' }])
+    for (const id of [first, second]) {
+      const captured = (await row(id))?.state === 'captured'
+      expect((await payments(id)).length).toBe(captured ? 1 : 0)
+    }
+  })
+})
+
 describe('recording a card outcome by hand: declined', () => {
   it('closes the attempt like a normal decline and posts nothing', async () => {
     expect(await record('declined')).toEqual({ ok: true, value: { state: 'declined' } })
@@ -257,6 +274,16 @@ describe('the processor reporting after a manual outcome', () => {
     await processorSays({ status: 'captured' })
     expect(await row()).toMatchObject({ state: 'declined', processorMismatch: 'captured' })
     expect(await payments()).toHaveLength(0)
+  })
+
+  it('keeps a processor id learned after a decline by hand so later reports still match', async () => {
+    const bare = await stuck(null)
+    await record('declined', { id: bare })
+    await processorSays({ objectId: 'pi_late', status: 'pending' }, bare)
+    expect((await row(bare))?.processorObjectId).toBe('pi_late')
+    await processorSays({ objectId: 'pi_late', status: 'captured' }, bare)
+    expect(await row(bare)).toMatchObject({ state: 'declined', processorMismatch: 'captured' })
+    expect(await payments(bare)).toHaveLength(0)
   })
 
   it('treats a later cancel as agreeing with a decline', async () => {

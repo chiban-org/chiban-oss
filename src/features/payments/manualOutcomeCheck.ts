@@ -34,14 +34,27 @@ export async function heldByManualOutcome(
   state: ProcessorPaymentState,
 ): Promise<boolean> {
   if (attempt.manualOutcome === null) return false
-  const verdict = processorVerdict(state.status)
-  if (verdict === attempt.manualOutcome) return verdict === 'declined'
-  if (verdict !== null && attempt.processorMismatch === null) {
+  if (attempt.processorObjectId === null) {
     await tx
       .update(paymentAttempts)
-      .set({ processorMismatch: state.status })
+      .set({ processorObjectId: state.objectId })
       .where(eq(paymentAttempts.id, attempt.id))
-    await noteAnomaly(tx, attempt.id, 'processor_disagrees_with_manual_outcome')
   }
+  const verdict = processorVerdict(state.status)
+  if (verdict === attempt.manualOutcome) return verdict === 'declined'
+  if (verdict !== null && attempt.processorMismatch === null)
+    await recordMismatch(tx, attempt, state)
   return true
+}
+
+async function recordMismatch(
+  tx: Tx,
+  attempt: PaymentAttemptRow,
+  state: ProcessorPaymentState,
+): Promise<void> {
+  await tx
+    .update(paymentAttempts)
+    .set({ processorMismatch: state.status })
+    .where(eq(paymentAttempts.id, attempt.id))
+  await noteAnomaly(tx, attempt.id, 'processor_disagrees_with_manual_outcome')
 }

@@ -1,4 +1,4 @@
-import { and, eq, ne } from 'drizzle-orm'
+import { and, eq, ne, sql } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
 import {
@@ -69,6 +69,8 @@ async function approvedObjectId(
   if (attempt.processorObjectId !== null) return ok(attempt.processorObjectId)
   const ref = processorRef?.trim() ?? ''
   if (ref === '') return err('reference_required')
+  const lockKey = `payment-reference:${attempt.processorAccountId}:${ref}`
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${lockKey}))`)
   return (await referenceInUse(tx, attempt, ref)) ? err('reference_in_use') : ok(ref)
 }
 
