@@ -11,6 +11,7 @@ import {
 } from '@/db/schema'
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
+import { designationCandidates } from '@/features/enforcement/officerList'
 import { draftOrder } from '@/features/enforcement/orders'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { getPublicParcelView } from '@/features/parcels/publicParcelView'
@@ -314,8 +315,7 @@ describe('enforcement queue and case pages', () => {
   it('the officers page offers only people who may issue orders and can end a designation', async () => {
     await actAs('admin')
     const markup = await html(OfficersPage())
-    const select = markup.slice(markup.indexOf('name="userId"'), markup.indexOf('</select>'))
-    const names = [...select.matchAll(/<option[^>]*>([^<]*)</g)].map((m) => m[1])
+    const names = (await designationCandidates(handle.db)).map((c) => c.name)
     expect(names).toContain('Sam Clerk')
     for (const role of ['finance', 'board']) {
       const user = await handle.db.query.users.findFirst({
@@ -324,6 +324,9 @@ describe('enforcement queue and case pages', () => {
       expect(names).not.toContain(user?.displayName)
     }
     expect(visibleText(markup)).toContain('End this designation')
+    expect(markup.indexOf('>Designate an officer<')).toBeGreaterThan(-1)
+    expect(markup.indexOf('>Designate an officer<')).toBeLessThan(markup.indexOf('record-item'))
+    expect(markup).toContain('aria-label="Edit Sam Clerk&#x27;s designation"')
   })
 
   it('a draft order without a deadline can be completed or discarded from the case page', async () => {

@@ -56,6 +56,56 @@ export async function designateEnforcementOfficer(
   })
 }
 
+const ChangeSchema = DesignationSchema.pick({
+  title: true,
+  adoptingAuthority: true,
+  adoptedOn: true,
+}).extend({ designationId: z.string().uuid() })
+
+export async function updateEnforcementDesignation(
+  db: Db,
+  actor: Actor,
+  input: z.input<typeof ChangeSchema>,
+  signal: AbortSignal,
+): Promise<Result<void, 'forbidden' | 'invalid' | 'not_found'>> {
+  signal.throwIfAborted()
+  const allowed = await requireCapability(db, actor.userId, 'config.edit', signal)
+  if (!allowed.ok) return err('forbidden')
+  const parsed = ChangeSchema.safeParse(input)
+  if (!parsed.success) return err('invalid')
+  const { designationId, ...change } = parsed.data
+  return await transactionResult(db, async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(enforcementDesignations)
+      .where(eq(enforcementDesignations.id, designationId))
+      .for('update')
+    if (row === undefined) return err('not_found')
+    if (row.endedOn !== null && row.endedOn < change.adoptedOn) return err('invalid')
+    await tx
+      .update(enforcementDesignations)
+      .set(change)
+      .where(eq(enforcementDesignations.id, designationId))
+    await writeAudit(
+      tx,
+      {
+        actor: { kind: 'user', userId: actor.userId },
+        action: 'enforcement.officer_designation_updated',
+        entityType: 'enforcement_designation',
+        entityId: designationId,
+        before: {
+          title: row.title,
+          adoptingAuthority: row.adoptingAuthority,
+          adoptedOn: row.adoptedOn,
+        },
+        after: change,
+      },
+      signal,
+    )
+    return ok(undefined)
+  })
+}
+
 const EndSchema = z.object({ designationId: z.string().uuid(), endedOn: civilDateSchema })
 
 export async function endEnforcementDesignation(
