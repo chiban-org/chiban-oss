@@ -1,11 +1,14 @@
+import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { paymentAttempts } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { reconcileAttempt } from '@/features/payments/reconcileAttempt'
 import type { PermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { setupTradeWorld, submittedTrade } from '@/test/ledgerFixtures'
 import { staffActor } from '@/test/parcels'
-import { makeCardAttempt, setupPayments } from '@/test/paymentFixtures'
+import { makeCardAttempt, processorState, setupPayments } from '@/test/paymentFixtures'
 
 interface MockState {
   db: unknown
@@ -52,19 +55,52 @@ afterAll(async () => {
   await handle.drop()
 })
 
-async function render(actor: Actor): Promise<string> {
+async function render(actor: Actor, id: string = attemptId): Promise<string> {
   state.actor = actor
-  return renderToStaticMarkup(await AttemptPage({ params: Promise.resolve({ attemptId }) }))
+  return renderToStaticMarkup(await AttemptPage({ params: Promise.resolve({ attemptId: id }) }))
 }
 
 describe('payment attempt page', () => {
-  it('shows human labels and an explicit empty history', async () => {
+  it('shows human labels, the status in the rail and the empty history with the empty panels', async () => {
     const html = await render(world.staff)
-    expect(html).toContain('paid by card at the counter')
+    expect(html).toContain('Card at the counter')
     expect(html).toContain('Waiting for the processor')
-    expect(html).not.toContain('State: pending')
+    expect(html).not.toContain('Status: Waiting')
     expect(html).not.toContain('card present')
+    expect(html).toContain('record-rail')
+    expect(html).toContain('Nothing recorded yet')
     expect(html).toContain('No events yet')
+    expect(html).toContain('Stripe, test mode')
+    expect(html).not.toContain('Processor: stripe')
+  })
+
+  it('tells staff to check with the processor before voiding when the outcome is unknown', async () => {
+    const { attemptId: unknown } = await makeCardAttempt(handle.db, trade, 'card_present')
+    await handle.db
+      .update(paymentAttempts)
+      .set({ outcomeUnknown: true })
+      .where(eq(paymentAttempts.id, unknown))
+    const html = await render(await staffActor(handle.db, 'finance'), unknown)
+    expect(html).toContain('Outcome unknown')
+    expect(html).toContain('Check with the processor before voiding')
+    expect(html).toContain('Check with processor')
+  })
+
+  it('links a captured attempt to the receipt it produced', async () => {
+    const made = await makeCardAttempt(handle.db, trade, 'card_online')
+    await handle.db.transaction((tx) =>
+      reconcileAttempt(
+        tx,
+        made.attemptId,
+        processorState({ objectId: 'pi_receipt', amountCents: made.amountCents }),
+        { kind: 'event' },
+        new AbortController().signal,
+      ),
+    )
+    const html = await render(world.staff, made.attemptId)
+    expect(html).toContain('Captured')
+    expect(html).toMatch(/href="\/staff\/receipts\/[0-9a-f-]{36}"/)
+    expect(html).not.toContain('Void this attempt')
   })
 
   it('tells staff without payment access they lack permission, the same for any attempt id', async () => {
