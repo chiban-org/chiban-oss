@@ -200,7 +200,13 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
     icon: 'overrides',
     access: records,
   },
-  { href: '/staff/settings', label: 'Settings', group: 'admin', icon: 'settings', access: records },
+  {
+    href: '/staff/settings',
+    label: 'Settings',
+    group: 'admin',
+    icon: 'settings',
+    access: any('config.edit'),
+  },
   {
     href: '/staff/admin/export',
     label: 'Export',
@@ -217,7 +223,7 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
   },
   {
     href: '/staff/admin/cutover',
-    label: 'Cutover',
+    label: 'Move open applications over',
     group: 'admin',
     icon: 'cutover',
     access: any('cutover.import'),
@@ -238,7 +244,7 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
   },
   {
     href: '/staff/admin/migration',
-    label: 'Migration',
+    label: 'Scanned property files',
     group: 'admin',
     icon: 'migration',
     access: { kind: 'allCapabilities', capabilities: ['document.manage', 'parcel.manage'] },

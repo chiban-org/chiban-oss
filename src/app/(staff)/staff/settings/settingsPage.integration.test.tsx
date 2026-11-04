@@ -70,10 +70,13 @@ describe('settings page', () => {
     expect(html).toContain('Adopt this starter')
   })
 
-  it('offers no adopt button to someone who may not edit configuration', async () => {
-    state.actor = await staffActor(handle.db, 'staff')
-    const html = await page()
-    expect(html).not.toContain('Adopt this starter')
+  it('refuses anyone without the right to edit configuration', async () => {
+    for (const role of ['staff', 'records_custodian'] as const) {
+      state.actor = await staffActor(handle.db, role)
+      const html = await page()
+      expect(html).toContain('You do not have permission')
+      expect(html).not.toContain('Adopt this starter')
+    }
     state.actor = admin
   })
 

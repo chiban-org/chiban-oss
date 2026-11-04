@@ -87,10 +87,12 @@ describe('record administration pages', () => {
     expect(await html(render(given))).toContain(NO_PERMISSION)
   })
 
-  it('staff still reach the settings and overrides pages', async () => {
+  it('staff reach the overrides page but the settings hub needs configuration rights', async () => {
     await actAs('staff')
-    expect(await html((await page('settings'))(SEARCH))).not.toContain(NO_PERMISSION)
+    expect(await html((await page('settings'))(SEARCH))).toContain(NO_PERMISSION)
     expect(await html((await page('overrides/aliases'))(SEARCH))).not.toContain(NO_PERMISSION)
+    await actAs('admin')
+    expect(await html((await page('settings'))(SEARCH))).not.toContain(NO_PERMISSION)
   })
 
   it('only configuration editors get the settings editor, others see the permission page first', async () => {

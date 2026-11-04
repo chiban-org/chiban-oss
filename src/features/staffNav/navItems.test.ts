@@ -98,14 +98,15 @@ describe('staff navigation', () => {
       expect(labels).not.toContain(hidden)
     }
     expect(labelsFor('staff')).toEqual(
-      expect.arrayContaining([
-        'Imports',
-        'Exceptions',
-        'Unresolved records',
-        'Overrides',
-        'Settings',
-      ]),
+      expect.arrayContaining(['Imports', 'Exceptions', 'Unresolved records', 'Overrides']),
     )
+  })
+
+  it('shows Settings only to admin', () => {
+    expect(labelsFor('admin')).toContain('Settings')
+    for (const role of ['staff', 'records_custodian', 'finance', 'inspector'] as const) {
+      expect(labelsFor(role)).not.toContain('Settings')
+    }
   })
 
   it('shows Unresolved records only to roles that can link parcels', () => {
@@ -118,7 +119,9 @@ describe('staff navigation', () => {
   })
 
   it('shows admin the administration pages and finance the payments page', () => {
-    expect(labelsFor('admin')).toEqual(expect.arrayContaining(['Export', 'Health', 'Cutover']))
+    expect(labelsFor('admin')).toEqual(
+      expect.arrayContaining(['Export', 'Health', 'Move open applications over']),
+    )
     expect(labelsFor('finance')).toContain('Payments')
     expect(labelsFor('finance')).not.toContain('Health')
   })

@@ -29,13 +29,23 @@ describe('loading the navigation viewer from stored grants', () => {
     const finance = await labels('finance')
     expect(finance).toContain('Payments')
     expect(finance).not.toEqual(
-      expect.arrayContaining(['Export', 'Health', 'Cutover', 'Migration']),
+      expect.arrayContaining([
+        'Export',
+        'Health',
+        'Move open applications over',
+        'Scanned property files',
+      ]),
     )
     const custodian = await labels('records_custodian')
     expect(custodian).toEqual(expect.arrayContaining(['Preservation', 'Legal holds', 'Export']))
-    expect(custodian).not.toEqual(expect.arrayContaining(['Health', 'Cutover', 'Migration']))
+    expect(custodian).not.toEqual(
+      expect.arrayContaining(['Health', 'Move open applications over', 'Scanned property files']),
+    )
+    expect(custodian).not.toContain('Settings')
     const board = await labels('board_member')
     expect(board).not.toEqual(expect.arrayContaining(['Applications', 'Export']))
-    expect(await labels('admin')).toEqual(expect.arrayContaining(['Export', 'Health', 'Cutover']))
+    expect(await labels('admin')).toEqual(
+      expect.arrayContaining(['Export', 'Health', 'Move open applications over']),
+    )
   })
 })

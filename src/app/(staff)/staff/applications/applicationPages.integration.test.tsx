@@ -214,7 +214,13 @@ describe('staff application pages', () => {
 
 describe('staff settings pages', () => {
   it('the settings page lists kinds, adopted starters, rules, and the unverified edition', async () => {
+    const clerk = state.actor
+    const admin = await handle.db.query.users.findFirst({
+      where: (u, { eq }) => eq(u.email, 'admin@alderpond.example'),
+    })
+    state.actor = await loadActor(handle.db, admin?.id ?? '', signal)
     const page = await html(SettingsPage({ searchParams: Promise.resolve({}) }))
+    state.actor = clerk
     expect(page).toContain('Application types')
     expect(page).toMatch(/<summary[^>]*>\d+ starters? adopted<\/summary>/)
     expect(page).toContain('Edition not verified (before July 1, 2024)')
