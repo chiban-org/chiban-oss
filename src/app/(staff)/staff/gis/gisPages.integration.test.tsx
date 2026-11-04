@@ -118,7 +118,9 @@ describe('import exceptions page', () => {
     const html = await exceptionsHtml()
     expect(html).toContain('class="exception-card')
     expect(html).not.toContain('(changed)')
-    expect(html).toMatch(/<td[^>]*><span class="sr-only">Changed to <\/span><span class="attention">/)
+    expect(html).toMatch(
+      /<td[^>]*><span class="sr-only">Changed to <\/span><span class="attention">/,
+    )
     expect(html).toMatch(/<details[^>]*><summary[^>]*>Dismiss<\/summary>/)
     expect(html).toContain('<h2>Held owner changes</h2>')
   })
