@@ -9,7 +9,7 @@ import { AddHearingsForm, AddItemForm } from './AgendaSection'
 type StepKind = 'build' | 'publish' | 'packet' | 'packet_made'
 
 function stepOf(view: MeetingView): StepKind | null {
-  if (view.cancelled) return null
+  if (view.cancelled || view.past) return null
   const { agenda } = view
   if (agenda === null || agenda.items.length === 0) return 'build'
   if (agenda.status === 'draft') return 'publish'

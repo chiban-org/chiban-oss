@@ -9,6 +9,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { HEARING_STATUS_LABELS, timeZoneOf } from '@/features/hearings/views'
+import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { todayInTimeZone } from '@/types/civilDate'
 
@@ -39,6 +40,7 @@ export interface MeetingView {
   kindText: string
   locationText: string
   cancelled: boolean
+  past: boolean
   cancelReason: string | null
   hearings: {
     id: string
@@ -141,6 +143,7 @@ export async function loadMeetingView(
     kindText: meeting.kind === 'special' ? 'Special meeting' : 'Regular meeting',
     locationText: meeting.location,
     cancelled: meeting.status === 'cancelled',
+    past: meeting.meetingDate < (await townToday(db, new Date(), signal)),
     cancelReason: meeting.cancelReason,
     hearings: await hearingLines(db, meetingId, signal),
     agenda: agenda === undefined ? null : await agendaView(db, agenda, items, signal),

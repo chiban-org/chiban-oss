@@ -24,6 +24,7 @@ function emptyMeeting(hearings: (typeof HEARING)[]): MeetingView {
   return {
     meetingId: 'm1',
     cancelled: false,
+    past: false,
     cancelReason: null,
     kindText: 'Regular meeting',
     locationText: '',
@@ -54,5 +55,10 @@ describe('meeting rail next step', () => {
     expect(screen.getByRole('textbox', { name: 'Title' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Add the first agenda item' })).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Build the agenda' })).toBeNull()
+  })
+  it('offers no next step for a meeting that has already taken place', () => {
+    renderRail({ ...emptyMeeting([HEARING]), past: true })
+    expect(screen.queryByRole('button', { name: 'Add the scheduled hearings' })).toBeNull()
+    expect(screen.queryByText('Next step')).toBeNull()
   })
 })
