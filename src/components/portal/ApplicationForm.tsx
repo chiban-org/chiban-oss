@@ -75,6 +75,7 @@ export function ApplicationForm(props: Props) {
       className="flex flex-col gap-6"
     >
       <FormRenderer
+        addressChecks
         form={props.form}
         values={values}
         errors={errors}

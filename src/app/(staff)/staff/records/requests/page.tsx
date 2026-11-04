@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { AddressTextField } from '@/components/address/AddressTextField'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { TablePager } from '@/components/dataTable/TablePager'
@@ -129,7 +130,7 @@ export default async function RightToKnowLogPage({
             options={Object.entries(RTK_VIA_LABELS)}
           />
           <TextField label="Requester name" name="requesterName" />
-          <TextField label="Requester email, phone, or address" name="requesterContact" />
+          <AddressTextField label="Requester email, phone, or address" name="requesterContact" />
           <AreaField label="What was asked for" name="description" rows={3} required />
         </ActionForm>
       </details>

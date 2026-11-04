@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { AddressTextField } from '@/components/address/AddressTextField'
 import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { BoardPanelData } from '@/features/boards/panelData'
@@ -149,7 +150,7 @@ export function ListSection({ data }: { data: BoardPanelData }) {
                   ['soil_scientist', 'Soil scientist'],
                 ]}
               />
-              <TextField label="Business address" name="businessAddress" required />
+              <AddressTextField label="Business address" name="businessAddress" required />
               <SelectField
                 label="Seal is on the plat"
                 name="sealOnPlat"

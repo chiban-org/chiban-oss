@@ -1,6 +1,7 @@
 'use client'
 
-import { Area, Input, RowButton, rowKey } from '@/components/config/primitives'
+import { AddressAreaField } from '@/components/address/AddressAreaField'
+import { Input, RowButton, rowKey } from '@/components/config/primitives'
 import type { Contact, RegionalContactsBody } from '@/features/boards/regionalContacts'
 
 interface Props {
@@ -26,11 +27,11 @@ function ContactFields({
     <fieldset className="rounded-md border p-3">
       <legend className="px-1 text-sm font-medium">{label}</legend>
       <Input label="Name" value={current.name} onChange={(e) => set({ name: e.target.value })} />
-      <Area
+      <AddressAreaField
         label="Mailing address"
         rows={3}
         value={current.mailingAddress}
-        onChange={(e) => set({ mailingAddress: e.target.value })}
+        onValue={(mailingAddress) => set({ mailingAddress })}
       />
     </fieldset>
   )
@@ -82,15 +83,15 @@ export function RegionalContactsEditor({ body, onChange }: Props) {
               })
             }
           />
-          <Area
+          <AddressAreaField
             label="Mailing address"
             rows={2}
             value={m.mailingAddress}
-            onChange={(e) =>
+            onValue={(mailingAddress) =>
               onChange({
                 ...body,
                 municipalities: body.municipalities.map((x, n) =>
-                  n === i ? { ...x, mailingAddress: e.target.value } : x,
+                  n === i ? { ...x, mailingAddress } : x,
                 ),
               })
             }

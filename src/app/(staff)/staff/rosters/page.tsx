@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { AddressTextField } from '@/components/address/AddressTextField'
 import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -81,7 +82,7 @@ export default async function RostersPage() {
             <ParcelPicker label="Parcel of the park" name="parcelRef" required />
             <TextField label="Park name" name="parkName" required />
             <TextField label="Owner name" name="ownerName" required />
-            <TextField label="Owner mailing address" name="ownerMailingAddress" required />
+            <AddressTextField label="Owner mailing address" name="ownerMailingAddress" required />
             <TextField
               label="Roster current as of"
               name="asOf"
@@ -110,7 +111,7 @@ export default async function RostersPage() {
           <ActionForm action={addRestrictionAction} submitLabel="Add holder" className="max-w-xl">
             <ParcelPicker label="Parcel the restriction covers" name="parcelRef" required />
             <TextField label="Holder name" name="holderName" required />
-            <TextField label="Holder mailing address" name="holderMailingAddress" required />
+            <AddressTextField label="Holder mailing address" name="holderMailingAddress" required />
             <SelectField
               label="Kind"
               name="restrictionKind"

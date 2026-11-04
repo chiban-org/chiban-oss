@@ -1,5 +1,6 @@
 'use client'
 
+import { AddressCheck } from '@/components/address/AddressCheck'
 import { FieldError, type FieldErrors, Input, RowButton } from '@/components/config/primitives'
 import { ImageUpload } from '@/components/config/town/ImageUpload'
 import type { TownProfileBody } from '@/features/town/profileSchema'
@@ -30,26 +31,33 @@ export function ProfileFields({ body, onChange, errors }: Props) {
       </div>
       <fieldset className="grid gap-3">
         <legend className="mb-2 text-sm font-medium">Mailing address</legend>
-        {body.addressLines.map((line, index) => (
-          <div key={`address-${String(index)}`} className="flex max-w-xl items-end gap-2">
-            <div className="min-w-0 flex-1">
-              <Input
-                label={`Address line ${String(index + 1)}`}
-                value={line}
-                onChange={(e) => setLine(index, e.target.value)}
-              />
+        <AddressCheck
+          lines={body.addressLines}
+          maxLines={MAX_ADDRESS_LINES}
+          onUse={(addressLines) => set({ addressLines })}
+          className="grid gap-3"
+        >
+          {body.addressLines.map((line, index) => (
+            <div key={`address-${String(index)}`} className="flex max-w-xl items-end gap-2">
+              <div className="min-w-0 flex-1">
+                <Input
+                  label={`Address line ${String(index + 1)}`}
+                  value={line}
+                  onChange={(e) => setLine(index, e.target.value)}
+                />
+              </div>
+              {body.addressLines.length > 1 ? (
+                <RowButton
+                  onClick={() =>
+                    set({ addressLines: body.addressLines.filter((_, i) => i !== index) })
+                  }
+                >
+                  Remove
+                </RowButton>
+              ) : null}
             </div>
-            {body.addressLines.length > 1 ? (
-              <RowButton
-                onClick={() =>
-                  set({ addressLines: body.addressLines.filter((_, i) => i !== index) })
-                }
-              >
-                Remove
-              </RowButton>
-            ) : null}
-          </div>
-        ))}
+          ))}
+        </AddressCheck>
         {body.addressLines.length < MAX_ADDRESS_LINES ? (
           <div>
             <RowButton onClick={() => set({ addressLines: [...body.addressLines, ''] })}>

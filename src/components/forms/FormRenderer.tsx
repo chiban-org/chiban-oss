@@ -1,5 +1,6 @@
 'use client'
 
+import { AddressQuestion } from '@/components/forms/AddressQuestion'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -11,6 +12,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
+import { isAddressQuestion } from '@/features/address/addressQuestion'
 import { evaluateCondition } from '@/features/forms/condition'
 import type { FormBody, FormField } from '@/features/forms/formSchema'
 
@@ -21,6 +23,7 @@ export interface FormRendererProps {
   values: Record<string, unknown>
   errors: Record<string, string>
   onChange: (key: string, value: FormValue) => void
+  addressChecks?: boolean
 }
 
 const INPUT_TYPES: Partial<Record<FormField['type'], string>> = {
@@ -158,17 +161,15 @@ function Control(props: ControlProps) {
   )
 }
 
-function FieldRow({
-  field,
-  values,
-  error,
-  onChange,
-}: {
+interface EntryProps {
   field: FormField
   values: Record<string, unknown>
   error: string | undefined
   onChange: FormRendererProps['onChange']
-}) {
+  addressChecks?: boolean | undefined
+}
+
+function FieldRow({ field, values, error, onChange, addressChecks }: EntryProps) {
   const id = `field-${field.key}`
   const errorId = `${id}-error`
   const helpId = `${id}-help`
@@ -177,6 +178,17 @@ function FieldRow({
       .filter((v): v is string => v !== null)
       .join(' ') || undefined
   const required = isRequired(field, values)
+  const control = (
+    <Control
+      field={field}
+      id={id}
+      value={values[field.key]}
+      invalid={error !== undefined}
+      describedBy={describedBy}
+      required={required}
+      onChange={onChange}
+    />
+  )
   return (
     <div className="space-y-1.5">
       <div className="flex items-baseline gap-1">
@@ -190,15 +202,13 @@ function FieldRow({
           {field.help}
         </p>
       )}
-      <Control
-        field={field}
-        id={id}
-        value={values[field.key]}
-        invalid={error !== undefined}
-        describedBy={describedBy}
-        required={required}
-        onChange={onChange}
-      />
+      {addressChecks === true && isAddressQuestion(field) ? (
+        <AddressQuestion field={field} text={asText(values[field.key])} onChange={onChange}>
+          {control}
+        </AddressQuestion>
+      ) : (
+        control
+      )}
       {error === undefined ? null : (
         <p id={errorId} className="m-0 text-base font-medium text-destructive">
           {error}
@@ -219,22 +229,12 @@ function SectionHeading({ field }: { field: FormField }) {
   )
 }
 
-export function FormEntry({
-  field,
-  values,
-  error,
-  onChange,
-}: {
-  field: FormField
-  values: Record<string, unknown>
-  error: string | undefined
-  onChange: FormRendererProps['onChange']
-}) {
-  if (field.type === 'section') return <SectionHeading field={field} />
-  return <FieldRow field={field} values={values} error={error} onChange={onChange} />
+export function FormEntry(props: EntryProps) {
+  if (props.field.type === 'section') return <SectionHeading field={props.field} />
+  return <FieldRow {...props} />
 }
 
-export function FormRenderer({ form, values, errors, onChange }: FormRendererProps) {
+export function FormRenderer({ form, values, errors, onChange, addressChecks }: FormRendererProps) {
   return (
     <div className="flex flex-col gap-5">
       {form.fields
@@ -247,6 +247,7 @@ export function FormRenderer({ form, values, errors, onChange }: FormRendererPro
             values={values}
             error={errors[field.key]}
             onChange={onChange}
+            addressChecks={addressChecks}
           />
         ))}
     </div>

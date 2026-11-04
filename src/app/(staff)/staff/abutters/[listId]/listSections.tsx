@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { CandidateTable } from '@/components/abutters/CandidateTable'
 import { RecipientTable } from '@/components/abutters/RecipientTable'
+import { AddressTextField } from '@/components/address/AddressTextField'
 import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import type { CandidateRow, ListView, RecipientView } from '@/features/abutters/listView'
@@ -43,7 +44,7 @@ function RecipientControls({ listId, row }: { listId: string; row: RecipientView
           <input type="hidden" name="listId" value={listId} />
           <input type="hidden" name="recipientId" value={row.id} />
           <TextField label="Name" name="name" defaultValue={row.name} required />
-          <TextField
+          <AddressTextField
             label="Mailing address"
             name="mailingAddress"
             defaultValue={row.mailingAddress ?? ''}

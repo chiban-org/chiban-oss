@@ -1,4 +1,5 @@
 import { ActionForm } from '@/components/ActionForm'
+import { AddressTextField } from '@/components/address/AddressTextField'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { CaseDetail, OrderDetail } from '@/features/enforcement/caseDetail'
 import {
@@ -46,7 +47,7 @@ export function ServiceForms({ order, detail }: { order: OrderDetail; detail: Ca
           <Hidden name="orderId" value={orderId} />
           <SelectField label="Role" name="role" options={ROLES} />
           <TextField label="Name" name="name" required />
-          <TextField label="Address" name="address" required />
+          <AddressTextField label="Address" name="address" required />
           <TextField
             label="Where the name came from, such as the CAMA owner or a registry book and page"
             name="source"
