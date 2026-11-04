@@ -11,13 +11,8 @@ import {
 } from '@/features/queue/stateScopes'
 
 describe('application status tabs', () => {
-  it('needs action leaves out drafts and finished applications but keeps issued permits', () => {
-    for (const state of ['draft', 'closed', 'denied', 'withdrawn', 'expired'] as const) {
-      expect(NEEDS_ACTION_STATES).not.toContain(state)
-    }
-    expect(NEEDS_ACTION_STATES).toEqual(
-      expect.arrayContaining(['submitted', 'under_review', 'decided', 'issued', 'suspended']),
-    )
+  it('needs action takes only submitted and under review work by state', () => {
+    expect(NEEDS_ACTION_STATES).toEqual(['submitted', 'under_review'])
   })
 
   it('offers needs action first and all last', () => {

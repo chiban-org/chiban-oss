@@ -1,9 +1,7 @@
-import { CORE_STATES, type CoreState, TERMINAL_STATES } from '@/features/applications/states'
+import { CORE_STATES, type CoreState } from '@/features/applications/states'
 import { firstParam, type TableParams } from '@/features/dataTable/params'
 
-export const NEEDS_ACTION_STATES: readonly CoreState[] = CORE_STATES.filter(
-  (state) => state !== 'draft' && !TERMINAL_STATES.includes(state),
-)
+export const NEEDS_ACTION_STATES: readonly CoreState[] = ['submitted', 'under_review']
 
 export const STATUS_TAB_PARAM = 'stage'
 

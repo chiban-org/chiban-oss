@@ -63,6 +63,7 @@ describe('/staff/applications page', () => {
   it('opens on needs action under one Applications heading, without work queue wording', async () => {
     const html = await render({})
     expect(html).toContain('<h1>Applications</h1>')
+    expect(html).toContain('submitted or under review, and any other with a')
     expect(html.toLowerCase()).not.toContain('queue')
     expect(html).not.toContain('<select')
     expect(tab(html, 'Needs action')).toContain('aria-current="page"')

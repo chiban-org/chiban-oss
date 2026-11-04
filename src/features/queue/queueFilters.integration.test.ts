@@ -252,6 +252,7 @@ describe('work queue sorting and paging', () => {
     const a = await app()
     const b = await app({ state: 'under_review' })
     const c = await app({ state: 'issued' })
+    await addClock(c, '2027-04-01')
     expect(await ids({}, world.staff, { key: 'number', dir: 'asc' })).toEqual([a, b, c])
     expect(await ids({}, world.staff, { key: 'number', dir: 'desc' })).toEqual([c, b, a])
     expect(await ids({}, world.staff, { key: 'status', dir: 'desc' })).toEqual([c, b, a])

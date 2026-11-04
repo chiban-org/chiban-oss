@@ -22,12 +22,26 @@ beforeEach(async () => {
   handle = await makeTestDb()
   world = await setupPermitWorld(handle.db)
   made = new Map()
-  for (const state of ['draft', 'submitted', 'issued', 'suspended', 'closed', 'denied'] as const) {
+  for (const state of [
+    'draft',
+    'submitted',
+    'under_review',
+    'decided',
+    'issued',
+    'suspended',
+    'closed',
+    'denied',
+  ] as const) {
     made.set(state, await make(state))
   }
   made.set('deniedRunning', await make('denied'))
+  made.set('issuedOverdue', await make('issued'))
+  await addClock(made.get('deniedRunning') ?? '', '2027-03-10')
+  await addClock(made.get('issuedOverdue') ?? '', '2027-02-20')
+})
+async function addClock(applicationId: string, due: string): Promise<void> {
   await handle.db.insert(clocks).values({
-    applicationId: made.get('deniedRunning') ?? '',
+    applicationId,
     ruleKey: 'nh.bp.decision',
     ruleVersion: 1,
     packVersion: '0.3.0',
@@ -36,12 +50,13 @@ beforeEach(async () => {
     lengthValue: 30,
     lengthUnit: 'days',
     countingMethod: 'test',
-    computedDue: '2027-03-10',
-    currentDue: '2027-03-10',
+    computedDue: due,
+    currentDue: due,
     source: 'pack_rule',
     status: 'running',
   })
-})
+}
+
 afterEach(async () => {
   await handle.drop()
 })
@@ -64,13 +79,18 @@ async function listed(tab: StatusTab, actor = world.staff): Promise<string[]> {
 }
 
 describe('application status tabs', () => {
-  it('needs action leaves drafts and finished work out but keeps a running deadline', async () => {
-    expect(await listed('action')).toEqual(['deniedRunning', 'issued', 'submitted', 'suspended'])
+  it('needs action holds submitted and under review work plus any running or overdue deadline', async () => {
+    expect(await listed('action')).toEqual([
+      'deniedRunning',
+      'issuedOverdue',
+      'submitted',
+      'under_review',
+    ])
   })
 
   it('open holds the drafts, issued holds suspended permits, finished holds denials', async () => {
-    expect(await listed('open')).toEqual(['draft', 'submitted'])
-    expect(await listed('issued')).toEqual(['issued', 'suspended'])
+    expect(await listed('open')).toEqual(['decided', 'draft', 'submitted', 'under_review'])
+    expect(await listed('issued')).toEqual(['issued', 'issuedOverdue', 'suspended'])
     expect(await listed('finished')).toEqual(['closed', 'denied', 'deniedRunning'])
   })
 
@@ -83,15 +103,15 @@ describe('application status tabs', () => {
       Object.fromEntries(
         (await queueFacets(handle.db, world.staff, { filters, now: NOW }, signal)).stages,
       )
-    const expected = { action: 4, open: 2, issued: 2, finished: 3, all: 7 }
+    const expected = { action: 4, open: 4, issued: 3, finished: 3, all: 10 }
     expect(await counts(tabFilters('action'))).toEqual(expected)
     expect(await counts(tabFilters('finished'))).toEqual(expected)
     expect(await counts(tabFilters('all', { due: ['none'] }))).toEqual({
-      action: 3,
-      open: 2,
+      action: 2,
+      open: 4,
       issued: 2,
       finished: 2,
-      all: 6,
+      all: 8,
     })
   })
 
@@ -111,7 +131,7 @@ describe('application status tabs', () => {
       signal,
     )
     expect(Object.fromEntries(facets.states)).toMatchObject({ closed: 1, denied: 2, draft: 0 })
-    expect(Object.fromEntries(facets.stages)).toMatchObject({ issued: 2, finished: 3, all: 7 })
+    expect(Object.fromEntries(facets.stages)).toMatchObject({ issued: 3, finished: 3, all: 10 })
   })
 
   it('scopes every tab to what a reviewer is assigned', async () => {

@@ -72,8 +72,9 @@ export default async function ApplicationsPage({
     <main data-wide="">
       <h1>Applications</h1>
       <p className="mb-5">
-        Needs action lists open applications and any with a deadline still running, soonest due
-        first. The other tabs show the rest, drafts included.
+        Needs action lists applications that are submitted or under review, and any other with a
+        deadline running or overdue, soonest due first. The other tabs show the rest, drafts
+        included.
       </p>
       <FilterTabs label="Status" tabs={statusTabs(params, facets)} />
       <QueueFilters

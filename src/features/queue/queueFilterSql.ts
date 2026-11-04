@@ -13,8 +13,6 @@ import type {
 import {
   EARLIEST_DUE,
   FEES_DUE,
-  FILING_DUE,
-  NEXT_DUE,
   NOTICE_DUE,
   preservationIncompleteFor,
   UNKNOWN_PAYMENT,
@@ -25,9 +23,12 @@ import { addDays, type CivilDate } from '@/types/civilDate'
 
 export const DUE_WEEK_DAYS = 7
 
+const DEADLINE_RUNNING = sql`exists (select 1 from clocks c
+  where c.application_id = ${applications.id} and c.status in ('running', 'overdue'))`
+
 const NEEDS_ACTION = sql`(${inArray(applications.state, [...NEEDS_ACTION_STATES])}
   or (${applications.state} <> 'draft'
-    and (${NEXT_DUE} is not null or ${FILING_DUE} is not null or ${NOTICE_DUE} is not null)))`
+    and (${DEADLINE_RUNNING} or ${NOTICE_DUE} is not null)))`
 
 const ACTIVE_ASSIGNMENT = sql`select 1 from review_assignments ra
   where ra.application_id = ${applications.id} and ra.removed_at is null`
