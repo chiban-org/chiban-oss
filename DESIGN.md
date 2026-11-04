@@ -33,7 +33,7 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 ## Layout pieces
 
 - `PageHeader` (`src/components/layout/PageHeader.tsx`): kicker, serif title with status chip, lead line, a fact list, and the page's actions. Use it for every record page.
-- `RecordLayout` (`src/components/layout/RecordLayout.tsx`): a record page body with a sticky right rail. The rail holds the next step (the one filled action), the key facts as a stacked `FactList`, and an "On this page" index once there are four or more panels. Below 1024px the rail comes first, above the panels.
+- `RecordLayout` (`src/components/layout/RecordLayout.tsx`): a record page body with a sticky right rail. The rail holds the next step (the one filled action), the key facts as a stacked `FactList`, and an "On this page" index once there are four or more panels. In windows 1840px and wider the index moves to the empty space left of the record and sticks there while the page scrolls. Below 1024px the rail comes first, above the panels.
 - `splitPanels` (`src/components/layout/splitPanels.ts`): the page decides which panels have nothing on file. Filled panels keep their order; empty ones collect at the end under "Nothing recorded yet" as one-line rows, with any add action as a disclosure on the right.
 - Forms that add something (assign, apply, record, refer) sit behind a `<details>` disclosure named for the action. Forms that are the page's next step stay open in the rail.
 - Lists of records inside a panel use `record-item` dividers, never bordered boxes inside a bordered panel.

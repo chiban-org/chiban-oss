@@ -92,10 +92,16 @@ function useSectionIndex() {
   return { body, entries, active }
 }
 
-function SectionIndex({ entries, active }: { entries: IndexEntry[]; active: string | null }) {
+interface SectionIndexProps {
+  entries: IndexEntry[]
+  active: string | null
+  className: string
+}
+
+function SectionIndex({ entries, active, className }: SectionIndexProps) {
   if (entries.length < 4) return null
   return (
-    <nav aria-label="On this page" className="no-print hidden lg:block">
+    <nav aria-label="On this page" className={`no-print ${className}`}>
       <p className="mb-2 text-sm font-semibold text-muted-foreground">On this page</p>
       <ul className="flex flex-col border-l">
         {entries.map((entry) => (
@@ -172,7 +178,13 @@ export function RecordLayout({ children, rail, railFooter, strip, empty }: Recor
   const { aside, tall } = useTallRail()
   const collapsed = strip !== undefined
   return (
-    <div className="record-layout lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-8">
+    <div className="record-layout relative lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-8">
+      <div
+        data-index-gutter=""
+        className="absolute inset-y-0 right-full mr-10 hidden w-48 min-[1840px]:block"
+      >
+        <SectionIndex entries={entries} active={active} className="sticky top-6" />
+      </div>
       {collapsed ? (
         <div className="record-strip mb-5 flex flex-col gap-4 lg:hidden">{strip}</div>
       ) : null}
@@ -182,7 +194,7 @@ export function RecordLayout({ children, rail, railFooter, strip, empty }: Recor
         className={`record-rail mb-6 flex-col gap-6 lg:order-2 lg:mb-0 lg:sticky lg:top-6 lg:flex lg:data-tall:static ${collapsed ? 'hidden' : 'flex'}`}
       >
         {rail}
-        <SectionIndex entries={entries} active={active} />
+        <SectionIndex entries={entries} active={active} className="hidden lg:max-[1839px]:block" />
         {railFooter}
       </aside>
       <div ref={body} className="record-body flex min-w-0 flex-col gap-5">

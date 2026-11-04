@@ -32,3 +32,23 @@ describe('RecordLayout rail', () => {
     expect(container.querySelector('aside')?.hasAttribute('data-tall')).toBe(true)
   })
 })
+
+describe('RecordLayout section index', () => {
+  it('offers the index both in the rail and in the left gutter for wide windows', () => {
+    railHeight(400)
+    const { container } = render(
+      <RecordLayout rail={<p>Next step</p>}>
+        {['Findings', 'Orders', 'Fines', 'Counsel'].map((title) => (
+          <section key={title}>
+            <h2>{title}</h2>
+          </section>
+        ))}
+      </RecordLayout>,
+    )
+    const gutter = container.querySelector('[data-index-gutter]')
+    expect(gutter?.querySelector('nav[aria-label="On this page"]')?.textContent).toContain(
+      'Counsel',
+    )
+    expect(container.querySelector('aside nav[aria-label="On this page"]')).not.toBeNull()
+  })
+})
