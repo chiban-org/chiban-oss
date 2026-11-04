@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 import { env } from '@/config/env'
+import { plainFrame } from '@/features/pdf/frame'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { createGhostscriptConverter } from '@/features/preservation/ghostscript'
 import { pdfaDef } from '@/features/preservation/pdfaDef'
@@ -36,7 +37,7 @@ describe('ghostscript', () => {
   it('a pdf from renderPdf converts to output whose XMP says pdfaid:part 2', async () => {
     const input = await renderPdf({
       title: 'Permit',
-      townName: 'Town of Alder Pond',
+      frame: plainFrame('Town of Alder Pond'),
       scale: 'document',
       blocks: [{ kind: 'paragraph', text: 'Garage addition on Heron Cove Road' }],
     })

@@ -10,8 +10,8 @@ import {
 } from '@/db/schema'
 import { assessedLines, lineKey } from '@/features/ledger/lineTotals'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
+import { documentFrame } from '@/features/pdf/documentFrame'
 import { renderPdf } from '@/features/pdf/renderPdf'
-import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { err, ok, type Result } from '@/types/result'
@@ -101,7 +101,6 @@ export async function buildReceiptPdf(
     .select()
     .from(ledgerEntries)
     .where(eq(ledgerEntries.receiptId, receiptId))
-  const town = await getTownSettings(db, signal)
   const settings = await getPaymentSettings(db, signal)
   const refund = receipt.kind === 'refund'
   const lines =
@@ -129,7 +128,7 @@ export async function buildReceiptPdf(
     await renderPdf({
       title: refund ? 'Refund receipt' : 'Payment receipt',
       subtitle: receipt.number,
-      townName: town.ok ? town.value.name : '',
+      frame: await documentFrame(db, {}, signal),
       scale: 'document',
       blocks: [
         { kind: 'fields', rows: fields },

@@ -14,9 +14,12 @@ import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { attachDocument } from '@/features/documents/attach'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import { formatMinuteOfDay } from '@/features/hearings/labels'
+import { documentFrame } from '@/features/pdf/documentFrame'
+import type { DocumentFrame } from '@/features/pdf/frame'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { loadPermitData, mergeContextOf, NOT_APPLICABLE } from '@/features/permits/permitData'
 import type { ObjectStore } from '@/features/storage/objectStore'
+import { frameMergeContext } from '@/features/templates/frameFields'
 import { renderTemplateText } from '@/features/templates/renderTemplate'
 import type { TemplateBody } from '@/features/templates/templateSchema'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -27,7 +30,7 @@ export type DocumentsError = 'forbidden' | 'not_found' | 'no_template' | 'alread
 export interface DecisionTexts {
   noticeOfDecision: string
   letter: string
-  townName: string
+  frame: DocumentFrame
   noticeTitle: string
   letterTitle: string
 }
@@ -66,10 +69,12 @@ export async function renderDecisionTexts(
   if (notice === null || letter === null) return err('no_template')
   const board = boardOfApplication(app)
   const settings = await getBoardSettings(db, signal)
+  const frame = await documentFrame(db, { board }, signal)
   const reasonsText = decision.reasonsForDisapproval?.trim() ?? ''
   const reasons = reasonsText === '' ? null : reasonsText
   const context = {
     ...mergeContextOf(data),
+    ...frameMergeContext(frame),
     'board.name': board === null ? '' : boardLabel(settings, board),
     'meeting.date': formatCivilDate(meeting.meetingDate),
     'meeting.location': meeting.location,
@@ -95,7 +100,7 @@ export async function renderDecisionTexts(
   return ok({
     noticeOfDecision: noticeText.value,
     letter: letterText.value,
-    townName: data.townName,
+    frame,
     noticeTitle: notice.label,
     letterTitle: letter.label,
   })
@@ -137,7 +142,7 @@ export async function generateDecisionDocuments(
       ] as const) {
         const pdf = await renderPdf({
           title,
-          townName: texts.value.townName,
+          frame: texts.value.frame,
           scale: 'document',
           blocks: paragraphs(body),
         })

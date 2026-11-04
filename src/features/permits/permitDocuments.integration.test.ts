@@ -155,11 +155,11 @@ describe('receipt documents', () => {
     expect(text).toContain('Cash')
   })
 
-  it('name outside WinAnsi renders without throwing on the receipt', async () => {
+  it('a name outside WinAnsi prints exactly on the receipt', async () => {
     const number = await payCashAndIssue()
     const [row] = await handle.db.select().from(receipts).where(eq(receipts.number, number))
     const built = await buildReceiptPdf(handle.db, row?.id ?? '', signal)
-    expect(built.ok && (await pdfText(built.value))).toContain('Zoë Lukasz-Ngugi')
+    expect(built.ok && (await pdfText(built.value))).toContain('Zoë Łukasz-Ngũgĩ')
   })
 
   it('simulated receipt contains SIMULATED', async () => {

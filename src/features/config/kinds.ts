@@ -12,6 +12,7 @@ import { InspectionSettingsBodySchema } from '@/features/inspections/settingsSch
 import { PaymentSettingsBodySchema } from '@/features/payments/settingsSchema'
 import { ReviewRoutesBodySchema } from '@/features/reviews/routesSchema'
 import { TemplateBodySchema } from '@/features/templates/templateSchema'
+import { TownProfileBodySchema } from '@/features/town/profileSchema'
 
 export const CONFIG_KINDS = [
   'application_type',
@@ -27,6 +28,7 @@ export const CONFIG_KINDS = [
   'board_settings',
   'regional_contacts',
   'review_routes',
+  'town_profile',
 ] as const
 export type ConfigKind = (typeof CONFIG_KINDS)[number]
 
@@ -38,6 +40,7 @@ export const SINGLETON_KINDS: readonly ConfigKind[] = [
   'board_settings',
   'regional_contacts',
   'review_routes',
+  'town_profile',
 ]
 
 export function isSingletonKind(kind: ConfigKind): boolean {
@@ -88,6 +91,7 @@ export const CONFIG_SCHEMAS: Record<ConfigKind, ZodType> = {
   board_settings: BoardSettingsBodySchema,
   regional_contacts: RegionalContactsBodySchema,
   review_routes: ReviewRoutesBodySchema,
+  town_profile: TownProfileBodySchema,
 }
 
 const CONFIG_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/

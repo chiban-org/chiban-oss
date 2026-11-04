@@ -43,6 +43,7 @@ COPY --from=build --chown=node:node /app/.next ./.next
 COPY --from=build --chown=node:node /app/public ./public
 COPY --from=build --chown=node:node /app/dist ./dist
 COPY --from=build --chown=node:node /app/drizzle ./drizzle
+COPY --from=build --chown=node:node /app/src/features/pdf/fonts ./src/features/pdf/fonts
 COPY --from=build --chown=node:node /app/package.json /app/next.config.ts ./
 USER node
 EXPOSE 3000

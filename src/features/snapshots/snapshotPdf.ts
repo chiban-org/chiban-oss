@@ -1,4 +1,5 @@
 import { displayFieldValue } from '@/features/forms/displayValue'
+import type { DocumentFrame } from '@/features/pdf/frame'
 import { type PdfBlock, renderPdf } from '@/features/pdf/renderPdf'
 import { partyRoleLabel } from '@/features/projects/partyRoleLabels'
 import type { PublicSnapshotView } from '@/features/snapshots/publicView'
@@ -54,14 +55,14 @@ function blocks(body: SnapshotPdfInput, timeZone: string): PdfBlock[] {
 
 export async function renderSnapshotPdf(
   body: SnapshotPdfInput,
-  townName: string,
+  frame: DocumentFrame,
   sequence: number,
   timeZone: string,
 ): Promise<Uint8Array> {
   return await renderPdf({
     title: `Application ${body.applicationNumber}`,
     subtitle: `Snapshot ${sequence}`,
-    townName,
+    frame,
     scale: 'document',
     blocks: blocks(body, timeZone),
   })

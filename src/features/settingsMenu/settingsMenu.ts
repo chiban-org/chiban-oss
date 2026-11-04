@@ -3,6 +3,7 @@ import { accessAllows } from '@/features/staffNav/access'
 import type { BaseNavAccess, NavViewer } from '@/features/staffNav/navTypes'
 
 export const SETTINGS_GROUPS = [
+  { key: 'town', label: 'Town' },
   { key: 'permits', label: 'Permits' },
   { key: 'townRules', label: 'Town rules' },
   { key: 'boards', label: 'Boards' },
@@ -41,6 +42,15 @@ const config = any('config.edit')
 const kind = (key: string) => `/staff/settings/${key}`
 
 export const SETTINGS_MENU_ITEMS: readonly SettingsMenuItem[] = [
+  {
+    href: '/staff/settings/town-profile',
+    label: 'Town profile',
+    group: 'town',
+    access: config,
+    match: [kind('town_profile')],
+  },
+  { href: '/staff/settings/letterhead', label: 'Letterhead', group: 'town', access: config },
+  { href: '/staff/settings/signers', label: 'Signers', group: 'town', access: config },
   {
     href: kind('application_type'),
     label: 'Application types',

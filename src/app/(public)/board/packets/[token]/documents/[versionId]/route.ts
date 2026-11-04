@@ -1,10 +1,10 @@
 import { db } from '@/db/client'
 import { packetCoverPdf } from '@/features/boards/cover'
 import { openPacket, openPacketVersion } from '@/features/boards/packetLinks'
+import { documentFrame } from '@/features/pdf/documentFrame'
 import { pdfOk, toResponse } from '@/features/pdf/pdfResponse'
 import { streamStoredObject } from '@/features/storage/delivery'
 import { getObjectStore } from '@/features/storage/objectStore'
-import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
 
 export const runtime = 'nodejs'
@@ -29,8 +29,8 @@ export async function GET(
     const opened = await openPacket(db, token, now, signal)
     if (!opened.ok)
       return opened.error === 'expired' ? plain(410, EXPIRED_COPY) : plain(404, 'Not found')
-    const town = await getTownSettings(db, signal)
-    const bytes = await packetCoverPdf(opened.value, town.ok ? town.value.name : '')
+    const frame = await documentFrame(db, { board: opened.value.board }, signal)
+    const bytes = await packetCoverPdf(opened.value, frame)
     return toResponse(pdfOk(bytes), request.headers.get('accept'))
   }
   if (!UUID.test(versionId)) return plain(404, 'Not found')

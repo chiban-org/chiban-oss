@@ -21,6 +21,7 @@ import { storeGeneratedBytes } from '@/features/files/ingest'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { getMailTransport, type MailTransport } from '@/features/mail/transport'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
+import { plainFrame } from '@/features/pdf/frame'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { createGhostscriptConverter, type PdfaConverter } from '@/features/preservation/ghostscript'
 import { processPreservation } from '@/features/preservation/preserve'
@@ -51,7 +52,7 @@ interface Context {
 async function textPdf(title: string, line: string): Promise<Uint8Array> {
   return await renderPdf({
     title,
-    townName: 'Town of Alder Pond',
+    frame: plainFrame('Town of Alder Pond'),
     scale: 'document',
     blocks: [{ kind: 'paragraph', text: line }],
   })

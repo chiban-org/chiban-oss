@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { plainFrame } from '@/features/pdf/frame'
 import { renderSnapshotPdf } from '@/features/snapshots/snapshotPdf'
 import { findIsoDates, findRawKeys } from '@/test/leaks'
 import { pdfText } from '@/test/pdfText'
@@ -19,7 +20,7 @@ const body = {
 
 describe('renderSnapshotPdf', () => {
   it('writes the attestation date in the town zone and party roles as labels', async () => {
-    const bytes = await renderSnapshotPdf(body, 'Test Town', 1, 'America/New_York')
+    const bytes = await renderSnapshotPdf(body, plainFrame('Test Town'), 1, 'America/New_York')
     const text = await pdfText(bytes)
     expect(text).toContain('Attested on November 2, 2026.')
     expect(findIsoDates(text)).toEqual([])

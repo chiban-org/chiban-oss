@@ -27,15 +27,21 @@ describe('settings menu', () => {
     expect(new Set(hrefs).size).toBe(hrefs.length)
   })
 
-  it('shows an admin every settings page, Application types first', () => {
+  it('shows an admin every settings page, the town group first', () => {
     const labels = labelsFor('admin')
     expect(labels).toHaveLength(SETTINGS_MENU_ITEMS.length)
-    expect(labels[0]).toBe('Application types')
+    expect(labels.slice(0, 4)).toEqual([
+      'Town profile',
+      'Letterhead',
+      'Signers',
+      'Application types',
+    ])
   })
 
   it('groups the admin menu in the fixed order', () => {
     const sections = groupSettingsMenu(settingsMenuFor(viewerOf('admin')))
     expect(sections.map((s) => s.label)).toEqual([
+      'Town',
       'Permits',
       'Town rules',
       'Boards',
@@ -43,7 +49,7 @@ describe('settings menu', () => {
       'Starters',
       'Administration',
     ])
-    expect(sections[1]?.items.map((i) => i.label)).toEqual([
+    expect(sections[2]?.items.map((i) => i.label)).toEqual([
       'Town rule settings',
       'Local code amendments',
       'State law',
@@ -92,6 +98,9 @@ describe('settings menu', () => {
       '/staff/settings/payments',
     )
     expect(activeHref('/staff/admin/export/targets', items)).toBe('/staff/admin/export')
+    expect(activeHref('/staff/settings/town_profile/default', items)).toBe(
+      '/staff/settings/town-profile',
+    )
     expect(activeHref('/staff/settings', items)).toBeNull()
   })
 

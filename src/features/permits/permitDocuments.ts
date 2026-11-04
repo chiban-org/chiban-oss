@@ -1,16 +1,22 @@
 import type { Db, DbOrTx } from '@/db/client'
+import { documentFrame } from '@/features/pdf/documentFrame'
+import type { DocumentFrame } from '@/features/pdf/frame'
 import type { PdfBlock } from '@/features/pdf/renderPdf'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { loadPermitData, mergeContextOf, type PermitData } from '@/features/permits/permitData'
+import { frameMergeContext } from '@/features/templates/frameFields'
 import { renderTemplateText } from '@/features/templates/renderTemplate'
 import { err, ok, type Result } from '@/types/result'
 
 const PLACARD_NOTICE =
   'Post this placard where it can be seen from the street until the final inspection.'
 
-function templateParagraphs(data: PermitData): PdfBlock[] {
+function templateParagraphs(data: PermitData, frame: DocumentFrame): PdfBlock[] {
   if (data.permitTemplate === null) return []
-  const rendered = renderTemplateText(data.permitTemplate.body, mergeContextOf(data))
+  const rendered = renderTemplateText(data.permitTemplate.body, {
+    ...mergeContextOf(data),
+    ...frameMergeContext(frame),
+  })
   if (!rendered.ok) return []
   return rendered.value
     .split(/\n\s*\n/)
@@ -35,6 +41,7 @@ export async function buildPermitPdf(
 ): Promise<Result<Uint8Array, 'not_issued'>> {
   const data = await loadPermitData(db, applicationId, signal)
   if (data?.application.state !== 'issued') return err('not_issued')
+  const frame = await documentFrame(db, {}, signal)
   const contractor =
     data.licenseNumber === ''
       ? data.contractorName
@@ -43,10 +50,10 @@ export async function buildPermitPdf(
     await renderPdf({
       title: data.application.typeBody.label,
       subtitle: data.application.number,
-      townName: data.townName,
+      frame,
       scale: 'document',
       blocks: [
-        ...templateParagraphs(data),
+        ...templateParagraphs(data, frame),
         {
           kind: 'fields',
           rows: [
@@ -66,7 +73,7 @@ export async function buildPermitPdf(
           ],
         },
         ...conditionsBlock(data),
-        { kind: 'signature', label: 'Authorized signature' },
+        { kind: 'signature', role: 'building_official', label: 'Authorized signature' },
       ],
     }),
   )
@@ -82,7 +89,7 @@ export async function buildPlacardPdf(
   return ok(
     await renderPdf({
       title: data.application.typeBody.label.toUpperCase(),
-      townName: data.townName,
+      frame: await documentFrame(db, {}, signal),
       scale: 'placard',
       blocks: [
         {

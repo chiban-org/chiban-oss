@@ -14,6 +14,7 @@ export const KIND_LABELS: Record<ConfigKind, string> = {
   board_settings: 'Board settings',
   regional_contacts: 'Regional notice contacts',
   review_routes: 'Technical Review Committee routes',
+  town_profile: 'Town profile',
 }
 
 export const KIND_DESCRIPTIONS: Record<ConfigKind, string> = {
@@ -33,6 +34,8 @@ export const KIND_DESCRIPTIONS: Record<ConfigKind, string> = {
   regional_contacts: 'Who is sent notice when an application may have impact beyond the town.',
   review_routes:
     'Which departments the Technical Review Committee asks to review each kind of application.',
+  town_profile:
+    'The office name, address, contact details, logo, letterhead and signers on every document Chiban prints.',
 }
 
 const START_SETTINGS = 'Start the settings'
@@ -51,6 +54,7 @@ export const KIND_NEW_LABELS: Record<ConfigKind, string> = {
   board_settings: START_SETTINGS,
   regional_contacts: START_SETTINGS,
   review_routes: START_SETTINGS,
+  town_profile: START_SETTINGS,
 }
 
 const EMPTY_COPY: Partial<Record<ConfigKind, { title: string; description: string }>> = {

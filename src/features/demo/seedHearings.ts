@@ -32,6 +32,7 @@ import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { type ProofMethod, referenceRequired } from '@/features/notices/proofMethods'
 import { recordProof } from '@/features/notices/proofs'
+import { plainFrame } from '@/features/pdf/frame'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { signOffReview } from '@/features/reviews/assignments'
 import { routeToTrc } from '@/features/reviews/trcRouting'
@@ -96,7 +97,7 @@ async function demoDocument(
 ): Promise<string> {
   const pdf = await renderPdf({
     title,
-    townName: 'Town of Alder Pond',
+    frame: plainFrame('Town of Alder Pond'),
     scale: 'document',
     blocks: [{ kind: 'paragraph', text: `${title}. Demonstration record.` }],
   })

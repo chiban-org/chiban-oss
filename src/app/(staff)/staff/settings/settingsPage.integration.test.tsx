@@ -59,7 +59,7 @@ afterAll(async () => {
 
 describe('settings index', () => {
   it('opens the first settings page each role can use', async () => {
-    expect(await settingsFor(admin)).toBe('NEXT_REDIRECT:/staff/settings/application_type')
+    expect(await settingsFor(admin)).toBe('NEXT_REDIRECT:/staff/settings/town-profile')
     expect(await settingsFor(await staffActor(handle.db, 'staff'))).toBe(
       'NEXT_REDIRECT:/staff/admin/cutover',
     )

@@ -11,6 +11,8 @@ import { loadPack } from '@/features/packs/loadPack'
 import { checkTownValue } from '@/features/packs/overridePolicy'
 import { unknownMergeFields } from '@/features/templates/mergeFields'
 import type { TemplateBody } from '@/features/templates/templateSchema'
+import { checkTownProfile } from '@/features/town/profileChecks'
+import type { TownProfileBody } from '@/features/town/profileSchema'
 import { validateWorkflow, type WorkflowIssue } from '@/features/workflow/validateWorkflow'
 
 export type PublishError =
@@ -118,5 +120,6 @@ export async function runPublishChecks(
   }
   if (kind === 'town_rule_setting') return checkTownRule(body as TownRuleSettingBody, key)
   if (kind === 'board_settings') return checkBoardSettings(body as BoardSettingsBody)
+  if (kind === 'town_profile') return checkTownProfile(body as TownProfileBody)
   return null
 }

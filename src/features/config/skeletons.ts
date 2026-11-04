@@ -3,6 +3,7 @@ import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettings'
 import { EMPTY_REGIONAL_CONTACTS } from '@/features/boards/regionalContacts'
 import type { ConfigKind } from '@/features/config/kinds'
 import { EMPTY_REVIEW_ROUTES } from '@/features/reviews/routesSchema'
+import { TOWN_PROFILE_SKELETON } from '@/features/town/profileSchema'
 
 export function skeletonBody(kind: ConfigKind, key: string): unknown {
   switch (kind) {
@@ -59,6 +60,8 @@ export function skeletonBody(kind: ConfigKind, key: string): unknown {
       return EMPTY_REGIONAL_CONTACTS
     case 'review_routes':
       return EMPTY_REVIEW_ROUTES
+    case 'town_profile':
+      return TOWN_PROFILE_SKELETON
     case 'application_type':
       return {
         key,

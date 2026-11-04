@@ -9,12 +9,12 @@ import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { attachDocument } from '@/features/documents/attach'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import { formatMinuteOfDay } from '@/features/hearings/labels'
-import { renderPdf } from '@/features/pdf/renderPdf'
+import { documentFrame } from '@/features/pdf/documentFrame'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { formatCivilDate } from '@/lib/formatDate'
 import { err, ok, type Result } from '@/types/result'
-import { hearingTitle, loadTownName, modelItems } from './agendaModel'
-import { agendaBlocks } from './agendaPdf'
+import { hearingTitle, modelItems } from './agendaModel'
+import { renderAgendaPdf } from './agendaPdf'
 
 export type AgendaError =
   | 'forbidden'
@@ -236,18 +236,13 @@ export async function publishAgenda(
     if (meeting === undefined) return err('not_found')
     const settings = await getBoardSettings(tx, signal)
     const date = formatCivilDate(meeting.meetingDate)
-    const bytes = await renderPdf({
-      title: 'Meeting agenda',
-      subtitle: date,
-      townName: await loadTownName(tx, signal),
-      scale: 'document',
-      blocks: agendaBlocks({
-        boardName: boardLabel(settings, meeting.board),
-        meetingDate: date,
-        location: meeting.location,
-        time: formatMinuteOfDay(meeting.startsAtMinute),
-        items: await modelItems(tx, items, signal),
-      }),
+    const frame = await documentFrame(tx, { board: meeting.board }, signal, store)
+    const bytes = await renderAgendaPdf(frame, {
+      boardName: boardLabel(settings, meeting.board),
+      meetingDate: date,
+      location: meeting.location,
+      time: formatMinuteOfDay(meeting.startsAtMinute),
+      items: await modelItems(tx, items, signal),
     })
     const stored = await storeGeneratedBytes(tx, store, bytes, 'application/pdf', signal)
     const revision = agenda.value.revision + 1

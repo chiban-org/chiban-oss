@@ -3,6 +3,7 @@ import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'nod
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { env } from '@/config/env'
+import { plainFrame } from '@/features/pdf/frame'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { wrapImageAsPdf } from '@/features/preservation/wrapImage'
 
@@ -17,7 +18,7 @@ function gs(args: string[]): void {
 async function sourcePdf(heading: string, body: string): Promise<Uint8Array> {
   return await renderPdf({
     title: heading,
-    townName: 'Town of Alder Pond',
+    frame: plainFrame('Town of Alder Pond'),
     scale: 'document',
     blocks: [
       { kind: 'heading', text: heading },

@@ -8,13 +8,14 @@ import {
 } from '@packs/nh/starters/enforcementTemplates'
 import type { violationFindings } from '@/db/schema'
 import { PROVISION_KIND_LABELS } from '@/features/enforcement/labels'
+import type { DocumentFrame } from '@/features/pdf/frame'
 import { type PdfBlock, renderPdf } from '@/features/pdf/renderPdf'
 import { formatCivilDate } from '@/lib/formatDate'
 
 type Finding = typeof violationFindings.$inferSelect
 
 export interface OrderPdfInput {
-  townName: string
+  frame: DocumentFrame
   number: string
   rule: CeaseAndDesistRule
   locationText: string
@@ -93,21 +94,22 @@ export async function renderOrderPdf(input: OrderPdfInput): Promise<Uint8Array> 
     blocks.push({ kind: 'paragraph', text: ORDER_LIEN_WARNING })
   }
   blocks.push({
-    kind: 'fields',
-    rows: [{ label: 'Issued by', value: `${input.issuerName}, ${input.issuerTitle}` }],
+    kind: 'signature',
+    role: 'code_enforcement_officer',
+    label: 'Enforcement officer signature',
+    person: { name: input.issuerName, title: input.issuerTitle },
   })
-  blocks.push({ kind: 'signature', label: 'Enforcement officer signature' })
   return await renderPdf({
     title: 'Cease and desist order',
     subtitle: input.number,
-    townName: input.townName,
+    frame: input.frame,
     scale: 'document',
     blocks,
   })
 }
 
 export interface NoticePdfInput {
-  townName: string
+  frame: DocumentFrame
   caseNumber: string
   locationText: string
   findings: Finding[]
@@ -139,7 +141,7 @@ export async function renderNoticePdf(input: NoticePdfInput): Promise<Uint8Array
   return await renderPdf({
     title: 'Notice of violation',
     subtitle: input.caseNumber,
-    townName: input.townName,
+    frame: input.frame,
     scale: 'document',
     blocks,
   })

@@ -14,6 +14,7 @@ import { getVersion } from '@/features/config/store'
 import { attachDocument, defaultSeriesForApplication } from '@/features/documents/attach'
 import { sha256Hex, storeGeneratedBytes } from '@/features/files/ingest'
 import type { FormBody } from '@/features/forms/formSchema'
+import { documentFrame } from '@/features/pdf/documentFrame'
 import { assignSeries } from '@/features/records/assignments'
 import { canonicalJson } from '@/features/snapshots/canonicalJson'
 import {
@@ -23,7 +24,6 @@ import {
 } from '@/features/snapshots/publicView'
 import { renderSnapshotPdf } from '@/features/snapshots/snapshotPdf'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
-import { getTownSettings } from '@/features/town/settings'
 import { townTimeZone } from '@/features/town/timeZone'
 
 export type SnapshotReason = 'submission' | 'amendment'
@@ -118,13 +118,12 @@ export async function captureSnapshot(
       createdBy: actor.userId,
     })
     .returning({ id: applicationSnapshots.id })
-  const town = await getTownSettings(tx, signal)
-  const townName = town.ok ? town.value.name : ''
+  const frame = await documentFrame(tx, {}, signal, store)
   const timeZone = await townTimeZone(tx, signal)
-  const full = await renderSnapshotPdf(body, townName, sequence, timeZone)
+  const full = await renderSnapshotPdf(body, frame, sequence, timeZone)
   const redacted = await renderSnapshotPdf(
     { ...publicSnapshotView(body), attestation: null },
-    townName,
+    frame,
     sequence,
     timeZone,
   )

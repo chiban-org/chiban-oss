@@ -7,6 +7,7 @@ import { attachDocument } from '@/features/documents/attach'
 import { openCase } from '@/features/enforcement/cases'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import { finishDisposition } from '@/features/files/releaseFile'
+import { plainFrame } from '@/features/pdf/frame'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { recordRetentionEvent } from '@/features/records/recordEvents'
 import { addDays } from '@/types/civilDate'
@@ -18,7 +19,7 @@ export async function caseWithPhoto(ctx: RtkSeedContext, location: string, title
   )
   const bytes = await renderPdf({
     title,
-    townName: 'Town of Alder Pond',
+    frame: plainFrame('Town of Alder Pond'),
     scale: 'document',
     blocks: [{ kind: 'paragraph', text: `${title}. Photograph log for ${location}.` }],
   })

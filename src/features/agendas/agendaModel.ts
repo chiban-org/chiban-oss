@@ -4,7 +4,6 @@ import { type agendaItems, hearings } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { loadPermitData } from '@/features/permits/permitData'
-import { getTownSettings } from '@/features/town/settings'
 import type { AgendaModelItem } from './agendaPdf'
 
 type ItemRow = typeof agendaItems.$inferSelect
@@ -49,9 +48,4 @@ export async function modelItems(
     })
   }
   return out
-}
-
-export async function loadTownName(tx: Tx, signal: AbortSignal): Promise<string> {
-  const town = await getTownSettings(tx, signal)
-  return town.ok ? town.value.name : ''
 }

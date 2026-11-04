@@ -10,8 +10,8 @@ import {
   rtkTimeStatements,
   rtkWithholdings,
 } from '@/db/schema'
+import { documentFrame } from '@/features/pdf/documentFrame'
 import { type PdfBlock, renderPdf } from '@/features/pdf/renderPdf'
-import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 
@@ -83,7 +83,6 @@ export async function buildResponseLetter(
     .from(rtkWithholdings)
     .where(eq(rtkWithholdings.requestId, requestId))
     .orderBy(asc(rtkWithholdings.createdAt))
-  const town = await getTownSettings(db, signal)
   const blocks: PdfBlock[] = [
     {
       kind: 'fields',
@@ -152,7 +151,7 @@ export async function buildResponseLetter(
   return await renderPdf({
     title: 'Response to your Right-to-Know request',
     subtitle: request.number,
-    townName: town.ok ? town.value.name : '',
+    frame: await documentFrame(db, {}, signal),
     scale: 'document',
     blocks,
   })

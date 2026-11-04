@@ -1,14 +1,15 @@
 import type { PacketView } from '@/features/boards/packetLinks'
+import type { DocumentFrame } from '@/features/pdf/frame'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { formatCivilDate } from '@/lib/formatDate'
 
 const BOARD_NAMES = { planning_board: 'Planning Board', zba: 'Zoning Board of Adjustment' } as const
 
-export async function packetCoverPdf(view: PacketView, townName: string): Promise<Uint8Array> {
+export async function packetCoverPdf(view: PacketView, frame: DocumentFrame): Promise<Uint8Array> {
   return await renderPdf({
     title: view.title,
     subtitle: `${BOARD_NAMES[view.board]}, meeting ${formatCivilDate(view.meetingDate)}`,
-    townName,
+    frame,
     scale: 'document',
     blocks: [
       { kind: 'heading', text: 'Contents' },

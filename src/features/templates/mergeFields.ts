@@ -28,6 +28,23 @@ export const MERGE_FIELDS = [
   'decision.conditionsSection',
   'decision.reasonsSection',
   'decision.appealRights',
+  'town.address',
+  'town.phone',
+  'town.email',
+  'town.website',
+  'office.name',
+  'signer.building_official.name',
+  'signer.building_official.title',
+  'signer.land_use_administrator.name',
+  'signer.land_use_administrator.title',
+  'signer.planning_board_chair.name',
+  'signer.planning_board_chair.title',
+  'signer.zba_chair.name',
+  'signer.zba_chair.title',
+  'signer.code_enforcement_officer.name',
+  'signer.code_enforcement_officer.title',
+  'signer.town_clerk.name',
+  'signer.town_clerk.title',
 ] as const
 
 export type MergeField = (typeof MERGE_FIELDS)[number]

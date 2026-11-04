@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { MERGE_FIELD_LABELS } from '@/features/templates/mergeFieldLabels'
 import { MERGE_FIELDS, unknownMergeFields } from '@/features/templates/mergeFields'
 import { renderTemplate, renderTemplateText } from '@/features/templates/renderTemplate'
 
@@ -62,7 +63,33 @@ describe('renderTemplate', () => {
       'decision.conditionsSection',
       'decision.reasonsSection',
       'decision.appealRights',
+      'town.address',
+      'town.phone',
+      'town.email',
+      'town.website',
+      'office.name',
+      'signer.building_official.name',
+      'signer.building_official.title',
+      'signer.land_use_administrator.name',
+      'signer.land_use_administrator.title',
+      'signer.planning_board_chair.name',
+      'signer.planning_board_chair.title',
+      'signer.zba_chair.name',
+      'signer.zba_chair.title',
+      'signer.code_enforcement_officer.name',
+      'signer.code_enforcement_officer.title',
+      'signer.town_clerk.name',
+      'signer.town_clerk.title',
     ])
+  })
+
+  it('gives every merge field a plain-language label', () => {
+    expect(Object.keys(MERGE_FIELD_LABELS).sort()).toEqual([...MERGE_FIELDS].sort())
+    expect(Object.values(MERGE_FIELD_LABELS).every((label) => label.trim() !== '')).toBe(true)
+    expect(MERGE_FIELD_LABELS['party.applicant.name']).toBe('Applicant name')
+    expect(MERGE_FIELD_LABELS['signer.zba_chair.title']).toBe(
+      'Zoning Board of Adjustment chair title',
+    )
   })
 
   it('unknownMergeFields scans without rendering', () => {

@@ -10,8 +10,8 @@ import { requireCapability } from '@/features/authz/capabilities'
 import { attachDocument } from '@/features/documents/attach'
 import { renderNoticePdf } from '@/features/enforcement/orderPdf'
 import { storeGeneratedBytes } from '@/features/files/ingest'
+import { documentFrame } from '@/features/pdf/documentFrame'
 import type { ObjectStore } from '@/features/storage/objectStore'
-import { getTownSettings } from '@/features/town/settings'
 import { err, ok, type Result } from '@/types/result'
 
 const SendSchema = z.object({
@@ -57,9 +57,8 @@ export async function sendViolationNotice(
         ),
       )
     if (findings.length !== new Set(value.findingIds).size) return err('findings_invalid')
-    const town = await getTownSettings(tx, signal)
     const bytes = await renderNoticePdf({
-      townName: town.ok ? town.value.name : '',
+      frame: await documentFrame(tx, {}, signal, store),
       caseNumber: caseRow.number,
       locationText: caseRow.locationText,
       findings,

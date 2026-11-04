@@ -61,6 +61,8 @@ export const ErrorIds = {
   RTK_INVARIANT: 'E_RTK_001',
 
   ANON_INTAKE_FAILED: 'E_ANON_001',
+
+  PDF_FRAME_MISSING: 'E_PDF_001',
 } as const
 
 export type ErrorId = (typeof ErrorIds)[keyof typeof ErrorIds]

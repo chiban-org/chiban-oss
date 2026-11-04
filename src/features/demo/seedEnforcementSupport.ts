@@ -5,6 +5,7 @@ import { must } from '@/features/demo/seedPermitSupport'
 import { attachDocument } from '@/features/documents/attach'
 import type { DocKind } from '@/features/documents/types'
 import { storeGeneratedBytes } from '@/features/files/ingest'
+import { plainFrame } from '@/features/pdf/frame'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { addDays, type CivilDate } from '@/types/civilDate'
@@ -48,7 +49,7 @@ export async function caseDocument(
 ): Promise<string> {
   const bytes = await renderPdf({
     title: input.title,
-    townName: TOWN,
+    frame: plainFrame(TOWN),
     scale: 'document',
     blocks: [
       {

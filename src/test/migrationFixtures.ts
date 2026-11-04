@@ -5,6 +5,7 @@ import { fileURLToPath } from 'node:url'
 import type { Db } from '@/db/client'
 import { roleCapabilities } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { plainFrame } from '@/features/pdf/frame'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { staffActor } from '@/test/parcels'
 
@@ -40,7 +41,7 @@ export async function buildSourceTree(): Promise<string> {
   const scan = scannedFixture('alder-pond-scan.pdf')
   const deed = await renderPdf({
     title: 'Deed',
-    townName: 'Town of Alder Pond',
+    frame: plainFrame('Town of Alder Pond'),
     scale: 'document',
     blocks: [{ kind: 'paragraph', text: 'Quitclaim deed for the Fernwood Lane lot' }],
   })

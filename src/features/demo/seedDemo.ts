@@ -23,6 +23,7 @@ import { actorFor } from '@/features/demo/seedPermitSupport'
 import { seedPermits } from '@/features/demo/seedPermits'
 import { type SeedRecordsDeps, seedRecords } from '@/features/demo/seedRecords'
 import { seedRecordsM10 } from '@/features/demo/seedRtk'
+import { seedTownProfile } from '@/features/demo/seedTownProfile'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { getMailTransport } from '@/features/mail/transport'
 import type { OcrConverter } from '@/features/migration/ocrmypdf'
@@ -110,6 +111,7 @@ const DEFAULT_LEGACY_DIR = './.data/legacy-source'
 
 export interface SeedReport {
   townConfigured: boolean
+  townProfileSeeded: boolean
   usersCreated: number
   rolesAssigned: number
   parcelsSeeded: boolean
@@ -168,6 +170,8 @@ export async function seedDemo(
       rolesAssigned: assigned.length,
     }
   })
+  const store = deps.operations?.store ?? getObjectStore()
+  const townProfileSeeded = await seedTownProfile(db, store, signal)
   const seeded = await seedParcels(db, signal)
   const permitsSeeded = await seedPermits(db, signal)
   const paymentsSeeded = await seedPayments(db, signal)
@@ -181,7 +185,6 @@ export async function seedDemo(
   )
   await seedBoardPacket(db, signal, deps.records?.mail)
   const operationsSeeded = await seedOperations(db, signal, deps.operations ?? {})
-  const store = deps.operations?.store ?? getObjectStore()
   const now = deps.operations?.now ?? new Date()
   const enforcementSeeded = await seedEnforcement(db, store, signal, now)
   await seedRecordsM10(db, store, signal, now)
@@ -190,6 +193,7 @@ export async function seedDemo(
     (await seedCoverage(db, { store, now, mail: deps.records?.mail ?? getMailTransport() }, signal))
   return {
     ...base,
+    townProfileSeeded,
     parcelsSeeded: seeded.imported,
     permitsSeeded,
     paymentsSeeded,

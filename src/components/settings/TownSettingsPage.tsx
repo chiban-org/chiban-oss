@@ -1,0 +1,46 @@
+import Link from 'next/link'
+import { TownSectionForm } from '@/components/config/town/TownSectionForm'
+import { SettingsHeader } from '@/components/settings/SettingsHeader'
+import { NoPermission } from '@/components/staff/NoPermission'
+import { hasCapability } from '@/features/authz/capabilities'
+import { type TownProfileSection, townProfileForEditing } from '@/features/town/profileSettings'
+import { getTownSettings } from '@/features/town/settings'
+import type { StaffContext } from '@/server/requireStaff'
+
+interface Props {
+  ctx: StaffContext
+  section: TownProfileSection
+  title: string
+  lead: string
+}
+
+export async function TownSettingsPage({ ctx, section, title, lead }: Props) {
+  if (!(await hasCapability(ctx.db, ctx.actor.userId, 'config.edit', ctx.signal))) {
+    return <NoPermission title={title} action="change town settings" />
+  }
+  const [profile, town] = await Promise.all([
+    townProfileForEditing(ctx.db, ctx.signal),
+    getTownSettings(ctx.db, ctx.signal),
+  ])
+  return (
+    <main>
+      <SettingsHeader title={title} lead={lead} />
+      {profile.published ? null : (
+        <p className="mb-6 max-w-[75ch]">
+          <span className="bg-highlight px-1">Nothing is published yet.</span> Until it is,
+          documents show only the town name at the top.
+        </p>
+      )}
+      <TownSectionForm
+        section={section}
+        initial={profile.body}
+        townName={town.ok ? town.value.name : ''}
+      />
+      <p className="mt-8 text-sm">
+        <Link href="/staff/settings/town_profile/default" className="text-action underline">
+          Version history
+        </Link>
+      </p>
+    </main>
+  )
+}

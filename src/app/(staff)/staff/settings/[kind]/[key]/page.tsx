@@ -28,6 +28,7 @@ interface Props {
 const SINGLETON_HOMES: Partial<Record<ConfigKind, SettingsBackLink>> = {
   payment_settings: { href: '/staff/settings/payments', label: 'Card payments' },
   inspection_settings: { href: '/staff/settings/inspections', label: 'Inspection schedule' },
+  town_profile: { href: '/staff/settings/town-profile', label: 'Town profile' },
 }
 
 function headerFor(kind: ConfigKind, key: string) {

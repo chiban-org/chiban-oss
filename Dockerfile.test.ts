@@ -95,6 +95,12 @@ describe('Dockerfile', () => {
     expect(tools.trimEnd().split('\n').at(-1)).toBe('USER node')
   })
 
+  it('runtime carries the PDF fonts at the path the renderer reads them from', () => {
+    expect(stageBody('runtime')).toContain(
+      'COPY --from=build --chown=node:node /app/src/features/pdf/fonts ./src/features/pdf/fonts',
+    )
+  })
+
   it('the runtime stage does not install the OCR toolchain', () => {
     expect(stageBody('runtime')).not.toContain('ocrmypdf')
   })

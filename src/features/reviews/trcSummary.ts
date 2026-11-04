@@ -5,10 +5,10 @@ import { hasFullRecordAccess } from '@/features/access/roles'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { getPublished } from '@/features/config/store'
+import { documentFrame } from '@/features/pdf/documentFrame'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import type { ReviewRoutesBody } from '@/features/reviews/routesSchema'
 import { reviewStatusLabel } from '@/features/reviews/statusLabels'
-import { getTownSettings } from '@/features/town/settings'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { words } from '@/lib/words'
@@ -88,11 +88,10 @@ export async function trcSummaryPdf(
   if (!summary.ok) return summary
   if (summary.value.length === 0) return err('empty')
   const app = await loadApplicationContext(db, applicationId, signal)
-  const town = await getTownSettings(db, signal)
   const bytes = await renderPdf({
     title: 'Technical Review Committee summary',
     subtitle: app?.number ?? '',
-    townName: town.ok ? town.value.name : '',
+    frame: await documentFrame(db, {}, signal),
     scale: 'document',
     blocks: [
       {

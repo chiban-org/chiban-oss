@@ -1,4 +1,5 @@
-import type { PdfBlock } from '@/features/pdf/renderPdf'
+import type { DocumentFrame } from '@/features/pdf/frame'
+import { type PdfBlock, renderPdf } from '@/features/pdf/renderPdf'
 
 export interface AgendaModelItem {
   position: number
@@ -62,4 +63,17 @@ export function agendaBlocks(model: AgendaModel): PdfBlock[] {
     },
     ...notes,
   ]
+}
+
+export async function renderAgendaPdf(
+  frame: DocumentFrame,
+  model: AgendaModel,
+): Promise<Uint8Array> {
+  return await renderPdf({
+    title: 'Meeting agenda',
+    subtitle: model.meetingDate,
+    frame,
+    scale: 'document',
+    blocks: agendaBlocks(model),
+  })
 }

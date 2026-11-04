@@ -34,8 +34,8 @@ import { PENALTY_EXPOSURE_LABEL, penaltyExposure } from '@/features/enforcement/
 import { enforcementRulesFor } from '@/features/enforcement/ruleLinks'
 import { orderRule } from '@/features/enforcement/service'
 import { stayBanner, stayFor } from '@/features/enforcement/stay'
+import { documentFrame } from '@/features/pdf/documentFrame'
 import { type PdfBlock, renderPdf } from '@/features/pdf/renderPdf'
-import { getTownSettings } from '@/features/town/settings'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
@@ -323,11 +323,10 @@ export async function buildCounselPacket(
   blocks.push(await proofBlock(db, caseId), ...(await appealBlocks(db, caseId, today, signal)))
   convictedOn ??= await townWinOn(db, caseId)
   blocks.push(...(await exposureBlocks(db, { caseId, penaltyRule, convictedOn, today })))
-  const town = await getTownSettings(db, signal)
   return await renderPdf({
     title: 'Packet for town counsel',
     subtitle: caseRow?.number ?? '',
-    townName: town.ok ? town.value.name : '',
+    frame: await documentFrame(db, {}, signal),
     scale: 'document',
     blocks,
   })

@@ -15,6 +15,7 @@ import {
   TemplateAdapter,
   TownRuleAdapter,
 } from '@/components/config/editorAdapters'
+import { TownProfileAdapter } from '@/components/config/town/TownProfileAdapter'
 import type { ConfigKind } from '@/features/config/kinds'
 
 export const CONFIG_EDITORS: Record<ConfigKind, ComponentType<EditorProps>> = {
@@ -31,4 +32,5 @@ export const CONFIG_EDITORS: Record<ConfigKind, ComponentType<EditorProps>> = {
   board_settings: BoardSettingsAdapter,
   regional_contacts: RegionalContactsAdapter,
   review_routes: ReviewRoutesAdapter,
+  town_profile: TownProfileAdapter,
 }

@@ -10,8 +10,10 @@ import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { getVersion } from '@/features/config/store'
 import { formatMinuteOfDay, HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { noticeStatus } from '@/features/notices/noticeStatus'
+import { documentFrame } from '@/features/pdf/documentFrame'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { loadPermitData, mergeContextOf } from '@/features/permits/permitData'
+import { frameMergeContext } from '@/features/templates/frameFields'
 import { renderTemplateText } from '@/features/templates/renderTemplate'
 import type { TemplateBody } from '@/features/templates/templateSchema'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -54,8 +56,10 @@ export async function renderNoticeLetters(
   const board = boardOfApplication(app)
   const settings = await getBoardSettings(db, signal)
   const status = await noticeStatus(db, setId, signal)
+  const frame = await documentFrame(db, { board }, signal)
   const base = {
     ...mergeContextOf(data),
+    ...frameMergeContext(frame),
     'board.name': board === null ? '' : boardLabel(settings, board),
     'meeting.date': formatCivilDate(hearing.meeting.meetingDate),
     'meeting.location': hearing.meeting.location,
@@ -72,7 +76,7 @@ export async function renderNoticeLetters(
     if (!text.ok) return err('no_template')
     const pdf = await renderPdf({
       title: template.label,
-      townName: data.townName,
+      frame,
       scale: 'document',
       blocks: text.value
         .split(/\n\s*\n/)

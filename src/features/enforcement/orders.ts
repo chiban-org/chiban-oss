@@ -21,8 +21,8 @@ import { missingOrderContent, renderOrderPdf } from '@/features/enforcement/orde
 import { stayFor } from '@/features/enforcement/stay'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { documentFrame } from '@/features/pdf/documentFrame'
 import type { ObjectStore } from '@/features/storage/objectStore'
-import { getTownSettings } from '@/features/town/settings'
 import { err, ok, type Result } from '@/types/result'
 
 const DraftSchema = z.object({
@@ -274,9 +274,8 @@ export async function issueOrder(
       return err('deadline_before_issue')
     }
     const [issuer] = await tx.select().from(users).where(eq(users.id, actor.userId))
-    const town = await getTownSettings(tx, signal)
     const bytes = await renderOrderPdf({
-      townName: town.ok ? town.value.name : '',
+      frame: await documentFrame(tx, {}, signal, store),
       number: order.number,
       rule,
       locationText: caseRow.locationText,

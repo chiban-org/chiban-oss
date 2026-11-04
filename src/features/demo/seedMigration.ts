@@ -7,6 +7,7 @@ import { must } from '@/features/demo/seedPermitSupport'
 import type { OcrConverter } from '@/features/migration/ocrmypdf'
 import { runBatch } from '@/features/migration/runBatch'
 import { scanSource } from '@/features/migration/scanSource'
+import { plainFrame } from '@/features/pdf/frame'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok } from '@/types/result'
@@ -38,7 +39,7 @@ async function writeSourceTree(root: string): Promise<void> {
     await mkdir(path.dirname(target), { recursive: true })
     const pdf = await renderPdf({
       title: 'Legacy scan',
-      townName: 'Town of Alder Pond',
+      frame: plainFrame('Town of Alder Pond'),
       scale: 'document',
       blocks: [{ kind: 'paragraph', text: scan.line }],
     })

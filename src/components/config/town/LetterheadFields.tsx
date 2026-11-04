@@ -1,0 +1,126 @@
+'use client'
+
+import type { Board } from '@packs/nh/boardSchema'
+import { Check, Input, ListInput, Pick } from '@/components/config/primitives'
+import {
+  type BoardOverride,
+  type ContactLine,
+  type Letterhead,
+  TOWN_BOARD_LABELS,
+  type TownProfileBody,
+} from '@/features/town/profileSchema'
+
+interface Props {
+  body: TownProfileBody
+  onChange: (next: TownProfileBody) => void
+}
+
+const CONTACT_LABELS: readonly (readonly [ContactLine, string])[] = [
+  ['address', 'Mailing address'],
+  ['phone', 'Phone'],
+  ['email', 'Email'],
+  ['website', 'Website'],
+  ['officeHours', 'Office hours'],
+]
+
+function overrideOf(body: TownProfileBody, board: Board): BoardOverride {
+  return new Map(Object.entries(body.boardOverrides)).get(board) ?? {}
+}
+
+function shown(lines: Letterhead['contactLines'], line: ContactLine): boolean {
+  return new Map(Object.entries(lines)).get(line) === true
+}
+
+function BoardOverrideFields({
+  label,
+  value,
+  onChange,
+}: {
+  label: string
+  value: BoardOverride
+  onChange: (next: BoardOverride) => void
+}) {
+  return (
+    <fieldset className="grid gap-3 border-t border-hairline pt-4">
+      <legend className="text-sm font-medium">{label}</legend>
+      <Input
+        label="Office name on this board's documents"
+        hint="Leave empty to use the town office name."
+        value={value.officeName ?? ''}
+        onChange={(e) => onChange({ ...value, officeName: e.target.value })}
+      />
+      <ListInput
+        label="Address on this board's documents, one line per row (up to three)"
+        values={value.addressLines ?? []}
+        onValues={(next) => onChange({ ...value, addressLines: next.slice(0, 3) })}
+        separator={/\n/}
+        multiline
+      />
+      <Input
+        label="Footer on this board's documents"
+        value={value.footerText ?? ''}
+        onChange={(e) => onChange({ ...value, footerText: e.target.value })}
+      />
+    </fieldset>
+  )
+}
+
+export function LetterheadFields({ body, onChange }: Props) {
+  const letterhead = body.letterhead
+  const set = (next: Partial<Letterhead>) =>
+    onChange({ ...body, letterhead: { ...letterhead, ...next } })
+  return (
+    <div className="grid gap-5">
+      <Pick
+        label="Logo position"
+        value={letterhead.logoPosition}
+        options={[
+          ['left', 'Left, beside the town name'],
+          ['center', 'Centered above the town name'],
+        ]}
+        onChange={(e) => set({ logoPosition: e.target.value === 'center' ? 'center' : 'left' })}
+      />
+      <fieldset className="grid gap-2">
+        <legend className="mb-1 text-sm font-medium">Contact lines under the office name</legend>
+        {CONTACT_LABELS.map(([line, label]) => (
+          <Check
+            key={line}
+            label={label}
+            checked={shown(letterhead.contactLines, line)}
+            onChange={(checked) =>
+              set({ contactLines: { ...letterhead.contactLines, [line]: checked } })
+            }
+          />
+        ))}
+      </fieldset>
+      <Input
+        label="Footer text"
+        hint="Printed at the bottom of every page, for example the town's mailing address or a privacy line."
+        value={letterhead.footerText}
+        onChange={(e) => set({ footerText: e.target.value })}
+      />
+      <Check
+        label="Number the pages (Page 1 of 2)"
+        checked={letterhead.pageNumbers}
+        onChange={(pageNumbers) => set({ pageNumbers })}
+      />
+      <div className="grid gap-4">
+        <h2 className="m-0 text-base">Board documents</h2>
+        <p className="m-0 text-sm text-muted-foreground">
+          Notices, decisions and agendas for a board can carry its own office name, address and
+          footer.
+        </p>
+        {TOWN_BOARD_LABELS.map(([board, label]) => (
+          <BoardOverrideFields
+            key={board}
+            label={label}
+            value={overrideOf(body, board)}
+            onChange={(next) =>
+              onChange({ ...body, boardOverrides: { ...body.boardOverrides, [board]: next } })
+            }
+          />
+        ))}
+      </div>
+    </div>
+  )
+}

@@ -1,4 +1,5 @@
 import type { DbOrTx } from '@/db/client'
+import { documentFrame } from '@/features/pdf/documentFrame'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { loadPermitData } from '@/features/permits/permitData'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -25,7 +26,7 @@ export async function buildCertificatePdf(
   return await renderPdf({
     title: 'Certificate of Occupancy',
     subtitle: details.number,
-    townName: data.townName,
+    frame: await documentFrame(db, {}, signal),
     scale: 'document',
     blocks: [
       {
@@ -65,7 +66,7 @@ export async function buildCertificatePdf(
               rows: data.conditions.map((c) => [c]),
             },
           ]),
-      { kind: 'signature', label: 'Authorized signature' },
+      { kind: 'signature', role: 'building_official', label: 'Authorized signature' },
     ],
   })
 }

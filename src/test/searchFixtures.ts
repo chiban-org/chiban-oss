@@ -5,6 +5,7 @@ import type { Actor } from '@/features/auth/actor'
 import { setPublic, uploadRedactedCopy } from '@/features/documents/publish'
 import type { RecordRef } from '@/features/documents/types'
 import { createUploadIntent } from '@/features/documents/uploads'
+import { plainFrame } from '@/features/pdf/frame'
 import { renderPdf } from '@/features/pdf/renderPdf'
 import { createGhostscriptConverter } from '@/features/preservation/ghostscript'
 import { processPreservation } from '@/features/preservation/preserve'
@@ -23,7 +24,7 @@ export const converter = createGhostscriptConverter({
 export async function textPdf(text: string): Promise<Uint8Array<ArrayBuffer>> {
   const bytes = await renderPdf({
     title: 'Record',
-    townName: 'Town of Alder Pond',
+    frame: plainFrame('Town of Alder Pond'),
     scale: 'document',
     blocks: [{ kind: 'paragraph', text }],
   })
