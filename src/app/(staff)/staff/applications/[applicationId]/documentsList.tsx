@@ -1,3 +1,4 @@
+import { NEW_TAB } from '@/components/newTab'
 import type { DocumentListRow } from '@/features/documents/types'
 
 export function DocumentsList({ documents }: { documents: DocumentListRow[] }) {
@@ -8,7 +9,11 @@ export function DocumentsList({ documents }: { documents: DocumentListRow[] }) {
       <ul className="space-y-1">
         {documents.map((d) => (
           <li key={d.documentId}>
-            <a href={`/api/documents/${d.documentId}`} className="text-action underline">
+            <a
+              {...NEW_TAB}
+              href={`/api/documents/${d.documentId}`}
+              className="text-action underline"
+            >
               {d.title}
             </a>
           </li>

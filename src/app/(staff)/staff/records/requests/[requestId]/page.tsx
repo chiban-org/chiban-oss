@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
 import { splitPanels } from '@/components/layout/splitPanels'
+import { NEW_TAB } from '@/components/newTab'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { RTK_STATUS_LABELS } from '@/features/rtk/labels'
@@ -37,7 +38,9 @@ function LettersSection({ letters }: { letters: { id: string; title: string }[] 
         <ul className="m-0 list-none space-y-1 p-0">
           {letters.map((l) => (
             <li key={l.id}>
-              <a href={`/api/documents/${l.id}`}>{l.title}</a>
+              <a {...NEW_TAB} href={`/api/documents/${l.id}`}>
+                {l.title}
+              </a>
             </li>
           ))}
         </ul>

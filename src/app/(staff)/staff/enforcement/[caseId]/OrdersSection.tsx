@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { DueLine } from '@/components/enforcement/DueLine'
 import { ServiceChecklist } from '@/components/enforcement/ServiceChecklist'
+import { NEW_TAB } from '@/components/newTab'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import type { CaseDetail, OrderDetail } from '@/features/enforcement/caseDetail'
 import { motionGateText } from '@/features/enforcement/gateText'
@@ -42,7 +43,7 @@ function OrderSummary({ order, detail }: { order: OrderDetail; detail: CaseDetai
         ? '.'
         : `. Issued ${formatCivilDate(row.issuedOn)}${row.issuedBy === null ? '' : ` by ${detail.names[row.issuedBy] ?? 'staff'}`}.`}{' '}
       {row.documentId === null ? null : (
-        <a href={`/api/documents/${row.documentId}`} className="text-action underline">
+        <a {...NEW_TAB} href={`/api/documents/${row.documentId}`} className="text-action underline">
           Open order
         </a>
       )}

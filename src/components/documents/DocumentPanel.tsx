@@ -3,6 +3,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { RecordKeeping, SeriesLine, sharedSeries } from '@/components/documents/RecordKeeping'
 import { RedactedUploader } from '@/components/documents/RedactedUploader'
 import type { UploaderActions } from '@/components/documents/Uploader'
+import { NEW_TAB } from '@/components/newTab'
 import { StatusChip } from '@/components/StatusChip'
 import type { PanelDocument, RenditionState } from '@/features/documents/panelData'
 import { AUDIENCES, type Audience, type RecordRef } from '@/features/documents/types'
@@ -203,7 +204,11 @@ function DocumentRow({
   return (
     <li className="space-y-2 py-4 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-center gap-3">
-        <a href={`/api/documents/${doc.documentId}`} className="font-medium text-action underline">
+        <a
+          {...NEW_TAB}
+          href={`/api/documents/${doc.documentId}`}
+          className="font-medium text-action underline"
+        >
           {doc.title}
         </a>
         <StatusChip status={chip.status} label={chip.label} />

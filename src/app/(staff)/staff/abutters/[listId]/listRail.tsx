@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { NextStep } from '@/components/layout/NextStep'
 import { type Fact, FactList } from '@/components/layout/PageHeader'
+import { NEW_TAB } from '@/components/newTab'
 import type { ListView } from '@/features/abutters/listView'
 import { formatCents } from '@/lib/money'
 import { issueListAction } from '../actions'
@@ -60,10 +61,14 @@ function LabelCard({ listId }: { listId: string }) {
       <h2 className={RAIL_HEADING}>Print mailing labels</h2>
       <ul className="m-0 flex list-none flex-col gap-1 p-0">
         <li>
-          <a href={`/staff/abutters/${listId}/labels`}>Avery 5160</a>
+          <a {...NEW_TAB} href={`/staff/abutters/${listId}/labels`}>
+            Avery 5160
+          </a>
         </li>
         <li>
-          <a href={`/staff/abutters/${listId}/labels?sheet=avery_5163`}>Avery 5163</a>
+          <a {...NEW_TAB} href={`/staff/abutters/${listId}/labels?sheet=avery_5163`}>
+            Avery 5163
+          </a>
         </li>
       </ul>
     </section>

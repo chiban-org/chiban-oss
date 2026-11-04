@@ -1,4 +1,5 @@
 import { ActionForm } from '@/components/ActionForm'
+import { NEW_TAB } from '@/components/newTab'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { RTK_METHOD_LABELS } from '@/features/rtk/labels'
 import type { ReleaseCandidate, ReleaseSummary, RequestApproval } from '@/features/rtk/requestPage'
@@ -49,7 +50,9 @@ function ReleaseList({ releases }: { releases: ReleaseSummary[] }) {
             ))}
           </ul>
           {r.letterDocumentId === null ? null : (
-            <a href={`/api/documents/${r.letterDocumentId}`}>Letter for this release</a>
+            <a {...NEW_TAB} href={`/api/documents/${r.letterDocumentId}`}>
+              Letter for this release
+            </a>
           )}
         </li>
       ))}

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { type Fact, FactList } from '@/components/layout/PageHeader'
+import { NEW_TAB } from '@/components/newTab'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { dueNext, otherOverdue } from '@/features/clocks/clockSummary'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -9,8 +10,12 @@ import { LeadStatus, MoreActions, NextStepCard, PrimaryMove, type RailPlan } fro
 function PrintLinks({ applicationId }: { applicationId: string }) {
   return (
     <p className="flex flex-col gap-1">
-      <Link href={`/staff/applications/${applicationId}/permit.pdf`}>Print permit</Link>
-      <Link href={`/staff/applications/${applicationId}/placard.pdf`}>Print placard</Link>
+      <Link {...NEW_TAB} href={`/staff/applications/${applicationId}/permit.pdf`}>
+        Print permit
+      </Link>
+      <Link {...NEW_TAB} href={`/staff/applications/${applicationId}/placard.pdf`}>
+        Print placard
+      </Link>
     </p>
   )
 }

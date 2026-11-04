@@ -1,3 +1,4 @@
+import { NEW_TAB } from '@/components/newTab'
 import { db } from '@/db/client'
 import { type PaymentReturnDetails, paymentReturnDetails } from '@/features/payments/paymentReturn'
 import { formatCents } from '@/lib/money'
@@ -86,7 +87,7 @@ export default async function PaymentReturnPage({
             <dd>{details.applicationNumbers.join(', ')}</dd>
           </dl>
           <p>
-            <a href={`/payments/receipt/${attemptId}`} className={LINK}>
+            <a {...NEW_TAB} href={`/payments/receipt/${attemptId}`} className={LINK}>
               Open your receipt
             </a>
           </p>

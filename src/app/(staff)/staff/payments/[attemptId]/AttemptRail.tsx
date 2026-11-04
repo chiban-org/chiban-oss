@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { NextStep } from '@/components/layout/NextStep'
 import { type Fact, FactList } from '@/components/layout/PageHeader'
+import { NEW_TAB } from '@/components/newTab'
 import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
 import type { paymentAttempts } from '@/db/schema'
@@ -48,7 +49,11 @@ function attemptFacts(attempt: Attempt, links: AttemptLinks): Fact[] {
     facts.push({
       label: 'Receipt',
       value: (
-        <Link href={`/staff/receipts/${links.receipt.id}`} className="text-action underline">
+        <Link
+          {...NEW_TAB}
+          href={`/staff/receipts/${links.receipt.id}`}
+          className="text-action underline"
+        >
           {links.receipt.number}
         </Link>
       ),

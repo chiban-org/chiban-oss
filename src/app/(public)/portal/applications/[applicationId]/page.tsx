@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { NEW_TAB } from '@/components/newTab'
 import { StatusTimeline } from '@/components/portal/StatusTimeline'
 import { StatusChip } from '@/components/StatusChip'
 import { env } from '@/config/env'
@@ -98,6 +99,7 @@ function MoneyHistory({ view }: { view: PortalApplicationView }) {
               <>
                 {' '}
                 <a
+                  {...NEW_TAB}
                   href={`/portal/applications/${view.applicationId}/receipts/${entry.receiptId}`}
                   className="tap-target inline-flex items-center underline"
                 >{`Receipt ${entry.receiptNumber ?? ''}`}</a>
@@ -194,6 +196,7 @@ export default async function PortalApplicationPage({
             {view.documents.map((d) => (
               <li key={d.documentId}>
                 <Link
+                  {...NEW_TAB}
                   href={`/api/documents/${d.documentId}`}
                   className="tap-target inline-flex items-center underline"
                 >

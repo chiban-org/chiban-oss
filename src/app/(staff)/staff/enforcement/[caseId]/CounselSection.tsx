@@ -1,4 +1,5 @@
 import { ActionForm } from '@/components/ActionForm'
+import { NEW_TAB } from '@/components/newTab'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import { COUNSEL_OUTCOME_LABELS, COUNSEL_PURPOSE_LABELS } from '@/features/enforcement/labels'
@@ -24,7 +25,11 @@ export function CounselSection({ detail, can }: { detail: CaseDetail; can: Can }
         <article key={r.row.id} className="record-item space-y-2">
           <p className="m-0 font-medium">
             {`Referred to ${r.row.counselName} on ${formatCivilDate(r.row.referredOn)} for ${COUNSEL_PURPOSE_LABELS[r.row.purpose].toLowerCase()}. `}
-            <a href={`/api/documents/${r.row.packetDocumentId}`} className="text-action underline">
+            <a
+              {...NEW_TAB}
+              href={`/api/documents/${r.row.packetDocumentId}`}
+              className="text-action underline"
+            >
               Open packet
             </a>
           </p>

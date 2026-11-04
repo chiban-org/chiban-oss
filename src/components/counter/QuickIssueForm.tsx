@@ -13,6 +13,7 @@ import {
   WorkSection,
 } from '@/components/counter/QuickIssueSections'
 import { ReaderPanel } from '@/components/counter/ReaderPanel'
+import { NEW_TAB } from '@/components/newTab'
 import { Button } from '@/components/ui/button'
 import { computeConvenienceFee } from '@/features/payments/convenienceFee'
 import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
@@ -50,7 +51,7 @@ function useMethodHotkeys(cardAvailable: boolean, setMethod: (m: Method) => void
 function openPrintouts(result: CounterOutcome): void {
   if (!result.ok || result.state !== 'issued' || result.links === null) return
   for (const href of [result.links.permit, result.links.placard, result.links.receipt]) {
-    if (href !== null) window.open(href, '_blank', 'noopener')
+    if (href !== null) window.open(href, NEW_TAB.target, 'noopener')
   }
 }
 

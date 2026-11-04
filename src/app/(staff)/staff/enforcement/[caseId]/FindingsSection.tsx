@@ -1,4 +1,5 @@
 import { ActionForm } from '@/components/ActionForm'
+import { NEW_TAB } from '@/components/newTab'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import { PROVISION_KINDS } from '@/db/schema'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
@@ -96,7 +97,11 @@ export function FindingsSection({ detail, can }: { detail: CaseDetail; can: Can 
                 ? 'Receipt not recorded.'
                 : `Received ${formatCivilDate(n.receivedOn)}: ${n.receiptBasis ?? ''}.`}{' '}
               {n.documentId === null ? null : (
-                <a href={`/api/documents/${n.documentId}`} className="text-action underline">
+                <a
+                  {...NEW_TAB}
+                  href={`/api/documents/${n.documentId}`}
+                  className="text-action underline"
+                >
                   Open notice
                 </a>
               )}

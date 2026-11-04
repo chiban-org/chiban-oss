@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { NEW_TAB } from '@/components/newTab'
 import { isBoardMember } from '@/features/access/predicates'
 import { getMemberPacket } from '@/features/boards/memberPackets'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -36,7 +37,7 @@ export default async function BoardMeetingPage({
         {packet.value.items.map((item) => (
           <li key={item.versionId}>
             {item.withdrawnOn === null ? (
-              <Link href={`${base}/${item.versionId}`} className={LINK}>
+              <Link {...NEW_TAB} href={`${base}/${item.versionId}`} className={LINK}>
                 {item.title}
               </Link>
             ) : (

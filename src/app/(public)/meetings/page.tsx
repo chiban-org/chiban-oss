@@ -1,3 +1,4 @@
+import { NEW_TAB } from '@/components/newTab'
 import { db } from '@/db/client'
 import { loadPublicBoardRecords, type PublicPage } from '@/features/hearings/publicRecords'
 
@@ -52,7 +53,7 @@ export default async function PublicMeetingsPage({ searchParams }: Props) {
         <ul className="m-0 list-none space-y-2 p-0">
           {records.agendas.map((a) => (
             <li key={a.meetingId}>
-              <a href={`/api/documents/${a.documentId}`} className={LINK}>
+              <a {...NEW_TAB} href={`/api/documents/${a.documentId}`} className={LINK}>
                 {`Agenda: ${a.text}`}
               </a>
             </li>
@@ -70,12 +71,12 @@ export default async function PublicMeetingsPage({ searchParams }: Props) {
               <p className="m-0">{`Filed ${d.filedText}.`}</p>
               <div className="flex flex-wrap gap-4">
                 {d.decisionDocumentId === null ? null : (
-                  <a href={`/api/documents/${d.decisionDocumentId}`} className={LINK}>
+                  <a {...NEW_TAB} href={`/api/documents/${d.decisionDocumentId}`} className={LINK}>
                     Notice of Decision
                   </a>
                 )}
                 {d.minutesDocumentId === null ? null : (
-                  <a href={`/api/documents/${d.minutesDocumentId}`} className={LINK}>
+                  <a {...NEW_TAB} href={`/api/documents/${d.minutesDocumentId}`} className={LINK}>
                     Minutes
                   </a>
                 )}

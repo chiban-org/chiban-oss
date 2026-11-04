@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ChecklistForm } from '@/components/inspections/ChecklistForm'
 import { InspectionPhotoUploader } from '@/components/inspections/InspectionPhotos'
+import { NEW_TAB } from '@/components/newTab'
 import { StatusChip } from '@/components/StatusChip'
 import { honestText } from '@/features/honest/honest'
 import { loadInspectionView } from '@/features/inspections/inspectionView'
@@ -100,7 +101,7 @@ export default async function InspectionPage({
           <ul className="m-0 list-none space-y-1 p-0">
             {view.photos.map((photo) => (
               <li key={photo.documentId}>
-                <a className={LINK} href={`/api/documents/${photo.documentId}`}>
+                <a {...NEW_TAB} className={LINK} href={`/api/documents/${photo.documentId}`}>
                   {photo.title}
                 </a>
               </li>

@@ -3,6 +3,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
 import { splitPanels } from '@/components/layout/splitPanels'
+import { NEW_TAB } from '@/components/newTab'
 import { AreaField } from '@/components/staff/fields'
 import { type AssignmentView, getAssignmentView, reviewOpen } from '@/features/reviews/reviewerView'
 import { getTownSettings } from '@/features/town/settings'
@@ -24,7 +25,11 @@ function DocumentsSection({ view }: { view: AssignmentView }) {
       <ul className="space-y-1">
         {view.documents.map((d) => (
           <li key={d.documentId}>
-            <a href={`/api/documents/${d.documentId}`} className="text-action underline">
+            <a
+              {...NEW_TAB}
+              href={`/api/documents/${d.documentId}`}
+              className="text-action underline"
+            >
               {d.title}
             </a>
           </li>

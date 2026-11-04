@@ -1,4 +1,5 @@
 import type { CeaseAndDesistRule } from '@packs/nh/schema'
+import { NEW_TAB } from '@/components/newTab'
 import {
   ROLE_CHECK_LABELS,
   ROLE_LABELS,
@@ -108,6 +109,7 @@ export function ServiceChecklist({
                 {e.row.newspaper === null ? '' : `, ${e.row.newspaper}`}
                 {'. '}
                 <a
+                  {...NEW_TAB}
                   href={`/api/documents/${e.row.proofDocumentId}`}
                   className="text-action underline"
                 >

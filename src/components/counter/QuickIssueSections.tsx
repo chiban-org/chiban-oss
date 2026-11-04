@@ -3,6 +3,7 @@
 import type { ReactNode } from 'react'
 import { ClaimLinkButton } from '@/components/counter/ClaimLinkButton'
 import type { CounterActions, CounterOutcome } from '@/components/counter/counterTypes'
+import { NEW_TAB } from '@/components/newTab'
 import { formatCents } from '@/lib/money'
 
 export type Method = 'cash' | 'check' | 'card'
@@ -102,12 +103,7 @@ export function ContractorSection({
           <input name="licenseNote" className={CONTROL} />
         </Labeled>
       </div>
-      <a
-        href={lookup.url}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="text-action underline"
-      >
+      <a href={lookup.url} {...NEW_TAB} className="text-action underline">
         {lookup.label}
       </a>
     </section>
@@ -218,14 +214,14 @@ export function IssuedNotice({
         {outcome.number} is issued.{' '}
         {links === null ? null : (
           <>
-            <a href={links.permit} target="_blank" rel="noopener noreferrer">
+            <a href={links.permit} {...NEW_TAB}>
               Permit
             </a>{' '}
-            <a href={links.placard} target="_blank" rel="noopener noreferrer">
+            <a href={links.placard} {...NEW_TAB}>
               Placard
             </a>{' '}
             {links.receipt === null ? null : (
-              <a href={links.receipt} target="_blank" rel="noopener noreferrer">
+              <a href={links.receipt} {...NEW_TAB}>
                 Receipt
               </a>
             )}

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { NEW_TAB } from '@/components/newTab'
 import { db } from '@/db/client'
 import { openRelease } from '@/features/rtk/releaseLinks'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -33,7 +34,7 @@ export default async function ReleasePage({ params }: { params: Promise<{ token:
         {release.items.map((item) => (
           <li key={item.versionId} className="text-base">
             {item.withdrawnOn === null ? (
-              <Link href={`${base}/${item.versionId}`} className={LINK}>
+              <Link {...NEW_TAB} href={`${base}/${item.versionId}`} className={LINK}>
                 {item.downloadName}
               </Link>
             ) : (

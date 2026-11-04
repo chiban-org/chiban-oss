@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { FactList, PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
 import { splitPanels } from '@/components/layout/splitPanels'
+import { NEW_TAB } from '@/components/newTab'
 import { StatusChip } from '@/components/StatusChip'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
 import type { LimitedApplicationView } from '@/features/applications/limitedApplicationView'
@@ -76,7 +77,7 @@ function DocumentSection({ view }: { view: LimitedApplicationView }) {
       <ul className="m-0 list-none p-0">
         {view.documents.map((d) => (
           <li key={d.documentId} className="record-item flex flex-wrap items-baseline gap-3">
-            <a href={`/api/documents/${d.documentId}`} className="font-medium">
+            <a {...NEW_TAB} href={`/api/documents/${d.documentId}`} className="font-medium">
               {d.title}
             </a>
             <span className="text-sm text-muted-foreground">

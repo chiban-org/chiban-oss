@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { NEW_TAB } from '@/components/newTab'
 import { db } from '@/db/client'
 import { openPacket } from '@/features/boards/packetLinks'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -32,14 +33,14 @@ export default async function BoardPacketPage({ params }: { params: Promise<{ to
       <p>{`${BOARD_NAMES[packet.board]}, meeting ${formatCivilDate(packet.meetingDate)}`}</p>
       <ul className="m-0 list-none space-y-2 p-0">
         <li>
-          <Link href={`${base}/cover`} className={LINK}>
+          <Link {...NEW_TAB} href={`${base}/cover`} className={LINK}>
             Cover page and contents
           </Link>
         </li>
         {packet.items.map((item) => (
           <li key={item.versionId}>
             {item.withdrawnOn === null ? (
-              <Link href={`${base}/${item.versionId}`} className={LINK}>
+              <Link {...NEW_TAB} href={`${base}/${item.versionId}`} className={LINK}>
                 {item.title}
               </Link>
             ) : (

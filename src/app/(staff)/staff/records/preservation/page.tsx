@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { NEW_TAB } from '@/components/newTab'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { type IncompleteRow, listPreservationIncomplete } from '@/features/preservation/preserve'
 import { preservationReasonLabel } from '@/features/preservation/reasonCopy'
@@ -28,7 +29,7 @@ function DocumentCell({
   return (
     <span className="flex flex-col">
       {href === undefined ? title : <Link href={href}>{title}</Link>}
-      <a href={`/api/documents/${documentId}`} className="text-sm">
+      <a {...NEW_TAB} href={`/api/documents/${documentId}`} className="text-sm">
         Download the file
       </a>
     </span>

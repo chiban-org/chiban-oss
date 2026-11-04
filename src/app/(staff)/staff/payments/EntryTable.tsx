@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { SortHeader } from '@/components/dataTable/SortHeader'
+import { NEW_TAB } from '@/components/newTab'
 import type { SortLink } from '@/features/dataTable/sort'
 import type { EntrySortKey } from '@/features/payments/entryListParams'
 import { entryTypeLabel, methodLabel } from '@/features/payments/labels'
@@ -33,7 +34,11 @@ export function EntryTable({
             <td>{e.applicationNumbers.join(', ')}</td>
             <td>
               {e.receiptId === null ? null : (
-                <Link href={`/staff/receipts/${e.receiptId}`} className="text-action underline">
+                <Link
+                  {...NEW_TAB}
+                  href={`/staff/receipts/${e.receiptId}`}
+                  className="text-action underline"
+                >
                   {`Receipt ${e.receiptNumber ?? ''}`}
                 </Link>
               )}

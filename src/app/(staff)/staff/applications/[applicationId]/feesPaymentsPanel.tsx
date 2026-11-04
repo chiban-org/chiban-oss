@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { NEW_TAB } from '@/components/newTab'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import { type FeeRow, feeRows } from '@/features/fees/feeRows'
@@ -102,7 +103,7 @@ function Ledger({ payments }: { payments: ApplicationPayments }) {
           <p className="m-0">
             {`${entrySummary(entry)} `}
             {entry.receiptId === null ? null : (
-              <Link href={`/staff/receipts/${entry.receiptId}`}>
+              <Link {...NEW_TAB} href={`/staff/receipts/${entry.receiptId}`}>
                 {`Receipt ${entry.receiptNumber ?? ''}`}
               </Link>
             )}

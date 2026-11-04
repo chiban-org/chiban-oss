@@ -4,6 +4,7 @@ import {
 } from '@/app/(staff)/staff/records/actions'
 import { ActionForm } from '@/components/ActionForm'
 import { ApplicationFileUploader } from '@/components/documents/ApplicationFileUploader'
+import { NEW_TAB } from '@/components/newTab'
 import { NoticeChecklist } from '@/components/notices/NoticeChecklist'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { HearingView } from '@/features/hearings/views'
@@ -70,7 +71,9 @@ export function NoticeSection({ view, today }: { view: HearingView; today: strin
       <h2 id="notice">Notice</h2>
       <NoticeChecklist items={view.checklist} noticedOn={view.noticedOn} />
       <p>
-        <a href={`/staff/boards/hearings/${view.hearingId}/letters`}>Print the notice letters</a>
+        <a {...NEW_TAB} href={`/staff/boards/hearings/${view.hearingId}/letters`}>
+          Print the notice letters
+        </a>
       </p>
       {view.status === 'scheduled' ? <ProofForm view={view} today={today} /> : null}
     </section>
