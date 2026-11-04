@@ -3,9 +3,10 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApplicationTypeEditor } from '@/components/config/ApplicationTypeEditor'
+import { ChecklistEditor } from '@/components/config/ChecklistEditor'
+import { ConditionsEditor } from '@/components/config/ConditionsEditor'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
 import { FeeLinesEditor } from '@/components/config/FeeLinesEditor'
-import { ChecklistEditor, ConditionsEditor } from '@/components/config/SimpleEditors'
 import { TownRuleEditor } from '@/components/config/TownRuleEditor'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
@@ -46,13 +47,16 @@ describe('ApplicationTypeEditor', () => {
       <ApplicationTypeEditor
         body={{ ...TYPE, classification: 'nh.building_permit' }}
         onChange={vi.fn()}
-        errors={{ bindings: 'Missing mandatory rules: nh.bp.decision.' }}
+        errors={{
+          bindings:
+            'Turn on the rules this kind of proceeding requires: Building permit decision deadline.',
+        }}
         packRules={PACK_RULES}
         classifications={CLASSIFICATIONS}
       />,
     )
-    const group = screen.getByRole('group', { name: 'Bindings' })
-    expect(within(group).getByRole('alert').textContent).toContain('nh.bp.decision')
+    const group = screen.getByRole('group', { name: 'State law rules' })
+    expect(within(group).getByRole('alert').textContent).toContain('Building permit decision')
     expect(group.getAttribute('aria-describedby')).toBe('error-bindings')
   })
 
@@ -98,36 +102,38 @@ describe('ApplicationTypeEditor', () => {
       <ApplicationTypeEditor
         body={TYPE}
         onChange={vi.fn()}
-        errors={{ classification: 'Choose a classification before publishing.' }}
+        errors={{ classification: 'Choose the kind of proceeding before publishing.' }}
         packRules={PACK_RULES}
         classifications={CLASSIFICATIONS}
       />,
     )
-    const group = screen.getByRole('group', { name: 'Classification' })
-    expect(within(group).getByRole('alert').textContent).toContain('Choose a classification')
+    const group = screen.getByRole('group', { name: 'Kind of proceeding' })
+    expect(within(group).getByRole('alert').textContent).toContain('kind of proceeding')
   })
 })
 
 describe('FeeLinesEditor', () => {
   const FEES = skeletonBody('fee_schedule', 'f') as FeeScheduleBody
 
-  it('edits a flat amount and offers the after-the-fact multiplier', () => {
+  it('edits a flat amount in dollars and offers the after-the-fact multiplier', () => {
     const onChange = vi.fn()
     render(<FeeLinesEditor body={FEES} onChange={onChange} errors={{}} />)
-    fireEvent.change(screen.getByLabelText('Amount in cents'), { target: { value: '4500' } })
+    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '45' } })
     expect(onChange.mock.calls[0]?.[0].lines[0].expr).toEqual({ op: 'flat', cents: 4500 })
-    fireEvent.click(screen.getByLabelText('Multiply when work started before the permit'))
+    fireEvent.click(
+      screen.getByLabelText('Charge more when work started before the permit was issued'),
+    )
     expect(onChange.mock.calls[1]?.[0].lines[0].expr.op).toBe('conditional_multiplier')
   })
 
   it('switching to a tiered table shows tier rows', () => {
     const onChange = vi.fn()
     render(<FeeLinesEditor body={FEES} onChange={onChange} errors={{}} />)
-    fireEvent.change(screen.getByLabelText('Calculation'), { target: { value: 'tiered' } })
+    fireEvent.change(screen.getByLabelText('How it is worked out'), { target: { value: 'tiered' } })
     expect(onChange.mock.calls[0]?.[0].lines[0].expr.op).toBe('tiered')
   })
 
-  it('falls back to JSON for an expression with no table form', () => {
+  it('falls back to editing as data for an expression with no table form', () => {
     const odd: FeeScheduleBody = {
       ...FEES,
       lines: [
@@ -145,7 +151,8 @@ describe('FeeLinesEditor', () => {
       ],
     }
     render(<FeeLinesEditor body={odd} onChange={vi.fn()} errors={{}} />)
-    expect(screen.getByLabelText(/as JSON/)).toBeTruthy()
+    expect(screen.getByLabelText('The whole fee written as data')).toBeTruthy()
+    expect(screen.getByText(/formula the fields here cannot show/)).toBeTruthy()
   })
 
   it('shows the lines error next to the fee lines', () => {
@@ -153,20 +160,20 @@ describe('FeeLinesEditor', () => {
       <FeeLinesEditor
         body={FEES}
         onChange={vi.fn()}
-        errors={{ lines: 'Fee lines use fields the form does not have: ghost.' }}
+        errors={{ lines: 'The fee schedule counts answers this form does not ask: Ghost.' }}
       />,
     )
     expect(
-      within(screen.getByRole('group', { name: 'Fee lines' })).getByRole('alert').textContent,
-    ).toContain('ghost')
+      within(screen.getByRole('group', { name: 'Fees' })).getByRole('alert').textContent,
+    ).toContain('Ghost')
   })
 
   it('adds and removes a fee line', () => {
     const onChange = vi.fn()
     render(<FeeLinesEditor body={FEES} onChange={onChange} errors={{}} />)
-    fireEvent.click(screen.getByRole('button', { name: 'Add fee line' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Add a fee' }))
     expect(onChange.mock.calls[0]?.[0].lines).toHaveLength(2)
-    fireEvent.click(screen.getByRole('button', { name: 'Remove line' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Remove this fee' }))
     expect(onChange.mock.calls[1]?.[0].lines).toHaveLength(0)
   })
 })
@@ -190,7 +197,8 @@ describe('TownRuleEditor', () => {
       />,
     )
     expect(
-      within(screen.getByRole('group', { name: 'Value' })).getByRole('alert').textContent,
+      within(screen.getByRole('group', { name: "The town's value" })).getByRole('alert')
+        .textContent,
     ).toContain('cannot')
     expect(
       within(screen.getByRole('group', { name: 'Adoption record' })).getByRole('alert').textContent,

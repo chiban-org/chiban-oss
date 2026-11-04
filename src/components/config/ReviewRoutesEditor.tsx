@@ -1,7 +1,9 @@
 'use client'
 
 import { useEditorContext } from '@/components/config/EditorContextProvider'
+import { NamePicker } from '@/components/config/plainFields'
 import { Check, Input, RowButton, rowKey } from '@/components/config/primitives'
+import { NO_REFERENCE_CHOICES } from '@/features/config/referenceChoices'
 import type { ReviewRoutesBody } from '@/features/reviews/routesSchema'
 
 interface Props {
@@ -46,9 +48,14 @@ function DepartmentRow({
           onChange({ ...department, label: e.target.value, key: keyFromLabel(e.target.value) })
         }
       />
-      <p className="text-sm font-medium">Reviewers, first active one is assigned</p>
+      <p className="m-0 text-sm font-medium">Reviewers</p>
+      <p className="m-0 text-sm text-muted-foreground">
+        The first ticked reviewer whose account is active gets each request.
+      </p>
       {reviewers.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No active reviewer accounts yet.</p>
+        <p className="text-sm text-muted-foreground">
+          No active reviewer accounts yet. Invite reviewers under Users first.
+        </p>
       ) : (
         reviewers.map((r) => (
           <Check
@@ -75,6 +82,7 @@ function RouteRow({
   onChange: (next: Route) => void
   onRemove: () => void
 }) {
+  const applicationTypes = (useEditorContext().references ?? NO_REFERENCE_CHOICES).application_type
   const toggle = (key: string, on: boolean) =>
     onChange({
       ...route,
@@ -85,13 +93,15 @@ function RouteRow({
   return (
     <fieldset className="space-y-2 rounded-md border p-3">
       <legend className="px-1 text-sm font-medium">Route</legend>
-      <Input
+      <NamePicker
         label="Application type"
         value={route.applicationTypeKey}
-        onChange={(e) => onChange({ ...route, applicationTypeKey: e.target.value })}
+        choices={applicationTypes}
+        onChange={(applicationTypeKey) => onChange({ ...route, applicationTypeKey })}
       />
       <Input
         label="Comments due, days before the meeting"
+        hint="Reviewers are asked to comment this many days before the board meets."
         type="number"
         min={0}
         value={route.commentDueDaysBeforeMeeting}
@@ -99,6 +109,7 @@ function RouteRow({
           onChange({ ...route, commentDueDaysBeforeMeeting: Number(e.target.value) })
         }
       />
+      <p className="m-0 text-sm font-medium">Departments asked to review</p>
       {departments.map((d) => (
         <Check
           key={d.key}
@@ -115,6 +126,7 @@ function RouteRow({
 export function ReviewRoutesEditor({ body, onChange }: Props) {
   return (
     <div className="space-y-4">
+      <h2 className="text-lg">Departments</h2>
       {body.departments.map((d, i) => (
         <DepartmentRow
           key={rowKey('department', i)}
@@ -137,6 +149,12 @@ export function ReviewRoutesEditor({ body, onChange }: Props) {
       >
         Add department
       </RowButton>
+      <h2 className="text-lg">Which departments review each type</h2>
+      {body.routes.length === 0 ? (
+        <p className="m-0 text-sm text-muted-foreground">
+          No routes yet. Add one for each kind of application the committee reviews.
+        </p>
+      ) : null}
       {body.routes.map((r, i) => (
         <RouteRow
           key={rowKey('route', i)}

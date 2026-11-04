@@ -3,6 +3,8 @@
 import { useEffect, useMemo } from 'react'
 import { ApplicationTypeEditor } from '@/components/config/ApplicationTypeEditor'
 import { BoardSettingsEditor } from '@/components/config/BoardSettingsEditor'
+import { ChecklistEditor } from '@/components/config/ChecklistEditor'
+import { ConditionsEditor } from '@/components/config/ConditionsEditor'
 import { useEditorContext } from '@/components/config/EditorContextProvider'
 import { FeeLinesEditor } from '@/components/config/FeeLinesEditor'
 import { FormBuilder } from '@/components/config/formBuilder/FormBuilder'
@@ -12,11 +14,7 @@ import { PaymentSettingsEditor } from '@/components/config/PaymentSettingsEditor
 import type { FieldErrors } from '@/components/config/primitives'
 import { RegionalContactsEditor } from '@/components/config/RegionalContactsEditor'
 import { ReviewRoutesEditor } from '@/components/config/ReviewRoutesEditor'
-import {
-  ChecklistEditor,
-  ConditionsEditor,
-  LocalAmendmentEditor,
-} from '@/components/config/SimpleEditors'
+import { LocalAmendmentEditor } from '@/components/config/SimpleEditors'
 import { TownRuleEditor } from '@/components/config/TownRuleEditor'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'

@@ -39,6 +39,10 @@ function ContactFields({
 export function RegionalContactsEditor({ body, onChange }: Props) {
   return (
     <div className="space-y-4">
+      <p className="m-0 text-sm text-muted-foreground">
+        When a board finds an application may affect places beyond the town, Chiban writes notice to
+        each of these. Leave a contact empty if the town does not send to it.
+      </p>
       <ContactFields
         label="Regional planning commission"
         contact={body.commission}
@@ -49,13 +53,19 @@ export function RegionalContactsEditor({ body, onChange }: Props) {
         contact={body.nhDes}
         onChange={(nhDes) => onChange({ ...body, nhDes })}
       />
+      <h2 className="text-lg">Neighboring towns</h2>
+      {body.municipalities.length === 0 ? (
+        <p className="m-0 text-sm text-muted-foreground">
+          No neighboring towns yet. Add each town that should be sent notice.
+        </p>
+      ) : null}
       {body.municipalities.map((m, i) => (
         <div
           key={rowKey('municipality', i)}
-          className="grid grid-cols-[1fr_1fr_auto] items-end gap-2"
+          className="grid items-end gap-2 sm:grid-cols-[1fr_1fr_auto]"
         >
           <Input
-            label="Municipality"
+            label="Town or city"
             value={m.name}
             onChange={(e) =>
               onChange({
@@ -109,7 +119,7 @@ export function RegionalContactsEditor({ body, onChange }: Props) {
           })
         }
       >
-        Add affected municipality
+        Add a neighboring town
       </RowButton>
     </div>
   )

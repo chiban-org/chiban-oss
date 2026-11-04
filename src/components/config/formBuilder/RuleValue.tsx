@@ -1,6 +1,7 @@
 'use client'
 
-import { Check, Input, ListInput, Pick } from '@/components/config/primitives'
+import { TextRows } from '@/components/config/plainFields'
+import { Check, Input, Pick } from '@/components/config/primitives'
 import type { Leaf } from '@/features/forms/condition'
 import type { FormField } from '@/features/forms/formSchema'
 import { isNumberQuestion } from '@/features/forms/questionTypes'
@@ -60,11 +61,12 @@ export function RuleValue({
   }
   if (leaf.op === 'in') {
     return (
-      <ListInput
-        label="Answer"
+      <TextRows
+        legend="Any of these answers"
+        rowLabel="Answer"
+        addLabel="Add an answer"
         values={Array.isArray(leaf.value) ? leaf.value : []}
-        separator={/,/}
-        onValues={(value) => onChange({ ...leaf, value })}
+        onChange={(value) => onChange({ ...leaf, value })}
       />
     )
   }

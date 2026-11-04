@@ -47,7 +47,7 @@ export function InspectionSettingsEditor({ body, onChange, errors }: Props) {
     <div className="space-y-3">
       <fieldset className="rounded-md border p-3">
         <legend className="px-1 text-sm font-medium">Inspection days</legend>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {WEEKDAYS.map(([day, label]) => (
             <Check
               key={day}
@@ -64,7 +64,7 @@ export function InspectionSettingsEditor({ body, onChange, errors }: Props) {
         </div>
         <FieldError errors={errors} name="schedulingDays" />
       </fieldset>
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <Input
             label="First slot starts"
@@ -109,6 +109,7 @@ export function InspectionSettingsEditor({ body, onChange, errors }: Props) {
         <div>
           <Input
             label="Days of notice before the first slot"
+            hint="0 lets residents book the same day."
             type="number"
             min={0}
             value={body.minNoticeDays}
@@ -119,6 +120,7 @@ export function InspectionSettingsEditor({ body, onChange, errors }: Props) {
         <div>
           <Input
             label="Days ahead that can be booked"
+            hint="How far into the future the calendar opens."
             type="number"
             min={1}
             value={body.horizonDays}
@@ -129,7 +131,10 @@ export function InspectionSettingsEditor({ body, onChange, errors }: Props) {
       </div>
       <fieldset className="rounded-md border p-3">
         <legend className="px-1 text-sm font-medium">Phone request hours</legend>
-        <div className="grid grid-cols-3 gap-2">
+        <p className="m-0 mb-2 text-sm text-muted-foreground">
+          When residents can phone the office to ask for an inspection.
+        </p>
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {WEEKDAYS.map(([day, label]) => (
             <Check
               key={day}
@@ -144,7 +149,7 @@ export function InspectionSettingsEditor({ body, onChange, errors }: Props) {
             />
           ))}
         </div>
-        <div className="mt-2 grid grid-cols-2 gap-3">
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
           <Input
             label="Phone line opens"
             type="time"

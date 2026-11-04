@@ -5,6 +5,7 @@ import { env } from '@/config/env'
 import { publishConfig } from '@/features/config/publish'
 import { saveDraft } from '@/features/config/store'
 import { PROCESSORS } from '@/features/ledger/types'
+import { parseFeeInputs } from '@/features/payments/feeInputs'
 import { saveProcessorAccount } from '@/features/payments/processorAccounts'
 import {
   CloverCredentialsSchema,
@@ -75,8 +76,15 @@ export async function saveProcessorAccountAction(formData: FormData): Promise<Ac
 
 export async function publishPaymentSettingsAction(formData: FormData): Promise<ActionResult> {
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const basisPoints = Number(text(formData, 'basisPoints'))
-    const fixedCents = Number(text(formData, 'fixedCents'))
+    const amounts = parseFeeInputs(text(formData, 'percent'), text(formData, 'fixedDollars'))
+    if (!amounts.ok) {
+      return {
+        ok: false,
+        error: amounts.message,
+        fieldErrors: { [amounts.field]: amounts.message },
+      }
+    }
+    const { basisPoints, fixedCents } = amounts
     const body: PaymentSettingsBody = {
       key: 'default',
       convenienceFee: {

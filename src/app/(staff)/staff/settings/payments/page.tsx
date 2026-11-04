@@ -4,8 +4,10 @@ import { PracticeNotice } from '@/components/PracticeNotice'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { convenienceExample, percentText } from '@/features/payments/feeInputs'
 import { processorFormDefaults } from '@/features/payments/processorFormDefaults'
 import { loadProcessorSettings } from '@/features/payments/settingsView'
+import { centsToDollarInput } from '@/lib/money'
 import { recordStaffContext } from '@/server/requireStaff'
 import { publishPaymentSettingsAction, saveProcessorAccountAction } from './actions'
 
@@ -76,35 +78,50 @@ export default async function PaymentSettingsPage() {
             ]}
           />
           <TextField
-            label="Account reference (Stripe account ID or Clover merchant ID)"
+            label="Account number at the processor"
+            hint="The Stripe account ID or the Clover merchant ID, from the processor's dashboard."
             name="accountRef"
             defaultValue={current?.accountRef}
             required
           />
           <TextField
-            label="Secret key or private token"
+            label="Secret key"
+            hint="Stripe calls it the secret key, Clover the private token."
             name="secretKey"
             type="password"
             autoComplete="off"
           />
           <TextField
             label="Webhook signing secret"
+            hint="Lets Chiban check that payment updates really come from the processor."
             name="webhookSecret"
             type="password"
             autoComplete="off"
             required
           />
-          <TextField label="Clover API base URL" name="apiBase" defaultValue={current?.apiBase} />
-          <TextField
-            label="Clover checkout base URL"
-            name="ecommBase"
-            defaultValue={current?.ecommBase}
-          />
-          <TextField
-            label="Card reader device ID"
-            name="deviceId"
-            defaultValue={current?.deviceId}
-          />
+          <details className="rounded-md border border-hairline p-3">
+            <summary className="cursor-pointer text-sm font-medium">Advanced</summary>
+            <div className="mt-3 grid gap-3">
+              <TextField
+                label="Clover API address"
+                hint="Only for Clover. Leave as it is unless Clover gives you another."
+                name="apiBase"
+                defaultValue={current?.apiBase}
+              />
+              <TextField
+                label="Clover checkout address"
+                hint="Only for Clover. Leave as it is unless Clover gives you another."
+                name="ecommBase"
+                defaultValue={current?.ecommBase}
+              />
+              <TextField
+                label="Card reader device ID"
+                hint="Printed on the counter card reader or shown in the processor's dashboard."
+                name="deviceId"
+                defaultValue={current?.deviceId}
+              />
+            </div>
+          </details>
         </ActionForm>
       </section>
       <section aria-labelledby="convenience-fee">
@@ -119,17 +136,23 @@ export default async function PaymentSettingsPage() {
           variant="default"
         >
           <TextField
-            label="Basis points (100 is 1 percent)"
-            name="basisPoints"
-            defaultValue={fee.basisPoints}
+            label="Percent of the payment"
+            name="percent"
+            inputMode="decimal"
+            hint="For example 2.5 adds $2.50 to a $100 payment. Enter 0 for none."
+            defaultValue={percentText(fee.basisPoints)}
             required
           />
           <TextField
-            label="Fixed amount in cents"
-            name="fixedCents"
-            defaultValue={fee.fixedCents}
+            label="Plus a set amount, in dollars"
+            name="fixedDollars"
+            inputMode="decimal"
+            hint="Added to every card payment the fee applies to, for example 0.30. Enter 0 for none."
+            defaultValue={centsToDollarInput(fee.fixedCents)}
             required
           />
+          <p className="m-0 text-sm">{convenienceExample(fee)}</p>
+          <p className="m-0 text-sm font-medium">Charge it on</p>
           <CheckField
             label="Online card payments"
             name="appliesOnline"

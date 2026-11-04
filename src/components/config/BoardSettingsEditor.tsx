@@ -1,12 +1,7 @@
 'use client'
 
-import {
-  Check,
-  FieldError,
-  type FieldErrors,
-  Input,
-  ListInput,
-} from '@/components/config/primitives'
+import { TextRows } from '@/components/config/plainFields'
+import { Check, FieldError, type FieldErrors, Input } from '@/components/config/primitives'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
 
 interface Props {
@@ -14,8 +9,6 @@ interface Props {
   onChange: (next: BoardSettingsBody) => void
   errors: FieldErrors
 }
-
-const LINE_BREAKS = /\n/
 
 function toNumberOrNull(raw: string): number | null {
   const parsed = Number.parseInt(raw, 10)
@@ -35,7 +28,7 @@ export function BoardSettingsEditor({ body, onChange, errors }: Props) {
       {body.boards.map((board, index) => (
         <fieldset key={board.board} className="rounded-md border p-3">
           <legend className="px-1 text-sm font-medium">{board.label}</legend>
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid gap-3 sm:grid-cols-2">
             <Input
               label="Board name"
               value={board.label}
@@ -43,6 +36,7 @@ export function BoardSettingsEditor({ body, onChange, errors }: Props) {
             />
             <Input
               label="Newspaper of record"
+              hint="Where legal notices for this board are published."
               value={board.publicNotice.newspaper ?? ''}
               onChange={(e) =>
                 setBoard(index, {
@@ -67,7 +61,8 @@ export function BoardSettingsEditor({ body, onChange, errors }: Props) {
             />
             {board.board === 'planning_board' ? (
               <Input
-                label="Filing lead time in days (blank uses the statute's 21)"
+                label="Filing deadline, days before the meeting"
+                hint="How many days before a meeting an application must be filed. Leave empty to use the 21 days state law sets."
                 type="number"
                 min={1}
                 value={board.filingLeadDays ?? ''}
@@ -97,36 +92,41 @@ export function BoardSettingsEditor({ body, onChange, errors }: Props) {
               }
             />
           </div>
-          <ListInput
-            label="Places where notices are posted, one per line"
-            values={board.publicNotice.bulletinBoards}
-            onValues={(next) =>
-              setBoard(index, { publicNotice: { ...board.publicNotice, bulletinBoards: next } })
-            }
-            separator={LINE_BREAKS}
-            multiline
-          />
+          <div className="mt-3">
+            <TextRows
+              legend="Places where notices are posted"
+              hint="Each place a paper notice goes up, for example Town Hall lobby."
+              rowLabel="Place"
+              addLabel="Add a place"
+              values={board.publicNotice.bulletinBoards}
+              onChange={(next) =>
+                setBoard(index, { publicNotice: { ...board.publicNotice, bulletinBoards: next } })
+              }
+            />
+          </div>
         </fieldset>
       ))}
       <fieldset className="rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">
-          Across the street and across the stream
-        </legend>
+        <legend className="px-1 text-sm font-medium">Abutters across a street or stream</legend>
+        <p className="m-0 mb-2 text-sm text-muted-foreground">
+          State law counts land directly across a street or stream as abutting. Chiban can find
+          those owners from the town's road and water maps once someone has checked the maps.
+        </p>
         <Check
-          label="Use perpendicular projection to find abutters across streets and streams"
+          label="Include owners directly across a street or stream"
           checked={body.abutters.projectionEnabled}
           onChange={(checked) => setAbutters({ projectionEnabled: checked })}
         />
-        <div className="mt-2 grid grid-cols-2 gap-3">
+        <div className="mt-2 grid gap-3 sm:grid-cols-2">
           <Input
-            label="Road and water layers confirmed by"
+            label="Road and water maps checked by"
             value={body.abutters.layersConfirmedBy ?? ''}
             onChange={(e) =>
               setAbutters({ layersConfirmedBy: e.target.value === '' ? null : e.target.value })
             }
           />
           <Input
-            label="Layers confirmed on"
+            label="Maps checked on"
             type="date"
             value={body.abutters.layersConfirmedOn ?? ''}
             onChange={(e) =>
@@ -139,7 +139,8 @@ export function BoardSettingsEditor({ body, onChange, errors }: Props) {
             }
           />
           <Input
-            label="Assumed right-of-way width in feet"
+            label="Usual road width, in feet"
+            hint="Used where the map does not show a road's width. 50 is common."
             type="number"
             min={1}
             value={body.abutters.assumedRightOfWayFt}

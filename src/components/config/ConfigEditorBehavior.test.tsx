@@ -3,10 +3,11 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ApplicationTypeEditor } from '@/components/config/ApplicationTypeEditor'
+import { ChecklistEditor } from '@/components/config/ChecklistEditor'
+import { ConditionsEditor } from '@/components/config/ConditionsEditor'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
 import { FeeLinesEditor } from '@/components/config/FeeLinesEditor'
 import { FormBuilder } from '@/components/config/formBuilder/FormBuilder'
-import { ChecklistEditor, ConditionsEditor } from '@/components/config/SimpleEditors'
 import { TownRuleEditor } from '@/components/config/TownRuleEditor'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
@@ -40,7 +41,6 @@ const CLASSIFICATIONS = [
 ]
 
 const TYPE = skeletonBody('application_type', 'BP') as ApplicationTypeBody
-const BUILDING_TYPE: ApplicationTypeBody = { ...TYPE, classification: 'nh.building_permit' }
 
 function Stateful<T>({
   initial,
@@ -96,9 +96,9 @@ describe('editors keep rows mounted while a key is typed', () => {
         render={(b, set) => <ChecklistEditor body={b} onChange={set} errors={{}} />}
       />,
     )
-    const key = screen.getByLabelText('Key')
+    const key = screen.getByLabelText('Item key')
     fireEvent.change(key, { target: { value: 'footing-1' } })
-    expect(screen.getByLabelText('Key')).toBe(key)
+    expect(screen.getByLabelText('Item key')).toBe(key)
     cleanup()
     render(
       <Stateful
@@ -106,15 +106,15 @@ describe('editors keep rows mounted while a key is typed', () => {
         render={(b, set) => <FeeLinesEditor body={b} onChange={set} errors={{}} />}
       />,
     )
-    const feeCode = screen.getByLabelText('Code')
+    const feeCode = screen.getByLabelText('Fee code')
     fireEvent.change(feeCode, { target: { value: 'building' } })
-    expect(screen.getByLabelText('Code')).toBe(feeCode)
+    expect(screen.getByLabelText('Fee code')).toBe(feeCode)
     expect(stateOf<{ lines: { code: string }[] }>().lines[0]?.code).toBe('building')
   })
 })
 
 describe('membership conditions', () => {
-  it('the in operator stores the comma separated values as an array and shows an existing array', () => {
+  it('the in operator edits its answers as a list of rows and stores them as an array', () => {
     const form: FormBody = {
       ...(skeletonBody('form', 'f') as FormBody),
       fields: [
@@ -138,40 +138,16 @@ describe('membership conditions', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Edit B' }))
     const show = screen.getByRole('group', { name: 'Show only when' })
-    const value = within(show).getByLabelText<HTMLInputElement>('Answer')
-    expect(value.value).toBe('x, y')
-    fireEvent.change(value, { target: { value: 'x, y, ' } })
-    expect(value.value).toBe('x, y, ')
-    fireEvent.change(value, { target: { value: 'x, y, z' } })
+    expect(within(show).getByLabelText<HTMLInputElement>('Answer 2').value).toBe('y')
+    fireEvent.click(within(show).getByRole('button', { name: 'Add an answer' }))
+    const third = within(show).getByLabelText<HTMLInputElement>('Answer 3')
+    expect(
+      stateOf<{ fields: { showIf: { value: string[] } }[] }>().fields[1]?.showIf.value,
+    ).toEqual(['x', 'y'])
+    fireEvent.change(third, { target: { value: 'z' } })
     expect(
       stateOf<{ fields: { showIf: { value: string[] } }[] }>().fields[1]?.showIf.value,
     ).toEqual(['x', 'y', 'z'])
-  })
-})
-
-describe('delimited list inputs', () => {
-  it('keep unfinished text so a second entry can be typed', () => {
-    render(
-      <Stateful
-        initial={BUILDING_TYPE}
-        render={(b, set) => (
-          <ApplicationTypeEditor
-            body={b}
-            onChange={set}
-            errors={{}}
-            packRules={PACK_RULES}
-            classifications={CLASSIFICATIONS}
-          />
-        )}
-      />,
-    )
-    const input = screen.getByLabelText<HTMLInputElement>('Checklist keys (comma separated)')
-    fireEvent.change(input, { target: { value: 'footing' } })
-    fireEvent.change(input, { target: { value: 'footing, ' } })
-    expect(input.value).toBe('footing, ')
-    fireEvent.change(input, { target: { value: 'footing, framing' } })
-    expect(stateOf<{ checklistKeys: string[] }>().checklistKeys).toEqual(['footing', 'framing'])
-    expect(input.value).toBe('footing, framing')
   })
 })
 
@@ -191,7 +167,7 @@ describe('classification choice', () => {
         )}
       />,
     )
-    fireEvent.change(screen.getByLabelText('Proceeding classification'), {
+    fireEvent.change(screen.getByLabelText('Kind of proceeding'), {
       target: { value: 'nh.building_permit' },
     })
     expect(stateOf<{ bindings: string[] }>().bindings).toEqual(['nh.bp.decision'])

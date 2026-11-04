@@ -1,6 +1,8 @@
 'use client'
 
+import { DollarsInput, PercentInput } from '@/components/config/plainFields'
 import { Check, Input } from '@/components/config/primitives'
+import { convenienceExample } from '@/features/payments/feeInputs'
 import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
 
 interface Props {
@@ -13,11 +15,6 @@ const CHANNELS = [
   ['card_present', 'Card payments at the counter'],
 ] as const
 
-function toWholeNumber(raw: string): number {
-  const parsed = Number.parseInt(raw, 10)
-  return Number.isNaN(parsed) ? 0 : parsed
-}
-
 export function PaymentSettingsEditor({ body, onChange }: Props) {
   const fee = body.convenienceFee
   const setFee = (next: Partial<typeof fee>) =>
@@ -26,23 +23,20 @@ export function PaymentSettingsEditor({ body, onChange }: Props) {
     <div className="space-y-3">
       <fieldset className="rounded-md border p-3">
         <legend className="px-1 text-sm font-medium">Convenience fee passed to the payer</legend>
-        <div className="grid grid-cols-2 gap-3">
-          <Input
-            label="Basis points (100 is 1 percent)"
-            type="number"
-            min={0}
-            value={fee.basisPoints}
-            onChange={(e) => setFee({ basisPoints: toWholeNumber(e.target.value) })}
+        <div className="grid gap-3 sm:grid-cols-2">
+          <PercentInput
+            label="Percent of the payment"
+            basisPoints={fee.basisPoints}
+            onBasisPoints={(basisPoints) => setFee({ basisPoints })}
           />
-          <Input
-            label="Fixed amount in cents"
-            type="number"
-            min={0}
-            value={fee.fixedCents}
-            onChange={(e) => setFee({ fixedCents: toWholeNumber(e.target.value) })}
+          <DollarsInput
+            label="Plus a set amount"
+            cents={fee.fixedCents}
+            onCents={(fixedCents) => setFee({ fixedCents })}
           />
         </div>
-        <div className="mt-2 space-y-1">
+        <div className="mt-3 space-y-1">
+          <p className="m-0 text-sm font-medium">Charge it on</p>
           {CHANNELS.map(([channel, label]) => (
             <Check
               key={channel}
@@ -58,14 +52,19 @@ export function PaymentSettingsEditor({ body, onChange }: Props) {
             />
           ))}
         </div>
+        <p className="m-0 mt-3 text-sm" aria-live="polite">
+          {convenienceExample(fee)}
+        </p>
       </fieldset>
       <Input
         label="Checks payable to"
+        hint="Printed on invoices and receipts, for example Town of Alder Pond."
         value={body.checksPayableTo}
         onChange={(e) => onChange({ ...body, checksPayableTo: e.target.value })}
       />
       <Input
         label="Receipt footer"
+        hint="A line printed at the bottom of every receipt."
         value={body.receiptFooter}
         onChange={(e) => onChange({ ...body, receiptFooter: e.target.value })}
       />

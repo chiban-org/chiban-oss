@@ -1,7 +1,8 @@
 'use client'
 
 import type { Board } from '@packs/nh/boardSchema'
-import { Check, Input, ListInput, Pick } from '@/components/config/primitives'
+import { TextRows } from '@/components/config/plainFields'
+import { Check, Input, Pick } from '@/components/config/primitives'
 import {
   type BoardOverride,
   type ContactLine,
@@ -49,12 +50,14 @@ function BoardOverrideFields({
         value={value.officeName ?? ''}
         onChange={(e) => onChange({ ...value, officeName: e.target.value })}
       />
-      <ListInput
-        label="Address on this board's documents, one line per row (up to three)"
+      <TextRows
+        legend="Address on this board's documents"
+        hint="Up to three lines. Leave empty to use the town address."
+        rowLabel="Address line"
+        addLabel="Add an address line"
+        max={3}
         values={value.addressLines ?? []}
-        onValues={(next) => onChange({ ...value, addressLines: next.slice(0, 3) })}
-        separator={/\n/}
-        multiline
+        onChange={(next) => onChange({ ...value, addressLines: next.slice(0, 3) })}
       />
       <Input
         label="Footer on this board's documents"

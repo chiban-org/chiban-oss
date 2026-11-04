@@ -136,8 +136,8 @@ describe('settings actions', () => {
     state.actor = world.admin
     const r = await settingsActions.publishPaymentSettingsAction(
       form({
-        basisPoints: '250',
-        fixedCents: '25',
+        percent: '2.5',
+        fixedDollars: '0.25',
         appliesOnline: 'on',
         receiptFooter: 'Thank you.',
         checksPayableTo: 'Town of Alder Pond',
@@ -152,9 +152,20 @@ describe('settings actions', () => {
     })
   })
 
+  it('names the field when the percent is not a number', async () => {
+    state.actor = world.admin
+    const r = await settingsActions.publishPaymentSettingsAction(
+      form({ percent: 'three', fixedDollars: '0', receiptFooter: '', checksPayableTo: 'Town' }),
+    )
+    expect(r).toMatchObject({
+      ok: false,
+      fieldErrors: { percent: expect.stringContaining('percent') },
+    })
+  })
+
   it('staff publishing payment settings is forbidden', async () => {
     const r = await settingsActions.publishPaymentSettingsAction(
-      form({ basisPoints: '1', fixedCents: '0', receiptFooter: '', checksPayableTo: 'Town' }),
+      form({ percent: '0.01', fixedDollars: '0', receiptFooter: '', checksPayableTo: 'Town' }),
     )
     expect(r).toEqual({ ok: false, error: 'You do not have permission to do this.' })
   })
