@@ -1,14 +1,11 @@
-import { and, eq, inArray, or, sql } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { agendaItems, agendas, boardMeetings, boardPackets, documents, hearings } from '@/db/schema'
+import { agendas, boardPackets } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { createPacket } from '@/features/boards/packets'
-import { attachDocument } from '@/features/documents/attach'
-import { storeGeneratedBytes } from '@/features/files/ingest'
-import { trcSummaryPdf } from '@/features/reviews/trcSummary'
+import { gatherPacket } from '@/features/boards/packetGather'
+import { savePacket } from '@/features/boards/packetSave'
 import type { ObjectStore } from '@/features/storage/objectStore'
-import { formatCivilDate } from '@/lib/formatDate'
 import { err, ok, type Result } from '@/types/result'
 
 export type MeetingPacketError =
@@ -19,8 +16,6 @@ export type MeetingPacketError =
   | 'packet_exists'
   | 'meeting_cancelled'
   | { notForBoard: string[] }
-
-const BOARD_OR_PUBLIC = sql`('board' = any(${documents.audiences}) or ${documents.isPublic})`
 
 export async function meetingPacketId(db: Db, meetingId: string): Promise<string | null> {
   const [row] = await db
@@ -39,66 +34,24 @@ export async function createMeetingPacket(
 ): Promise<Result<{ packetId: string; documents: number }, MeetingPacketError>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'packet.manage', signal))) return err('forbidden')
-  const [meeting] = await db.select().from(boardMeetings).where(eq(boardMeetings.id, meetingId))
-  if (meeting === undefined) return err('not_found')
   const [agenda] = await db.select().from(agendas).where(eq(agendas.meetingId, meetingId))
   if (agenda === undefined) return err('empty')
-  if (agenda.status !== 'published') return err('agenda_not_published')
-  if (meeting.status === 'cancelled') return err('meeting_cancelled')
-  if ((await meetingPacketId(db, meetingId)) !== null) return err('packet_exists')
-  const applicationRows = await db
-    .selectDistinct({ applicationId: hearings.applicationId })
-    .from(agendaItems)
-    .innerJoin(hearings, eq(hearings.id, agendaItems.hearingId))
-    .where(eq(agendaItems.meetingId, meetingId))
-  const applicationIds = applicationRows.map((r) => r.applicationId)
-  for (const applicationId of applicationIds) {
-    const pdf = await trcSummaryPdf(db, actor, applicationId, signal)
-    if (!pdf.ok) continue
-    await db.transaction(async (tx) => {
-      const stored = await storeGeneratedBytes(tx, store, pdf.value, 'application/pdf', signal)
-      await attachDocument(
-        tx,
-        actor,
-        {
-          target: { kind: 'application', id: applicationId },
-          title: 'Technical Review Committee summary',
-          docKind: 'board_material',
-          file: {
-            sha256: stored.sha256,
-            filename: 'trc-summary.pdf',
-            contentType: 'application/pdf',
-          },
-          audiences: ['board'],
-          isPublic: false,
-        },
-        signal,
-      )
-    })
-  }
-  const owners = [
-    and(eq(documents.recordKind, 'meeting'), eq(documents.recordId, meetingId)),
-    ...(applicationIds.length === 0
-      ? []
-      : [
-          and(eq(documents.recordKind, 'application'), inArray(documents.recordId, applicationIds)),
-        ]),
-  ]
-  const rows = await db
-    .select({ id: documents.id })
-    .from(documents)
-    .where(and(or(...owners), BOARD_OR_PUBLIC))
-    .orderBy(documents.seq)
-  if (rows.length === 0) return err('empty')
-  const made = await createPacket(
+  const gathered = await gatherPacket(db, actor, meetingId, signal)
+  if (!gathered.ok) return gathered
+  if (gathered.value.packetId !== null) return err('packet_exists')
+  const groups = gathered.value.groups
+  const documentIds = groups.flatMap((g) =>
+    g.candidates.filter((c) => c.exclusion === null).map((c) => c.documentId),
+  )
+  const trcApplicationIds = groups.flatMap((g) =>
+    g.trc === 'make' && g.applicationId !== null ? [g.applicationId] : [],
+  )
+  const saved = await savePacket(
     db,
+    store,
     actor,
-    {
-      title: `Meeting packet for ${formatCivilDate(meeting.meetingDate)}`,
-      meetingId,
-      documentIds: rows.map((r) => r.id),
-    },
+    { meetingId, documentIds, trcApplicationIds },
     signal,
   )
-  return made.ok ? ok({ packetId: made.value.packetId, documents: rows.length }) : made
+  return saved.ok ? ok({ packetId: saved.value.packetId, documents: saved.value.added }) : saved
 }

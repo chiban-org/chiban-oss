@@ -56,11 +56,16 @@ interface Versioned {
   createdAt: Date
 }
 
-function frozenVersion(
+export interface FrozenVersion {
+  versionId: string
+  approvalId: string | null
+}
+
+export function frozenVersion(
   doc: { audiences: string[]; isPublic: boolean },
   versions: Versioned[],
   approved: { id: string; versionId: string } | null,
-): { versionId: string; approvalId: string | null } | null {
+): FrozenVersion | null {
   const latest = (role: string) =>
     versions
       .filter((v) => v.role === role)
