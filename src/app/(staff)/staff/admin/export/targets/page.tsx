@@ -1,15 +1,13 @@
 import { ActionForm } from '@/components/ActionForm'
-import { PracticeNotice } from '@/components/PracticeNotice'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { type ExportTargetView, listTargets } from '@/features/export/targets/manageTargets'
-import { ONEDRIVE_STUB_NOTE } from '@/features/export/targets/oneDrive'
 import { getTownSettings } from '@/features/town/settings'
 import { DEFAULT_TIME_ZONE } from '@/features/town/timeZone'
 import { formatInstantLong } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
-import { runTargetNowAction, saveTargetAction, setTargetActiveAction } from './actions'
-import { TargetFields } from './TargetFields'
+import { runTargetNowAction, setTargetActiveAction } from './actions'
+import { AddTarget, EditTarget, StubNote } from './TargetForms'
 
 export const dynamic = 'force-dynamic'
 
@@ -18,10 +16,6 @@ const KIND_LABEL = {
   s3: 'S3 bucket',
   onedrive: 'OneDrive or SharePoint',
 } as const
-
-function StubNote() {
-  return <PracticeNotice>{ONEDRIVE_STUB_NOTE}</PracticeNotice>
-}
 
 function TargetCard({
   target,
@@ -46,7 +40,8 @@ function TargetCard({
           Last failed {day(target.lastFailureAt)}: {target.lastError ?? 'unknown error'}
         </p>
       )}
-      <div className="mt-3 flex flex-wrap gap-3">
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <EditTarget target={target} />
         {target.isActive ? (
           <ActionForm action={runTargetNowAction} submitLabel="Run now">
             <input type="hidden" name="id" value={target.id} />
@@ -69,12 +64,6 @@ function TargetCard({
           <input type="hidden" name="active" value={target.isActive ? 'false' : 'true'} />
         </ActionForm>
       </div>
-      <details className="mt-3">
-        <summary>Change this target</summary>
-        <ActionForm action={saveTargetAction} submitLabel="Save changes">
-          <TargetFields kind={target.kind} idPrefix={`edit-${target.id}`} current={target} />
-        </ActionForm>
-      </details>
     </li>
   )
 }
@@ -94,38 +83,17 @@ export default async function ExportTargetsPage() {
         title="Copy exports to your own storage"
         lead="Each month Chiban copies what changed since the last copy to storage the town controls."
         back={{ href: '/staff/admin/export', label: 'Data export' }}
+        action={<AddTarget />}
       />
       <p>The first copy holds everything. Files are copied once and shared between months.</p>
       <section aria-labelledby="your-targets">
         <h2 id="your-targets">Your targets</h2>
-        {listed.value.length === 0 ? <p>No targets yet.</p> : null}
+        {listed.value.length === 0 ? <p>No targets yet. Add one with Add a target.</p> : null}
         <ul className="m-0 list-none p-0">
           {listed.value.map((target) => (
             <TargetCard key={target.id} target={target} day={day} />
           ))}
         </ul>
-      </section>
-      <section aria-labelledby="add-target">
-        <h2 id="add-target">Add a target</h2>
-        <details>
-          <summary>Add a local folder</summary>
-          <ActionForm action={saveTargetAction} submitLabel="Add the folder">
-            <TargetFields kind="local_fs" idPrefix="add-local" />
-          </ActionForm>
-        </details>
-        <details>
-          <summary>Add an S3 bucket</summary>
-          <ActionForm action={saveTargetAction} submitLabel="Add the bucket">
-            <TargetFields kind="s3" idPrefix="add-s3" />
-          </ActionForm>
-        </details>
-        <details>
-          <summary>Add a OneDrive or SharePoint drive</summary>
-          <StubNote />
-          <ActionForm action={saveTargetAction} submitLabel="Add the drive">
-            <TargetFields kind="onedrive" idPrefix="add-onedrive" />
-          </ActionForm>
-        </details>
       </section>
     </main>
   )

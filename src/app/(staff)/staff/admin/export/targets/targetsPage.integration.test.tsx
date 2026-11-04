@@ -59,13 +59,12 @@ afterAll(async () => {
 })
 
 describe('export targets page', () => {
-  it('shows the stub note beside the kind choice before any target exists', async () => {
+  it('offers Add a target in the header before any target exists', async () => {
     state.actor = admin
     const html = renderToStaticMarkup(await TargetsPage())
-    expect(html).toContain('Add a local folder')
-    expect(html).toContain('Add an S3 bucket')
-    expect(html).toContain('Add a OneDrive or SharePoint')
-    expect(notes(html)).toContain(NOTE)
+    expect(html).toMatch(/>Add a target<\/button>/)
+    expect(html.indexOf('>Add a target<')).toBeLessThan(html.indexOf('Your targets'))
+    expect(html).toContain('No targets yet. Add one with Add a target.')
     expect(html).not.toContain(String.fromCodePoint(0x2014))
   })
 
@@ -96,7 +95,8 @@ describe('export targets page', () => {
     expect(html).toContain('Run now')
     expect(html).toContain('Turn off')
     expect(html).not.toContain('v1:secret:blob')
-    expect(notes(html).filter((n) => n === NOTE).length).toBeGreaterThanOrEqual(2)
+    expect(notes(html)).toContain(NOTE)
+    expect(html).toContain('aria-label="Edit Town server"')
   })
 
   it('refuses a reviewer', async () => {
@@ -104,7 +104,7 @@ describe('export targets page', () => {
     const html = renderToStaticMarkup(await TargetsPage())
     expect(html).toContain('You do not have permission')
     expect(html).not.toContain('Town server')
-    expect(html).not.toContain('Add a local folder')
+    expect(html).not.toContain('Add a target')
   })
 
   it('redirects a signed-out visitor to sign in', async () => {
