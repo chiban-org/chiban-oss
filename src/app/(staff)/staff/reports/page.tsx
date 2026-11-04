@@ -1,5 +1,7 @@
 import Link from 'next/link'
-import { SortHeader } from '@/components/dataTable/SortHeader'
+import { TextField } from '@/components/staff/fields'
+import { NoPermission } from '@/components/staff/NoPermission'
+import { Button } from '@/components/ui/button'
 import { readTableParams } from '@/features/dataTable/params'
 import { permitVolumeReport } from '@/features/reports/permitVolume'
 import { processingTimeReport } from '@/features/reports/processingTime'
@@ -10,9 +12,6 @@ import {
   REPORTS_PATH,
   REVENUE_SCOPE,
   REVENUE_SORT,
-  sortProcessing,
-  sortRevenue,
-  sortVolume,
   VOLUME_SCOPE,
   VOLUME_SORT,
 } from '@/features/reports/reportSorts'
@@ -20,22 +19,32 @@ import { revenueReport } from '@/features/reports/revenue'
 import { applicationTypeLabels } from '@/features/reports/typeLabels'
 import { activeSortFields, scopedSort } from '@/features/staffTables/scopedSort'
 import { formatCivilDate } from '@/lib/formatDate'
-import { formatCents } from '@/lib/money'
 import { requireStaffContext } from '@/server/requireStaff'
+import { ProcessingTable, ReportSection, RevenueTable, VolumeTable } from './ReportTables'
 
 export const dynamic = 'force-dynamic'
 
-const MONTH_LABEL = new Intl.DateTimeFormat('en-US', {
-  timeZone: 'UTC',
-  year: 'numeric',
-  month: 'long',
-})
+const OTHER_REPORTS = [
+  { href: '/staff/reports/cash-receipts', label: 'Daily cash receipts' },
+  { href: '/staff/reports/census', label: 'Census building permits' },
+] as const
 
-function monthLabel(month: string): string {
-  return MONTH_LABEL.format(new Date(`${month}-01T00:00:00Z`))
+function OtherReports() {
+  return (
+    <nav aria-label="Other reports" className="no-print my-4">
+      <h2 className="font-sans text-sm font-semibold text-muted-foreground">Other reports</h2>
+      <ul className="flex flex-wrap gap-x-6 gap-y-1">
+        {OTHER_REPORTS.map((report) => (
+          <li key={report.href}>
+            <Link className="text-action underline" href={report.href}>
+              {report.label}
+            </Link>
+          </li>
+        ))}
+      </ul>
+    </nav>
+  )
 }
-
-const days = (n: number | null): string => (n === null ? '' : n.toFixed(1))
 
 export default async function ReportsPage({
   searchParams,
@@ -55,12 +64,7 @@ export default async function ReportsPage({
     revenueReport(ctx.db, ctx.actor, range, ctx.signal),
   ])
   if (!volume.ok && volume.error === 'forbidden') {
-    return (
-      <main data-wide="">
-        <h1>Reports</h1>
-        <p role="alert">You do not have permission to view reports.</p>
-      </main>
-    )
+    return <NoPermission title="Reports" action="view reports" />
   }
   const typeLabels = await applicationTypeLabels(
     ctx.db,
@@ -75,33 +79,18 @@ export default async function ReportsPage({
   return (
     <main data-wide="">
       <h1>Reports</h1>
-      <form method="get" className="no-print my-3 flex flex-wrap items-end gap-3">
-        <label className="block text-sm font-medium">
-          From
-          <input
-            type="date"
-            name="from"
-            defaultValue={range.from}
-            className="mt-1 block rounded-md border px-2 py-1.5"
-          />
-        </label>
-        <label className="block text-sm font-medium">
-          To
-          <input
-            type="date"
-            name="to"
-            defaultValue={range.to}
-            className="mt-1 block rounded-md border px-2 py-1.5"
-          />
-        </label>
+      <OtherReports />
+      <form method="get" className="toolbar no-print my-4 flex flex-wrap items-end gap-3">
+        <TextField label="From" name="from" type="date" defaultValue={range.from} />
+        <TextField label="To" name="to" type="date" defaultValue={range.to} />
         {activeSortFields(params, [VOLUME_SCOPE, PROCESSING_SCOPE, REVENUE_SCOPE]).map(
           ([name, value]) => (
             <input key={name} type="hidden" name={name} value={value} />
           ),
         )}
-        <button type="submit" className="rounded-md border px-3 py-1.5 text-sm">
+        <Button type="submit" variant="outline">
           Show range
-        </button>
+        </Button>
       </form>
       <p>
         {formatCivilDate(range.from)} to {formatCivilDate(range.to)}
@@ -109,173 +98,32 @@ export default async function ReportsPage({
       {!volume.ok ? (
         <p role="alert">Choose a range of at most five years.</p>
       ) : (
-        <>
-          <h2>Permit volume</h2>
-          <p>
-            <Link
-              className="text-action underline"
-              href={`/staff/reports/permit-volume/csv?${query}`}
-            >
-              Download CSV
-            </Link>
-          </p>
-          <div className="table-panel my-2">
-            <table className="w-full min-w-[40rem] text-sm">
-              <thead>
-                <tr>
-                  <SortHeader label="Month" link={volumeSort.links.month} />
-                  <SortHeader label="Type" link={volumeSort.links.type} />
-                  <SortHeader
-                    label="Received"
-                    link={volumeSort.links.received}
-                    className="text-right"
-                  />
-                  <SortHeader
-                    label="Issued"
-                    link={volumeSort.links.issued}
-                    className="text-right"
-                  />
-                  <SortHeader
-                    label="Closed"
-                    link={volumeSort.links.closed}
-                    className="text-right"
-                  />
-                  <SortHeader
-                    label="Denied"
-                    link={volumeSort.links.denied}
-                    className="text-right"
-                  />
-                  <SortHeader
-                    label="Withdrawn"
-                    link={volumeSort.links.withdrawn}
-                    className="text-right"
-                  />
-                </tr>
-              </thead>
-              <tbody>
-                {sortVolume(volume.value, volumeSort.state, typeLabel).map((r) => (
-                  <tr key={`${r.month}-${r.type}`}>
-                    <td>{monthLabel(r.month)}</td>
-                    <td>{typeLabel(r.type)}</td>
-                    <td className="text-right">{r.received}</td>
-                    <td className="text-right">{r.issued}</td>
-                    <td className="text-right">{r.closed}</td>
-                    <td className="text-right">{r.denied}</td>
-                    <td className="text-right">{r.withdrawn}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+        <ReportSection
+          title="Permit volume"
+          csvHref={`/staff/reports/permit-volume/csv?${query}`}
+          order="Oldest month first, then by permit type."
+        >
+          <VolumeTable rows={volume.value} sort={volumeSort} typeLabel={typeLabel} />
+        </ReportSection>
       )}
       {processing.ok ? (
-        <>
-          <h2>Processing time</h2>
-          <p>
-            <Link
-              className="text-action underline"
-              href={`/staff/reports/processing-time/csv?${query}`}
-            >
-              Download CSV
-            </Link>
-          </p>
-          <div className="table-panel my-2">
-            <table className="w-full min-w-[40rem] text-sm">
-              <thead>
-                <tr>
-                  <SortHeader label="Type" link={processingSort.links.type} />
-                  <SortHeader
-                    label="Issued"
-                    link={processingSort.links.issued}
-                    className="text-right"
-                  />
-                  <SortHeader
-                    label="Median days to issue"
-                    link={processingSort.links.median}
-                    className="text-right"
-                  />
-                  <SortHeader
-                    label="90th percentile days"
-                    link={processingSort.links.p90}
-                    className="text-right"
-                  />
-                  <SortHeader
-                    label="Median days to decision"
-                    link={processingSort.links.decision}
-                    className="text-right"
-                  />
-                  <SortHeader
-                    label="Decided on time"
-                    link={processingSort.links.onTime}
-                    className="text-right"
-                  />
-                  <SortHeader
-                    label="Decided late"
-                    link={processingSort.links.late}
-                    className="text-right"
-                  />
-                </tr>
-              </thead>
-              <tbody>
-                {sortProcessing(processing.value, processingSort.state, typeLabel).map((r) => (
-                  <tr key={r.type}>
-                    <td>{typeLabel(r.type)}</td>
-                    <td className="text-right">{r.issued}</td>
-                    <td className="text-right">{days(r.medianReceivedToIssued)}</td>
-                    <td className="text-right">{days(r.p90ReceivedToIssued)}</td>
-                    <td className="text-right">{days(r.medianCompleteToDecision)}</td>
-                    <td className="text-right">{r.decidedOnTime ?? ''}</td>
-                    <td className="text-right">{r.decidedLate ?? ''}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+        <ReportSection
+          title="Processing time"
+          csvHref={`/staff/reports/processing-time/csv?${query}`}
+          order="By permit type."
+        >
+          <ProcessingTable rows={processing.value} sort={processingSort} typeLabel={typeLabel} />
+        </ReportSection>
       ) : null}
       {revenue.ok ? (
-        <>
-          <h2>Revenue</h2>
-          <p>
-            <Link className="text-action underline" href={`/staff/reports/revenue/csv?${query}`}>
-              Download CSV
-            </Link>
-          </p>
-          <div className="table-panel my-2">
-            <table className="w-full text-sm">
-              <thead>
-                <tr>
-                  <SortHeader label="Month" link={revenueSort.links.month} />
-                  <SortHeader label="Fee" link={revenueSort.links.fee} />
-                  <SortHeader label="Net" link={revenueSort.links.net} className="text-right" />
-                </tr>
-              </thead>
-              <tbody>
-                {sortRevenue(revenue.value, revenueSort.state).map((r) => (
-                  <tr key={`${r.month}-${r.kind}-${r.code}`}>
-                    <td>{monthLabel(r.month)}</td>
-                    <td>{r.label}</td>
-                    <td className="text-right">{formatCents(r.netCents)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </>
+        <ReportSection
+          title="Revenue"
+          csvHref={`/staff/reports/revenue/csv?${query}`}
+          order="Oldest month first."
+        >
+          <RevenueTable rows={revenue.value} sort={revenueSort} />
+        </ReportSection>
       ) : null}
-      <h2>Daily cash receipts</h2>
-      <p>
-        <Link className="text-action underline" href="/staff/reports/cash-receipts">
-          Open the daily cash receipts report
-        </Link>
-      </p>
-      <h2>Census building permits</h2>
-      <p>
-        <Link className="text-action underline" href="/staff/reports/census">
-          Open the Census building permits report
-        </Link>
-      </p>
     </main>
   )
 }

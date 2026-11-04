@@ -47,7 +47,7 @@ export function sortVolume(
   typeLabel: (type: string) => string,
 ) {
   return sortRows(rows, state, {
-    order: null,
+    order: (r) => `${r.month} ${typeLabel(r.type)}`,
     month: (r) => r.month,
     type: (r) => typeLabel(r.type),
     received: (r) => r.received,
@@ -88,7 +88,7 @@ export function sortProcessing(
   typeLabel: (type: string) => string,
 ) {
   return sortRows(rows, state, {
-    order: null,
+    order: (r) => typeLabel(r.type),
     type: (r) => typeLabel(r.type),
     issued: (r) => r.issued,
     median: (r) => r.medianReceivedToIssued,

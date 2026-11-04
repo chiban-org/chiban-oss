@@ -151,11 +151,11 @@ describe('cashReceiptsReport', () => {
       }),
     )
     expect((await report()).checks).toEqual([
-      { number: '1042', payerName: 'Pat Contractor', amountCents: 4500 },
+      { number: '1042', payerName: 'Pat Contractor', amountCents: 4500, returnedOn: null },
     ])
   })
 
-  it('a returned check no longer appears in the checks for deposit', async () => {
+  it('a check returned later stays on the deposit list, in the order taken, with the day the return was recorded', async () => {
     const returned = await post(
       entry({
         method: 'check',
@@ -169,6 +169,7 @@ describe('cashReceiptsReport', () => {
         method: 'check',
         checkNumber: '1043',
         amountCents: 4500,
+        postedAt: new Date('2027-03-02T03:40:00Z'),
         allocations: [lineAllocation(second, 4500)],
       }),
     )
@@ -184,7 +185,12 @@ describe('cashReceiptsReport', () => {
       { now: new Date('2027-03-06T15:00:00Z') },
     )
     expect(result.ok).toBe(true)
-    expect((await report()).checks.map((c) => c.number)).toEqual(['1043'])
+    const day = await report()
+    expect(day.checks.map((c) => [c.number, c.returnedOn])).toEqual([
+      ['1042', '2027-03-06'],
+      ['1043', null],
+    ])
+    expect(day.checks.reduce((sum, c) => sum + c.amountCents, 0)).toBe(day.totalsByMethod.check)
   })
 
   it('reviewer is forbidden', async () => {

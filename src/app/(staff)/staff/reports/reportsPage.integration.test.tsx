@@ -61,10 +61,24 @@ describe('reports page', () => {
     expect(html).toContain('/staff/reports/cash-receipts')
   })
 
-  it('tells a reviewer they cannot view reports', async () => {
+  it('states the default order of each table and lists the other reports once', async () => {
+    state.actor = world.staff
+    const html = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve(search) }))
+    expect(html).toContain(
+      'Oldest month first, then by permit type. Click a column heading to sort.',
+    )
+    expect(html).toContain('By permit type. Click a column heading to sort.')
+    expect(html).toContain('Other reports')
+    expect(html).toContain('href="/staff/reports/census"')
+    expect(html).not.toContain('Open the daily cash receipts report')
+    expect(html).not.toContain('Open the Census building permits report')
+  })
+
+  it('tells a reviewer they cannot view reports and offers their start page', async () => {
     state.actor = world.reviewer
     const html = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve(search) }))
-    expect(html).toContain('You do not have permission')
+    expect(html).toContain('You do not have permission to view reports.')
+    expect(html).toContain('href="/staff"')
     expect(html).not.toContain('csv?from')
   })
 

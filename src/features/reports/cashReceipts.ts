@@ -1,4 +1,4 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { feeAssessments, ledgerAllocations, ledgerEntries } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
@@ -22,7 +22,12 @@ export interface CashReceiptsReport {
   totalsByMethod: ByMethod
   grandTotalCents: number
   entryCount: number
-  checks: { number: string; payerName: string; amountCents: number }[]
+  checks: {
+    number: string
+    payerName: string
+    amountCents: number
+    returnedOn: CivilDate | null
+  }[]
 }
 
 function zeroes(): ByMethod {
@@ -48,10 +53,10 @@ export async function labelsFor(db: Db, assessmentIds: string[]): Promise<Map<st
   return labels
 }
 
-async function returnedCheckIds(db: Db, entryIds: string[]): Promise<Set<string>> {
-  if (entryIds.length === 0) return new Set()
+async function returnedCheckDates(db: Db, entryIds: string[]): Promise<Map<string, CivilDate>> {
+  if (entryIds.length === 0) return new Map()
   const rows = await db
-    .select({ reverses: ledgerEntries.reversesEntryId })
+    .select({ reverses: ledgerEntries.reversesEntryId, on: ledgerEntries.businessDate })
     .from(ledgerEntries)
     .where(
       and(
@@ -59,7 +64,14 @@ async function returnedCheckIds(db: Db, entryIds: string[]): Promise<Set<string>
         inArray(ledgerEntries.reversesEntryId, entryIds),
       ),
     )
-  return new Set(rows.flatMap((r) => (r.reverses === null ? [] : [r.reverses])))
+    .orderBy(asc(ledgerEntries.businessDate))
+  const dates = new Map<string, CivilDate>()
+  for (const row of rows) {
+    if (row.reverses !== null && !dates.has(row.reverses)) {
+      dates.set(row.reverses, row.on as CivilDate)
+    }
+  }
+  return dates
 }
 
 const FINE_CODE = '\u0000court-imposed-fine'
@@ -77,6 +89,7 @@ export async function cashReceiptsReport(
     .select()
     .from(ledgerEntries)
     .where(eq(ledgerEntries.businessDate, input.date))
+    .orderBy(asc(ledgerEntries.postedAt), asc(ledgerEntries.id))
   const allocations =
     entries.length === 0
       ? []
@@ -89,9 +102,10 @@ export async function cashReceiptsReport(
               entries.map((e) => e.id),
             ),
           )
-  const returned = await returnedCheckIds(
+  const checkPayments = entries.filter((e) => e.entryType === 'payment' && e.method === 'check')
+  const returned = await returnedCheckDates(
     db,
-    entries.map((e) => e.id),
+    checkPayments.map((e) => e.id),
   )
   const methodByEntry = new Map(entries.map((e) => [e.id, methodOf(e)]))
   const totalsByMethod = zeroes()
@@ -120,24 +134,23 @@ export async function cashReceiptsReport(
     townName: town.ok ? town.value.name : '',
     methods: [...REPORT_METHODS],
     rows: [...byCode.entries()]
-      .sort(([a], [b]) => a.localeCompare(b))
       .map(([feeCode, byMethod]) => ({
         feeCode,
         label: feeCode === FINE_CODE ? 'Court-imposed fine' : (labels.get(feeCode) ?? feeCode),
         byMethod,
         totalCents: Object.values(byMethod).reduce((sum, n) => sum + n, 0),
-      })),
+      }))
+      .sort((a, b) => a.label.localeCompare(b.label) || a.feeCode.localeCompare(b.feeCode)),
     convenienceFees,
     overpayments,
     totalsByMethod,
     grandTotalCents: entries.reduce((sum, e) => sum + e.amountCents, 0),
     entryCount: entries.length,
-    checks: entries
-      .filter((e) => e.entryType === 'payment' && e.method === 'check' && !returned.has(e.id))
-      .map((e) => ({
-        number: e.checkNumber ?? '',
-        payerName: e.payerName,
-        amountCents: e.amountCents,
-      })),
+    checks: checkPayments.map((e) => ({
+      number: e.checkNumber ?? '',
+      payerName: e.payerName,
+      amountCents: e.amountCents,
+      returnedOn: returned.get(e.id) ?? null,
+    })),
   })
 }

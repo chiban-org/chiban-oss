@@ -28,8 +28,8 @@ describe('report table sorting', () => {
   const order = (state: Parameters<typeof sortVolume>[1]) =>
     sortVolume(VOLUME, state, label).map((r) => `${r.month}/${r.type}`)
 
-  it('keeps the report order by default and sorts months chronologically', () => {
-    expect(order({ key: 'order', dir: 'asc' })).toEqual(['2027-02/el', '2027-01/bp', '2027-01/el'])
+  it('lists the oldest month first, then the type label, by default and sorts months chronologically', () => {
+    expect(order({ key: 'order', dir: 'asc' })).toEqual(['2027-01/bp', '2027-01/el', '2027-02/el'])
     expect(order({ key: 'month', dir: 'asc' })).toEqual(['2027-01/bp', '2027-01/el', '2027-02/el'])
   })
 
@@ -65,6 +65,23 @@ describe('report table sorting', () => {
     ])
   })
 
+  it('lists processing times by the type label shown by default', () => {
+    const row = (type: string) => ({
+      type,
+      issued: 1,
+      medianReceivedToIssued: null,
+      p90ReceivedToIssued: null,
+      medianCompleteToDecision: null,
+      decidedOnTime: null,
+      decidedLate: null,
+    })
+    const rows = [row('el'), row('bp')]
+    expect(sortProcessing(rows, { key: 'order', dir: 'asc' }, label).map((r) => r.type)).toEqual([
+      'bp',
+      'el',
+    ])
+  })
+
   it('sorts revenue by net amount', () => {
     const rows = [
       { month: '2027-01', kind: 'fee', code: 'a', label: 'A', netCents: 100 },
@@ -87,8 +104,8 @@ describe('report table sorting', () => {
 
   it('sorts checks by number, payer and amount', () => {
     const checks = [
-      { number: '10', payerName: 'Zed', amountCents: 5 },
-      { number: '9', payerName: 'Amy', amountCents: 50 },
+      { number: '10', payerName: 'Zed', amountCents: 5, returnedOn: null },
+      { number: '9', payerName: 'Amy', amountCents: 50, returnedOn: null },
     ]
     expect(sortChecks(checks, { key: 'number', dir: 'asc' }).map((c) => c.number)).toEqual([
       '9',

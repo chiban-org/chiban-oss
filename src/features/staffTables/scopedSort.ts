@@ -41,12 +41,17 @@ function toScopedHref(href: string, scope: string): string {
   return text === '' ? href.slice(0, split) : `${href.slice(0, split)}?${text}`
 }
 
+export interface ScopedSort<K extends string> {
+  state: SortState<K>
+  links: Record<K, SortLink>
+}
+
 export function scopedSort<K extends string>(
   path: string,
   params: TableParams,
   config: SortConfig<K>,
   scope: string,
-): { state: SortState<K>; links: Record<K, SortLink> } {
+): ScopedSort<K> {
   const base = asBaseParams(params, scope)
   const state = parseSort(config, base)
   const links = sortLinks(path, base, config, state)
