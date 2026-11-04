@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { FormBodySchema } from '@/features/forms/formSchema'
+import { FormBodySchema, questionsOf } from '@/features/forms/formSchema'
 
 const base = { key: 'f', label: 'F' }
 
@@ -52,5 +52,65 @@ describe('form schema', () => {
       ],
     }
     expect(FormBodySchema.safeParse(body).success).toBe(true)
+  })
+
+  it('a section entry with a title and description is accepted', () => {
+    const body = {
+      ...base,
+      fields: [
+        {
+          key: 'about',
+          label: 'About the work',
+          help: 'Tell us',
+          type: 'section',
+          required: false,
+        },
+        { key: 'a', label: 'A', type: 'text', required: false },
+      ],
+    }
+    expect(FormBodySchema.safeParse(body).success).toBe(true)
+  })
+
+  it('a section cannot be required, carry a fact or choices, or have conditions', () => {
+    const section = { key: 's', label: 'S', type: 'section' }
+    const bad = [
+      { ...section, required: true },
+      { ...section, required: false, fact: 'classification' },
+      { ...section, required: false, options: [{ value: 'x', label: 'X' }] },
+      { ...section, required: false, showIf: { field: 'a', op: 'is_true' } },
+    ]
+    for (const entry of bad) {
+      const body = {
+        ...base,
+        fields: [{ key: 'a', label: 'A', type: 'checkbox', required: false }, entry],
+      }
+      expect(FormBodySchema.safeParse(body).success).toBe(false)
+    }
+  })
+
+  it('a condition cannot point at a section', () => {
+    const body = {
+      ...base,
+      fields: [
+        { key: 's', label: 'S', type: 'section', required: false },
+        {
+          key: 'a',
+          label: 'A',
+          type: 'text',
+          required: false,
+          showIf: { field: 's', op: 'is_true' },
+        },
+      ],
+    }
+    expect(FormBodySchema.safeParse(body).success).toBe(false)
+  })
+
+  it('questionsOf leaves out sections and keeps question order', () => {
+    const fields = [
+      { key: 's', label: 'S', type: 'section' as const, required: false },
+      { key: 'a', label: 'A', type: 'text' as const, required: false },
+      { key: 'b', label: 'B', type: 'checkbox' as const, required: false },
+    ]
+    expect(questionsOf(fields).map((f) => f.key)).toEqual(['a', 'b'])
   })
 })

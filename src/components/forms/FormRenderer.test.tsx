@@ -87,4 +87,24 @@ describe('FormRenderer', () => {
     expect(screen.getByLabelText('Scope of work').hasAttribute('required')).toBe(true)
     expect(screen.getByLabelText('Contact email').getAttribute('type')).toBe('email')
   })
+
+  it('renders a section as a heading with its description and no input', () => {
+    const sectioned: FormBody = {
+      ...FORM,
+      fields: [
+        {
+          key: 'about',
+          label: 'About the project',
+          help: 'Tell us what you plan to build.',
+          type: 'section',
+          required: false,
+        },
+        ...FORM.fields,
+      ],
+    }
+    render(<FormRenderer form={sectioned} values={{}} errors={{}} onChange={noop} />)
+    expect(screen.getByRole('heading', { name: 'About the project' })).toBeTruthy()
+    expect(screen.getByText('Tell us what you plan to build.')).toBeTruthy()
+    expect(screen.queryByLabelText('About the project')).toBeNull()
+  })
 })

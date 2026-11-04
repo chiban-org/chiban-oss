@@ -1,6 +1,6 @@
 import type { DecisionOutcome } from '@packs/nh/schema'
 import { evaluateCondition } from '@/features/forms/condition'
-import type { FormBody, FormField } from '@/features/forms/formSchema'
+import { type FormBody, type FormField, questionsOf } from '@/features/forms/formSchema'
 import { parseCivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -96,27 +96,20 @@ function parseNumeric(field: FormField, raw: unknown): Parsed {
   return { ok: true, value: field.type === 'integer' ? n : text }
 }
 
+const TEXT_TYPES: ReadonlySet<string> = new Set(['text', 'textarea', 'email', 'phone'])
+const NUMBER_TYPES: ReadonlySet<string> = new Set(['integer', 'decimal', 'money'])
+
 function parseValue(field: FormField, raw: unknown): Parsed {
-  switch (field.type) {
-    case 'text':
-    case 'textarea':
-    case 'email':
-    case 'phone':
-      return parseText(field, raw)
-    case 'integer':
-    case 'decimal':
-    case 'money':
-      return parseNumeric(field, raw)
-    case 'date':
-      return typeof raw === 'string' && parseCivilDate(raw).ok
-        ? { ok: true, value: raw }
-        : { ok: false, code: 'type' }
-    case 'select':
-    case 'multiselect':
-      return parseSelect(field, raw)
-    case 'checkbox':
-      return { ok: true, value: raw === true || raw === 'true' || raw === 'on' }
+  if (TEXT_TYPES.has(field.type)) return parseText(field, raw)
+  if (NUMBER_TYPES.has(field.type)) return parseNumeric(field, raw)
+  if (field.type === 'select' || field.type === 'multiselect') return parseSelect(field, raw)
+  if (field.type === 'checkbox') {
+    return { ok: true, value: raw === true || raw === 'true' || raw === 'on' }
   }
+  if (field.type === 'date' && typeof raw === 'string' && parseCivilDate(raw).ok) {
+    return { ok: true, value: raw }
+  }
+  return { ok: false, code: 'type' }
 }
 
 export function extractFacts(form: FormBody, values: Record<string, FieldValue>): ProjectFacts {
@@ -170,7 +163,7 @@ export function validateSubmission(
 ): Result<{ values: Record<string, FieldValue>; facts: ProjectFacts }, FieldError[]> {
   const values: Record<string, FieldValue> = {}
   const errors: FieldError[] = []
-  for (const field of form.fields) {
+  for (const field of questionsOf(form.fields)) {
     if (!isShown(field, values)) continue
     const outcome = validateField(field, raw[field.key], values, {
       asStaff: opts.asStaff,

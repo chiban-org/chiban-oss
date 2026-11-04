@@ -208,6 +208,32 @@ function FieldRow({
   )
 }
 
+function SectionHeading({ field }: { field: FormField }) {
+  return (
+    <div className="space-y-1 border-t border-hairline pt-4 first:border-t-0 first:pt-0">
+      <h3 className="m-0 text-lg font-bold">{field.label}</h3>
+      {field.help === undefined ? null : (
+        <p className="m-0 text-base text-muted-foreground">{field.help}</p>
+      )}
+    </div>
+  )
+}
+
+export function FormEntry({
+  field,
+  values,
+  error,
+  onChange,
+}: {
+  field: FormField
+  values: Record<string, unknown>
+  error: string | undefined
+  onChange: FormRendererProps['onChange']
+}) {
+  if (field.type === 'section') return <SectionHeading field={field} />
+  return <FieldRow field={field} values={values} error={error} onChange={onChange} />
+}
+
 export function FormRenderer({ form, values, errors, onChange }: FormRendererProps) {
   return (
     <div className="flex flex-col gap-5">
@@ -215,7 +241,7 @@ export function FormRenderer({ form, values, errors, onChange }: FormRendererPro
         .filter((f) => f.staffOnly !== true)
         .filter((f) => f.showIf === undefined || evaluateCondition(f.showIf, values))
         .map((field) => (
-          <FieldRow
+          <FormEntry
             key={field.key}
             field={field}
             values={values}

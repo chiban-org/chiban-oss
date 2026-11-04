@@ -13,6 +13,7 @@ export const FIELD_TYPES = [
   'checkbox',
   'email',
   'phone',
+  'section',
 ] as const
 export type FieldType = (typeof FIELD_TYPES)[number]
 
@@ -38,6 +39,27 @@ export const FormFieldSchema = z.object({
 })
 export type FormField = z.infer<typeof FormFieldSchema>
 
+export function isSection(field: FormField): boolean {
+  return field.type === 'section'
+}
+
+export function questionsOf(fields: readonly FormField[]): FormField[] {
+  return fields.filter((f) => !isSection(f))
+}
+
+function sectionIssue(field: FormField): string | null {
+  if (field.required) return 'a section cannot be required'
+  const extras = {
+    options: field.options,
+    validation: field.validation,
+    showIf: field.showIf,
+    requireIf: field.requireIf,
+    fact: field.fact,
+  }
+  const extra = Object.entries(extras).find(([, value]) => value !== undefined)
+  return extra === undefined ? null : `a section cannot have ${extra[0]}`
+}
+
 export const FormBodySchema = z
   .object({
     key: z.string().min(1),
@@ -45,10 +67,16 @@ export const FormBodySchema = z
     fields: z.array(FormFieldSchema).min(1),
   })
   .superRefine((form, ctx) => {
+    const seen = new Set<string>()
     const earlier = new Set<string>()
     form.fields.forEach((field, i) => {
-      if (earlier.has(field.key)) {
+      if (seen.has(field.key)) {
         ctx.addIssue({ code: 'custom', path: ['fields', i, 'key'], message: 'duplicate key' })
+      }
+      seen.add(field.key)
+      const misuse = isSection(field) ? sectionIssue(field) : null
+      if (misuse !== null) {
+        ctx.addIssue({ code: 'custom', path: ['fields', i, 'type'], message: misuse })
       }
       const needsOptions = field.type === 'select' || field.type === 'multiselect'
       if (needsOptions && (field.options === undefined || field.options.length === 0)) {
@@ -71,7 +99,7 @@ export const FormBodySchema = z
           }
         }
       }
-      earlier.add(field.key)
+      if (!isSection(field)) earlier.add(field.key)
     })
   })
 export type FormBody = z.infer<typeof FormBodySchema>

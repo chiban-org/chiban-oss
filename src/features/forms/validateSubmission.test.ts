@@ -116,4 +116,21 @@ describe('validateSubmission', () => {
     )
     expect(r.ok && r.value.values.finished_sq_ft).toBe('333.33')
   })
+
+  it('a section entry is skipped and never yields a value or an error', () => {
+    const withSection: FormBody = {
+      ...FORM,
+      fields: [
+        { key: 'about', label: 'About the project', type: 'section', required: false },
+        ...FORM.fields,
+      ],
+    }
+    const r = validateSubmission(
+      withSection,
+      { about: 'typed anyway', classification: 'nonresidential' },
+      { asStaff: false },
+    )
+    expect(r.ok).toBe(true)
+    if (r.ok) expect('about' in r.value.values).toBe(false)
+  })
 })

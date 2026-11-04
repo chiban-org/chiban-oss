@@ -3,7 +3,7 @@ import type { ApplicationTypeBody } from '@/features/applications/applicationTyp
 import { getPublished } from '@/features/config/store'
 import { computeFees } from '@/features/fees/computeFees'
 import type { FeeScheduleBody } from '@/features/fees/feeSchema'
-import type { FormBody, FormField } from '@/features/forms/formSchema'
+import { type FormBody, type FormField, questionsOf } from '@/features/forms/formSchema'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
 import { getActiveProcessor } from '@/features/payments/processorAccounts'
 import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
@@ -40,7 +40,7 @@ export async function loadCounterFormData(
   const settings = await getPaymentSettings(db, signal)
   const processor = await getActiveProcessor(db, signal)
   return {
-    fields: (form.body as FormBody).fields.filter((f) => f.key !== LICENSE_FIELD),
+    fields: questionsOf((form.body as FormBody).fields).filter((f) => f.key !== LICENSE_FIELD),
     baseCents: computed.totalCents,
     convenienceFee: settings.convenienceFee,
     cardAvailable: processor.state === 'known',

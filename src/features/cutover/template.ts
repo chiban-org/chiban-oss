@@ -4,7 +4,7 @@ import { configVersions } from '@/db/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import { getPublished } from '@/features/config/store'
 import { CUTOVER_BASE_COLUMNS } from '@/features/cutover/columns'
-import type { FormBody } from '@/features/forms/formSchema'
+import { type FormBody, questionsOf } from '@/features/forms/formSchema'
 import { err, ok, type Result } from '@/types/result'
 
 export { CUTOVER_FEES_PAID_VALUES } from '@/features/cutover/columns'
@@ -29,7 +29,7 @@ async function fieldKeysOfType(
   signal: AbortSignal,
 ): Promise<string[]> {
   const form = await getPublished(db, 'form', (type.body as ApplicationTypeBody).formKey, signal)
-  return ((form?.body as FormBody | undefined)?.fields ?? []).map((f) => f.key)
+  return questionsOf((form?.body as FormBody | undefined)?.fields ?? []).map((f) => f.key)
 }
 
 function matchType(types: PublishedType[], requested: string): PublishedType | undefined {
