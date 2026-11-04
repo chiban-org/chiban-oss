@@ -35,12 +35,12 @@ const KEY = 'default'
 export async function townProfileForEditing(
   db: DbOrTx,
   signal: AbortSignal,
-): Promise<{ body: TownProfileBody; published: boolean }> {
+): Promise<{ body: TownProfileBody; version: number | null }> {
   const row = await getPublished(db, KIND, KEY, signal)
   const parsed = TownProfileBodySchema.safeParse(row?.body)
-  return parsed.success
-    ? { body: parsed.data, published: true }
-    : { body: TOWN_PROFILE_SKELETON, published: false }
+  return parsed.success && row !== null
+    ? { body: parsed.data, version: row.version }
+    : { body: TOWN_PROFILE_SKELETON, version: null }
 }
 
 function pickSection(section: TownProfileSection, slice: unknown): Record<string, unknown> {

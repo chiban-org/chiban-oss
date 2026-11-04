@@ -31,7 +31,7 @@ export function ProfileFields({ body, onChange, errors }: Props) {
       <fieldset className="grid gap-3">
         <legend className="mb-2 text-sm font-medium">Mailing address</legend>
         {body.addressLines.map((line, index) => (
-          <div key={`address-${String(index)}`} className="flex items-end gap-2">
+          <div key={`address-${String(index)}`} className="flex max-w-xl items-end gap-2">
             <div className="min-w-0 flex-1">
               <Input
                 label={`Address line ${String(index + 1)}`}

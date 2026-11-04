@@ -41,7 +41,7 @@ function SignerRow({
   const roles = SIGNER_ROLES.filter((r) => r === signer.role || !taken.has(r))
   return (
     <li className="record-item grid gap-3 py-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex max-w-xl flex-wrap items-end gap-3">
         <div className="min-w-56 flex-1">
           <Pick
             label="Signs as"

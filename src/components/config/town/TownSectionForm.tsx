@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { type FormEvent, startTransition, useActionState, useState } from 'react'
 import { publishTownSectionAction } from '@/app/(staff)/staff/settings/town-profile/actions'
 import { CsrfField } from '@/components/CsrfField'
 import type { FieldErrors } from '@/components/config/primitives'
@@ -18,6 +18,7 @@ import type { ActionResult } from '@/server/actionRunner'
 interface Props {
   section: TownProfileSection
   initial: TownProfileBody
+  resetKey: string
   townName: string
 }
 
@@ -33,7 +34,7 @@ function SectionFields({
   onChange,
   errors,
   townName,
-}: Omit<Props, 'initial'> & {
+}: Omit<Props, 'initial' | 'resetKey'> & {
   body: TownProfileBody
   onChange: (b: TownProfileBody) => void
   errors: FieldErrors
@@ -52,18 +53,28 @@ function SectionFields({
   )
 }
 
-export function TownSectionForm({ section, initial, townName }: Props) {
+export function TownSectionForm({ section, initial, resetKey, townName }: Props) {
   const [body, setBody] = useState(initial)
+  const [seenKey, setSeenKey] = useState(resetKey)
+  if (seenKey !== resetKey) {
+    setSeenKey(resetKey)
+    setBody(initial)
+  }
   const [result, run, pending] = useActionState(
     async (_previous: ActionResult | null, formData: FormData) =>
       await publishTownSectionAction(formData),
     null,
   )
   const hydrated = useHydrated()
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+    const data = new FormData(event.currentTarget)
+    startTransition(() => run(data))
+  }
   const errors: FieldErrors = result !== null && !result.ok ? (result.fieldErrors ?? {}) : {}
   const listed = Object.entries(errors).filter(([path]) => path !== '_form')
   return (
-    <form action={run} className={section === 'letterhead' ? 'max-w-6xl' : 'max-w-3xl'}>
+    <form onSubmit={submit} className={section === 'letterhead' ? 'max-w-6xl' : 'max-w-3xl'}>
       <CsrfField />
       <input type="hidden" name="section" value={section} />
       <input type="hidden" name="body" value={JSON.stringify(body)} />

@@ -25,7 +25,7 @@ export async function TownSettingsPage({ ctx, section, title, lead }: Props) {
   return (
     <main>
       <SettingsHeader title={title} lead={lead} />
-      {profile.published ? null : (
+      {profile.version !== null ? null : (
         <p className="mb-6 max-w-[75ch]">
           <span className="bg-highlight px-1">Nothing is published yet.</span> Until it is,
           documents show only the town name at the top.
@@ -34,6 +34,7 @@ export async function TownSettingsPage({ ctx, section, title, lead }: Props) {
       <TownSectionForm
         section={section}
         initial={profile.body}
+        resetKey={String(profile.version)}
         townName={town.ok ? town.value.name : ''}
       />
       <p className="mt-8 text-sm">
