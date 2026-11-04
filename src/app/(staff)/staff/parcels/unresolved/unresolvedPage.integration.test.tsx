@@ -80,9 +80,21 @@ describe('unresolved records page', () => {
   it('names each record and parcel ID format in words', async () => {
     const text = textOf(renderToStaticMarkup(await UnresolvedPage()))
     expect(text).toContain('Deed for Map 9 Lot 99')
-    expect(text).toContain('Named parcel: 009099000000000 (CAMA number)')
-    expect(text).toContain('Named parcel: 008099000000 (Map-lot ID)')
     expect(text).toContain('Demo record')
+  })
+
+  it('gives the named ID and its type their own columns in a wide table', async () => {
+    const html = renderToStaticMarkup(await UnresolvedPage())
+    expect(html).toContain('<main data-wide="">')
+    expect(html).toMatch(/class="table-panel"><table/)
+    expect(html).toMatch(/<td[^>]*>009099000000000<\/td><td[^>]*>CAMA number<\/td>/)
+    expect(html).toMatch(/<td[^>]*>008099000000<\/td><td[^>]*>Map-lot ID<\/td>/)
+    expect(html).not.toContain('Named parcel:')
+  })
+
+  it('links a record to where it can be opened', async () => {
+    const html = renderToStaticMarkup(await UnresolvedPage())
+    expect(html).toMatch(/<a href="\/api\/documents\/[0-9a-f-]{36}"[^>]*>Deed for Map 9 Lot 99/)
   })
 
   it('shows no record IDs or internal keys', async () => {

@@ -1,5 +1,6 @@
 import '@/features/applications/recordSource'
 import '@/features/documents/recordSource'
+import '@/features/enforcement/recordSource'
 import '@/features/historical/recordSource'
 import '@/features/inspections/recordSource'
 import type { DbOrTx } from '@/db/client'
@@ -12,7 +13,14 @@ import { words } from '@/lib/words'
 export interface UnresolvedRecordView {
   linkId: string
   record: string
-  namedParcel: string
+  recordHref: string | null
+  namedId: string
+  idType: string
+}
+
+interface RecordName {
+  name: string
+  href: string | null
 }
 
 async function recordNames(
@@ -20,23 +28,26 @@ async function recordNames(
   links: { recordKind: string; recordId: string }[],
   actor: Actor,
   signal: AbortSignal,
-): Promise<Map<string, string>> {
-  const names = new Map<string, string>()
+): Promise<Map<string, RecordName>> {
+  const names = new Map<string, RecordName>()
   for (const source of parcelRecordSources()) {
     const ids = [
       ...new Set(links.filter((l) => l.recordKind === source.kind).map((l) => l.recordId)),
     ]
     if (ids.length === 0) continue
     for (const s of await source.summarize(db, ids, { kind: 'actor', actor }, signal)) {
-      names.set(`${s.kind}:${s.recordId}`, s.number === null ? s.title : `${s.title}, ${s.number}`)
+      names.set(`${s.kind}:${s.recordId}`, {
+        name: s.number === null ? s.title : `${s.title}, ${s.number}`,
+        href: s.href,
+      })
     }
   }
   return names
 }
 
-function namedParcel(value: string | null, format: string | undefined): string {
-  const id = value ?? 'unknown'
-  return format === undefined ? id : `${id} (${format})`
+function idType(format: string | null, labels: ReadonlyMap<string, string>): string {
+  if (format === null) return 'Not given'
+  return labels.get(format) ?? 'Unlisted format'
 }
 
 export async function listUnresolvedRecords(
@@ -49,14 +60,14 @@ export async function listUnresolvedRecords(
   const formats = new Map(
     (await db.select().from(parcelIdFormats)).map((f) => [f.key, f.label] as const),
   )
-  return links.map((link) => ({
-    linkId: link.id,
-    record: names.get(`${link.recordKind}:${link.recordId}`) ?? words(link.recordKind),
-    namedParcel: namedParcel(
-      link.rawRefValue,
-      link.rawRefFormat === null
-        ? undefined
-        : (formats.get(link.rawRefFormat) ?? 'unlisted format'),
-    ),
-  }))
+  return links.map((link) => {
+    const named = names.get(`${link.recordKind}:${link.recordId}`)
+    return {
+      linkId: link.id,
+      record: named?.name ?? words(link.recordKind),
+      recordHref: named?.href ?? null,
+      namedId: link.rawRefValue ?? 'Unknown',
+      idType: idType(link.rawRefFormat, formats),
+    }
+  })
 }
