@@ -180,11 +180,8 @@ export function RecordLayout({ children, rail, railFooter, strip, empty }: Recor
   const { aside, tall } = useTallRail()
   const collapsed = strip !== undefined
   return (
-    <div className="record-layout relative lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-8">
-      <div
-        data-index-gutter=""
-        className="absolute inset-y-0 right-full mr-10 hidden w-48 min-[1840px]:block"
-      >
+    <div className="record-layout lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-8">
+      <div data-index-gutter="" className="record-gutter hidden min-[1840px]:block">
         <SectionIndex entries={entries} active={active} className="sticky top-6" />
       </div>
       {collapsed ? (

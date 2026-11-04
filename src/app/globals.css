@@ -216,6 +216,20 @@
   font-size: 0.875rem;
 }
 
+@media (min-width: 1840px) {
+  .record-layout {
+    grid-template-columns: 12rem minmax(0, 1fr) 17rem;
+  }
+
+  .record-gutter {
+    align-self: stretch;
+  }
+
+  .staff-content:has(.record-layout) {
+    max-width: calc(var(--content-max-width) + 14rem);
+  }
+}
+
 .staff-content:has(main[data-wide]) {
   max-width: var(--list-max-width);
 }
