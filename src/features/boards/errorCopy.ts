@@ -12,6 +12,8 @@ const COPY: Record<string, string> = {
   not_under_review: 'The application is not under review.',
   already_scheduled: 'That meeting is already on the calendar.',
   already_cancelled: 'That meeting is already cancelled.',
+  meeting_past: 'That meeting has already taken place, so it cannot be cancelled.',
+  cancelled_meeting: 'That meeting was cancelled, so its agenda can no longer be changed.',
   reason_required: 'Enter a reason of at least 10 characters.',
   note_required: 'Describe why this parcel belongs on the list.',
   municipality_required: 'Choose at least one affected municipality.',

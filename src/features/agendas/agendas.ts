@@ -1,24 +1,28 @@
 import { and, asc, eq, inArray, max } from 'drizzle-orm'
-import type { Db, Tx } from '@/db/client'
+import type { Db, DbOrTx, Tx } from '@/db/client'
 import { agendaItems, agendas, boardMeetings, documents, hearings } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
-import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { attachDocument } from '@/features/documents/attach'
 import { storeGeneratedBytes } from '@/features/files/ingest'
-import { formatMinuteOfDay, HEARING_KIND_LABELS } from '@/features/hearings/labels'
+import { formatMinuteOfDay } from '@/features/hearings/labels'
 import { renderPdf } from '@/features/pdf/renderPdf'
-import { loadPermitData } from '@/features/permits/permitData'
 import type { ObjectStore } from '@/features/storage/objectStore'
-import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
 import { err, ok, type Result } from '@/types/result'
-import { type AgendaModelItem, agendaBlocks } from './agendaPdf'
+import { hearingTitle, loadTownName, modelItems } from './agendaModel'
+import { agendaBlocks } from './agendaPdf'
 
-export type AgendaError = 'forbidden' | 'not_found' | 'not_draft' | 'already_published' | 'empty'
+export type AgendaError =
+  | 'forbidden'
+  | 'not_found'
+  | 'not_draft'
+  | 'already_published'
+  | 'empty'
+  | 'cancelled_meeting'
 
 export type AgendaItemKind = 'hearing' | 'business' | 'minutes_approval' | 'other'
 
@@ -28,15 +32,24 @@ async function allowed(db: Db, actor: Actor, signal: AbortSignal): Promise<boole
   return await hasCapability(db, actor.userId, 'board.record', signal)
 }
 
-async function draftAgenda(
-  tx: Tx,
+async function meetingOpen(
+  db: DbOrTx,
   meetingId: string,
-): Promise<Result<typeof agendas.$inferSelect, 'not_found' | 'not_draft'>> {
-  const [meeting] = await tx
-    .select({ id: boardMeetings.id })
+): Promise<Result<void, 'not_found' | 'cancelled_meeting'>> {
+  const [meeting] = await db
+    .select({ status: boardMeetings.status })
     .from(boardMeetings)
     .where(eq(boardMeetings.id, meetingId))
   if (meeting === undefined) return err('not_found')
+  return meeting.status === 'cancelled' ? err('cancelled_meeting') : ok(undefined)
+}
+
+async function draftAgenda(
+  tx: Tx,
+  meetingId: string,
+): Promise<Result<typeof agendas.$inferSelect, 'not_found' | 'not_draft' | 'cancelled_meeting'>> {
+  const open = await meetingOpen(tx, meetingId)
+  if (!open.ok) return open
   await tx.insert(agendas).values({ meetingId }).onConflictDoNothing()
   const [agenda] = await tx
     .select()
@@ -69,16 +82,6 @@ async function nextPosition(tx: Tx, meetingId: string): Promise<number> {
     .from(agendaItems)
     .where(eq(agendaItems.meetingId, meetingId))
   return row?.top == null ? 0 : row.top + 1
-}
-
-async function hearingTitle(
-  tx: Tx,
-  applicationId: string,
-  kind: keyof typeof HEARING_KIND_LABELS,
-  signal: AbortSignal,
-) {
-  const app = await loadApplicationContext(tx, applicationId, signal)
-  return `${HEARING_KIND_LABELS[kind]}: ${app?.typeBody.label ?? 'Application'} ${app?.number ?? ''}`.trim()
 }
 
 export async function buildAgenda(
@@ -199,44 +202,14 @@ export async function reopenAgenda(
 ): Promise<Result<void, AgendaError>> {
   signal.throwIfAborted()
   if (!(await allowed(db, actor, signal))) return err('forbidden')
+  const open = await meetingOpen(db, meetingId)
+  if (!open.ok) return open
   const changed = await db
     .update(agendas)
     .set({ status: 'draft' })
     .where(and(eq(agendas.meetingId, meetingId), eq(agendas.status, 'published')))
     .returning({ meetingId: agendas.meetingId })
   return changed.length === 0 ? err('not_found') : ok(undefined)
-}
-
-async function modelItems(
-  tx: Tx,
-  items: ItemRow[],
-  signal: AbortSignal,
-): Promise<AgendaModelItem[]> {
-  const out: AgendaModelItem[] = []
-  for (const item of items) {
-    const [hearing] =
-      item.hearingId === null
-        ? []
-        : await tx.select().from(hearings).where(eq(hearings.id, item.hearingId))
-    const data =
-      hearing === undefined ? null : await loadPermitData(tx, hearing.applicationId, signal)
-    out.push({
-      position: item.position,
-      kind: item.kind,
-      title: item.title,
-      description: item.description,
-      application:
-        data === null
-          ? null
-          : {
-              number: data.application.number,
-              applicantName: data.applicantName,
-              parcelDisplayId: data.parcelDisplayId,
-              siteAddress: data.siteAddress,
-            },
-    })
-  }
-  return out
 }
 
 export async function publishAgenda(
@@ -323,9 +296,4 @@ export async function publishAgenda(
     )
     return ok({ documentId: attached.documentId })
   })
-}
-
-async function loadTownName(tx: Tx, signal: AbortSignal): Promise<string> {
-  const town = await getTownSettings(tx, signal)
-  return town.ok ? town.value.name : ''
 }

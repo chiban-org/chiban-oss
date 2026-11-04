@@ -54,32 +54,42 @@ function DraftControls({ meetingId }: { meetingId: string }) {
   )
 }
 
+function AgendaControls({ view, draft }: { view: MeetingView; draft: boolean }) {
+  if (view.cancelled) return null
+  return draft ? (
+    <DraftControls meetingId={view.meetingId} />
+  ) : (
+    <ActionForm action={reopenAgendaAction} submitLabel="Reopen the agenda">
+      <input type="hidden" name="meetingId" value={view.meetingId} />
+    </ActionForm>
+  )
+}
+
 export function AgendaSection({ view }: { view: MeetingView }) {
   const { agenda } = view
   const draft = agenda === null || agenda.status === 'draft'
+  const editable = draft && !view.cancelled
   return (
     <section aria-labelledby="agenda" className="space-y-4">
       <h2 id="agenda">Agenda</h2>
       {agenda === null || agenda.items.length === 0 ? (
-        <p>The agenda has no items yet.</p>
+        <p>
+          {view.cancelled
+            ? 'The meeting was cancelled before its agenda had any items.'
+            : 'The agenda has no items yet.'}
+        </p>
       ) : (
         <ol className="space-y-3">
           {agenda.items.map((item) => (
             <li key={item.id} className="space-y-1">
               <p className="m-0">{item.line}</p>
               {item.description === '' ? null : <p className="m-0 text-sm">{item.description}</p>}
-              {draft ? <ItemControls item={item} /> : null}
+              {editable ? <ItemControls item={item} /> : null}
             </li>
           ))}
         </ol>
       )}
-      {draft ? (
-        <DraftControls meetingId={view.meetingId} />
-      ) : (
-        <ActionForm action={reopenAgendaAction} submitLabel="Reopen the agenda">
-          <input type="hidden" name="meetingId" value={view.meetingId} />
-        </ActionForm>
-      )}
+      <AgendaControls view={view} draft={draft} />
     </section>
   )
 }

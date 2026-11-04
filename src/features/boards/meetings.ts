@@ -12,6 +12,7 @@ import {
   nextRegularMeeting,
 } from '@/features/boards/calendar'
 import { recomputeMeetingBoundClocks } from '@/features/clocks/recomputeMeetingBound'
+import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -91,7 +92,10 @@ export async function cancelMeeting(
   actor: Actor,
   input: { meetingId: string; reason: string },
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden' | 'not_found' | 'reason_required' | 'already_cancelled'>> {
+  now: Date = new Date(),
+): Promise<
+  Result<void, 'forbidden' | 'not_found' | 'reason_required' | 'already_cancelled' | 'meeting_past'>
+> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
   const reason = input.reason.trim()
@@ -100,6 +104,7 @@ export async function cancelMeeting(
     const meeting = await getMeeting(tx, input.meetingId, signal)
     if (meeting === null) return err('not_found')
     if (meeting.status === 'cancelled') return err('already_cancelled')
+    if (meeting.meetingDate < (await townToday(tx, now, signal))) return err('meeting_past')
     await tx
       .update(boardMeetings)
       .set({ status: 'cancelled', cancelReason: reason })
