@@ -64,6 +64,32 @@ describe('resolveParcelId', () => {
     const r = await resolveParcelId(handle.db, { value: '999999999999' }, signal)
     expect(r).toEqual({ ok: false, error: 'not_found' })
   })
+
+  it('a parcel chosen from the picker resolves by its record id, retired or not', async () => {
+    const live = await makeParcel(handle.db, [])
+    const gone = await makeParcel(handle.db, [], { status: 'retired' })
+    expect(await resolveParcelId(handle.db, { value: live }, signal)).toEqual({
+      ok: true,
+      value: { parcelId: live, via: 'active' },
+    })
+    expect(await resolveParcelId(handle.db, { value: gone }, signal)).toEqual({
+      ok: true,
+      value: { parcelId: gone, via: 'retired' },
+    })
+  })
+
+  it('an unknown record id is not_found and a format-scoped lookup ignores record ids', async () => {
+    const live = await makeParcel(handle.db, [])
+    const unknown = '00000000-0000-4000-8000-000000000000'
+    expect(await resolveParcelId(handle.db, { value: unknown }, signal)).toEqual({
+      ok: false,
+      error: 'not_found',
+    })
+    expect(await resolveParcelId(handle.db, { format: 'gis12', value: live }, signal)).toEqual({
+      ok: false,
+      error: 'not_found',
+    })
+  })
 })
 
 describe('addAlias', () => {

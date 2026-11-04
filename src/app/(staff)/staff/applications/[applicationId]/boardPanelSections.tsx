@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import { addProfessionalAction, generateListAction } from '../../abutters/actions'
@@ -126,7 +127,7 @@ export function ListSection({ data }: { data: BoardPanelData }) {
               className="max-w-md"
             >
               <input type="hidden" name="applicationId" value={data.applicationId} />
-              <TextField label="Parcel ID" name="parcelRef" required />
+              <ParcelPicker label="Parcel" name="parcelRef" required />
             </ActionForm>
           </details>
           <details>

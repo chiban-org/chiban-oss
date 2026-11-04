@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
+import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import { StatusChip } from '@/components/StatusChip'
 import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -42,11 +43,11 @@ function AddAliasOverride() {
       >
         <TextField label="Format key" name="format" required hint="For example cama15 or gis12." />
         <TextField label="ID value" name="value" required />
-        <TextField
+        <ParcelPicker
           label="Points to parcel"
           name="parcelRef"
           required
-          hint="Any current or retired parcel ID."
+          hint="Any current or retired parcel."
         />
         <TextField label="Reason" name="reason" required />
         <TextField label="Expires on" name="expiresOn" type="date" />

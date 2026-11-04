@@ -70,4 +70,17 @@ describe('easement and restriction holders', () => {
       error: 'No parcel has the ID 999999999999. Check the parcel ID and try again.',
     })
   })
+
+  it('accepts the parcel record id the parcel picker submits', async () => {
+    const result = await actions.addRestrictionAction(
+      form({
+        parcelRef: world.parcelId,
+        holderName: 'Alder Pond Land Trust',
+        holderMailingAddress: '1 Trust Way, Alder Pond NH 03999',
+        restrictionKind: 'conservation',
+        recordedReference: 'Book 1 Page 3',
+      }),
+    )
+    expect(result).toEqual({ ok: true, message: 'Restriction holder added.' })
+  })
 })

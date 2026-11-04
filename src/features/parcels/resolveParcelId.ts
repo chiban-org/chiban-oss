@@ -1,8 +1,9 @@
 import { and, eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { parcelAliases } from '@/db/schema'
+import { parcelAliases, parcels } from '@/db/schema'
 import { normalizeId } from '@/features/parcels/idFormats'
 import { err, ok, type Result } from '@/types/result'
+import { isUuid } from '@/utils/uuid'
 
 export interface ParcelIdRef {
   format?: string
@@ -27,6 +28,14 @@ async function candidates(
   return rows.map((r) => r.parcelId)
 }
 
+async function byRecordId(db: DbOrTx, id: string): Promise<Result<Resolved, ResolveError>> {
+  const [row] = await db
+    .select({ id: parcels.id, status: parcels.status })
+    .from(parcels)
+    .where(eq(parcels.id, id))
+  return row === undefined ? err('not_found') : ok({ parcelId: row.id, via: row.status })
+}
+
 export async function resolveParcelId(
   db: DbOrTx,
   ref: ParcelIdRef,
@@ -34,6 +43,8 @@ export async function resolveParcelId(
 ): Promise<Result<Resolved, ResolveError>> {
   signal.throwIfAborted()
   if (normalizeId(ref.value) === '') return err('not_found')
+  if (ref.format === undefined && isUuid(ref.value.trim()))
+    return await byRecordId(db, ref.value.trim())
   for (const via of ['active', 'retired'] as const) {
     const ids = await candidates(db, ref, via)
     const first = ids[0]

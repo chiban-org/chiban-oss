@@ -108,6 +108,13 @@ describe('unresolved records page', () => {
     expect(html).toMatch(/<a href="\/api\/documents\/[0-9a-f-]{36}"[^>]*>Deed for Map 9 Lot 99/)
   })
 
+  it('links each record through a parcel search picker that submits parcelRef', async () => {
+    const html = renderToStaticMarkup(await UnresolvedPage())
+    expect(html.match(/role="combobox"/g)).toHaveLength(2)
+    expect(html.match(/<input type="hidden" name="parcelRef" value=""/g)).toHaveLength(2)
+    expect(html).toContain('Parcel for Deed for Map 9 Lot 99')
+  })
+
   it('shows no record IDs or internal keys', async () => {
     const text = textOf(renderToStaticMarkup(await UnresolvedPage()))
     expect(findUuids(text)).toEqual([])

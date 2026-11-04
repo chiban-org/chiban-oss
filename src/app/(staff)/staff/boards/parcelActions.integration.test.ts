@@ -92,4 +92,13 @@ describe('addApplicantParcelAction', () => {
       [a, m4, m6].sort(),
     )
   })
+
+  it('accepts the parcel record id the parcel picker submits', async () => {
+    const e1 = lw.ids.E1 ?? ''
+    const result = await boardActions.addApplicantParcelAction(
+      form({ applicationId: lw.applicationId, parcelRef: e1 }),
+    )
+    expect(result).toEqual({ ok: true, message: 'Parcels for this application updated.' })
+    expect(await applicantParcelIds(handle.db, lw.applicationId, signal)).toContain(e1)
+  })
 })

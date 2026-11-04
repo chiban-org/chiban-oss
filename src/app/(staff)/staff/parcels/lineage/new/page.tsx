@@ -1,7 +1,11 @@
 import { ActionForm } from '@/components/ActionForm'
-import { AreaField, SelectField, TextField } from '@/components/staff/fields'
+import { ParcelMultiPicker } from '@/components/parcels/picker/ParcelPicker'
+import type { PickerChoice } from '@/components/parcels/picker/pickerChoice'
+import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
+import type { Db } from '@/db/client'
 import { hasCapability } from '@/features/authz/capabilities'
+import { pickedParcelFor } from '@/features/parcels/parcelPick'
 import { requireStaffContext } from '@/server/requireStaff'
 import { recordLineageAction } from '../../[parcelId]/actions'
 
@@ -15,10 +19,19 @@ const KINDS = [
   ['merge', 'Merge'],
 ] as const
 
+const CHILD_HINT =
+  'A child ID that is not in the parcel layer yet can be added with "Use this ID anyway".'
+
 const BASES = [
   ['recording', 'Recording date'],
   ['approval', 'Approval date'],
 ] as const
+
+async function startingParents(db: Db, ref: string, signal: AbortSignal): Promise<PickerChoice[]> {
+  if (ref.trim() === '') return []
+  const parcel = await pickedParcelFor(db, ref, signal)
+  return parcel === null ? [{ kind: 'raw', value: ref.trim() }] : [{ kind: 'parcel', parcel }]
+}
 
 export default async function NewLineageEventPage({ searchParams }: NewLineagePageProps) {
   const ctx = await requireStaffContext()
@@ -26,6 +39,7 @@ export default async function NewLineageEventPage({ searchParams }: NewLineagePa
     return <NoPermission title="Record lineage event" action="record lineage events" />
   }
   const { parent = '' } = await searchParams
+  const parents = await startingParents(ctx.db, parent, ctx.signal)
   return (
     <main>
       <h1>Record lineage event</h1>
@@ -47,15 +61,14 @@ export default async function NewLineageEventPage({ searchParams }: NewLineagePa
           name="reference"
           hint="Book and page, if recorded."
         />
-        <AreaField
-          label="Parent parcel IDs"
-          name="parents"
-          rows={2}
-          defaultValue={parent}
+        <ParcelMultiPicker label="Parent parcels" name="parents" initial={parents} required />
+        <ParcelMultiPicker
+          label="Child parcels"
+          name="children"
           required
-          hint="Separate IDs with spaces, commas, or new lines."
+          allowUnknown
+          hint={CHILD_HINT}
         />
-        <AreaField label="Child parcel IDs" name="children" rows={3} required />
       </ActionForm>
     </main>
   )

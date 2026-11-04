@@ -1,5 +1,5 @@
 import { ActionForm } from '@/components/ActionForm'
-import { TextField } from '@/components/staff/fields'
+import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import { setCaseParcelAction } from '../actions'
 import type { Can } from './can'
@@ -23,7 +23,7 @@ export function CaseParcel({ detail, can }: { detail: CaseDetail; can: Can }) {
             submitLabel={linked ? 'Change the parcel' : 'Link the case to a parcel'}
           >
             <Hidden name="caseId" value={row.id} />
-            <TextField label="Parcel number or site address" name="parcelRef" required />
+            <ParcelPicker label="Parcel" name="parcelRef" required />
           </ActionForm>
         </details>
       ) : null}

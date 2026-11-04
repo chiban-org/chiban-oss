@@ -139,6 +139,31 @@ describe('staff actions', () => {
     })
   })
 
+  it('the parcel pickers submit record ids for chosen parcels and raw IDs for new children', async () => {
+    const parent = await makeParcel(handle.db, [{ format: 'gis12', value: '007050000000' }])
+    const kept = await makeParcel(handle.db, [{ format: 'gis12', value: '007050001000' }])
+    state.actor = await staffActor(handle.db)
+    const result = await parcelActions.recordLineageAction(
+      form({
+        kind: 'subdivision',
+        effectiveDate: '2020-05-01',
+        effectiveBasis: 'recording',
+        parents: parent,
+        children: `${kept} 007050002000`,
+      }),
+    )
+    expect(result).toEqual({ ok: true, message: 'Lineage event recorded.' })
+  })
+
+  it('an override points at the parcel record id the picker submits', async () => {
+    const parcelId = await makeParcel(handle.db, [{ format: 'gis12', value: '007051000000' }])
+    state.actor = await staffActor(handle.db)
+    const result = await parcelActions.createAliasOverrideAction(
+      form({ format: 'gis12', value: '007051900000', parcelRef: parcelId, reason: 'Deed' }),
+    )
+    expect(result).toEqual({ ok: true, message: 'Override saved.' })
+  })
+
   it('a parent that does not exist is named in the error', async () => {
     state.actor = await staffActor(handle.db)
     const result = await parcelActions.recordLineageAction(

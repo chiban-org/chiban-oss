@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { Input } from '@/components/ui/input'
 import { hasCapability } from '@/features/authz/capabilities'
 import { listUnresolvedRecords, type UnresolvedRecordView } from '@/features/parcels/unresolvedView'
 import { recordStaffContext } from '@/server/requireStaff'
@@ -40,12 +40,12 @@ function UnresolvedTable({ links }: { links: UnresolvedRecordView[] }) {
                   compact
                 >
                   <input type="hidden" name="linkId" value={link.linkId} />
-                  <Input
+                  <ParcelPicker
                     name="parcelRef"
-                    aria-label={`Parcel ID for ${link.record}`}
-                    placeholder="Parcel ID"
+                    label={`Parcel for ${link.record}`}
+                    labelHidden
                     required
-                    className="w-44"
+                    className="w-64"
                   />
                 </ActionForm>
               </td>

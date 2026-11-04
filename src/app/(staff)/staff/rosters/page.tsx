@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { loadRostersView } from '@/features/rosters/rosterView'
@@ -51,7 +52,7 @@ export default async function RostersPage() {
             submitLabel="Save roster"
             className="max-w-xl"
           >
-            <TextField label="Parcel ID of the condominium" name="parcelRef" required />
+            <ParcelPicker label="Parcel of the condominium" name="parcelRef" required />
             <TextField label="Association name" name="associationName" required />
             <TextField
               label="Roster current as of"
@@ -77,7 +78,7 @@ export default async function RostersPage() {
         <details>
           <summary>Add or replace a park roster</summary>
           <ActionForm action={upsertParkAction} submitLabel="Save roster" className="max-w-xl">
-            <TextField label="Parcel ID of the park" name="parcelRef" required />
+            <ParcelPicker label="Parcel of the park" name="parcelRef" required />
             <TextField label="Park name" name="parkName" required />
             <TextField label="Owner name" name="ownerName" required />
             <TextField label="Owner mailing address" name="ownerMailingAddress" required />
@@ -107,7 +108,7 @@ export default async function RostersPage() {
         <details>
           <summary>Add a holder</summary>
           <ActionForm action={addRestrictionAction} submitLabel="Add holder" className="max-w-xl">
-            <TextField label="Parcel ID the restriction covers" name="parcelRef" required />
+            <ParcelPicker label="Parcel the restriction covers" name="parcelRef" required />
             <TextField label="Holder name" name="holderName" required />
             <TextField label="Holder mailing address" name="holderMailingAddress" required />
             <SelectField

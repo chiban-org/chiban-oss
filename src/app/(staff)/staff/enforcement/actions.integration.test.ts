@@ -150,6 +150,19 @@ describe('enforcement server actions', () => {
     expect(after?.parcelId).toBe(parcelId)
   })
 
+  it('a parcel chosen in the picker links by its record id', async () => {
+    const parcelId = await makeParcel(handle.db, [{ format: 'gis12', value: '031006000000' }])
+    const opened = await main.openCaseAction(
+      form({ locationText: 'Gravel pit off the county road', parcelRef: parcelId }),
+    )
+    expect(opened.ok).toBe(true)
+    const [row] = await handle.db
+      .select({ parcelId: enforcementCases.parcelId })
+      .from(enforcementCases)
+      .where(eq(enforcementCases.locationText, 'Gravel pit off the county road'))
+    expect(row?.parcelId).toBe(parcelId)
+  })
+
   it.each(Object.entries(ALL))('%s rejects a missing csrf token', async (_name, action) => {
     state.actor = world.admin
     expect(await action(form({}, null))).toMatchObject({ ok: false })

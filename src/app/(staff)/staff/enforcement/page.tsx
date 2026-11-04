@@ -3,6 +3,7 @@ import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { TablePager } from '@/components/dataTable/TablePager'
 import { EnforcementQueueTable } from '@/components/enforcement/EnforcementQueueTable'
 import { KeyHints } from '@/components/KeyHints'
+import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -27,6 +28,8 @@ export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 25
 
+const PARCEL_HINT = 'Without one, Chiban links the parcel whose site address matches exactly.'
+
 function NewCaseForms() {
   return (
     <>
@@ -34,11 +37,7 @@ function NewCaseForms() {
         <summary>Open a case</summary>
         <ActionForm action={openCaseAction} submitLabel="Open case">
           <TextField label="Where is the property?" name="locationText" required />
-          <TextField
-            label="Parcel number, if known"
-            name="parcelRef"
-            hint="Without one, Chiban links the parcel whose site address matches exactly."
-          />
+          <ParcelPicker label="Parcel, if known" name="parcelRef" hint={PARCEL_HINT} />
         </ActionForm>
       </details>
       <details>
@@ -47,11 +46,7 @@ function NewCaseForms() {
         <ActionForm action={staffComplaintAction} submitLabel="Record complaint">
           <TextField label="Where is the property?" name="locationText" required />
           <TextField label="What was reported?" name="description" required />
-          <TextField
-            label="Parcel number, if known"
-            name="parcelRef"
-            hint="Without one, Chiban links the parcel whose site address matches exactly."
-          />
+          <ParcelPicker label="Parcel, if known" name="parcelRef" hint={PARCEL_HINT} />
         </ActionForm>
       </details>
     </>

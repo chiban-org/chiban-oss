@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { abutterLists } from '@/db/schema'
 import { generateList } from '@/features/abutters/lists'
+import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { LIST_NOW, type ListWorld, prepareListWorld } from '@/test/listFixtures'
@@ -151,6 +152,19 @@ describe('abutter list actions', () => {
   it('selecting a parcel by its ID adds it', async () => {
     const result = await actions.selectParcelAction(
       form({ listId, parcelRef: '009011000000', crossing: 'street', note: 'Across the road' }),
+    )
+    expect(result.ok).toBe(true)
+  })
+
+  it('selecting a parcel by the record id the parcel picker submits adds it', async () => {
+    const found = await resolveParcelId(handle.db, { value: '009012000000' }, signal)
+    const result = await actions.selectParcelAction(
+      form({
+        listId,
+        parcelRef: found.ok ? found.value.parcelId : '',
+        crossing: 'stream',
+        note: 'Across the brook',
+      }),
     )
     expect(result.ok).toBe(true)
   })

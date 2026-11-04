@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { CandidateTable } from '@/components/abutters/CandidateTable'
 import { RecipientTable } from '@/components/abutters/RecipientTable'
+import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import type { CandidateRow, ListView, RecipientView } from '@/features/abutters/listView'
 import {
@@ -94,7 +95,7 @@ export function CandidatesSection({ view }: { view: ListView }) {
           <summary>Add a parcel across a street or stream</summary>
           <ActionForm action={selectParcelAction} submitLabel="Add parcel" className="max-w-xl">
             <input type="hidden" name="listId" value={view.listId} />
-            <TextField label="Parcel ID" name="parcelRef" required />
+            <ParcelPicker label="Parcel" name="parcelRef" required />
             <SelectField
               label="Across a"
               name="crossing"
