@@ -1,5 +1,9 @@
 import Link from 'next/link'
+import { SortHeader } from '@/components/dataTable/SortHeader'
 import { StatusChip } from '@/components/StatusChip'
+import { adjustmentKindLabel } from '@/features/clocks/adjustmentKinds'
+import type { SortLink } from '@/features/dataTable/sort'
+import type { ClockSortKey } from '@/features/overrides/clockOverrideView'
 import { ruleLabel } from '@/features/packs/ruleLabel'
 import type { OverrideStatus } from '@/features/parcels/aliasOverrides'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -17,6 +21,7 @@ const CHIP: Record<
 export interface ClockAdjustmentView {
   id: string
   applicationId: string
+  applicationNumber: string
   ruleKey: string
   kind: string
   days: number | null
@@ -26,47 +31,61 @@ export interface ClockAdjustmentView {
   status: OverrideStatus
 }
 
-export function ClockAdjustmentsTable({ rows }: { rows: ClockAdjustmentView[] }) {
+function adjustmentText(row: ClockAdjustmentView): string {
+  return `${adjustmentKindLabel(row.kind)}${row.days === null ? '' : `, ${row.days} days`}`
+}
+
+export function ClockAdjustmentsTable({
+  rows,
+  links = {},
+}: {
+  rows: ClockAdjustmentView[]
+  links?: Partial<Record<ClockSortKey, SortLink>>
+}) {
   return (
-    <table className="my-4 w-full text-sm">
-      <thead>
-        <tr className="border-b text-left">
-          <th className="py-2">Application</th>
-          <th>Rule</th>
-          <th>Adjustment</th>
-          <th>New due date</th>
-          <th>Reason</th>
-          <th>Status</th>
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.id} className="border-b align-top">
-            <td className="py-2">
-              <Link
-                href={`/staff/applications/${row.applicationId}`}
-                className="text-action underline"
-              >
-                View application
-              </Link>
-            </td>
-            <td>{ruleLabel(row.ruleKey)}</td>
-            <td>{`${row.kind.replaceAll('_', ' ')}${row.days === null ? '' : `, ${row.days} days`}`}</td>
-            <td>{row.newDue === null ? 'Unchanged' : formatCivilDate(row.newDue)}</td>
-            <td>
-              {row.reason}
-              {row.legalAuthority === null ? null : (
-                <span className="block text-muted-foreground">
-                  {`Authority: ${(row.legalAuthority as { citation: string }).citation}`}
-                </span>
-              )}
-            </td>
-            <td>
-              <StatusChip status={CHIP[row.status].chip} label={CHIP[row.status].label} />
-            </td>
+    <div className="table-panel my-4">
+      <table className="w-full min-w-[48rem] text-sm">
+        <thead>
+          <tr>
+            <SortHeader label="Application" link={links.application} />
+            <SortHeader label="Rule" link={links.rule} />
+            <SortHeader label="Adjustment" link={links.adjustment} />
+            <SortHeader label="New due date" link={links.due} />
+            <SortHeader label="Reason" link={links.reason} />
+            <SortHeader label="Status" link={links.status} />
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id}>
+              <td className="whitespace-nowrap">
+                <Link
+                  href={`/staff/applications/${row.applicationId}`}
+                  className="text-action underline"
+                >
+                  {row.applicationNumber}
+                </Link>
+              </td>
+              <td>{ruleLabel(row.ruleKey)}</td>
+              <td>{adjustmentText(row)}</td>
+              <td className="whitespace-nowrap">
+                {row.newDue === null ? 'Unchanged' : formatCivilDate(row.newDue)}
+              </td>
+              <td>
+                {row.reason}
+                {row.legalAuthority === null ? null : (
+                  <span className="block text-muted-foreground">
+                    {`Authority: ${(row.legalAuthority as { citation: string }).citation}`}
+                  </span>
+                )}
+              </td>
+              <td>
+                <StatusChip status={CHIP[row.status].chip} label={CHIP[row.status].label} />
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }

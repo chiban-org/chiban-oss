@@ -122,11 +122,11 @@ describe('listClockAdjustments', () => {
     return { app, clock }
   }
 
-  it('lists a live adjustment as applied', async () => {
-    await adjusted()
-    expect((await listClockAdjustments(handle.db, signal)).map((r) => r.status)).toEqual([
-      'applied',
-    ])
+  it('lists a live adjustment as applied with its application number', async () => {
+    const { app } = await adjusted()
+    expect(
+      (await listClockAdjustments(handle.db, signal)).map((r) => [r.status, r.applicationNumber]),
+    ).toEqual([['applied', app.number]])
   })
 
   it('adjustment on a closed application lists as expired', async () => {

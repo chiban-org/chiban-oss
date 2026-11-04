@@ -39,6 +39,7 @@ const { default: ApplicationPage } = await import(
 const { default: ApplicationsPage } = await import('@/app/(staff)/staff/applications/page')
 const { default: ClockOverridesPage } = await import('@/app/(staff)/staff/overrides/clocks/page')
 const { default: FeeOverridesPage } = await import('@/app/(staff)/staff/overrides/fees/page')
+const { default: AliasOverridesPage } = await import('@/app/(staff)/staff/overrides/aliases/page')
 const { default: SettingsPage } = await import('@/app/(staff)/staff/settings/page')
 const { default: SettingsKindPage } = await import('@/app/(staff)/staff/settings/[kind]/page')
 const { default: SettingsKeyPage } = await import('@/app/(staff)/staff/settings/[kind]/[key]/page')
@@ -178,10 +179,36 @@ describe('staff application pages', () => {
   })
 
   it('the clock and fee override views list the seeded adjustment and waiver', async () => {
-    expect(await html(ClockOverridesPage())).toContain('renewal')
-    const fees = await html(FeeOverridesPage({ searchParams: Promise.resolve({}) }))
+    const noSearch = { searchParams: Promise.resolve({}) }
+    const clocks = await html(ClockOverridesPage(noSearch))
+    expect(clocks).toContain('<td>Renewal</td>')
+    expect(clocks).not.toContain('View application')
+    expect(clocks).toMatch(/href="\/staff\/applications\/[^"]+">[A-Z]+-\d{4}-\d{4}<\/a>/)
+    expect(clocks).toContain('<main data-wide="">')
+    expect(clocks).toContain('table-panel')
+    expect(clocks).toContain('Newest first. Click a column heading to sort.')
+    const fees = await html(FeeOverridesPage(noSearch))
     expect(fees).toContain('Waived')
     expect(fees).toContain('Applied')
+    expect(fees).toContain('Newest first. Click a column heading to sort.')
+    expect(fees).not.toMatch(/<td>[a-z_]+<\/td>/)
+  })
+
+  it('offers the add-override form only to staff who can manage parcels', async () => {
+    const noSearch = { searchParams: Promise.resolve({}) }
+    const staffView = await html(AliasOverridesPage(noSearch))
+    expect(staffView).toContain('Save override')
+    expect(staffView).toContain('Newest first. Click a column heading to sort.')
+    const viewer = state.actor
+    const finance = await handle.db.query.users.findFirst({
+      where: (u, { eq }) => eq(u.email, 'finance@alderpond.example'),
+    })
+    state.actor = await loadActor(handle.db, finance?.id ?? '', signal)
+    const financeView = await html(AliasOverridesPage(noSearch))
+    state.actor = viewer
+    expect(financeView).toContain('Parcel ID overrides')
+    expect(financeView).not.toContain('Save override')
+    expect(financeView).not.toContain('Add an override')
   })
 })
 

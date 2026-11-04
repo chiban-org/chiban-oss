@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { StatusChip } from '@/components/StatusChip'
+import { adjustmentKindLabel } from '@/features/clocks/adjustmentKinds'
 import type { ClockExplanation } from '@/features/clocks/explainClock'
 import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
 import { daysBetween } from '@/types/civilDate'
@@ -9,15 +10,6 @@ const WHOSE: Record<ClockExplanation['whose'], string> = {
   board: 'Board',
   applicant: 'Applicant',
   third_party: 'Third party',
-}
-
-const KIND_LABEL: Record<string, string> = {
-  extension: 'Extension',
-  waiver: 'Waiver',
-  renewal: 'Renewal',
-  tolling: 'Tolling',
-  statutory_floor: 'Statutory minimum',
-  statutory_exception: 'Statutory exception',
 }
 
 function plural(n: number): string {
@@ -115,7 +107,7 @@ function ClockDetails({ clock }: ClockProps) {
         <ul className="mt-2 list-disc pl-5 text-sm">
           {clock.adjustments.map((a) => (
             <li key={`${a.kind}-${a.at.toISOString()}`}>
-              {`${KIND_LABEL[a.kind] ?? a.kind}${a.days === null ? '' : `, ${a.days} ${plural(a.days)}`}${a.newDue === null ? '' : `, new due date ${formatCivilDate(a.newDue)}`}. ${a.reason}`}
+              {`${adjustmentKindLabel(a.kind)}${a.days === null ? '' : `, ${a.days} ${plural(a.days)}`}${a.newDue === null ? '' : `, new due date ${formatCivilDate(a.newDue)}`}. ${a.reason}`}
               {a.legalAuthority === null
                 ? null
                 : ` Authority: ${a.legalAuthority.citation}. ${a.legalAuthority.explanation}`}

@@ -68,7 +68,7 @@ const CASES: [string, unknown][] = [
   ['parcels/unresolved', undefined],
   ['overrides/aliases', SEARCH],
   ['overrides/fees', SEARCH],
-  ['overrides/clocks', undefined],
+  ['overrides/clocks', SEARCH],
   ['settings', SEARCH],
   ['settings/payments', undefined],
   ['settings/[kind]', { params: Promise.resolve({ kind: 'fee_schedule' }), ...SEARCH }],
