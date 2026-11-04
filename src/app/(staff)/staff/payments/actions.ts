@@ -3,6 +3,8 @@
 import { recordApplicationPayment } from '@/features/counter/applicationPayment'
 import { moveFunds } from '@/features/ledger/moveFunds'
 import { recordChargeback, recordReturnedCheck, refundEntry } from '@/features/ledger/reversals'
+import { recordOutcomeByHand } from '@/features/payments/manualOutcome'
+import { MANUAL_OUTCOMES } from '@/features/payments/manualOutcomeCheck'
 import { checkWithProcessor, voidAttempt } from '@/features/payments/startPayment'
 import { dollarsToCents, formatCents } from '@/lib/money'
 import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
@@ -108,9 +110,15 @@ export async function checkWithProcessorAction(formData: FormData): Promise<Acti
     const attemptId = text(formData, 'attemptId')
     if (!isUuid(attemptId)) return INVALID
     const result = await checkWithProcessor(db, actor, attemptId, signal)
-    return result.ok
-      ? { ok: true, message: `The processor reports this attempt as ${result.value.state}.` }
-      : { ok: false, error: copy(result.error) }
+    if (!result.ok) return { ok: false, error: copy(result.error) }
+    const { state, processorStatus, byHand } = result.value
+    return {
+      ok: true,
+      message:
+        byHand === true && processorStatus !== undefined
+          ? `The processor reports this payment as ${processorStatus}. The outcome recorded by hand stands.`
+          : `The processor reports this attempt as ${state}.`,
+    }
   })
 }
 
@@ -125,6 +133,32 @@ export async function voidAttemptAction(formData: FormData): Promise<ActionResul
       signal,
     )
     return done(result, 'Attempt voided.')
+  })
+}
+
+export async function recordOutcomeByHandAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffAction(formData, async ({ db, actor, signal }) => {
+    const attemptId = text(formData, 'attemptId')
+    const outcome = MANUAL_OUTCOMES.find((o) => o === text(formData, 'outcome'))
+    if (!isUuid(attemptId) || outcome === undefined) return INVALID
+    const processorRef = text(formData, 'processorRef')
+    const result = await recordOutcomeByHand(
+      db,
+      actor,
+      {
+        attemptId,
+        outcome,
+        note: text(formData, 'note'),
+        ...(processorRef === '' ? {} : { processorRef }),
+      },
+      signal,
+    )
+    return done(
+      result,
+      outcome === 'approved'
+        ? 'Recorded as approved. The payment is in the ledger.'
+        : 'Recorded as declined. The attempt is closed.',
+    )
   })
 }
 

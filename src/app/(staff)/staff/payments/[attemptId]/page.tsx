@@ -16,6 +16,8 @@ import {
 } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
 import { transitionSentence } from '@/features/payments/labels'
+import { manualResolverName } from '@/features/payments/manualOutcome'
+import { mayRecordOutcomeByHand } from '@/features/payments/manualOutcomeCheck'
 import { mayViewPayments } from '@/features/payments/overview'
 import { getTownSettings } from '@/features/town/settings'
 import { formatInstant } from '@/lib/formatDate'
@@ -23,6 +25,7 @@ import { formatCents } from '@/lib/money'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { AttemptRail, isOpen } from './AttemptRail'
+import { ManualOutcomePanel } from './ManualOutcomePanel'
 
 export const dynamic = 'force-dynamic'
 
@@ -132,22 +135,24 @@ export default async function PaymentAttemptPage({
     .from(paymentAttempts)
     .where(eq(paymentAttempts.id, attemptId))
   if (attempt === undefined) notFound()
-  const [[account], transitions, linked, receipt, canVoid, canCollect, town] = await Promise.all([
-    ctx.db
-      .select()
-      .from(processorAccounts)
-      .where(eq(processorAccounts.id, attempt.processorAccountId)),
-    ctx.db
-      .select()
-      .from(paymentAttemptTransitions)
-      .where(eq(paymentAttemptTransitions.attemptId, attempt.id))
-      .orderBy(paymentAttemptTransitions.at),
-    attemptApplications(ctx.db, attempt.plannedAllocations),
-    attemptReceipt(ctx.db, attempt.id),
-    hasCapability(ctx.db, ctx.actor.userId, 'payment.refund_void_correct', ctx.signal),
-    hasCapability(ctx.db, ctx.actor.userId, 'payment.collect', ctx.signal),
-    getTownSettings(ctx.db, ctx.signal),
-  ])
+  const [[account], transitions, linked, receipt, canVoid, canCollect, town, resolver] =
+    await Promise.all([
+      ctx.db
+        .select()
+        .from(processorAccounts)
+        .where(eq(processorAccounts.id, attempt.processorAccountId)),
+      ctx.db
+        .select()
+        .from(paymentAttemptTransitions)
+        .where(eq(paymentAttemptTransitions.attemptId, attempt.id))
+        .orderBy(paymentAttemptTransitions.at),
+      attemptApplications(ctx.db, attempt.plannedAllocations),
+      attemptReceipt(ctx.db, attempt.id),
+      hasCapability(ctx.db, ctx.actor.userId, 'payment.refund_void_correct', ctx.signal),
+      hasCapability(ctx.db, ctx.actor.userId, 'payment.collect', ctx.signal),
+      getTownSettings(ctx.db, ctx.signal),
+      manualResolverName(ctx.db, attempt),
+    ])
   const zone = town.ok ? town.value.timeZone : 'America/New_York'
   const simulated = account?.processor === 'simulated'
   const checkoutRef =
@@ -155,6 +160,10 @@ export default async function PaymentAttemptPage({
       ? attempt.processorObjectId
       : null
   const { filled, empty } = splitPanels([
+    {
+      empty: attempt.manualOutcome === null,
+      node: <ManualOutcomePanel key="manual" attempt={attempt} resolver={resolver} zone={zone} />,
+    },
     {
       empty: false,
       node: (
@@ -194,7 +203,11 @@ export default async function PaymentAttemptPage({
           <>
             <AttemptRail
               attempt={attempt}
-              viewer={{ canCheck: canVoid || canCollect, canVoid }}
+              viewer={{
+                canCheck: canVoid || canCollect,
+                canVoid,
+                canRecordOutcome: canVoid && mayRecordOutcomeByHand(attempt, new Date()),
+              }}
               links={{ processor: processorText(account), receipt }}
             />
             {simulated ? <SimulatedNotice checkoutRef={checkoutRef} /> : null}

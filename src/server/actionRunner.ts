@@ -95,6 +95,12 @@ export const ERROR_COPY: Record<string, string> = {
   simulated_disabled: 'The simulated processor is turned off in this environment.',
   outcome_unknown: 'The outcome is still unknown. Check with the processor first.',
   not_voidable: 'Only an attempt that has not been paid can be voided.',
+  note_required: 'Add a note: the processor reference or who confirmed the outcome.',
+  not_pending: 'This attempt is no longer waiting for the processor. Reload the page.',
+  too_soon:
+    'The outcome can be recorded by hand only after the attempt has waited a day for the processor.',
+  reference_required: "Enter the processor's reference for this payment.",
+  reference_in_use: 'That processor reference is already on another payment.',
   processor_reports_payment:
     'The processor reports this payment was captured. It has been recorded.',
   foreign_object: 'The processor reports a payment from a different account. Nothing was recorded.',

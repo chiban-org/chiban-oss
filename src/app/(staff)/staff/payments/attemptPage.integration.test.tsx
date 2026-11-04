@@ -34,6 +34,7 @@ vi.mock('next/navigation', () => ({
 vi.mock('../actions', () => ({
   checkWithProcessorAction: () => Promise.resolve({ ok: true }),
   voidAttemptAction: () => Promise.resolve({ ok: true }),
+  recordOutcomeByHandAction: () => Promise.resolve({ ok: true }),
 }))
 
 const { default: AttemptPage } = await import('./[attemptId]/page')

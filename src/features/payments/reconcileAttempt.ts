@@ -15,6 +15,7 @@ import { issueReceipt } from '@/features/ledger/receipts'
 import type { AllocationInput } from '@/features/ledger/types'
 import { queueNotification } from '@/features/notifications/queue'
 import { isMoneyState, nextAttemptMove } from '@/features/payments/attemptStates'
+import { heldByManualOutcome } from '@/features/payments/manualOutcomeCheck'
 import type { ProcessorPaymentState } from '@/features/payments/processors/types'
 import { postProcessorReversals } from '@/features/payments/reconcileReversals'
 import {
@@ -222,6 +223,9 @@ export async function reconcileAttempt(
   const sameObject =
     attempt.processorObjectId === null || attempt.processorObjectId === state.objectId
   if (state.accountRef !== account.accountRef || !sameObject) return err('foreign_object')
+  if (await heldByManualOutcome(tx, attempt, state)) {
+    return ok({ state: attempt.state, entriesPosted: 0 })
+  }
   const planned = attempt.plannedAllocations as AllocationInput[]
   await lockApplications(tx, planned)
   const next = await advance(tx, attempt, state, source, now)

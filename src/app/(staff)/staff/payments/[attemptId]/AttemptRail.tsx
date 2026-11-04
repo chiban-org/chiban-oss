@@ -10,12 +10,14 @@ import type { Status } from '@/features/design/tokens'
 import { attemptStateLabel, channelLabel } from '@/features/payments/labels'
 import { words } from '@/lib/words'
 import { checkWithProcessorAction, voidAttemptAction } from '../actions'
+import { ManualOutcomeForm } from './ManualOutcomeForm'
 
 type Attempt = typeof paymentAttempts.$inferSelect
 
 export interface AttemptViewer {
   canCheck: boolean
   canVoid: boolean
+  canRecordOutcome: boolean
 }
 
 export interface AttemptLinks {
@@ -36,7 +38,10 @@ export function isOpen(attempt: Attempt): boolean {
   return attempt.state === 'pending' || attempt.state === 'authorized'
 }
 
-function guidance(attempt: Attempt): string | null {
+function guidance(attempt: Attempt, viewer: AttemptViewer): string | null {
+  if (viewer.canRecordOutcome) {
+    return 'The processor has not confirmed this payment for over a day. Once it confirms the outcome by phone or in its dashboard, record it here.'
+  }
   if (attempt.outcomeUnknown) return 'Check with the processor before voiding.'
   if (attempt.anomaly !== null) return 'Check with the processor to see what it recorded.'
   return null
@@ -63,9 +68,9 @@ function attemptFacts(attempt: Attempt, links: AttemptLinks): Fact[] {
 }
 
 function Actions({ attempt, viewer }: { attempt: Attempt; viewer: AttemptViewer }) {
-  const next = guidance(attempt)
+  const next = guidance(attempt, viewer)
   const mayVoid = isOpen(attempt) && viewer.canVoid
-  if (next === null && !viewer.canCheck && !mayVoid) return null
+  if (next === null && !viewer.canCheck && !mayVoid && !viewer.canRecordOutcome) return null
   return (
     <div className="rail-card">
       <NextStep>
@@ -78,6 +83,7 @@ function Actions({ attempt, viewer }: { attempt: Attempt; viewer: AttemptViewer 
             <input type="hidden" name="attemptId" value={attempt.id} />
           </ActionForm>
         ) : null}
+        {viewer.canRecordOutcome ? <ManualOutcomeForm attempt={attempt} /> : null}
         {mayVoid ? (
           <ActionForm action={voidAttemptAction} submitLabel="Void this attempt">
             <input type="hidden" name="attemptId" value={attempt.id} />

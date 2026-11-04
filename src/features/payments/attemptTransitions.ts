@@ -2,16 +2,17 @@ import { eq } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import { type PaymentAttemptRow, paymentAttempts, paymentAttemptTransitions } from '@/db/schema'
 
-export async function markVoided(
+async function closeByStaff(
   tx: Tx,
   attempt: PaymentAttemptRow,
+  change: { to: 'voided' | 'declined'; anomaly: string | null },
   now: Date,
-  anomaly: string | null = null,
 ): Promise<void> {
+  const { to, anomaly } = change
   await tx
     .update(paymentAttempts)
     .set({
-      state: 'voided',
+      state: to,
       outcomeUnknown: false,
       anomaly: anomaly ?? attempt.anomaly,
       updatedAt: now,
@@ -21,8 +22,21 @@ export async function markVoided(
   await tx.insert(paymentAttemptTransitions).values({
     attemptId: attempt.id,
     fromState: attempt.state,
-    toState: 'voided',
+    toState: to,
     source: 'staff',
     at: now,
   })
+}
+
+export async function markVoided(
+  tx: Tx,
+  attempt: PaymentAttemptRow,
+  now: Date,
+  anomaly: string | null = null,
+): Promise<void> {
+  await closeByStaff(tx, attempt, { to: 'voided', anomaly }, now)
+}
+
+export async function markDeclined(tx: Tx, attempt: PaymentAttemptRow, now: Date): Promise<void> {
+  await closeByStaff(tx, attempt, { to: 'declined', anomaly: null }, now)
 }

@@ -61,7 +61,12 @@ export async function checkWithProcessor(
   deps: AttemptDeps = {},
 ): Promise<
   Result<
-    { state: AttemptState; outcomeUnknown: boolean },
+    {
+      state: AttemptState
+      outcomeUnknown: boolean
+      processorStatus?: ProcessorPaymentState['status']
+      byHand?: boolean
+    },
     'forbidden' | 'not_found' | ProcessorError
   >
 > {
@@ -90,7 +95,12 @@ export async function checkWithProcessor(
   if (!reconciled.ok)
     return err({ kind: 'rejected', detail: 'Processor object belongs to another account' })
   const [fresh] = await db.select().from(paymentAttempts).where(eq(paymentAttempts.id, attemptId))
-  return ok({ state: reconciled.value.state, outcomeUnknown: fresh?.outcomeUnknown ?? false })
+  return ok({
+    state: reconciled.value.state,
+    outcomeUnknown: fresh?.outcomeUnknown ?? false,
+    processorStatus: state.value.status,
+    byHand: (fresh?.manualOutcome ?? null) !== null,
+  })
 }
 
 type VoidPlan = 'void' | 'reconcile' | 'refuse' | 'cancel_authorization'

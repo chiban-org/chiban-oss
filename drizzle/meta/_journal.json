@@ -610,6 +610,13 @@
       "when": 1793798796794,
       "tag": "0086_staff_account_links",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1793809506550,
+      "tag": "0087_card_manual_outcome",
+      "breakpoints": true
     }
   ]
 }
