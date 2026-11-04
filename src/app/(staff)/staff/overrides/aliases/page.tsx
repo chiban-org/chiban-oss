@@ -1,14 +1,14 @@
 import Link from 'next/link'
-import { ActionForm } from '@/components/ActionForm'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
-import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
+import { TablePager } from '@/components/dataTable/TablePager'
+import { ListHeader } from '@/components/layout/ListHeader'
 import { StatusChip } from '@/components/StatusChip'
-import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { OverridesTabs } from '@/components/staff/OverridesTabs'
 import { hasCapability } from '@/features/authz/capabilities'
-import { clearHref, type RawSearchParams } from '@/features/dataTable/params'
+import { pagerLinks, slicePage } from '@/features/dataTable/pageSlice'
+import { clearHref, type RawSearchParams, readOffset } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
 import {
   ALIAS_FILTER_PARAMS,
@@ -20,7 +20,9 @@ import {
 import { listAliasOverrides, type OverrideStatus } from '@/features/parcels/aliasOverrides'
 import { formatCivilDate } from '@/lib/formatDate'
 import { recordStaffContext } from '@/server/requireStaff'
-import { createAliasOverrideAction } from '../../parcels/[parcelId]/actions'
+import { AddAliasOverride, EditAliasOverride } from './AliasOverrideForms'
+
+const PAGE_SIZE = 25
 
 const CHIP: Record<
   OverrideStatus,
@@ -30,30 +32,6 @@ const CHIP: Record<
   no_match: { chip: 'overdue', label: 'No match: parcel retired' },
   superseded: { chip: 'neutral', label: 'Superseded' },
   expired: { chip: 'neutral', label: 'Expired' },
-}
-
-function AddAliasOverride() {
-  return (
-    <details>
-      <summary>Add an override</summary>
-      <ActionForm
-        action={createAliasOverrideAction}
-        submitLabel="Save override"
-        className="max-w-md"
-      >
-        <TextField label="Format key" name="format" required hint="For example cama15 or gis12." />
-        <TextField label="ID value" name="value" required />
-        <ParcelPicker
-          label="Points to parcel"
-          name="parcelRef"
-          required
-          hint="Any current or retired parcel."
-        />
-        <TextField label="Reason" name="reason" required />
-        <TextField label="Expires on" name="expiresOn" type="date" />
-      </ActionForm>
-    </details>
-  )
 }
 
 export default async function StaffAliasOverridesPage({
@@ -68,16 +46,17 @@ export default async function StaffAliasOverridesPage({
     listAliasOverrides(ctx.db, new Date(), ctx.signal),
     hasCapability(ctx.db, ctx.actor.userId, 'parcel.manage', ctx.signal),
   ])
-  const { rows, chips } = arrangeAliasOverrides(all, view)
+  const { rows: arranged, chips } = arrangeAliasOverrides(all, view)
+  const page = slicePage(arranged, readOffset(view.params), PAGE_SIZE)
   const links = sortLinks(ALIAS_OVERRIDES_PATH, view.params, ALIAS_SORT, view.sort)
   const clear = clearHref(ALIAS_OVERRIDES_PATH, view.params, ALIAS_FILTER_PARAMS)
   return (
     <main data-wide="">
-      <h1>Parcel ID overrides</h1>
-      <p>
-        An override points a town ID at a parcel. Imports never overwrite an override; they send the
-        conflict to the exception queue. Newest first.
-      </p>
+      <ListHeader
+        title="Parcel ID overrides"
+        lead="An override points a town ID at a parcel. Imports never overwrite an override; they send the conflict to the exception queue. Newest first."
+        actions={mayManage ? <AddAliasOverride /> : null}
+      />
       <OverridesTabs current="/staff/overrides/aliases" />
       {all.length === 0 ? (
         <p>No overrides are in force.</p>
@@ -87,7 +66,7 @@ export default async function StaffAliasOverridesPage({
             <QuickFilters label="Quick filters" groups={chips} clearHref={clear} />
           </div>
           <div className="table-panel">
-            {rows.length === 0 ? (
+            {page.rows.length === 0 ? (
               <p className="px-5 py-8">No override matches these filters.</p>
             ) : (
               <table className="w-full min-w-[44rem] text-sm">
@@ -99,10 +78,15 @@ export default async function StaffAliasOverridesPage({
                     <SortHeader label="Reason" link={links.reason} />
                     <SortHeader label="Expires" link={links.expires} />
                     <SortHeader label="Status" link={links.status} />
+                    {mayManage ? (
+                      <th scope="col">
+                        <span className="sr-only">Actions</span>
+                      </th>
+                    ) : null}
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => (
+                  {page.rows.map((row) => (
                     <tr key={row.id}>
                       <td>{`${row.format}: ${row.value}`}</td>
                       <td>
@@ -120,15 +104,20 @@ export default async function StaffAliasOverridesPage({
                       <td>
                         <StatusChip status={CHIP[row.status].chip} label={CHIP[row.status].label} />
                       </td>
+                      {mayManage ? (
+                        <td>
+                          {row.status === 'superseded' ? null : <EditAliasOverride row={row} />}
+                        </td>
+                      ) : null}
                     </tr>
                   ))}
                 </tbody>
               </table>
             )}
           </div>
+          <TablePager {...pagerLinks(ALIAS_OVERRIDES_PATH, view.params, page)} />
         </>
       )}
-      {mayManage ? <AddAliasOverride /> : null}
     </main>
   )
 }

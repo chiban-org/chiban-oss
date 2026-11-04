@@ -201,7 +201,10 @@ describe('staff application pages', () => {
   it('offers the add-override form only to staff who can manage parcels', async () => {
     const noSearch = { searchParams: Promise.resolve({}) }
     const staffView = await html(AliasOverridesPage(noSearch))
-    expect(staffView).toContain('Save override')
+    expect(staffView).toMatch(/>Add override<\/button>/)
+    expect(staffView.indexOf('>Add override<')).toBeLessThan(
+      staffView.indexOf('aria-label="Overrides"'),
+    )
     expect(staffView).toContain('conflict to the exception queue. Newest first.')
     const viewer = state.actor
     const finance = await handle.db.query.users.findFirst({
@@ -211,8 +214,7 @@ describe('staff application pages', () => {
     const financeView = await html(AliasOverridesPage(noSearch))
     state.actor = viewer
     expect(financeView).toContain('Parcel ID overrides')
-    expect(financeView).not.toContain('Save override')
-    expect(financeView).not.toContain('Add an override')
+    expect(financeView).not.toContain('Add override')
   })
 })
 

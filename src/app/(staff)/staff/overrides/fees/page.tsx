@@ -1,10 +1,12 @@
 import Link from 'next/link'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
+import { TablePager } from '@/components/dataTable/TablePager'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { OverridesTabs } from '@/components/staff/OverridesTabs'
-import { clearHref, type RawSearchParams } from '@/features/dataTable/params'
+import { pagerLinks, slicePage } from '@/features/dataTable/pageSlice'
+import { clearHref, type RawSearchParams, readOffset } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
 import { listFeeOverrides } from '@/features/fees/feeOverrides'
 import {
@@ -28,6 +30,8 @@ const CHIP: Record<
   expired: { chip: 'neutral', label: 'Expired: the application is closed' },
 }
 
+const PAGE_SIZE = 25
+
 export default async function FeeOverridesPage({
   searchParams,
 }: {
@@ -37,7 +41,8 @@ export default async function FeeOverridesPage({
   const ctx = await recordStaffContext()
   if (ctx === null) return <NoPermission title="Fee overrides" action="see overrides" />
   const all = await listFeeOverrides(ctx.db, ctx.signal)
-  const { rows, chips } = arrangeFeeOverrides(all, view)
+  const { rows: arranged, chips } = arrangeFeeOverrides(all, view)
+  const page = slicePage(arranged, readOffset(view.params), PAGE_SIZE)
   const links = sortLinks(FEE_OVERRIDES_PATH, view.params, FEE_SORT, view.sort)
   const clear = clearHref(FEE_OVERRIDES_PATH, view.params, FEE_FILTER_PARAMS)
   return (
@@ -56,7 +61,7 @@ export default async function FeeOverridesPage({
             <QuickFilters label="Quick filters" groups={chips} clearHref={clear} />
           </div>
           <div className="table-panel">
-            {rows.length === 0 ? (
+            {page.rows.length === 0 ? (
               <p className="px-5 py-8">No override matches these filters.</p>
             ) : (
               <table className="w-full min-w-[40rem] text-sm">
@@ -70,7 +75,7 @@ export default async function FeeOverridesPage({
                   </tr>
                 </thead>
                 <tbody>
-                  {rows.map((row) => (
+                  {page.rows.map((row) => (
                     <tr key={row.id}>
                       <td>
                         <Link href={`/staff/applications/${row.applicationId}`}>
@@ -93,6 +98,7 @@ export default async function FeeOverridesPage({
               </table>
             )}
           </div>
+          <TablePager {...pagerLinks(FEE_OVERRIDES_PATH, view.params, page)} />
         </>
       )}
     </main>
