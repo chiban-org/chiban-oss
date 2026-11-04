@@ -39,6 +39,17 @@ export const FormFieldSchema = z.object({
 })
 export type FormField = z.infer<typeof FormFieldSchema>
 
+const CHOICE_TYPES: ReadonlySet<FieldType> = new Set(['select', 'multiselect'])
+const NUMBER_TYPES: ReadonlySet<FieldType> = new Set(['integer', 'decimal', 'money'])
+
+export function isChoiceType(type: FieldType): boolean {
+  return CHOICE_TYPES.has(type)
+}
+
+export function isNumberType(type: FieldType): boolean {
+  return NUMBER_TYPES.has(type)
+}
+
 export function isSection(field: FormField): boolean {
   return field.type === 'section'
 }
@@ -78,7 +89,7 @@ export const FormBodySchema = z
       if (misuse !== null) {
         ctx.addIssue({ code: 'custom', path: ['fields', i, 'type'], message: misuse })
       }
-      const needsOptions = field.type === 'select' || field.type === 'multiselect'
+      const needsOptions = isChoiceType(field.type)
       if (needsOptions && (field.options === undefined || field.options.length === 0)) {
         ctx.addIssue({
           code: 'custom',

@@ -1,12 +1,33 @@
 // @vitest-environment jsdom
 import { NH_STARTERS } from '@packs/nh/starters'
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { useState } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { Harness, stateBody } from '@/components/config/formBuilder/BuilderHarness'
 import { FormBuilder } from '@/components/config/formBuilder/FormBuilder'
+import type { FormBuilderData } from '@/features/forms/formReferences'
 import type { FormBody } from '@/features/forms/formSchema'
 
 afterEach(cleanup)
+
+function Harness({
+  initial,
+  data = { frozenKeys: [], externalUses: [] },
+}: {
+  initial: FormBody
+  data?: FormBuilderData
+}) {
+  const [body, setBody] = useState(initial)
+  return (
+    <>
+      <FormBuilder body={body} onChange={setBody} errors={{}} data={data} />
+      <output data-testid="state">{JSON.stringify(body)}</output>
+    </>
+  )
+}
+
+function stateBody(): FormBody {
+  return JSON.parse(screen.getByTestId('state').textContent) as FormBody
+}
 
 const BASE: FormBody = {
   key: 'f',

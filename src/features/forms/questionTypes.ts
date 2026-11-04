@@ -1,4 +1,9 @@
-import type { FieldType, FormField } from '@/features/forms/formSchema'
+import {
+  type FieldType,
+  type FormField,
+  isChoiceType,
+  isNumberType,
+} from '@/features/forms/formSchema'
 
 export const TYPE_WORDS: Record<FieldType, string> = {
   text: 'Short answer',
@@ -42,9 +47,9 @@ export const FACT_CHOICES: readonly (readonly [string, string])[] = [
 ]
 
 export function hasChoices(field: FormField): boolean {
-  return field.type === 'select' || field.type === 'multiselect'
+  return isChoiceType(field.type)
 }
 
 export function isNumberQuestion(field: FormField): boolean {
-  return field.type === 'integer' || field.type === 'decimal' || field.type === 'money'
+  return isNumberType(field.type)
 }

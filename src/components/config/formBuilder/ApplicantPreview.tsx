@@ -2,6 +2,7 @@
 
 import { Monitor, Smartphone } from 'lucide-react'
 import { useState } from 'react'
+import { PressedGroup } from '@/components/config/formBuilder/PressedGroup'
 import { FormRenderer, type FormValue } from '@/components/forms/FormRenderer'
 import { Button } from '@/components/ui/button'
 import type { FormBody } from '@/features/forms/formSchema'
@@ -11,10 +12,10 @@ import { cn } from '@/lib/utils'
 
 type Width = 'desktop' | 'phone'
 
-const WIDTHS: [Width, string, typeof Monitor][] = [
+const WIDTHS = [
   ['desktop', 'Desktop', Monitor],
   ['phone', 'Phone', Smartphone],
-]
+] as const
 
 export function ApplicantPreview({ form }: { form: FormBody }) {
   const [width, setWidth] = useState<Width>('desktop')
@@ -37,21 +38,7 @@ export function ApplicantPreview({ form }: { form: FormBody }) {
   }
   return (
     <div className="grid gap-3">
-      <div className="flex flex-wrap items-center gap-2" role="group" aria-label="Preview width">
-        {WIDTHS.map(([value, label, Icon]) => (
-          <Button
-            key={value}
-            type="button"
-            size="sm"
-            variant={width === value ? 'outline' : 'ghost'}
-            aria-pressed={width === value}
-            onClick={() => setWidth(value)}
-          >
-            <Icon aria-hidden="true" />
-            {label}
-          </Button>
-        ))}
-      </div>
+      <PressedGroup label="Preview width" options={WIDTHS} value={width} onChange={setWidth} />
       <div
         className={cn(
           'mx-auto w-full rounded-md border border-hairline bg-surface',

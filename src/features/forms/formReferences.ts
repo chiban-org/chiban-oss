@@ -46,14 +46,17 @@ const FACT_WORDS: Record<NonNullable<FormField['fact']>, string> = {
   afterTheFact: 'Records whether work started before the permit.',
 }
 
-export function feeFieldRefs(expr: FeeExpr): string[] {
-  const own = exprFieldRefs(expr)
+function multiplierRefs(expr: FeeExpr): string[] {
   if (expr.op === 'conditional_multiplier') {
-    return [...new Set([...conditionFields(expr.when), ...own, ...feeFieldRefs(expr.of)])]
+    return [...conditionFields(expr.when), ...multiplierRefs(expr.of)]
   }
-  if (expr.op === 'minimum') return [...new Set([...own, ...feeFieldRefs(expr.of)])]
-  if (expr.op === 'sum') return [...new Set([...own, ...expr.of.flatMap(feeFieldRefs)])]
-  return own
+  if (expr.op === 'minimum') return multiplierRefs(expr.of)
+  if (expr.op === 'sum') return expr.of.flatMap(multiplierRefs)
+  return []
+}
+
+export function feeFieldRefs(expr: FeeExpr): string[] {
+  return [...new Set([...multiplierRefs(expr), ...exprFieldRefs(expr)])]
 }
 
 export function externalUses(

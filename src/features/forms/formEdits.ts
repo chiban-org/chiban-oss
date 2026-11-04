@@ -2,10 +2,14 @@ import type { Condition, Leaf } from '@/features/forms/condition'
 import { conditionFields } from '@/features/forms/condition'
 import { conditionOf, ruleSetOf } from '@/features/forms/conditionRules'
 import { keyForLabel } from '@/features/forms/fieldKeys'
-import type { FieldType, FormBody, FormField } from '@/features/forms/formSchema'
+import {
+  type FieldType,
+  type FormBody,
+  type FormField,
+  isChoiceType,
+  isNumberType,
+} from '@/features/forms/formSchema'
 
-const CHOICE_TYPES: ReadonlySet<FieldType> = new Set(['select', 'multiselect'])
-const NUMBER_TYPES: ReadonlySet<FieldType> = new Set(['integer', 'decimal', 'money'])
 const RULE_NAMES = ['showIf', 'requireIf'] as const
 
 export const ORDER_ISSUE =
@@ -34,7 +38,7 @@ export function addEntry(
     label,
     type,
     required: false,
-    ...(CHOICE_TYPES.has(type) ? { options: startingChoices() } : {}),
+    ...(isChoiceType(type) ? { options: startingChoices() } : {}),
   }
   const index = after === null ? body.fields.length : after + 1
   const fields = [...body.fields.slice(0, index), entry, ...body.fields.slice(index)]
@@ -91,8 +95,12 @@ export function relabel(
   }
 }
 
+export function patchField(body: FormBody, index: number, patch: Partial<FormField>): FormBody {
+  return { ...body, fields: body.fields.map((f, i) => (i === index ? { ...f, ...patch } : f)) }
+}
+
 export function setKey(body: FormBody, index: number, key: string): FormBody {
-  return { ...body, fields: body.fields.map((f, i) => (i === index ? { ...f, key } : f)) }
+  return patchField(body, index, { key })
 }
 
 export function removeEntry(body: FormBody, index: number): FormBody {
@@ -105,11 +113,16 @@ export function removeEntry(body: FormBody, index: number): FormBody {
   }
 }
 
+export function moveItem<T>(items: readonly T[], from: number, to: number): readonly T[] {
+  const moving = items[from]
+  if (moving === undefined || to < 0 || to >= items.length || from === to) return items
+  const rest = items.filter((_, i) => i !== from)
+  return [...rest.slice(0, to), moving, ...rest.slice(to)]
+}
+
 export function moveEntry(body: FormBody, from: number, to: number): FormBody {
-  const moving = body.fields[from]
-  if (moving === undefined || to < 0 || to >= body.fields.length || from === to) return body
-  const rest = body.fields.filter((_, i) => i !== from)
-  return { ...body, fields: [...rest.slice(0, to), moving, ...rest.slice(to)] }
+  const fields = moveItem(body.fields, from, to)
+  return fields === body.fields ? body : { ...body, fields: [...fields] }
 }
 
 export function changeType(body: FormBody, index: number, type: FieldType): FormBody {
@@ -121,8 +134,8 @@ export function changeType(body: FormBody, index: number, type: FieldType): Form
       return {
         ...rest,
         type,
-        ...(CHOICE_TYPES.has(type) ? { options: options ?? startingChoices() } : {}),
-        ...(NUMBER_TYPES.has(type) && validation !== undefined ? { validation } : {}),
+        ...(isChoiceType(type) ? { options: options ?? startingChoices() } : {}),
+        ...(isNumberType(type) && validation !== undefined ? { validation } : {}),
       }
     }),
   }

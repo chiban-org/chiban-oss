@@ -1,8 +1,7 @@
-import { and, eq, inArray } from 'drizzle-orm'
+import { and, eq, inArray, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { configVersions } from '@/db/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
-import { getPublished } from '@/features/config/store'
 import type { FeeScheduleBody } from '@/features/fees/feeSchema'
 import { externalUses, type FormBuilderData } from '@/features/forms/formReferences'
 import type { FormBody } from '@/features/forms/formSchema'
@@ -36,19 +35,35 @@ async function typesUsingForm(
   return rows.map((r) => r.body as ApplicationTypeBody).filter((b) => b.formKey === formKey)
 }
 
+async function feeSchedules(
+  db: DbOrTx,
+  keys: string[],
+  signal: AbortSignal,
+): Promise<{ key: string; body: FeeScheduleBody }[]> {
+  signal.throwIfAborted()
+  if (keys.length === 0) return []
+  const rows = await db
+    .select({ key: configVersions.key, body: configVersions.body })
+    .from(configVersions)
+    .where(
+      and(
+        eq(configVersions.kind, 'fee_schedule'),
+        eq(configVersions.status, 'published'),
+        inArray(configVersions.key, keys),
+      ),
+    )
+  return rows.map((r) => ({ key: r.key, body: r.body as FeeScheduleBody }))
+}
+
 export async function loadFormBuilderData(
   db: DbOrTx,
   formKey: string,
   signal: AbortSignal,
 ): Promise<FormBuilderData> {
-  const types = await typesUsingForm(db, formKey, signal)
-  const fees: { key: string; body: FeeScheduleBody }[] = []
-  for (const key of new Set(types.map((t) => t.feeScheduleKey))) {
-    const row = await getPublished(db, 'fee_schedule', key, signal)
-    if (row !== null) fees.push({ key, body: row.body as FeeScheduleBody })
-  }
-  return {
-    frozenKeys: await publishedKeys(db, formKey, signal),
-    externalUses: externalUses(formKey, types, fees),
-  }
+  const [frozenKeys, types] = await Promise.all([
+    publishedKeys(db, formKey, signal),
+    typesUsingForm(db, formKey, signal),
+  ])
+  const fees = await feeSchedules(db, [...new Set(types.map((t) => t.feeScheduleKey))], signal)
+  return { frozenKeys, externalUses: externalUses(formKey, types, fees) }
 }

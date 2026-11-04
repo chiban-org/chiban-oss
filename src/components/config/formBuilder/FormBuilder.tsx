@@ -3,12 +3,12 @@
 import { Eye, PencilRuler } from 'lucide-react'
 import { type KeyboardEvent, useMemo, useRef, useState } from 'react'
 import { ApplicantPreview } from '@/components/config/formBuilder/ApplicantPreview'
+import { PressedGroup } from '@/components/config/formBuilder/PressedGroup'
 import { QuestionCanvas } from '@/components/config/formBuilder/QuestionCanvas'
 import { QuestionPalette } from '@/components/config/formBuilder/QuestionPalette'
 import { QuestionSettings } from '@/components/config/formBuilder/QuestionSettings'
 import { RemoveQuestionDialog } from '@/components/config/formBuilder/RemoveQuestionDialog'
 import { FieldError, type FieldErrors, Input } from '@/components/config/primitives'
-import { Button } from '@/components/ui/button'
 import {
   addEntry,
   indexAfterMove,
@@ -30,32 +30,10 @@ function revealBelowFold(element: HTMLElement | null) {
   element.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
-function ModeSwitch({ mode, onMode }: { mode: Mode; onMode: (m: Mode) => void }) {
-  return (
-    <div className="mb-3 flex flex-wrap gap-2" role="group" aria-label="View">
-      <Button
-        type="button"
-        size="sm"
-        variant={mode === 'design' ? 'outline' : 'ghost'}
-        aria-pressed={mode === 'design'}
-        onClick={() => onMode('design')}
-      >
-        <PencilRuler aria-hidden="true" />
-        Design
-      </Button>
-      <Button
-        type="button"
-        size="sm"
-        variant={mode === 'preview' ? 'outline' : 'ghost'}
-        aria-pressed={mode === 'preview'}
-        onClick={() => onMode('preview')}
-      >
-        <Eye aria-hidden="true" />
-        Preview as applicant
-      </Button>
-    </div>
-  )
-}
+const MODES = [
+  ['design', 'Design', PencilRuler],
+  ['preview', 'Preview as applicant', Eye],
+] as const
 
 export function FormBuilder({
   body,
@@ -104,7 +82,13 @@ export function FormBuilder({
           <QuestionPalette onAdd={add} />
         </div>
         <div className="min-w-0 rounded-md bg-canvas p-3 @md:p-4">
-          <ModeSwitch mode={mode} onMode={setMode} />
+          <PressedGroup
+            label="View"
+            className="mb-3"
+            options={MODES}
+            value={mode}
+            onChange={setMode}
+          />
           <FieldError errors={errors} name="fields" />
           {mode === 'design' ? (
             <QuestionCanvas

@@ -5,7 +5,7 @@ import { ChoicesEditor } from '@/components/config/formBuilder/ChoicesEditor'
 import { ConditionBuilder } from '@/components/config/formBuilder/ConditionBuilder'
 import { Area, Check, Input, Pick } from '@/components/config/primitives'
 import { Button } from '@/components/ui/button'
-import { changeType, relabel, setKey } from '@/features/forms/formEdits'
+import { changeType, patchField, relabel, setKey } from '@/features/forms/formEdits'
 import type { FieldReference } from '@/features/forms/formReferences'
 import type { FieldType, FormBody, FormField } from '@/features/forms/formSchema'
 import { ANSWER_TYPE_CHOICES, hasChoices, isNumberQuestion } from '@/features/forms/questionTypes'
@@ -53,13 +53,12 @@ function NumberLimits({
 
 function QuestionOnly({
   body,
+  field,
   index,
   frozen,
   onChange,
-}: Omit<Props, 'onMove' | 'onRemove' | 'references'>) {
-  const field = body.fields[index] as FormField
-  const patch = (p: Partial<FormField>) =>
-    onChange({ ...body, fields: body.fields.map((f, i) => (i === index ? { ...f, ...p } : f)) })
+}: Omit<Props, 'onMove' | 'onRemove' | 'references'> & { field: FormField }) {
+  const patch = (p: Partial<FormField>) => onChange(patchField(body, index, p))
   return (
     <>
       <Pick
@@ -96,8 +95,7 @@ export function QuestionSettings(props: Props) {
   const field = body.fields[index]
   if (field === undefined) return null
   const section = field.type === 'section'
-  const patch = (p: Partial<FormField>) =>
-    onChange({ ...body, fields: body.fields.map((f, i) => (i === index ? { ...f, ...p } : f)) })
+  const patch = (p: Partial<FormField>) => onChange(patchField(body, index, p))
   return (
     <div className="grid gap-4">
       <Input
@@ -112,7 +110,7 @@ export function QuestionSettings(props: Props) {
         onChange={(e) => patch({ help: e.target.value === '' ? undefined : e.target.value })}
       />
       {section ? null : (
-        <QuestionOnly body={body} index={index} frozen={frozen} onChange={onChange} />
+        <QuestionOnly body={body} field={field} index={index} frozen={frozen} onChange={onChange} />
       )}
       <AdvancedSettings
         field={field}

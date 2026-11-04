@@ -1,5 +1,5 @@
 import type { Condition, Leaf } from '@/features/forms/condition'
-import type { FieldType, FormField } from '@/features/forms/formSchema'
+import { type FieldType, type FormField, isNumberType } from '@/features/forms/formSchema'
 
 export type Operator = Leaf['op']
 export type Join = 'leaf' | 'all' | 'any'
@@ -28,12 +28,11 @@ const CHOICE_OPS: Operator[] = ['equals', 'not_equals', 'in']
 const YES_NO_OPS: Operator[] = ['is_true', 'is_false']
 const NUMBER_OPS: Operator[] = ['equals', 'not_equals', 'gt', 'lt']
 const TEXT_OPS: Operator[] = ['equals', 'not_equals']
-const NUMBER_TYPES: ReadonlySet<FieldType> = new Set(['integer', 'decimal', 'money'])
 
 export function operatorsFor(type: FieldType): Operator[] {
   if (type === 'select') return CHOICE_OPS
   if (type === 'checkbox') return YES_NO_OPS
-  if (NUMBER_TYPES.has(type)) return NUMBER_OPS
+  if (isNumberType(type)) return NUMBER_OPS
   return TEXT_OPS
 }
 

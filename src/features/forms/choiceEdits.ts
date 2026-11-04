@@ -1,6 +1,6 @@
 import type { Leaf } from '@/features/forms/condition'
 import { keyForLabel } from '@/features/forms/fieldKeys'
-import { mapConditions, mapLeaves } from '@/features/forms/formEdits'
+import { mapConditions, mapLeaves, moveItem } from '@/features/forms/formEdits'
 import type { FormBody, FormField } from '@/features/forms/formSchema'
 
 type Choice = NonNullable<FormField['options']>[number]
@@ -68,11 +68,6 @@ export function removeChoice(body: FormBody, index: number, choice: number): For
 
 export function moveChoice(body: FormBody, index: number, choice: number, by: -1 | 1): FormBody {
   const choices = body.fields[index]?.options ?? []
-  const target = choice + by
-  const moving = choices[choice]
-  if (moving === undefined || target < 0 || target >= choices.length) return body
-  return withChoices(body, index, (all) => {
-    const rest = all.filter((_, i) => i !== choice)
-    return [...rest.slice(0, target), moving, ...rest.slice(target)]
-  })
+  const moved = moveItem(choices, choice, choice + by)
+  return moved === choices ? body : withChoices(body, index, () => [...moved])
 }

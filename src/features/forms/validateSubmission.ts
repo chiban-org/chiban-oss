@@ -1,6 +1,11 @@
 import type { DecisionOutcome } from '@packs/nh/schema'
 import { evaluateCondition } from '@/features/forms/condition'
-import { type FormBody, type FormField, questionsOf } from '@/features/forms/formSchema'
+import {
+  type FormBody,
+  type FormField,
+  isNumberType,
+  questionsOf,
+} from '@/features/forms/formSchema'
 import { parseCivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -97,11 +102,10 @@ function parseNumeric(field: FormField, raw: unknown): Parsed {
 }
 
 const TEXT_TYPES: ReadonlySet<string> = new Set(['text', 'textarea', 'email', 'phone'])
-const NUMBER_TYPES: ReadonlySet<string> = new Set(['integer', 'decimal', 'money'])
 
 function parseValue(field: FormField, raw: unknown): Parsed {
   if (TEXT_TYPES.has(field.type)) return parseText(field, raw)
-  if (NUMBER_TYPES.has(field.type)) return parseNumeric(field, raw)
+  if (isNumberType(field.type)) return parseNumeric(field, raw)
   if (field.type === 'select' || field.type === 'multiselect') return parseSelect(field, raw)
   if (field.type === 'checkbox') {
     return { ok: true, value: raw === true || raw === 'true' || raw === 'on' }
