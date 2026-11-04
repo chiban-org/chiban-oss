@@ -1,14 +1,11 @@
 'use client'
 
 import {
-  Area,
-  Check,
-  type FieldErrors,
-  FieldGroup,
-  Input,
-  ListInput,
-  Pick,
-} from '@/components/config/primitives'
+  ReferenceFields,
+  RuleFields,
+  WorkflowSummary,
+} from '@/components/config/ApplicationTypeParts'
+import { Area, type FieldErrors, FieldGroup, Input, Pick } from '@/components/config/primitives'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import { ruleChoicesFor } from '@/features/config/ruleChoices'
 
@@ -32,6 +29,11 @@ interface Props {
   classifications: ClassificationOption[]
 }
 
+const PAY_TIMING = [
+  ['at_intake', 'When the application is submitted'],
+  ['at_approval', 'When the application is approved'],
+] as const
+
 export function ApplicationTypeEditor({
   body,
   onChange,
@@ -45,26 +47,32 @@ export function ApplicationTypeEditor({
   const set = (patch: Partial<ApplicationTypeBody>) => onChange({ ...body, ...patch })
   return (
     <>
-      <div className="grid grid-cols-3 gap-3">
-        <Input label="Label" value={body.label} onChange={(e) => set({ label: e.target.value })} />
+      <div className="grid gap-3 sm:grid-cols-3">
+        <Input
+          label="Name"
+          hint="What applicants and staff see, for example Building permit."
+          value={body.label}
+          onChange={(e) => set({ label: e.target.value })}
+        />
         <Input
           label="Number prefix"
+          hint="One to four capital letters that start each application number, such as BP."
           value={body.prefix}
+          maxLength={4}
           onChange={(e) => set({ prefix: e.target.value.toUpperCase() })}
         />
         <Pick
-          label="Pay fees"
+          label="Fees are paid"
+          hint="The fee schedule can also charge at renewal or with notice."
           value={body.payTiming}
-          options={[
-            ['at_intake', 'At intake'],
-            ['at_approval', 'At approval'],
-          ]}
-          onChange={(e) => set({ payTiming: e.target.value as 'at_intake' })}
+          options={PAY_TIMING}
+          onChange={(e) => set({ payTiming: e.target.value as ApplicationTypeBody['payTiming'] })}
         />
       </div>
-      <FieldGroup name="classification" label="Classification" errors={errors}>
+      <FieldGroup name="classification" label="Kind of proceeding" errors={errors}>
         <Pick
-          label="Proceeding classification"
+          label="Kind of proceeding"
+          hint="Sets the state law deadlines, notices and board steps this type follows."
           value={body.classification ?? ''}
           options={[
             ['', 'Choose one'],
@@ -74,111 +82,26 @@ export function ApplicationTypeEditor({
             const chosen = classifications.find((c) => c.key === e.target.value)
             set({
               classification:
-                e.target.value === '' ? undefined : (e.target.value as 'nh.building_permit'),
+                e.target.value === ''
+                  ? undefined
+                  : (e.target.value as ApplicationTypeBody['classification']),
               bindings: [...new Set([...body.bindings, ...(chosen?.mandatoryRuleKeys ?? [])])],
             })
           }}
         />
       </FieldGroup>
-      <FieldGroup name="references" label="Configuration this type uses" errors={errors}>
-        <div className="grid grid-cols-3 gap-3">
-          <Input
-            label="Form key"
-            value={body.formKey}
-            onChange={(e) => set({ formKey: e.target.value })}
-          />
-          <Input
-            label="Fee schedule key"
-            value={body.feeScheduleKey}
-            onChange={(e) => set({ feeScheduleKey: e.target.value })}
-          />
-          <Input
-            label="Condition library key"
-            value={body.conditionLibraryKey}
-            onChange={(e) => set({ conditionLibraryKey: e.target.value })}
-          />
-        </div>
-        <ListInput
-          label="Checklist keys (comma separated)"
-          values={body.checklistKeys}
-          onValues={(next) => set({ checklistKeys: next })}
-          separator={/,/}
-        />
-        <ListInput
-          label="Template keys (comma separated)"
-          values={body.templateKeys}
-          onValues={(next) => set({ templateKeys: next })}
-          separator={/,/}
-        />
-      </FieldGroup>
-      <FieldGroup name="bindings" label="Bindings" errors={errors}>
-        <p className="text-sm text-muted-foreground">
-          Rules this type is bound to. Rules required by the classification are always on.
-        </p>
-        {offered.map((rule) => {
-          const locked = mandatory.has(rule.key)
-          return (
-            <Check
-              key={rule.key}
-              label={rule.label}
-              checked={locked || body.bindings.includes(rule.key)}
-              disabled={locked}
-              onChange={(checked) =>
-                set({
-                  bindings: checked
-                    ? [...body.bindings, rule.key]
-                    : body.bindings.filter((b) => b !== rule.key),
-                })
-              }
-            />
-          )
-        })}
-      </FieldGroup>
-      <FieldGroup name="workflow" label="Workflow" errors={errors}>
-        <Check
-          label="Staff may issue straight from submitted"
-          checked={body.workflow.allowsDirectIssue}
-          onChange={(checked) =>
-            set({ workflow: { ...body.workflow, allowsDirectIssue: checked } })
-          }
-        />
-        <Pick
-          label="Closes on"
-          value={body.workflow.closesOn}
-          options={[
-            ['final_inspection_passed', 'Final inspection passed'],
-            ['certificate_of_occupancy', 'Certificate of occupancy'],
-          ]}
-          onChange={(e) =>
-            set({
-              workflow: { ...body.workflow, closesOn: e.target.value as 'final_inspection_passed' },
-            })
-          }
-        />
-        <ListInput
-          label="Sub-steps (one per line: state:key:label)"
-          values={body.workflow.substeps.map((x) => `${x.state}:${x.key}:${x.label}`)}
-          separator={/\n/}
-          multiline
-          onValues={(lines) =>
-            set({
-              workflow: {
-                ...body.workflow,
-                substeps: lines.map((l) => {
-                  const [state = '', key = '', ...label] = l.split(':')
-                  return {
-                    state: state.trim() as 'under_review',
-                    key: key.trim(),
-                    label: label.join(':').trim(),
-                  }
-                }),
-              },
-            })
-          }
-        />
-      </FieldGroup>
+      <ReferenceFields body={body} set={set} errors={errors} />
+      <WorkflowSummary body={body} errors={errors} />
+      <RuleFields
+        offered={offered}
+        mandatory={mandatory}
+        bindings={body.bindings}
+        set={set}
+        errors={errors}
+      />
       <Area
-        label="Attestation text"
+        label="Applicant statement"
+        hint="The applicant confirms this statement before they submit."
         rows={3}
         value={body.attestationText}
         onChange={(e) => set({ attestationText: e.target.value })}
