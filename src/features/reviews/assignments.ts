@@ -1,5 +1,5 @@
 import { and, eq, isNull } from 'drizzle-orm'
-import type { DbOrTx } from '@/db/client'
+import type { DbOrTx, Tx } from '@/db/client'
 import { applications, reviewAssignments, reviewComments, userRoles, users } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { isReviewer } from '@/features/access/roles'
@@ -133,45 +133,41 @@ export type ReviewLockError = 'forbidden' | 'already_signed_off' | 'application_
 interface OwnAssignment {
   id: string
   applicationId: string
-  status: string
-  applicationState: string
 }
 
-async function ownActiveAssignment(
-  db: DbOrTx,
-  actor: Actor,
-  assignmentId: string,
-): Promise<OwnAssignment | null> {
-  if (!isReviewer(actor)) return null
-  const [row] = await db
-    .select({
-      id: reviewAssignments.id,
-      applicationId: reviewAssignments.applicationId,
-      status: reviewAssignments.status,
-      applicationState: applications.state,
-    })
-    .from(reviewAssignments)
-    .innerJoin(applications, eq(applications.id, reviewAssignments.applicationId))
-    .where(
-      and(
-        eq(reviewAssignments.id, assignmentId),
-        eq(reviewAssignments.reviewerUserId, actor.userId),
-        isNull(reviewAssignments.removedAt),
-      ),
-    )
-  return row ?? null
+function ownActive(actor: Actor, assignmentId: string) {
+  return and(
+    eq(reviewAssignments.id, assignmentId),
+    eq(reviewAssignments.reviewerUserId, actor.userId),
+    isNull(reviewAssignments.removedAt),
+  )
 }
 
-async function openAssignment(
-  db: DbOrTx,
+async function lockOpenAssignment(
+  tx: Tx,
   actor: Actor,
   assignmentId: string,
 ): Promise<Result<OwnAssignment, ReviewLockError>> {
-  const mine = await ownActiveAssignment(db, actor, assignmentId)
-  if (mine === null) return err('forbidden')
-  if (isTerminalState(mine.applicationState)) return err('application_closed')
-  if (mine.status === 'signed_off') return err('already_signed_off')
-  return ok(mine)
+  if (!isReviewer(actor)) return err('forbidden')
+  const [owned] = await tx
+    .select({ applicationId: reviewAssignments.applicationId })
+    .from(reviewAssignments)
+    .where(ownActive(actor, assignmentId))
+  if (owned === undefined) return err('forbidden')
+  const [app] = await tx
+    .select({ state: applications.state })
+    .from(applications)
+    .where(eq(applications.id, owned.applicationId))
+    .for('update')
+  const [row] = await tx
+    .select({ status: reviewAssignments.status })
+    .from(reviewAssignments)
+    .where(ownActive(actor, assignmentId))
+    .for('update')
+  if (app === undefined || row === undefined) return err('forbidden')
+  if (isTerminalState(app.state)) return err('application_closed')
+  if (row.status === 'signed_off') return err('already_signed_off')
+  return ok({ id: assignmentId, applicationId: owned.applicationId })
 }
 
 export async function addReviewComment(
@@ -181,10 +177,10 @@ export async function addReviewComment(
   signal: AbortSignal,
 ): Promise<Result<void, ReviewLockError>> {
   signal.throwIfAborted()
-  const open = await openAssignment(db, actor, input.assignmentId)
-  if (!open.ok) return open
-  const mine = open.value
   return await transactionResult(db, async (tx) => {
+    const open = await lockOpenAssignment(tx, actor, input.assignmentId)
+    if (!open.ok) return open
+    const mine = open.value
     await tx.insert(reviewComments).values({ assignmentId: mine.id, body: input.body })
     await tx
       .update(reviewAssignments)
@@ -212,10 +208,10 @@ export async function signOffReview(
   signal: AbortSignal,
 ): Promise<Result<void, ReviewLockError>> {
   signal.throwIfAborted()
-  const open = await openAssignment(db, actor, input.assignmentId)
-  if (!open.ok) return open
-  const mine = open.value
   return await transactionResult(db, async (tx) => {
+    const open = await lockOpenAssignment(tx, actor, input.assignmentId)
+    if (!open.ok) return open
+    const mine = open.value
     await tx
       .update(reviewAssignments)
       .set({ status: 'signed_off', signedOffAt: new Date() })

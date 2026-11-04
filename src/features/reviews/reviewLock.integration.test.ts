@@ -52,4 +52,13 @@ describe('a finished review', () => {
     expect(await comment(assignmentId)).toEqual({ ok: false, error: 'application_closed' })
     expect(await signOff(assignmentId)).toEqual({ ok: false, error: 'application_closed' })
   })
+
+  it('lets exactly one of several simultaneous sign-offs through', async () => {
+    const assignmentId = await assignmentOn('submitted')
+    const results = await Promise.all(Array.from({ length: 12 }, () => signOff(assignmentId)))
+    expect(results.filter((r) => r.ok)).toHaveLength(1)
+    expect(results.filter((r) => !r.ok)).toEqual(
+      Array.from({ length: 11 }, () => ({ ok: false, error: 'already_signed_off' })),
+    )
+  })
 })

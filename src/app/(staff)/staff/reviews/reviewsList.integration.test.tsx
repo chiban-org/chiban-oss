@@ -73,6 +73,14 @@ beforeAll(async () => {
     signal,
   )
   numbers.set('stranger', stranger.number)
+  const finished = await makeApplication(handle.db, world, { state: 'closed' })
+  await assignReviewer(
+    handle.db,
+    world.staff,
+    { applicationId: finished.applicationId, reviewerUserId: world.reviewer.userId },
+    signal,
+  )
+  numbers.set('finished', finished.number)
   state.actor = world.reviewer
 })
 afterAll(async () => {
@@ -104,7 +112,7 @@ describe('/staff/reviews for a reviewer', () => {
     for (const header of ['Application', 'Project', 'Status', 'Comments due']) {
       expect(head).toContain(`${header}<`)
     }
-    expect(order(html, ['late', 'soon', 'undated', 'done', 'stranger'])).toEqual([
+    expect(order(html, ['late', 'soon', 'undated', 'done', 'stranger', 'finished'])).toEqual([
       'soon',
       'late',
       'undated',
@@ -121,8 +129,11 @@ describe('/staff/reviews for a reviewer', () => {
     expect(tab(html, 'Open')).toContain('>3</span>')
     expect(tab(html, 'Signed off')).toContain('>1</span>')
     expect(tab(html, 'Signed off')).toContain('href="/staff/reviews?tab=signed_off"')
+    expect(tab(html, 'Closed')).toContain('>1</span>')
     const signed = await render({ tab: 'signed_off' })
-    expect(order(signed, ['late', 'soon', 'undated', 'done'])).toEqual(['done'])
+    expect(order(signed, ['late', 'soon', 'undated', 'done', 'finished'])).toEqual(['done'])
+    const closed = await render({ tab: 'closed' })
+    expect(order(closed, ['late', 'soon', 'undated', 'done', 'finished'])).toEqual(['finished'])
   })
 
   it('sorts from the column headers', async () => {

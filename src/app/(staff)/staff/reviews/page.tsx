@@ -21,6 +21,7 @@ export const dynamic = 'force-dynamic'
 const EMPTY: Readonly<Record<ReviewTab, string>> = {
   open: 'No reviews are waiting on you. New assignments show up here.',
   signed_off: 'You have not signed off on any review yet.',
+  closed: 'No application finished before you signed off.',
 }
 
 export default async function ReviewsPage({
