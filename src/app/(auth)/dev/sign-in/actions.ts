@@ -27,5 +27,5 @@ export async function devSignInAction(formData: FormData): Promise<void> {
     ...sessionCookieOptions(),
     maxAge: 7 * 24 * 60 * 60,
   })
-  redirect(parsed.data.kind === 'staff' ? '/staff/account' : '/')
+  redirect(parsed.data.kind === 'staff' ? '/staff' : '/')
 }

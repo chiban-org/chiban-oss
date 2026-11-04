@@ -38,6 +38,7 @@ const { default: ReviewsPage } = await import('@/app/(staff)/staff/reviews/page'
 const { default: InspectionsPage } = await import('@/app/(staff)/staff/inspections/page')
 const { default: DayPage } = await import('@/app/(staff)/staff/inspections/day/page')
 const { default: PaymentsPage } = await import('@/app/(staff)/staff/payments/page')
+const { default: CounterPage } = await import('@/app/(staff)/staff/counter/page')
 const { default: ApplicationPage } = await import(
   '@/app/(staff)/staff/applications/[applicationId]/page'
 )
@@ -87,6 +88,13 @@ describe('section pages refuse with one permission page', () => {
   it('an inspector gets the permission page on payments', async () => {
     await actAs('inspector')
     expect(await html(PaymentsPage(noSearch))).toContain(NO_PERMISSION)
+  })
+
+  it('the counter refuses with the shared permission page and a way back to the start page', async () => {
+    await actAs('reviewer')
+    const body = await html(CounterPage(noSearch))
+    expect(body).toContain(`${NO_PERMISSION} to issue permits at the counter.`)
+    expect(body).toContain('href="/staff"')
   })
 
   it('a record by id gives the permission page, and none of the record, to someone who may not see it', async () => {

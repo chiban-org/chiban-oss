@@ -49,5 +49,5 @@ export async function signInAction(_prev: SignInState, formData: FormData): Prom
     ...sessionCookieOptions(),
     maxAge: 7 * 24 * 60 * 60,
   })
-  redirect('/staff/account')
+  redirect('/staff')
 }

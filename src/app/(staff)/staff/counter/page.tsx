@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { ParcelSearchHotkey } from '@/components/counter/ParcelSearchHotkey'
 import { QuickIssueForm } from '@/components/counter/QuickIssueForm'
 import { PageHeader } from '@/components/layout/PageHeader'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { Button } from '@/components/ui/button'
 import { parcels } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -97,14 +98,7 @@ export default async function CounterPage({ searchParams }: Props) {
   const allowed =
     (await hasCapability(ctx.db, ctx.actor.userId, 'permit.issue', ctx.signal)) &&
     (await hasCapability(ctx.db, ctx.actor.userId, 'payment.collect', ctx.signal))
-  if (!allowed) {
-    return (
-      <main>
-        <h1>Counter</h1>
-        <p role="alert">You do not have permission to issue permits at the counter.</p>
-      </main>
-    )
-  }
+  if (!allowed) return <NoPermission title="Counter" action="issue permits at the counter" />
   const types = await listDirectIssueTypes(ctx.db, ctx.signal)
   const selectedType = types.find((t) => t.key === type)
   const hits = q.trim().length >= 2 ? await searchParcels(ctx.db, { q }, ctx.signal) : []
