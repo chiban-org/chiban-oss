@@ -29,8 +29,7 @@ function renderMulti(hits: PickedParcel[]) {
     </form>,
   )
   const hidden = () =>
-    view.container.querySelector<HTMLInputElement>('input[type="hidden"][name="children"]')
-      ?.value ?? null
+    view.container.querySelector<HTMLInputElement>('input[name="children"]')?.value ?? null
   return { hidden }
 }
 

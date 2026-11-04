@@ -111,7 +111,7 @@ describe('unresolved records page', () => {
   it('links each record through a parcel search picker that submits parcelRef', async () => {
     const html = renderToStaticMarkup(await UnresolvedPage())
     expect(html.match(/role="combobox"/g)).toHaveLength(2)
-    expect(html.match(/<input type="hidden" name="parcelRef" value=""/g)).toHaveLength(2)
+    expect(html.match(/<input[^>]*name="parcelRef"[^>]*>/g)).toHaveLength(2)
     expect(html).toContain('Parcel for Deed for Map 9 Lot 99')
   })
 

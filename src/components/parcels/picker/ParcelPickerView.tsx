@@ -11,7 +11,8 @@ import {
   type PickerChoice,
   type PickerFieldProps,
 } from './pickerChoice'
-import { useFormReset } from './useFormReset'
+import { SubmittedField } from './SubmittedField'
+import { useSubmittedValue } from './useSubmittedValue'
 
 export interface ParcelPickerProps extends PickerFieldProps {
   labelHidden?: boolean
@@ -33,17 +34,22 @@ export function ParcelPickerView({
   const id = useId()
   const hintId = hint === undefined ? undefined : `${id}-hint`
   const inputRef = useRef<HTMLInputElement>(null)
-  const hiddenRef = useRef<HTMLInputElement>(null)
   const [chosen, setChosen] = useState<PickerChoice | null>(initial)
   const refocus = useRef(false)
-  useFormReset(hiddenRef, () => setChosen(initial))
+  const fieldRef = useSubmittedValue(chosen === null ? '' : choiceValue(chosen), () =>
+    setChosen(initial),
+  )
   useEffect(() => {
     if (refocus.current && chosen === null) inputRef.current?.focus()
     refocus.current = false
   }, [chosen])
   const body = (
     <>
-      <input ref={hiddenRef} type="hidden" name={name} value={chosen ? choiceValue(chosen) : ''} />
+      <SubmittedField
+        fieldRef={fieldRef}
+        name={name}
+        initialValue={initial === null ? '' : choiceValue(initial)}
+      />
       {chosen === null ? (
         <ParcelCombobox
           id={id}

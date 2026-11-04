@@ -11,7 +11,8 @@ import {
   type PickerChoice,
   type PickerFieldProps,
 } from './pickerChoice'
-import { useFormReset } from './useFormReset'
+import { SubmittedField } from './SubmittedField'
+import { useSubmittedValue } from './useSubmittedValue'
 
 export interface ParcelMultiPickerProps extends PickerFieldProps {
   initial?: PickerChoice[]
@@ -29,9 +30,8 @@ export function ParcelMultiPickerView({
   const id = useId()
   const hintId = hint === undefined ? undefined : `${id}-hint`
   const inputRef = useRef<HTMLInputElement>(null)
-  const hiddenRef = useRef<HTMLInputElement>(null)
   const [chosen, setChosen] = useState<PickerChoice[]>(initial)
-  useFormReset(hiddenRef, () => setChosen(initial))
+  const fieldRef = useSubmittedValue(chosen.map(choiceValue).join(' '), () => setChosen(initial))
   const add = (choice: PickerChoice) => {
     const value = choiceValue(choice)
     setChosen((list) => (list.some((c) => choiceValue(c) === value) ? list : [...list, choice]))
@@ -42,7 +42,11 @@ export function ParcelMultiPickerView({
   }
   return (
     <Field label={label} htmlFor={id} hint={hint} hintId={hintId}>
-      <input ref={hiddenRef} type="hidden" name={name} value={chosen.map(choiceValue).join(' ')} />
+      <SubmittedField
+        fieldRef={fieldRef}
+        name={name}
+        initialValue={initial.map(choiceValue).join(' ')}
+      />
       {chosen.length === 0 ? null : (
         <ul className="m-0 grid list-none gap-2 p-0">
           {chosen.map((choice) => (

@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ParcelPickerView } from '@/components/parcels/picker/ParcelPickerView'
+import { restoreSubmittedValues } from '@/components/useFormAction'
 import type { PickedParcel } from '@/features/parcels/parcelPick'
 
 afterEach(cleanup)
@@ -40,8 +41,7 @@ function renderPicker(
       <ParcelPickerView name="parcelRef" label="Parcel ID" search={search} {...extra} />
     </form>,
   )
-  const hidden = () =>
-    view.container.querySelector('input[type="hidden"][name="parcelRef"]') as HTMLInputElement
+  const hidden = () => view.container.querySelector('input[name="parcelRef"]') as HTMLInputElement
   return { submitted, hidden, form: view.container.querySelector('form') as HTMLFormElement }
 }
 
@@ -132,8 +132,23 @@ describe('ParcelPickerView', () => {
     const { hidden, form } = renderPicker(fakeSearch([HERON]))
     fireEvent.change(box(), { target: { value: 'Heron' } })
     fireEvent.click((await screen.findAllByRole('option'))[0] as HTMLElement)
-    fireEvent(form, new Event('reset'))
-    await waitFor(() => expect(hidden().value).toBe(''))
+    act(() => form.reset())
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Change parcel' })).toBeNull())
+    expect(hidden().value).toBe('')
     expect(box().value).toBe('')
+  })
+
+  it('keeps the choice when a failed save resets the form and restores what was sent', async () => {
+    const { hidden, form } = renderPicker(fakeSearch([HERON]))
+    fireEvent.change(box(), { target: { value: 'Heron' } })
+    fireEvent.click((await screen.findAllByRole('option'))[0] as HTMLElement)
+    const sent = Array.from(new FormData(form).entries())
+    act(() => {
+      form.reset()
+      restoreSubmittedValues(form, sent)
+    })
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(hidden().value).toBe(HERON.parcelId)
+    expect(screen.getByRole('button', { name: 'Change parcel' })).toBeTruthy()
   })
 })
