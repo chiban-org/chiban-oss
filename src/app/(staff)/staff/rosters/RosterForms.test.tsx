@@ -93,7 +93,7 @@ describe('roster Edit dialogs', () => {
 
   it('adds a roster from an empty form that asks for the parcel', () => {
     const dialog = open(<AddAssociation today="2026-11-04" />, 'Add association')
-    expect(field('Parcel ID of the condominium').value).toBe('')
+    expect(field('Parcel of the condominium').value).toBe('')
     expect(field('Roster current as of').value).toBe('2026-11-04')
     expect(dialog.textContent).toContain('use Edit on its row')
   })
