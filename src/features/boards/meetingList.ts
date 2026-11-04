@@ -43,8 +43,8 @@ export interface MeetingListPage {
 
 type MeetingGroup = 'boards' | 'kinds' | 'agendas'
 
-const HEARINGS = sql<number>`(select count(*)::int from hearings h where h.meeting_id = ${m.id})`
-const AGENDA = sql<AgendaState>`coalesce((select a.status from agendas a where a.meeting_id = ${m.id}), 'none')`
+const HEARINGS = sql<number>`(select count(*)::int from hearings h where h.meeting_id = ${m}.id)`
+const AGENDA = sql<AgendaState>`coalesce((select a.status from agendas a where a.meeting_id = ${m}.id), 'none')`
 
 const SORT_COLUMNS = {
   date: m.meetingDate,
