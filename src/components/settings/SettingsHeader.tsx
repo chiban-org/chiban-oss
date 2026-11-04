@@ -30,7 +30,7 @@ export function SettingsHeader({
             <Link href={back.href}>{back.label}</Link>
           </p>
         )}
-        <h1 className="m-0 mb-1">{title}</h1>
+        <h1 className="m-0 mb-1 [overflow-wrap:anywhere]">{title}</h1>
         <p className="m-0 text-muted-foreground">
           {versioned ? `${lead} ${VERSIONED_LINE}` : lead}
         </p>

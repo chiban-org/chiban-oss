@@ -68,6 +68,7 @@ export type FeeStage = (typeof FEE_STAGES)[number]
 export const FeeScheduleBodySchema = z
   .object({
     key: z.string().min(1),
+    label: z.string().optional(),
     lines: z
       .array(
         z.object({

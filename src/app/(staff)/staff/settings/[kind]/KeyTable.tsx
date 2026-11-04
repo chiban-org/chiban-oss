@@ -21,7 +21,6 @@ export function KeyTable({
   all: readonly KeyRow[]
   view: KeyListView
 }) {
-  const named = all.some((row) => row.label !== null)
   const path = `/staff/settings/${kind}`
   const { rows, chips } = arrangeKeyRows(path, all, view)
   const links = sortLinks(path, view.params, KEY_SORT, view.sort)
@@ -36,11 +35,10 @@ export function KeyTable({
           <p className="px-5 py-8">Nothing here matches these filters.</p>
         ) : (
           <table className="w-full text-sm">
-            <caption className="sr-only">By key, A to Z.</caption>
+            <caption className="sr-only">By name, A to Z.</caption>
             <thead>
               <tr>
-                <SortHeader label="Key" link={links.key} />
-                {named ? <SortHeader label="Name" link={links.label} /> : null}
+                <SortHeader label="Name" link={links.label} />
                 <SortHeader label="Published" link={links.published} />
                 <SortHeader label="Draft" link={links.draft} />
               </tr>
@@ -50,10 +48,9 @@ export function KeyTable({
                 <tr key={row.key}>
                   <td>
                     <Link href={`/staff/settings/${kind}/${encodeURIComponent(row.key)}`}>
-                      {row.key}
+                      {row.label ?? row.key}
                     </Link>
                   </td>
-                  {named ? <td>{row.label}</td> : null}
                   <td>
                     {row.publishedVersion === null
                       ? 'Not published'

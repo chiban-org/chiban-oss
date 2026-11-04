@@ -1,7 +1,7 @@
-import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
+import { RestoreVersion } from '@/components/config/RestoreVersion'
 import { VersionHistory } from '@/components/config/VersionHistory'
 import { type SettingsBackLink, SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -14,7 +14,16 @@ import {
   isPinnedKind,
   isSingletonKind,
 } from '@/features/config/kinds'
-import { getEditorState } from '@/features/config/settingsViews'
+import {
+  choicesFromRows,
+  keyWords,
+  numberQuestionsFor,
+  REFERENCE_KINDS,
+  type ReferenceChoices,
+  type ReferenceKind,
+} from '@/features/config/referenceChoices'
+import { loadReferenceRows } from '@/features/config/referenceRows'
+import { getEditorState, labelOfBody } from '@/features/config/settingsViews'
 import { loadFormBuilderData } from '@/features/forms/formBuilderData'
 import { loadTownProfile } from '@/features/pdf/documentFrame'
 import { listReviewerChoices } from '@/features/reviews/reviewerView'
@@ -33,15 +42,27 @@ const SINGLETON_HOMES: Partial<Record<ConfigKind, SettingsBackLink>> = {
   town_profile: { href: '/staff/settings/town-profile', label: 'Town profile' },
 }
 
-function headerFor(kind: ConfigKind, key: string) {
+function headerFor(kind: ConfigKind, title: string) {
   if (isSingletonKind(kind)) {
     return { title: KIND_LABELS[kind], lead: KIND_DESCRIPTIONS[kind], back: SINGLETON_HOMES[kind] }
   }
   return {
-    title: key,
-    lead: 'Edit the draft, then publish it when it is ready.',
+    title,
+    lead: KIND_DESCRIPTIONS[kind],
     back: { href: `/staff/settings/${kind}`, label: KIND_LABELS[kind] },
   }
+}
+
+function itemTitle(
+  kind: ConfigKind,
+  key: string,
+  body: unknown,
+  references: ReferenceChoices,
+): string {
+  const listed = (REFERENCE_KINDS as readonly string[]).includes(kind)
+    ? references[kind as ReferenceKind].find((c) => c.key === key)?.label
+    : undefined
+  return listed ?? labelOfBody(kind, body) ?? keyWords(key)
 }
 
 async function builderContextFor(
@@ -79,7 +100,13 @@ export default async function SettingsKeyPage({ params }: Props) {
   const state = await getEditorState(ctx.db, kind, key, ctx.signal)
   const town = await getTownSettings(ctx.db, ctx.signal)
   const timeZone = town.ok ? town.value.timeZone : 'America/New_York'
-  const context = editorContext(await listReviewerChoices(ctx.db))
+  const referenceRows = await loadReferenceRows(ctx.db, ctx.signal)
+  const references = choicesFromRows(referenceRows)
+  const context = {
+    ...editorContext(await listReviewerChoices(ctx.db)),
+    references,
+    feeQuestions: kind === 'fee_schedule' ? numberQuestionsFor(referenceRows, key) : [],
+  }
   const isForm = kind === 'form'
   const builderContext = await builderContextFor(ctx, kind, key, {
     base: context,
@@ -88,14 +115,10 @@ export default async function SettingsKeyPage({ params }: Props) {
   })
   return (
     <main data-wide={isForm || kind === 'template' ? true : undefined}>
-      <SettingsHeader {...headerFor(kind, key)} versioned={isPinnedKind(kind)} />
-      {kind === 'application_type' ? (
-        <p>
-          <Link href={`/staff/settings/workflow/${encodeURIComponent(key)}`}>
-            Edit the workflow steps
-          </Link>
-        </p>
-      ) : null}
+      <SettingsHeader
+        {...headerFor(kind, itemTitle(kind, key, state.body, references))}
+        versioned={isPinnedKind(kind)}
+      />
       <ConfigEditorForm
         kind={kind}
         configKey={key}
@@ -110,11 +133,12 @@ export default async function SettingsKeyPage({ params }: Props) {
         rows={state.versions}
         timeZone={timeZone}
         rollbackSlot={(row) => (
-          <ActionForm action={rollbackAction} submitLabel={`Restore version ${row.version}`}>
-            <input type="hidden" name="kind" value={kind} />
-            <input type="hidden" name="key" value={key} />
-            <input type="hidden" name="toVersion" value={row.version} />
-          </ActionForm>
+          <RestoreVersion
+            kind={kind}
+            configKey={key}
+            version={row.version}
+            pinned={isPinnedKind(kind)}
+          />
         )}
       />
     </main>

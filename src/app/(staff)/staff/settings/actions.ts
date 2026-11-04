@@ -5,8 +5,10 @@ import type { PreviewActionResult } from '@/components/config/WorkflowEditor'
 import { adoptStarter } from '@/features/config/adoptStarter'
 import { applyStarterPaths } from '@/features/config/applyStarterPaths'
 import { type ConfigIssue, type ConfigKind, isConfigKind } from '@/features/config/kinds'
+import { newItemKey } from '@/features/config/newItemKey'
 import { publishConfig, rollbackConfig } from '@/features/config/publish'
 import { fieldErrorsFor } from '@/features/config/publishErrors'
+import { listKeysOfKind } from '@/features/config/settingsViews'
 import { skeletonBody } from '@/features/config/skeletons'
 import { saveDraft } from '@/features/config/store'
 import { previewWorkflow } from '@/features/workflow/previewWorkflow'
@@ -110,10 +112,24 @@ export async function adoptStarterAction(formData: FormData): Promise<ActionResu
 
 export async function startDraftAction(formData: FormData): Promise<ActionResult> {
   const kind = kindOf(formData)
-  const key = text(formData, 'key')
+  let key = ''
   const result = await runStaffAction(formData, async ({ db, actor, signal }) => {
-    if (kind === null || key === '') return INVALID
-    const saved = await saveDraft(db, actor, { kind, key, body: skeletonBody(kind, key) }, signal)
+    if (kind === null) return INVALID
+    const taken = new Set((await listKeysOfKind(db, kind, signal)).map((row) => row.key))
+    if (kind === 'town_rule_setting') {
+      key = text(formData, 'key')
+      if (key === '') return INVALID
+      if (taken.has(key)) return { ok: true, message: 'This rule is already set.' }
+    } else {
+      const chosen = newItemKey(text(formData, 'label'), text(formData, 'key'), taken)
+      if (!chosen.ok) {
+        return { ok: false, error: chosen.message, fieldErrors: { [chosen.field]: chosen.message } }
+      }
+      key = chosen.key
+    }
+    const label = text(formData, 'label').trim() || key
+    const body = skeletonBody(kind, key, label)
+    const saved = await saveDraft(db, actor, { kind, key, body }, signal)
     if (saved.ok) return { ok: true, message: 'Draft created.' }
     return refusedDraft(saved.error)
   })

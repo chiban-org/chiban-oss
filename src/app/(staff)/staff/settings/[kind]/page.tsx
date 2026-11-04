@@ -5,6 +5,8 @@ import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { emptyKindCopy, KIND_DESCRIPTIONS, KIND_LABELS } from '@/features/config/kindLabels'
 import { isConfigKind, isPinnedKind, isSingletonKind, SINGLETON_KEY } from '@/features/config/kinds'
+import { choicesFromRows, namedKeyRows } from '@/features/config/referenceChoices'
+import { loadReferenceRows } from '@/features/config/referenceRows'
 import { readKeyListView } from '@/features/config/settingsTableView'
 import { listKeysOfKind } from '@/features/config/settingsViews'
 import type { RawSearchParams } from '@/features/dataTable/params'
@@ -24,10 +26,12 @@ export default async function SettingsKindPage({ params, searchParams }: Props) 
   if (isSingletonKind(kind)) redirect(`/staff/settings/${kind}/${SINGLETON_KEY}`)
   const ctx = await recordStaffContext()
   if (ctx === null) return <NoPermission title="Settings" action="change settings" />
-  const [all, canEdit] = await Promise.all([
+  const [listed, canEdit, referenceRows] = await Promise.all([
     listKeysOfKind(ctx.db, kind, ctx.signal),
     hasCapability(ctx.db, ctx.actor.userId, 'config.edit', ctx.signal),
+    loadReferenceRows(ctx.db, ctx.signal),
   ])
+  const all = namedKeyRows(listed, kind, choicesFromRows(referenceRows))
   const action = canEdit ? <NewConfigItem kind={kind} /> : undefined
   const empty = all.length === 0
   return (

@@ -2,16 +2,22 @@ import { NH_INSPECTION_SETTINGS_DEFAULT } from '@packs/nh/starters'
 import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettings'
 import { EMPTY_REGIONAL_CONTACTS } from '@/features/boards/regionalContacts'
 import type { ConfigKind } from '@/features/config/kinds'
+import { prefixFromLabel } from '@/features/config/newItemKey'
+import { slugKey } from '@/features/forms/fieldKeys'
 import { EMPTY_REVIEW_ROUTES } from '@/features/reviews/routesSchema'
 import { defaultDoc } from '@/features/templates/kinds/documentKinds'
 import { TOWN_PROFILE_SKELETON } from '@/features/town/profileSchema'
 
-export function skeletonBody(kind: ConfigKind, key: string): unknown {
+function inspectionTypeFor(label: string): string {
+  return slugKey(label.replace(/\s*inspection\s*$/i, ''))
+}
+
+export function skeletonBody(kind: ConfigKind, key: string, label: string = key): unknown {
   switch (kind) {
     case 'form':
       return {
         key,
-        label: key,
+        label,
         fields: [
           { key: 'description', label: 'Description of work', type: 'textarea', required: true },
         ],
@@ -19,28 +25,30 @@ export function skeletonBody(kind: ConfigKind, key: string): unknown {
     case 'fee_schedule':
       return {
         key,
+        label,
         lines: [{ code: 'fee', label: 'Fee', due: 'at_approval', expr: { op: 'flat', cents: 0 } }],
       }
     case 'template':
-      return { key, label: key, kind: 'letter', format: 'doc', doc: defaultDoc('letter') }
+      return { key, label, kind: 'letter', format: 'doc', doc: defaultDoc('letter') }
     case 'condition_library':
       return {
         key,
-        conditions: [{ code: 'CONDITION', text: 'Describe the condition', blocksIssuance: false }],
+        label,
+        conditions: [{ code: 'C1', text: 'Describe the condition', blocksIssuance: false }],
       }
     case 'inspection_checklist':
       return {
         key,
-        inspectionType: 'final',
-        label: key,
-        final: true,
+        inspectionType: inspectionTypeFor(label),
+        label,
+        final: false,
         items: [{ key: 'item-1', label: 'Describe the check', required: true }],
       }
     case 'town_rule_setting':
       return { ruleKey: key, value: 0 }
     case 'local_code_amendment':
       return {
-        title: key,
+        title: label,
         codeSection: 'Section',
         adoptingAuthority: 'Governing body',
         adoptedOn: '2027-01-01',
@@ -66,8 +74,8 @@ export function skeletonBody(kind: ConfigKind, key: string): unknown {
     case 'application_type':
       return {
         key,
-        label: key,
-        prefix: 'XX',
+        label,
+        prefix: prefixFromLabel(label),
         formKey: 'form-key',
         feeScheduleKey: 'fee-key',
         conditionLibraryKey: 'conditions-key',

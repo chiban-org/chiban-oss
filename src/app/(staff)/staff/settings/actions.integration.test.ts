@@ -159,7 +159,7 @@ describe('settings actions', () => {
     )
     expect(result).toMatchObject({
       ok: false,
-      fieldErrors: { bindings: expect.stringContaining('nh.bp.decision') },
+      fieldErrors: { bindings: expect.stringContaining('Building permit decision deadline') },
     })
   })
 

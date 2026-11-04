@@ -1,3 +1,4 @@
+import type { NamedChoice, ReferenceChoices } from '@/features/config/referenceChoices'
 import type { FormBuilderData } from '@/features/forms/formReferences'
 import { loadPack } from '@/features/packs/loadPack'
 import { policyText, ruleSummary } from '@/features/packs/ruleSummary'
@@ -20,10 +21,13 @@ export interface EditorContext {
     {
       label: string
       policy: string
+      settable?: boolean
       unit: string | null
       citation: { label: string; url: string | null }
     }
   >
+  references?: ReferenceChoices
+  feeQuestions?: NamedChoice[]
   form?: FormBuilderData
   template?: TemplateBuilderData
 }
@@ -66,6 +70,9 @@ export function editorContext(reviewers: { id: string; name: string }[] = []): E
     townRules[rule.key] = {
       label: summary.label,
       policy: policyText(rule.overridePolicy),
+      settable:
+        rule.overridePolicy.policy !== 'fixed' &&
+        rule.overridePolicy.policy !== 'locally_prohibited',
       unit: summary.unit,
       citation: summary.citation,
     }

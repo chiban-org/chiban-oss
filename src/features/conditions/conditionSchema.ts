@@ -3,6 +3,7 @@ import { z } from 'zod'
 export const ConditionLibraryBodySchema = z
   .object({
     key: z.string().min(1),
+    label: z.string().optional(),
     conditions: z
       .array(
         z.object({

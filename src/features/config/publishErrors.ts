@@ -1,7 +1,9 @@
 import type { PublishError } from '@/features/config/publishChecks'
+import { loadPack } from '@/features/packs/loadPack'
 import { lockedSource } from '@/features/templates/doc/lockedSources'
 import { mergeFieldLabel } from '@/features/templates/mergeFieldLabels'
 import { workflowIssueText } from '@/features/workflow/issueText'
+import { words } from '@/lib/words'
 
 export type FieldErrors = Record<string, string>
 
@@ -14,6 +16,23 @@ const POLICY_COPY: Record<string, string> = {
 }
 
 const FORM_FIELD = '_form'
+
+const REFERENCE_NAMES: ReadonlyMap<string, string> = new Map([
+  ['form', 'the form'],
+  ['fee_schedule', 'the fee schedule'],
+  ['condition_library', 'the conditions'],
+  ['inspection_checklist', 'the checklist'],
+  ['template', 'the template'],
+])
+
+function referenceText(reference: string): string {
+  const [kind = '', ...rest] = reference.split(':')
+  return `${REFERENCE_NAMES.get(kind) ?? kind} ${rest.join(':')}`
+}
+
+function ruleLabel(key: string): string {
+  return loadPack().rules.find((r) => r.key === key)?.label ?? key
+}
 
 function fieldNames(names: string[]): string {
   return names.map(mergeFieldLabel).join(', ')
@@ -52,18 +71,22 @@ type ObjectError = Exclude<PublishError, string>
 function fromObjectError(error: ObjectError): FieldErrors {
   if ('invalid' in error) return fromIssues(error.invalid)
   if ('missingClassification' in error) {
-    return { classification: 'Choose a classification before publishing.' }
+    return { classification: 'Choose the kind of proceeding before publishing.' }
   }
   if ('missingBindings' in error) {
-    return { bindings: `Missing mandatory rules: ${error.missingBindings.join(', ')}.` }
+    return {
+      bindings: `Turn on the rules this kind of proceeding requires: ${error.missingBindings.map(ruleLabel).join(', ')}.`,
+    }
   }
   if ('unknownBindings' in error) {
     return {
-      bindings: `These rules are not in the jurisdiction pack: ${error.unknownBindings.join(', ')}.`,
+      bindings: `These rules no longer exist in state law and need to be turned off: ${error.unknownBindings.join(', ')}.`,
     }
   }
   if ('missingReferences' in error) {
-    return { references: `Publish these first: ${error.missingReferences.join(', ')}.` }
+    return {
+      references: `Pick a published item, or publish these first: ${error.missingReferences.map(referenceText).join(', ')}.`,
+    }
   }
   if ('unknownMergeFields' in error) {
     return { body: `Unknown merge fields: ${error.unknownMergeFields.join(', ')}.` }
@@ -85,12 +108,12 @@ function fromObjectError(error: ObjectError): FieldErrors {
   }
   if ('finalChecklistCount' in error) {
     return {
-      checklists: `Choose exactly one final inspection checklist. This type names ${error.finalChecklistCount}.`,
+      checklists: `Tick exactly one final inspection. ${error.finalChecklistCount === 0 ? 'None is ticked now.' : `${String(error.finalChecklistCount)} are ticked now.`}`,
     }
   }
   if ('unknownFieldRefs' in error) {
     return {
-      lines: `Fee lines use fields the form does not have: ${error.unknownFieldRefs.join(', ')}.`,
+      lines: `The fee schedule counts answers this type's form does not ask as numbers: ${error.unknownFieldRefs.map((f) => words(f)).join(', ')}. Change the fee or the form.`,
     }
   }
   if ('workflowIssues' in error) {

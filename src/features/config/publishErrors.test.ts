@@ -22,19 +22,21 @@ describe('fieldErrorsFor', () => {
     expect(fieldErrorsFor({ invalid: issues }).workflow).toBe('Name every step.')
   })
 
-  it('puts missing bindings next to the bindings field and names them', () => {
+  it('puts missing bindings next to the bindings field and names them in words', () => {
     const e = fieldErrorsFor({ missingBindings: ['nh.bp.decision'] })
-    expect(e.bindings).toContain('nh.bp.decision')
+    expect(e.bindings).toContain('Building permit decision deadline')
+    expect(e.bindings).not.toContain('nh.bp.decision')
   })
 
   it('maps each publish error to the field that caused it', () => {
     expect(fieldErrorsFor({ missingClassification: true }).classification).toBeDefined()
     expect(fieldErrorsFor({ unknownBindings: ['x'] }).bindings).toContain('x')
     expect(fieldErrorsFor({ missingReferences: ['form:bp-form'] }).references).toContain(
-      'form:bp-form',
+      'the form bp-form',
     )
+    expect(fieldErrorsFor({ finalChecklistCount: 2 }).checklists).toContain('2 are ticked')
     expect(fieldErrorsFor({ unknownMergeFields: ['nope'] }).body).toContain('nope')
-    expect(fieldErrorsFor({ unknownFieldRefs: ['ghost'] }).lines).toContain('ghost')
+    expect(fieldErrorsFor({ unknownFieldRefs: ['ghost_area'] }).lines).toContain('Ghost area')
   })
 
   it('maps policy violations to the value or adoption record', () => {

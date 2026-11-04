@@ -252,7 +252,7 @@ describe('staff settings pages', () => {
     )
     state.actor = clerk
     expect(key).toContain('Version history')
-    expect(key).toContain('Bindings')
+    expect(key).toContain('State law rules')
     expect(key).toContain('Building or demolition permit starter, version 2')
     expect(key).not.toContain('nh.starter.building')
   })

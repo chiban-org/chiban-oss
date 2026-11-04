@@ -75,7 +75,7 @@ describe('settings kind page', () => {
 
   it('heads the page with its title, what it controls, and the versioning line', async () => {
     const html = await render(await staffActor(handle.db, 'admin'))
-    expect(html).toContain('<h1 class="m-0 mb-1">Application types</h1>')
+    expect(html).toContain('>Application types</h1>')
     expect(html).toContain('The kinds of application the town accepts')
     expect(html).toContain('Open applications keep the version they started under.')
     expect(html).not.toContain('data-wide')
@@ -111,10 +111,12 @@ describe('settings kind page', () => {
     expect(html).not.toContain('Set a town rule')
   })
 
-  it('names each key and states the default order', async () => {
+  it('lists each item by name and states the default order', async () => {
     const html = await render(await staffActor(handle.db, 'staff'))
-    expect(html).toContain('Electrical permit')
-    expect(html).toContain('By key, A to Z.')
+    expect(html).toMatch(
+      /<a [^>]*href="\/staff\/settings\/application_type\/EL"[^>]*>Electrical permit<\/a>/,
+    )
+    expect(html).toContain('By name, A to Z.')
   })
 
   it('keeps one published choice at a time', async () => {
