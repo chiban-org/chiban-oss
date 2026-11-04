@@ -21,7 +21,7 @@ export default async function ParcelIdRedirectPage({ params }: IdRedirectPagePro
       <ul>
         {route.choices.map((c) => (
           <li key={c.parcelId}>
-            <Link href={`/parcels/${c.parcelId}`} className="tap-target text-action underline">
+            <Link href={`/parcels/${c.parcelId}`} className="tap-target">
               {c.displayId ?? 'Parcel'}
             </Link>
           </li>

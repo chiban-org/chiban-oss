@@ -72,7 +72,7 @@ export default async function StaffParcelsPage({ searchParams }: ParcelsPageProp
             Best matches first. Click a column heading to sort.
           </p>
           <MoreMatchesNotice more={more} />
-          <div className="toolbar mb-5">
+          <div className="toolbar">
             <QuickFilters
               label="Quick filters"
               groups={hitChipGroups(params, hitFacets(hits, filters))}

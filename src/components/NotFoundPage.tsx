@@ -1,6 +1,6 @@
 import Link from 'next/link'
 
-const LINK = 'tap-target inline-flex items-center text-lg underline'
+const LINK = 'tap-target inline-flex items-center text-lg'
 
 export function NotFoundPage() {
   return (

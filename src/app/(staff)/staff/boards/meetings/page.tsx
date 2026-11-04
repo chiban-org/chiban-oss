@@ -118,9 +118,9 @@ export default async function MeetingsPage({
   const pageLink = (offset: number | null) =>
     offset === null ? null : pageHref(MEETINGS_PATH, params, String(offset))
   return (
-    <main data-wide="" className="space-y-6">
+    <main data-wide="">
       <h1>Meetings</h1>
-      <p className="max-w-prose">{leadText(when === 'upcoming', list.usualLocation)}</p>
+      <p>{leadText(when === 'upcoming', list.usualLocation)}</p>
       <FilterTabs label="Meetings" tabs={tabs} />
       <div className="toolbar">
         <QuickFilters

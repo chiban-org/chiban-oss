@@ -34,7 +34,7 @@ export default async function VerifyPage({ searchParams }: VerifyPageProps) {
       <main className="mx-auto max-w-md p-6">
         <h1>Sign in</h1>
         <p role="alert">That link is no longer valid. Request a new one.</p>
-        <a href="/sign-in" className="tap-target inline-flex items-center text-action underline">
+        <a href="/sign-in" className="tap-target inline-flex items-center">
           Back to sign in
         </a>
       </main>

@@ -19,9 +19,9 @@ export default async function RostersPage() {
   const view = await loadRostersView(ctx.db, ctx.actor, ctx.signal)
   if (view === null) return <NoPermission title="Rosters" action="keep the abutter rosters" />
   return (
-    <main data-wide="" className="space-y-8">
+    <main data-wide="">
       <h1>Rosters</h1>
-      <p className="max-w-prose text-muted-foreground">
+      <p>
         These lists are kept by the town and feed every abutter list. Review each one on a schedule
         so the lists drawn from them can be trusted.
       </p>
@@ -136,7 +136,7 @@ export default async function RostersPage() {
         <p>
           {'An administrator changes these in Settings. '}
           {view.canEditRegionalContacts ? (
-            <Link href="/staff/settings/regional_contacts" className="text-action underline">
+            <Link href="/staff/settings/regional_contacts">
               Change the regional notice contacts
             </Link>
           ) : null}

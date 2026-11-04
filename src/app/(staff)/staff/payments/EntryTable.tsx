@@ -34,11 +34,7 @@ export function EntryTable({
             <td>{e.applicationNumbers.join(', ')}</td>
             <td>
               {e.receiptId === null ? null : (
-                <Link
-                  {...NEW_TAB}
-                  href={`/staff/receipts/${e.receiptId}`}
-                  className="text-action underline"
-                >
+                <Link {...NEW_TAB} href={`/staff/receipts/${e.receiptId}`}>
                   {`Receipt ${e.receiptNumber ?? ''}`}
                 </Link>
               )}

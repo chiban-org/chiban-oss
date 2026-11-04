@@ -27,10 +27,7 @@ export default async function StaffMapPage() {
       />
       <p className="mt-3">
         Select a parcel on the map to open its record, or{' '}
-        <a href="/staff/parcels" className="text-action underline">
-          search for a parcel
-        </a>
-        .
+        <a href="/staff/parcels">search for a parcel</a>.
       </p>
     </main>
   )

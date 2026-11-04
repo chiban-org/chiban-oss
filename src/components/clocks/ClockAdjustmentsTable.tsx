@@ -43,7 +43,7 @@ export function ClockAdjustmentsTable({
   links?: Partial<Record<ClockSortKey, SortLink>>
 }) {
   return (
-    <div className="table-panel my-4">
+    <div className="table-panel">
       <table className="w-full min-w-[48rem] text-sm">
         <thead>
           <tr>
@@ -59,10 +59,7 @@ export function ClockAdjustmentsTable({
           {rows.map((row) => (
             <tr key={row.id}>
               <td className="whitespace-nowrap">
-                <Link
-                  href={`/staff/applications/${row.applicationId}`}
-                  className="text-action underline"
-                >
+                <Link href={`/staff/applications/${row.applicationId}`}>
                   {row.applicationNumber}
                 </Link>
               </td>

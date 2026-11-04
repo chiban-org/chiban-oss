@@ -29,7 +29,7 @@ export default async function NewLineageEventPage({ searchParams }: NewLineagePa
   return (
     <main>
       <h1>Record lineage event</h1>
-      <p className="text-muted-foreground">
+      <p>
         The effective date is the legal date. Parents that are not also children are retired on that
         date. Child IDs that Chiban does not know yet are created without a shape.
       </p>

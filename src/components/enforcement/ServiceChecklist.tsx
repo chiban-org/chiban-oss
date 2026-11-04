@@ -108,11 +108,7 @@ export function ServiceChecklist({
                   : `, by ${e.row.serverName}${e.row.serverRole === null ? '' : ` (${SERVER_ROLE_LABELS[e.row.serverRole]})`}`}
                 {e.row.newspaper === null ? '' : `, ${e.row.newspaper}`}
                 {'. '}
-                <a
-                  {...NEW_TAB}
-                  href={`/api/documents/${e.row.proofDocumentId}`}
-                  className="text-action underline"
-                >
+                <a {...NEW_TAB} href={`/api/documents/${e.row.proofDocumentId}`}>
                   Proof of service
                 </a>
               </li>

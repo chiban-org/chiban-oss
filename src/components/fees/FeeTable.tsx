@@ -8,7 +8,7 @@ export function FeeTable({ title, computation }: { title: string; computation: F
       <h3 className="text-base font-semibold">{title}</h3>
       <table className="w-full text-sm">
         <thead>
-          <tr className="border-b text-left">
+          <tr>
             <th>Fee</th>
             <th>Amount</th>
             <th>How it was worked out</th>
@@ -16,7 +16,7 @@ export function FeeTable({ title, computation }: { title: string; computation: F
         </thead>
         <tbody>
           {computation.lines.map((line) => (
-            <tr key={line.code} className="border-b align-top">
+            <tr key={line.code} className="align-top">
               <td>{line.label}</td>
               <td>{amountText(line)}</td>
               <td>
@@ -31,7 +31,7 @@ export function FeeTable({ title, computation }: { title: string; computation: F
         </tbody>
         <tfoot>
           <tr>
-            <th className="text-left text-ink">Total</th>
+            <th className="text-ink">Total</th>
             <td colSpan={2}>
               {computation.totalCents === null
                 ? 'Total not yet known'

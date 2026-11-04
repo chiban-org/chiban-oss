@@ -49,10 +49,7 @@ export function KeyTable({
               {rows.map((row) => (
                 <tr key={row.key}>
                   <td>
-                    <Link
-                      href={`/staff/settings/${kind}/${encodeURIComponent(row.key)}`}
-                      className="text-action underline"
-                    >
+                    <Link href={`/staff/settings/${kind}/${encodeURIComponent(row.key)}`}>
                       {row.key}
                     </Link>
                   </td>

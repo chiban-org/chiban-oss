@@ -8,7 +8,7 @@ import { formatCivilDate } from '@/lib/formatDate'
 export const dynamic = 'force-dynamic'
 
 const TIMEOUT_MS = 10_000
-const LINK = 'tap-target inline-flex items-center text-base underline'
+const LINK = 'tap-target inline-flex items-center text-base'
 
 export default async function ReleasePage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params

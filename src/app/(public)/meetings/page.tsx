@@ -5,7 +5,7 @@ import { loadPublicBoardRecords, type PublicPage } from '@/features/hearings/pub
 export const dynamic = 'force-dynamic'
 
 const TIMEOUT_MS = 10_000
-const LINK = 'tap-target inline-flex items-center underline'
+const LINK = 'tap-target inline-flex items-center'
 const PAGE = /^[1-9]\d{0,5}$/
 
 interface Props {

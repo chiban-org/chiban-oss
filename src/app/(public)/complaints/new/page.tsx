@@ -26,11 +26,7 @@ export default async function NewComplaintPage() {
       <ComplaintForm />
       {anonymous ? (
         <p className="max-w-prose">
-          Prefer not to give your name?{' '}
-          <Link href="/report-anonymously" className="underline">
-            Report anonymously
-          </Link>
-          .
+          Prefer not to give your name? <Link href="/report-anonymously">Report anonymously</Link>.
         </p>
       ) : null}
     </main>

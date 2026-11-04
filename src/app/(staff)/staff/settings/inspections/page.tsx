@@ -25,15 +25,13 @@ export default async function InspectionSettingsPage() {
   const targets = await loadInspectorTargets(ctx.db, ctx.signal)
   const tenant = await connectedTenant(ctx.db, ctx.signal)
   return (
-    <main className="space-y-6">
+    <main>
       <SettingsHeader
         title="Inspection schedule"
         lead="When inspections can be booked, and where each inspector's calendar invites go."
       />
       <p>
-        <Link href="/staff/inspections" className="text-action underline">
-          Open the schedule board
-        </Link>
+        <Link href="/staff/inspections">Open the schedule board</Link>
       </p>
       {canEdit ? (
         <ConfigEditorForm

@@ -24,11 +24,7 @@ export function CourtForms({ order, detail }: { order: OrderDetail; detail: Case
         {order.steps.map((s) => (
           <li key={s.id}>
             {`${formatCivilDate(s.occurredOn)}: ${COURT_STEP_LABELS[s.kind]}, ${s.court}${s.docket === null ? '' : `, docket ${s.docket}`}${s.judgmentOutcome === null ? '' : `, ${JUDGMENT_OUTCOME_LABELS[s.judgmentOutcome].toLowerCase()}`}. `}
-            <a
-              {...NEW_TAB}
-              href={`/api/documents/${s.documentId}`}
-              className="text-action underline"
-            >
+            <a {...NEW_TAB} href={`/api/documents/${s.documentId}`}>
               Open document
             </a>
           </li>

@@ -25,7 +25,7 @@ export function HeldRunAccept({
       <input type="hidden" name="runId" value={run.id} />
       <p className="m-0">
         {`${held} held owner ${held === 1 ? 'change' : 'changes'} from the `}
-        <Link href={`/staff/gis/imports/${run.id}`} className="text-action underline">
+        <Link href={`/staff/gis/imports/${run.id}`}>
           {`${layerLabel(run.layerKey)} import of ${formatInstantLong(run.startedAt, timeZone)}`}
         </Link>
       </p>

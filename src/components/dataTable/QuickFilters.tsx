@@ -99,7 +99,7 @@ export function QuickFilters({
         ),
       )}
       {clearHref === null ? null : (
-        <Link href={clearHref} className="ml-1 text-sm text-action underline">
+        <Link href={clearHref} className="ml-1 text-sm">
           Clear all
         </Link>
       )}

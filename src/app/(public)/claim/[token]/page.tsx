@@ -6,7 +6,7 @@ import { claimProjectAction } from './actions'
 export const dynamic = 'force-dynamic'
 
 const TIMEOUT_MS = 10_000
-const LINK = 'tap-target inline-flex items-center text-action underline'
+const LINK = 'tap-target inline-flex items-center'
 const TOKEN_SHAPE = /^[A-Za-z0-9_-]{20,100}$/
 
 export default async function ClaimPage({ params }: { params: Promise<{ token: string }> }) {

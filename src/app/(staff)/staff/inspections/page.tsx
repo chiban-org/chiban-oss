@@ -24,7 +24,7 @@ export default async function ScheduleBoardPage({
     <TakeRequestSection data={await loadTakeRequest(ctx, number, reinspect)} board={board} />
   )
   return (
-    <main className="space-y-6">
+    <main>
       <h1>Inspections</h1>
       {board.inspectors.some((i) => i.calendarKind === 'graph') ? <GraphStubNotice /> : null}
       {asked ? takeRequest : null}
@@ -35,9 +35,7 @@ export default async function ScheduleBoardPage({
       />
       {asked ? null : takeRequest}
       <p>
-        <Link href="/staff/inspections/day" className="text-action underline">
-          Open an inspector day list
-        </Link>
+        <Link href="/staff/inspections/day">Open an inspector day list</Link>
       </p>
     </main>
   )

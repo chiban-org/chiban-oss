@@ -173,10 +173,7 @@ export function InspectionsPanel({
       </ul>
       {canSchedule && data.takesRequests ? (
         <p>
-          <Link
-            href={`/staff/inspections?number=${encodeURIComponent(number)}`}
-            className="text-action underline"
-          >
+          <Link href={`/staff/inspections?number=${encodeURIComponent(number)}`}>
             Take an inspection request for this permit
           </Link>
         </p>

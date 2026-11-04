@@ -54,7 +54,7 @@ export default async function PortalInspectionsPage({
       <p>
         <Link
           href={`/portal/applications/${applicationId}`}
-          className="tap-target inline-flex items-center underline"
+          className="tap-target inline-flex items-center"
         >
           Back to the application
         </Link>
@@ -108,7 +108,7 @@ export default async function PortalInspectionsPage({
               view.reinspectableIds.includes(row.id) ? (
                 <Link
                   href={`/portal/applications/${applicationId}/inspections?reinspect=${row.id}`}
-                  className="tap-target inline-flex items-center underline"
+                  className="tap-target inline-flex items-center"
                 >
                   Request a reinspection
                 </Link>

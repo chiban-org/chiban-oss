@@ -9,7 +9,7 @@ import { requirePortalContext } from '@/server/requirePortal'
 export const dynamic = 'force-dynamic'
 
 const BOARD_NAMES = { planning_board: 'Planning Board', zba: 'Zoning Board of Adjustment' } as const
-const LINK = 'tap-target inline-flex items-center underline'
+const LINK = 'tap-target inline-flex items-center'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export default async function BoardMeetingPage({

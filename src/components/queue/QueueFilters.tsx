@@ -21,7 +21,7 @@ interface Props {
 
 export function QueueFilters({ search, carried, chips, clearHref }: Props) {
   return (
-    <div className="toolbar mb-5 flex flex-wrap items-center gap-x-3 gap-y-3">
+    <div className="toolbar flex flex-wrap items-center gap-x-3 gap-y-3">
       <form
         method="get"
         role="search"

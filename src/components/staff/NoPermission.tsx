@@ -17,7 +17,7 @@ export function NoPermission({
   wayOut?: WayOut
 }) {
   return (
-    <main className="space-y-4">
+    <main>
       <h1>{title}</h1>
       <p role="alert">{`You do not have permission to ${action}.`}</p>
       <p>

@@ -67,7 +67,7 @@ export default async function StaffUnresolvedPage() {
   return (
     <main data-wide="">
       <h1>Unresolved records</h1>
-      <p className="mb-5 text-muted-foreground">
+      <p>
         These records name a parcel ID that is not in Chiban. They link automatically after an
         import brings the parcel in, or you can link them by hand. Newest first.
       </p>

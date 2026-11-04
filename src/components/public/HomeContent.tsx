@@ -6,7 +6,8 @@ import { Label } from '@/components/ui/label'
 
 export type HomeAudience = 'visitor' | 'resident' | 'staff'
 
-const TASK_LINK = 'tap-target inline-flex items-center font-serif text-2xl font-semibold'
+const TASK_LINK =
+  'tap-target inline-flex items-center font-serif text-2xl font-semibold no-underline hover:underline'
 
 function Task({ href, title, children }: { href: string; title: string; children: ReactNode }) {
   return (

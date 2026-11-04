@@ -148,7 +148,7 @@ export default async function PreservationQueuePage() {
     ...waiting.map((r) => r.documentId),
   ])
   return (
-    <main data-wide="" className="space-y-6">
+    <main data-wide="">
       <h1>Preservation incomplete</h1>
       <p>These documents have no archival copy yet. Fix the file or try again.</p>
       <IncompleteTable rows={queue.value.rows} links={links} />

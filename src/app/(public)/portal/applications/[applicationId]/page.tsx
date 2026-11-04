@@ -101,7 +101,7 @@ function MoneyHistory({ view }: { view: PortalApplicationView }) {
                 <a
                   {...NEW_TAB}
                   href={`/portal/applications/${view.applicationId}/receipts/${entry.receiptId}`}
-                  className="tap-target inline-flex items-center underline"
+                  className="tap-target inline-flex items-center"
                 >{`Receipt ${entry.receiptNumber ?? ''}`}</a>
               </>
             )}
@@ -198,7 +198,7 @@ export default async function PortalApplicationPage({
                 <Link
                   {...NEW_TAB}
                   href={`/api/documents/${d.documentId}`}
-                  className="tap-target inline-flex items-center underline"
+                  className="tap-target inline-flex items-center"
                 >
                   {d.title}
                 </Link>
@@ -219,7 +219,7 @@ export default async function PortalApplicationPage({
           <h2 id="inspections-heading">Inspections</h2>
           <Link
             href={`/portal/applications/${view.applicationId}/inspections`}
-            className="tap-target inline-flex items-center underline"
+            className="tap-target inline-flex items-center"
           >
             Request or review inspections
           </Link>

@@ -79,7 +79,7 @@ export function ContractorSection({
         />
         <TextField label="Note" name="licenseNote" />
       </div>
-      <a href={lookup.url} {...NEW_TAB} className="text-action underline">
+      <a href={lookup.url} {...NEW_TAB}>
         {lookup.label}
       </a>
     </section>

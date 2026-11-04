@@ -73,9 +73,7 @@ function Citation({ clock }: ClockProps) {
   return clock.citation.url === null ? (
     clock.citation.label
   ) : (
-    <a href={clock.citation.url} className="text-action underline">
-      {clock.citation.label}
-    </a>
+    <a href={clock.citation.url}>{clock.citation.label}</a>
   )
 }
 

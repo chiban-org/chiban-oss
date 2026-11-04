@@ -78,9 +78,7 @@ export function ImportUploadForm({ layerKey, primary }: ImportUploadFormProps) {
         <p role="status" className="text-sm">
           {error}
           {runId === null ? null : (
-            <Link href={`/staff/gis/imports/${runId}`} className="text-action underline">
-              Import finished. View the run report.
-            </Link>
+            <Link href={`/staff/gis/imports/${runId}`}>Import finished. View the run report.</Link>
           )}
         </p>
       </div>

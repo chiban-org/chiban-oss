@@ -39,7 +39,7 @@ export default async function PublicParcelsPage({ searchParams }: PublicParcelsP
               <li key={hit.parcelId} className="py-3">
                 <Link
                   href={`/parcels/${hit.parcelId}`}
-                  className="tap-target text-lg font-semibold text-action underline"
+                  className="tap-target text-lg font-semibold"
                 >
                   {hit.displayId ?? 'Parcel'}
                 </Link>

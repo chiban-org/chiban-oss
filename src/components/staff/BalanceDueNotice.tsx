@@ -17,12 +17,7 @@ export function BalanceDueNotice({ notices, linkApplications = false }: BalanceD
           {linkApplications ? (
             <>
               {'. '}
-              <Link
-                href={`/staff/applications/${n.applicationId}`}
-                className="text-action underline"
-              >
-                {n.number}
-              </Link>
+              <Link href={`/staff/applications/${n.applicationId}`}>{n.number}</Link>
             </>
           ) : null}
         </p>

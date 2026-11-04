@@ -74,7 +74,7 @@ export default async function ApplicationsPage({
   return (
     <main data-wide="">
       <h1>Applications</h1>
-      <p className="mb-5">
+      <p>
         Needs action lists applications that are submitted or under review, and any other with a
         deadline running or overdue, soonest due first. The other tabs show the rest, drafts
         included.

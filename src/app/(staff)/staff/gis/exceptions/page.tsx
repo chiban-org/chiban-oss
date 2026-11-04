@@ -78,11 +78,9 @@ export default async function StaffExceptionsPage({ searchParams }: ExceptionsPa
   return (
     <main data-wide="">
       <h1>Import exceptions</h1>
-      <p className="text-muted-foreground">
-        Rows an import could not apply on its own. Newest first.
-      </p>
+      <p>Rows an import could not apply on its own. Newest first.</p>
       <FilterTabs label="Status" tabs={tabs} />
-      <div className="toolbar my-3 flex flex-wrap items-center justify-between gap-3">
+      <div className="toolbar flex flex-wrap items-center justify-between gap-3">
         <QuickFilters label="Quick filters" groups={chips} clearHref={clear} />
         <SortBar options={sortOptions} />
       </div>

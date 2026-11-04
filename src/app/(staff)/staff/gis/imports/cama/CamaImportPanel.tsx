@@ -173,9 +173,7 @@ export function CamaImportPanel({
       <p role="status" className="text-sm">
         {message}{' '}
         {runId === null ? null : (
-          <Link href={`/staff/gis/imports/${runId}`} className="text-action underline">
-            View the run report.
-          </Link>
+          <Link href={`/staff/gis/imports/${runId}`}>View the run report.</Link>
         )}
       </p>
     </form>

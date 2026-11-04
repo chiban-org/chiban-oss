@@ -57,7 +57,7 @@ function InspectorLinks({
             <Link
               href={href(date, i.userId)}
               aria-current={i.userId === selected ? 'page' : undefined}
-              className="inline-flex min-h-11 items-center text-action underline aria-[current=page]:font-semibold aria-[current=page]:text-ink aria-[current=page]:no-underline"
+              className="inline-flex min-h-11 items-center aria-[current=page]:font-semibold aria-[current=page]:text-ink aria-[current=page]:no-underline"
             >
               {i.name}
             </Link>

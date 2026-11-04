@@ -33,9 +33,7 @@ function OrderSummary({ order, detail }: { order: OrderDetail; detail: CaseDetai
   return (
     <p className="m-0">
       {`${order.rule.label} (`}
-      <a href={order.rule.citation.url ?? undefined} className="text-action underline">
-        {order.rule.citation.label}
-      </a>
+      <a href={order.rule.citation.url ?? undefined}>{order.rule.citation.label}</a>
       {`). Corrective action: ${row.correctiveAction === '' ? 'not written yet' : row.correctiveAction.replace(/\.$/, '')}`}
       {row.correctiveDeadline === null ? '' : `, due ${formatCivilDate(row.correctiveDeadline)}`}
       {row.ceaseImmediately ? '. The order requires the activity to stop immediately' : ''}
@@ -43,7 +41,7 @@ function OrderSummary({ order, detail }: { order: OrderDetail; detail: CaseDetai
         ? '.'
         : `. Issued ${formatCivilDate(row.issuedOn)}${row.issuedBy === null ? '' : ` by ${detail.names[row.issuedBy] ?? 'staff'}`}.`}{' '}
       {row.documentId === null ? null : (
-        <a {...NEW_TAB} href={`/api/documents/${row.documentId}`} className="text-action underline">
+        <a {...NEW_TAB} href={`/api/documents/${row.documentId}`}>
           Open order
         </a>
       )}

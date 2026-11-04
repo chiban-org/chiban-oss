@@ -27,9 +27,7 @@ export function SettingsHeader({
       <div className="max-w-[75ch] min-w-0 flex-1 basis-80">
         {back === undefined ? null : (
           <p className="m-0 mb-1 text-sm">
-            <Link href={back.href} className="text-action underline">
-              {back.label}
-            </Link>
+            <Link href={back.href}>{back.label}</Link>
           </p>
         )}
         <h1 className="m-0 mb-1">{title}</h1>

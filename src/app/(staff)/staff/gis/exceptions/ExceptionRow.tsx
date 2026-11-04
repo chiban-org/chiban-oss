@@ -16,13 +16,7 @@ function RowTitle({ row }: { row: ExceptionRecord }) {
   return (
     <p className="font-semibold">
       {`${exceptionKindLabel(row.kind)}: `}
-      {parcelId === null ? (
-        subject
-      ) : (
-        <Link href={`/staff/parcels/${parcelId}`} className="text-action underline">
-          {subject}
-        </Link>
-      )}
+      {parcelId === null ? subject : <Link href={`/staff/parcels/${parcelId}`}>{subject}</Link>}
     </p>
   )
 }

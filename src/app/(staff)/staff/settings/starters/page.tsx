@@ -26,9 +26,7 @@ export default async function StartersPage() {
       </p>
       <StarterList adopted={new Set(typeKeys.map((k) => k.key))} />
       <p>
-        <Link href="/staff/settings/starters/updates" className="text-action underline">
-          Check adopted starters for updates
-        </Link>
+        <Link href="/staff/settings/starters/updates">Check adopted starters for updates</Link>
       </p>
     </main>
   )

@@ -43,7 +43,7 @@ function FeeTable({ report, sort }: { report: CashReceiptsReport; sort: ScopedSo
       <p className="text-muted-foreground">
         Fees in alphabetical order. Click a column heading to sort.
       </p>
-      <div className="table-panel my-4">
+      <div className="table-panel">
         <table className="w-full min-w-[40rem] text-sm">
           <thead>
             <tr>
@@ -114,7 +114,7 @@ function CheckTable({
       <p className="text-muted-foreground">
         Checks in the order they were taken. Click a column heading to sort.
       </p>
-      <div className="table-panel my-2">
+      <div className="table-panel">
         <table className="w-full text-sm">
           <thead>
             <tr>
@@ -166,7 +166,7 @@ export default async function CashReceiptsPage({
     <main data-wide="">
       <h1>Daily cash receipts</h1>
       <p>{report.townName}</p>
-      <form method="get" className="toolbar no-print my-4 flex flex-wrap items-end gap-3">
+      <form method="get" className="toolbar no-print flex flex-wrap items-end gap-3">
         <TextField label="Date" name="date" type="date" defaultValue={day} />
         {activeSortFields(params, [FEES_SCOPE, CHECKS_SCOPE]).map(([name, value]) => (
           <input key={name} type="hidden" name={name} value={value} />
@@ -178,10 +178,7 @@ export default async function CashReceiptsPage({
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <h2>{formatCivilDate(day)}</h2>
         {report.entryCount === 0 ? null : (
-          <Link
-            href={`/staff/reports/cash-receipts/csv?date=${day}`}
-            className="no-print text-action underline"
-          >
+          <Link href={`/staff/reports/cash-receipts/csv?date=${day}`} className="no-print">
             Download CSV
           </Link>
         )}

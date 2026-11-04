@@ -9,11 +9,7 @@ export function DocumentsList({ documents }: { documents: DocumentListRow[] }) {
       <ul className="space-y-1">
         {documents.map((d) => (
           <li key={d.documentId}>
-            <a
-              {...NEW_TAB}
-              href={`/api/documents/${d.documentId}`}
-              className="text-action underline"
-            >
+            <a {...NEW_TAB} href={`/api/documents/${d.documentId}`}>
               {d.title}
             </a>
           </li>

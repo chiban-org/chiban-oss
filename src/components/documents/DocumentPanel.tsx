@@ -151,10 +151,7 @@ function ManageControls({
           </>
         ) : null}
         {doc.canRedact && doc.originalVersionId !== null ? (
-          <a
-            href={`/staff/records/redact/${doc.originalVersionId}`}
-            className="inline-block text-action underline"
-          >
+          <a href={`/staff/records/redact/${doc.originalVersionId}`} className="inline-block">
             Redact this document
           </a>
         ) : null}
@@ -183,11 +180,7 @@ function DocumentRow({
   return (
     <li className="space-y-2 py-4 first:pt-0 last:pb-0">
       <div className="flex flex-wrap items-center gap-3">
-        <a
-          {...NEW_TAB}
-          href={`/api/documents/${doc.documentId}`}
-          className="font-medium text-action underline"
-        >
+        <a {...NEW_TAB} href={`/api/documents/${doc.documentId}`} className="font-medium">
           {doc.title}
         </a>
         <StatusChip status={chip.status} label={chip.label} />

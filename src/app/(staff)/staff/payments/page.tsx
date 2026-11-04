@@ -134,9 +134,7 @@ export default async function PaymentsPage({
           nextHref={pageLink(entryPage.nextOffset)}
         />
         <p>
-          <Link href="/staff/reports/cash-receipts" className="text-action underline">
-            Daily cash receipts report
-          </Link>
+          <Link href="/staff/reports/cash-receipts">Daily cash receipts report</Link>
         </p>
       </section>
     </main>

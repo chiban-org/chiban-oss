@@ -97,11 +97,7 @@ export function FindingsSection({ detail, can }: { detail: CaseDetail; can: Can 
                 ? 'Receipt not recorded.'
                 : `Received ${formatCivilDate(n.receivedOn)}: ${n.receiptBasis ?? ''}.`}{' '}
               {n.documentId === null ? null : (
-                <a
-                  {...NEW_TAB}
-                  href={`/api/documents/${n.documentId}`}
-                  className="text-action underline"
-                >
+                <a {...NEW_TAB} href={`/api/documents/${n.documentId}`}>
                   Open notice
                 </a>
               )}

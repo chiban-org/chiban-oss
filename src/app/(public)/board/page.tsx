@@ -8,7 +8,7 @@ export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 50
 const BOARD_NAMES = { planning_board: 'Planning Board', zba: 'Zoning Board of Adjustment' } as const
-const LINK = 'tap-target inline-flex items-center underline'
+const LINK = 'tap-target inline-flex items-center'
 
 export default async function BoardHomePage() {
   const ctx = await requirePortalContext('/board')

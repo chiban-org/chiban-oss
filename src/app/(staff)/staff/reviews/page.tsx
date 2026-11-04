@@ -45,12 +45,12 @@ export default async function ReviewsPage({
   return (
     <main data-wide="">
       <h1>Your reviews</h1>
-      <p className="mb-5">
+      <p>
         Applications assigned to you for review, comments due soonest first. Open a review to read
         the documents, comment and sign off.
       </p>
       <FilterTabs label="Reviews" tabs={tabs} />
-      <div className="toolbar my-3 sm:hidden">
+      <div className="toolbar sm:hidden">
         <ReviewSortBar links={links} />
       </div>
       <ReviewTable

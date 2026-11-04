@@ -22,9 +22,7 @@ export default async function SetPasswordPage({
         <h1>{setPasswordTitle(link.purpose)}</h1>
         <p role="alert">{deadLinkCopy(link.state, link.purpose)}</p>
         <p>
-          <Link href="/staff/sign-in" className="text-action underline">
-            Go to staff sign-in
-          </Link>
+          <Link href="/staff/sign-in">Go to staff sign-in</Link>
         </p>
       </main>
     )

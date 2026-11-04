@@ -29,13 +29,7 @@ const PAGE_SIZE = 50
 const KIND = { document: 'Document', application_snapshot: 'Application snapshot' } as const
 
 function Citation({ citation }: { citation: TombstoneRow['citation'] }) {
-  return citation.url === null ? (
-    citation.label
-  ) : (
-    <a href={citation.url} className="text-action underline">
-      {citation.label}
-    </a>
-  )
+  return citation.url === null ? citation.label : <a href={citation.url}>{citation.label}</a>
 }
 
 export default async function DisposedRecordsPage({
@@ -69,14 +63,14 @@ export default async function DisposedRecordsPage({
   const town = await getTownSettings(ctx.db, ctx.signal)
   const zone = town.ok ? town.value.timeZone : 'America/New_York'
   return (
-    <main data-wide="" className="space-y-6">
+    <main data-wide="">
       <h1>Disposed records</h1>
-      <p className="m-0">
+      <p>
         Each record disposed of under its retention schedule leaves a tombstone: what it was, the
         series that allowed it, and who proposed and approved it. The record itself is gone, so this
         list is read-only. Most recently disposed first.
       </p>
-      <div className="toolbar mt-4">
+      <div className="toolbar">
         <QuickFilters
           label="Quick filters"
           groups={tombstoneChipGroups(params, facets)}
@@ -112,10 +106,7 @@ export default async function DisposedRecordsPage({
                     <Citation citation={r.citation} />
                   </td>
                   <td>
-                    <Link
-                      href={`/staff/records/disposition/${r.batchId}`}
-                      className="text-action underline"
-                    >
+                    <Link href={`/staff/records/disposition/${r.batchId}`}>
                       {formatInstantDate(r.executedAt, zone)}
                     </Link>
                   </td>

@@ -1,0 +1,229 @@
+@layer components {
+  :where(main) > :where(* + *) {
+    margin-top: calc(var(--space-base) * 5);
+  }
+
+  :where(main) > :where(h1) {
+    margin-bottom: calc(var(--space-base) * 1);
+  }
+
+  :where(main) > :where(h1 + p) {
+    margin-top: calc(var(--space-base) * 1);
+    color: var(--muted);
+    max-width: 75ch;
+  }
+
+  :where(main) :where(a:not([data-slot])) {
+    text-decoration-line: underline;
+    text-underline-offset: 0.15em;
+  }
+
+  :where(main) :where(td, th) :where(a:not([data-slot])) {
+    text-decoration-line: none;
+  }
+
+  :where(main) :where(td, th) :where(a:not([data-slot]):hover) {
+    text-decoration-line: underline;
+  }
+
+  :where(main) :where(section):not(:where(section section, [data-plain])) {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius);
+    padding: var(--card-padding);
+    margin-block: calc(var(--space-base) * 5);
+  }
+
+  @media (max-width: 639px) {
+    :where(main) :where(section):not(:where(section section, [data-plain])) {
+      padding: calc(var(--space-base) * 4);
+    }
+  }
+
+  :where(main) :where(section section):not(:first-child) {
+    border-top: 1px solid var(--hairline);
+    padding-top: calc(var(--space-base) * 5);
+    margin-top: calc(var(--space-base) * 5);
+  }
+
+  :where(main section:not([data-plain])) > :where(* + *) {
+    margin-top: calc(var(--space-base) * 3);
+  }
+
+  :where(main section) > :where(h2, h3):first-child {
+    margin-top: 0;
+  }
+
+  :where(main section) > h2 {
+    margin-bottom: calc(var(--space-base) * 3);
+  }
+
+  :where(main section) > :where(h2 + *) {
+    margin-top: calc(var(--space-base) * 4);
+  }
+
+  :where(.staff-shell main form:not([role="search"]))
+    :where(
+      input:not([type="checkbox"], [type="radio"], [type="hidden"]),
+      select,
+      textarea,
+      [data-slot="native-select-wrapper"]
+    ) {
+    max-width: 36rem;
+  }
+
+  :where(.record-body) > :where(section) {
+    margin-block: 0;
+  }
+
+  .record-empty {
+    margin-top: calc(var(--space-base) * 3);
+  }
+
+  .record-empty-title {
+    margin-bottom: calc(var(--space-base) * 2);
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--muted);
+  }
+
+  :where(main) .record-empty > section:not([data-plain]) {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    column-gap: calc(var(--space-base) * 4);
+    row-gap: calc(var(--space-base) * 2);
+    margin: 0;
+    padding: calc(var(--space-base) * 3) calc(var(--space-base) * 5);
+    border-radius: 0;
+  }
+
+  :where(main) .record-empty > section:not(:first-of-type) {
+    border-top: 0;
+  }
+
+  :where(main) .record-empty > .record-empty-title + section {
+    border-top-left-radius: var(--radius);
+    border-top-right-radius: var(--radius);
+  }
+
+  :where(main) .record-empty > section:last-child {
+    border-bottom-left-radius: var(--radius);
+    border-bottom-right-radius: var(--radius);
+  }
+
+  :where(main) .record-empty > section > * {
+    margin: 0;
+  }
+
+  :where(main) .record-empty > section > h2 {
+    flex: 0 0 11rem;
+    font-family: var(--font-body);
+    font-size: var(--text-base);
+    font-weight: 600;
+    letter-spacing: var(--body-tracking);
+  }
+
+  :where(main) .record-empty > section > :not(h2, details, form, ul:empty) {
+    flex: 1 1 16rem;
+    color: var(--muted);
+  }
+
+  :where(main) .record-empty > section > :is(ul:empty, h3, h3 ~ :not(details)) {
+    display: none;
+  }
+
+  :where(main) .record-empty > section > details {
+    margin-left: auto;
+  }
+
+  :where(main) .record-empty > section > details[open] {
+    flex-basis: 100%;
+  }
+
+  .record-item {
+    border-top: 1px solid var(--hairline);
+    padding-top: calc(var(--space-base) * 3);
+  }
+
+  :where(h2, h3) + .record-item,
+  li.record-item:first-child {
+    border-top: 0;
+    padding-top: 0;
+  }
+
+  .table-panel,
+  .toolbar {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius);
+  }
+
+  .table-panel {
+    position: relative;
+    overflow-x: auto;
+  }
+
+  .toolbar {
+    padding: calc(var(--space-base) * 4) calc(var(--space-base) * 5);
+  }
+
+  .table-panel :where(th, td):first-child {
+    padding-inline-start: calc(var(--space-base) * 5);
+  }
+
+  .table-panel :where(th, td):last-child {
+    padding-inline-end: calc(var(--space-base) * 5);
+  }
+
+  .table-panel :where(thead th) {
+    padding-block: calc(var(--space-base) * 3);
+    border-bottom-color: var(--hairline);
+    background: color-mix(in oklab, var(--canvas) 55%, var(--surface));
+  }
+
+  .table-panel :where(tbody tr:hover) {
+    background: color-mix(in oklab, var(--canvas) 60%, var(--surface));
+  }
+
+  .table-panel :where(a) {
+    text-decoration: none;
+  }
+
+  .table-panel :where(a:hover) {
+    text-decoration: underline;
+  }
+
+  .rail-card {
+    background: var(--surface);
+    border: 1px solid var(--hairline);
+    border-radius: var(--radius);
+    padding: calc(var(--space-base) * 5);
+  }
+
+  .rail-card > * + * {
+    margin-top: calc(var(--space-base) * 4);
+  }
+
+  .rail-card :where(form, form button[type="submit"]) {
+    width: 100%;
+  }
+
+  :where(main) :where(table) {
+    width: 100%;
+  }
+
+  :where(main) :where(th, td) {
+    padding-block: calc(var(--space-base) * 2.5);
+    padding-inline-end: calc(var(--space-base) * 4);
+    vertical-align: top;
+  }
+
+  :where(main) :where(thead th) {
+    border-bottom: 1px solid var(--control-border);
+  }
+
+  :where(main) :where(tbody tr + tr) {
+    border-top: 1px solid var(--hairline);
+  }
+}

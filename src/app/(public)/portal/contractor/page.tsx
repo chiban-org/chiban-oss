@@ -42,7 +42,7 @@ export default async function ContractorDashboardPage({
                   <li key={app.applicationId} className="flex flex-wrap items-center gap-3">
                     <Link
                       href={`/portal/applications/${app.applicationId}`}
-                      className="tap-target inline-flex items-center underline"
+                      className="tap-target inline-flex items-center"
                     >{`${app.typeLabel} ${app.number}`}</Link>
                     <StatusChip
                       status={applicationChipStatus(app.state)}
@@ -61,7 +61,7 @@ export default async function ContractorDashboardPage({
       {page.nextCursor === null ? null : (
         <Link
           href={`/portal/contractor?cursor=${encodeURIComponent(page.nextCursor)}`}
-          className="tap-target inline-flex items-center underline"
+          className="tap-target inline-flex items-center"
         >
           Next page
         </Link>

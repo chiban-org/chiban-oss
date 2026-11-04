@@ -13,7 +13,7 @@ export default async function InviteStaffPage() {
     return <NoPermission title="Invite staff" action="manage staff accounts" />
   }
   return (
-    <main className="space-y-6">
+    <main>
       <SettingsHeader
         title="Invite staff"
         lead="We email a link that works once for 7 days. They choose a password and land on their start page, and can add an authenticator app from Account."

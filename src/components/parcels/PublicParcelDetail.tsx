@@ -112,7 +112,7 @@ export function PublicParcelDetail({
             {view.lineage.parents.map((p) => (
               <li key={`p${p.eventId}${p.parcelId}`}>
                 {'Parent lot '}
-                <Link href={`/parcels/${p.parcelId}`} className="tap-target text-action underline">
+                <Link href={`/parcels/${p.parcelId}`} className="tap-target">
                   {p.displayId ?? 'Parcel'}
                 </Link>
                 {`, ${p.eventKind.replaceAll('_', ' ')} effective ${formatCivilDate(p.effectiveDate)}`}
@@ -121,7 +121,7 @@ export function PublicParcelDetail({
             {view.lineage.children.map((c) => (
               <li key={`c${c.eventId}${c.parcelId}`}>
                 {'Child lot '}
-                <Link href={`/parcels/${c.parcelId}`} className="tap-target text-action underline">
+                <Link href={`/parcels/${c.parcelId}`} className="tap-target">
                   {c.displayId ?? 'Parcel'}
                 </Link>
                 {`, ${c.eventKind.replaceAll('_', ' ')} effective ${formatCivilDate(c.effectiveDate)}`}

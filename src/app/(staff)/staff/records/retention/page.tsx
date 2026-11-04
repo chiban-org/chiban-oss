@@ -96,7 +96,7 @@ export default async function RetentionPage({
   const pageLink = (offset: number | null) =>
     offset === null ? null : pageHref(RETENTION_PATH, view.params, String(offset))
   return (
-    <main data-wide="" className="space-y-6">
+    <main data-wide="">
       <h1>Retention</h1>
       <p>
         Records under a retention schedule, by whether they can be disposed of now. Earliest

@@ -37,11 +37,7 @@ export function DueLine({
           `(${rule.citation.label})`
         ) : (
           <>
-            (
-            <a href={rule.citation.url} className="text-action underline">
-              {rule.citation.label}
-            </a>
-            )
+            (<a href={rule.citation.url}>{rule.citation.label}</a>)
           </>
         )}
       </p>

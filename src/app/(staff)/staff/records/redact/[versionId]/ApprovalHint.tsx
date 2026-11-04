@@ -5,13 +5,7 @@ export interface ApprovalHintProps {
 }
 
 function Place({ href, children }: { href: string | null; children: string }) {
-  return href === null ? (
-    children
-  ) : (
-    <a href={href} className="text-action underline">
-      {children}
-    </a>
-  )
+  return href === null ? children : <a href={href}>{children}</a>
 }
 
 export function ApprovalHint({ requestId, recordHref, canPublish }: ApprovalHintProps) {

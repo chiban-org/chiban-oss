@@ -32,9 +32,7 @@ export function PackRules({
                   {summary.citation.url === null ? (
                     summary.citation.label
                   ) : (
-                    <a href={summary.citation.url} className="text-action underline">
-                      {summary.citation.label}
-                    </a>
+                    <a href={summary.citation.url}>{summary.citation.label}</a>
                   )}
                 </td>
                 <td>{summary.policy}</td>

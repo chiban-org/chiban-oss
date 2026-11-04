@@ -13,7 +13,7 @@ const STATUS: Record<DayListRow['status'], { chip: Status; label: string }> = {
   failed: { chip: 'failed', label: 'Failed' },
 }
 
-const LINK = 'inline-flex min-h-11 items-center gap-2 text-action underline'
+const LINK = 'inline-flex min-h-11 items-center gap-2'
 
 function addressText(stop: DayListRow): string | null {
   const address = stop.siteAddress
@@ -67,7 +67,7 @@ function Stop({ stop }: { stop: DayListRow }) {
           )}
           <Link
             href={`/staff/inspections/${stop.inspectionId}`}
-            className="inline-flex min-h-11 items-center font-semibold text-action underline"
+            className="inline-flex min-h-11 items-center font-semibold"
           >
             {`Open ${stop.applicationNumber}`}
           </Link>

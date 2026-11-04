@@ -90,10 +90,7 @@ export default async function SettingsKeyPage({ params }: Props) {
       <SettingsHeader {...headerFor(kind, key)} versioned={isPinnedKind(kind)} />
       {kind === 'application_type' ? (
         <p>
-          <Link
-            href={`/staff/settings/workflow/${encodeURIComponent(key)}`}
-            className="text-action underline"
-          >
+          <Link href={`/staff/settings/workflow/${encodeURIComponent(key)}`}>
             Edit the workflow steps
           </Link>
         </p>

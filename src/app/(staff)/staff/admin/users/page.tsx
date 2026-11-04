@@ -41,7 +41,7 @@ export default async function UsersPage({
   })
   const links = sortLinks(USERS_PATH, params, USER_SORT, sort)
   return (
-    <main data-wide="" className="space-y-6">
+    <main data-wide="">
       <SettingsHeader
         title="Users"
         lead="Staff and board accounts that sign in with a password. Listed by name."

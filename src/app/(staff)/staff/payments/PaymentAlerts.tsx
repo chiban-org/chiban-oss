@@ -8,7 +8,7 @@ type Attempt = PaymentsOverview['unknownAttempts'][number]
 
 function AttemptLink({ attempt }: { attempt: Attempt }) {
   return (
-    <Link href={`/staff/payments/${attempt.id}`} className="text-action underline">
+    <Link href={`/staff/payments/${attempt.id}`}>
       {`${formatCents(attempt.amountCents)} from ${attempt.payerName}`}
     </Link>
   )
@@ -56,10 +56,7 @@ export function PaymentAlerts({
           <ul className="space-y-2">
             {overpayments.map((o) => (
               <li key={o.applicationId}>
-                <Link
-                  href={`/staff/applications/${o.applicationId}`}
-                  className="text-action underline"
-                >
+                <Link href={`/staff/applications/${o.applicationId}`}>
                   {`${o.applicationNumber}: ${formatCents(o.amountCents)}`}
                 </Link>
               </li>

@@ -23,9 +23,7 @@ export function SeriesLine({ series }: { series: PanelDocument['series'] }) {
   return (
     <>
       <span>{`Record series: ${series.label}`}</span>{' '}
-      <a href={series.citation.url} className="text-action underline">
-        {series.citation.label}
-      </a>
+      <a href={series.citation.url}>{series.citation.label}</a>
     </>
   )
 }

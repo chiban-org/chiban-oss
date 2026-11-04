@@ -59,7 +59,7 @@ export default async function AnonymousIntakePage() {
   const open = await intakeOpen(ctx.db, imageRef, APP_VERSION, ctx.signal)
   const findings = (latest?.findings ?? []) as Finding[]
   return (
-    <main className="space-y-6">
+    <main>
       <SettingsHeader
         title="Anonymous intake"
         lead="Whether the public can report a possible violation without giving a name."

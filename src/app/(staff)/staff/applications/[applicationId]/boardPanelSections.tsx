@@ -105,9 +105,7 @@ export function ListSection({ data }: { data: BoardPanelData }) {
         {data.lists.map((l) =>
           data.canOpenLists ? (
             <li key={l.id}>
-              <Link href={`/staff/abutters/${l.id}`} className="text-action underline">
-                {`Version ${l.version}`}
-              </Link>
+              <Link href={`/staff/abutters/${l.id}`}>{`Version ${l.version}`}</Link>
               {`, ${l.statusText}, drawn ${l.drawnText}`}
             </li>
           ) : (

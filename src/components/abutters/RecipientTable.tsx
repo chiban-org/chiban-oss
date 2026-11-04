@@ -9,13 +9,11 @@ interface Props {
 export function RecipientTable({ rows, renderControls }: Props) {
   if (rows.length === 0) return <p>Nobody is on this list yet.</p>
   return (
-    <table className="my-3 w-full text-sm">
+    <table className="w-full text-sm">
       <caption className="sr-only">People who receive notice</caption>
       <thead>
-        <tr className="border-b text-left">
-          <th scope="col" className="py-2">
-            Name and mailing address
-          </th>
+        <tr>
+          <th scope="col">Name and mailing address</th>
           <th scope="col">Receives notice as</th>
           <th scope="col">Where the information came from</th>
           {renderControls === undefined ? null : <th scope="col">Action</th>}
@@ -23,8 +21,8 @@ export function RecipientTable({ rows, renderControls }: Props) {
       </thead>
       <tbody>
         {rows.map((row) => (
-          <tr key={row.id} className="border-b align-top">
-            <td className="py-2">
+          <tr key={row.id} className="align-top">
+            <td>
               <p className="m-0 font-medium">{row.name === '' ? 'Name not on record' : row.name}</p>
               <p className="m-0">{row.mailingAddress ?? 'No mailing address on record'}</p>
               {row.statusText === 'Complete' ? null : (

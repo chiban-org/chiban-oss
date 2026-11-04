@@ -16,7 +16,7 @@ interface RecordsSectionProps {
 
 function ParcelLink({ base, parcelId, label }: { base: string; parcelId: string; label: string }) {
   return (
-    <Link href={`${base}${parcelId}`} className="tap-target text-action underline">
+    <Link href={`${base}${parcelId}`} className="tap-target">
       {label}
     </Link>
   )
@@ -69,7 +69,7 @@ function RecordTitle({ record }: { record: OwnRecord | AncestralRecord }) {
       {record.href === null ? (
         <span className="font-semibold">{record.title}</span>
       ) : (
-        <Link href={record.href} className="font-semibold text-action underline">
+        <Link href={record.href} className="font-semibold">
           {record.title}
         </Link>
       )}

@@ -38,9 +38,7 @@ export async function TownSettingsPage({ ctx, section, title, lead }: Props) {
         townName={town.ok ? town.value.name : ''}
       />
       <p className="mt-8 text-sm">
-        <Link href="/staff/settings/town_profile/default" className="text-action underline">
-          Version history
-        </Link>
+        <Link href="/staff/settings/town_profile/default">Version history</Link>
       </p>
     </main>
   )

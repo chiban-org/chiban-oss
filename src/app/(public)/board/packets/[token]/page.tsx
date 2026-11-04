@@ -9,7 +9,7 @@ export const dynamic = 'force-dynamic'
 
 const TIMEOUT_MS = 10_000
 const BOARD_NAMES = { planning_board: 'Planning Board', zba: 'Zoning Board of Adjustment' } as const
-const LINK = 'tap-target inline-flex items-center underline'
+const LINK = 'tap-target inline-flex items-center'
 
 export default async function BoardPacketPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params

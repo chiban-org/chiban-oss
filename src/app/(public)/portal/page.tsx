@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 50
 const DEFAULT_ZONE = 'America/New_York'
-const LINK = 'tap-target inline-flex items-center underline'
+const LINK = 'tap-target inline-flex items-center'
 
 function isCoreState(state: string): state is CoreState {
   return (CORE_STATES as readonly string[]).includes(state)

@@ -55,7 +55,7 @@ export function LetterheadPreview({ townName, body }: Props) {
         </div>
       </div>
       <p className="m-0 text-sm">
-        <a href={sampleHref} target="_blank" rel="noreferrer" className="text-action underline">
+        <a href={sampleHref} target="_blank" rel="noreferrer">
           Download sample PDF
         </a>
         <span className="text-muted-foreground">

@@ -146,7 +146,7 @@ describe('holds, preservation and the other lists', () => {
   it('the preservation queue is a wide table', async () => {
     await actAs('records')
     const markup = await html(PreservationPage())
-    expect(markup).toContain('<main data-wide="" class="space-y-6"')
+    expect(markup).toContain('<main data-wide="">')
     expect(markup).toContain('class="table-panel"')
   })
 

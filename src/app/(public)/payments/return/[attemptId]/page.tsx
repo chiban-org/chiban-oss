@@ -18,7 +18,7 @@ const NOT_FOUND_DETAILS: PaymentReturnDetails = {
   receiptId: null,
 }
 
-const LINK = 'tap-target inline-flex items-center text-action underline'
+const LINK = 'tap-target inline-flex items-center'
 
 function ApplicationLinks({
   details,
