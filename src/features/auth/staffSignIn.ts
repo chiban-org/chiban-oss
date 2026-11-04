@@ -3,7 +3,7 @@ import type { DbOrTx } from '@/db/client'
 import { users } from '@/db/schema'
 import { writeAudit } from '@/features/audit/writeAudit'
 import { verifyPassword } from '@/features/auth/password'
-import { createSession } from '@/features/auth/session'
+import { createSession, revokeSession } from '@/features/auth/session'
 import { verifyTotpCounter } from '@/features/auth/totp'
 import { createRateLimiter } from '@/server/rateLimiter'
 import { decryptSecret } from '@/server/secrets'
@@ -54,6 +54,18 @@ async function consumeTotpCounter(db: DbOrTx, userId: string, counter: number): 
   return consumed.length > 0
 }
 
+async function passwordUnchanged(
+  db: DbOrTx,
+  userId: string,
+  verifiedHash: string | null,
+): Promise<boolean> {
+  const [current] = await db
+    .select({ passwordHash: users.passwordHash, isActive: users.isActive })
+    .from(users)
+    .where(eq(users.id, userId))
+  return current?.isActive === true && current.passwordHash === verifiedHash
+}
+
 export async function staffSignIn(
   db: DbOrTx,
   input: StaffSignInInput,
@@ -82,6 +94,10 @@ export async function staffSignIn(
 
   const session = await createSession(db, user.id, signal)
   if (!session.ok) return err('invalid_credentials')
+  if (!(await passwordUnchanged(db, user.id, user.passwordHash))) {
+    await revokeSession(db, session.value.sid, signal)
+    return err('invalid_credentials')
+  }
   limiter.clear(key)
   await writeAudit(
     db,
