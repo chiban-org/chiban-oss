@@ -78,9 +78,10 @@ export default async function InspectionSettingsPage() {
                   required
                 />
                 <TextField
-                  label="Microsoft user (only for Microsoft calendar)"
+                  label="Microsoft 365 user"
                   name="graphUserId"
                   defaultValue={t.graphUserId}
+                  hint="Only for Microsoft calendar. Your IT contact can give you this."
                 />
               </ActionForm>
             ) : (
@@ -89,19 +90,26 @@ export default async function InspectionSettingsPage() {
           </div>
         ))}
       </section>
-      <section aria-label="Microsoft tenant" className="max-w-xl space-y-3">
-        <h2>Microsoft tenant</h2>
+      <section aria-label="Microsoft 365 connection" className="max-w-xl space-y-3">
+        <h2>Microsoft 365 connection</h2>
+        <p>
+          Only needed if inspectors keep their calendars in Microsoft 365. Your IT contact can find
+          these values in the Microsoft admin center.
+        </p>
         <p role="status">
           {tenant === null
-            ? 'No Microsoft tenant is connected.'
-            : `Tenant ${tenant.tenantId} is saved. It has not been verified against a live Microsoft 365 account.`}
+            ? 'Not connected. Invites go out by email.'
+            : `Connection details are saved for ${tenant.tenantId}. They have not been checked against a live Microsoft 365 account yet.`}
         </p>
         {canEdit ? (
-          <ActionForm action={saveCalendarAccountAction} submitLabel="Save tenant details">
-            <TextField label="Tenant ID" name="tenantId" required />
-            <TextField label="Application (client) ID" name="clientId" required />
-            <TextField label="Client secret" name="clientSecret" type="password" required />
-          </ActionForm>
+          <details>
+            <summary>Enter the connection details</summary>
+            <ActionForm action={saveCalendarAccountAction} submitLabel="Save connection details">
+              <TextField label="Directory (tenant) ID" name="tenantId" required />
+              <TextField label="Application (client) ID" name="clientId" required />
+              <TextField label="Client secret" name="clientSecret" type="password" required />
+            </ActionForm>
+          </details>
         ) : null}
       </section>
     </main>
