@@ -1,15 +1,7 @@
 'use client'
 
 import type { ReactNode } from 'react'
-import { Button } from '@/components/ui/button'
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { FormDialog } from '@/components/FormDialog'
 
 export function NewItemDialog({
   label,
@@ -21,17 +13,8 @@ export function NewItemDialog({
   children: ReactNode
 }) {
   return (
-    <Dialog>
-      <DialogTrigger asChild>
-        <Button type="button">{label}</Button>
-      </DialogTrigger>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle>{label}</DialogTitle>
-          <DialogDescription>{description}</DialogDescription>
-        </DialogHeader>
-        {children}
-      </DialogContent>
-    </Dialog>
+    <FormDialog label={label} title={label} description={description} variant="default">
+      {children}
+    </FormDialog>
   )
 }
