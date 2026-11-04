@@ -54,11 +54,7 @@ function attemptFacts(attempt: Attempt, links: AttemptLinks): Fact[] {
     facts.push({
       label: 'Receipt',
       value: (
-        <Link
-          {...NEW_TAB}
-          href={`/staff/receipts/${links.receipt.id}`}
-          className="text-action underline"
-        >
+        <Link {...NEW_TAB} href={`/staff/receipts/${links.receipt.id}`}>
           {links.receipt.number}
         </Link>
       ),

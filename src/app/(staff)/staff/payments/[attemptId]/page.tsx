@@ -93,9 +93,7 @@ function AmountBreakdown({
           {linked.map((a, i) => (
             <span key={a.id}>
               {i > 0 ? ', ' : null}
-              <Link href={`/staff/applications/${a.id}`} className="text-action underline">
-                {a.number}
-              </Link>
+              <Link href={`/staff/applications/${a.id}`}>{a.number}</Link>
             </span>
           ))}
         </p>
@@ -110,9 +108,7 @@ function SimulatedNotice({ checkoutRef }: { checkoutRef: string | null }) {
       <p>Simulated payment: no card is charged.</p>
       {checkoutRef === null ? null : (
         <p>
-          <Link href={`/dev/checkout/${checkoutRef}`} className="text-action underline">
-            Open the simulated checkout
-          </Link>
+          <Link href={`/dev/checkout/${checkoutRef}`}>Open the simulated checkout</Link>
         </p>
       )}
     </div>
