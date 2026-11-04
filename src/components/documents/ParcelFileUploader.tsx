@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { Uploader, type UploaderActions } from '@/components/documents/Uploader'
 import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import {
   Select,
   SelectContent,
@@ -61,18 +62,21 @@ export function ParcelFileUploader({ parcelId, series, actions }: Props) {
         <>
           <fieldset className="space-y-2 border-0 p-0">
             <legend className="text-base font-medium">Who can see this file</legend>
-            {VISIBILITY_CHOICES.map(([value, label]) => (
-              <label key={value} className="flex min-h-11 items-center gap-2 text-base">
-                <input
-                  type="radio"
-                  name="parcel-visibility"
-                  value={value}
-                  checked={visibility === value}
-                  onChange={() => setVisibility(value)}
-                />
-                {label}
-              </label>
-            ))}
+            <RadioGroup
+              name="parcel-visibility"
+              value={visibility}
+              onValueChange={(next) => setVisibility(next as ParcelFileVisibility)}
+              className="gap-0"
+            >
+              {VISIBILITY_CHOICES.map(([value, label]) => (
+                <div key={value} className="flex min-h-11 items-center gap-2">
+                  <RadioGroupItem id={`parcel-visibility-${value}`} value={value} />
+                  <Label htmlFor={`parcel-visibility-${value}`} className="text-base font-normal">
+                    {label}
+                  </Label>
+                </div>
+              ))}
+            </RadioGroup>
           </fieldset>
           <Uploader
             target={{ kind: 'parcel', id: parcelId }}

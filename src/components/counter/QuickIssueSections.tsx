@@ -1,9 +1,11 @@
 'use client'
 
-import type { ReactNode } from 'react'
 import { ClaimLinkButton } from '@/components/counter/ClaimLinkButton'
 import type { CounterActions, CounterOutcome } from '@/components/counter/counterTypes'
 import { NEW_TAB } from '@/components/newTab'
+import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
+import { Label } from '@/components/ui/label'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { formatCents } from '@/lib/money'
 
 export type Method = 'cash' | 'check' | 'card'
@@ -15,8 +17,6 @@ export interface WorkField {
   required: boolean
   options?: { value: string; label: string }[]
 }
-
-export const CONTROL = 'mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-sm'
 
 const RESULTS = [
   ['active', 'Active'],
@@ -31,35 +31,24 @@ const METHODS = [
   ['card', 'Card'],
 ] as const
 
-function Labeled({ label, children }: { label: string; children: ReactNode }) {
-  return (
-    <label className="block text-sm font-medium">
-      {label}
-      {children}
-    </label>
-  )
-}
-
 function WorkInput({ field }: { field: WorkField }) {
   const name = `value.${field.key}`
   if (field.type === 'textarea') {
-    return <textarea name={name} required={field.required} className={CONTROL} rows={3} />
+    return <AreaField label={field.label} name={name} required={field.required} rows={3} />
   }
-  if (field.type === 'checkbox') return <input type="checkbox" name={name} className="ml-2" />
+  if (field.type === 'checkbox') return <CheckField label={field.label} name={name} />
   if (field.type === 'select') {
     return (
-      <select name={name} required={field.required} className={CONTROL}>
-        <option value="" />
-        {(field.options ?? []).map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </select>
+      <SelectField
+        label={field.label}
+        name={name}
+        required={field.required}
+        options={[['', ''], ...(field.options ?? []).map((o) => [o.value, o.label] as const)]}
+      />
     )
   }
   const inputType = field.type === 'date' ? 'date' : field.type === 'email' ? 'email' : 'text'
-  return <input type={inputType} name={name} required={field.required} className={CONTROL} />
+  return <TextField label={field.label} type={inputType} name={name} required={field.required} />
 }
 
 export function ContractorSection({
@@ -72,36 +61,23 @@ export function ContractorSection({
   return (
     <section aria-labelledby="contractor" className="space-y-3">
       <h2 id="contractor">Contractor and license check</h2>
-      <div className="grid grid-cols-2 gap-3">
-        <Labeled label="Contractor name">
-          <input name="contractorName" required className={CONTROL} />
-        </Labeled>
-        <Labeled label="Contractor email">
-          <input type="email" name="contractorEmail" className={CONTROL} />
-        </Labeled>
-        <Labeled label="License number">
-          <input name="licenseNumber" required className={CONTROL} />
-        </Labeled>
-        <Labeled label="License type">
-          <input
-            name="licenseType"
-            required
-            defaultValue={defaultLicenseType}
-            className={CONTROL}
-          />
-        </Labeled>
-        <Labeled label="Result of the state lookup">
-          <select name="licenseResult" className={CONTROL} defaultValue="active">
-            {RESULTS.map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
-              </option>
-            ))}
-          </select>
-        </Labeled>
-        <Labeled label="Note">
-          <input name="licenseNote" className={CONTROL} />
-        </Labeled>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <TextField label="Contractor name" name="contractorName" required />
+        <TextField label="Contractor email" type="email" name="contractorEmail" />
+        <TextField label="License number" name="licenseNumber" required />
+        <TextField
+          label="License type"
+          name="licenseType"
+          required
+          defaultValue={defaultLicenseType}
+        />
+        <SelectField
+          label="Result of the state lookup"
+          name="licenseResult"
+          defaultValue="active"
+          options={RESULTS}
+        />
+        <TextField label="Note" name="licenseNote" />
       </div>
       <a href={lookup.url} {...NEW_TAB} className="text-action underline">
         {lookup.label}
@@ -115,9 +91,7 @@ export function WorkSection({ fields }: { fields: WorkField[] }) {
     <section aria-labelledby="work" className="space-y-3">
       <h2 id="work">Work details</h2>
       {fields.map((field) => (
-        <Labeled key={field.key} label={field.label}>
-          <WorkInput field={field} />
-        </Labeled>
+        <WorkInput key={field.key} field={field} />
       ))}
     </section>
   )
@@ -158,26 +132,30 @@ export function PaymentSection({
   return (
     <section aria-labelledby="payment" className="space-y-3">
       <h2 id="payment">Payment</h2>
-      <Labeled label="Payer name (defaults to the contractor)">
-        <input name="payerName" className={CONTROL} />
-      </Labeled>
-      <fieldset className="flex gap-6">
+      <TextField label="Payer name (defaults to the contractor)" name="payerName" />
+      <fieldset className="space-y-2">
         <legend className="text-sm font-medium">
           Method (Alt+1 cash, Alt+2 check, Alt+3 card)
         </legend>
-        {METHODS.map(([value, label]) => (
-          <label key={value} className="flex items-center gap-2 text-sm">
-            <input
-              type="radio"
-              name="method"
-              value={value}
-              checked={method === value}
-              disabled={value === 'card' && !cardAvailable}
-              onChange={() => onMethod(value)}
-            />
-            {label}
-          </label>
-        ))}
+        <RadioGroup
+          name="method"
+          value={method}
+          onValueChange={(next) => onMethod(next as Method)}
+          className="flex gap-6"
+        >
+          {METHODS.map(([value, label]) => (
+            <div key={value} className="flex items-center gap-2">
+              <RadioGroupItem
+                id={`method-${value}`}
+                value={value}
+                disabled={value === 'card' && !cardAvailable}
+              />
+              <Label htmlFor={`method-${value}`} className="font-normal">
+                {label}
+              </Label>
+            </div>
+          ))}
+        </RadioGroup>
       </fieldset>
       {cardAvailable ? null : <p>Card payments not configured.</p>}
       {method === 'card' && readerSimulated ? (
@@ -187,15 +165,9 @@ export function PaymentSection({
         </p>
       ) : null}
       {method === 'cash' ? (
-        <Labeled label="Cash tendered (dollars)">
-          <input name="tendered" inputMode="decimal" className={CONTROL} />
-        </Labeled>
+        <TextField label="Cash tendered (dollars)" name="tendered" inputMode="decimal" />
       ) : null}
-      {method === 'check' ? (
-        <Labeled label="Check number">
-          <input name="checkNumber" className={CONTROL} />
-        </Labeled>
-      ) : null}
+      {method === 'check' ? <TextField label="Check number" name="checkNumber" /> : null}
     </section>
   )
 }

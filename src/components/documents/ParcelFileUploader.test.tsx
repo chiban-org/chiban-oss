@@ -33,10 +33,10 @@ function pickSeries(label: string) {
 }
 
 function visibility(): string | null {
-  const checked = screen.queryAllByRole('radio').find((r) => (r as HTMLInputElement).checked) as
-    | HTMLInputElement
-    | undefined
-  return checked?.value ?? null
+  const checked = screen
+    .queryAllByRole('radio')
+    .find((r) => r.getAttribute('aria-checked') === 'true')
+  return checked?.getAttribute('value') ?? null
 }
 
 describe('ParcelFileUploader', () => {

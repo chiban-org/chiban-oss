@@ -1,6 +1,6 @@
 import { ActionForm } from '@/components/ActionForm'
 import { NEW_TAB } from '@/components/newTab'
-import { SelectField, TextField } from '@/components/staff/fields'
+import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import { RTK_METHOD_LABELS } from '@/features/rtk/labels'
 import type { ReleaseCandidate, ReleaseSummary, RequestApproval } from '@/features/rtk/requestPage'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -134,13 +134,15 @@ function ReleaseForm({
       <summary>Release approved records</summary>
       <ActionForm action={createReleaseAction} submitLabel="Release">
         <Hidden name="requestId" value={requestId} />
-        <fieldset className="space-y-1 border-0 p-0">
+        <fieldset className="space-y-2 border-0 p-0">
           <legend className="text-sm font-medium">Records in this release</legend>
           {active.map((a) => (
-            <label key={a.approvalId} className="flex items-center gap-2">
-              <input type="checkbox" name="items" value={`${a.documentId}:${a.approvalId}`} />
-              {`${a.title}: ${ROLE_LABELS[a.role] ?? a.role}`}
-            </label>
+            <CheckField
+              key={a.approvalId}
+              label={`${a.title}: ${ROLE_LABELS[a.role] ?? a.role}`}
+              name="items"
+              value={`${a.documentId}:${a.approvalId}`}
+            />
           ))}
         </fieldset>
         <TextField

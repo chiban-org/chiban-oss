@@ -1,6 +1,6 @@
 import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
-import { SelectField, TextField } from '@/components/staff/fields'
+import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { TERMINAL_STATES } from '@/features/applications/states'
 import type { AdjustmentKind } from '@/features/clocks/explainClock'
@@ -99,10 +99,7 @@ export function ClockAdjustForm({
         <TextField label="Reason" name="reason" required />
         <TextField label="Legal authority: citation" name="citation" />
         <TextField label="Legal authority: explanation" name="explanation" />
-        <label className="flex items-center gap-2 text-sm">
-          <input type="checkbox" name="applicantConsent" />
-          The applicant consents
-        </label>
+        <CheckField label="The applicant consents" name="applicantConsent" />
       </ActionForm>
     </details>
   )

@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
-import { SelectField, TextField } from '@/components/staff/fields'
+import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { loadPacketsPage, type PacketsPageView } from '@/features/boards/packetsPage'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -32,10 +32,7 @@ function NewPacket({ meetings, documents }: Pick<PacketsPageView, 'meetings' | '
               <p>No board documents are shared with the board yet.</p>
             ) : null}
             {documents.map((d) => (
-              <label key={d.id} className="flex items-center gap-2">
-                <input type="checkbox" name="documentId" value={d.id} />
-                {d.label}
-              </label>
+              <CheckField key={d.id} label={d.label} name="documentId" value={d.id} />
             ))}
           </fieldset>
         </ActionForm>

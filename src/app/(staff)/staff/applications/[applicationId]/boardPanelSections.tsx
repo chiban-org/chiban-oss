@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
-import { AreaField, SelectField, TextField } from '@/components/staff/fields'
+import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import { addProfessionalAction, generateListAction } from '../../abutters/actions'
 import {
@@ -33,20 +33,18 @@ export function DeterminationSection({ data }: { data: BoardPanelData }) {
                 ['previously_determined', 'Previously determined by another board'],
               ]}
             />
-            <fieldset className="space-y-1">
+            <fieldset className="space-y-2">
               <legend className="text-sm font-medium">
                 Affected municipalities, if there is regional impact
               </legend>
               {data.regional.options.map((o) => (
-                <label key={o.key} className="flex items-center gap-2 text-sm">
-                  <input
-                    type="checkbox"
-                    name="municipalityKeys"
-                    value={o.key}
-                    defaultChecked={data.regional.chosen.includes(o.key)}
-                  />
-                  {o.name}
-                </label>
+                <CheckField
+                  key={o.key}
+                  label={o.name}
+                  name="municipalityKeys"
+                  value={o.key}
+                  defaultChecked={data.regional.chosen.includes(o.key)}
+                />
               ))}
             </fieldset>
             <TextField label="Board reference, if determined earlier" name="previousBoardRef" />

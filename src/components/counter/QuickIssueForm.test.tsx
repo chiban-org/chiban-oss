@@ -72,11 +72,11 @@ describe('QuickIssueForm', () => {
   it('Alt+1 to Alt+3 pick cash, check, and card', () => {
     form()
     fireEvent.keyDown(window, { key: '2', altKey: true })
-    expect(screen.getByLabelText<HTMLInputElement>('Check').checked).toBe(true)
+    expect(screen.getByRole('radio', { name: 'Check' }).getAttribute('aria-checked')).toBe('true')
     fireEvent.keyDown(window, { key: '3', altKey: true })
-    expect(screen.getByLabelText<HTMLInputElement>('Card').checked).toBe(true)
+    expect(screen.getByRole('radio', { name: 'Card' }).getAttribute('aria-checked')).toBe('true')
     fireEvent.keyDown(window, { key: '1', altKey: true })
-    expect(screen.getByLabelText<HTMLInputElement>('Cash').checked).toBe(true)
+    expect(screen.getByRole('radio', { name: 'Cash' }).getAttribute('aria-checked')).toBe('true')
   })
 
   it('the license lookup link opens a new tab', () => {

@@ -5,6 +5,7 @@ import { RedactedUploader } from '@/components/documents/RedactedUploader'
 import type { UploaderActions } from '@/components/documents/Uploader'
 import { NEW_TAB } from '@/components/newTab'
 import { StatusChip } from '@/components/StatusChip'
+import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { PanelDocument, RenditionState } from '@/features/documents/panelData'
 import { AUDIENCES, type Audience, type RecordRef } from '@/features/documents/types'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -78,40 +79,18 @@ function ApprovalControls({ doc, actions }: { doc: PanelDocument; actions: Docum
               Approving another version replaces the current public copy.
             </p>
           )}
-          <label className="block text-sm font-medium">
-            Version to approve
-            <select
-              name="versionId"
-              className="mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-sm"
-            >
-              {candidates.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {versionLabel(v)}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="block text-sm font-medium">
-            What you checked before approving
-            <input
-              name="reviewStatement"
-              required
-              className="mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-sm"
-            />
-          </label>
+          <SelectField
+            label="Version to approve"
+            name="versionId"
+            options={candidates.map((v) => [v.id, versionLabel(v)] as const)}
+          />
+          <TextField label="What you checked before approving" name="reviewStatement" required />
         </ActionForm>
       ) : null}
       {actions.revoke !== undefined && doc.approvalId !== null ? (
         <ActionForm action={actions.revoke} submitLabel="Revoke the approval">
           <input type="hidden" name="approvalId" value={doc.approvalId} />
-          <label className="block text-sm font-medium">
-            Why it is being revoked
-            <input
-              name="reason"
-              required
-              className="mt-1 block w-full rounded-md border bg-surface px-3 py-2 text-sm"
-            />
-          </label>
+          <TextField label="Why it is being revoked" name="reason" required />
         </ActionForm>
       ) : null}
     </>
@@ -141,15 +120,13 @@ function ManageControls({
             <input type="hidden" name="documentId" value={doc.documentId} />
             <div className="flex flex-wrap gap-4">
               {AUDIENCES.map((a) => (
-                <label key={a} className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    name="audience"
-                    value={a}
-                    defaultChecked={doc.audiences.includes(a)}
-                  />
-                  {AUDIENCE_LABELS[a]}
-                </label>
+                <CheckField
+                  key={a}
+                  label={AUDIENCE_LABELS[a]}
+                  name="audience"
+                  value={a}
+                  defaultChecked={doc.audiences.includes(a)}
+                />
               ))}
             </div>
           </ActionForm>
@@ -158,10 +135,12 @@ function ManageControls({
           <>
             <ActionForm action={props.actions.setPublic} submitLabel="Save public setting">
               <input type="hidden" name="documentId" value={doc.documentId} />
-              <label className="flex items-center gap-2">
-                <input type="checkbox" name="isPublic" value="true" defaultChecked={doc.isPublic} />
-                Public
-              </label>
+              <CheckField
+                label="Public"
+                name="isPublic"
+                value="true"
+                defaultChecked={doc.isPublic}
+              />
             </ActionForm>
             <ApprovalControls doc={doc} actions={props.actions} />
             <RedactedUploader

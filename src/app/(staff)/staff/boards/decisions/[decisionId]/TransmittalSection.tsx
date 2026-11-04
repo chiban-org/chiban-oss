@@ -1,7 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { ApplicationFileUploader } from '@/components/documents/ApplicationFileUploader'
 import { NoticeChecklist } from '@/components/notices/NoticeChecklist'
-import { SelectField, TextField } from '@/components/staff/fields'
+import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { DecisionView } from '@/features/decisions/decisionView'
 import { PROOF_METHOD_LABELS, type ProofMethod } from '@/features/notices/proofMethods'
 import { recordProofAction } from '../../hearings/actions'
@@ -28,13 +28,10 @@ function ProofForm({
         actions={UPLOAD_ACTIONS}
       />
       <ActionForm action={recordProofAction} submitLabel="Record proof" className="max-w-xl">
-        <fieldset className="space-y-1 rounded-md border p-3">
+        <fieldset className="space-y-2 rounded-md border p-3">
           <legend className="px-1 text-sm font-medium">Recipients this proof covers</legend>
           {transmittal.itemChoices.map((c) => (
-            <label key={c.id} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="itemIds" value={c.id} />
-              {c.label}
-            </label>
+            <CheckField key={c.id} label={c.label} name="itemIds" value={c.id} />
           ))}
         </fieldset>
         <SelectField

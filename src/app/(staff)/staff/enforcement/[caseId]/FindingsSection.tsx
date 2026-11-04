@@ -1,6 +1,6 @@
 import { ActionForm } from '@/components/ActionForm'
 import { NEW_TAB } from '@/components/newTab'
-import { AreaField, SelectField, TextField } from '@/components/staff/fields'
+import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
 import { PROVISION_KINDS } from '@/db/schema'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import {
@@ -130,13 +130,15 @@ export function FindingsSection({ detail, can }: { detail: CaseDetail; can: Can 
           <summary>Send a notice of violation</summary>
           <ActionForm action={sendNoticeAction} submitLabel="Send notice of violation">
             <Hidden name="caseId" value={caseId} />
-            <fieldset className="space-y-1">
+            <fieldset className="space-y-2">
               <legend className="font-medium">Findings to include</legend>
               {open.map((f) => (
-                <label key={f.id} className="flex items-center gap-2">
-                  <input type="checkbox" name="findingIds" value={f.id} />
-                  {`${PROVISION_KIND_LABELS[f.provisionKind]}: ${f.provisionRef}`}
-                </label>
+                <CheckField
+                  key={f.id}
+                  label={`${PROVISION_KIND_LABELS[f.provisionKind]}: ${f.provisionRef}`}
+                  name="findingIds"
+                  value={f.id}
+                />
               ))}
             </fieldset>
             <TextField

@@ -6,7 +6,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { ApplicationFileUploader } from '@/components/documents/ApplicationFileUploader'
 import { NEW_TAB } from '@/components/newTab'
 import { NoticeChecklist } from '@/components/notices/NoticeChecklist'
-import { SelectField, TextField } from '@/components/staff/fields'
+import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { HearingView } from '@/features/hearings/views'
 import { PROOF_METHOD_LABELS, PROOF_METHODS } from '@/features/notices/proofMethods'
 import { recordProofAction } from '../actions'
@@ -24,13 +24,10 @@ function ProofForm({ view, today }: { view: HearingView; today: string }) {
         }}
       />
       <ActionForm action={recordProofAction} submitLabel="Record proof" className="max-w-xl">
-        <fieldset className="space-y-1 rounded-md border p-3">
+        <fieldset className="space-y-2 rounded-md border p-3">
           <legend className="px-1 text-sm font-medium">Notice items this proof covers</legend>
           {view.itemChoices.map((c) => (
-            <label key={c.id} className="flex items-center gap-2 text-sm">
-              <input type="checkbox" name="itemIds" value={c.id} />
-              {c.label}
-            </label>
+            <CheckField key={c.id} label={c.label} name="itemIds" value={c.id} />
           ))}
         </fieldset>
         <SelectField

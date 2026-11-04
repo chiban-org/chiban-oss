@@ -2,7 +2,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { DueLine } from '@/components/enforcement/DueLine'
 import { ServiceChecklist } from '@/components/enforcement/ServiceChecklist'
 import { NEW_TAB } from '@/components/newTab'
-import { AreaField, SelectField, TextField } from '@/components/staff/fields'
+import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { CaseDetail, OrderDetail } from '@/features/enforcement/caseDetail'
 import { motionGateText } from '@/features/enforcement/gateText'
 import {
@@ -70,15 +70,12 @@ function DraftForms({ order }: { order: OrderDetail }) {
           type="date"
           defaultValue={row.correctiveDeadline ?? ''}
         />
-        <label className="flex items-center gap-2">
-          <input
-            type="checkbox"
-            name="ceaseImmediately"
-            value="true"
-            defaultChecked={row.ceaseImmediately}
-          />
-          The activity must stop immediately
-        </label>
+        <CheckField
+          label="The activity must stop immediately"
+          name="ceaseImmediately"
+          value="true"
+          defaultChecked={row.ceaseImmediately}
+        />
       </ActionForm>
       <ActionForm action={discardDraftOrderAction} submitLabel="Discard the draft">
         <Hidden name="orderId" value={row.id} />
@@ -156,13 +153,15 @@ export function OrdersSection({ detail, can }: { detail: CaseDetail; can: Can })
           <summary>Draft an order</summary>
           <ActionForm action={draftOrderAction} submitLabel="Draft order">
             <Hidden name="caseId" value={detail.staff.row.id} />
-            <fieldset className="space-y-1">
+            <fieldset className="space-y-2">
               <legend className="font-medium">Findings the order is based on</legend>
               {open.map((f) => (
-                <label key={f.id} className="flex items-center gap-2">
-                  <input type="checkbox" name="findingIds" value={f.id} />
-                  {`${PROVISION_KIND_LABELS[f.provisionKind]}: ${f.provisionRef}`}
-                </label>
+                <CheckField
+                  key={f.id}
+                  label={`${PROVISION_KIND_LABELS[f.provisionKind]}: ${f.provisionRef}`}
+                  name="findingIds"
+                  value={f.id}
+                />
               ))}
             </fieldset>
             <AreaField label="Corrective action required" name="correctiveAction" rows={3} />
@@ -172,10 +171,11 @@ export function OrdersSection({ detail, can }: { detail: CaseDetail; can: Can })
               type="date"
               required
             />
-            <label className="flex items-center gap-2">
-              <input type="checkbox" name="ceaseImmediately" value="true" />
-              The activity must stop immediately
-            </label>
+            <CheckField
+              label="The activity must stop immediately"
+              name="ceaseImmediately"
+              value="true"
+            />
             <p className="m-0">
               Only an officer on record as designated by the town can issue the order.
             </p>
