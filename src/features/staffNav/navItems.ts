@@ -1,82 +1,22 @@
 import { CAPABILITY_KEYS, type Capability } from '@/constants/capabilities'
 import type { Role } from '@/constants/roles'
 import { FULL_RECORD_ROLES } from '@/features/access/roles'
+import {
+  NAV_GROUPS,
+  type NavAccess,
+  type NavItem,
+  type NavSection,
+  type NavViewer,
+} from '@/features/staffNav/navTypes'
 
-export interface NavViewer {
-  roles: readonly Role[]
-  capabilities: ReadonlySet<Capability>
-}
-
-type NavAccess =
-  | { kind: 'open' }
-  | { kind: 'anyCapability'; capabilities: readonly Capability[] }
-  | { kind: 'allCapabilities'; capabilities: readonly Capability[] }
-  | { kind: 'reviewer' }
-  | { kind: 'fullRecordAccess' }
-
-export const NAV_GROUPS = [
-  { key: 'work', label: 'Daily work', collapsible: false },
-  { key: 'boards', label: 'Boards', collapsible: false },
-  { key: 'records', label: 'Records and reports', collapsible: true },
-  { key: 'data', label: 'Parcel data', collapsible: true },
-  { key: 'admin', label: 'Administration', collapsible: true },
-  { key: 'account', label: null, collapsible: false },
-] as const
-
-export const NAV_ICONS = [
-  'parcels',
-  'map',
-  'counter',
-  'reviews',
-  'applications',
-  'inspections',
-  'day',
-  'payments',
-  'enforcement',
-  'boards',
-  'meetings',
-  'members',
-  'rosters',
-  'packets',
-  'preservation',
-  'holds',
-  'requests',
-  'retention',
-  'reports',
-  'census',
-  'imports',
-  'exceptions',
-  'unresolved',
-  'overrides',
-  'settings',
-  'export',
-  'health',
-  'cutover',
-  'officers',
-  'intake',
-  'migration',
-  'account',
-] as const
-
-export type NavIcon = (typeof NAV_ICONS)[number]
-
-export type NavGroupKey = (typeof NAV_GROUPS)[number]['key']
-
-export interface NavItem {
-  href: string
-  label: string
-  group: NavGroupKey
-  icon: NavIcon
-  parent?: string
-  access: NavAccess
-}
-
-export interface NavSection {
-  key: NavGroupKey
-  label: string | null
-  collapsible: boolean
-  items: NavItem[]
-}
+export type {
+  NavGroupKey,
+  NavIcon,
+  NavItem,
+  NavSection,
+  NavViewer,
+} from '@/features/staffNav/navTypes'
+export { NAV_GROUPS, NAV_ICONS } from '@/features/staffNav/navTypes'
 
 export function groupNavItems(items: readonly NavItem[]): NavSection[] {
   return NAV_GROUPS.map((g) => ({
@@ -181,6 +121,13 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
     group: 'boards',
     icon: 'packets',
     access: any('packet.manage'),
+  },
+  {
+    href: '/board',
+    label: 'Board meetings',
+    group: 'boards',
+    icon: 'boardHome',
+    access: { kind: 'boardMember' },
   },
   {
     href: '/staff/records/preservation',
@@ -324,7 +271,20 @@ export function mayUse(item: NavItem, viewer: NavViewer): boolean {
       return viewer.roles.includes('reviewer')
     case 'fullRecordAccess':
       return hasRecordAccess(viewer.roles)
+    case 'boardMember':
+      return viewer.roles.includes('board_member')
   }
+}
+
+const BOARD_STAFF_CAPABILITIES: readonly Capability[] = [
+  'board.record',
+  'board.manage_members',
+  'packet.manage',
+]
+
+export function boardMemberHome(viewer: NavViewer): string | null {
+  if (!viewer.roles.includes('board_member')) return null
+  return BOARD_STAFF_CAPABILITIES.some((c) => viewer.capabilities.has(c)) ? null : '/board'
 }
 
 export function navItemsFor(viewer: NavViewer): NavItem[] {

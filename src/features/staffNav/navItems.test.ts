@@ -4,6 +4,7 @@ import type { Role } from '@/constants/roles'
 import { DEFAULT_GRANTS } from '@/features/authz/defaultGrants'
 import {
   activeNavHref,
+  boardMemberHome,
   groupNavItems,
   isNested,
   NAV_GROUPS,
@@ -47,6 +48,25 @@ describe('staff navigation', () => {
     }
     expect(labels).toContain('Parcels')
     expect(labels).toContain('Account')
+  })
+
+  it('shows Board meetings, the board page, to board members only', () => {
+    const item = STAFF_NAV_ITEMS.find((i) => i.label === 'Board meetings')
+    expect(item?.href).toBe('/board')
+    expect(labelsFor('board_member')).toContain('Board meetings')
+    for (const role of ['admin', 'staff', 'reviewer', 'inspector', 'finance'] as const) {
+      expect(labelsFor(role)).not.toContain('Board meetings')
+    }
+  })
+
+  it('sends a board member without board staff work from the board staff pages to /board', () => {
+    const viewer = (roles: Role[]) => ({
+      roles,
+      capabilities: new Set<Capability>(roles.flatMap((r) => DEFAULT_GRANTS[r] ?? [])),
+    })
+    expect(boardMemberHome(viewer(['board_member']))).toBe('/board')
+    expect(boardMemberHome(viewer(['staff', 'board_member']))).toBeNull()
+    expect(boardMemberHome(viewer(['reviewer']))).toBeNull()
   })
 
   it('shows the boards and rosters pages to staff and admin only', () => {
