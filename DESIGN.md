@@ -76,6 +76,17 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 - The staff menu lists only pages the viewer can open. A viewer with no list to work from lands on a page they can use, never on a bare permission refusal.
 - Reviewers and board members see read-only versions of records, without buttons they cannot use.
 
+## Builders
+
+Builders let town staff shape configuration without knowing how it is stored. The form builder (`src/components/config/formBuilder`) is the first.
+
+- Three panes: what can be added on the left, the thing being built in the middle as its reader will see it, and the settings of the selected part on the right. In narrow windows the panes stack, and selecting a part scrolls its settings into view.
+- Plain-language names everywhere: question types are Short answer, Paragraph, Whole number, Number, Money, Date, Dropdown, Checkboxes, Yes / No, Email, Phone and Section. Rules read "Show only when" and "Required only when" and are built from three dropdowns (question, test, answer). Storage details (the key, the fact, staff only) sit under a closed "Advanced" disclosure.
+- Keys are made from the text a person types and stop changing once a published version uses them.
+- Reorder by dragging a handle, by keyboard on the same handle (space, arrows, space), or with Move up and Move down.
+- Removing something that other configuration uses opens a warning that names each use before anything changes.
+- "Preview as applicant" shows the real form at desktop and phone width, fillable, with the same validation messages applicants see.
+
 ## Copy
 
 - Plain words, no internal jargon, and no text repeated within one panel (a gate's label and its reason, for example).
