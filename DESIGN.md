@@ -79,7 +79,7 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 
 ## Builders
 
-Builders let town staff shape configuration without knowing how it is stored. The form builder (`src/components/config/formBuilder`) is the first.
+Builders let town staff shape configuration without knowing how it is stored. The form builder (`src/components/config/formBuilder`) and the letter builder (`src/components/config/letterBuilder`) follow the same rules.
 
 - Three panes: what can be added on the left, the thing being built in the middle as its reader will see it, and the settings of the selected part on the right. In narrow windows the panes stack, and selecting a part scrolls its settings into view.
 - Plain-language names everywhere: question types are Short answer, Paragraph, Whole number, Number, Money, Date, Dropdown, Checkboxes, Yes / No, Email, Phone and Section. Rules read "Show only when" and "Required only when" and are built from three dropdowns (question, test, answer). Storage details (the key, the fact, staff only) sit under a closed "Advanced" disclosure.
@@ -87,6 +87,13 @@ Builders let town staff shape configuration without knowing how it is stored. Th
 - Reorder by dragging a handle, by keyboard on the same handle (space, arrows, space), or with Move up and Move down.
 - Removing something that other configuration uses opens a warning that names each use before anything changes.
 - "Preview as applicant" shows the real form at desktop and phone width, fillable, with the same validation messages applicants see.
+
+The letter builder edits templates on a letter-sized page under the town letterhead:
+
+- The Insert pane holds blocks (Signature, Conditions list, Field table, Notice box), the parts filled in from the record for that kind of document, and merge fields grouped and named in plain words. Insert and toolbar buttons never take focus from the letter.
+- Merge fields are highlighted chips with their plain name. "Preview" with a real record of the right kind swaps every chip and record part for that record's values; "Download PDF" renders exactly what would be sent.
+- Wording state law requires is a locked block: a lock icon, the reason ("Required by state law"), and no way to edit or delete it.
+- In settings-menu width the Insert pane and the selected part's settings share the left column; wide windows get three columns.
 
 ## Copy
 

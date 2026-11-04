@@ -69,10 +69,15 @@ export function LetterBuilder({ body, onChange, errors, data }: Props) {
   useEffect(() => {
     if (editor === null || body.doc === emitted.current) return
     emitted.current = body.doc
-    replaceDocument(editor, body.doc)
+    const doc = body.doc
+    queueMicrotask(() => replaceDocument(editor, doc))
   }, [editor, body.doc])
   useEffect(() => {
-    editor?.setEditable(preview === null)
+    if (editor === null) return
+    const editable = preview === null
+    queueMicrotask(() => {
+      if (!editor.isDestroyed) editor.setEditable(editable)
+    })
   }, [editor, preview])
   const kind = documentKind(body.kind)
   const used = templateUse(body).locked

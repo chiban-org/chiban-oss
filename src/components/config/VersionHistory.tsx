@@ -26,36 +26,38 @@ export function VersionHistory({
 }) {
   if (rows.length === 0) return <p>No versions yet.</p>
   return (
-    <table className="my-3 w-full text-sm">
-      <thead>
-        <tr className="border-b text-left">
-          <th className="py-1">Version</th>
-          <th>Status</th>
-          <th>Published</th>
-          <th>Upstream template</th>
-          <th />
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.id} className="border-b align-top">
-            <td className="py-1">{`Version ${row.version}`}</td>
-            <td>
-              {STATUS_LABEL[row.status]}
-              {row.rolledBackFrom === null ? null : (
-                <span className="block text-muted-foreground">{`Restored from version ${row.rolledBackFrom}`}</span>
-              )}
-            </td>
-            <td>
-              {row.publishedAt === null
-                ? 'Not published'
-                : `${row.publishedBy ?? 'Unknown'} on ${formatInstantLong(row.publishedAt, timeZone)}`}
-            </td>
-            <td>{row.upstream === null ? 'None' : upstreamText(row.upstream)}</td>
-            <td>{row.status === 'superseded' ? rollbackSlot?.(row) : null}</td>
+    <div className="max-w-full overflow-x-auto">
+      <table className="my-3 w-full text-sm">
+        <thead>
+          <tr className="border-b text-left">
+            <th className="py-1">Version</th>
+            <th>Status</th>
+            <th>Published</th>
+            <th>Upstream template</th>
+            <th />
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id} className="border-b align-top">
+              <td className="py-1">{`Version ${row.version}`}</td>
+              <td>
+                {STATUS_LABEL[row.status]}
+                {row.rolledBackFrom === null ? null : (
+                  <span className="block text-muted-foreground">{`Restored from version ${row.rolledBackFrom}`}</span>
+                )}
+              </td>
+              <td>
+                {row.publishedAt === null
+                  ? 'Not published'
+                  : `${row.publishedBy ?? 'Unknown'} on ${formatInstantLong(row.publishedAt, timeZone)}`}
+              </td>
+              <td>{row.upstream === null ? 'None' : upstreamText(row.upstream)}</td>
+              <td>{row.status === 'superseded' ? rollbackSlot?.(row) : null}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   )
 }
