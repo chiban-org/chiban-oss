@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
-import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { Input } from '@/components/ui/input'
 import { listUnresolvedRecords, type UnresolvedRecordView } from '@/features/parcels/unresolvedView'
 import { recordStaffContext } from '@/server/requireStaff'
 import { resolveUnresolvedAction } from '../[parcelId]/actions'
@@ -35,11 +35,17 @@ function UnresolvedTable({ links }: { links: UnresolvedRecordView[] }) {
                 <ActionForm
                   action={resolveUnresolvedAction}
                   submitLabel="Link to parcel"
-                  className="flex flex-wrap items-end gap-x-3"
+                  className="flex flex-wrap items-center gap-x-3"
                   compact
                 >
                   <input type="hidden" name="linkId" value={link.linkId} />
-                  <TextField label="Parcel ID" name="parcelRef" required className="w-40" />
+                  <Input
+                    name="parcelRef"
+                    aria-label={`Parcel ID for ${link.record}`}
+                    placeholder="Parcel ID"
+                    required
+                    className="w-44"
+                  />
                 </ActionForm>
               </td>
             </tr>
@@ -58,7 +64,7 @@ export default async function StaffUnresolvedPage() {
   return (
     <main data-wide="">
       <h1>Unresolved records</h1>
-      <p className="text-muted-foreground">
+      <p className="mb-5 text-muted-foreground">
         These records name a parcel ID that is not in Chiban. They link automatically after an
         import brings the parcel in, or you can link them by hand. Newest first.
       </p>
