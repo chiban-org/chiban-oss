@@ -40,9 +40,10 @@ describe('ConfigEditorForm errors', () => {
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Publish now' }))
     await waitFor(() => expect(screen.getByText('The draft has errors.')).toBeTruthy())
-    expect(screen.getByText('Prefix: Use one to four capital letters.')).toBeTruthy()
-    expect(screen.getByText('Checklist keys: Leave no checklist key blank.')).toBeTruthy()
+    expect(screen.getByText('Number prefix: Use one to four capital letters.')).toBeTruthy()
+    expect(screen.getByText('Inspection checklists: Leave no checklist key blank.')).toBeTruthy()
   })
 })
 
@@ -60,7 +61,7 @@ describe('ConfigEditorForm while a request runs', () => {
         publishAction={never}
       />,
     )
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Save draft' }))
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Working'))
   })
 })

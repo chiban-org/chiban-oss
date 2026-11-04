@@ -2,6 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
+import { PublishBar } from '@/components/config/PublishBar'
 import { Check, FieldError, Input, Pick, RowButton, rowKey } from '@/components/config/primitives'
 import { WorkflowPreview } from '@/components/config/WorkflowPreview'
 import { Button } from '@/components/ui/button'
@@ -194,32 +195,24 @@ export function WorkflowEditor({
       </fieldset>
       <FieldError errors={fieldErrors} name="workflow" />
       <FieldError errors={fieldErrors} name="_form" />
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" name="intent" value="publish" disabled={pending || !hydrated}>
-          Publish
-        </Button>
-        <Button
-          type="submit"
-          name="intent"
-          value="save"
-          variant="outline"
-          disabled={pending || !hydrated}
-        >
-          Save draft
-        </Button>
-        <Button
-          type="submit"
-          name="intent"
-          value="preview"
-          variant="outline"
-          disabled={pending || !hydrated}
-        >
-          Preview
-        </Button>
-        <p role="status" className="text-sm">
-          {result === null ? null : result.ok ? result.message : result.error}
-        </p>
-      </div>
+      <PublishBar
+        pinned
+        disabled={pending || !hydrated}
+        status={
+          pending ? 'Working' : result === null ? null : result.ok ? result.message : result.error
+        }
+        extra={
+          <Button
+            type="submit"
+            name="intent"
+            value="preview"
+            variant="outline"
+            disabled={pending || !hydrated}
+          >
+            Preview
+          </Button>
+        }
+      />
       {preview === null ? null : <WorkflowPreview preview={preview} />}
     </form>
   )

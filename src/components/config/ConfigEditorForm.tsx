@@ -4,12 +4,12 @@ import { useActionState, useState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
 import { EditorContextProvider } from '@/components/config/EditorContextProvider'
 import { CONFIG_EDITORS } from '@/components/config/editorRegistry'
+import { PublishBar } from '@/components/config/PublishBar'
 import { FieldError, type FieldErrors } from '@/components/config/primitives'
-import { Button } from '@/components/ui/button'
 import { useHydrated } from '@/components/useHydrated'
 import type { EditorContext } from '@/features/config/editorContext'
-import type { ConfigKind } from '@/features/config/kinds'
-import { words } from '@/lib/words'
+import { issueFieldName } from '@/features/config/issueFieldNames'
+import { type ConfigKind, isPinnedKind } from '@/features/config/kinds'
 import type { ActionResult } from '@/server/actionRunner'
 
 interface Props {
@@ -74,27 +74,15 @@ export function ConfigEditorForm({
         />
       </EditorContextProvider>
       <FieldError errors={errors} name="_form" />
-      <div className="mt-4 flex items-center gap-3">
-        <Button type="submit" name="intent" value="publish" disabled={pending || !hydrated}>
-          Publish
-        </Button>
-        <Button
-          type="submit"
-          name="intent"
-          value="save"
-          variant="outline"
-          disabled={pending || !hydrated}
-        >
-          Save draft
-        </Button>
-        <p role="status" className="text-sm">
-          {statusText(pending, result)}
-        </p>
-      </div>
+      <PublishBar
+        pinned={isPinnedKind(kind)}
+        disabled={pending || !hydrated}
+        status={statusText(pending, result)}
+      />
       {listed.length === 0 ? null : (
         <ul role="alert" className="mt-2 list-disc pl-5 text-sm text-status-failed-fg">
           {listed.map(([path, message]) => (
-            <li key={path}>{`${words(path)}: ${message}`}</li>
+            <li key={path}>{`${issueFieldName(path)}: ${message}`}</li>
           ))}
         </ul>
       )}

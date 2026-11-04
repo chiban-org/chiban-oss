@@ -5,7 +5,7 @@ import type { VersionRowView } from '@/features/config/settingsViews'
 import { formatInstantLong } from '@/lib/formatDate'
 import { words } from '@/lib/words'
 
-const STATUS_LABEL = { draft: 'Draft', published: 'Published', superseded: 'Superseded' } as const
+const STATUS_LABEL = { draft: 'Draft', published: 'Published', superseded: 'Replaced' } as const
 
 function upstreamText(upstream: { id: string; version: number }): string {
   const starter = NH_STARTERS.find((s) => s.id === upstream.id)
@@ -25,7 +25,8 @@ export function VersionHistory({
   timeZone: string
   rollbackSlot?: (row: VersionRowView) => ReactNode
 }) {
-  if (rows.length === 0) return <p>No versions yet.</p>
+  if (rows.length === 0)
+    return <p>Nothing is saved yet. Save a draft or publish to start the history.</p>
   return (
     <div className="max-w-full overflow-x-auto">
       <table className="w-full text-sm">
@@ -34,7 +35,7 @@ export function VersionHistory({
             <th>Version</th>
             <th>Status</th>
             <th>Published</th>
-            <th>Upstream template</th>
+            <th>Started from</th>
             <th />
           </tr>
         </thead>
@@ -56,7 +57,7 @@ export function VersionHistory({
                   ? 'Not published'
                   : `${row.publishedBy ?? 'Unknown'} on ${formatInstantLong(row.publishedAt, timeZone)}`}
               </td>
-              <td>{row.upstream === null ? 'None' : upstreamText(row.upstream)}</td>
+              <td>{row.upstream === null ? 'Made by the town' : upstreamText(row.upstream)}</td>
               <td>{row.status === 'superseded' ? rollbackSlot?.(row) : null}</td>
             </tr>
           ))}

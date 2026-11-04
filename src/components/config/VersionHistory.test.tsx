@@ -48,7 +48,7 @@ describe('VersionHistory', () => {
   it('lists version, status, who published and when, and the upstream template', () => {
     render(<VersionHistory rows={ROWS} timeZone="America/New_York" />)
     const row1 = screen.getByText('Version 1').closest('tr') as HTMLElement
-    expect(within(row1).getByText('Superseded')).toBeTruthy()
+    expect(within(row1).getByText('Replaced')).toBeTruthy()
     expect(within(row1).getByText('Building or demolition permit starter, version 1')).toBeTruthy()
     expect(within(row1).getByText(/Alex Admin/)).toBeTruthy()
     const row4 = screen.getByText('Version 4').closest('tr') as HTMLElement
@@ -77,6 +77,6 @@ describe('VersionHistory', () => {
 
   it('says so when nothing has been saved', () => {
     render(<VersionHistory rows={[]} timeZone="America/New_York" />)
-    expect(screen.getByText('No versions yet.')).toBeTruthy()
+    expect(screen.getByText(/Nothing is saved yet/)).toBeTruthy()
   })
 })

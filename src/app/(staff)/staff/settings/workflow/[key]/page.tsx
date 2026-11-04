@@ -1,6 +1,7 @@
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
+import { RestoreVersion } from '@/components/config/RestoreVersion'
 import { VersionHistory } from '@/components/config/VersionHistory'
 import { WorkflowEditor } from '@/components/config/WorkflowEditor'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
@@ -62,11 +63,12 @@ export default async function WorkflowPage({ params }: Props) {
         rows={state.versions}
         timeZone={timeZone}
         rollbackSlot={(row) => (
-          <ActionForm action={rollbackAction} submitLabel={`Restore version ${row.version}`}>
-            <input type="hidden" name="kind" value="application_type" />
-            <input type="hidden" name="key" value={key} />
-            <input type="hidden" name="toVersion" value={row.version} />
-          </ActionForm>
+          <RestoreVersion
+            kind="application_type"
+            configKey={key}
+            version={row.version}
+            pinned={true}
+          />
         )}
       />
     </main>

@@ -1,5 +1,6 @@
 import { rollbackAction } from '@/app/(staff)/staff/settings/actions'
 import { ActionForm } from '@/components/ActionForm'
+import { RestoreVersion } from '@/components/config/RestoreVersion'
 import { TownSectionForm } from '@/components/config/town/TownSectionForm'
 import { VersionHistory } from '@/components/config/VersionHistory'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
@@ -47,11 +48,12 @@ export async function TownSettingsPage({ ctx, section, title, lead }: Props) {
           rows={history.versions}
           timeZone={town.ok ? town.value.timeZone : 'America/New_York'}
           rollbackSlot={(row) => (
-            <ActionForm action={rollbackAction} submitLabel={`Restore version ${row.version}`}>
-              <input type="hidden" name="kind" value="town_profile" />
-              <input type="hidden" name="key" value="default" />
-              <input type="hidden" name="toVersion" value={row.version} />
-            </ActionForm>
+            <RestoreVersion
+              kind="town_profile"
+              configKey="default"
+              version={row.version}
+              pinned={false}
+            />
           )}
         />
       </details>
