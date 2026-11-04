@@ -24,6 +24,7 @@ import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/appl
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/minio'
+import { packetMeeting } from '@/test/packetFixtures'
 import { staffActor } from '@/test/parcels'
 import { approvePublic } from '@/test/renditionFixtures'
 import { addRedactedCopy } from '@/test/searchFixtures'
@@ -70,7 +71,11 @@ async function packetWith(documentIds: string[]) {
   const made = await createPacket(
     handle.db,
     world.staff,
-    { title: 'April agenda', board: 'planning_board', meetingDate: MEETING, documentIds },
+    {
+      title: 'April agenda',
+      meetingId: await packetMeeting(handle.db, 'planning_board', MEETING),
+      documentIds,
+    },
     signal,
   )
   if (!made.ok) throw new Error(JSON.stringify(made.error))
@@ -108,7 +113,11 @@ describe('board packets', () => {
     const made = await createPacket(
       handle.db,
       world.staff,
-      { title: 'x', board: 'zba', meetingDate: MEETING, documentIds: [hidden.documentId] },
+      {
+        title: 'x',
+        meetingId: await packetMeeting(handle.db, 'zba', MEETING),
+        documentIds: [hidden.documentId],
+      },
       signal,
     )
     expect(made).toEqual({ ok: false, error: { notForBoard: [hidden.documentId] } })
@@ -233,7 +242,11 @@ describe('board packets', () => {
       await createPacket(
         handle.db,
         inspector,
-        { title: 'x', board: 'zba', meetingDate: MEETING, documentIds: [doc.documentId] },
+        {
+          title: 'x',
+          meetingId: await packetMeeting(handle.db, 'zba', MEETING),
+          documentIds: [doc.documentId],
+        },
         signal,
       ),
     ).toEqual({ ok: false, error: 'forbidden' })

@@ -16,6 +16,7 @@ import { deriveRenditions, serveDerivative } from '@/features/renditions/derive'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/minio'
+import { packetMeeting } from '@/test/packetFixtures'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { uploadRedactionFixture } from '@/test/redactionFixtures'
 import { activePublicApproval, redactedVersionOf, STATEMENT } from '@/test/renditionFixtures'
@@ -83,14 +84,20 @@ async function thumbnailEtag(actor: Actor | null): Promise<string | null> {
   return r.ok ? r.value.etag : null
 }
 
+let packets = 0
+
 async function packetFor(): Promise<{ packetId: string; token: string }> {
+  packets += 1
   const made = await createPacket(
     handle.db,
     staff,
     {
       title: 'Packet',
-      board: 'planning_board',
-      meetingDate: '2027-04-01' as CivilDate,
+      meetingId: await packetMeeting(
+        handle.db,
+        'planning_board',
+        `2027-05-${String(packets).padStart(2, '0')}`,
+      ),
       documentIds: [doc.documentId],
     },
     signal,
@@ -243,8 +250,7 @@ describe('revocation propagation', () => {
         staff,
         {
           title: 'Racing packet',
-          board: 'planning_board',
-          meetingDate: '2027-04-01' as CivilDate,
+          meetingId: await packetMeeting(handle.db, 'planning_board', '2027-04-01'),
           documentIds: [doc.documentId],
         },
         signal,

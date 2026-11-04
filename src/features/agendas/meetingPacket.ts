@@ -1,5 +1,4 @@
-import type { Board } from '@packs/nh/schema'
-import { and, asc, eq, inArray, or, sql } from 'drizzle-orm'
+import { and, eq, inArray, or, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { agendaItems, agendas, boardMeetings, boardPackets, documents, hearings } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
@@ -10,7 +9,6 @@ import { storeGeneratedBytes } from '@/features/files/ingest'
 import { trcSummaryPdf } from '@/features/reviews/trcSummary'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { formatCivilDate } from '@/lib/formatDate'
-import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 export type MeetingPacketError =
@@ -19,21 +17,16 @@ export type MeetingPacketError =
   | 'empty'
   | 'agenda_not_published'
   | 'packet_exists'
+  | 'meeting_cancelled'
   | { notForBoard: string[] }
 
 const BOARD_OR_PUBLIC = sql`('board' = any(${documents.audiences}) or ${documents.isPublic})`
 
-export async function meetingPacketId(
-  db: Db,
-  board: Board,
-  meetingDate: string,
-): Promise<string | null> {
+export async function meetingPacketId(db: Db, meetingId: string): Promise<string | null> {
   const [row] = await db
     .select({ id: boardPackets.id })
     .from(boardPackets)
-    .where(and(eq(boardPackets.board, board), eq(boardPackets.meetingDate, meetingDate)))
-    .orderBy(asc(boardPackets.createdAt), asc(boardPackets.id))
-    .limit(1)
+    .where(eq(boardPackets.meetingId, meetingId))
   return row?.id ?? null
 }
 
@@ -51,9 +44,8 @@ export async function createMeetingPacket(
   const [agenda] = await db.select().from(agendas).where(eq(agendas.meetingId, meetingId))
   if (agenda === undefined) return err('empty')
   if (agenda.status !== 'published') return err('agenda_not_published')
-  if ((await meetingPacketId(db, meeting.board, meeting.meetingDate)) !== null) {
-    return err('packet_exists')
-  }
+  if (meeting.status === 'cancelled') return err('meeting_cancelled')
+  if ((await meetingPacketId(db, meetingId)) !== null) return err('packet_exists')
   const applicationRows = await db
     .selectDistinct({ applicationId: hearings.applicationId })
     .from(agendaItems)
@@ -103,8 +95,7 @@ export async function createMeetingPacket(
     actor,
     {
       title: `Meeting packet for ${formatCivilDate(meeting.meetingDate)}`,
-      board: meeting.board,
-      meetingDate: meeting.meetingDate as CivilDate,
+      meetingId,
       documentIds: rows.map((r) => r.id),
     },
     signal,

@@ -64,7 +64,7 @@ export async function listMemberMeetings(
       board: boardMeetings.board,
       meetingDate: boardMeetings.meetingDate,
       agendaDocumentId: agendas.documentId,
-      hasPacket: sql<boolean>`exists (select 1 from board_packets bp where bp.board = ${boardMeetings.board} and bp.meeting_date = ${boardMeetings.meetingDate})`,
+      hasPacket: sql<boolean>`exists (select 1 from board_packets bp where bp.meeting_id = ${boardMeetings.id})`,
     })
     .from(boardMeetings)
     .innerJoin(
@@ -109,11 +109,7 @@ async function packetFor(db: Db, meeting: typeof boardMeetings.$inferSelect) {
   const [packet] = await db
     .select()
     .from(boardPackets)
-    .where(
-      and(eq(boardPackets.board, meeting.board), eq(boardPackets.meetingDate, meeting.meetingDate)),
-    )
-    .orderBy(desc(boardPackets.createdAt))
-    .limit(1)
+    .where(eq(boardPackets.meetingId, meeting.id))
   return packet ?? null
 }
 

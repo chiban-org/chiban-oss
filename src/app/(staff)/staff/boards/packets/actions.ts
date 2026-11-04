@@ -1,12 +1,12 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { boardErrorCopy } from '@/features/boards/errorCopy'
 import { revokePacketLink, sendPacketLink } from '@/features/boards/packetLinks'
 import { notForBoardMessage } from '@/features/boards/packetRefusal'
 import { createPacket } from '@/features/boards/packets'
 import { getMailTransport } from '@/features/mail/transport'
 import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
-import { parseCivilDate } from '@/types/civilDate'
 import { isUuid } from '@/utils/uuid'
 
 const invalid = (): ActionResult => ({ ok: false, error: errorCopy('invalid_input') })
@@ -19,25 +19,22 @@ const SEND_COPY = {
 
 export async function createPacketAction(formData: FormData): Promise<ActionResult> {
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const board = text(formData, 'board')
-    const date = parseCivilDate(text(formData, 'meetingDate'))
+    const meetingId = text(formData, 'meetingId')
     const documentIds = formData
       .getAll('documentId')
       .filter((v): v is string => typeof v === 'string' && isUuid(v))
-    if ((board !== 'planning_board' && board !== 'zba') || !date.ok || documentIds.length === 0) {
-      return invalid()
-    }
+    if (!isUuid(meetingId) || documentIds.length === 0) return invalid()
     const made = await createPacket(
       db,
       actor,
-      { title: text(formData, 'title'), board, meetingDate: date.value, documentIds },
+      { title: text(formData, 'title'), meetingId, documentIds },
       signal,
     )
     if (made.ok) {
       revalidatePath('/staff/boards/packets')
       return { ok: true, message: 'Packet created.' }
     }
-    if (made.error === 'forbidden') return { ok: false, error: errorCopy('forbidden') }
+    if (typeof made.error === 'string') return { ok: false, error: boardErrorCopy(made.error) }
     return { ok: false, error: await notForBoardMessage(db, made.error.notForBoard, signal) }
   })
 }

@@ -15,6 +15,7 @@ import { seedAcknowledgedEmailTest, seedStaleJobAlert } from '@/features/demo/se
 import { seedHistorical } from '@/features/demo/seedHistorical'
 import { type SeedInspectionsDeps, seedInspections } from '@/features/demo/seedInspections'
 import { demoOcrConverter, seedMigration } from '@/features/demo/seedMigration'
+import { seedBoardPacket } from '@/features/demo/seedPacket'
 import { seedParcels } from '@/features/demo/seedParcels'
 import { seedPayments } from '@/features/demo/seedPayments'
 import { actorFor } from '@/features/demo/seedPermitSupport'
@@ -174,6 +175,7 @@ export async function seedDemo(
     deps.boards?.now,
     deps.operations?.store ?? deps.records?.store,
   )
+  await seedBoardPacket(db, signal, deps.records?.mail)
   const operationsSeeded = await seedOperations(db, signal, deps.operations ?? {})
   const enforcementSeeded = await seedEnforcement(
     db,

@@ -2,10 +2,12 @@ import { and, asc, desc, eq, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { auditLog, boardPacketItems, boardPacketLinks, documents } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { type PacketMeetingChoice, packetMeetingChoices } from '@/features/boards/packetMeetings'
 import { eligibleBoardDocuments, listPackets } from '@/features/boards/packets'
 import { BOARD_NAMES } from '@/features/hearings/views'
 import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate, formatInstant } from '@/lib/formatDate'
+import { todayInTimeZone } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 export interface PacketLinkLine {
@@ -24,6 +26,7 @@ export interface PacketsPageView {
     notified: string[]
   }[]
   documents: { id: string; label: string }[]
+  meetings: PacketMeetingChoice[]
 }
 
 const FALLBACK_ZONE = 'America/New_York'
@@ -108,5 +111,6 @@ export async function loadPacketsPage(
         }),
     })),
     documents: eligible.ok ? eligible.value.map((d) => ({ id: d.id, label: d.label })) : [],
+    meetings: await packetMeetingChoices(db, todayInTimeZone(zone, now), signal),
   })
 }

@@ -27,6 +27,7 @@ import { expectDbError } from '@/test/dbErrors'
 import { DISPOSITION_NOW, eligibleCase } from '@/test/dispositionFixtures'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/minio'
+import { packetMeeting } from '@/test/packetFixtures'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -266,7 +267,11 @@ describe('executing a batch', () => {
     const packet = await createPacket(
       handle.db,
       staff,
-      { title: 'Packet', board: 'zba', meetingDate: d('2027-04-01'), documentIds: [documentId] },
+      {
+        title: 'Packet',
+        meetingId: await packetMeeting(handle.db, 'zba', d('2027-04-01')),
+        documentIds: [documentId],
+      },
       signal,
     )
     if (!packet.ok) throw new Error('packet')

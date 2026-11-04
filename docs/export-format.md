@@ -459,8 +459,12 @@ File: `data/board_packets.ndjson`. Ordered by id.
 - `title`: text
 - `board`: text
 - `meeting_date`: date
+- `meeting_id`: uuid, nullable
 - `created_by`: uuid
 - `created_at`: timestamp with time zone
+
+References:
+- `meeting_id` refers to `board_meetings`
 
 ### calendar_accounts
 

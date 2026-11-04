@@ -8,6 +8,7 @@ import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/appl
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/minio'
+import { packetMeeting } from '@/test/packetFixtures'
 import type { CivilDate } from '@/types/civilDate'
 
 const state = vi.hoisted((): { db: unknown; store: unknown } => ({ db: null, store: null }))
@@ -62,8 +63,7 @@ beforeAll(async () => {
     world.staff,
     {
       title: 'April agenda',
-      board: 'zba',
-      meetingDate: '2027-04-14' as CivilDate,
+      meetingId: await packetMeeting(handle.db, 'zba', '2027-04-14'),
       documentIds: [up.documentId],
     },
     signal,

@@ -60,7 +60,7 @@ async function memberHearings(db: Db, actor: Actor, applicationId: string) {
     .select({
       hearing: hearings,
       meeting: boardMeetings,
-      hasPacket: sql<boolean>`exists (select 1 from board_packets bp where bp.board = ${boardMeetings.board} and bp.meeting_date = ${boardMeetings.meetingDate})`,
+      hasPacket: sql<boolean>`exists (select 1 from board_packets bp where bp.meeting_id = ${boardMeetings.id})`,
     })
     .from(hearings)
     .innerJoin(boardMeetings, eq(boardMeetings.id, hearings.meetingId))

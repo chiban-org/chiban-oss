@@ -2,6 +2,7 @@ import type { Board } from '@packs/nh/schema'
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
+  boardMeetings,
   boardPacketItems,
   boardPackets,
   documents,
@@ -14,19 +15,40 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { documentOwners } from '@/features/boards/documentBoard'
 import { BOARD_NAMES } from '@/features/hearings/views'
-import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
+import { isUuid } from '@/utils/uuid'
 
 const ELIGIBLE_SCAN = 500
 
 export interface CreatePacketInput {
   title: string
-  board: 'planning_board' | 'zba'
-  meetingDate: CivilDate
+  meetingId: string
   documentIds: string[]
 }
 
-export type PacketError = 'forbidden' | { notForBoard: string[] }
+export type PacketError =
+  | 'forbidden'
+  | 'not_found'
+  | 'meeting_cancelled'
+  | 'packet_exists'
+  | { notForBoard: string[] }
+
+type MeetingRow = typeof boardMeetings.$inferSelect
+
+async function packetMeeting(
+  db: Db,
+  meetingId: string,
+): Promise<Result<MeetingRow, 'not_found' | 'meeting_cancelled' | 'packet_exists'>> {
+  if (!isUuid(meetingId)) return err('not_found')
+  const [meeting] = await db.select().from(boardMeetings).where(eq(boardMeetings.id, meetingId))
+  if (meeting === undefined) return err('not_found')
+  if (meeting.status === 'cancelled') return err('meeting_cancelled')
+  const [existing] = await db
+    .select({ id: boardPackets.id })
+    .from(boardPackets)
+    .where(eq(boardPackets.meetingId, meetingId))
+  return existing === undefined ? ok(meeting) : err('packet_exists')
+}
 
 interface Versioned {
   id: string
@@ -62,6 +84,9 @@ export async function createPacket(
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'packet.manage', signal)
   if (!allowed.ok) return err('forbidden')
+  const meeting = await packetMeeting(db, input.meetingId)
+  if (!meeting.ok) return meeting
+  const board = meeting.value.board
   const docs = await db.select().from(documents).where(inArray(documents.id, input.documentIds))
   const versions = await db
     .select()
@@ -98,7 +123,7 @@ export async function createPacket(
   const otherBoard = new Set<string>()
   for (const doc of docs) {
     const owner = await ownerOf(doc)
-    if (owner !== null && owner.board !== input.board) otherBoard.add(doc.id)
+    if (owner !== null && owner.board !== board) otherBoard.add(doc.id)
   }
   const refused = picked.filter((p) => p.frozen === null || otherBoard.has(p.id)).map((p) => p.id)
   if (refused.length > 0) return err({ notForBoard: refused })
@@ -107,12 +132,15 @@ export async function createPacket(
       .insert(boardPackets)
       .values({
         title: input.title,
-        board: input.board,
-        meetingDate: input.meetingDate,
+        board,
+        meetingDate: meeting.value.meetingDate,
+        meetingId: meeting.value.id,
         createdBy: actor.userId,
       })
+      .onConflictDoNothing()
       .returning({ id: boardPackets.id })
-    const packetId = packet?.id ?? ''
+    if (packet === undefined) return err('packet_exists')
+    const packetId = packet.id
     const approvalIds = picked.flatMap((p) =>
       p.frozen?.approvalId == null ? [] : [p.frozen.approvalId],
     )

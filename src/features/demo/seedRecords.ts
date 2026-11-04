@@ -3,8 +3,6 @@ import { env } from '@/config/env'
 import type { Db } from '@/db/client'
 import { applications, documents, documentVersions } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
-import { sendPacketLink } from '@/features/boards/packetLinks'
-import { createPacket } from '@/features/boards/packets'
 import { claimProject, sendContractorClaim } from '@/features/contractors/claims'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import {
@@ -181,7 +179,7 @@ export async function seedRecords(
   }
   const ctx: Context = { db, signal, store: deps.store ?? getObjectStore(), staff: cast.staff }
   const parcel = must(await resolveParcelId(db, { value: '007001000000' }, signal), 'parcel')
-  const files = await seedParcelFiles(ctx, parcel.parcelId)
+  await seedParcelFiles(ctx, parcel.parcelId)
 
   const first = await open(db, cast, signal, {
     parcel: '007001000000',
@@ -255,33 +253,6 @@ export async function seedRecords(
       signal,
     ),
     'hold',
-  )
-
-  const packet = must(
-    await createPacket(
-      db,
-      cast.staff,
-      {
-        title: 'Planning Board agenda',
-        board: 'planning_board',
-        meetingDate: d('2026-07-14'),
-        documentIds: files.map((f) => f.documentId),
-      },
-      signal,
-    ),
-    'packet',
-  )
-  await sendPacketLink(
-    db,
-    deps.mail ?? getMailTransport(),
-    cast.staff,
-    {
-      packetId: packet.packetId,
-      recipientName: 'Bea Board',
-      recipientEmail: `board@${DEMO_DOMAIN}`,
-    },
-    signal,
-    noon('2026-07-01'),
   )
 
   const contractor = await actorFor(db, 'contractor', signal)

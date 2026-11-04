@@ -11,6 +11,7 @@ import { type BoardWorld, setupBoardWorld, submitBoardApplication } from '@/test
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/minio'
+import { packetMeeting } from '@/test/packetFixtures'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -64,7 +65,11 @@ describe('packet document chooser', () => {
     const made = await createPacket(
       handle.db,
       world.staff,
-      { title: 'April', board: 'planning_board', meetingDate: MEETING, documentIds: [documentId] },
+      {
+        title: 'April',
+        meetingId: await packetMeeting(handle.db, 'planning_board', MEETING),
+        documentIds: [documentId],
+      },
       signal,
     )
     expect(made).toEqual({ ok: false, error: { notForBoard: [documentId] } })
@@ -92,7 +97,11 @@ describe('packets page', () => {
     const made = await createPacket(
       handle.db,
       world.staff,
-      { title: 'April', board: 'zba', meetingDate: MEETING, documentIds: [documentId] },
+      {
+        title: 'April',
+        meetingId: await packetMeeting(handle.db, 'zba', MEETING),
+        documentIds: [documentId],
+      },
       signal,
     )
     if (!made.ok) throw new Error('packet')
@@ -129,7 +138,11 @@ describe('packets page', () => {
     const made = await createPacket(
       handle.db,
       world.staff,
-      { title: 'April', board: 'zba', meetingDate: MEETING, documentIds: [documentId] },
+      {
+        title: 'April',
+        meetingId: await packetMeeting(handle.db, 'zba', MEETING),
+        documentIds: [documentId],
+      },
       signal,
     )
     if (!made.ok) throw new Error('packet')

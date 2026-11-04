@@ -8,6 +8,7 @@ import { approveRendition, revokeApproval } from '@/features/renditions/approval
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/minio'
+import { packetMeeting } from '@/test/packetFixtures'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { uploadRedactionFixture } from '@/test/redactionFixtures'
 import { redactedVersionOf, STATEMENT } from '@/test/renditionFixtures'
@@ -61,8 +62,7 @@ describe('board packet document route', () => {
       staff,
       {
         title: 'Packet',
-        board: 'zba',
-        meetingDate: '2027-04-01' as CivilDate,
+        meetingId: await packetMeeting(handle.db, 'zba', '2027-04-01'),
         documentIds: [doc.documentId],
       },
       signal,

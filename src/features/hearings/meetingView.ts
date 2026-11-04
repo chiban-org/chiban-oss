@@ -144,7 +144,7 @@ export async function loadMeetingView(
     cancelReason: meeting.cancelReason,
     hearings: await hearingLines(db, meetingId, signal),
     agenda: agenda === undefined ? null : await agendaView(db, agenda, items, signal),
-    packetId: await meetingPacketId(db, meeting.board, meeting.meetingDate),
+    packetId: await meetingPacketId(db, meetingId),
     canManagePackets: await hasCapability(db, actor.userId, 'packet.manage', signal),
   }
 }

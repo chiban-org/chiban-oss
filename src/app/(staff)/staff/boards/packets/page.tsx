@@ -1,35 +1,31 @@
+import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { loadPacketsPage } from '@/features/boards/packetsPage'
+import { loadPacketsPage, type PacketsPageView } from '@/features/boards/packetsPage'
 import { requireStaffContext } from '@/server/requireStaff'
 import { createPacketAction, revokePacketLinkAction, sendPacketLinkAction } from './actions'
 
 export const dynamic = 'force-dynamic'
 
-const BOARDS: [string, string][] = [
-  ['planning_board', 'Planning Board'],
-  ['zba', 'Zoning Board of Adjustment'],
-]
-
-export default async function PacketsPage() {
-  const ctx = await requireStaffContext()
-  const page = await loadPacketsPage(ctx.db, ctx.actor, ctx.signal)
-  if (!page.ok) return <NoPermission title="Board packets" action="manage board packets" />
-  const { packets, documents } = page.value
+function NewPacket({ meetings, documents }: Pick<PacketsPageView, 'meetings' | 'documents'>) {
   return (
-    <main className="space-y-6">
-      <h1>Board packets</h1>
-      <p>
-        Seated board members read a packet on their board page once the meeting agenda is published.
-        Sending to a seated member emails them a notice. Anyone else gets a link that expires.
-      </p>
-      <details>
-        <summary>New packet</summary>
+    <details>
+      <summary>New packet</summary>
+      {meetings.length === 0 ? (
+        <p>
+          {'Every scheduled meeting already has a packet. '}
+          <Link href="/staff/boards/meetings">Add the next meeting</Link>
+          {' to make a packet for it.'}
+        </p>
+      ) : (
         <ActionForm action={createPacketAction} submitLabel="Create packet" variant="default">
           <TextField label="Title" name="title" required />
-          <SelectField label="Board" name="board" options={BOARDS} />
-          <TextField label="Meeting date" name="meetingDate" type="date" required />
+          <SelectField
+            label="Meeting"
+            name="meetingId"
+            options={meetings.map((m) => [m.id, m.label] as const)}
+          />
           <fieldset className="space-y-1 border-0 p-0">
             <legend className="font-medium">Board documents shared with the board or public</legend>
             {documents.length === 0 ? (
@@ -43,7 +39,24 @@ export default async function PacketsPage() {
             ))}
           </fieldset>
         </ActionForm>
-      </details>
+      )}
+    </details>
+  )
+}
+
+export default async function PacketsPage() {
+  const ctx = await requireStaffContext()
+  const page = await loadPacketsPage(ctx.db, ctx.actor, ctx.signal)
+  if (!page.ok) return <NoPermission title="Board packets" action="manage board packets" />
+  const { packets, documents, meetings } = page.value
+  return (
+    <main className="space-y-6">
+      <h1>Board packets</h1>
+      <p>
+        Seated board members read a packet on their board page once the meeting agenda is published.
+        Sending to a seated member emails them a notice. Anyone else gets a link that expires.
+      </p>
+      <NewPacket meetings={meetings} documents={documents} />
       {packets.length === 0 ? (
         <p>
           No packets yet. Create one from a meeting page once its agenda is published, or add one

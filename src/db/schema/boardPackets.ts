@@ -6,20 +6,27 @@ import {
   primaryKey,
   text,
   timestamp,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
+import { boardMeetings } from './boards'
 import { documents, documentVersions } from './documents'
 import { citext } from './identity'
 import { renditionApprovals } from './renditionApprovals'
 
-export const boardPackets = pgTable('board_packets', {
-  id: uuid('id').primaryKey().defaultRandom(),
-  title: text('title').notNull(),
-  board: text('board', { enum: ['planning_board', 'zba'] }).notNull(),
-  meetingDate: date('meeting_date', { mode: 'string' }).notNull(),
-  createdBy: uuid('created_by').notNull(),
-  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
-})
+export const boardPackets = pgTable(
+  'board_packets',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    title: text('title').notNull(),
+    board: text('board', { enum: ['planning_board', 'zba'] }).notNull(),
+    meetingDate: date('meeting_date', { mode: 'string' }).notNull(),
+    meetingId: uuid('meeting_id').references(() => boardMeetings.id),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex('board_packets_meeting_idx').on(t.meetingId)],
+)
 
 export const boardPacketItems = pgTable(
   'board_packet_items',
