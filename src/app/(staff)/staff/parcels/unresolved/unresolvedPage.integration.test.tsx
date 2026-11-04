@@ -77,6 +77,17 @@ afterAll(async () => {
 })
 
 describe('unresolved records page', () => {
+  it('refuses roles without parcel.manage', async () => {
+    const staff = state.actor
+    for (const role of ['inspector', 'finance', 'records_custodian'] as const) {
+      state.actor = await staffActor(handle.db, role)
+      expect(textOf(renderToStaticMarkup(await UnresolvedPage()))).toContain(
+        'You do not have permission',
+      )
+    }
+    state.actor = staff
+  })
+
   it('names each record and parcel ID format in words', async () => {
     const text = textOf(renderToStaticMarkup(await UnresolvedPage()))
     expect(text).toContain('Deed for Map 9 Lot 99')

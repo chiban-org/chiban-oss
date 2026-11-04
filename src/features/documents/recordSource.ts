@@ -50,6 +50,7 @@ export async function summarizeDocuments(
     date: todayInTimeZone(zone, row.createdAt),
     href: `/api/documents/${row.id}`,
     thumbnailHref: `/api/documents/${row.id}/thumbnail`,
+    parcelFile: row.docKind === 'parcel_file',
   }))
 }
 

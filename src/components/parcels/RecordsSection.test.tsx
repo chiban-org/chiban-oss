@@ -93,4 +93,24 @@ describe('RecordsSection', () => {
       '/staff/parcels/src',
     )
   })
+
+  it('folds closed records to one line and keeps open ones expanded', () => {
+    const history: ParcelHistory = {
+      own: [
+        { ...record, closed: true, note: 'Final inspection passed.' },
+        { ...record, recordId: 'r3', title: 'Fence permit', note: 'Awaiting review.' },
+      ],
+      ancestral: [],
+      sourcesRegistered: 1,
+    }
+    const { container } = render(<RecordsSection history={history} />)
+    const folded = container.querySelectorAll('li details')
+    expect(folded).toHaveLength(1)
+    expect(folded[0]?.hasAttribute('open')).toBe(false)
+    expect(folded[0]?.querySelector('summary')?.textContent).toContain('Deck permit')
+    expect(folded[0]?.textContent).toContain('Final inspection passed.')
+    const open = screen.getByText('Fence permit').closest('li')
+    expect(open?.querySelector('details')).toBeNull()
+    expect(screen.getByText('Awaiting review.')).toBeTruthy()
+  })
 })

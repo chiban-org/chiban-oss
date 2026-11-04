@@ -245,7 +245,7 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
     label: 'Unresolved records',
     group: 'data',
     icon: 'unresolved',
-    access: records,
+    access: any('parcel.manage'),
   },
   {
     href: '/staff/overrides/aliases',

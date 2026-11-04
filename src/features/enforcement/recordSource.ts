@@ -58,6 +58,7 @@ export async function summarizeCases(
     title: 'Code enforcement case',
     number: row.number,
     status: { label: CASE_STATUS_LABELS[row.status], chip: 'neutral' },
+    closed: row.status === 'closed',
     date: row.openedOn as CivilDate,
     href: actor !== null && hasFullRecordAccess(actor) ? `/staff/enforcement/${row.id}` : null,
     note: notes.get(row.id) ?? null,

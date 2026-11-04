@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { Input } from '@/components/ui/input'
+import { hasCapability } from '@/features/authz/capabilities'
 import { listUnresolvedRecords, type UnresolvedRecordView } from '@/features/parcels/unresolvedView'
 import { recordStaffContext } from '@/server/requireStaff'
 import { resolveUnresolvedAction } from '../[parcelId]/actions'
@@ -58,7 +59,9 @@ function UnresolvedTable({ links }: { links: UnresolvedRecordView[] }) {
 
 export default async function StaffUnresolvedPage() {
   const ctx = await recordStaffContext()
-  if (ctx === null)
+  const mayLink =
+    ctx !== null && (await hasCapability(ctx.db, ctx.actor.userId, 'parcel.manage', ctx.signal))
+  if (ctx === null || !mayLink)
     return <NoPermission title="Unresolved records" action="see unresolved records" />
   const links = await listUnresolvedRecords(ctx.db, ctx.actor, ctx.signal)
   return (

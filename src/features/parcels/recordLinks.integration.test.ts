@@ -99,11 +99,13 @@ describe('linking records', () => {
       ),
     )
     const p = await makeParcel(handle.db, [{ format: 'gis12', value: '007102000000' }])
-    const reviewer = await staffActor(handle.db, 'reviewer')
-    expect(await resolveUnresolvedLink(handle.db, reviewer, r.linkId, p, signal)).toEqual({
-      ok: false,
-      error: 'forbidden',
-    })
+    for (const role of ['reviewer', 'inspector', 'finance', 'records_custodian'] as const) {
+      const refused = await staffActor(handle.db, role)
+      expect(await resolveUnresolvedLink(handle.db, refused, r.linkId, p, signal)).toEqual({
+        ok: false,
+        error: 'forbidden',
+      })
+    }
     const staff = await staffActor(handle.db)
     expect((await resolveUnresolvedLink(handle.db, staff, r.linkId, p, signal)).ok).toBe(true)
     expect(await linkRow(r.linkId)).toMatchObject({ linkedVia: 'manual_resolution', parcelId: p })

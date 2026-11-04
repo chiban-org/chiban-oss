@@ -67,6 +67,13 @@ describe('documents in parcel history', () => {
     expect(await publicTitles()).toEqual(['Recorded plat'])
   })
 
+  it('marks parcel files so the staff parcel page can list them only under Documents', async () => {
+    const history = await getParcelHistory(handle.db, world.parcelId, { kind: 'public' }, signal)
+    const files = history.own.filter((r) => r.kind === 'document')
+    expect(files.length).toBeGreaterThan(0)
+    expect(files.every((r) => r.parcelFile === true)).toBe(true)
+  })
+
   it('applicant parcel history shows own party documents; the public view does not', async () => {
     const app = await makeApplication(handle.db, world)
     await attach({ kind: 'application', id: app.applicationId }, 'Applicant plan', {

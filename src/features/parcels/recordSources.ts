@@ -14,6 +14,8 @@ export interface ParcelRecordSummary {
   href: string | null
   note?: string | null
   thumbnailHref?: string | null
+  closed?: boolean
+  parcelFile?: boolean
 }
 
 export interface ParcelRecordSource {

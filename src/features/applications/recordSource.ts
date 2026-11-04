@@ -29,6 +29,8 @@ const CHIPS: Record<CoreState, Chip> = {
   suspended: 'overdue',
 }
 
+const CLOSED_STATES: readonly CoreState[] = ['issued', 'expired', 'closed', 'denied', 'withdrawn']
+
 export const NOT_ACCEPTED_REASON = 'not_accepted_incomplete'
 
 function statusLabel(
@@ -82,6 +84,7 @@ export async function summarizeApplications(
         ),
         chip: CHIPS[state],
       },
+      closed: CLOSED_STATES.includes(state),
       date: (row.issuedOn ?? row.receivedDate) as CivilDate | null,
       href: full ? `/staff/applications/${row.id}` : null,
     })

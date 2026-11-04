@@ -20,6 +20,7 @@ import { returnedCheckNoticesForParcel } from '@/features/ledger/balanceNotice'
 import { loadPack } from '@/features/packs/loadPack'
 import { aliasSourceText, lineageEventText, retiredText } from '@/features/parcels/parcelText'
 import { getStaffParcelView } from '@/features/parcels/staffParcelView'
+import { withoutParcelFiles } from '@/features/parcels/withoutParcelFiles'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
 import { createStaffUploadIntentAction, finalizeStaffUploadAction } from '../../records/actions'
@@ -106,7 +107,7 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
       node: (
         <RecordsSection
           key="records"
-          history={view.history}
+          history={withoutParcelFiles(view.history)}
           parcelHrefBase="/staff/parcels/"
           renderAction={(record) =>
             record.linkId === undefined || !canManageParcel ? null : (

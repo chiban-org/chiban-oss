@@ -22,7 +22,7 @@ function ParcelLink({ base, parcelId, label }: { base: string; parcelId: string;
   )
 }
 
-function RecordRow({
+function RecordDetails({
   record,
   hrefBase,
   children,
@@ -33,7 +33,7 @@ function RecordRow({
 }) {
   const carried = 'carriedFrom' in record ? record.carriedFrom : undefined
   return (
-    <li className="flex items-start gap-4 border-b py-3 last:border-b-0">
+    <div className="flex items-start gap-4">
       {record.thumbnailHref === undefined || record.thumbnailHref === null ? null : (
         <img
           src={record.thumbnailHref}
@@ -44,16 +44,7 @@ function RecordRow({
         />
       )}
       <div className="min-w-0 flex-1">
-        {record.href === null ? (
-          <span className="font-semibold">{record.title}</span>
-        ) : (
-          <Link href={record.href} className="font-semibold text-action underline">
-            {record.title}
-          </Link>
-        )}
-        {record.number === null ? null : (
-          <span className="ml-2 text-muted-foreground">{record.number}</span>
-        )}
+        <RecordTitle record={record} />
         {record.note === undefined || record.note === null ? null : (
           <p className="text-sm text-muted-foreground">{record.note}</p>
         )}
@@ -68,6 +59,60 @@ function RecordRow({
         <StatusChip status={record.status.chip} label={record.status.label} />
         {children}
       </div>
+    </div>
+  )
+}
+
+function RecordTitle({ record }: { record: OwnRecord | AncestralRecord }) {
+  return (
+    <>
+      {record.href === null ? (
+        <span className="font-semibold">{record.title}</span>
+      ) : (
+        <Link href={record.href} className="font-semibold text-action underline">
+          {record.title}
+        </Link>
+      )}
+      {record.number === null ? null : (
+        <span className="ml-2 text-muted-foreground">{record.number}</span>
+      )}
+    </>
+  )
+}
+
+function RecordRow({
+  record,
+  hrefBase,
+  children,
+}: {
+  record: OwnRecord | AncestralRecord
+  hrefBase: string
+  children?: ReactNode
+}) {
+  if (record.closed !== true) {
+    return (
+      <li className="border-b py-3 last:border-b-0">
+        <RecordDetails record={record} hrefBase={hrefBase}>
+          {children}
+        </RecordDetails>
+      </li>
+    )
+  }
+  return (
+    <li className="border-b py-2 last:border-b-0">
+      <details>
+        <summary className="flex cursor-pointer items-center gap-3">
+          <span className="min-w-0 flex-1">
+            <RecordTitle record={record} />
+          </span>
+          <StatusChip status={record.status.chip} label={record.status.label} />
+        </summary>
+        <div className="pt-2">
+          <RecordDetails record={record} hrefBase={hrefBase}>
+            {children}
+          </RecordDetails>
+        </div>
+      </details>
     </li>
   )
 }

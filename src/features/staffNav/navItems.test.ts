@@ -88,6 +88,15 @@ describe('staff navigation', () => {
     )
   })
 
+  it('shows Unresolved records only to roles that can link parcels', () => {
+    for (const role of ['inspector', 'finance', 'records_custodian'] as const) {
+      expect(labelsFor(role)).not.toContain('Unresolved records')
+    }
+    for (const role of ['admin', 'staff'] as const) {
+      expect(labelsFor(role)).toContain('Unresolved records')
+    }
+  })
+
   it('shows admin the administration pages and finance the payments page', () => {
     expect(labelsFor('admin')).toEqual(expect.arrayContaining(['Export', 'Health', 'Cutover']))
     expect(labelsFor('finance')).toContain('Payments')
