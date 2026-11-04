@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { auditLog, parcelAliases } from '@/db/schema'
+import { auditLog, parcelAliases, parcelIdFormats } from '@/db/schema'
 import { loadActor } from '@/features/auth/actor'
 import { addAlias } from '@/features/parcels/aliases'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
@@ -75,6 +75,19 @@ describe('resolveParcelId', () => {
     expect(await resolveParcelId(handle.db, { value: gone }, signal)).toEqual({
       ok: true,
       value: { parcelId: gone, via: 'retired' },
+    })
+  })
+
+  it('a free-text alias shaped like a record id still resolves through the alias', async () => {
+    await handle.db
+      .insert(parcelIdFormats)
+      .values({ key: 'deedref', label: 'Deed reference', kind: 'free_text', width: null })
+      .onConflictDoNothing()
+    const value = '0a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d'
+    const id = await makeParcel(handle.db, [{ format: 'deedref', value }])
+    expect(await resolveParcelId(handle.db, { value }, signal)).toEqual({
+      ok: true,
+      value: { parcelId: id, via: 'active' },
     })
   })
 

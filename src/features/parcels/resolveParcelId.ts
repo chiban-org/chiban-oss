@@ -28,12 +28,14 @@ async function candidates(
   return rows.map((r) => r.parcelId)
 }
 
-async function byRecordId(db: DbOrTx, id: string): Promise<Result<Resolved, ResolveError>> {
+async function byRecordId(db: DbOrTx, ref: ParcelIdRef): Promise<Resolved | null> {
+  const id = ref.value.trim()
+  if (ref.format !== undefined || !isUuid(id)) return null
   const [row] = await db
     .select({ id: parcels.id, status: parcels.status })
     .from(parcels)
     .where(eq(parcels.id, id))
-  return row === undefined ? err('not_found') : ok({ parcelId: row.id, via: row.status })
+  return row === undefined ? null : { parcelId: row.id, via: row.status }
 }
 
 export async function resolveParcelId(
@@ -43,8 +45,8 @@ export async function resolveParcelId(
 ): Promise<Result<Resolved, ResolveError>> {
   signal.throwIfAborted()
   if (normalizeId(ref.value) === '') return err('not_found')
-  if (ref.format === undefined && isUuid(ref.value.trim()))
-    return await byRecordId(db, ref.value.trim())
+  const record = await byRecordId(db, ref)
+  if (record !== null) return ok(record)
   for (const via of ['active', 'retired'] as const) {
     const ids = await candidates(db, ref, via)
     const first = ids[0]

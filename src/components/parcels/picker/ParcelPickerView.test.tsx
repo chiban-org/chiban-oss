@@ -1,11 +1,18 @@
 // @vitest-environment jsdom
 import { act, cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { ParcelPickerView } from '@/components/parcels/picker/ParcelPickerView'
 import { restoreSubmittedValues } from '@/components/useFormAction'
 import type { PickedParcel } from '@/features/parcels/parcelPick'
 
 afterEach(cleanup)
+
+const scrolled = vi.fn()
+beforeAll(() => {
+  Element.prototype.scrollIntoView = function (this: Element) {
+    scrolled(this.textContent)
+  }
+})
 
 const HERON: PickedParcel = {
   parcelId: '11111111-1111-4111-8111-111111111111',
@@ -82,6 +89,17 @@ describe('ParcelPickerView', () => {
     expect(hidden().value).toBe(MILL.parcelId)
     expect(screen.getByText('3 Old Mill Lane, Quillfeather Trust')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Change parcel' })).toBeTruthy()
+  })
+
+  it('scrolls the option the arrow keys reach into view', async () => {
+    scrolled.mockClear()
+    renderPicker(fakeSearch([HERON, MILL]))
+    fireEvent.change(box(), { target: { value: 'Lane' } })
+    await screen.findAllByRole('option')
+    fireEvent.keyDown(box(), { key: 'ArrowUp' })
+    await waitFor(() =>
+      expect(scrolled).toHaveBeenLastCalledWith(expect.stringContaining('007020000000')),
+    )
   })
 
   it('closes the list on Escape', async () => {

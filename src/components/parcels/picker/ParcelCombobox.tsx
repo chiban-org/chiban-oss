@@ -54,6 +54,10 @@ export function ParcelCombobox({
   useEffect(() => {
     inputRef.current?.setCustomValidity(query.trim() === '' ? '' : UNCHOSEN_COPY)
   }, [inputRef, query])
+  useEffect(() => {
+    if (expanded && active >= 0)
+      document.getElementById(optionId(listId, active))?.scrollIntoView({ block: 'nearest' })
+  }, [expanded, active, listId])
   const pick = (choice: PickerChoice) => {
     setQuery('')
     setOpen(false)
