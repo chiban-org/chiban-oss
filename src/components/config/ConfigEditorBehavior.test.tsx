@@ -242,4 +242,21 @@ describe('ConfigEditorForm', () => {
     const hidden = document.querySelector('input[name="body"]') as HTMLInputElement
     expect(JSON.parse(hidden.value).label).toBe('Restored')
   })
+
+  it('lets a form publish even though the builder shows required applicant fields', () => {
+    const { container } = render(
+      <ConfigEditorForm
+        kind="form"
+        configKey="f"
+        initialBody={skeletonBody('form', 'f')}
+        resetKey="v1"
+        context={context}
+        saveAction={noop}
+        publishAction={noop}
+      />,
+    )
+    const form = container.querySelector('form') as HTMLFormElement
+    expect(form.querySelector('[required]')).not.toBeNull()
+    expect(form.noValidate).toBe(true)
+  })
 })

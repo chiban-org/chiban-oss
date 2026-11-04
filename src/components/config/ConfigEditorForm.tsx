@@ -55,7 +55,11 @@ export function ConfigEditorForm({
   const errors: FieldErrors = result !== null && !result.ok ? (result.fieldErrors ?? {}) : {}
   const listed = Object.entries(errors).filter(([path]) => path !== '_form')
   return (
-    <form action={run} className={kind === 'form' ? undefined : 'max-w-4xl'}>
+    <form
+      action={run}
+      noValidate={kind === 'form'}
+      className={kind === 'form' ? undefined : 'max-w-4xl'}
+    >
       <CsrfField />
       <input type="hidden" name="kind" value={kind} />
       <input type="hidden" name="key" value={configKey} />
