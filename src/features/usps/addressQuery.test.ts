@@ -1,0 +1,80 @@
+import { describe, expect, it } from 'vitest'
+import { parseTypedAddress } from '@/features/usps/addressQuery'
+
+describe('parseTypedAddress', () => {
+  it('reads one line with the city, state and ZIP after the last comma', () => {
+    expect(parseTypedAddress(['12 Osprey Lane, Alder Pond NH 03999'])).toEqual({
+      preamble: [],
+      query: { streetAddress: '12 Osprey Lane', city: 'Alder Pond', state: 'NH', ZIPCode: '03999' },
+    })
+  })
+
+  it('reads a city and state with no ZIP', () => {
+    expect(parseTypedAddress(['12 Alder Lane, Alder Pond NH'])?.query).toEqual({
+      streetAddress: '12 Alder Lane',
+      city: 'Alder Pond',
+      state: 'NH',
+    })
+  })
+
+  it('reads the state and ZIP after their own comma, with a ZIP+4', () => {
+    expect(parseTypedAddress(['1 Main St, Alder Pond, nh 03000-1234'])?.query).toEqual({
+      streetAddress: '1 Main St',
+      city: 'Alder Pond',
+      state: 'NH',
+      ZIPCode: '03000',
+      ZIPPlus4: '1234',
+    })
+  })
+
+  it('reads a street and a ZIP alone', () => {
+    expect(parseTypedAddress(['1 Main St, 03000'])?.query).toEqual({
+      streetAddress: '1 Main St',
+      ZIPCode: '03000',
+    })
+  })
+
+  it('keeps a unit between the street and the city as the secondary address', () => {
+    expect(parseTypedAddress(['1 Main St, Apt 2, Alder Pond NH 03000'])?.query).toEqual({
+      streetAddress: '1 Main St',
+      secondaryAddress: 'Apt 2',
+      city: 'Alder Pond',
+      state: 'NH',
+      ZIPCode: '03000',
+    })
+  })
+
+  it('keeps whole lines before the street line as the preamble', () => {
+    expect(
+      parseTypedAddress(['Land Use Office, Town Hall', '1 Main Street', 'Alder Pond, NH 03000']),
+    ).toEqual({
+      preamble: ['Land Use Office, Town Hall'],
+      query: { streetAddress: '1 Main Street', city: 'Alder Pond', state: 'NH', ZIPCode: '03000' },
+    })
+  })
+
+  it('keeps parts before the street on the same line as one preamble entry', () => {
+    expect(parseTypedAddress(['Attn Clerk, 1 Main St, Alder Pond NH 03000'])?.preamble).toEqual([
+      'Attn Clerk',
+    ])
+  })
+
+  it('reads a post office box as a street line', () => {
+    expect(parseTypedAddress(['PO Box 7', 'Alder Pond NH 03000'])?.query.streetAddress).toBe(
+      'PO Box 7',
+    )
+  })
+
+  it('returns null for text that is not a mailing address', () => {
+    expect(parseTypedAddress(['clerk@alderpond.example'])).toBeNull()
+    expect(parseTypedAddress(['603-555-0100'])).toBeNull()
+    expect(parseTypedAddress(['Alder Pond NH 03000'])).toBeNull()
+    expect(parseTypedAddress(['12 Alder Lane'])).toBeNull()
+    expect(parseTypedAddress(['12 Alder Lane, Alder Pond'])).toBeNull()
+    expect(parseTypedAddress(['', '  '])).toBeNull()
+  })
+
+  it('returns null for a state code USPS does not list', () => {
+    expect(parseTypedAddress(['12 Alder Lane, Alder Pond ZZ'])).toBeNull()
+  })
+})

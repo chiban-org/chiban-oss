@@ -69,6 +69,39 @@ describe('alert environment', () => {
   })
 })
 
+describe('usps environment', () => {
+  it('leaves address checks off when nothing is set or the values are blank', () => {
+    const parsed = envSchema.parse({ ...base, USPS_CLIENT_ID: '', USPS_CLIENT_SECRET: '' })
+    expect(parsed.USPS_CLIENT_ID).toBeUndefined()
+    expect(parsed.USPS_CLIENT_SECRET).toBeUndefined()
+    expect(parsed.USPS_STUB).toBe(false)
+    expect(parsed.USPS_API_BASE).toBe('https://apis.usps.com')
+  })
+
+  it('a client id without a secret fails env parsing', () => {
+    const parsed = envSchema.safeParse({ ...base, USPS_CLIENT_ID: 'consumer-key' })
+    expect(parsed.success).toBe(false)
+    expect(parsed.error?.issues.map((i) => i.path.join('.'))).toContain('USPS_CLIENT_SECRET')
+  })
+
+  it('a secret without a client id fails env parsing', () => {
+    const parsed = envSchema.safeParse({ ...base, USPS_CLIENT_SECRET: 'consumer-secret' })
+    expect(parsed.success).toBe(false)
+    expect(parsed.error?.issues.map((i) => i.path.join('.'))).toContain('USPS_CLIENT_ID')
+  })
+
+  it('USPS_STUB in production fails env parsing', () => {
+    const parsed = envSchema.safeParse({ ...base, NODE_ENV: 'production', USPS_STUB: 'true' })
+    expect(parsed.success).toBe(false)
+    expect(parsed.error?.issues.map((i) => i.path.join('.'))).toContain('USPS_STUB')
+  })
+
+  it('accepts the testing environment base', () => {
+    const parsed = envSchema.parse({ ...base, USPS_API_BASE: 'https://apis-tem.usps.com' })
+    expect(parsed.USPS_API_BASE).toBe('https://apis-tem.usps.com')
+  })
+})
+
 describe('ocr environment', () => {
   it('OCRMYPDF_PATH defaults to ocrmypdf and can be overridden', () => {
     expect(envSchema.parse(base).OCRMYPDF_PATH).toBe('ocrmypdf')
@@ -90,6 +123,7 @@ describe('strict env prefixes', () => {
       'EXPORT_',
       'GHOSTSCRIPT_',
       'BACKUP_',
+      'USPS_',
     ])
   })
 

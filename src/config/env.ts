@@ -24,6 +24,10 @@ const secretKeys = z
       ),
   )
 
+const blankAsUnset = (value: unknown) => (value === '' ? undefined : value)
+
+const optionalSecret = z.preprocess(blankAsUnset, z.string().min(1).optional())
+
 const commaList = (item: z.ZodType<string, string>) =>
   z
     .string()
@@ -71,6 +75,10 @@ export const envSchema = z
     CHIBAN_ACTIVE_KEY_ID: z.string().regex(KEY_ID),
     CHIBAN_IMAGE_REF: z.string().min(1).optional(),
     CHIBAN_TERMS_FILE: z.string().optional(),
+    USPS_CLIENT_ID: optionalSecret,
+    USPS_CLIENT_SECRET: optionalSecret,
+    USPS_API_BASE: z.preprocess(blankAsUnset, z.url().default('https://apis.usps.com')),
+    USPS_STUB: z.preprocess(blankAsUnset, boolFromString.default(false)),
   })
   .refine((v) => v.CHIBAN_ACTIVE_KEY_ID in v.CHIBAN_SECRET_KEYS, {
     path: ['CHIBAN_ACTIVE_KEY_ID'],
@@ -82,6 +90,18 @@ export const envSchema = z
   })
   .refine((v) => v.NODE_ENV !== 'production' || v.STRIPE_API_BASE === undefined, {
     path: ['STRIPE_API_BASE'],
+    message: 'must not be set in production',
+  })
+  .refine((v) => v.USPS_CLIENT_ID === undefined || v.USPS_CLIENT_SECRET !== undefined, {
+    path: ['USPS_CLIENT_SECRET'],
+    message: 'is required when USPS_CLIENT_ID is set',
+  })
+  .refine((v) => v.USPS_CLIENT_SECRET === undefined || v.USPS_CLIENT_ID !== undefined, {
+    path: ['USPS_CLIENT_ID'],
+    message: 'is required when USPS_CLIENT_SECRET is set',
+  })
+  .refine((v) => v.NODE_ENV !== 'production' || !v.USPS_STUB, {
+    path: ['USPS_STUB'],
     message: 'must not be set in production',
   }) satisfies z.ZodType
 
