@@ -14,6 +14,7 @@ import {
 import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
 import { transitionApplication } from '@/features/applications/transition'
 import { recordCounterPayment } from '@/features/counter/counterPayment'
+import { defaultSort } from '@/features/dataTable/sort'
 import { setAudiences } from '@/features/documents/publish'
 import { blobKey, ingestTempObject, sha256Hex } from '@/features/files/ingest'
 import { buildReceiptPdf } from '@/features/ledger/receiptPdf'
@@ -28,7 +29,8 @@ import { listWorkQueue } from '@/features/queue/workQueue'
 import { setDocumentSeries } from '@/features/records/assignments'
 import { checkDisposition } from '@/features/records/disposition'
 import { addReviewComment, assignReviewer } from '@/features/reviews/assignments'
-import { getAssignmentView, listMyAssignments } from '@/features/reviews/reviewerView'
+import { getAssignmentView } from '@/features/reviews/reviewerView'
+import { listReviewTable, REVIEW_SORT } from '@/features/reviews/reviewList'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { appTypeBody, FORM_BODY, saveAndPublish } from '@/test/configFixtures'
@@ -300,7 +302,13 @@ describe('findings 3 to 8', () => {
     const { loadActor } = await import('@/features/auth/actor')
     const demoted = await loadActor(handle.db, world.reviewer.userId, signal)
     if (demoted === null) throw new Error('actor')
-    expect(await listMyAssignments(handle.db, demoted, signal)).toEqual([])
+    const listed = await listReviewTable(
+      handle.db,
+      demoted,
+      { tab: 'open', sort: defaultSort(REVIEW_SORT) },
+      signal,
+    )
+    expect(listed.rows).toEqual([])
     expect(
       await getAssignmentView(handle.db, demoted, assigned.value.assignmentId, signal),
     ).toBeNull()

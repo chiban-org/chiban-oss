@@ -89,11 +89,13 @@ describe('reviewer assignment actions and pages', () => {
     }
   })
 
-  it('the reviewer application list shows only the 2 assigned of 4, and the review page is theirs alone', async () => {
+  it('a reviewer opening the application list lands on their reviews, and the review page is theirs alone', async () => {
     state.actor = world.reviewer
-    const html = renderToStaticMarkup(await ApplicationsPage({ searchParams: Promise.resolve({}) }))
-    expect(html).toContain('2 applications')
-    const mine = renderToStaticMarkup(await ReviewsPage())
+    await expect(ApplicationsPage({ searchParams: Promise.resolve({}) })).rejects.toThrow(
+      'NEXT_REDIRECT:/staff/reviews',
+    )
+    const mine = renderToStaticMarkup(await ReviewsPage({ searchParams: Promise.resolve({}) }))
+    expect(mine.match(/href="\/staff\/reviews\/[0-9a-f-]{36}"/g)).toHaveLength(2)
     const assignmentId = /reviews\/([0-9a-f-]{36})/.exec(mine)?.[1] ?? ''
     expect(assignmentId).not.toBe('')
     const page = renderToStaticMarkup(

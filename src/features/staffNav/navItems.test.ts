@@ -69,10 +69,10 @@ describe('staff navigation', () => {
     }
   })
 
-  it('shows a reviewer reviews and applications but not the day list', () => {
+  it('shows a reviewer reviews but not applications or the day list', () => {
     const labels = labelsFor('reviewer')
     expect(labels).toContain('Reviews')
-    expect(labels).toContain('Applications')
+    expect(labels).not.toContain('Applications')
     expect(labels).not.toContain('My day')
     for (const hidden of ['Imports', 'Exceptions', 'Unresolved records', 'Overrides', 'Settings']) {
       expect(labels).not.toContain(hidden)

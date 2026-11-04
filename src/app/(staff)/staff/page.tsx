@@ -5,6 +5,7 @@ import { RecentParcelSearches } from '@/components/parcels/RecentParcelSearches'
 import { SearchExamples } from '@/components/parcels/SearchExamples'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { isReviewer } from '@/features/access/roles'
 import { type SearchExample, searchExample } from '@/features/parcels/searchExample'
 import {
   countWorkQueue,
@@ -12,6 +13,7 @@ import {
   type WorkQueueFilters,
   type WorkQueueRow,
 } from '@/features/queue/workQueue'
+import { REVIEWS_PATH } from '@/features/reviews/reviewList'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
@@ -154,7 +156,7 @@ export default async function StaffHome() {
   if (inspectorOnly) redirect('/staff/inspections/day')
   const ctx = await requireStaffContext()
   if (!mayOpen('/staff/applications', await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
-    redirect('/staff/parcels')
+    redirect(isReviewer(ctx.actor) ? REVIEWS_PATH : '/staff/parcels')
   }
   const today = await townToday(ctx.db, new Date(), ctx.signal)
   const [counts, soon, example] = await Promise.all([

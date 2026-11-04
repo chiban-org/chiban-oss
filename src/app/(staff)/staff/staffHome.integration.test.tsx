@@ -5,7 +5,7 @@ import type { Actor } from '@/features/auth/actor'
 import type { PermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { setupTradeWorld, submittedTrade } from '@/test/ledgerFixtures'
-import { staffActor } from '@/test/parcels'
+import { seedParcelWorld, staffActor } from '@/test/parcels'
 
 interface MockState {
   db: unknown
@@ -70,10 +70,23 @@ describe('/staff home', () => {
   })
 
   it('says nothing needs attention when every count is zero', async () => {
+    const empty = await makeTestDb()
+    state.db = empty.db
+    try {
+      await seedParcelWorld(empty.db)
+      state.actor = await staffActor(empty.db, 'staff')
+      const html = renderToStaticMarkup(await StaffHome())
+      expect(html).toContain('Nothing needs attention')
+      expect(html).not.toContain('Submitted and not yet started')
+    } finally {
+      state.db = handle.db
+      await empty.drop()
+    }
+  })
+
+  it('sends a reviewer to their reviews', async () => {
     state.actor = await staffActor(handle.db, 'reviewer')
-    const html = renderToStaticMarkup(await StaffHome())
-    expect(html).toContain('Nothing needs attention')
-    expect(html).not.toContain('Submitted and not yet started')
+    await expect(StaffHome()).rejects.toThrow('NEXT_REDIRECT:/staff/reviews')
   })
 
   it('offers recent searches and an example under the parcel search', async () => {

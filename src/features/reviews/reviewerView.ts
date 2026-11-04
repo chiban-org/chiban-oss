@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq, isNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
   applications,
@@ -16,35 +16,6 @@ import type { Actor } from '@/features/auth/actor'
 import { listDocuments } from '@/features/documents/listDocuments'
 import type { DocumentListRow } from '@/features/documents/types'
 import { displayIdsFor } from '@/features/parcels/displayId'
-
-export interface MyAssignment {
-  assignmentId: string
-  applicationId: string
-  number: string
-  status: string
-}
-
-export async function listMyAssignments(
-  db: DbOrTx,
-  actor: Actor,
-  signal: AbortSignal,
-): Promise<MyAssignment[]> {
-  signal.throwIfAborted()
-  if (!isReviewer(actor)) return []
-  return await db
-    .select({
-      assignmentId: reviewAssignments.id,
-      applicationId: reviewAssignments.applicationId,
-      number: applications.number,
-      status: reviewAssignments.status,
-    })
-    .from(reviewAssignments)
-    .innerJoin(applications, eq(applications.id, reviewAssignments.applicationId))
-    .where(
-      and(eq(reviewAssignments.reviewerUserId, actor.userId), isNull(reviewAssignments.removedAt)),
-    )
-    .orderBy(desc(reviewAssignments.assignedAt))
-}
 
 export interface AssignmentView {
   assignmentId: string

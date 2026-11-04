@@ -76,7 +76,7 @@ describe('section pages refuse with one permission page', () => {
   it('a board member gets the permission page on the application list', async () => {
     await actAs('board')
     expect(await html(ApplicationsPage(noSearch))).toContain(NO_PERMISSION)
-    expect(await html(ReviewsPage())).toContain(NO_PERMISSION)
+    expect(await html(ReviewsPage(noSearch))).toContain(NO_PERMISSION)
   })
 
   it('a reviewer gets the permission page, not a missing page, on the inspection board and day list', async () => {

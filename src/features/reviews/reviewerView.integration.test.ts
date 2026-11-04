@@ -1,11 +1,13 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import type { Actor } from '@/features/auth/actor'
+import { defaultSort } from '@/features/dataTable/sort'
 import { addReviewComment, assignReviewer } from '@/features/reviews/assignments'
 import {
   getAssignmentView,
   listApplicationReviewers,
-  listMyAssignments,
   listReviewerChoices,
 } from '@/features/reviews/reviewerView'
+import { listReviewTable, REVIEW_SORT } from '@/features/reviews/reviewList'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { staffActor } from '@/test/parcels'
@@ -35,20 +37,28 @@ beforeAll(async () => {
     signal,
   )
 })
+async function openReviews(actor: Actor) {
+  const list = await listReviewTable(
+    handle.db,
+    actor,
+    { tab: 'open', sort: defaultSort(REVIEW_SORT) },
+    signal,
+  )
+  return list.rows
+}
+
 afterAll(async () => {
   await handle.drop()
 })
 
 describe('reviewer views', () => {
   it('lists my assignments and shows comments on mine only', async () => {
-    expect(
-      (await listMyAssignments(handle.db, world.reviewer, signal)).map((a) => a.assignmentId),
-    ).toEqual([assignmentId])
+    expect((await openReviews(world.reviewer)).map((a) => a.assignmentId)).toEqual([assignmentId])
     const view = await getAssignmentView(handle.db, world.reviewer, assignmentId, signal)
     expect(view?.comments.map((c) => c.body)).toEqual(['Needs a stamped plan'])
     const other = await staffActor(handle.db, 'reviewer')
     expect(await getAssignmentView(handle.db, other, assignmentId, signal)).toBeNull()
-    expect(await listMyAssignments(handle.db, other, signal)).toEqual([])
+    expect(await openReviews(other)).toEqual([])
   })
 
   it('lists the application reviewers and the reviewer choices', async () => {

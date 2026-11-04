@@ -1,10 +1,11 @@
+import { redirect } from 'next/navigation'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { TablePager } from '@/components/dataTable/TablePager'
 import { QueueFilters } from '@/components/queue/QueueFilters'
 import { KeyHints, NoMatches, QueueSummary } from '@/components/queue/QueueSummary'
 import { QueueTable } from '@/components/queue/QueueTable'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { hasFullRecordAccess } from '@/features/access/roles'
+import { hasFullRecordAccess, isReviewer } from '@/features/access/roles'
 import { hasCapability } from '@/features/authz/capabilities'
 import {
   clearHref,
@@ -27,6 +28,7 @@ import {
 import { readStatusTab, type StatusTab } from '@/features/queue/stateScopes'
 import { listWorkQueue } from '@/features/queue/workQueue'
 import { listReviewerChoices } from '@/features/reviews/reviewerView'
+import { REVIEWS_PATH } from '@/features/reviews/reviewList'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -52,6 +54,7 @@ export default async function ApplicationsPage({
   const { params, sort, filters } = readQueueView(await searchParams)
   const ctx = await requireStaffContext()
   if (!mayOpen(APPLICATIONS_PATH, await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
+    if (isReviewer(ctx.actor)) redirect(REVIEWS_PATH)
     return <NoPermission title="Applications" action="see applications" />
   }
   const cursor = firstParam(params, PAGE_PARAM)

@@ -12,7 +12,6 @@ type NavAccess =
   | { kind: 'anyCapability'; capabilities: readonly Capability[] }
   | { kind: 'allCapabilities'; capabilities: readonly Capability[] }
   | { kind: 'reviewer' }
-  | { kind: 'fullRecordAccessOrReviewer' }
   | { kind: 'fullRecordAccess' }
 
 export const NAV_GROUPS = [
@@ -124,7 +123,7 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
     label: 'Applications',
     group: 'work',
     icon: 'applications',
-    access: { kind: 'fullRecordAccessOrReviewer' },
+    access: records,
   },
   {
     href: '/staff/inspections',
@@ -325,8 +324,6 @@ export function mayUse(item: NavItem, viewer: NavViewer): boolean {
       return viewer.roles.includes('reviewer')
     case 'fullRecordAccess':
       return hasRecordAccess(viewer.roles)
-    case 'fullRecordAccessOrReviewer':
-      return hasRecordAccess(viewer.roles) || viewer.roles.includes('reviewer')
   }
 }
 
