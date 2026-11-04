@@ -36,7 +36,7 @@ async function grantsOf(): Promise<string[]> {
 describe('application.manage grant', () => {
   it('is a default grant of staff and admin only', () => {
     const holders = Object.entries(DEFAULT_GRANTS)
-      .filter(([, caps]) => caps?.includes('application.manage'))
+      .filter(([, caps]) => caps.includes('application.manage'))
       .map(([role]) => role)
     expect(holders.sort()).toEqual(['admin', 'staff'])
   })
