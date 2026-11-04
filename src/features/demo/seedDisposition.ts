@@ -11,7 +11,7 @@ import { renderPdf } from '@/features/pdf/renderPdf'
 import { recordRetentionEvent } from '@/features/records/recordEvents'
 import { addDays } from '@/types/civilDate'
 
-async function caseWithPhoto(ctx: RtkSeedContext, location: string, title: string) {
+export async function caseWithPhoto(ctx: RtkSeedContext, location: string, title: string) {
   const opened = must(
     await openCase(ctx.db, ctx.staff, { locationText: location }, ctx.signal, ctx.now),
     'open a demo case',

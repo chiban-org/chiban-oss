@@ -60,7 +60,7 @@ function groupClauses(filters: EntryFilters) {
   ])
 }
 
-function weekStart(date: CivilDate): CivilDate {
+export function weekStart(date: CivilDate): CivilDate {
   const weekday = new Date(`${date}T00:00:00Z`).getUTCDay()
   return addDays(date, -((weekday + 6) % 7))
 }

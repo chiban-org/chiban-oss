@@ -1,11 +1,15 @@
 import { and, eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  agendaItems,
   agendas,
   appealNodes,
   applications,
   boardDecisions,
+  boardMeetings,
   boardMemberships,
+  boardPacketLinks,
+  boardPackets,
   documents,
   hearings,
   noticeItems,
@@ -14,12 +18,15 @@ import {
   users,
 } from '@/db/schema'
 import { loadActor } from '@/features/auth/actor'
+import { listMeetingTable } from '@/features/boards/meetingList'
+import { readMeetingListView } from '@/features/boards/meetingListParams'
 import { listMemberMeetings } from '@/features/boards/memberPackets'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { actorFor } from '@/features/demo/seedPermitSupport'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { trcSummary } from '@/features/reviews/trcSummary'
+import { townToday } from '@/features/town/today'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { demoSeedDeps } from '@/test/demoSeedDeps'
 
@@ -28,7 +35,7 @@ let handle: TestDb
 
 beforeAll(async () => {
   handle = await makeTestDb()
-  await seedDemo(handle.db, signal, await demoSeedDeps())
+  await seedDemo(handle.db, signal, { ...(await demoSeedDeps()), screenStates: true })
 })
 afterAll(async () => {
   await handle.drop()
@@ -42,6 +49,14 @@ async function member(local: string) {
   const actor = await loadActor(handle.db, row?.id ?? '', signal)
   if (actor === null) throw new Error(`no ${local}`)
   return actor
+}
+
+async function meetingOn(board: 'planning_board' | 'zba', date: string): Promise<string> {
+  const [row] = await handle.db
+    .select({ id: boardMeetings.id })
+    .from(boardMeetings)
+    .where(and(eq(boardMeetings.board, board), eq(boardMeetings.meetingDate, date)))
+  return row?.id ?? ''
 }
 
 describe('hearing demo data', () => {
@@ -79,7 +94,7 @@ describe('hearing demo data', () => {
   it('seats the staff board member Bea Board on the ZBA once, even when seeded again', async () => {
     const bea = await member('board')
     expect(bea.kind).toBe('staff')
-    await seedDemo(handle.db, signal, await demoSeedDeps())
+    await seedDemo(handle.db, signal, { ...(await demoSeedDeps()), screenStates: true })
     const seats = await handle.db
       .select({ board: boardMemberships.board })
       .from(boardMemberships)
@@ -87,21 +102,83 @@ describe('hearing demo data', () => {
     expect(seats).toEqual([{ board: 'zba' }])
   })
 
-  it('has one published agenda', async () => {
+  it('has a published agenda for each board and one draft agenda', async () => {
     const rows = await handle.db.select().from(agendas)
-    expect(rows.filter((a) => a.status === 'published')).toHaveLength(1)
+    expect(rows.filter((a) => a.status === 'published')).toHaveLength(2)
+    expect(rows.filter((a) => a.status === 'draft')).toHaveLength(1)
   })
 
-  it("seeded board member sees only their board's meeting in /board", async () => {
+  it("seeded board members see only their board's meeting in /board, with its packet", async () => {
     const zba = await listMemberMeetings(
       handle.db,
       await member('zba.member'),
       { limit: 25 },
       signal,
     )
-    expect(zba.rows.map((r) => r.board)).toEqual(['zba'])
+    expect(zba.rows.map((r) => [r.board, r.hasPacket])).toEqual([['zba', true]])
     const pb = await listMemberMeetings(handle.db, await member('pb.member'), { limit: 25 }, signal)
-    expect(pb.rows).toEqual([])
+    expect(pb.rows.map((r) => [r.board, r.hasPacket])).toEqual([['planning_board', true]])
+  })
+
+  it('the November 12 Planning Board meeting has hearings that are not on an agenda yet', async () => {
+    const meetingId = await meetingOn('planning_board', '2026-11-12')
+    const scheduled = await handle.db
+      .select()
+      .from(hearings)
+      .where(and(eq(hearings.meetingId, meetingId), eq(hearings.status, 'scheduled')))
+    expect(scheduled.length).toBeGreaterThanOrEqual(2)
+    expect(
+      await handle.db.select().from(agendaItems).where(eq(agendaItems.meetingId, meetingId)),
+    ).toEqual([])
+  })
+
+  it('the meeting table counts the hearings at each meeting', async () => {
+    const page = await listMeetingTable(
+      handle.db,
+      await actorFor(handle.db, 'staff', signal),
+      { ...readMeetingListView({}), today: '2026-11-01', limit: 50, offset: 0 },
+      signal,
+    )
+    const nov12 = page?.rows.find((r) => r.meetingDate === '2026-11-12')
+    expect(nov12?.hearings).toBeGreaterThanOrEqual(2)
+  })
+
+  it('has a cancelled special meeting that is still ahead, with its reason', async () => {
+    const today = await townToday(handle.db, new Date(), signal)
+    const cancelled = await handle.db
+      .select()
+      .from(boardMeetings)
+      .where(eq(boardMeetings.status, 'cancelled'))
+    expect(cancelled.map((m) => m.kind)).toEqual(['special'])
+    expect((cancelled[0]?.meetingDate ?? '') >= today).toBe(true)
+    expect(cancelled[0]?.cancelReason).not.toBe('')
+  })
+
+  it('has a packet link that is still open', async () => {
+    const links = await handle.db.select().from(boardPacketLinks)
+    expect(links.some((l) => l.revokedAt === null && l.expiresAt > new Date())).toBe(true)
+  })
+
+  it('removes the old demo packet that names no meeting when seeded again', async () => {
+    const staff = await actorFor(handle.db, 'staff', signal)
+    const [stale] = await handle.db
+      .insert(boardPackets)
+      .values({
+        title: 'Planning Board agenda',
+        board: 'planning_board',
+        meetingDate: '2026-07-14',
+        createdBy: staff.userId,
+      })
+      .returning({ id: boardPackets.id })
+    await seedDemo(handle.db, signal, { ...(await demoSeedDeps()), screenStates: true })
+    const left = await handle.db
+      .select()
+      .from(boardPackets)
+      .where(eq(boardPackets.id, stale?.id ?? ''))
+    expect(left).toEqual([])
+    expect((await handle.db.select().from(boardPackets)).every((p) => p.meetingId !== null)).toBe(
+      true,
+    )
   })
 
   it('has a site plan decision with conditions, filed on time, with every notice item proved', async () => {

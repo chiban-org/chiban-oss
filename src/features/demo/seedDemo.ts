@@ -8,6 +8,7 @@ import { seedDefaultGrants } from '@/features/authz/defaultGrants'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { seedBoards } from '@/features/demo/seedBoards'
 import { seedCama } from '@/features/demo/seedCama'
+import { seedCoverage } from '@/features/demo/seedCoverage'
 import { seedCutover } from '@/features/demo/seedCutover'
 import { seedEnforcement } from '@/features/demo/seedEnforcement'
 import { seedBusinessExport, seedExportTarget } from '@/features/demo/seedExports'
@@ -23,6 +24,7 @@ import { seedPermits } from '@/features/demo/seedPermits'
 import { type SeedRecordsDeps, seedRecords } from '@/features/demo/seedRecords'
 import { seedRecordsM10 } from '@/features/demo/seedRtk'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
+import { getMailTransport } from '@/features/mail/transport'
 import type { OcrConverter } from '@/features/migration/ocrmypdf'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 
@@ -100,6 +102,7 @@ export interface SeedDemoDeps {
   inspections?: SeedInspectionsDeps
   operations?: SeedOperationsDeps
   boards?: { now?: Date }
+  screenStates?: boolean
 }
 
 const DEFAULT_EXPORT_DIR = './.data/exports'
@@ -117,6 +120,7 @@ export interface SeedReport {
   operationsSeeded: boolean
   boardsSeeded: boolean
   enforcementSeeded: boolean
+  coverageSeeded: boolean
 }
 
 export async function seedDemo(
@@ -177,18 +181,13 @@ export async function seedDemo(
   )
   await seedBoardPacket(db, signal, deps.records?.mail)
   const operationsSeeded = await seedOperations(db, signal, deps.operations ?? {})
-  const enforcementSeeded = await seedEnforcement(
-    db,
-    deps.operations?.store ?? getObjectStore(),
-    signal,
-    deps.operations?.now ?? new Date(),
-  )
-  await seedRecordsM10(
-    db,
-    deps.operations?.store ?? getObjectStore(),
-    signal,
-    deps.operations?.now ?? new Date(),
-  )
+  const store = deps.operations?.store ?? getObjectStore()
+  const now = deps.operations?.now ?? new Date()
+  const enforcementSeeded = await seedEnforcement(db, store, signal, now)
+  await seedRecordsM10(db, store, signal, now)
+  const coverageSeeded =
+    deps.screenStates === true &&
+    (await seedCoverage(db, { store, now, mail: deps.records?.mail ?? getMailTransport() }, signal))
   return {
     ...base,
     parcelsSeeded: seeded.imported,
@@ -199,6 +198,7 @@ export async function seedDemo(
     operationsSeeded,
     boardsSeeded,
     enforcementSeeded,
+    coverageSeeded,
   }
 }
 

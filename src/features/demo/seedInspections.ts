@@ -10,6 +10,7 @@ import {
   BUILDING_VALUES,
   type Cast,
   completeAndReview,
+  findApplication,
   must,
   noon,
   open,
@@ -24,6 +25,7 @@ import { cancelOpenInspections } from '@/features/inspections/permitStateEffect'
 import { recordInspectionResult } from '@/features/inspections/recordResult'
 import { requestInspection } from '@/features/inspections/requestInspection'
 import { scheduleInspection } from '@/features/inspections/schedule'
+import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
 import { schedulingDates } from '@/features/inspections/slots'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
@@ -50,13 +52,29 @@ interface Days {
   earlier: CivilDate
 }
 
-async function inspectionDays(db: Db, today: CivilDate, signal: AbortSignal): Promise<Days> {
-  const settings = await getInspectionSettings(db, signal)
+function inspectionDayTest(settings: InspectionSettingsBody): (date: CivilDate) => boolean {
   const holidays = packHolidayCalendar()
-  const isDay = (date: CivilDate) =>
+  return (date) =>
     (settings.schedulingDays as number[]).includes(dayOfWeek(date)) && !holidays.isHoliday(date)
-  let seeded = today
-  while (!isDay(seeded)) seeded = addDays(seeded, 1)
+}
+
+function firstDayFrom(isDay: (date: CivilDate) => boolean, today: CivilDate): CivilDate {
+  let day = today
+  while (!isDay(day)) day = addDays(day, 1)
+  return day
+}
+
+export async function nextInspectionDay(
+  db: Db,
+  today: CivilDate,
+  signal: AbortSignal,
+): Promise<CivilDate> {
+  return firstDayFrom(inspectionDayTest(await getInspectionSettings(db, signal)), today)
+}
+
+async function inspectionDays(db: Db, today: CivilDate, signal: AbortSignal): Promise<Days> {
+  const isDay = inspectionDayTest(await getInspectionSettings(db, signal))
+  const seeded = firstDayFrom(isDay, today)
   const past: CivilDate[] = []
   for (let back = 1; back <= LOOKBACK_DAYS && past.length < 2; back += 1) {
     const candidate = addDays(today, -back)
@@ -80,12 +98,8 @@ async function publishSettings(db: Db, cast: Cast, signal: AbortSignal): Promise
 }
 
 async function applicationByTitle(db: Db, title: string): Promise<string> {
-  const [row] = await db
-    .select({ id: applications.id })
-    .from(applications)
-    .innerJoin(projects, eq(projects.id, applications.projectId))
-    .where(eq(projects.title, `${TITLE_PREFIX} ${title}`))
-  return must(row === undefined ? { ok: false, error: title } : { ok: true, value: row.id }, title)
+  const id = await findApplication(db, title)
+  return must(id === null ? { ok: false, error: title } : { ok: true, value: id }, title)
 }
 
 export async function seedInspections(

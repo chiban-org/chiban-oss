@@ -73,7 +73,11 @@ const ZBA_SEATS = [
 const PB_VOTES = votes(PB_SEATS.map(([, name]) => name))
 const ZBA_VOTES = votes(ZBA_SEATS.map(([, name]) => name))
 
-async function meetingId(db: Db, board: 'planning_board' | 'zba', date: string): Promise<string> {
+export async function meetingId(
+  db: Db,
+  board: 'planning_board' | 'zba',
+  date: string,
+): Promise<string> {
   const [row] = await db
     .select({ id: boardMeetings.id })
     .from(boardMeetings)

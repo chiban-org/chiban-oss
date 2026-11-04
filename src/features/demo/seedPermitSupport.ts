@@ -2,7 +2,7 @@ import { NH_STARTERS } from '@packs/nh/starters'
 import { eq } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
-import { applications, users } from '@/db/schema'
+import { applications, projects, users } from '@/db/schema'
 import { createApplication } from '@/features/applications/createApplication'
 import type { CoreState } from '@/features/applications/states'
 import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
@@ -125,6 +125,16 @@ export class Scenario {
     )
     must(posted, 'demo payment')
   }
+}
+
+export async function findApplication(db: Db, title: string): Promise<string | null> {
+  const [row] = await db
+    .select({ id: applications.id })
+    .from(applications)
+    .innerJoin(projects, eq(projects.id, applications.projectId))
+    .where(eq(projects.title, `${TITLE_PREFIX} ${title}`))
+    .limit(1)
+  return row?.id ?? null
 }
 
 export async function open(

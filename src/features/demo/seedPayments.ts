@@ -1,6 +1,7 @@
 import { and, eq, like } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { ledgerEntries, paymentAttempts, projects } from '@/db/schema'
+import type { Actor } from '@/features/auth/actor'
 import { publishConfig } from '@/features/config/publish'
 import { saveDraft } from '@/features/config/store'
 import { recordCounterPayment } from '@/features/counter/counterPayment'
@@ -64,6 +65,63 @@ async function configurePayments(db: Db, cast: Cast, signal: AbortSignal): Promi
   )
 }
 
+export async function payByCard(
+  db: Db,
+  staff: Actor,
+  input: { applicationId: string; payerName: string },
+  signal: AbortSignal,
+  now: Date,
+): Promise<string> {
+  const started = must(
+    await startCardPresentPayment(
+      db,
+      staff,
+      { applicationIds: [input.applicationId], payerName: input.payerName },
+      signal,
+      { now },
+    ),
+    'card start',
+  )
+  must(
+    await resolveSimulatedReader(
+      db,
+      staff,
+      { attemptId: started.attemptId, outcome: 'captured' },
+      signal,
+      { now },
+    ),
+    'card capture',
+  )
+  return started.attemptId
+}
+
+export async function payByCheck(
+  db: Db,
+  staff: Actor,
+  input: { applicationId: string; payerName: string; checkNumber: string },
+  signal: AbortSignal,
+  now: Date,
+): Promise<string> {
+  const allocations = await dueAllocations(db, input.applicationId, signal)
+  const paid = must(
+    await recordCounterPayment(
+      db,
+      staff,
+      {
+        method: 'check',
+        amountCents: allocations.reduce((s, a) => s + a.amountCents, 0),
+        checkNumber: input.checkNumber,
+        payerName: input.payerName,
+        allocations,
+      },
+      signal,
+      now,
+    ),
+    'check payment',
+  )
+  return paid.entryId
+}
+
 async function cardPermit(
   db: Db,
   cast: Cast,
@@ -71,35 +129,19 @@ async function cardPermit(
   scenario: Scenario,
   signal: AbortSignal,
 ): Promise<void> {
-  const started = must(
-    await startCardPresentPayment(
-      db,
-      cast.staff,
-      { applicationIds: [scenario.applicationId], payerName: 'Demo plumber' },
-      signal,
-      { now: noon(DEMO_PAYMENT_DATE) },
-    ),
-    'card start',
-  )
-  must(
-    await resolveSimulatedReader(
-      db,
-      cast.staff,
-      { attemptId: started.attemptId, outcome: 'captured' },
-      signal,
-      { now: noon(DEMO_PAYMENT_DATE) },
-    ),
-    'card capture',
+  const attemptId = await payByCard(
+    db,
+    cast.staff,
+    { applicationId: scenario.applicationId, payerName: 'Demo plumber' },
+    signal,
+    noon(DEMO_PAYMENT_DATE),
   )
   await scenario.step('issued', DEMO_PAYMENT_DATE)
   const [payment] = await db
     .select()
     .from(ledgerEntries)
     .where(
-      and(
-        eq(ledgerEntries.paymentAttemptId, started.attemptId),
-        eq(ledgerEntries.entryType, 'payment'),
-      ),
+      and(eq(ledgerEntries.paymentAttemptId, attemptId), eq(ledgerEntries.entryType, 'payment')),
     )
   must(
     await refundEntry(
@@ -124,24 +166,12 @@ async function checkPermit(
   scenario: Scenario,
   signal: AbortSignal,
 ): Promise<void> {
-  const paid = must(
-    await recordCounterPayment(
-      db,
-      cast.staff,
-      {
-        method: 'check',
-        amountCents: (await dueAllocations(db, scenario.applicationId, signal)).reduce(
-          (s, a) => s + a.amountCents,
-          0,
-        ),
-        checkNumber: '1048',
-        payerName: 'Demo electrician',
-        allocations: await dueAllocations(db, scenario.applicationId, signal),
-      },
-      signal,
-      noon(DEMO_PAYMENT_DATE),
-    ),
-    'check payment',
+  const entryId = await payByCheck(
+    db,
+    cast.staff,
+    { applicationId: scenario.applicationId, payerName: 'Demo electrician', checkNumber: '1048' },
+    signal,
+    noon(DEMO_PAYMENT_DATE),
   )
   await scenario.step('issued', DEMO_PAYMENT_DATE)
   must(
@@ -149,7 +179,7 @@ async function checkPermit(
       db,
       finance,
       {
-        entryId: paid.entryId,
+        entryId,
         reason: 'Insufficient funds notice from the bank',
         returnedOn: RETURNED_DATE as CivilDate,
       },

@@ -6,17 +6,23 @@ import { seedDemo } from '@/features/demo/seedDemo'
 import { DEMO_PAYMENT_DATE } from '@/features/demo/seedPayments'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
+import { listEntriesOn, rangeCountsOn } from '@/features/payments/entryList'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
 import { getActiveProcessor } from '@/features/payments/processorAccounts'
 import { cashReceiptsReport } from '@/features/reports/cashReceipts'
+import { townToday } from '@/features/town/today'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { dayOfWeek } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 let handle: TestDb
 
 beforeAll(async () => {
   handle = await makeTestDb()
-  await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
+  await seedDemo(handle.db, signal, {
+    records: { mail: createMemoryTransport() },
+    screenStates: true,
+  })
 })
 afterAll(async () => {
   await handle.drop()
@@ -55,6 +61,22 @@ describe('seeded payments', () => {
     const dates = new Set((await handle.db.select().from(ledgerEntries)).map((e) => e.businessDate))
     expect(dates.has(DEMO_PAYMENT_DATE)).toBe(true)
     expect(dates.size).toBeGreaterThanOrEqual(2)
+  })
+
+  it('puts cash, check and card payments on today and one more earlier this week, once a day', async () => {
+    const today = await townToday(handle.db, new Date(), signal)
+    const counts = await rangeCountsOn(handle.db, today, {})
+    const methods = (await listEntriesOn(handle.db, today, { range: 'today', filters: {} })).map(
+      (e) => e.method,
+    )
+    expect(methods).toEqual(expect.arrayContaining(['cash', 'check', 'card_present']))
+    const monday = dayOfWeek(today) === 1
+    expect(counts.week).toBeGreaterThanOrEqual(counts.today + (monday ? 0 : 1))
+    await seedDemo(handle.db, signal, {
+      records: { mail: createMemoryTransport() },
+      screenStates: true,
+    })
+    expect(await rangeCountsOn(handle.db, today, {})).toEqual(counts)
   })
 
   it('seeded cash receipts report for the first seeded date has nonzero cash, check, and simulated totals', async () => {
