@@ -96,6 +96,7 @@ export interface StaffApplicationView {
     canRecordStatutoryException: boolean
     canOverrideFee: boolean
     canDetermineRegionalImpact: boolean
+    canManageWorkflow: boolean
   }
 }
 
@@ -108,6 +109,7 @@ async function permissionsOf(db: Db, actor: Actor, signal: AbortSignal) {
     canRecordStatutoryException: await has('gate.record_statutory_exception'),
     canOverrideFee: await has('fee.override'),
     canDetermineRegionalImpact: await has('regional_impact.determine'),
+    canManageWorkflow: await has('application.manage'),
   }
 }
 

@@ -108,8 +108,12 @@ export function MoreActions({ view, moves }: { view: StaffApplicationView; moves
   )
 }
 
+function offersSubstep(view: StaffApplicationView): boolean {
+  return view.substeps.length > 0 && view.permissions.canManageWorkflow
+}
+
 function SubstepForm({ view }: { view: StaffApplicationView }) {
-  if (view.substeps.length === 0) return null
+  if (!offersSubstep(view)) return null
   const options = view.substeps.map((s): [string, string] => [s.key, s.label])
   return (
     <ActionForm action={setSubstepAction} submitLabel="Set step">
@@ -162,10 +166,7 @@ export function PrimaryMove({ view, plan }: { view: StaffApplicationView; plan: 
 
 export function NextStepCard({ view, plan }: { view: StaffApplicationView; plan: RailPlan }) {
   const empty =
-    plan.lead === null &&
-    plan.board === null &&
-    plan.terminal.length === 0 &&
-    view.substeps.length === 0
+    plan.lead === null && plan.board === null && plan.terminal.length === 0 && !offersSubstep(view)
   if (empty && !(view.state === 'issued' && view.permissions.canIssue)) return null
   return (
     <NextStep>

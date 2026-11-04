@@ -100,4 +100,17 @@ describe('the rail offers only moves this viewer can make', () => {
     expect(finance).not.toContain('Record the completeness vote')
     expect(finance).toContain('The board votes on whether the application is complete.')
   })
+
+  it('offers the step and the withdrawal only to roles that manage the workflow', async () => {
+    for (const role of ['staff', 'admin']) {
+      const rail = await railAs(role, 'SPR-2026-0001')
+      expect(rail).toContain('Set step')
+      expect(rail).toContain('Move to withdrawn')
+    }
+    for (const role of ['finance', 'inspector']) {
+      const rail = await railAs(role, 'SPR-2026-0001')
+      expect(rail).not.toContain('Set step')
+      expect(rail).not.toContain('withdrawn')
+    }
+  })
 })

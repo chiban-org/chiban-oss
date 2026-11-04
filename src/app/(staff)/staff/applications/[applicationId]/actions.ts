@@ -1,9 +1,10 @@
 'use server'
 
 import type { Db } from '@/db/client'
+import { chooseSubstep } from '@/features/applications/chooseSubstep'
 import { loadApplicationContext } from '@/features/applications/context'
 import { CORE_STATES, type CoreState } from '@/features/applications/states'
-import { setSubstep, transitionApplication } from '@/features/applications/transition'
+import { transitionApplication } from '@/features/applications/transition'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
@@ -76,7 +77,7 @@ export async function setSubstepAction(formData: FormData): Promise<ActionResult
     const expectedRowVersion = Number(text(formData, 'expectedRowVersion'))
     if (applicationId === null || !Number.isInteger(expectedRowVersion)) return INVALID
     const result = await db.transaction((tx) =>
-      setSubstep(
+      chooseSubstep(
         tx,
         actor,
         { applicationId, substep: text(formData, 'substep'), expectedRowVersion },

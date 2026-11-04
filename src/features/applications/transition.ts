@@ -91,8 +91,13 @@ async function isAllowedActor(
       (await hasCapability(tx, actor.userId, 'inspection.record', signal))
     )
   }
-  if (hasFullRecordAccess(actor)) return true
-  return to === 'withdrawn' && (await isActiveParty(tx, actor.userId, app.projectId))
+  if (to === 'withdrawn') {
+    return (
+      (await hasCapability(tx, actor.userId, 'application.manage', signal)) ||
+      (await isActiveParty(tx, actor.userId, app.projectId))
+    )
+  }
+  return hasFullRecordAccess(actor)
 }
 
 export async function actorMayMove(

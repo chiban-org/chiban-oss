@@ -5,6 +5,7 @@ import { roleCapabilities } from '@/db/schema'
 
 export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]>>> = {
   admin: [
+    'application.manage',
     'project.manage_parties',
     'gate.record_statutory_exception',
     'payment.refund_void_correct',
@@ -36,6 +37,7 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'document.publish',
     'project.manage_parties',
     'application.amend_after_review',
+    'application.manage',
     'parcel.manage',
     'gis.import',
     'fee.override',
