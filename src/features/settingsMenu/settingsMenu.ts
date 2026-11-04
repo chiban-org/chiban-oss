@@ -111,6 +111,12 @@ export const SETTINGS_MENU_ITEMS: readonly SettingsMenuItem[] = [
     access: config,
   },
   {
+    href: '/staff/admin/users',
+    label: 'Users',
+    group: 'admin',
+    access: any('user.manage'),
+  },
+  {
     href: '/staff/admin/enforcement-officers',
     label: 'Enforcement officers',
     group: 'admin',

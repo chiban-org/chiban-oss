@@ -1,4 +1,4 @@
-import Link from 'next/link'
+import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { USERS_PATH } from '@/features/users/userListParams'
@@ -14,18 +14,11 @@ export default async function InviteStaffPage() {
   }
   return (
     <main className="space-y-6">
-      <header>
-        <p className="m-0 mb-1 text-sm">
-          <Link href={USERS_PATH} className="text-action underline">
-            Users
-          </Link>
-        </p>
-        <h1 className="m-0 mb-1">Invite staff</h1>
-        <p className="m-0 max-w-[65ch] text-muted-foreground">
-          We email a link that works once for 7 days. They choose a password and land on their start
-          page. They can add an authenticator app from Account.
-        </p>
-      </header>
+      <SettingsHeader
+        title="Invite staff"
+        lead="We email a link that works once for 7 days. They choose a password and land on their start page, and can add an authenticator app from Account."
+        back={{ href: USERS_PATH, label: 'Users' }}
+      />
       <InviteForm />
     </main>
   )

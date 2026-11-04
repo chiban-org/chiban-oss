@@ -65,6 +65,16 @@ describe('settings menu', () => {
     }
   })
 
+  it('lists Users under Administration only for user.manage', () => {
+    const admin = groupSettingsMenu(settingsMenuFor(viewerOf('admin')))
+    const administration = admin.find((s) => s.key === 'admin')?.items.map((i) => i.label)
+    expect(administration).toContain('Users')
+    expect(mayOpen('/staff/admin/users', viewerOf('admin'))).toBe(true)
+    for (const role of ['staff', 'records_custodian', 'finance'] as const) {
+      expect(labelsFor(role)).not.toContain('Users')
+    }
+  })
+
   it('keeps each admin page gate in mayOpen', () => {
     expect(mayOpen('/staff/admin/anonymous-intake', viewerOf('admin'))).toBe(true)
     expect(mayOpen('/staff/admin/anonymous-intake', viewerOf('staff'))).toBe(false)

@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
+import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { Button } from '@/components/ui/button'
 import type { RawSearchParams } from '@/features/dataTable/params'
@@ -41,17 +42,15 @@ export default async function UsersPage({
   const links = sortLinks(USERS_PATH, params, USER_SORT, sort)
   return (
     <main data-wide="" className="space-y-6">
-      <header className="flex flex-wrap items-start justify-between gap-x-6 gap-y-3">
-        <div className="max-w-[75ch] min-w-0 flex-1 basis-80">
-          <h1 className="m-0 mb-1">Users</h1>
-          <p className="m-0 text-muted-foreground">
-            Staff and board accounts that sign in with a password. Listed by name.
-          </p>
-        </div>
-        <Button asChild className="shrink-0 no-underline">
-          <Link href={`${USERS_PATH}/invite`}>Invite staff</Link>
-        </Button>
-      </header>
+      <SettingsHeader
+        title="Users"
+        lead="Staff and board accounts that sign in with a password. Listed by name."
+        action={
+          <Button asChild className="no-underline">
+            <Link href={`${USERS_PATH}/invite`}>Invite staff</Link>
+          </Button>
+        }
+      />
       <FilterTabs label="Accounts" tabs={tabs} />
       <UsersSortBar links={links} />
       <div className="table-panel">
