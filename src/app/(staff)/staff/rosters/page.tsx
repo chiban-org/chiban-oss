@@ -1,17 +1,11 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
-import { AddressTextField } from '@/components/address/AddressTextField'
-import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
-import { AreaField, SelectField, TextField } from '@/components/staff/fields'
+import { SectionHeader } from '@/components/layout/ListHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { loadRostersView } from '@/features/rosters/rosterView'
 import { requireStaffContext } from '@/server/requireStaff'
-import {
-  addRestrictionAction,
-  recordReviewAction,
-  upsertAssociationAction,
-  upsertParkAction,
-} from './actions'
+import { recordReviewAction } from './actions'
+import { AddAssociation, AddHolder, AddPark } from './RosterForms'
 import { AssociationTable, ParkTable, RestrictionTable } from './RosterTables'
 
 export const dynamic = 'force-dynamic'
@@ -42,88 +36,41 @@ export default async function RostersPage() {
           </div>
         ))}
       </section>
-      <section aria-label="Condominium associations" className="space-y-3">
-        <h2>Condominium associations</h2>
-        {view.associations.length === 0 ? <p>No association rosters yet.</p> : null}
-        {view.associations.length === 0 ? null : <AssociationTable rows={view.associations} />}
-        <details>
-          <summary>Add or replace an association roster</summary>
-          <ActionForm
-            action={upsertAssociationAction}
-            submitLabel="Save roster"
-            className="max-w-xl"
-          >
-            <ParcelPicker label="Parcel of the condominium" name="parcelRef" required />
-            <TextField label="Association name" name="associationName" required />
-            <TextField
-              label="Roster current as of"
-              name="asOf"
-              type="date"
-              defaultValue={view.today}
-              required
-            />
-            <AreaField
-              label="Officers, one per line"
-              name="officers"
-              hint="Write each line as: Name | Title | Mailing address"
-              rows={4}
-              required
-            />
-          </ActionForm>
-        </details>
+      <section aria-labelledby="associations" className="space-y-3">
+        <SectionHeader
+          id="associations"
+          title="Condominium associations"
+          action={<AddAssociation today={view.today} />}
+        />
+        {view.associations.length === 0 ? (
+          <p>No association rosters yet. Add the first one with Add association.</p>
+        ) : (
+          <AssociationTable rows={view.associations} today={view.today} />
+        )}
       </section>
-      <section aria-label="Manufactured housing parks" className="space-y-3">
-        <h2>Manufactured housing parks</h2>
-        {view.parks.length === 0 ? <p>No park rosters yet.</p> : null}
-        {view.parks.length === 0 ? null : <ParkTable rows={view.parks} />}
-        <details>
-          <summary>Add or replace a park roster</summary>
-          <ActionForm action={upsertParkAction} submitLabel="Save roster" className="max-w-xl">
-            <ParcelPicker label="Parcel of the park" name="parcelRef" required />
-            <TextField label="Park name" name="parkName" required />
-            <TextField label="Owner name" name="ownerName" required />
-            <AddressTextField label="Owner mailing address" name="ownerMailingAddress" required />
-            <TextField
-              label="Roster current as of"
-              name="asOf"
-              type="date"
-              defaultValue={view.today}
-              required
-            />
-            <AreaField
-              label="Tenants, one per line"
-              name="tenants"
-              hint="Write each line as: Name | Site | Mailing address"
-              rows={4}
-              required
-            />
-          </ActionForm>
-        </details>
+      <section aria-labelledby="parks" className="space-y-3">
+        <SectionHeader
+          id="parks"
+          title="Manufactured housing parks"
+          action={<AddPark today={view.today} />}
+        />
+        {view.parks.length === 0 ? (
+          <p>No park rosters yet. Add the first one with Add park.</p>
+        ) : (
+          <ParkTable rows={view.parks} today={view.today} />
+        )}
       </section>
-      <section aria-label="Easement and restriction holders" className="space-y-3">
-        <h2>Easement and restriction holders</h2>
-        {view.restrictions.length === 0 ? <p>No holders yet.</p> : null}
-        {view.restrictions.length === 0 ? null : (
+      <section aria-labelledby="holders" className="space-y-3">
+        <SectionHeader
+          id="holders"
+          title="Easement and restriction holders"
+          action={<AddHolder />}
+        />
+        {view.restrictions.length === 0 ? (
+          <p>No holders yet. Add the first one with Add holder.</p>
+        ) : (
           <RestrictionTable rows={view.restrictions} today={view.today} />
         )}
-        <details>
-          <summary>Add a holder</summary>
-          <ActionForm action={addRestrictionAction} submitLabel="Add holder" className="max-w-xl">
-            <ParcelPicker label="Parcel the restriction covers" name="parcelRef" required />
-            <TextField label="Holder name" name="holderName" required />
-            <AddressTextField label="Holder mailing address" name="holderMailingAddress" required />
-            <SelectField
-              label="Kind"
-              name="restrictionKind"
-              options={[
-                ['conservation', 'Conservation easement'],
-                ['preservation', 'Preservation easement'],
-                ['agricultural_preservation', 'Agricultural preservation restriction'],
-              ]}
-            />
-            <TextField label="Where it is recorded" name="recordedReference" required />
-          </ActionForm>
-        </details>
       </section>
       <section aria-label="Regional notice contacts" className="space-y-3">
         <h2>Regional notice contacts</h2>

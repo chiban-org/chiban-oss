@@ -10,6 +10,8 @@ import {
 } from '@/features/boards/regionalContacts'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { mayManageAbutters } from '@/features/rosters/manage'
+import { officerLines, tenantLines } from '@/features/rosters/parseLines'
+import type { RestrictionKind } from '@/features/rosters/restrictions'
 import { type RosterKind, type RosterStatus, rosterStatus } from '@/features/rosters/reviews'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -28,6 +30,8 @@ export interface RostersView {
     parcel: string
     name: string
     officers: string[]
+    officersText: string
+    asOf: string
     asOfText: string
   }[]
   parks: {
@@ -35,7 +39,10 @@ export interface RostersView {
     parcel: string
     name: string
     owner: string
+    ownerMailingAddress: string
     tenants: string[]
+    tenantsText: string
+    asOf: string
     asOfText: string
   }[]
   restrictions: {
@@ -43,6 +50,8 @@ export interface RostersView {
     parcelId: string
     parcel: string
     holder: string
+    holderMailingAddress: string
+    kind: RestrictionKind
     kindText: string
     reference: string
     endedText: string | null
@@ -58,7 +67,7 @@ const KIND_LABELS: Record<RosterKind, string> = {
   regional_contacts: 'Regional planning commission, municipalities, and NH DES contacts',
 }
 
-const RESTRICTION_LABELS = {
+export const RESTRICTION_LABELS = {
   conservation: 'Conservation easement',
   preservation: 'Preservation easement',
   agricultural_preservation: 'Agricultural preservation restriction',
@@ -125,6 +134,8 @@ export async function loadRostersView(
       parcel: label(a.parcelId),
       name: a.associationName,
       officers: a.officers.map((o) => `${o.name}, ${o.title}`),
+      officersText: officerLines(a.officers),
+      asOf: a.asOf,
       asOfText: formatCivilDate(a.asOf),
     })),
     parks: parks.map((p) => ({
@@ -132,7 +143,10 @@ export async function loadRostersView(
       parcel: label(p.parcelId),
       name: p.parkName,
       owner: p.ownerName,
+      ownerMailingAddress: p.ownerMailingAddress,
       tenants: p.tenants.map((t) => `${t.name}, ${t.siteLabel}`),
+      tenantsText: tenantLines(p.tenants),
+      asOf: p.asOf,
       asOfText: formatCivilDate(p.asOf),
     })),
     restrictions: holdings.map((h) => ({
@@ -140,6 +154,8 @@ export async function loadRostersView(
       parcelId: h.parcelId,
       parcel: label(h.parcelId),
       holder: h.holderName,
+      holderMailingAddress: h.holderMailingAddress,
+      kind: h.restrictionKind,
       kindText: RESTRICTION_LABELS[h.restrictionKind],
       reference: h.recordedReference,
       endedText: h.endedOn === null ? null : formatCivilDate(h.endedOn),

@@ -27,3 +27,15 @@ export function parseTenants(input: string): ParkTenant[] {
     mailingAddress,
   }))
 }
+
+function joined(parts: string[]): string {
+  return parts.map((p) => p.replaceAll(/\s*[|\r\n]+\s*/g, ' ').trim()).join(` ${SEPARATOR} `)
+}
+
+export function officerLines(officers: readonly AssociationOfficer[]): string {
+  return officers.map((o) => joined([o.name, o.title, o.mailingAddress])).join('\n')
+}
+
+export function tenantLines(tenants: readonly ParkTenant[]): string {
+  return tenants.map((t) => joined([t.name, t.siteLabel, t.mailingAddress])).join('\n')
+}

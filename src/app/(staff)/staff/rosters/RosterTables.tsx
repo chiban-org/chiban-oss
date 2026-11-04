@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import type { RostersView } from '@/features/rosters/rosterView'
 import { endRestrictionAction } from './actions'
+import { EditAssociation, EditHolder, EditPark } from './RosterForms'
 
 function ParcelLink({ parcelId, label }: { parcelId: string; label: string }) {
   return (
@@ -11,7 +12,21 @@ function ParcelLink({ parcelId, label }: { parcelId: string; label: string }) {
   )
 }
 
-export function AssociationTable({ rows }: { rows: RostersView['associations'] }) {
+function ActionsHeader() {
+  return (
+    <th scope="col">
+      <span className="sr-only">Actions</span>
+    </th>
+  )
+}
+
+export function AssociationTable({
+  rows,
+  today,
+}: {
+  rows: RostersView['associations']
+  today: string
+}) {
   return (
     <div className="table-panel">
       <table className="w-full min-w-[40rem] text-sm">
@@ -22,6 +37,7 @@ export function AssociationTable({ rows }: { rows: RostersView['associations'] }
             <th scope="col">Parcel</th>
             <th scope="col">Officers</th>
             <th scope="col">Current as of</th>
+            <ActionsHeader />
           </tr>
         </thead>
         <tbody>
@@ -33,6 +49,9 @@ export function AssociationTable({ rows }: { rows: RostersView['associations'] }
               </td>
               <td>{a.officers.join('; ')}</td>
               <td className="whitespace-nowrap">{a.asOfText}</td>
+              <td>
+                <EditAssociation row={a} today={today} />
+              </td>
             </tr>
           ))}
         </tbody>
@@ -41,7 +60,7 @@ export function AssociationTable({ rows }: { rows: RostersView['associations'] }
   )
 }
 
-export function ParkTable({ rows }: { rows: RostersView['parks'] }) {
+export function ParkTable({ rows, today }: { rows: RostersView['parks']; today: string }) {
   return (
     <div className="table-panel">
       <table className="w-full min-w-[44rem] text-sm">
@@ -53,6 +72,7 @@ export function ParkTable({ rows }: { rows: RostersView['parks'] }) {
             <th scope="col">Owner</th>
             <th scope="col">Tenants</th>
             <th scope="col">Current as of</th>
+            <ActionsHeader />
           </tr>
         </thead>
         <tbody>
@@ -72,6 +92,9 @@ export function ParkTable({ rows }: { rows: RostersView['parks'] }) {
               </td>
               <td>{p.tenants.join('; ')}</td>
               <td className="whitespace-nowrap">{p.asOfText}</td>
+              <td>
+                <EditPark row={p} today={today} />
+              </td>
             </tr>
           ))}
         </tbody>
@@ -98,6 +121,7 @@ export function RestrictionTable({
             <th scope="col">Parcel</th>
             <th scope="col">Recorded at</th>
             <th scope="col">Status</th>
+            <ActionsHeader />
           </tr>
         </thead>
         <tbody>
@@ -127,6 +151,9 @@ export function RestrictionTable({
                 ) : (
                   `Ended ${r.endedText}`
                 )}
+              </td>
+              <td>
+                <EditHolder row={r} />
               </td>
             </tr>
           ))}

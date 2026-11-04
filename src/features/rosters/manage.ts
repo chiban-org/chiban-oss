@@ -1,6 +1,8 @@
 import type { DbOrTx } from '@/db/client'
 import { hasCapability } from '@/features/authz/capabilities'
 
+export type RosterSaveMode = 'upsert' | 'add' | 'update'
+
 export async function mayManageAbutters(
   db: DbOrTx,
   userId: string,

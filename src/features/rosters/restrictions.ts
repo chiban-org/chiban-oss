@@ -48,6 +48,64 @@ export async function addRestriction(
   })
 }
 
+export interface RestrictionChange {
+  holdingId: string
+  holderName: string
+  holderMailingAddress: string
+  restrictionKind: RestrictionKind
+  recordedReference: string
+}
+
+function holdingSummary(row: Omit<RestrictionChange, 'holdingId'>) {
+  return {
+    holderName: row.holderName,
+    holderMailingAddress: row.holderMailingAddress,
+    kind: row.restrictionKind,
+    recordedReference: row.recordedReference,
+  }
+}
+
+export async function updateRestriction(
+  db: Db,
+  actor: Actor,
+  input: RestrictionChange,
+  signal: AbortSignal,
+): Promise<Result<void, 'forbidden' | 'not_found' | 'address_required' | 'holder_required'>> {
+  signal.throwIfAborted()
+  if (!(await mayManageAbutters(db, actor.userId, signal))) return err('forbidden')
+  if (!nonEmpty(input.holderName)) return err('holder_required')
+  if (!nonEmpty(input.holderMailingAddress)) return err('address_required')
+  const { holdingId, ...change } = input
+  const values = {
+    ...change,
+    holderName: change.holderName.trim(),
+    holderMailingAddress: change.holderMailingAddress.trim(),
+    recordedReference: change.recordedReference.trim(),
+  }
+  return await transactionResult(db, async (tx) => {
+    const [before] = await tx
+      .select()
+      .from(restrictionHoldings)
+      .where(eq(restrictionHoldings.id, holdingId))
+      .for('update')
+    if (before === undefined) return err('not_found')
+    await tx.update(restrictionHoldings).set(values).where(eq(restrictionHoldings.id, holdingId))
+    await writeAudit(
+      tx,
+      {
+        actor: { kind: 'user', userId: actor.userId },
+        action: 'roster.restriction.update',
+        entityType: 'parcel',
+        entityId: before.parcelId,
+        before: { holdingId, ...holdingSummary(before) },
+        after: { holdingId, ...holdingSummary(values) },
+      },
+      signal,
+    )
+    return ok(undefined)
+  })
+}
+
 export async function endRestriction(
   db: Db,
   actor: Actor,

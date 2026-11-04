@@ -30,6 +30,11 @@ const COPY: Record<string, string> = {
   officers_required: 'Enter at least one officer, each with a name and a mailing address.',
   tenants_required: 'Enter at least one tenant, each with a name and a mailing address.',
   owner_required: 'Enter the park owner name and mailing address.',
+  association_exists:
+    'This parcel already has an association roster. Use Edit on its row to change it.',
+  park_exists: 'This parcel already has a park roster. Use Edit on its row to change it.',
+  email_taken: 'Another person already uses that email address.',
+  term_order: 'The term cannot end before it starts.',
   name_required: 'Enter a name.',
   address_required: 'Enter a mailing address.',
   holder_required: 'Enter the holder name.',
