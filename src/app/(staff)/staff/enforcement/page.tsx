@@ -29,9 +29,9 @@ const PAGE_SIZE = 25
 function NewCaseForms() {
   return (
     <>
-      <section aria-labelledby="open-case" className="space-y-2">
-        <h2 id="open-case">Open a case</h2>
-        <ActionForm action={openCaseAction} submitLabel="Open case" variant="default">
+      <details>
+        <summary>Open a case</summary>
+        <ActionForm action={openCaseAction} submitLabel="Open case">
           <TextField label="Where is the property?" name="locationText" required />
           <TextField
             label="Parcel number, if known"
@@ -39,11 +39,11 @@ function NewCaseForms() {
             hint="Without one, Chiban links the parcel whose site address matches exactly."
           />
         </ActionForm>
-      </section>
-      <section aria-labelledby="enter-complaint" className="space-y-2">
-        <h2 id="enter-complaint">Enter a complaint taken by phone or at the counter</h2>
+      </details>
+      <details>
+        <summary>Enter a complaint taken by phone or at the counter</summary>
         <p>Entering a complaint opens a case for it.</p>
-        <ActionForm action={staffComplaintAction} submitLabel="Record complaint" variant="default">
+        <ActionForm action={staffComplaintAction} submitLabel="Record complaint">
           <TextField label="Where is the property?" name="locationText" required />
           <TextField label="What was reported?" name="description" required />
           <TextField
@@ -52,7 +52,7 @@ function NewCaseForms() {
             hint="Without one, Chiban links the parcel whose site address matches exactly."
           />
         </ActionForm>
-      </section>
+      </details>
     </>
   )
 }
@@ -90,7 +90,7 @@ export default async function EnforcementQueuePage({
     ...CASE_FILTER_PARAMS.map((name) => (params.get(name) ?? []).join(',')),
   ].join('|')
   return (
-    <main data-wide="" className="space-y-6">
+    <main data-wide="">
       <h1>Code enforcement</h1>
       <p>Newest case first. Keys: j and k to move, Enter to open a case.</p>
       <div className="toolbar">

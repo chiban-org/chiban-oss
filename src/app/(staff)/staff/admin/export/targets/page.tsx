@@ -1,5 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
+import { PracticeNotice } from '@/components/PracticeNotice'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { type ExportTargetView, listTargets } from '@/features/export/targets/manageTargets'
 import { ONEDRIVE_STUB_NOTE } from '@/features/export/targets/oneDrive'
 import { getTownSettings } from '@/features/town/settings'
@@ -18,11 +20,7 @@ const KIND_LABEL = {
 } as const
 
 function StubNote() {
-  return (
-    <div role="note" className="rounded-md border border-dashed p-3 text-sm">
-      {ONEDRIVE_STUB_NOTE}
-    </div>
-  )
+  return <PracticeNotice>{ONEDRIVE_STUB_NOTE}</PracticeNotice>
 }
 
 function TargetCard({
@@ -33,7 +31,7 @@ function TargetCard({
   day: (d: Date | null) => string
 }) {
   return (
-    <li className="rounded-md border p-3">
+    <li className="record-item">
       <h3 className="m-0">{target.name}</h3>
       <p className="m-0">
         {KIND_LABEL[target.kind]}. Copies on day {target.dayOfMonth} of each month.{' '}
@@ -64,7 +62,7 @@ function TargetCard({
       </div>
       <details className="mt-3">
         <summary>Change this target</summary>
-        <ActionForm action={saveTargetAction} submitLabel="Save changes" variant="default">
+        <ActionForm action={saveTargetAction} submitLabel="Save changes">
           <TargetFields kind={target.kind} idPrefix={`edit-${target.id}`} current={target} />
         </ActionForm>
       </details>
@@ -76,12 +74,7 @@ export default async function ExportTargetsPage() {
   const ctx = await requireStaffContext()
   const listed = await listTargets(ctx.db, ctx.actor, ctx.signal)
   if (!listed.ok) {
-    return (
-      <main>
-        <h1>Copy exports to your own storage</h1>
-        <p role="alert">You do not have permission to change export targets.</p>
-      </main>
-    )
+    return <NoPermission title="Copy exports to your own storage" action="change export targets" />
   }
   const town = await getTownSettings(ctx.db, ctx.signal)
   const zone = town.ok ? town.value.timeZone : DEFAULT_TIME_ZONE
@@ -94,32 +87,36 @@ export default async function ExportTargetsPage() {
         back={{ href: '/staff/admin/export', label: 'Data export' }}
       />
       <p>The first copy holds everything. Files are copied once and shared between months.</p>
-      <h2>Your targets</h2>
-      {listed.value.length === 0 ? <p>No targets yet.</p> : null}
-      <ul className="m-0 list-none space-y-3 p-0">
-        {listed.value.map((target) => (
-          <TargetCard key={target.id} target={target} day={day} />
-        ))}
-      </ul>
-      <h2>Add a target</h2>
-      <section aria-labelledby="add-local">
-        <h3 id="add-local">Add a local folder</h3>
-        <ActionForm action={saveTargetAction} submitLabel="Add the folder" variant="default">
-          <TargetFields kind="local_fs" idPrefix="add-local" />
-        </ActionForm>
+      <section aria-labelledby="your-targets">
+        <h2 id="your-targets">Your targets</h2>
+        {listed.value.length === 0 ? <p>No targets yet.</p> : null}
+        <ul className="m-0 list-none p-0">
+          {listed.value.map((target) => (
+            <TargetCard key={target.id} target={target} day={day} />
+          ))}
+        </ul>
       </section>
-      <section aria-labelledby="add-s3">
-        <h3 id="add-s3">Add an S3 bucket</h3>
-        <ActionForm action={saveTargetAction} submitLabel="Add the bucket" variant="default">
-          <TargetFields kind="s3" idPrefix="add-s3" />
-        </ActionForm>
-      </section>
-      <section aria-labelledby="add-onedrive">
-        <h3 id="add-onedrive">Add a OneDrive or SharePoint drive</h3>
-        <StubNote />
-        <ActionForm action={saveTargetAction} submitLabel="Add the drive" variant="default">
-          <TargetFields kind="onedrive" idPrefix="add-onedrive" />
-        </ActionForm>
+      <section aria-labelledby="add-target">
+        <h2 id="add-target">Add a target</h2>
+        <details>
+          <summary>Add a local folder</summary>
+          <ActionForm action={saveTargetAction} submitLabel="Add the folder">
+            <TargetFields kind="local_fs" idPrefix="add-local" />
+          </ActionForm>
+        </details>
+        <details>
+          <summary>Add an S3 bucket</summary>
+          <ActionForm action={saveTargetAction} submitLabel="Add the bucket">
+            <TargetFields kind="s3" idPrefix="add-s3" />
+          </ActionForm>
+        </details>
+        <details>
+          <summary>Add a OneDrive or SharePoint drive</summary>
+          <StubNote />
+          <ActionForm action={saveTargetAction} submitLabel="Add the drive">
+            <TargetFields kind="onedrive" idPrefix="add-onedrive" />
+          </ActionForm>
+        </details>
       </section>
     </main>
   )

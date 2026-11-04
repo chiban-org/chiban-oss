@@ -33,8 +33,8 @@ const CHIP: Record<
 
 function AddAliasOverride() {
   return (
-    <>
-      <h2>Add an override</h2>
+    <details>
+      <summary>Add an override</summary>
       <ActionForm
         action={createAliasOverrideAction}
         submitLabel="Save override"
@@ -51,7 +51,7 @@ function AddAliasOverride() {
         <TextField label="Reason" name="reason" required />
         <TextField label="Expires on" name="expiresOn" type="date" />
       </ActionForm>
-    </>
+    </details>
   )
 }
 
@@ -72,21 +72,20 @@ export default async function StaffAliasOverridesPage({
   const clear = clearHref(ALIAS_OVERRIDES_PATH, view.params, ALIAS_FILTER_PARAMS)
   return (
     <main data-wide="">
-      <OverridesTabs current="/staff/overrides/aliases" />
       <h1>Parcel ID overrides</h1>
-      <p className="text-muted-foreground">
+      <p>
         An override points a town ID at a parcel. Imports never overwrite an override; they send the
-        conflict to the exception queue.
+        conflict to the exception queue. Newest first.
       </p>
+      <OverridesTabs current="/staff/overrides/aliases" />
       {all.length === 0 ? (
-        <p className="my-4">No overrides are in force.</p>
+        <p>No overrides are in force.</p>
       ) : (
         <>
-          <div className="toolbar my-4">
+          <div className="toolbar">
             <QuickFilters label="Quick filters" groups={chips} clearHref={clear} />
           </div>
-          <p className="text-muted-foreground">Newest first. Click a column heading to sort.</p>
-          <div className="table-panel my-4">
+          <div className="table-panel">
             {rows.length === 0 ? (
               <p className="px-5 py-8">No override matches these filters.</p>
             ) : (
@@ -106,10 +105,7 @@ export default async function StaffAliasOverridesPage({
                     <tr key={row.id}>
                       <td>{`${row.format}: ${row.value}`}</td>
                       <td>
-                        <Link
-                          href={`/staff/parcels/${row.parcelId}`}
-                          className="text-action underline"
-                        >
+                        <Link href={`/staff/parcels/${row.parcelId}`}>
                           {row.parcelDisplayId ?? 'No map-lot ID'}
                         </Link>
                       </td>

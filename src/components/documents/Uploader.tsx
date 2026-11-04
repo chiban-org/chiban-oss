@@ -150,7 +150,13 @@ export function Uploader({
         />
       </div>
       <div className="flex flex-wrap items-center gap-3">
-        <Button type="button" className="min-h-11" disabled={pending} onClick={() => void submit()}>
+        <Button
+          type="button"
+          variant="outline"
+          className="min-h-11"
+          disabled={pending}
+          onClick={() => void submit()}
+        >
           Upload
         </Button>
         {progress === null ? null : <p className="m-0 text-base">{`Sending ${progress}%`}</p>}

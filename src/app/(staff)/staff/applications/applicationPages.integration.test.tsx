@@ -190,11 +190,11 @@ describe('staff application pages', () => {
     expect(clocks).toMatch(/href="\/staff\/applications\/[^"]+">[A-Z]+-\d{4}-\d{4}<\/a>/)
     expect(clocks).toContain('<main data-wide="">')
     expect(clocks).toContain('table-panel')
-    expect(clocks).toContain('Newest first. Click a column heading to sort.')
+    expect(clocks).toContain('has a task to review it. Newest first.')
     const fees = await html(FeeOverridesPage(noSearch))
     expect(fees).toContain('Waived')
     expect(fees).toContain('Applied')
-    expect(fees).toContain('Newest first. Click a column heading to sort.')
+    expect(fees).toContain('so the difference is visible. Newest first.')
     expect(fees).not.toMatch(/<td>[a-z_]+<\/td>/)
   })
 
@@ -202,7 +202,7 @@ describe('staff application pages', () => {
     const noSearch = { searchParams: Promise.resolve({}) }
     const staffView = await html(AliasOverridesPage(noSearch))
     expect(staffView).toContain('Save override')
-    expect(staffView).toContain('Newest first. Click a column heading to sort.')
+    expect(staffView).toContain('conflict to the exception queue. Newest first.')
     const viewer = state.actor
     const finance = await handle.db.query.users.findFirst({
       where: (u, { eq }) => eq(u.email, 'finance@alderpond.example'),

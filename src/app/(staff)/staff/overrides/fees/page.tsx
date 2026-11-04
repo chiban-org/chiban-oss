@@ -42,21 +42,20 @@ export default async function FeeOverridesPage({
   const clear = clearHref(FEE_OVERRIDES_PATH, view.params, FEE_FILTER_PARAMS)
   return (
     <main data-wide="">
-      <OverridesTabs current="/staff/overrides/fees" />
       <h1>Fee overrides</h1>
-      <p className="text-muted-foreground">
+      <p>
         A waiver or a set amount replaces the computed fee at the next assessment. The computed
-        amount stays on the fee table so the difference is visible.
+        amount stays on the fee table so the difference is visible. Newest first.
       </p>
+      <OverridesTabs current="/staff/overrides/fees" />
       {all.length === 0 ? (
-        <p className="my-4">No fee has been overridden.</p>
+        <p>No fee has been overridden.</p>
       ) : (
         <>
-          <div className="toolbar my-4">
+          <div className="toolbar">
             <QuickFilters label="Quick filters" groups={chips} clearHref={clear} />
           </div>
-          <p className="text-muted-foreground">Newest first. Click a column heading to sort.</p>
-          <div className="table-panel my-4">
+          <div className="table-panel">
             {rows.length === 0 ? (
               <p className="px-5 py-8">No override matches these filters.</p>
             ) : (
@@ -74,10 +73,7 @@ export default async function FeeOverridesPage({
                   {rows.map((row) => (
                     <tr key={row.id}>
                       <td>
-                        <Link
-                          href={`/staff/applications/${row.applicationId}`}
-                          className="text-action underline"
-                        >
+                        <Link href={`/staff/applications/${row.applicationId}`}>
                           {row.applicationNumber}
                         </Link>
                       </td>

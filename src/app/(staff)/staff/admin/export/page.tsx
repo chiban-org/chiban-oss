@@ -54,7 +54,7 @@ export default async function ExportPage({ searchParams }: ExportPageProps = {})
   const zone = town.ok ? town.value.timeZone : DEFAULT_TIME_ZONE
   const day = (instant: Date | null) => (instant === null ? '' : formatInstantLong(instant, zone))
   return (
-    <main className="space-y-4">
+    <main>
       <SettingsHeader
         title="Data export"
         lead="One file with every record the town keeps in Chiban and every stored document, in open formats."
@@ -84,36 +84,33 @@ export default async function ExportPage({ searchParams }: ExportPageProps = {})
       ) : null}
       {ctx.actor.roles.includes('admin') ? (
         <p>
-          <a className="text-action underline" href="/staff/admin/export/targets">
-            Copy exports to your own storage every month
-          </a>
+          <a href="/staff/admin/export/targets">Copy exports to your own storage every month</a>
         </p>
       ) : null}
-      <h2>Your exports</h2>
-      {listed.value.length === 0 ? <p>No exports have been requested yet.</p> : null}
-      <ul className="m-0 list-none space-y-3 p-0">
-        {listed.value.map((row) => (
-          <li key={row.id} className="rounded-md border p-3">
-            <p className="m-0 font-medium">
-              Requested {day(row.requestedAt)}: {STATUS_COPY[row.status]}
-            </p>
-            {row.status === 'ready' && service.mode !== 'closed' ? (
-              <p className="m-0">
-                <a
-                  className="text-action underline"
-                  href={`/staff/admin/export/${row.id}/download`}
-                >
-                  Download {megabytes(row.sizeBytes)}
-                </a>{' '}
-                (available through {day(row.expiresAt)})
+      <section aria-labelledby="exports-heading">
+        <h2 id="exports-heading">Your exports</h2>
+        {listed.value.length === 0 ? <p>No exports have been requested yet.</p> : null}
+        <ul className="m-0 list-none space-y-3 p-0">
+          {listed.value.map((row) => (
+            <li key={row.id} className="record-item">
+              <p className="m-0 font-medium">
+                Requested {day(row.requestedAt)}: {STATUS_COPY[row.status]}
               </p>
-            ) : null}
-            {row.status === 'failed' ? (
-              <p className="m-0">It did not finish. Request another.</p>
-            ) : null}
-          </li>
-        ))}
-      </ul>
+              {row.status === 'ready' && service.mode !== 'closed' ? (
+                <p className="m-0">
+                  <a href={`/staff/admin/export/${row.id}/download`}>
+                    Download {megabytes(row.sizeBytes)}
+                  </a>{' '}
+                  (available through {day(row.expiresAt)})
+                </p>
+              ) : null}
+              {row.status === 'failed' ? (
+                <p className="m-0">It did not finish. Request another.</p>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </section>
       {ctx.actor.roles.includes('admin') && service.mode !== 'closed' ? (
         <section aria-labelledby="recovery-heading">
           <h2 id="recovery-heading">Recovery export</h2>
@@ -151,7 +148,9 @@ export default async function ExportPage({ searchParams }: ExportPageProps = {})
               required
               autoComplete="new-password"
             />
-            <Button type="submit">Download recovery export</Button>
+            <Button type="submit" variant="outline">
+              Download recovery export
+            </Button>
           </form>
         </section>
       ) : null}

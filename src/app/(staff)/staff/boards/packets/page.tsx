@@ -19,7 +19,7 @@ function NewPacket({ meetings, documents }: Pick<PacketsPageView, 'meetings' | '
           {' to make a packet for it.'}
         </p>
       ) : (
-        <ActionForm action={createPacketAction} submitLabel="Create packet" variant="default">
+        <ActionForm action={createPacketAction} submitLabel="Create packet">
           <TextField label="Title" name="title" required />
           <SelectField
             label="Meeting"
@@ -47,7 +47,7 @@ export default async function PacketsPage() {
   if (!page.ok) return <NoPermission title="Board packets" action="manage board packets" />
   const { packets, documents, meetings } = page.value
   return (
-    <main className="space-y-6">
+    <main>
       <h1>Board packets</h1>
       <p>
         Seated board members read a packet on their board page once the meeting agenda is published.

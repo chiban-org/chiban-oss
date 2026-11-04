@@ -57,7 +57,7 @@ function PlaceHold() {
   return (
     <details>
       <summary>Place a hold</summary>
-      <ActionForm action={placeHoldAction} submitLabel="Place hold" variant="default">
+      <ActionForm action={placeHoldAction} submitLabel="Place hold">
         <SelectField label="Hold on" name="targetKind" options={TARGETS} />
         <TextField
           label="Application number, project title, or document title"
@@ -99,7 +99,7 @@ export default async function HoldsPage({
   })
   const { rows } = list.value
   return (
-    <main data-wide="" className="space-y-6">
+    <main data-wide="">
       <h1>Legal holds</h1>
       <p>
         A hold on a project, application, or document blocks disposition of everything under it.

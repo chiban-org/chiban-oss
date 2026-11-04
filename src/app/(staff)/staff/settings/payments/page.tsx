@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
+import { PracticeNotice } from '@/components/PracticeNotice'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -41,22 +42,20 @@ export default async function PaymentSettingsPage() {
           ))}
         </ul>
         {cloverStatus === 'stubbed' ? (
-          <p role="note">Clover connection is not yet verified against a live merchant account.</p>
+          <PracticeNotice>
+            Clover connection is not yet verified against a live merchant account.
+          </PracticeNotice>
         ) : null}
-        <p role="note">
+        <PracticeNotice>
           The simulated processor and card reader are not connected to a live processor. They exist
           for practice and demonstrations, and no card is ever charged.
-        </p>
+        </PracticeNotice>
         <p className="text-muted-foreground">
           {current === null
             ? 'Save an account to turn on card payments.'
             : 'The form below starts from the active account. Secrets are never shown, so enter them again whenever you save.'}
         </p>
-        <ActionForm
-          action={saveProcessorAccountAction}
-          submitLabel="Save processor account"
-          variant="default"
-        >
+        <ActionForm action={saveProcessorAccountAction} submitLabel="Save processor account">
           <SelectField
             label="Processor"
             name="processor"
@@ -154,9 +153,7 @@ export default async function PaymentSettingsPage() {
           />
         </ActionForm>
         <p>
-          <Link href="/staff/settings/payment_settings" className="text-action underline">
-            Version history for payment settings
-          </Link>
+          <Link href="/staff/settings/payment_settings">Version history for payment settings</Link>
         </p>
       </section>
     </main>

@@ -28,23 +28,22 @@ export default async function ClockOverridesPage({
   const clear = clearHref(CLOCK_OVERRIDES_PATH, view.params, CLOCK_FILTER_PARAMS)
   return (
     <main data-wide="">
-      <OverridesTabs current="/staff/overrides/clocks" />
       <h1>Clock adjustments</h1>
-      <p className="text-muted-foreground">
+      <p>
         Every extension, waiver, statutory exception, tolling, and renewal that moved a due date. An
         adjustment whose clock was replaced by a rule change shows as no match and has a task to
-        review it.
+        review it. Newest first.
       </p>
+      <OverridesTabs current="/staff/overrides/clocks" />
       {all.length === 0 ? (
-        <p className="my-4">No clock has been adjusted.</p>
+        <p>No clock has been adjusted.</p>
       ) : (
         <>
-          <div className="toolbar my-4">
+          <div className="toolbar">
             <QuickFilters label="Quick filters" groups={chips} clearHref={clear} />
           </div>
-          <p className="text-muted-foreground">Newest first. Click a column heading to sort.</p>
           {rows.length === 0 ? (
-            <div className="table-panel my-4">
+            <div className="table-panel">
               <p className="px-5 py-8">No adjustment matches these filters.</p>
             </div>
           ) : (

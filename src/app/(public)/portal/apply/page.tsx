@@ -15,7 +15,7 @@ import { startApplicationAction } from './actions'
 
 export const dynamic = 'force-dynamic'
 
-const LINK = 'tap-target inline-flex items-center underline'
+const LINK = 'tap-target inline-flex items-center'
 const MIN_QUERY = 2
 
 export default async function ApplyPage({
@@ -89,7 +89,7 @@ export default async function ApplyPage({
           </Label>
           <Input id="parcel-search" name="q" defaultValue={query} className="min-h-11 text-base" />
         </div>
-        <Button type="submit" variant="outline" className="min-h-11 text-base">
+        <Button type="submit" className="min-h-11 text-base">
           Search
         </Button>
       </form>

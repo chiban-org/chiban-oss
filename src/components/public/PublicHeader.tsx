@@ -39,7 +39,7 @@ export function PublicHeader({ signedIn, signOutAction }: PublicHeaderProps) {
             </a>
             <form action={signOutAction}>
               <CsrfField />
-              <SubmitButton variant="link" className="text-base underline">
+              <SubmitButton variant="link" className="px-0 text-base">
                 Sign out
               </SubmitButton>
             </form>
