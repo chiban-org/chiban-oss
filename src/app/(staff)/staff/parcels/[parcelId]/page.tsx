@@ -18,7 +18,7 @@ import { loadPanelDocuments } from '@/features/documents/panelData'
 import { bboxOfGeometry, configuredOverlayLayers } from '@/features/gis/extent'
 import { returnedCheckNoticesForParcel } from '@/features/ledger/balanceNotice'
 import { loadPack } from '@/features/packs/loadPack'
-import { lineageEventText, retiredText } from '@/features/parcels/parcelText'
+import { aliasSourceText, lineageEventText, retiredText } from '@/features/parcels/parcelText'
 import { getStaffParcelView } from '@/features/parcels/staffParcelView'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -29,6 +29,8 @@ import { carryForwardAction, createAliasOverrideAction } from './actions'
 interface ParcelPageProps {
   params: Promise<{ parcelId: string }>
 }
+
+const MAP_HINT = 'The map is a visual aid. Select a neighboring parcel on it to open that parcel.'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -95,6 +97,7 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
             layers={overlays}
             basemapRasterUrl={town.ok ? town.value.basemapRasterUrl : null}
             basemapAttribution={town.ok ? town.value.basemapAttribution : null}
+            hint={MAP_HINT}
           />
         ),
     },
@@ -186,7 +189,7 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
                   <td>{a.label}</td>
                   <td>{a.value}</td>
                   <td>{a.status === 'retired' ? retiredText(a.retiredOn) : 'Active'}</td>
-                  <td>{a.source}</td>
+                  <td>{aliasSourceText(a.source)}</td>
                 </tr>
               ))}
             </tbody>

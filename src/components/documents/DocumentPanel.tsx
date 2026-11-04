@@ -117,6 +117,10 @@ function ApprovalControls({ doc, actions }: { doc: PanelDocument; actions: Docum
   )
 }
 
+function mayAct(doc: PanelDocument, props: Props): boolean {
+  return props.canManage || props.canPublish || (doc.canRedact && doc.originalVersionId !== null)
+}
+
 function ManageControls({
   doc,
   props,
@@ -128,7 +132,7 @@ function ManageControls({
 }) {
   return (
     <details>
-      <summary className="text-sm">Manage</summary>
+      <summary className="text-sm">{mayAct(doc, props) ? 'Manage' : 'Details'}</summary>
       <div className="mt-3 space-y-4 rounded-md bg-canvas p-4">
         <RecordKeeping doc={doc} seriesShown={seriesShown} />
         {props.canManage ? (

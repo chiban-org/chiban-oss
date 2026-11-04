@@ -89,14 +89,14 @@ describe('DocumentPanel', () => {
   })
 
   it('names the series with its citation, the retention, and a hold badge', () => {
-    view([doc({ holdCount: 1, retention: 'Waiting for: building removed' })])
+    view([doc({ holdCount: 1, retention: 'Starts when the building is removed' })])
     expect(
       screen.getByText('Record series: Building permits: applications and approvals'),
     ).toBeTruthy()
     expect(screen.getByRole('link', { name: 'RSA 33-A:3-a XV' }).getAttribute('href')).toContain(
       '33-A-3-a',
     )
-    expect(screen.getByText('Retention: Waiting for: building removed')).toBeTruthy()
+    expect(screen.getByText('Retention: Starts when the building is removed')).toBeTruthy()
     expect(screen.getByText('Legal hold')).toBeTruthy()
   })
 
@@ -105,6 +105,20 @@ describe('DocumentPanel', () => {
     expect(screen.queryByRole('button', { name: 'Save public setting' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Retry preservation' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Save audiences' })).toBeNull()
+  })
+
+  it('labels the disclosure Details, not Manage, for someone who can take no action on it', () => {
+    view([doc()], false, false)
+    expect(screen.queryByText('Manage')).toBeNull()
+    expect(screen.getByText('Details')).toBeTruthy()
+  })
+
+  it('keeps Manage when the viewer may redact, manage or publish', () => {
+    view([doc({ canRedact: true })], false, false)
+    expect(screen.getByText('Manage')).toBeTruthy()
+    cleanup()
+    view([doc()], false, true)
+    expect(screen.getByText('Manage')).toBeTruthy()
   })
 
   it('offers audience checkboxes, the public toggle, and retry for staff', () => {
