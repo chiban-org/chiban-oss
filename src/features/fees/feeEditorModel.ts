@@ -1,11 +1,11 @@
-import type { FeeExpr, FeeScheduleBody, FeeTier } from '@/features/fees/feeSchema'
+import type { FeeExpr, FeeScheduleBody, FeeSource, FeeTier } from '@/features/fees/feeSchema'
 
 export const AFTER_THE_FACT_FIELD = 'after_the_fact'
 
 export type FeeBase =
   | { kind: 'flat'; cents: number }
-  | { kind: 'per_unit'; rows: { field: string; centsPerUnit: number }[] }
-  | { kind: 'tiered'; field: string; mode: 'graduated' | 'bracket'; tiers: FeeTier[] }
+  | { kind: 'per_unit'; rows: { source: FeeSource; centsPerUnit: number }[] }
+  | { kind: 'tiered'; source: FeeSource; mode: 'graduated' | 'bracket'; tiers: FeeTier[] }
 
 export interface FeeLineModel {
   code: string
@@ -18,22 +18,19 @@ export interface FeeLineModel {
 
 function parseBase(expr: FeeExpr): FeeBase | null {
   if (expr.op === 'flat') return { kind: 'flat', cents: expr.cents }
-  if (expr.op === 'per_unit' && expr.source.kind === 'field') {
-    return {
-      kind: 'per_unit',
-      rows: [{ field: expr.source.field, centsPerUnit: expr.centsPerUnit }],
-    }
+  if (expr.op === 'per_unit') {
+    return { kind: 'per_unit', rows: [{ source: expr.source, centsPerUnit: expr.centsPerUnit }] }
   }
   if (expr.op === 'sum') {
-    const rows: { field: string; centsPerUnit: number }[] = []
+    const rows: { source: FeeSource; centsPerUnit: number }[] = []
     for (const part of expr.of) {
-      if (part.op !== 'per_unit' || part.source.kind !== 'field') return null
-      rows.push({ field: part.source.field, centsPerUnit: part.centsPerUnit })
+      if (part.op !== 'per_unit') return null
+      rows.push({ source: part.source, centsPerUnit: part.centsPerUnit })
     }
     return { kind: 'per_unit', rows }
   }
-  if (expr.op === 'tiered' && expr.source.kind === 'field') {
-    return { kind: 'tiered', field: expr.source.field, mode: expr.mode, tiers: expr.tiers }
+  if (expr.op === 'tiered') {
+    return { kind: 'tiered', source: expr.source, mode: expr.mode, tiers: expr.tiers }
   }
   return null
 }
@@ -62,16 +59,11 @@ export function parseLine(line: FeeScheduleBody['lines'][number]): FeeLineModel 
 function buildBase(base: FeeBase): FeeExpr {
   if (base.kind === 'flat') return { op: 'flat', cents: base.cents }
   if (base.kind === 'tiered') {
-    return {
-      op: 'tiered',
-      source: { kind: 'field', field: base.field },
-      mode: base.mode,
-      tiers: base.tiers,
-    }
+    return { op: 'tiered', source: base.source, mode: base.mode, tiers: base.tiers }
   }
   const parts: FeeExpr[] = base.rows.map((r) => ({
     op: 'per_unit',
-    source: { kind: 'field', field: r.field },
+    source: r.source,
     centsPerUnit: r.centsPerUnit,
   }))
   return parts.length === 1 && parts[0] !== undefined ? parts[0] : { op: 'sum', of: parts }

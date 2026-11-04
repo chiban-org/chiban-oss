@@ -75,6 +75,20 @@ describe('fee editor model', () => {
     expect(buildExpr(model).op).toBe('sum')
   })
 
+  it('round trips a per-unit line that counts abutters on the issued list', () => {
+    const expr: FeeExpr = {
+      op: 'per_unit',
+      source: { kind: 'count_of', what: 'abutters_on_issued_list' },
+      centsPerUnit: 1200,
+    }
+    const parsed = parseLine({ code: 'mail', label: 'Mailing', due: 'at_notice', expr })
+    expect(parsed?.base).toEqual({
+      kind: 'per_unit',
+      rows: [{ source: { kind: 'count_of', what: 'abutters_on_issued_list' }, centsPerUnit: 1200 }],
+    })
+    expect(parsed && buildExpr(parsed)).toEqual(expr)
+  })
+
   it('returns null for an expression the editor cannot represent', () => {
     const odd: FeeExpr = {
       op: 'conditional_multiplier',
