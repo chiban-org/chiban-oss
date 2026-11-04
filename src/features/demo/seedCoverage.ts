@@ -4,6 +4,7 @@ import { seedMeetingStates } from '@/features/demo/seedMeetingStates'
 import { actorFor, type Cast } from '@/features/demo/seedPermitSupport'
 import { seedRecordStates } from '@/features/demo/seedRecordStates'
 import { seedTodayWork } from '@/features/demo/seedToday'
+import { seedUserStates } from '@/features/demo/seedUserStates'
 import type { MailTransport } from '@/features/mail/transport'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
@@ -41,6 +42,7 @@ export async function seedCoverage(
     await seedApplicationStates(ctx),
     await seedRecordStates(ctx),
     await seedTodayWork(ctx),
+    await seedUserStates(ctx),
   ]
   return steps.some(Boolean)
 }

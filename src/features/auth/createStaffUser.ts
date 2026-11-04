@@ -4,7 +4,7 @@ import { userRoles, users } from '@/db/schema'
 import { hashPassword } from '@/features/auth/password'
 import { err, ok, type Result } from '@/types/result'
 
-const MIN_PASSWORD_LENGTH = 12
+export const MIN_PASSWORD_LENGTH = 12
 const UNIQUE_VIOLATION = '23505'
 
 export interface CreateStaffUserInput {

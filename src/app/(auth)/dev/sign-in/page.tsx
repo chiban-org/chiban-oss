@@ -1,4 +1,4 @@
-import { eq, like } from 'drizzle-orm'
+import { and, eq, like } from 'drizzle-orm'
 import { notFound } from 'next/navigation'
 import { CsrfField } from '@/components/CsrfField'
 import { SubmitButton } from '@/components/SubmitButton'
@@ -16,7 +16,7 @@ export default async function DevSignInPage() {
     .select({ email: users.email, name: users.displayName, kind: users.kind, role: userRoles.role })
     .from(users)
     .innerJoin(userRoles, eq(userRoles.userId, users.id))
-    .where(like(users.email, `%@${DEMO_DOMAIN}`))
+    .where(and(like(users.email, `%@${DEMO_DOMAIN}`), eq(users.isActive, true)))
     .orderBy(users.email)
 
   return (

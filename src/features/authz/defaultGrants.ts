@@ -30,6 +30,7 @@ export const DEFAULT_GRANTS: Readonly<Partial<Record<Role, readonly Capability[]
     'enforcement.refer_counsel',
     'fine.record',
     'anonymous_intake.enable',
+    'user.manage',
   ],
   staff: [
     'permit.issue',

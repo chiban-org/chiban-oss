@@ -45,6 +45,7 @@ export const CAPABILITIES = {
   'rtk.manage': 'Log Right-to-Know requests, respond, withhold, and release records',
   'redaction.create': 'Draw redactions on a document version and run them',
   'disposition.propose': 'Propose a disposition batch from the retention worklist',
+  'user.manage': 'Invite staff, change their roles, and disable or re-enable their accounts',
 } as const
 
 export type Capability = keyof typeof CAPABILITIES
