@@ -50,11 +50,12 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 
 ## Settings
 
-- Settings and administration pages (`/staff/settings/*` and `/staff/admin/*`) share one shell: a settings menu about 14rem wide on the left inside the content area, and one focused page on the right. The menu model lives in `src/features/settingsMenu/settingsMenu.ts`, grouped (Permits, Town rules, Boards, Money and inspections, Starters, Administration); add a page by adding an item there.
+- Settings and administration pages (`/staff/settings/*` and `/staff/admin/*`) share one shell: a settings menu about 14rem wide on the left inside the content area, and one focused page on the right. The menu model lives in `src/features/settingsMenu/settingsMenu.ts`, grouped (Town, Permits, Town rules, Boards, Money and inspections, Starters, Administration); add a page by adding an item there.
 - The menu lists only the pages the viewer can open, using each page's own access rule, and marks the current page like the main sidebar's current row. A filter box at the top narrows it. Below 768px it becomes a picker at the top of the page.
 - `/staff/settings` opens the first page the viewer can use. A viewer who can open none gets the permission refusal.
 - One page per setting, never a long hub. Every page starts with `SettingsHeader` (`src/components/settings/SettingsHeader.tsx`): the title, one plain line saying what the page controls, and the page's one filled action on the right (New type, Request a new export) where there is one. The versioning sentence joins that line only on kinds that open applications pin (application types, forms, fee schedules, templates, conditions, checklists).
 - Kinds that hold one record (payment, inspection and board settings, regional notice contacts, review committee routes) open straight to their form and version history instead of a one-row list.
+- The Town group (Town profile, Letterhead, Signers) edits one town profile. Each page publishes its part straight to a new version, with no draft step, and links to the version history on the town profile kind page. The Letterhead page shows a live preview of the header and footer next to its form.
 - An empty kind shows what it does and the add action in its place, never a bare 0.
 - Settings pages are not record pages: no `RecordLayout`, and `main[data-wide]` only when a table needs the width.
 
