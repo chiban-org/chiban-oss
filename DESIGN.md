@@ -1,6 +1,6 @@
 # Design
 
-Chiban should read as a public record: paper-white surfaces, serif headlines, one pen color. The token values live in `src/features/design/tokens.ts` and are mirrored in `src/app/globals.css`. Components use token classes (`bg-surface`, `text-ink`, `text-muted-foreground`), never raw hex values.
+Chiban should read as a public record: paper-white surfaces, serif headlines, one pen color. The token values live in `src/features/design/tokens.ts` and are mirrored in `src/app/globals.css`; shared component styles (page rhythm, panels, tables, record lists) live in `src/app/components.css`. Components use token classes (`bg-surface`, `text-ink`, `text-muted-foreground`), never raw hex values.
 
 ## Tokens
 
@@ -28,6 +28,9 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 - Highlighter yellow marks what needs attention, behind a short phrase, never as a full surface.
 - Status is never color alone: use `StatusChip`, which always renders an icon and a text label.
 - Records look like documents: serif titles, hairline-bordered white cards on the canvas, almost no shadow.
+- A page that refuses the viewer renders `NoPermission`, never a hand-made heading and alert.
+- Upload buttons and the submit of any form that is not the page's next step are outline buttons.
+- A note that a connection is a practice or stand-in one uses `PracticeNotice`: a dashed outline on white, never a yellow surface.
 - Every top-level `<section>` inside `<main>` renders as a hairline panel; nested sections become divided subsections. Add `data-plain` to a section that should not be a panel (an action bar, for example).
 
 ## Layout pieces
@@ -36,8 +39,10 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 - `RecordLayout` (`src/components/layout/RecordLayout.tsx`): a record page body with a sticky right rail. The rail holds the next step (the one filled action), the key facts as a stacked `FactList`, and an "On this page" index once there are four or more panels. In windows 1840px and wider the index moves to the empty space left of the record and sticks there while the page scrolls. Below 1024px the rail comes first, above the panels.
 - `splitPanels` (`src/components/layout/splitPanels.ts`): the page decides which panels have nothing on file. Filled panels keep their order; empty ones collect at the end under "Nothing recorded yet" as one-line rows, with any add action as a disclosure on the right.
 - Forms that add something (assign, apply, record, refer) sit behind a `<details>` disclosure named for the action. Forms that are the page's next step stay open in the rail.
-- Lists of records inside a panel use `record-item` dividers, never bordered boxes inside a bordered panel.
-- Data tables sit in a `table-panel`; filter bars above them in a `toolbar`. Status columns use `StatusChip`, and empty cells read in muted text.
+- Lists of records inside a panel use `record-item` dividers, never bordered boxes inside a bordered panel. A list that would stand alone on the page goes in a panel with a heading first.
+- Top-level blocks inside `<main>` sit 20px apart and the lead line sits 4px under the `h1`, both from `components.css`. Pages do not add `space-y-*` to `<main>`, margins to its direct children, or classes to the lead line.
+- A page below another one (an import run under Imports, a user under Users) names its parent as a link in the kicker above the title, through `PageHeader` or `SettingsHeader`'s back link.
+- Data tables sit in a `table-panel`; filter bars above them in a `toolbar`. Tables never add their own row border or cell padding classes; the base table style draws them. Status columns use `StatusChip`, in panels too, and empty cells read in muted text.
 - Staff navigation lives on its own `sidebar` layer (`#e9eef2`), a step darker than the canvas. Entries are grouped by the `group` field in `src/features/staffNav/navItems.ts` and each carries an icon. The current page is a white row with a hairline edge.
 - Records and reports and Parcel data fold away unless the current page is inside them. Configuration and administration pages sit behind one Settings entry, shown to anyone who can open at least one settings page. An entry with a `parent` (My day under Inspections) is indented beneath it when both are visible.
 - The person's name, role, Account and Sign out are pinned to the bottom of the sidebar; only the entries scroll.
@@ -62,6 +67,9 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 ## Lists and filters
 
 - One list per kind of record. Status or scope is a row of `FilterTabs` with counts above the filter bar, not a second page. Tabs pick one value, and "Clear all" leaves the chosen tab alone.
+- Tabs always sit under the lead line and always use `FilterTabs`, including tabs that switch between sibling lists (the three override lists).
+- A form that adds a record to a list (log a request, open a case, add an override) sits after the table and pager behind a `<details>` disclosure named for the action, with an outline submit.
+- A table's download link reads "Download CSV" and is hidden in print.
 - List pages use `<main data-wide>` so the table can use the wider list width. The lead line states the default order.
 - Every meaningful column sorts from its header with `SortHeader`, one sort link per header. Paged or growing lists sort and filter in SQL with a stable tiebreak. Narrow layouts get the same sorts through `SortBar`.
 - Quick filters come from `chipGroups` in `src/features/dataTable/quickFilters.ts`: two to four groups, counts from `countFacets`. Options that exclude each other (Mine and Unassigned, Overdue and Due this week) set `single: true` and are read with `singleValue`. Groups longer than three options, and anything not every viewer needs, go behind a `FilterMenu`.
@@ -95,11 +103,18 @@ The letter builder edits templates on a letter-sized page under the town letterh
 - Wording state law requires is a locked block: a lock icon, the reason ("Required by state law"), and no way to edit or delete it.
 - In settings-menu width the Insert pane and the selected part's settings share the left column; wide windows get three columns.
 
+## Links
+
+- Links inside page content are underlined, from one rule in `components.css`. Links in table cells stay plain until hovered. Navigation, tabs, sort headers, chips and buttons are never underlined.
+- Pages do not add color or underline classes to links; a link that must not underline opts out with `no-underline`.
+
 ## Copy
 
 - Plain words, no internal jargon, and no text repeated within one panel (a gate's label and its reason, for example).
 - A count appears only when it says something: "2 more overdue", never "0 overdue".
 - An empty state says what to do next.
+- A count of days reads "today" when it is zero.
+- Dates read in full ("November 4, 2026") through `formatCivilDate`. Only the two keyboard work queues (Applications and Your reviews) use the short month, to keep their many columns on one line.
 
 ## Type and shape
 
