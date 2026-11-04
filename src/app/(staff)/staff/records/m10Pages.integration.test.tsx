@@ -274,9 +274,9 @@ describe('records screens with the demo seed', () => {
     expect(await html(RequestsPage(search()))).toContain('You do not have permission')
     expect(await html(RetentionPage(search()))).toContain('You do not have permission')
     const [request] = await handle.db.select().from(rtkRequests)
-    await expect(
-      html(RequestPage({ params: Promise.resolve({ requestId: request?.id ?? '' }) })),
-    ).rejects.toThrow('NOT_FOUND')
+    expect(
+      await html(RequestPage({ params: Promise.resolve({ requestId: request?.id ?? '' }) })),
+    ).toContain('You do not have permission')
     await expect(
       html(
         RedactPage({ params: Promise.resolve({ versionId: crypto.randomUUID() }), ...search() }),

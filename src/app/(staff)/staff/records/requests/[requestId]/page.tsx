@@ -3,8 +3,9 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
 import { splitPanels } from '@/components/layout/splitPanels'
 import { StatusChip } from '@/components/StatusChip'
-import { hasCapability } from '@/features/authz/capabilities'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { RTK_STATUS_LABELS } from '@/features/rtk/labels'
+import { REQUESTS_PATH } from '@/features/rtk/requestListParams'
 import {
   loadReleaseCandidates,
   loadReleases,
@@ -14,6 +15,8 @@ import {
 } from '@/features/rtk/requestPage'
 import { isRequestOpen, requestChipStatus } from '@/features/rtk/requestStatus'
 import { rtkRequestView } from '@/features/rtk/requests'
+import { mayOpen } from '@/features/staffNav/navItems'
+import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
@@ -54,12 +57,15 @@ export default async function RequestPage({
   const find = (await searchParams)?.find ?? ''
   if (!isUuid(requestId)) notFound()
   const ctx = await requireStaffContext()
+  if (!mayOpen(REQUESTS_PATH, await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
+    return <NoPermission title="Right-to-Know requests" action="see Right-to-Know requests" />
+  }
   const today = await townToday(ctx.db, new Date(), ctx.signal)
   const view = await rtkRequestView(ctx.db, ctx.actor, requestId, today, ctx.signal)
   if (!view.ok) notFound()
   const request = view.value
-  const canManage = await hasCapability(ctx.db, ctx.actor.userId, 'rtk.manage', ctx.signal)
-  const working = canManage && isRequestOpen(request)
+  const canManage = true
+  const working = isRequestOpen(request)
   const [releases, approvals, candidates, letters, example] = await Promise.all([
     loadReleases(ctx.db, requestId),
     loadRequestApprovals(ctx.db, requestId),

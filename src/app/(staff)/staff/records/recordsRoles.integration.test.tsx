@@ -73,15 +73,6 @@ async function openRequest() {
   return request
 }
 
-const REQUEST_WORK = [
-  'Record withholding',
-  'Record response',
-  'Close the request',
-  'Approve for release',
-  'Find a document',
-  'Release approved records',
-]
-
 beforeAll(async () => {
   handle = await makeTestDb()
   state.db = handle.db
@@ -92,7 +83,7 @@ afterAll(async () => {
 })
 
 describe('Right-to-Know request page by role', () => {
-  it('administrators and inspectors see the request read-only, with no working forms', async () => {
+  it('administrators and inspectors get the permission refusal on the request page', async () => {
     const request = await openRequest()
     for (const role of ['admin', 'inspector']) {
       await actAs(role)
@@ -100,8 +91,8 @@ describe('Right-to-Know request page by role', () => {
         RequestPage({ params: Promise.resolve({ requestId: request.id }), ...search() }),
       )
       const text = visibleText(markup)
-      expect(text).toContain(request.number)
-      for (const label of REQUEST_WORK) expect(text).not.toContain(label)
+      expect(text).toContain('You do not have permission to see Right-to-Know requests')
+      expect(text).not.toContain(request.number)
       expect(markup).not.toContain('<form')
     }
   })
