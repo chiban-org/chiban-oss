@@ -48,9 +48,9 @@ export function PaymentSettingsEditor({ body, onChange }: Props) {
               key={channel}
               label={label}
               checked={fee.appliesTo.includes(channel)}
-              onChange={(e) =>
+              onChange={(checked) =>
                 setFee({
-                  appliesTo: e.target.checked
+                  appliesTo: checked
                     ? [...fee.appliesTo, channel]
                     : fee.appliesTo.filter((c) => c !== channel),
                 })

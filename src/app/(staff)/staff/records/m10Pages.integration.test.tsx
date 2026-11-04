@@ -296,7 +296,7 @@ describe('records screens with the demo seed', () => {
       RequestPage({ params: Promise.resolve({ requestId: request?.id ?? '' }) }),
     )
     expect(page).toMatch(
-      /<select name="exemptionKey"[^>]*><option value="" selected="">Choose an exemption<\/option>/,
+      /<select[^>]*name="exemptionKey"[^>]*><option[^>]*value=""[^>]*selected=""[^>]*>Choose an exemption<\/option>/,
     )
   })
 

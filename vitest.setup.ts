@@ -25,4 +25,14 @@ function applyMinioConfig(): void {
 
 applyMinioConfig()
 
+class ResizeObserverStub {
+  observe = (): undefined => undefined
+  unobserve = (): undefined => undefined
+  disconnect = (): undefined => undefined
+}
+
+if (!('ResizeObserver' in globalThis)) {
+  Object.assign(globalThis, { ResizeObserver: ResizeObserverStub })
+}
+
 export {}

@@ -104,11 +104,11 @@ export function ConditionsEditor({ body, onChange, errors }: EditorProps<Conditi
           <Check
             label="Blocks issuance"
             checked={c.blocksIssuance}
-            onChange={(e) =>
+            onChange={(checked) =>
               onChange({
                 ...body,
                 conditions: body.conditions.map((x, n) =>
-                  n === i ? { ...x, blocksIssuance: e.target.checked } : x,
+                  n === i ? { ...x, blocksIssuance: checked } : x,
                 ),
               })
             }
@@ -157,7 +157,7 @@ export function ChecklistEditor({ body, onChange, errors }: EditorProps<Checklis
       <Check
         label="Final inspection of the permit"
         checked={isFinalChecklist(body)}
-        onChange={(e) => onChange({ ...body, final: e.target.checked })}
+        onChange={(checked) => onChange({ ...body, final: checked })}
       />
       <FieldGroup name="items" label="Checklist items" errors={errors}>
         {body.items.map((item, i) => (
@@ -188,12 +188,10 @@ export function ChecklistEditor({ body, onChange, errors }: EditorProps<Checklis
             <Check
               label="Required"
               checked={item.required}
-              onChange={(e) =>
+              onChange={(checked) =>
                 onChange({
                   ...body,
-                  items: body.items.map((x, n) =>
-                    n === i ? { ...x, required: e.target.checked } : x,
-                  ),
+                  items: body.items.map((x, n) => (n === i ? { ...x, required: checked } : x)),
                 })
               }
             />

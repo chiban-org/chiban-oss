@@ -53,7 +53,7 @@ function ModelEditor({
       <Check
         label="Apply a minimum"
         checked={model.minimumCents !== null}
-        onChange={(e) => onChange({ ...model, minimumCents: e.target.checked ? 0 : null })}
+        onChange={(checked) => onChange({ ...model, minimumCents: checked ? 0 : null })}
       />
       {model.minimumCents === null ? null : (
         <Input
@@ -66,9 +66,7 @@ function ModelEditor({
       <Check
         label="Multiply when work started before the permit"
         checked={model.multiplier !== null}
-        onChange={(e) =>
-          onChange({ ...model, multiplier: e.target.checked ? { factor: 2 } : null })
-        }
+        onChange={(checked) => onChange({ ...model, multiplier: checked ? { factor: 2 } : null })}
       />
       {model.multiplier === null ? null : (
         <Input

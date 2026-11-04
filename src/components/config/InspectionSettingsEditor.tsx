@@ -53,10 +53,10 @@ export function InspectionSettingsEditor({ body, onChange, errors }: Props) {
               key={day}
               label={label}
               checked={body.schedulingDays.includes(day)}
-              onChange={(e) =>
+              onChange={(checked) =>
                 onChange({
                   ...body,
-                  schedulingDays: toggled(body.schedulingDays, day, e.target.checked),
+                  schedulingDays: toggled(body.schedulingDays, day, checked),
                 })
               }
             />
@@ -135,10 +135,10 @@ export function InspectionSettingsEditor({ body, onChange, errors }: Props) {
               key={day}
               label={label}
               checked={phone.days.includes(day)}
-              onChange={(e) =>
+              onChange={(checked) =>
                 onChange({
                   ...body,
-                  phoneRequestHours: { ...phone, days: toggled(phone.days, day, e.target.checked) },
+                  phoneRequestHours: { ...phone, days: toggled(phone.days, day, checked) },
                 })
               }
             />
@@ -173,7 +173,7 @@ export function InspectionSettingsEditor({ body, onChange, errors }: Props) {
       <Check
         label="Residents can request inspections online"
         checked={body.portalRequestsEnabled}
-        onChange={(e) => onChange({ ...body, portalRequestsEnabled: e.target.checked })}
+        onChange={(checked) => onChange({ ...body, portalRequestsEnabled: checked })}
       />
     </div>
   )

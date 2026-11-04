@@ -6,6 +6,7 @@ import { SubmitButton } from '@/components/SubmitButton'
 import { Button } from '@/components/ui/button'
 import { useFormAction } from '@/components/useFormAction'
 import { useHydrated } from '@/components/useHydrated'
+import { cn } from '@/lib/utils'
 import type { ActionResult } from '@/server/actionRunner'
 
 interface AlternateSubmit {
@@ -182,10 +183,16 @@ export function ActionForm({
   const message = problem ?? answer
   const failed = problem !== null || (answer !== null && result?.ok === false)
   return (
-    <form {...formProps} onSubmit={onSubmit} onInput={onInput} noValidate className={className}>
+    <form
+      {...formProps}
+      onSubmit={onSubmit}
+      onInput={onInput}
+      noValidate
+      className={cn(compact ? undefined : 'flex flex-col gap-4', className)}
+    >
       <CsrfField />
       {children}
-      <div className={`${compact ? '' : 'mt-3 '}flex flex-wrap items-center gap-x-3 gap-y-1`}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         <SubmitButtons
           label={submitLabel}
           variant={variant}

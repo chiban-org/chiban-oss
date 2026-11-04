@@ -123,9 +123,9 @@ export function ApplicationTypeEditor({
               label={rule.label}
               checked={locked || body.bindings.includes(rule.key)}
               disabled={locked}
-              onChange={(e) =>
+              onChange={(checked) =>
                 set({
-                  bindings: e.target.checked
+                  bindings: checked
                     ? [...body.bindings, rule.key]
                     : body.bindings.filter((b) => b !== rule.key),
                 })
@@ -138,8 +138,8 @@ export function ApplicationTypeEditor({
         <Check
           label="Staff may issue straight from submitted"
           checked={body.workflow.allowsDirectIssue}
-          onChange={(e) =>
-            set({ workflow: { ...body.workflow, allowsDirectIssue: e.target.checked } })
+          onChange={(checked) =>
+            set({ workflow: { ...body.workflow, allowsDirectIssue: checked } })
           }
         />
         <Pick

@@ -81,18 +81,18 @@ export function BoardSettingsEditor({ body, onChange, errors }: Props) {
             <Check
               label="Notice by posting"
               checked={board.publicNotice.posting}
-              onChange={(e) =>
+              onChange={(checked) =>
                 setBoard(index, {
-                  publicNotice: { ...board.publicNotice, posting: e.target.checked },
+                  publicNotice: { ...board.publicNotice, posting: checked },
                 })
               }
             />
             <Check
               label="Notice by publication"
               checked={board.publicNotice.publication}
-              onChange={(e) =>
+              onChange={(checked) =>
                 setBoard(index, {
-                  publicNotice: { ...board.publicNotice, publication: e.target.checked },
+                  publicNotice: { ...board.publicNotice, publication: checked },
                 })
               }
             />
@@ -115,7 +115,7 @@ export function BoardSettingsEditor({ body, onChange, errors }: Props) {
         <Check
           label="Use perpendicular projection to find abutters across streets and streams"
           checked={body.abutters.projectionEnabled}
-          onChange={(e) => setAbutters({ projectionEnabled: e.target.checked })}
+          onChange={(checked) => setAbutters({ projectionEnabled: checked })}
         />
         <div className="mt-2 grid grid-cols-2 gap-3">
           <Input

@@ -262,7 +262,12 @@
   }
 
   :where(.staff-shell main form:not([role="search"]))
-    :where(input:not([type="checkbox"], [type="radio"], [type="hidden"]), select, textarea) {
+    :where(
+      input:not([type="checkbox"], [type="radio"], [type="hidden"]),
+      select,
+      textarea,
+      [data-slot="native-select-wrapper"]
+    ) {
     max-width: 36rem;
   }
 

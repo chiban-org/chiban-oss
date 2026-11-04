@@ -71,11 +71,13 @@ describe('ApplicationTypeEditor', () => {
         classifications={CLASSIFICATIONS}
       />,
     )
-    const decision = screen.getByLabelText<HTMLInputElement>(/Building permit decision deadline/)
-    expect(decision.checked).toBe(true)
+    const decision = screen.getByRole<HTMLButtonElement>('checkbox', {
+      name: /Building permit decision deadline/,
+    })
+    expect(decision.getAttribute('aria-checked')).toBe('true')
     expect(decision.disabled).toBe(true)
-    const other = screen.getByLabelText<HTMLInputElement>(/Suspended by appeal/)
-    expect(other.checked).toBe(false)
+    const other = screen.getByRole('checkbox', { name: /Suspended by appeal/ })
+    expect(other.getAttribute('aria-checked')).toBe('false')
     expect(document.body.textContent).not.toMatch(/\(nh\./)
   })
 

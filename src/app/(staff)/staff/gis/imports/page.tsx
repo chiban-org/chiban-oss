@@ -109,7 +109,7 @@ export default async function StaffImportsPage({
                 <ActionForm
                   action={updateLayerSettingsAction}
                   submitLabel="Save settings"
-                  className="mt-3 max-w-xl space-y-3"
+                  className="mt-3 max-w-xl"
                 >
                   <input type="hidden" name="key" value={key} />
                   <SelectField

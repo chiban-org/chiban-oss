@@ -1,0 +1,83 @@
+// @vitest-environment jsdom
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { afterEach, describe, expect, it } from 'vitest'
+import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
+
+afterEach(cleanup)
+
+function submitted(): [string, FormDataEntryValue][] {
+  const form = document.querySelector('form')
+  if (form === null) throw new Error('no form')
+  return Array.from(new FormData(form).entries())
+}
+
+describe('staff fields', () => {
+  it('labels each control and describes it with its hint', () => {
+    render(
+      <form>
+        <TextField label="Title" name="title" hint="Shown on the agenda" />
+        <AreaField label="Details" name="description" />
+      </form>,
+    )
+    const title = screen.getByLabelText<HTMLInputElement>('Title')
+    expect(title.name).toBe('title')
+    const hintId = title.getAttribute('aria-describedby') ?? ''
+    expect(document.getElementById(hintId)?.textContent).toBe('Shown on the agenda')
+    expect(screen.getByLabelText<HTMLTextAreaElement>('Details').name).toBe('description')
+  })
+
+  it('submits the chosen option, including an empty one, under the select name', () => {
+    render(
+      <form>
+        <SelectField
+          label="Appeal"
+          name="appealId"
+          defaultValue=""
+          options={[
+            ['', 'Not applicable'],
+            ['a1', 'First appeal'],
+          ]}
+        />
+      </form>,
+    )
+    expect(submitted()).toEqual([['appealId', '']])
+    fireEvent.change(screen.getByLabelText('Appeal'), { target: { value: 'a1' } })
+    expect(submitted()).toEqual([['appealId', 'a1']])
+  })
+
+  it('keeps a required select required so the form refuses an empty choice', () => {
+    render(
+      <form>
+        <SelectField
+          label="Determination"
+          name="determination"
+          required
+          defaultValue=""
+          options={[
+            ['', 'Choose a determination'],
+            ['yes', 'Regional impact'],
+          ]}
+        />
+      </form>,
+    )
+    const select = screen.getByLabelText<HTMLSelectElement>('Determination')
+    expect(select.validity.valueMissing).toBe(true)
+  })
+
+  it('submits a checkbox value only while it is checked', () => {
+    render(
+      <form>
+        <CheckField label="Finding one" name="findingIds" value="f1" />
+        <CheckField label="Finding two" name="findingIds" value="f2" defaultChecked />
+      </form>,
+    )
+    expect(submitted()).toEqual([['findingIds', 'f2']])
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Finding one' }))
+    expect(submitted()).toEqual([
+      ['findingIds', 'f1'],
+      ['findingIds', 'f2'],
+    ])
+    fireEvent.click(screen.getByText('Finding two'))
+    expect(submitted()).toEqual([['findingIds', 'f1']])
+  })
+})

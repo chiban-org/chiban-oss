@@ -37,7 +37,7 @@ export default async function NewLineageEventPage({ searchParams }: NewLineagePa
         action={recordLineageAction}
         submitLabel="Record lineage event"
         variant="default"
-        className="mt-4 max-w-xl space-y-3"
+        className="mt-4 max-w-xl"
       >
         <SelectField label="Kind" name="kind" options={KINDS} />
         <TextField label="Effective date" name="effectiveDate" type="date" required />

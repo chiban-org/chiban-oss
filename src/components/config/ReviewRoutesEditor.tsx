@@ -55,7 +55,7 @@ function DepartmentRow({
             key={r.id}
             label={r.name}
             checked={department.reviewerUserIds.includes(r.id)}
-            onChange={(e) => toggle(r.id, e.target.checked)}
+            onChange={(checked) => toggle(r.id, checked)}
           />
         ))
       )}
@@ -104,7 +104,7 @@ function RouteRow({
           key={d.key}
           label={d.label}
           checked={route.departmentKeys.includes(d.key)}
-          onChange={(e) => toggle(d.key, e.target.checked)}
+          onChange={(checked) => toggle(d.key, checked)}
         />
       ))}
       <RowButton onClick={onRemove}>Remove route</RowButton>

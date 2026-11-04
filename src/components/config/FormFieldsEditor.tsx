@@ -143,12 +143,12 @@ export function FormFieldsEditor({
               <Check
                 label="Required"
                 checked={field.required}
-                onChange={(e) => update(i, { required: e.target.checked })}
+                onChange={(checked) => update(i, { required: checked })}
               />
               <Check
                 label="Staff only"
                 checked={field.staffOnly === true}
-                onChange={(e) => update(i, { staffOnly: e.target.checked })}
+                onChange={(checked) => update(i, { staffOnly: checked })}
               />
               <Input
                 label="Minimum"

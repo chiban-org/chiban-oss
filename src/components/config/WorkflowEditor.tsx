@@ -167,7 +167,7 @@ export function WorkflowEditor({
         <Check
           label="Staff may issue directly at the counter"
           checked={workflow.allowsDirectIssue}
-          onChange={(e) => setWorkflow({ ...workflow, allowsDirectIssue: e.target.checked })}
+          onChange={(checked) => setWorkflow({ ...workflow, allowsDirectIssue: checked })}
         />
       ) : (
         <p className="text-sm">This kind of proceeding always goes through the board.</p>

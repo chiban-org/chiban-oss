@@ -45,7 +45,7 @@ export function RequestForm({
 }) {
   const first = channels[0]
   return (
-    <ActionForm action={action} submitLabel={submitLabel} variant="default" className="space-y-4">
+    <ActionForm action={action} submitLabel={submitLabel} variant="default">
       <input type="hidden" name="applicationId" value={applicationId} />
       {reinspectionOf === undefined ? null : (
         <input type="hidden" name="reinspectionOf" value={reinspectionOf} />
