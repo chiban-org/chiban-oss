@@ -76,10 +76,14 @@ function contactLines(contacts: RegionalContactsBody): { role: string; lines: st
   ]
 }
 
-function statusText(status: RosterStatus): string {
+function ageText(age: number): string {
+  if (age === 0) return 'today'
+  return `${age} ${age === 1 ? 'day' : 'days'} ago`
+}
+
+export function rosterStatusText(status: RosterStatus): string {
   if (status.state === 'never_reviewed') return 'Never reviewed'
-  const age = status.ageDays ?? 0
-  return `Reviewed ${formatCivilDate(status.reviewedOn ?? '')}, ${age} ${age === 1 ? 'day' : 'days'} ago`
+  return `Reviewed ${formatCivilDate(status.reviewedOn ?? '')}, ${ageText(status.ageDays ?? 0)}`
 }
 
 export async function loadRostersView(
@@ -95,7 +99,7 @@ export async function loadRostersView(
     kinds.push({
       kind,
       label: KIND_LABELS[kind],
-      statusText: statusText(await rosterStatus(db, kind, today, signal)),
+      statusText: rosterStatusText(await rosterStatus(db, kind, today, signal)),
     })
   }
   const associations = await db

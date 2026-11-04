@@ -27,21 +27,22 @@ export default async function MigrationPage() {
         documents command. Originals are kept as they are, and a searchable PDF/A copy is stored
         alongside.
       </p>
-      {listed.value.length === 0 ? <p>No batches have been scanned yet.</p> : null}
-      <ul className="m-0 list-none space-y-3 p-0">
-        {listed.value.map((batch) => (
-          <li key={batch.id} className="rounded-md border p-3">
-            <p className="m-0 font-medium">
-              <a className="text-action underline" href={`/staff/admin/migration/${batch.id}`}>
-                {batch.name}
-              </a>
-            </p>
-            <p className="m-0">
-              {STATUS_COPY[batch.status]}. Scanned {formatInstantDate(batch.createdAt, zone)}.
-            </p>
-          </li>
-        ))}
-      </ul>
+      <section aria-labelledby="batches">
+        <h2 id="batches">Batches</h2>
+        {listed.value.length === 0 ? <p>No batches have been scanned yet.</p> : null}
+        <ul className="m-0 list-none space-y-3 p-0">
+          {listed.value.map((batch) => (
+            <li key={batch.id} className="record-item">
+              <p className="m-0 font-medium">
+                <a href={`/staff/admin/migration/${batch.id}`}>{batch.name}</a>
+              </p>
+              <p className="m-0">
+                {STATUS_COPY[batch.status]}. Scanned {formatInstantDate(batch.createdAt, zone)}.
+              </p>
+            </li>
+          ))}
+        </ul>
+      </section>
     </main>
   )
 }

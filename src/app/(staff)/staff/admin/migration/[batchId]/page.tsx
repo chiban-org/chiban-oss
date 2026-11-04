@@ -1,6 +1,7 @@
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { loadBatchDetail } from '@/features/migration/batchQueries'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -54,12 +55,7 @@ export default async function MigrationBatchPage({
   const loaded = await loadBatchDetail(ctx.db, ctx.actor, batchId, ctx.signal)
   if (!loaded.ok && loaded.error === 'not_found') notFound()
   if (!loaded.ok) {
-    return (
-      <main>
-        <h1>Scanned property files</h1>
-        <p role="alert">You do not have permission to migrate scanned files.</p>
-      </main>
-    )
+    return <NoPermission title="Scanned property files" action="migrate scanned files" />
   }
   const { batch, report, exceptions } = loaded.value
   const staged = batch.status === 'staged'
@@ -114,9 +110,9 @@ export default async function MigrationBatchPage({
       {exceptions.length === 0 ? null : (
         <section aria-labelledby="items-heading">
           <h2 id="items-heading">Files that need a look</h2>
-          <ul className="m-0 list-none space-y-2 p-0">
+          <ul className="m-0 list-none space-y-3 p-0">
             {exceptions.map((item) => (
-              <li key={item.id} className="rounded-md border p-3">
+              <li key={item.id} className="record-item">
                 <p className="m-0 font-medium">{item.sourcePath}</p>
                 {itemProblems(item).map((problem) => (
                   <p key={problem} className="m-0">

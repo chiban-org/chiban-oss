@@ -31,14 +31,12 @@ const OTHER_REPORTS = [
 
 function OtherReports() {
   return (
-    <nav aria-label="Other reports" className="no-print my-4">
+    <nav aria-label="Other reports" className="no-print">
       <h2 className="font-sans text-sm font-semibold text-muted-foreground">Other reports</h2>
       <ul className="flex flex-wrap gap-x-6 gap-y-1">
         {OTHER_REPORTS.map((report) => (
           <li key={report.href}>
-            <Link className="text-action underline" href={report.href}>
-              {report.label}
-            </Link>
+            <Link href={report.href}>{report.label}</Link>
           </li>
         ))}
       </ul>
@@ -79,8 +77,9 @@ export default async function ReportsPage({
   return (
     <main data-wide="">
       <h1>Reports</h1>
+      <p>Permit volume, processing time and revenue for the dates you choose.</p>
       <OtherReports />
-      <form method="get" className="toolbar no-print my-4 flex flex-wrap items-end gap-3">
+      <form method="get" className="toolbar no-print flex flex-wrap items-end gap-3">
         <TextField label="From" name="from" type="date" defaultValue={range.from} />
         <TextField label="To" name="to" type="date" defaultValue={range.to} />
         {activeSortFields(params, [VOLUME_SCOPE, PROCESSING_SCOPE, REVENUE_SCOPE]).map(

@@ -72,7 +72,7 @@ describe('CAMA import page', () => {
   it('shows the not-checked notice in a visible note block near the top', async () => {
     state.actor = staff
     const html = renderToStaticMarkup(await CamaPage())
-    expect(html).toMatch(/<div role="note"[^>]*><p>The Avitar export layout has not been checked/)
+    expect(html).toMatch(/<p role="note"[^>]*>The Avitar export layout has not been checked/)
     expect(html).toContain(NOTICE.replace("'", '&#x27;'))
     expect(html.indexOf('role="note"')).toBeLessThan(html.indexOf('Column mapping'))
   })

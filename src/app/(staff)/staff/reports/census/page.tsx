@@ -95,13 +95,13 @@ export default async function CensusPage({
     }),
   )
   return (
-    <main data-wide="" className="space-y-6">
+    <main data-wide="">
       <h1>Census building permits report</h1>
-      <p className="m-0">
+      <p>
         Counts of new housing units from permits issued, in the categories of Census Bureau Form
         C-404. Key these numbers into the Census site.
       </p>
-      <form method="get" className="flex flex-wrap items-end gap-4">
+      <form method="get" className="toolbar no-print flex flex-wrap items-end gap-3">
         <TextField
           label="Year"
           name="year"
@@ -131,7 +131,7 @@ export default async function CensusPage({
       {r.noPermits ? <p role="status">No permits issued.</p> : null}
       {r.complete ? null : (
         <p role="alert">
-          {`${incompleteCopy(r)} below. The spreadsheet file is available once every permit is classified.`}
+          {`${incompleteCopy(r)} below. The CSV download is available once every permit is classified.`}
         </p>
       )}
       <section aria-labelledby="section-3" className="space-y-2">
@@ -195,12 +195,12 @@ export default async function CensusPage({
         )}
       </section>
       {r.complete ? (
-        <Link href={csvHref} className="inline-block text-action underline">
-          Download as a spreadsheet file
+        <Link href={csvHref} className="no-print inline-block">
+          Download CSV
         </Link>
       ) : null}
       {suggestions.length === 0 ? null : (
-        <section aria-labelledby="needs" className="space-y-3 border-t pt-4">
+        <section aria-labelledby="needs">
           <h2 id="needs">Needs classification</h2>
           <p className="m-0">
             Chiban cannot tell a new building from an addition, so confirm each permit before it
@@ -208,7 +208,7 @@ export default async function CensusPage({
           </p>
           <ul className="m-0 list-none space-y-4 p-0">
             {suggestions.map(({ row, suggestion, suggested }) => (
-              <li key={row.applicationId} className="rounded-md border p-3">
+              <li key={row.applicationId} className="record-item">
                 <p className="m-0 font-medium">{`Permit ${row.number}`}</p>
                 <p className="m-0">
                   {suggested

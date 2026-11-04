@@ -50,54 +50,64 @@ export default async function EnforcementOfficersPage() {
     .where(eq(users.isActive, true))
     .orderBy(users.displayName)
   return (
-    <main className="space-y-6">
+    <main>
       <SettingsHeader
         title="Enforcement officers"
         lead="Who may issue a cease and desist order. Record each designation the board adopts."
       />
-      {designations.length === 0 ? <p>No officer has been designated.</p> : null}
-      <ul className="m-0 list-none space-y-2 p-0">
-        {designations.map((d) => (
-          <li key={d.id} className="space-y-2 rounded-md border p-3">
-            <p className="m-0">
-              {`${d.name}, ${d.title}. Designated by ${d.authority} on ${formatCivilDate(d.adoptedOn)}${d.endedOn === null ? '' : `, ended ${formatCivilDate(d.endedOn)}`}.`}
-            </p>
-            {d.endedOn === null ? (
-              <ActionForm action={endDesignationAction} submitLabel="End this designation">
-                <input type="hidden" name="designationId" value={d.id} />
-                <TextField
-                  label="Last day as officer"
-                  name="endedOn"
-                  type="date"
-                  defaultValue={today}
-                  required
-                />
-              </ActionForm>
-            ) : null}
-          </li>
-        ))}
-      </ul>
-      <ActionForm action={designateOfficerAction} submitLabel="Designate officer" variant="default">
-        <SelectField
-          label="Officer"
-          name="userId"
-          options={staff.map((s) => [s.id, s.name] as [string, string])}
-        />
-        <TextField label="Title" name="title" defaultValue="Code Enforcement Officer" required />
-        <TextField
-          label="Designated by"
-          name="adoptingAuthority"
-          defaultValue="Select Board"
-          required
-        />
-        <TextField
-          label="Date adopted"
-          name="adoptedOn"
-          type="date"
-          defaultValue={today}
-          required
-        />
-      </ActionForm>
+      <section aria-labelledby="officers">
+        <h2 id="officers">Designated officers</h2>
+        {designations.length === 0 ? <p>No officer has been designated.</p> : null}
+        <ul className="m-0 list-none space-y-3 p-0">
+          {designations.map((d) => (
+            <li key={d.id} className="record-item space-y-2">
+              <p className="m-0">
+                {`${d.name}, ${d.title}. Designated by ${d.authority} on ${formatCivilDate(d.adoptedOn)}${d.endedOn === null ? '' : `, ended ${formatCivilDate(d.endedOn)}`}.`}
+              </p>
+              {d.endedOn === null ? (
+                <ActionForm action={endDesignationAction} submitLabel="End this designation">
+                  <input type="hidden" name="designationId" value={d.id} />
+                  <TextField
+                    label="Last day as officer"
+                    name="endedOn"
+                    type="date"
+                    defaultValue={today}
+                    required
+                  />
+                </ActionForm>
+              ) : null}
+            </li>
+          ))}
+        </ul>
+      </section>
+      <section aria-labelledby="designate">
+        <h2 id="designate">Designate an officer</h2>
+        <ActionForm
+          action={designateOfficerAction}
+          submitLabel="Designate officer"
+          variant="default"
+        >
+          <SelectField
+            label="Officer"
+            name="userId"
+            options={staff.map((s) => [s.id, s.name] as [string, string])}
+          />
+          <TextField label="Title" name="title" defaultValue="Code Enforcement Officer" required />
+          <TextField
+            label="Designated by"
+            name="adoptingAuthority"
+            defaultValue="Select Board"
+            required
+          />
+          <TextField
+            label="Date adopted"
+            name="adoptedOn"
+            type="date"
+            defaultValue={today}
+            required
+          />
+        </ActionForm>
+      </section>
     </main>
   )
 }

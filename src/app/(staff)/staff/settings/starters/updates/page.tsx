@@ -23,7 +23,7 @@ export default async function StarterUpdatesPage() {
       />
       {bundles.length === 0 ? <p>Every adopted starter is up to date.</p> : null}
       {bundles.map((bundle) => (
-        <section key={bundle.starterId} className="my-6">
+        <section key={bundle.starterId}>
           <h2>{`${bundle.label}, upstream version ${bundle.upstreamVersion}`}</h2>
           <ActionForm
             action={applyStarterPathsAction}

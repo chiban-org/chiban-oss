@@ -1,5 +1,8 @@
 import { desc, eq } from 'drizzle-orm'
 import Link from 'next/link'
+import { PageHeader } from '@/components/layout/PageHeader'
+import { PracticeNotice } from '@/components/PracticeNotice'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { gisLayers, importRuns, parcelIdFormats } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
 import {
@@ -33,12 +36,7 @@ const STATE_WORDS = {
 export default async function CamaImportPage() {
   const ctx = await requireStaffContext()
   if (!(await hasCapability(ctx.db, ctx.actor.userId, 'gis.import', ctx.signal))) {
-    return (
-      <main>
-        <h1>CAMA owner import</h1>
-        <p role="alert">You do not have permission to run imports.</p>
-      </main>
-    )
+    return <NoPermission title="CAMA owner import" action="run imports" />
   }
   const [layer] = await ctx.db.select().from(gisLayers).where(eq(gisLayers.key, 'cama'))
   const status = await getLayerStatus(ctx.db, 'cama', new Date(), ctx.signal)
@@ -56,12 +54,19 @@ export default async function CamaImportPage() {
   const saved = camaMappingSchema.safeParse(layer?.mapping)
   return (
     <main>
-      <h1>CAMA owner import</h1>
-      {adapterStatus === 'stubbed' ? (
-        <div role="note" className="my-3 rounded-md bg-highlight px-3 py-2 text-sm">
-          <p>{CAMA_STUB_NOTICE}</p>
-        </div>
-      ) : null}
+      <PageHeader
+        kicker={<Link href="/staff/gis/imports">Imports</Link>}
+        title="CAMA owner import"
+        lead={
+          <>
+            Owner names and mailing addresses come from this file. Parcels are never created here,
+            and a changed owner or mailing address is held in the{' '}
+            <Link href="/staff/gis/exceptions?kind=owner_changed">exception queue</Link> until
+            someone accepts it.
+          </>
+        }
+      />
+      {adapterStatus === 'stubbed' ? <PracticeNotice>{CAMA_STUB_NOTICE}</PracticeNotice> : null}
       <p>
         {STATE_WORDS[status.state]}
         {status.lastSuccessAt === null
@@ -72,39 +77,30 @@ export default async function CamaImportPage() {
           : `. Last failure ${formatInstantLong(new Date(status.lastFailureAt), zone)}`}
         .
       </p>
-      <p>
-        Owner names and mailing addresses come from this file. Parcels are never created here, and a
-        changed owner or mailing address is held in the{' '}
-        <Link href="/staff/gis/exceptions?kind=owner_changed" className="text-action underline">
-          exception queue
-        </Link>{' '}
-        until someone accepts it.
-      </p>
-      <h2>Chiban CAMA CSV v1 layout</h2>
-      <p>{`The default layout has these columns, in this order: ${DEFAULT_CAMA_COLUMNS.join(', ')}.`}</p>
-      <CamaImportPanel
-        saved={saved.success ? saved.data : DEFAULT_CAMA_MAPPING}
-        formats={formats}
-      />
-      <h2>Recent runs</h2>
-      {runs.length === 0 ? (
-        <p>No CAMA imports have run yet.</p>
-      ) : (
-        <ul>
-          {runs.map((run) => (
-            <li key={run.id}>
-              <Link href={`/staff/gis/imports/${run.id}`} className="text-action underline">
-                {`${formatInstantLong(run.startedAt, zone)}, ${words(run.status)}`}
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-      <p>
-        <Link href="/staff/gis/imports" className="text-action underline">
-          Back to Imports
-        </Link>
-      </p>
+      <section aria-labelledby="cama-layout">
+        <h2 id="cama-layout">Chiban CAMA CSV v1 layout</h2>
+        <p>{`The default layout has these columns, in this order: ${DEFAULT_CAMA_COLUMNS.join(', ')}.`}</p>
+        <CamaImportPanel
+          saved={saved.success ? saved.data : DEFAULT_CAMA_MAPPING}
+          formats={formats}
+        />
+      </section>
+      <section aria-labelledby="cama-runs">
+        <h2 id="cama-runs">Recent runs</h2>
+        {runs.length === 0 ? (
+          <p>No CAMA imports have run yet.</p>
+        ) : (
+          <ul>
+            {runs.map((run) => (
+              <li key={run.id}>
+                <Link href={`/staff/gis/imports/${run.id}`}>
+                  {`${formatInstantLong(run.startedAt, zone)}, ${words(run.status)}`}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
     </main>
   )
 }

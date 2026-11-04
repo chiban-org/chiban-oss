@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import { PracticeNotice } from '@/components/PracticeNotice'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { healthAlerts, workerState } from '@/db/schema'
@@ -54,9 +55,9 @@ export default async function HealthPage() {
       <section aria-labelledby="alerts-heading">
         <h2 id="alerts-heading">Firing alerts</h2>
         {firing.length === 0 ? <p>No alerts are firing.</p> : null}
-        <ul className="m-0 list-none space-y-2 p-0">
+        <ul className="m-0 list-none space-y-3 p-0">
           {firing.map((alert) => (
-            <li key={alert.key} className="rounded-md border p-3">
+            <li key={alert.key} className="record-item">
               <p className="m-0 font-medium">{alert.summary}</p>
               <p className="m-0">Since {day(alert.firstSeenAt)}</p>
             </li>
@@ -75,9 +76,9 @@ export default async function HealthPage() {
       <section aria-labelledby="channels-heading">
         <h2 id="channels-heading">Alert channels</h2>
         {readiness.length === 0 ? <p>{NO_CHANNEL_COPY}</p> : null}
-        <ul className="m-0 list-none space-y-2 p-0">
+        <ul className="m-0 list-none space-y-3 p-0">
           {readiness.map((row) => (
-            <li key={row.channel} className="rounded-md border p-3">
+            <li key={row.channel} className="record-item">
               <p className="m-0 font-medium">{CHANNEL_COPY[row.channel]}</p>
               <p className="m-0">{READINESS_COPY[row.status]}</p>
               {row.lastSentAt === null ? null : (
@@ -86,7 +87,7 @@ export default async function HealthPage() {
             </li>
           ))}
         </ul>
-        {kinds.includes('pager') ? <p role="note">{PAGER_STUB_NOTICE}</p> : null}
+        {kinds.includes('pager') ? <PracticeNotice>{PAGER_STUB_NOTICE}</PracticeNotice> : null}
       </section>
     </main>
   )

@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { RunReport } from '@/components/staff/RunReport'
 import { importRuns } from '@/db/schema'
@@ -25,19 +26,20 @@ export default async function StaffRunReportPage({ params }: RunPageProps) {
   const timeZone = await townTimeZone(ctx.db, ctx.signal)
   return (
     <main>
-      <p>
-        <Link href="/staff/gis/imports" className="text-action underline">
-          Imports
-        </Link>
-      </p>
-      <h1>{importRunTitle(run, timeZone)}</h1>
-      <p>{importRunSummary(run)}</p>
+      <PageHeader
+        kicker={<Link href="/staff/gis/imports">Imports</Link>}
+        title={importRunTitle(run, timeZone)}
+        lead={importRunSummary(run)}
+      />
       {run.status === 'failed' ? <p role="alert">{`Error: ${run.error ?? 'Unknown'}`}</p> : null}
-      {run.report === null ? null : <RunReport report={run.report as ImportRunReport} />}
-      <p className="mt-4">
-        <Link href="/staff/gis/exceptions" className="text-action underline">
-          View the exception queue
-        </Link>
+      {run.report === null ? null : (
+        <section aria-labelledby="run-report">
+          <h2 id="run-report">Run report</h2>
+          <RunReport report={run.report as ImportRunReport} />
+        </section>
+      )}
+      <p>
+        <Link href="/staff/gis/exceptions">View the exception queue</Link>
       </p>
     </main>
   )

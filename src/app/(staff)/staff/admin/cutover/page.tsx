@@ -1,10 +1,8 @@
 import { ActionForm } from '@/components/ActionForm'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
+import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { hasCapability } from '@/features/authz/capabilities'
 import { listRecentReconciliations } from '@/features/cutover/reconcile'
 import { cutoverTemplateTypes } from '@/features/cutover/template'
@@ -37,52 +35,66 @@ export default async function CutoverPage() {
         message. Each keeps the status it had there, without the checks Chiban runs before a status
         change. Fees paid in the old system are recorded as waived, with the old receipt number.
       </p>
-      <form method="get" action="/staff/admin/cutover/template.csv" className="my-3 space-y-2">
-        <Label htmlFor="cutover-template-type">Application type</Label>
-        <NativeSelect
-          id="cutover-template-type"
-          name="type"
-          defaultValue=""
-          wrapperClassName="max-w-md"
-        >
-          <NativeSelectOption value="">Every adopted application type</NativeSelectOption>
-          {types.map((t) => (
-            <NativeSelectOption key={t.key} value={t.key}>
-              {t.label}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-        <p className="m-0">
-          The template lists the form fields of the type you pick, or of every adopted type.
+      <section aria-labelledby="cutover-template">
+        <h2 id="cutover-template">Template</h2>
+        <form method="get" action="/staff/admin/cutover/template.csv" className="space-y-2">
+          <SelectField
+            id="cutover-template-type"
+            label="Application type"
+            name="type"
+            defaultValue=""
+            hint="The template lists the form fields of the type you pick, or of every adopted type."
+            options={[
+              ['', 'Every adopted application type'],
+              ...types.map((t) => [t.key, t.label] as const),
+            ]}
+          />
+          <Button type="submit" variant="outline">
+            Download the CSV template
+          </Button>
+        </form>
+        <p>
+          In the <code>fees_paid_in_prior_system</code> column, write yes if the fees were paid in
+          the old system, no if they were not, or leave it empty. An amount such as 45.00 is not
+          accepted.
         </p>
-        <Button type="submit" variant="outline">
-          Download the CSV template
-        </Button>
-      </form>
-      <p>
-        In the <code>fees_paid_in_prior_system</code> column, write yes if the fees were paid in the
-        old system, no if they were not, or leave it empty. An amount such as 45.00 is not accepted.
-      </p>
-      <h2>Import</h2>
-      <p>Check the file first. Checking saves nothing and lists any rows that would fail.</p>
-      <ActionForm
-        action={importCutoverAction}
-        submitLabel="Check the file"
-        alternate={{ label: 'Import the file', name: 'mode', value: 'import' }}
-      >
-        <Label htmlFor="cutover-file">CSV file</Label>
-        <Input id="cutover-file" type="file" name="file" accept=".csv,text/csv" required />
-      </ActionForm>
-      <p>
-        To attach scanned files, whoever runs the server runs the folder attach command, with one
-        folder per legacy number.
-      </p>
-      <h2>Compare with the town&apos;s list</h2>
-      <ActionForm action={reconcileCutoverAction} submitLabel="Compare with the list">
-        <Label htmlFor="cutover-list">Town list as a CSV file with a legacy_number column</Label>
-        <Input id="cutover-list" type="file" name="file" accept=".csv,text/csv" required />
-      </ActionForm>
-      <ReconciliationTable rows={reconciliations} isAdmin={isAdmin} timeZone={timeZone} />
+      </section>
+      <section aria-labelledby="cutover-import">
+        <h2 id="cutover-import">Import</h2>
+        <p>Check the file first. Checking saves nothing and lists any rows that would fail.</p>
+        <ActionForm
+          action={importCutoverAction}
+          submitLabel="Check the file"
+          alternate={{ label: 'Import the file', name: 'mode', value: 'import' }}
+        >
+          <TextField
+            id="cutover-file"
+            label="CSV file"
+            type="file"
+            name="file"
+            accept=".csv,text/csv"
+            required
+          />
+        </ActionForm>
+        <p>
+          To attach scanned files, whoever runs the server runs the folder attach command, with one
+          folder per legacy number.
+        </p>
+      </section>
+      <section aria-labelledby="cutover-compare">
+        <h2 id="cutover-compare">Compare with the town&apos;s list</h2>
+        <ActionForm action={reconcileCutoverAction} submitLabel="Compare with the list">
+          <TextField
+            id="cutover-list"
+            label="Town list as a CSV file with a legacy_number column"
+            type="file"
+            name="file"
+            accept=".csv,text/csv"
+            required
+          />
+        </ActionForm>
+        <ReconciliationTable rows={reconciliations} isAdmin={isAdmin} timeZone={timeZone} />
+      </section>
     </main>
   )
 }

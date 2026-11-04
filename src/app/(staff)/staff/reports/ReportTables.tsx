@@ -39,10 +39,10 @@ export function ReportSection({
   children: ReactNode
 }) {
   return (
-    <section aria-label={title} className="my-6">
+    <section aria-label={title} data-plain className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <h2>{title}</h2>
-        <Link className="no-print text-action underline" href={csvHref}>
+        <Link className="no-print" href={csvHref}>
           Download CSV
         </Link>
       </div>
@@ -62,7 +62,7 @@ export function VolumeTable({
   typeLabel: (type: string) => string
 }) {
   return (
-    <div className="table-panel my-2">
+    <div className="table-panel">
       <table className="w-full min-w-[40rem] text-sm">
         <thead>
           <tr>
@@ -103,7 +103,7 @@ export function ProcessingTable({
   typeLabel: (type: string) => string
 }) {
   return (
-    <div className="table-panel my-2">
+    <div className="table-panel">
       <table className="w-full min-w-[40rem] text-sm">
         <thead>
           <tr>
@@ -150,7 +150,7 @@ export function RevenueTable({
   sort: ScopedSort<RevenueSortKey>
 }) {
   return (
-    <div className="table-panel my-2">
+    <div className="table-panel">
       <table className="w-full text-sm">
         <thead>
           <tr>

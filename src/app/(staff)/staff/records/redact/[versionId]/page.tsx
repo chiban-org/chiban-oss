@@ -1,6 +1,7 @@
 import { NH_RTK_EXEMPTIONS, OTHER_LAW_EXEMPTION_KEY } from '@packs/nh/rtkExemptions'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
+import { PageHeader } from '@/components/layout/PageHeader'
 import { BoxEditor } from '@/components/redaction/BoxEditor'
 import { SelectField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -53,12 +54,12 @@ export default async function RedactPage({
   const recordHref = await staffRecordHref(ctx.db, ctx.actor, documentId, ctx.signal)
   const canPublish = await hasCapability(ctx.db, ctx.actor.userId, 'document.publish', ctx.signal)
   return (
-    <main className="space-y-6">
-      <h1>{`Redact: ${title}`}</h1>
-      <p className="m-0">
-        The original is never changed. Everything under each box is removed from a new copy, and
-        nothing is public until you approve that copy.
-      </p>
+    <main>
+      <PageHeader
+        kicker="Redact a document"
+        title={title}
+        lead="The original is never changed. Everything under each box is removed from a new copy, and nothing is public until you approve that copy."
+      />
       <ActionForm
         action={requestRedactionAction}
         submitLabel="Make the redacted copy"
