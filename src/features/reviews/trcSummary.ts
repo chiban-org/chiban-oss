@@ -6,9 +6,12 @@ import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { getPublished } from '@/features/config/store'
 import { documentFrame } from '@/features/pdf/documentFrame'
-import { renderPdf } from '@/features/pdf/renderPdf'
+import type { PdfBlock } from '@/features/pdf/renderPdf'
+import { loadPermitData, mergeContextOf } from '@/features/permits/permitData'
 import type { ReviewRoutesBody } from '@/features/reviews/routesSchema'
 import { reviewStatusLabel } from '@/features/reviews/statusLabels'
+import { townTemplate } from '@/features/templates/findTemplate'
+import { type DocumentInput, renderDocumentOrDefault } from '@/features/templates/templateBlocks'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { words } from '@/lib/words'
@@ -78,41 +81,67 @@ export async function trcSummary(
   return ok(summaries)
 }
 
+function departmentsTable(summary: TrcDepartmentSummary[]): PdfBlock {
+  return {
+    kind: 'table',
+    columns: ['Department', 'Reviewer', 'Status', 'Comments due'],
+    rows: summary.map((s) => [
+      s.departmentLabel,
+      s.reviewerName,
+      s.overdue ? `${reviewStatusLabel(s.status)}, overdue` : reviewStatusLabel(s.status),
+      s.commentDue === null ? 'Not set' : formatCivilDate(s.commentDue),
+    ]),
+  }
+}
+
+function commentBlocks(summary: TrcDepartmentSummary[]): PdfBlock[] {
+  return summary.flatMap((s): PdfBlock[] =>
+    s.comments.length === 0
+      ? []
+      : [
+          { kind: 'heading', text: s.departmentLabel },
+          ...s.comments.map((c): PdfBlock => ({ kind: 'paragraph', text: c.body })),
+        ],
+  )
+}
+
+export async function trcSummaryInput(
+  db: Db,
+  actor: Actor,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<
+  Result<{ input: DocumentInput; pins: readonly string[] }, 'forbidden' | 'not_found' | 'empty'>
+> {
+  const summary = await trcSummary(db, actor, applicationId, signal)
+  if (!summary.ok) return summary
+  if (summary.value.length === 0) return err('empty')
+  const app = await loadApplicationContext(db, applicationId, signal)
+  const data = await loadPermitData(db, applicationId, signal)
+  return ok({
+    pins: app?.pins.templates ?? [],
+    input: {
+      subtitle: app?.number ?? '',
+      frame: await documentFrame(db, {}, signal),
+      context: {
+        values: data === null ? { 'application.number': app?.number ?? '' } : mergeContextOf(data),
+        sections: new Map([
+          ['trc.departments', [departmentsTable(summary.value)]],
+          ['trc.comments', commentBlocks(summary.value)],
+        ]),
+      },
+    },
+  })
+}
+
 export async function trcSummaryPdf(
   db: Db,
   actor: Actor,
   applicationId: string,
   signal: AbortSignal,
 ): Promise<Result<Uint8Array, 'forbidden' | 'not_found' | 'empty'>> {
-  const summary = await trcSummary(db, actor, applicationId, signal)
-  if (!summary.ok) return summary
-  if (summary.value.length === 0) return err('empty')
-  const app = await loadApplicationContext(db, applicationId, signal)
-  const bytes = await renderPdf({
-    title: 'Technical Review Committee summary',
-    subtitle: app?.number ?? '',
-    frame: await documentFrame(db, {}, signal),
-    scale: 'document',
-    blocks: [
-      {
-        kind: 'table',
-        columns: ['Department', 'Reviewer', 'Status', 'Comments due'],
-        rows: summary.value.map((s) => [
-          s.departmentLabel,
-          s.reviewerName,
-          s.overdue ? `${reviewStatusLabel(s.status)}, overdue` : reviewStatusLabel(s.status),
-          s.commentDue === null ? 'Not set' : formatCivilDate(s.commentDue),
-        ]),
-      },
-      ...summary.value.flatMap((s) =>
-        s.comments.length === 0
-          ? []
-          : [
-              { kind: 'heading' as const, text: s.departmentLabel },
-              ...s.comments.map((c) => ({ kind: 'paragraph' as const, text: c.body })),
-            ],
-      ),
-    ],
-  })
-  return ok(bytes)
+  const built = await trcSummaryInput(db, actor, applicationId, signal)
+  if (!built.ok) return built
+  const template = await townTemplate(db, 'trc_summary', built.value.pins, signal)
+  return ok(await renderDocumentOrDefault('trc_summary', template, built.value.input))
 }

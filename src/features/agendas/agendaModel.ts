@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import type { Tx } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import { type agendaItems, hearings } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
@@ -9,7 +9,7 @@ import type { AgendaModelItem } from './agendaPdf'
 type ItemRow = typeof agendaItems.$inferSelect
 
 export async function hearingTitle(
-  tx: Tx,
+  tx: DbOrTx,
   applicationId: string,
   kind: keyof typeof HEARING_KIND_LABELS,
   signal: AbortSignal,
@@ -19,7 +19,7 @@ export async function hearingTitle(
 }
 
 export async function modelItems(
-  tx: Tx,
+  tx: DbOrTx,
   items: ItemRow[],
   signal: AbortSignal,
 ): Promise<AgendaModelItem[]> {

@@ -11,7 +11,9 @@ import {
   rtkWithholdings,
 } from '@/db/schema'
 import { documentFrame } from '@/features/pdf/documentFrame'
-import { type PdfBlock, renderPdf } from '@/features/pdf/renderPdf'
+import type { PdfBlock } from '@/features/pdf/renderPdf'
+import { publishedTemplate } from '@/features/templates/findTemplate'
+import { type DocumentInput, renderDocumentOrDefault } from '@/features/templates/templateBlocks'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 
@@ -45,7 +47,6 @@ const KIND_SENTENCES: Record<string, string> = {
 function withholdingBlocks(withholdings: Withholding[]): PdfBlock[] {
   if (withholdings.length === 0) return []
   return [
-    { kind: 'heading', text: 'Records withheld or redacted' },
     {
       kind: 'table',
       columns: ['Record', 'Exemption', 'Explanation'],
@@ -61,39 +62,12 @@ function withholdingBlocks(withholdings: Withholding[]): PdfBlock[] {
   ]
 }
 
-export async function buildResponseLetter(
-  db: DbOrTx,
-  requestId: string,
-  signal: AbortSignal,
-): Promise<Uint8Array> {
-  signal.throwIfAborted()
-  const [request] = await db.select().from(rtkRequests).where(eq(rtkRequests.id, requestId))
-  if (request === undefined) {
-    throw new AppError(ErrorIds.RTK_INVARIANT, 'No such request for a response letter', {
-      requestId,
-    })
-  }
-  const statements = await db
-    .select()
-    .from(rtkTimeStatements)
-    .where(eq(rtkTimeStatements.requestId, requestId))
-    .orderBy(asc(rtkTimeStatements.statedOn))
-  const withholdings = await db
-    .select()
-    .from(rtkWithholdings)
-    .where(eq(rtkWithholdings.requestId, requestId))
-    .orderBy(asc(rtkWithholdings.createdAt))
-  const blocks: PdfBlock[] = [
-    {
-      kind: 'fields',
-      rows: [
-        { label: 'Request number', value: request.number },
-        { label: 'Received', value: formatCivilDate(request.receivedOn) },
-        { label: 'Your request', value: request.description },
-      ],
-    },
-  ]
+type Request = typeof rtkRequests.$inferSelect
+type TimeStatement = typeof rtkTimeStatements.$inferSelect
+
+function responseBlocks(request: Request): PdfBlock[] {
   const kind = request.firstResponseKind
+  const blocks: PdfBlock[] = []
   if (kind !== null) blocks.push({ kind: 'paragraph', text: KIND_SENTENCES[kind] ?? '' })
   if (kind === 'website_reference' && request.firstResponseUrl !== null) {
     blocks.push({
@@ -101,6 +75,11 @@ export async function buildResponseLetter(
       rows: [{ label: 'Web address', value: request.firstResponseUrl }],
     })
   }
+  return blocks
+}
+
+function statementBlocks(statements: TimeStatement[]): PdfBlock[] {
+  const blocks: PdfBlock[] = []
   for (const s of statements) {
     blocks.push({ kind: 'heading', text: 'Time the town needs' })
     blocks.push({
@@ -122,6 +101,10 @@ export async function buildResponseLetter(
       })
     }
   }
+  return blocks
+}
+
+async function releasedBlocks(db: DbOrTx, requestId: string): Promise<PdfBlock[]> {
   const released = await db
     .select({
       sequence: rtkReleases.sequence,
@@ -134,9 +117,9 @@ export async function buildResponseLetter(
     .innerJoin(documents, eq(documents.id, rtkReleaseItems.documentId))
     .where(eq(rtkReleases.requestId, requestId))
     .orderBy(asc(rtkReleases.sequence), asc(rtkReleaseItems.position))
-  if (released.length > 0) {
-    blocks.push({ kind: 'heading', text: 'Records released' })
-    blocks.push({
+  if (released.length === 0) return []
+  return [
+    {
       kind: 'table',
       columns: ['Release', 'Date', 'How', 'Record'],
       rows: released.map((r) => [
@@ -145,14 +128,57 @@ export async function buildResponseLetter(
         RELEASE_METHOD_LABELS[r.method],
         r.title,
       ]),
+    },
+  ]
+}
+
+export async function responseLetterInput(
+  db: DbOrTx,
+  requestId: string,
+  signal: AbortSignal,
+): Promise<DocumentInput> {
+  signal.throwIfAborted()
+  const [request] = await db.select().from(rtkRequests).where(eq(rtkRequests.id, requestId))
+  if (request === undefined) {
+    throw new AppError(ErrorIds.RTK_INVARIANT, 'No such request for a response letter', {
+      requestId,
     })
   }
-  blocks.push(...withholdingBlocks(withholdings))
-  return await renderPdf({
-    title: 'Response to your Right-to-Know request',
+  const statements = await db
+    .select()
+    .from(rtkTimeStatements)
+    .where(eq(rtkTimeStatements.requestId, requestId))
+    .orderBy(asc(rtkTimeStatements.statedOn))
+  const withholdings = await db
+    .select()
+    .from(rtkWithholdings)
+    .where(eq(rtkWithholdings.requestId, requestId))
+    .orderBy(asc(rtkWithholdings.createdAt))
+  return {
     subtitle: request.number,
     frame: await documentFrame(db, {}, signal),
-    scale: 'document',
-    blocks,
-  })
+    context: {
+      values: {
+        'rtk.number': request.number,
+        'rtk.receivedOn': formatCivilDate(request.receivedOn),
+        'rtk.description': request.description,
+      },
+      sections: new Map([
+        ['rtk.response', responseBlocks(request)],
+        ['rtk.timeStatements', statementBlocks(statements)],
+        ['rtk.released', await releasedBlocks(db, requestId)],
+        ['rtk.withheld', withholdingBlocks(withholdings)],
+      ]),
+    },
+  }
+}
+
+export async function buildResponseLetter(
+  db: DbOrTx,
+  requestId: string,
+  signal: AbortSignal,
+): Promise<Uint8Array> {
+  const input = await responseLetterInput(db, requestId, signal)
+  const template = await publishedTemplate(db, 'rtk_response', signal)
+  return await renderDocumentOrDefault('rtk_response', template, input)
 }

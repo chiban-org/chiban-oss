@@ -1,7 +1,8 @@
 import type { DbOrTx } from '@/db/client'
 import { documentFrame } from '@/features/pdf/documentFrame'
-import { renderPdf } from '@/features/pdf/renderPdf'
-import { loadPermitData } from '@/features/permits/permitData'
+import { loadPermitData, mergeContextOf } from '@/features/permits/permitData'
+import { townTemplate } from '@/features/templates/findTemplate'
+import { type DocumentInput, renderDocumentOrDefault } from '@/features/templates/templateBlocks'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -14,59 +15,43 @@ export interface CertificateDetails {
   inspectorName: string
 }
 
+export async function certificateDocumentInput(
+  db: DbOrTx,
+  applicationId: string,
+  details: CertificateDetails,
+  signal: AbortSignal,
+): Promise<{ input: DocumentInput; pins: readonly string[] } | null> {
+  const data = await loadPermitData(db, applicationId, signal)
+  if (data === null) return null
+  const classification = data.application.facts.classification ?? null
+  return {
+    pins: data.application.pins.templates,
+    input: {
+      subtitle: details.number,
+      frame: await documentFrame(db, {}, signal),
+      context: {
+        values: {
+          ...mergeContextOf(data),
+          'codeEdition.label': data.codeEdition === '' ? 'Not recorded' : data.codeEdition,
+          'certificate.number': details.number,
+          'certificate.issuedOn': formatCivilDate(details.issuedOn),
+          'certificate.finalInspection': `${formatCivilDate(details.finalInspectionOn)}, ${details.inspectorName}`,
+          'certificate.use': classification === null ? 'Not recorded' : USE_LABELS[classification],
+        },
+        conditions: data.conditions,
+      },
+    },
+  }
+}
+
 export async function buildCertificatePdf(
   db: DbOrTx,
   applicationId: string,
   details: CertificateDetails,
   signal: AbortSignal,
 ): Promise<Uint8Array | null> {
-  const data = await loadPermitData(db, applicationId, signal)
-  if (data === null) return null
-  const classification = data.application.facts.classification ?? null
-  return await renderPdf({
-    title: 'Certificate of Occupancy',
-    subtitle: details.number,
-    frame: await documentFrame(db, {}, signal),
-    scale: 'document',
-    blocks: [
-      {
-        kind: 'paragraph',
-        text: `${data.townName} certifies that the work under permit ${data.application.number} was inspected and the building may be occupied.`,
-      },
-      {
-        kind: 'fields',
-        rows: [
-          { label: 'Certificate number', value: details.number },
-          { label: 'Permit number', value: data.application.number },
-          { label: 'Parcel', value: data.parcelDisplayId },
-          { label: 'Site address', value: data.siteAddress },
-          { label: 'Owner', value: data.ownerName },
-          {
-            label: 'Use',
-            value: classification === null ? 'Not recorded' : USE_LABELS[classification],
-          },
-          { label: 'Issued', value: formatCivilDate(details.issuedOn) },
-          {
-            label: 'Final inspection',
-            value: `${formatCivilDate(details.finalInspectionOn)}, ${details.inspectorName}`,
-          },
-          {
-            label: 'Code edition',
-            value: data.codeEdition === '' ? 'Not recorded' : data.codeEdition,
-          },
-        ],
-      },
-      ...(data.conditions.length === 0
-        ? []
-        : [
-            { kind: 'heading' as const, text: 'Conditions' },
-            {
-              kind: 'table' as const,
-              columns: ['Condition'],
-              rows: data.conditions.map((c) => [c]),
-            },
-          ]),
-      { kind: 'signature', role: 'building_official', label: 'Authorized signature' },
-    ],
-  })
+  const built = await certificateDocumentInput(db, applicationId, details, signal)
+  if (built === null) return null
+  const template = await townTemplate(db, 'certificate', built.pins, signal)
+  return await renderDocumentOrDefault('certificate', template, built.input)
 }

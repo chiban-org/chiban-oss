@@ -11,7 +11,9 @@ import {
 import { assessedLines, lineKey } from '@/features/ledger/lineTotals'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
 import { documentFrame } from '@/features/pdf/documentFrame'
-import { renderPdf } from '@/features/pdf/renderPdf'
+import type { PdfBlock } from '@/features/pdf/renderPdf'
+import { publishedTemplate } from '@/features/templates/findTemplate'
+import { type DocumentInput, renderDocumentOrDefault } from '@/features/templates/templateBlocks'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { err, ok, type Result } from '@/types/result'
@@ -88,15 +90,15 @@ async function lineRows(
   return { rows, totalCents }
 }
 
-export async function buildReceiptPdf(
+export async function receiptDocumentInput(
   db: Db,
   receiptId: string,
   signal: AbortSignal,
   scope?: { applicationId: string },
-): Promise<Result<Uint8Array, 'not_found'>> {
+): Promise<DocumentInput | null> {
   signal.throwIfAborted()
   const [receipt] = await db.select().from(receipts).where(eq(receipts.id, receiptId))
-  if (receipt === undefined) return err('not_found')
+  if (receipt === undefined) return null
   const [entry] = await db
     .select()
     .from(ledgerEntries)
@@ -105,7 +107,6 @@ export async function buildReceiptPdf(
   const refund = receipt.kind === 'refund'
   const lines =
     entry === undefined ? { rows: [], totalCents: 0 } : await lineRows(db, entry.id, scope)
-  const rows = lines.rows
   const shownTotal = scope === undefined ? receipt.totalCents : lines.totalCents
   const method = entry === undefined ? '' : (METHOD_LABELS[entry.method] ?? entry.method)
   const fields = [
@@ -124,20 +125,39 @@ export async function buildReceiptPdf(
           { label: 'Change', value: formatCents(receipt.changeCents ?? 0) },
         ]),
   ]
-  return ok(
-    await renderPdf({
-      title: refund ? 'Refund receipt' : 'Payment receipt',
-      subtitle: receipt.number,
-      frame: await documentFrame(db, {}, signal),
-      scale: 'document',
-      blocks: [
-        { kind: 'fields', rows: fields },
-        { kind: 'table', columns: ['Application', 'Fee', 'Amount'], rows },
-        ...(receipt.simulated ? [{ kind: 'notice' as const, text: SIMULATED_NOTICE }] : []),
-        ...(settings.receiptFooter === ''
-          ? []
-          : [{ kind: 'paragraph' as const, text: settings.receiptFooter }]),
-      ],
-    }),
-  )
+  const notice: PdfBlock[] = receipt.simulated ? [{ kind: 'notice', text: SIMULATED_NOTICE }] : []
+  return {
+    ...(refund ? { title: 'Refund receipt' } : {}),
+    subtitle: receipt.number,
+    frame: await documentFrame(db, {}, signal),
+    context: {
+      values: {
+        'receipt.number': receipt.number,
+        'receipt.date': formatCivilDate(receipt.businessDate),
+        'receipt.payerName': receipt.payerName,
+        'receipt.total': formatCents(shownTotal),
+        'receipt.footer': settings.receiptFooter,
+      },
+      sections: new Map<string, PdfBlock[]>([
+        ['receipt.details', [{ kind: 'fields', rows: fields }]],
+        [
+          'receipt.lines',
+          [{ kind: 'table', columns: ['Application', 'Fee', 'Amount'], rows: lines.rows }],
+        ],
+        ['receipt.simulatedNotice', notice],
+      ]),
+    },
+  }
+}
+
+export async function buildReceiptPdf(
+  db: Db,
+  receiptId: string,
+  signal: AbortSignal,
+  scope?: { applicationId: string },
+): Promise<Result<Uint8Array, 'not_found'>> {
+  const input = await receiptDocumentInput(db, receiptId, signal, scope)
+  if (input === null) return err('not_found')
+  const template = await publishedTemplate(db, 'receipt', signal)
+  return ok(await renderDocumentOrDefault('receipt', template, input))
 }

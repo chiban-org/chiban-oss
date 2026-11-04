@@ -5,6 +5,7 @@ import { documentFrame } from '@/features/pdf/documentFrame'
 import { pdfOk, toResponse } from '@/features/pdf/pdfResponse'
 import { streamStoredObject } from '@/features/storage/delivery'
 import { getObjectStore } from '@/features/storage/objectStore'
+import { publishedTemplate } from '@/features/templates/findTemplate'
 import { formatCivilDate } from '@/lib/formatDate'
 
 export const runtime = 'nodejs'
@@ -30,7 +31,8 @@ export async function GET(
     if (!opened.ok)
       return opened.error === 'expired' ? plain(410, EXPIRED_COPY) : plain(404, 'Not found')
     const frame = await documentFrame(db, { board: opened.value.board }, signal)
-    const bytes = await packetCoverPdf(opened.value, frame)
+    const template = await publishedTemplate(db, 'board_packet_cover', signal)
+    const bytes = await packetCoverPdf(opened.value, frame, template)
     return toResponse(pdfOk(bytes), request.headers.get('accept'))
   }
   if (!UUID.test(versionId)) return plain(404, 'Not found')

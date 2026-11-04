@@ -1,5 +1,7 @@
 import type { DocumentFrame } from '@/features/pdf/frame'
-import { type PdfBlock, renderPdf } from '@/features/pdf/renderPdf'
+import type { PdfBlock } from '@/features/pdf/renderPdf'
+import { type DocumentInput, renderDocumentOrDefault } from '@/features/templates/templateBlocks'
+import type { TemplateBody } from '@/features/templates/templateSchema'
 
 export interface AgendaModelItem {
   position: number
@@ -29,15 +31,18 @@ function applicantOf(item: AgendaModelItem): string {
   return item.application.applicantName === '' ? NONE : item.application.applicantName
 }
 
-export function agendaBlocks(model: AgendaModel): PdfBlock[] {
-  const rows = model.items.map((item) => [
+function itemRows(model: AgendaModel): string[][] {
+  return model.items.map((item) => [
     `${item.position + 1}. ${item.title}`,
     item.application?.number ?? '',
     applicantOf(item),
     item.application?.parcelDisplayId ?? '',
     item.application?.siteAddress ?? '',
   ])
-  const notes = model.items
+}
+
+function itemNotes(model: AgendaModel): PdfBlock[] {
+  return model.items
     .filter((item) => item.description.trim() !== '')
     .map(
       (item): PdfBlock => ({
@@ -45,6 +50,11 @@ export function agendaBlocks(model: AgendaModel): PdfBlock[] {
         text: `Item ${item.position + 1} details: ${item.description.trim()}`,
       }),
     )
+}
+
+const ITEM_COLUMNS = ['Item', 'Application', 'Applicant', 'Parcel', 'Site address']
+
+export function agendaBlocks(model: AgendaModel): PdfBlock[] {
   return [
     {
       kind: 'fields',
@@ -56,24 +66,34 @@ export function agendaBlocks(model: AgendaModel): PdfBlock[] {
       ],
     },
     { kind: 'heading', text: 'Items' },
-    {
-      kind: 'table',
-      columns: ['Item', 'Application', 'Applicant', 'Parcel', 'Site address'],
-      rows,
-    },
-    ...notes,
+    { kind: 'table', columns: ITEM_COLUMNS, rows: itemRows(model) },
+    ...itemNotes(model),
   ]
+}
+
+export function agendaDocumentInput(frame: DocumentFrame, model: AgendaModel): DocumentInput {
+  return {
+    subtitle: model.meetingDate,
+    frame,
+    context: {
+      values: {
+        'board.name': model.boardName,
+        'meeting.date': model.meetingDate,
+        'meeting.time': model.time,
+        'meeting.location': model.location === '' ? NONE : model.location,
+      },
+      sections: new Map<string, PdfBlock[]>([
+        ['agenda.items', [{ kind: 'table', columns: ITEM_COLUMNS, rows: itemRows(model) }]],
+        ['agenda.itemNotes', itemNotes(model)],
+      ]),
+    },
+  }
 }
 
 export async function renderAgendaPdf(
   frame: DocumentFrame,
   model: AgendaModel,
+  template: TemplateBody | null = null,
 ): Promise<Uint8Array> {
-  return await renderPdf({
-    title: 'Meeting agenda',
-    subtitle: model.meetingDate,
-    frame,
-    scale: 'document',
-    blocks: agendaBlocks(model),
-  })
+  return await renderDocumentOrDefault('agenda', template, agendaDocumentInput(frame, model))
 }

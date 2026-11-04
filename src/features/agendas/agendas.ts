@@ -5,15 +5,15 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { attachDocument } from '@/features/documents/attach'
 import { storeGeneratedBytes } from '@/features/files/ingest'
-import { formatMinuteOfDay } from '@/features/hearings/labels'
 import { documentFrame } from '@/features/pdf/documentFrame'
 import type { ObjectStore } from '@/features/storage/objectStore'
+import { publishedTemplate } from '@/features/templates/findTemplate'
 import { formatCivilDate } from '@/lib/formatDate'
 import { err, ok, type Result } from '@/types/result'
-import { hearingTitle, modelItems } from './agendaModel'
+import { agendaModelOf } from './agendaMeetingModel'
+import { hearingTitle } from './agendaModel'
 import { renderAgendaPdf } from './agendaPdf'
 
 export type AgendaError =
@@ -234,16 +234,11 @@ export async function publishAgenda(
     if (items.length === 0) return err('empty')
     const [meeting] = await tx.select().from(boardMeetings).where(eq(boardMeetings.id, meetingId))
     if (meeting === undefined) return err('not_found')
-    const settings = await getBoardSettings(tx, signal)
     const date = formatCivilDate(meeting.meetingDate)
     const frame = await documentFrame(tx, { board: meeting.board }, signal, store)
-    const bytes = await renderAgendaPdf(frame, {
-      boardName: boardLabel(settings, meeting.board),
-      meetingDate: date,
-      location: meeting.location,
-      time: formatMinuteOfDay(meeting.startsAtMinute),
-      items: await modelItems(tx, items, signal),
-    })
+    const model = await agendaModelOf(tx, meeting, items, signal)
+    const template = await publishedTemplate(tx, 'agenda', signal)
+    const bytes = await renderAgendaPdf(frame, model, template)
     const stored = await storeGeneratedBytes(tx, store, bytes, 'application/pdf', signal)
     const revision = agenda.value.revision + 1
     const attached = await attachDocument(

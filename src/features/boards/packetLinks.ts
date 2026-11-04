@@ -17,9 +17,9 @@ import { activeMembershipOn } from '@/features/access/predicates'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { loadPacketView, type PacketView, townDateOf } from '@/features/boards/packetView'
 import type { MailTransport } from '@/features/mail/transport'
 import type { StoredObject } from '@/features/storage/delivery'
-import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, todayInTimeZone } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -173,15 +173,6 @@ export async function revokePacketLink(
   return revoked.length === 0 ? err('not_found') : ok(undefined)
 }
 
-export interface PacketView {
-  packetId: string
-  title: string
-  board: 'planning_board' | 'zba'
-  meetingDate: CivilDate
-  expiresAt: string
-  items: { versionId: string; title: string; filename: string; withdrawnOn: CivilDate | null }[]
-}
-
 async function resolveLink(
   db: Db,
   token: string,
@@ -206,37 +197,10 @@ export async function openPacket(
   const resolved = await resolveLink(db, token, now)
   if (!resolved.ok) return err(resolved.error)
   const link = resolved.value
-  const [packet] = await db.select().from(boardPackets).where(eq(boardPackets.id, link.packetId))
-  if (packet === undefined) return err('invalid')
-  const items = await db
-    .select({
-      versionId: boardPacketItems.versionId,
-      formerVersionId: boardPacketItems.formerVersionId,
-      title: documents.title,
-      filename: documentVersions.filename,
-      withdrawnAt: boardPacketItems.withdrawnAt,
-    })
-    .from(boardPacketItems)
-    .innerJoin(documents, eq(documents.id, boardPacketItems.documentId))
-    .leftJoin(documentVersions, eq(documentVersions.id, boardPacketItems.versionId))
-    .where(eq(boardPacketItems.packetId, packet.id))
-    .orderBy(asc(boardPacketItems.position))
+  const view = await loadPacketView(db, link.packetId, link.expiresAt.toISOString(), signal)
+  if (view === null) return err('invalid')
   await db.insert(boardPacketAccess).values({ linkId: link.id, versionId: null, accessedAt: now })
-  return ok({
-    packetId: packet.id,
-    title: packet.title,
-    board: packet.board,
-    meetingDate: packet.meetingDate as CivilDate,
-    expiresAt: link.expiresAt.toISOString(),
-    items: await Promise.all(
-      items.map(async ({ withdrawnAt, formerVersionId, ...item }) => ({
-        title: item.title,
-        versionId: item.versionId ?? formerVersionId ?? '',
-        filename: item.filename ?? '',
-        withdrawnOn: withdrawnAt === null ? null : await townDateOf(db, withdrawnAt, signal),
-      })),
-    ),
-  })
+  return ok(view)
 }
 
 export type PacketVersionError = 'invalid' | 'expired' | 'not_found' | { withdrawnOn: CivilDate }
@@ -282,11 +246,6 @@ export async function openPacketVersion(
   return ok({ storageKey: row.storageKey, filename: row.filename, contentType: row.contentType })
 }
 
-export async function townDateOf(db: Db, at: Date, signal: AbortSignal): Promise<CivilDate> {
-  const town = await getTownSettings(db, signal)
-  return todayInTimeZone(town.ok ? town.value.timeZone : 'UTC', at)
-}
-
 export async function listPacketAccess(db: Db, packetId: string) {
   return await db
     .select({
@@ -299,3 +258,5 @@ export async function listPacketAccess(db: Db, packetId: string) {
     .where(eq(boardPacketLinks.packetId, packetId))
     .orderBy(desc(boardPacketAccess.accessedAt))
 }
+
+export { type PacketView, townDateOf }
