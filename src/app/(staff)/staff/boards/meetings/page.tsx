@@ -2,6 +2,8 @@ import { ActionForm } from '@/components/ActionForm'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { TablePager } from '@/components/dataTable/TablePager'
+import { FormDialog } from '@/components/FormDialog'
+import { ListHeader } from '@/components/layout/ListHeader'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
@@ -35,8 +37,7 @@ const PAGE_SIZE = 25
 
 function AddMeeting({ boards }: { boards: [string, string][] }) {
   return (
-    <details>
-      <summary>Add a meeting</summary>
+    <FormDialog label="Add meeting" title="Add a meeting" variant="default">
       <ActionForm action={scheduleMeetingAction} submitLabel="Add meeting" className="max-w-md">
         <SelectField label="Board" name="board" options={boards} />
         <TextField label="Date" name="meetingDate" type="date" required />
@@ -50,7 +51,7 @@ function AddMeeting({ boards }: { boards: [string, string][] }) {
         />
         <TextField label="Location" name="location" />
       </ActionForm>
-    </details>
+    </FormDialog>
   )
 }
 
@@ -119,8 +120,11 @@ export default async function MeetingsPage({
     offset === null ? null : pageHref(MEETINGS_PATH, params, String(offset))
   return (
     <main data-wide="">
-      <h1>Meetings</h1>
-      <p>{leadText(when === 'upcoming', list.usualLocation)}</p>
+      <ListHeader
+        title="Meetings"
+        lead={leadText(when === 'upcoming', list.usualLocation)}
+        actions={<AddMeeting boards={[...boardNames]} />}
+      />
       <FilterTabs label="Meetings" tabs={tabs} />
       <div className="toolbar">
         <QuickFilters
@@ -135,7 +139,7 @@ export default async function MeetingsPage({
             {clear !== null
               ? 'No meeting matches these filters.'
               : when === 'upcoming'
-                ? 'No upcoming meetings. Add the next one below.'
+                ? 'No upcoming meetings. Add the next one with Add meeting.'
                 : 'No past meetings yet.'}
           </p>
         ) : (
@@ -155,7 +159,6 @@ export default async function MeetingsPage({
         prevHref={pageLink(list.prevOffset)}
         nextHref={pageLink(list.nextOffset)}
       />
-      <AddMeeting boards={[...boardNames]} />
     </main>
   )
 }

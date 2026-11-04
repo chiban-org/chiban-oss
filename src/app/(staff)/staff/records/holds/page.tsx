@@ -2,9 +2,13 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { SortHeader } from '@/components/dataTable/SortHeader'
+import { TablePager } from '@/components/dataTable/TablePager'
+import { FormDialog } from '@/components/FormDialog'
+import { ListHeader } from '@/components/layout/ListHeader'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
-import type { RawSearchParams } from '@/features/dataTable/params'
+import { pagerLinks } from '@/features/dataTable/pageSlice'
+import { type RawSearchParams, readOffset } from '@/features/dataTable/params'
 import { filterTabs } from '@/features/dataTable/quickFilters'
 import { sortLinks } from '@/features/dataTable/sort'
 import {
@@ -35,6 +39,7 @@ const KIND_LABELS: Record<HoldListRow['targetKind'], string> = {
   rtk_request: 'Right-to-Know request',
 }
 const DEFAULT_ZONE = 'America/New_York'
+const PAGE_SIZE = 25
 
 function Subject({ row }: { row: HoldListRow }) {
   const label = row.subject === '' ? 'Record no longer found' : row.subject
@@ -63,8 +68,7 @@ function ReleaseHold({ holdId }: { holdId: string }) {
 
 function PlaceHold() {
   return (
-    <details>
-      <summary>Place a hold</summary>
+    <FormDialog label="Place a hold" title="Place a legal hold" variant="default">
       <ActionForm action={placeHoldAction} submitLabel="Place hold">
         <SelectField label="Hold on" name="targetKind" options={TARGETS} />
         <TextField
@@ -74,13 +78,13 @@ function PlaceHold() {
         />
         <TextField label="Reason (at least 10 characters)" name="reason" required />
       </ActionForm>
-    </details>
+    </FormDialog>
   )
 }
 
 function emptyText(state: HoldState): string {
   return state === 'active'
-    ? 'No record is on hold. Place a hold below when litigation or a records request needs one.'
+    ? 'No record is on hold. Use Place a hold when litigation or a records request needs one.'
     : 'No hold has been released yet.'
 }
 
@@ -91,7 +95,12 @@ export default async function HoldsPage({
 }) {
   const { params, state, sort } = readHoldView(await searchParams)
   const ctx = await requireStaffContext()
-  const list = await listHoldTable(ctx.db, ctx.actor, { state, sort }, ctx.signal)
+  const list = await listHoldTable(
+    ctx.db,
+    ctx.actor,
+    { state, sort, limit: PAGE_SIZE, offset: readOffset(params) },
+    ctx.signal,
+  )
   if (!list.ok) return <NoPermission title="Legal holds" action="manage legal holds" />
   const town = await getTownSettings(ctx.db, ctx.signal)
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
@@ -108,11 +117,11 @@ export default async function HoldsPage({
   const { rows } = list.value
   return (
     <main data-wide="">
-      <h1>Legal holds</h1>
-      <p>
-        A hold on a project, application, or document blocks disposition of everything under it.
-        Newest hold first.
-      </p>
+      <ListHeader
+        title="Legal holds"
+        lead="A hold on a project, application, or document blocks disposition of everything under it. Newest hold first."
+        actions={<PlaceHold />}
+      />
       <FilterTabs label="Holds" tabs={tabs} />
       <div className="table-panel">
         {rows.length === 0 ? (
@@ -152,7 +161,7 @@ export default async function HoldsPage({
           </table>
         )}
       </div>
-      <PlaceHold />
+      <TablePager {...pagerLinks(HOLDS_PATH, params, list.value)} />
     </main>
   )
 }

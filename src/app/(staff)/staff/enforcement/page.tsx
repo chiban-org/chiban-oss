@@ -2,7 +2,9 @@ import { ActionForm } from '@/components/ActionForm'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { TablePager } from '@/components/dataTable/TablePager'
 import { EnforcementQueueTable } from '@/components/enforcement/EnforcementQueueTable'
+import { FormDialog } from '@/components/FormDialog'
 import { KeyHints } from '@/components/KeyHints'
+import { ListHeader } from '@/components/layout/ListHeader'
 import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -33,22 +35,23 @@ const PARCEL_HINT = 'Without one, Chiban links the parcel whose site address mat
 function NewCaseForms() {
   return (
     <>
-      <details>
-        <summary>Open a case</summary>
+      <FormDialog label="Open a case" title="Open a case" variant="default">
         <ActionForm action={openCaseAction} submitLabel="Open case">
           <TextField label="Where is the property?" name="locationText" required />
           <ParcelPicker label="Parcel, if known" name="parcelRef" hint={PARCEL_HINT} />
         </ActionForm>
-      </details>
-      <details>
-        <summary>Enter a complaint taken by phone or at the counter</summary>
-        <p>Entering a complaint opens a case for it.</p>
+      </FormDialog>
+      <FormDialog
+        label="Enter a complaint"
+        title="Enter a complaint taken by phone or at the counter"
+        description="Entering a complaint opens a case for it."
+      >
         <ActionForm action={staffComplaintAction} submitLabel="Record complaint">
           <TextField label="Where is the property?" name="locationText" required />
           <TextField label="What was reported?" name="description" required />
           <ParcelPicker label="Parcel, if known" name="parcelRef" hint={PARCEL_HINT} />
         </ActionForm>
-      </details>
+      </FormDialog>
     </>
   )
 }
@@ -87,8 +90,11 @@ export default async function EnforcementQueuePage({
   ].join('|')
   return (
     <main data-wide="">
-      <h1>Code enforcement</h1>
-      <p>Newest case first.</p>
+      <ListHeader
+        title="Code enforcement"
+        lead="Newest case first."
+        actions={canManage ? <NewCaseForms /> : null}
+      />
       <div className="toolbar">
         <QuickFilters
           label="Quick filters"
@@ -112,7 +118,6 @@ export default async function EnforcementQueuePage({
         prevHref={pageLink(queue.prevOffset)}
         nextHref={pageLink(queue.nextOffset)}
       />
-      {canManage ? <NewCaseForms /> : null}
     </main>
   )
 }

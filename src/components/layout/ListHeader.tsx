@@ -15,7 +15,7 @@ export function ListHeader({
         <h1 className="m-0 mb-1 [overflow-wrap:anywhere]">{title}</h1>
         <p className="m-0 text-muted-foreground">{lead}</p>
       </div>
-      {actions === undefined ? null : (
+      {actions === undefined || actions === null ? null : (
         <div className="flex shrink-0 flex-wrap items-center gap-3">{actions}</div>
       )}
     </header>

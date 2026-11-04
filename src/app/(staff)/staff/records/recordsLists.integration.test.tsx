@@ -133,7 +133,8 @@ describe('holds, preservation and the other lists', () => {
     expect(markup).toContain('>Released<')
     expect(markup).toMatch(/<a href="\/staff\/parcels\/[0-9a-f-]{36}">/)
     expect(markup).toContain('<summary>Release</summary>')
-    expect(markup).toContain('<summary>Place a hold</summary>')
+    expect(markup).toMatch(/>Place a hold<\/button>/)
+    expect(markup.indexOf('>Place a hold<')).toBeLessThan(markup.indexOf('<table'))
     const [hold] = await handle.db
       .select()
       .from(legalHolds)
@@ -155,11 +156,16 @@ describe('holds, preservation and the other lists', () => {
     const requests = await html(RequestsPage(search()))
     expect(visibleText(requests)).toContain('Soonest next date first.')
     expect(requests).toMatch(/<td class="whitespace-nowrap"><a href="\/staff\/records\/requests\//)
+    expect(requests.indexOf('>Log a request<')).toBeGreaterThan(-1)
+    expect(requests.indexOf('>Log a request<')).toBeLessThan(requests.indexOf('<table'))
     expect(visibleText(await html(DisposedPage(search())))).toContain(
       'Most recently disposed first.',
     )
     await actAs('staff')
-    expect(visibleText(await html(QueuePage(search())))).toContain('Newest case first.')
+    const queue = await html(QueuePage(search()))
+    expect(visibleText(queue)).toContain('Newest case first.')
+    expect(queue.indexOf('>Open a case<')).toBeGreaterThan(-1)
+    expect(queue.indexOf('>Enter a complaint<')).toBeLessThan(queue.indexOf('<table'))
   })
 
   it('the disposed list sorts by proposer and approver from their headers', async () => {

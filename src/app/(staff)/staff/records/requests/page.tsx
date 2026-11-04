@@ -4,6 +4,8 @@ import { AddressTextField } from '@/components/address/AddressTextField'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { TablePager } from '@/components/dataTable/TablePager'
+import { FormDialog } from '@/components/FormDialog'
+import { ListHeader } from '@/components/layout/ListHeader'
 import { StatusChip } from '@/components/StatusChip'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -29,6 +31,30 @@ import { logRequestAction } from './actions'
 export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 25
+
+function LogRequest({ today }: { today: string }) {
+  return (
+    <FormDialog label="Log a request" title="Log a Right-to-Know request" variant="default">
+      <ActionForm action={logRequestAction} submitLabel="Log request">
+        <TextField
+          label="Date received"
+          name="receivedOn"
+          type="date"
+          defaultValue={today}
+          required
+        />
+        <SelectField
+          label="How it arrived"
+          name="receivedVia"
+          options={Object.entries(RTK_VIA_LABELS)}
+        />
+        <TextField label="Requester name" name="requesterName" />
+        <AddressTextField label="Requester email, phone, or address" name="requesterContact" />
+        <AreaField label="What was asked for" name="description" rows={3} required />
+      </ActionForm>
+    </FormDialog>
+  )
+}
 
 export default async function RightToKnowLogPage({
   searchParams,
@@ -56,8 +82,11 @@ export default async function RightToKnowLogPage({
     offset === null ? null : pageHref(REQUESTS_PATH, params, String(offset))
   return (
     <main data-wide="">
-      <h1>Right-to-Know requests</h1>
-      <p>Soonest next date first. Requests with no date running come last.</p>
+      <ListHeader
+        title="Right-to-Know requests"
+        lead="Soonest next date first. Requests with no date running come last."
+        actions={<LogRequest today={today} />}
+      />
       <div className="toolbar">
         <QuickFilters
           label="Quick filters"
@@ -114,26 +143,6 @@ export default async function RightToKnowLogPage({
         prevHref={pageLink(list.prevOffset)}
         nextHref={pageLink(list.nextOffset)}
       />
-      <details>
-        <summary>Log a request</summary>
-        <ActionForm action={logRequestAction} submitLabel="Log request">
-          <TextField
-            label="Date received"
-            name="receivedOn"
-            type="date"
-            defaultValue={today}
-            required
-          />
-          <SelectField
-            label="How it arrived"
-            name="receivedVia"
-            options={Object.entries(RTK_VIA_LABELS)}
-          />
-          <TextField label="Requester name" name="requesterName" />
-          <AddressTextField label="Requester email, phone, or address" name="requesterContact" />
-          <AreaField label="What was asked for" name="description" rows={3} required />
-        </ActionForm>
-      </details>
     </main>
   )
 }

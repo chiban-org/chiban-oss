@@ -3,6 +3,7 @@ import type { DbOrTx } from '@/db/client'
 import { legalHolds } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { type PageWindow, pageWindow } from '@/features/dataTable/pageSlice'
 import {
   type RawSearchParams,
   readTableParams,
@@ -83,7 +84,7 @@ export interface HoldListRow {
   releaseReason: string | null
 }
 
-export interface HoldList {
+export interface HoldList extends PageWindow {
   rows: HoldListRow[]
   counts: ReadonlyMap<HoldState, number>
 }
@@ -91,7 +92,7 @@ export interface HoldList {
 export async function listHoldTable(
   db: DbOrTx,
   actor: Actor,
-  input: { state: HoldState; sort: SortState<HoldSortKey> },
+  input: { state: HoldState; sort: SortState<HoldSortKey>; limit: number; offset: number },
   signal: AbortSignal,
 ): Promise<Result<HoldList, 'forbidden'>> {
   signal.throwIfAborted()
@@ -114,7 +115,9 @@ export async function listHoldTable(
       .where(
         input.state === 'active' ? isNull(legalHolds.releasedAt) : isNotNull(legalHolds.releasedAt),
       )
-      .orderBy(...orderBySql(input.sort, SORT_COLUMNS, [desc(legalHolds.id)])),
+      .orderBy(...orderBySql(input.sort, SORT_COLUMNS, [desc(legalHolds.id)]))
+      .limit(input.limit)
+      .offset(input.offset),
     db
       .select({
         active: sql<number>`(count(*) filter (where ${legalHolds.releasedAt} is null))::int`,
@@ -122,14 +125,16 @@ export async function listHoldTable(
       })
       .from(legalHolds),
   ])
+  const counts = new Map<HoldState, number>([
+    ['active', tally?.active ?? 0],
+    ['released', tally?.released ?? 0],
+  ])
   return ok({
+    ...pageWindow(input.offset, input.limit, counts.get(input.state) ?? 0),
     rows: rows.map(({ linkKind, linkId, ...row }) => ({
       ...row,
       href: staffRecordHref(linkKind, linkId),
     })),
-    counts: new Map([
-      ['active', tally?.active ?? 0],
-      ['released', tally?.released ?? 0],
-    ]),
+    counts,
   })
 }
