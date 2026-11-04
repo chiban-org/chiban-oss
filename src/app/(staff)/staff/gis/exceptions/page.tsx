@@ -21,7 +21,7 @@ import { exceptionFacets, listExceptions } from '@/features/gis/exceptionsList'
 import { townTimeZone } from '@/features/town/timeZone'
 import { recordStaffContext } from '@/server/requireStaff'
 import { ExceptionRow } from './ExceptionRow'
-import { HeldRunAccept } from './HeldRunAccept'
+import { HeldRunsPanel } from './HeldRunAccept'
 
 interface ExceptionsPageProps {
   searchParams: Promise<RawSearchParams>
@@ -84,18 +84,17 @@ export default async function StaffExceptionsPage({ searchParams }: ExceptionsPa
         <QuickFilters label="Quick filters" groups={chips} clearHref={clear} />
         <SortBar options={sortOptions} />
       </div>
-      {heldRuns.map((run) => (
-        <HeldRunAccept
-          key={run.id}
-          run={run}
-          held={held.filter((r) => r.lastSeenRunId === run.id).length}
-          timeZone={timeZone}
-        />
-      ))}
+      <HeldRunsPanel
+        runs={heldRuns.map((run) => ({
+          run,
+          held: held.filter((r) => r.lastSeenRunId === run.id).length,
+        }))}
+        timeZone={timeZone}
+      />
       {rows.length === 0 ? (
         <p>No exceptions match. Pick another status or kind.</p>
       ) : (
-        <ul className="divide-y">
+        <ul className="flex flex-col gap-4">
           {rows.map((row) => (
             <ExceptionRow key={row.id} row={row} timeZone={timeZone} canManage={canManage} />
           ))}

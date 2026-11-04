@@ -7,28 +7,45 @@ import { acceptAllOwnerChangesAction } from './actions'
 
 type ImportRun = typeof importRuns.$inferSelect
 
-export function HeldRunAccept({
-  run,
-  held,
-  timeZone,
-}: {
+export interface HeldRun {
   run: ImportRun
   held: number
-  timeZone: string
-}) {
+}
+
+function HeldRunRow({ run, held, timeZone }: HeldRun & { timeZone: string }) {
   return (
-    <ActionForm
-      action={acceptAllOwnerChangesAction}
-      submitLabel="Accept all owner changes from this import"
-      className="toolbar mb-3"
-    >
-      <input type="hidden" name="runId" value={run.id} />
+    <li className="record-item flex flex-wrap items-center justify-between gap-3">
       <p className="m-0">
-        {`${held} held owner ${held === 1 ? 'change' : 'changes'} from the `}
         <Link href={`/staff/gis/imports/${run.id}`}>
           {`${layerLabel(run.layerKey)} import of ${formatInstantLong(run.startedAt, timeZone)}`}
         </Link>
+        <span className="text-muted-foreground">{`, ${held} owner ${held === 1 ? 'change' : 'changes'} held`}</span>
       </p>
-    </ActionForm>
+      <ActionForm
+        action={acceptAllOwnerChangesAction}
+        submitLabel="Accept all owner changes from this import"
+        compact
+      >
+        <input type="hidden" name="runId" value={run.id} />
+      </ActionForm>
+    </li>
+  )
+}
+
+export function HeldRunsPanel({ runs, timeZone }: { runs: HeldRun[]; timeZone: string }) {
+  if (runs.length === 0) return null
+  return (
+    <section>
+      <h2>Held owner changes</h2>
+      <p className="text-muted-foreground">
+        Owner changes wait for review. Accept an import's changes all at once, or apply them one by
+        one below.
+      </p>
+      <ul className="flex flex-col gap-3">
+        {runs.map((entry) => (
+          <HeldRunRow key={entry.run.id} {...entry} timeZone={timeZone} />
+        ))}
+      </ul>
+    </section>
   )
 }

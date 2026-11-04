@@ -71,7 +71,7 @@ describe('import exceptions page', () => {
     await actAs('records')
     const html = await exceptionsHtml()
     expect(html).toContain('Owner changed')
-    for (const action of ['>Dismiss<', '>Apply held row<', 'Accept all owner changes']) {
+    for (const action of ['>Dismiss<', '>Apply the change<', 'Accept all owner changes']) {
       expect(html).not.toContain(action)
     }
     expect(html).not.toContain('name="reason"')
@@ -82,7 +82,7 @@ describe('import exceptions page', () => {
     const row = await ownerChange()
     const html = await exceptionsHtml()
     expect(html).toContain('>Dismiss<')
-    expect(html).toContain('>Apply held row<')
+    expect(html).toContain('>Apply the change<')
     expect(html).toContain(`href="/staff/gis/imports/${row.lastSeenRunId}"`)
     expect(html.match(/Accept all owner changes from this import/g)?.length).toBe(
       new Set(
@@ -111,6 +111,16 @@ describe('import exceptions page', () => {
     expect(html).not.toContain('<select')
     const text = html.replace(/<[^>]+>/g, ' ')
     expect(text).not.toContain('owner changed')
+  })
+
+  it('lays each exception out as a card with a marked change and dismissal behind a disclosure', async () => {
+    await actAs('staff')
+    const html = await exceptionsHtml()
+    expect(html).toContain('class="exception-card')
+    expect(html).not.toContain('(changed)')
+    expect(html).toMatch(/<td[^>]*><span class="sr-only">Changed to <\/span><span class="attention">/)
+    expect(html).toMatch(/<details[^>]*><summary[^>]*>Dismiss<\/summary>/)
+    expect(html).toContain('<h2>Held owner changes</h2>')
   })
 
   it('offers no bulk accept on the accepted tab', async () => {

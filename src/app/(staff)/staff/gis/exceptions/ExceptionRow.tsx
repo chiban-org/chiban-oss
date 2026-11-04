@@ -14,25 +14,33 @@ function RowTitle({ row }: { row: ExceptionRecord }) {
   const parcelId = exceptionParcelId(row.payload)
   const subject = exceptionSubject(row.rowKey)
   return (
-    <p className="font-semibold">
+    <h3 className="m-0">
       {`${exceptionKindLabel(row.kind)}: `}
       {parcelId === null ? subject : <Link href={`/staff/parcels/${parcelId}`}>{subject}</Link>}
-    </p>
+    </h3>
   )
 }
 
 function RowActions({ row }: { row: ExceptionRecord }) {
   return (
-    <div className="mt-2 flex flex-wrap gap-6">
+    <div className="flex flex-wrap items-start gap-4 border-t pt-4">
       {row.kind === 'owner_changed' ? (
-        <ActionForm action={acceptHeldRowAction} submitLabel="Apply held row">
+        <ActionForm action={acceptHeldRowAction} submitLabel="Apply the change" compact>
           <input type="hidden" name="exceptionId" value={row.id} />
         </ActionForm>
       ) : null}
-      <ActionForm action={dismissExceptionAction} submitLabel="Dismiss">
-        <input type="hidden" name="exceptionId" value={row.id} />
-        <TextField label="Reason" name="reason" required />
-      </ActionForm>
+      <details className="min-w-0 flex-1 basis-64">
+        <summary>Dismiss</summary>
+        <ActionForm action={dismissExceptionAction} submitLabel="Dismiss" className="max-w-md">
+          <input type="hidden" name="exceptionId" value={row.id} />
+          <TextField
+            label="Reason"
+            name="reason"
+            hint="Recorded with the exception, for example why the stored value is right."
+            required
+          />
+        </ActionForm>
+      </details>
     </div>
   )
 }
@@ -47,14 +55,16 @@ export function ExceptionRow({
   canManage: boolean
 }) {
   return (
-    <li className="py-4">
-      <RowTitle row={row} />
-      <p className="text-sm text-muted-foreground">
-        {exceptionDetailText(row.detail, row.createdAt, timeZone)}
-      </p>
+    <li className="exception-card flex flex-col gap-4 rounded-[var(--radius)] border border-hairline bg-surface p-5">
+      <div>
+        <RowTitle row={row} />
+        <p className="m-0 mt-1 text-sm text-muted-foreground">
+          {exceptionDetailText(row.detail, row.createdAt, timeZone)}
+        </p>
+      </div>
       <ExceptionFacts payload={row.payload} />
       {row.dispositionReason === null ? null : (
-        <p className="text-sm">{`Reason: ${row.dispositionReason}`}</p>
+        <p className="m-0 text-sm">{`Reason: ${row.dispositionReason}`}</p>
       )}
       {canManage && row.status === 'open' ? <RowActions row={row} /> : null}
     </li>
