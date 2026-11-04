@@ -54,7 +54,26 @@ export function RegionalContactsEditor({ body, onChange }: Props) {
         contact={body.nhDes}
         onChange={(nhDes) => onChange({ ...body, nhDes })}
       />
-      <h2 className="text-lg">Neighboring towns</h2>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h2 className="m-0 text-lg">Neighboring towns</h2>
+        <RowButton
+          onClick={() =>
+            onChange({
+              ...body,
+              municipalities: [
+                {
+                  key: `municipality_${body.municipalities.length + 1}`,
+                  name: '',
+                  mailingAddress: '',
+                },
+                ...body.municipalities,
+              ],
+            })
+          }
+        >
+          Add a neighboring town
+        </RowButton>
+      </div>
       {body.municipalities.length === 0 ? (
         <p className="m-0 text-sm text-muted-foreground">
           No neighboring towns yet. Add each town that should be sent notice.
@@ -105,23 +124,6 @@ export function RegionalContactsEditor({ body, onChange }: Props) {
           </RowButton>
         </div>
       ))}
-      <RowButton
-        onClick={() =>
-          onChange({
-            ...body,
-            municipalities: [
-              ...body.municipalities,
-              {
-                key: `municipality_${body.municipalities.length + 1}`,
-                name: '',
-                mailingAddress: '',
-              },
-            ],
-          })
-        }
-      >
-        Add a neighboring town
-      </RowButton>
     </div>
   )
 }
