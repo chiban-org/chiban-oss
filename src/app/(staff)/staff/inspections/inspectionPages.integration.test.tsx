@@ -74,18 +74,23 @@ afterAll(async () => {
 })
 
 describe('the inspector day list', () => {
-  it('opens on the first inspector for staff who are not inspectors, and says whose day it is', async () => {
+  it('asks staff who are not inspectors to choose an inspector, then names whose day it is', async () => {
     await actAs('staff')
-    const body = await html(DayPage({ searchParams: Promise.resolve({}) }))
-    expect(body).toContain('Ira Inspector')
-    expect(body).not.toContain('Your day')
-    expect(body).not.toContain('aria-label="Inspectors"')
+    const picker = await html(DayPage({ searchParams: Promise.resolve({}) }))
+    expect(picker).toContain('Choose an inspector')
+    expect(picker).toContain('Ira Inspector')
+    const chosen = await html(
+      DayPage({ searchParams: Promise.resolve({ inspector: inspectorId }) }),
+    )
+    expect(chosen).toContain('Ira Inspector')
+    expect(chosen).not.toContain('Your day')
+    expect(chosen).not.toContain('aria-label="Inspectors"')
   })
 
   it('marks the chosen inspector when there is more than one to choose from', async () => {
     await makeUser(handle.db, { role: 'inspector' })
     await actAs('staff')
-    const body = await html(DayPage({ searchParams: Promise.resolve({}) }))
+    const body = await html(DayPage({ searchParams: Promise.resolve({ inspector: inspectorId }) }))
     expect(body).toMatch(/aria-current="page"[^>]*>Ira Inspector</)
   })
 

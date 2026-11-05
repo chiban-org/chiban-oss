@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { DayList } from '@/components/inspections/DayList'
+import { InspectorPicker } from '@/components/inspections/InspectorPicker'
 import { MissingResults } from '@/components/inspections/MissingResults'
 import { NoPermission } from '@/components/staff/NoPermission'
 import type { Actor } from '@/features/auth/actor'
@@ -27,15 +28,10 @@ function href(date: CivilDate, inspector: string): string {
   return `/staff/inspections/day?date=${date}&inspector=${inspector}`
 }
 
-function chosenInspector(
-  actor: Actor,
-  requested: string | undefined,
-  inspectors: readonly Inspector[],
-): string {
+function chosenInspector(actor: Actor, requested: string | undefined): string | null {
   if (requested !== undefined && isUuid(requested)) return requested
-  const first = inspectors[0]
-  if (first !== undefined && !actor.roles.includes('inspector')) return first.userId
-  return actor.userId
+  if (actor.roles.includes('inspector')) return actor.userId
+  return managesAllInspectors(actor) ? null : actor.userId
 }
 
 function whoseDay(actor: Actor, inspectorUserId: string, inspectors: readonly Inspector[]) {
@@ -83,7 +79,10 @@ export default async function InspectorDayPage({
   const parsed = parseCivilDate(params.date ?? '')
   const date = parsed.ok ? parsed.value : today
   const inspectors = managesAllInspectors(ctx.actor) ? await listInspectors(ctx.db, ctx.signal) : []
-  const inspectorUserId = chosenInspector(ctx.actor, params.inspector, inspectors)
+  const inspectorUserId = chosenInspector(ctx.actor, params.inspector)
+  if (inspectorUserId === null) {
+    return <InspectorPicker inspectors={inspectors} href={(id) => href(date, id)} />
+  }
   const list = await getDayList(ctx.db, ctx.actor, { inspectorUserId, date }, ctx.signal)
   if (!list.ok) return <NoPermission title="My day" action="see this inspector's day" />
   const missing = await listMissingResults(
