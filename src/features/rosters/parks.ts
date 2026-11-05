@@ -5,6 +5,8 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { mayManageAbutters, nonEmpty, type RosterSaveMode } from '@/features/rosters/manage'
+import { flagListsUsing } from '@/features/rosters/usedBy'
+import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -15,6 +17,7 @@ export interface ParkInput {
   ownerMailingAddress: string
   tenants: ParkTenant[]
   asOf: CivilDate
+  now?: Date
 }
 
 export type ParkError =
@@ -44,8 +47,22 @@ async function checkedTenants(
   return ok(tenants)
 }
 
-function summary(row: { parkName: string; tenants: unknown[]; asOf: string }) {
-  return { parkName: row.parkName, tenants: row.tenants.length, asOf: row.asOf }
+type ParkContent = Pick<ParkInput, 'parkName' | 'ownerName' | 'ownerMailingAddress' | 'tenants'>
+
+function summary(row: ParkContent & { asOf: string }) {
+  return {
+    parkName: row.parkName,
+    ownerName: row.ownerName,
+    ownerMailingAddress: row.ownerMailingAddress,
+    tenants: row.tenants,
+    asOf: row.asOf,
+  }
+}
+
+function contentChanged(before: ParkContent, after: ParkContent): boolean {
+  const content = (p: ParkContent) =>
+    JSON.stringify([p.parkName, p.ownerName, p.ownerMailingAddress, p.tenants])
+  return content(before) !== content(after)
 }
 
 async function savePark(
@@ -56,6 +73,7 @@ async function savePark(
 ): Promise<Result<void, ParkError>> {
   const tenants = await checkedTenants(db, actor, input, signal)
   if (!tenants.ok) return tenants
+  const today = await townToday(db, input.now ?? new Date(), signal)
   const values = {
     parcelId: input.parcelId,
     parkName: input.parkName.trim(),
@@ -63,6 +81,7 @@ async function savePark(
     ownerMailingAddress: input.ownerMailingAddress.trim(),
     tenants: tenants.value,
     asOf: input.asOf,
+    checkedOn: today,
     updatedBy: actor.userId,
     updatedAt: new Date(),
   }
@@ -95,6 +114,9 @@ async function savePark(
       },
       signal,
     )
+    if (before !== undefined && contentChanged(before, values)) {
+      await flagListsUsing(tx, before.id, today, signal)
+    }
     return ok(undefined)
   })
 }

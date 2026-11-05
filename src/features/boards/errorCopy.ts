@@ -31,8 +31,11 @@ const COPY: Record<string, string> = {
   tenants_required: 'Enter at least one tenant, each with a name and a mailing address.',
   owner_required: 'Enter the park owner name and mailing address.',
   association_exists:
-    'This parcel already has an association roster. Use Edit on its row to change it.',
-  park_exists: 'This parcel already has a park roster. Use Edit on its row to change it.',
+    'This parcel already has an association on file. Use Edit on its row to change it.',
+  park_exists: 'This parcel already has a park on file. Use Edit on its row to change it.',
+  not_ended: 'This restriction has not been ended.',
+  ending_used:
+    'A list issued after this ending already left the holder off, so the ending cannot be undone. Add the holder again instead.',
   email_taken: 'Another person already uses that email address.',
   term_order: 'The term cannot end before it starts.',
   name_required: 'Enter a name.',

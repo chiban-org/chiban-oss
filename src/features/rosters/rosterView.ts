@@ -1,6 +1,4 @@
-import { asc } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { associationRosters, parkRosters, restrictionHoldings } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import {
@@ -8,70 +6,28 @@ import {
   getRegionalContacts,
   type RegionalContactsBody,
 } from '@/features/boards/regionalContacts'
-import { displayIdsFor } from '@/features/parcels/displayId'
+import { type ContactRows, loadContactRows } from '@/features/rosters/contactRows'
+import { type CondoGap, condoGaps } from '@/features/rosters/gaps'
 import { mayManageAbutters } from '@/features/rosters/manage'
-import { officerLines, tenantLines } from '@/features/rosters/parseLines'
-import type { RestrictionKind } from '@/features/rosters/restrictions'
-import { type RosterKind, type RosterStatus, rosterStatus } from '@/features/rosters/reviews'
-import { townToday } from '@/features/town/today'
+import { isDue, recheckDays } from '@/features/rosters/recheck'
+import { type RosterStatus, rosterStatus } from '@/features/rosters/reviews'
+import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
+import { todayInTimeZone } from '@/types/civilDate'
 
-export interface RosterKindView {
-  kind: RosterKind
-  label: string
-  statusText: string
-}
+export { RESTRICTION_LABELS } from '@/features/rosters/contactRows'
 
-export interface RostersView {
+export interface RostersView extends ContactRows {
   today: string
-  kinds: RosterKindView[]
-  associations: {
-    parcelId: string
-    parcel: string
-    name: string
-    officers: string[]
-    officersText: string
-    asOf: string
-    asOfText: string
-  }[]
-  parks: {
-    parcelId: string
-    parcel: string
-    name: string
-    owner: string
-    ownerMailingAddress: string
-    tenants: string[]
-    tenantsText: string
-    asOf: string
-    asOfText: string
-  }[]
-  restrictions: {
-    id: string
-    parcelId: string
-    parcel: string
-    holder: string
-    holderMailingAddress: string
-    kind: RestrictionKind
-    kindText: string
-    reference: string
-    endedText: string | null
-  }[]
+  recheckDays: number
+  dueCount: number
+  landRecords: { text: string; due: boolean }
+  gaps: CondoGap[]
   regionalContacts: { role: string; lines: string[] }[]
-  canEditRegionalContacts: boolean
+  canEditSettings: boolean
 }
 
-const KIND_LABELS: Record<RosterKind, string> = {
-  condo: 'Condominium association officers',
-  park: 'Manufactured housing parks',
-  restrictions: 'Easement and restriction holders',
-  regional_contacts: 'Regional planning commission, municipalities, and NH DES contacts',
-}
-
-export const RESTRICTION_LABELS = {
-  conservation: 'Conservation easement',
-  preservation: 'Preservation easement',
-  agricultural_preservation: 'Agricultural preservation restriction',
-} as const
+const FALLBACK_TIME_ZONE = 'UTC'
 
 function contactLines(contacts: RegionalContactsBody): { role: string; lines: string[] }[] {
   const line = (c: Contact) => `${c.name}, ${c.mailingAddress}`
@@ -85,82 +41,41 @@ function contactLines(contacts: RegionalContactsBody): { role: string; lines: st
   ]
 }
 
-function ageText(age: number): string {
-  if (age === 0) return 'today'
-  return `${age} ${age === 1 ? 'day' : 'days'} ago`
-}
-
-export function rosterStatusText(status: RosterStatus): string {
-  if (status.state === 'never_reviewed') return 'Never reviewed'
-  return `Reviewed ${formatCivilDate(status.reviewedOn ?? '')}, ${ageText(status.ageDays ?? 0)}`
+export function landRecordsText(status: RosterStatus): string {
+  if (status.state === 'never_reviewed') return 'Land records not yet checked for restrictions'
+  return `Land records checked for new restrictions on ${formatCivilDate(status.reviewedOn ?? '')}`
 }
 
 export async function loadRostersView(
   db: Db,
   actor: Actor,
   signal: AbortSignal,
+  now: Date = new Date(),
 ): Promise<RostersView | null> {
   signal.throwIfAborted()
   if (!(await mayManageAbutters(db, actor.userId, signal))) return null
-  const today = await townToday(db, new Date(), signal)
-  const kinds: RosterKindView[] = []
-  for (const kind of ['condo', 'park', 'restrictions', 'regional_contacts'] as const) {
-    kinds.push({
-      kind,
-      label: KIND_LABELS[kind],
-      statusText: rosterStatusText(await rosterStatus(db, kind, today, signal)),
-    })
-  }
-  const associations = await db
-    .select()
-    .from(associationRosters)
-    .orderBy(asc(associationRosters.associationName))
-  const parks = await db.select().from(parkRosters).orderBy(asc(parkRosters.parkName))
-  const holdings = await db
-    .select()
-    .from(restrictionHoldings)
-    .orderBy(asc(restrictionHoldings.holderName))
-  const labels = await displayIdsFor(db, [
-    ...associations.map((a) => a.parcelId),
-    ...parks.map((p) => p.parcelId),
-    ...holdings.map((h) => h.parcelId),
-  ])
-  const label = (id: string) => labels.get(id) ?? 'Parcel'
+  const town = await getTownSettings(db, signal)
+  const timeZone = town.ok ? town.value.timeZone : FALLBACK_TIME_ZONE
+  const today = todayInTimeZone(timeZone, now)
+  const days = await recheckDays(db, signal)
+  const rows = await loadContactRows(
+    db,
+    { today, recheckDays: days, timeZone, parcelId: null },
+    signal,
+  )
+  const review = await rosterStatus(db, 'restrictions', today, signal)
+  const all = [...rows.associations, ...rows.parks, ...rows.restrictions]
   return {
+    ...rows,
     today,
-    kinds,
-    associations: associations.map((a) => ({
-      parcelId: a.parcelId,
-      parcel: label(a.parcelId),
-      name: a.associationName,
-      officers: a.officers.map((o) => `${o.name}, ${o.title}`),
-      officersText: officerLines(a.officers),
-      asOf: a.asOf,
-      asOfText: formatCivilDate(a.asOf),
-    })),
-    parks: parks.map((p) => ({
-      parcelId: p.parcelId,
-      parcel: label(p.parcelId),
-      name: p.parkName,
-      owner: p.ownerName,
-      ownerMailingAddress: p.ownerMailingAddress,
-      tenants: p.tenants.map((t) => `${t.name}, ${t.siteLabel}`),
-      tenantsText: tenantLines(p.tenants),
-      asOf: p.asOf,
-      asOfText: formatCivilDate(p.asOf),
-    })),
-    restrictions: holdings.map((h) => ({
-      id: h.id,
-      parcelId: h.parcelId,
-      parcel: label(h.parcelId),
-      holder: h.holderName,
-      holderMailingAddress: h.holderMailingAddress,
-      kind: h.restrictionKind,
-      kindText: RESTRICTION_LABELS[h.restrictionKind],
-      reference: h.recordedReference,
-      endedText: h.endedOn === null ? null : formatCivilDate(h.endedOn),
-    })),
+    recheckDays: days,
+    dueCount: all.filter((r) => r.due).length,
+    landRecords: {
+      text: landRecordsText(review),
+      due: isDue(review.reviewedOn, today, days),
+    },
+    gaps: await condoGaps(db, signal),
     regionalContacts: contactLines(await getRegionalContacts(db, signal)),
-    canEditRegionalContacts: await hasCapability(db, actor.userId, 'config.edit', signal),
+    canEditSettings: await hasCapability(db, actor.userId, 'config.edit', signal),
   }
 }

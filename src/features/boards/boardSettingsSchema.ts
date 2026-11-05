@@ -6,6 +6,8 @@ const AdoptionSchema = z.object({
   adoptedOn: civilDateSchema,
 })
 
+export const RECHECK_CONTACTS_DEFAULT_DAYS = 365
+
 export const BoardSettingsBodySchema = z.object({
   key: z.literal('default'),
   boards: z
@@ -30,6 +32,7 @@ export const BoardSettingsBodySchema = z.object({
     layersConfirmedBy: z.string().min(1).nullable(),
     layersConfirmedOn: civilDateSchema.nullable(),
     assumedRightOfWayFt: z.number().positive(),
+    recheckContactsDays: z.number().int().min(1).max(3650).optional(),
   }),
 })
 export type BoardSettingsBody = z.infer<typeof BoardSettingsBodySchema>
@@ -69,5 +72,6 @@ export const BOARD_SETTINGS_DEFAULT: BoardSettingsBody = {
     layersConfirmedBy: null,
     layersConfirmedOn: null,
     assumedRightOfWayFt: 50,
+    recheckContactsDays: RECHECK_CONTACTS_DEFAULT_DAYS,
   },
 }

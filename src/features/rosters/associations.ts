@@ -5,6 +5,8 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { mayManageAbutters, nonEmpty, type RosterSaveMode } from '@/features/rosters/manage'
+import { flagListsUsing } from '@/features/rosters/usedBy'
+import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -13,6 +15,7 @@ export interface AssociationInput {
   associationName: string
   officers: AssociationOfficer[]
   asOf: CivilDate
+  now?: Date
 }
 
 export type AssociationError =
@@ -38,8 +41,18 @@ async function checkedOfficers(
   return ok(officers)
 }
 
-function summary(row: { associationName: string; officers: unknown[]; asOf: string }) {
-  return { associationName: row.associationName, officers: row.officers.length, asOf: row.asOf }
+function summary(row: { associationName: string; officers: AssociationOfficer[]; asOf: string }) {
+  return { associationName: row.associationName, officers: row.officers, asOf: row.asOf }
+}
+
+function contentChanged(
+  before: { associationName: string; officers: AssociationOfficer[] },
+  after: { associationName: string; officers: AssociationOfficer[] },
+): boolean {
+  return (
+    JSON.stringify([before.associationName, before.officers]) !==
+    JSON.stringify([after.associationName, after.officers])
+  )
 }
 
 async function saveAssociation(
@@ -50,11 +63,13 @@ async function saveAssociation(
 ): Promise<Result<void, AssociationError>> {
   const officers = await checkedOfficers(db, actor, input, signal)
   if (!officers.ok) return officers
+  const today = await townToday(db, input.now ?? new Date(), signal)
   const values = {
     parcelId: input.parcelId,
     associationName: input.associationName.trim(),
     officers: officers.value,
     asOf: input.asOf,
+    checkedOn: today,
     updatedBy: actor.userId,
     updatedAt: new Date(),
   }
@@ -87,6 +102,9 @@ async function saveAssociation(
       },
       signal,
     )
+    if (before !== undefined && contentChanged(before, values)) {
+      await flagListsUsing(tx, before.id, today, signal)
+    }
     return ok(undefined)
   })
 }

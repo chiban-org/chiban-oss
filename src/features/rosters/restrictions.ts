@@ -5,6 +5,8 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { mayManageAbutters, nonEmpty } from '@/features/rosters/manage'
+import { flagListsUsing } from '@/features/rosters/usedBy'
+import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -20,6 +22,7 @@ export async function addRestriction(
     holderMailingAddress: string
     restrictionKind: RestrictionKind
     recordedReference: string
+    now?: Date
   },
   signal: AbortSignal,
 ): Promise<Result<{ holdingId: string }, 'forbidden' | 'address_required' | 'holder_required'>> {
@@ -27,10 +30,12 @@ export async function addRestriction(
   if (!(await mayManageAbutters(db, actor.userId, signal))) return err('forbidden')
   if (!nonEmpty(input.holderName)) return err('holder_required')
   if (!nonEmpty(input.holderMailingAddress)) return err('address_required')
+  const { now, ...holding } = input
+  const checkedOn = await townToday(db, now ?? new Date(), signal)
   return await transactionResult(db, async (tx) => {
     const [row] = await tx
       .insert(restrictionHoldings)
-      .values({ ...input, createdBy: actor.userId })
+      .values({ ...holding, checkedOn, createdBy: actor.userId })
       .returning({ id: restrictionHoldings.id })
     const holdingId = row?.id ?? ''
     await writeAudit(
@@ -40,7 +45,7 @@ export async function addRestriction(
         action: 'roster.restriction.add',
         entityType: 'parcel',
         entityId: input.parcelId,
-        after: { holdingId, holderName: input.holderName, kind: input.restrictionKind },
+        after: { holdingId, ...holdingSummary(holding) },
       },
       signal,
     )
@@ -54,9 +59,10 @@ export interface RestrictionChange {
   holderMailingAddress: string
   restrictionKind: RestrictionKind
   recordedReference: string
+  now?: Date
 }
 
-function holdingSummary(row: Omit<RestrictionChange, 'holdingId'>) {
+function holdingSummary(row: Omit<RestrictionChange, 'holdingId' | 'now'>) {
   return {
     holderName: row.holderName,
     holderMailingAddress: row.holderMailingAddress,
@@ -75,7 +81,8 @@ export async function updateRestriction(
   if (!(await mayManageAbutters(db, actor.userId, signal))) return err('forbidden')
   if (!nonEmpty(input.holderName)) return err('holder_required')
   if (!nonEmpty(input.holderMailingAddress)) return err('address_required')
-  const { holdingId, ...change } = input
+  const { holdingId, now, ...change } = input
+  const today = await townToday(db, now ?? new Date(), signal)
   const values = {
     ...change,
     holderName: change.holderName.trim(),
@@ -89,7 +96,10 @@ export async function updateRestriction(
       .where(eq(restrictionHoldings.id, holdingId))
       .for('update')
     if (before === undefined) return err('not_found')
-    await tx.update(restrictionHoldings).set(values).where(eq(restrictionHoldings.id, holdingId))
+    await tx
+      .update(restrictionHoldings)
+      .set({ ...values, checkedOn: today })
+      .where(eq(restrictionHoldings.id, holdingId))
     await writeAudit(
       tx,
       {
@@ -102,36 +112,9 @@ export async function updateRestriction(
       },
       signal,
     )
-    return ok(undefined)
-  })
-}
-
-export async function endRestriction(
-  db: Db,
-  actor: Actor,
-  input: { holdingId: string; endedOn: CivilDate },
-  signal: AbortSignal,
-): Promise<Result<void, 'forbidden' | 'not_found'>> {
-  signal.throwIfAborted()
-  if (!(await mayManageAbutters(db, actor.userId, signal))) return err('forbidden')
-  return await transactionResult(db, async (tx) => {
-    const [row] = await tx
-      .update(restrictionHoldings)
-      .set({ endedOn: input.endedOn })
-      .where(eq(restrictionHoldings.id, input.holdingId))
-      .returning({ parcelId: restrictionHoldings.parcelId })
-    if (row === undefined) return err('not_found')
-    await writeAudit(
-      tx,
-      {
-        actor: { kind: 'user', userId: actor.userId },
-        action: 'roster.restriction.end',
-        entityType: 'parcel',
-        entityId: row.parcelId,
-        after: { holdingId: input.holdingId, endedOn: input.endedOn },
-      },
-      signal,
-    )
+    if (JSON.stringify(holdingSummary(before)) !== JSON.stringify(holdingSummary(values))) {
+      await flagListsUsing(tx, holdingId, today, signal)
+    }
     return ok(undefined)
   })
 }
