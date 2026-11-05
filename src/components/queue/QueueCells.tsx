@@ -100,6 +100,16 @@ function BoardDate({ what, due, overdue }: { what: string; due: string; overdue:
   )
 }
 
+function noticeLeads(row: WorkQueueRow): boolean {
+  return row.nextDue !== null && row.nextDue !== row.clockDue
+}
+
+function SecondClock({ row }: { row: WorkQueueRow }) {
+  if (!noticeLeads(row) || row.clockDue === null) return null
+  const label = row.clockDueLabel ?? 'Clock'
+  return <span className="block">{`${label} due ${formatCivilDateShort(row.clockDue)}`}</span>
+}
+
 export function DueCell({ row }: { row: WorkQueueRow }) {
   const detail = dueDetail(row)
   const empty = row.nextDue === null && row.noticeDue === null && row.filingDue === null
@@ -109,7 +119,8 @@ export function DueCell({ row }: { row: WorkQueueRow }) {
         <div className="flex flex-col items-start gap-0.5">
           <DueHeadline row={row} />
           {detail === null ? null : <span className="text-muted-foreground">{detail}</span>}
-          {row.noticeDue === null ? null : (
+          <SecondClock row={row} />
+          {row.noticeDue === null || noticeLeads(row) ? null : (
             <BoardDate
               what={NOTICE_DEADLINE_LABEL}
               due={row.noticeDue}

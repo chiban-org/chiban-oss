@@ -10,6 +10,7 @@ import { defaultSort, type SortState } from '@/features/dataTable/sort'
 import { orderBySql } from '@/features/dataTable/sortSql'
 import { ruleLabel } from '@/features/packs/ruleLabel'
 import { displayIdsFor } from '@/features/parcels/displayId'
+import { headlineDeadline } from '@/features/queue/headlineDeadline'
 import { QUEUE_SORT_COLUMNS, QUEUE_TIEBREAK, queueWhere } from '@/features/queue/queueFilterSql'
 import {
   type AssignedFilter,
@@ -59,6 +60,8 @@ export interface WorkQueueRow {
   nextDueLabel: string | null
   daysUntilDue: number | null
   dueStatus: DueStatus
+  clockDue: CivilDate | null
+  clockDueLabel: string | null
   noticeDue: CivilDate | null
   noticeOverdue: boolean
   filingDue: CivilDate | null
@@ -209,7 +212,8 @@ export async function listWorkQueue(
   )
   return {
     rows: page.map((r) => {
-      const nextDue = r.nextDue as CivilDate | null
+      const headline = headlineDeadline(r.nextDue, r.nextDueRuleKey, r.noticeDue)
+      const nextDue = headline?.on ?? null
       const type = labels.get((r.configPins as { applicationType: string }).applicationType)
       return {
         applicationId: r.id,
@@ -223,9 +227,11 @@ export async function listWorkQueue(
         parcelId: r.parcelId,
         parcelDisplayId: display.get(r.parcelId) ?? null,
         nextDue,
-        nextDueLabel: r.nextDueRuleKey === null ? null : ruleLabel(r.nextDueRuleKey),
+        nextDueLabel: headline?.label ?? null,
         daysUntilDue: nextDue === null ? null : daysBetween(today, nextDue),
         dueStatus: dueStatusOf(nextDue, today),
+        clockDue: r.nextDue as CivilDate | null,
+        clockDueLabel: r.nextDueRuleKey === null ? null : ruleLabel(r.nextDueRuleKey),
         noticeDue: r.noticeDue as CivilDate | null,
         noticeOverdue: isPast(r.noticeDue as CivilDate | null, today),
         filingDue: r.filingDue as CivilDate | null,

@@ -9,8 +9,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
-import { NOTICE_DEADLINE_LABEL } from '@/features/hearings/labels'
-import { ruleLabel } from '@/features/packs/ruleLabel'
+import { headlineDeadline } from '@/features/queue/headlineDeadline'
 import { DEADLINE_OPEN, NEXT_DUE, NEXT_DUE_RULE_KEY, NOTICE_DUE } from '@/features/queue/queueSql'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -55,17 +54,6 @@ export interface BoardsView {
 
 const OPEN_STATES: CoreState[] = ['submitted', 'under_review', 'decided']
 
-function deadlineOf(
-  clockDue: string | null,
-  clockRuleKey: string | null,
-  noticeDue: string | null,
-) {
-  if (noticeDue !== null && (clockDue === null || noticeDue < clockDue))
-    return { on: noticeDue, label: NOTICE_DEADLINE_LABEL }
-  if (clockDue === null || clockRuleKey === null) return null
-  return { on: clockDue, label: ruleLabel(clockRuleKey) }
-}
-
 async function applicationLines(
   db: Db,
   board: Board,
@@ -97,7 +85,7 @@ async function applicationLines(
       .from(acceptanceSchedules)
       .innerJoin(boardMeetings, eq(boardMeetings.id, acceptanceSchedules.meetingId))
       .where(eq(acceptanceSchedules.applicationId, row.id))
-    const deadline = deadlineOf(clockDue, clockRuleKey, noticeDue)
+    const deadline = headlineDeadline(clockDue, clockRuleKey, noticeDue)
     const deadlineOverdue = deadline !== null && deadline.on < today
     lines.push({
       typeKey: row.applicationTypeKey,
