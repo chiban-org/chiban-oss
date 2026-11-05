@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { StatusChip } from '@/components/StatusChip'
+import { NOTICE_DEADLINE_LABEL } from '@/features/hearings/labels'
 import type { WorkQueueRow } from '@/features/queue/workQueue'
 import { reviewStatusLabel } from '@/features/reviews/statusLabels'
 import { formatCivilDateShort } from '@/lib/formatDate'
@@ -109,7 +110,11 @@ export function DueCell({ row }: { row: WorkQueueRow }) {
           <DueHeadline row={row} />
           {detail === null ? null : <span className="text-muted-foreground">{detail}</span>}
           {row.noticeDue === null ? null : (
-            <BoardDate what="Notice" due={row.noticeDue} overdue={row.noticeOverdue} />
+            <BoardDate
+              what={NOTICE_DEADLINE_LABEL}
+              due={row.noticeDue}
+              overdue={row.noticeOverdue}
+            />
           )}
           {row.filingDue === null || row.filingDue === row.nextDue ? null : (
             <BoardDate what="Filing" due={row.filingDue} overdue={row.filingOverdue} />

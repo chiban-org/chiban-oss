@@ -1,7 +1,7 @@
 import type { Board } from '@packs/nh/schema'
-import { and, asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, inArray, ne, or } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { acceptanceSchedules, applications, boardMeetings, clocks } from '@/db/schema'
+import { acceptanceSchedules, applications, boardMeetings, projects } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { stateLabel } from '@/features/applications/stateLabel'
 import type { CoreState } from '@/features/applications/states'
@@ -9,7 +9,9 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
-import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { NOTICE_DEADLINE_LABEL } from '@/features/hearings/labels'
+import { ruleLabel } from '@/features/packs/ruleLabel'
+import { DEADLINE_OPEN, NEXT_DUE, NEXT_DUE_RULE_KEY, NOTICE_DUE } from '@/features/queue/queueSql'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 
@@ -53,6 +55,17 @@ export interface BoardsView {
 
 const OPEN_STATES: CoreState[] = ['submitted', 'under_review', 'decided']
 
+function deadlineOf(
+  clockDue: string | null,
+  clockRuleKey: string | null,
+  noticeDue: string | null,
+) {
+  if (noticeDue !== null && (clockDue === null || noticeDue < clockDue))
+    return { on: noticeDue, label: NOTICE_DEADLINE_LABEL }
+  if (clockDue === null || clockRuleKey === null) return null
+  return { on: clockDue, label: ruleLabel(clockRuleKey) }
+}
+
 async function applicationLines(
   db: Db,
   board: Board,
@@ -60,12 +73,23 @@ async function applicationLines(
   signal: AbortSignal,
 ): Promise<BoardApplicationLine[]> {
   const rows = await db
-    .select()
+    .select({
+      row: applications,
+      clockDue: NEXT_DUE,
+      clockRuleKey: NEXT_DUE_RULE_KEY,
+      noticeDue: NOTICE_DUE,
+    })
     .from(applications)
-    .where(inArray(applications.state, OPEN_STATES))
+    .innerJoin(projects, eq(projects.id, applications.projectId))
+    .where(
+      or(
+        inArray(applications.state, OPEN_STATES),
+        and(ne(applications.state, 'draft'), DEADLINE_OPEN),
+      ),
+    )
     .orderBy(asc(applications.receivedDate))
   const lines: BoardApplicationLine[] = []
-  for (const row of rows) {
+  for (const { row, clockDue, clockRuleKey, noticeDue } of rows) {
     const app = await loadApplicationContext(db, row.id, signal)
     if (app === null || boardOfApplication(app) !== board) continue
     const [schedule] = await db
@@ -73,22 +97,14 @@ async function applicationLines(
       .from(acceptanceSchedules)
       .innerJoin(boardMeetings, eq(boardMeetings.id, acceptanceSchedules.meetingId))
       .where(eq(acceptanceSchedules.applicationId, row.id))
-    const [clock] = await db
-      .select()
-      .from(clocks)
-      .where(and(eq(clocks.applicationId, row.id), inArray(clocks.status, ['running', 'overdue'])))
-      .orderBy(asc(clocks.currentDue))
-      .limit(1)
-    const rule =
-      clock === undefined ? null : ruleByKey(loadPack(), clock.ruleKey, clock.ruleVersion)
-    const deadlineOverdue =
-      clock !== undefined && (clock.status === 'overdue' || clock.currentDue < today)
+    const deadline = deadlineOf(clockDue, clockRuleKey, noticeDue)
+    const deadlineOverdue = deadline !== null && deadline.on < today
     lines.push({
       typeKey: row.applicationTypeKey,
       state: app.state,
       filedOn: row.receivedDate,
       meetingOn: schedule?.date ?? null,
-      deadlineOn: clock?.currentDue ?? null,
+      deadlineOn: deadline?.on ?? null,
       deadlineOverdue,
       id: row.id,
       number: row.number,
@@ -97,9 +113,9 @@ async function applicationLines(
       filedText: row.receivedDate === null ? 'Not yet filed' : formatCivilDate(row.receivedDate),
       meetingText: schedule === undefined ? null : formatCivilDate(schedule.date),
       deadlineText:
-        clock === undefined || rule === null
+        deadline === null
           ? null
-          : `${rule.label}: ${formatCivilDate(clock.currentDue)}${deadlineOverdue ? ' (overdue)' : ''}`,
+          : `${deadline.label}: ${formatCivilDate(deadline.on)}${deadlineOverdue ? ' (overdue)' : ''}`,
     })
   }
   return lines
@@ -109,10 +125,11 @@ export async function loadBoardsView(
   db: Db,
   actor: Actor,
   signal: AbortSignal,
+  now: Date = new Date(),
 ): Promise<BoardsView | null> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return null
-  const today = await townToday(db, new Date(), signal)
+  const today = await townToday(db, now, signal)
   const settings = await getBoardSettings(db, signal)
   const sections: BoardSection[] = []
   for (const board of ['planning_board', 'zba'] as const) {

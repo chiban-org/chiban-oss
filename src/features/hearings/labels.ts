@@ -6,6 +6,8 @@ export const HEARING_KIND_LABELS: Record<HearingKind, string> = {
   rehearing: 'Rehearing',
 }
 
+export const NOTICE_DEADLINE_LABEL = 'Notice'
+
 export function formatMinuteOfDay(minute: number): string {
   const hours24 = Math.floor(minute / 60)
   const mins = minute % 60
