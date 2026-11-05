@@ -19,7 +19,13 @@ function noticeHeading(deadline: NoticeDeadline): string {
   return `Notice for the hearing on ${formatCivilDate(deadline.meetingOn)}`
 }
 
-export function NoticeDeadlineCard({ deadline }: { deadline: NoticeDeadline }) {
+export function NoticeDeadlineCard({
+  deadline,
+  canOpenHearing,
+}: {
+  deadline: NoticeDeadline
+  canOpenHearing: boolean
+}) {
   const items =
     deadline.missing === 1 ? '1 notice item has' : `${deadline.missing} notice items have`
   return (
@@ -30,7 +36,9 @@ export function NoticeDeadlineCard({ deadline }: { deadline: NoticeDeadline }) {
       </div>
       <p className="m-0 mt-1 text-sm">
         {`Due ${formatCivilDate(deadline.dueOn)}. ${items} no proof recorded. `}
-        <Link href={`/staff/boards/hearings/${deadline.hearingId}`}>Open the hearing</Link>
+        {canOpenHearing ? (
+          <Link href={`/staff/boards/hearings/${deadline.hearingId}`}>Open the hearing</Link>
+        ) : null}
       </p>
     </div>
   )

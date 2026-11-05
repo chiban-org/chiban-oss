@@ -104,6 +104,7 @@ export interface StaffApplicationView {
     canOverrideFee: boolean
     canDetermineRegionalImpact: boolean
     canManageWorkflow: boolean
+    canOpenHearings: boolean
   }
 }
 
@@ -117,6 +118,7 @@ async function permissionsOf(db: Db, actor: Actor, signal: AbortSignal) {
     canOverrideFee: await has('fee.override'),
     canDetermineRegionalImpact: await has('regional_impact.determine'),
     canManageWorkflow: await has('application.manage'),
+    canOpenHearings: await has('board.record'),
   }
 }
 

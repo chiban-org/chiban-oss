@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
+import { loadActor } from '@/features/auth/actor'
 import { scheduleHearing } from '@/features/hearings/hearings'
 import {
   type BoardWorld,
@@ -8,6 +9,7 @@ import {
   submitBoardApplication,
 } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { makeUser } from '@/test/factories'
 import { sectionOf } from '@/test/htmlSections'
 import { issueListWithRecipients, recipient } from '@/test/noticeFixtures'
 
@@ -90,6 +92,23 @@ describe('the hearing notice deadline on the record', () => {
     expect(clocks).toContain('/staff/boards/hearings/')
     expect(headerStatus(html)).toBe('overdue')
     expect(sectionOf(html, 'Deadlines') ?? '').toContain('Notice overdue, due April 10, 2027')
+  })
+
+  it('names the notice deadline without a hearing link for staff who cannot open hearings', async () => {
+    state.actor = await loadActor(
+      handle.db,
+      await makeUser(handle.db, { roles: ['inspector'] }),
+      signal,
+    )
+    try {
+      const clocks = sectionOf(await pageOn('2027-04-12T16:00:00Z'), 'Clocks') ?? ''
+      expect(clocks).toContain('Notice for the hearing on April 15, 2027')
+      expect(clocks).toContain('Overdue by 2 days')
+      expect(clocks).not.toContain('/staff/boards/hearings/')
+      expect(clocks).not.toContain('Open the hearing')
+    } finally {
+      state.actor = world.staff
+    }
   })
 
   it('shows the notice deadline as running before it passes', async () => {

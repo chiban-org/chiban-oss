@@ -15,7 +15,11 @@ export function ClocksPanel({ view }: { view: StaffApplicationView }) {
       <h2>Clocks</h2>
       {noDeadlines(view) ? <p>No clock is running on this application.</p> : null}
       {view.noticeDeadlines.map((deadline) => (
-        <NoticeDeadlineCard key={deadline.hearingId} deadline={deadline} />
+        <NoticeDeadlineCard
+          key={deadline.hearingId}
+          deadline={deadline}
+          canOpenHearing={view.permissions.canOpenHearings}
+        />
       ))}
       {sortClocks(view.clocks).map((clock) => (
         <ClockCard key={clock.clockId} clock={clock} collapsed={!expanded.has(clock)}>
