@@ -25,6 +25,16 @@ describe('RecheckInterval', () => {
     expect(screen.getByText('Contacts are due for a check every 365 days.')).toBeTruthy()
   })
 
+  it('names this a board setting with a version history, because Publish saves a new version', () => {
+    renderInterval(false)
+    expect(screen.queryByRole('link', { name: 'Board settings version history' })).toBeNull()
+    cleanup()
+    renderInterval(true)
+    const link = screen.getByRole('link', { name: 'Board settings version history' })
+    expect(link.getAttribute('href')).toBe('/staff/settings/board_settings')
+    expect(screen.getByText(/saved as a version/)).toBeTruthy()
+  })
+
   it('offers Change only to someone who can edit settings', () => {
     renderInterval(false)
     expect(screen.queryByRole('button', { name: /change/i })).toBeNull()

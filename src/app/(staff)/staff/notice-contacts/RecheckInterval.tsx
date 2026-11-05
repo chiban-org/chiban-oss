@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { publishImpact } from '@/components/config/PublishBar'
 import { FormDialog } from '@/components/FormDialog'
@@ -18,6 +19,14 @@ export function RecheckInterval({ days, canEdit }: { days: number; canEdit: bool
   return (
     <p className="m-0 flex flex-wrap items-center gap-x-3 gap-y-1">
       <span>{recheckSentence(days)}</span>
+      {canEdit ? (
+        <span className="text-muted-foreground">
+          This is a board setting, so each change is saved as a version.{' '}
+          <Link href="/staff/settings/board_settings" aria-label="Board settings version history">
+            Version history
+          </Link>
+        </span>
+      ) : null}
       {canEdit ? (
         <FormDialog
           label="Change"
