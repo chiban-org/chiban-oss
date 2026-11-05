@@ -1,6 +1,7 @@
 import type { Db } from '@/db/client'
 import { seedApplicationStates } from '@/features/demo/seedApplicationStates'
 import { seedMeetingStates } from '@/features/demo/seedMeetingStates'
+import { seedMeetingMinutes } from '@/features/demo/seedMinutes'
 import { actorFor, type Cast } from '@/features/demo/seedPermitSupport'
 import { seedRecordStates } from '@/features/demo/seedRecordStates'
 import { seedTodayWork } from '@/features/demo/seedToday'
@@ -39,6 +40,7 @@ export async function seedCoverage(
   }
   const steps = [
     await seedMeetingStates(ctx),
+    await seedMeetingMinutes(ctx),
     await seedApplicationStates(ctx),
     await seedRecordStates(ctx),
     await seedTodayWork(ctx),

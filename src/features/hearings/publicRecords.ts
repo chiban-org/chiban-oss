@@ -1,6 +1,13 @@
-import { and, desc, eq, isNotNull } from 'drizzle-orm'
+import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { agendas, applications, boardDecisions, boardMeetings, documents } from '@/db/schema'
+import {
+  agendas,
+  applications,
+  boardDecisions,
+  boardMeetings,
+  documents,
+  meetingMinutes,
+} from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { BOARD_NAMES } from '@/features/hearings/views'
@@ -20,6 +27,12 @@ export interface PublicDecisionLine {
   minutesDocumentId: string | null
 }
 
+export interface PublicMinutesLine {
+  meetingId: string
+  documentId: string
+  text: string
+}
+
 const LIMIT = 100
 export const AGENDA_PAGE_SIZE = 20
 
@@ -32,6 +45,29 @@ export interface PublicBoardRecords {
   agendas: PublicAgendaLine[]
   agendaPage: PublicPage
   decisions: PublicDecisionLine[]
+  minutes: PublicMinutesLine[]
+}
+
+async function approvedMinutes(db: Db): Promise<PublicMinutesLine[]> {
+  const rows = await db
+    .select({ meeting: boardMeetings, minutes: meetingMinutes })
+    .from(meetingMinutes)
+    .innerJoin(boardMeetings, eq(boardMeetings.id, meetingMinutes.meetingId))
+    .innerJoin(documents, eq(documents.id, meetingMinutes.documentId))
+    .where(
+      and(
+        eq(meetingMinutes.status, 'approved'),
+        eq(documents.isPublic, true),
+        isNull(documents.disposedAt),
+      ),
+    )
+    .orderBy(desc(boardMeetings.meetingDate), desc(boardMeetings.id))
+    .limit(LIMIT)
+  return rows.map(({ meeting, minutes }) => ({
+    meetingId: meeting.id,
+    documentId: minutes.documentId,
+    text: `${BOARD_NAMES[meeting.board]}, ${formatCivilDate(meeting.meetingDate)}, approved ${formatCivilDate(minutes.approvedOn ?? meeting.meetingDate)}`,
+  }))
 }
 
 export async function loadPublicBoardRecords(
@@ -76,5 +112,6 @@ export async function loadPublicBoardRecords(
     })),
     agendaPage: { page, hasNext: agendaRows.length > AGENDA_PAGE_SIZE },
     decisions,
+    minutes: await approvedMinutes(db),
   }
 }

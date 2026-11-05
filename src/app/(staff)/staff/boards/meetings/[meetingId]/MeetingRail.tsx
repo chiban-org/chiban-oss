@@ -2,18 +2,25 @@ import { ActionForm } from '@/components/ActionForm'
 import { NextStep } from '@/components/layout/NextStep'
 import { FactList } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
+import { type MeetingMinutesView, minutesStatusText } from '@/features/boards/minutesView'
 import { agendaStatusText, type MeetingView } from '@/features/hearings/meetingView'
 import { publishAgendaAction } from '../../hearings/actions'
 import { AddHearingsForm, AddItemForm } from './AgendaSection'
 
 export type PacketStep = 'prepare' | 'update' | null
 
-type StepKind = 'build' | 'publish' | 'prepare' | 'update'
+type StepKind = 'build' | 'publish' | 'prepare' | 'update' | 'minutes'
 
 const PACKET_LABELS = { prepare: 'Prepare the packet', update: 'Send the packet update' } as const
 
-function stepOf(view: MeetingView, packetStep: PacketStep): StepKind | null {
-  if (view.cancelled || view.past) return null
+function stepOf(
+  view: MeetingView,
+  packetStep: PacketStep,
+  minutes: MeetingMinutesView | null,
+): StepKind | null {
+  if (view.cancelled) return null
+  if (view.past)
+    return minutes !== null && minutes.current?.status !== 'approved' ? 'minutes' : null
   const { agenda } = view
   if (agenda === null || agenda.items.length === 0) return 'build'
   if (agenda.status === 'draft') return 'publish'
@@ -45,10 +52,21 @@ function Step({ view, kind }: { view: MeetingView; kind: StepKind }) {
           <a href="#packet">{PACKET_LABELS[kind]}</a>
         </Button>
       )
+    case 'minutes':
+      return (
+        <Button asChild className="no-underline">
+          <a href="#minutes">Record the minutes</a>
+        </Button>
+      )
   }
 }
 
-function meetingFacts(view: MeetingView, packetLabel: string | null) {
+function meetingFacts(
+  view: MeetingView,
+  packetLabel: string | null,
+  minutes: MeetingMinutesView | null,
+) {
+  const minutesText = minutes === null ? null : minutesStatusText(minutes)
   return [
     { label: 'Kind', value: view.kindText },
     ...(view.locationText === '' ? [] : [{ label: 'Location', value: view.locationText }]),
@@ -57,6 +75,7 @@ function meetingFacts(view: MeetingView, packetLabel: string | null) {
       value: view.agenda === null ? 'Not started' : agendaStatusText(view.agenda),
     },
     ...(packetLabel === null ? [] : [{ label: 'Packet', value: packetLabel }]),
+    ...(minutesText === null ? [] : [{ label: 'Minutes', value: minutesText }]),
     ...(view.cancelled
       ? [{ label: 'Cancelled', value: view.cancelReason ?? 'No reason given' }]
       : []),
@@ -67,12 +86,14 @@ export function MeetingRail({
   view,
   packetStep = null,
   packetLabel = null,
+  minutes = null,
 }: {
   view: MeetingView
   packetStep?: PacketStep
   packetLabel?: string | null
+  minutes?: MeetingMinutesView | null
 }) {
-  const kind = stepOf(view, packetStep)
+  const kind = stepOf(view, packetStep, minutes)
   return (
     <>
       {kind === null ? null : (
@@ -83,7 +104,7 @@ export function MeetingRail({
         </div>
       )}
       <div className="rail-card">
-        <FactList facts={meetingFacts(view, packetLabel)} stacked />
+        <FactList facts={meetingFacts(view, packetLabel, minutes)} stacked />
       </div>
     </>
   )
