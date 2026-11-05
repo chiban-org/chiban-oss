@@ -7,7 +7,7 @@ import { SubmitButton } from '@/components/SubmitButton'
 import { Button } from '@/components/ui/button'
 import { RequiredNote } from '@/components/ui/required-mark'
 import { type ConfirmStep, useConfirmStep } from '@/components/useConfirmStep'
-import { useFormAction } from '@/components/useFormAction'
+import { isRestoringValues, useFormAction } from '@/components/useFormAction'
 import { useHydrated } from '@/components/useHydrated'
 import { cn } from '@/lib/utils'
 import type { ActionResult } from '@/server/actionRunner'
@@ -166,6 +166,7 @@ export function ActionForm({
   const [edited, setEdited] = useState(false)
   const form = formProps.ref
   const onInput = () => {
+    if (isRestoringValues()) return
     setProblem(null)
     setEdited(true)
     clearInvalid(form.current)
