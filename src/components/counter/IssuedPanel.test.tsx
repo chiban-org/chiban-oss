@@ -54,6 +54,9 @@ function issue() {
     target: { value: 'Pat Volt' },
   })
   fireEvent.change(screen.getByLabelText(/^License number( \*)?$/), { target: { value: 'EL-1' } })
+  fireEvent.change(screen.getByLabelText(/^Result of the state lookup( \*)?$/), {
+    target: { value: 'active' },
+  })
   fireEvent.click(screen.getByLabelText('Check'))
   fireEvent.click(screen.getByRole('button', { name: 'Issue and print' }))
   return waitFor(() => screen.getByRole('region', { name: 'EL-2027-0001 is issued' }))

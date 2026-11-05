@@ -58,6 +58,9 @@ function fillRequired() {
     target: { value: 'Pat Contractor' },
   })
   fireEvent.change(screen.getByLabelText(/^License number( \*)?$/), { target: { value: 'EL-1' } })
+  fireEvent.change(screen.getByLabelText(/^Result of the state lookup( \*)?$/), {
+    target: { value: 'active' },
+  })
   fireEvent.change(screen.getByLabelText(/^Description of work( \*)?$/), {
     target: { value: 'Panel' },
   })
