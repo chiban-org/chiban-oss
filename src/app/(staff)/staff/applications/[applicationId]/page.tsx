@@ -18,6 +18,7 @@ import { loadBoardPanel } from '@/features/boards/panelData'
 import { overdueCount } from '@/features/clocks/clockSummary'
 import type { Status } from '@/features/design/tokens'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
+import { lateNotice } from '@/features/hearings/noticeDeadlines'
 import { returnedCheckNotices } from '@/features/ledger/balanceNotice'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
 import { loadCorrectionForm } from '@/features/permits/correction/correctionForm'
@@ -37,7 +38,8 @@ interface Props {
 
 function headerStatus(view: StaffApplicationView): Status {
   const status = applicationChipStatus(view.state)
-  return overdueCount(view.clocks) > 0 && status !== 'failed' ? 'overdue' : status
+  const late = overdueCount(view.clocks) > 0 || lateNotice(view.noticeDeadlines) !== null
+  return late && status !== 'failed' ? 'overdue' : status
 }
 
 async function limitedPage(ctx: StaffContext, applicationId: string) {

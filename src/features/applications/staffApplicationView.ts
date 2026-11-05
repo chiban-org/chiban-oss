@@ -37,6 +37,7 @@ import { getVersion } from '@/features/config/store'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import { previewFees } from '@/features/fees/preview'
 import { evaluateGates, type GateResult } from '@/features/gates/evaluateGates'
+import { loadNoticeDeadlines, type NoticeDeadline } from '@/features/hearings/noticeDeadlines'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { hasFullRecordAccess } from '@/features/projects/access'
@@ -71,6 +72,7 @@ export interface StaffApplicationView {
     linked: boolean
   }[]
   clocks: (ClockExplanation & { clockId: string })[]
+  noticeDeadlines: NoticeDeadline[]
   nextTransitions: CoreState[]
   allowedMoves: CoreState[]
   gates: { to: CoreState; results: GateResult[] }[]
@@ -237,6 +239,7 @@ export async function getStaffApplicationView(
       linked: p.userId !== null,
     })),
     clocks: await clockExplanations(db, applicationId, today),
+    noticeDeadlines: await loadNoticeDeadlines(db, applicationId, today, signal),
     nextTransitions,
     allowedMoves: await movesFor(db, actor, app, nextTransitions, signal),
     gates,

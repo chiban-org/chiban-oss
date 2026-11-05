@@ -3,6 +3,7 @@ import { applications } from '@/db/schema'
 import { hasFullRecordAccess } from '@/features/access/roles'
 import type { Actor } from '@/features/auth/actor'
 import { FILING_CLOCK_KEY } from '@/features/decisions/fileDecision'
+import { unprovedHearingNotice } from '@/features/hearings/noticeDeadlines'
 
 const OPEN_CLOCK = sql`c.application_id = ${applications.id} and c.status in ('running', 'overdue')`
 
@@ -14,10 +15,7 @@ export const NEXT_DUE_RULE_KEY = sql<string | null>`(
   order by c.current_due asc, c.id asc limit 1)`
 
 export const NOTICE_DUE = sql<string | null>`(
-  select min(i.due_on) from notice_items i
-  join hearings h on h.notice_set_id = i.set_id and h.status = 'scheduled'
-  where h.application_id = ${applications.id}
-    and not exists (select 1 from notice_proofs p where p.item_id = i.id))`
+  select min(i.due_on) ${unprovedHearingNotice(applications.id)})`
 
 export const FILING_DUE = sql<string | null>`(
   select min(c.current_due) from clocks c
