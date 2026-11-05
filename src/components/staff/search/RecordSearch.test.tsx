@@ -106,4 +106,46 @@ describe('RecordSearch', () => {
     await waitFor(() => expect(screen.queryAllByRole('option')).toHaveLength(0))
     expect(box().value).toBe('Elm')
   })
+
+  it('drops an Enter lookup that finishes after the query changed', async () => {
+    let finish: (result: SearchResult) => void = () => undefined
+    const find = vi.fn(
+      (q: string, _signal: AbortSignal) =>
+        new Promise<SearchResult>((resolve) => {
+          finish = () => resolve(resultFor(q, true))
+        }),
+    )
+    render(<RecordSearch find={find} />)
+    fireEvent.change(box(), { target: { value: 'PL-2026-0005' } })
+    fireEvent.keyDown(box(), { key: 'Enter' })
+    fireEvent.change(box(), { target: { value: 'Elm Street' } })
+    finish(resultFor('PL-2026-0005', true))
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(push).not.toHaveBeenCalled()
+    expect(box().value).toBe('Elm Street')
+  })
+
+  it('keeps a receipt in the list when the browser blocks the new tab', async () => {
+    const opened = vi.spyOn(window, 'open').mockReturnValue(null)
+    const find = vi.fn((q: string, _signal: AbortSignal) =>
+      Promise.resolve<SearchResult>({
+        query: q,
+        exact: {
+          kind: 'receipt',
+          number: 'R-2026-000001',
+          href: '/staff/receipts/r1',
+          newTab: true,
+        },
+        groups: [],
+      }),
+    )
+    render(<RecordSearch find={find} />)
+    fireEvent.change(box(), { target: { value: 'R-2026-000001' } })
+    fireEvent.keyDown(box(), { key: 'Enter' })
+    await waitFor(() => expect(opened).toHaveBeenCalled())
+    expect(box().value).toBe('R-2026-000001')
+    const [option] = await screen.findAllByRole('option')
+    expect(option?.textContent).toContain('Receipt, opens in a new tab')
+    opened.mockRestore()
+  })
 })

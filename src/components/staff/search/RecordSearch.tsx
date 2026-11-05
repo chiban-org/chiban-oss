@@ -33,9 +33,17 @@ async function resultFor(
   state: RecordSearchState,
   query: string,
   find: FindRecords,
+  signal: AbortSignal,
 ): Promise<SearchResult | null> {
   if (state.phase === 'done' && state.query === query) return state.result
-  return await find(query, new AbortController().signal).catch(() => null)
+  return await find(query, signal).catch(() => null)
+}
+
+function openInNewTab(href: string): boolean {
+  const tab = window.open(href, '_blank')
+  if (tab === null) return false
+  tab.opener = null
+  return true
 }
 
 export function RecordSearch({
@@ -51,6 +59,7 @@ export function RecordSearch({
   const [query, setQuery] = useState('')
   const [open, setOpen] = useState(false)
   const [picked, setPicked] = useState<number | null>(null)
+  const pending = useRef<AbortController | null>(null)
   const state = useRecordSearch(find, query)
   const { options, exactIndex } = optionsFor(state, query)
   const active = picked ?? exactIndex
@@ -62,18 +71,31 @@ export function RecordSearch({
     if (expanded && active >= 0)
       document.getElementById(recordOptionId(listId, active))?.scrollIntoView({ block: 'nearest' })
   }, [expanded, active, listId])
+  const cancelPending = () => {
+    pending.current?.abort()
+    pending.current = null
+  }
+  useEffect(() => cancelPending, [])
   const go = (href: string, newTab: boolean) => {
+    if (newTab && !openInNewTab(href)) {
+      setOpen(true)
+      return
+    }
+    if (!newTab) router.push(href)
     setQuery('')
     setOpen(false)
-    if (newTab) window.open(href, '_blank', 'noopener,noreferrer')
-    else router.push(href)
   }
   const submit = async () => {
     const chosen = expanded && active >= 0 ? options.at(active) : undefined
     if (chosen !== undefined) return go(chosen.href, chosen.newTab)
     const trimmed = query.trim()
     if (trimmed.length < MIN_SEARCH_CHARS) return
-    const exact = (await resultFor(state, trimmed, find))?.exact ?? null
+    cancelPending()
+    const controller = new AbortController()
+    pending.current = controller
+    const exact = (await resultFor(state, trimmed, find, controller.signal))?.exact ?? null
+    if (controller.signal.aborted) return
+    pending.current = null
     if (exact === null) setOpen(true)
     else go(exact.href, exact.newTab)
   }
@@ -86,6 +108,7 @@ export function RecordSearch({
     } else if (event.key === 'Escape' && expanded) {
       event.preventDefault()
       event.stopPropagation()
+      cancelPending()
       setOpen(false)
     } else if (event.key === 'Enter') {
       event.preventDefault()
@@ -120,6 +143,7 @@ export function RecordSearch({
             value={query}
             className="border-control-border pl-8"
             onChange={(event) => {
+              cancelPending()
               setQuery(event.target.value)
               setPicked(null)
               setOpen(event.target.value.trim().length >= MIN_SEARCH_CHARS)
