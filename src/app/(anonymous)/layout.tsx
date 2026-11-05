@@ -3,7 +3,7 @@ import type { ReactNode } from 'react'
 import '@fontsource-variable/mulish'
 import '@fontsource-variable/source-serif-4'
 import '../globals.css'
-import { TownHeader } from '@/components/public/PublicHeader'
+import { TownHeader } from '@/components/public/TownHeader'
 
 export const metadata: Metadata = {
   title: 'Report a possible violation',
