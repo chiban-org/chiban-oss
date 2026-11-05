@@ -11,7 +11,7 @@ import {
   type MemberSortKey,
   readMembersView,
 } from '@/features/boards/membersParams'
-import { loadMembersView, type MemberRow } from '@/features/boards/membersView'
+import { type BoardOption, loadMembersView, type MemberRow } from '@/features/boards/membersView'
 import { pagerLinks } from '@/features/dataTable/pageSlice'
 import { type RawSearchParams, readOffset } from '@/features/dataTable/params'
 import { filterTabs } from '@/features/dataTable/quickFilters'
@@ -47,11 +47,13 @@ function MembersTable({
   links,
   ending,
   today,
+  boards,
 }: {
   rows: MemberRow[]
   links: Record<MemberSortKey, SortLink>
   ending: boolean
   today: string
+  boards: readonly BoardOption[]
 }) {
   return (
     <table className="w-full min-w-[48rem] text-sm">
@@ -82,7 +84,7 @@ function MembersTable({
             </td>
             <td>
               <div className="row-actions">
-                <EditMember row={row} today={today} />
+                <EditMember row={row} today={today} boards={boards} />
                 {ending && row.active ? <EndMembership row={row} /> : null}
               </div>
             </td>
@@ -122,7 +124,7 @@ export default async function BoardMembersPage({
       <ListHeader
         title="Board members"
         lead="Members sign in with a link sent to their email. They see only their own board's meetings, and only after the agenda is published. Listed by board, then name."
-        actions={<AddMember today={today} />}
+        actions={<AddMember today={today} boards={view.boardOptions} />}
       />
       <FilterTabs label="Members" tabs={tabs} />
       <div className="table-panel">
@@ -138,6 +140,7 @@ export default async function BoardMembersPage({
             links={sortLinks(MEMBERS_PATH, params, MEMBER_SORT, sort)}
             ending={tab === 'active'}
             today={today}
+            boards={view.boardOptions}
           />
         )}
       </div>

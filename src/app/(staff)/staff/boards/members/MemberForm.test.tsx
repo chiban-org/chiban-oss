@@ -25,6 +25,11 @@ const row: MemberRow = {
   active: true,
 }
 
+const BOARD_OPTIONS = [
+  ['planning_board', 'Alder Pond Planning Board'],
+  ['zba', 'Alder Pond Zoning Board of Adjustment'],
+] as const
+
 function value(label: string): string {
   return screen.getByLabelText<HTMLInputElement>(new RegExp(`^${label}( \\*)?$`)).value
 }
@@ -33,7 +38,7 @@ describe('board member dialogs', () => {
   it('opens Edit filled in with the member as recorded', () => {
     render(
       <CsrfProvider token="t1">
-        <EditMember row={row} today="2026-11-04" />
+        <EditMember row={row} today="2026-11-04" boards={BOARD_OPTIONS} />
       </CsrfProvider>,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Edit Avery Stone' }))
@@ -52,7 +57,7 @@ describe('board member dialogs', () => {
   it('opens Add empty with the term starting today', () => {
     render(
       <CsrfProvider token="t1">
-        <AddMember today="2026-11-04" />
+        <AddMember today="2026-11-04" boards={BOARD_OPTIONS} />
       </CsrfProvider>,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Add member' }))
@@ -60,5 +65,10 @@ describe('board member dialogs', () => {
     expect(value('Name')).toBe('')
     expect(value('Term starts')).toBe('2026-11-04')
     expect(value('Term ends')).toBe('')
+    const board = screen.getByLabelText<HTMLSelectElement>(/^Board( \*)?$/)
+    expect(Array.from(board.options).map((o) => o.text)).toEqual([
+      'Alder Pond Planning Board',
+      'Alder Pond Zoning Board of Adjustment',
+    ])
   })
 })

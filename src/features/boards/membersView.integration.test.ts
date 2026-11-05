@@ -107,6 +107,13 @@ describe('board members list', () => {
     ).toEqual({ ok: false, error: 'not_started' })
   })
 
+  it('offers each board under the name the board settings give it', async () => {
+    expect((await view('active'))?.boardOptions).toEqual([
+      ['planning_board', 'Alder Pond Planning Board'],
+      ['zba', 'Alder Pond Zoning Board of Adjustment'],
+    ])
+  })
+
   it('shows nothing to someone who cannot manage members', async () => {
     expect(
       await loadMembersView(

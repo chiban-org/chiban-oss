@@ -1,13 +1,8 @@
 import { ActionForm } from '@/components/ActionForm'
 import { FormDialog, RowEditDialog } from '@/components/FormDialog'
 import { SelectField, TextField } from '@/components/staff/fields'
-import type { MemberRow } from '@/features/boards/membersView'
+import type { BoardOption, MemberRow } from '@/features/boards/membersView'
 import { inviteMemberAction, updateMemberAction } from './actions'
-
-const BOARDS = [
-  ['planning_board', 'Planning Board'],
-  ['zba', 'Zoning Board of Adjustment'],
-] as const
 
 const ROLES = [
   ['member', 'Member'],
@@ -17,7 +12,13 @@ const ROLES = [
   ['clerk', 'Clerk'],
 ] as const
 
-function MemberFields({ current, today }: { current?: MemberRow; today: string }) {
+interface MemberFieldsProps {
+  current?: MemberRow
+  today: string
+  boards: readonly BoardOption[]
+}
+
+function MemberFields({ current, today, boards }: MemberFieldsProps) {
   return (
     <>
       <TextField label="Name" name="displayName" defaultValue={current?.name} required />
@@ -28,7 +29,7 @@ function MemberFields({ current, today }: { current?: MemberRow; today: string }
         defaultValue={current?.email}
         required
       />
-      <SelectField label="Board" name="board" options={BOARDS} defaultValue={current?.board} />
+      <SelectField label="Board" name="board" options={boards} defaultValue={current?.board} />
       <SelectField
         label="Role on the board"
         name="title"
@@ -53,7 +54,7 @@ function MemberFields({ current, today }: { current?: MemberRow; today: string }
   )
 }
 
-export function AddMember({ today }: { today: string }) {
+export function AddMember({ today, boards }: { today: string; boards: readonly BoardOption[] }) {
   return (
     <FormDialog
       label="Add member"
@@ -62,13 +63,21 @@ export function AddMember({ today }: { today: string }) {
       variant="default"
     >
       <ActionForm action={inviteMemberAction} submitLabel="Add member" className="max-w-md">
-        <MemberFields today={today} />
+        <MemberFields today={today} boards={boards} />
       </ActionForm>
     </FormDialog>
   )
 }
 
-export function EditMember({ row, today }: { row: MemberRow; today: string }) {
+export function EditMember({
+  row,
+  today,
+  boards,
+}: {
+  row: MemberRow
+  today: string
+  boards: readonly BoardOption[]
+}) {
   return (
     <RowEditDialog
       record={row.name}
@@ -77,7 +86,7 @@ export function EditMember({ row, today }: { row: MemberRow; today: string }) {
     >
       <ActionForm action={updateMemberAction} submitLabel="Save changes" className="max-w-md">
         <input type="hidden" name="membershipId" value={row.membershipId} />
-        <MemberFields current={row} today={today} />
+        <MemberFields current={row} today={today} boards={boards} />
       </ActionForm>
     </RowEditDialog>
   )
