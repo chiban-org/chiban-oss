@@ -18,8 +18,9 @@ const CHIP: Record<PacketStateKind, Status> = {
 
 export default async function PacketsPage() {
   const ctx = await requireStaffContext()
-  const rows = await loadPacketsIndex(ctx.db, ctx.actor, ctx.signal)
-  if (!rows.ok) return <NoPermission title="Board packets" action="manage board packets" />
+  const index = await loadPacketsIndex(ctx.db, ctx.actor, ctx.signal)
+  if (!index.ok) return <NoPermission title="Board packets" action="manage board packets" />
+  const rows = index.value.meetings
   return (
     <main data-wide="">
       <h1>Board packets</h1>
@@ -27,7 +28,7 @@ export default async function PacketsPage() {
         Upcoming meetings, soonest first. Each packet is gathered, sent and tracked on its meeting
         page.
       </p>
-      {rows.value.length === 0 ? (
+      {rows.length === 0 ? (
         <p>
           {'No meetings are coming up. '}
           <Link href="/staff/boards/meetings">Add the next meeting</Link>
@@ -45,7 +46,7 @@ export default async function PacketsPage() {
               </tr>
             </thead>
             <tbody>
-              {rows.value.map((row) => (
+              {rows.map((row) => (
                 <tr key={row.meetingId}>
                   <td className="whitespace-nowrap">
                     <Link href={row.href} className="font-semibold">
@@ -64,6 +65,19 @@ export default async function PacketsPage() {
             </tbody>
           </table>
         </div>
+      )}
+      {index.value.unlinked.length === 0 ? null : (
+        <section aria-labelledby="older-packets">
+          <h2 id="older-packets">Older packets not tied to a meeting</h2>
+          <ul className="m-0 list-none p-0">
+            {index.value.unlinked.map((p) => (
+              <li key={p.id} className="record-item">
+                <Link href={p.href}>{p.title}</Link>
+                {`, meeting ${p.dateText}`}
+              </li>
+            ))}
+          </ul>
+        </section>
       )}
     </main>
   )

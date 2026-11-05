@@ -24,19 +24,31 @@ function linkIsOn(row: TrackRow, now: Date): boolean {
   return row.gets.kind === 'link' && !row.gets.revoked && row.gets.expiresAt > now
 }
 
-function RecipientActions({ row, packetId, now }: { row: TrackRow; packetId: string; now: Date }) {
+export function RecipientActions({
+  row,
+  packetId,
+  now,
+  turnOffOnly = false,
+}: {
+  row: TrackRow
+  packetId: string
+  now: Date
+  turnOffOnly?: boolean
+}) {
   const { gets } = row
   if (gets.kind === 'link' && !linkIsOn(row, now)) return null
   return (
     <div className="flex flex-wrap gap-2">
-      <ActionForm action={resendAction} submitLabel="Resend" compact>
-        <input type="hidden" name="packetId" value={packetId} />
-        {gets.kind === 'member' ? (
-          <input type="hidden" name="userId" value={gets.userId} />
-        ) : (
-          <input type="hidden" name="linkId" value={gets.linkId} />
-        )}
-      </ActionForm>
+      {turnOffOnly ? null : (
+        <ActionForm action={resendAction} submitLabel="Resend" compact>
+          <input type="hidden" name="packetId" value={packetId} />
+          {gets.kind === 'member' ? (
+            <input type="hidden" name="userId" value={gets.userId} />
+          ) : (
+            <input type="hidden" name="linkId" value={gets.linkId} />
+          )}
+        </ActionForm>
+      )}
       {gets.kind === 'link' ? (
         <ActionForm
           action={turnOffLinkAction}
@@ -104,11 +116,7 @@ export function SendStep({
       )}
       <details>
         <summary>Also send to someone outside the board</summary>
-        <ActionForm
-          action={sendOutsideAction}
-          submitLabel="Send the link"
-          className="max-w-md"
-        >
+        <ActionForm action={sendOutsideAction} submitLabel="Send the link" className="max-w-md">
           <input type="hidden" name="packetId" value={send.packetId} />
           <TextField label="Name" name="recipientName" required />
           <TextField label="Email" name="recipientEmail" type="email" required />

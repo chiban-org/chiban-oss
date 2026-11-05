@@ -27,13 +27,13 @@ describe('board packets index', () => {
   it('lists each upcoming meeting with its packet state and a link to its packet section', async () => {
     const before = await loadPacketsIndex(handle.db, flow.world.staff, signal, NOW)
     if (!before.ok) throw new Error(before.error)
-    const row = before.value.find((r) => r.meetingId === flow.meetingId)
+    const row = before.value.meetings.find((r) => r.meetingId === flow.meetingId)
     expect(row).toMatchObject({
       state: 'Not sent yet',
       href: `/staff/boards/meetings/${flow.meetingId}#packet`,
     })
-    expect(before.value.every((r) => r.meetingDate >= '2027-04-01')).toBe(true)
-    const others = before.value.filter((r) => r.meetingId !== flow.meetingId)
+    expect(before.value.meetings.every((r) => r.meetingDate >= '2027-04-01')).toBe(true)
+    const others = before.value.meetings.filter((r) => r.meetingId !== flow.meetingId)
     expect(others.every((r) => r.state === 'Publish the agenda to start the packet')).toBe(true)
     const saved = await savePacket(
       handle.db,
@@ -51,7 +51,7 @@ describe('board packets index', () => {
       signal,
     )
     const after = await loadPacketsIndex(handle.db, flow.world.staff, signal, NOW)
-    const sent = after.ok ? after.value.find((r) => r.meetingId === flow.meetingId) : undefined
+    const sent = after.ok ? after.value.meetings.find((r) => r.meetingId === flow.meetingId) : undefined
     expect(sent?.state).toMatch(/^Sent to 6 members on /)
   })
 
