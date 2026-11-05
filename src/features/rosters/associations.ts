@@ -4,6 +4,7 @@ import { type AssociationOfficer, associationRosters } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
+import { canonicalJson } from '@/features/export/canonical'
 import { mayManageAbutters, nonEmpty, type RosterSaveMode } from '@/features/rosters/manage'
 import { flagListsUsing } from '@/features/rosters/usedBy'
 import { townToday } from '@/features/town/today'
@@ -50,8 +51,8 @@ function contentChanged(
   after: { associationName: string; officers: AssociationOfficer[] },
 ): boolean {
   return (
-    JSON.stringify([before.associationName, before.officers]) !==
-    JSON.stringify([after.associationName, after.officers])
+    canonicalJson([before.associationName, before.officers]) !==
+    canonicalJson([after.associationName, after.officers])
   )
 }
 

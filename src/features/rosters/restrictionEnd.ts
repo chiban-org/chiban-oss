@@ -14,7 +14,7 @@ export type UndoEndError = 'forbidden' | 'not_found' | 'not_ended' | 'ending_use
 
 export async function endingUsed(
   db: DbOrTx,
-  holding: { parcelId: string; endedAt: Date | null },
+  holding: { id: string; parcelId: string; endedAt: Date | null },
 ): Promise<boolean> {
   if (holding.endedAt === null) return false
   const [used] = await db
@@ -25,6 +25,7 @@ export async function endingUsed(
         inArray(abutterLists.status, ['issued', 'superseded']),
         gt(abutterLists.issuedAt, holding.endedAt),
         sql`${abutterLists.snapshot}->'applicantParcelIds' @> ${JSON.stringify([holding.parcelId])}::jsonb`,
+        sql`not jsonb_path_exists(${abutterLists.snapshot}, '$.recipients[*].provenance[*] ? (@.ref == $ref)', jsonb_build_object('ref', ${holding.id}::text))`,
       ),
     )
     .limit(1)

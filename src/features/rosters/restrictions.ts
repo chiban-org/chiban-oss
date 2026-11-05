@@ -4,6 +4,7 @@ import { restrictionHoldings } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
+import { canonicalJson } from '@/features/export/canonical'
 import { mayManageAbutters, nonEmpty } from '@/features/rosters/manage'
 import { flagListsUsing } from '@/features/rosters/usedBy'
 import { townToday } from '@/features/town/today'
@@ -112,7 +113,7 @@ export async function updateRestriction(
       },
       signal,
     )
-    if (JSON.stringify(holdingSummary(before)) !== JSON.stringify(holdingSummary(values))) {
+    if (canonicalJson(holdingSummary(before)) !== canonicalJson(holdingSummary(values))) {
       await flagListsUsing(tx, holdingId, today, signal)
     }
     return ok(undefined)

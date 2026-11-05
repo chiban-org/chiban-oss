@@ -2,11 +2,14 @@ import { and, eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { boardMeetings, hearings, noticeSets, remediationTasks } from '@/db/schema'
 import { issueList } from '@/features/abutters/issue'
-import { generateList } from '@/features/abutters/lists'
+import { decideTenant, generateList } from '@/features/abutters/lists'
 import { currentIssuedList } from '@/features/abutters/queries'
 import type { Recipient } from '@/features/abutters/resolution'
 import { type AssociationInput, upsertAssociation } from '@/features/rosters/associations'
 import { confirmEntry } from '@/features/rosters/confirm'
+import { upsertPark } from '@/features/rosters/parks'
+import { endRestriction, undoRestrictionEnd } from '@/features/rosters/restrictionEnd'
+import { addRestriction } from '@/features/rosters/restrictions'
 import { listsUsing } from '@/features/rosters/usedBy'
 import { type BoardWorld, publishRegionalContacts, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -190,5 +193,84 @@ describe('changing a contact an issued list used', () => {
     await confirmEntry(handle.db, world.staff, { kind: 'association', entryId: id }, signal)
     await saveAssociation()
     expect(await regenerationTasks()).toEqual([])
+  })
+})
+
+describe('codex findings', () => {
+  it('does not ask to regenerate when a park is saved again unchanged', async () => {
+    const park = {
+      parcelId: lw.ids.SW ?? '',
+      parkName: 'Heron Park',
+      ownerName: 'Heron Park LLC',
+      ownerMailingAddress: '1 Heron Road, Alder Pond NH',
+      asOf: '2027-02-01' as CivilDate,
+      now: LIST_NOW,
+    }
+    await upsertPark(
+      handle.db,
+      world.staff,
+      {
+        ...park,
+        tenants: [
+          { tenantId: 's4', name: 'Lee Marsh', siteLabel: 'Site 4', mailingAddress: '4 Heron' },
+        ],
+      },
+      signal,
+    )
+    const listId = await generate()
+    const tenant = (await handle.db.query.abutterListRecipients.findMany()).find(
+      (r) => (r.data as Recipient).name === 'Lee Marsh',
+    )
+    await decideTenant(
+      handle.db,
+      world.staff,
+      { listId, recipientId: tenant?.id ?? '', qualifies: true, reason: 'Adjoins' },
+      signal,
+      LIST_NOW,
+    )
+    expect((await issueList(handle.db, world.staff, { listId }, signal, LIST_NOW)).ok).toBe(true)
+    await hearingOn('2027-04-14', 'scheduled')
+    await upsertPark(
+      handle.db,
+      world.staff,
+      {
+        ...park,
+        tenants: [
+          { tenantId: 's4', name: 'Lee Marsh', siteLabel: 'Site 4', mailingAddress: '4 Heron' },
+        ],
+      },
+      signal,
+    )
+    expect(await regenerationTasks()).toEqual([])
+  })
+
+  it('keeps Undo while a list issued after a future ending still names the holder', async () => {
+    const added = await addRestriction(
+      handle.db,
+      world.staff,
+      {
+        parcelId: lw.ids.A ?? '',
+        holderName: 'Alder Valley Land Trust',
+        holderMailingAddress: '2 Trust Lane, Alder Pond NH',
+        restrictionKind: 'conservation',
+        recordedReference: 'Book 412, Page 88',
+      },
+      signal,
+    )
+    const holdingId = added.ok ? added.value.holdingId : ''
+    await endRestriction(
+      handle.db,
+      world.staff,
+      { holdingId, endedOn: '2027-12-31' as CivilDate, now: new Date('2027-03-20T16:00:00Z') },
+      signal,
+    )
+    const listId = await generate()
+    expect((await issueList(handle.db, world.staff, { listId }, signal, LIST_NOW)).ok).toBe(true)
+    const list = await currentIssuedList(handle.db, lw.applicationId, signal)
+    expect(list?.snapshot.recipients.map((r) => r.name)).toContain('Alder Valley Land Trust')
+    expect(await undoRestrictionEnd(handle.db, world.staff, { holdingId }, signal)).toEqual({
+      ok: true,
+      value: undefined,
+    })
   })
 })

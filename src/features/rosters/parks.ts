@@ -4,6 +4,7 @@ import { type ParkTenant, parkRosters } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
+import { canonicalJson } from '@/features/export/canonical'
 import { mayManageAbutters, nonEmpty, type RosterSaveMode } from '@/features/rosters/manage'
 import { flagListsUsing } from '@/features/rosters/usedBy'
 import { townToday } from '@/features/town/today'
@@ -61,7 +62,7 @@ function summary(row: ParkContent & { asOf: string }) {
 
 function contentChanged(before: ParkContent, after: ParkContent): boolean {
   const content = (p: ParkContent) =>
-    JSON.stringify([p.parkName, p.ownerName, p.ownerMailingAddress, p.tenants])
+    canonicalJson([p.parkName, p.ownerName, p.ownerMailingAddress, p.tenants])
   return content(before) !== content(after)
 }
 
