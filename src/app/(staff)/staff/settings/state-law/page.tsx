@@ -7,6 +7,7 @@ import {
   STATE_LAW_PATH,
   sortRuleSummaries,
 } from '@/features/config/settingsTableView'
+import { publishedTownRuleValues } from '@/features/config/townRuleValues'
 import { type RawSearchParams, readTableParams } from '@/features/dataTable/params'
 import { loadPack } from '@/features/packs/loadPack'
 import { packInfo } from '@/features/packs/packInfo'
@@ -27,6 +28,7 @@ export default async function StateLawPage({
   }
   const ruleSort = scopedSort(STATE_LAW_PATH, params, RULE_SORT, RULE_TABLE_SCOPE)
   const rules = sortRuleSummaries(loadPack().rules.map(ruleSummary), ruleSort.state)
+  const townValues = await publishedTownRuleValues(ctx.db, ctx.signal)
   const info = packInfo()
   return (
     <main>
@@ -34,7 +36,7 @@ export default async function StateLawPage({
         title="State law"
         lead="The rules Chiban follows from state law, and what the town can change in each."
       />
-      <PackRules rules={rules} links={ruleSort.links} />
+      <PackRules rules={rules} links={ruleSort.links} townValues={townValues} />
       <p className="text-sm text-muted-foreground">{`Jurisdiction pack ${info.id} version ${info.version}, fingerprint ${info.hash.slice(0, 12)}.`}</p>
     </main>
   )
