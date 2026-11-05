@@ -48,6 +48,7 @@ export const documents = pgTable(
     }).notNull(),
     createdBy: uuid('created_by'),
     migrationBatchId: uuid('migration_batch_id').references(() => migrationBatches.id),
+    supersededBy: uuid('superseded_by').references((): AnyPgColumn => documents.id),
     disposedAt: timestamp('disposed_at', { withTimezone: true }),
     disposedTombstoneId: uuid('disposed_tombstone_id'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

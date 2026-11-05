@@ -26,7 +26,7 @@ import { renderSnapshotPdf } from '@/features/snapshots/snapshotPdf'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { townTimeZone } from '@/features/town/timeZone'
 
-export type SnapshotReason = 'submission' | 'amendment'
+export type SnapshotReason = 'submission' | 'amendment' | 'correction'
 
 async function partiesOf(tx: Tx, projectId: string): Promise<SnapshotParty[]> {
   return await tx

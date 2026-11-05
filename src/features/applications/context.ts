@@ -23,6 +23,9 @@ export interface ApplicationContext {
   completedDate: CivilDate | null
   decidedOn: CivilDate | null
   issuedOn: CivilDate | null
+  closureReason: string | null
+  permitRevision: number
+  permitCorrectedOn: CivilDate | null
 }
 
 export async function loadApplicationContext(
@@ -51,5 +54,8 @@ export async function loadApplicationContext(
     completedDate: row.completedDate as CivilDate | null,
     decidedOn: row.decidedOn as CivilDate | null,
     issuedOn: row.issuedOn as CivilDate | null,
+    closureReason: row.closureReason,
+    permitRevision: row.permitRevision,
+    permitCorrectedOn: row.permitCorrectedOn as CivilDate | null,
   }
 }

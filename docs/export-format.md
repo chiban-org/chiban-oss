@@ -295,6 +295,8 @@ File: `data/applications.ndjson`. Ordered by id.
 - `decided_on`: date, nullable
 - `issued_on`: date, nullable
 - `closure_reason`: text, nullable
+- `permit_revision`: integer
+- `permit_corrected_on`: date, nullable
 - `created_by`: uuid
 - `created_at`: timestamp with time zone
 - `updated_at`: timestamp with time zone
@@ -887,12 +889,14 @@ File: `data/documents.ndjson`. Ordered by id.
 - `created_by_kind`: text
 - `created_by`: uuid, nullable
 - `migration_batch_id`: uuid, nullable
+- `superseded_by`: uuid, nullable
 - `disposed_at`: timestamp with time zone, nullable
 - `disposed_tombstone_id`: uuid, nullable
 - `created_at`: timestamp with time zone
 
 References:
 - `migration_batch_id` refers to `migration_batches`
+- `superseded_by` refers to `documents`
 
 Typed references:
 - `record_id` by `record_kind`: application to `applications`, inspection to `inspections`, project to `projects`, parcel to `parcels`, meeting to `board_meetings`, migration_batch to `migration_batches`, enforcement_case to `enforcement_cases`

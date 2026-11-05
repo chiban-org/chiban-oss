@@ -1,4 +1,15 @@
-import { index, integer, jsonb, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
+import { sql } from 'drizzle-orm'
+import {
+  check,
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  text,
+  timestamp,
+  unique,
+  uuid,
+} from 'drizzle-orm/pg-core'
 import { applications } from './projects'
 
 export const applicationSnapshots = pgTable(
@@ -9,7 +20,7 @@ export const applicationSnapshots = pgTable(
       .notNull()
       .references(() => applications.id),
     sequence: integer('sequence').notNull(),
-    reason: text('reason', { enum: ['submission', 'amendment'] }).notNull(),
+    reason: text('reason', { enum: ['submission', 'amendment', 'correction'] }).notNull(),
     body: jsonb('body').notNull(),
     bodySha256: text('body_sha256').notNull(),
     createdBy: uuid('created_by').notNull(),
@@ -18,6 +29,10 @@ export const applicationSnapshots = pgTable(
   (t) => [
     unique('application_snapshots_sequence_uq').on(t.applicationId, t.sequence),
     index('application_snapshots_application_idx').on(t.applicationId),
+    check(
+      'application_snapshots_reason_check',
+      sql`${t.reason} in ('submission', 'amendment', 'correction')`,
+    ),
   ],
 )
 

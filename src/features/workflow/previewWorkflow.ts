@@ -184,6 +184,9 @@ async function sampleContext(
     completedDate: input.sampleDates.accepted ?? null,
     decidedOn: null,
     issuedOn: null,
+    closureReason: null,
+    permitRevision: 0,
+    permitCorrectedOn: null,
   }
 }
 

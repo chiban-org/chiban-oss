@@ -71,6 +71,8 @@ export const applications = pgTable(
     decidedOn: date('decided_on', { mode: 'string' }),
     issuedOn: date('issued_on', { mode: 'string' }),
     closureReason: text('closure_reason'),
+    permitRevision: integer('permit_revision').notNull().default(0),
+    permitCorrectedOn: date('permit_corrected_on', { mode: 'string' }),
     createdBy: uuid('created_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
