@@ -6,7 +6,14 @@ export const MAX_SEARCH_CHARS = 100
 
 export type SearchGroupKey = 'applications' | 'cases' | 'parcels' | 'requests'
 
-export type ExactKind = 'application' | 'case' | 'order' | 'complaint' | 'request' | 'receipt'
+export type ExactKind =
+  | 'application'
+  | 'case'
+  | 'order'
+  | 'complaint'
+  | 'request'
+  | 'receipt'
+  | 'parcel'
 
 export interface SearchRow {
   key: string
