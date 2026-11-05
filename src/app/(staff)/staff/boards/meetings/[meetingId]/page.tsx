@@ -6,11 +6,13 @@ import { splitPanels } from '@/components/layout/splitPanels'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
+import { loadPacketPanel, type PacketPanel } from '@/features/boards/packetPanel'
 import { loadMeetingView, type MeetingView } from '@/features/hearings/meetingView'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { AgendaSection } from './AgendaSection'
-import { MeetingRail } from './MeetingRail'
+import { MeetingRail, type PacketStep } from './MeetingRail'
+import { PacketSection } from './PacketSection'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,6 +36,11 @@ function HearingsSection({ view }: { view: MeetingView }) {
   )
 }
 
+function packetStepOf(panel: PacketPanel | null): PacketStep {
+  if (panel === null || !panel.state.needsWork) return null
+  return panel.state.kind === 'changed' ? 'update' : 'prepare'
+}
+
 export default async function MeetingPage({ params }: { params: Promise<{ meetingId: string }> }) {
   const { meetingId } = await params
   const ctx = await requireStaffContext()
@@ -43,11 +50,16 @@ export default async function MeetingPage({ params }: { params: Promise<{ meetin
   if (!isUuid(meetingId)) notFound()
   const view = await loadMeetingView(ctx.db, ctx.actor, meetingId, ctx.signal)
   if (view === null) notFound()
+  const panel = await loadPacketPanel(ctx.db, ctx.actor, meetingId, ctx.signal)
   const sections = splitPanels([
     { empty: view.hearings.length === 0, node: <HearingsSection key="hearings" view={view} /> },
     {
       empty: view.agenda === null || view.agenda.items.length === 0,
       node: <AgendaSection key="agenda" view={view} />,
+    },
+    {
+      empty: panel?.state.kind === 'no_agenda',
+      node: panel === null ? null : <PacketSection key="packet" panel={panel} />,
     },
   ])
   return (
@@ -57,7 +69,16 @@ export default async function MeetingPage({ params }: { params: Promise<{ meetin
         title={view.dateText}
         status={view.cancelled ? <StatusChip status="neutral" label="Cancelled" /> : undefined}
       />
-      <RecordLayout rail={<MeetingRail view={view} />} empty={sections.empty}>
+      <RecordLayout
+        rail={
+          <MeetingRail
+            view={view}
+            packetStep={packetStepOf(panel)}
+            packetLabel={panel?.state.label ?? null}
+          />
+        }
+        empty={sections.empty}
+      >
         {sections.filled}
       </RecordLayout>
     </main>

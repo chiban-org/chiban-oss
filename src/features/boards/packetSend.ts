@@ -129,6 +129,7 @@ export async function resendToMember(
 ): Promise<Result<void, SendError>> {
   const found = await sendablePacket(db, actor, input.packetId, signal)
   if (!found.ok) return found
+  if (!isUuid(input.userId)) return err('not_found')
   const [member] = await db
     .select({ email: users.email })
     .from(boardPacketMembers)

@@ -24,7 +24,9 @@ export function packetCoverInput(view: PacketView, frame: DocumentFrame): Docume
             {
               kind: 'table',
               columns: ['Item', 'Document'],
-              rows: view.items.map((item, i) => [String(i + 1), item.title]),
+              rows: view.items
+                .filter((item) => item.withdrawnOn === null)
+                .map((item, i) => [String(i + 1), item.title]),
             },
           ],
         ],

@@ -7,7 +7,6 @@ import type { MeetingView } from '@/features/hearings/meetingView'
 vi.mock('../../hearings/actions', () => ({
   addAgendaItemAction: vi.fn(),
   buildAgendaAction: vi.fn(),
-  createMeetingPacketAction: vi.fn(),
   moveAgendaItemAction: vi.fn(),
   publishAgendaAction: vi.fn(),
   removeAgendaItemAction: vi.fn(),
@@ -35,12 +34,19 @@ function emptyMeeting(hearings: (typeof HEARING)[]): MeetingView {
   } as unknown as MeetingView
 }
 
-function renderRail(v: MeetingView) {
+function renderRail(v: MeetingView, packetStep: 'prepare' | 'update' | null = null) {
   render(
     <CsrfProvider token="t">
-      <MeetingRail view={v} />
+      <MeetingRail view={v} packetStep={packetStep} />
     </CsrfProvider>,
   )
+}
+
+function published(): MeetingView {
+  return {
+    ...emptyMeeting([HEARING]),
+    agenda: { status: 'published', items: [{ id: 'i1' }] },
+  } as unknown as MeetingView
 }
 
 describe('meeting rail next step', () => {
@@ -59,6 +65,20 @@ describe('meeting rail next step', () => {
   it('offers no next step for a meeting that has already taken place', () => {
     renderRail({ ...emptyMeeting([HEARING]), past: true })
     expect(screen.queryByRole('button', { name: 'Add the scheduled hearings' })).toBeNull()
+    expect(screen.queryByText('Next step')).toBeNull()
+  })
+
+  it('jumps to the packet section once the agenda is published', () => {
+    renderRail(published(), 'prepare')
+    const link = screen.getByRole('link', { name: 'Prepare the packet' })
+    expect(link.getAttribute('href')).toBe('#packet')
+  })
+
+  it('jumps to the update when changes are not sent yet, and offers nothing once sent', () => {
+    renderRail(published(), 'update')
+    expect(screen.getByRole('link', { name: 'Send the packet update' })).toBeTruthy()
+    cleanup()
+    renderRail(published(), null)
     expect(screen.queryByText('Next step')).toBeNull()
   })
 })

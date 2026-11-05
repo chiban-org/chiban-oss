@@ -8,7 +8,6 @@ import {
   removeAgendaItem,
   reopenAgenda,
 } from '@/features/agendas/agendas'
-import { createMeetingPacket } from '@/features/agendas/meetingPacket'
 import { errorOrOk } from '@/features/boards/actionResult'
 import { continueHearing } from '@/features/hearings/continuations'
 import { markHearingHeld, markProperlyNoticed, scheduleHearing } from '@/features/hearings/hearings'
@@ -187,19 +186,6 @@ export async function reopenAgendaAction(formData: FormData): Promise<ActionResu
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
     const reopened = await reopenAgenda(db, actor, text(formData, 'meetingId'), signal)
     return errorOrOk(reopened, 'Agenda reopened. Publishing again creates a new revision.')
-  })
-}
-
-export async function createMeetingPacketAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const made = await createMeetingPacket(
-      db,
-      getObjectStore(),
-      actor,
-      text(formData, 'meetingId'),
-      signal,
-    )
-    return errorOrOk(made, 'Meeting packet created. Send it from Board packets.')
   })
 }
 

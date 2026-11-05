@@ -11,12 +11,16 @@ import { recordDesDetermination } from '@/features/boards/des500'
 import { boardErrorCopy } from '@/features/boards/errorCopy'
 import { recordFinalApproval } from '@/features/boards/exercise'
 import { cancelMeeting, scheduleMeeting } from '@/features/boards/meetings'
+import { tellPacketRecipientsCancelled } from '@/features/boards/packetCancel'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
+import { getMailTransport } from '@/features/mail/transport'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import { type ActionResult, runStaffAction, text } from '@/server/actionRunner'
 import type { CivilDate } from '@/types/civilDate'
 
 const INVALID: ActionResult = { ok: false, error: 'Check the form fields and try again.' }
+const CANCELLED_MESSAGE =
+  'Meeting cancelled. Deadlines that depend on the calendar were recalculated.'
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 
 function date(formData: FormData, key: string): CivilDate | null {
@@ -48,10 +52,23 @@ export async function cancelMeetingAction(formData: FormData): Promise<ActionRes
       { meetingId: text(formData, 'meetingId'), reason: text(formData, 'reason') },
       signal,
     )
-    return errorOrOk(
-      cancelled,
-      'Meeting cancelled. Deadlines that depend on the calendar were recalculated.',
+    if (!cancelled.ok) return errorOrOk(cancelled, '')
+    if (text(formData, 'tellRecipients') !== 'yes') {
+      return { ok: true, message: CANCELLED_MESSAGE }
+    }
+    const told = await tellPacketRecipientsCancelled(
+      db,
+      getMailTransport(),
+      actor,
+      { meetingId: text(formData, 'meetingId') },
+      signal,
     )
+    return told.ok
+      ? {
+          ok: true,
+          message: `${CANCELLED_MESSAGE} ${told.value.told} packet recipients were told.`,
+        }
+      : { ok: true, message: `${CANCELLED_MESSAGE} The packet recipients could not be emailed.` }
   })
 }
 

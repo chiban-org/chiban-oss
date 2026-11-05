@@ -28,6 +28,7 @@ export interface MeetingListRow {
   cancelReason: string | null
   hearings: number
   agenda: AgendaState
+  packetSent: boolean
 }
 
 export interface MeetingListPage {
@@ -128,6 +129,8 @@ export async function listMeetingTable(
         cancelReason: m.cancelReason,
         hearings: HEARINGS,
         agenda: AGENDA,
+        packetSent: sql<boolean>`exists (select 1 from board_packets bp
+          where bp.meeting_id = ${m.id} and bp.sent_at is not null)`,
       })
       .from(m)
       .where(where)

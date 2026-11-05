@@ -1,7 +1,14 @@
 import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { agendas, applications, boardDecisions, boardMeetings, hearings } from '@/db/schema'
+import {
+  agendas,
+  applications,
+  boardDecisions,
+  boardMeetings,
+  boardPackets,
+  hearings,
+} from '@/db/schema'
 import { createMeetingPacket } from '@/features/agendas/meetingPacket'
 import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
@@ -103,20 +110,26 @@ afterAll(async () => {
 })
 
 describe('meeting page', () => {
-  it('offers the packet once, then links to it', async () => {
+  it('shows the packet section, jumps to it from the rail, and creates nothing by rendering', async () => {
     await actAs('staff')
     const meetingId = await publishedMeeting()
-    const params = { params: Promise.resolve({ meetingId }) }
-    const before = markup(await MeetingPage(params))
-    expect(before).toContain('class="record-layout')
-    expect(text(before)).toContain('Create the meeting packet')
+    const packetsBefore = await handle.db.select().from(boardPackets)
+    const html = markup(await MeetingPage({ params: Promise.resolve({ meetingId }) }))
+    expect(html).toContain('class="record-layout')
+    expect(html).toContain('id="packet"')
+    expect(text(html)).toContain('Gather')
+    expect(text(html)).toContain('Not sent yet')
+    expect(html).toContain('href="#packet"')
+    expect(text(html)).toContain('Prepare the packet')
+    expect(text(html)).not.toContain('Create the meeting packet')
+    expect(await handle.db.select().from(boardPackets)).toHaveLength(packetsBefore.length)
     const { store } = await makeTestStore()
     const staff = state.actor as Parameters<typeof createMeetingPacket>[2]
     const made = await createMeetingPacket(handle.db, store, staff, meetingId, signal)
     if (!made.ok) throw new Error(JSON.stringify(made.error))
     const after = markup(await MeetingPage({ params: Promise.resolve({ meetingId }) }))
-    expect(text(after)).not.toContain('Create the meeting packet')
-    expect(after).toContain('href="/staff/boards/packets"')
+    expect(text(after)).toContain('Save title')
+    expect(text(after)).toMatch(/Send to the .+ \(\d+ members\)/)
   })
 })
 

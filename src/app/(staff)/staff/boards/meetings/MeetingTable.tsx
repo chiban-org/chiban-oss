@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { StatusChip } from '@/components/StatusChip'
-import { TextField } from '@/components/staff/fields'
+import { CheckField, TextField } from '@/components/staff/fields'
 import type { MeetingListRow } from '@/features/boards/meetingList'
 import {
   AGENDA_STATE_LABELS,
@@ -13,7 +13,15 @@ import type { SortLink } from '@/features/dataTable/sort'
 import { formatCivilDate } from '@/lib/formatDate'
 import { cancelMeetingAction } from '../actions'
 
-function CancelMeeting({ meetingId, name }: { meetingId: string; name: string }) {
+function CancelMeeting({
+  meetingId,
+  name,
+  packetSent,
+}: {
+  meetingId: string
+  name: string
+  packetSent: boolean
+}) {
   return (
     <details>
       <summary>Cancel</summary>
@@ -22,13 +30,22 @@ function CancelMeeting({ meetingId, name }: { meetingId: string; name: string })
         submitLabel="Cancel meeting"
         confirm={{
           title: `Cancel the ${name} meeting?`,
-          body: 'It is marked cancelled with your reason. A cancelled meeting cannot be brought back; add a new meeting instead.',
+          body: packetSent
+            ? 'It is marked cancelled with your reason, and its packet links stop working. A cancelled meeting cannot be brought back; add a new meeting instead.'
+            : 'It is marked cancelled with your reason. A cancelled meeting cannot be brought back; add a new meeting instead.',
           confirmLabel: 'Cancel the meeting',
           cancelLabel: 'Keep the meeting',
         }}
       >
         <input type="hidden" name="meetingId" value={meetingId} />
         <TextField label="Reason" name="reason" required />
+        {packetSent ? (
+          <CheckField
+            label="Email the packet's recipients that the meeting is cancelled"
+            name="tellRecipients"
+            value="yes"
+          />
+        ) : null}
       </ActionForm>
     </details>
   )
@@ -90,6 +107,7 @@ export function MeetingTable({
                   <CancelMeeting
                     meetingId={r.id}
                     name={`${formatCivilDate(r.meetingDate)} ${boardNames.get(r.board) ?? r.board}`}
+                    packetSent={r.packetSent}
                   />
                 )}
               </td>

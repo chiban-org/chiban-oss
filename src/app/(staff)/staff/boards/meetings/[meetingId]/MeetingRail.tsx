@@ -1,20 +1,23 @@
-import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { NextStep } from '@/components/layout/NextStep'
 import { FactList } from '@/components/layout/PageHeader'
+import { Button } from '@/components/ui/button'
 import { agendaStatusText, type MeetingView } from '@/features/hearings/meetingView'
-import { createMeetingPacketAction, publishAgendaAction } from '../../hearings/actions'
+import { publishAgendaAction } from '../../hearings/actions'
 import { AddHearingsForm, AddItemForm } from './AgendaSection'
 
-type StepKind = 'build' | 'publish' | 'packet' | 'packet_made'
+export type PacketStep = 'prepare' | 'update' | null
 
-function stepOf(view: MeetingView): StepKind | null {
+type StepKind = 'build' | 'publish' | 'prepare' | 'update'
+
+const PACKET_LABELS = { prepare: 'Prepare the packet', update: 'Send the packet update' } as const
+
+function stepOf(view: MeetingView, packetStep: PacketStep): StepKind | null {
   if (view.cancelled || view.past) return null
   const { agenda } = view
   if (agenda === null || agenda.items.length === 0) return 'build'
   if (agenda.status === 'draft') return 'publish'
-  if (view.packetId !== null) return 'packet_made'
-  return view.canManagePackets ? 'packet' : null
+  return view.canManagePackets ? packetStep : null
 }
 
 function Step({ view, kind }: { view: MeetingView; kind: StepKind }) {
@@ -35,29 +38,17 @@ function Step({ view, kind }: { view: MeetingView; kind: StepKind }) {
           <input type="hidden" name="meetingId" value={view.meetingId} />
         </ActionForm>
       )
-    case 'packet':
+    case 'prepare':
+    case 'update':
       return (
-        <ActionForm
-          action={createMeetingPacketAction}
-          submitLabel="Create the meeting packet"
-          variant="default"
-        >
-          <input type="hidden" name="meetingId" value={view.meetingId} />
-        </ActionForm>
-      )
-    case 'packet_made':
-      return view.canManagePackets ? (
-        <p>
-          {'The meeting packet is made. '}
-          <Link href="/staff/boards/packets">Send it from Board packets</Link>
-        </p>
-      ) : (
-        <p>The meeting packet is made.</p>
+        <Button asChild className="no-underline">
+          <a href="#packet">{PACKET_LABELS[kind]}</a>
+        </Button>
       )
   }
 }
 
-function meetingFacts(view: MeetingView) {
+function meetingFacts(view: MeetingView, packetLabel: string | null) {
   return [
     { label: 'Kind', value: view.kindText },
     ...(view.locationText === '' ? [] : [{ label: 'Location', value: view.locationText }]),
@@ -65,14 +56,23 @@ function meetingFacts(view: MeetingView) {
       label: 'Agenda',
       value: view.agenda === null ? 'Not started' : agendaStatusText(view.agenda),
     },
+    ...(packetLabel === null ? [] : [{ label: 'Packet', value: packetLabel }]),
     ...(view.cancelled
       ? [{ label: 'Cancelled', value: view.cancelReason ?? 'No reason given' }]
       : []),
   ]
 }
 
-export function MeetingRail({ view }: { view: MeetingView }) {
-  const kind = stepOf(view)
+export function MeetingRail({
+  view,
+  packetStep = null,
+  packetLabel = null,
+}: {
+  view: MeetingView
+  packetStep?: PacketStep
+  packetLabel?: string | null
+}) {
+  const kind = stepOf(view, packetStep)
   return (
     <>
       {kind === null ? null : (
@@ -83,7 +83,7 @@ export function MeetingRail({ view }: { view: MeetingView }) {
         </div>
       )}
       <div className="rail-card">
-        <FactList facts={meetingFacts(view)} stacked />
+        <FactList facts={meetingFacts(view, packetLabel)} stacked />
       </div>
     </>
   )

@@ -30,7 +30,7 @@ const DESTRUCTIVE_ACTIONS = [
   'revokeInviteAction',
   'setTargetActiveAction',
   'excludeCandidateAction',
-  'revokePacketLinkAction',
+  'turnOffLinkAction',
   'endMembershipAction',
   'cancelMeetingAction',
   'removeAgendaItemAction',
