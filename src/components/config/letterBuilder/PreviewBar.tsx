@@ -74,7 +74,7 @@ export function PreviewBar({ kind, data, anchor, previewing, onPreview }: Props)
     )
   }
   return (
-    <div className="grid gap-2 @md:grid-cols-[minmax(0,1fr)_auto] @md:items-end">
+    <div className="grid gap-2">
       <Pick
         label={`Preview with (${record.toLowerCase()})`}
         value={recordId}
@@ -84,37 +84,37 @@ export function PreviewBar({ kind, data, anchor, previewing, onPreview }: Props)
           setRecordId(e.target.value)
           if (previewing) show(e.target.value)
         }}
+        action={
+          <div className="flex gap-2">
+            {previewing ? (
+              <Button type="button" variant="outline" onClick={() => onPreview(null)}>
+                <PencilRuler aria-hidden="true" />
+                Back to editing
+              </Button>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                disabled={pending || recordId === ''}
+                onClick={() => show(recordId)}
+              >
+                <Eye aria-hidden="true" />
+                Preview
+              </Button>
+            )}
+            <Button
+              type="button"
+              variant="ghost"
+              disabled={pending || recordId === ''}
+              onClick={save}
+            >
+              <Download aria-hidden="true" />
+              Download PDF
+            </Button>
+          </div>
+        }
       />
-      <div className="flex flex-wrap gap-2">
-        {previewing ? (
-          <Button type="button" variant="outline" size="sm" onClick={() => onPreview(null)}>
-            <PencilRuler aria-hidden="true" />
-            Back to editing
-          </Button>
-        ) : (
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
-            disabled={pending || recordId === ''}
-            onClick={() => show(recordId)}
-          >
-            <Eye aria-hidden="true" />
-            Preview
-          </Button>
-        )}
-        <Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={pending || recordId === ''}
-          onClick={save}
-        >
-          <Download aria-hidden="true" />
-          Download PDF
-        </Button>
-      </div>
-      <p role="status" className="m-0 text-sm @md:col-span-2">
+      <p role="status" className="m-0 text-sm">
         {pending ? 'Working' : (message ?? '')}
       </p>
     </div>

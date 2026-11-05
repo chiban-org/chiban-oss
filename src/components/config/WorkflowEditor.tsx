@@ -74,34 +74,37 @@ function StateSteps({
     <fieldset className="space-y-2 rounded-md border p-3">
       <legend className="px-1 text-sm font-medium">{STATE_LABELS[state]}</legend>
       {own.map(({ s, index }, position) => (
-        <div key={rowKey(`${state}-step`, index)} className="flex flex-wrap items-end gap-2">
-          <Input
-            label="Step name"
-            value={s.label}
-            onChange={(e) =>
-              onChange(
-                substeps.map((x, n) =>
-                  n === index
-                    ? { ...x, label: e.target.value, key: slug(e.target.value) || x.key }
-                    : x,
-                ),
-              )
-            }
-          />
-          <RowButton
-            onClick={() => onChange(move(substeps, index, own[position - 1]?.index ?? index))}
-          >
-            Move up
-          </RowButton>
-          <RowButton
-            onClick={() => onChange(move(substeps, index, own[position + 1]?.index ?? index))}
-          >
-            Move down
-          </RowButton>
-          <RowButton onClick={() => onChange(substeps.filter((_, n) => n !== index))}>
-            Remove
-          </RowButton>
-        </div>
+        <Input
+          key={rowKey(`${state}-step`, index)}
+          label="Step name"
+          value={s.label}
+          onChange={(e) =>
+            onChange(
+              substeps.map((x, n) =>
+                n === index
+                  ? { ...x, label: e.target.value, key: slug(e.target.value) || x.key }
+                  : x,
+              ),
+            )
+          }
+          action={
+            <div className="flex gap-2">
+              <RowButton
+                onClick={() => onChange(move(substeps, index, own[position - 1]?.index ?? index))}
+              >
+                Move up
+              </RowButton>
+              <RowButton
+                onClick={() => onChange(move(substeps, index, own[position + 1]?.index ?? index))}
+              >
+                Move down
+              </RowButton>
+              <RowButton onClick={() => onChange(substeps.filter((_, n) => n !== index))}>
+                Remove
+              </RowButton>
+            </div>
+          }
+        />
       ))}
       <RowButton
         onClick={() =>

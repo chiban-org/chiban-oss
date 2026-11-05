@@ -70,7 +70,7 @@ export function Check({ onChange, ...props }: CheckProps) {
 
 export function RowButton({ children, onClick }: { children: ReactNode; onClick: () => void }) {
   return (
-    <Button type="button" variant="outline" size="sm" onClick={onClick}>
+    <Button type="button" variant="outline" onClick={onClick}>
       {children}
     </Button>
   )

@@ -80,4 +80,31 @@ describe('staff fields', () => {
     fireEvent.click(screen.getByText('Finding two'))
     expect(submitted()).toEqual([['findingIds', 'f1']])
   })
+
+  it('keeps a field at the top of a grid cell taller than itself', () => {
+    render(<TextField label="Board name" name="label" />)
+    const field = screen.getByLabelText('Board name').closest('[data-slot="field"]')
+    expect(field?.classList.contains('content-start')).toBe(true)
+  })
+
+  it('puts a field action in one row with its control, between label and hint', () => {
+    render(
+      <TextField
+        label="Place 1"
+        hint="Where the notice goes up"
+        action={<button type="button">Remove</button>}
+      />,
+    )
+    const row = screen.getByLabelText('Place 1').closest('[data-slot="field-control-row"]')
+    expect(row?.contains(screen.getByRole('button', { name: 'Remove' }))).toBe(true)
+    expect(row?.nextElementSibling?.textContent).toBe('Where the notice goes up')
+  })
+
+  it('centres a checkbox on the first line of its label', () => {
+    render(<CheckField label="Notice by posting" />)
+    const line = screen.getByRole('checkbox').parentElement
+    expect(line?.dataset['slot']).toBe('check-line')
+    expect(line?.classList.contains('h-[1lh]')).toBe(true)
+    expect(line?.parentElement?.classList.contains('items-start')).toBe(true)
+  })
 })

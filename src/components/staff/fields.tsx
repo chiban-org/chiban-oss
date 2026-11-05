@@ -1,5 +1,5 @@
 import { type ComponentProps, type ReactNode, useId } from 'react'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Checkbox, CheckLine } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
@@ -12,19 +12,39 @@ interface FieldProps {
   hint?: string | undefined
   hintId?: string | undefined
   className?: string | undefined
+  action?: ReactNode
   children: ReactNode
 }
 
-export function Field({ label, htmlFor, hint, hintId, className, children }: FieldProps) {
+export function Field({ label, htmlFor, hint, hintId, className, action, children }: FieldProps) {
   return (
-    <div data-slot="field" className={cn('grid gap-2', className)}>
+    <div data-slot="field" className={cn('grid content-start gap-2', className)}>
       <Label htmlFor={htmlFor}>{label}</Label>
-      {children}
+      {action === undefined ? (
+        children
+      ) : (
+        <ControlWithAction action={action}>{children}</ControlWithAction>
+      )}
       {hint === undefined ? null : (
         <p id={hintId} className="m-0 text-sm text-muted-foreground">
           {hint}
         </p>
       )}
+    </div>
+  )
+}
+
+export function ControlWithAction({
+  action,
+  children,
+}: {
+  action: ReactNode
+  children: ReactNode
+}) {
+  return (
+    <div data-slot="field-control-row" className="flex flex-wrap items-start gap-2">
+      <div className="min-w-0 max-w-xl flex-1 basis-48">{children}</div>
+      {action}
     </div>
   )
 }
@@ -36,15 +56,20 @@ export function useFieldIds(id: string | undefined, hint?: string) {
   return { controlId, hintId }
 }
 
+interface ActionProps {
+  action?: ReactNode
+}
+
 export function TextField({
   label,
   hint,
   id,
+  action,
   ...props
-}: ComponentProps<'input'> & { label: string; hint?: string }) {
+}: ComponentProps<'input'> & ActionProps & { label: string; hint?: string }) {
   const { controlId, hintId } = useFieldIds(id, hint)
   return (
-    <Field label={label} htmlFor={controlId} hint={hint} hintId={hintId}>
+    <Field label={label} htmlFor={controlId} hint={hint} hintId={hintId} action={action}>
       <Input id={controlId} aria-describedby={hintId} {...props} />
     </Field>
   )
@@ -54,11 +79,12 @@ export function AreaField({
   label,
   hint,
   id,
+  action,
   ...props
-}: ComponentProps<'textarea'> & { label: string; hint?: string }) {
+}: ComponentProps<'textarea'> & ActionProps & { label: string; hint?: string }) {
   const { controlId, hintId } = useFieldIds(id, hint)
   return (
-    <Field label={label} htmlFor={controlId} hint={hint} hintId={hintId}>
+    <Field label={label} htmlFor={controlId} hint={hint} hintId={hintId} action={action}>
       <Textarea
         id={controlId}
         aria-describedby={hintId}
@@ -74,15 +100,17 @@ export function SelectField({
   hint,
   id,
   options,
+  action,
   ...props
-}: Omit<ComponentProps<'select'>, 'size'> & {
-  label: string
-  hint?: string
-  options: readonly (readonly [string, string])[]
-}) {
+}: Omit<ComponentProps<'select'>, 'size'> &
+  ActionProps & {
+    label: string
+    hint?: string
+    options: readonly (readonly [string, string])[]
+  }) {
   const { controlId, hintId } = useFieldIds(id, hint)
   return (
-    <Field label={label} htmlFor={controlId} hint={hint} hintId={hintId}>
+    <Field label={label} htmlFor={controlId} hint={hint} hintId={hintId} action={action}>
       <NativeSelect id={controlId} aria-describedby={hintId} {...props}>
         {options.map(([value, text]) => (
           <NativeSelectOption key={value} value={value}>
@@ -103,8 +131,13 @@ export function CheckField({
   const generated = useId()
   const controlId = id ?? generated
   return (
-    <div data-slot="check-field" className={cn('flex items-center gap-2', className)}>
-      <Checkbox id={controlId} {...props} />
+    <div
+      data-slot="check-field"
+      className={cn('flex items-start gap-2 text-sm leading-snug', className)}
+    >
+      <CheckLine>
+        <Checkbox id={controlId} {...props} />
+      </CheckLine>
       <Label htmlFor={controlId} className="leading-snug font-normal">
         {label}
       </Label>

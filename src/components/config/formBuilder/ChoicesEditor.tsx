@@ -37,7 +37,7 @@ export function ChoicesEditor({
               <Button
                 type="button"
                 variant="ghost"
-                size="icon-sm"
+                size="icon"
                 aria-label={`Move choice ${n} up`}
                 disabled={c === 0}
                 onClick={() => onChange(moveChoice(body, index, c, -1))}
@@ -47,7 +47,7 @@ export function ChoicesEditor({
               <Button
                 type="button"
                 variant="ghost"
-                size="icon-sm"
+                size="icon"
                 aria-label={`Move choice ${n} down`}
                 disabled={c === choices.length - 1}
                 onClick={() => onChange(moveChoice(body, index, c, 1))}
@@ -57,7 +57,7 @@ export function ChoicesEditor({
               <Button
                 type="button"
                 variant="ghost"
-                size="icon-sm"
+                size="icon"
                 aria-label={`Remove choice ${n}`}
                 disabled={choices.length === 1}
                 onClick={() => onChange(removeChoice(body, index, c))}

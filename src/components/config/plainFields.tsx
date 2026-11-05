@@ -42,6 +42,7 @@ function ScaledInput({
   places,
   prefix,
   suffix,
+  action,
   onValue,
 }: {
   label: string
@@ -51,6 +52,7 @@ function ScaledInput({
   places: number
   prefix?: string
   suffix?: string
+  action?: ReactNode
   onValue: (next: number) => void
 }) {
   const [raw, setRaw] = useNumberText(value, scale)
@@ -77,6 +79,7 @@ function ScaledInput({
           }}
         />
         {suffix === undefined ? null : <span>{suffix}</span>}
+        {action}
       </div>
     </Field>
   )
@@ -88,17 +91,20 @@ export function DollarsInput({
   cents,
   onCents,
   fractionOfCent = false,
+  action,
 }: {
   label: string
   hint?: string
   cents: number
   onCents: (next: number) => void
   fractionOfCent?: boolean
+  action?: ReactNode
 }) {
   return (
     <ScaledInput
       label={label}
       hint={hint}
+      action={action}
       value={cents}
       scale={100}
       places={fractionOfCent ? 2 : 0}
@@ -201,7 +207,7 @@ export function CheckedNames({
     />
   ))
   return (
-    <div className="grid gap-2">
+    <div className="grid content-start gap-2">
       <p className="m-0 text-sm font-medium">{legend}</p>
       {hint === undefined ? null : <p className="m-0 text-sm text-muted-foreground">{hint}</p>}
       {choices.length === 0 ? <p className="m-0 text-sm text-muted-foreground">{empty}</p> : null}
@@ -266,16 +272,15 @@ export function TextRows({
       <legend className="mb-1 text-sm font-medium">{legend}</legend>
       {hint === undefined ? null : <p className="m-0 text-sm text-muted-foreground">{hint}</p>}
       {rows.map((value, index) => (
-        <div key={`row-${String(index)}`} className="flex items-end gap-2">
-          <div className="min-w-0 flex-1">
-            <Input
-              label={`${rowLabel} ${String(index + 1)}`}
-              value={value}
-              onChange={(e) => change(rows.map((v, i) => (i === index ? e.target.value : v)))}
-            />
-          </div>
-          <RowButton onClick={() => change(rows.filter((_, i) => i !== index))}>Remove</RowButton>
-        </div>
+        <Input
+          key={`row-${String(index)}`}
+          label={`${rowLabel} ${String(index + 1)}`}
+          value={value}
+          onChange={(e) => change(rows.map((v, i) => (i === index ? e.target.value : v)))}
+          action={
+            <RowButton onClick={() => change(rows.filter((_, i) => i !== index))}>Remove</RowButton>
+          }
+        />
       ))}
       {max !== undefined && rows.length >= max ? null : (
         <div>

@@ -62,7 +62,7 @@ function PerUnitRows({
   return (
     <div className="grid gap-3">
       {rows.map((row, i) => (
-        <div key={rowKey('row', i)} className="grid items-end gap-2 sm:grid-cols-[1fr_auto_auto]">
+        <div key={rowKey('row', i)} className="grid gap-2 sm:grid-cols-[1fr_auto]">
           <SourcePick
             label="Count"
             source={row.source}
@@ -74,10 +74,12 @@ function PerUnitRows({
             cents={row.centsPerUnit}
             fractionOfCent
             onCents={(centsPerUnit) => setRow(i, { centsPerUnit })}
+            action={
+              rows.length > 1 ? (
+                <RowButton onClick={() => onRows(rows.filter((_, n) => n !== i))}>Remove</RowButton>
+              ) : undefined
+            }
           />
-          {rows.length > 1 ? (
-            <RowButton onClick={() => onRows(rows.filter((_, n) => n !== i))}>Remove</RowButton>
-          ) : null}
         </div>
       ))}
       <div>
@@ -120,10 +122,7 @@ function TierRows({
         onChange={(e) => onBase({ ...base, mode: e.target.value as Tiered['mode'] })}
       />
       {base.tiers.map((tier, i) => (
-        <div
-          key={rowKey('tier', i)}
-          className="grid items-end gap-2 sm:grid-cols-[1fr_auto_auto_auto]"
-        >
+        <div key={rowKey('tier', i)} className="grid gap-2 sm:grid-cols-[1fr_auto_auto]">
           <Input
             label="Band up to"
             hint="Leave empty for everything above the last band."
@@ -144,14 +143,16 @@ function TierRows({
             label="Plus a set amount"
             cents={tier.flatCents ?? 0}
             onCents={(flatCents) => setTier(i, { flatCents })}
+            action={
+              base.tiers.length > 1 ? (
+                <RowButton
+                  onClick={() => onBase({ ...base, tiers: base.tiers.filter((_, n) => n !== i) })}
+                >
+                  Remove
+                </RowButton>
+              ) : undefined
+            }
           />
-          {base.tiers.length > 1 ? (
-            <RowButton
-              onClick={() => onBase({ ...base, tiers: base.tiers.filter((_, n) => n !== i) })}
-            >
-              Remove
-            </RowButton>
-          ) : null}
         </div>
       ))}
       <div>

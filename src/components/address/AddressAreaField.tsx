@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { AddressCheck } from '@/components/address/AddressCheck'
 import { AreaField } from '@/components/staff/fields'
 import { toTextBlock } from '@/features/address/suggestionLayout'
@@ -11,21 +12,23 @@ interface Props {
   rows: number
   value: string
   onValue: (value: string) => void
+  action?: ReactNode
 }
 
-export function AddressAreaField({ label, rows, value, onValue }: Props) {
+export function AddressAreaField({ label, rows, value, onValue, action }: Props) {
   return (
     <AddressCheck
       lines={value.split('\n')}
       maxLines={MOST_LINES_IN_A_BOX}
       onUse={(lines) => onValue(toTextBlock(lines))}
-      className="grid gap-1.5"
+      className="grid content-start gap-1.5"
     >
       <AreaField
         label={label}
         rows={rows}
         value={value}
         onChange={(e) => onValue(e.target.value)}
+        action={action}
       />
     </AddressCheck>
   )

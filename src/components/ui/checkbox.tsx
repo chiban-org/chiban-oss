@@ -25,4 +25,12 @@ function Checkbox({ className, ...props }: React.ComponentProps<typeof CheckboxP
   )
 }
 
-export { Checkbox }
+function CheckLine({ className, children }: { className?: string; children: React.ReactNode }) {
+  return (
+    <span data-slot="check-line" className={cn('flex h-[1lh] shrink-0 items-center', className)}>
+      {children}
+    </span>
+  )
+}
+
+export { Checkbox, CheckLine }

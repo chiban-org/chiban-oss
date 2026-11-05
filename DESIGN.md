@@ -66,6 +66,9 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 - Settings editors speak in the town's terms. Items are listed, titled and picked by name; keys, codes, inspection types and fee formulas as data sit under a closed "Advanced" disclosure. A new item starts from a name, and its short name is made from it (`src/features/config/newItemKey.ts`).
 - The shared pieces live in `src/components/config/plainFields.tsx`: `NamePicker` and `CheckedNames` pick other configuration by name and store its key, `TextRows` edits a list one row per entry, `DollarsInput` and `PercentInput` show dollars and percent while storing cents and basis points. A choice list longer than ten folds behind "Choose from all N" under a "Chosen:" line.
 - Every field has a plain label, and a one-line hint when its meaning or unit is not obvious. Field grids are one column below 640px.
+- Field grids align to the top: `Field` is `content-start`, so a neighbour with a longer hint never pushes a label or input down. Rows of fields never use `items-end`.
+- A button that acts on one input (Remove, Move up, Preview) is that field's `action`: it sits right beside the input, between the label and the hint, at the input's height (`RowButton` is the default button size, `h-9`). It never floats to the far edge of the row, and beside a textarea it lines up with the textarea's top.
+- A checkbox lines up with the first line of its label (`CheckLine`), however many lines the label runs to.
 - Each fee shows a worked example in a sentence ("For Finished area of 1,200 ..., this fee is $420.00."), worked out by the same calculation that charges applicants.
 - `PublishBar` explains Save draft and Publish once, above the buttons. Publish and Restore open a confirmation that says what changes: open applications keep their version on kinds they pin, everything else takes effect at once.
 

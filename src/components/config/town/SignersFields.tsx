@@ -41,20 +41,16 @@ function SignerRow({
   const roles = SIGNER_ROLES.filter((r) => r === signer.role || !taken.has(r))
   return (
     <li className="record-item grid gap-3 py-4">
-      <div className="flex max-w-xl flex-wrap items-end gap-3">
-        <div className="min-w-56 flex-1">
-          <Pick
-            label="Signs as"
-            value={signer.role}
-            options={roles.map((r) => [r, roleLabel(r)] as [string, string])}
-            onChange={(e) => {
-              const role = SIGNER_ROLES.find((r) => r === e.target.value)
-              if (role !== undefined) onChange({ ...signer, role })
-            }}
-          />
-        </div>
-        <RowButton onClick={onRemove}>Remove signer</RowButton>
-      </div>
+      <Pick
+        label="Signs as"
+        value={signer.role}
+        options={roles.map((r) => [r, roleLabel(r)] as [string, string])}
+        onChange={(e) => {
+          const role = SIGNER_ROLES.find((r) => r === e.target.value)
+          if (role !== undefined) onChange({ ...signer, role })
+        }}
+        action={<RowButton onClick={onRemove}>Remove signer</RowButton>}
+      />
       <div className="grid gap-3 sm:grid-cols-2">
         <Input
           label="Name"

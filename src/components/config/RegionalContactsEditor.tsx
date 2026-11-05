@@ -24,7 +24,7 @@ function ContactFields({
     onChange(merged.name === '' && merged.mailingAddress === '' ? null : merged)
   }
   return (
-    <fieldset className="rounded-md border p-3">
+    <fieldset className="grid gap-3 rounded-md border p-3">
       <legend className="px-1 text-sm font-medium">{label}</legend>
       <Input label="Name" value={current.name} onChange={(e) => set({ name: e.target.value })} />
       <AddressAreaField
@@ -80,10 +80,7 @@ export function RegionalContactsEditor({ body, onChange }: Props) {
         </p>
       ) : null}
       {body.municipalities.map((m, i) => (
-        <div
-          key={rowKey('municipality', i)}
-          className="grid items-end gap-2 sm:grid-cols-[1fr_1fr_auto]"
-        >
+        <div key={rowKey('municipality', i)} className="grid gap-2 sm:grid-cols-2">
           <Input
             label="Town or city"
             value={m.name}
@@ -114,14 +111,19 @@ export function RegionalContactsEditor({ body, onChange }: Props) {
                 ),
               })
             }
-          />
-          <RowButton
-            onClick={() =>
-              onChange({ ...body, municipalities: body.municipalities.filter((_, n) => n !== i) })
+            action={
+              <RowButton
+                onClick={() =>
+                  onChange({
+                    ...body,
+                    municipalities: body.municipalities.filter((_, n) => n !== i),
+                  })
+                }
+              >
+                Remove
+              </RowButton>
             }
-          >
-            Remove
-          </RowButton>
+          />
         </div>
       ))}
     </div>

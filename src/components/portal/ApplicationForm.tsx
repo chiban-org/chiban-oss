@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { useCsrfToken } from '@/components/CsrfProvider'
 import { FormRenderer, type FormValue } from '@/components/forms/FormRenderer'
 import { Button } from '@/components/ui/button'
-import { Checkbox } from '@/components/ui/checkbox'
+import { Checkbox, CheckLine } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import type { FormBody } from '@/features/forms/formSchema'
 import { attempt } from '@/lib/attempt'
@@ -83,12 +83,14 @@ export function ApplicationForm(props: Props) {
           setValues((prev) => ({ ...prev, [key]: value }))
         }
       />
-      <div className="flex items-start gap-3 rounded-md border p-4">
-        <Checkbox
-          id="attest"
-          checked={attested}
-          onCheckedChange={(next) => setAttested(next === true)}
-        />
+      <div className="flex items-start gap-3 rounded-md border p-4 text-base leading-snug">
+        <CheckLine>
+          <Checkbox
+            id="attest"
+            checked={attested}
+            onCheckedChange={(next) => setAttested(next === true)}
+          />
+        </CheckLine>
         <Label htmlFor="attest" className="text-base leading-snug">
           {props.attestationText}
         </Label>

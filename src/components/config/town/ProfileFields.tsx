@@ -38,24 +38,23 @@ export function ProfileFields({ body, onChange, errors }: Props) {
           className="grid gap-3"
         >
           {body.addressLines.map((line, index) => (
-            <div key={`address-${String(index)}`} className="flex max-w-xl items-end gap-2">
-              <div className="min-w-0 flex-1">
-                <Input
-                  label={`Address line ${String(index + 1)}`}
-                  value={line}
-                  onChange={(e) => setLine(index, e.target.value)}
-                />
-              </div>
-              {body.addressLines.length > 1 ? (
-                <RowButton
-                  onClick={() =>
-                    set({ addressLines: body.addressLines.filter((_, i) => i !== index) })
-                  }
-                >
-                  Remove
-                </RowButton>
-              ) : null}
-            </div>
+            <Input
+              key={`address-${String(index)}`}
+              label={`Address line ${String(index + 1)}`}
+              value={line}
+              onChange={(e) => setLine(index, e.target.value)}
+              action={
+                body.addressLines.length > 1 ? (
+                  <RowButton
+                    onClick={() =>
+                      set({ addressLines: body.addressLines.filter((_, i) => i !== index) })
+                    }
+                  >
+                    Remove
+                  </RowButton>
+                ) : undefined
+              }
+            />
           ))}
         </AddressCheck>
         {body.addressLines.length < MAX_ADDRESS_LINES ? (

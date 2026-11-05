@@ -116,4 +116,14 @@ describe('row lists', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Remove' })[0] as HTMLElement)
     expect(stored()).toEqual(['Library', 'Post office'])
   })
+
+  it('sits each Remove beside its own input at the input height', () => {
+    render(<RowsHarness initial={['Town Hall']} />)
+    const input = screen.getByLabelText('Place 1')
+    const remove = screen.getByRole('button', { name: 'Remove' })
+    const row = input.closest('[data-slot="field-control-row"]')
+    expect(row?.contains(remove)).toBe(true)
+    expect(input.classList.contains('h-9')).toBe(true)
+    expect(remove.classList.contains('h-9')).toBe(true)
+  })
 })
