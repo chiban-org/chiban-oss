@@ -53,19 +53,19 @@ export function ChecklistEditor({
               label={`Check ${String(i + 1)}`}
               value={item.label}
               onChange={(e) => setItem(i, { label: e.target.value })}
+              action={
+                <RowButton
+                  onClick={() => onChange({ ...body, items: body.items.filter((_, n) => n !== i) })}
+                >
+                  Remove
+                </RowButton>
+              }
             />
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Check
-                label="Must pass for the inspection to pass"
-                checked={item.required}
-                onChange={(checked) => setItem(i, { required: checked })}
-              />
-              <RowButton
-                onClick={() => onChange({ ...body, items: body.items.filter((_, n) => n !== i) })}
-              >
-                Remove
-              </RowButton>
-            </div>
+            <Check
+              label="Must pass for the inspection to pass"
+              checked={item.required}
+              onChange={(checked) => setItem(i, { required: checked })}
+            />
             <Advanced>
               <Input
                 label="Item key"

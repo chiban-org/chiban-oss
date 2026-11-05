@@ -61,21 +61,21 @@ export function ConditionsEditor({
               rows={2}
               value={c.text}
               onChange={(e) => setRow(i, { text: e.target.value })}
+              action={
+                <RowButton
+                  onClick={() =>
+                    onChange({ ...body, conditions: body.conditions.filter((_, n) => n !== i) })
+                  }
+                >
+                  Remove
+                </RowButton>
+              }
             />
-            <div className="flex flex-wrap items-center justify-between gap-2">
-              <Check
-                label="Must be met before the permit is issued"
-                checked={c.blocksIssuance}
-                onChange={(checked) => setRow(i, { blocksIssuance: checked })}
-              />
-              <RowButton
-                onClick={() =>
-                  onChange({ ...body, conditions: body.conditions.filter((_, n) => n !== i) })
-                }
-              >
-                Remove
-              </RowButton>
-            </div>
+            <Check
+              label="Must be met before the permit is issued"
+              checked={c.blocksIssuance}
+              onChange={(checked) => setRow(i, { blocksIssuance: checked })}
+            />
             <Advanced>
               <Input
                 label="Code"
