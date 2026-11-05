@@ -97,7 +97,7 @@ async function isAllowedActor(
       (await isActiveParty(tx, actor.userId, app.projectId))
     )
   }
-  return hasFullRecordAccess(actor)
+  return await hasCapability(tx, actor.userId, 'application.manage', signal)
 }
 
 export async function actorMayMove(
