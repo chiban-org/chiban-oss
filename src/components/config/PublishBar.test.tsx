@@ -17,7 +17,7 @@ const context = {
 }
 
 function renderForm(
-  kind: 'condition_library' | 'board_settings' | 'inspection_settings',
+  kind: 'condition_library' | 'board_settings' | 'inspection_settings' | 'payment_settings',
   initialBody: unknown = skeletonBody(kind, 'default'),
 ) {
   const publish = vi.fn((_: FormData) =>
@@ -83,6 +83,24 @@ describe('publishing asks first', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.getByRole('alert').textContent).toBe(
       'Fix this before publishing: Days ahead that can be booked must be 1 or more.',
+    )
+    expect(publish).not.toHaveBeenCalled()
+  })
+
+  it('names an emptied convenience fee amount instead of publishing the old one', () => {
+    const body = {
+      key: 'default',
+      convenienceFee: { basisPoints: 250, fixedCents: 30, appliesTo: ['card_online'] },
+      receiptFooter: '',
+      checksPayableTo: 'Town of Alder Pond',
+    }
+    const { publish } = renderForm('payment_settings', body)
+    fireEvent.change(screen.getByLabelText(/^Percent of the payment/), { target: { value: '' } })
+    fireEvent.change(screen.getByLabelText(/^Plus a set amount/), { target: { value: '' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    expect(screen.queryByRole('dialog')).toBeNull()
+    expect(screen.getByRole('alert').textContent).toBe(
+      'Fix these before publishing: Percent of the payment is required; Plus a set amount is required.',
     )
     expect(publish).not.toHaveBeenCalled()
   })

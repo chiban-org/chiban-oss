@@ -118,7 +118,7 @@ describe('FeeLinesEditor', () => {
   it('edits a flat amount in dollars and offers the after-the-fact multiplier', () => {
     const onChange = vi.fn()
     render(<FeeLinesEditor body={FEES} onChange={onChange} errors={{}} />)
-    fireEvent.change(screen.getByLabelText('Amount'), { target: { value: '45' } })
+    fireEvent.change(screen.getByLabelText(/^Amount/), { target: { value: '45' } })
     expect(onChange.mock.calls[0]?.[0].lines[0].expr).toEqual({ op: 'flat', cents: 4500 })
     fireEvent.click(
       screen.getByLabelText('Charge more when work started before the permit was issued'),

@@ -45,11 +45,9 @@ function ScaledInput({
   prefix,
   suffix,
   action,
-  required,
   onValue,
 }: {
   label: string
-  required?: boolean
   hint?: string | undefined
   value: number
   scale: number
@@ -63,14 +61,14 @@ function ScaledInput({
   const { controlId, hintId } = useFieldIds(undefined, hint)
   const factor = 10 ** places
   return (
-    <Field label={label} htmlFor={controlId} hint={hint} hintId={hintId} required={required}>
+    <Field label={label} htmlFor={controlId} hint={hint} hintId={hintId} required>
       <div className="flex items-center gap-2">
         {prefix === undefined ? null : <span aria-hidden="true">{prefix}</span>}
         <BareInput
           id={controlId}
           aria-describedby={hintId}
           type="number"
-          required={required}
+          required
           inputMode="decimal"
           min={0}
           step={1 / (scale * factor)}
@@ -97,11 +95,9 @@ export function DollarsInput({
   onCents,
   fractionOfCent = false,
   action,
-  required,
 }: {
   label: string
   hint?: string
-  required?: boolean
   cents: number
   onCents: (next: number) => void
   fractionOfCent?: boolean
@@ -112,7 +108,6 @@ export function DollarsInput({
       label={label}
       hint={hint}
       action={action}
-      required={required}
       value={cents}
       scale={100}
       places={fractionOfCent ? 2 : 0}
@@ -127,11 +122,9 @@ export function PercentInput({
   hint,
   basisPoints,
   onBasisPoints,
-  required,
 }: {
   label: string
   hint?: string
-  required?: boolean
   basisPoints: number
   onBasisPoints: (next: number) => void
 }) {
@@ -139,7 +132,6 @@ export function PercentInput({
     <ScaledInput
       label={label}
       hint={hint}
-      required={required}
       value={basisPoints}
       scale={100}
       places={0}
