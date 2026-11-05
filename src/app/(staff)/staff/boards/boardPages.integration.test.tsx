@@ -210,11 +210,11 @@ describe('board pages show words, not keys or dates', () => {
     expect(zba).not.toContain('November 12, 2026')
   })
 
-  it('the packets page folds its forms and refuses with the shared permission page', async () => {
+  it('the packets page is a read-only list of upcoming meetings and refuses with the shared permission page', async () => {
     await actAs('staff')
     const html = renderToStaticMarkup((await PacketsPage()) as never)
-    expect(html).toContain('<summary>New packet</summary>')
-    expect(html).toContain('<summary>Send link</summary>')
+    expect(html).not.toContain('<form')
+    expect(html).toMatch(/href="\/staff\/boards\/meetings\/[0-9a-f-]{36}#packet"/)
     await actAs('reviewer')
     const refused = renderToStaticMarkup((await PacketsPage()) as never)
     expect(refused).toContain(NO_PERMISSION)

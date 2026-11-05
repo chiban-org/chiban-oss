@@ -18,8 +18,6 @@ import { BOARD_NAMES } from '@/features/hearings/views'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
 
-const ELIGIBLE_SCAN = 500
-
 export interface CreatePacketInput {
   title: string
   meetingId: string
@@ -185,46 +183,4 @@ export async function createPacket(
     )
     return ok({ packetId })
   })
-}
-
-export async function listPackets(db: Db, actor: Actor, signal: AbortSignal) {
-  signal.throwIfAborted()
-  const allowed = await requireCapability(db, actor.userId, 'packet.manage', signal)
-  if (!allowed.ok) return err('forbidden' as const)
-  const rows = await db
-    .select()
-    .from(boardPackets)
-    .orderBy(desc(boardPackets.meetingDate), asc(boardPackets.id))
-  return ok(rows)
-}
-
-export async function eligibleBoardDocuments(db: Db, actor: Actor, signal: AbortSignal) {
-  signal.throwIfAborted()
-  const allowed = await requireCapability(db, actor.userId, 'packet.manage', signal)
-  if (!allowed.ok) return err('forbidden' as const)
-  const rows = await db
-    .select({
-      id: documents.id,
-      title: documents.title,
-      audiences: documents.audiences,
-      isPublic: documents.isPublic,
-      recordKind: documents.recordKind,
-      recordId: documents.recordId,
-    })
-    .from(documents)
-    .orderBy(desc(documents.seq))
-    .limit(ELIGIBLE_SCAN)
-  const ownerOf = documentOwners(db, signal)
-  const out: { id: string; label: string; board: Board }[] = []
-  for (const d of rows.filter((r) => r.audiences.includes('board') || r.isPublic)) {
-    const owner = await ownerOf(d)
-    if (owner === null) continue
-    const prefix = owner.applicationNumber === null ? '' : `${owner.applicationNumber}: `
-    out.push({
-      id: d.id,
-      label: `${prefix}${d.title}, ${BOARD_NAMES[owner.board]}`,
-      board: owner.board,
-    })
-  }
-  return ok(out)
 }

@@ -1,12 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { inviteBoardMember } from '@/features/boards/members'
-import { sendPacketLink } from '@/features/boards/packetLinks'
-import { createPacket, eligibleBoardDocuments } from '@/features/boards/packets'
-import { loadPacketsPage } from '@/features/boards/packetsPage'
+import { createPacket } from '@/features/boards/packets'
 import { setAudiences } from '@/features/documents/publish'
-import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import type { ObjectStore } from '@/features/storage/objectStore'
-import { makeApplication } from '@/test/applicationFixtures'
 import { type BoardWorld, setupBoardWorld, submitBoardApplication } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
@@ -47,18 +42,7 @@ async function boardDocument(applicationId: string, title: string): Promise<stri
   return up.documentId
 }
 
-describe('packet document chooser', () => {
-  it('lists only board application documents, named with the application and board', async () => {
-    const variance = await submitBoardApplication(handle.db, world, world.zbaTypeKey, '2027-03-02')
-    await boardDocument(variance, 'Site plan')
-    const permit = (await makeApplication(handle.db, world)).applicationId
-    await boardDocument(permit, 'Panel schedule')
-    const chosen = await eligibleBoardDocuments(handle.db, world.staff, signal)
-    const labels = chosen.ok ? chosen.value.map((d) => d.label) : []
-    expect(labels).toHaveLength(1)
-    expect(labels[0]).toMatch(/^VAR-\d{4}-\d{4}: Site plan, Zoning Board of Adjustment$/)
-  })
-
+describe('packet board check', () => {
   it('a zoning board document cannot go into a planning board packet', async () => {
     const variance = await submitBoardApplication(handle.db, world, world.zbaTypeKey, '2027-03-02')
     const documentId = await boardDocument(variance, 'Site plan')
@@ -73,99 +57,5 @@ describe('packet document chooser', () => {
       signal,
     )
     expect(made).toEqual({ ok: false, error: { notForBoard: [documentId] } })
-  })
-})
-
-describe('packets page', () => {
-  it('names the board and lists a seated member who was notified', async () => {
-    const variance = await submitBoardApplication(handle.db, world, world.zbaTypeKey, '2027-03-02')
-    const documentId = await boardDocument(variance, 'Site plan')
-    const mail = createMemoryTransport()
-    await inviteBoardMember(
-      handle.db,
-      mail,
-      world.staff,
-      {
-        email: 'drew@alderpond.example',
-        displayName: 'Drew Hale',
-        board: 'zba',
-        title: 'member',
-        termStart: '2020-01-01' as CivilDate,
-      },
-      signal,
-    )
-    const made = await createPacket(
-      handle.db,
-      world.staff,
-      {
-        title: 'April',
-        meetingId: await packetMeeting(handle.db, 'zba', MEETING),
-        documentIds: [documentId],
-      },
-      signal,
-    )
-    if (!made.ok) throw new Error('packet')
-    await sendPacketLink(
-      handle.db,
-      mail,
-      world.staff,
-      {
-        packetId: made.value.packetId,
-        recipientName: 'Drew Hale',
-        recipientEmail: 'drew@alderpond.example',
-      },
-      signal,
-    )
-    const page = await loadPacketsPage(handle.db, world.staff, signal)
-    expect(page).toMatchObject({
-      ok: true,
-      value: {
-        packets: [
-          {
-            heading: 'April',
-            meeting: 'Zoning Board of Adjustment meeting, April 15, 2027',
-            documents: ['Site plan'],
-            notified: [expect.stringMatching(/^Drew Hale \(drew@alderpond\.example\), notified /)],
-          },
-        ],
-      },
-    })
-  })
-
-  it('an expired link reads as expired and offers no revoke', async () => {
-    const variance = await submitBoardApplication(handle.db, world, world.zbaTypeKey, '2027-03-02')
-    const documentId = await boardDocument(variance, 'Site plan')
-    const made = await createPacket(
-      handle.db,
-      world.staff,
-      {
-        title: 'April',
-        meetingId: await packetMeeting(handle.db, 'zba', MEETING),
-        documentIds: [documentId],
-      },
-      signal,
-    )
-    if (!made.ok) throw new Error('packet')
-    await sendPacketLink(
-      handle.db,
-      createMemoryTransport(),
-      world.staff,
-      {
-        packetId: made.value.packetId,
-        recipientName: 'Pat Guest',
-        recipientEmail: 'pat@example.org',
-      },
-      signal,
-      new Date('2027-03-01T16:00:00Z'),
-    )
-    const page = await loadPacketsPage(
-      handle.db,
-      world.staff,
-      signal,
-      new Date('2027-04-01T16:00:00Z'),
-    )
-    const [link] = page.ok ? (page.value.packets[0]?.links ?? []) : []
-    expect(link?.revocable).toBe(false)
-    expect(link?.text).toMatch(/^Pat Guest \(pat@example\.org\), expired March 15, 2027/)
   })
 })
