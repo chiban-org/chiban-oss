@@ -21,7 +21,7 @@ describe('money and percent inputs', () => {
   it('shows cents as dollars and stores whole cents', () => {
     const onCents = vi.fn()
     render(<DollarsInput label="Amount" cents={4500} onCents={onCents} />)
-    const input = screen.getByLabelText<HTMLInputElement>('Amount')
+    const input = screen.getByLabelText<HTMLInputElement>(/^Amount/)
     expect(input.value).toBe('45')
     fireEvent.change(input, { target: { value: '12.34' } })
     expect(onCents).toHaveBeenLastCalledWith(1234)
@@ -30,7 +30,7 @@ describe('money and percent inputs', () => {
   it('keeps fractions of a cent for a rate', () => {
     const onCents = vi.fn()
     render(<DollarsInput label="Rate" cents={35} fractionOfCent onCents={onCents} />)
-    const input = screen.getByLabelText<HTMLInputElement>('Rate')
+    const input = screen.getByLabelText<HTMLInputElement>(/^Rate/)
     expect(input.value).toBe('0.35')
     fireEvent.change(input, { target: { value: '0.355' } })
     expect(onCents).toHaveBeenLastCalledWith(35.5)
@@ -39,10 +39,24 @@ describe('money and percent inputs', () => {
   it('shows basis points as a percent and stores basis points', () => {
     const onBasisPoints = vi.fn()
     render(<PercentInput label="Percent" basisPoints={300} onBasisPoints={onBasisPoints} />)
-    const input = screen.getByLabelText<HTMLInputElement>('Percent')
+    const input = screen.getByLabelText<HTMLInputElement>(/^Percent/)
     expect(input.value).toBe('3')
     fireEvent.change(input, { target: { value: '2.5' } })
     expect(onBasisPoints).toHaveBeenLastCalledWith(250)
+  })
+
+  it('refuses an emptied amount instead of keeping the old value silently', () => {
+    render(
+      <form>
+        <DollarsInput label="Amount" cents={4500} onCents={vi.fn()} />
+        <PercentInput label="Percent" basisPoints={300} onBasisPoints={vi.fn()} />
+      </form>,
+    )
+    for (const label of [/^Amount/, /^Percent/]) {
+      const input = screen.getByLabelText<HTMLInputElement>(label)
+      fireEvent.change(input, { target: { value: '' } })
+      expect(input.validity.valueMissing).toBe(true)
+    }
   })
 
   it('reports nothing until the person types', () => {

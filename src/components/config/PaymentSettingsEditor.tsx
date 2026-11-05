@@ -27,11 +27,13 @@ export function PaymentSettingsEditor({ body, onChange }: Props) {
         <div className="grid gap-3 sm:grid-cols-2">
           <PercentInput
             label="Percent of the payment"
+            hint="For example 2.5 adds $2.50 to a $100 payment. Enter 0 for none."
             basisPoints={fee.basisPoints}
             onBasisPoints={(basisPoints) => setFee({ basisPoints })}
           />
           <DollarsInput
             label="Plus a set amount"
+            hint="Added to every card payment the fee applies to, for example 0.30. Enter 0 for none."
             cents={fee.fixedCents}
             onCents={(fixedCents) => setFee({ fixedCents })}
           />

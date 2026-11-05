@@ -2,6 +2,8 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Actor } from '@/features/auth/actor'
 import { adoptStarter } from '@/features/config/adoptStarter'
+import { publishConfig } from '@/features/config/publish'
+import { saveDraft } from '@/features/config/store'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 
@@ -81,6 +83,30 @@ describe('state law page', () => {
     expect(text).not.toMatch(/Local zoning permit:\s/)
     expect(html).not.toMatch(/<td>[^<]*<span[^>]*>Version \d+<\/span>/)
     expect(html).toContain('href="/staff/settings/state-law?rules_sort=')
+  })
+
+  it("shows the town's adopted value on a rule the town has set, linked to that rule", async () => {
+    const saved = await saveDraft(
+      handle.db,
+      admin,
+      {
+        kind: 'town_rule_setting',
+        key: 'town.bp.validity',
+        body: {
+          ruleKey: 'town.bp.validity',
+          value: 24,
+          adoptingAuthority: 'Town Meeting',
+          adoptedOn: '2027-03-10',
+        },
+      },
+      signal,
+    )
+    if (!saved.ok) throw new Error('draft refused')
+    expect((await publishConfig(handle.db, admin, saved.value.versionId, signal)).ok).toBe(true)
+    const html = renderToStaticMarkup(await StateLawPage({ searchParams: Promise.resolve({}) }))
+    expect(html).toMatch(
+      /<a href="\/staff\/settings\/town_rule_setting\/town\.bp\.validity">Town value: 24 months<\/a>/,
+    )
   })
 
   it('refuses anyone without the right to edit configuration', async () => {

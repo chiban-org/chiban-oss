@@ -2,17 +2,13 @@
 
 import { z } from 'zod'
 import { env } from '@/config/env'
-import { publishConfig } from '@/features/config/publish'
-import { saveDraft } from '@/features/config/store'
 import { PROCESSORS } from '@/features/ledger/types'
-import { parseFeeInputs } from '@/features/payments/feeInputs'
 import { saveProcessorAccount } from '@/features/payments/processorAccounts'
 import {
   CloverCredentialsSchema,
   CloverSettingsSchema,
 } from '@/features/payments/processors/clover'
 import { StripeCredentialsSchema } from '@/features/payments/processors/stripe'
-import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
 import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
 
 const INVALID: ActionResult = { ok: false, error: errorCopy('invalid_input') }
@@ -71,53 +67,5 @@ export async function saveProcessorAccountAction(formData: FormData): Promise<Ac
     return result.ok
       ? { ok: true, message: 'Processor account saved. The connection has not been verified yet.' }
       : { ok: false, error: errorCopy(result.error) }
-  })
-}
-
-export async function publishPaymentSettingsAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const amounts = parseFeeInputs(text(formData, 'percent'), text(formData, 'fixedDollars'))
-    if (!amounts.ok) {
-      return {
-        ok: false,
-        error: amounts.message,
-        fieldErrors: { [amounts.field]: amounts.message },
-      }
-    }
-    const { basisPoints, fixedCents } = amounts
-    const body: PaymentSettingsBody = {
-      key: 'default',
-      convenienceFee: {
-        basisPoints,
-        fixedCents,
-        appliesTo: [
-          ...(formData.get('appliesOnline') === null ? [] : (['card_online'] as const)),
-          ...(formData.get('appliesPresent') === null ? [] : (['card_present'] as const)),
-        ],
-      },
-      receiptFooter: text(formData, 'receiptFooter'),
-      checksPayableTo: text(formData, 'checksPayableTo'),
-    }
-    const saved = await saveDraft(
-      db,
-      actor,
-      { kind: 'payment_settings', key: 'default', body },
-      signal,
-    )
-    if (!saved.ok) {
-      return typeof saved.error === 'string'
-        ? { ok: false, error: errorCopy(saved.error) }
-        : INVALID
-    }
-    const published = await publishConfig(db, actor, saved.value.versionId, signal)
-    return published.ok
-      ? { ok: true, message: `Payment settings published as version ${published.value.version}.` }
-      : {
-          ok: false,
-          error:
-            typeof published.error === 'string'
-              ? errorCopy(published.error)
-              : errorCopy('invalid_input'),
-        }
   })
 }

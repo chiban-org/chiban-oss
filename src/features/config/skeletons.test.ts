@@ -14,4 +14,8 @@ describe('skeletonBody', () => {
       ruleKey: 'town.bp.validity',
     })
   })
+
+  it('starts a town rule at the default state law gives it', () => {
+    expect(skeletonBody('town_rule_setting', 'town.bp.validity')).toMatchObject({ value: 12 })
+  })
 })

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { SectionHeader } from '@/components/layout/ListHeader'
 import type { RuleSortKey } from '@/features/config/settingsTableView'
@@ -6,12 +7,26 @@ import { loadPack } from '@/features/packs/loadPack'
 import { classificationSummary, type RuleSummary } from '@/features/packs/ruleSummary'
 import { ClassificationRules } from './ClassificationRules'
 
+function TownValue({ summary, value }: { summary: RuleSummary; value: number | undefined }) {
+  if (value === undefined) return null
+  const amount = summary.unit === null ? String(value) : `${String(value)} ${summary.unit}`
+  return (
+    <p className="mt-1">
+      <Link href={`/staff/settings/town_rule_setting/${encodeURIComponent(summary.key)}`}>
+        {`Town value: ${amount}`}
+      </Link>
+    </p>
+  )
+}
+
 export function PackRules({
   rules,
   links,
+  townValues,
 }: {
   rules: readonly RuleSummary[]
   links: Record<RuleSortKey, SortLink>
+  townValues: ReadonlyMap<string, number>
 }) {
   const pack = loadPack()
   return (
@@ -37,7 +52,10 @@ export function PackRules({
                     <a href={summary.citation.url}>{summary.citation.label}</a>
                   )}
                 </td>
-                <td>{summary.policy}</td>
+                <td>
+                  {summary.policy}
+                  <TownValue summary={summary} value={townValues.get(summary.key)} />
+                </td>
               </tr>
             ))}
           </tbody>

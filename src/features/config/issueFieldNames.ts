@@ -22,6 +22,8 @@ const NAMES: ReadonlyMap<string, string> = new Map(
     inspectionType: 'Inspection name',
     value: 'Town value',
     adoption: 'Adoption record',
+    filingLeadDays: 'Filing deadline',
+    filingLeadAdoption: 'Filing deadline adoption record',
     body: 'Document',
     workflow: 'Workflow',
   }),

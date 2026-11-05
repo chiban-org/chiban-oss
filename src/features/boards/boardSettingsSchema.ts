@@ -2,8 +2,8 @@ import { BoardSchema, civilDateSchema } from '@packs/nh/schema'
 import { z } from 'zod'
 
 const AdoptionSchema = z.object({
-  adoptingAuthority: z.string().min(1),
-  adoptedOn: civilDateSchema,
+  adoptingAuthority: z.string(),
+  adoptedOn: civilDateSchema.nullable(),
 })
 
 export const RECHECK_CONTACTS_DEFAULT_DAYS = 365

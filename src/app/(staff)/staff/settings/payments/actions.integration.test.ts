@@ -41,6 +41,7 @@ vi.mock('next/headers', () => ({
 vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
 
 const settingsActions = await import('@/app/(staff)/staff/settings/payments/actions')
+const { publishAction } = await import('@/app/(staff)/staff/settings/actions')
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -68,6 +69,19 @@ function form(fields: Record<string, string>, token: string | null = 'tok'): For
   return f
 }
 
+function paymentSettingsForm(basisPoints: number, fixedCents: number): FormData {
+  return form({
+    kind: 'payment_settings',
+    key: 'default',
+    body: JSON.stringify({
+      key: 'default',
+      convenienceFee: { basisPoints, fixedCents, appliesTo: ['card_online'] },
+      receiptFooter: 'Thank you.',
+      checksPayableTo: 'Town of Alder Pond',
+    }),
+  })
+}
+
 const CSRF_COPY = 'Your session expired. Reload the page and try again.'
 describe('settings actions', () => {
   const stripeFields = {
@@ -84,7 +98,7 @@ describe('settings actions', () => {
       ok: false,
       error: CSRF_COPY,
     })
-    expect(await settingsActions.publishPaymentSettingsAction(form({}, null))).toEqual({
+    expect(await publishAction(form({}, null))).toEqual({
       ok: false,
       error: CSRF_COPY,
     })
@@ -134,15 +148,7 @@ describe('settings actions', () => {
 
   it('admin publishes the convenience fee and it is read back', async () => {
     state.actor = world.admin
-    const r = await settingsActions.publishPaymentSettingsAction(
-      form({
-        percent: '2.5',
-        fixedDollars: '0.25',
-        appliesOnline: 'on',
-        receiptFooter: 'Thank you.',
-        checksPayableTo: 'Town of Alder Pond',
-      }),
-    )
+    const r = await publishAction(paymentSettingsForm(250, 25))
     expect(r.ok).toBe(true)
     const settings = await getPaymentSettings(handle.db, signal)
     expect(settings.convenienceFee).toEqual({
@@ -152,21 +158,8 @@ describe('settings actions', () => {
     })
   })
 
-  it('names the field when the percent is not a number', async () => {
-    state.actor = world.admin
-    const r = await settingsActions.publishPaymentSettingsAction(
-      form({ percent: 'three', fixedDollars: '0', receiptFooter: '', checksPayableTo: 'Town' }),
-    )
-    expect(r).toMatchObject({
-      ok: false,
-      fieldErrors: { percent: expect.stringContaining('percent') },
-    })
-  })
-
   it('staff publishing payment settings is forbidden', async () => {
-    const r = await settingsActions.publishPaymentSettingsAction(
-      form({ percent: '0.01', fixedDollars: '0', receiptFooter: '', checksPayableTo: 'Town' }),
-    )
-    expect(r).toEqual({ ok: false, error: 'You do not have permission to do this.' })
+    const r = await publishAction(paymentSettingsForm(1, 0))
+    expect(r).toMatchObject({ ok: false, error: 'You do not have permission to do this.' })
   })
 })
