@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { and, eq, gt, isNull, sql } from 'drizzle-orm'
+import { and, eq, gt, isNull, ne, sql } from 'drizzle-orm'
 import { SESSION_COOKIE } from '@/constants/cookies'
 import type { DbOrTx } from '@/db/client'
 import { sessions, users } from '@/db/schema'
@@ -75,4 +75,23 @@ export async function revokeAllSessions(
     .update(sessions)
     .set({ revokedAt: new Date() })
     .where(and(eq(sessions.userId, userId), isNull(sessions.revokedAt)))
+}
+
+export async function revokeOtherSessions(
+  db: DbOrTx,
+  userId: string,
+  keepToken: string | null,
+  signal: AbortSignal,
+): Promise<void> {
+  signal.throwIfAborted()
+  await db
+    .update(sessions)
+    .set({ revokedAt: new Date() })
+    .where(
+      and(
+        eq(sessions.userId, userId),
+        isNull(sessions.revokedAt),
+        keepToken === null ? undefined : ne(sessions.tokenHash, hashSessionToken(keepToken)),
+      ),
+    )
 }

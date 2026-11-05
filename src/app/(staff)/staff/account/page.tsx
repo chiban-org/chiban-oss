@@ -4,8 +4,10 @@ import { FactList, PageHeader } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { db } from '@/db/client'
 import { loadAccountSummary } from '@/features/auth/accountSummary'
+import { MIN_PASSWORD_LENGTH } from '@/features/auth/createStaffUser'
 import { roleLabel } from '@/features/staffNav/roleLabels'
 import { requireStaffActor } from '@/server/requireStaff'
+import { ChangeNameForm, ChangePasswordForm } from './AccountForms'
 import { signOutAction } from './actions'
 
 export default async function StaffAccountPage({
@@ -51,6 +53,21 @@ export default async function StaffAccountPage({
             },
           ]}
         />
+        {summary === null ? null : (
+          <section aria-labelledby="account-name">
+            <h2 id="account-name">Your name</h2>
+            <ChangeNameForm displayName={summary.displayName} />
+          </section>
+        )}
+        {summary?.hasPassword === true ? (
+          <section aria-labelledby="account-password">
+            <h2 id="account-password">Password</h2>
+            <p className="text-muted-foreground">
+              Changing it signs you out on every other device.
+            </p>
+            <ChangePasswordForm minLength={MIN_PASSWORD_LENGTH} />
+          </section>
+        ) : null}
         <div className="flex flex-wrap gap-3">
           <Button asChild>
             <Link href="/staff/account/totp">Authenticator settings</Link>

@@ -6,6 +6,7 @@ export interface AccountSummary {
   displayName: string
   email: string
   totpEnabled: boolean
+  hasPassword: boolean
 }
 
 export async function loadAccountSummary(
@@ -15,8 +16,15 @@ export async function loadAccountSummary(
 ): Promise<AccountSummary | null> {
   signal.throwIfAborted()
   const [row] = await db
-    .select({ displayName: users.displayName, email: users.email, totpEnabled: users.totpEnabled })
+    .select({
+      displayName: users.displayName,
+      email: users.email,
+      totpEnabled: users.totpEnabled,
+      passwordHash: users.passwordHash,
+    })
     .from(users)
     .where(eq(users.id, userId))
-  return row ?? null
+  if (row === undefined) return null
+  const { passwordHash, ...rest } = row
+  return { ...rest, hasPassword: passwordHash !== null }
 }
