@@ -63,6 +63,23 @@ describe('counter steps', () => {
     expect(html).not.toContain('Contractor name')
   })
 
+  it('says where permits not listed here are started', async () => {
+    const html = await page({})
+    expect(html).toContain('Other permits and applications are started by the applicant in the')
+    expect(html).toContain('href="/portal/apply"')
+    expect(await page({ type: 'EL' })).not.toContain('started by the applicant')
+  })
+
+  it('changes the lead line as the steps are chosen', async () => {
+    expect(await page({})).toContain('Choose the permit type, then find the parcel.')
+    const typed = await page({ type: 'EL' })
+    expect(typed).toContain('Find the parcel the permit is for.')
+    expect(typed).not.toContain('Choose the permit type')
+    const full = await page({ type: 'EL', parcel: world.parcelId })
+    expect(full).toContain('Fill in the details, take payment, then issue and print the permit.')
+    expect(full).not.toContain('find the parcel.')
+  })
+
   it('ignores a parcel until a permit type is chosen, and keeps it for the type tile', async () => {
     const html = await page({ parcel: world.parcelId })
     expect(html).not.toContain('name="q"')

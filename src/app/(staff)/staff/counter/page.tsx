@@ -1,6 +1,7 @@
 import { NH_LICENSE_TYPES, nhDefaultLicenseType } from '@packs/nh/licenseTypes'
 import { NH_LICENSE_LOOKUP } from '@packs/nh/links'
 import { eq } from 'drizzle-orm'
+import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { CounterParcelSearch } from '@/components/counter/CounterParcelSearch'
 import { type ChosenStep, ChosenSteps, TypeTiles } from '@/components/counter/CounterSteps'
@@ -55,8 +56,23 @@ function href(params: Record<string, string | undefined>): string {
   return `${START}?${query.toString()}`
 }
 
-function Header() {
-  return <PageHeader title="Counter" lead="Choose the permit type, then find the parcel." />
+const LEADS = {
+  type: 'Choose the permit type, then find the parcel.',
+  parcel: 'Find the parcel the permit is for.',
+  form: 'Fill in the details, take payment, then issue and print the permit.',
+} as const
+
+function Header({ step }: { step: keyof typeof LEADS }) {
+  return <PageHeader title="Counter" lead={LEADS[step]} />
+}
+
+function OtherApplications() {
+  return (
+    <p>
+      Other permits and applications are started by the applicant in the{' '}
+      <Link href="/portal/apply">online portal</Link>.
+    </p>
+  )
 }
 
 async function parcelLabel(ctx: StaffContext, parcelId: string): Promise<string> {
@@ -146,8 +162,9 @@ export default async function CounterPage({ searchParams }: Props) {
   if (selectedType === undefined) {
     return (
       <main>
-        <Header />
+        <Header step="type" />
         <TypeTiles types={types} hrefFor={(key) => href({ q, parcel: parcelId, type: key })} />
+        <OtherApplications />
       </main>
     )
   }
@@ -157,7 +174,7 @@ export default async function CounterPage({ searchParams }: Props) {
       : await issueStep(ctx, selectedType, parcelId, q)
   return (
     <main>
-      <Header />
+      <Header step={parcelId === undefined ? 'parcel' : 'form'} />
       {step}
     </main>
   )
