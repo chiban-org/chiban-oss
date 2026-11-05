@@ -14,6 +14,7 @@ import { loadApplicationContext } from '@/features/applications/context'
 import { getVersion } from '@/features/config/store'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import { displayIdsFor } from '@/features/parcels/displayId'
+import { correctionMark } from '@/features/permits/correction/mark'
 import type { MergeContext } from '@/features/templates/renderTemplate'
 import type { TemplateBody } from '@/features/templates/templateSchema'
 import { getTownSettings } from '@/features/town/settings'
@@ -40,6 +41,7 @@ export interface PermitData {
   feesTotal: string
   feeStatus: string
   permitTemplate: TemplateBody | null
+  correctionMark: string | null
 }
 
 async function partyName(db: DbOrTx, projectId: string, role: 'applicant' | 'contractor') {
@@ -141,6 +143,7 @@ export async function loadPermitData(
     feesTotal: fees.total,
     feeStatus: fees.status,
     permitTemplate: await permitTemplate(db, application.pins.templates, signal),
+    correctionMark: correctionMark(application.permitRevision, application.permitCorrectedOn),
   }
 }
 

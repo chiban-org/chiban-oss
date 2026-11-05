@@ -18,4 +18,22 @@ describe('notification messages', () => {
     expect(rendered.text).toContain('November 2, 2026')
     expect(findIsoDates(`${rendered.subject} ${rendered.text} ${rendered.html}`)).toEqual([])
   })
+
+  it('tell a replaced contractor about a correction without linking the application', () => {
+    const payload: NotificationPayload = {
+      number: 'EL-2027-0001',
+      revision: 2,
+      contractorRemoved: true,
+    }
+    const removed = MESSAGES.permit_corrected({ applicationId: 'a1', payload })
+    expect(removed.text).toContain('revision 2')
+    expect(removed.text).toContain('no longer listed as its contractor')
+    expect(removed.text).not.toContain('/portal/applications/a1')
+    const party = MESSAGES.permit_corrected({
+      applicationId: 'a1',
+      payload: { number: 'EL-2027-0001', revision: 2 },
+    })
+    expect(party.subject).toBe('Permit EL-2027-0001 corrected')
+    expect(party.text).toContain('/portal/applications/a1')
+  })
 })

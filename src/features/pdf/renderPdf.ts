@@ -41,8 +41,9 @@ function drawTitle(ctx: BlockContext, spec: PdfDocumentSpec): void {
   drawText(page, spec.title, { x, y: layout.y - size, font: fonts.heading, size })
   layout.y -= size * LEADING + 4
   if (spec.subtitle !== undefined) {
+    const subtitleWidth = textWidth(fonts.body, spec.subtitle, 12)
     drawText(page, spec.subtitle, {
-      x: MARGIN,
+      x: spec.scale === 'placard' ? (PAGE_WIDTH - subtitleWidth) / 2 : MARGIN,
       y: layout.y - 12,
       font: fonts.body,
       size: 12,

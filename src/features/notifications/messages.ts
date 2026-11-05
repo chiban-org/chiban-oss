@@ -97,6 +97,22 @@ export const MESSAGES: Record<NotificationEvent, Builder> = {
       ],
       portalLink(c.applicationId),
     ),
+  permit_corrected: (c) =>
+    c.payload.contractorRemoved === true
+      ? compose(
+          `Permit ${c.payload.number} corrected`,
+          [
+            `Permit ${c.payload.number} was corrected and reissued as revision ${c.payload.revision ?? ''}. You are no longer listed as its contractor.`,
+          ],
+          `${env.BASE_URL}/portal`,
+        )
+      : compose(
+          `Permit ${c.payload.number} corrected`,
+          [
+            `Permit ${c.payload.number} was corrected and reissued as revision ${c.payload.revision ?? ''}. The corrected permit is in your account; the earlier copy stays listed under it.`,
+          ],
+          portalLink(c.applicationId),
+        ),
   review_assigned: (c) =>
     compose(
       `Review requested: ${c.payload.number}`,

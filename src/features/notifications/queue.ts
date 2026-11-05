@@ -17,6 +17,8 @@ export interface NotificationPayload {
   onDate?: string
   atTime?: string
   result?: string
+  revision?: number
+  contractorRemoved?: boolean
 }
 
 export interface QueueInput {
