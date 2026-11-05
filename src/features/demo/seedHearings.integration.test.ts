@@ -21,6 +21,9 @@ import { loadActor } from '@/features/auth/actor'
 import { listMeetingTable } from '@/features/boards/meetingList'
 import { readMeetingListView } from '@/features/boards/meetingListParams'
 import { listMemberMeetings } from '@/features/boards/memberPackets'
+import { pendingChanges } from '@/features/boards/packetChanges'
+import { packetItemRows } from '@/features/boards/packetContents'
+import { trackPacket } from '@/features/boards/packetTrack'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { actorFor } from '@/features/demo/seedPermitSupport'
@@ -49,6 +52,14 @@ async function member(local: string) {
   const actor = await loadActor(handle.db, row?.id ?? '', signal)
   if (actor === null) throw new Error(`no ${local}`)
   return actor
+}
+
+async function packetFor(meetingId: string) {
+  const [row] = await handle.db
+    .select()
+    .from(boardPackets)
+    .where(eq(boardPackets.meetingId, meetingId))
+  return row
 }
 
 async function meetingOn(board: 'planning_board' | 'zba', date: string): Promise<string> {
@@ -152,6 +163,21 @@ describe('hearing demo data', () => {
     expect(cancelled.map((m) => m.kind)).toEqual(['special'])
     expect((cancelled[0]?.meetingDate ?? '') >= today).toBe(true)
     expect(cancelled[0]?.cancelReason).not.toBe('')
+  })
+
+  it('has one sent packet with reads and one with a change not sent, and seeding again adds nothing', async () => {
+    const sentPacket = await packetFor(await meetingOn('planning_board', '2026-12-09'))
+    expect(sentPacket?.sentAt).not.toBeNull()
+    const reads = await trackPacket(handle.db, sentPacket?.id ?? '')
+    expect(reads.some((r) => r.firstOpenedAt !== null && r.documentsOpened > 0)).toBe(true)
+    const changed = await packetFor(await meetingOn('zba', '2026-12-15'))
+    const rows = await packetItemRows(handle.db, changed?.id ?? '')
+    const pending = changed === undefined ? null : pendingChanges(rows, changed)
+    expect(pending?.added.map((r) => r.title)).toEqual(['Zoning administrator memo'])
+    await seedDemo(handle.db, signal, { ...(await demoSeedDeps()), screenStates: true })
+    const again = await packetItemRows(handle.db, changed?.id ?? '')
+    expect(again).toHaveLength(rows.length)
+    expect(await trackPacket(handle.db, sentPacket?.id ?? '')).toEqual(reads)
   })
 
   it('has a packet link that is still open', async () => {

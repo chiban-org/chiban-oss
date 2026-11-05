@@ -14,6 +14,7 @@ import { COMMON } from '@/features/demo/seedBoardApps'
 import type { CoverageContext } from '@/features/demo/seedCoverage'
 import { meetingId as meetingOn } from '@/features/demo/seedHearings'
 import { removeStaleDemoPacket, seedCancelledMeeting } from '@/features/demo/seedMeetingCleanup'
+import { packetWithUnsentChange, sentPacketWithReads } from '@/features/demo/seedPacketStates'
 import { findApplication, must, open } from '@/features/demo/seedPermitSupport'
 import { scheduleHearing } from '@/features/hearings/hearings'
 
@@ -199,13 +200,16 @@ async function openPacketLink(ctx: CoverageContext, meetingId: string): Promise<
 
 export async function seedMeetingStates(ctx: CoverageContext): Promise<boolean> {
   const december9 = await meetingOn(ctx.db, 'planning_board', '2026-12-09')
+  const december15 = await meetingOn(ctx.db, 'zba', '2026-12-15')
   const steps = [
     await removeStaleDemoPacket(ctx),
     await hearingsAwaitingAgenda(ctx),
     await draftAgenda(ctx),
     await publishedWithPacket(ctx, december9, PUBLISHED_AGENDA_APP),
-    await publishedWithPacket(ctx, await meetingOn(ctx.db, 'zba', '2026-12-15'), null),
+    await publishedWithPacket(ctx, december15, null),
+    await sentPacketWithReads(ctx, december9),
     await openPacketLink(ctx, december9),
+    await packetWithUnsentChange(ctx, december15),
     await seedCancelledMeeting(ctx),
   ]
   return steps.some(Boolean)
