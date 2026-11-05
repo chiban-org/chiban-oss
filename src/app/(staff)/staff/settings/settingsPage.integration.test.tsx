@@ -60,17 +60,13 @@ afterAll(async () => {
 describe('settings index', () => {
   it('opens the first settings page each role can use', async () => {
     expect(await settingsFor(admin)).toBe('NEXT_REDIRECT:/staff/settings/town-profile')
-    expect(await settingsFor(await staffActor(handle.db, 'staff'))).toBe(
-      'NEXT_REDIRECT:/staff/admin/cutover',
-    )
-    expect(await settingsFor(await staffActor(handle.db, 'records_custodian'))).toBe(
-      'NEXT_REDIRECT:/staff/admin/export',
-    )
   })
 
   it('refuses a viewer who can open no settings page', async () => {
-    const html = await settingsFor(await staffActor(handle.db, 'finance'))
-    expect(html).toContain('You do not have permission to change settings.')
+    for (const role of ['finance', 'staff', 'records_custodian'] as const) {
+      const html = await settingsFor(await staffActor(handle.db, role))
+      expect(html).toContain('You do not have permission to change settings.')
+    }
   })
 })
 

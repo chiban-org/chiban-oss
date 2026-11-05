@@ -38,6 +38,10 @@ const any = (...capabilities: Capability[]): BaseNavAccess => ({
   kind: 'anyCapability',
   capabilities,
 })
+const all = (...capabilities: Capability[]): BaseNavAccess => ({
+  kind: 'allCapabilities',
+  capabilities,
+})
 const config = any('config.edit')
 const kind = (key: string) => `/staff/settings/${key}`
 
@@ -142,20 +146,20 @@ export const SETTINGS_MENU_ITEMS: readonly SettingsMenuItem[] = [
     href: '/staff/admin/export',
     label: 'Data export',
     group: 'admin',
-    access: any('export.download'),
+    access: all('config.edit', 'export.download'),
   },
   { href: '/staff/admin/health', label: 'Health', group: 'admin', access: config },
   {
     href: '/staff/admin/cutover',
     label: 'Move open applications over',
     group: 'admin',
-    access: any('cutover.import'),
+    access: all('config.edit', 'cutover.import'),
   },
   {
     href: '/staff/admin/migration',
     label: 'Scanned property files',
     group: 'admin',
-    access: { kind: 'allCapabilities', capabilities: ['document.manage', 'parcel.manage'] },
+    access: all('config.edit', 'document.manage', 'parcel.manage'),
   },
 ]
 

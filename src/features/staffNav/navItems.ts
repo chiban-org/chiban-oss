@@ -37,6 +37,10 @@ export function activeNavHref(pathname: string, items: readonly NavItem[]): stri
 
 const open: NavAccess = { kind: 'open' }
 const records: NavAccess = { kind: 'fullRecordAccess' }
+const parcelData: NavAccess = {
+  kind: 'anyCapability',
+  capabilities: ['parcel.manage', 'gis.import'],
+}
 const any = (...capabilities: Capability[]): NavAccess => ({ kind: 'anyCapability', capabilities })
 
 export const STAFF_NAV_ITEMS: readonly NavItem[] = [
@@ -176,13 +180,27 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
     icon: 'census',
     access: any('report.view'),
   },
-  { href: '/staff/gis/imports', label: 'Imports', group: 'data', icon: 'imports', access: records },
+  {
+    href: '/staff/admin/export',
+    label: 'Data export',
+    group: 'records',
+    icon: 'export',
+    access: any('export.download'),
+    settingsTwin: true,
+  },
+  {
+    href: '/staff/gis/imports',
+    label: 'Imports',
+    group: 'data',
+    icon: 'imports',
+    access: parcelData,
+  },
   {
     href: '/staff/gis/exceptions',
     label: 'Exceptions',
     group: 'data',
     icon: 'exceptions',
-    access: records,
+    access: parcelData,
   },
   {
     href: '/staff/parcels/unresolved',
@@ -196,7 +214,23 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
     label: 'Overrides',
     group: 'data',
     icon: 'overrides',
-    access: records,
+    access: parcelData,
+  },
+  {
+    href: '/staff/admin/cutover',
+    label: 'Move open applications over',
+    group: 'data',
+    icon: 'cutover',
+    access: any('cutover.import'),
+    settingsTwin: true,
+  },
+  {
+    href: '/staff/admin/migration',
+    label: 'Scanned property files',
+    group: 'data',
+    icon: 'migration',
+    access: { kind: 'allCapabilities', capabilities: ['document.manage', 'parcel.manage'] },
+    settingsTwin: true,
   },
   {
     href: '/staff/settings',
@@ -215,8 +249,13 @@ export const NAV_CAPABILITIES: readonly Capability[] = CAPABILITY_KEYS.filter((c
   NAV_ACCESS.some((access) => accessCapabilities(access).includes(capability)),
 )
 
+function inSettingsMenu(href: string, viewer: NavViewer): boolean {
+  return settingsMenuFor(viewer).some((setting) => setting.href === href)
+}
+
 export function mayUse(item: NavItem, viewer: NavViewer): boolean {
   if (item.access.kind === 'settings') return settingsMenuFor(viewer).length > 0
+  if (item.settingsTwin === true && inSettingsMenu(item.href, viewer)) return false
   return accessAllows(item.access, viewer)
 }
 
@@ -237,7 +276,6 @@ export function navItemsFor(viewer: NavViewer): NavItem[] {
 
 export function mayOpen(href: string, viewer: NavViewer): boolean {
   const item = STAFF_NAV_ITEMS.find((i) => i.href === href)
-  if (item !== undefined) return mayUse(item, viewer)
-  const setting = SETTINGS_MENU_ITEMS.find((i) => i.href === href)
-  return setting === undefined ? false : accessAllows(setting.access, viewer)
+  if (item !== undefined && mayUse(item, viewer)) return true
+  return inSettingsMenu(href, viewer)
 }

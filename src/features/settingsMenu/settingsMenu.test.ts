@@ -57,12 +57,12 @@ describe('settings menu', () => {
     ])
   })
 
-  it('shows staff only the administration pages their role opens', () => {
-    expect(labelsFor('staff')).toEqual(['Move open applications over', 'Scanned property files'])
+  it('leaves the data pages staff can open out of their settings menu', () => {
+    expect(labelsFor('staff')).toEqual([])
   })
 
-  it('shows the records custodian only the data export', () => {
-    expect(labelsFor('records_custodian')).toEqual(['Data export'])
+  it('leaves the data export out of the records custodian settings menu', () => {
+    expect(labelsFor('records_custodian')).toEqual([])
   })
 
   it('shows nothing to roles without any settings page', () => {

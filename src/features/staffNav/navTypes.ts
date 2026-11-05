@@ -51,6 +51,9 @@ export const NAV_ICONS = [
   'exceptions',
   'unresolved',
   'overrides',
+  'export',
+  'cutover',
+  'migration',
   'settings',
   'account',
 ] as const
@@ -67,6 +70,7 @@ export interface NavItem {
   parent?: string
   match?: readonly string[]
   access: NavAccess
+  settingsTwin?: true
 }
 
 export interface NavSection {

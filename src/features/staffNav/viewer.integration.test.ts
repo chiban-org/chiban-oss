@@ -38,7 +38,10 @@ describe('loading the navigation viewer from stored grants', () => {
     expect(finance).toContain('Payments')
     expect(finance).not.toContain('Settings')
     const custodian = await labels('records_custodian')
-    expect(custodian).toEqual(expect.arrayContaining(['Preservation', 'Legal holds', 'Settings']))
+    expect(custodian).toEqual(
+      expect.arrayContaining(['Preservation', 'Legal holds', 'Data export']),
+    )
+    expect(custodian).not.toContain('Settings')
     const board = await labels('board_member')
     expect(board).not.toEqual(expect.arrayContaining(['Applications', 'Settings']))
     expect(await labels('admin')).toContain('Settings')
@@ -46,7 +49,7 @@ describe('loading the navigation viewer from stored grants', () => {
 
   it('derives each role settings menu from the stored capabilities', async () => {
     expect(await settings('finance')).toEqual([])
-    expect(await settings('records_custodian')).toEqual(['Data export'])
+    expect(await settings('records_custodian')).toEqual([])
     expect(await settings('admin')).toEqual(
       expect.arrayContaining(['Data export', 'Health', 'Move open applications over']),
     )

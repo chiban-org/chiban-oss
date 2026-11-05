@@ -112,22 +112,22 @@ describe('staff navigation', () => {
   })
 
   it('shows Settings to anyone who can open at least one settings page', () => {
-    for (const role of ['admin', 'staff', 'records_custodian'] as const) {
-      expect(labelsFor(role)).toContain('Settings')
-    }
-    for (const role of ['finance', 'inspector', 'reviewer', 'board_member'] as const) {
+    expect(labelsFor('admin')).toContain('Settings')
+    for (const role of [
+      'staff',
+      'records_custodian',
+      'finance',
+      'inspector',
+      'reviewer',
+      'board_member',
+    ] as const) {
       expect(labelsFor(role)).not.toContain('Settings')
     }
   })
 
   it('has no Administration group, only the single Settings entry', () => {
     expect(NAV_GROUPS.map((g) => g.key)).not.toContain('admin')
-    for (const label of [
-      'Export',
-      'Health',
-      'Move open applications over',
-      'Enforcement officers',
-    ]) {
+    for (const label of ['Export', 'Health', 'Enforcement officers', 'Users']) {
       expect(STAFF_NAV_ITEMS.map((i) => i.label)).not.toContain(label)
     }
     expect(STAFF_NAV_ITEMS.filter((i) => i.label === 'Settings')).toHaveLength(1)
@@ -135,7 +135,11 @@ describe('staff navigation', () => {
 
   it('marks Settings current on the settings and administration pages', () => {
     expect(activeNavHref('/staff/settings/form', STAFF_NAV_ITEMS)).toBe('/staff/settings')
-    expect(activeNavHref('/staff/admin/export/targets', STAFF_NAV_ITEMS)).toBe('/staff/settings')
+    const admin = navItemsFor({
+      roles: ['admin'],
+      capabilities: new Set<Capability>(DEFAULT_GRANTS.admin ?? []),
+    })
+    expect(activeNavHref('/staff/admin/export/targets', admin)).toBe('/staff/settings')
   })
 
   it('loads every capability a settings page needs', () => {

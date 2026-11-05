@@ -1,5 +1,6 @@
 import {
   Archive,
+  ArrowRightLeft,
   Banknote,
   BookUser,
   CalendarClock,
@@ -8,7 +9,9 @@ import {
   ClipboardCheck,
   ClipboardList,
   ConciergeBell,
+  Download,
   FileQuestion,
+  FileScan,
   FileSearch,
   FileText,
   FolderOpen,
@@ -56,6 +59,9 @@ export const NAV_ICON_COMPONENTS: Record<NavIcon, LucideIcon> = {
   exceptions: TriangleAlert,
   unresolved: FileQuestion,
   overrides: PenLine,
+  export: Download,
+  cutover: ArrowRightLeft,
+  migration: FileScan,
   settings: Settings,
   account: UserRound,
 }
