@@ -1,6 +1,5 @@
-import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { NEW_TAB } from '@/components/newTab'
+import { PacketItems } from '@/components/board/PacketItems'
 import { db } from '@/db/client'
 import { openPacket } from '@/features/boards/packetLinks'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -9,7 +8,6 @@ export const dynamic = 'force-dynamic'
 
 const TIMEOUT_MS = 10_000
 const BOARD_NAMES = { planning_board: 'Planning Board', zba: 'Zoning Board of Adjustment' } as const
-const LINK = 'tap-target inline-flex items-center'
 
 export default async function BoardPacketPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
@@ -31,24 +29,7 @@ export default async function BoardPacketPage({ params }: { params: Promise<{ to
       <meta name="robots" content="noindex" />
       <h1>{packet.title}</h1>
       <p>{`${BOARD_NAMES[packet.board]}, meeting ${formatCivilDate(packet.meetingDate)}`}</p>
-      <ul className="m-0 list-none space-y-2 p-0">
-        <li>
-          <Link {...NEW_TAB} href={`${base}/cover`} className={LINK}>
-            Cover page and contents
-          </Link>
-        </li>
-        {packet.items.map((item) => (
-          <li key={item.versionId}>
-            {item.withdrawnOn === null ? (
-              <Link {...NEW_TAB} href={`${base}/${item.versionId}`} className={LINK}>
-                {item.title}
-              </Link>
-            ) : (
-              <span>{`${item.title}: withdrawn by the town on ${formatCivilDate(item.withdrawnOn)}`}</span>
-            )}
-          </li>
-        ))}
-      </ul>
+      <PacketItems items={packet.items} base={base} />
     </main>
   )
 }

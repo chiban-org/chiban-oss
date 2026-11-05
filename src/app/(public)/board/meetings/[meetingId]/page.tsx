@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { NEW_TAB } from '@/components/newTab'
+import { PacketItems } from '@/components/board/PacketItems'
 import { isBoardMember } from '@/features/access/predicates'
 import { getMemberPacket } from '@/features/boards/memberPackets'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -33,19 +33,7 @@ export default async function BoardMeetingPage({
       </p>
       <h1>{packet.value.title}</h1>
       <p>{`${BOARD_NAMES[packet.value.board]}, meeting ${formatCivilDate(packet.value.meetingDate)}`}</p>
-      <ul className="m-0 list-none space-y-2 p-0">
-        {packet.value.items.map((item) => (
-          <li key={item.versionId}>
-            {item.withdrawnOn === null ? (
-              <Link {...NEW_TAB} href={`${base}/${item.versionId}`} className={LINK}>
-                {item.title}
-              </Link>
-            ) : (
-              <span>{`${item.title}: withdrawn by the town on ${formatCivilDate(item.withdrawnOn)}`}</span>
-            )}
-          </li>
-        ))}
-      </ul>
+      <PacketItems items={packet.value.items} base={base} />
     </main>
   )
 }

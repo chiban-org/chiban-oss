@@ -1,7 +1,11 @@
 import { db } from '@/db/client'
-import { openMemberPacketVersion } from '@/features/boards/memberPackets'
+import { packetCoverPdf } from '@/features/boards/cover'
+import { memberPacketView, openMemberPacketVersion } from '@/features/boards/memberPackets'
+import { documentFrame } from '@/features/pdf/documentFrame'
+import { pdfOk, toResponse } from '@/features/pdf/pdfResponse'
 import { streamStoredObject } from '@/features/storage/delivery'
 import { getObjectStore } from '@/features/storage/objectStore'
+import { publishedTemplate } from '@/features/templates/findTemplate'
 import { formatCivilDate } from '@/lib/formatDate'
 import { getActor } from '@/server/getActor'
 
@@ -15,15 +19,31 @@ function plain(status: number, body: string): Response {
   return new Response(body, { status, headers: { 'content-type': 'text/plain; charset=utf-8' } })
 }
 
+async function coverResponse(
+  request: Request,
+  actor: NonNullable<Awaited<ReturnType<typeof getActor>>>,
+  meetingId: string,
+  signal: AbortSignal,
+): Promise<Response> {
+  const view = await memberPacketView(db, actor, meetingId, signal)
+  if (!view.ok) return plain(404, 'Not found')
+  const frame = await documentFrame(db, { board: view.value.board }, signal)
+  const template = await publishedTemplate(db, 'board_packet_cover', signal)
+  const bytes = await packetCoverPdf({ ...view.value, expiresAt: '' }, frame, template)
+  return toResponse(pdfOk(bytes), request.headers.get('accept'))
+}
+
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ meetingId: string; versionId: string }> },
 ): Promise<Response> {
   const { meetingId, versionId } = await params
   const signal = AbortSignal.timeout(TIMEOUT_MS)
   const actor = await getActor(signal)
   if (actor === null) return plain(401, 'Sign in to read board packets')
-  if (!UUID.test(meetingId) || !UUID.test(versionId)) return plain(404, 'Not found')
+  if (!UUID.test(meetingId)) return plain(404, 'Not found')
+  if (versionId === 'cover') return await coverResponse(request, actor, meetingId, signal)
+  if (!UUID.test(versionId)) return plain(404, 'Not found')
   const result = await openMemberPacketVersion(db, actor, { meetingId, versionId }, signal)
   if (result.ok) {
     return (await streamStoredObject(getObjectStore(), result.value)) ?? plain(404, 'Not found')

@@ -134,6 +134,7 @@ describe('board member home', () => {
     const html = renderToStaticMarkup(await BoardHomePage())
     expect(html).toContain('Zoning Board of Adjustment, April 15, 2027')
     expect(html).toContain(`/board/meetings/${meetingId}`)
+    expect(html).toMatch(/<mark[^>]*>New<\/mark>/)
     expect(findIsoDates(html.replace(/href="[^"]*"/g, ''))).toEqual([])
   })
 
@@ -156,6 +157,7 @@ describe('board member meeting page', () => {
     const html = renderToStaticMarkup(await MeetingPage({ params: Promise.resolve({ meetingId }) }))
     expect(html).toContain('Zoning Board of Adjustment packet, April 15, 2027')
     expect(html).toContain(`/documents/${versionId}`)
+    expect(html).toContain(`/board/meetings/${meetingId}/documents/cover`)
     expect(findUuids(html.replace(/href="[^"]*"/g, ''))).toEqual([])
     expect(html).not.toMatch(/\.pdf\)/)
   })
@@ -192,6 +194,13 @@ describe('board member document route', () => {
     expect(response.status).toBe(200)
     expect(response.headers.get('content-security-policy')).toContain('sandbox')
     expect((await response.arrayBuffer()).byteLength).toBeGreaterThan(0)
+  })
+
+  it('serves the cover page to a member and not to the other board', async () => {
+    const response = await call(zba, 'cover')
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toContain('pdf')
+    expect((await call(pb, 'cover')).status).toBe(404)
   })
 
   it('answers 401 when signed out and 404 for the other board and unknown versions', async () => {
