@@ -111,7 +111,10 @@ describe('record administration pages', () => {
 
   it('parcel ID overrides and lineage events are offered only to those who may record them', async () => {
     const [parcel] = await handle.db.select({ id: parcels.id }).from(parcels).limit(1)
-    const props = () => ({ params: Promise.resolve({ parcelId: parcel?.id ?? '' }) })
+    const props = () => ({
+      params: Promise.resolve({ parcelId: parcel?.id ?? '' }),
+      searchParams: Promise.resolve({}),
+    })
     await actAs('reviewer')
     const reviewerPage = await html((await page('parcels/[parcelId]'))(props()))
     expect(reviewerPage).not.toContain('Override an ID')
