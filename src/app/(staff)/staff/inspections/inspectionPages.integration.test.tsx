@@ -116,6 +116,35 @@ describe('the inspection board', () => {
       body.indexOf('aria-label="Requests and bookings"'),
     )
   })
+
+  it('opens with a lead line, the day list link in the header, and Take a request above the queue', async () => {
+    await actAs('staff')
+    const body = await html(InspectionsPage({ searchParams: Promise.resolve({}) }))
+    const header = body.slice(body.indexOf('<header'), body.indexOf('</header>'))
+    expect(header).toContain('Requests are listed oldest first')
+    expect(header).toContain('href="/staff/inspections/day"')
+    expect(body).toContain('<main data-wide')
+    expect(body.indexOf('aria-label="Take a request"')).toBeGreaterThan(-1)
+    expect(body.indexOf('aria-label="Take a request"')).toBeLessThan(
+      body.indexOf('aria-label="Requests and bookings"'),
+    )
+    expect(body.indexOf('aria-label="Requests and bookings"')).toBeLessThan(
+      body.indexOf('aria-label="Open slots"'),
+    )
+  })
+
+  it('refuses a viewer without the scheduling capability', async () => {
+    await actAs('admin')
+    const body = await html(InspectionsPage({ searchParams: Promise.resolve({}) }))
+    expect(body).toContain('You do not have permission to schedule inspections.')
+    expect(body).not.toContain('aria-label="Open slots"')
+  })
+
+  it('opens for an inspector', async () => {
+    await actAs('inspector')
+    const body = await html(InspectionsPage({ searchParams: Promise.resolve({}) }))
+    expect(body).toContain('aria-label="Open slots"')
+  })
 })
 
 describe('an inspection', () => {

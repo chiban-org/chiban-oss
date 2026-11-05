@@ -92,7 +92,7 @@ export function TakeRequestSection({
   board: ScheduleBoardData
 }) {
   return (
-    <section aria-label="Take a request" id="take-request" className="max-w-xl space-y-3">
+    <section aria-label="Take a request" id="take-request" className="m-0">
       <h2>Take a request</h2>
       <PermitLookupForm number={data.number} />
       <Outcome data={data} board={board} />

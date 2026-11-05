@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { useCsrfToken } from '@/components/CsrfProvider'
 import {
   type BoardDay,
@@ -15,10 +15,14 @@ import type { ActionResult } from '@/server/actionRunner'
 export function ScheduleBoardClient({
   requests,
   days,
+  today,
+  takeRequest,
   scheduleAction,
 }: {
   requests: BoardRequest[]
   days: BoardDay[]
+  today: string
+  takeRequest: ReactNode
   scheduleAction: (formData: FormData) => Promise<ActionResult>
 }) {
   const csrf = useCsrfToken()
@@ -44,6 +48,8 @@ export function ScheduleBoardClient({
     <ScheduleBoard
       requests={requests}
       days={days}
+      today={today}
+      takeRequest={takeRequest}
       message={message}
       onSchedule={(choice) => void schedule(choice)}
     />

@@ -1,12 +1,10 @@
 'use client'
 
-import Link from 'next/link'
-import { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { minutesToClock } from '@/features/inspections/zonedTime'
-import { formatCivilDate } from '@/lib/formatDate'
+import { type ReactNode, useState } from 'react'
+import { RequestQueue } from '@/components/inspections/RequestQueue'
+import { SlotDayRow, type SlotPick, WeekSwitcher } from '@/components/inspections/SlotWeeks'
+import { firstOpenWeek, groupSlotWeeks, weekStart } from '@/features/inspections/slotWeeks'
+import type { CivilDate } from '@/types/civilDate'
 
 export interface BoardRequest {
   inspectionId: string
@@ -37,85 +35,88 @@ export interface ScheduleChoice {
   inspectorUserId: string
 }
 
-const CHANNEL_LABEL = { phone: 'Phone', counter: 'Counter', portal: 'Portal' } as const
+function pickPrompt(request: BoardRequest | undefined): string {
+  return request === undefined
+    ? 'Choose a request, then an open time.'
+    : `Pick a time for ${request.applicationNumber}, ${request.typeLabel}.`
+}
 
-const OPEN_DAYS = 3
-
-type SlotPick = (day: BoardDay, start: number) => void
-
-function SlotButtons({ day, onPick }: { day: BoardDay; onPick: SlotPick }) {
+function OpenSlots({
+  days,
+  today,
+  chosen,
+  shown,
+  onShow,
+  onPick,
+  message,
+}: {
+  days: BoardDay[]
+  today: string
+  chosen: BoardRequest | undefined
+  shown: CivilDate | null
+  onShow: (start: CivilDate) => void
+  onPick: SlotPick
+  message: string | null
+}) {
+  const weeks = groupSlotWeeks(days, today as CivilDate)
+  const week = weeks.find((w) => w.start === shown) ?? weeks[0]
   return (
-    <div className="mt-2 flex flex-wrap gap-2">
-      {day.freeStarts.length === 0 ? <span>Full</span> : null}
-      {day.freeStarts.map((start) => (
-        <Button
-          key={start}
-          type="button"
-          variant="outline"
-          size="sm"
-          aria-label={`${minutesToClock(start)}, ${formatCivilDate(day.date)}, ${day.inspectorName}`}
-          onClick={() => onPick(day, start)}
-          className="tabular-nums"
-        >
-          {minutesToClock(start)}
-        </Button>
-      ))}
-    </div>
+    <section aria-label="Open slots" className="m-0 min-w-0">
+      <h2>Open slots</h2>
+      <p className={chosen === undefined ? 'm-0 text-muted-foreground' : 'm-0 font-semibold'}>
+        {pickPrompt(chosen)}
+      </p>
+      {message === null ? null : <p role="status">{message}</p>}
+      {week === undefined ? (
+        <p className="m-0">No inspection days in this range.</p>
+      ) : (
+        <div className="@container">
+          <div className="grid gap-x-8 gap-y-5 @4xl:grid-cols-[18rem_minmax(0,1fr)] @4xl:items-start">
+            <WeekSwitcher weeks={weeks} shown={week.start} onShow={onShow} />
+            <ul className="m-0 list-none divide-y divide-hairline p-0">
+              {week.days.map((day) => (
+                <SlotDayRow key={`${day.date}-${day.inspectorUserId}`} day={day} onPick={onPick} />
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
+    </section>
   )
-}
-
-function openText(day: BoardDay): string {
-  return day.freeStarts.length === 0 ? 'full' : `${day.freeStarts.length} open`
-}
-
-function SlotDay({ day, folded, onPick }: { day: BoardDay; folded: boolean; onPick: SlotPick }) {
-  const slots = <SlotButtons day={day} onPick={onPick} />
-  if (folded) {
-    return (
-      <details className="border-t pt-3">
-        <summary className="font-semibold">
-          {`${formatCivilDate(day.date)}, ${day.inspectorName}, ${openText(day)}`}
-        </summary>
-        {slots}
-      </details>
-    )
-  }
-  return (
-    <div className="border-t pt-3">
-      <p className="m-0 font-semibold">{formatCivilDate(day.date)}</p>
-      <p className="m-0 text-muted-foreground">{day.inspectorName}</p>
-      {slots}
-    </div>
-  )
-}
-
-function matches(request: BoardRequest, query: string): boolean {
-  if (query === '') return true
-  const haystack =
-    `${request.applicationNumber} ${request.typeLabel} ${request.address} ${request.contactName}`.toLowerCase()
-  return haystack.includes(query.toLowerCase())
 }
 
 export function ScheduleBoard({
   requests,
   days,
+  today,
+  takeRequest = null,
   onSchedule,
   message,
 }: {
   requests: BoardRequest[]
   days: BoardDay[]
+  today: string
+  takeRequest?: ReactNode
   onSchedule: (choice: ScheduleChoice) => void
   message: string | null
 }) {
-  const [query, setQuery] = useState('')
-  const [selected, setSelected] = useState<number>(-1)
-  const visible = requests.filter((r) => matches(r, query))
+  const [chosenId, setChosenId] = useState<string | null>(null)
+  const [shown, setShown] = useState<CivilDate | null>(() =>
+    firstOpenWeek(groupSlotWeeks(days, today as CivilDate)),
+  )
+  const chosen = requests.find((r) => r.inspectionId === chosenId)
+  const choose = (request: BoardRequest) => {
+    setChosenId(request.inspectionId)
+    const preferred = request.preferredDate
+    if (preferred === null) return
+    const start = weekStart(preferred as CivilDate)
+    if (days.some((d) => weekStart(d.date as CivilDate) === start)) setShown(start)
+  }
   const pick: SlotPick = (day, start) => {
-    const request = visible[selected]
-    if (request === undefined) return
+    if (chosen === undefined) return
     onSchedule({
-      inspectionId: request.inspectionId,
-      rowVersion: request.rowVersion,
+      inspectionId: chosen.inspectionId,
+      rowVersion: chosen.rowVersion,
       date: day.date,
       startMinute: start,
       inspectorUserId: day.inspectorUserId,
@@ -123,75 +124,20 @@ export function ScheduleBoard({
   }
 
   return (
-    <>
-      <div className="grid items-start gap-6 md:grid-cols-[22rem_1fr] [&>section]:m-0">
-        <section aria-label="Requests and bookings" className="space-y-3">
-          <h2 className="m-0 text-xl">Requests and bookings</h2>
-          <Label htmlFor="request-search">Search requests</Label>
-          <Input
-            id="request-search"
-            type="search"
-            placeholder="Permit number, address or contact"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-          />
-          {visible.length === 0 ? (
-            <p className="m-0">No requests are waiting.</p>
-          ) : (
-            <ul
-              role="listbox"
-              aria-label="Requests"
-              className="m-0 flex list-none flex-col gap-2 p-0"
-            >
-              {visible.map((request, index) => (
-                <li
-                  key={request.inspectionId}
-                  role="option"
-                  aria-selected={index === selected}
-                  tabIndex={0}
-                  onClick={() => setSelected(index)}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') setSelected(index)
-                  }}
-                  className={`rounded-md border p-3 ${index === selected ? 'border-ring bg-highlight' : 'border-hairline'}`}
-                >
-                  <p className="m-0 font-semibold">
-                    <Link href={`/staff/inspections/${request.inspectionId}`}>
-                      {`${request.applicationNumber}, ${request.typeLabel}`}
-                    </Link>
-                  </p>
-                  <p className="m-0">{request.address}</p>
-                  <p className="m-0 flex flex-wrap gap-2">
-                    <span>{CHANNEL_LABEL[request.channel]}</span>
-                    {request.isReinspection ? (
-                      <span className="font-semibold">Reinspection</span>
-                    ) : null}
-                    {request.scheduledFor === undefined ? null : (
-                      <span className="font-semibold">{`Booked ${request.scheduledFor}`}</span>
-                    )}
-                    {request.preferredDate === null ? null : (
-                      <span>{`Prefers ${formatCivilDate(request.preferredDate)}`}</span>
-                    )}
-                  </p>
-                </li>
-              ))}
-            </ul>
-          )}
-        </section>
-        <section aria-label="Open slots" className="space-y-3">
-          <h2 className="m-0 text-xl">Open slots</h2>
-          {message === null ? null : <p role="status">{message}</p>}
-          {days.length === 0 ? <p className="m-0">No inspection days in this range.</p> : null}
-          {days.map((day, index) => (
-            <SlotDay
-              key={`${day.date}-${day.inspectorUserId}`}
-              day={day}
-              folded={index >= OPEN_DAYS}
-              onPick={pick}
-            />
-          ))}
-        </section>
+    <div className="grid items-start gap-5 lg:grid-cols-[minmax(20rem,26rem)_minmax(0,1fr)]">
+      <div data-testid="request-column" className="flex min-w-0 flex-col gap-5 [&>section]:m-0">
+        {takeRequest}
+        <RequestQueue requests={requests} chosenId={chosenId} onChoose={choose} />
       </div>
-    </>
+      <OpenSlots
+        days={days}
+        today={today}
+        chosen={chosen}
+        shown={shown}
+        onShow={setShown}
+        onPick={pick}
+        message={message}
+      />
+    </div>
   )
 }
