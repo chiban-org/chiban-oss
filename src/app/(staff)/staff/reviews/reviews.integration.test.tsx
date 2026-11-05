@@ -111,9 +111,11 @@ describe('reviewer assignment actions and pages', () => {
     expect(page).toContain(`href="/staff/parcels/${world.parcelId}"`)
     expect(page).toMatch(/href="\/staff\/applications\/[0-9a-f-]{36}"/)
     state.actor = await staffActor(handle.db, 'reviewer')
-    await expect(ReviewPage({ params: Promise.resolve({ assignmentId }) })).rejects.toThrow(
-      'NEXT_NOT_FOUND',
+    const other = renderToStaticMarkup(
+      await ReviewPage({ params: Promise.resolve({ assignmentId }) }),
     )
+    expect(other).toContain('You do not have permission to open this review.')
+    expect(other).not.toContain('Garage addition')
     const signOff = await actions.signOffReviewAction(form({ assignmentId }))
     expect(signOff).toMatchObject({ ok: false })
   })

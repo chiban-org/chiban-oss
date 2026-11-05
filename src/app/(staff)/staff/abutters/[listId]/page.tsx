@@ -5,7 +5,9 @@ import { ProjectionMap } from '@/components/abutters/ProjectionMap'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
 import { StatusChip } from '@/components/StatusChip'
+import { NoPermission } from '@/components/staff/NoPermission'
 import { type ListView, loadListView } from '@/features/abutters/listView'
+import { recordExists } from '@/features/access/recordExists'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
 import { ListRail } from './listRail'
@@ -60,7 +62,12 @@ export default async function AbutterListPage({ params }: { params: Promise<{ li
   if (!UUID.test(listId)) notFound()
   const ctx = await requireStaffContext()
   const view = await loadListView(ctx.db, ctx.actor, listId, ctx.signal)
-  if (view === null) notFound()
+  if (view === null) {
+    if (await recordExists(ctx.db, 'abutterList', listId, ctx.signal)) {
+      return <NoPermission title="Abutter list" action="see abutter lists" />
+    }
+    notFound()
+  }
   const town = await getTownSettings(ctx.db, ctx.signal)
   return (
     <main>

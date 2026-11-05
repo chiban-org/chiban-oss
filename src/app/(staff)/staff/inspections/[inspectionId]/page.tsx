@@ -5,6 +5,8 @@ import { InspectionPhotoUploader } from '@/components/inspections/InspectionPhot
 import { PageHeader } from '@/components/layout/PageHeader'
 import { NEW_TAB } from '@/components/newTab'
 import { StatusChip } from '@/components/StatusChip'
+import { NoPermission } from '@/components/staff/NoPermission'
+import { recordExists } from '@/features/access/recordExists'
 import { honestText } from '@/features/honest/honest'
 import { loadInspectionView } from '@/features/inspections/inspectionView'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -34,7 +36,12 @@ export default async function InspectionPage({
   const ctx = await requireStaffContext()
   if (!isUuid(inspectionId)) notFound()
   const loaded = await loadInspectionView(ctx.db, ctx.actor, inspectionId, ctx.signal)
-  if (!loaded.ok) notFound()
+  if (!loaded.ok) {
+    if (await recordExists(ctx.db, 'inspection', inspectionId, ctx.signal)) {
+      return <NoPermission title="Inspection" action="see this inspection" />
+    }
+    notFound()
+  }
   const view = loaded.value
   const { inspection } = view
   const status = STATUS[inspection.status]

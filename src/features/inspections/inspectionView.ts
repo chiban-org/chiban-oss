@@ -32,6 +32,7 @@ export interface InspectionView {
   photos: { documentId: string; title: string }[]
   canRecord: boolean
   canAddPhotos: boolean
+  showContactPhone: boolean
   waitingForDate: boolean
 }
 
@@ -48,29 +49,31 @@ export async function loadInspectionView(
     .from(inspections)
     .where(and(eq(inspections.id, inspectionId), inspectionVisibleTo(actor)))
   if (inspection === undefined) return err('not_found')
-  const [site, version, results, previous, photos, mayRecord, today] = await Promise.all([
-    loadSiteInfo(db, inspection.applicationId, now, signal),
-    getVersion(db, inspection.checklistVersionId, signal),
-    db
-      .select()
-      .from(inspectionItemResults)
-      .where(eq(inspectionItemResults.inspectionId, inspection.id)),
-    inspection.reinspectionOf === null
-      ? Promise.resolve(undefined)
-      : db
-          .select()
-          .from(inspections)
-          .where(eq(inspections.id, inspection.reinspectionOf))
-          .then((rows) => rows[0]),
-    listDocuments(
-      db,
-      actor,
-      { record: { kind: 'inspection', id: inspection.id }, limit: 50 },
-      signal,
-    ),
-    hasCapability(db, actor.userId, 'inspection.record', signal),
-    townToday(db, now, signal),
-  ])
+  const [site, version, results, previous, photos, mayRecord, maySchedule, today] =
+    await Promise.all([
+      loadSiteInfo(db, inspection.applicationId, now, signal),
+      getVersion(db, inspection.checklistVersionId, signal),
+      db
+        .select()
+        .from(inspectionItemResults)
+        .where(eq(inspectionItemResults.inspectionId, inspection.id)),
+      inspection.reinspectionOf === null
+        ? Promise.resolve(undefined)
+        : db
+            .select()
+            .from(inspections)
+            .where(eq(inspections.id, inspection.reinspectionOf))
+            .then((rows) => rows[0]),
+      listDocuments(
+        db,
+        actor,
+        { record: { kind: 'inspection', id: inspection.id }, limit: 50 },
+        signal,
+      ),
+      hasCapability(db, actor.userId, 'inspection.record', signal),
+      hasCapability(db, actor.userId, 'inspection.schedule', signal),
+      townToday(db, now, signal),
+    ])
   if (site === null || version === null) return err('not_found')
   const checklist = version.body as ChecklistBody
   const assigned = inspection.inspectorUserId === actor.userId || managesAllInspectors(actor)
@@ -103,5 +106,6 @@ export async function loadInspectionView(
       now,
     ),
     waitingForDate: mayRecord && assigned && scheduled && !dateReached,
+    showContactPhone: mayRecord || maySchedule,
   })
 }

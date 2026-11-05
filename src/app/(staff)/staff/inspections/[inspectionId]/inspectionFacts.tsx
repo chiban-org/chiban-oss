@@ -15,7 +15,7 @@ export function inspectionFacts(view: InspectionView, linkClass: string): Fact[]
   facts.push({
     label: 'Contact',
     value:
-      inspection.contactPhone === null ? (
+      inspection.contactPhone === null || !view.showContactPhone ? (
         inspection.contactName
       ) : (
         <>

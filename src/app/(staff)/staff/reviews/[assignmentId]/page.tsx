@@ -5,6 +5,8 @@ import { RecordLayout } from '@/components/layout/RecordLayout'
 import { splitPanels } from '@/components/layout/splitPanels'
 import { NEW_TAB } from '@/components/newTab'
 import { AreaField } from '@/components/staff/fields'
+import { NoPermission } from '@/components/staff/NoPermission'
+import { recordExists } from '@/features/access/recordExists'
 import { type AssignmentView, getAssignmentView, reviewOpen } from '@/features/reviews/reviewerView'
 import { getTownSettings } from '@/features/town/settings'
 import { formatInstant } from '@/lib/formatDate'
@@ -66,7 +68,12 @@ export default async function ReviewPage({
   const ctx = await requireStaffContext()
   if (!isUuid(assignmentId)) notFound()
   const view = await getAssignmentView(ctx.db, ctx.actor, assignmentId, ctx.signal)
-  if (view === null) notFound()
+  if (view === null) {
+    if (await recordExists(ctx.db, 'review', assignmentId, ctx.signal)) {
+      return <NoPermission title="Review" action="open this review" />
+    }
+    notFound()
+  }
   const town = await getTownSettings(ctx.db, ctx.signal)
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
   const sections = splitPanels([
