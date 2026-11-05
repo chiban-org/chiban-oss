@@ -31,7 +31,9 @@ export default async function StaffHome() {
         </div>
         <HomeParcelSearch userId={ctx.actor.userId} example={example} />
       </header>
-      <div className="grid gap-5 lg:grid-cols-2 lg:items-start [&>section]:m-0">
+      <div
+        className={`grid gap-5 lg:items-start [&>section]:m-0 ${sections.length > 1 ? 'lg:grid-cols-2' : ''}`}
+      >
         {sections.map((section) => (
           <HomeSectionPanel key={section.role} section={section} />
         ))}

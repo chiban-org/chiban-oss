@@ -26,7 +26,7 @@ export function TownHeader({ children }: { children?: ReactNode }) {
 export function PublicHeader({ signedIn, boardMember = false, signOutAction }: PublicHeaderProps) {
   return (
     <TownHeader>
-      <nav aria-label="Account" className="flex items-center gap-4">
+      <nav aria-label="Account" className="flex flex-wrap items-center gap-x-4">
         {signedIn ? (
           <>
             {boardMember ? (
