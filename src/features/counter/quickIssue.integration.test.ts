@@ -78,7 +78,10 @@ describe('quickIssue claim link', () => {
     const r = await quickIssue(
       handle.db,
       world.staff,
-      input({ contractor: { name: 'No Mail' }, license: { number: 'EL-1', type: 'Electrician', result: 'active' } }),
+      input({
+        contractor: { name: 'No Mail' },
+        license: { number: 'EL-1', type: 'Electrician', result: 'active' },
+      }),
       signal,
       deps,
     )

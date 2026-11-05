@@ -79,7 +79,8 @@ export const ERROR_COPY: Record<string, string> = {
   election_not_allowed: 'The applicant cannot elect that edition on this receipt date.',
   license_not_active:
     'The license is not active. Do not issue at the counter. Take the application through the normal path.',
-  license_required: 'This permit type needs the contractor license checked. Fill in the license fields.',
+  license_required:
+    'This permit type needs the contractor license checked. Fill in the license fields.',
   not_direct_issue_type: 'This permit type cannot be issued at the counter.',
   tendered_short: 'The cash tendered is less than the amount due.',
   check_number_required: 'Enter the check number.',
