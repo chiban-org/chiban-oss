@@ -1,3 +1,4 @@
+import type { Board } from '@packs/nh/schema'
 import { and, desc, eq, gt, gte, inArray, isNull, or, sql } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import {
@@ -12,6 +13,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { cancelledPacketMail } from '@/features/boards/packetMail'
+import { stillSeated } from '@/features/boards/packetSend'
 import type { MailTransport } from '@/features/mail/transport'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
@@ -27,12 +29,17 @@ export async function closeMeetingPacket(tx: Tx, meetingId: string): Promise<voi
     .where(and(inArray(boardPacketLinks.packetId, packets), isNull(boardPacketLinks.revokedAt)))
 }
 
-async function cancelledRecipients(db: Db, packetId: string, cancelledAt: Date) {
+async function cancelledRecipients(
+  db: Db,
+  packet: { id: string; board: Board },
+  cancelledAt: Date,
+) {
+  const packetId = packet.id
   const members = await db
     .select({ email: users.email })
     .from(boardPacketMembers)
     .innerJoin(users, eq(users.id, boardPacketMembers.userId))
-    .where(eq(boardPacketMembers.packetId, packetId))
+    .where(and(eq(boardPacketMembers.packetId, packetId), stillSeated(packet.board)))
   const links = await db
     .select({ email: boardPacketLinks.recipientEmail })
     .from(boardPacketLinks)
@@ -44,15 +51,6 @@ async function cancelledRecipients(db: Db, packetId: string, cancelledAt: Date) 
       ),
     )
   return [...new Set([...members, ...links].map((r) => r.email))]
-}
-
-export async function packetRecipientCount(db: Db, meetingId: string): Promise<number> {
-  const [packet] = await db
-    .select({ id: boardPackets.id })
-    .from(boardPackets)
-    .where(eq(boardPackets.meetingId, meetingId))
-  if (packet === undefined) return 0
-  return (await cancelledRecipients(db, packet.id, new Date(0))).length
 }
 
 export async function tellPacketRecipientsCancelled(
@@ -79,7 +77,7 @@ export async function tellPacketRecipientsCancelled(
     .orderBy(desc(auditLog.at))
     .limit(1)
   const cancelledAt = cancel?.at ?? new Date()
-  const recipients = await cancelledRecipients(db, row.packet.id, cancelledAt)
+  const recipients = await cancelledRecipients(db, row.packet, cancelledAt)
   const reason = row.meeting.cancelReason ?? 'no reason given'
   for (const email of recipients) {
     const sent = await mail.send(cancelledPacketMail(email, row.packet, reason), signal)

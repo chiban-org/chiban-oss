@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import { boardPackets, documents } from '@/db/schema'
+import { boardPacketItems, boardPackets, documents } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -26,9 +26,21 @@ export interface SavePacketInput {
 
 export type SavePacketError = GatherError | 'empty' | { notForBoard: string[] }
 
-function refusedOf(candidates: Candidate[], documentIds: string[]): string[] {
-  const allowed = new Set(candidates.filter((c) => c.exclusion === null).map((c) => c.documentId))
+function refusedOf(candidates: Candidate[], kept: string[], documentIds: string[]): string[] {
+  const allowed = new Set([
+    ...candidates.filter((c) => c.exclusion === null).map((c) => c.documentId),
+    ...kept,
+  ])
   return documentIds.filter((id) => !allowed.has(id))
+}
+
+async function keptItems(db: Db, packetId: string | undefined): Promise<string[]> {
+  if (packetId === undefined) return []
+  const rows = await db
+    .select({ documentId: boardPacketItems.documentId })
+    .from(boardPacketItems)
+    .where(and(eq(boardPacketItems.packetId, packetId), isNull(boardPacketItems.removedAt)))
+  return rows.map((r) => r.documentId)
 }
 
 async function packetIdFor(tx: Tx, actor: Actor, context: PacketMeeting): Promise<string> {
@@ -58,7 +70,8 @@ export async function savePacket(
   if (!context.ok) return context
   const { meeting, agendaDocumentId, packet } = context.value
   const first = await packetCandidates(db, meeting, agendaDocumentId, signal)
-  const refused = refusedOf(first.candidates, input.documentIds)
+  const kept = await keptItems(db, packet?.id)
+  const refused = refusedOf(first.candidates, kept, input.documentIds)
   if (refused.length > 0) return err({ notForBoard: refused })
   if (packet === null && input.documentIds.length === 0 && input.trcApplicationIds.length === 0) {
     return err('empty')
@@ -73,7 +86,7 @@ export async function savePacket(
     const packetId = await packetIdFor(tx, actor, context.value)
     const { candidates } = await packetCandidates(tx, meeting, agendaDocumentId, signal)
     const change = await applySelection(tx, {
-      packet: { id: packetId, lastSentAt: packet?.lastSentAt ?? null },
+      packet: { id: packetId },
       candidates,
       selected: new Set([...input.documentIds, ...made]),
       now,

@@ -43,16 +43,19 @@ function Candidate({ candidate, canShare }: { candidate: GatherCandidate; canSha
 }
 
 function Trc({ group }: { group: GatherGroup }) {
-  if (group.applicationId === null || group.trc === null || group.trc === 'made') return null
-  return group.trc === 'make' ? (
+  if (group.applicationId === null || group.trc === null) return null
+  if (group.trc === 'none') {
+    return (
+      <p className="m-0 pl-6 text-sm text-muted-foreground">No TRC review on this application</p>
+    )
+  }
+  return (
     <CheckField
-      label="Make TRC summary"
+      label={group.trc === 'made' ? 'Make a new TRC summary' : 'Make TRC summary'}
       name="trcApplicationId"
       value={group.applicationId}
-      defaultChecked
+      defaultChecked={group.trc === 'make'}
     />
-  ) : (
-    <p className="m-0 pl-6 text-sm text-muted-foreground">No TRC review on this application</p>
   )
 }
 
@@ -61,7 +64,7 @@ export function GatherStep({ gather, canShare }: { gather: PacketGather; canShar
     <ActionForm action={gatherPacketAction} submitLabel="Save the packet">
       <input type="hidden" name="meetingId" value={gather.meetingId} />
       {gather.groups.map((group) => (
-        <fieldset key={group.applicationId ?? 'meeting'} className="space-y-2 border-0 p-0">
+        <fieldset key={group.heading} className="space-y-2 border-0 p-0">
           <legend className="mb-2 font-semibold">{group.heading}</legend>
           {group.candidates.length === 0 && group.trc !== 'make' ? (
             <p className="m-0 text-sm text-muted-foreground">No documents on file.</p>

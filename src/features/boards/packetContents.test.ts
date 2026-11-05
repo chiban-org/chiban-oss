@@ -15,6 +15,7 @@ function row(documentId: string, extra: Partial<PacketItemRow> = {}): PacketItem
     filename: `${documentId}.pdf`,
     sentAt: FIRST,
     removedAt: null,
+    removalSentAt: null,
     replacesDocumentId: null,
     withdrawnAt: null,
     withdrawnReason: null,
@@ -39,7 +40,7 @@ describe('what packet readers see', () => {
   it('marks items sent in an update as added or replaced and drops the item a replacement took over', () => {
     const items = readerItems(
       [
-        row('agenda 1', { removedAt: UPDATE }),
+        row('agenda 1', { removedAt: UPDATE, removalSentAt: UPDATE }),
         row('agenda 2', { sentAt: UPDATE, replacesDocumentId: 'agenda 1' }),
         row('letter', { sentAt: UPDATE }),
       ],
@@ -54,7 +55,7 @@ describe('what packet readers see', () => {
   it('keeps a sent removal and a revoked copy in the list with the reason', () => {
     const items = readerItems(
       [
-        row('gone', { removedAt: UPDATE }),
+        row('gone', { removedAt: UPDATE, removalSentAt: UPDATE }),
         row('revoked', { withdrawnAt: UPDATE, withdrawnReason: 'revoked' }),
       ],
       packet,

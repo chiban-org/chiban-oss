@@ -47,6 +47,7 @@ export const boardPacketItems = pgTable(
     withdrawnReason: text('withdrawn_reason', { enum: ['revoked', 'disposed'] }),
     sentAt: timestamp('sent_at', { withTimezone: true }),
     removedAt: timestamp('removed_at', { withTimezone: true }),
+    removalSentAt: timestamp('removal_sent_at', { withTimezone: true }),
     replacesDocumentId: uuid('replaces_document_id'),
   },
   (t) => [primaryKey({ columns: [t.packetId, t.documentId] })],

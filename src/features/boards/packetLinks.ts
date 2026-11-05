@@ -1,6 +1,7 @@
 import { and, desc, eq, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
+  boardMeetings,
   boardMemberships,
   boardPacketAccess,
   boardPacketLinks,
@@ -110,11 +111,16 @@ async function resolveLink(
   token: string,
   now: Date,
 ): Promise<Result<typeof boardPacketLinks.$inferSelect, 'invalid' | 'expired'>> {
-  const [link] = await db
-    .select()
+  const [row] = await db
+    .select({ link: boardPacketLinks, status: boardMeetings.status })
     .from(boardPacketLinks)
+    .innerJoin(boardPackets, eq(boardPackets.id, boardPacketLinks.packetId))
+    .leftJoin(boardMeetings, eq(boardMeetings.id, boardPackets.meetingId))
     .where(eq(boardPacketLinks.tokenHash, hashPacketToken(token)))
-  if (link === undefined || link.revokedAt !== null) return err('invalid')
+  const link = row?.link
+  if (link === undefined || link.revokedAt !== null || row?.status === 'cancelled') {
+    return err('invalid')
+  }
   if (link.expiresAt.getTime() <= now.getTime()) return err('expired')
   return ok(link)
 }

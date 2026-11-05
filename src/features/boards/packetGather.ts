@@ -1,7 +1,7 @@
 import type { Board } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { agendas, boardMeetings, boardPacketItems, boardPackets } from '@/db/schema'
+import { agendas, boardMeetings, boardPackets } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
@@ -11,6 +11,7 @@ import {
   packetCandidates,
   TRC_SUMMARY_TITLE,
 } from '@/features/boards/packetCandidates'
+import { packetItemRows } from '@/features/boards/packetContents'
 import { trcSummary } from '@/features/reviews/trcSummary'
 import { formatCivilDate } from '@/lib/formatDate'
 import { err, ok, type Result } from '@/types/result'
@@ -106,11 +107,9 @@ export async function gatherPacket(
     context.value.agendaDocumentId,
     signal,
   )
-  const items =
-    packet === null
-      ? []
-      : await db.select().from(boardPacketItems).where(eq(boardPacketItems.packetId, packet.id))
-  const inPacket = new Set(items.filter((i) => i.removedAt === null).map((i) => i.documentId))
+  const items = packet === null ? [] : await packetItemRows(db, packet.id)
+  const active = items.filter((i) => i.removedAt === null)
+  const inPacket = new Set(active.map((i) => i.documentId))
   const checked = (c: Candidate) =>
     c.exclusion === null && (packet === null || inPacket.has(c.documentId))
   const out: GatherGroup[] = []
@@ -140,6 +139,21 @@ export async function gatherPacket(
           checked: checked(c),
           exclusion: c.exclusion,
         })),
+    })
+  }
+  const listed = new Set(candidates.map((c) => c.documentId))
+  const leftover = active.filter((i) => !listed.has(i.documentId))
+  if (leftover.length > 0) {
+    out.push({
+      heading: 'No longer on the agenda',
+      applicationId: null,
+      trc: null,
+      candidates: leftover.map((i) => ({
+        documentId: i.documentId,
+        title: i.title,
+        checked: true,
+        exclusion: null,
+      })),
     })
   }
   return ok({

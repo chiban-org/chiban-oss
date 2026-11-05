@@ -9,22 +9,21 @@ export interface PendingChanges {
   added: PacketItemRow[]
   replaced: PacketItemRow[]
   removed: PacketItemRow[]
+  superseded: PacketItemRow[]
 }
 
 export function pendingChanges(rows: PacketItemRow[], packet: SentMarks): PendingChanges {
-  if (packet.sentAt === null) return { added: [], replaced: [], removed: [] }
-  const incoming = rows.filter((r) => r.removedAt === null && !isSentToReaders(r, packet))
+  if (packet.sentAt === null) return { added: [], replaced: [], removed: [], superseded: [] }
+  const incoming = rows.filter((r) => r.removedAt === null && !isSentToReaders(r))
   const replacedIds = new Set(incoming.map((r) => r.replacesDocumentId))
+  const leaving = rows.filter(
+    (r) => r.removedAt !== null && isSentToReaders(r) && !isRemovalSent(r),
+  )
   return {
     added: incoming.filter((r) => r.replacesDocumentId === null),
     replaced: incoming.filter((r) => r.replacesDocumentId !== null),
-    removed: rows.filter(
-      (r) =>
-        r.removedAt !== null &&
-        isSentToReaders(r, packet) &&
-        !isRemovalSent(r, packet) &&
-        !replacedIds.has(r.documentId),
-    ),
+    removed: leaving.filter((r) => !replacedIds.has(r.documentId)),
+    superseded: leaving.filter((r) => replacedIds.has(r.documentId)),
   }
 }
 

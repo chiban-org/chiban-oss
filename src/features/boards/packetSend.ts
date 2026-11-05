@@ -62,6 +62,13 @@ export async function stampSent(db: DbOrTx, packet: PacketRow, now: Date): Promi
     .where(and(eq(boardPacketItems.packetId, packet.id), isNull(boardPacketItems.sentAt)))
 }
 
+export function stillSeated(board: Board) {
+  return and(
+    eq(users.isActive, true),
+    activeMembershipOn(sql`${boardPacketMembers.userId}`, sql`${board}`),
+  )
+}
+
 export async function boardMembersOf(db: DbOrTx, board: Board) {
   return await db
     .selectDistinct({ userId: users.id, email: users.email, name: users.displayName })
@@ -138,6 +145,7 @@ export async function resendToMember(
       and(
         eq(boardPacketMembers.packetId, input.packetId),
         eq(boardPacketMembers.userId, input.userId),
+        stillSeated(found.value.board),
       ),
     )
   if (member === undefined) return err('not_found')

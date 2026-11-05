@@ -33,6 +33,7 @@ export async function packetItemRows(db: DbOrTx, packetId: string) {
       filename: documentVersions.filename,
       sentAt: boardPacketItems.sentAt,
       removedAt: boardPacketItems.removedAt,
+      removalSentAt: boardPacketItems.removalSentAt,
       replacesDocumentId: boardPacketItems.replacesDocumentId,
       withdrawnAt: boardPacketItems.withdrawnAt,
       withdrawnReason: boardPacketItems.withdrawnReason,
@@ -44,16 +45,12 @@ export async function packetItemRows(db: DbOrTx, packetId: string) {
     .orderBy(asc(boardPacketItems.position), asc(boardPacketItems.documentId))
 }
 
-function wasSent(at: Date | null, packet: SentMarks): boolean {
-  return at !== null && packet.lastSentAt !== null && at.getTime() <= packet.lastSentAt.getTime()
+export function isSentToReaders(item: PacketItemRow): boolean {
+  return item.sentAt !== null
 }
 
-export function isSentToReaders(item: PacketItemRow, packet: SentMarks): boolean {
-  return wasSent(item.sentAt, packet)
-}
-
-export function isRemovalSent(item: PacketItemRow, packet: SentMarks): boolean {
-  return wasSent(item.removedAt, packet)
+export function isRemovalSent(item: PacketItemRow): boolean {
+  return item.removalSentAt !== null
 }
 
 function markOf(item: PacketItemRow, packet: SentMarks): ReaderMark {
@@ -62,32 +59,29 @@ function markOf(item: PacketItemRow, packet: SentMarks): ReaderMark {
   return item.replacesDocumentId === null ? 'added' : 'replaced'
 }
 
-function withdrawnOf(item: PacketItemRow, packet: SentMarks): ReaderItem['withdrawn'] {
+function withdrawnOf(item: PacketItemRow): ReaderItem['withdrawn'] {
   if (item.withdrawnAt !== null) {
     return { at: item.withdrawnAt, why: item.withdrawnReason ?? 'revoked' }
   }
-  if (item.removedAt !== null && isRemovalSent(item, packet)) {
-    return { at: item.removedAt, why: 'removed' }
-  }
-  return null
+  return item.removalSentAt === null ? null : { at: item.removalSentAt, why: 'removed' }
 }
 
 export function readerItems(rows: PacketItemRow[], packet: SentMarks): ReaderItem[] {
-  const sent = rows.filter((r) => isSentToReaders(r, packet))
+  const seen = rows.filter((r) => isSentToReaders(r) || isRemovalSent(r))
   const replaced = new Set(
-    sent
-      .filter((r) => r.replacesDocumentId !== null && r.removedAt === null)
+    seen
+      .filter((r) => r.replacesDocumentId !== null && r.removedAt === null && isSentToReaders(r))
       .map((r) => r.replacesDocumentId),
   )
-  return sent
-    .filter((r) => !(replaced.has(r.documentId) && isRemovalSent(r, packet)))
+  return seen
+    .filter((r) => !(replaced.has(r.documentId) && isRemovalSent(r)))
     .map((r) => ({
       documentId: r.documentId,
       versionId: r.versionId ?? r.formerVersionId ?? '',
       title: r.title,
       filename: r.filename ?? '',
       mark: markOf(r, packet),
-      withdrawn: withdrawnOf(r, packet),
+      withdrawn: withdrawnOf(r),
     }))
 }
 

@@ -9,6 +9,7 @@ CREATE TABLE "board_packet_members" (
 ALTER TABLE "board_packet_access" ADD COLUMN "packet_id" uuid;--> statement-breakpoint
 ALTER TABLE "board_packet_items" ADD COLUMN "sent_at" timestamp with time zone;--> statement-breakpoint
 ALTER TABLE "board_packet_items" ADD COLUMN "removed_at" timestamp with time zone;--> statement-breakpoint
+ALTER TABLE "board_packet_items" ADD COLUMN "removal_sent_at" timestamp with time zone;--> statement-breakpoint
 ALTER TABLE "board_packet_items" ADD COLUMN "replaces_document_id" uuid;--> statement-breakpoint
 ALTER TABLE "board_packets" ADD COLUMN "sent_at" timestamp with time zone;--> statement-breakpoint
 ALTER TABLE "board_packets" ADD COLUMN "last_sent_at" timestamp with time zone;--> statement-breakpoint
