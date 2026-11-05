@@ -8,6 +8,8 @@ import { STAFF_NAV_COOKIE } from '@/constants/cookies'
 import { activeNavHref, groupNavItems, type NavItem } from '@/features/staffNav/navItems'
 import { cn } from '@/lib/utils'
 import { BrandMark, NavFooter, NavSections, type NavUser } from './StaffNavBody'
+import { RecordSearch } from './search/RecordSearch'
+import { SidebarSearch } from './search/SidebarSearch'
 
 const ONE_YEAR_SECONDS = 365 * 24 * 60 * 60
 
@@ -41,8 +43,9 @@ function MobileNav({
     return () => wide.removeEventListener('change', onChange)
   }, [])
   return (
-    <div className="no-print sticky top-0 z-40 flex h-14 items-center justify-between border-b border-hairline bg-sidebar px-2 md:hidden">
+    <div className="no-print sticky top-0 z-40 flex h-14 items-center gap-2 border-b border-hairline bg-sidebar px-2 md:hidden">
       <BrandMark town={town} />
+      <RecordSearch placeholder="Find a record" className="min-w-0 flex-1" />
       <Button
         type="button"
         variant="ghost"
@@ -125,8 +128,9 @@ export function StaffNav({ items, town, user, initialRail }: StaffNavProps) {
           rail ? 'w-16' : 'w-64',
         )}
       >
-        <div className={cn('pt-3 pb-2', rail ? 'px-2' : 'px-3')}>
+        <div className={cn('flex flex-col gap-2 pt-3 pb-2', rail ? 'px-2' : 'px-3')}>
           <BrandMark town={town} rail={rail} />
+          <SidebarSearch rail={rail} onExpand={toggleRail} />
         </div>
         {body(rail, undefined, toggleRail)}
       </nav>

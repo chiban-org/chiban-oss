@@ -21,7 +21,7 @@ const ROW =
 const CURRENT =
   'aria-[current=page]:bg-surface aria-[current=page]:text-ink aria-[current=page]:shadow-[0_0_0_1px_var(--hairline),0_1px_2px_rgb(31_31_31/0.06)]'
 
-function RailTip({
+export function RailTip({
   label,
   rail,
   children,

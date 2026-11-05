@@ -80,7 +80,7 @@ interface TypeLabels {
   substeps: { key: string; label: string }[]
 }
 
-async function typeLabels(db: DbOrTx, pins: string[], signal: AbortSignal) {
+export async function typeLabels(db: DbOrTx, pins: string[], signal: AbortSignal) {
   const labels = new Map<string, TypeLabels>()
   for (const id of new Set(pins)) {
     const version = await getVersion(db, id, signal)
