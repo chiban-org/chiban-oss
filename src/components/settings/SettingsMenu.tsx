@@ -84,12 +84,19 @@ function MenuList({
   filtering: boolean
 }) {
   const current = groupOf(sections, active)
-  const [toggled, setToggled] = useState<ReadonlySet<string>>(() => new Set())
+  const [opened, setOpened] = useState<ReadonlySet<string>>(
+    () => new Set(current === null ? [] : [current]),
+  )
+  const [shownGroup, setShownGroup] = useState(current)
+  if (current !== shownGroup) {
+    setShownGroup(current)
+    if (current !== null && !opened.has(current)) setOpened(new Set([...opened, current]))
+  }
   if (sections.length === 0) {
     return <p className="m-0 px-3 py-2 text-sm text-muted-foreground">No settings match.</p>
   }
   const toggle = (key: string) =>
-    setToggled((prev) => {
+    setOpened((prev) => {
       const next = new Set(prev)
       if (next.has(key)) next.delete(key)
       else next.add(key)
@@ -98,7 +105,7 @@ function MenuList({
   return (
     <div className="flex flex-col gap-1">
       {sections.map((section) => {
-        const open = filtering || (section.key === current) !== toggled.has(section.key)
+        const open = filtering || opened.has(section.key)
         return (
           <div key={section.key}>
             <GroupHeading section={section} open={open} onToggle={() => toggle(section.key)} />

@@ -3,14 +3,19 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SettingsMenuSection } from '@/features/settingsMenu/settingsMenu'
 
+const nav = vi.hoisted(() => ({ path: '/staff/settings/form' }))
+
 vi.mock('next/navigation', () => ({
-  usePathname: () => '/staff/settings/form',
+  usePathname: () => nav.path,
   useRouter: () => ({ push: vi.fn() }),
 }))
 
 const { SettingsMenu } = await import('./SettingsMenu')
 
-afterEach(cleanup)
+afterEach(() => {
+  cleanup()
+  nav.path = '/staff/settings/form'
+})
 
 const SECTIONS: SettingsMenuSection[] = [
   {
@@ -56,6 +61,27 @@ describe('settings menu', () => {
     const nav = menu()
     fireEvent.click(within(nav).getByRole('button', { name: /Permits/ }))
     expect(within(nav).queryByRole('link', { name: 'Forms' })).toBeNull()
+  })
+
+  it('keeps a group the user opened open after moving to a page inside it', () => {
+    const { rerender } = render(<SettingsMenu sections={SECTIONS} />)
+    const menuNav = screen.getByRole('navigation', { name: 'Settings' })
+    fireEvent.click(within(menuNav).getByRole('button', { name: /Town/ }))
+    nav.path = '/staff/settings/letterhead'
+    rerender(<SettingsMenu sections={SECTIONS} />)
+    expect(
+      within(menuNav).getByRole('button', { name: /Town/ }).getAttribute('aria-expanded'),
+    ).toBe('true')
+    expect(within(menuNav).getByRole('link', { name: 'Letterhead' })).toBeTruthy()
+  })
+
+  it('opens the group of a page reached from elsewhere and keeps the earlier group open', () => {
+    const { rerender } = render(<SettingsMenu sections={SECTIONS} />)
+    const menuNav = screen.getByRole('navigation', { name: 'Settings' })
+    nav.path = '/staff/settings/town-profile'
+    rerender(<SettingsMenu sections={SECTIONS} />)
+    expect(within(menuNav).getByRole('link', { name: 'Letterhead' })).toBeTruthy()
+    expect(within(menuNav).getByRole('link', { name: 'Forms' })).toBeTruthy()
   })
 
   it('shows every match across groups while filtering', () => {

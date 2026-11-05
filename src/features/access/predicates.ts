@@ -52,6 +52,10 @@ export function memberCanSeeMeeting(userId: string, meetingIdColumn: SQL): SQL {
       and ${activeMembershipOn(userId, sql`m.board`)})`
 }
 
+export function applicationPartyOf(actor: Actor | null): SQL {
+  return actor === null ? NOTHING : activePartyOf(actor.userId, applications.projectId)
+}
+
 export function applicationVisibleTo(actor: Actor | null): SQL {
   if (actor === null) return NOTHING
   if (hasFullRecordAccess(actor)) return EVERYTHING

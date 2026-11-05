@@ -1,7 +1,7 @@
 import { and, desc, eq, lt } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { applications, projects } from '@/db/schema'
-import { applicationVisibleTo } from '@/features/access/predicates'
+import { applicationPartyOf, applicationVisibleTo } from '@/features/access/predicates'
 import type { Actor } from '@/features/auth/actor'
 
 export interface ApplicationListRow {
@@ -30,7 +30,7 @@ function decodeCursor(cursor: string): number | null {
 export async function listApplicationsForViewer(
   db: DbOrTx,
   actor: Actor,
-  input: { limit: number; cursor?: string },
+  input: { limit: number; cursor?: string; scope?: 'visible' | 'party' },
   signal: AbortSignal,
 ): Promise<ApplicationPage> {
   signal.throwIfAborted()
@@ -51,7 +51,12 @@ export async function listApplicationsForViewer(
     })
     .from(applications)
     .innerJoin(projects, eq(projects.id, applications.projectId))
-    .where(and(applicationVisibleTo(actor), afterClause))
+    .where(
+      and(
+        input.scope === 'party' ? applicationPartyOf(actor) : applicationVisibleTo(actor),
+        afterClause,
+      ),
+    )
     .orderBy(desc(applications.seq))
     .limit(input.limit + 1)
   const page = rows.slice(0, input.limit)

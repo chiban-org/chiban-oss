@@ -68,4 +68,12 @@ describe('applicant portal home', () => {
     expect(html).toContain('href="/parcels"')
     expect(html).toContain('href="/portal/apply"')
   })
+
+  it('lists town staff only the applications they are a party to, with a way to the staff area', async () => {
+    state.actor = await staffActor(handle.db, 'staff')
+    const html = renderToStaticMarkup(await PortalHomePage())
+    expect(html).not.toContain(number)
+    expect(html).toContain('You have no applications yet.')
+    expect(html).toContain('href="/staff"')
+  })
 })

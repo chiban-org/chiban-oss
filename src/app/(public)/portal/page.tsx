@@ -21,13 +21,19 @@ function isCoreState(state: string): state is CoreState {
 export default async function PortalHomePage() {
   const ctx = await requirePortalContext('/portal')
   const [page, town] = await Promise.all([
-    listApplicationsForViewer(ctx.db, ctx.actor, { limit: PAGE_SIZE }, ctx.signal),
+    listApplicationsForViewer(ctx.db, ctx.actor, { limit: PAGE_SIZE, scope: 'party' }, ctx.signal),
     getTownSettings(ctx.db, ctx.signal),
   ])
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
   return (
     <main className="space-y-6">
       <h1>Your applications</h1>
+      {ctx.actor.kind === 'staff' ? (
+        <p className="m-0 text-muted-foreground">
+          {'This page lists applications you filed yourself. Town applications are in the '}
+          <Link href="/staff">staff area</Link>.
+        </p>
+      ) : null}
       <ul className="m-0 flex list-none flex-wrap gap-x-6 gap-y-2 p-0">
         <li>
           <Link href="/portal/apply" className={LINK}>
