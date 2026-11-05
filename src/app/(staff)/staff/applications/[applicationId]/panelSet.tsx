@@ -1,11 +1,9 @@
-import { ClockCard } from '@/components/clocks/ClockCard'
 import { DocumentPanel } from '@/components/documents/DocumentPanel'
 import { GatePanel } from '@/components/gates/GatePanel'
 import { type Panel, splitPanels } from '@/components/layout/splitPanels'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { TERMINAL_STATES } from '@/features/applications/states'
 import type { BoardPanelData } from '@/features/boards/panelData'
-import { expandedClocks, isOpen, sortClocks } from '@/features/clocks/clockSummary'
 import { REVIEWS_GATE_KEY } from '@/features/gates/coreGates'
 import type { ApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import type { ApplicationPayments } from '@/features/payments/applicationPayments'
@@ -13,17 +11,12 @@ import { PANEL_ACTIONS } from '../../records/panelActions'
 import { AppealsPanel, hasAppeals } from './appealsPanel'
 import { BoardPanel } from './boardPanel'
 import { CodeEditionPanel, RegionalImpactPanel } from './buildingPanels'
+import { ClocksPanel, noDeadlines } from './clocksPanel'
 import { FeesPaymentsPanel, feeRowsOf } from './feesPaymentsPanel'
 import { GateControls } from './gateControls'
 import { HearingsPanel } from './hearingsPanel'
 import { InspectionsPanel, type InspectionsPanelData } from './inspectionsPanel'
-import {
-  ClockAdjustForm,
-  CompletenessPanel,
-  ConditionsPanel,
-  completenessApplies,
-  PartiesPanel,
-} from './panels'
+import { CompletenessPanel, ConditionsPanel, completenessApplies, PartiesPanel } from './panels'
 import type { loadRecordsData } from './recordsData'
 import { RecordsPanel } from './recordsPanels'
 import { ReviewersPanel } from './reviewersPanel'
@@ -40,27 +33,6 @@ export interface RecordPanelsInput {
 function reviewRequired(view: StaffApplicationView): boolean {
   return view.gates.some((g) =>
     g.results.some((r) => r.key === REVIEWS_GATE_KEY && r.effective === 'blocked'),
-  )
-}
-
-function ClocksPanel({ view }: { view: StaffApplicationView }) {
-  const expanded = expandedClocks(view.clocks)
-  return (
-    <section aria-label="Clocks" id="clocks">
-      <h2>Clocks</h2>
-      {view.clocks.length === 0 ? <p>No clock is running on this application.</p> : null}
-      {sortClocks(view.clocks).map((clock) => (
-        <ClockCard key={clock.clockId} clock={clock} collapsed={!expanded.has(clock)}>
-          {isOpen(clock) ? (
-            <ClockAdjustForm
-              view={view}
-              clockId={clock.clockId}
-              allowedKinds={clock.allowedAdjustments}
-            />
-          ) : null}
-        </ClockCard>
-      ))}
-    </section>
   )
 }
 
@@ -108,7 +80,7 @@ function workPanels({ view, records, board, hearings }: RecordPanelsInput): Pane
       empty: false,
       node: completenessApplies(view) ? <CompletenessPanel key="completeness" view={view} /> : null,
     },
-    { empty: view.clocks.length === 0, node: <ClocksPanel key="clocks" view={view} /> },
+    { empty: noDeadlines(view), node: <ClocksPanel key="clocks" view={view} /> },
     {
       empty: view.gates.every((g) => g.results.length === 0),
       node: view.nextTransitions.length === 0 ? null : <GatesPanel key="gates" view={view} />,

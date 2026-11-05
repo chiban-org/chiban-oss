@@ -46,7 +46,7 @@ describe('/staff home', () => {
     state.actor = world.staff
     const html = renderToStaticMarkup(await StaffHome())
     expect(html).toContain('>Applications</h2>')
-    expect(html).toContain('Submitted and not yet started')
+    expect(html).toContain('Submitted, not yet under review')
     expect(html).toContain('href="/staff/applications?state=submitted"')
     expect(html).toContain('href="/staff/applications"')
     expect(html).not.toContain('Open in applications')
@@ -54,11 +54,11 @@ describe('/staff home', () => {
     expect(html).toContain('Find a parcel')
   })
 
-  it('counts the submitted application as not yet started', async () => {
+  it('counts the submitted application under the state it is in, not as untouched work', async () => {
     state.actor = world.staff
     const html = renderToStaticMarkup(await StaffHome())
     expect(html).toMatch(
-      /<a[^>]*href="\/staff\/applications\?state=submitted"[^>]*><span[^>]*>1<\/span><span[^>]*>Submitted and not yet started<\/span><\/a>/,
+      /<a[^>]*href="\/staff\/applications\?state=submitted"[^>]*><span[^>]*>1<\/span><span[^>]*>Submitted, not yet under review<\/span><\/a>/,
     )
   })
 
@@ -77,7 +77,7 @@ describe('/staff home', () => {
       state.actor = await staffActor(empty.db, 'staff')
       const html = renderToStaticMarkup(await StaffHome())
       expect(html).toContain('Nothing waiting.')
-      expect(html).not.toContain('Submitted and not yet started')
+      expect(html).not.toContain('Submitted, not yet under review')
     } finally {
       state.db = handle.db
       await empty.drop()

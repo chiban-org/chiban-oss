@@ -110,6 +110,28 @@ describe('QueueTable cells', () => {
     expect(screen.getByText('Building permit decision deadline')).toBeTruthy()
   })
 
+  it('heads the due cell with a missed notice and keeps the running clock as a second line', () => {
+    setup([
+      row({
+        dueStatus: 'overdue',
+        nextDue: d('2026-11-02'),
+        nextDueLabel: 'Notice',
+        daysUntilDue: -3,
+        noticeDue: d('2026-11-02'),
+        noticeOverdue: true,
+        clockDue: d('2026-11-12'),
+        clockDueLabel: 'Planning Board completeness determination',
+      }),
+    ])
+    expect(screen.getByText('3 days overdue')).toBeTruthy()
+    expect(screen.getByText('Notice, Nov 2, 2026')).toBeTruthy()
+    expect(
+      screen.getByText('Planning Board completeness determination due Nov 12, 2026'),
+    ).toBeTruthy()
+    expect(screen.queryByText(/^Due in/)).toBeNull()
+    expect(screen.queryByText('Notice overdue, due Nov 2, 2026')).toBeNull()
+  })
+
   it('says how many days an overdue clock is late and when it was due', () => {
     setup([
       row({

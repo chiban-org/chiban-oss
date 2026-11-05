@@ -5,6 +5,8 @@ import { NEW_TAB } from '@/components/newTab'
 import { CorrectPermitDialog } from '@/components/permits/CorrectPermitDialog'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { dueNext, otherOverdue } from '@/features/clocks/clockSummary'
+import { NOTICE_DEADLINE_LABEL } from '@/features/hearings/labels'
+import { lateNotice } from '@/features/hearings/noticeDeadlines'
 import type { CorrectionFormData } from '@/features/permits/correction/correctionForm'
 import { formatCivilDate } from '@/lib/formatDate'
 import { checkCorrectionAction, correctPermitAction } from './correctionActions'
@@ -53,12 +55,22 @@ function DueNext({ clock }: { clock: Clock | null }) {
   )
 }
 
+function LateNotice({ view }: { view: StaffApplicationView }) {
+  const late = lateNotice(view.noticeDeadlines)
+  return late === null ? null : (
+    <span className="block font-semibold text-status-overdue-fg">
+      {`${NOTICE_DEADLINE_LABEL} overdue, due ${formatCivilDate(late.dueOn)}`}
+    </span>
+  )
+}
+
 function deadlineFacts(view: StaffApplicationView): Fact[] {
   const clock = dueNext(view.clocks)
-  if (clock === null) return []
+  if (clock === null && lateNotice(view.noticeDeadlines) === null) return []
   const more = otherOverdue(view.clocks)
   const value = (
     <>
+      <LateNotice view={view} />
       <DueNext clock={clock} />
       {more === 0 ? null : (
         <span className="block font-semibold text-status-overdue-fg">{`${more} more overdue`}</span>
@@ -154,6 +166,7 @@ export function StatusStrip({
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
         {status}
         <DueNext clock={dueNext(view.clocks)} />
+        <LateNotice view={view} />
       </div>
       {notice}
       <PrimaryMove view={view} plan={plan} />

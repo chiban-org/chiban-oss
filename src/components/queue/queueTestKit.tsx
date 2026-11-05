@@ -22,6 +22,8 @@ export function row(overrides: Partial<WorkQueueRow>): WorkQueueRow {
     nextDueLabel: null,
     daysUntilDue: null,
     dueStatus: 'none',
+    clockDue: null,
+    clockDueLabel: null,
     noticeDue: null,
     noticeOverdue: false,
     filingDue: null,

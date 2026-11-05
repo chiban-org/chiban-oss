@@ -54,6 +54,30 @@ describe('board dates on the work queue', () => {
     })
   })
 
+  it('a missed notice heads the due cell when it is earlier than every running clock', async () => {
+    const id = await submitBoardApplication(handle.db, world, world.zbaTypeKey, '2027-03-02')
+    await recordNoRegionalImpact(handle.db, world, id)
+    await issueListWithRecipients(handle.db, world, id, [recipient(1)])
+    const [meeting] = await handle.db.query.boardMeetings.findMany({
+      where: (m, { eq }) => eq(m.meetingDate, '2027-04-15'),
+    })
+    const scheduled = await scheduleHearing(
+      handle.db,
+      world.staff,
+      { applicationId: id, meetingId: meeting?.id ?? '', kind: 'public_hearing' },
+      signal,
+    )
+    expect(scheduled.ok).toBe(true)
+    expect(await rowFor(id, new Date('2027-04-12T16:00:00Z'))).toMatchObject({
+      nextDue: '2027-04-10',
+      nextDueLabel: 'Notice',
+      daysUntilDue: -2,
+      dueStatus: 'overdue',
+      clockDue: '2027-04-16',
+      clockDueLabel: 'ZBA hearing deadline',
+    })
+  })
+
   it('a decision awaiting filing shows the filing due date and no notice date once noticed', async () => {
     const { store } = await makeTestStore()
     const decided = await decidedZba(handle.db, world, store, { documents: false })

@@ -8,7 +8,7 @@ const APPLICATIONS = '/staff/applications'
 const WAITING: readonly { label: string; href: string; filters: WorkQueueFilters }[] = [
   { label: 'Past a deadline', href: `${APPLICATIONS}?due=overdue`, filters: { due: ['overdue'] } },
   {
-    label: 'Submitted and not yet started',
+    label: 'Submitted, not yet under review',
     href: `${APPLICATIONS}?state=submitted`,
     filters: { stateKeys: ['submitted'] },
   },
