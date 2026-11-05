@@ -105,7 +105,7 @@ describe('the staff start page for each role', () => {
     expect(text).toContain('Still need a result')
     expect(html).toContain('href="/staff/inspections/day#missing-results"')
     expect(text).toContain('Next inspection days')
-    expect(text).not.toContain('Submitted and not yet started')
+    expect(text).not.toContain('Submitted, not yet under review')
   })
 
   it('shows finance payment problems, fees, receipts and the cash report for today', async () => {
@@ -127,7 +127,7 @@ describe('the staff start page for each role', () => {
     const text = visibleText(await homeOf('admin'))
     expect(text).toContain('System')
     expect(text).toContain('Health checks needing attention')
-    expect(text).not.toContain('Submitted and not yet started')
+    expect(text).not.toContain('Submitted, not yet under review')
     expect(text).not.toContain('Next deadlines')
   })
 
