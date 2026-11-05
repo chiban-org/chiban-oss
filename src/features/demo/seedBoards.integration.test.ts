@@ -13,10 +13,12 @@ import {
 import { CORE_STATES } from '@/features/applications/states'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { nextInspectionDay } from '@/features/demo/seedInspections'
+import { seedNoticeContacts } from '@/features/demo/seedNoticeContacts'
 import { actorFor } from '@/features/demo/seedPermitSupport'
 import { getDayList } from '@/features/inspections/dayList'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
+import { loadRostersView } from '@/features/rosters/rosterView'
 import { townToday } from '@/features/town/today'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { addDays } from '@/types/civilDate'
@@ -130,5 +132,21 @@ describe('states the screens tell apart', () => {
       signal,
     )
     expect(list.ok && list.value.filter((s) => s.status === 'scheduled').length).toBeGreaterThan(1)
+  })
+
+  it('shows notice contacts with one due for a check, one gap and one used on a list', async () => {
+    const staff = await actorFor(handle.db, 'staff', signal)
+    const view = await loadRostersView(handle.db, staff, signal)
+    expect(view?.parks.find((p) => p.name === 'Merganser Court')?.due).toBe(true)
+    expect(view?.gaps.length).toBeGreaterThan(0)
+    const entries = [
+      ...(view?.associations ?? []),
+      ...(view?.parks ?? []),
+      ...(view?.restrictions ?? []),
+    ]
+    expect(entries.some((e) => e.uses.some((u) => u.status === 'issued'))).toBe(true)
+    await seedNoticeContacts(handle.db, signal)
+    const again = await loadRostersView(handle.db, staff, signal)
+    expect(again?.dueCount).toBe(view?.dueCount)
   })
 })

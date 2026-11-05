@@ -16,6 +16,7 @@ import { seedAcknowledgedEmailTest, seedStaleJobAlert } from '@/features/demo/se
 import { seedHistorical } from '@/features/demo/seedHistorical'
 import { type SeedInspectionsDeps, seedInspections } from '@/features/demo/seedInspections'
 import { demoOcrConverter, seedMigration } from '@/features/demo/seedMigration'
+import { seedNoticeContacts } from '@/features/demo/seedNoticeContacts'
 import { seedBoardPacket } from '@/features/demo/seedPacket'
 import { seedParcels } from '@/features/demo/seedParcels'
 import { seedPayments } from '@/features/demo/seedPayments'
@@ -184,6 +185,7 @@ export async function seedDemo(
     deps.operations?.store ?? deps.records?.store,
   )
   await seedBoardPacket(db, signal, deps.records?.mail)
+  await seedNoticeContacts(db, signal, deps.boards?.now)
   const operationsSeeded = await seedOperations(db, signal, deps.operations ?? {})
   const now = deps.operations?.now ?? new Date()
   const enforcementSeeded = await seedEnforcement(db, store, signal, now)
