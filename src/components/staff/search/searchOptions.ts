@@ -19,6 +19,7 @@ const EXACT_DETAIL: Readonly<Record<ExactKind, string>> = {
   complaint: 'Complaint, opens its case',
   request: 'Right-to-Know request',
   receipt: 'Receipt, opens in a new tab',
+  parcel: 'Parcel at this address',
 }
 
 function groupOptions(result: SearchResult): SearchOption[] {

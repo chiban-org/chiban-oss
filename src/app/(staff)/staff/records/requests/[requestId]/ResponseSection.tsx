@@ -1,10 +1,11 @@
 import { ActionForm } from '@/components/ActionForm'
-import { AreaField, SelectField, TextField } from '@/components/staff/fields'
+import { TextField } from '@/components/staff/fields'
 import { costTotal, RTK_RESPONSE_LABELS } from '@/features/rtk/labels'
 import type { RtkRequestView } from '@/features/rtk/requests'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 import { firstResponseAction } from '../actions'
+import { ResponseKindFields } from './ResponseKindFields'
 
 const FORM_RESPONSE_OPTIONS = Object.entries<string>(RTK_RESPONSE_LABELS).filter(
   ([kind]) => kind !== 'made_available',
@@ -28,21 +29,7 @@ function ResponseForm({ requestId, today }: { requestId: string; today: CivilDat
           To make records available, approve and release them under Releases. The first release
           records the response.
         </p>
-        <SelectField label="Response" name="kind" options={FORM_RESPONSE_OPTIONS} />
-        <TextField
-          label="Date of response"
-          name="respondedOn"
-          type="date"
-          defaultValue={today}
-          required
-        />
-        <TextField label="Web address, if posted online" name="websiteUrl" type="url" />
-        <TextField
-          label="Date the town will respond by, if more time is needed"
-          name="statedDate"
-          type="date"
-        />
-        <AreaField label="Why more time is needed" name="delayReason" rows={2} />
+        <ResponseKindFields options={FORM_RESPONSE_OPTIONS} today={today} />
         <TextField label="Charge, if any (what it is for)" name="costLabel" />
         <TextField label="Charge in dollars" name="costDollars" type="number" min="0" step="0.01" />
       </ActionForm>

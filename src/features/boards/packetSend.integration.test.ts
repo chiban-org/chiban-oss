@@ -4,6 +4,7 @@ import { addAgendaItem, publishAgenda, reopenAgenda } from '@/features/agendas/a
 import { sendPacketLink } from '@/features/boards/packetLinks'
 import { savePacket } from '@/features/boards/packetSave'
 import { resendToLink, resendToMember, sendPacketToBoard } from '@/features/boards/packetSend'
+import { trackPacket } from '@/features/boards/packetTrack'
 import {
   agendaReplacement,
   replacePacketAgenda,
@@ -176,5 +177,24 @@ describe('changing a packet after sending', () => {
     const links = await handle.db.select().from(boardPacketLinks)
     expect(links.map((l) => l.revokedAt === null).sort()).toEqual([false, true])
     expect(mail.sent.at(-1)?.text).toContain('/board/packets/')
+  })
+
+  it('tracks a member by the time the packet was last sent to them', async () => {
+    const packetId = await sentToBoard([flow.agendaDocumentId])
+    const member = (await handle.db.select().from(boardPacketMembers))[0]
+    const resentAt = new Date((member?.sentAt.getTime() ?? 0) + 60 * 60 * 1000)
+    const again = await resendToMember(
+      handle.db,
+      mail,
+      flow.world.staff,
+      { packetId, userId: member?.userId ?? '' },
+      signal,
+      resentAt,
+    )
+    expect(again.ok).toBe(true)
+    const row = (await trackPacket(handle.db, packetId)).find(
+      (r) => r.key === `member:${member?.userId}`,
+    )
+    expect(row?.sentAt).toEqual(resentAt)
   })
 })

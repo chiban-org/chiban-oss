@@ -1,5 +1,6 @@
 'use server'
 
+import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import type { Db } from '@/db/client'
 import {
@@ -48,13 +49,14 @@ async function parcelFor(
 }
 
 export async function openCaseAction(formData: FormData): Promise<ActionResult> {
-  return await runEnforcement(
+  const outcome: { caseId?: string } = {}
+  const result = await runEnforcement(
     formData,
     z.object({ locationText: z.string().min(1), parcelRef: optional(z.string().trim().min(1)) }),
     async ({ db, actor, signal }, v) => {
       const parcel = await parcelFor(db, v, signal)
       if (!parcel.ok) return parcel
-      return await openCase(
+      const opened = await openCase(
         db,
         actor,
         {
@@ -63,9 +65,13 @@ export async function openCaseAction(formData: FormData): Promise<ActionResult> 
         },
         signal,
       )
+      if (opened.ok) outcome.caseId = opened.value.caseId
+      return opened
     },
     'Case opened.',
   )
+  if (result.ok && outcome.caseId !== undefined) redirect(`/staff/enforcement/${outcome.caseId}`)
+  return result
 }
 
 export async function setCaseParcelAction(formData: FormData): Promise<ActionResult> {

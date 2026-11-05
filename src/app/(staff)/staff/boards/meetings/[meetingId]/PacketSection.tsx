@@ -78,7 +78,7 @@ function TrackStep({ rows, zone }: { rows: TrackRow[]; zone: string }) {
         <thead>
           <tr>
             <th scope="col">Recipient</th>
-            <th scope="col">Sent</th>
+            <th scope="col">Last sent</th>
             <th scope="col">First opened</th>
             <th scope="col">Last opened</th>
             <th scope="col">Documents opened</th>

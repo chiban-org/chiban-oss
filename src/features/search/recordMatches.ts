@@ -3,11 +3,18 @@ import type { DbOrTx } from '@/db/client'
 import { enforcementCases, parcels, rtkRequests } from '@/db/schema'
 import { caseChipStatus } from '@/features/enforcement/chipStatus'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
-import { searchParcels } from '@/features/parcels/searchParcels'
+import { type ParcelSearchHit, searchParcels } from '@/features/parcels/searchParcels'
 import { RTK_STATUS_LABELS } from '@/features/rtk/labels'
 import { requestRowChipStatus } from '@/features/rtk/requestStatus'
 import type { CivilDate } from '@/types/civilDate'
-import { GROUP_LIMIT, joinDetail, likePattern, type SearchGroup } from './searchTypes'
+import { sameAddress } from './addressMatch'
+import {
+  type ExactRecord,
+  GROUP_LIMIT,
+  joinDetail,
+  likePattern,
+  type SearchGroup,
+} from './searchTypes'
 
 export async function caseMatches(db: DbOrTx, query: string): Promise<SearchGroup> {
   const pattern = likePattern(query)
@@ -88,12 +95,38 @@ export async function requestMatches(
   }
 }
 
+export interface ParcelMatches {
+  group: SearchGroup
+  atAddress: boolean
+  exact: ExactRecord | null
+}
+
 export async function parcelMatches(
   db: DbOrTx,
   query: string,
   signal: AbortSignal,
-): Promise<SearchGroup> {
-  const hits = await searchParcels(db, { q: query, limit: GROUP_LIMIT }, signal)
+): Promise<ParcelMatches> {
+  const found = await searchParcels(db, { q: query, limit: GROUP_LIMIT }, signal)
+  const atAddress = found.filter((hit) => sameAddress(hit.siteAddress, query))
+  const hits = [...atAddress, ...found.filter((hit) => !atAddress.includes(hit))]
+  const active = atAddress.filter((hit) => hit.status === 'active')
+  const only = active.length === 1 ? active[0] : undefined
+  return {
+    atAddress: atAddress.length > 0,
+    exact:
+      only === undefined
+        ? null
+        : {
+            kind: 'parcel',
+            number: only.displayId ?? only.siteAddress ?? query,
+            href: `/staff/parcels/${only.parcelId}`,
+            newTab: false,
+          },
+    group: parcelGroup(hits),
+  }
+}
+
+function parcelGroup(hits: readonly ParcelSearchHit[]): SearchGroup {
   return {
     key: 'parcels',
     label: 'Parcels',

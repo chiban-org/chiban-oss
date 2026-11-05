@@ -1,15 +1,17 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen, waitFor } from '@testing-library/react'
+import { act, cleanup, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const noop = vi.hoisted(() => () => undefined)
 const handlers = vi.hoisted(() => new Map<string, () => void>())
 const created = vi.hoisted(() => [] as Record<string, unknown>[])
+const failing = vi.hoisted(() => ({ construct: false }))
 
 vi.mock('maplibre-gl/dist/maplibre-gl.css', () => ({}))
 vi.mock('maplibre-gl', () => {
   class FakeMap {
     constructor(options: Record<string, unknown>) {
+      if (failing.construct) throw new Error('WebGL is not available')
       created.push(options)
     }
     on(event: string, a: unknown, b?: unknown) {
@@ -35,13 +37,27 @@ vi.mock('maplibre-gl', () => {
 })
 
 const { ParcelMap } = await import('@/components/map/ParcelMap')
-const { PARCEL_TILE_MIN_ZOOM } = await import('@/components/map/mapStyle')
+const { MAP_LOAD_TIMEOUT_MS, PARCEL_TILE_MIN_ZOOM } = await import('@/components/map/mapStyle')
 
 afterEach(() => {
   cleanup()
+  vi.restoreAllMocks()
   handlers.clear()
   created.length = 0
+  failing.construct = false
 })
+
+function watchLoadTimeout(): () => void {
+  const spy = vi.spyOn(globalThis, 'setTimeout')
+  return () => {
+    const call = spy.mock.calls.find(([, ms]) => ms === MAP_LOAD_TIMEOUT_MS)
+    const fire = call?.[0]
+    if (typeof fire !== 'function') throw new Error('no load timeout was set')
+    act(() => fire())
+  }
+}
+
+const NOT_LOADED = 'The map did not load. Reload the page to try again, or search for the parcel.'
 
 describe('ParcelMap loading state', () => {
   it('says the map is loading until the first tiles are drawn', async () => {
@@ -50,6 +66,33 @@ describe('ParcelMap loading state', () => {
     await waitFor(() => expect(handlers.has('idle')).toBe(true))
     handlers.get('idle')?.()
     await waitFor(() => expect(screen.queryByRole('status')).toBeNull())
+  })
+})
+
+describe('ParcelMap load failure', () => {
+  it('says the map did not load when it has not finished in time', async () => {
+    const timeOut = watchLoadTimeout()
+    render(<ParcelMap layers={[]} onSelect={noop} />)
+    await waitFor(() => expect(created).toHaveLength(1))
+    timeOut()
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe(NOT_LOADED))
+    expect(screen.queryByText('Loading the map')).toBeNull()
+  })
+
+  it('clears the failure once the map does finish drawing', async () => {
+    const timeOut = watchLoadTimeout()
+    render(<ParcelMap layers={[]} onSelect={noop} />)
+    await waitFor(() => expect(handlers.has('idle')).toBe(true))
+    timeOut()
+    await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy())
+    act(() => handlers.get('idle')?.())
+    await waitFor(() => expect(screen.queryByRole('alert')).toBeNull())
+  })
+
+  it('says the map did not load when the map cannot be created', async () => {
+    failing.construct = true
+    render(<ParcelMap layers={[]} onSelect={noop} />)
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe(NOT_LOADED))
   })
 })
 

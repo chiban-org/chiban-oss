@@ -43,6 +43,11 @@ vi.mock('next/headers', () => ({
     ),
 }))
 vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
+vi.mock('next/navigation', () => ({
+  redirect: (url: string) => {
+    throw new Error(`NEXT_REDIRECT:${url}`)
+  },
+}))
 
 const main = await import('@/app/(staff)/staff/enforcement/actions')
 const service = await import('@/app/(staff)/staff/enforcement/serviceActions')
@@ -70,6 +75,11 @@ beforeEach(() => {
   state.csrfCookie = 'tok'
   state.actor = world.staff
 })
+
+async function openedAt(fields: Record<string, string>): Promise<string> {
+  const failure = await main.openCaseAction(form(fields)).then(JSON.stringify, String)
+  return failure.replace(/^Error: NEXT_REDIRECT:/, '')
+}
 
 function form(fields: Record<string, string>, token: string | null = 'tok'): FormData {
   const f = new FormData()
@@ -117,13 +127,11 @@ describe('enforcement server actions', () => {
     const parcelId = await makeParcel(handle.db, [{ format: 'gis12', value: '031004000000' }], {
       siteAddress: '4 Linden Way',
     })
-    const byNumber = await main.openCaseAction(
-      form({ locationText: 'Behind the barn', parcelRef: '031-004-000-000' }),
-    )
+    await openedAt({ locationText: 'Behind the barn', parcelRef: '031-004-000-000' })
     const byAddress = await main.staffComplaintAction(
       form({ locationText: '4 linden way', description: 'Junk cars in the yard' }),
     )
-    expect(byNumber.ok && byAddress.ok).toBe(true)
+    expect(byAddress.ok).toBe(true)
     const linked = await handle.db
       .select({ parcelId: enforcementCases.parcelId })
       .from(enforcementCases)
@@ -133,8 +141,7 @@ describe('enforcement server actions', () => {
 
   it('a case without a parcel can be linked to one from the case page', async () => {
     const parcelId = await makeParcel(handle.db, [{ format: 'gis12', value: '031005000000' }])
-    const opened = await main.openCaseAction(form({ locationText: 'Unnamed lot' }))
-    expect(opened.ok).toBe(true)
+    await openedAt({ locationText: 'Unnamed lot' })
     const [row] = await handle.db
       .select()
       .from(enforcementCases)
@@ -150,17 +157,18 @@ describe('enforcement server actions', () => {
     expect(after?.parcelId).toBe(parcelId)
   })
 
-  it('a parcel chosen in the picker links by its record id', async () => {
+  it('a parcel chosen in the picker links by its record id and the new case opens', async () => {
     const parcelId = await makeParcel(handle.db, [{ format: 'gis12', value: '031006000000' }])
-    const opened = await main.openCaseAction(
-      form({ locationText: 'Gravel pit off the county road', parcelRef: parcelId }),
-    )
-    expect(opened.ok).toBe(true)
+    const path = await openedAt({
+      locationText: 'Gravel pit off the county road',
+      parcelRef: parcelId,
+    })
     const [row] = await handle.db
-      .select({ parcelId: enforcementCases.parcelId })
+      .select({ id: enforcementCases.id, parcelId: enforcementCases.parcelId })
       .from(enforcementCases)
       .where(eq(enforcementCases.locationText, 'Gravel pit off the county road'))
     expect(row?.parcelId).toBe(parcelId)
+    expect(path).toBe(`/staff/enforcement/${row?.id}`)
   })
 
   it.each(Object.entries(ALL))('%s rejects a missing csrf token', async (_name, action) => {
@@ -213,13 +221,13 @@ describe('enforcement server actions', () => {
   })
 
   it('opens a case through the action', async () => {
-    const result = await main.openCaseAction(form({ locationText: '9 Alder Court' }))
-    expect(result).toEqual({ ok: true, message: 'Case opened.' })
+    const path = await openedAt({ locationText: '9 Alder Court' })
     const rows = await handle.db
       .select()
       .from(enforcementCases)
       .where(eq(enforcementCases.locationText, '9 Alder Court'))
     expect(rows).toHaveLength(1)
+    expect(path).toBe(`/staff/enforcement/${rows[0]?.id}`)
   })
 
   it('an invalid form is answered with the form message, not a stack', async () => {
@@ -259,8 +267,7 @@ describe('enforcement server actions', () => {
 
   it('a missing-content refusal names what is missing in words', async () => {
     state.actor = world.staff
-    const opened = await main.openCaseAction(form({ locationText: '12 Pine Court' }))
-    expect(opened.ok).toBe(true)
+    expect(await openedAt({ locationText: '12 Pine Court' })).toMatch(/^\/staff\/enforcement\//)
     const result = await main.draftOrderAction(
       form({ caseId: crypto.randomUUID(), findingIds: crypto.randomUUID(), correctiveAction: '' }),
     )

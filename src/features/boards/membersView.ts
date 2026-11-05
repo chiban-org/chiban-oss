@@ -26,8 +26,11 @@ export interface MemberRow {
   active: boolean
 }
 
+export type BoardOption = readonly [MemberRow['board'], string]
+
 export interface MembersView extends PageWindow {
   rows: MemberRow[]
+  boardOptions: BoardOption[]
   counts: ReadonlyMap<MemberTab, number>
 }
 
@@ -127,5 +130,6 @@ export async function loadMembersView(
       active: m.termStart <= input.today,
     })),
     counts,
+    boardOptions: settings.boards.map((b) => [b.board, b.label] as const),
   }
 }

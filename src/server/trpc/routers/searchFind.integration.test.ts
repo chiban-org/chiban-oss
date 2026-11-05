@@ -119,6 +119,24 @@ describe('search.find grouped matches', () => {
     })
   })
 
+  it('lists the parcel first and opens it on Enter when the query is its exact address', async () => {
+    const result = await find(`  12 ${STREET.toLowerCase()} `)
+    expect(result.groups.map((g) => g.key)[0]).toBe('parcels')
+    expect(result.groups.length).toBeGreaterThan(1)
+    expect(result.exact).toEqual({
+      kind: 'parcel',
+      number: '007001000000',
+      href: `/staff/parcels/${w.world.parcelId}`,
+      newTab: false,
+    })
+  })
+
+  it('keeps records ahead of parcels when the query is only part of an address', async () => {
+    const result = await find(STREET)
+    expect(result.groups.map((g) => g.key)[0]).toBe('applications')
+    expect(result.exact).toBeNull()
+  })
+
   it('finds a parcel and its applications by owner name', async () => {
     const result = await find('Quillfeather')
     expect(group(result, 'parcels')?.rows.map((r) => r.key)).toEqual([w.world.parcelId])

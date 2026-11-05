@@ -29,7 +29,7 @@ async function memberRows(db: Db, packetId: string): Promise<TrackRow[]> {
       userId: boardPacketMembers.userId,
       name: users.displayName,
       email: users.email,
-      sentAt: boardPacketMembers.sentAt,
+      sentAt: boardPacketMembers.lastSentAt,
       ...reads,
     })
     .from(boardPacketMembers)
@@ -42,7 +42,12 @@ async function memberRows(db: Db, packetId: string): Promise<TrackRow[]> {
       ),
     )
     .where(eq(boardPacketMembers.packetId, packetId))
-    .groupBy(boardPacketMembers.userId, users.displayName, users.email, boardPacketMembers.sentAt)
+    .groupBy(
+      boardPacketMembers.userId,
+      users.displayName,
+      users.email,
+      boardPacketMembers.lastSentAt,
+    )
     .orderBy(asc(users.displayName))
   return rows.map(({ userId, ...row }) => ({
     ...row,

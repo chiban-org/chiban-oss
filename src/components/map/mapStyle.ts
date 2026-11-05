@@ -11,6 +11,7 @@ export interface MapStyleOptions {
 }
 
 export const PARCEL_TILE_MIN_ZOOM = 10
+export const MAP_LOAD_TIMEOUT_MS = 20_000
 const TILE_MAX_ZOOM = 20
 const PARCEL_FILL_OPACITY = 0.04
 const SELECTED_FILL_OPACITY = 0.25
