@@ -237,6 +237,11 @@ describe('staff settings pages', () => {
   })
 
   it('a kind page lists its items and a key page shows the editor and version history', async () => {
+    const clerk = state.actor
+    const admin = await handle.db.query.users.findFirst({
+      where: (u, { eq }) => eq(u.email, 'admin@alderpond.example'),
+    })
+    state.actor = await loadActor(handle.db, admin?.id ?? '', signal)
     const kind = await html(
       SettingsKindPage({
         params: Promise.resolve({ kind: 'application_type' }),
@@ -244,11 +249,6 @@ describe('staff settings pages', () => {
       }),
     )
     expect(kind).toContain('/staff/settings/application_type/BP')
-    const clerk = state.actor
-    const admin = await handle.db.query.users.findFirst({
-      where: (u, { eq }) => eq(u.email, 'admin@alderpond.example'),
-    })
-    state.actor = await loadActor(handle.db, admin?.id ?? '', signal)
     const key = await html(
       SettingsKeyPage({ params: Promise.resolve({ kind: 'application_type', key: 'BP' }) }),
     )

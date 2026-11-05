@@ -26,13 +26,15 @@ export default async function SettingsKindPage({ params, searchParams }: Props) 
   if (isSingletonKind(kind)) redirect(`/staff/settings/${kind}/${SINGLETON_KEY}`)
   const ctx = await recordStaffContext()
   if (ctx === null) return <NoPermission title="Settings" action="change settings" />
-  const [listed, canEdit, referenceRows] = await Promise.all([
+  if (!(await hasCapability(ctx.db, ctx.actor.userId, 'config.edit', ctx.signal))) {
+    return <NoPermission title="Settings" action="change settings" />
+  }
+  const [listed, referenceRows] = await Promise.all([
     listKeysOfKind(ctx.db, kind, ctx.signal),
-    hasCapability(ctx.db, ctx.actor.userId, 'config.edit', ctx.signal),
     loadReferenceRows(ctx.db, ctx.signal),
   ])
   const all = namedKeyRows(listed, kind, choicesFromRows(referenceRows))
-  const action = canEdit ? <NewConfigItem kind={kind} /> : undefined
+  const action = <NewConfigItem kind={kind} />
   const empty = all.length === 0
   return (
     <main>
@@ -43,7 +45,7 @@ export default async function SettingsKindPage({ params, searchParams }: Props) 
         action={empty ? undefined : action}
       />
       {empty ? (
-        <SettingsEmpty {...emptyKindCopy(kind, canEdit)} action={action} />
+        <SettingsEmpty {...emptyKindCopy(kind)} action={action} />
       ) : (
         <KeyTable kind={kind} all={all} view={view} />
       )}

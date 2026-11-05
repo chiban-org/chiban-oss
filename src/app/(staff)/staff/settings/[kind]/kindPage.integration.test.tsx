@@ -63,10 +63,11 @@ afterAll(async () => {
 })
 
 describe('settings kind page', () => {
-  it('offers New type only to someone who may edit configuration', async () => {
-    for (const role of ['staff', 'records_custodian'] as const) {
+  it('refuses the list to anyone who may not edit configuration, like the item pages do', async () => {
+    for (const role of ['staff', 'records_custodian', 'finance', 'inspector'] as const) {
       const html = await render(await staffActor(handle.db, role))
-      expect(html).not.toContain('New type')
+      expect(html).toContain('You do not have permission to change settings.')
+      expect(html).not.toContain('Electrical permit')
     }
     expect(await render(await staffActor(handle.db, 'admin'))).toMatch(
       /<button[^>]*>New type<\/button>/,
@@ -104,15 +105,8 @@ describe('settings kind page', () => {
     expect(html).not.toContain('Open applications keep the version')
   })
 
-  it('tells someone who cannot add that an administrator can', async () => {
-    const html = await render(await staffActor(handle.db, 'staff'), {}, 'town_rule_setting')
-    expect(html).toContain('No town rules are set')
-    expect(html).toContain('An administrator can add one.')
-    expect(html).not.toContain('Set a town rule')
-  })
-
   it('lists each item by name and states the default order', async () => {
-    const html = await render(await staffActor(handle.db, 'staff'))
+    const html = await render(await staffActor(handle.db, 'admin'))
     expect(html).toMatch(
       /<a [^>]*href="\/staff\/settings\/application_type\/EL"[^>]*>Electrical permit<\/a>/,
     )
@@ -120,7 +114,7 @@ describe('settings kind page', () => {
   })
 
   it('keeps one published choice at a time', async () => {
-    const html = await render(await staffActor(handle.db, 'staff'), { published: 'published' })
+    const html = await render(await staffActor(handle.db, 'admin'), { published: 'published' })
     expect(html).toContain('href="/staff/settings/application_type?published=unpublished"')
   })
 })

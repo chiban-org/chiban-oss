@@ -70,15 +70,11 @@ const EMPTY_COPY: Partial<Record<ConfigKind, { title: string; description: strin
   },
 }
 
-export function emptyKindCopy(
-  kind: ConfigKind,
-  canEdit: boolean,
-): { title: string; description: string } {
-  const copy = EMPTY_COPY[kind] ?? {
-    title: `No ${KIND_LABELS[kind].toLowerCase()} yet`,
-    description: 'Nothing is set up here yet.',
-  }
-  return canEdit
-    ? copy
-    : { ...copy, description: `${copy.description} An administrator can add one.` }
+export function emptyKindCopy(kind: ConfigKind): { title: string; description: string } {
+  return (
+    EMPTY_COPY[kind] ?? {
+      title: `No ${KIND_LABELS[kind].toLowerCase()} yet`,
+      description: 'Nothing is set up here yet.',
+    }
+  )
 }
