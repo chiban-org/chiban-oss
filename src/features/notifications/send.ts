@@ -2,10 +2,11 @@ import { and, asc, eq, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { notificationOutbox, users } from '@/db/schema'
 import { canViewApplication } from '@/features/access/queries'
-import { loadActor } from '@/features/auth/actor'
+import { type Actor, loadActor } from '@/features/auth/actor'
 import type { MailMessage, MailTransport } from '@/features/mail/transport'
 import { MESSAGES } from '@/features/notifications/messages'
 import type { NotificationPayload } from '@/features/notifications/queue'
+import { isRemovalNoticeToFormerContractor } from '@/features/notifications/removedContractor'
 import { err, type Result } from '@/types/result'
 
 const MAX_ATTEMPTS = 5
@@ -16,6 +17,16 @@ async function drop(db: DbOrTx, id: string, reason: 'no_access' | 'inactive_user
     .update(notificationOutbox)
     .set({ status: 'dropped', dropReason: reason })
     .where(eq(notificationOutbox.id, id))
+}
+
+async function mayReceive(
+  db: DbOrTx,
+  row: typeof notificationOutbox.$inferSelect,
+  actor: Actor,
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (await canViewApplication(db, actor, row.applicationId, signal)) return true
+  return await isRemovalNoticeToFormerContractor(db, row)
 }
 
 async function deliver(
@@ -51,7 +62,7 @@ export async function sendQueuedNotifications(
       await drop(db, row.id, 'inactive_user')
       continue
     }
-    if (!(await canViewApplication(db, actor, row.applicationId, signal))) {
+    if (!(await mayReceive(db, row, actor, signal))) {
       await drop(db, row.id, 'no_access')
       continue
     }

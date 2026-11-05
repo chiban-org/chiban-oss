@@ -64,20 +64,12 @@ async function payInFull(db: Db, trade: TradeFixture): Promise<void> {
   if (!paid.ok) throw new AppError(ErrorIds.DB_INVARIANT, `payment failed: ${paid.error}`)
 }
 
-export async function issuedTradePermit(
+export async function issuedTrade(
   db: Db,
   world: PermitWorld,
   store: ObjectStore,
-): Promise<IssuedPermit> {
+): Promise<TradeFixture> {
   const trade = await submittedTrade(db, world)
-  const contractor = await staffActor(db, 'applicant')
-  const owner = await staffActor(db, 'applicant')
-  const contractorPartyId = await addPartyRow(db, world, {
-    role: 'contractor',
-    name: 'Volt Electric',
-    userId: contractor.userId,
-  })
-  await addPartyRow(db, world, { role: 'owner', name: 'Robin Owner', userId: owner.userId })
   await payInFull(db, trade)
   const issued = await issueApplication(
     db,
@@ -88,6 +80,23 @@ export async function issuedTradePermit(
   )
   if (!issued.ok)
     throw new AppError(ErrorIds.DB_INVARIANT, `issue failed: ${JSON.stringify(issued.error)}`)
+  return trade
+}
+
+export async function issuedTradePermit(
+  db: Db,
+  world: PermitWorld,
+  store: ObjectStore,
+): Promise<IssuedPermit> {
+  const contractor = await staffActor(db, 'applicant')
+  const owner = await staffActor(db, 'applicant')
+  const contractorPartyId = await addPartyRow(db, world, {
+    role: 'contractor',
+    name: 'Volt Electric',
+    userId: contractor.userId,
+  })
+  await addPartyRow(db, world, { role: 'owner', name: 'Robin Owner', userId: owner.userId })
+  const trade = await issuedTrade(db, world, store)
   return { trade, contractor, contractorPartyId, owner }
 }
 
