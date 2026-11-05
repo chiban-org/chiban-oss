@@ -150,8 +150,8 @@ export function nextStepPlan(
 
 function clearLeadText(plan: NextStepPlan, to: CoreState): string {
   return plan.leadAllowed
-    ? `Nothing blocks ${moveLabel(to)}. It is under More actions.`
-    : `Nothing blocks ${moveLabel(to)}. Your role cannot make this move.`
+    ? `Nothing blocks the move to ${moveLabel(to)}. It is under More actions.`
+    : `Nothing blocks the move to ${moveLabel(to)}. Your role cannot make this move.`
 }
 
 export function LeadStatus({ plan }: { plan: RailPlan }) {
