@@ -57,6 +57,7 @@ export interface DocumentListRow {
   audiences: Audience[]
   isPublic: boolean
   hasRedactedCopy: boolean
+  supersededBy: string | null
   createdAt: string
 }
 

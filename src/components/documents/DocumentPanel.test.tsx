@@ -30,6 +30,7 @@ function doc(overrides: Partial<PanelDocument> = {}): PanelDocument {
     audiences: ['project_parties', 'reviewers'],
     isPublic: true,
     hasRedactedCopy: false,
+    supersededBy: null,
     createdAt: '2027-03-02T15:00:00.000Z',
     preservation: 'preserved',
     preservationRecordId: 'p1',

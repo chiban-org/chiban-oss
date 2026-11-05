@@ -8,8 +8,10 @@ import {
   roleCapabilities,
 } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { groupRevisions } from '@/features/documents/revisions'
 import { type CorrectionInput, correctPermit } from '@/features/permits/correction/correctPermit'
 import { buildPermitPdf, buildPlacardPdf } from '@/features/permits/permitDocuments'
+import { getPortalApplicationView } from '@/features/portal/portalView'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import type { PermitWorld } from '@/test/applicationFixtures'
 import {
@@ -134,6 +136,24 @@ describe('a correction', () => {
     expect(await pdfText(await downloadObject(handle.db, store, done.value.documentId))).toContain(
       MARK_1,
     )
+  })
+
+  it('shows the applicant the corrected copy with the earlier one under it', async () => {
+    const done = await correct()
+    if (!done.ok) throw new Error(JSON.stringify(done.error))
+    const view = await getPortalApplicationView(
+      handle.db,
+      world.applicant,
+      permit.trade.applicationId,
+      signal,
+    )
+    if (!view.ok) throw new Error(view.error)
+    const permits = groupRevisions(view.value.documents).filter(
+      (g) => g.current.docKind === 'issued_permit',
+    )
+    expect(permits).toHaveLength(1)
+    expect(permits[0]?.current.documentId).toBe(done.value.documentId)
+    expect(permits[0]?.earlier).toHaveLength(1)
   })
 
   it('numbers later corrections 2, 3 and chains the superseded copies', async () => {

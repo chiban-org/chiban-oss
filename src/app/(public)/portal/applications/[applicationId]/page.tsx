@@ -6,6 +6,8 @@ import { StatusTimeline } from '@/components/portal/StatusTimeline'
 import { StatusChip } from '@/components/StatusChip'
 import { env } from '@/config/env'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
+import { groupRevisions } from '@/features/documents/revisions'
+import type { DocumentListRow } from '@/features/documents/types'
 import { displayFieldValue } from '@/features/forms/displayValue'
 import { honestText } from '@/features/honest/honest'
 import { loadPortalBoardRecord, type PortalBoardRecord } from '@/features/portal/boardRecord'
@@ -41,6 +43,49 @@ function Details({ view }: { view: PortalApplicationView }) {
         </div>
       ))}
     </dl>
+  )
+}
+
+function DocumentLink({ doc, zone }: { doc: DocumentListRow; zone: string }) {
+  return (
+    <>
+      <Link
+        {...NEW_TAB}
+        href={`/api/documents/${doc.documentId}`}
+        className="tap-target inline-flex items-center"
+      >
+        {doc.title}
+      </Link>
+      <span className="ml-2 text-muted-foreground">
+        {formatInstant(new Date(doc.createdAt), zone)}
+      </span>
+    </>
+  )
+}
+
+function DocumentGroups({ documents, zone }: { documents: DocumentListRow[]; zone: string }) {
+  return (
+    <ul className="m-0 space-y-1">
+      {groupRevisions(documents).map(({ current, earlier }) => (
+        <li key={current.documentId}>
+          <DocumentLink doc={current} zone={zone} />
+          {earlier.length === 0 ? null : (
+            <div className="ml-4">
+              <p className="m-0 text-muted-foreground">
+                Earlier versions, replaced by the copy above
+              </p>
+              <ul className="m-0 space-y-1">
+                {earlier.map((d) => (
+                  <li key={d.documentId}>
+                    <DocumentLink doc={d} zone={zone} />
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -192,22 +237,7 @@ export default async function PortalApplicationPage({
         {view.documents.length === 0 ? (
           <p>No documents yet.</p>
         ) : (
-          <ul className="m-0 space-y-1">
-            {view.documents.map((d) => (
-              <li key={d.documentId}>
-                <Link
-                  {...NEW_TAB}
-                  href={`/api/documents/${d.documentId}`}
-                  className="tap-target inline-flex items-center"
-                >
-                  {d.title}
-                </Link>
-                <span className="ml-2 text-muted-foreground">
-                  {formatInstant(new Date(d.createdAt), zone)}
-                </span>
-              </li>
-            ))}
-          </ul>
+          <DocumentGroups documents={view.documents} zone={zone} />
         )}
         {view.canUpload ? (
           <UploadSection applicationId={view.applicationId} maxBytes={env.MAX_UPLOAD_BYTES} />

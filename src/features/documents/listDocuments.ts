@@ -27,6 +27,7 @@ export async function listDocuments(
       docKind: documents.docKind,
       audiences: documents.audiences,
       isPublic: documents.isPublic,
+      supersededBy: documents.supersededBy,
       createdAt: documents.createdAt,
       hasRedactedCopy: sql<boolean>`exists (
         select 1 from document_versions dv
@@ -53,6 +54,7 @@ export async function listDocuments(
       audiences: r.audiences as Audience[],
       isPublic: r.isPublic,
       hasRedactedCopy: r.hasRedactedCopy,
+      supersededBy: r.supersededBy,
       createdAt: r.createdAt.toISOString(),
     })),
     nextCursor: rows.length > input.limit && last !== undefined ? String(last.seq) : null,

@@ -205,6 +205,7 @@ function DocumentRow({
           {doc.title}
         </a>
         <StatusChip status={chip.status} label={chip.label} />
+        {doc.supersededBy === null ? null : <StatusChip status="neutral" label="Superseded" />}
         {doc.holdCount > 0 ? <StatusChip status="overdue" label="Legal hold" /> : null}
       </div>
       <p className="m-0 text-sm text-muted-foreground">
