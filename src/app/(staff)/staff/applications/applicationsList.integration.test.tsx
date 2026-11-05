@@ -122,10 +122,10 @@ describe('/staff/applications page', () => {
     expect(html).toMatch(/<a[^>]*href="\/staff\/applications\?stage=open"[^>]*>Clear filters</)
   })
 
-  it('shows the keys as their own line and submits filters without an apply button', async () => {
+  it('shows no key hints and submits filters without an apply button', async () => {
     const html = await render({})
-    expect(html).toContain('<kbd')
-    expect(html).toContain('data-slot="key-hints"')
+    expect(html).not.toContain('<kbd')
+    expect(html).not.toContain('data-slot="key-hints"')
     expect(html).not.toContain('Apply filters')
   })
 

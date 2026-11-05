@@ -1,9 +1,7 @@
 import { NH_LICENSE_LOOKUP } from '@packs/nh/links'
 import { eq } from 'drizzle-orm'
 import Link from 'next/link'
-import { ParcelSearchHotkey } from '@/components/counter/ParcelSearchHotkey'
 import { QuickIssueForm } from '@/components/counter/QuickIssueForm'
-import { KeyHints } from '@/components/KeyHints'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecentParcelSearches } from '@/components/parcels/RecentParcelSearches'
 import { SearchExamples } from '@/components/parcels/SearchExamples'
@@ -175,9 +173,7 @@ export default async function CounterPage({ searchParams }: Props) {
 
   return (
     <main>
-      <ParcelSearchHotkey />
       <PageHeader title="Counter" lead="Find the parcel, then choose the permit type." />
-      <KeyHints hints={[{ keys: ['/'], action: 'search for a parcel' }]} />
       <section aria-labelledby="parcel" className="space-y-3">
         <h2 id="parcel">Parcel</h2>
         <form method="get" role="search" className="flex max-w-3xl gap-3">

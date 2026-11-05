@@ -1,7 +1,7 @@
 'use client'
 
-import { type KeyboardEvent, type PointerEvent, useRef, useState } from 'react'
-import { KeyHints } from '@/components/KeyHints'
+import { type PointerEvent, useRef, useState } from 'react'
+import { BoxNudge } from '@/components/redaction/BoxNudge'
 import {
   boxProblems,
   clampBox,
@@ -22,7 +22,6 @@ export interface BoxEditorProps {
   onChange?: (boxes: EditorBox[], problems: string[]) => void
 }
 
-const STEP = 4
 const DEFAULT_SIZE = 80
 const PAGES_PER_VIEW = 12
 let counter = 0
@@ -104,44 +103,13 @@ export function BoxEditor({ pages, exemptions, mode, onChange }: BoxEditorProps)
       y: ((event.clientY - rect.top) / rect.height) * geometry.height,
     }
   }
-  const onKey = (event: KeyboardEvent<HTMLDivElement>, box: EditorBox) => {
-    const geometry = geometryOf(box.page)
-    const delta: Record<string, [number, number]> = {
-      ArrowLeft: [-STEP, 0],
-      ArrowRight: [STEP, 0],
-      ArrowUp: [0, -STEP],
-      ArrowDown: [0, STEP],
-    }
-    const move = delta[event.key]
-    if (move !== undefined) {
-      event.preventDefault()
-      const [dx, dy] = move
-      update(
-        boxes.map((b) =>
-          b.id === box.id
-            ? event.shiftKey
-              ? resizeBox(b, dx, dy, geometry)
-              : moveBox(b, dx, dy, geometry)
-            : b,
-        ),
-      )
-    } else if (event.key === 'Delete' || event.key === 'Backspace') {
-      event.preventDefault()
-      update(boxes.filter((b) => b.id !== box.id))
-    }
-  }
+  const reshape = (id: string, change: (b: EditorBox, geometry: PageGeometry) => EditorBox) =>
+    update(boxes.map((b) => (b.id === id ? change(b, geometryOf(b.page)) : b)))
   return (
     <div className="space-y-4">
       <p className="m-0">
         Drag on a page to draw a box over what must be removed, or add a box with the button.
       </p>
-      <KeyHints
-        hints={[
-          { keys: ['Arrows'], action: 'move a box' },
-          { keys: ['Shift', 'Arrows'], action: 'resize it' },
-          { keys: ['Delete'], action: 'remove it' },
-        ]}
-      />
       <PageWindows total={pages.length} first={first} onShow={setFirst} />
       {shown.map((geometry) => (
         <div key={geometry.page} className="space-y-2">
@@ -194,10 +162,8 @@ export function BoxEditor({ pages, exemptions, mode, onChange }: BoxEditorProps)
                 <div
                   key={b.id}
                   role="group"
-                  tabIndex={0}
                   aria-label={`Box ${boxes.indexOf(b) + 1} on page ${b.page}`}
-                  onKeyDown={(event) => onKey(event, b)}
-                  className="absolute bg-black/80 outline-offset-2 focus:outline focus:outline-2 focus:outline-action"
+                  className="absolute bg-black/80"
                   style={{
                     left: `${(b.x0 / geometry.width) * 100}%`,
                     top: `${(b.y0 / geometry.height) * 100}%`,
@@ -249,6 +215,10 @@ export function BoxEditor({ pages, exemptions, mode, onChange }: BoxEditorProps)
               value={b.explanation}
               rows={2}
               onChange={(event) => patch(b.id, { explanation: event.target.value })}
+            />
+            <BoxNudge
+              onMove={(dx, dy) => reshape(b.id, (x, g) => moveBox(x, dx, dy, g))}
+              onResize={(dx, dy) => reshape(b.id, (x, g) => resizeBox(x, dx, dy, g))}
             />
             <Button
               type="button"

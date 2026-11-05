@@ -41,9 +41,9 @@ export function ReceivedCell({ row }: { row: WorkQueueRow }) {
   )
 }
 
-export function ApplicationCell({ row, edgeClass }: { row: WorkQueueRow; edgeClass: string }) {
+export function ApplicationCell({ row }: { row: WorkQueueRow }) {
   return (
-    <td data-label="Application" className={cn(CARD_CELL, edgeClass)}>
+    <td data-label="Application" className={CARD_CELL}>
       <Link
         href={`/staff/applications/${row.applicationId}`}
         className="whitespace-nowrap font-semibold"

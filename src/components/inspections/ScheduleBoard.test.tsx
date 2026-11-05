@@ -57,13 +57,6 @@ describe('ScheduleBoard', () => {
     expect(within(item).getByText('Portal')).toBeTruthy()
   })
 
-  it('shows its keys as shared key hints', () => {
-    setup()
-    const hints = document.querySelector('[data-slot="key-hints"]') as HTMLElement
-    expect(hints.querySelectorAll('kbd').length).toBe(4)
-    expect(hints.textContent).toContain('choose a request')
-  })
-
   it('shows free slots by inspector and date in the long format', () => {
     setup()
     expect(screen.getByText('July 7, 2027')).toBeTruthy()
@@ -79,11 +72,10 @@ describe('ScheduleBoard', () => {
     ).toBeTruthy()
   })
 
-  it('pressing s schedules the selected request into the focused slot', () => {
+  it('clicking a request then a slot schedules it there', () => {
     const onSchedule = setup()
-    fireEvent.keyDown(document, { key: 'j' })
-    fireEvent.focus(screen.getByRole('button', { name: /10:30 AM/ }))
-    fireEvent.keyDown(document, { key: 's' })
+    fireEvent.click(screen.getByRole('option', { name: /EL-2027-0001/ }))
+    fireEvent.click(screen.getByRole('button', { name: /10:30 AM/ }))
     expect(onSchedule).toHaveBeenCalledWith({
       inspectionId: 'i1',
       rowVersion: 1,
@@ -93,31 +85,17 @@ describe('ScheduleBoard', () => {
     })
   })
 
-  it('j and k move the selection', () => {
+  it('clicking a slot without a chosen request schedules nothing', () => {
     const onSchedule = setup()
-    fireEvent.keyDown(document, { key: 'j' })
-    fireEvent.keyDown(document, { key: 'j' })
-    fireEvent.keyDown(document, { key: 'k' })
-    fireEvent.focus(screen.getByRole('button', { name: /9:30 AM/ }))
-    fireEvent.keyDown(document, { key: 's' })
-    expect(onSchedule).toHaveBeenCalledWith(expect.objectContaining({ inspectionId: 'i1' }))
-  })
-
-  it('s does nothing without a selected request or a focused slot', () => {
-    const onSchedule = setup()
-    fireEvent.keyDown(document, { key: 's' })
-    fireEvent.keyDown(document, { key: 'j' })
-    fireEvent.keyDown(document, { key: 's' })
+    fireEvent.click(screen.getByRole('button', { name: /10:30 AM/ }))
     expect(onSchedule).not.toHaveBeenCalled()
   })
 
-  it('/ focuses the search and typing there does not trigger shortcuts', () => {
+  it('ignores j, s and / pressed on the page', () => {
     const onSchedule = setup()
-    fireEvent.keyDown(document, { key: '/' })
-    const search = screen.getByRole('searchbox', { name: 'Search requests' })
-    expect(document.activeElement).toBe(search)
-    fireEvent.keyDown(search, { key: 's' })
+    for (const k of ['j', 's', '/']) fireEvent.keyDown(document, { key: k })
     expect(onSchedule).not.toHaveBeenCalled()
+    expect(document.activeElement).toBe(document.body)
   })
 
   it('search narrows the unscheduled list', () => {

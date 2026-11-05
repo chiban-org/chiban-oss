@@ -1,11 +1,9 @@
 import { redirect } from 'next/navigation'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { TablePager } from '@/components/dataTable/TablePager'
-import { KeyHints } from '@/components/KeyHints'
 import { QueueFilters } from '@/components/queue/QueueFilters'
 import { NoMatches, QueueSummary } from '@/components/queue/QueueSummary'
 import { QueueTable } from '@/components/queue/QueueTable'
-import { queueKeyHints } from '@/components/queue/queueKeyHints'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasFullRecordAccess, isReviewer } from '@/features/access/roles'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -89,7 +87,6 @@ export default async function ApplicationsPage({
         clearHref={clear}
       />
       <QueueSummary total={page.total} filters={labels} />
-      <KeyHints hints={queueKeyHints(reviewers.length > 0)} />
       <QueueTable
         key={filterKey(params)}
         rows={page.rows}

@@ -51,10 +51,10 @@ afterAll(async () => {
 })
 
 describe('counter parcel search', () => {
-  it('shows the shared key hints', async () => {
+  it('shows no key hints', async () => {
     const html = renderToStaticMarkup(await CounterPage({ searchParams: Promise.resolve({}) }))
-    expect(html).toContain('data-slot="key-hints"')
-    expect(html).toContain('search for a parcel')
+    expect(html).not.toContain('data-slot="key-hints"')
+    expect(html).not.toContain('<kbd')
   })
 
   it('says so when nothing matches', async () => {

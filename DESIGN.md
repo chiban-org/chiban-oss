@@ -86,8 +86,7 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 - Below 640px every filter group folds into a menu. No staff page scrolls sideways at 390px.
 - Identifiers link to their record: an application number to the application, a parcel ID to the parcel, an owner to a parcel search for that owner. An identifier gets its own column instead of sitting inside a sentence.
 - A field that asks for a parcel is the parcel picker (`ParcelPicker` and `ParcelMultiPicker` in `src/components/parcels/picker`), never a bare text box. It searches address, owner and every form of parcel ID after a short pause, lists up to eight matches with the display ID, site address and owner, labels retired parcels, and moves with the arrow keys, Enter and Escape. The choice shows as a chip with Change, and the form submits the parcel's record id under the field's usual name. Where a form may name a parcel that is not in the layer yet (lineage children), "No parcel matches" comes with "Use this ID anyway", which submits the typed ID.
-- Keyboard-driven tables move with `j` and `k`, open the selected row with Enter, and always show focus.
-- Every page with keyboard shortcuts lists them in one `KeyHints` row (`src/components/KeyHints.tsx`) directly above the table or tool, never in a sentence. Each key is a `Kbd` (`src/components/ui/kbd.tsx`), followed by a lowercase verb: "j k move", "Enter open", "/ search". The row is hidden below 640px. Do not draw keys any other way.
+- No custom keyboard shortcuts. Standard browser keyboard use only: Tab order, visible focus, Enter and Space on links and buttons, Escape to close dialogs and menus, arrow keys inside listboxes and selects.
 - Search forms offer recent searches and a one-click example under the field.
 - A list of people inside one record (association officers, park tenants) is edited as repeatable rows: one bordered group per person with its own fields, "Add another" under the last one and Remove on each when there is more than one. Never a delimited text box.
 - Rows that can go out of date carry a checked date. "Confirm still correct" records today without retyping anything; past the town's re-check interval the row shows a "Due for a check" chip and the page header counts what is due. Due is a warning, never a block.
@@ -154,7 +153,7 @@ A meeting's packet is prepared, sent and tracked in one "Packet" panel on the me
 - A count appears only when it says something: "2 more overdue", never "0 overdue".
 - An empty state says what to do next.
 - A count of days reads "today" when it is zero.
-- Dates read in full ("November 4, 2026") through `formatCivilDate`. Only the two keyboard work queues (Applications and Your reviews) use the short month, to keep their many columns on one line.
+- Dates read in full ("November 4, 2026") through `formatCivilDate`. Only the two work queues (Applications and Your reviews) use the short month, to keep their many columns on one line.
 
 ## Type and shape
 

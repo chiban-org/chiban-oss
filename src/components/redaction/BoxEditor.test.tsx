@@ -90,24 +90,28 @@ describe('BoxEditor', () => {
     expect(JSON.parse(hidden.value)).toHaveLength(1)
   })
 
-  it('shows its keys as shared key hints', () => {
-    const { container } = render(
-      <BoxEditor pages={[geometry]} exemptions={EXEMPTIONS} mode="pdf" />,
-    )
-    const hints = container.querySelector('[data-slot="key-hints"]') as HTMLElement
-    expect(hints.textContent.replace(/\s+/g, ' ')).toContain('Delete remove it')
-    expect(hints.querySelectorAll('kbd').length).toBe(4)
-  })
-
-  it('arrow keys move a focused box and Delete removes it', () => {
+  it('buttons move and resize a box and Remove deletes it', () => {
     render(<BoxEditor pages={[geometry]} exemptions={EXEMPTIONS} mode="pdf" />)
     fireEvent.click(screen.getByRole('button', { name: 'Add a box to page 1' }))
     const box = screen.getByRole('group', { name: 'Box 1 on page 1' })
-    const before = box.style.left
-    fireEvent.keyDown(box, { key: 'ArrowRight' })
-    expect(screen.getByRole('group', { name: 'Box 1 on page 1' }).style.left).not.toBe(before)
-    fireEvent.keyDown(screen.getByRole('group', { name: 'Box 1 on page 1' }), { key: 'Delete' })
+    const left = box.style.left
+    const width = box.style.width
+    fireEvent.click(screen.getByRole('button', { name: 'Move right' }))
+    expect(screen.getByRole('group', { name: 'Box 1 on page 1' }).style.left).not.toBe(left)
+    fireEvent.click(screen.getByRole('button', { name: 'Wider' }))
+    expect(screen.getByRole('group', { name: 'Box 1 on page 1' }).style.width).not.toBe(width)
+    fireEvent.click(screen.getByRole('button', { name: 'Remove this box' }))
     expect(screen.queryByRole('group', { name: 'Box 1 on page 1' })).toBeNull()
+  })
+
+  it('boxes take no keyboard shortcuts', () => {
+    render(<BoxEditor pages={[geometry]} exemptions={EXEMPTIONS} mode="pdf" />)
+    fireEvent.click(screen.getByRole('button', { name: 'Add a box to page 1' }))
+    const box = screen.getByRole('group', { name: 'Box 1 on page 1' })
+    const left = box.style.left
+    fireEvent.keyDown(box, { key: 'ArrowRight' })
+    fireEvent.keyDown(box, { key: 'Delete' })
+    expect(screen.getByRole('group', { name: 'Box 1 on page 1' }).style.left).toBe(left)
   })
 })
 

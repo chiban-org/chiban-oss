@@ -1,5 +1,4 @@
-import { fireEvent, render } from '@testing-library/react'
-import { vi } from 'vitest'
+import { render } from '@testing-library/react'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import { QueueTable } from '@/components/queue/QueueTable'
 import type { WorkQueueRow } from '@/features/queue/workQueue'
@@ -38,16 +37,10 @@ export function row(overrides: Partial<WorkQueueRow>): WorkQueueRow {
 const reviewers = [{ id: 'r1', name: 'Remy Reviewer' }]
 const noopAssign = () => Promise.resolve({ ok: true as const, message: 'Assigned.' })
 
-export function setup(rows: WorkQueueRow[], navigate = vi.fn(), choices = reviewers) {
+export function setup(rows: WorkQueueRow[], choices = reviewers) {
   render(
     <CsrfProvider token="t1">
-      <QueueTable rows={rows} reviewers={choices} assign={noopAssign} navigate={navigate} />
+      <QueueTable rows={rows} reviewers={choices} assign={noopAssign} />
     </CsrfProvider>,
   )
-  return navigate
 }
-
-export const key = (k: string, target: Element = document.body) =>
-  fireEvent.keyDown(target, { key: k })
-export const selectedNumber = () =>
-  document.querySelector('tbody tr[aria-selected="true"] a')?.textContent ?? null

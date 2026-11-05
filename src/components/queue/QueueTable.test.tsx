@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, within } from '@testing-library/rea
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import { QueueTable } from '@/components/queue/QueueTable'
-import { d, key, row, selectedNumber, setup } from '@/components/queue/queueTestKit'
+import { d, row, setup } from '@/components/queue/queueTestKit'
 import { findIsoDates } from '@/test/leaks'
 
 const noopAssign = () => Promise.resolve({ ok: true as const, message: 'Assigned.' })

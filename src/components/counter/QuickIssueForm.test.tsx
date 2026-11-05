@@ -3,7 +3,6 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { CounterActions } from '@/components/counter/counterTypes'
-import { ParcelSearchHotkey } from '@/components/counter/ParcelSearchHotkey'
 import { QuickIssueForm } from '@/components/counter/QuickIssueForm'
 import { ReaderPanel } from '@/components/counter/ReaderPanel'
 
@@ -69,26 +68,6 @@ describe('QuickIssueForm', () => {
     expect(screen.getByTestId('fee-total').textContent).toBe('$45.00')
   })
 
-  it('shows the method keys as shared key hints', () => {
-    const { container } = form()
-    const hints = container.querySelector('[data-slot="key-hints"]') as HTMLElement
-    expect([...hints.children].map((c) => c.textContent)).toEqual([
-      'Alt 1 cash',
-      'Alt 2 check',
-      'Alt 3 card',
-    ])
-  })
-
-  it('Alt+1 to Alt+3 pick cash, check, and card', () => {
-    form()
-    fireEvent.keyDown(window, { key: '2', altKey: true })
-    expect(screen.getByRole('radio', { name: 'Check' }).getAttribute('aria-checked')).toBe('true')
-    fireEvent.keyDown(window, { key: '3', altKey: true })
-    expect(screen.getByRole('radio', { name: 'Card' }).getAttribute('aria-checked')).toBe('true')
-    fireEvent.keyDown(window, { key: '1', altKey: true })
-    expect(screen.getByRole('radio', { name: 'Cash' }).getAttribute('aria-checked')).toBe('true')
-  })
-
   it('the license lookup link opens a new tab', () => {
     form()
     const link = screen.getByRole('link', { name: LOOKUP.label })
@@ -134,19 +113,6 @@ describe('QuickIssueForm', () => {
     expect(screen.getByRole('link', { name: 'Permit' }).getAttribute('href')).toBe('/p')
     expect(screen.getByRole('link', { name: 'Placard' }).getAttribute('href')).toBe('/pl')
     expect(screen.getByRole('link', { name: 'Receipt' }).getAttribute('href')).toBe('/r')
-  })
-})
-
-describe('ParcelSearchHotkey', () => {
-  it('slash focuses the parcel search', () => {
-    render(
-      <>
-        <input name="q" aria-label="Search" />
-        <ParcelSearchHotkey />
-      </>,
-    )
-    fireEvent.keyDown(window, { key: '/' })
-    expect(document.activeElement).toBe(screen.getByLabelText('Search'))
   })
 })
 

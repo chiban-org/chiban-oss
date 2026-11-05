@@ -3,7 +3,6 @@ import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { TablePager } from '@/components/dataTable/TablePager'
 import { EnforcementQueueTable } from '@/components/enforcement/EnforcementQueueTable'
 import { FormDialog } from '@/components/FormDialog'
-import { KeyHints } from '@/components/KeyHints'
 import { ListHeader } from '@/components/layout/ListHeader'
 import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import { TextField } from '@/components/staff/fields'
@@ -82,12 +81,6 @@ export default async function EnforcementQueuePage({
   const clear = clearHref(CASES_PATH, params, CASE_FILTER_PARAMS)
   const pageLink = (offset: number | null) =>
     offset === null ? null : pageHref(CASES_PATH, params, String(offset))
-  const tableKey = [
-    sort.key,
-    sort.dir,
-    queue.offset,
-    ...CASE_FILTER_PARAMS.map((name) => (params.get(name) ?? []).join(',')),
-  ].join('|')
   return (
     <main data-wide="">
       <ListHeader
@@ -102,14 +95,8 @@ export default async function EnforcementQueuePage({
           clearHref={clear}
         />
       </div>
-      <KeyHints
-        hints={[
-          { keys: ['j', 'k'], action: 'move' },
-          { keys: ['Enter'], action: 'open' },
-        ]}
-      />
       <div className="table-panel">
-        <EnforcementQueueTable key={tableKey} rows={queue.rows} links={links} />
+        <EnforcementQueueTable rows={queue.rows} links={links} />
       </div>
       <TablePager
         offset={queue.offset}

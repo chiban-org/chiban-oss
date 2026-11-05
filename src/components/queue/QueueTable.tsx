@@ -1,7 +1,6 @@
 'use client'
 
-import { useRouter } from 'next/navigation'
-import { type ReactNode, useEffect, useRef, useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { ApplicationStatusChip } from '@/components/ApplicationStatusChip'
 import { SortBar, SortHeader } from '@/components/dataTable/SortHeader'
 import { AssignReviewerDialog, type QueueReviewer } from '@/components/queue/AssignReviewerDialog'
@@ -13,7 +12,6 @@ import {
   ReceivedCell,
   ReviewersCell,
 } from '@/components/queue/QueueCells'
-import { useQueueKeys } from '@/components/queue/useQueueKeys'
 import type { SortLink } from '@/features/dataTable/sort'
 import type { QueueSortKey } from '@/features/queue/queueParams'
 import type { WorkQueueRow } from '@/features/queue/workQueue'
@@ -25,7 +23,6 @@ interface Props {
   rows: WorkQueueRow[]
   reviewers: QueueReviewer[]
   assign: (formData: FormData) => Promise<ActionResult>
-  navigate?: (url: string) => void
   empty?: ReactNode
   sort?: Record<QueueSortKey, SortLink>
 }
@@ -59,9 +56,7 @@ function QueueHead({ sort }: { sort: Record<QueueSortKey, SortLink> | undefined 
 }
 
 const ROW_CLASS =
-  'cursor-pointer md:aria-selected:bg-canvas max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-2 max-md:px-4 max-md:py-3'
-
-const SELECTED_EDGE = 'md:[[aria-selected=true]>&]:shadow-[inset_3px_0_0_var(--action)]'
+  'max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-2 max-md:px-4 max-md:py-3'
 
 function EmptyQueue({ children }: { children: ReactNode }) {
   return (
@@ -71,34 +66,9 @@ function EmptyQueue({ children }: { children: ReactNode }) {
   )
 }
 
-export function QueueTable({ rows, reviewers, assign, navigate, empty, sort }: Props) {
-  const router = useRouter()
-  const body = useRef<HTMLTableSectionElement>(null)
-  const [selected, setSelected] = useState(0)
+export function QueueTable({ rows, reviewers, assign, empty, sort }: Props) {
   const [assigning, setAssigning] = useState<WorkQueueRow | null>(null)
-  const go = navigate ?? ((url: string) => router.push(url))
   const canAssign = reviewers.length > 0
-  const assignRow = (index: number) => setAssigning(rows.at(index) ?? null)
-  const scrollPending = useRef(false)
-  useEffect(() => {
-    if (!scrollPending.current) return
-    scrollPending.current = false
-    body.current?.rows.item(selected)?.scrollIntoView({ block: 'nearest' })
-  }, [selected])
-  useQueueKeys({
-    count: rows.length,
-    selected,
-    paused: assigning !== null,
-    step: (delta) => {
-      scrollPending.current = true
-      setSelected((current) => Math.min(rows.length - 1, Math.max(0, current + delta)))
-    },
-    open: (index) => {
-      const row = rows.at(index)
-      if (row !== undefined) go(`/staff/applications/${row.applicationId}`)
-    },
-    assign: canAssign ? assignRow : null,
-  })
   if (rows.length === 0) {
     return <EmptyQueue>{empty ?? <p>Nothing matches these filters.</p>}</EmptyQueue>
   }
@@ -110,15 +80,10 @@ export function QueueTable({ rows, reviewers, assign, navigate, empty, sort }: P
       <div className="table-panel">
         <table className="w-full text-sm max-md:block">
           <QueueHead sort={sort} />
-          <tbody ref={body} className="max-md:block">
-            {rows.map((row, index) => (
-              <tr
-                key={row.applicationId}
-                aria-selected={index === selected}
-                onClick={() => setSelected(index)}
-                className={ROW_CLASS}
-              >
-                <ApplicationCell row={row} edgeClass={SELECTED_EDGE} />
+          <tbody className="max-md:block">
+            {rows.map((row) => (
+              <tr key={row.applicationId} className={ROW_CLASS}>
+                <ApplicationCell row={row} />
                 <ParcelCell row={row} />
                 <td
                   data-label="Status"
@@ -132,7 +97,7 @@ export function QueueTable({ rows, reviewers, assign, navigate, empty, sort }: P
                 </td>
                 <DueCell row={row} />
                 <FeesCell cents={row.feesDueCents} />
-                <ReviewersCell row={row} onAssign={canAssign ? () => assignRow(index) : null} />
+                <ReviewersCell row={row} onAssign={canAssign ? () => setAssigning(row) : null} />
                 <ReceivedCell row={row} />
               </tr>
             ))}

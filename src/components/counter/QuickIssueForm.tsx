@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 import { useCsrfToken } from '@/components/CsrfProvider'
 import type { CounterActions, CounterOutcome } from '@/components/counter/counterTypes'
 import {
@@ -13,7 +13,6 @@ import {
   WorkSection,
 } from '@/components/counter/QuickIssueSections'
 import { ReaderPanel } from '@/components/counter/ReaderPanel'
-import { type KeyHint, KeyHints } from '@/components/KeyHints'
 import { NEW_TAB } from '@/components/newTab'
 import { Button } from '@/components/ui/button'
 import { computeConvenienceFee } from '@/features/payments/convenienceFee'
@@ -33,30 +32,6 @@ interface Props {
   actions: CounterActions
 }
 
-const METHOD_KEYS: Record<string, Method> = { '1': 'cash', '2': 'check', '3': 'card' }
-
-function methodHints(cardAvailable: boolean): KeyHint[] {
-  return [
-    { keys: ['Alt', '1'], action: 'cash' },
-    { keys: ['Alt', '2'], action: 'check' },
-    ...(cardAvailable ? [{ keys: ['Alt', '3'], action: 'card' }] : []),
-  ]
-}
-
-function useMethodHotkeys(cardAvailable: boolean, setMethod: (m: Method) => void): void {
-  useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
-      const picked = METHOD_KEYS[event.key]
-      if (!event.altKey || picked === undefined) return
-      if (picked === 'card' && !cardAvailable) return
-      event.preventDefault()
-      setMethod(picked)
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [cardAvailable, setMethod])
-}
-
 function openPrintouts(result: CounterOutcome): void {
   if (!result.ok || result.state !== 'issued' || result.links === null) return
   for (const href of [result.links.permit, result.links.placard, result.links.receipt]) {
@@ -70,7 +45,6 @@ export function QuickIssueForm(props: Props) {
   const [pending, setPending] = useState(false)
   const [outcome, setOutcome] = useState<CounterOutcome | null>(null)
   const [declinedApplicationId, setDeclinedApplicationId] = useState<string | null>(null)
-  useMethodHotkeys(props.cardAvailable, setMethod)
 
   const channel = method === 'card' ? 'card_present' : method
   const convenienceCents = computeConvenienceFee(props.baseCents, props.convenienceFee, channel)
@@ -96,7 +70,6 @@ export function QuickIssueForm(props: Props) {
 
   return (
     <form onSubmit={(event) => void submit(event)} className="space-y-6">
-      <KeyHints hints={methodHints(props.cardAvailable)} />
       <input type="hidden" name="parcelId" value={props.parcelId} />
       <input type="hidden" name="typeKey" value={props.typeKey} />
       <ContractorSection defaultLicenseType={props.typeLabel} lookup={props.lookup} />
