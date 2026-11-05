@@ -27,7 +27,7 @@ export interface DayListRow {
   rowVersion: number
 }
 
-async function mayRead(
+export async function mayReadDay(
   db: DbOrTx,
   actor: Actor,
   inspectorUserId: string,
@@ -50,7 +50,7 @@ export async function getDayList(
   deps: { now?: Date } = {},
 ): Promise<Result<DayListRow[], 'forbidden'>> {
   signal.throwIfAborted()
-  if (!(await mayRead(db, actor, input.inspectorUserId, signal))) return err('forbidden')
+  if (!(await mayReadDay(db, actor, input.inspectorUserId, signal))) return err('forbidden')
   const rows = await db
     .select()
     .from(inspections)

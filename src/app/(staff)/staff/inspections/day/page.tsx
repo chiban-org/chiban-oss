@@ -1,9 +1,11 @@
 import Link from 'next/link'
 import { DayList } from '@/components/inspections/DayList'
+import { MissingResults } from '@/components/inspections/MissingResults'
 import { NoPermission } from '@/components/staff/NoPermission'
 import type { Actor } from '@/features/auth/actor'
 import { listInspectors } from '@/features/inspections/availability'
 import { getDayList, nextDayWithInspections } from '@/features/inspections/dayList'
+import { listMissingResults } from '@/features/inspections/inspectorWork'
 import { managesAllInspectors } from '@/features/inspections/visibility'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -18,6 +20,8 @@ interface SearchParams {
 }
 
 type Inspector = { userId: string; name: string }
+
+const MISSING_LIMIT = 20
 
 function href(date: CivilDate, inspector: string): string {
   return `/staff/inspections/day?date=${date}&inspector=${inspector}`
@@ -82,6 +86,12 @@ export default async function InspectorDayPage({
   const inspectorUserId = chosenInspector(ctx.actor, params.inspector, inspectors)
   const list = await getDayList(ctx.db, ctx.actor, { inspectorUserId, date }, ctx.signal)
   if (!list.ok) return <NoPermission title="My day" action="see this inspector's day" />
+  const missing = await listMissingResults(
+    ctx.db,
+    ctx.actor,
+    { inspectorUserId, today, limit: MISSING_LIMIT },
+    ctx.signal,
+  )
   const nextBusy =
     list.value.length === 0
       ? await nextDayWithInspections(ctx.db, ctx.actor, { inspectorUserId, date }, ctx.signal)
@@ -89,6 +99,7 @@ export default async function InspectorDayPage({
   return (
     <main className="public-shell mx-auto max-w-xl space-y-4">
       <InspectorLinks inspectors={inspectors} date={date} selected={inspectorUserId} />
+      {missing.ok ? <MissingResults rows={missing.value.rows} total={missing.value.total} /> : null}
       <DayList
         date={date}
         stops={list.value}
