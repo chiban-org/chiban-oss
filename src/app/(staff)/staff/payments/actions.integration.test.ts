@@ -132,7 +132,6 @@ describe('refund and correction actions', () => {
       actions.chargebackAction,
       actions.correctAction,
       settingsActions.saveProcessorAccountAction,
-      settingsActions.publishPaymentSettingsAction,
     ]) {
       expect(await action(form({}, null))).toEqual({ ok: false, error: CSRF_COPY })
     }

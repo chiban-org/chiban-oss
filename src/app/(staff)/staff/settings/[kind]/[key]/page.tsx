@@ -37,7 +37,6 @@ interface Props {
 }
 
 const SINGLETON_HOMES: Partial<Record<ConfigKind, SettingsBackLink>> = {
-  payment_settings: { href: '/staff/settings/payments', label: 'Card payments' },
   inspection_settings: { href: '/staff/settings/inspections', label: 'Inspection schedule' },
   town_profile: { href: '/staff/settings/town-profile', label: 'Town profile' },
 }
@@ -92,6 +91,7 @@ export default async function SettingsKeyPage({ params }: Props) {
   const key = decodeURIComponent(rawKey)
   if (!isConfigKind(kind)) notFound()
   if (kind === 'town_profile') redirect('/staff/settings/town-profile')
+  if (kind === 'payment_settings') redirect('/staff/settings/payments')
   const ctx = await recordStaffContext()
   if (ctx === null) return <NoPermission title="Settings" action="change settings" />
   if (!(await hasCapability(ctx.db, ctx.actor.userId, 'config.edit', ctx.signal))) {
