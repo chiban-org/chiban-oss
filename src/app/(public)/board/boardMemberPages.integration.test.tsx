@@ -138,6 +138,32 @@ describe('board member home', () => {
     expect(findIsoDates(html.replace(/href="[^"]*"/g, ''))).toEqual([])
   })
 
+  it('puts the next meeting first, with its packet', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2027-03-01T12:00:00Z') })
+    try {
+      state.actor = zba
+      const html = renderToStaticMarkup(await BoardHomePage())
+      const next = html.slice(html.indexOf('>Next meeting</h2>'))
+      expect(next).toContain('Zoning Board of Adjustment, April 15, 2027')
+      expect(next).toContain(`/board/meetings/${meetingId}`)
+      expect(html).not.toContain('Earlier meetings')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('moves a meeting that has passed under Earlier meetings', async () => {
+    vi.useFakeTimers({ toFake: ['Date'], now: new Date('2027-05-01T12:00:00Z') })
+    try {
+      state.actor = zba
+      const html = renderToStaticMarkup(await BoardHomePage())
+      expect(html).toContain('No meeting of your board is coming up.')
+      expect(html.slice(html.indexOf('>Earlier meetings</h2>'))).toContain('April 15, 2027')
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('shows the planning board member an empty list', async () => {
     state.actor = pb
     const html = renderToStaticMarkup(await BoardHomePage())
