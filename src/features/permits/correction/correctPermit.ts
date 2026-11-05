@@ -135,6 +135,11 @@ async function prepare(
   if (!assessed.ok) return assessed
   if (assessed.value.review.length > 0) return err({ review: assessed.value.review })
   if (assessed.value.feeChange) return err('fee_change')
+  await tx
+    .select({ id: projects.id })
+    .from(projects)
+    .where(eq(projects.id, app.projectId))
+    .for('update')
   const parties = await activeParties(tx, app.projectId)
   const plan = planContractor(parties, input.contractor)
   if (!plan.ok) return plan
