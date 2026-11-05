@@ -94,6 +94,10 @@ export function LetterheadFields({ body, onChange }: Props) {
       />
       <fieldset className="grid gap-2">
         <Legend>Contact lines under the office name</Legend>
+        <p className="m-0 text-sm text-muted-foreground">
+          The address, phone, email, website and office hours come from the{' '}
+          <a href="/staff/settings/town-profile">Town profile</a>. Change them there.
+        </p>
         {CONTACT_LABELS.map(([line, label]) => (
           <Check
             key={line}
@@ -107,7 +111,7 @@ export function LetterheadFields({ body, onChange }: Props) {
       </fieldset>
       <Input
         label="Footer text"
-        hint="Printed at the bottom of every page, for example the town's mailing address or a privacy line."
+        hint="Printed at the bottom of every page, for example a privacy line. Leave the contact details to the lines above."
         value={letterhead.footerText}
         onChange={(e) => set({ footerText: e.target.value })}
       />

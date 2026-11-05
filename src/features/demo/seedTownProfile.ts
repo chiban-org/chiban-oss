@@ -30,7 +30,7 @@ function demoProfile(images: {
     letterhead: {
       logoPosition: 'left',
       contactLines: { address: true, phone: true, email: true, website: true, officeHours: false },
-      footerText: 'Town of Alder Pond Land Use Office. Office hours Monday to Thursday, 8 to 4.',
+      footerText: 'Town of Alder Pond Land Use Office.',
       pageNumbers: true,
     },
     boardOverrides: {
