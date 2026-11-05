@@ -58,7 +58,7 @@ function DayHeading({ day }: { day: BoardDay }) {
         {weekdayName(day.date)}
         <span className="font-normal">{`, ${formatCivilDate(day.date)}`}</span>
       </p>
-      <p className="m-0 flex flex-wrap gap-x-3 text-sm text-muted-foreground">
+      <p className="m-0 flex flex-wrap gap-x-3 text-muted-foreground">
         <span>{day.inspectorName}</span>
         {day.freeStarts.length === 0 ? null : (
           <span className="tabular-nums">{openCountText(day.freeStarts.length)}</span>
@@ -81,7 +81,7 @@ export function SlotDayRow({ day, onPick }: { day: BoardDay; onPick: SlotPick })
     >
       <DayHeading day={day} />
       {full ? (
-        <p className="m-0 self-center text-sm">No open times</p>
+        <p className="m-0 self-center">No open times</p>
       ) : (
         <div className="flex flex-wrap gap-2">
           {day.freeStarts.map((start) => (

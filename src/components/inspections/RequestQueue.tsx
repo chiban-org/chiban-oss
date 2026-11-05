@@ -24,10 +24,10 @@ function RequestDetails({ request, chosen }: { request: BoardRequest; chosen: bo
         <Link href={`/staff/inspections/${request.inspectionId}`}>
           {`${request.applicationNumber}, ${request.typeLabel}`}
         </Link>
-        {chosen ? <span className="text-sm text-action">Chosen</span> : null}
+        {chosen ? <span className="text-action">Chosen</span> : null}
       </p>
       <p className="m-0">{request.address}</p>
-      <p className="m-0 flex flex-wrap gap-x-3 text-sm text-muted-foreground">
+      <p className="m-0 flex flex-wrap gap-x-3 text-muted-foreground">
         <span>{CHANNEL_LABEL[request.channel]}</span>
         {request.isReinspection ? (
           <span className="font-semibold text-ink">Reinspection</span>
@@ -37,7 +37,7 @@ function RequestDetails({ request, chosen }: { request: BoardRequest; chosen: bo
         )}
       </p>
       {request.scheduledFor === undefined ? null : (
-        <p className="m-0 text-sm font-semibold">{`Booked ${request.scheduledFor}`}</p>
+        <p className="m-0 font-semibold">{`Booked ${request.scheduledFor}`}</p>
       )}
     </>
   )
