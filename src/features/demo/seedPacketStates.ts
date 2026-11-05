@@ -1,5 +1,11 @@
 import { and, eq } from 'drizzle-orm'
-import { boardPacketAccess, boardPacketItems, boardPackets, documents } from '@/db/schema'
+import {
+  boardPacketAccess,
+  boardPacketItems,
+  boardPacketMembers,
+  boardPackets,
+  documents,
+} from '@/db/schema'
 import { getMemberPacket, openMemberPacketVersion } from '@/features/boards/memberPackets'
 import { savePacket } from '@/features/boards/packetSave'
 import { sendPacketToBoard } from '@/features/boards/packetSend'
@@ -23,7 +29,12 @@ async function packetOf(ctx: CoverageContext, meetingId: string) {
 async function sentToBoard(ctx: CoverageContext, meetingId: string) {
   const packet = await packetOf(ctx, meetingId)
   if (packet === null) return null
-  if (packet.sentAt !== null) return packet
+  const members = await ctx.db
+    .select({ userId: boardPacketMembers.userId })
+    .from(boardPacketMembers)
+    .where(eq(boardPacketMembers.packetId, packet.id))
+    .limit(1)
+  if (members.length > 0) return packet
   must(
     await sendPacketToBoard(ctx.db, ctx.mail, ctx.cast.staff, { packetId: packet.id }, ctx.signal),
     'send packet to the board',

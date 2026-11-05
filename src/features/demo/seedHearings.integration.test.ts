@@ -9,6 +9,7 @@ import {
   boardMeetings,
   boardMemberships,
   boardPacketLinks,
+  boardPacketMembers,
   boardPackets,
   documents,
   hearings,
@@ -180,6 +181,17 @@ describe('hearing demo data', () => {
     const again = await packetItemRows(handle.db, changed?.id ?? '')
     expect(again).toHaveLength(rows.length)
     expect(await trackPacket(handle.db, sentPacket?.id ?? '')).toEqual(reads)
+  })
+
+  it('sends a packet that the migration marked sent but no member received when seeded again', async () => {
+    const packet = await packetFor(await meetingOn('planning_board', '2026-12-09'))
+    const members = eq(boardPacketMembers.packetId, packet?.id ?? '')
+    const before = await handle.db.select().from(boardPacketMembers).where(members)
+    await handle.db.delete(boardPacketMembers).where(members)
+    await seedDemo(handle.db, signal, { ...(await demoSeedDeps()), screenStates: true })
+    expect(await handle.db.select().from(boardPacketMembers).where(members)).toHaveLength(
+      before.length,
+    )
   })
 
   it('has a packet link that is still open', async () => {
