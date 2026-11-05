@@ -8,19 +8,21 @@ import { RecordLayout } from '@/components/layout/RecordLayout'
 import { splitPanels } from '@/components/layout/splitPanels'
 import { LinkedParcelMap } from '@/components/map/LinkedParcelMap'
 import { HonestText } from '@/components/parcels/HonestText'
-import { RecordsSection } from '@/components/parcels/RecordsSection'
+import { ParcelRecordsPanel } from '@/components/parcels/ParcelRecordsPanel'
 import { StatusChip } from '@/components/StatusChip'
 import { BalanceDueNotice } from '@/components/staff/BalanceDueNotice'
 import { TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
 import { hasCapability } from '@/features/authz/capabilities'
+import type { RawSearchParams } from '@/features/dataTable/params'
 import { loadPanelDocuments } from '@/features/documents/panelData'
 import { bboxOfGeometry, configuredOverlayLayers } from '@/features/gis/extent'
 import { returnedCheckNoticesForParcel } from '@/features/ledger/balanceNotice'
 import { loadPack } from '@/features/packs/loadPack'
 import { aliasSourceText, lineageEventText, retiredText } from '@/features/parcels/parcelText'
+import { buildRecordTable } from '@/features/parcels/recordTable'
+import { arrangeRecordTable, readRecordTableView } from '@/features/parcels/recordTableView'
 import { getStaffParcelView } from '@/features/parcels/staffParcelView'
-import { withoutParcelFiles } from '@/features/parcels/withoutParcelFiles'
 import { loadParcelContacts } from '@/features/rosters/parcelContacts'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -32,6 +34,7 @@ import { ParcelIds } from './ParcelIds'
 
 interface ParcelPageProps {
   params: Promise<{ parcelId: string }>
+  searchParams: Promise<RawSearchParams>
 }
 
 const MAP_HINT = 'The map is a visual aid. Select a neighboring parcel on it to open that parcel.'
@@ -47,13 +50,18 @@ function LayerBanner({ state, text }: { state: string; text: string }) {
   )
 }
 
-export default async function StaffParcelPage({ params }: ParcelPageProps) {
+export default async function StaffParcelPage({ params, searchParams }: ParcelPageProps) {
   const { parcelId } = await params
   if (!UUID.test(parcelId)) notFound()
   const ctx = await requireStaffContext()
   const result = await getStaffParcelView(ctx.db, ctx.actor, parcelId, new Date(), ctx.signal)
   if (!result.ok) notFound()
   const view = result.value
+  const records = arrangeRecordTable(
+    buildRecordTable(view.history, parcelId),
+    readRecordTableView(await searchParams),
+    `/staff/parcels/${parcelId}`,
+  )
   const balanceNotices = await returnedCheckNoticesForParcel(ctx.db, parcelId, ctx.signal)
   const town = await getTownSettings(ctx.db, ctx.signal)
   const overlays = await configuredOverlayLayers(ctx.db, ctx.signal)
@@ -115,9 +123,9 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
     {
       empty: false,
       node: (
-        <RecordsSection
+        <ParcelRecordsPanel
           key="records"
-          history={withoutParcelFiles(view.history)}
+          records={records}
           parcelHrefBase="/staff/parcels/"
           renderAction={(record) =>
             record.linkId === undefined || !canManageParcel ? null : (

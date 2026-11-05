@@ -156,7 +156,7 @@ A meeting's packet is prepared, sent and tracked in one "Packet" panel on the me
 - A count appears only when it says something: "2 more overdue", never "0 overdue".
 - An empty state says what to do next.
 - A count of days reads "today" when it is zero.
-- Dates read in full ("November 4, 2026") through `formatCivilDate`. Only the two work queues (Applications and Your reviews) use the short month, to keep their many columns on one line.
+- Dates read in full ("November 4, 2026") through `formatCivilDate`. Only the two work queues (Applications and Your reviews) and the parcel page's Records table use the short month, to keep their many columns on one line.
 
 ## Type and shape
 

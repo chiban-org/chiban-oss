@@ -16,6 +16,8 @@ import {
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 
+const CASE_TITLE = 'Code enforcement case'
+
 type CaseRow = typeof enforcementCases.$inferSelect
 
 function publicNote(
@@ -55,11 +57,18 @@ export async function summarizeCases(
   return rows.map((row) => ({
     kind: 'enforcement_case',
     recordId: row.id,
-    title: 'Code enforcement case',
+    title: CASE_TITLE,
+    type: { key: 'enforcement_case', label: CASE_TITLE },
     number: row.number,
     status: { label: CASE_STATUS_LABELS[row.status], chip: 'neutral' },
     closed: row.status === 'closed',
     date: row.openedOn as CivilDate,
+    dates: {
+      filed: row.openedOn as CivilDate,
+      issued: null,
+      expires: null,
+      closed: row.closedOn as CivilDate | null,
+    },
     href: actor !== null && hasFullRecordAccess(actor) ? `/staff/enforcement/${row.id}` : null,
     note: notes.get(row.id) ?? null,
   }))

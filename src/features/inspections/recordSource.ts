@@ -53,13 +53,21 @@ export async function summarizeInspections(
     const site = await loadSiteInfo(db, row.applicationId, new Date(), signal)
     const decidedOn =
       row.resultRecordedAt === null ? null : utcToLocal(row.resultRecordedAt, zone).date
+    const requestedOn = utcToLocal(row.requestedAt, zone).date
     out.push({
       kind: 'inspection',
       recordId: row.id,
       title: `${inspectionTypeLabel(row.inspectionType)} inspection`,
       number: site?.applicationNumber ?? null,
       status: { label: LABEL[row.status], chip: CHIP[row.status] },
-      date: (decidedOn ?? row.scheduledDate ?? utcToLocal(row.requestedAt, zone).date) as CivilDate,
+      date: (decidedOn ?? row.scheduledDate ?? requestedOn) as CivilDate,
+      type: { key: 'inspection', label: 'Inspection' },
+      dates: {
+        filed: requestedOn,
+        issued: null,
+        expires: null,
+        closed: decidedOn,
+      },
       href: full ? `/staff/inspections/${row.id}` : null,
       note: full ? row.resultNotes : null,
     })

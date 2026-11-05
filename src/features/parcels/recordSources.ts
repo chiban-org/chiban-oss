@@ -4,6 +4,13 @@ import type { CivilDate } from '@/types/civilDate'
 
 export type Viewer = { kind: 'public' } | { kind: 'actor'; actor: Actor }
 
+export interface RecordDates {
+  filed: CivilDate | null
+  issued: CivilDate | null
+  expires: CivilDate | null
+  closed: CivilDate | null
+}
+
 export interface ParcelRecordSummary {
   kind: string
   recordId: string
@@ -16,6 +23,9 @@ export interface ParcelRecordSummary {
   thumbnailHref?: string | null
   closed?: boolean
   parcelFile?: boolean
+  dates?: RecordDates
+  type?: { key: string; label: string }
+  owner?: { kind: string; id: string }
 }
 
 export interface ParcelRecordSource {

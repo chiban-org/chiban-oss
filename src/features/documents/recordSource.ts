@@ -41,17 +41,23 @@ export async function summarizeDocuments(
     .where(and(inArray(documents.id, ids), documentVisibleTo(actor)))
   const town = await getTownSettings(db, signal)
   const zone = town.ok ? town.value.timeZone : FALLBACK_ZONE
-  return rows.map((row) => ({
-    kind: 'document',
-    recordId: row.id,
-    title: row.title,
-    number: KIND_LABEL[row.docKind],
-    status: { label: row.isPublic ? 'Public' : 'Private', chip: 'neutral' },
-    date: todayInTimeZone(zone, row.createdAt),
-    href: `/api/documents/${row.id}`,
-    thumbnailHref: `/api/documents/${row.id}/thumbnail`,
-    parcelFile: row.docKind === 'parcel_file',
-  }))
+  return rows.map((row) => {
+    const added = todayInTimeZone(zone, row.createdAt)
+    return {
+      kind: 'document',
+      recordId: row.id,
+      title: row.title,
+      number: KIND_LABEL[row.docKind],
+      status: { label: row.isPublic ? 'Public' : 'Private', chip: 'neutral' },
+      date: added,
+      dates: { filed: added, issued: null, expires: null, closed: null },
+      type: { key: 'document', label: 'File' },
+      owner: { kind: row.recordKind, id: row.recordId },
+      href: `/api/documents/${row.id}`,
+      thumbnailHref: `/api/documents/${row.id}/thumbnail`,
+      parcelFile: row.docKind === 'parcel_file',
+    }
+  })
 }
 
 export function registerDocumentRecordSource(): void {

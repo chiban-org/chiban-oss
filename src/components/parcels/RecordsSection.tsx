@@ -1,12 +1,8 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
+import { GroupLabel } from '@/components/parcels/GroupLabel'
 import { StatusChip } from '@/components/StatusChip'
-import type {
-  AncestralGroup,
-  AncestralRecord,
-  OwnRecord,
-  ParcelHistory,
-} from '@/features/parcels/parcelHistory'
+import type { AncestralRecord, OwnRecord, ParcelHistory } from '@/features/parcels/parcelHistory'
 
 interface RecordsSectionProps {
   history: ParcelHistory
@@ -114,18 +110,6 @@ function RecordRow({
         </div>
       </details>
     </li>
-  )
-}
-
-function GroupLabel({ group, hrefBase }: { group: AncestralGroup; hrefBase: string }) {
-  const at = group.displayId === '' ? -1 : group.label.indexOf(group.displayId)
-  if (at === -1) return group.label
-  return (
-    <>
-      {group.label.slice(0, at)}
-      <ParcelLink base={hrefBase} parcelId={group.parcelId} label={group.displayId} />
-      {group.label.slice(at + group.displayId.length)}
-    </>
   )
 }
 

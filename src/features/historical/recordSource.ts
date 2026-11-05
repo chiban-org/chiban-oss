@@ -46,6 +46,8 @@ function summary(
     number: row.number,
     status: { label: 'Historical record', chip: 'neutral' },
     date: row.recordedOn as CivilDate | null,
+    type: { key: HISTORICAL_RECORD_SOURCE_KIND, label: 'Historical record' },
+    dates: { filed: row.recordedOn as CivilDate | null, issued: null, expires: null, closed: null },
     href: null,
     note: joinNote([row.description, kept]),
   }

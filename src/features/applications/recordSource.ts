@@ -2,6 +2,7 @@ import { and, inArray, ne } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { applications, certificatesOfOccupancy } from '@/db/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
+import { expiryDates } from '@/features/applications/expiryDates'
 import { stateLabel } from '@/features/applications/stateLabel'
 import type { CoreState } from '@/features/applications/states'
 import { getVersion } from '@/features/config/store'
@@ -66,15 +67,21 @@ export async function summarizeApplications(
     })
     .from(certificatesOfOccupancy)
     .where(inArray(certificatesOfOccupancy.applicationId, ids))
+  const expiries = await expiryDates(
+    db,
+    rows.map((r) => r.id),
+  )
   const out: ParcelRecordSummary[] = []
   for (const row of rows) {
     const pins = row.configPins as { applicationType: string }
     const type = await getVersion(db, pins.applicationType, signal)
     const state = row.state as CoreState
+    const title = (type?.body as ApplicationTypeBody | undefined)?.label ?? row.applicationTypeKey
     out.push({
       kind: 'application',
       recordId: row.id,
-      title: (type?.body as ApplicationTypeBody | undefined)?.label ?? row.applicationTypeKey,
+      title,
+      type: { key: row.applicationTypeKey, label: title },
       number: row.number,
       status: {
         label: statusLabel(
@@ -86,6 +93,12 @@ export async function summarizeApplications(
       },
       closed: CLOSED_STATES.includes(state),
       date: (row.issuedOn ?? row.receivedDate) as CivilDate | null,
+      dates: {
+        filed: row.receivedDate as CivilDate | null,
+        issued: row.issuedOn as CivilDate | null,
+        expires: expiries.get(row.id) ?? null,
+        closed: row.decidedOn as CivilDate | null,
+      },
       href: full ? `/staff/applications/${row.id}` : null,
     })
   }

@@ -4,7 +4,7 @@ export type SortValue = string | number | null
 
 export type SortAccessors<T, K extends string> = Readonly<Record<K, ((row: T) => SortValue) | null>>
 
-const COLLATOR = new Intl.Collator('en', { numeric: true, sensitivity: 'base' })
+export const COLLATOR = new Intl.Collator('en', { numeric: true, sensitivity: 'base' })
 
 function compareValues(a: string | number, b: string | number): number {
   if (typeof a === 'number' && typeof b === 'number') return a - b
