@@ -22,7 +22,7 @@ export async function seedPublicCase(ctx: EnforcementSeedContext): Promise<void>
       tx,
       {
         channel: 'anonymous_web',
-        locationText: '3 Kingfisher Court',
+        locationText: '12 Heron Cove Road',
         description: 'Somebody is running an auto repair business out of the garage at night.',
         parcelId: parcel.parcelId,
       },

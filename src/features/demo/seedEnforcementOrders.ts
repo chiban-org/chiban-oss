@@ -190,7 +190,7 @@ async function listedRoles(ctx: EnforcementSeedContext, orderId: string, on: Civ
 
 export async function seedServedCase(ctx: EnforcementSeedContext): Promise<void> {
   const issued = await issuedOrderCase(ctx, {
-    location: '8 Loon Point Road',
+    location: '12 Heron Cove Road',
     parcel: '007001000000',
     issuedOffset: -9,
   })
@@ -198,8 +198,8 @@ export async function seedServedCase(ctx: EnforcementSeedContext): Promise<void>
   const ownerId = await owner(
     ctx,
     issued.orderId,
-    'Casey Landlord',
-    '8 Loon Point Road',
+    'Larkspur Family Trust',
+    'PO Box 100, Alder Pond NH',
     'CAMA owner',
   )
   must(
@@ -210,7 +210,7 @@ export async function seedServedCase(ctx: EnforcementSeedContext): Promise<void>
         orderId: issued.orderId,
         role: 'occupying_tenant',
         name: 'Robin Renter',
-        address: '8 Loon Point Road, upstairs',
+        address: '12 Heron Cove Road, upstairs',
         source: 'Site visit',
       },
       ctx.signal,
