@@ -51,7 +51,7 @@ export type DueFilter = (typeof DUE_FILTERS)[number]
 export const ASSIGNED_FILTERS = ['me', 'none'] as const
 export type AssignedFilter = (typeof ASSIGNED_FILTERS)[number]
 
-export const FLAG_FILTERS = ['fees', 'payment', 'preservation'] as const
+export const FLAG_FILTERS = ['fees', 'payment', 'preservation', 'reviewed'] as const
 export type FlagFilter = (typeof FLAG_FILTERS)[number]
 
 export const DUE_LABELS: ReadonlyMap<DueFilter, string> = new Map([
@@ -69,6 +69,7 @@ export const FLAG_LABELS: ReadonlyMap<FlagFilter, string> = new Map([
   ['fees', 'Fees due'],
   ['payment', 'Payment outcome unknown'],
   ['preservation', 'Preservation incomplete'],
+  ['reviewed', 'Reviews back'],
 ])
 
 export const CORE_STATE_LABELS: ReadonlyMap<CoreState, string> = new Map(

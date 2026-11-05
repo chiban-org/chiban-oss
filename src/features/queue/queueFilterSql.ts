@@ -33,6 +33,10 @@ const NEEDS_ACTION = sql`(${inArray(applications.state, [...NEEDS_ACTION_STATES]
 const ACTIVE_ASSIGNMENT = sql`select 1 from review_assignments ra
   where ra.application_id = ${applications.id} and ra.removed_at is null`
 
+const REVIEWS_BACK = sql`(${applications.state} = 'under_review'
+  and exists (${ACTIVE_ASSIGNMENT})
+  and not exists (${ACTIVE_ASSIGNMENT} and ra.status = 'pending'))`
+
 export function dueClause(value: DueFilter, today: CivilDate): SQL {
   switch (value) {
     case 'overdue':
@@ -58,6 +62,8 @@ export function flagClause(value: FlagFilter, actor: Actor): SQL {
       return UNKNOWN_PAYMENT
     case 'preservation':
       return preservationIncompleteFor(actor)
+    case 'reviewed':
+      return REVIEWS_BACK
   }
 }
 
