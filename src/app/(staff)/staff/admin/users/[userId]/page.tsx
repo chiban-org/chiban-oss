@@ -5,6 +5,7 @@ import { RecordLayout } from '@/components/layout/RecordLayout'
 import { splitPanels } from '@/components/layout/splitPanels'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { TransientNotice } from '@/components/TransientNotice'
 import { hasCapability } from '@/features/authz/capabilities'
 import { townTimeZone } from '@/features/town/timeZone'
 import { unsentCopy } from '@/features/users/errorCopy'
@@ -58,11 +59,7 @@ export default async function UserPage({
         }
         lead={detail.isSelf ? `${detail.email}. This is your account.` : detail.email}
       />
-      {message === undefined ? null : (
-        <p role="status" className="mb-6 rounded-md bg-highlight px-3 py-2">
-          {message}
-        </p>
-      )}
+      {message === undefined ? null : <TransientNotice>{message}</TransientNotice>}
       <RecordLayout rail={<UserRail detail={detail} timeZone={timeZone} />} empty={sections.empty}>
         {sections.filled}
       </RecordLayout>
