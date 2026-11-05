@@ -118,6 +118,20 @@ The letter builder edits templates on a letter-sized page under the town letterh
 - Wording state law requires is a locked block: a lock icon, the reason ("Required by state law"), and no way to edit or delete it.
 - In settings-menu width the Insert pane and the selected part's settings share the left column; wide windows get three columns.
 
+## Board packets
+
+A meeting's packet is prepared, sent and tracked in one "Packet" panel on the meeting page (`/staff/boards/meetings/[meetingId]#packet`). `/staff/boards/packets` is a read-only list of upcoming meetings with each packet's state and a link to that panel.
+
+- The panel opens with one state line: "Publish the agenda to start the packet", "Not sent yet", "Sent to N members on <date>", "N changes not sent yet" or "Meeting cancelled. Packet closed." (`src/features/boards/packetState.ts`). The same line is the Packet fact in the rail and the chip on the packets list. While the packet is unsent or has changes not sent, the rail's next step is a link to the panel ("Prepare the packet" or "Send the packet update").
+- Four steps in order: Gather, Review, Send, Track.
+- Gather lists candidates grouped by agenda item, with a checkbox each. A document that cannot go in stays in its group with the reason in plain words ("Not shared with the board", "Belongs to the ZBA", "No approved public copy"); "Not shared with the board" carries a Share with the board button for viewers who can manage documents. Each application offers "Make TRC summary" or says "No TRC review on this application". Viewing creates nothing; only Save does.
+- Review shows the contents in order with a cover page preview and the title, prefilled "<Board> packet, <date>". When the agenda is republished it asks "The agenda changed. Replace it in the packet?"
+- Send offers "Send to the <board> (N members)" from current membership, and "Also send to someone outside the board" behind a disclosure, which sends a private link with an expiry. Each recipient row says in words what they get ("signs in on the board page" or "private link, expires <date>") with Resend, and Turn off link for private links, which asks first.
+- After sending, the packet stays editable. Additions, removals and replacements are held as changes not sent, marked beside each item in Review, until Send update emails only what changed ("Added: ...; Replaced: ...").
+- Track is a table per recipient: sent, first opened, last opened, documents opened.
+- Cancelling a meeting turns off its packet's private links, and the cancel form asks whether to email the packet's recipients.
+- Members see a packet on `/board` only once it is sent: "New" until they open it, "Updated <date>" after an update they have not opened, and the meeting marked Cancelled instead of disappearing. The packet page starts with the cover page, marks items Added or Replaced, and keeps withdrawn or removed items in the list with the reason.
+
 ## Links
 
 - Links inside page content are underlined, from one rule in `components.css`. Links in table cells stay plain until hovered. Navigation, tabs, sort headers, chips and buttons are never underlined.
