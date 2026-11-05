@@ -5,6 +5,7 @@ import { createMeetingPacket } from '@/features/agendas/meetingPacket'
 import type { Actor } from '@/features/auth/actor'
 import { loadActor } from '@/features/auth/actor'
 import { inviteBoardMember } from '@/features/boards/members'
+import { sendPacketToBoard } from '@/features/boards/packetSend'
 import { scheduleHearing } from '@/features/hearings/hearings'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import {
@@ -99,6 +100,13 @@ beforeAll(async () => {
   await publishAgenda(handle.db, store, world.staff, meetingId, signal)
   const packet = await createMeetingPacket(handle.db, store, world.staff, meetingId, signal)
   if (!packet.ok) throw new Error('packet')
+  await sendPacketToBoard(
+    handle.db,
+    createMemoryTransport(),
+    world.staff,
+    { packetId: packet.value.packetId },
+    signal,
+  )
   const [item] = await handle.db.query.boardPacketItems.findMany({
     where: (i, { eq }) => eq(i.packetId, packet.value.packetId),
   })
@@ -146,7 +154,7 @@ describe('board member meeting page', () => {
   it('opens the packet for a member of that board', async () => {
     state.actor = zba
     const html = renderToStaticMarkup(await MeetingPage({ params: Promise.resolve({ meetingId }) }))
-    expect(html).toContain('Meeting packet for April 15, 2027')
+    expect(html).toContain('Zoning Board of Adjustment packet, April 15, 2027')
     expect(html).toContain(`/documents/${versionId}`)
     expect(findUuids(html.replace(/href="[^"]*"/g, ''))).toEqual([])
     expect(html).not.toMatch(/\.pdf\)/)

@@ -3,8 +3,11 @@ import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import { documents } from '@/db/schema'
 import { buildAgenda, publishAgenda } from '@/features/agendas/agendas'
+import { type Actor, loadActor } from '@/features/auth/actor'
+import { inviteBoardMember } from '@/features/boards/members'
 import type { Audience } from '@/features/documents/types'
 import { scheduleHearing } from '@/features/hearings/hearings'
+import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import {
   type BoardWorld,
@@ -14,6 +17,7 @@ import {
 } from '@/test/boardFixtures'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { issueListWithRecipients, recipient } from '@/test/noticeFixtures'
+import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 export const FLOW_MEETING = '2027-04-15'
@@ -72,4 +76,24 @@ export async function applicationDocument(
     .set({ audiences: doc.audiences, isPublic: doc.isPublic ?? false })
     .where(eq(documents.id, up.documentId))
   return up.documentId
+}
+
+export async function seatedMember(db: Db, flow: PacketFlow, email: string): Promise<Actor> {
+  const invited = await inviteBoardMember(
+    db,
+    createMemoryTransport(),
+    flow.world.staff,
+    {
+      email,
+      displayName: 'Seated Member',
+      board: 'zba',
+      title: 'member',
+      termStart: '2020-01-01' as CivilDate,
+    },
+    signal,
+  )
+  if (!invited.ok) throw new AppError(ErrorIds.DB_INVARIANT, 'member not invited')
+  const actor = await loadActor(db, invited.value.userId, signal)
+  if (actor === null) throw new AppError(ErrorIds.DB_INVARIANT, 'member not loaded')
+  return actor
 }

@@ -11,6 +11,7 @@ import {
   type MeetingCalendar,
   nextRegularMeeting,
 } from '@/features/boards/calendar'
+import { closeMeetingPacket } from '@/features/boards/packetCancel'
 import { recomputeMeetingBoundClocks } from '@/features/clocks/recomputeMeetingBound'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
@@ -109,6 +110,7 @@ export async function cancelMeeting(
       .update(boardMeetings)
       .set({ status: 'cancelled', cancelReason: reason })
       .where(eq(boardMeetings.id, meeting.id))
+    await closeMeetingPacket(tx, meeting.id)
     await writeAudit(
       tx,
       {

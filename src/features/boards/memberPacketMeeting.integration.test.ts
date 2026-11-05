@@ -4,6 +4,7 @@ import { loadActor } from '@/features/auth/actor'
 import { scheduleMeeting } from '@/features/boards/meetings'
 import { getMemberPacket, listMemberMeetings } from '@/features/boards/memberPackets'
 import { inviteBoardMember } from '@/features/boards/members'
+import { sendPacketToBoard } from '@/features/boards/packetSend'
 import { createPacket } from '@/features/boards/packets'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -86,6 +87,13 @@ describe('member packets follow the meeting a packet was made for', () => {
     )
     if (!packet.ok) throw new Error(JSON.stringify(packet.error))
     const member = await zbaMember()
+    await sendPacketToBoard(
+      handle.db,
+      createMemoryTransport(),
+      world.staff,
+      { packetId: packet.value.packetId },
+      signal,
+    )
     const list = await listMemberMeetings(handle.db, member, { limit: 25 }, signal)
     const hasPacket = new Map(list.rows.map((r) => [r.meetingId, r.hasPacket]))
     expect(hasPacket.get(special.meetingId)).toBe(true)
