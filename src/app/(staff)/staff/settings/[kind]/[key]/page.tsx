@@ -23,7 +23,7 @@ import {
   type ReferenceKind,
 } from '@/features/config/referenceChoices'
 import { loadReferenceRows } from '@/features/config/referenceRows'
-import { getEditorState, labelOfBody } from '@/features/config/settingsViews'
+import { documentKindLabel, getEditorState, labelOfBody } from '@/features/config/settingsViews'
 import { loadFormBuilderData } from '@/features/forms/formBuilderData'
 import { loadTownProfile } from '@/features/pdf/documentFrame'
 import { listReviewerChoices } from '@/features/reviews/reviewerView'
@@ -61,7 +61,9 @@ function itemTitle(
   const listed = (REFERENCE_KINDS as readonly string[]).includes(kind)
     ? references[kind as ReferenceKind].find((c) => c.key === key)?.label
     : undefined
-  return listed ?? labelOfBody(kind, body) ?? keyWords(key)
+  const title = listed ?? labelOfBody(kind, body) ?? keyWords(key)
+  const documentKind = documentKindLabel(kind, body)
+  return documentKind === null ? title : `${title} (${documentKind})`
 }
 
 async function builderContextFor(

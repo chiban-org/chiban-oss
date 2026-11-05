@@ -29,8 +29,8 @@ export default async function ReportAnonymouslyPage() {
         <h1>Anonymous reports are not available</h1>
         <p className="max-w-prose text-base">
           This town is not taking anonymous reports right now. You can report a possible violation
-          with your contact details, which only town staff see, at the report a possible violation
-          page.
+          with your contact details, which only town staff see, on the{' '}
+          <a href="/complaints/new">report a possible violation</a> page.
         </p>
       </>
     )

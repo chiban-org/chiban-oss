@@ -19,7 +19,12 @@ function restoreFiles(input: HTMLInputElement, files: File[]): void {
   input.files = transfer.files
 }
 
-function restoreField(field: Field, submitted: string[], occurrence: number): void {
+function restoreField(
+  field: Field,
+  submitted: string[],
+  occurrence: number,
+  wanted: Map<HTMLInputElement, boolean>,
+): void {
   if (field instanceof HTMLSelectElement && field.multiple) {
     for (const option of Array.from(field.options))
       option.selected = submitted.includes(option.value)
@@ -27,16 +32,51 @@ function restoreField(field: Field, submitted: string[], occurrence: number): vo
   }
   if (field instanceof HTMLInputElement && (field.type === 'checkbox' || field.type === 'radio')) {
     field.checked = submitted.includes(field.value)
+    wanted.set(field, field.checked)
     return
   }
   field.value = submitted.at(occurrence) ?? ''
+}
+
+let restoring = false
+
+export function isRestoringValues(): boolean {
+  return restoring
+}
+
+function syncCheckboxButton(input: HTMLInputElement, wanted: boolean): void {
+  const button = input.previousElementSibling
+  if (!(button instanceof HTMLButtonElement) || button.getAttribute('role') !== 'checkbox') return
+  if ((button.getAttribute('aria-checked') === 'true') !== wanted) button.click()
+}
+
+function syncCheckboxButtonsAfterReset(wanted: Map<HTMLInputElement, boolean>): void {
+  if (wanted.size === 0) return
+  setTimeout(() => {
+    restoring = true
+    try {
+      for (const [input, on] of wanted) syncCheckboxButton(input, on)
+    } finally {
+      restoring = false
+    }
+  }, 0)
 }
 
 export function restoreSubmittedValues(
   form: HTMLFormElement,
   entries: [string, FormDataEntryValue][],
 ): void {
+  restoring = true
+  try {
+    restoreAll(form, entries)
+  } finally {
+    restoring = false
+  }
+}
+
+function restoreAll(form: HTMLFormElement, entries: [string, FormDataEntryValue][]): void {
   const seen = new Map<string, number>()
+  const wanted = new Map<HTMLInputElement, boolean>()
   for (const element of Array.from(form.elements)) {
     if (!isField(element) || element.name === '') continue
     const occurrence = seen.get(element.name) ?? 0
@@ -54,8 +94,10 @@ export function restoreSubmittedValues(
       element,
       values.filter((value): value is string => typeof value === 'string'),
       occurrence,
+      wanted,
     )
   }
+  syncCheckboxButtonsAfterReset(wanted)
 }
 
 export function useFormAction<S>(

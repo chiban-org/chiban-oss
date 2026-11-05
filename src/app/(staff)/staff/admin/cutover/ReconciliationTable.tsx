@@ -17,7 +17,17 @@ function SignOffCell({
   }
   if (!isAdmin) return <>Waiting for an administrator</>
   return (
-    <ActionForm action={signOffReconciliationAction} submitLabel="Sign off" compact={true}>
+    <ActionForm
+      action={signOffReconciliationAction}
+      submitLabel="Sign off"
+      compact={true}
+      confirm={{
+        title: 'Sign off this comparison?',
+        body: 'This records that you checked the list against what was imported. A sign-off cannot be undone.',
+        confirmLabel: 'Sign off this comparison',
+        tone: 'default',
+      }}
+    >
       <input type="hidden" name="reconciliationId" value={row.id} />
     </ActionForm>
   )

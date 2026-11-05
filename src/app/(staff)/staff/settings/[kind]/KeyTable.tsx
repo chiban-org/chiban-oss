@@ -39,6 +39,7 @@ export function KeyTable({
             <thead>
               <tr>
                 <SortHeader label="Name" link={links.label} />
+                {kind === 'template' ? <th scope="col">Kind</th> : null}
                 <SortHeader label="Published" link={links.published} />
                 <SortHeader label="Draft" link={links.draft} />
               </tr>
@@ -51,6 +52,7 @@ export function KeyTable({
                       {row.label ?? row.key}
                     </Link>
                   </td>
+                  {kind === 'template' ? <td>{row.documentKind ?? ''}</td> : null}
                   <td>
                     {row.publishedVersion === null
                       ? 'Not published'

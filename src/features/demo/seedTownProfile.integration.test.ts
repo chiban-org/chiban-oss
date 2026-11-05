@@ -34,6 +34,11 @@ describe('seedTownProfile', () => {
     expect(frame.signers.find((s) => s.role === 'building_official')?.signature).not.toBeNull()
   })
 
+  it('keeps the footer free of the contact details the profile prints above it', async () => {
+    const frame = await documentFrame(handle.db, {}, signal, store)
+    expect(frame.footerText).not.toMatch(/office hours|\d{3}-\d{3}-\d{4}|@|https?:/i)
+  })
+
   it('changes nothing on an already seeded database', async () => {
     expect(await seedTownProfile(handle.db, store, signal)).toBe(false)
     const versions = await handle.db

@@ -36,10 +36,19 @@ describe('anonymous pages', () => {
     expect(anonymousMetadata.icons).toEqual({ icon: 'data:,' })
   })
 
+  it('carries the town header, with a way home, without reading any session', async () => {
+    const { default: AnonymousLayout } = await import('@/app/(anonymous)/layout')
+    const markup = renderToStaticMarkup(AnonymousLayout({ children: null }))
+    expect(markup).toMatch(/<header[\s\S]*<a href="\/"[^>]*>Town of Alder Pond<\/a>/)
+    expect(markup).not.toContain('Sign in')
+  })
+
   it('say the form is not available while intake is closed', async () => {
     const page = visibleText(await render(ReportPage()))
     expect(page).toContain('Anonymous reports are not available')
     expect(page).not.toContain('Send report')
+    const markup = await render(ReportPage())
+    expect(markup).toMatch(/<a [^>]*href="\/complaints\/new"[^>]*>report a possible violation<\/a>/)
   })
 
   it('show the exact warning copy and a plain multipart form once intake is open', async () => {

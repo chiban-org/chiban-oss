@@ -137,7 +137,7 @@ export function boardStarter(input: BoardStarterInput): StarterBundle {
       },
       {
         key: `${slug}-decision`,
-        label: `${label} notice of decision`,
+        label: `${label} decision notice letter`,
         kind: 'letter',
         body: `{{town.name}} notice of decision on {{application.typeLabel}} {{application.number}}, {{project.title}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}. Conditions: {{conditions.list}}.`,
       },

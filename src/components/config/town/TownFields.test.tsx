@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { LetterheadFields } from '@/components/config/town/LetterheadFields'
 import { LetterheadPreview } from '@/components/config/town/LetterheadPreview'
 import { SignersFields } from '@/components/config/town/SignersFields'
 import {
@@ -21,6 +22,19 @@ const BODY: TownProfileBody = {
   letterhead: { ...TOWN_PROFILE_SKELETON.letterhead, footerText: 'Keep for your records.' },
   boardOverrides: { zba: { officeName: 'Zoning Board of Adjustment' } },
 }
+
+describe('LetterheadFields', () => {
+  it('says the contact lines come from the town profile and keeps the footer hint off contact details', () => {
+    const { container } = render(<LetterheadFields body={BODY} onChange={() => undefined} />)
+    expect(container.textContent).toContain('office hours come from the Town profile')
+    expect(screen.getByRole('link', { name: 'Town profile' }).getAttribute('href')).toBe(
+      '/staff/settings/town-profile',
+    )
+    expect(screen.getByLabelText('Footer text').closest('div')?.textContent).not.toMatch(
+      /mailing address/,
+    )
+  })
+})
 
 describe('LetterheadPreview', () => {
   it('shows the lines the letterhead turns on and a board override on request', () => {
