@@ -81,7 +81,7 @@ function NewContractor({ name, onName }: { name: string; onName: (next: string) 
   )
 }
 
-export function CorrectPermitDialog({
+function CorrectionForm({
   data,
   actions,
 }: {
@@ -103,63 +103,75 @@ export function CorrectPermitDialog({
   })
   const label = `Save and reissue as revision ${data.nextRevision}`
   return (
+    <ActionForm
+      action={actions.save}
+      submitLabel={label}
+      checkBeforeSubmit={() => (outcome?.ok === true ? outcome.refusal : null)}
+      confirm={{
+        title: `Reissue permit ${data.number} as revision ${data.nextRevision}?`,
+        body: 'The permit keeps its number. The current copy stays on file, marked superseded, and the people listed are notified.',
+        confirmLabel: label,
+        tone: 'default',
+      }}
+    >
+      <input type="hidden" name="applicationId" value={data.applicationId} />
+      <input type="hidden" name="values" value={answers} />
+      <SelectField
+        label="Contractor"
+        name="contractor"
+        value={contractor}
+        onChange={(e) => setContractor(e.target.value)}
+        options={contractorOptions(data)}
+      />
+      {contractor === 'new' ? <NewContractor name={newName} onName={setNewName} /> : null}
+      {data.licenseField === null ? null : (
+        <TextField
+          label={data.licenseField.label}
+          value={license}
+          onChange={(e) => setLicense(e.target.value)}
+          required={data.licenseField.required}
+        />
+      )}
+      <FormRenderer
+        form={data.form}
+        values={values}
+        errors={outcome?.ok === true ? outcome.fieldErrors : {}}
+        onChange={(key: string, value: FormValue) =>
+          setValues((prev) => ({ ...prev, [key]: value }))
+        }
+      />
+      <TextField
+        label="Project title"
+        name="projectTitle"
+        defaultValue={data.projectTitle}
+        required
+      />
+      <AreaField
+        label="Reason for the correction"
+        name="reason"
+        hint="Kept in the permit's history."
+        required
+      />
+      <CheckLines outcome={outcome} />
+      <NotACorrection data={data} />
+    </ActionForm>
+  )
+}
+
+export function CorrectPermitDialog({
+  data,
+  actions,
+}: {
+  data: CorrectionFormData
+  actions: CorrectionActions
+}) {
+  return (
     <FormDialog
       label="Correct this permit"
       title={`Correct permit ${data.number}`}
       description="Fix the contractor, license number, answers or project title. The permit keeps its number."
     >
-      <ActionForm
-        action={actions.save}
-        submitLabel={label}
-        checkBeforeSubmit={() => (outcome?.ok === true ? outcome.refusal : null)}
-        confirm={{
-          title: `Reissue permit ${data.number} as revision ${data.nextRevision}?`,
-          body: 'The permit keeps its number. The current copy stays on file, marked superseded, and the people listed are notified.',
-          confirmLabel: label,
-          tone: 'default',
-        }}
-      >
-        <input type="hidden" name="applicationId" value={data.applicationId} />
-        <input type="hidden" name="values" value={answers} />
-        <SelectField
-          label="Contractor"
-          name="contractor"
-          value={contractor}
-          onChange={(e) => setContractor(e.target.value)}
-          options={contractorOptions(data)}
-        />
-        {contractor === 'new' ? <NewContractor name={newName} onName={setNewName} /> : null}
-        {data.licenseField === null ? null : (
-          <TextField
-            label={data.licenseField.label}
-            value={license}
-            onChange={(e) => setLicense(e.target.value)}
-            required={data.licenseField.required}
-          />
-        )}
-        <FormRenderer
-          form={data.form}
-          values={values}
-          errors={outcome?.ok === true ? outcome.fieldErrors : {}}
-          onChange={(key: string, value: FormValue) =>
-            setValues((prev) => ({ ...prev, [key]: value }))
-          }
-        />
-        <TextField
-          label="Project title"
-          name="projectTitle"
-          defaultValue={data.projectTitle}
-          required
-        />
-        <AreaField
-          label="Reason for the correction"
-          name="reason"
-          hint="Kept in the permit's history."
-          required
-        />
-        <CheckLines outcome={outcome} />
-        <NotACorrection data={data} />
-      </ActionForm>
+      <CorrectionForm data={data} actions={actions} />
     </FormDialog>
   )
 }
