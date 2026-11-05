@@ -81,4 +81,38 @@ describe('settings views', () => {
     expect(fresh.versions).toEqual([])
     expect(fresh.body).toMatchObject({ key: 'brand-new' })
   })
+
+  it('lists what changed against the previous version, labelled for amendments', async () => {
+    const admin = await staffActor(handle.db, 'admin')
+    const base = {
+      title: 'Snow load',
+      codeSection: 'R301.2',
+      adoptingAuthority: 'Town Meeting',
+      adoptedOn: '2026-03-10',
+      reviewBoardConfirmedOn: null,
+    }
+    await saveAndPublish(handle.db, admin, 'local_code_amendment', 'snow', {
+      ...base,
+      townText: 'Fifty pounds.',
+    })
+    await saveAndPublish(handle.db, admin, 'local_code_amendment', 'snow', {
+      ...base,
+      townText: 'Sixty pounds.',
+    })
+    const state = await getEditorState(handle.db, 'local_code_amendment', 'snow', signal)
+    const [latest, first] = state.versions
+    expect(first?.changes).toBeUndefined()
+    expect(latest?.changes).toEqual({
+      from: 1,
+      items: [
+        {
+          path: '/townText',
+          label: "Town's amended text",
+          before: 'Fifty pounds.',
+          after: 'Sixty pounds.',
+          inline: false,
+        },
+      ],
+    })
+  })
 })

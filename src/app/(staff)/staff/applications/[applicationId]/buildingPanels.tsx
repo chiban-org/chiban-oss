@@ -1,4 +1,5 @@
 import { ActionForm } from '@/components/ActionForm'
+import { AmendmentText } from '@/components/config/TextDiff'
 import { StatusChip } from '@/components/StatusChip'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
@@ -57,6 +58,16 @@ export function CodeEditionPanel({ view }: { view: StaffApplicationView }) {
               </div>
             ))}
           </dl>
+          {edition.amendments.map((a) =>
+            a.stateText === undefined && a.townText === undefined ? null : (
+              <details key={a.key} className="my-2">
+                <summary>{`${a.title} (${a.codeSection}): what the town changed`}</summary>
+                <div className="mt-2">
+                  <AmendmentText stateText={a.stateText} townText={a.townText} />
+                </div>
+              </details>
+            ),
+          )}
         </>
       )}
       {view.state === 'draft' ||

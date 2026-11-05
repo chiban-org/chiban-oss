@@ -74,6 +74,8 @@ export const LocalCodeAmendmentBodySchema = z.object({
   adoptingAuthority: z.string().min(1),
   adoptedOn: civilDateSchema,
   reviewBoardConfirmedOn: civilDateSchema.nullable(),
+  stateText: z.string().optional(),
+  townText: z.string().optional(),
 })
 export type LocalCodeAmendmentBody = z.infer<typeof LocalCodeAmendmentBodySchema>
 

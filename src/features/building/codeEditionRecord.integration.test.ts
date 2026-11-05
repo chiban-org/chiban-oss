@@ -135,6 +135,8 @@ describe('code edition record', () => {
       ...base,
       title: 'Confirmed stair rule',
       reviewBoardConfirmedOn: '2026-02-01',
+      stateText: 'Risers shall be 7 3/4 inches maximum.',
+      townText: 'Risers shall be 7 1/2 inches maximum.',
     })
     await saveAndPublish(handle.db, world.admin, 'local_code_amendment', 'rails', {
       ...base,
@@ -150,8 +152,14 @@ describe('code edition record', () => {
       .select()
       .from(codeEditionRecords)
       .where(eq(codeEditionRecords.applicationId, app.applicationId))
-    expect((rec?.localAmendmentsInForce as { title: string }[]).map((a) => a.title)).toEqual([
-      'Confirmed stair rule',
+    expect(rec?.localAmendmentsInForce).toEqual([
+      {
+        key: 'stairs',
+        title: 'Confirmed stair rule',
+        codeSection: 'R311',
+        stateText: 'Risers shall be 7 3/4 inches maximum.',
+        townText: 'Risers shall be 7 1/2 inches maximum.',
+      },
     ])
   })
 

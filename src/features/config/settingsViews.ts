@@ -1,8 +1,10 @@
 import { asc, eq, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { configVersions, users } from '@/db/schema'
+import { FIELD_LABELS } from '@/features/config/fieldLabels'
 import type { ConfigKind } from '@/features/config/kinds'
 import { skeletonBody } from '@/features/config/skeletons'
+import { type FieldChange, versionChanges } from '@/features/config/versionChanges'
 import { loadPack } from '@/features/packs/loadPack'
 
 export interface KeyRow {
@@ -59,6 +61,7 @@ export interface VersionRowView {
   publishedAt: Date | null
   upstream: { id: string; version: number } | null
   rolledBackFrom: number | null
+  changes?: { from: number; items: FieldChange[] }
 }
 
 export interface EditorState {
@@ -79,18 +82,29 @@ export async function getEditorState(
     .leftJoin(users, eq(users.id, configVersions.publishedBy))
     .where(sql`${configVersions.kind} = ${kind} and ${configVersions.key} = ${key}`)
     .orderBy(sql`${configVersions.version} desc`)
-  const versions = rows.map(({ v, publisher }) => ({
-    id: v.id,
-    version: v.version,
-    status: v.status,
-    publishedBy: publisher,
-    publishedAt: v.publishedAt,
-    upstream:
-      v.upstreamTemplateId === null || v.upstreamTemplateVersion === null
-        ? null
-        : { id: v.upstreamTemplateId, version: v.upstreamTemplateVersion },
-    rolledBackFrom: v.rolledBackFrom,
-  }))
+  const versions = rows.map(({ v, publisher }, index) => {
+    const older = rows[index + 1]
+    return {
+      id: v.id,
+      version: v.version,
+      status: v.status,
+      publishedBy: publisher,
+      publishedAt: v.publishedAt,
+      upstream:
+        v.upstreamTemplateId === null || v.upstreamTemplateVersion === null
+          ? null
+          : { id: v.upstreamTemplateId, version: v.upstreamTemplateVersion },
+      rolledBackFrom: v.rolledBackFrom,
+      ...(older === undefined
+        ? {}
+        : {
+            changes: {
+              from: older.v.version,
+              items: versionChanges(older.v.body, v.body, FIELD_LABELS[kind]),
+            },
+          }),
+    }
+  })
   const draft = rows.find((r) => r.v.status === 'draft')
   const published = rows.find((r) => r.v.status === 'published')
   const body = draft?.v.body ?? published?.v.body ?? skeletonBody(kind, key)

@@ -21,7 +21,7 @@ afterEach(cleanup)
 
 const verified = NH_CODE_EDITIONS.find((e) => e.status === 'verified' && e.components.length > 0)
 
-function view(): StaffApplicationView {
+function view(amendments: unknown[] = []): StaffApplicationView {
   if (verified === undefined) throw new Error('fixture edition missing')
   return {
     id: 'app-1',
@@ -32,11 +32,34 @@ function view(): StaffApplicationView {
       record: {},
       description: describeCodeEdition(verified, '2027-05-20' as CivilDate),
       rows: [{ field: 'Application received', value: 'May 20, 2027' }],
+      amendments,
     },
   } as unknown as StaffApplicationView
 }
 
 describe('CodeEditionPanel', () => {
+  it('shows what the town changed for each recorded amendment that has text', () => {
+    render(
+      <CsrfProvider token="t">
+        <CodeEditionPanel
+          view={view([
+            {
+              key: 'a',
+              title: 'Stair rise',
+              codeSection: 'R311.7',
+              stateText: 'Risers 7 3/4 inches',
+              townText: 'Risers 7 1/2 inches',
+            },
+            { key: 'b', title: 'Old record', codeSection: 'R1' },
+          ])}
+        />
+      </CsrfProvider>,
+    )
+    expect(screen.getByText('Stair rise (R311.7): what the town changed')).toBeTruthy()
+    expect(screen.getByText('What changed')).toBeTruthy()
+    expect(screen.queryByText(/Old record/)).toBeNull()
+  })
+
   it('states the edition once instead of repeating its code list', () => {
     render(
       <CsrfProvider token="t">

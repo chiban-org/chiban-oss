@@ -75,6 +75,8 @@ export async function recordCodeEdition(
         key: a.key,
         title: a.title,
         codeSection: a.codeSection,
+        ...(a.stateText === undefined ? {} : { stateText: a.stateText }),
+        ...(a.townText === undefined ? {} : { townText: a.townText }),
       })),
       recordedBy: actor.userId,
       recordedAt: new Date(),

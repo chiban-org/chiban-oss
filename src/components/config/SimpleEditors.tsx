@@ -1,6 +1,7 @@
 'use client'
 
-import { Input } from '@/components/config/primitives'
+import { Area, Input } from '@/components/config/primitives'
+import { AmendmentText } from '@/components/config/TextDiff'
 import type { LocalCodeAmendmentBody } from '@/features/config/kinds'
 
 export function LocalAmendmentEditor({
@@ -49,6 +50,27 @@ export function LocalAmendmentEditor({
           })
         }
       />
+      <div className="grid gap-3 sm:col-span-2 md:grid-cols-2">
+        <Area
+          label="State code text"
+          hint="Paste the section as the state code writes it."
+          rows={8}
+          value={body.stateText ?? ''}
+          onChange={(e) => onChange({ ...body, stateText: e.target.value })}
+        />
+        <Area
+          label="Town's amended text"
+          hint="What the town adopted in its place."
+          rows={8}
+          value={body.townText ?? ''}
+          onChange={(e) => onChange({ ...body, townText: e.target.value })}
+        />
+      </div>
+      {(body.stateText ?? '').trim() === '' || (body.townText ?? '').trim() === '' ? null : (
+        <div className="sm:col-span-2">
+          <AmendmentText stateText={body.stateText} townText={body.townText} />
+        </div>
+      )}
     </div>
   )
 }

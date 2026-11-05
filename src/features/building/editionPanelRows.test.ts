@@ -1,6 +1,6 @@
 import type { RecordRule } from '@packs/nh/schema'
 import { describe, expect, it } from 'vitest'
-import { codeEditionPanelRows } from '@/features/building/editionPanelRows'
+import { amendmentEntries, codeEditionPanelRows } from '@/features/building/editionPanelRows'
 
 const RULE = {
   fields: [
@@ -55,5 +55,34 @@ describe('codeEditionPanelRows', () => {
       permitFeeBasis: 'flat',
     })
     expect(rows).toEqual([{ field: 'Permit fee basis', value: 'flat' }])
+  })
+})
+
+describe('amendmentEntries', () => {
+  it('returns the recorded amendments with their texts', () => {
+    expect(
+      amendmentEntries({
+        ...RECORD,
+        localAmendmentsInForce: [
+          { key: 'a', title: 'Snow load', codeSection: 'R301.2', stateText: 'S', townText: 'T' },
+        ],
+      }),
+    ).toEqual([
+      { key: 'a', title: 'Snow load', codeSection: 'R301.2', stateText: 'S', townText: 'T' },
+    ])
+  })
+
+  it('keeps records made before the texts were stored', () => {
+    expect(
+      amendmentEntries({
+        ...RECORD,
+        localAmendmentsInForce: [{ key: 'a', title: 'Stair rise limit', codeSection: 'R311.7' }],
+      }),
+    ).toEqual([{ key: 'a', title: 'Stair rise limit', codeSection: 'R311.7' }])
+  })
+
+  it('returns nothing for no amendments or a malformed value', () => {
+    expect(amendmentEntries(RECORD)).toEqual([])
+    expect(amendmentEntries({ ...RECORD, localAmendmentsInForce: 'x' })).toEqual([])
   })
 })

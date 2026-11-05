@@ -6,6 +6,7 @@ import { townSettings, userRoles, users } from '@/db/schema'
 import { seedDefaultGrants } from '@/features/authz/defaultGrants'
 
 import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { seedAmendments } from '@/features/demo/seedAmendments'
 import { seedBoards } from '@/features/demo/seedBoards'
 import { seedCama } from '@/features/demo/seedCama'
 import { seedCoverage } from '@/features/demo/seedCoverage'
@@ -175,6 +176,7 @@ export async function seedDemo(
   const townProfileSeeded = await seedTownProfile(db, store, signal)
   const seeded = await seedParcels(db, signal)
   const permitsSeeded = await seedPermits(db, signal)
+  await seedAmendments(db, signal)
   const paymentsSeeded = await seedPayments(db, signal)
   const recordsSeeded = await seedRecords(db, signal, deps.records)
   const inspectionsSeeded = await seedInspections(db, signal, deps.inspections)

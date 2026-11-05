@@ -49,3 +49,26 @@ export function codeEditionPanelRows(
     value: displayValue(field, record[field], record),
   }))
 }
+
+export interface AmendmentEntry {
+  key: string
+  title: string
+  codeSection: string
+  stateText?: string
+  townText?: string
+}
+
+export function amendmentEntries(record: Record<string, unknown>): AmendmentEntry[] {
+  const value = record.localAmendmentsInForce
+  if (!Array.isArray(value)) return []
+  return value.map((entry) => {
+    const { key, title, codeSection, stateText, townText } = entry as AmendmentEntry
+    return {
+      key,
+      title,
+      codeSection,
+      ...(stateText === undefined ? {} : { stateText }),
+      ...(townText === undefined ? {} : { townText }),
+    }
+  })
+}

@@ -25,7 +25,11 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { describeCodeEdition, type EditionDescription } from '@/features/building/codeEdition'
-import { codeEditionPanelRows } from '@/features/building/editionPanelRows'
+import {
+  type AmendmentEntry,
+  amendmentEntries,
+  codeEditionPanelRows,
+} from '@/features/building/editionPanelRows'
 import { type ClockExplanation, explainClock } from '@/features/clocks/explainClock'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import { effectiveBindings } from '@/features/config/bindings'
@@ -82,6 +86,7 @@ export interface StaffApplicationView {
     record: typeof codeEditionRecords.$inferSelect
     description: EditionDescription
     rows: { field: string; value: string }[]
+    amendments: AmendmentEntry[]
   } | null
   regionalImpact: {
     applies: boolean
@@ -250,6 +255,7 @@ export async function getStaffApplicationView(
             record,
             description: describeCodeEdition(editionEntry, record.receiptDate as CivilDate),
             rows: codeEditionPanelRows(recordRule, record),
+            amendments: amendmentEntries(record),
           },
     regionalImpact: {
       applies: effectiveBindings(app.typeBody, pack).includes('nh.bp.regional_impact'),
