@@ -1,5 +1,6 @@
 'use client'
 
+import { FilingLeadFields } from '@/components/config/FilingLeadFields'
 import { TextRows } from '@/components/config/plainFields'
 import { Check, FieldError, type FieldErrors, Input } from '@/components/config/primitives'
 import { Legend } from '@/components/ui/legend'
@@ -61,15 +62,10 @@ export function BoardSettingsEditor({ body, onChange, errors }: Props) {
               }
             />
             {board.board === 'planning_board' ? (
-              <Input
-                label="Filing deadline, days before the meeting"
-                hint="How many days before a meeting an application must be filed. Leave empty to use the 21 days state law sets."
-                type="number"
-                min={1}
-                value={board.filingLeadDays ?? ''}
-                onChange={(e) =>
-                  setBoard(index, { filingLeadDays: toNumberOrNull(e.target.value) })
-                }
+              <FilingLeadFields
+                board={board}
+                onChange={(next) => setBoard(index, next)}
+                errors={errors}
               />
             ) : null}
           </div>
