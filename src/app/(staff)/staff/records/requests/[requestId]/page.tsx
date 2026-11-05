@@ -33,7 +33,7 @@ function LettersSection({ letters }: { letters: { id: string; title: string }[] 
     <section aria-labelledby="letters">
       <h2 id="letters">Letters</h2>
       {letters.length === 0 ? (
-        <p>No letters yet.</p>
+        <p>A letter is created when you record the first response or release the first records.</p>
       ) : (
         <ul className="list-none space-y-1 p-0">
           {letters.map((l) => (

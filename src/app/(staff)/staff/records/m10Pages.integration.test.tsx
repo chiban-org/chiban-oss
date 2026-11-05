@@ -170,6 +170,9 @@ describe('records screens with the demo seed', () => {
     )
     expect(page).toContain('5 business days after')
     expect(page).toContain('RSA 91-A:4 IV(b)')
+    expect(page).toContain(
+      'A letter is created when you record the first response or release the first records.',
+    )
   })
 
   it('retention and disposition screens show the worklist rows and the tombstone batch', async () => {
