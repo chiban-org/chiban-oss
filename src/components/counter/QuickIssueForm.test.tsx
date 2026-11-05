@@ -88,7 +88,7 @@ describe('QuickIssueForm', () => {
 
   it('the state lookup result starts unchosen and is required', () => {
     form()
-    const select = screen.getByLabelText(/^Result of the state lookup( \*)?$/) as HTMLSelectElement
+    const select = screen.getByLabelText<HTMLSelectElement>(/^Result of the state lookup( \*)?$/)
     expect(select.value).toBe('')
     expect(select.required).toBe(true)
   })
