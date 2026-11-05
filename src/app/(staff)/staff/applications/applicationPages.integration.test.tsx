@@ -1,3 +1,4 @@
+import { asc } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { applications, cutoverRows } from '@/db/schema'
@@ -131,7 +132,7 @@ describe('staff application pages', () => {
 
   it('the building permit in review shows its clock, the waived fee, and the next step', async () => {
     const id = ids.BPunder_review
-    const rows = await handle.db.select().from(applications)
+    const rows = await handle.db.select().from(applications).orderBy(asc(applications.number))
     const review = rows.find((r) => r.state === 'under_review' && r.number.startsWith('BP'))
     const page = await html(
       ApplicationPage({ params: Promise.resolve({ applicationId: review?.id ?? id ?? '' }) }),
