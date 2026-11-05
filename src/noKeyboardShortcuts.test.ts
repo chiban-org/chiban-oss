@@ -9,6 +9,7 @@ const KEY_HANDLER_FILES = [
   'components/config/letterBuilder/LetterBuilder.tsx',
   'components/inspections/RequestQueue.tsx',
   'components/parcels/picker/ParcelCombobox.tsx',
+  'components/staff/search/RecordSearch.tsx',
 ]
 
 const GLOBAL_KEY_LISTENER =
