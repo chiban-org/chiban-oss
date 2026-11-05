@@ -40,7 +40,7 @@ export interface PaymentsOverview {
     payerName: string
     receiptId: string | null
     receiptNumber: string | null
-    applicationNumbers: string[]
+    records: { number: string; href: string }[]
   }[]
 }
 
@@ -55,22 +55,33 @@ export async function mayViewPayments(db: Db, actor: Actor, signal: AbortSignal)
   return false
 }
 
-async function entryApplications(db: Db, entryIds: string[]): Promise<Map<string, string[]>> {
+async function entryRecords(
+  db: Db,
+  entryIds: string[],
+): Promise<Map<string, { number: string; href: string }[]>> {
   if (entryIds.length === 0) return new Map()
   const rows = await db
-    .selectDistinct({ entryId: ledgerAllocations.entryId, number: applications.number })
+    .selectDistinct({
+      entryId: ledgerAllocations.entryId,
+      number: applications.number,
+      href: sql<string>`'/staff/applications/' || ${applications.id}`,
+    })
     .from(ledgerAllocations)
     .innerJoin(applications, eq(applications.id, ledgerAllocations.applicationId))
     .where(sql`${ledgerAllocations.entryId} in ${entryIds}`)
   const fineRows = await db
-    .selectDistinct({ entryId: ledgerAllocations.entryId, number: enforcementCases.number })
+    .selectDistinct({
+      entryId: ledgerAllocations.entryId,
+      number: enforcementCases.number,
+      href: sql<string>`'/staff/enforcement/' || ${enforcementCases.id}`,
+    })
     .from(ledgerAllocations)
     .innerJoin(enforcementFines, eq(enforcementFines.id, ledgerAllocations.fineId))
     .innerJoin(enforcementCases, eq(enforcementCases.id, enforcementFines.caseId))
     .where(sql`${ledgerAllocations.entryId} in ${entryIds}`)
-  const byEntry = new Map<string, string[]>()
-  for (const row of [...rows, ...fineRows])
-    byEntry.set(row.entryId, [...(byEntry.get(row.entryId) ?? []), row.number])
+  const byEntry = new Map<string, { number: string; href: string }[]>()
+  for (const { entryId, ...record } of [...rows, ...fineRows])
+    byEntry.set(entryId, [...(byEntry.get(entryId) ?? []), record])
   return byEntry
 }
 
@@ -111,7 +122,7 @@ export async function loadPaymentsOverview(
   const total = rangeCounts[view.range ?? 'today']
   const offset = Math.max(view.offset ?? 0, 0)
   const limit = view.limit ?? ENTRY_PAGE_SIZE
-  const numbers = await entryApplications(
+  const records = await entryRecords(
     db,
     entries.map((e) => e.id),
   )
@@ -129,6 +140,6 @@ export async function loadPaymentsOverview(
       prevOffset: offset === 0 ? null : Math.max(0, offset - limit),
       nextOffset: offset + limit < total ? offset + limit : null,
     },
-    entries: entries.map((e) => ({ ...e, applicationNumbers: numbers.get(e.id) ?? [] })),
+    entries: entries.map((e) => ({ ...e, records: records.get(e.id) ?? [] })),
   })
 }

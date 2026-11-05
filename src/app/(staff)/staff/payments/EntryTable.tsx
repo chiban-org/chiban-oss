@@ -31,7 +31,14 @@ export function EntryTable({
             <td>{`${entryTypeLabel(e.entryType)}, ${methodLabel(e.method).toLowerCase()}`}</td>
             <td className="text-right tabular-nums">{formatCents(e.amountCents)}</td>
             <td>{e.payerName}</td>
-            <td>{e.applicationNumbers.join(', ')}</td>
+            <td>
+              {e.records.map((record, index) => (
+                <span key={record.href}>
+                  {index === 0 ? '' : ', '}
+                  <Link href={record.href}>{record.number}</Link>
+                </span>
+              ))}
+            </td>
             <td>
               {e.receiptId === null ? null : (
                 <Link {...NEW_TAB} href={`/staff/receipts/${e.receiptId}`}>

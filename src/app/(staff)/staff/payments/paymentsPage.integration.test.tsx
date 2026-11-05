@@ -125,6 +125,13 @@ describe('payments page', () => {
     expect(await page()).toContain('Newest first. Click a column heading to sort.')
   })
 
+  it('links the application number in the Application column to the application', async () => {
+    const html = await page(trade.world.staff, { range: 'all' })
+    expect(html).toMatch(
+      new RegExp(`<a[^>]*href="/staff/applications/${trade.applicationId}"[^>]*>EL-`),
+    )
+  })
+
   it('sends someone without payment access to their start page', async () => {
     const html = await page(await staffActor(handle.db, 'inspector'))
     expect(html).toContain('You do not have permission to view payments.')
