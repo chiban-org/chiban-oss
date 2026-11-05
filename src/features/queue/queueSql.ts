@@ -4,13 +4,13 @@ import { hasFullRecordAccess } from '@/features/access/roles'
 import type { Actor } from '@/features/auth/actor'
 import { FILING_CLOCK_KEY } from '@/features/decisions/fileDecision'
 
+const OPEN_CLOCK = sql`c.application_id = ${applications.id} and c.status in ('running', 'overdue')`
+
 export const NEXT_DUE = sql<string | null>`(
-  select min(c.current_due) from clocks c
-  where c.application_id = ${applications.id} and c.status = 'running')`
+  select min(c.current_due) from clocks c where ${OPEN_CLOCK})`
 
 export const NEXT_DUE_RULE_KEY = sql<string | null>`(
-  select c.rule_key from clocks c
-  where c.application_id = ${applications.id} and c.status = 'running'
+  select c.rule_key from clocks c where ${OPEN_CLOCK}
   order by c.current_due asc, c.id asc limit 1)`
 
 export const NOTICE_DUE = sql<string | null>`(
@@ -21,10 +21,12 @@ export const NOTICE_DUE = sql<string | null>`(
 
 export const FILING_DUE = sql<string | null>`(
   select min(c.current_due) from clocks c
-  where c.application_id = ${applications.id} and c.rule_key = ${FILING_CLOCK_KEY}
-    and c.status in ('running', 'overdue'))`
+  where ${OPEN_CLOCK} and c.rule_key = ${FILING_CLOCK_KEY})`
 
-export const EARLIEST_DUE = sql<string | null>`least(${NEXT_DUE}, ${FILING_DUE}, ${NOTICE_DUE})`
+export const EARLIEST_DUE = sql<string | null>`least(${NEXT_DUE}, ${NOTICE_DUE})`
+
+export const DEADLINE_OPEN = sql<boolean>`(exists (select 1 from clocks c where ${OPEN_CLOCK})
+  or ${NOTICE_DUE} is not null)`
 
 export const FEES_DUE = sql<number>`(
   select coalesce(sum(greatest(0, l.amt - coalesce(p.paid, 0))), 0)::int

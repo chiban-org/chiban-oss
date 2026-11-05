@@ -11,9 +11,9 @@ import type {
   QueueSortKey,
 } from '@/features/queue/queueParams'
 import {
+  DEADLINE_OPEN,
   EARLIEST_DUE,
   FEES_DUE,
-  NOTICE_DUE,
   preservationIncompleteFor,
   UNKNOWN_PAYMENT,
 } from '@/features/queue/queueSql'
@@ -23,12 +23,8 @@ import { addDays, type CivilDate } from '@/types/civilDate'
 
 export const DUE_WEEK_DAYS = 7
 
-const DEADLINE_RUNNING = sql`exists (select 1 from clocks c
-  where c.application_id = ${applications.id} and c.status in ('running', 'overdue'))`
-
 const NEEDS_ACTION = sql`(${inArray(applications.state, [...NEEDS_ACTION_STATES])}
-  or (${applications.state} <> 'draft'
-    and (${DEADLINE_RUNNING} or ${NOTICE_DUE} is not null)))`
+  or (${applications.state} <> 'draft' and ${DEADLINE_OPEN}))`
 
 const ACTIVE_ASSIGNMENT = sql`select 1 from review_assignments ra
   where ra.application_id = ${applications.id} and ra.removed_at is null`
