@@ -3,6 +3,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { KeyFacts } from '@/components/layout/KeyFacts'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { Button } from '@/components/ui/button'
 import { APP_VERSION } from '@/config/appVersion'
 import { env } from '@/config/env'
 import { anonymousIntakeVerifications, townSettings } from '@/db/schema'
@@ -71,7 +72,7 @@ export default async function AnonymousIntakePage() {
             ? 'Anonymous complaints are being accepted at the report anonymously page.'
             : 'Anonymous complaints are not being accepted. The report anonymously page says anonymous reports are not available and links to the named complaint form.'}
         </p>
-        <p>
+        <p id={verified ? undefined : 'intake-blocked'}>
           {verified
             ? 'The version running now has a passing retention check.'
             : 'The version running now has no passing retention check, so intake cannot be turned on. Run the check on the server host: verify-anonymous-intake.sh with the folder that holds the nightly backups.'}
@@ -118,7 +119,11 @@ export default async function AnonymousIntakePage() {
         >
           <p className="m-0">It takes effect immediately.</p>
         </ActionForm>
-      ) : null}
+      ) : (
+        <Button type="button" disabled aria-describedby="intake-blocked">
+          Turn anonymous intake on
+        </Button>
+      )}
     </main>
   )
 }

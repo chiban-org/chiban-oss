@@ -49,9 +49,12 @@ async function page(): Promise<string> {
 }
 
 describe('anonymous intake page', () => {
-  it('offers no turn-on button until the running version has a passing check, and says why once', async () => {
+  it('shows the turn-on button disabled until the running version has a passing check, and says why once', async () => {
     const html = await page()
-    expect(html).not.toContain('Turn anonymous intake on')
+    expect(html).toMatch(
+      /<button[^>]*disabled=""[^>]*aria-describedby="intake-blocked"[^>]*>Turn anonymous intake on<\/button>|<button[^>]*aria-describedby="intake-blocked"[^>]*disabled=""[^>]*>Turn anonymous intake on<\/button>/,
+    )
+    expect(html).toMatch(/<p[^>]*id="intake-blocked"[^>]*>[^<]*no passing retention check/)
     expect(html).toContain('verify-anonymous-intake.sh')
     expect(html.match(/passing retention check/g)?.length).toBe(1)
   })
@@ -64,6 +67,8 @@ describe('anonymous intake page', () => {
       passed: true,
       findings: [],
     })
-    expect(await page()).toContain('Turn anonymous intake on')
+    const html = await page()
+    expect(html).toContain('Turn anonymous intake on')
+    expect(html).not.toContain('intake-blocked')
   })
 })
