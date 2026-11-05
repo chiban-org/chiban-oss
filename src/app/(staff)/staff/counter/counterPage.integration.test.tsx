@@ -50,6 +50,51 @@ afterAll(async () => {
   await handle.drop()
 })
 
+async function page(params: { q?: string; parcel?: string; type?: string }) {
+  return renderToStaticMarkup(await CounterPage({ searchParams: Promise.resolve(params) }))
+}
+
+describe('counter steps', () => {
+  it('starts with only the permit type tiles', async () => {
+    const html = await page({})
+    expect(html).toContain('Electrical')
+    expect(html).toContain('href="/staff/counter?type=EL"')
+    expect(html).not.toContain('name="q"')
+    expect(html).not.toContain('Contractor name')
+  })
+
+  it('ignores a parcel until a permit type is chosen, and keeps it for the type tile', async () => {
+    const html = await page({ parcel: world.parcelId })
+    expect(html).not.toContain('name="q"')
+    expect(html).not.toContain('Contractor name')
+    expect(html).toContain(`href="/staff/counter?parcel=${world.parcelId}&amp;type=EL"`)
+  })
+
+  it('after a type shows the chosen type with Change and the parcel search only', async () => {
+    const html = await page({ type: 'EL' })
+    expect(html).toContain('name="q"')
+    expect(html).toContain('Electrical')
+    expect(html).toMatch(/<a[^>]*href="\/staff\/counter"[^>]*>Change/)
+    expect(html).not.toContain('href="/staff/counter?type=EL"')
+    expect(html).not.toContain('Contractor name')
+  })
+
+  it('after a parcel shows both choices with Change and the rest of the form', async () => {
+    const html = await page({ type: 'EL', parcel: world.parcelId, q: 'Elm' })
+    expect(html).not.toContain('name="q"')
+    expect(html).toContain('Contractor name')
+    expect(html).toContain('Issue and print')
+    expect(html).toMatch(/<a[^>]*href="\/staff\/counter\?q=Elm&amp;type=EL"[^>]*>Change/)
+    expect(html).toMatch(/<a[^>]*href="\/staff\/counter"[^>]*>Change/)
+  })
+
+  it('defaults the license type to the one that fits the permit type', async () => {
+    const html = await page({ type: 'EL', parcel: world.parcelId })
+    expect(html).toMatch(/<option[^>]*value="Master electrician"[^>]*selected/)
+    expect(html).not.toContain('value="Electrical permit"')
+  })
+})
+
 describe('counter parcel search', () => {
   it('shows no key hints', async () => {
     const html = renderToStaticMarkup(await CounterPage({ searchParams: Promise.resolve({}) }))
@@ -59,19 +104,19 @@ describe('counter parcel search', () => {
 
   it('says so when nothing matches', async () => {
     const html = renderToStaticMarkup(
-      await CounterPage({ searchParams: Promise.resolve({ q: 'zzzzzz nothing' }) }),
+      await CounterPage({ searchParams: Promise.resolve({ type: 'EL', q: 'zzzzzz nothing' }) }),
     )
     expect(html).toContain('No parcels match')
   })
 
   it('says nothing about matches before a search is made', async () => {
-    const html = renderToStaticMarkup(await CounterPage({ searchParams: Promise.resolve({}) }))
+    const html = await page({ type: 'EL' })
     expect(html).not.toContain('No parcels match')
   })
 
   it('asks for two characters when the search is too short', async () => {
     const html = renderToStaticMarkup(
-      await CounterPage({ searchParams: Promise.resolve({ q: 'a' }) }),
+      await CounterPage({ searchParams: Promise.resolve({ type: 'EL', q: 'a' }) }),
     )
     expect(html).toContain('Enter at least two characters')
   })
@@ -82,7 +127,7 @@ describe('counter parcel search', () => {
       .set({ siteAddress: '12 Elm Road' })
       .where(eq(parcels.id, world.parcelId))
     const html = renderToStaticMarkup(
-      await CounterPage({ searchParams: Promise.resolve({ parcel: world.parcelId }) }),
+      await CounterPage({ searchParams: Promise.resolve({ type: 'EL', parcel: world.parcelId }) }),
     )
     expect(html).toContain('12 Elm Road')
   })
@@ -92,8 +137,8 @@ describe('counter parcel search', () => {
       .update(parcels)
       .set({ siteAddress: '12 Elm Road' })
       .where(eq(parcels.id, world.parcelId))
-    const html = renderToStaticMarkup(await CounterPage({ searchParams: Promise.resolve({}) }))
-    expect(html).toMatch(/Try<\/span><a href="\/staff\/counter\?q=12%20Elm%20Road"/)
+    const html = await page({ type: 'EL' })
+    expect(html).toMatch(/Try<\/span><a href="\/staff\/counter\?type=EL&amp;q=12%20Elm%20Road"/)
   })
 
   it('says a hit has no site address instead of leaving a bare ID', async () => {
@@ -102,7 +147,7 @@ describe('counter parcel search', () => {
       .values({ siteAddress: null, ownerName: 'Zed Nameless' })
       .returning({ id: parcels.id })
     const html = renderToStaticMarkup(
-      await CounterPage({ searchParams: Promise.resolve({ q: 'Nameless' }) }),
+      await CounterPage({ searchParams: Promise.resolve({ type: 'EL', q: 'Nameless' }) }),
     )
     expect(other).toBeDefined()
     expect(html).toContain('No site address')

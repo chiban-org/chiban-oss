@@ -1,7 +1,7 @@
 'use client'
 
-import { ClaimLinkButton } from '@/components/counter/ClaimLinkButton'
-import type { CounterActions, CounterOutcome } from '@/components/counter/counterTypes'
+import type { LicenseGroup } from '@/components/counter/counterTypes'
+import { LicenseTypeField } from '@/components/counter/LicenseTypeField'
 import { NEW_TAB } from '@/components/newTab'
 import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
 import { Label } from '@/components/ui/label'
@@ -52,9 +52,11 @@ function WorkInput({ field }: { field: WorkField }) {
 }
 
 export function ContractorSection({
+  licenseGroups,
   defaultLicenseType,
   lookup,
 }: {
+  licenseGroups: readonly LicenseGroup[]
   defaultLicenseType: string
   lookup: { label: string; url: string }
 }) {
@@ -65,12 +67,7 @@ export function ContractorSection({
         <TextField label="Contractor name" name="contractorName" required />
         <TextField label="Contractor email" type="email" name="contractorEmail" />
         <TextField label="License number" name="licenseNumber" required />
-        <TextField
-          label="License type"
-          name="licenseType"
-          required
-          defaultValue={defaultLicenseType}
-        />
+        <LicenseTypeField groups={licenseGroups} defaultValue={defaultLicenseType} />
         <SelectField
           label="Result of the state lookup"
           name="licenseResult"
@@ -167,40 +164,5 @@ export function PaymentSection({
       ) : null}
       {method === 'check' ? <TextField label="Check number" name="checkNumber" /> : null}
     </section>
-  )
-}
-
-export function IssuedNotice({
-  outcome,
-  claim,
-}: {
-  outcome: Extract<CounterOutcome, { ok: true }>
-  claim?: CounterActions['claim']
-}) {
-  const links = outcome.links
-  return (
-    <div className="space-y-3">
-      <p role="status">
-        {outcome.number} is issued.{' '}
-        {links === null ? null : (
-          <>
-            <a href={links.permit} {...NEW_TAB}>
-              Permit
-            </a>{' '}
-            <a href={links.placard} {...NEW_TAB}>
-              Placard
-            </a>{' '}
-            {links.receipt === null ? null : (
-              <a href={links.receipt} {...NEW_TAB}>
-                Receipt
-              </a>
-            )}
-          </>
-        )}
-      </p>
-      {claim === undefined ? null : (
-        <ClaimLinkButton applicationId={outcome.applicationId} send={claim} />
-      )}
-    </div>
   )
 }

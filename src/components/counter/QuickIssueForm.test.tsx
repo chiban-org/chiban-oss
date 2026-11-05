@@ -31,6 +31,8 @@ function form(actions: CounterActions = idle) {
         parcelId="p1"
         typeKey="EL"
         typeLabel="Electrical permit"
+        parcelLabel="007001000000, 12 Heron Cove Road"
+        summary={null}
         fields={[
           { key: 'description', label: 'Description of work', type: 'textarea', required: true },
         ]}
@@ -42,6 +44,8 @@ function form(actions: CounterActions = idle) {
         }}
         cardAvailable={true}
         readerSimulated={true}
+        licenseGroups={[{ label: 'Electrical', licenses: ['Master electrician'] }]}
+        defaultLicenseType="Master electrician"
         lookup={LOOKUP}
         actions={actions}
       />

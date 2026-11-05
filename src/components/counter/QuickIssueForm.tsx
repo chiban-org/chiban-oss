@@ -1,12 +1,16 @@
 'use client'
 
-import { useState } from 'react'
+import { type ReactNode, useState } from 'react'
 import { useCsrfToken } from '@/components/CsrfProvider'
-import type { CounterActions, CounterOutcome } from '@/components/counter/counterTypes'
+import type {
+  CounterActions,
+  CounterOutcome,
+  LicenseGroup,
+} from '@/components/counter/counterTypes'
+import { IssuedPanel, type IssuedReceipt } from '@/components/counter/IssuedPanel'
 import {
   ContractorSection,
   FeeSection,
-  IssuedNotice,
   type Method,
   PaymentSection,
   type WorkField,
@@ -23,11 +27,15 @@ interface Props {
   parcelId: string
   typeKey: string
   typeLabel: string
+  parcelLabel: string
+  summary: ReactNode
   fields: WorkField[]
   baseCents: number
   convenienceFee: PaymentSettingsBody['convenienceFee']
   cardAvailable: boolean
   readerSimulated: boolean
+  licenseGroups: readonly LicenseGroup[]
+  defaultLicenseType: string | null
   lookup: { label: string; url: string }
   actions: CounterActions
 }
@@ -39,12 +47,35 @@ function openPrintouts(result: CounterOutcome): void {
   }
 }
 
+type Accepted = Extract<CounterOutcome, { ok: true }>
+
+function accepted(outcome: CounterOutcome | null, state: Accepted['state']): Accepted | null {
+  return outcome?.ok === true && outcome.state === state ? outcome : null
+}
+
+function receiptFor(
+  props: Props,
+  data: FormData,
+  method: Method,
+  paidCents: number,
+): IssuedReceipt {
+  const contractorName = data.get('contractorName')
+  return {
+    typeLabel: props.typeLabel,
+    parcelLabel: props.parcelLabel,
+    contractorName: typeof contractorName === 'string' ? contractorName.trim() : '',
+    paidCents,
+    method,
+  }
+}
+
 export function QuickIssueForm(props: Props) {
   const csrf = useCsrfToken()
   const [method, setMethod] = useState<Method>('cash')
   const [pending, setPending] = useState(false)
   const [outcome, setOutcome] = useState<CounterOutcome | null>(null)
   const [declinedApplicationId, setDeclinedApplicationId] = useState<string | null>(null)
+  const [receipt, setReceipt] = useState<IssuedReceipt | null>(null)
 
   const channel = method === 'card' ? 'card_present' : method
   const convenienceCents = computeConvenienceFee(props.baseCents, props.convenienceFee, channel)
@@ -58,21 +89,31 @@ export function QuickIssueForm(props: Props) {
     event.preventDefault()
     const data = new FormData(event.currentTarget)
     data.set('csrf_token', csrf)
+    setReceipt(receiptFor(props, data, method, props.baseCents + convenienceCents))
     if (declinedApplicationId !== null) data.set('applicationId', declinedApplicationId)
     setDeclinedApplicationId(null)
     const result = await attempt(() => props.actions.issue(data), setPending)
     show(result.ok ? result.value : { ok: false, error: result.error })
   }
 
-  const issued = outcome?.ok === true && outcome.state === 'issued' ? outcome : null
-  const waiting = outcome?.ok === true && outcome.state === 'submitted' ? outcome : null
+  const issued = accepted(outcome, 'issued')
+  const waiting = accepted(outcome, 'submitted')
   const readerBusy = waiting !== null && declinedApplicationId === null
+
+  if (issued !== null && receipt !== null) {
+    return <IssuedPanel outcome={issued} receipt={receipt} claim={props.actions.claim} />
+  }
 
   return (
     <form onSubmit={(event) => void submit(event)} className="space-y-6">
+      {props.summary}
       <input type="hidden" name="parcelId" value={props.parcelId} />
       <input type="hidden" name="typeKey" value={props.typeKey} />
-      <ContractorSection defaultLicenseType={props.typeLabel} lookup={props.lookup} />
+      <ContractorSection
+        licenseGroups={props.licenseGroups}
+        defaultLicenseType={props.defaultLicenseType ?? ''}
+        lookup={props.lookup}
+      />
       <WorkSection fields={props.fields} />
       <FeeSection
         baseCents={props.baseCents}
@@ -86,12 +127,11 @@ export function QuickIssueForm(props: Props) {
         readerSimulated={props.readerSimulated}
       />
       <div className="flex items-center gap-3">
-        <Button type="submit" disabled={pending || issued !== null || readerBusy}>
+        <Button type="submit" disabled={pending || readerBusy}>
           Issue and print
         </Button>
         {outcome?.ok === false ? <p role="alert">{outcome.error}</p> : null}
       </div>
-      {issued === null ? null : <IssuedNotice outcome={issued} claim={props.actions.claim} />}
       {waiting?.attemptId == null ? null : (
         <ReaderPanel
           key={waiting.attemptId}

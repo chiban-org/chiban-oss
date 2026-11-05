@@ -29,3 +29,8 @@ export interface CounterActions {
   complete(formData: FormData): Promise<CounterOutcome>
   claim?: (formData: FormData) => Promise<CounterClaimResult>
 }
+
+export interface LicenseGroup {
+  label: string
+  licenses: readonly string[]
+}
