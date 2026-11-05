@@ -30,6 +30,7 @@ import {
 } from '@/features/boards/memberPackets'
 import { endMembership, inviteBoardMember } from '@/features/boards/members'
 import { sendPacketLink } from '@/features/boards/packetLinks'
+import { sendPacketToBoard } from '@/features/boards/packetSend'
 import { resolveRendition } from '@/features/documents/visibility'
 import { scheduleHearing } from '@/features/hearings/hearings'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
@@ -335,10 +336,12 @@ describe('packets for members', () => {
       .where(eq(documents.id, boardDoc))
     const made = await createMeetingPacket(handle.db, store, world.staff, id, signal)
     if (!made.ok) throw new Error(JSON.stringify(made.error))
-    return { applicationId, meetingId: id, boardDoc, packetId: made.value.packetId }
+    const packetId = made.value.packetId
+    await sendPacketToBoard(handle.db, createMemoryTransport(), world.staff, { packetId }, signal)
+    return { applicationId, meetingId: id, boardDoc, packetId }
   }
 
-  it('packet send to an active member uses the account and mints no token', async () => {
+  it('a private link to an active member is refused, since members read on their board page', async () => {
     await invite('zba.member@alderpond.example', 'zba')
     const { packetId } = await packet()
     const sent = await sendPacketLink(
@@ -349,10 +352,8 @@ describe('packets for members', () => {
       signal,
       NOW,
     )
-    expect(sent).toEqual({ ok: true, value: { linkId: null, viaAccount: true } })
+    expect(sent).toEqual({ ok: false, error: 'member_of_board' })
     expect(await handle.db.select().from(boardPacketLinks)).toEqual([])
-    expect(mail.sent.at(-1)?.text).toContain('Packet ready: sign in at')
-    expect(mail.sent.at(-1)?.text).toContain('/board')
   })
 
   it('packet send to a non-member still mints a link', async () => {
@@ -365,7 +366,7 @@ describe('packets for members', () => {
       signal,
       NOW,
     )
-    expect(sent.ok && sent.value.viaAccount).toBe(false)
+    expect(sent.ok).toBe(true)
     expect(await handle.db.select().from(boardPacketLinks)).toHaveLength(1)
   })
 
@@ -380,7 +381,7 @@ describe('packets for members', () => {
       signal,
       NOW,
     )
-    expect(sent.ok && sent.value.viaAccount).toBe(false)
+    expect(sent.ok).toBe(true)
   })
 
   it('a member opens the packet of their own board and nothing else', async () => {

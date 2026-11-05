@@ -15,6 +15,8 @@ const SEND_COPY = {
   expiry_too_long: 'A link can last at most 30 days.',
   not_found: errorCopy('not_found'),
   send_failed: 'The email could not be sent. Try again.',
+  meeting_cancelled: 'The meeting is cancelled, so its packet is closed.',
+  member_of_board: 'This person is a seated member of the board. Send the packet to the board instead.',
 } as const
 
 export async function createPacketAction(formData: FormData): Promise<ActionResult> {
@@ -58,12 +60,7 @@ export async function sendPacketLinkAction(formData: FormData): Promise<ActionRe
     )
     if (!sent.ok) return { ok: false, error: SEND_COPY[sent.error] }
     revalidatePath('/staff/boards/packets')
-    return {
-      ok: true,
-      message: sent.value.viaAccount
-        ? 'Board member notified. They read the packet on their board page, so there is no link to expire or revoke.'
-        : 'Link sent.',
-    }
+    return { ok: true, message: 'Link sent.' }
   })
 }
 

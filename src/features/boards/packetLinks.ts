@@ -1,37 +1,29 @@
-import { createHash, randomBytes } from 'node:crypto'
-import { and, asc, desc, eq, or, sql } from 'drizzle-orm'
-import { env } from '@/config/env'
+import { and, desc, eq, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
   boardMemberships,
   boardPacketAccess,
-  boardPacketItems,
   boardPacketLinks,
   boardPackets,
-  documents,
-  documentVersions,
-  files,
   users,
 } from '@/db/schema'
 import { activeMembershipOn } from '@/features/access/predicates'
-import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { packetDocument } from '@/features/boards/packetDocument'
+import { hashPacketToken, issuePacketLink } from '@/features/boards/packetLinkIssue'
+import { sendablePacket, stampSent } from '@/features/boards/packetSend'
 import { loadPacketView, type PacketView, townDateOf } from '@/features/boards/packetView'
 import type { MailTransport } from '@/features/mail/transport'
 import type { StoredObject } from '@/features/storage/delivery'
-import { formatCivilDate } from '@/lib/formatDate'
-import { type CivilDate, todayInTimeZone } from '@/types/civilDate'
+import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
+import { isUuid } from '@/utils/uuid'
 
-const TOKEN_BYTES = 32
 const DEFAULT_DAYS = 14
 const MAX_DAYS = 30
-const DAY_MS = 24 * 60 * 60 * 1000
 
-export function hashPacketToken(token: string): string {
-  return createHash('sha256').update(token).digest('base64url')
-}
+export { hashPacketToken }
 
 async function isActiveMemberOf(
   db: Db,
@@ -54,39 +46,13 @@ async function isActiveMemberOf(
   return rows.length > 0
 }
 
-async function notifyMember(
-  db: Db,
-  mail: MailTransport,
-  actor: Actor,
-  packet: typeof boardPackets.$inferSelect,
-  input: { recipientName: string; recipientEmail: string },
-  signal: AbortSignal,
-): Promise<Result<{ linkId: string | null; viaAccount: boolean }, 'send_failed'>> {
-  const date = formatCivilDate(packet.meetingDate)
-  const text = `Packet ready: sign in at ${env.BASE_URL}/board to read the packet for the ${date} meeting.\n`
-  const sent = await mail.send(
-    {
-      to: input.recipientEmail,
-      subject: `Board packet: ${packet.title}, meeting ${date}`,
-      text,
-      html: `<p>Packet ready: sign in at <a href="${env.BASE_URL}/board">${env.BASE_URL}/board</a> to read the packet for the ${date} meeting.</p>`,
-    },
-    signal,
-  )
-  if (!sent.ok) return err('send_failed')
-  await writeAudit(
-    db,
-    {
-      actor: { kind: 'user', userId: actor.userId },
-      action: 'packet.member.notify',
-      entityType: 'board_packet',
-      entityId: packet.id,
-      after: { recipientName: input.recipientName, recipientEmail: input.recipientEmail },
-    },
-    signal,
-  )
-  return ok({ linkId: null, viaAccount: true })
-}
+export type SendLinkError =
+  | 'forbidden'
+  | 'expiry_too_long'
+  | 'not_found'
+  | 'meeting_cancelled'
+  | 'member_of_board'
+  | 'send_failed'
 
 export async function sendPacketLink(
   db: Db,
@@ -100,60 +66,24 @@ export async function sendPacketLink(
   },
   signal: AbortSignal,
   now: Date = new Date(),
-): Promise<
-  Result<
-    { linkId: string | null; viaAccount: boolean },
-    'forbidden' | 'expiry_too_long' | 'not_found' | 'send_failed'
-  >
-> {
-  signal.throwIfAborted()
-  const allowed = await requireCapability(db, actor.userId, 'packet.manage', signal)
-  if (!allowed.ok) return err('forbidden')
+): Promise<Result<{ linkId: string }, SendLinkError>> {
   const days = input.expiresInDays ?? DEFAULT_DAYS
-  if (days > MAX_DAYS) return err('expiry_too_long')
-  const [packet] = await db.select().from(boardPackets).where(eq(boardPackets.id, input.packetId))
-  if (packet === undefined) return err('not_found')
-  const recipientEmail = input.recipientEmail.trim().toLowerCase()
-  if (await isActiveMemberOf(db, recipientEmail, packet.board)) {
-    return await notifyMember(db, mail, actor, packet, { ...input, recipientEmail }, signal)
+  if (!Number.isInteger(days) || days < 1 || days > MAX_DAYS) {
+    const allowed = await requireCapability(db, actor.userId, 'packet.manage', signal)
+    return err(allowed.ok ? 'expiry_too_long' : 'forbidden')
   }
-  const token = randomBytes(TOKEN_BYTES).toString('base64url')
-  const [created] = await db
-    .insert(boardPacketLinks)
-    .values({
-      packetId: packet.id,
-      recipientName: input.recipientName,
-      recipientEmail: input.recipientEmail.trim().toLowerCase(),
-      tokenHash: hashPacketToken(token),
-      expiresAt: new Date(now.getTime() + days * DAY_MS),
-      createdBy: actor.userId,
-      createdAt: now,
-    })
-    .returning({ id: boardPacketLinks.id })
-  await writeAudit(
+  const found = await sendablePacket(db, actor, input.packetId, signal)
+  if (!found.ok) return found
+  const recipientEmail = input.recipientEmail.trim().toLowerCase()
+  if (await isActiveMemberOf(db, recipientEmail, found.value.board)) return err('member_of_board')
+  await stampSent(db, found.value, now)
+  const issued = await issuePacketLink(
     db,
-    {
-      actor: { kind: 'user', userId: actor.userId },
-      action: 'packet.link.send',
-      entityType: 'board_packet',
-      entityId: packet.id,
-      after: { linkId: created?.id, recipientEmail: input.recipientEmail },
-    },
-    signal,
+    mail,
+    { actor, packet: found.value, now, signal },
+    { recipientName: input.recipientName, recipientEmail, days },
   )
-  const link = `${env.BASE_URL}/board/packets/${token}`
-  const date = formatCivilDate(packet.meetingDate)
-  const sent = await mail.send(
-    {
-      to: input.recipientEmail.trim().toLowerCase(),
-      subject: `Board packet: ${packet.title}, meeting ${date}`,
-      text: `${input.recipientName}, the packet for the ${date} meeting is ready. The link expires in ${days} days.\n\n${link}\n`,
-      html: `<p>${input.recipientName}, the packet for the ${date} meeting is ready. The link expires in ${days} days.</p><p><a href="${link}">Open the packet</a></p>`,
-    },
-    signal,
-  )
-  if (!sent.ok) return err('send_failed')
-  return ok({ linkId: created?.id ?? '', viaAccount: false })
+  return issued.ok ? ok({ linkId: issued.value }) : err('send_failed')
 }
 
 export async function revokePacketLink(
@@ -161,16 +91,18 @@ export async function revokePacketLink(
   actor: Actor,
   input: { linkId: string },
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden' | 'not_found'>> {
+): Promise<Result<{ packetId: string }, 'forbidden' | 'not_found'>> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'packet.manage', signal)
   if (!allowed.ok) return err('forbidden')
+  if (!isUuid(input.linkId)) return err('not_found')
   const revoked = await db
     .update(boardPacketLinks)
     .set({ revokedAt: new Date() })
     .where(eq(boardPacketLinks.id, input.linkId))
-    .returning({ id: boardPacketLinks.id })
-  return revoked.length === 0 ? err('not_found') : ok(undefined)
+    .returning({ packetId: boardPacketLinks.packetId })
+  const [row] = revoked
+  return row === undefined ? err('not_found') : ok({ packetId: row.packetId })
 }
 
 async function resolveLink(
@@ -199,7 +131,9 @@ export async function openPacket(
   const link = resolved.value
   const view = await loadPacketView(db, link.packetId, link.expiresAt.toISOString(), signal)
   if (view === null) return err('invalid')
-  await db.insert(boardPacketAccess).values({ linkId: link.id, versionId: null, accessedAt: now })
+  await db
+    .insert(boardPacketAccess)
+    .values({ linkId: link.id, packetId: link.packetId, versionId: null, accessedAt: now })
   return ok(view)
 }
 
@@ -216,34 +150,14 @@ export async function openPacketVersion(
   const resolved = await resolveLink(db, token, now)
   if (!resolved.ok) return err(resolved.error)
   const link = resolved.value
-  const [row] = await db
-    .select({
-      storageKey: files.storageKey,
-      filename: documentVersions.filename,
-      contentType: documentVersions.contentType,
-      withdrawnAt: boardPacketItems.withdrawnAt,
-    })
-    .from(boardPacketItems)
-    .leftJoin(documentVersions, eq(documentVersions.id, boardPacketItems.versionId))
-    .leftJoin(files, eq(files.sha256, documentVersions.fileSha256))
-    .where(
-      and(
-        eq(boardPacketItems.packetId, link.packetId),
-        or(
-          eq(boardPacketItems.versionId, versionId),
-          eq(boardPacketItems.formerVersionId, versionId),
-        ),
-      ),
-    )
-  if (row === undefined) return err('not_found')
-  if (row.withdrawnAt !== null) {
-    return err({ withdrawnOn: await townDateOf(db, row.withdrawnAt, signal) })
-  }
-  if (row.storageKey === null || row.filename === null || row.contentType === null) {
-    return err('not_found')
-  }
-  await db.insert(boardPacketAccess).values({ linkId: link.id, versionId, accessedAt: now })
-  return ok({ storageKey: row.storageKey, filename: row.filename, contentType: row.contentType })
+  const [packet] = await db.select().from(boardPackets).where(eq(boardPackets.id, link.packetId))
+  if (packet === undefined) return err('not_found')
+  const found = await packetDocument(db, packet, versionId, signal)
+  if (!found.ok) return found
+  await db
+    .insert(boardPacketAccess)
+    .values({ linkId: link.id, packetId: packet.id, versionId, accessedAt: now })
+  return found
 }
 
 export async function listPacketAccess(db: Db, packetId: string) {

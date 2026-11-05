@@ -16,9 +16,18 @@ const VIEW: PacketView = {
       versionId: 'v1',
       title: 'Application narrative',
       filename: 'narrative.pdf',
+      mark: null,
       withdrawnOn: null,
+      withdrawnWhy: null,
     },
-    { versionId: 'v2', title: 'Site plan', filename: 'site-plan.pdf', withdrawnOn: null },
+    {
+      versionId: 'v2',
+      title: 'Site plan',
+      filename: 'site-plan.pdf',
+      mark: null,
+      withdrawnOn: null,
+      withdrawnWhy: null,
+    },
   ],
 }
 
