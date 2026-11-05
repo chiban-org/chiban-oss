@@ -1,7 +1,14 @@
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
 import { eq, sql } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { applications, parcelAliases, parcels, projectParties, projects } from '@/db/schema'
+import {
+  applications,
+  parcelAliases,
+  parcels,
+  projectParties,
+  projects,
+  restrictionHoldings,
+} from '@/db/schema'
 import { type ResolverOutput, recipientResolver } from '@/features/abutters/resolution'
 import { recordDesDetermination } from '@/features/boards/des500'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
@@ -167,9 +174,15 @@ describe('other roles', () => {
     expect(
       reviewed.recipients.find((r) => r.roles[0] === 'restriction_holder')?.provenance[0],
     ).toMatchObject({
-      state: 'reviewed',
+      state: 'fresh',
       ageDays: 23,
     })
+    await handle.db.update(restrictionHoldings).set({ checkedOn: '2025-06-01' })
+    const due = await resolve([])
+    expect(due.incomplete.map((i) => i.code)).not.toContain('roster_never_reviewed')
+    expect(
+      due.recipients.find((r) => r.roles[0] === 'restriction_holder')?.provenance[0],
+    ).toMatchObject({ state: 'stale' })
   })
 
   it('regional impact yes adds the commission and Pine River and Dunmore municipalities with certified hints', async () => {

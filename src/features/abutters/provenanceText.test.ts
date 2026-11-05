@@ -31,6 +31,41 @@ describe('provenanceText', () => {
   })
 })
 
+describe('roster provenance', () => {
+  it('names the land records check once, without a second reviewed', () => {
+    expect(
+      provenanceText(
+        source({ source: 'restriction_roster', asOf: '2026-11-04', state: 'reviewed' }),
+      ),
+    ).toBe('Land records checked for restrictions on November 4, 2026')
+    expect(
+      provenanceText(source({ source: 'restriction_roster', asOf: '2026-11-04', state: 'fresh' })),
+    ).toBe('Land records checked for restrictions on November 4, 2026')
+  })
+
+  it('reads a roster from an older issued list without a trailing reviewed', () => {
+    expect(
+      provenanceText(
+        source({ source: 'association_roster', asOf: '2026-10-01', state: 'reviewed' }),
+      ),
+    ).toBe('Association officer roster as of October 1, 2026')
+  })
+
+  it('names the last check and prints out of date once a roster is due', () => {
+    expect(
+      provenanceText(
+        source({
+          source: 'association_roster',
+          asOf: '2025-01-10',
+          ageDays: 600,
+          checkedOn: '2025-06-01',
+          state: 'stale',
+        }),
+      ),
+    ).toBe('Association officer roster as of January 10, 2025, checked June 1, 2025, out of date')
+  })
+})
+
 describe('ageText', () => {
   it('says nothing for an age of zero or unknown, and counts days otherwise', () => {
     expect(ageText(0)).toBe('')

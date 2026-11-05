@@ -22,7 +22,7 @@ export function reasonText(reason: CandidateReason): string {
 const STATE_WORDS: Record<Provenance['state'], string> = {
   fresh: '',
   stale: ', out of date',
-  reviewed: ', reviewed',
+  reviewed: '',
   entered: '',
 }
 
@@ -31,9 +31,15 @@ export function ageText(days: number | null): string {
   return `, ${days} ${days === 1 ? 'day' : 'days'} old`
 }
 
+function checkedText(p: Provenance): string | null {
+  if (p.checkedOn === undefined || p.checkedOn === p.asOf) return null
+  return `, checked ${formatCivilDate(p.checkedOn)}`
+}
+
 function asOfText(label: string, p: Provenance): string {
   if (p.asOf === null) return label
-  return `${label} ${formatCivilDate(p.asOf)}${ageText(p.ageDays)}${STATE_WORDS[p.state]}`
+  const age = checkedText(p) ?? ageText(p.ageDays)
+  return `${label} ${formatCivilDate(p.asOf)}${age}${STATE_WORDS[p.state]}`
 }
 
 export function provenanceText(p: Provenance): string {
@@ -47,7 +53,7 @@ export function provenanceText(p: Provenance): string {
     case 'restriction_roster':
       return p.asOf === null
         ? 'Easement and restriction roster'
-        : asOfText('Easement and restriction roster reviewed', p)
+        : asOfText('Land records checked for restrictions on', p)
     case 'application_professionals':
       return 'Entered for this application'
     case 'regional_contacts':

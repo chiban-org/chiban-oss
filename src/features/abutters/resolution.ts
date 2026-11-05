@@ -17,6 +17,7 @@ export interface Provenance {
   asOf: string | null
   ageDays: number | null
   state: 'fresh' | 'stale' | 'reviewed' | 'entered'
+  checkedOn?: string
   replaced?: { name: string; mailingAddress: string | null }
   reason?: string
 }

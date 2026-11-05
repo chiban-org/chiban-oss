@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { RecipientView } from '@/features/abutters/listView'
 
@@ -37,7 +38,9 @@ export function RecipientTable({ rows, renderControls }: Props) {
             <td>
               <ul className="m-0 list-none p-0">
                 {row.provenance.map((line) => (
-                  <li key={line}>{line}</li>
+                  <li key={line.text}>
+                    {line.href === null ? line.text : <Link href={line.href}>{line.text}</Link>}
+                  </li>
                 ))}
               </ul>
             </td>

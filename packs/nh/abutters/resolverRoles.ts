@@ -5,10 +5,13 @@ import {
   regionalImpactParties,
 } from '@/db/schema'
 import { applicantParcelIds } from '@/features/abutters/applicantParcels'
+import type { Provenance } from '@/features/abutters/resolution'
 import { getRegionalContacts } from '@/features/boards/regionalContacts'
 import { professionalsFor } from '@/features/rosters/professionals'
+import { isDue } from '@/features/rosters/recheck'
 import { activeRestrictions } from '@/features/rosters/restrictions'
 import { rosterStatus } from '@/features/rosters/reviews'
+import type { CivilDate } from '@/types/civilDate'
 import { type Context, makeRecipient, rosterProvenance } from './resolverContext'
 import { applicantParty, applicationValues } from './resolverSources'
 
@@ -50,6 +53,18 @@ export async function resolveApplicant(ctx: Context, signal: AbortSignal): Promi
   }
 }
 
+function holdingState(
+  ctx: Context,
+  landRecordsCheckedOn: CivilDate | null,
+  holderCheckedOn: string | null,
+): Provenance['state'] {
+  if (landRecordsCheckedOn === null) return 'entered'
+  const due =
+    isDue(landRecordsCheckedOn, ctx.today, ctx.recheckDays) ||
+    isDue(holderCheckedOn as CivilDate | null, ctx.today, ctx.recheckDays)
+  return due ? 'stale' : 'fresh'
+}
+
 export async function resolveRestrictions(ctx: Context, signal: AbortSignal): Promise<void> {
   if (!wants(ctx, 'restriction_holder')) return
   const parcelIds = await applicantParcelIds(ctx.tx, ctx.input.applicationId, signal)
@@ -72,7 +87,7 @@ export async function resolveRestrictions(ctx: Context, signal: AbortSignal): Pr
             holding.id,
             review.reviewedOn,
             ctx.today,
-            review.state === 'reviewed' ? 'reviewed' : 'entered',
+            holdingState(ctx, review.reviewedOn, holding.checkedOn),
           ),
         ],
       }),

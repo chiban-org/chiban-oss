@@ -27,7 +27,7 @@ const recipient = (overrides: Partial<RecipientView>): RecipientView => ({
   mailingAddress: 'PO Box 302, Alder Pond NH 03999',
   roles: ['Abutting owner'],
   statusText: 'Complete',
-  provenance: ['Parcel layer imported March 1, 2027, 23 days old'],
+  provenance: [{ text: 'Parcel layer imported March 1, 2027, 23 days old', href: null }],
   excluded: false,
   exclusionReason: null,
   needsDecision: false,

@@ -1,4 +1,4 @@
-import { type Context, makeRecipient, rosterProvenance } from './resolverContext'
+import { type Context, checkedProvenance, makeRecipient } from './resolverContext'
 import { loadAssociations, loadParcelFacts, loadParks } from './resolverSources'
 
 function pushOwner(
@@ -40,13 +40,7 @@ export async function resolveParcels(ctx: Context): Promise<void> {
     const association = associations.get(id)
     const park = parks.get(id)
     if (association !== undefined) {
-      const provenance = rosterProvenance(
-        'association_roster',
-        association.id,
-        association.asOf,
-        ctx.today,
-        'reviewed',
-      )
+      const provenance = checkedProvenance(ctx, 'association_roster', association)
       for (const officer of association.officers) {
         ctx.recipients.push(
           makeRecipient(officer.name, officer.mailingAddress, {
@@ -57,7 +51,7 @@ export async function resolveParcels(ctx: Context): Promise<void> {
         )
       }
     } else if (park !== undefined) {
-      const provenance = rosterProvenance('park_roster', park.id, park.asOf, ctx.today, 'reviewed')
+      const provenance = checkedProvenance(ctx, 'park_roster', park)
       ctx.recipients.push(
         makeRecipient(park.ownerName, park.ownerMailingAddress, {
           roles: ['mhp_owner'],

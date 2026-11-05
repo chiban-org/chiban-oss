@@ -13,9 +13,16 @@ import { openIncomplete } from '@/features/abutters/draft'
 import { type NoticeCostSummary, noticeCostSummary } from '@/features/abutters/noticeCosts'
 import { type Overlay, projectionOverlay } from '@/features/abutters/overlay'
 import { getList, type ListRow, type ListSnapshot } from '@/features/abutters/queries'
-import { ageText, provenanceText, reasonLines } from '@/features/abutters/reasonText'
+import { ageText, reasonLines } from '@/features/abutters/reasonText'
+import { frozenView, type RecipientView, recipientView } from '@/features/abutters/recipientView'
 import type { Recipient } from '@/features/abutters/resolution'
 import { RECIPIENT_ROLE_LABELS } from '@/features/abutters/roles'
+import {
+  type IncompleteLine,
+  incompleteLines,
+  type SourceLine,
+  sourceLines,
+} from '@/features/abutters/sourceLinks'
 import type { Candidate } from '@/features/abutters/types'
 import type { Actor } from '@/features/auth/actor'
 import { getBoardSettings as loadBoardSettings } from '@/features/boards/boardSettings'
@@ -38,20 +45,7 @@ export interface CandidateRow {
   exclusionReason: string | null
 }
 
-export interface RecipientView {
-  id: string
-  name: string
-  mailingAddress: string | null
-  roles: string[]
-  statusText: string
-  provenance: string[]
-  excluded: boolean
-  exclusionReason: string | null
-  needsDecision: boolean
-  tenantDecided: boolean
-  decisionText: string | null
-  corrected: boolean
-}
+export type { RecipientView } from '@/features/abutters/recipientView'
 
 export interface ListView {
   listId: string
@@ -64,7 +58,7 @@ export interface ListView {
   issuedText: string | null
   fingerprint: string | null
   layerNotes: string[]
-  incomplete: string[]
+  incomplete: IncompleteLine[]
   candidates: CandidateRow[]
   recipients: RecipientView[]
   attestedText: string | null
@@ -114,52 +108,6 @@ function boundsOf(overlay: Overlay): [number, number, number, number] | null {
   const xs = coords.map((c) => c[0] ?? 0)
   const ys = coords.map((c) => c[1] ?? 0)
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]
-}
-
-function frozenView(data: Recipient, index: number): RecipientView {
-  return {
-    id: `frozen-${index}`,
-    name: data.name,
-    mailingAddress: data.mailingAddress,
-    roles: data.roles.map((r) => RECIPIENT_ROLE_LABELS[r]),
-    statusText: 'Complete',
-    provenance: data.provenance.map(provenanceText),
-    excluded: false,
-    exclusionReason: null,
-    needsDecision: false,
-    tenantDecided: false,
-    decisionText: null,
-    corrected: data.provenance.some((p) => p.source === 'staff_entry'),
-  }
-}
-
-function recipientView(row: typeof abutterListRecipients.$inferSelect): RecipientView {
-  const data = row.data as Recipient
-  const decision =
-    row.qualifies === null
-      ? null
-      : `${row.qualifies ? 'Counts as an abutter' : 'Does not count as an abutter'}: ${row.decisionReason ?? ''}`
-  return {
-    id: row.id,
-    name: data.name,
-    mailingAddress: data.mailingAddress,
-    roles: data.roles.map((r) => RECIPIENT_ROLE_LABELS[r]),
-    statusText:
-      data.status === 'needs_decision'
-        ? row.qualifies === null
-          ? 'Needs a staff decision'
-          : 'Decided by staff'
-        : data.status === 'incomplete_data'
-          ? 'Missing name or address'
-          : 'Complete',
-    provenance: data.provenance.map(provenanceText),
-    excluded: row.excluded,
-    exclusionReason: row.exclusionReason,
-    needsDecision: data.status === 'needs_decision' && row.qualifies === null,
-    tenantDecided: data.status === 'needs_decision' && row.qualifies !== null,
-    decisionText: decision,
-    corrected: data.provenance.some((p) => p.source === 'staff_entry'),
-  }
 }
 
 async function candidateRows(tx: Tx, listId: string): Promise<CandidateRow[]> {
@@ -252,8 +200,14 @@ export async function loadListView(
       list.crossingsAttestedAt === null
         ? null
         : `Staff confirmed on ${formatCivilDate(todayInTimeZone(zone, list.crossingsAttestedAt))} that streets and streams were reviewed.`
-    const incomplete =
-      list.status === 'draft' ? (await openIncomplete(tx, listId)).map((i) => i.detail) : []
+    const open = list.status === 'draft' ? await openIncomplete(tx, listId) : []
+    const incomplete = incompleteLines(
+      open,
+      await displayIdsFor(
+        tx,
+        open.flatMap((i) => (i.parcelId === undefined ? [] : [i.parcelId])),
+      ),
+    )
     const recipients =
       list.snapshot === null
         ? recipientRows.map(recipientView)

@@ -27,7 +27,15 @@ function Incomplete({ view }: { view: ListView }) {
       <h2>Before this list can be issued</h2>
       <ul>
         {view.incomplete.map((line) => (
-          <li key={line}>{line}</li>
+          <li key={line.text}>
+            {line.text}
+            {line.href === null ? null : (
+              <>
+                {' '}
+                <Link href={line.href}>{line.linkText}</Link>
+              </>
+            )}
+          </li>
         ))}
       </ul>
     </section>
