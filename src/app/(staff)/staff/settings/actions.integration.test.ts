@@ -82,6 +82,7 @@ const ALL = {
   rollbackAction: actions.rollbackAction,
   adoptStarterAction: actions.adoptStarterAction,
   startDraftAction: actions.startDraftAction,
+  discardDraftAction: actions.discardDraftAction,
 }
 
 describe('settings actions', () => {
@@ -114,6 +115,37 @@ describe('settings actions', () => {
     expect(result).toMatchObject({ ok: false, error: expect.stringContaining('permission') })
     const keys = (await listKeysOfKind(handle.db, 'template', signal)).map((k) => k.key)
     expect(keys).not.toContain('staff-letter')
+  })
+
+  it('discarding a draft as staff without config.edit is forbidden and keeps the draft', async () => {
+    const admin = await staffActor(handle.db, 'admin')
+    state.actor = admin
+    await actions.saveDraftAction(form(formBodyFields('discard-guarded')))
+    state.actor = await staffActor(handle.db, 'staff')
+    const result = await actions.discardDraftAction(form(formBodyFields('discard-guarded')))
+    expect(result).toMatchObject({ ok: false, error: expect.stringContaining('permission') })
+    expect(await listVersions(handle.db, 'form', 'discard-guarded', signal)).toHaveLength(1)
+  })
+
+  it('discarding the only draft of a list item returns to its list', async () => {
+    state.actor = await staffActor(handle.db, 'admin')
+    await actions.saveDraftAction(form(formBodyFields('discard-lone')))
+    await expect(
+      actions.discardDraftAction(form({ kind: 'form', key: 'discard-lone' })),
+    ).rejects.toThrow('NEXT_REDIRECT:/staff/settings/form')
+    expect(await listVersions(handle.db, 'form', 'discard-lone', signal)).toEqual([])
+  })
+
+  it('discarding a draft over a published version stays on the page', async () => {
+    state.actor = await staffActor(handle.db, 'admin')
+    await actions.publishAction(form(formBodyFields('discard-over')))
+    await actions.saveDraftAction(form(formBodyFields('discard-over')))
+    expect(await actions.discardDraftAction(form({ kind: 'form', key: 'discard-over' }))).toEqual({
+      ok: true,
+      message: 'Draft discarded.',
+    })
+    const versions = await listVersions(handle.db, 'form', 'discard-over', signal)
+    expect(versions.map((v) => v.status)).toEqual(['published'])
   })
 
   it('publish action without csrf token is refused', async () => {

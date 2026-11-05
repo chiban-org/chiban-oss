@@ -1,9 +1,14 @@
-import { publishAction, saveDraftAction } from '@/app/(staff)/staff/settings/actions'
+import {
+  discardDraftAction,
+  publishAction,
+  saveDraftAction,
+} from '@/app/(staff)/staff/settings/actions'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
 import { RestoreVersion } from '@/components/config/RestoreVersion'
 import { VersionHistory } from '@/components/config/VersionHistory'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { discardOffer } from '@/features/config/discardOffer'
 import { editorContext } from '@/features/config/editorContext'
 import { getEditorState } from '@/features/config/settingsViews'
 import { loadProcessorSettings } from '@/features/payments/settingsView'
@@ -43,6 +48,7 @@ export default async function PaymentSettingsPage() {
           context={editorContext()}
           saveAction={saveDraftAction}
           publishAction={publishAction}
+          {...discardOffer(state.versions, discardDraftAction)}
         />
         <details id="version-history" className="mt-8">
           <summary>Version history</summary>

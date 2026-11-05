@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
-import { PublishBar } from '@/components/config/PublishBar'
+import { type DiscardOffer, PublishBar } from '@/components/config/PublishBar'
 import { Check, FieldError, Input, Pick, RowButton, rowKey } from '@/components/config/primitives'
 import { WorkflowPreview } from '@/components/config/WorkflowPreview'
 import { Button } from '@/components/ui/button'
@@ -43,6 +43,7 @@ interface Props {
   saveAction: (formData: FormData) => Promise<ActionResult>
   publishAction: (formData: FormData) => Promise<ActionResult>
   previewAction: (formData: FormData) => Promise<PreviewActionResult>
+  discard?: DiscardOffer & { action: (formData: FormData) => Promise<ActionResult> }
 }
 
 function slug(label: string): string {
@@ -131,6 +132,7 @@ export function WorkflowEditor({
   saveAction,
   publishAction,
   previewAction,
+  discard,
 }: Props) {
   const [workflow, setWorkflow] = useState<Workflow>(initialBody.workflow)
   const [preview, setPreview] = useState<Preview | null>(null)
@@ -144,6 +146,7 @@ export function WorkflowEditor({
         if (shown.ok) setPreview(shown.preview)
         return shown
       }
+      if (intent === 'discard' && discard !== undefined) return await discard.action(formData)
       return intent === 'publish' ? await publishAction(formData) : await saveAction(formData)
     },
     null,
@@ -203,6 +206,7 @@ export function WorkflowEditor({
       <FieldError errors={fieldErrors} name="_form" />
       <PublishBar
         pinned
+        {...(discard === undefined ? {} : { discard })}
         disabled={pending || !hydrated}
         status={
           pending ? 'Working' : result === null ? null : result.ok ? result.message : result.error

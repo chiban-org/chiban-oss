@@ -4,7 +4,7 @@ import { useActionState, useState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
 import { EditorContextProvider } from '@/components/config/EditorContextProvider'
 import { CONFIG_EDITORS } from '@/components/config/editorRegistry'
-import { PublishBar } from '@/components/config/PublishBar'
+import { type DiscardOffer, PublishBar } from '@/components/config/PublishBar'
 import { FieldError, type FieldErrors } from '@/components/config/primitives'
 import { RequiredNote } from '@/components/ui/required-mark'
 import { useHydrated } from '@/components/useHydrated'
@@ -21,6 +21,7 @@ interface Props {
   context: EditorContext
   saveAction: (formData: FormData) => Promise<ActionResult>
   publishAction: (formData: FormData) => Promise<ActionResult>
+  discard?: DiscardOffer & { action: (formData: FormData) => Promise<ActionResult> }
 }
 
 const BUILDER_KINDS: ReadonlySet<ConfigKind> = new Set(['form', 'template'])
@@ -39,6 +40,7 @@ export function ConfigEditorForm({
   context,
   saveAction,
   publishAction,
+  discard,
 }: Props) {
   const [body, setBody] = useState<unknown>(initialBody)
   const [seenKey, setSeenKey] = useState(resetKey)
@@ -47,10 +49,11 @@ export function ConfigEditorForm({
     setBody(initialBody)
   }
   const [result, run, pending] = useActionState(
-    async (_previous: ActionResult | null, formData: FormData) =>
-      formData.get('intent') === 'publish'
-        ? await publishAction(formData)
-        : await saveAction(formData),
+    async (_previous: ActionResult | null, formData: FormData) => {
+      const intent = formData.get('intent')
+      if (intent === 'discard' && discard !== undefined) return await discard.action(formData)
+      return intent === 'publish' ? await publishAction(formData) : await saveAction(formData)
+    },
     null,
   )
   const hydrated = useHydrated()
@@ -80,6 +83,7 @@ export function ConfigEditorForm({
         pinned={isPinnedKind(kind)}
         disabled={pending || !hydrated}
         status={statusText(pending, result)}
+        {...(discard === undefined ? {} : { discard })}
       />
       {listed.length === 0 ? null : (
         <ul role="alert" className="mt-2 list-disc pl-5 text-sm text-status-failed-fg">

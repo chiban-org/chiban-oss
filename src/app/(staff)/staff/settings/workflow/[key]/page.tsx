@@ -8,10 +8,12 @@ import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { ApplicationTypeBodySchema } from '@/features/applications/applicationTypeSchema'
 import { hasCapability } from '@/features/authz/capabilities'
+import { discardOffer } from '@/features/config/discardOffer'
 import { getEditorState } from '@/features/config/settingsViews'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
 import {
+  discardDraftAction,
   previewWorkflowAction,
   publishAction,
   rollbackAction,
@@ -51,12 +53,14 @@ export default async function WorkflowPage({ params }: Props) {
         }}
       />
       <WorkflowEditor
+        key={state.versions.map((v) => `${v.id}:${v.status}`).join(',')}
         typeKey={key}
         initialBody={parsed.data}
         classification={classification}
         saveAction={saveDraftAction}
         publishAction={publishAction}
         previewAction={previewWorkflowAction}
+        {...discardOffer(state.versions, discardDraftAction)}
       />
       <h2>Version history</h2>
       <VersionHistory

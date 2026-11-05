@@ -5,6 +5,7 @@ import { GraphStubNotice } from '@/components/inspections/GraphStubNotice'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { hasCapability } from '@/features/authz/capabilities'
+import { discardOffer } from '@/features/config/discardOffer'
 import { editorContext } from '@/features/config/editorContext'
 import { getEditorState } from '@/features/config/settingsViews'
 import { connectedTenant, loadInspectorTargets } from '@/features/inspections/settingsView'
@@ -14,7 +15,7 @@ import {
   saveCalendarAccountAction,
   saveInspectorCalendarAction,
 } from '../../inspections/actions'
-import { saveDraftAction } from '../actions'
+import { discardDraftAction, saveDraftAction } from '../actions'
 
 export const dynamic = 'force-dynamic'
 
@@ -52,6 +53,7 @@ export default async function InspectionSettingsPage() {
           context={editorContext()}
           saveAction={saveDraftAction}
           publishAction={publishInspectionSettingsAction}
+          {...discardOffer(state.versions, discardDraftAction)}
         />
       ) : (
         <p role="alert">You do not have permission to change inspection settings.</p>
