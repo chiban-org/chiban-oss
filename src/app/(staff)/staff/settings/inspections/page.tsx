@@ -21,6 +21,12 @@ export const dynamic = 'force-dynamic'
 export default async function InspectionSettingsPage() {
   const ctx = await requireStaffContext()
   const canEdit = await hasCapability(ctx.db, ctx.actor.userId, 'config.edit', ctx.signal)
+  const canSchedule = await hasCapability(
+    ctx.db,
+    ctx.actor.userId,
+    'inspection.schedule',
+    ctx.signal,
+  )
   const state = await getEditorState(ctx.db, 'inspection_settings', 'default', ctx.signal)
   const targets = await loadInspectorTargets(ctx.db, ctx.signal)
   const tenant = await connectedTenant(ctx.db, ctx.signal)
@@ -31,7 +37,11 @@ export default async function InspectionSettingsPage() {
         lead="When inspections can be booked, and where each inspector's calendar invites go."
       />
       <p>
-        <Link href="/staff/inspections">Open the schedule board</Link>
+        {canSchedule ? (
+          <Link href="/staff/inspections">Open the schedule board</Link>
+        ) : (
+          'Inspections are booked on the schedule board, and only staff who can schedule inspections can open it.'
+        )}
       </p>
       {canEdit ? (
         <ConfigEditorForm

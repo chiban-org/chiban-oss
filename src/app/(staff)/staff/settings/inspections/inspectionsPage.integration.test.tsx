@@ -49,4 +49,18 @@ describe('inspection schedule page', () => {
       /<details[^>]*><summary[^>]*>Enter the connection details<\/summary>[\s\S]*name="tenantId"/,
     )
   })
+
+  it('links to the schedule board only for someone who can schedule inspections', async () => {
+    const admin = state.actor
+    const board = 'href="/staff/inspections"'
+    const adminHtml = renderToStaticMarkup(await InspectionSettingsPage())
+    expect(adminHtml).not.toContain(board)
+    expect(adminHtml).toContain('only staff who can schedule inspections can open it')
+    state.actor = await staffActor(handle.db, 'staff')
+    try {
+      expect(renderToStaticMarkup(await InspectionSettingsPage())).toContain(board)
+    } finally {
+      state.actor = admin
+    }
+  })
 })
