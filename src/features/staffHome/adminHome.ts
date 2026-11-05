@@ -39,7 +39,7 @@ async function draftRows(ctx: HomeContext): Promise<HomeRow[]> {
   return drafts.map((d) => ({
     label: `${KIND_LABELS[d.kind]}: drafts not yet published`,
     count: d.count,
-    href: `/staff/settings/${d.kind}`,
+    href: `/staff/settings/${d.kind}?draft=draft`,
   }))
 }
 
