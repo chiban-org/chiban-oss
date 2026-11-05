@@ -1,174 +1,25 @@
-import Link from 'next/link'
 import { redirect } from 'next/navigation'
-import { ApplicationStatusChip } from '@/components/ApplicationStatusChip'
-import { RecentParcelSearches } from '@/components/parcels/RecentParcelSearches'
-import { SearchExamples } from '@/components/parcels/SearchExamples'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { isReviewer } from '@/features/access/roles'
-import { type SearchExample, searchExample } from '@/features/parcels/searchExample'
-import {
-  countWorkQueue,
-  listWorkQueue,
-  type WorkQueueFilters,
-  type WorkQueueRow,
-} from '@/features/queue/workQueue'
-import { REVIEWS_PATH } from '@/features/reviews/reviewList'
-import { mayOpen } from '@/features/staffNav/navItems'
+import { HomeParcelSearch } from '@/components/staff/home/HomeParcelSearch'
+import { HomeSectionPanel } from '@/components/staff/home/HomeSectionPanel'
+import { searchExample } from '@/features/parcels/searchExample'
+import { loadHomeSections } from '@/features/staffHome/loadHome'
+import { startPageFor } from '@/features/staffHome/startPage'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffActor, requireStaffContext } from '@/server/requireStaff'
 
 const TIMEOUT_MS = 10_000
-const DUE_SOON = 6
-
-interface Attention {
-  label: string
-  href: string
-  filters: WorkQueueFilters
-}
-
-const ATTENTION: readonly Attention[] = [
-  {
-    label: 'Past a deadline',
-    href: '/staff/applications?due=overdue',
-    filters: { due: ['overdue'] },
-  },
-  {
-    label: 'Assigned to you for review',
-    href: '/staff/applications?assigned=me',
-    filters: { assigned: ['me'] },
-  },
-  {
-    label: 'Waiting on fees',
-    href: '/staff/applications?flag=fees',
-    filters: { flags: ['fees'] },
-  },
-  {
-    label: 'Submitted and not yet started',
-    href: '/staff/applications?state=submitted',
-    filters: { stateKeys: ['submitted'] },
-  },
-]
-
-function AttentionList({ counts }: { counts: number[] }) {
-  const open = ATTENTION.map((item, index) => ({ item, count: counts[index] ?? 0 })).filter(
-    ({ count }) => count > 0,
-  )
-  return (
-    <section aria-label="Needs attention">
-      <h2>Needs attention</h2>
-      {open.length === 0 ? (
-        <p className="text-muted-foreground">Nothing needs attention.</p>
-      ) : (
-        <ul className="divide-y">
-          {open.map(({ item, count }) => (
-            <li key={item.href} className="py-3">
-              <Link href={item.href} className="flex items-baseline gap-4">
-                <span className="w-10 text-right text-2xl font-semibold tabular-nums text-ink">
-                  {count}
-                </span>
-                <span className="flex-1">{item.label}</span>
-              </Link>
-            </li>
-          ))}
-        </ul>
-      )}
-    </section>
-  )
-}
-
-function dueText(row: WorkQueueRow): string {
-  if (row.nextDue === null) return 'No clock running'
-  if (row.dueStatus === 'overdue') return `Was due ${formatCivilDate(row.nextDue)}`
-  return `Due ${formatCivilDate(row.nextDue)}`
-}
-
-function DueSoon({ rows }: { rows: WorkQueueRow[] }) {
-  return (
-    <section aria-label="Next deadlines">
-      <h2>Next deadlines</h2>
-      {rows.length === 0 ? <p>No application has a clock running.</p> : null}
-      <ul className="divide-y">
-        {rows.map((row) => (
-          <li
-            key={row.applicationId}
-            className="grid grid-cols-1 items-center justify-items-start gap-x-4 gap-y-1 py-3 sm:grid-cols-[minmax(10rem,1fr)_auto_12rem] sm:justify-items-stretch"
-          >
-            <span className="flex flex-col">
-              <Link
-                href={`/staff/applications/${row.applicationId}`}
-                className="whitespace-nowrap font-semibold"
-              >
-                {row.number}
-              </Link>
-              <span className="text-sm text-muted-foreground">{row.typeLabel}</span>
-            </span>
-            <ApplicationStatusChip
-              state={row.state}
-              substep={row.substep}
-              substepLabel={row.substepLabel}
-            />
-            <span className="whitespace-nowrap text-sm sm:text-right">
-              <span
-                className={
-                  row.dueStatus === 'overdue' ? 'attention font-semibold' : 'text-muted-foreground'
-                }
-              >
-                {dueText(row)}
-              </span>
-            </span>
-          </li>
-        ))}
-      </ul>
-      <Link href="/staff/applications">Open applications</Link>
-    </section>
-  )
-}
-
-function ParcelSearch({ userId, example }: { userId: string; example: SearchExample | null }) {
-  return (
-    <div className="flex max-w-2xl flex-col gap-3">
-      <form role="search" method="get" action="/staff/parcels" className="flex gap-3">
-        <Label htmlFor="home-parcel-search" className="sr-only">
-          Address, owner, or parcel ID
-        </Label>
-        <Input
-          id="home-parcel-search"
-          name="q"
-          placeholder="Address, owner, or parcel ID"
-          className="h-11 flex-1 text-base md:text-base"
-        />
-        <Button type="submit" size="lg" className="h-11 text-base">
-          Find a parcel
-        </Button>
-      </form>
-      <SearchExamples example={example} hrefBase="/staff/parcels" />
-      <RecentParcelSearches userId={userId} record={null} hrefBase="/staff/parcels" />
-    </div>
-  )
-}
 
 export default async function StaffHome() {
-  const actor = await requireStaffActor(AbortSignal.timeout(TIMEOUT_MS))
-  const inspectorOnly = actor.roles.length > 0 && actor.roles.every((role) => role === 'inspector')
-  if (inspectorOnly) redirect('/staff/inspections/day')
+  await requireStaffActor(AbortSignal.timeout(TIMEOUT_MS))
   const ctx = await requireStaffContext()
-  if (!mayOpen('/staff/applications', await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
-    redirect(isReviewer(ctx.actor) ? REVIEWS_PATH : '/staff/parcels')
-  }
+  const viewer = await loadNavViewer(ctx.db, ctx.actor, ctx.signal)
+  const start = startPageFor(viewer)
+  if (start.kind === 'redirect') redirect(start.to)
   const today = await townToday(ctx.db, new Date(), ctx.signal)
-  const [counts, soon, example] = await Promise.all([
-    countWorkQueue(
-      ctx.db,
-      ctx.actor,
-      ATTENTION.map((item) => item.filters),
-      today,
-      ctx.signal,
-    ),
-    listWorkQueue(ctx.db, ctx.actor, { filters: {}, limit: DUE_SOON }, ctx.signal),
+  const [sections, example] = await Promise.all([
+    loadHomeSections({ ...ctx, viewer, today }, start.roles),
     searchExample(ctx.db, ctx.signal),
   ])
   return (
@@ -178,11 +29,12 @@ export default async function StaffHome() {
           <p className="text-sm font-semibold text-muted-foreground">{formatCivilDate(today)}</p>
           <h1>Today</h1>
         </div>
-        <ParcelSearch userId={ctx.actor.userId} example={example} />
+        <HomeParcelSearch userId={ctx.actor.userId} example={example} />
       </header>
-      <div className="grid gap-5 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-start [&>section]:m-0">
-        <AttentionList counts={counts} />
-        <DueSoon rows={soon.rows.filter((row) => row.nextDue !== null)} />
+      <div className="grid gap-5 lg:grid-cols-2 lg:items-start [&>section]:m-0">
+        {sections.map((section) => (
+          <HomeSectionPanel key={section.role} section={section} />
+        ))}
       </div>
     </main>
   )

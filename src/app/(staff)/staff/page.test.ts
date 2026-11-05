@@ -20,9 +20,4 @@ describe('/staff', () => {
   it('redirects a signed-out visitor to sign in instead of returning 404', async () => {
     await expect(StaffHome()).rejects.toThrow('NEXT_REDIRECT:/staff/sign-in')
   })
-
-  it('lands an inspector on the day list', async () => {
-    state.actor = { userId: 'u', kind: 'staff', roles: ['inspector'] }
-    await expect(StaffHome()).rejects.toThrow('NEXT_REDIRECT:/staff/inspections/day')
-  })
 })

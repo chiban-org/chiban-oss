@@ -45,7 +45,7 @@ describe('/staff home', () => {
   it('shows a clerk what needs attention with links into the application list', async () => {
     state.actor = world.staff
     const html = renderToStaticMarkup(await StaffHome())
-    expect(html).toContain('Needs attention')
+    expect(html).toContain('>Applications</h2>')
     expect(html).toContain('Submitted and not yet started')
     expect(html).toContain('href="/staff/applications?state=submitted"')
     expect(html).toContain('href="/staff/applications"')
@@ -69,14 +69,14 @@ describe('/staff home', () => {
     expect(html).not.toMatch(/>0<\/span>/)
   })
 
-  it('says nothing needs attention when every count is zero', async () => {
+  it('says nothing is waiting when every count is zero', async () => {
     const empty = await makeTestDb()
     state.db = empty.db
     try {
       await seedParcelWorld(empty.db)
       state.actor = await staffActor(empty.db, 'staff')
       const html = renderToStaticMarkup(await StaffHome())
-      expect(html).toContain('Nothing needs attention')
+      expect(html).toContain('Nothing waiting.')
       expect(html).not.toContain('Submitted and not yet started')
     } finally {
       state.db = handle.db
@@ -96,15 +96,15 @@ describe('/staff home', () => {
     expect(html).toMatch(/Try<\/span><a href="\/staff\/parcels\?q=/)
   })
 
-  it('sends someone who may not open the application list to the parcel search', async () => {
+  it('sends a board member to the board page', async () => {
     state.actor = await staffActor(handle.db, 'board_member')
-    await expect(StaffHome()).rejects.toThrow('NEXT_REDIRECT:/staff/parcels')
+    await expect(StaffHome()).rejects.toThrow('NEXT_REDIRECT:/board')
   })
 
   it('keeps staff who are also inspectors on the home page', async () => {
     const actor = await staffActor(handle.db, 'staff')
     state.actor = { ...actor, roles: ['inspector', 'staff'] }
     const html = renderToStaticMarkup(await StaffHome())
-    expect(html).toContain('Needs attention')
+    expect(html).toContain('>Applications</h2>')
   })
 })
