@@ -107,7 +107,10 @@ describe('settings menu', () => {
   it('filters by item name and keeps a whole group when its name matches', () => {
     const sections = groupSettingsMenu(settingsMenuFor(viewerOf('admin')))
     const fee = filterSettingsSections(sections, ' FEE ')
-    expect(fee.map((s) => s.items.map((i) => i.label))).toEqual([['Fee schedules']])
+    expect(fee.flatMap((s) => s.items.map((i) => i.label))).toEqual([
+      'Fee schedules',
+      'Card payments',
+    ])
     const boards = filterSettingsSections(sections, 'boards')
     expect(boards[0]?.items.map((i) => i.label)).toEqual([
       'Board settings',
@@ -115,6 +118,11 @@ describe('settings menu', () => {
       'Review committee routes',
     ])
     expect(filterSettingsSections(sections, 'zzz')).toEqual([])
+    const found = (query: string) =>
+      filterSettingsSections(sections, query).flatMap((s) => s.items.map((i) => i.label))
+    expect(found('convenience fee')).toEqual(['Card payments'])
+    expect(found('alert')).toEqual(['Health'])
+    expect(found('invite')).toEqual(['Users'])
     expect(filterSettingsSections(sections, '')).toEqual(sections)
   })
 })

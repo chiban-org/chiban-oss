@@ -1,4 +1,5 @@
 import type { Capability } from '@/constants/capabilities'
+import { SETTINGS_KEYWORDS } from '@/features/settingsMenu/settingsKeywords'
 import { accessAllows } from '@/features/staffNav/access'
 import type { BaseNavAccess, NavViewer } from '@/features/staffNav/navTypes'
 
@@ -25,6 +26,7 @@ export interface SettingsMenuItem {
 export interface SettingsMenuLink {
   href: string
   label: string
+  keywords?: string
   match?: readonly string[]
 }
 
@@ -53,8 +55,18 @@ export const SETTINGS_MENU_ITEMS: readonly SettingsMenuItem[] = [
     access: config,
     match: [kind('town_profile')],
   },
-  { href: '/staff/settings/letterhead', label: 'Letterhead', group: 'town', access: config },
-  { href: '/staff/settings/signers', label: 'Signers', group: 'town', access: config },
+  {
+    href: '/staff/settings/letterhead',
+    label: 'Letterhead',
+    group: 'town',
+    access: config,
+  },
+  {
+    href: '/staff/settings/signers',
+    label: 'Signers',
+    group: 'town',
+    access: config,
+  },
   {
     href: kind('application_type'),
     label: 'Application types',
@@ -62,10 +74,30 @@ export const SETTINGS_MENU_ITEMS: readonly SettingsMenuItem[] = [
     access: config,
     match: ['/staff/settings/workflow'],
   },
-  { href: kind('form'), label: 'Forms', group: 'permits', access: config },
-  { href: kind('fee_schedule'), label: 'Fee schedules', group: 'permits', access: config },
-  { href: kind('template'), label: 'Templates', group: 'permits', access: config },
-  { href: kind('condition_library'), label: 'Conditions', group: 'permits', access: config },
+  {
+    href: kind('form'),
+    label: 'Forms',
+    group: 'permits',
+    access: config,
+  },
+  {
+    href: kind('fee_schedule'),
+    label: 'Fee schedules',
+    group: 'permits',
+    access: config,
+  },
+  {
+    href: kind('template'),
+    label: 'Templates',
+    group: 'permits',
+    access: config,
+  },
+  {
+    href: kind('condition_library'),
+    label: 'Conditions',
+    group: 'permits',
+    access: config,
+  },
   {
     href: kind('inspection_checklist'),
     label: 'Inspection checklists',
@@ -84,14 +116,24 @@ export const SETTINGS_MENU_ITEMS: readonly SettingsMenuItem[] = [
     group: 'townRules',
     access: config,
   },
-  { href: '/staff/settings/state-law', label: 'State law', group: 'townRules', access: config },
+  {
+    href: '/staff/settings/state-law',
+    label: 'State law',
+    group: 'townRules',
+    access: config,
+  },
   {
     href: '/staff/settings/code-editions',
     label: 'Building code editions',
     group: 'townRules',
     access: config,
   },
-  { href: kind('board_settings'), label: 'Board settings', group: 'boards', access: config },
+  {
+    href: kind('board_settings'),
+    label: 'Board settings',
+    group: 'boards',
+    access: config,
+  },
   {
     href: kind('regional_contacts'),
     label: 'Regional notice contacts',
@@ -148,7 +190,12 @@ export const SETTINGS_MENU_ITEMS: readonly SettingsMenuItem[] = [
     group: 'admin',
     access: all('config.edit', 'export.download'),
   },
-  { href: '/staff/admin/health', label: 'Health', group: 'admin', access: config },
+  {
+    href: '/staff/admin/health',
+    label: 'Health',
+    group: 'admin',
+    access: config,
+  },
   {
     href: '/staff/admin/cutover',
     label: 'Move open applications over',
@@ -173,9 +220,12 @@ export function groupSettingsMenu(items: readonly SettingsMenuItem[]): SettingsM
     label: group.label,
     items: items
       .filter((item) => item.group === group.key)
-      .map(({ href, label, match }) =>
-        match === undefined ? { href, label } : { href, label, match },
-      ),
+      .map(({ href, label, match }) => ({
+        href,
+        label,
+        keywords: SETTINGS_KEYWORDS.get(href) ?? '',
+        ...(match === undefined ? {} : { match }),
+      })),
   })).filter((section) => section.items.length > 0)
 }
 
@@ -191,7 +241,9 @@ export function filterSettingsSections(
         ? section
         : {
             ...section,
-            items: section.items.filter((i) => i.label.toLowerCase().includes(needle)),
+            items: section.items.filter((i) =>
+              `${i.label} ${i.keywords ?? ''}`.toLowerCase().includes(needle),
+            ),
           },
     )
     .filter((section) => section.items.length > 0)
