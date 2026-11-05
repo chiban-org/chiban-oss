@@ -1,7 +1,7 @@
 'use client'
 
 import { Area, Input } from '@/components/config/primitives'
-import { AmendmentText } from '@/components/config/TextDiff'
+import { WordDiffPreview } from '@/components/config/TextDiff'
 import type { LocalCodeAmendmentBody } from '@/features/config/kinds'
 
 export function LocalAmendmentEditor({
@@ -68,7 +68,7 @@ export function LocalAmendmentEditor({
       </div>
       {(body.stateText ?? '').trim() === '' || (body.townText ?? '').trim() === '' ? null : (
         <div className="sm:col-span-2">
-          <AmendmentText stateText={body.stateText} townText={body.townText} />
+          <WordDiffPreview before={body.stateText ?? ''} after={body.townText ?? ''} />
         </div>
       )}
     </div>

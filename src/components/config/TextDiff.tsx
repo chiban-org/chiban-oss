@@ -30,6 +30,15 @@ export function InlineDiff({ before, after }: { before: string; after: string })
   )
 }
 
+export function WordDiffPreview({ before, after }: { before: string; after: string }) {
+  return (
+    <section aria-label="What changed" className="space-y-1.5 rounded-md border bg-surface p-3">
+      <h3 className="m-0 text-sm font-medium">What changed, word by word</h3>
+      <InlineDiff before={before} after={after} />
+    </section>
+  )
+}
+
 function TextBlock({ label, text }: { label: string; text: string }) {
   return (
     <div role="group" aria-label={label} className="min-w-0 rounded-md border p-3">

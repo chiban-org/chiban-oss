@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
-import { AmendmentText, InlineDiff } from '@/components/config/TextDiff'
+import { AmendmentText, InlineDiff, WordDiffPreview } from '@/components/config/TextDiff'
 
 afterEach(cleanup)
 
@@ -11,6 +11,16 @@ describe('InlineDiff', () => {
     expect(container.querySelector('del')?.textContent).toBe('30')
     expect(container.querySelector('ins')?.textContent).toBe('60')
     expect(container.textContent).toBe('carry 3060 psf')
+  })
+})
+
+describe('WordDiffPreview', () => {
+  it('shows only the word-level diff, not the two texts again', () => {
+    render(<WordDiffPreview before="Roofs carry 30 psf." after="Roofs carry 60 psf." />)
+    const preview = screen.getByRole('region', { name: 'What changed' })
+    expect(preview.querySelector('del')?.textContent).toBe('30')
+    expect(preview.querySelector('ins')?.textContent).toBe('60')
+    expect(within(preview).queryByText('Roofs carry 30 psf.')).toBeNull()
   })
 })
 
