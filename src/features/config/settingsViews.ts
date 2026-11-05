@@ -6,12 +6,15 @@ import type { ConfigKind } from '@/features/config/kinds'
 import { skeletonBody } from '@/features/config/skeletons'
 import { type FieldChange, versionChanges } from '@/features/config/versionChanges'
 import { loadPack } from '@/features/packs/loadPack'
+import { DOCUMENT_KINDS } from '@/features/templates/kinds/documentKinds'
+import { TEMPLATE_KINDS, type TemplateKind } from '@/features/templates/templateSchema'
 
 export interface KeyRow {
   key: string
   label: string | null
   publishedVersion: number | null
   hasDraft: boolean
+  documentKind?: string
 }
 
 function stringField(body: unknown, field: string): string | null {
@@ -24,6 +27,16 @@ export function labelOfBody(kind: ConfigKind, body: unknown): string | null {
   if (kind !== 'town_rule_setting') return stringField(body, 'label')
   const ruleKey = stringField(body, 'ruleKey')
   return loadPack().rules.find((r) => r.key === ruleKey)?.label ?? null
+}
+
+function isTemplateKind(value: string | null): value is TemplateKind {
+  return TEMPLATE_KINDS.some((k) => k === value)
+}
+
+export function documentKindLabel(kind: ConfigKind, body: unknown): string | null {
+  if (kind !== 'template') return null
+  const value = stringField(body, 'kind')
+  return isTemplateKind(value) ? DOCUMENT_KINDS[value].label : null
 }
 
 export async function listKeysOfKind(
@@ -47,7 +60,11 @@ export async function listKeysOfKind(
     }
     if (row.status === 'published') held.publishedVersion = row.version
     if (row.status === 'draft') held.hasDraft = true
-    if (row.status !== 'superseded') held.label ??= labelOfBody(kind, row.body)
+    if (row.status !== 'superseded') {
+      held.label ??= labelOfBody(kind, row.body)
+      const documentKind = documentKindLabel(kind, row.body)
+      if (documentKind !== null) held.documentKind ??= documentKind
+    }
     byKey.set(row.key, held)
   }
   return [...byKey.values()]

@@ -1,8 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { adoptStarter } from '@/features/config/adoptStarter'
-import { getEditorState, labelOfBody, listKeysOfKind } from '@/features/config/settingsViews'
+import {
+  documentKindLabel,
+  getEditorState,
+  labelOfBody,
+  listKeysOfKind,
+} from '@/features/config/settingsViews'
 import { saveDraft } from '@/features/config/store'
-import { FORM_BODY, saveAndPublish } from '@/test/configFixtures'
+import { FORM_BODY, saveAndPublish, TEMPLATE_BODY } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 
@@ -33,6 +38,24 @@ describe('settings views', () => {
       { key: 'a-form', label: 'Building permit form', publishedVersion: 1, hasDraft: true },
       { key: 'b-form', label: 'Building permit form', publishedVersion: null, hasDraft: true },
     ])
+  })
+
+  it('tells a template list row which kind of document it is', async () => {
+    const admin = await staffActor(handle.db, 'admin')
+    await saveAndPublish(handle.db, admin, 'template', 'bp-permit', TEMPLATE_BODY)
+    await saveAndPublish(handle.db, admin, 'template', 'bp-letter', {
+      ...TEMPLATE_BODY,
+      key: 'bp-letter',
+      kind: 'letter',
+    })
+    const keys = await listKeysOfKind(handle.db, 'template', signal)
+    expect(keys.map((k) => [k.key, k.documentKind])).toEqual([
+      ['bp-letter', 'Letter'],
+      ['bp-permit', 'Permit'],
+    ])
+    expect(documentKindLabel('template', { kind: 'notice_of_decision' })).toBe('Notice of decision')
+    expect(documentKindLabel('template', { kind: 'nonsense' })).toBeNull()
+    expect(documentKindLabel('form', { kind: 'letter' })).toBeNull()
   })
 
   it('names a town rule setting by the pack rule it sets and leaves an unnamed key blank', async () => {
