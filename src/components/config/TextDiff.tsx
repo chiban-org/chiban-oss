@@ -32,8 +32,8 @@ export function InlineDiff({ before, after }: { before: string; after: string })
 
 export function WordDiffPreview({ before, after }: { before: string; after: string }) {
   return (
-    <section aria-label="What changed" className="space-y-1.5 rounded-md border bg-surface p-3">
-      <h3 className="m-0 text-sm font-medium">What changed, word by word</h3>
+    <section aria-label="What changed" className="rounded-md border bg-surface p-3">
+      <h3 className="text-sm font-medium">What changed, word by word</h3>
       <InlineDiff before={before} after={after} />
     </section>
   )
@@ -61,8 +61,8 @@ export function AmendmentText({
   if (state === '') return <TextBlock label="Town's amended text" text={town} />
   if (town === '') return <TextBlock label="State code text" text={state} />
   return (
-    <section aria-label="What changed" className="space-y-3">
-      <h3 className="m-0 text-sm font-medium">What changed</h3>
+    <section aria-label="What changed">
+      <h3 className="text-sm font-medium">What changed</h3>
       <div data-columns className="grid grid-cols-1 gap-3 md:grid-cols-2">
         <TextBlock label="State code text" text={state} />
         <TextBlock label="Town's amended text" text={town} />
