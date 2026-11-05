@@ -1,5 +1,6 @@
 import { type ComponentProps, type ReactNode, useId } from 'react'
 import { Checkbox, CheckLine } from '@/components/ui/checkbox'
+import { FilePicker } from '@/components/ui/file-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
@@ -76,6 +77,10 @@ interface ActionProps {
   action?: ReactNode
 }
 
+function omitType({ type: _type, ...rest }: ComponentProps<'input'>) {
+  return rest
+}
+
 export function TextField({
   label,
   hint,
@@ -93,7 +98,11 @@ export function TextField({
       action={action}
       required={props.required}
     >
-      <Input id={controlId} aria-describedby={hintId} {...props} />
+      {props.type === 'file' ? (
+        <FilePicker id={controlId} aria-describedby={hintId} {...omitType(props)} />
+      ) : (
+        <Input id={controlId} aria-describedby={hintId} {...props} />
+      )}
     </Field>
   )
 }

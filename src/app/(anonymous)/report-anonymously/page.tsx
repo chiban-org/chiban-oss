@@ -1,4 +1,5 @@
 import { Button } from '@/components/ui/button'
+import { FilePicker } from '@/components/ui/file-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RequiredMark, RequiredNote } from '@/components/ui/required-mark'
@@ -75,7 +76,7 @@ export default async function ReportAnonymouslyPage() {
         </div>
         <div className="flex flex-col gap-2">
           <Label htmlFor="photos">Photos (up to 5, JPEG or PNG)</Label>
-          <Input id="photos" name="photos" type="file" accept="image/jpeg,image/png" multiple />
+          <FilePicker id="photos" name="photos" accept="image/jpeg,image/png" multiple />
         </div>
         <Button type="submit" size="lg" className="min-h-11 self-start text-base">
           Send report

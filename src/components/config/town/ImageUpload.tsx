@@ -1,9 +1,10 @@
 'use client'
 
-import { type ChangeEvent, useId, useState } from 'react'
+import { useId, useState } from 'react'
 import { uploadTownImageAction } from '@/app/(staff)/staff/settings/town-profile/actions'
 import { useCsrfToken } from '@/components/CsrfProvider'
 import { Button } from '@/components/ui/button'
+import { FilePicker } from '@/components/ui/file-picker'
 import { ensureCsrfAction } from '@/features/auth/csrfRefresh'
 import type { TownImage } from '@/features/town/profileSchema'
 import { attempt } from '@/lib/attempt'
@@ -26,15 +27,16 @@ export function ImageUpload({ label, hint, image, onChange, previewClassName }: 
   const [pending, setPending] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  const upload = async (event: ChangeEvent<HTMLInputElement>) => {
-    const input = event.currentTarget
-    const file = input.files?.[0]
+  const [pickerKey, setPickerKey] = useState(0)
+
+  const upload = async (files: File[]) => {
+    const file = files[0]
     if (file === undefined) return
     const data = new FormData()
     data.set('csrf_token', csrf === '' ? await ensureCsrfAction() : csrf)
     data.set('file', file)
     const outcome = await attempt(() => uploadTownImageAction(data), setPending)
-    input.value = ''
+    setPickerKey((key) => key + 1)
     if (!outcome.ok) return setError(outcome.error)
     if (!outcome.value.ok) return setError(outcome.value.error)
     setError(null)
@@ -62,14 +64,13 @@ export function ImageUpload({ label, hint, image, onChange, previewClassName }: 
           </Button>
         </div>
       )}
-      <input
+      <FilePicker
+        key={pickerKey}
         id={inputId}
-        type="file"
         accept="image/png,image/jpeg"
         aria-describedby={`${inputId}-hint`}
         disabled={pending}
-        onChange={(e) => void upload(e)}
-        className="text-sm file:mr-3 file:rounded-md file:border file:border-control-border file:bg-surface file:px-3 file:py-1.5 file:text-sm"
+        onFilesChange={(files) => void upload(files)}
       />
       <p id={`${inputId}-hint`} className="m-0 text-sm text-muted-foreground">
         {pending ? 'Uploading' : hint}

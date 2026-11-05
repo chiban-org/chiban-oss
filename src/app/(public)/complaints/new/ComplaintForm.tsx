@@ -1,6 +1,7 @@
 'use client'
 
 import { ActionForm } from '@/components/ActionForm'
+import { FilePicker } from '@/components/ui/file-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RequiredMark } from '@/components/ui/required-mark'
@@ -43,7 +44,7 @@ export function ComplaintForm() {
       </div>
       <div className="flex flex-col gap-2">
         <Label htmlFor="photos">{`Photos (up to 5, JPEG or PNG, ${ACTION_FILES_LIMIT_MB} MB in all)`}</Label>
-        <Input id="photos" name="photos" type="file" accept="image/jpeg,image/png" multiple />
+        <FilePicker id="photos" name="photos" accept="image/jpeg,image/png" multiple />
       </div>
       <p className="m-0 text-base">Your name and contact details are seen only by town staff.</p>
       <div className="flex flex-col gap-2">

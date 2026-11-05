@@ -3,6 +3,7 @@
 import { useId, useState } from 'react'
 import { useCsrfToken } from '@/components/CsrfProvider'
 import { Button } from '@/components/ui/button'
+import { FilePicker } from '@/components/ui/file-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { RecordRef } from '@/features/documents/types'
@@ -128,14 +129,12 @@ export function Uploader({
         <Label htmlFor={fileId} className="text-base font-medium">
           {fileLabel}
         </Label>
-        <Input
+        <FilePicker
           key={pickerKey}
           id={fileId}
-          type="file"
           accept={accept}
           {...(capture === undefined ? {} : { capture })}
-          className="min-h-11 text-base"
-          onChange={(event) => setFile(event.target.files?.[0] ?? null)}
+          onFilesChange={(files) => setFile(files[0] ?? null)}
         />
       </div>
       <div className="space-y-1.5">
