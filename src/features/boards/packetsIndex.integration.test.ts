@@ -51,7 +51,9 @@ describe('board packets index', () => {
       signal,
     )
     const after = await loadPacketsIndex(handle.db, flow.world.staff, signal, NOW)
-    const sent = after.ok ? after.value.meetings.find((r) => r.meetingId === flow.meetingId) : undefined
+    const sent = after.ok
+      ? after.value.meetings.find((r) => r.meetingId === flow.meetingId)
+      : undefined
     expect(sent?.state).toMatch(/^Sent to 6 members on /)
   })
 
