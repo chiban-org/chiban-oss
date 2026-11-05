@@ -2,6 +2,7 @@ import { KeyFacts } from '@/components/layout/KeyFacts'
 import { ListHeader } from '@/components/layout/ListHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { pickedParcelFor } from '@/features/parcels/parcelPick'
+import { RECHECK_NOTE } from '@/features/rosters/recheck'
 import { loadRostersView, type RostersView } from '@/features/rosters/rosterView'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
@@ -20,7 +21,7 @@ export const dynamic = 'force-dynamic'
 function DueLine({ view }: { view: RostersView }) {
   const due = view.dueCount
   return (
-    <KeyFacts note="Lists still issue and print an entry past the interval as out of date.">
+    <KeyFacts note={RECHECK_NOTE}>
       {due === 0 ? null : (
         <p className="m-0">
           <span className="attention font-semibold">{`${due} due for a check.`}</span>

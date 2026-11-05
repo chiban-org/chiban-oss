@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import type { AssociationRow, HoldingRow, ParkRow } from '@/features/rosters/contactRows'
 import { entryAnchor } from '@/features/rosters/links'
-import { formatCivilDate } from '@/lib/formatDate'
+import { listDatedText } from '@/features/rosters/recheck'
 import { EditAssociation } from './AssociationForms'
 import { EditHolder, EndHolder, UndoEnd } from './HolderForms'
 import { EditPark } from './ParkForms'
@@ -27,7 +27,7 @@ export function AssociationTable({ rows, today }: { rows: AssociationRow[]; toda
             <tr key={a.entryId} id={entryAnchor(a.entryId)} className="align-top">
               <td className="min-w-48">
                 <p className="m-0 font-semibold">{a.name}</p>
-                <p className="m-0 text-muted-foreground">{`Current as of ${formatCivilDate(a.asOf)}`}</p>
+                <p className="m-0 text-muted-foreground">{listDatedText(a.asOf)}</p>
               </td>
               <td>
                 <ParcelLink parcelId={a.parcelId} label={a.parcel} />
@@ -80,7 +80,7 @@ export function ParkTable({ rows, today }: { rows: ParkRow[]; today: string }) {
             <tr key={p.entryId} id={entryAnchor(p.entryId)} className="align-top">
               <td className="min-w-40">
                 <p className="m-0 font-semibold">{p.name}</p>
-                <p className="m-0 text-muted-foreground">{`Current as of ${formatCivilDate(p.asOf)}`}</p>
+                <p className="m-0 text-muted-foreground">{listDatedText(p.asOf)}</p>
               </td>
               <td>
                 <ParcelLink parcelId={p.parcelId} label={p.parcel} />

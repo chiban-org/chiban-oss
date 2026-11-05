@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { isDue, lastChecked } from '@/features/rosters/recheck'
+import { isDue, lastChecked, listDatedText, RECHECK_NOTE } from '@/features/rosters/recheck'
 import type { CivilDate } from '@/types/civilDate'
 
 const d = (s: string) => s as CivilDate
@@ -21,5 +21,17 @@ describe('isDue', () => {
 
   it('treats an entry never checked as due', () => {
     expect(isDue(null, d('2026-11-04'), 365)).toBe(true)
+  })
+})
+
+describe('roster date wording', () => {
+  it('calls the roster date the date of the list, apart from the last check', () => {
+    expect(listDatedText('2025-10-01')).toBe('List dated October 1, 2025')
+  })
+
+  it('says plainly that an out-of-date contact never stops a list from issuing', () => {
+    expect(RECHECK_NOTE).toBe(
+      'A contact past this interval does not stop a list from issuing. The list prints that contact marked out of date.',
+    )
   })
 })

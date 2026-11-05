@@ -1,7 +1,15 @@
 import type { DbOrTx } from '@/db/client'
 import { getBoardSettings } from '@/features/boards/boardSettings'
 import { RECHECK_CONTACTS_DEFAULT_DAYS } from '@/features/boards/boardSettingsSchema'
+import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, daysBetween } from '@/types/civilDate'
+
+export const RECHECK_NOTE =
+  'A contact past this interval does not stop a list from issuing. The list prints that contact marked out of date.'
+
+export function listDatedText(date: string): string {
+  return `List dated ${formatCivilDate(date)}`
+}
 
 export async function recheckDays(db: DbOrTx, signal: AbortSignal): Promise<number> {
   const settings = await getBoardSettings(db, signal)

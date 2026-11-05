@@ -107,7 +107,7 @@ describe('earlier versions', () => {
     expect(kept[0]?.lines).toEqual([
       'Pond View Condominium',
       'Dana Whitcomb, President, PO Box 105, Alder Pond NH',
-      'Current as of January 10, 2026',
+      'List dated January 10, 2026',
     ])
     expect(kept[0]?.changedText).toMatch(/^Replaced .+ by /)
   })
@@ -139,7 +139,7 @@ describe('earlier versions', () => {
       'Heron Park',
       'Owner: Heron Park LLC, 1 Heron Road, Alder Pond NH',
       'Cass Pryor, Site 4, 4 Heron Road',
-      'Current as of January 10, 2026',
+      'List dated January 10, 2026',
     ])
   })
 })

@@ -18,14 +18,14 @@ describe('versionLines', () => {
     ).toEqual([
       'Heron Landing Condominium',
       'Dana Whitcomb, President, PO Box 105, Alder Pond NH',
-      'Current as of October 1, 2026',
+      'List dated October 1, 2026',
     ])
   })
 
   it('still reads entries written before full versions were kept', () => {
     expect(
       versionLines('park', { parkName: 'Heron Park', tenants: 2, asOf: '2026-10-01' }),
-    ).toEqual(['Heron Park', '2 on the roster', 'Current as of October 1, 2026'])
+    ).toEqual(['Heron Park', '2 on the roster', 'List dated October 1, 2026'])
   })
 
   it('shows a holder with its address, reference and ending', () => {

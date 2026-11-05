@@ -2,6 +2,7 @@ import { and, desc, eq, inArray, isNotNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { auditLog, users } from '@/db/schema'
 import type { EntryKind } from '@/features/rosters/confirm'
+import { listDatedText } from '@/features/rosters/recheck'
 import { formatCivilDate } from '@/lib/formatDate'
 import { todayInTimeZone } from '@/types/civilDate'
 
@@ -25,7 +26,7 @@ function people(value: unknown, middle: 'title' | 'siteLabel'): string[] {
 }
 
 function asOfLine(before: Before): string[] {
-  return typeof before.asOf === 'string' ? [`Current as of ${formatCivilDate(before.asOf)}`] : []
+  return typeof before.asOf === 'string' ? [listDatedText(before.asOf)] : []
 }
 
 export function versionLines(kind: EntryKind, before: Before): string[] {
