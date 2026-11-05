@@ -47,7 +47,7 @@ export function DesignateOfficer({
 }) {
   return (
     <FormDialog label="Designate an officer" title="Designate an officer" variant="default">
-      <ActionForm action={designateOfficerAction} submitLabel="Designate officer">
+      <ActionForm action={designateOfficerAction} submitLabel="Designate officer" closeOnSuccess>
         <SelectField
           label="Officer"
           name="userId"

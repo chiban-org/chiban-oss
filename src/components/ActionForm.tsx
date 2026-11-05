@@ -3,6 +3,7 @@
 import { type FormEvent, type ReactNode, useEffect, useId, useState } from 'react'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { CsrfField } from '@/components/CsrfField'
+import { useCloseEnclosingDialog } from '@/components/dialogCloseContext'
 import { SubmitButton } from '@/components/SubmitButton'
 import { Button } from '@/components/ui/button'
 import { RequiredNote } from '@/components/ui/required-mark'
@@ -28,6 +29,7 @@ interface ActionFormProps {
   compact?: boolean
   checkBeforeSubmit?: (form: HTMLFormElement) => string | null
   confirm?: ConfirmStep
+  closeOnSuccess?: boolean
   children: ReactNode
 }
 
@@ -148,6 +150,7 @@ export function ActionForm({
   compact = false,
   checkBeforeSubmit,
   confirm,
+  closeOnSuccess = false,
   children,
 }: ActionFormProps) {
   const {
@@ -160,6 +163,7 @@ export function ActionForm({
     isFailure,
   )
   const hydrated = useHydrated()
+  const closeDialog = useCloseEnclosingDialog()
   const step = useConfirmStep(confirm)
   const messageId = useId()
   const [problem, setProblem] = useState<string | null>(null)
@@ -180,6 +184,9 @@ export function ActionForm({
     document.addEventListener('submit', onOtherSubmit, true)
     return () => document.removeEventListener('submit', onOtherSubmit, true)
   }, [form])
+  useEffect(() => {
+    if (closeOnSuccess && result?.ok === true) closeDialog?.()
+  }, [closeOnSuccess, result, closeDialog])
   const onSubmit = (event: FormEvent<HTMLFormElement>) => {
     const invalid = invalidFields(event.currentTarget)
     markInvalid(event.currentTarget, invalid, messageId)

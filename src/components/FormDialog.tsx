@@ -1,6 +1,7 @@
 'use client'
 
-import type { ReactNode } from 'react'
+import { type ReactNode, useState } from 'react'
+import { DialogCloseProvider } from '@/components/dialogCloseContext'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -32,8 +33,9 @@ export function FormDialog({
   defaultOpen = false,
   children,
 }: FormDialogProps) {
+  const [open, setOpen] = useState(defaultOpen)
   return (
-    <Dialog defaultOpen={defaultOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button type="button" variant={variant} size={size} aria-label={accessibleLabel}>
           {label}
@@ -44,7 +46,7 @@ export function FormDialog({
           <DialogTitle>{title}</DialogTitle>
           {description === undefined ? null : <DialogDescription>{description}</DialogDescription>}
         </DialogHeader>
-        {children}
+        <DialogCloseProvider value={() => setOpen(false)}>{children}</DialogCloseProvider>
       </DialogContent>
     </Dialog>
   )
