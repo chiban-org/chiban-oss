@@ -20,6 +20,7 @@ import type { Status } from '@/features/design/tokens'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import { returnedCheckNotices } from '@/features/ledger/balanceNotice'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
+import { loadCorrectionForm } from '@/features/permits/correction/correctionForm'
 import { requireStaffContext, type StaffContext } from '@/server/requireStaff'
 import { ApplicationFacts, ApplicationRail, StatusStrip } from './applicationRail'
 import { loadInspectionsPanelData } from './inspectionsPanel'
@@ -47,20 +48,30 @@ async function limitedPage(ctx: StaffContext, applicationId: string) {
 
 async function loadAll(ctx: StaffContext, applicationId: string) {
   const loading = getStaffApplicationView(ctx.db, ctx.actor, applicationId, new Date(), ctx.signal)
-  const [view, records, balanceNotices, payments, inspections, board, hearings, imported] =
-    await Promise.all([
-      loading,
-      loading.then((v) => (v === null ? null : loadRecordsData(ctx, applicationId, v.projectId))),
-      returnedCheckNotices(ctx.db, [applicationId], ctx.signal),
-      loadApplicationPayments(ctx.db, ctx.actor, applicationId, ctx.signal),
-      loadInspectionsPanelData(ctx, applicationId),
-      loadBoardPanel(ctx.db, ctx.actor, applicationId, ctx.signal),
-      loadApplicationHearingsPanel(ctx.db, ctx.actor, applicationId, ctx.signal),
-      ctx.db
-        .select({ legacyNumber: cutoverRows.legacyNumber })
-        .from(cutoverRows)
-        .where(eq(cutoverRows.applicationId, applicationId)),
-    ])
+  const [
+    view,
+    records,
+    balanceNotices,
+    payments,
+    inspections,
+    board,
+    hearings,
+    imported,
+    correction,
+  ] = await Promise.all([
+    loading,
+    loading.then((v) => (v === null ? null : loadRecordsData(ctx, applicationId, v.projectId))),
+    returnedCheckNotices(ctx.db, [applicationId], ctx.signal),
+    loadApplicationPayments(ctx.db, ctx.actor, applicationId, ctx.signal),
+    loadInspectionsPanelData(ctx, applicationId),
+    loadBoardPanel(ctx.db, ctx.actor, applicationId, ctx.signal),
+    loadApplicationHearingsPanel(ctx.db, ctx.actor, applicationId, ctx.signal),
+    ctx.db
+      .select({ legacyNumber: cutoverRows.legacyNumber })
+      .from(cutoverRows)
+      .where(eq(cutoverRows.applicationId, applicationId)),
+    loadCorrectionForm(ctx.db, ctx.actor, applicationId, ctx.signal),
+  ])
   if (view === null || records === null) return null
   return {
     view,
@@ -71,6 +82,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     board,
     hearings,
     legacyNumber: imported[0]?.legacyNumber ?? null,
+    correction,
   }
 }
 
@@ -81,7 +93,7 @@ export default async function StaffApplicationPage({ params }: Props) {
   if (!hasFullRecordAccess(ctx.actor)) return await limitedPage(ctx, applicationId)
   const loaded = await loadAll(ctx, applicationId)
   if (loaded === null) notFound()
-  const { view, balanceNotices, legacyNumber } = loaded
+  const { view, balanceNotices, legacyNumber, correction } = loaded
   const parts = applicationPanels(loaded)
   const plan = nextStepPlan(view, loaded.board)
   const status = (
@@ -100,7 +112,7 @@ export default async function StaffApplicationPage({ params }: Props) {
         lead={view.projectTitle}
       />
       <RecordLayout
-        rail={<ApplicationRail view={view} plan={plan} notice={notice} />}
+        rail={<ApplicationRail view={view} plan={plan} notice={notice} correction={correction} />}
         railFooter={<ApplicationFacts view={view} legacyNumber={legacyNumber} />}
         strip={
           <StatusStrip
@@ -109,6 +121,7 @@ export default async function StaffApplicationPage({ params }: Props) {
             status={status}
             notice={notice}
             legacyNumber={legacyNumber}
+            correction={correction}
           />
         }
         empty={parts.empty}

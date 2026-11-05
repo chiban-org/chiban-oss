@@ -2,9 +2,12 @@ import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { type Fact, FactList } from '@/components/layout/PageHeader'
 import { NEW_TAB } from '@/components/newTab'
+import { CorrectPermitDialog } from '@/components/permits/CorrectPermitDialog'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { dueNext, otherOverdue } from '@/features/clocks/clockSummary'
+import type { CorrectionFormData } from '@/features/permits/correction/correctionForm'
 import { formatCivilDate } from '@/lib/formatDate'
+import { checkCorrectionAction, correctPermitAction } from './correctionActions'
 import { LeadStatus, MoreActions, NextStepCard, PrimaryMove, type RailPlan } from './nextStepCard'
 
 function PrintLinks({ applicationId }: { applicationId: string }) {
@@ -17,6 +20,16 @@ function PrintLinks({ applicationId }: { applicationId: string }) {
         Print placard
       </Link>
     </p>
+  )
+}
+
+function CorrectPermit({ data }: { data: CorrectionFormData | null }) {
+  if (data === null) return null
+  return (
+    <CorrectPermitDialog
+      data={data}
+      actions={{ check: checkCorrectionAction, save: correctPermitAction }}
+    />
   )
 }
 
@@ -89,10 +102,12 @@ export function ApplicationRail({
   view,
   plan,
   notice,
+  correction,
 }: {
   view: StaffApplicationView
   plan: RailPlan
   notice: ReactNode
+  correction: CorrectionFormData | null
 }) {
   return (
     <div className="rail-card empty:hidden">
@@ -100,6 +115,7 @@ export function ApplicationRail({
       <Deadlines view={view} />
       <NextStepCard view={view} plan={plan} />
       {view.state === 'issued' ? <PrintLinks applicationId={view.id} /> : null}
+      <CorrectPermit data={correction} />
     </div>
   )
 }
@@ -124,12 +140,14 @@ export function StatusStrip({
   status,
   notice,
   legacyNumber,
+  correction,
 }: {
   view: StaffApplicationView
   plan: RailPlan
   status: ReactNode
   notice: ReactNode
   legacyNumber: string | null
+  correction: CorrectionFormData | null
 }) {
   return (
     <section aria-label="Status" data-plain className="rail-card flex flex-col gap-3 [&>*]:m-0">
@@ -145,6 +163,7 @@ export function StatusStrip({
         <div className="flex flex-col gap-4">
           <FactList facts={applicationFacts(view, legacyNumber)} stacked />
           <MoreActions view={view} moves={plan.terminal} />
+          <CorrectPermit data={correction} />
         </div>
       </details>
     </section>
