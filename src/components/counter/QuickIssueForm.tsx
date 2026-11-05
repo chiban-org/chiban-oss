@@ -35,6 +35,7 @@ interface Props {
   convenienceFee: PaymentSettingsBody['convenienceFee']
   cardAvailable: boolean
   readerSimulated: boolean
+  licenseRequired: boolean
   licenseGroups: readonly LicenseGroup[]
   defaultLicenseType: string | null
   lookup: { label: string; url: string }
@@ -65,6 +66,7 @@ function receiptFor(
     typeLabel: props.typeLabel,
     parcelLabel: props.parcelLabel,
     contractorName: typeof contractorName === 'string' ? contractorName.trim() : '',
+    contractorLabel: props.licenseRequired ? 'Contractor' : 'Applicant',
     paidCents,
     method,
   }
@@ -112,6 +114,7 @@ export function QuickIssueForm(props: Props) {
       <input type="hidden" name="parcelId" value={props.parcelId} />
       <input type="hidden" name="typeKey" value={props.typeKey} />
       <ContractorSection
+        licenseRequired={props.licenseRequired}
         licenseGroups={props.licenseGroups}
         defaultLicenseType={props.defaultLicenseType ?? ''}
         lookup={props.lookup}

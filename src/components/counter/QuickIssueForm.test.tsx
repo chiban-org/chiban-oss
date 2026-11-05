@@ -24,7 +24,7 @@ const idle: CounterActions = {
   complete: () => Promise.resolve({ ok: false, error: 'not used' }),
 }
 
-function form(actions: CounterActions = idle) {
+function form(actions: CounterActions = idle, licenseRequired = true) {
   return render(
     <CsrfProvider token="t1">
       <QuickIssueForm
@@ -44,6 +44,7 @@ function form(actions: CounterActions = idle) {
         }}
         cardAvailable={true}
         readerSimulated={true}
+        licenseRequired={licenseRequired}
         licenseGroups={[{ label: 'Electrical', licenses: ['Master electrician'] }]}
         defaultLicenseType="Master electrician"
         lookup={LOOKUP}
@@ -90,6 +91,14 @@ describe('QuickIssueForm', () => {
     const select = screen.getByLabelText(/^Result of the state lookup( \*)?$/) as HTMLSelectElement
     expect(select.value).toBe('')
     expect(select.required).toBe(true)
+  })
+
+  it('a permit type that needs no trade license asks for the applicant only', () => {
+    form(idle, false)
+    expect(screen.getByLabelText(/^Applicant name( \*)?$/)).toBeTruthy()
+    expect(screen.queryByLabelText(/^License number( \*)?$/)).toBeNull()
+    expect(screen.queryByLabelText(/^Result of the state lookup( \*)?$/)).toBeNull()
+    expect(screen.queryByRole('link', { name: LOOKUP.label })).toBeNull()
   })
 
   it('has one primary action named Issue and print', () => {

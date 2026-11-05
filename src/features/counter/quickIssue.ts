@@ -21,6 +21,7 @@ import {
   retryableApplication,
 } from '@/features/counter/counterApplication'
 import { recordCounterPayment } from '@/features/counter/counterPayment'
+import { requiresTradeLicense } from '@/features/counter/directIssueTypes'
 import { assessFees } from '@/features/fees/assess'
 import type { FieldError } from '@/features/forms/validateSubmission'
 import type { GateResult } from '@/features/gates/evaluateGates'
@@ -42,8 +43,8 @@ export interface QuickIssueInput {
   parcelId: string
   applicationTypeKey: string
   values: Record<string, unknown>
-  contractor: { name: string; email?: string; licenseNumber: string; licenseType: string }
-  licenseCheck: { result: LicenseResult; note?: string }
+  contractor: { name: string; email?: string }
+  license?: { number: string; type: string; result: LicenseResult; note?: string }
   payerName: string
   applicationId?: string
   payment:
@@ -64,6 +65,7 @@ export type QuickIssueError =
   | 'forbidden'
   | 'not_direct_issue_type'
   | 'license_not_active'
+  | 'license_required'
   | 'tendered_short'
   | 'check_number_required'
   | 'unknown_parcel'
@@ -169,10 +171,13 @@ export async function quickIssue(
   signal.throwIfAborted()
   const now = deps.now ?? new Date()
   if (!(await mayQuickIssue(db, actor, signal))) return err('forbidden')
-  if (input.licenseCheck.result !== 'active') return err('license_not_active')
   const type = await getPublished(db, 'application_type', input.applicationTypeKey, signal)
   if (type === null) return err('not_published')
   const typeBody = type.body as ApplicationTypeBody
+  if (input.license === undefined && requiresTradeLicense(typeBody)) return err('license_required')
+  if (input.license !== undefined && input.license.result !== 'active') {
+    return err('license_not_active')
+  }
   if (!typeBody.workflow.allowsDirectIssue) return err('not_direct_issue_type')
   if (input.payment.method === 'card' && (await getActiveProcessor(db, signal)).state !== 'known') {
     return err('not_configured')

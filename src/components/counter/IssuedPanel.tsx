@@ -13,6 +13,7 @@ export interface IssuedReceipt {
   typeLabel: string
   parcelLabel: string
   contractorName: string
+  contractorLabel: string
   paidCents: number
   method: Method
 }
@@ -57,7 +58,7 @@ export function IssuedPanel({
         facts={[
           { label: 'Permit type', value: receipt.typeLabel },
           { label: 'Parcel', value: receipt.parcelLabel },
-          { label: 'Contractor', value: receipt.contractorName },
+          { label: receipt.contractorLabel, value: receipt.contractorName },
           { label: 'Paid', value: `${formatCents(receipt.paidCents)} by ${receipt.method}` },
         ]}
       />

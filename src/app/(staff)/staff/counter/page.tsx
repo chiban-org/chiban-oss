@@ -102,6 +102,7 @@ async function issueStep(
       typeLabel={type.label}
       parcelLabel={label}
       summary={<ChosenSteps steps={steps} />}
+      licenseRequired={type.requiresLicense}
       licenseGroups={LICENSE_GROUPS}
       defaultLicenseType={nhDefaultLicenseType(type.key)}
       lookup={NH_LICENSE_LOOKUP}

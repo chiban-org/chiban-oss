@@ -88,22 +88,27 @@ export async function createCounterApplication(
     actor,
     {
       applicationId,
-      values: { ...input.values, contractor_license_number: input.contractor.licenseNumber },
+      values:
+        input.license === undefined
+          ? input.values
+          : { ...input.values, contractor_license_number: input.license.number },
       attestation: { statementSha256: attestationHash(typeBody.attestationText) },
     },
     signal,
     now,
   )
   if (!submitted.ok) return err(submitted.error)
-  await tx.insert(licenseChecks).values({
-    applicationId,
-    licenseNumber: input.contractor.licenseNumber,
-    licenseType: input.contractor.licenseType,
-    result: input.licenseCheck.result,
-    note: input.licenseCheck.note ?? null,
-    lookupUrl: NH_LICENSE_LOOKUP.url,
-    checkedBy: actor.userId,
-    checkedAt: now,
-  })
+  if (input.license !== undefined) {
+    await tx.insert(licenseChecks).values({
+      applicationId,
+      licenseNumber: input.license.number,
+      licenseType: input.license.type,
+      result: input.license.result,
+      note: input.license.note ?? null,
+      lookupUrl: NH_LICENSE_LOOKUP.url,
+      checkedBy: actor.userId,
+      checkedAt: now,
+    })
+  }
   return ok({ applicationId, number: application.value.number })
 }

@@ -43,6 +43,7 @@ function issue() {
         convenienceFee={{ basisPoints: 300, fixedCents: 0, appliesTo: ['card_present'] }}
         cardAvailable={false}
         readerSimulated={false}
+        licenseRequired={true}
         licenseGroups={[{ label: 'Electrical', licenses: ['Master electrician'] }]}
         defaultLicenseType="Master electrician"
         lookup={{ label: 'License lookup', url: 'https://example.test' }}

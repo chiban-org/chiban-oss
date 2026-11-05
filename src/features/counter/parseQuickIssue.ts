@@ -35,30 +35,33 @@ function paymentOf(data: FormData): QuickIssueInput['payment'] | null {
 
 export { dollarsToCents }
 
+function licenseOf(data: FormData): QuickIssueInput['license'] | null | undefined {
+  const number = field(data, 'licenseNumber')
+  const type = field(data, 'licenseType')
+  const result = field(data, 'licenseResult')
+  if (number === '' && type === '' && result === '') return undefined
+  if (number === '' || type === '' || !(LICENSE_RESULTS as readonly string[]).includes(result)) {
+    return null
+  }
+  const note = field(data, 'licenseNote')
+  return { number, type, result: result as LicenseResult, ...(note === '' ? {} : { note }) }
+}
+
 export function parseQuickIssue(data: FormData): Result<QuickIssueInput, 'invalid_input'> {
   const parcelId = field(data, 'parcelId')
-  const result = field(data, 'licenseResult')
   const payment = paymentOf(data)
+  const license = licenseOf(data)
   const name = field(data, 'contractorName')
-  const licenseNumber = field(data, 'licenseNumber')
-  const licenseType = field(data, 'licenseType')
-  const fieldsOk =
-    isUuid(parcelId) &&
-    (LICENSE_RESULTS as readonly string[]).includes(result) &&
-    name !== '' &&
-    licenseNumber !== '' &&
-    licenseType !== '' &&
-    field(data, 'typeKey') !== ''
-  if (!fieldsOk || payment === null) return err('invalid_input')
+  const fieldsOk = isUuid(parcelId) && name !== '' && field(data, 'typeKey') !== ''
+  if (!fieldsOk || payment === null || license === null) return err('invalid_input')
   const retry = field(data, 'applicationId')
   const email = field(data, 'contractorEmail')
-  const note = field(data, 'licenseNote')
   return ok({
     parcelId,
     applicationTypeKey: field(data, 'typeKey'),
     values: workValues(data),
-    contractor: { name, ...(email === '' ? {} : { email }), licenseNumber, licenseType },
-    licenseCheck: { result: result as LicenseResult, ...(note === '' ? {} : { note }) },
+    contractor: { name, ...(email === '' ? {} : { email }) },
+    ...(license === undefined ? {} : { license }),
     payerName: field(data, 'payerName') || name,
     payment,
     ...(isUuid(retry) ? { applicationId: retry } : {}),

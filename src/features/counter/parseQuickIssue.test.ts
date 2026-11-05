@@ -44,7 +44,7 @@ describe('parseQuickIssue', () => {
         values: { description: 'Panel' },
         payerName: 'Pat Contractor',
         payment: { method: 'cash', tenderedCents: 5000 },
-        licenseCheck: { result: 'active' },
+        license: { number: 'EL-1', type: 'Electrician', result: 'active' },
       },
     })
   })
@@ -70,6 +70,9 @@ describe('parseQuickIssue', () => {
     const cases: Record<string, string>[] = [
       { parcelId: 'x' },
       { licenseResult: 'maybe' },
+      { licenseResult: '' },
+      { licenseNumber: '' },
+      { licenseType: '' },
       { method: 'barter' },
       { tendered: 'lots' },
       { contractorName: '' },
@@ -80,6 +83,13 @@ describe('parseQuickIssue', () => {
         error: 'invalid_input',
       })
     }
+  })
+
+  it('takes no license when every license field is blank', () => {
+    const parsed = parseQuickIssue(
+      form({ ...BASE, licenseNumber: '', licenseType: '', licenseResult: '' }),
+    )
+    expect(parsed.ok && 'license' in parsed.value).toBe(false)
   })
 
   it('carries a retry application id only when it is a uuid', () => {

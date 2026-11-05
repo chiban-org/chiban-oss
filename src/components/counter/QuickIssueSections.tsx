@@ -53,14 +53,27 @@ function WorkInput({ field }: { field: WorkField }) {
 }
 
 export function ContractorSection({
+  licenseRequired,
   licenseGroups,
   defaultLicenseType,
   lookup,
 }: {
+  licenseRequired: boolean
   licenseGroups: readonly LicenseGroup[]
   defaultLicenseType: string
   lookup: { label: string; url: string }
 }) {
+  if (!licenseRequired) {
+    return (
+      <section aria-labelledby="contractor">
+        <h2 id="contractor">Applicant</h2>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <TextField label="Applicant name" name="contractorName" required />
+          <TextField label="Applicant email" type="email" name="contractorEmail" />
+        </div>
+      </section>
+    )
+  }
   return (
     <section aria-labelledby="contractor">
       <h2 id="contractor">Contractor and license check</h2>

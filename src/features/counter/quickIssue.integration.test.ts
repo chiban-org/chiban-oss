@@ -9,6 +9,7 @@ import {
   projects,
   roleCapabilities,
 } from '@/db/schema'
+import { adoptStarter } from '@/features/config/adoptStarter'
 import { sendCounterClaim } from '@/features/contractors/counterClaim'
 import { searchContractors } from '@/features/counter/contractorLookup'
 import { completeQuickIssue, type QuickIssueInput, quickIssue } from '@/features/counter/quickIssue'
@@ -41,13 +42,8 @@ function input(overrides: Partial<QuickIssueInput> = {}): QuickIssueInput {
     parcelId: world.parcelId,
     applicationTypeKey: 'EL',
     values: { description: 'Panel upgrade', service_amps: 200 },
-    contractor: {
-      name: 'Pat Contractor',
-      email: 'pat@contractor.example',
-      licenseNumber: 'EL-20418',
-      licenseType: 'Electrician',
-    },
-    licenseCheck: { result: 'active' },
+    contractor: { name: 'Pat Contractor', email: 'pat@contractor.example' },
+    license: { number: 'EL-20418', type: 'Electrician', result: 'active' },
     payerName: 'Pat Contractor',
     payment: { method: 'cash', tenderedCents: 5000 },
     ...overrides,
@@ -82,7 +78,7 @@ describe('quickIssue claim link', () => {
     const r = await quickIssue(
       handle.db,
       world.staff,
-      input({ contractor: { name: 'No Mail', licenseNumber: 'EL-1', licenseType: 'Electrician' } }),
+      input({ contractor: { name: 'No Mail' }, license: { number: 'EL-1', type: 'Electrician', result: 'active' } }),
       signal,
       deps,
     )
@@ -178,12 +174,36 @@ describe('quickIssue cash and check', () => {
     const r = await quickIssue(
       handle.db,
       world.staff,
-      input({ licenseCheck: { result: 'not_found' } }),
+      input({ license: { number: 'EL-20418', type: 'Electrician', result: 'not_found' } }),
       signal,
       deps,
     )
     expect(r).toEqual({ ok: false, error: 'license_not_active' })
     expect(await counts()).toEqual(baseline)
+  })
+
+  it('a trade permit without a license check is license_required and creates nothing', async () => {
+    const { license: _omitted, ...withoutLicense } = input()
+    const r = await quickIssue(handle.db, world.staff, withoutLicense, signal, deps)
+    expect(r).toEqual({ ok: false, error: 'license_required' })
+    expect(await counts()).toEqual(baseline)
+  })
+
+  it('an alarm registration issues with no license and records no license check', async () => {
+    const adopted = await adoptStarter(
+      handle.db,
+      world.admin,
+      'nh.starter.alarm_registration',
+      signal,
+    )
+    expect(adopted.ok).toBe(true)
+    const { license: _omitted, ...withoutLicense } = input({
+      applicationTypeKey: 'AR',
+      values: { description: 'Burglar alarm', emergency_contact: 'Sam, 603 555 0100' },
+    })
+    const r = await quickIssue(handle.db, world.staff, withoutLicense, signal, deps)
+    expect(r.ok && r.value).toMatchObject({ state: 'issued', number: 'AR-2027-0001' })
+    expect(await handle.db.select().from(licenseChecks)).toHaveLength(0)
   })
 
   it('building permit type is not_direct_issue_type', async () => {
