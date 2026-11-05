@@ -19,6 +19,7 @@ export interface WorkField {
 }
 
 const RESULTS = [
+  ['', 'Choose a result'],
   ['active', 'Active'],
   ['not_found', 'Not found'],
   ['expired', 'Expired'],
@@ -71,7 +72,7 @@ export function ContractorSection({
         <SelectField
           label="Result of the state lookup"
           name="licenseResult"
-          defaultValue="active"
+          required
           options={RESULTS}
         />
         <TextField label="Note" name="licenseNote" />

@@ -82,6 +82,13 @@ describe('QuickIssueForm', () => {
     expect(link.getAttribute('rel')).toContain('noopener')
   })
 
+  it('the state lookup result starts unchosen and is required', () => {
+    form()
+    const select = screen.getByLabelText(/^Result of the state lookup( \*)?$/) as HTMLSelectElement
+    expect(select.value).toBe('')
+    expect(select.required).toBe(true)
+  })
+
   it('has one primary action named Issue and print', () => {
     form()
     expect(screen.getAllByRole('button', { name: 'Issue and print' })).toHaveLength(1)
