@@ -69,7 +69,7 @@ export async function openImportExceptions(db: Db, signal: AbortSignal): Promise
 export async function exportsFailedSinceLastGood(db: Db, signal: AbortSignal): Promise<number> {
   signal.throwIfAborted()
   const lastGood = sql`coalesce((select max(e.requested_at) from exports e
-    where e.kind = 'business' and e.status = 'ready'), '-infinity'::timestamptz)`
+    where e.kind = 'business' and e.status in ('ready', 'expired')), '-infinity'::timestamptz)`
   const [row] = await db
     .select({ n: count() })
     .from(exportsTable)
