@@ -21,7 +21,7 @@ function submitFile() {
     </CsrfProvider>,
   )
   const file = new File(['{}'], 'parcels.geojson', { type: 'application/json' })
-  fireEvent.change(screen.getByLabelText('File'), { target: { files: [file] } })
+  fireEvent.change(screen.getByLabelText(/^File( \*)?$/), { target: { files: [file] } })
   fireEvent.submit(
     screen.getByRole('button', { name: 'Run import' }).closest('form') as HTMLFormElement,
   )

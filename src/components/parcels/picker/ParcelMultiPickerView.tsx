@@ -41,7 +41,7 @@ export function ParcelMultiPickerView({
     inputRef.current?.focus()
   }
   return (
-    <Field label={label} htmlFor={id} hint={hint} hintId={hintId}>
+    <Field label={label} htmlFor={id} hint={hint} hintId={hintId} required={required}>
       <SubmittedField
         fieldRef={fieldRef}
         name={name}

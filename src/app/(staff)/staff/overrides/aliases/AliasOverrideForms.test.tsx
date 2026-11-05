@@ -41,7 +41,7 @@ describe('changing a parcel ID override', () => {
     expect(hidden('format')).toBe('cama15')
     expect(hidden('value')).toBe('000210040000000')
     expect(hidden('parcelId')).toBe(row.parcelId)
-    expect(screen.getByLabelText<HTMLInputElement>('Reason').value).toBe(row.reason)
+    expect(screen.getByLabelText<HTMLInputElement>(/^Reason( \*)?$/).value).toBe(row.reason)
     expect(screen.getByLabelText<HTMLInputElement>('Expires on').value).toBe('2027-06-30')
     expect(dialog.textContent).toContain('Leave blank to keep 021-004.')
     expect(dialog.textContent).toContain('This one stays listed as superseded.')

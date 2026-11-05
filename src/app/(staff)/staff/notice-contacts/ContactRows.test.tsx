@@ -24,7 +24,9 @@ describe('ContactRows', () => {
       </form>,
     )
     const row = screen.getByRole('group', { name: 'Officer 1' })
-    expect(within(row).getByLabelText<HTMLInputElement>('Name').value).toBe('Lee Marsh')
-    expect(within(row).getByLabelText<HTMLInputElement>('Name').defaultValue).toBe('Lee Marsh')
+    expect(within(row).getByLabelText<HTMLInputElement>(/^Name( \*)?$/).value).toBe('Lee Marsh')
+    expect(within(row).getByLabelText<HTMLInputElement>(/^Name( \*)?$/).defaultValue).toBe(
+      'Lee Marsh',
+    )
   })
 })

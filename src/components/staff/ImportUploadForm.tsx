@@ -6,6 +6,7 @@ import { type FormEvent, useState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
+import { RequiredNote } from '@/components/ui/required-mark'
 import { attempt } from '@/lib/attempt'
 
 const ADAPTERS = [
@@ -67,6 +68,7 @@ export function ImportUploadForm({ layerKey, primary }: ImportUploadFormProps) {
 
   return (
     <form onSubmit={(event) => void onSubmit(event)} className="max-w-md space-y-4">
+      <RequiredNote />
       <CsrfField />
       <input type="hidden" name="layerKey" value={layerKey} />
       <SelectField label="File format" name="adapter" options={ADAPTERS} />

@@ -25,7 +25,7 @@ export function AddressTextField({
   }, [reset])
 
   return (
-    <Field label={label} htmlFor={controlId} hint={hint} hintId={hintId}>
+    <Field label={label} htmlFor={controlId} hint={hint} hintId={hintId} required={props.required}>
       <Input
         ref={ref}
         id={controlId}

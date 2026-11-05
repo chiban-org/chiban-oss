@@ -62,7 +62,7 @@ afterEach(() => {
 describe('address questions on the applicant form', () => {
   it('suggests the USPS address under a mailing address question and fills it on Use this', async () => {
     render(<Applicant addressChecks />)
-    const input = screen.getByLabelText<HTMLInputElement>('Applicant mailing address')
+    const input = screen.getByLabelText<HTMLInputElement>(/^Applicant\ mailing\ address( \*)?$/)
     fireEvent.change(input, { target: { value: '12 Osprey Lane, Alder Pond NH' } })
     await pause()
     fireEvent.click(screen.getByRole('button', { name: 'Use this' }))
@@ -80,7 +80,7 @@ describe('address questions on the applicant form', () => {
 
   it('leaves other questions alone', async () => {
     render(<Applicant addressChecks />)
-    fireEvent.change(screen.getByLabelText('Applicant name'), {
+    fireEvent.change(screen.getByLabelText(/^Applicant\ name( \*)?$/), {
       target: { value: '12 Osprey Lane, Alder Pond NH' },
     })
     await pause()
@@ -89,7 +89,7 @@ describe('address questions on the applicant form', () => {
 
   it('checks nothing where the form is shown without address checks', async () => {
     render(<Applicant addressChecks={false} />)
-    fireEvent.change(screen.getByLabelText('Applicant mailing address'), {
+    fireEvent.change(screen.getByLabelText(/^Applicant\ mailing\ address( \*)?$/), {
       target: { value: '12 Osprey Lane, Alder Pond NH' },
     })
     await pause()

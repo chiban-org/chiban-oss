@@ -5,6 +5,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { CsrfField } from '@/components/CsrfField'
 import { SubmitButton } from '@/components/SubmitButton'
 import { Button } from '@/components/ui/button'
+import { RequiredNote } from '@/components/ui/required-mark'
 import { type ConfirmStep, useConfirmStep } from '@/components/useConfirmStep'
 import { useFormAction } from '@/components/useFormAction'
 import { useHydrated } from '@/components/useHydrated'
@@ -38,11 +39,13 @@ const TEXT_NODE = 3
 function labelOf(element: Element): string {
   const label = (element as HTMLInputElement).labels?.[0]
   if (label === undefined) return element.getAttribute('name') ?? 'a required field'
-  return Array.from(label.childNodes)
-    .filter((n) => n.nodeType === TEXT_NODE)
-    .map((n) => n.textContent ?? '')
-    .join('')
-    .trim()
+  return visibleText(label).trim()
+}
+
+function visibleText(node: Node): string {
+  if (node.nodeType === TEXT_NODE) return node.textContent ?? ''
+  if (node instanceof Element && node.getAttribute('aria-hidden') === 'true') return ''
+  return Array.from(node.childNodes).map(visibleText).join('')
 }
 
 function invalidFields(form: HTMLFormElement): Element[] {
@@ -202,6 +205,7 @@ export function ActionForm({
         className={cn(compact ? undefined : 'flex flex-col gap-4', className)}
       >
         <CsrfField />
+        {compact ? null : <RequiredNote />}
         {children}
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <SubmitButtons

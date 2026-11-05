@@ -7,6 +7,7 @@ import { FormRenderer, type FormValue } from '@/components/forms/FormRenderer'
 import { Button } from '@/components/ui/button'
 import { Checkbox, CheckLine } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
+import { RequiredNote } from '@/components/ui/required-mark'
 import type { FormBody } from '@/features/forms/formSchema'
 import { attempt } from '@/lib/attempt'
 import type { ActionResult } from '@/server/actionRunner'
@@ -74,6 +75,7 @@ export function ApplicationForm(props: Props) {
       }}
       className="flex flex-col gap-6"
     >
+      <RequiredNote />
       <FormRenderer
         addressChecks
         form={props.form}

@@ -239,7 +239,9 @@ describe('FormBuilder', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Preview as applicant' }))
     fireEvent.click(screen.getByRole('button', { name: 'Check answers' }))
     expect(screen.getAllByText('This is required.')).toHaveLength(2)
-    fireEvent.change(screen.getByLabelText('Describe the shed'), { target: { value: '10 by 12' } })
+    fireEvent.change(screen.getByLabelText(/^Describe\ the\ shed( \*)?$/), {
+      target: { value: '10 by 12' },
+    })
     fireEvent.click(screen.getByRole('button', { name: 'Phone' }))
     expect(screen.getByRole('button', { name: 'Phone' }).getAttribute('aria-pressed')).toBe('true')
     fireEvent.click(screen.getByRole('button', { name: 'Check answers' }))

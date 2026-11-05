@@ -54,21 +54,23 @@ function form(actions: CounterActions = idle) {
 }
 
 function fillRequired() {
-  fireEvent.change(screen.getByLabelText('Contractor name'), {
+  fireEvent.change(screen.getByLabelText(/^Contractor\ name( \*)?$/), {
     target: { value: 'Pat Contractor' },
   })
-  fireEvent.change(screen.getByLabelText('License number'), { target: { value: 'EL-1' } })
-  fireEvent.change(screen.getByLabelText('Description of work'), { target: { value: 'Panel' } })
+  fireEvent.change(screen.getByLabelText(/^License number( \*)?$/), { target: { value: 'EL-1' } })
+  fireEvent.change(screen.getByLabelText(/^Description of work( \*)?$/), {
+    target: { value: 'Panel' },
+  })
 }
 
 describe('QuickIssueForm', () => {
   it('fee section shows 46.35 for card and 45.00 for cash', () => {
     form()
     expect(screen.getByTestId('fee-total').textContent).toBe('$45.00')
-    fireEvent.click(screen.getByLabelText('Card'))
+    fireEvent.click(screen.getByLabelText(/^Card( \*)?$/))
     expect(screen.getByTestId('fee-total').textContent).toBe('$46.35')
     expect(screen.getByText(/Convenience fee \$1\.35/)).toBeTruthy()
-    fireEvent.click(screen.getByLabelText('Check'))
+    fireEvent.click(screen.getByLabelText(/^Check( \*)?$/))
     expect(screen.getByTestId('fee-total').textContent).toBe('$45.00')
   })
 
@@ -232,7 +234,7 @@ describe('ReaderPanel', () => {
         reader: () => Promise.resolve({ ok: true, state: 'declined', outcomeUnknown: false }),
       })
       fillRequired()
-      fireEvent.click(screen.getByLabelText('Card'))
+      fireEvent.click(screen.getByLabelText(/^Card( \*)?$/))
       fireEvent.click(screen.getByRole('button', { name: 'Issue and print' }))
       await waitFor(() => expect(screen.getByRole('button', { name: 'Decline' })).toBeTruthy())
       fireEvent.click(screen.getByRole('button', { name: 'Decline' }))
@@ -241,7 +243,7 @@ describe('ReaderPanel', () => {
 
     it('re-enables Issue and print so staff can switch to cash without reloading', async () => {
       await declineCard(() => Promise.resolve(waiting))
-      fireEvent.click(screen.getByLabelText('Cash'))
+      fireEvent.click(screen.getByLabelText(/^Cash( \*)?$/))
       expect(
         screen.getByRole<HTMLButtonElement>('button', { name: 'Issue and print' }).disabled,
       ).toBe(false)
@@ -257,7 +259,7 @@ describe('ReaderPanel', () => {
             : { ...waiting, state: 'issued' as const, attemptId: null, links: null },
         )
       })
-      fireEvent.click(screen.getByLabelText('Cash'))
+      fireEvent.click(screen.getByLabelText(/^Cash( \*)?$/))
       fireEvent.click(screen.getByRole('button', { name: 'Issue and print' }))
       await waitFor(() => expect(sent).toHaveLength(2))
       expect(sent[0]?.get('applicationId')).toBeNull()
@@ -268,7 +270,7 @@ describe('ReaderPanel', () => {
     it('keeps Issue and print disabled while the reader is still waiting', async () => {
       form({ ...idle, issue: () => Promise.resolve(waiting) })
       fillRequired()
-      fireEvent.click(screen.getByLabelText('Card'))
+      fireEvent.click(screen.getByLabelText(/^Card( \*)?$/))
       fireEvent.click(screen.getByRole('button', { name: 'Issue and print' }))
       await waitFor(() => expect(screen.getByRole('button', { name: 'Approve' })).toBeTruthy())
       expect(

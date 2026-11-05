@@ -36,7 +36,7 @@ describe('RecheckInterval', () => {
   it('opens a dialog with a days field of at least 1 and a plain hint', () => {
     renderInterval(true)
     fireEvent.click(screen.getByRole('button', { name: /change/i }))
-    const field = screen.getByLabelText<HTMLInputElement>('Days between checks')
+    const field = screen.getByLabelText<HTMLInputElement>(/^Days between checks( \*)?$/)
     expect(field.type).toBe('number')
     expect(field.min).toBe('1')
     expect(field.value).toBe('365')

@@ -3,6 +3,7 @@ import { Checkbox, CheckLine } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { RequiredMark } from '@/components/ui/required-mark'
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 
@@ -13,13 +14,28 @@ interface FieldProps {
   hintId?: string | undefined
   className?: string | undefined
   action?: ReactNode
+  required?: boolean | undefined
   children: ReactNode
 }
 
-export function Field({ label, htmlFor, hint, hintId, className, action, children }: FieldProps) {
+export function Field({
+  label,
+  htmlFor,
+  hint,
+  hintId,
+  className,
+  action,
+  required,
+  children,
+}: FieldProps) {
   return (
     <div data-slot="field" className={cn('grid content-start gap-2', className)}>
-      <Label htmlFor={htmlFor}>{label}</Label>
+      <Label htmlFor={htmlFor}>
+        <span>
+          {label}
+          {required === true ? <RequiredMark /> : null}
+        </span>
+      </Label>
       {action === undefined ? (
         children
       ) : (
@@ -69,7 +85,14 @@ export function TextField({
 }: ComponentProps<'input'> & ActionProps & { label: string; hint?: string }) {
   const { controlId, hintId } = useFieldIds(id, hint)
   return (
-    <Field label={label} htmlFor={controlId} hint={hint} hintId={hintId} action={action}>
+    <Field
+      label={label}
+      htmlFor={controlId}
+      hint={hint}
+      hintId={hintId}
+      action={action}
+      required={props.required}
+    >
       <Input id={controlId} aria-describedby={hintId} {...props} />
     </Field>
   )
@@ -84,7 +107,14 @@ export function AreaField({
 }: ComponentProps<'textarea'> & ActionProps & { label: string; hint?: string }) {
   const { controlId, hintId } = useFieldIds(id, hint)
   return (
-    <Field label={label} htmlFor={controlId} hint={hint} hintId={hintId} action={action}>
+    <Field
+      label={label}
+      htmlFor={controlId}
+      hint={hint}
+      hintId={hintId}
+      action={action}
+      required={props.required}
+    >
       <Textarea
         id={controlId}
         aria-describedby={hintId}
@@ -110,7 +140,14 @@ export function SelectField({
   }) {
   const { controlId, hintId } = useFieldIds(id, hint)
   return (
-    <Field label={label} htmlFor={controlId} hint={hint} hintId={hintId} action={action}>
+    <Field
+      label={label}
+      htmlFor={controlId}
+      hint={hint}
+      hintId={hintId}
+      action={action}
+      required={props.required}
+    >
       <NativeSelect id={controlId} aria-describedby={hintId} {...props}>
         {options.map(([value, text]) => (
           <NativeSelectOption key={value} value={value}>
@@ -139,7 +176,10 @@ export function CheckField({
         <Checkbox id={controlId} {...props} />
       </CheckLine>
       <Label htmlFor={controlId} className="leading-snug font-normal">
-        {label}
+        <span>
+          {label}
+          {props.required === true ? <RequiredMark /> : null}
+        </span>
       </Label>
     </div>
   )

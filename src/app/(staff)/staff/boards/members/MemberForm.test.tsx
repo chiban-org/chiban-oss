@@ -26,7 +26,7 @@ const row: MemberRow = {
 }
 
 function value(label: string): string {
-  return screen.getByLabelText<HTMLInputElement>(label).value
+  return screen.getByLabelText<HTMLInputElement>(new RegExp(`^${label}( \\*)?$`)).value
 }
 
 describe('board member dialogs', () => {

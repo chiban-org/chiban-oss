@@ -19,6 +19,7 @@ import {
 import { ReaderPanel } from '@/components/counter/ReaderPanel'
 import { NEW_TAB } from '@/components/newTab'
 import { Button } from '@/components/ui/button'
+import { RequiredNote } from '@/components/ui/required-mark'
 import { computeConvenienceFee } from '@/features/payments/convenienceFee'
 import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
 import { attempt } from '@/lib/attempt'
@@ -107,6 +108,7 @@ export function QuickIssueForm(props: Props) {
   return (
     <form onSubmit={(event) => void submit(event)} className="space-y-6">
       {props.summary}
+      <RequiredNote />
       <input type="hidden" name="parcelId" value={props.parcelId} />
       <input type="hidden" name="typeKey" value={props.typeKey} />
       <ContractorSection

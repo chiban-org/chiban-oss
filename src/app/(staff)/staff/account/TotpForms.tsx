@@ -4,6 +4,7 @@ import { useActionState } from 'react'
 import { CsrfField } from '@/components/CsrfField'
 import { SubmitButton } from '@/components/SubmitButton'
 import { TextField } from '@/components/staff/fields'
+import { RequiredNote } from '@/components/ui/required-mark'
 import { useFormAction } from '@/components/useFormAction'
 import { beginTotpAction, confirmTotpAction, type TotpState } from './actions'
 
@@ -17,6 +18,7 @@ export function BeginTotpForm() {
   const [state, action] = useActionState(beginTotpAction, initial)
   return (
     <form action={action} className="flex flex-col gap-3">
+      <RequiredNote />
       <CsrfField />
       {state.error === null ? null : <p role="alert">{state.error}</p>}
       <SubmitButton className="self-start">Set up authenticator</SubmitButton>
@@ -28,6 +30,7 @@ export function ConfirmTotpForm() {
   const { state, formProps } = useFormAction(confirmTotpAction, initial, failed)
   return (
     <form {...formProps} className="flex flex-col gap-3">
+      <RequiredNote />
       <CsrfField />
       <TextField
         label="6-digit code"

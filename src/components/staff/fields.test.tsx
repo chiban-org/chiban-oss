@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
+import { RequiredNote } from '@/components/ui/required-mark'
 
 afterEach(cleanup)
 
@@ -60,7 +61,7 @@ describe('staff fields', () => {
         />
       </form>,
     )
-    const select = screen.getByLabelText<HTMLSelectElement>('Determination')
+    const select = screen.getByLabelText<HTMLSelectElement>(/^Determination/)
     expect(select.validity.valueMissing).toBe(true)
   })
 
@@ -106,5 +107,45 @@ describe('staff fields', () => {
     expect(line?.dataset['slot']).toBe('check-line')
     expect(line?.classList.contains('h-[1lh]')).toBe(true)
     expect(line?.parentElement?.classList.contains('items-start')).toBe(true)
+  })
+
+  it('marks a required control with an aria-hidden asterisk and keeps the native attribute', () => {
+    render(
+      <form>
+        <TextField label="Title" name="title" required />
+        <TextField label="Nickname" name="nickname" />
+        <AreaField label="Details" name="details" required />
+        <SelectField label="Kind" name="kind" required options={[['a', 'A']]} />
+        <CheckField label="Agree" name="agree" required />
+      </form>,
+    )
+    const marks = document.querySelectorAll('label [aria-hidden="true"]')
+    expect(Array.from(marks).map((m) => m.textContent.trim())).toEqual(['*', '*', '*', '*'])
+    for (const mark of marks) expect(mark.closest('label')?.getAttribute('for')).not.toBeNull()
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Title' }).required).toBe(true)
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Nickname' }).required).toBe(false)
+    const nickname = screen.getByRole('textbox', { name: 'Nickname' })
+    expect(document.querySelector(`label[for="${nickname.id}"] [aria-hidden]`)).toBeNull()
+  })
+
+  it('shows the Required note only when the form has a required control', async () => {
+    const { rerender } = render(
+      <form>
+        <RequiredNote />
+        <TextField label="Nickname" name="nickname" />
+      </form>,
+    )
+    expect(document.querySelector('[data-slot="required-note"]')?.hasAttribute('hidden')).toBe(true)
+    rerender(
+      <form>
+        <RequiredNote />
+        <TextField label="Title" name="title" required />
+      </form>,
+    )
+    await waitFor(() =>
+      expect(document.querySelector('[data-slot="required-note"]')?.hasAttribute('hidden')).toBe(
+        false,
+      ),
+    )
   })
 })

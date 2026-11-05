@@ -4,6 +4,7 @@ import { AddressQuestion } from '@/components/forms/AddressQuestion'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { RequiredMark } from '@/components/ui/required-mark'
 import {
   Select,
   SelectContent,
@@ -191,12 +192,12 @@ function FieldRow({ field, values, error, onChange, addressChecks }: EntryProps)
   )
   return (
     <div className="space-y-1.5">
-      <div className="flex items-baseline gap-1">
-        <Label htmlFor={id} className="text-base font-medium">
+      <Label htmlFor={id} className="text-base font-medium">
+        <span>
           {field.label}
-        </Label>
-        {required ? <span aria-hidden="true">*</span> : null}
-      </div>
+          {required ? <RequiredMark /> : null}
+        </span>
+      </Label>
       {field.help === undefined ? null : (
         <p id={helpId} className="m-0 text-base text-muted-foreground">
           {field.help}

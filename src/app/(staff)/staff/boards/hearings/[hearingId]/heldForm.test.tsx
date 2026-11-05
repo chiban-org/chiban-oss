@@ -25,13 +25,13 @@ function show(meetingDate: string) {
 describe('mark the hearing held', () => {
   it('is not offered before the meeting has happened', () => {
     show('2026-12-09')
-    expect(screen.queryByLabelText('Date held')).toBeNull()
+    expect(screen.queryByLabelText(/^Date\ held( \*)?$/)).toBeNull()
     expect(screen.getByText(/after the meeting on December 9, 2026/)).toBeTruthy()
   })
 
   it('limits the held date to the meeting through today', () => {
     show('2026-10-28')
-    const input = screen.getByLabelText('Date held')
+    const input = screen.getByLabelText(/^Date\ held( \*)?$/)
     expect(input.getAttribute('min')).toBe('2026-10-28')
     expect(input.getAttribute('max')).toBe('2026-11-02')
   })

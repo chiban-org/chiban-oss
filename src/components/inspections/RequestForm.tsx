@@ -4,6 +4,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { RequiredMark } from '@/components/ui/required-mark'
 import {
   Select,
   SelectContent,
@@ -112,7 +113,10 @@ export function RequestForm({
       </div>
       <div className="space-y-1.5">
         <Label htmlFor="contactName" className="text-base font-medium">
-          Contact name
+          <span>
+            Contact name
+            <RequiredMark />
+          </span>
         </Label>
         <Input
           id="contactName"

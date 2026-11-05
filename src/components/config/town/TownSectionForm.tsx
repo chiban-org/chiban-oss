@@ -9,6 +9,7 @@ import { LetterheadPreview } from '@/components/config/town/LetterheadPreview'
 import { ProfileFields } from '@/components/config/town/ProfileFields'
 import { SignersFields } from '@/components/config/town/SignersFields'
 import { Button } from '@/components/ui/button'
+import { RequiredNote } from '@/components/ui/required-mark'
 import { useHydrated } from '@/components/useHydrated'
 import type { TownProfileBody } from '@/features/town/profileSchema'
 import type { TownProfileSection } from '@/features/town/profileSettings'
@@ -75,6 +76,7 @@ export function TownSectionForm({ section, initial, resetKey, townName }: Props)
   const listed = Object.entries(errors).filter(([path]) => path !== '_form')
   return (
     <form onSubmit={submit} className={section === 'letterhead' ? 'max-w-6xl' : 'max-w-3xl'}>
+      <RequiredNote />
       <CsrfField />
       <input type="hidden" name="section" value={section} />
       <input type="hidden" name="body" value={JSON.stringify(body)} />

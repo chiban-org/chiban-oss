@@ -4,6 +4,7 @@ import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { Button } from '@/components/ui/button'
+import { RequiredNote } from '@/components/ui/required-mark'
 import { listExports } from '@/features/export/requestExport'
 import { currentServiceState } from '@/features/town/serviceStatus'
 import { getTownSettings } from '@/features/town/settings'
@@ -123,6 +124,7 @@ export default async function ExportPage({ searchParams }: ExportPageProps = {})
             <p role="alert">{RECOVERY_ERROR_COPY[recoveryError] ?? RECOVERY_ERROR_FALLBACK}</p>
           )}
           <form method="post" action="/staff/admin/export/recovery" className="max-w-md space-y-4">
+            <RequiredNote />
             <CsrfField />
             <TextField
               id="recovery-password"

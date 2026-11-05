@@ -30,7 +30,7 @@ describe('completeness vote form', () => {
         <VoteForm data={data('2026-11-25')} />
       </CsrfProvider>,
     )
-    expect(screen.queryByLabelText('Date of the vote')).toBeNull()
+    expect(screen.queryByLabelText(/^Date\ of\ the\ vote( \*)?$/)).toBeNull()
     expect(screen.getByText(/once the meeting on November 25, 2026 has happened/)).toBeTruthy()
   })
 
@@ -40,7 +40,7 @@ describe('completeness vote form', () => {
         <VoteForm data={data('2026-10-28')} />
       </CsrfProvider>,
     )
-    const input = screen.getByLabelText('Date of the vote')
+    const input = screen.getByLabelText(/^Date\ of\ the\ vote( \*)?$/)
     expect(input.getAttribute('min')).toBe('2026-10-28')
     expect(input.getAttribute('max')).toBe('2026-11-02')
   })

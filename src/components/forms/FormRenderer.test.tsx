@@ -73,7 +73,7 @@ describe('FormRenderer', () => {
         onChange={noop}
       />,
     )
-    const scope = screen.getByLabelText('Scope of work')
+    const scope = screen.getByLabelText(/^Scope of work/)
     expect(scope.getAttribute('aria-invalid')).toBe('true')
     const describedBy = scope.getAttribute('aria-describedby') ?? ''
     expect(document.getElementById(describedBy)?.textContent).toBe('This is required.')
@@ -82,9 +82,9 @@ describe('FormRenderer', () => {
   it('reports typed values and marks required fields', () => {
     const onChange = vi.fn()
     render(<FormRenderer form={FORM} values={{}} errors={{}} onChange={onChange} />)
-    fireEvent.change(screen.getByLabelText('Scope of work'), { target: { value: 'Garage' } })
+    fireEvent.change(screen.getByLabelText(/^Scope of work/), { target: { value: 'Garage' } })
     expect(onChange).toHaveBeenCalledWith('scope', 'Garage')
-    expect(screen.getByLabelText('Scope of work').hasAttribute('required')).toBe(true)
+    expect(screen.getByLabelText(/^Scope of work/).hasAttribute('required')).toBe(true)
     expect(screen.getByLabelText('Contact email').getAttribute('type')).toBe('email')
   })
 
@@ -106,5 +106,40 @@ describe('FormRenderer', () => {
     expect(screen.getByRole('heading', { name: 'About the project' })).toBeTruthy()
     expect(screen.getByText('Tell us what you plan to build.')).toBeTruthy()
     expect(screen.queryByLabelText('About the project')).toBeNull()
+  })
+
+  it('marks a field required by its condition only while the condition holds', () => {
+    const conditional: FormBody = {
+      key: 'c',
+      label: 'C',
+      fields: [
+        { key: 'kind', label: 'Kind', type: 'text', required: false },
+        {
+          key: 'detail',
+          label: 'Detail',
+          type: 'text',
+          required: false,
+          requireIf: { field: 'kind', op: 'equals', value: 'other' },
+        },
+        { key: 'plain', label: 'Plain', type: 'text', required: false },
+      ],
+    }
+    const marked = () => document.querySelector('label[for="field-detail"] [aria-hidden="true"]')
+    const { rerender } = render(
+      <FormRenderer form={conditional} values={{}} errors={{}} onChange={noop} />,
+    )
+    expect(marked()).toBeNull()
+    expect(document.querySelector('label[for="field-plain"] [aria-hidden]')).toBeNull()
+    rerender(
+      <FormRenderer form={conditional} values={{ kind: 'other' }} errors={{}} onChange={noop} />,
+    )
+    expect(marked()?.textContent.trim()).toBe('*')
+    expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Detail' }).required).toBe(true)
+  })
+
+  it('marks always-required fields', () => {
+    render(<FormRenderer form={FORM} values={{}} errors={{}} onChange={noop} />)
+    expect(document.querySelector('label[for="field-scope"] [aria-hidden="true"]')).not.toBeNull()
+    expect(document.querySelector('label[for="field-contact_email"] [aria-hidden]')).toBeNull()
   })
 })

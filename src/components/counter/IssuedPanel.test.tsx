@@ -50,8 +50,10 @@ function issue() {
       />
     </CsrfProvider>,
   )
-  fireEvent.change(screen.getByLabelText('Contractor name'), { target: { value: 'Pat Volt' } })
-  fireEvent.change(screen.getByLabelText('License number'), { target: { value: 'EL-1' } })
+  fireEvent.change(screen.getByLabelText(/^Contractor name( \*)?$/), {
+    target: { value: 'Pat Volt' },
+  })
+  fireEvent.change(screen.getByLabelText(/^License number( \*)?$/), { target: { value: 'EL-1' } })
   fireEvent.click(screen.getByLabelText('Check'))
   fireEvent.click(screen.getByRole('button', { name: 'Issue and print' }))
   return waitFor(() => screen.getByRole('region', { name: 'EL-2027-0001 is issued' }))
@@ -60,7 +62,7 @@ function issue() {
 describe('issued panel', () => {
   it('replaces the filled form and the chosen steps', async () => {
     await issue()
-    expect(screen.queryByLabelText('Contractor name')).toBeNull()
+    expect(screen.queryByLabelText(/^Contractor name( \*)?$/)).toBeNull()
     expect(screen.queryByRole('button', { name: 'Issue and print' })).toBeNull()
     expect(screen.queryByText('Chosen so far')).toBeNull()
   })

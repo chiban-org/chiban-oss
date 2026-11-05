@@ -76,7 +76,7 @@ export function ParcelPickerView({
   )
   if (!labelHidden)
     return (
-      <Field label={label} htmlFor={id} hint={hint} hintId={hintId}>
+      <Field label={label} htmlFor={id} hint={hint} hintId={hintId} required={required}>
         {body}
       </Field>
     )

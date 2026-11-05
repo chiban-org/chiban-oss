@@ -3,6 +3,7 @@
 import { CsrfField } from '@/components/CsrfField'
 import { SubmitButton } from '@/components/SubmitButton'
 import { TextField } from '@/components/staff/fields'
+import { RequiredNote } from '@/components/ui/required-mark'
 import { useFormAction } from '@/components/useFormAction'
 import { type SignInState, signInAction } from './actions'
 
@@ -17,6 +18,7 @@ export function SignInForm() {
 
   return (
     <form {...formProps} className="flex flex-col gap-4">
+      <RequiredNote />
       <CsrfField />
       <TextField label="Email" name="email" type="email" autoComplete="username" required />
       <TextField

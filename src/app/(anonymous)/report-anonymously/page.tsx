@@ -1,6 +1,7 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { RequiredMark, RequiredNote } from '@/components/ui/required-mark'
 import { Textarea } from '@/components/ui/textarea'
 import { APP_VERSION } from '@/config/appVersion'
 import { env } from '@/config/env'
@@ -42,8 +43,14 @@ export default async function ReportAnonymouslyPage() {
         encType="multipart/form-data"
         className="mt-4 flex max-w-xl flex-col gap-5"
       >
+        <RequiredNote />
         <div className="flex flex-col gap-2">
-          <Label htmlFor="location">Where is the property?</Label>
+          <Label htmlFor="location">
+            <span>
+              Where is the property?
+              <RequiredMark />
+            </span>
+          </Label>
           <Input id="location" name="location" required maxLength={300} autoComplete="off" />
         </div>
         <p className="m-0 max-w-prose text-base">
@@ -52,7 +59,12 @@ export default async function ReportAnonymouslyPage() {
           are saved.
         </p>
         <div className="flex flex-col gap-2">
-          <Label htmlFor="description">What did you see?</Label>
+          <Label htmlFor="description">
+            <span>
+              What did you see?
+              <RequiredMark />
+            </span>
+          </Label>
           <Textarea
             id="description"
             name="description"

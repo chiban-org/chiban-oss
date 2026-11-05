@@ -3,6 +3,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { RequiredMark } from '@/components/ui/required-mark'
 import { Textarea } from '@/components/ui/textarea'
 import { ACTION_FILES_LIMIT_MB, complaintPhotosProblem } from '@/lib/uploadLimits'
 import { submitComplaintAction } from './actions'
@@ -23,11 +24,21 @@ export function ComplaintForm() {
       className="flex max-w-xl flex-col gap-5"
     >
       <div className="flex flex-col gap-2">
-        <Label htmlFor="locationText">Where is the property?</Label>
+        <Label htmlFor="locationText">
+          <span>
+            Where is the property?
+            <RequiredMark />
+          </span>
+        </Label>
         <Input id="locationText" name="locationText" required maxLength={300} />
       </div>
       <div className="flex flex-col gap-2">
-        <Label htmlFor="description">What did you see?</Label>
+        <Label htmlFor="description">
+          <span>
+            What did you see?
+            <RequiredMark />
+          </span>
+        </Label>
         <Textarea id="description" name="description" required maxLength={5000} rows={6} />
       </div>
       <div className="flex flex-col gap-2">

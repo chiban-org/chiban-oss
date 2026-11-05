@@ -3,6 +3,7 @@
 import { CsrfField } from '@/components/CsrfField'
 import { SubmitButton } from '@/components/SubmitButton'
 import { TextField } from '@/components/staff/fields'
+import { RequiredNote } from '@/components/ui/required-mark'
 import { useFormAction } from '@/components/useFormAction'
 import { type SetPasswordState, setPasswordAction } from './actions'
 
@@ -26,6 +27,7 @@ export function SetPasswordForm({
   const { state, formProps } = useFormAction(setPasswordAction, initial, failed)
   return (
     <form {...formProps} className="flex flex-col gap-4">
+      <RequiredNote />
       <CsrfField />
       <input type="hidden" name="token" value={token} />
       <input type="hidden" name="username" autoComplete="username" value={email} readOnly />

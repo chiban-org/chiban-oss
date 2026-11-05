@@ -6,6 +6,7 @@ import { PublishBar } from '@/components/config/PublishBar'
 import { Check, FieldError, Input, Pick, RowButton, rowKey } from '@/components/config/primitives'
 import { WorkflowPreview } from '@/components/config/WorkflowPreview'
 import { Button } from '@/components/ui/button'
+import { RequiredNote } from '@/components/ui/required-mark'
 import { useHydrated } from '@/components/useHydrated'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import { type CoreState, STATE_LABELS } from '@/features/applications/states'
@@ -153,6 +154,7 @@ export function WorkflowEditor({
   const fieldErrors = result !== null && !result.ok ? (result.fieldErrors ?? {}) : {}
   return (
     <form action={run} className="max-w-4xl space-y-4">
+      <RequiredNote />
       <CsrfField />
       <input type="hidden" name="kind" value="application_type" />
       <input type="hidden" name="key" value={typeKey} />

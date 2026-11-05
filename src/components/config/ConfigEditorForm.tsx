@@ -6,6 +6,7 @@ import { EditorContextProvider } from '@/components/config/EditorContextProvider
 import { CONFIG_EDITORS } from '@/components/config/editorRegistry'
 import { PublishBar } from '@/components/config/PublishBar'
 import { FieldError, type FieldErrors } from '@/components/config/primitives'
+import { RequiredNote } from '@/components/ui/required-mark'
 import { useHydrated } from '@/components/useHydrated'
 import type { EditorContext } from '@/features/config/editorContext'
 import { issueFieldName } from '@/features/config/issueFieldNames'
@@ -62,6 +63,7 @@ export function ConfigEditorForm({
       noValidate={BUILDER_KINDS.has(kind)}
       className={BUILDER_KINDS.has(kind) ? undefined : 'max-w-4xl'}
     >
+      <RequiredNote />
       <CsrfField />
       <input type="hidden" name="kind" value={kind} />
       <input type="hidden" name="key" value={configKey} />

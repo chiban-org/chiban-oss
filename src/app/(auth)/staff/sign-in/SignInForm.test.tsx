@@ -18,11 +18,15 @@ describe('SignInForm', () => {
         <SignInForm />
       </CsrfProvider>,
     )
-    fireEvent.change(screen.getByLabelText('Email'), { target: { value: 'clerk@example.test' } })
-    fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'wrong' } })
+    fireEvent.change(screen.getByLabelText(/^Email( \*)?$/), {
+      target: { value: 'clerk@example.test' },
+    })
+    fireEvent.change(screen.getByLabelText(/^Password( \*)?$/), { target: { value: 'wrong' } })
     fireEvent.click(screen.getByRole('button', { name: 'Sign in' }))
     await waitFor(() => expect(screen.getByRole('alert')).toBeTruthy())
-    expect(screen.getByLabelText<HTMLInputElement>('Email').value).toBe('clerk@example.test')
-    expect(screen.getByLabelText<HTMLInputElement>('Password').value).toBe('')
+    expect(screen.getByLabelText<HTMLInputElement>(/^Email( \*)?$/).value).toBe(
+      'clerk@example.test',
+    )
+    expect(screen.getByLabelText<HTMLInputElement>(/^Password( \*)?$/).value).toBe('')
   })
 })
