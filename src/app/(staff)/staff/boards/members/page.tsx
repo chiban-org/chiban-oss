@@ -81,7 +81,7 @@ function MembersTable({
               <StatusChip status={row.active ? 'passed' : 'neutral'} label={row.statusText} />
             </td>
             <td>
-              <div className="flex flex-wrap items-center gap-2">
+              <div className="row-actions">
                 <EditMember row={row} today={today} />
                 {ending && row.active ? <EndMembership row={row} /> : null}
               </div>

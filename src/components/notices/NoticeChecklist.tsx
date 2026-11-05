@@ -100,7 +100,7 @@ export function NoticeChecklist({
     )
   }
   return (
-    <section aria-label="Notice checklist" className="space-y-3">
+    <section aria-label="Notice checklist">
       {due === null ? null : <p>{`All due ${due}.`}</p>}
       {table}
       {noticedOn === null ? null : <p>{`Marked properly noticed on ${noticedOn}.`}</p>}

@@ -1,8 +1,10 @@
 import { SortHeader } from '@/components/dataTable/SortHeader'
+import { SectionHeader } from '@/components/layout/ListHeader'
 import type { RuleSortKey } from '@/features/config/settingsTableView'
 import type { SortLink } from '@/features/dataTable/sort'
 import { loadPack } from '@/features/packs/loadPack'
 import { classificationSummary, type RuleSummary } from '@/features/packs/ruleSummary'
+import { ClassificationRules } from './ClassificationRules'
 
 export function PackRules({
   rules,
@@ -14,7 +16,7 @@ export function PackRules({
   const pack = loadPack()
   return (
     <>
-      <div className="table-panel my-3">
+      <div className="table-panel">
         <table className="w-full min-w-[40rem] text-sm">
           <caption className="sr-only">Rules from state law</caption>
           <thead>
@@ -41,15 +43,12 @@ export function PackRules({
           </tbody>
         </table>
       </div>
-      <details className="my-6">
-        <summary className="cursor-pointer">Required rules by classification</summary>
-        <ul className="mt-2">
-          {pack.classifications.map((c) => {
-            const summary = classificationSummary(c, pack)
-            return <li key={summary.key}>{`${summary.label}: ${summary.mandatory.join('; ')}`}</li>
-          })}
-        </ul>
-      </details>
+      <section aria-labelledby="by-classification">
+        <SectionHeader id="by-classification" title="Required rules by classification" />
+        <ClassificationRules
+          summaries={pack.classifications.map((c) => classificationSummary(c, pack))}
+        />
+      </section>
     </>
   )
 }

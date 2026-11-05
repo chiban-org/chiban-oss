@@ -26,7 +26,7 @@ export function BatchesSection({
   return (
     <section aria-labelledby="batches" data-plain className="space-y-3">
       <h2 id="batches">Disposition batches</h2>
-      <p className="m-0">
+      <p>
         Newest first. <Link href="/staff/records/disposed">Disposed records</Link> lists every
         record already disposed of, with its tombstone.
       </p>
@@ -43,7 +43,7 @@ export function BatchesSection({
         </ActionForm>
       </details>
       {batches.length === 0 ? (
-        <p className="m-0">No batch has been proposed yet.</p>
+        <p>No batch has been proposed yet.</p>
       ) : (
         <div className="table-panel">
           <table className="w-full min-w-[32rem] text-left">

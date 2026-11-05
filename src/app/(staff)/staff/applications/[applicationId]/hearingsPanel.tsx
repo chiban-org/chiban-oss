@@ -10,10 +10,10 @@ import { routeToTrcAction, scheduleHearingAction } from '../../boards/hearings/a
 export function HearingsPanel({ data }: { data: ApplicationHearingsPanel | null }) {
   if (data === null) return null
   return (
-    <section aria-label="Hearings and decisions" id="hearings" className="space-y-4">
+    <section aria-label="Hearings and decisions" id="hearings">
       <h2>Hearings and decisions</h2>
       {data.hearings.length === 0 ? <p>No hearing is scheduled yet.</p> : null}
-      <ul className="m-0 list-none space-y-1 p-0">
+      <ul className="list-none space-y-1 p-0">
         {data.hearings.map((h) => (
           <li key={h.id}>
             <Link href={`/staff/boards/hearings/${h.id}`}>{h.text}</Link>

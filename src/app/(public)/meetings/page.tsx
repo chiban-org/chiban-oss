@@ -41,7 +41,7 @@ export default async function PublicMeetingsPage({ searchParams }: Props) {
   return (
     <main className="space-y-8">
       <h1>Board meetings and decisions</h1>
-      <section aria-label="Agendas" className="space-y-3">
+      <section aria-label="Agendas">
         <h2>Agendas</h2>
         {records.agendas.length === 0 ? (
           <p>
@@ -50,7 +50,7 @@ export default async function PublicMeetingsPage({ searchParams }: Props) {
               : 'No more agendas.'}
           </p>
         ) : null}
-        <ul className="m-0 list-none space-y-2 p-0">
+        <ul className="list-none space-y-2 p-0">
           {records.agendas.map((a) => (
             <li key={a.meetingId}>
               <a {...NEW_TAB} href={`/api/documents/${a.documentId}`} className={LINK}>
@@ -61,14 +61,14 @@ export default async function PublicMeetingsPage({ searchParams }: Props) {
         </ul>
         <AgendaPager {...records.agendaPage} />
       </section>
-      <section aria-label="Decisions" className="space-y-3">
+      <section aria-label="Decisions">
         <h2>Decisions</h2>
         {records.decisions.length === 0 ? <p>No decisions have been filed yet.</p> : null}
-        <ul className="m-0 list-none space-y-3 p-0">
+        <ul className="list-none space-y-3 p-0">
           {records.decisions.map((d) => (
             <li key={d.decisionId} className="space-y-1">
-              <p className="m-0 font-semibold">{d.text}</p>
-              <p className="m-0">{`Filed ${d.filedText}.`}</p>
+              <p className="font-semibold">{d.text}</p>
+              <p>{`Filed ${d.filedText}.`}</p>
               <div className="flex flex-wrap gap-4">
                 {d.decisionDocumentId === null ? null : (
                   <a {...NEW_TAB} href={`/api/documents/${d.decisionDocumentId}`} className={LINK}>

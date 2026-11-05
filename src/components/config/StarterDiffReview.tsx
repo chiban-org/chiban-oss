@@ -1,4 +1,5 @@
 import { CheckField } from '@/components/staff/fields'
+import { Legend } from '@/components/ui/legend'
 import { describePath, describeValue } from '@/features/config/diffText'
 import { KIND_LABELS } from '@/features/config/kindLabels'
 import type { ConfigKind } from '@/features/config/kinds'
@@ -16,7 +17,7 @@ export function StarterDiffReview({ members }: { members: ReviewMember[] }) {
     <div className="space-y-4">
       {members.map((member) => (
         <fieldset key={`${member.kind}:${member.key}`} className="rounded-md border p-3">
-          <legend className="px-1 text-sm font-medium">{`${KIND_LABELS[member.kind]}: ${member.label}`}</legend>
+          <Legend bordered>{`${KIND_LABELS[member.kind]}: ${member.label}`}</Legend>
           {member.entries.length === 0 ? <p className="m-0 text-sm">No differences.</p> : null}
           <ul className="m-0 list-none space-y-2 p-0">
             {member.entries.map((entry) => (

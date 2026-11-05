@@ -49,8 +49,8 @@ export function MoneySection({ detail, can }: { detail: CaseDetail; can: Can }) 
       {detail.fines.length === 0 ? <p>No fine has been imposed by a court.</p> : null}
       {detail.fines.map((f) => (
         <article key={f.row.id} className="record-item space-y-2">
-          <p className="m-0 font-medium">{`${FINE_KIND_LABELS[f.row.kind]}, ${formatCents(f.row.amountCents)}, imposed ${formatCivilDate(f.row.imposedOn)} by ${f.row.court}, docket ${f.row.docket}`}</p>
-          <p className="m-0">{`Paid ${formatCents(f.paidCents)}. Balance due ${formatCents(f.dueCents)}.`}</p>
+          <p className="font-medium">{`${FINE_KIND_LABELS[f.row.kind]}, ${formatCents(f.row.amountCents)}, imposed ${formatCivilDate(f.row.imposedOn)} by ${f.row.court}, docket ${f.row.docket}`}</p>
+          <p>{`Paid ${formatCents(f.paidCents)}. Balance due ${formatCents(f.dueCents)}.`}</p>
           {can.collect && f.dueCents > 0 ? (
             <ActionForm action={finePaymentAction} submitLabel="Record payment">
               <Hidden name="fineId" value={f.row.id} />

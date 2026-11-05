@@ -2,6 +2,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { AmendmentText } from '@/components/config/TextDiff'
 import { StatusChip } from '@/components/StatusChip'
 import { SelectField, TextField } from '@/components/staff/fields'
+import { DescriptionList } from '@/components/ui/description-list'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { TERMINAL_STATES } from '@/features/applications/states'
 import { componentsNotInLabel } from '@/features/building/codeEdition'
@@ -46,18 +47,13 @@ export function CodeEditionPanel({ view }: { view: StaffApplicationView }) {
             <p>{componentsNotInLabel(edition.description).join(', ')}</p>
           )}
           {edition.description.amendmentPackagesInForce.map((label) => (
-            <p key={label} className="m-0">
-              {humanizeIsoDates(label)}
-            </p>
+            <p key={label}>{humanizeIsoDates(label)}</p>
           ))}
-          <dl className="grid grid-cols-1 gap-x-4 text-sm sm:grid-cols-[12rem_1fr]">
-            {edition.rows.map((r) => (
-              <div key={r.field} className="contents">
-                <dt className="font-medium">{r.field}</dt>
-                <dd>{r.value}</dd>
-              </div>
-            ))}
-          </dl>
+          <DescriptionList
+            labelWidth="wide"
+            className="text-sm"
+            items={edition.rows.map((r) => ({ label: r.field, value: r.value }))}
+          />
           {edition.amendments.map((a) =>
             a.stateText === undefined && a.townText === undefined ? null : (
               <details key={a.key} className="my-2">

@@ -10,7 +10,7 @@ export function StarterList({ adopted }: { adopted: ReadonlySet<string> }) {
       <section aria-labelledby="starters-open">
         <h2 id="starters-open">Ready to adopt</h2>
         {open.length === 0 ? <p>Every starter has been adopted.</p> : null}
-        <ul className="m-0 list-none p-0">
+        <ul className="list-none p-0">
           {open.map((starter) => (
             <li
               key={starter.id}
@@ -32,7 +32,7 @@ export function StarterList({ adopted }: { adopted: ReadonlySet<string> }) {
         {taken.length === 0 ? (
           <p>No starter has been adopted yet.</p>
         ) : (
-          <ul className="m-0 list-none p-0">
+          <ul className="list-none p-0">
             {taken.map((starter) => (
               <li key={starter.id} className="record-item pb-3">
                 <strong>{starter.applicationType.label}</strong>

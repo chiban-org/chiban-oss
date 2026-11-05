@@ -53,7 +53,7 @@ function HearingSection({ view }: { view: LimitedApplicationView }) {
   return (
     <section aria-label="Board hearings" id="board-hearings">
       <h2>Board hearings</h2>
-      <ul className="m-0 list-none p-0">
+      <ul className="list-none p-0">
         {view.hearings.map((h) => (
           <li key={h.id} className="record-item flex flex-wrap items-center gap-3">
             <span>{h.text}</span>
@@ -74,7 +74,7 @@ function DocumentSection({ view }: { view: LimitedApplicationView }) {
     <section aria-label="Documents" id="documents">
       <h2>Documents</h2>
       {view.documents.length === 0 ? <p>No documents are shared with you.</p> : null}
-      <ul className="m-0 list-none p-0">
+      <ul className="list-none p-0">
         {view.documents.map((d) => (
           <li key={d.documentId} className="record-item flex flex-wrap items-baseline gap-3">
             <a {...NEW_TAB} href={`/api/documents/${d.documentId}`} className="font-medium">

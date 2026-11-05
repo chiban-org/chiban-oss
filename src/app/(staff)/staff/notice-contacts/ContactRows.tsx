@@ -4,6 +4,7 @@ import { useRef, useState } from 'react'
 import { AddressTextField } from '@/components/address/AddressTextField'
 import { TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
+import { Legend } from '@/components/ui/legend'
 
 export interface PersonRow {
   id?: string
@@ -52,7 +53,7 @@ function Rows({ kind, initial }: RowsProps) {
     <div className="space-y-3">
       {rows.map(({ key, row }, index) => (
         <fieldset key={key} className="space-y-3 rounded-md border border-hairline p-3">
-          <legend className="px-1 text-sm font-semibold">{`${label} ${index + 1}`}</legend>
+          <Legend bordered>{`${label} ${index + 1}`}</Legend>
           {shape.fields.id === undefined ? null : (
             <input type="hidden" name={shape.fields.id} value={row.id ?? ''} />
           )}

@@ -35,7 +35,7 @@ function LettersSection({ letters }: { letters: { id: string; title: string }[] 
       {letters.length === 0 ? (
         <p>No letters yet.</p>
       ) : (
-        <ul className="m-0 list-none space-y-1 p-0">
+        <ul className="list-none space-y-1 p-0">
           {letters.map((l) => (
             <li key={l.id}>
               <a {...NEW_TAB} href={`/api/documents/${l.id}`}>

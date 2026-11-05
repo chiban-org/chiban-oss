@@ -8,12 +8,12 @@ export function MissingResults({ rows, total }: { rows: MissingResultRow[]; tota
   if (total === 0) return null
   const more = total - rows.length
   return (
-    <section id="missing-results" aria-labelledby="missing-results-heading" className="space-y-2">
-      <h2 id="missing-results-heading" className="m-0 text-xl">
+    <section id="missing-results" aria-labelledby="missing-results-heading">
+      <h2 id="missing-results-heading" className="text-xl">
         Still need a result
       </h2>
-      <p className="m-0">These inspection dates have passed with no result recorded.</p>
-      <ul className="m-0 list-none p-0">
+      <p>These inspection dates have passed with no result recorded.</p>
+      <ul className="list-none p-0">
         {rows.map((row) => (
           <li key={row.inspectionId} className="record-item">
             <Link href={`/staff/inspections/${row.inspectionId}`} className={LINK}>
@@ -23,7 +23,7 @@ export function MissingResults({ rows, total }: { rows: MissingResultRow[]; tota
           </li>
         ))}
       </ul>
-      {more > 0 ? <p className="m-0">{`${more} more not shown.`}</p> : null}
+      {more > 0 ? <p>{`${more} more not shown.`}</p> : null}
     </section>
   )
 }

@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { SectionHeader } from '@/components/layout/ListHeader'
 import { StatusChip } from '@/components/StatusChip'
+import { DescriptionList } from '@/components/ui/description-list'
 import type { PickedParcel } from '@/features/parcels/parcelPick'
 import type { RostersView } from '@/features/rosters/rosterView'
 import { AddAssociation } from './AssociationForms'
@@ -18,6 +19,7 @@ export const SECTION_LINES = {
   associations: 'Notices for a condo parcel go to the association officers, not the unit owners.',
   parks:
     'Notices go to the park owner. Each tenant is listed and you decide per application whether their home is adjoining or across.',
+  gaps: 'An abutter list that touches one of these cannot be issued until its association is added.',
   restrictions: "When an applicant's land carries one of these, the holder is notified.",
   regional:
     'Used only when an application has regional impact or is within 500 feet under NH DES rules.',
@@ -31,15 +33,15 @@ export function AssociationsSection({
   prefill: PickedParcel | null
 }) {
   return (
-    <section aria-labelledby="associations" className="space-y-3">
+    <section aria-labelledby="associations">
       <SectionHeader
         id="associations"
         title="Condo associations"
+        lead={SECTION_LINES.associations}
         action={<AddAssociation today={view.today} parcel={prefill} open={prefill !== null} />}
       />
-      <p className="m-0">{SECTION_LINES.associations}</p>
       {view.associations.length === 0 ? (
-        <p className="m-0">No associations on file. Add one with Add association.</p>
+        <p>No associations on file. Add one with Add association.</p>
       ) : (
         <AssociationTable rows={view.associations} today={view.today} />
       )}
@@ -50,14 +52,13 @@ export function AssociationsSection({
 export function GapsSection({ view }: { view: RostersView }) {
   if (view.gaps.length === 0) return null
   return (
-    <section aria-labelledby="gaps" className="space-y-3">
-      <h2 id="gaps" className="m-0">
-        Condo parcels with no association on file
-      </h2>
-      <p className="m-0">
-        An abutter list that touches one of these cannot be issued until its association is added.
-      </p>
-      <ul className="m-0 list-none p-0">
+    <section aria-labelledby="gaps">
+      <SectionHeader
+        id="gaps"
+        title="Condo parcels with no association on file"
+        lead={SECTION_LINES.gaps}
+      />
+      <ul className="list-none p-0">
         {view.gaps.map((g) => (
           <li key={g.parcelId} className="record-item flex flex-wrap items-center gap-x-4 gap-y-2">
             <ParcelLink parcelId={g.parcelId} label={g.parcel} />
@@ -81,15 +82,15 @@ export function GapsSection({ view }: { view: RostersView }) {
 
 export function ParksSection({ view }: { view: RostersView }) {
   return (
-    <section aria-labelledby="parks" className="space-y-3">
+    <section aria-labelledby="parks">
       <SectionHeader
         id="parks"
         title="Manufactured housing parks"
+        lead={SECTION_LINES.parks}
         action={<AddPark today={view.today} />}
       />
-      <p className="m-0">{SECTION_LINES.parks}</p>
       {view.parks.length === 0 ? (
-        <p className="m-0">No parks on file. Add one with Add park.</p>
+        <p>No parks on file. Add one with Add park.</p>
       ) : (
         <ParkTable rows={view.parks} today={view.today} />
       )}
@@ -99,13 +100,13 @@ export function ParksSection({ view }: { view: RostersView }) {
 
 export function RestrictionsSection({ view }: { view: RostersView }) {
   return (
-    <section aria-labelledby="holders" className="space-y-3">
+    <section aria-labelledby="holders">
       <SectionHeader
         id="holders"
         title="Conservation and preservation restrictions"
+        lead={SECTION_LINES.restrictions}
         action={<AddHolder />}
       />
-      <p className="m-0">{SECTION_LINES.restrictions}</p>
       <div className="flex flex-wrap items-center gap-3">
         <p className="m-0 font-medium">{view.landRecords.text}</p>
         {view.landRecords.due ? <StatusChip status="overdue" label="Due for a check" /> : null}
@@ -114,7 +115,7 @@ export function RestrictionsSection({ view }: { view: RostersView }) {
         </ActionForm>
       </div>
       {view.restrictions.length === 0 ? (
-        <p className="m-0">No restriction holders on file. Add one with Add holder.</p>
+        <p>No restriction holders on file. Add one with Add holder.</p>
       ) : (
         <RestrictionTable rows={view.restrictions} today={view.today} />
       )}
@@ -124,25 +125,34 @@ export function RestrictionsSection({ view }: { view: RostersView }) {
 
 export function RegionalSection({ view }: { view: RostersView }) {
   return (
-    <section aria-labelledby="regional" className="space-y-3">
-      <h2 id="regional" className="m-0">
-        Regional and state contacts
-      </h2>
-      <p className="m-0">{SECTION_LINES.regional}</p>
-      <dl className="m-0 space-y-2">
-        {view.regionalContacts.map((c) => (
-          <div key={c.role}>
-            <dt className="font-medium">{c.role}</dt>
-            <dd className="m-0">{c.lines.length === 0 ? 'None on file' : c.lines.join('; ')}</dd>
-          </div>
-        ))}
-      </dl>
+    <section aria-labelledby="regional">
+      <SectionHeader
+        id="regional"
+        title="Regional and state contacts"
+        lead={SECTION_LINES.regional}
+      />
+      <DescriptionList
+        labelWidth="wide"
+        items={view.regionalContacts.map((c) => ({
+          label: c.role,
+          value:
+            c.lines.length === 0 ? (
+              <span className="text-muted-foreground">None on file</span>
+            ) : (
+              <ul className="m-0 grid list-none gap-1 p-0">
+                {c.lines.map((line) => (
+                  <li key={line}>{line}</li>
+                ))}
+              </ul>
+            ),
+        }))}
+      />
       {view.canEditSettings ? (
-        <p className="m-0">
+        <p>
           <Link href="/staff/settings/regional_contacts">Change these in Settings</Link>
         </p>
       ) : (
-        <p className="m-0 text-muted-foreground">An administrator changes these in Settings.</p>
+        <p className="text-muted-foreground">An administrator changes these in Settings.</p>
       )}
     </section>
   )

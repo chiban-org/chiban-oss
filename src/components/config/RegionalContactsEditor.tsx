@@ -2,6 +2,7 @@
 
 import { AddressAreaField } from '@/components/address/AddressAreaField'
 import { Input, RowButton, rowKey } from '@/components/config/primitives'
+import { Legend } from '@/components/ui/legend'
 import type { Contact, RegionalContactsBody } from '@/features/boards/regionalContacts'
 
 interface Props {
@@ -25,7 +26,7 @@ function ContactFields({
   }
   return (
     <fieldset className="grid gap-3 rounded-md border p-3">
-      <legend className="px-1 text-sm font-medium">{label}</legend>
+      <Legend bordered>{label}</Legend>
       <Input label="Name" value={current.name} onChange={(e) => set({ name: e.target.value })} />
       <AddressAreaField
         label="Mailing address"
@@ -40,7 +41,7 @@ function ContactFields({
 export function RegionalContactsEditor({ body, onChange }: Props) {
   return (
     <div className="space-y-4">
-      <p className="m-0 text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         When a board finds an application may affect places beyond the town, Chiban writes notice to
         each of these. Leave a contact empty if the town does not send to it.
       </p>
@@ -75,7 +76,7 @@ export function RegionalContactsEditor({ body, onChange }: Props) {
         </RowButton>
       </div>
       {body.municipalities.length === 0 ? (
-        <p className="m-0 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           No neighboring towns yet. Add each town that should be sent notice.
         </p>
       ) : null}

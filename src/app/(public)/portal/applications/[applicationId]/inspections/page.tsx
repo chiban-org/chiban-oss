@@ -73,7 +73,7 @@ export default async function PortalInspectionsPage({
         </p>
       ) : null}
       {view.canRequest && (reinspection !== null || view.types.length > 0) ? (
-        <section aria-label="Request an inspection" className="max-w-xl space-y-3">
+        <section aria-label="Request an inspection" className="max-w-xl">
           <h2>Request an inspection</h2>
           <RequestForm
             applicationId={applicationId}
@@ -87,10 +87,10 @@ export default async function PortalInspectionsPage({
           />
         </section>
       ) : null}
-      <section aria-label="Your inspections" className="space-y-3">
+      <section aria-label="Your inspections">
         <h2>Your inspections</h2>
         {view.history.length === 0 ? <p>No inspections have been requested.</p> : null}
-        <ul className="m-0 list-none space-y-3 p-0">
+        <ul className="list-none space-y-3 p-0">
           {view.history.map((row) => (
             <li key={row.id} className="space-y-1 rounded-md border p-3">
               <div className="flex flex-wrap items-center gap-3">
@@ -98,11 +98,9 @@ export default async function PortalInspectionsPage({
                 <StatusChip status={CHIP[row.status]} label={LABEL[row.status]} />
               </div>
               {row.scheduledDate !== null && row.startMinute !== null ? (
-                <p className="m-0">{`${formatCivilDate(row.scheduledDate)} at ${minutesToClock(row.startMinute)}`}</p>
+                <p>{`${formatCivilDate(row.scheduledDate)} at ${minutesToClock(row.startMinute)}`}</p>
               ) : null}
-              {row.resultNotes === null ? null : (
-                <p className="m-0">{`Notes: ${row.resultNotes}`}</p>
-              )}
+              {row.resultNotes === null ? null : <p>{`Notes: ${row.resultNotes}`}</p>}
               {row.status === 'failed' &&
               view.canRequest &&
               view.reinspectableIds.includes(row.id) ? (

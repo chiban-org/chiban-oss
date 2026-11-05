@@ -3,6 +3,7 @@ import { LinkedParcelMap } from '@/components/map/LinkedParcelMap'
 import { HonestText } from '@/components/parcels/HonestText'
 import { RecordsSection } from '@/components/parcels/RecordsSection'
 import { Button } from '@/components/ui/button'
+import { DescriptionList } from '@/components/ui/description-list'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { Bbox } from '@/features/gis/extent'
@@ -80,31 +81,38 @@ export function PublicParcelDetail({
         </p>
       ) : null}
       <Banner view={view} timeZone={timeZone} />
-      <dl className="my-4 grid grid-cols-1 gap-x-6 gap-y-3 sm:grid-cols-[10rem_1fr]">
-        <dt className="font-semibold">Site address</dt>
-        <dd>
-          <HonestText value={view.siteAddress} timeZone={timeZone} />
-        </dd>
-        <dt className="font-semibold">Owner of record</dt>
-        <dd>
-          <HonestText value={view.owner} timeZone={timeZone} />
-        </dd>
-        <dt className="font-semibold">Area</dt>
-        <dd>
-          <HonestText value={view.areaAcres} format={(n) => `${n} acres`} timeZone={timeZone} />
-        </dd>
-        <dt className="font-semibold">Parcel IDs</dt>
-        <dd>
-          <ul>
-            {view.ids.map((id) => (
-              <li key={`${id.label}:${id.value}`}>
-                {id.retired ? `${id.value} (retired ID)` : id.value}
-                <span className="ml-2 text-muted-foreground">{id.label}</span>
-              </li>
-            ))}
-          </ul>
-        </dd>
-      </dl>
+      <DescriptionList
+        className="my-4"
+        items={[
+          {
+            label: 'Site address',
+            value: <HonestText value={view.siteAddress} timeZone={timeZone} />,
+          },
+          {
+            label: 'Owner of record',
+            value: <HonestText value={view.owner} timeZone={timeZone} />,
+          },
+          {
+            label: 'Area',
+            value: (
+              <HonestText value={view.areaAcres} format={(n) => `${n} acres`} timeZone={timeZone} />
+            ),
+          },
+          {
+            label: 'Parcel IDs',
+            value: (
+              <ul>
+                {view.ids.map((id) => (
+                  <li key={`${id.label}:${id.value}`}>
+                    {id.retired ? `${id.value} (retired ID)` : id.value}
+                    <span className="ml-2 text-muted-foreground">{id.label}</span>
+                  </li>
+                ))}
+              </ul>
+            ),
+          },
+        ]}
+      />
       {view.lineage.parents.length + view.lineage.children.length === 0 ? null : (
         <section aria-labelledby="lineage-heading" className="my-6">
           <h2 id="lineage-heading">Where this parcel came from</h2>

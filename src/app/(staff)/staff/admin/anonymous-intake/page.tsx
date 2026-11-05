@@ -1,5 +1,6 @@
 import { desc, eq } from 'drizzle-orm'
 import { ActionForm } from '@/components/ActionForm'
+import { KeyFacts } from '@/components/layout/KeyFacts'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { APP_VERSION } from '@/config/appVersion'
@@ -64,26 +65,28 @@ export default async function AnonymousIntakePage() {
         title="Anonymous intake"
         lead="Whether the public can report a possible violation without giving a name."
       />
-      <p>
-        {open
-          ? 'Anonymous complaints are being accepted at the report anonymously page.'
-          : 'Anonymous complaints are not being accepted. The report anonymously page says anonymous reports are not available and links to the named complaint form.'}
-      </p>
-      <p>
-        {verified
-          ? 'The version running now has a passing retention check.'
-          : 'The version running now has no passing retention check, so intake cannot be turned on. Run the check on the server host: verify-anonymous-intake.sh with the folder that holds the nightly backups.'}
-      </p>
-      <section aria-labelledby="last-check" className="space-y-2">
+      <KeyFacts stacked>
+        <p>
+          {open
+            ? 'Anonymous complaints are being accepted at the report anonymously page.'
+            : 'Anonymous complaints are not being accepted. The report anonymously page says anonymous reports are not available and links to the named complaint form.'}
+        </p>
+        <p>
+          {verified
+            ? 'The version running now has a passing retention check.'
+            : 'The version running now has no passing retention check, so intake cannot be turned on. Run the check on the server host: verify-anonymous-intake.sh with the folder that holds the nightly backups.'}
+        </p>
+      </KeyFacts>
+      <section aria-labelledby="last-check">
         <h2 id="last-check">Last retention check</h2>
         {latest === undefined ? (
           <p>No retention check has been recorded.</p>
         ) : (
           <>
-            <p className="m-0">{`${latest.passed ? 'Passed' : 'Failed'} on ${formatInstantLong(latest.ranAt, zone)}.`}</p>
-            <p className="m-0">{`Version checked: ${latest.imageRef ?? `release ${latest.appVersion}`}.`}</p>
+            <p>{`${latest.passed ? 'Passed' : 'Failed'} on ${formatInstantLong(latest.ranAt, zone)}.`}</p>
+            <p>{`Version checked: ${latest.imageRef ?? `release ${latest.appVersion}`}.`}</p>
             {findings.length === 0 ? null : (
-              <ul className="m-0 space-y-1">
+              <ul className="space-y-1">
                 {findings.map((f) => (
                   <li key={`${f.location}-${f.marker ?? 'none'}`}>
                     {`${LOCATION_LABELS[f.location] ?? 'Somewhere'}${f.marker === null ? '' : `: ${MARKER_LABELS[f.marker] ?? 'identifying data'} was found`}.`}

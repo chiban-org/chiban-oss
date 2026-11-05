@@ -14,7 +14,7 @@ import {
 
 export function DeterminationSection({ data }: { data: BoardPanelData }) {
   return (
-    <section aria-label="Determinations" className="space-y-3">
+    <section aria-label="Determinations">
       <h3>Regional impact and water bodies</h3>
       <p>{data.regional.summary}</p>
       {data.canDetermine ? (
@@ -95,7 +95,7 @@ export function DeterminationSection({ data }: { data: BoardPanelData }) {
 
 export function ListSection({ data }: { data: BoardPanelData }) {
   return (
-    <section aria-label="Abutter lists" className="space-y-3">
+    <section aria-label="Abutter lists">
       <h3>Abutter lists</h3>
       <p>
         {data.parcels.length === 0
@@ -103,7 +103,7 @@ export function ListSection({ data }: { data: BoardPanelData }) {
           : `Parcels: ${data.parcels.join(', ')}.`}
       </p>
       {data.lists.length === 0 ? <p>No list has been drawn.</p> : null}
-      <ul className="m-0 list-none p-0">
+      <ul className="list-none p-0">
         {data.lists.map((l) =>
           data.canOpenLists ? (
             <li key={l.id}>
@@ -164,7 +164,7 @@ export function ListSection({ data }: { data: BoardPanelData }) {
         </>
       ) : null}
       {data.professionals.length > 0 ? (
-        <ul className="m-0 list-none p-0">
+        <ul className="list-none p-0">
           {data.professionals.map((p) => (
             <li key={p.id}>{p.text}</li>
           ))}
@@ -179,7 +179,7 @@ export function CostSection({ data }: { data: BoardPanelData }) {
   const ending =
     data.canRecord && notice.dueCents > 0 && ['submitted', 'under_review'].includes(data.state)
   return (
-    <section aria-label="Notice costs" className="space-y-3">
+    <section aria-label="Notice costs">
       <h3>Notice costs</h3>
       {notice.mailings === null ? (
         <p>The cost is worked out when a list is issued.</p>

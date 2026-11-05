@@ -40,10 +40,10 @@ export default async function EnforcementOfficersPage() {
         {designations.length === 0 ? (
           <p>No officer has been designated. Add one with Designate an officer.</p>
         ) : null}
-        <ul className="m-0 list-none space-y-3 p-0">
+        <ul className="list-none space-y-3 p-0">
           {designations.map((d) => (
             <li key={d.id} className="record-item space-y-2">
-              <p className="m-0">
+              <p>
                 {`${d.name}, ${d.title}. Designated by ${d.authority} on ${formatCivilDate(d.adoptedOn)}${d.endedOn === null ? '' : `, ended ${formatCivilDate(d.endedOn)}`}.`}
               </p>
               <EditDesignation row={d} today={today} />

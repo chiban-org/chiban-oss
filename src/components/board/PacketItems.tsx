@@ -23,7 +23,7 @@ export function Marker({ text }: { text: string }) {
 
 export function PacketItems({ items, base }: { items: PacketViewItem[]; base: string }) {
   return (
-    <ul className="m-0 list-none space-y-2 p-0">
+    <ul className="list-none space-y-2 p-0">
       <li>
         <Link {...NEW_TAB} href={`${base}/cover`} className={LINK}>
           Cover page and contents

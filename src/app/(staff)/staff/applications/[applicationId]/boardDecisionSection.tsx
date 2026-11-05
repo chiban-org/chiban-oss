@@ -18,7 +18,7 @@ export function DecisionSection({ data }: { data: BoardPanelData }) {
   if (!data.certification.offered && data.certification.history.length === 0 && !exercise)
     return null
   return (
-    <section aria-label="Decision follow-up" className="space-y-3">
+    <section aria-label="Decision follow-up">
       <h3>Decision follow-up</h3>
       {data.certification.history.map((line) => (
         <p key={line}>{line}</p>

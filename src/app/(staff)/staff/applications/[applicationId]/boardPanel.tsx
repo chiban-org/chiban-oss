@@ -83,7 +83,7 @@ function AcceptanceSection({ data, hearings }: { data: BoardPanelData; hearings:
   const planning = data.board === 'planning_board'
   const open = data.canRecord && data.state === 'submitted'
   return (
-    <section aria-label={planning ? 'Acceptance' : 'Hearing'} className="space-y-3">
+    <section aria-label={planning ? 'Acceptance' : 'Hearing'}>
       <h3>{planning ? 'Filing and acceptance' : 'Hearing'}</h3>
       <p>
         {acceptanceSummary(data, hearings)}
@@ -108,7 +108,7 @@ function AcceptanceSection({ data, hearings }: { data: BoardPanelData; hearings:
 
 export function BoardPanel({ data, hearings }: { data: BoardPanelData; hearings: string[] }) {
   return (
-    <section aria-label="Board" id="board" className="space-y-4">
+    <section aria-label="Board" id="board">
       <h2>{data.boardName}</h2>
       <AcceptanceSection data={data} hearings={hearings} />
       <DeterminationSection data={data} />

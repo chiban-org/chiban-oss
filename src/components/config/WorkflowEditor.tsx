@@ -6,6 +6,7 @@ import { PublishBar } from '@/components/config/PublishBar'
 import { Check, FieldError, Input, Pick, RowButton, rowKey } from '@/components/config/primitives'
 import { WorkflowPreview } from '@/components/config/WorkflowPreview'
 import { Button } from '@/components/ui/button'
+import { Legend } from '@/components/ui/legend'
 import { RequiredNote } from '@/components/ui/required-mark'
 import { useHydrated } from '@/components/useHydrated'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
@@ -73,7 +74,7 @@ function StateSteps({
   const own = substeps.map((s, index) => ({ s, index })).filter(({ s }) => s.state === state)
   return (
     <fieldset className="space-y-2 rounded-md border p-3">
-      <legend className="px-1 text-sm font-medium">{STATE_LABELS[state]}</legend>
+      <Legend bordered>{STATE_LABELS[state]}</Legend>
       {own.map(({ s, index }, position) => (
         <Input
           key={rowKey(`${state}-step`, index)}
@@ -192,7 +193,7 @@ export function WorkflowEditor({
         </p>
       ))}
       <fieldset className="flex flex-wrap items-end gap-3 rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">Preview with a sample</legend>
+        <Legend bordered>Preview with a sample</Legend>
         <Input label="Received on" type="date" name="previewReceived" defaultValue="2027-03-24" />
         <Input label="Accepted on" type="date" name="previewAccepted" defaultValue="2027-04-14" />
         <Input label="Meeting on" type="date" name="previewMeeting" defaultValue="2027-04-14" />

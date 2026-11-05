@@ -1,3 +1,4 @@
+import { KeyFacts } from '@/components/layout/KeyFacts'
 import { ListHeader } from '@/components/layout/ListHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { pickedParcelFor } from '@/features/parcels/parcelPick'
@@ -19,17 +20,14 @@ export const dynamic = 'force-dynamic'
 function DueLine({ view }: { view: RostersView }) {
   const due = view.dueCount
   return (
-    <div className="grid gap-1">
+    <KeyFacts note="Lists still issue and print an entry past the interval as out of date.">
       {due === 0 ? null : (
         <p className="m-0">
-          <span className="bg-highlight px-1 font-semibold">{`${due} due for a check.`}</span>
+          <span className="attention font-semibold">{`${due} due for a check.`}</span>
         </p>
       )}
       <RecheckInterval days={view.recheckDays} canEdit={view.canEditSettings} />
-      <p className="m-0 text-sm text-muted-foreground">
-        Lists still issue and print an entry past the interval as out of date.
-      </p>
-    </div>
+    </KeyFacts>
   )
 }
 

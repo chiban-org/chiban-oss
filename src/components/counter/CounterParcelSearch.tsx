@@ -65,7 +65,7 @@ export function CounterParcelSearch({
 }) {
   const query = { type: typeKey }
   return (
-    <section aria-labelledby="parcel" className="space-y-3">
+    <section aria-labelledby="parcel">
       <h2 id="parcel">Parcel</h2>
       <form method="get" role="search" className="flex max-w-3xl gap-3">
         <input type="hidden" name="type" value={typeKey} />

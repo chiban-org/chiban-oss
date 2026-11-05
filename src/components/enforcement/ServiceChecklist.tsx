@@ -30,15 +30,15 @@ function RoleRow({
   const gap = status.missing.find((m) => m.role === role)
   return (
     <li className="space-y-1 rounded-md border p-3">
-      <p className="m-0 font-medium">{ROLE_LABELS[role]}</p>
+      <p className="font-medium">{ROLE_LABELS[role]}</p>
       {check === undefined && listed.length === 0 ? (
-        <p className="m-0">
+        <p>
           <Missing>Not yet checked</Missing>
         </p>
       ) : null}
-      {check === undefined ? null : <p className="m-0">{ROLE_CHECK_LABELS[check.outcome]}</p>}
+      {check === undefined ? null : <p>{ROLE_CHECK_LABELS[check.outcome]}</p>}
       {listed.length === 0 ? null : (
-        <ul className="m-0 list-none space-y-1 p-0">
+        <ul className="list-none space-y-1 p-0">
           {listed.map((r) => {
             const servedOn = status.servedOn[r.id]
             return (
@@ -55,7 +55,7 @@ function RoleRow({
         </ul>
       )}
       {role === 'record_owner' && status.fallbackCompletedOn !== null && listed.length === 0 ? (
-        <p className="m-0">
+        <p>
           <Missing>
             List the owner of record by name, with the address as unknown, so the answer period can
             start.
@@ -63,7 +63,7 @@ function RoleRow({
         </p>
       ) : null}
       {gap?.reason === 'publication_incomplete' ? (
-        <p className="m-0">
+        <p>
           <Missing>Posting and publication not complete</Missing>
         </p>
       ) : null}
@@ -82,16 +82,16 @@ export function ServiceChecklist({
 }) {
   return (
     <div className="space-y-3">
-      <p className="m-0 font-medium">
+      <p className="font-medium">
         {status.complete ? 'Service is complete.' : 'Service is not complete.'}
       </p>
-      <ul className="m-0 list-none space-y-2 p-0">
+      <ul className="list-none space-y-2 p-0">
         {rule.recipientRoles.map((role) => (
           <RoleRow key={role} role={role} status={status} state={state} />
         ))}
       </ul>
       {status.fallbackCompletedOn === null ? null : (
-        <p className="m-0">{`Posting and publication complete ${formatCivilDate(status.fallbackCompletedOn)}.`}</p>
+        <p>{`Posting and publication complete ${formatCivilDate(status.fallbackCompletedOn)}.`}</p>
       )}
       {state.events.length === 0 ? null : (
         <div>

@@ -134,7 +134,7 @@ export default async function CensusPage({
           {`${incompleteCopy(r)} below. The CSV download is available once every permit is classified.`}
         </p>
       )}
-      <section aria-labelledby="section-3" className="space-y-2">
+      <section aria-labelledby="section-3">
         <h2 id="section-3">Section 3: Housing units authorized</h2>
         <table className="w-full text-left">
           <thead>
@@ -159,7 +159,7 @@ export default async function CensusPage({
           </tbody>
         </table>
       </section>
-      <section aria-labelledby="section-4" className="space-y-2">
+      <section aria-labelledby="section-4">
         <h2 id="section-4">Section 4: Permits valued at $1,000,000 or more</h2>
         {r.largePermits.length === 0 ? (
           <p>No permit this period is valued at $1,000,000 or more.</p>
@@ -202,11 +202,11 @@ export default async function CensusPage({
       {suggestions.length === 0 ? null : (
         <section aria-labelledby="needs">
           <h2 id="needs">Needs classification</h2>
-          <p className="m-0">
+          <p>
             Chiban cannot tell a new building from an addition, so confirm each permit before it
             counts.
           </p>
-          <ul className="m-0 list-none space-y-4 p-0">
+          <ul className="list-none space-y-4 p-0">
             {suggestions.map(({ row, suggestion, suggested }) => (
               <li key={row.applicationId} className="record-item">
                 <p className="m-0 font-medium">{`Permit ${row.number}`}</p>

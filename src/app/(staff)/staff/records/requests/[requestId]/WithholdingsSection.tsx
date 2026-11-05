@@ -59,7 +59,7 @@ export function WithholdingsSection({
       {request.withholdings.length === 0 ? (
         <p>Nothing has been withheld.</p>
       ) : (
-        <ul className="m-0 list-none space-y-3 p-0">
+        <ul className="list-none space-y-3 p-0">
           {request.withholdings.map((w) => {
             const e = exemptionLabel(w)
             return (

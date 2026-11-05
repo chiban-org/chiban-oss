@@ -58,7 +58,7 @@ export function AppealsPanel({ view, graph }: { view: StaffApplicationView; grap
       <h2>Appeals</h2>
       {hasAppeals(view, graph) ? null : <p>No appeal has been filed.</p>}
       {view.appeals.length === 0 ? null : (
-        <ul className="m-0 list-none p-0">
+        <ul className="list-none p-0">
           {view.appeals.map((a) => (
             <li key={a.id} className="record-item pb-3">
               {appealLine(a)}

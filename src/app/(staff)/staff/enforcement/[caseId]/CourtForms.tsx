@@ -20,7 +20,7 @@ export function CourtForms({ order, detail }: { order: OrderDetail; detail: Case
   return (
     <div className="space-y-3">
       {order.steps.length === 0 ? <p>No court step has been recorded.</p> : null}
-      <ul className="m-0 list-none space-y-1 p-0">
+      <ul className="list-none space-y-1 p-0">
         {order.steps.map((s) => (
           <li key={s.id}>
             {`${formatCivilDate(s.occurredOn)}: ${COURT_STEP_LABELS[s.kind]}, ${s.court}${s.docket === null ? '' : `, docket ${s.docket}`}${s.judgmentOutcome === null ? '' : `, ${JUDGMENT_OUTCOME_LABELS[s.judgmentOutcome].toLowerCase()}`}. `}

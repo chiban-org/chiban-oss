@@ -23,7 +23,7 @@ export function RecordsPanel(props: Props) {
       {props.snapshots.length === 0 ? (
         <p>No snapshot yet. One is taken when the application is submitted.</p>
       ) : null}
-      <ul className="m-0 list-none p-0">
+      <ul className="list-none p-0">
         {props.snapshots.map((s) => (
           <li key={s.id}>
             {`Snapshot ${s.sequence}, ${s.reason === 'submission' ? 'at submission' : 'after an amendment'}, ${formatInstant(s.createdAt, props.zone)}`}

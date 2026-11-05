@@ -32,7 +32,7 @@ export default async function LegacyPacketPage({
         {page.value.links.length === 0 ? (
           <p>This packet was never sent by private link.</p>
         ) : (
-          <ul className="m-0 list-none p-0">
+          <ul className="list-none p-0">
             {page.value.links.map((row) => (
               <li
                 key={row.key}

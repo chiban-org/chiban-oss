@@ -123,7 +123,7 @@ describe('staff application pages', () => {
       )
       const articles = page.split('<article').slice(1)
       for (const article of articles) {
-        const consequence = /If missed<\/dt><dd>([^<]*)</.exec(article)?.[1] ?? ''
+        const consequence = /If missed<\/dt><dd[^>]*>([^<]*)</.exec(article)?.[1] ?? ''
         expect(consequence.length).toBeGreaterThan(10)
       }
       expect(page).toContain(row.number)

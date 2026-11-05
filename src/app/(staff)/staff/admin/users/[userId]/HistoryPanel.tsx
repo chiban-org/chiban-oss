@@ -10,7 +10,7 @@ export function HistoryPanel({ detail, timeZone }: { detail: UserDetail; timeZon
           No changes recorded. Invites, role changes and access changes appear here.
         </p>
       ) : (
-        <ol className="m-0 list-none p-0">
+        <ol className="list-none p-0">
           {detail.history.map((entry) => (
             <li key={entry.id} className="record-item">
               <p className="m-0">{entry.text}</p>

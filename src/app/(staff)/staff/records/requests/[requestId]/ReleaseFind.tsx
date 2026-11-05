@@ -26,7 +26,7 @@ export function ReleaseFind({ requestId, find, userId, example }: FindContext) {
         </Button>
       </form>
       {example === null ? null : (
-        <p className="m-0 flex flex-wrap items-center gap-2 text-sm">
+        <p className="flex flex-wrap items-center gap-2 text-sm">
           <span className="font-semibold text-muted-foreground">Try</span>
           <Link href={`${path}?find=${encodeURIComponent(example)}`}>{example}</Link>
         </p>

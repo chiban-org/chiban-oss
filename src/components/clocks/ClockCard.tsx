@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { StatusChip } from '@/components/StatusChip'
+import { DescriptionList } from '@/components/ui/description-list'
 import { adjustmentKindLabel } from '@/features/clocks/adjustmentKinds'
 import type { ClockExplanation } from '@/features/clocks/explainClock'
 import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
@@ -81,28 +82,31 @@ function ClockDetails({ clock }: ClockProps) {
   const note = dueNote(clock)
   return (
     <>
-      <dl className="mt-2 grid grid-cols-1 gap-x-4 gap-y-1 text-sm sm:grid-cols-[10rem_1fr]">
-        <dt className="font-medium">Starts</dt>
-        <dd>{`${clock.startEvent} on ${formatCivilDate(clock.startDate)}`}</dd>
-        <dt className="font-medium">Counting</dt>
-        <dd>{humanizeIsoDates(clock.countingMethod)}</dd>
-        <dt className="font-medium">Due</dt>
-        <dd>
-          <strong>{formatCivilDate(clock.currentDue.value)}</strong>
-          {note === null ? null : ` ${note}`}
-          {clock.rolledFrom === null
-            ? null
-            : ` Rolled forward from ${formatCivilDate(clock.rolledFrom)}.`}
-        </dd>
-        <dt className="font-medium">Who acts</dt>
-        <dd>{WHOSE[clock.whose]}</dd>
-        <dt className="font-medium">If missed</dt>
-        <dd>{clock.consequence}</dd>
-        <dt className="font-medium">Extension</dt>
-        <dd>{clock.extensionPolicy}</dd>
-      </dl>
+      <DescriptionList
+        labelWidth="narrow"
+        className="mt-3 text-sm"
+        items={[
+          { label: 'Starts', value: `${clock.startEvent} on ${formatCivilDate(clock.startDate)}` },
+          { label: 'Counting', value: humanizeIsoDates(clock.countingMethod) },
+          {
+            label: 'Due',
+            value: (
+              <>
+                <strong>{formatCivilDate(clock.currentDue.value)}</strong>
+                {note === null ? null : ` ${note}`}
+                {clock.rolledFrom === null
+                  ? null
+                  : ` Rolled forward from ${formatCivilDate(clock.rolledFrom)}.`}
+              </>
+            ),
+          },
+          { label: 'Who acts', value: WHOSE[clock.whose] },
+          { label: 'If missed', value: clock.consequence },
+          { label: 'Extension', value: clock.extensionPolicy },
+        ]}
+      />
       {clock.adjustments.length === 0 ? null : (
-        <ul className="mt-2 list-disc pl-5 text-sm">
+        <ul className="mt-3 list-disc pl-5 text-sm">
           {clock.adjustments.map((a) => (
             <li key={`${a.kind}-${a.at.toISOString()}`}>
               {`${adjustmentKindLabel(a.kind)}${a.days === null ? '' : `, ${a.days} ${plural(a.days)}`}${a.newDue === null ? '' : `, new due date ${formatCivilDate(a.newDue)}`}. ${a.reason}`}
@@ -119,7 +123,7 @@ function ClockDetails({ clock }: ClockProps) {
 
 function CollapsedClock({ clock, children }: CardProps) {
   return (
-    <article className="py-2" aria-label={clock.ruleLabel} data-collapsed="">
+    <article className="record-item" aria-label={clock.ruleLabel} data-collapsed="">
       <details>
         <summary className="flex w-full flex-wrap items-center gap-x-3 gap-y-1 font-normal text-ink">
           <span className="font-semibold">{clock.ruleLabel}</span>
@@ -143,12 +147,12 @@ export function ClockCard({ clock, collapsed = false, children }: CardProps) {
     return <CollapsedClock clock={clock}>{children}</CollapsedClock>
   }
   return (
-    <article className="py-2" aria-label={clock.ruleLabel}>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h3 className="text-base font-semibold">{clock.ruleLabel}</h3>
+    <article className="record-item" aria-label={clock.ruleLabel}>
+      <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+        <h3 className="m-0 text-base font-semibold">{clock.ruleLabel}</h3>
         {statusChip(clock)}
       </div>
-      <p className="text-sm text-muted-foreground">
+      <p className="m-0 mt-1 text-sm text-muted-foreground">
         <Citation clock={clock} />
       </p>
       <ClockDetails clock={clock} />

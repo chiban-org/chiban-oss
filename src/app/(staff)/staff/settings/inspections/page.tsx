@@ -46,7 +46,7 @@ export default async function InspectionSettingsPage() {
       ) : (
         <p role="alert">You do not have permission to change inspection settings.</p>
       )}
-      <section aria-label="Inspector calendars" className="space-y-3">
+      <section aria-label="Inspector calendars">
         <h2>Inspector calendars</h2>
         <p>
           Every booking is sent to the inspector as a calendar invite. Chiban is the record. The
@@ -90,7 +90,7 @@ export default async function InspectionSettingsPage() {
           </div>
         ))}
       </section>
-      <section aria-label="Microsoft 365 connection" className="max-w-xl space-y-3">
+      <section aria-label="Microsoft 365 connection" className="max-w-xl">
         <h2>Microsoft 365 connection</h2>
         <p>
           Only needed if inspectors keep their calendars in Microsoft 365. Your IT contact can find

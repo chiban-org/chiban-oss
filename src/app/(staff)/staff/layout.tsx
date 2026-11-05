@@ -32,7 +32,7 @@ export default async function StaffLayout({ children }: { children: ReactNode })
         user={{ name: account?.displayName ?? 'Signed in', role: primaryRoleLabel(actor.roles) }}
         initialRail={rail}
       />
-      <div className="staff-content w-full max-w-[var(--content-max-width)] flex-1 px-4 py-6 md:px-10 md:py-10">
+      <div className="staff-content w-full min-w-0 max-w-[var(--content-max-width)] flex-1 px-4 py-6 md:px-10 md:py-10">
         <ServiceNotice mode={service.mode} exportUntil={service.exportUntil} />
         {children}
       </div>

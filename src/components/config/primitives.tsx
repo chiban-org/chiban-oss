@@ -3,6 +3,7 @@
 import type { ComponentProps, ReactNode } from 'react'
 import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
+import { Legend } from '@/components/ui/legend'
 
 export type FieldErrors = Record<string, string>
 
@@ -42,7 +43,7 @@ export function FieldGroup({
       aria-describedby={errors[name] === undefined ? undefined : `error-${name}`}
       className="my-4 rounded-md border p-3"
     >
-      <legend className="px-1 text-sm font-medium">{label}</legend>
+      <Legend bordered>{label}</Legend>
       {children}
       <FieldError errors={errors} name={name} />
     </fieldset>

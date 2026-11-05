@@ -76,7 +76,7 @@ export function TownSectionForm({ section, initial, resetKey, townName }: Props)
   const listed = Object.entries(errors).filter(([path]) => path !== '_form')
   return (
     <form onSubmit={submit} className={section === 'letterhead' ? 'max-w-6xl' : 'max-w-3xl'}>
-      <RequiredNote />
+      <RequiredNote className="mb-5" />
       <CsrfField />
       <input type="hidden" name="section" value={section} />
       <input type="hidden" name="body" value={JSON.stringify(body)} />

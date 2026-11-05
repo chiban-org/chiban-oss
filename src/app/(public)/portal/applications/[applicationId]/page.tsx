@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/layout/PageHeader'
 import { NEW_TAB } from '@/components/newTab'
 import { StatusTimeline } from '@/components/portal/StatusTimeline'
 import { StatusChip } from '@/components/StatusChip'
+import { DescriptionList } from '@/components/ui/description-list'
 import { env } from '@/config/env'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
 import { groupRevisions } from '@/features/documents/revisions'
@@ -35,14 +36,10 @@ function Details({ view }: { view: PortalApplicationView }) {
   })
   if (rows.length === 0) return <p>No details were entered.</p>
   return (
-    <dl className="grid grid-cols-1 gap-x-6 gap-y-2 sm:grid-cols-[14rem_1fr]">
-      {rows.map((r) => (
-        <div key={r.label} className="contents">
-          <dt className="font-medium">{r.label}</dt>
-          <dd className="m-0">{r.text}</dd>
-        </div>
-      ))}
-    </dl>
+    <DescriptionList
+      labelWidth="wide"
+      items={rows.map((r) => ({ label: r.label, value: r.text }))}
+    />
   )
 }
 
@@ -65,7 +62,7 @@ function DocumentLink({ doc, zone }: { doc: DocumentListRow; zone: string }) {
 
 function DocumentGroups({ documents, zone }: { documents: DocumentListRow[]; zone: string }) {
   return (
-    <ul className="m-0 space-y-1">
+    <ul className="space-y-1">
       {groupRevisions(documents).map(({ current, earlier }) => (
         <li key={current.documentId}>
           <DocumentLink doc={current} zone={zone} />
@@ -160,9 +157,9 @@ function MoneyHistory({ view }: { view: PortalApplicationView }) {
 function BoardRecordSection({ record }: { record: PortalBoardRecord }) {
   if (record.hearings.length + record.decisions.length + record.deadlines.length === 0) return null
   return (
-    <section aria-labelledby="board-heading" className="space-y-2">
+    <section aria-labelledby="board-heading">
       <h2 id="board-heading">Board hearing and decision</h2>
-      <ul className="m-0 space-y-1">
+      <ul className="space-y-1">
         {[...record.hearings, ...record.decisions, ...record.deadlines].map((line) => (
           <li key={line}>{line}</li>
         ))}
@@ -204,7 +201,7 @@ export default async function PortalApplicationPage({
         }
       />
 
-      <section aria-labelledby="details-heading" className="space-y-3">
+      <section aria-labelledby="details-heading">
         <h2 id="details-heading">Application</h2>
         {view.canEdit && view.form !== null ? (
           <PortalApplicationForm
@@ -222,9 +219,9 @@ export default async function PortalApplicationPage({
       {board.ok ? <BoardRecordSection record={board.value} /> : null}
 
       {view.conditions.length === 0 ? null : (
-        <section aria-labelledby="conditions-heading" className="space-y-2">
+        <section aria-labelledby="conditions-heading">
           <h2 id="conditions-heading">Conditions</h2>
-          <ul className="m-0 space-y-1">
+          <ul className="space-y-1">
             {view.conditions.map((c) => (
               <li key={c.text}>{`${c.text} (${CONDITION_STATUS[c.status]})`}</li>
             ))}
@@ -232,7 +229,7 @@ export default async function PortalApplicationPage({
         </section>
       )}
 
-      <section aria-labelledby="documents-heading" className="space-y-3">
+      <section aria-labelledby="documents-heading">
         <h2 id="documents-heading">Documents</h2>
         {view.documents.length === 0 ? (
           <p>No documents yet.</p>
@@ -245,7 +242,7 @@ export default async function PortalApplicationPage({
       </section>
 
       {view.state === 'issued' || view.state === 'suspended' || view.state === 'closed' ? (
-        <section aria-labelledby="inspections-heading" className="space-y-3">
+        <section aria-labelledby="inspections-heading">
           <h2 id="inspections-heading">Inspections</h2>
           <Link
             href={`/portal/applications/${view.applicationId}/inspections`}
@@ -256,7 +253,7 @@ export default async function PortalApplicationPage({
         </section>
       ) : null}
 
-      <section aria-labelledby="fees-heading" className="space-y-3">
+      <section aria-labelledby="fees-heading">
         <h2 id="fees-heading">Fees and payment</h2>
         <Fees view={view} />
         <MoneyHistory view={view} />

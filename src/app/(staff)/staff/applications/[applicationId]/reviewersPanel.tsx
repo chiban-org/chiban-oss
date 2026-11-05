@@ -57,7 +57,7 @@ export function ReviewersPanel({
     <section aria-label="Reviewers" id="reviewers">
       <h2>Reviewers</h2>
       {reviewers.length === 0 ? <Unassigned required={required} /> : null}
-      <ul className="m-0 list-none p-0">
+      <ul className="list-none p-0">
         {reviewers.map((r) => (
           <li
             key={r.assignmentId}

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { cn } from '@/lib/utils'
 
 export function RequiredMark() {
   return (
@@ -30,14 +31,14 @@ function useFormHasRequired() {
   return { ref, found }
 }
 
-export function RequiredNote() {
+export function RequiredNote({ className }: { className?: string }) {
   const { ref, found } = useFormHasRequired()
   return (
     <p
       ref={ref}
       hidden={!found}
       data-slot="required-note"
-      className="m-0 text-sm text-muted-foreground"
+      className={cn('text-sm text-muted-foreground', className)}
     >
       <span aria-hidden="true">*</span> Required
     </p>

@@ -3,6 +3,7 @@
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Legend } from '@/components/ui/legend'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import type { CamaIdPart } from '@/features/cama/mapping'
 
@@ -29,7 +30,7 @@ export function IdPartsEditor({ parts, headers, onChange }: IdPartsEditorProps) 
     )
   return (
     <fieldset className="my-3">
-      <legend className="text-sm font-medium">Parcel ID parts, in order</legend>
+      <Legend>Parcel ID parts, in order</Legend>
       {parts.map((part, index) => {
         const options = [...new Set([...headers, ...('column' in part ? [part.column] : [])])]
         return (

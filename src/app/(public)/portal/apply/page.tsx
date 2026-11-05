@@ -95,7 +95,7 @@ export default async function ApplyPage({
       </form>
       {query.length > 0 && query.length < MIN_QUERY ? <p>Enter at least two characters.</p> : null}
       {query.length >= MIN_QUERY && hits.length === 0 ? <p>No parcels match that search.</p> : null}
-      <ul className="m-0 list-none divide-y p-0">
+      <ul className="list-none divide-y p-0">
         {hits.map((h) => (
           <li key={h.parcelId} className="py-2">
             {h.status === 'retired' ? (

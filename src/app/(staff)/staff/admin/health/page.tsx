@@ -55,7 +55,7 @@ export default async function HealthPage() {
       <section aria-labelledby="alerts-heading">
         <h2 id="alerts-heading">Firing alerts</h2>
         {firing.length === 0 ? <p>No alerts are firing.</p> : null}
-        <ul className="m-0 list-none space-y-3 p-0">
+        <ul className="list-none space-y-3 p-0">
           {firing.map((alert) => (
             <li key={alert.key} className="record-item">
               <p className="m-0 font-medium">{alert.summary}</p>
@@ -76,7 +76,7 @@ export default async function HealthPage() {
       <section aria-labelledby="channels-heading">
         <h2 id="channels-heading">Alert channels</h2>
         {readiness.length === 0 ? <p>{NO_CHANNEL_COPY}</p> : null}
-        <ul className="m-0 list-none space-y-3 p-0">
+        <ul className="list-none space-y-3 p-0">
           {readiness.map((row) => (
             <li key={row.channel} className="record-item">
               <p className="m-0 font-medium">{CHANNEL_COPY[row.channel]}</p>

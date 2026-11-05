@@ -3,6 +3,7 @@
 import { RuleValue } from '@/components/config/formBuilder/RuleValue'
 import { Pick } from '@/components/config/primitives'
 import { Button } from '@/components/ui/button'
+import { Legend } from '@/components/ui/legend'
 import type { Condition, Leaf } from '@/features/forms/condition'
 import {
   changeOperator,
@@ -99,7 +100,7 @@ export function ConditionBuilder({
   }
   return (
     <fieldset className="m-0 min-w-0 border-0 p-0">
-      <legend className="mb-2 text-sm font-medium">{title}</legend>
+      <Legend>{title}</Legend>
       {set.rules.length > 1 ? (
         <Pick
           label="Match"

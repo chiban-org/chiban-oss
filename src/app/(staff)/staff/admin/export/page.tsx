@@ -91,7 +91,7 @@ export default async function ExportPage({ searchParams }: ExportPageProps = {})
       <section aria-labelledby="exports-heading">
         <h2 id="exports-heading">Your exports</h2>
         {listed.value.length === 0 ? <p>No exports have been requested yet.</p> : null}
-        <ul className="m-0 list-none space-y-3 p-0">
+        <ul className="list-none space-y-3 p-0">
           {listed.value.map((row) => (
             <li key={row.id} className="record-item">
               <p className="m-0 font-medium">

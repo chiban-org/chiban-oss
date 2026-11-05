@@ -30,7 +30,7 @@ export default async function ReleasePage({ params }: { params: Promise<{ token:
       <meta name="robots" content="noindex" />
       <h1>{`Records for request ${release.requestNumber}`}</h1>
       <p className="text-base">{`Released on ${formatCivilDate(release.releasedOn)}. Release ${release.sequence}.`}</p>
-      <ul className="m-0 list-none space-y-2 p-0">
+      <ul className="list-none space-y-2 p-0">
         {release.items.map((item) => (
           <li key={item.versionId} className="text-base">
             {item.withdrawnOn === null ? (

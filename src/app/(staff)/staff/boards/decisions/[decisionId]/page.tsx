@@ -4,6 +4,7 @@ import { RecordLayout } from '@/components/layout/RecordLayout'
 import { splitPanels } from '@/components/layout/splitPanels'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { DescriptionList } from '@/components/ui/description-list'
 import { hasCapability } from '@/features/authz/capabilities'
 import { type DecisionView, loadDecisionView } from '@/features/decisions/decisionView'
 import { townToday } from '@/features/town/today'
@@ -20,28 +21,25 @@ function DecisionSection({ view }: { view: DecisionView }) {
   return (
     <section aria-labelledby="decision">
       <h2 id="decision">Decision</h2>
-      <dl className="grid gap-x-4 gap-y-1 text-sm sm:grid-cols-[12rem_1fr]">
-        <dt className="font-medium">Motion</dt>
-        <dd>{view.motion}</dd>
-        <dt className="font-medium">Findings of fact</dt>
-        <dd>{view.findings}</dd>
-        {view.conditions.length === 0 ? null : (
-          <>
-            <dt className="font-medium">Conditions</dt>
-            <dd>
-              {view.conditions
-                .map((c) => (c.precedent ? `Before issuance: ${c.text}` : c.text))
-                .join(' ')}
-            </dd>
-          </>
-        )}
-        {view.reasons === null ? null : (
-          <>
-            <dt className="font-medium">Reasons for disapproval</dt>
-            <dd>{view.reasons}</dd>
-          </>
-        )}
-      </dl>
+      <DescriptionList
+        labelWidth="wide"
+        items={[
+          { label: 'Motion', value: view.motion },
+          { label: 'Findings of fact', value: view.findings },
+          {
+            label: 'Conditions',
+            value:
+              view.conditions.length === 0 ? null : (
+                <ul className="m-0 grid list-disc gap-1 pl-5">
+                  {view.conditions.map((c) => (
+                    <li key={c.text}>{c.precedent ? `Before issuance: ${c.text}` : c.text}</li>
+                  ))}
+                </ul>
+              ),
+          },
+          { label: 'Reasons for disapproval', value: view.reasons },
+        ]}
+      />
     </section>
   )
 }

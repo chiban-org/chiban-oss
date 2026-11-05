@@ -11,9 +11,9 @@ const GATE_OUTCOME: Record<string, string> = {
 
 export function WorkflowPreview({ preview }: { preview: Preview }) {
   return (
-    <section aria-label="Preview" className="space-y-4">
+    <section aria-label="Preview">
       {preview.issues.length === 0 ? null : (
-        <ul role="alert" className="m-0 list-none space-y-1 p-0 text-status-failed-fg">
+        <ul role="alert" className="list-none space-y-1 p-0 text-status-failed-fg">
           {preview.issues.map((issue) => (
             <li key={`${issue.code}:${issue.state ?? ''}:${issue.key ?? ''}`}>
               {workflowIssueText(issue)}

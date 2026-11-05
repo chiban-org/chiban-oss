@@ -26,7 +26,7 @@ export function ActionsHeader() {
 export function Checked({ row }: { row: EntryMeta }) {
   return (
     <div className="space-y-1">
-      <p className="m-0 whitespace-nowrap">{row.checkedText}</p>
+      <p className="whitespace-nowrap">{row.checkedText}</p>
       {row.due ? <StatusChip status="overdue" label="Due for a check" /> : null}
     </div>
   )
@@ -112,7 +112,7 @@ export function RowActions({
   extra?: ReactNode
 }) {
   return (
-    <div className="flex flex-wrap items-start gap-2">
+    <div className="row-actions">
       {edit}
       <ActionForm
         action={confirmEntryAction}

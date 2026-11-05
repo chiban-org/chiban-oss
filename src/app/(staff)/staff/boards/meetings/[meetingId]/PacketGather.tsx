@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { CheckField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
+import { Legend } from '@/components/ui/legend'
 import type { Exclusion } from '@/features/boards/packetCandidates'
 import type { GatherCandidate, GatherGroup, PacketGather } from '@/features/boards/packetGather'
 import { gatherPacketAction } from './packetActions'
@@ -65,9 +66,9 @@ export function GatherStep({ gather, canShare }: { gather: PacketGather; canShar
       <input type="hidden" name="meetingId" value={gather.meetingId} />
       {gather.groups.map((group) => (
         <fieldset key={group.heading} className="space-y-2 border-0 p-0">
-          <legend className="mb-2 font-semibold">{group.heading}</legend>
+          <Legend>{group.heading}</Legend>
           {group.candidates.length === 0 && group.trc !== 'make' ? (
-            <p className="m-0 text-sm text-muted-foreground">No documents on file.</p>
+            <p className="text-sm text-muted-foreground">No documents on file.</p>
           ) : null}
           {group.candidates.map((c) => (
             <Candidate key={c.documentId} candidate={c} canShare={canShare} />

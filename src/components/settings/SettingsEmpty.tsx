@@ -11,8 +11,8 @@ export function SettingsEmpty({
 }) {
   return (
     <section aria-label={title} className="flex flex-col items-start gap-3 py-4">
-      <h2 className="m-0">{title}</h2>
-      <p className="m-0 max-w-[60ch] text-muted-foreground">{description}</p>
+      <h2>{title}</h2>
+      <p className="max-w-[60ch] text-muted-foreground">{description}</p>
       {action}
     </section>
   )

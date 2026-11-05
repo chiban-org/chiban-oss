@@ -63,7 +63,7 @@ export function ConfigEditorForm({
       noValidate={BUILDER_KINDS.has(kind)}
       className={BUILDER_KINDS.has(kind) ? undefined : 'max-w-4xl'}
     >
-      <RequiredNote />
+      <RequiredNote className="mb-5" />
       <CsrfField />
       <input type="hidden" name="kind" value={kind} />
       <input type="hidden" name="key" value={configKey} />

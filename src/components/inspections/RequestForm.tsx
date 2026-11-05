@@ -3,6 +3,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
+import { Legend } from '@/components/ui/legend'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { RequiredMark } from '@/components/ui/required-mark'
 import {
@@ -77,7 +78,7 @@ export function RequestForm({
         <p className="m-0">{`Phone request hours: ${phoneHoursText}.`}</p>
       )}
       <fieldset className="space-y-2 border-0 p-0">
-        <legend className="font-medium">Inspection</legend>
+        <Legend>Inspection</Legend>
         <RadioGroup
           name="checklistVersionId"
           defaultValue={types[0]?.checklistVersionId}

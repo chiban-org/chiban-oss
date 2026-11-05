@@ -23,13 +23,13 @@ export function CounselSection({ detail, can }: { detail: CaseDetail; can: Can }
       {detail.referrals.length === 0 ? <p>This case has not been referred to counsel.</p> : null}
       {detail.referrals.map((r) => (
         <article key={r.row.id} className="record-item space-y-2">
-          <p className="m-0 font-medium">
+          <p className="font-medium">
             {`Referred to ${r.row.counselName} on ${formatCivilDate(r.row.referredOn)} for ${COUNSEL_PURPOSE_LABELS[r.row.purpose].toLowerCase()}. `}
             <a {...NEW_TAB} href={`/api/documents/${r.row.packetDocumentId}`}>
               Open packet
             </a>
           </p>
-          <ul className="m-0 list-none space-y-1 p-0">
+          <ul className="list-none space-y-1 p-0">
             {r.outcomes.map((o) => (
               <li
                 key={o.id}

@@ -64,7 +64,7 @@ function ProofForm({ view, today }: { view: HearingView; today: string }) {
 
 export function NoticeSection({ view, today }: { view: HearingView; today: string }) {
   return (
-    <section aria-labelledby="notice" className="space-y-4">
+    <section aria-labelledby="notice">
       <h2 id="notice">Notice</h2>
       <NoticeChecklist items={view.checklist} noticedOn={view.noticedOn} />
       <p>

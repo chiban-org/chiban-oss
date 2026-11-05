@@ -2,6 +2,7 @@
 
 import { DollarsInput, PercentInput } from '@/components/config/plainFields'
 import { Check, Input } from '@/components/config/primitives'
+import { Legend } from '@/components/ui/legend'
 import { convenienceExample } from '@/features/payments/feeInputs'
 import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
 
@@ -22,7 +23,7 @@ export function PaymentSettingsEditor({ body, onChange }: Props) {
   return (
     <div className="space-y-3">
       <fieldset className="rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">Convenience fee passed to the payer</legend>
+        <Legend bordered>Convenience fee passed to the payer</Legend>
         <div className="grid gap-3 sm:grid-cols-2">
           <PercentInput
             label="Percent of the payment"
@@ -36,7 +37,7 @@ export function PaymentSettingsEditor({ body, onChange }: Props) {
           />
         </div>
         <div className="mt-3 space-y-1">
-          <p className="m-0 text-sm font-medium">Charge it on</p>
+          <p className="text-sm font-medium">Charge it on</p>
           {CHANNELS.map(([channel, label]) => (
             <Check
               key={channel}

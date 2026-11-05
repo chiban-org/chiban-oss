@@ -20,8 +20,8 @@ function Node({ node, all }: { node: GraphNode; all: GraphNode[] }) {
   const children = all.filter((n) => n.parentId === node.nodeId)
   return (
     <li className="space-y-1">
-      <p className="m-0 font-semibold">{node.kindLabel}</p>
-      <p className="m-0 text-sm">
+      <p className="font-semibold">{node.kindLabel}</p>
+      <p className="text-sm">
         {node.dateText}
         {node.outcomeText === null ? '' : `, ${node.outcomeText}`}
       </p>
@@ -35,12 +35,12 @@ function Node({ node, all }: { node: GraphNode; all: GraphNode[] }) {
         {node.untimely ? <StatusChip status="failed" label="Filed late" /> : null}
       </div>
       {node.window === null ? null : (
-        <p className="m-0 text-sm">
+        <p className="text-sm">
           {`${node.window.label}, due ${node.window.dueText}. ${node.window.consequence}`}
         </p>
       )}
       {children.length === 0 ? null : (
-        <ul className="m-0 list-none space-y-3 border-l pl-4 pt-2">
+        <ul className="list-none space-y-3 border-l pl-4 pt-2">
           {children.map((child) => (
             <Node key={child.nodeId} node={child} all={all} />
           ))}

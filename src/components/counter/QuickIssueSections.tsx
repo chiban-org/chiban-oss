@@ -61,7 +61,7 @@ export function ContractorSection({
   lookup: { label: string; url: string }
 }) {
   return (
-    <section aria-labelledby="contractor" className="space-y-3">
+    <section aria-labelledby="contractor">
       <h2 id="contractor">Contractor and license check</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField label="Contractor name" name="contractorName" required />
@@ -85,7 +85,7 @@ export function ContractorSection({
 
 export function WorkSection({ fields }: { fields: WorkField[] }) {
   return (
-    <section aria-labelledby="work" className="space-y-3">
+    <section aria-labelledby="work">
       <h2 id="work">Work details</h2>
       {fields.map((field) => (
         <WorkInput key={field.key} field={field} />
@@ -104,7 +104,7 @@ export function FeeSection({
   card: boolean
 }) {
   return (
-    <section aria-labelledby="fee" className="space-y-1">
+    <section aria-labelledby="fee">
       <h2 id="fee">Fee</h2>
       <p>Permit fee {formatCents(baseCents)}</p>
       {card ? <p>Convenience fee {formatCents(convenienceCents)}</p> : null}
@@ -127,7 +127,7 @@ export function PaymentSection({
   readerSimulated: boolean
 }) {
   return (
-    <section aria-labelledby="payment" className="space-y-3">
+    <section aria-labelledby="payment">
       <h2 id="payment">Payment</h2>
       <TextField label="Payer name (defaults to the contractor)" name="payerName" />
       <fieldset className="space-y-2">

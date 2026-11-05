@@ -31,7 +31,7 @@ export function DueLine({
   const startLabel = START_EVENT_LABELS[due.startEvent] ?? due.startEvent
   return (
     <div className="space-y-1">
-      <p className="m-0 font-medium">
+      <p className="font-medium">
         {rule.label}{' '}
         {rule.citation.url === null ? (
           `(${rule.citation.label})`
@@ -41,13 +41,13 @@ export function DueLine({
           </>
         )}
       </p>
-      <p className="m-0">{`Starts: ${startLabel}, ${formatCivilDate(due.startDate)}. ${humanizeIsoDates(due.countingMethod)}`}</p>
-      <p className="m-0">
+      <p>{`Starts: ${startLabel}, ${formatCivilDate(due.startDate)}. ${humanizeIsoDates(due.countingMethod)}`}</p>
+      <p>
         {`Due ${formatCivilDate(due.due)}`}
         {due.rolledFrom === null ? '' : `, moved from ${formatCivilDate(due.rolledFrom)}`}
         {met ? '.' : `. ${statusText(due, today)}`}
       </p>
-      {met ? null : <p className="m-0">{consequenceText(due, today)}</p>}
+      {met ? null : <p>{consequenceText(due, today)}</p>}
     </div>
   )
 }

@@ -106,7 +106,7 @@ export default async function BoardsPage({
         </div>
       )}
       {view.sections.map((section) => (
-        <section key={section.board} aria-label={section.label} className="space-y-3">
+        <section key={section.board} aria-label={section.label}>
           <h2>{section.label}</h2>
           <SectionApplications
             section={section}

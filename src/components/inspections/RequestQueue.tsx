@@ -68,12 +68,12 @@ export function RequestQueue({
         />
       </div>
       {visible.length === 0 ? (
-        <p className="m-0">No requests are waiting.</p>
+        <p>No requests are waiting.</p>
       ) : (
         <ul
           role="listbox"
           aria-label="Requests"
-          className="m-0 flex list-none flex-col divide-y divide-hairline p-0"
+          className="flex list-none flex-col divide-y divide-hairline p-0"
         >
           {visible.map((request) => {
             const chosen = request.inspectionId === chosenId

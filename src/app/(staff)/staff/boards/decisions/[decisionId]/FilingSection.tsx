@@ -47,7 +47,7 @@ export function FilingSection({ view, today }: { view: DecisionView; today: stri
     )
   }
   return (
-    <section aria-labelledby="file-decision" className="space-y-4">
+    <section aria-labelledby="file-decision">
       <h2 id="file-decision">Filing</h2>
       <ApplicationFileUploader
         applicationId={view.applicationId}

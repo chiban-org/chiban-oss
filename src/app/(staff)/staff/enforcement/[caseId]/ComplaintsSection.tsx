@@ -11,7 +11,7 @@ type Complaint = CaseDetail['staff']['complaints'][number]
 
 function ComplaintLine({ complaint }: { complaint: Complaint }) {
   return (
-    <p className="m-0 font-medium">{`${complaint.number}, ${CHANNEL_LABELS[complaint.channel]}, received ${formatCivilDate(complaint.receivedOn)}`}</p>
+    <p className="font-medium">{`${complaint.number}, ${CHANNEL_LABELS[complaint.channel]}, received ${formatCivilDate(complaint.receivedOn)}`}</p>
   )
 }
 
@@ -19,7 +19,7 @@ function ComplaintSummary({ complaint }: { complaint: Complaint }) {
   return (
     <article className="record-item space-y-2">
       <ComplaintLine complaint={complaint} />
-      <p className="m-0">Who sent it and what they reported are seen only by enforcement staff.</p>
+      <p>Who sent it and what they reported are seen only by enforcement staff.</p>
     </article>
   )
 }
@@ -29,9 +29,9 @@ function ManagedComplaint({ complaint: c }: { complaint: Complaint }) {
     <article className="record-item space-y-2">
       <ComplaintLine complaint={c} />
       {c.channel === 'anonymous_web' ? (
-        <p className="m-0">Anonymous. The town does not know who sent this.</p>
+        <p>Anonymous. The town does not know who sent this.</p>
       ) : (
-        <p className="m-0">{`Complainant: ${c.complainantName ?? 'not given'}, ${c.complainantEmail ?? 'no email'}, ${c.complainantPhone ?? 'no phone'}. Seen only by town staff.`}</p>
+        <p>{`Complainant: ${c.complainantName ?? 'not given'}, ${c.complainantEmail ?? 'no email'}, ${c.complainantPhone ?? 'no phone'}. Seen only by town staff.`}</p>
       )}
       <div className="grid gap-4 md:grid-cols-2">
         <div>
@@ -75,7 +75,7 @@ export function ComplaintsSection({ detail, can }: { detail: CaseDetail; can: Ca
       {can.manage ? (
         row.isPublic ? (
           <div className="space-y-2">
-            <p className="m-0">{`This case is public. Summary: ${row.publicSummary ?? ''}`}</p>
+            <p>{`This case is public. Summary: ${row.publicSummary ?? ''}`}</p>
             <ActionForm
               action={unpublishCaseAction}
               submitLabel="Make case private"

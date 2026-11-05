@@ -60,14 +60,14 @@ export default async function InspectionPage({
         facts={inspectionFacts(view, LINK)}
       />
       {view.previousFailureNotes === null ? null : (
-        <p className="m-0 rounded-md bg-highlight px-3 py-2">{`Last time: ${view.previousFailureNotes}`}</p>
+        <p className="rounded-md bg-highlight px-3 py-2">{`Last time: ${view.previousFailureNotes}`}</p>
       )}
       {view.waitingForDate ? (
         <p role="status">This inspection can be recorded on or after its scheduled date.</p>
       ) : null}
       {view.canRecord ? (
-        <section aria-label="Checklist" className="space-y-3">
-          <h2 className="m-0 text-xl">Checklist</h2>
+        <section aria-label="Checklist">
+          <h2 className="text-xl">Checklist</h2>
           <ChecklistForm
             inspectionId={inspection.id}
             rowVersion={inspection.rowVersion}
@@ -77,9 +77,9 @@ export default async function InspectionPage({
           />
         </section>
       ) : (
-        <section aria-label="Result" className="space-y-2">
-          <h2 className="m-0 text-xl">Checklist</h2>
-          <ul className="m-0 list-none space-y-1 p-0">
+        <section aria-label="Result">
+          <h2 className="text-xl">Checklist</h2>
+          <ul className="list-none space-y-1 p-0">
             {view.items.map((item) => (
               <li key={item.key}>
                 {`${item.label}: ${item.outcome === null ? 'Not answered' : OUTCOME[item.outcome]}`}
@@ -89,12 +89,12 @@ export default async function InspectionPage({
           {inspection.resultNotes === null ? null : <p>{`Notes: ${inspection.resultNotes}`}</p>}
         </section>
       )}
-      <section aria-label="Photos" className="space-y-3">
-        <h2 className="m-0 text-xl">Photos</h2>
+      <section aria-label="Photos">
+        <h2 className="text-xl">Photos</h2>
         {view.photos.length === 0 ? (
-          <p className="m-0">No photos yet.</p>
+          <p>No photos yet.</p>
         ) : (
-          <ul className="m-0 list-none space-y-1 p-0">
+          <ul className="list-none space-y-1 p-0">
             {view.photos.map((photo) => (
               <li key={photo.documentId}>
                 <a {...NEW_TAB} className={LINK} href={`/api/documents/${photo.documentId}`}>

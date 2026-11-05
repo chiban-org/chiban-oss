@@ -99,7 +99,7 @@ export function ReaderPanel({
   )
 
   return (
-    <section aria-label="Card reader" className="space-y-3 rounded-md border p-4">
+    <section aria-label="Card reader" className="rounded-md border p-4">
       <h2>Present card on reader</h2>
       {simulated ? (
         <p className="rounded-md border p-2 text-sm font-semibold">

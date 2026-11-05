@@ -172,7 +172,7 @@ export function InspectionsPanel({
     <section aria-label="Inspections" id="inspections">
       <h2>Inspections</h2>
       {history.length === 0 ? <p>No inspections have been requested.</p> : null}
-      <ul className="m-0 list-none p-0">
+      <ul className="list-none p-0">
         {history.map((row) => (
           <InspectionRow key={row.id} row={row} data={data} number={number} />
         ))}

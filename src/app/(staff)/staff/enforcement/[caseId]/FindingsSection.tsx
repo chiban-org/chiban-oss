@@ -88,10 +88,10 @@ export function FindingsSection({ detail, can }: { detail: CaseDetail; can: Can 
       ) : null}
       <h3>Notices of violation</h3>
       {detail.notices.length === 0 ? <p>No notice has been sent.</p> : null}
-      <ul className="m-0 list-none space-y-2 p-0">
+      <ul className="list-none space-y-2 p-0">
         {detail.notices.map((n) => (
           <li key={n.id} className="record-item space-y-2">
-            <p className="m-0">
+            <p>
               {`${NOTICE_SENT_PHRASES[n.method]} on ${formatCivilDate(n.sentOn)}. `}
               {n.receivedOn === null
                 ? 'Receipt not recorded.'

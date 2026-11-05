@@ -19,7 +19,7 @@ function votesHint(seated: string[]): string {
 
 export function RecordDecisionSection({ view, today }: { view: HearingView; today: string }) {
   return (
-    <section aria-labelledby="record-decision" className="space-y-3">
+    <section aria-labelledby="record-decision">
       <h2 id="record-decision">Record the decision</h2>
       <ActionForm
         action={recordDecisionAction}

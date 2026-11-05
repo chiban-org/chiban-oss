@@ -107,13 +107,11 @@ export function BoxEditor({ pages, exemptions, mode, onChange }: BoxEditorProps)
     update(boxes.map((b) => (b.id === id ? change(b, geometryOf(b.page)) : b)))
   return (
     <div className="space-y-4">
-      <p className="m-0">
-        Drag on a page to draw a box over what must be removed, or add a box with the button.
-      </p>
+      <p>Drag on a page to draw a box over what must be removed, or add a box with the button.</p>
       <PageWindows total={pages.length} first={first} onShow={setFirst} />
       {shown.map((geometry) => (
         <div key={geometry.page} className="space-y-2">
-          <p className="m-0 font-medium">{`Page ${geometry.page}`}</p>
+          <p className="font-medium">{`Page ${geometry.page}`}</p>
           <div
             className="relative max-w-3xl touch-none select-none border"
             style={{ aspectRatio: `${geometry.width} / ${geometry.height}` }}
@@ -190,10 +188,10 @@ export function BoxEditor({ pages, exemptions, mode, onChange }: BoxEditorProps)
           </Button>
         </div>
       ))}
-      <ul className="m-0 list-none space-y-3 p-0">
+      <ul className="list-none space-y-3 p-0">
         {boxes.map((b, index) => (
           <li key={b.id} className="space-y-4 rounded-md border p-4">
-            <p className="m-0 font-medium">{`Box ${index + 1} on page ${b.page}`}</p>
+            <p className="font-medium">{`Box ${index + 1} on page ${b.page}`}</p>
             <SelectField
               label="Exemption"
               value={b.exemptionKey}
@@ -232,7 +230,7 @@ export function BoxEditor({ pages, exemptions, mode, onChange }: BoxEditorProps)
         ))}
       </ul>
       {problems.length > 0 && boxes.length > 0 ? (
-        <ul role="alert" className="m-0 list-none p-0">
+        <ul role="alert" className="list-none p-0">
           {problems.map((p) => (
             <li key={p}>{p}</li>
           ))}

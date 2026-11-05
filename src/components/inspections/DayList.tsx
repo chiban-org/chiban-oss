@@ -85,7 +85,7 @@ export interface NextBusyDay {
 function EmptyDay({ nextBusy }: { nextBusy: NextBusyDay | null }) {
   return (
     <div className="space-y-1">
-      <p className="m-0">No inspections on this day.</p>
+      <p>No inspections on this day.</p>
       {nextBusy === null ? null : (
         <Link href={nextBusy.href} className={LINK}>
           {`Go to ${formatCivilDate(nextBusy.date)}, the next day with inspections`}
@@ -127,7 +127,7 @@ export function DayList({
       {stops.length === 0 ? (
         <EmptyDay nextBusy={nextBusy} />
       ) : (
-        <ul className="m-0 space-y-3 p-0">
+        <ul className="space-y-3 p-0">
           {stops.map((stop) => (
             <Stop key={stop.inspectionId} stop={stop} />
           ))}

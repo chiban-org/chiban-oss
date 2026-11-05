@@ -58,8 +58,21 @@
     margin-bottom: calc(var(--space-base) * 3);
   }
 
-  :where(main section) > :where(h2 + *) {
+  :where(main section) > :where(h3:not(:first-child), h4:not(:first-child)) {
+    margin-top: calc(var(--space-base) * 6);
+  }
+
+  :where(main section) > :where(h3 + *, h4 + *) {
+    margin-top: calc(var(--space-base) * 2);
+  }
+
+  :where(main section) > :where(h2 + *, [data-slot="section-header"] + *) {
     margin-top: calc(var(--space-base) * 4);
+  }
+
+  [data-slot="section-lead"] {
+    max-width: 75ch;
+    color: var(--muted);
   }
 
   :where(.staff-shell main form:not([role="search"]))
@@ -225,5 +238,15 @@
 
   :where(main) :where(tbody tr + tr) {
     border-top: 1px solid var(--hairline);
+  }
+
+  .row-actions {
+    display: grid;
+    width: max-content;
+    gap: calc(var(--space-base) * 2);
+  }
+
+  .row-actions :where(button) {
+    width: 100%;
   }
 }

@@ -2,6 +2,7 @@
 
 import { TextRows } from '@/components/config/plainFields'
 import { Check, FieldError, type FieldErrors, Input } from '@/components/config/primitives'
+import { Legend } from '@/components/ui/legend'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
 
 interface Props {
@@ -27,7 +28,7 @@ export function BoardSettingsEditor({ body, onChange, errors }: Props) {
     <div className="space-y-4">
       {body.boards.map((board, index) => (
         <fieldset key={board.board} className="rounded-md border p-3">
-          <legend className="px-1 text-sm font-medium">{board.label}</legend>
+          <Legend bordered>{board.label}</Legend>
           <div className="grid gap-3 sm:grid-cols-2">
             <Input
               label="Board name"
@@ -107,7 +108,7 @@ export function BoardSettingsEditor({ body, onChange, errors }: Props) {
         </fieldset>
       ))}
       <fieldset className="rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">Abutters across a street or stream</legend>
+        <Legend bordered>Abutters across a street or stream</Legend>
         <p className="m-0 mb-2 text-sm text-muted-foreground">
           State law counts land directly across a street or stream as abutting. Chiban can find
           those owners from the town's road and water maps once someone has checked the maps.

@@ -127,7 +127,7 @@ export function AgendaSection({ view }: { view: MeetingView }) {
   const draft = agenda === null || agenda.status === 'draft'
   const editable = draft && !view.cancelled
   return (
-    <section aria-labelledby="agenda" className="space-y-4">
+    <section aria-labelledby="agenda">
       <h2 id="agenda">Agenda</h2>
       {agenda === null || agenda.items.length === 0 ? (
         <p>
@@ -139,8 +139,8 @@ export function AgendaSection({ view }: { view: MeetingView }) {
         <ol className="space-y-3">
           {agenda.items.map((item) => (
             <li key={item.id} className="space-y-1">
-              <p className="m-0">{item.line}</p>
-              {item.description === '' ? null : <p className="m-0 text-sm">{item.description}</p>}
+              <p>{item.line}</p>
+              {item.description === '' ? null : <p className="text-sm">{item.description}</p>}
               {editable ? <ItemControls item={item} /> : null}
             </li>
           ))}

@@ -69,7 +69,7 @@ export default async function PacketsPage() {
       {index.value.unlinked.length === 0 ? null : (
         <section aria-labelledby="older-packets">
           <h2 id="older-packets">Older packets not tied to a meeting</h2>
-          <ul className="m-0 list-none p-0">
+          <ul className="list-none p-0">
             {index.value.unlinked.map((p) => (
               <li key={p.id} className="record-item">
                 <Link href={p.href}>{p.title}</Link>

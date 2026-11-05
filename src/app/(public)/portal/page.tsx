@@ -29,12 +29,12 @@ export default async function PortalHomePage() {
     <main className="space-y-6">
       <h1>Your applications</h1>
       {ctx.actor.kind === 'staff' ? (
-        <p className="m-0 text-muted-foreground">
+        <p className="text-muted-foreground">
           {'This page lists applications you filed yourself. Town applications are in the '}
           <Link href="/staff">staff area</Link>.
         </p>
       ) : null}
-      <ul className="m-0 flex list-none flex-wrap gap-x-6 gap-y-2 p-0">
+      <ul className="flex list-none flex-wrap gap-x-6 gap-y-2 p-0">
         <li>
           <Link href="/portal/apply" className={LINK}>
             Start an application
@@ -54,7 +54,7 @@ export default async function PortalHomePage() {
       {page.rows.length === 0 ? (
         <p>You have no applications yet. Start one above.</p>
       ) : (
-        <ul className="m-0 list-none divide-y p-0">
+        <ul className="list-none divide-y p-0">
           {page.rows.map((row) => (
             <li key={row.id} className="flex flex-wrap items-center justify-between gap-2 py-3">
               <div>

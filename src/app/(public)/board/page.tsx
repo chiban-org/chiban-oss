@@ -18,7 +18,7 @@ function RowAction({ row }: { row: MemberMeetingRow }) {
       Open the packet
     </Link>
   ) : (
-    <p className="m-0">The packet is not ready yet.</p>
+    <p>The packet is not ready yet.</p>
   )
 }
 
@@ -40,7 +40,7 @@ function MeetingList({ title, rows }: { title: string; rows: MemberMeetingRow[] 
   return (
     <section aria-label={title}>
       <h2>{title}</h2>
-      <ul className="m-0 list-none divide-y p-0">
+      <ul className="list-none divide-y p-0">
         {rows.map((row) => (
           <li key={row.meetingId} className="py-3">
             <Meeting row={row} />

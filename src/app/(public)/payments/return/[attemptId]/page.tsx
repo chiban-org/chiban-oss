@@ -1,4 +1,5 @@
 import { NEW_TAB } from '@/components/newTab'
+import { DescriptionList } from '@/components/ui/description-list'
 import { db } from '@/db/client'
 import { type PaymentReturnDetails, paymentReturnDetails } from '@/features/payments/paymentReturn'
 import { formatCents } from '@/lib/money'
@@ -29,7 +30,7 @@ function ApplicationLinks({
 }) {
   if (details.applications.length === 0) return null
   return (
-    <ul className="m-0 list-none space-y-1 p-0">
+    <ul className="list-none space-y-1 p-0">
       {details.applications.map((a) => (
         <li key={a.id}>
           <a href={`/portal/applications/${a.id}`} className={LINK}>
@@ -80,12 +81,13 @@ export default async function PaymentReturnPage({
       {status === 'received' ? (
         <>
           <p>The town has recorded your payment.</p>
-          <dl className="grid grid-cols-[8rem_1fr] gap-y-1">
-            <dt className="font-semibold">Amount</dt>
-            <dd>{formatCents(details.amountCents ?? 0)}</dd>
-            <dt className="font-semibold">For</dt>
-            <dd>{details.applicationNumbers.join(', ')}</dd>
-          </dl>
+          <DescriptionList
+            labelWidth="narrow"
+            items={[
+              { label: 'Amount', value: formatCents(details.amountCents ?? 0) },
+              { label: 'For', value: details.applicationNumbers.join(', ') },
+            ]}
+          />
           <p>
             <a {...NEW_TAB} href={`/payments/receipt/${attemptId}`} className={LINK}>
               Open your receipt

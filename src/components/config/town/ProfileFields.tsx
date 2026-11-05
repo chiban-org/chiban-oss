@@ -3,6 +3,7 @@
 import { AddressCheck } from '@/components/address/AddressCheck'
 import { FieldError, type FieldErrors, Input, RowButton } from '@/components/config/primitives'
 import { ImageUpload } from '@/components/config/town/ImageUpload'
+import { Legend } from '@/components/ui/legend'
 import type { TownProfileBody } from '@/features/town/profileSchema'
 
 interface Props {
@@ -18,7 +19,7 @@ export function ProfileFields({ body, onChange, errors }: Props) {
   const setLine = (index: number, value: string) =>
     set({ addressLines: body.addressLines.map((line, i) => (i === index ? value : line)) })
   return (
-    <div className="grid gap-5">
+    <div className="grid gap-8">
       <div>
         <Input
           label="Office name"
@@ -30,7 +31,7 @@ export function ProfileFields({ body, onChange, errors }: Props) {
         <FieldError errors={errors} name="officeName" />
       </div>
       <fieldset className="grid gap-3">
-        <legend className="mb-2 text-sm font-medium">Mailing address</legend>
+        <Legend>Mailing address</Legend>
         <AddressCheck
           lines={body.addressLines}
           maxLines={MAX_ADDRESS_LINES}
@@ -66,7 +67,8 @@ export function ProfileFields({ body, onChange, errors }: Props) {
         ) : null}
         <FieldError errors={errors} name="addressLines" />
       </fieldset>
-      <div className="grid gap-4 sm:grid-cols-2">
+      <fieldset className="grid gap-4 sm:grid-cols-2">
+        <Legend>Contact details</Legend>
         <Input
           label="Phone"
           type="tel"
@@ -97,7 +99,7 @@ export function ProfileFields({ body, onChange, errors }: Props) {
           value={body.officeHours}
           onChange={(e) => set({ officeHours: e.target.value })}
         />
-      </div>
+      </fieldset>
       <ImageUpload
         label="Town logo or seal"
         hint="PNG or JPEG, up to 2 MB. Printed at the top of every document."

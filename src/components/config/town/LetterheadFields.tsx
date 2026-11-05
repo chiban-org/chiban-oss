@@ -4,6 +4,7 @@ import type { Board } from '@packs/nh/boardSchema'
 import { AddressCheck } from '@/components/address/AddressCheck'
 import { TextRows } from '@/components/config/plainFields'
 import { Check, Input, Pick } from '@/components/config/primitives'
+import { Legend } from '@/components/ui/legend'
 import {
   type BoardOverride,
   type ContactLine,
@@ -44,7 +45,7 @@ function BoardOverrideFields({
 }) {
   return (
     <fieldset className="grid gap-3 border-t border-hairline pt-4">
-      <legend className="text-sm font-medium">{label}</legend>
+      <Legend>{label}</Legend>
       <Input
         label="Office name on this board's documents"
         hint="Leave empty to use the town office name."
@@ -92,7 +93,7 @@ export function LetterheadFields({ body, onChange }: Props) {
         onChange={(e) => set({ logoPosition: e.target.value === 'center' ? 'center' : 'left' })}
       />
       <fieldset className="grid gap-2">
-        <legend className="mb-1 text-sm font-medium">Contact lines under the office name</legend>
+        <Legend>Contact lines under the office name</Legend>
         {CONTACT_LABELS.map(([line, label]) => (
           <Check
             key={line}

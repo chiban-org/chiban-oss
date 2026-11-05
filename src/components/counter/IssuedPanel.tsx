@@ -49,7 +49,7 @@ export function IssuedPanel({
   claim?: CounterActions['claim']
 }) {
   return (
-    <section aria-labelledby="issued" className="space-y-4">
+    <section aria-labelledby="issued">
       <h2 id="issued" role="status">
         {outcome.number} is issued
       </h2>

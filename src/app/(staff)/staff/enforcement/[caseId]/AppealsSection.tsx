@@ -42,17 +42,17 @@ export function AppealsSection({ detail, can }: { detail: CaseDetail; can: Can }
       {detail.appeals.length === 0 ? <p>No appeal has been filed.</p> : null}
       {detail.appeals.map((a) => (
         <article key={a.row.id} className="record-item space-y-2">
-          <p className="m-0 font-medium">
+          <p className="font-medium">
             {`${APPEAL_TARGET_LABELS[a.row.targetKind]} appealed by ${a.row.appellantName} on ${formatCivilDate(a.row.filedOn)}. `}
             {a.row.resolvedOn === null
               ? 'Not yet decided.'
               : `${a.row.outcome === null ? 'Resolved' : APPEAL_OUTCOME_LABELS[a.row.outcome]} on ${formatCivilDate(a.row.resolvedOn)}.`}
           </p>
           {a.certification === null ? null : (
-            <p className="m-0">{`Imminent peril certified ${formatCivilDate(a.certification.certifiedOn)} (${a.certification.categories.map((c) => PERIL_LABELS[c as keyof typeof PERIL_LABELS]).join(', ')}): ${a.certification.statement}`}</p>
+            <p>{`Imminent peril certified ${formatCivilDate(a.certification.certifiedOn)} (${a.certification.categories.map((c) => PERIL_LABELS[c as keyof typeof PERIL_LABELS]).join(', ')}): ${a.certification.statement}`}</p>
           )}
           {a.restraints.map((r) => (
-            <p key={r.id} className="m-0">
+            <p key={r.id}>
               {`Restraining order from ${r.issuedBy === 'zba' ? 'the ZBA' : 'the superior court'}, issued ${formatCivilDate(r.issuedOn)}${r.dissolvedOn === null ? '' : `, dissolved ${formatCivilDate(r.dissolvedOn)}`}. `}
               {r.dissolvedOn === null && can.service ? (
                 <ActionForm

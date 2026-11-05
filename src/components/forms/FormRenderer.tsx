@@ -199,7 +199,7 @@ function FieldRow({ field, values, error, onChange, addressChecks }: EntryProps)
         </span>
       </Label>
       {field.help === undefined ? null : (
-        <p id={helpId} className="m-0 text-base text-muted-foreground">
+        <p id={helpId} className="text-base text-muted-foreground">
           {field.help}
         </p>
       )}
@@ -211,7 +211,7 @@ function FieldRow({ field, values, error, onChange, addressChecks }: EntryProps)
         control
       )}
       {error === undefined ? null : (
-        <p id={errorId} className="m-0 text-base font-medium text-destructive">
+        <p id={errorId} className="text-base font-medium text-destructive">
           {error}
         </p>
       )}
@@ -222,9 +222,9 @@ function FieldRow({ field, values, error, onChange, addressChecks }: EntryProps)
 function SectionHeading({ field }: { field: FormField }) {
   return (
     <div className="space-y-1 border-t border-hairline pt-4 first:border-t-0 first:pt-0">
-      <h3 className="m-0 text-lg font-bold">{field.label}</h3>
+      <h3 className="text-lg font-bold">{field.label}</h3>
       {field.help === undefined ? null : (
-        <p className="m-0 text-base text-muted-foreground">{field.help}</p>
+        <p className="text-base text-muted-foreground">{field.help}</p>
       )}
     </div>
   )

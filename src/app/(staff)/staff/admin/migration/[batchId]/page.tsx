@@ -2,6 +2,7 @@ import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { DescriptionList } from '@/components/ui/description-list'
 import { hasCapability } from '@/features/authz/capabilities'
 import { loadBatchDetail } from '@/features/migration/batchQueries'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -88,14 +89,11 @@ export default async function MigrationBatchPage({
       {report === null ? null : (
         <section aria-labelledby="report-heading">
           <h2 id="report-heading">Run report</h2>
-          <dl className="m-0 grid max-w-md grid-cols-[1fr_auto] gap-x-6 gap-y-1">
-            {rows.map(([label, value]) => (
-              <div key={label} className="contents">
-                <dt>{label}</dt>
-                <dd className="m-0 text-right">{value}</dd>
-              </div>
-            ))}
-          </dl>
+          <DescriptionList
+            labelWidth="wide"
+            className="tabular-nums"
+            items={rows.map(([label, value]) => ({ label, value }))}
+          />
           <h3>Set aside, by reason</h3>
           {Object.keys(report.exceptionsByReason).length === 0 ? <p>None.</p> : null}
           <ul>
@@ -110,7 +108,7 @@ export default async function MigrationBatchPage({
       {exceptions.length === 0 ? null : (
         <section aria-labelledby="items-heading">
           <h2 id="items-heading">Files that need a look</h2>
-          <ul className="m-0 list-none space-y-3 p-0">
+          <ul className="list-none space-y-3 p-0">
             {exceptions.map((item) => (
               <li key={item.id} className="record-item">
                 <p className="m-0 font-medium">{item.sourcePath}</p>

@@ -3,6 +3,7 @@
 import { ArrowDown, ArrowUp, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
+import { Legend } from '@/components/ui/legend'
 import { addChoice, moveChoice, relabelChoice, removeChoice } from '@/features/forms/choiceEdits'
 import type { FormBody } from '@/features/forms/formSchema'
 
@@ -20,7 +21,7 @@ export function ChoicesEditor({
   const choices = body.fields[index]?.options ?? []
   return (
     <fieldset className="m-0 min-w-0 border-0 p-0">
-      <legend className="mb-2 text-sm font-medium">Choices</legend>
+      <Legend>Choices</Legend>
       <ol className="m-0 flex list-none flex-col gap-2 p-0">
         {choices.map((choice, c) => {
           const n = c + 1

@@ -111,7 +111,7 @@ export function ConditionsPanel({ view }: { view: StaffApplicationView }) {
     <section aria-label="Conditions" id="conditions">
       <h2>Conditions</h2>
       {view.conditions.length === 0 ? <p>No conditions are applied.</p> : null}
-      <ul className="m-0 list-none p-0">
+      <ul className="list-none p-0">
         {view.conditions.map((c) => (
           <li
             key={c.id}

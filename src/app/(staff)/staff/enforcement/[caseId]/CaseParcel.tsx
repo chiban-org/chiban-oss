@@ -11,7 +11,7 @@ export function CaseParcel({ detail, can }: { detail: CaseDetail; can: Can }) {
   return (
     <div className="space-y-3">
       {linked ? null : (
-        <p className="m-0 text-sm text-muted-foreground">
+        <p className="text-sm text-muted-foreground">
           No parcel is linked, so the case is not on any parcel page.
         </p>
       )}

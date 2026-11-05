@@ -1,6 +1,7 @@
 'use client'
 
 import { Check, FieldError, type FieldErrors, Input } from '@/components/config/primitives'
+import { Legend } from '@/components/ui/legend'
 import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
 
 interface Props {
@@ -46,7 +47,7 @@ export function InspectionSettingsEditor({ body, onChange, errors }: Props) {
   return (
     <div className="space-y-3">
       <fieldset className="rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">Inspection days</legend>
+        <Legend bordered>Inspection days</Legend>
         <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
           {WEEKDAYS.map(([day, label]) => (
             <Check
@@ -130,7 +131,7 @@ export function InspectionSettingsEditor({ body, onChange, errors }: Props) {
         </div>
       </div>
       <fieldset className="rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">Phone request hours</legend>
+        <Legend bordered>Phone request hours</Legend>
         <p className="m-0 mb-2 text-sm text-muted-foreground">
           When residents can phone the office to ask for an inspection.
         </p>

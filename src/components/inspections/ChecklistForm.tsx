@@ -132,11 +132,9 @@ export function ChecklistForm({
           onChange={(e) => setNotes(e.target.value)}
           className="min-h-24 text-base"
         />
-        {failed && !notesOk ? (
-          <p className="m-0">Write at least 10 characters about what failed.</p>
-        ) : null}
+        {failed && !notesOk ? <p>Write at least 10 characters about what failed.</p> : null}
       </div>
-      <p className="m-0 font-semibold">{`Result: ${resultText(failed, requiredAnswered)}`}</p>
+      <p className="font-semibold">{`Result: ${resultText(failed, requiredAnswered)}`}</p>
       <Button
         type="button"
         className="min-h-11 w-full text-base"
@@ -146,7 +144,7 @@ export function ChecklistForm({
         Record result
       </Button>
       {message === null ? null : (
-        <p role="status" className="m-0 text-base">
+        <p role="status" className="text-base">
           {message}
         </p>
       )}

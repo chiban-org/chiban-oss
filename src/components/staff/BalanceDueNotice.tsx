@@ -12,7 +12,7 @@ export function BalanceDueNotice({ notices, linkApplications = false }: BalanceD
   return (
     <div role="status" className="my-3 space-y-1 rounded-md bg-highlight px-3 py-2 font-semibold">
       {notices.map((n) => (
-        <p key={n.applicationId} className="m-0">
+        <p key={n.applicationId}>
           {`Balance due ${formatCents(n.dueCents)} (returned check)`}
           {linkApplications ? (
             <>

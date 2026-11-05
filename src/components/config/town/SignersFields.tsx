@@ -9,6 +9,7 @@ import {
   rowKey,
 } from '@/components/config/primitives'
 import { ImageUpload } from '@/components/config/town/ImageUpload'
+import { Legend } from '@/components/ui/legend'
 import {
   SIGNER_ROLE_LABELS,
   SIGNER_ROLES,
@@ -40,38 +41,45 @@ function SignerRow({
 }) {
   const roles = SIGNER_ROLES.filter((r) => r === signer.role || !taken.has(r))
   return (
-    <li className="record-item grid gap-3 py-4">
-      <Pick
-        label="Signs as"
-        value={signer.role}
-        options={roles.map((r) => [r, roleLabel(r)] as [string, string])}
-        onChange={(e) => {
-          const role = SIGNER_ROLES.find((r) => r === e.target.value)
-          if (role !== undefined) onChange({ ...signer, role })
-        }}
-        action={<RowButton onClick={onRemove}>Remove signer</RowButton>}
-      />
-      <div className="grid gap-3 sm:grid-cols-2">
-        <Input
-          label="Name"
-          value={signer.name}
-          onChange={(e) => onChange({ ...signer, name: e.target.value })}
-          required
+    <li className="record-item py-4">
+      <fieldset className="grid gap-4">
+        <Legend>
+          {signer.name === ''
+            ? roleLabel(signer.role)
+            : `${signer.name}, ${roleLabel(signer.role)}`}
+        </Legend>
+        <Pick
+          label="Signs as"
+          value={signer.role}
+          options={roles.map((r) => [r, roleLabel(r)] as [string, string])}
+          onChange={(e) => {
+            const role = SIGNER_ROLES.find((r) => r === e.target.value)
+            if (role !== undefined) onChange({ ...signer, role })
+          }}
+          action={<RowButton onClick={onRemove}>Remove signer</RowButton>}
         />
-        <Input
-          label="Title as printed"
-          value={signer.title}
-          onChange={(e) => onChange({ ...signer, title: e.target.value })}
-          required
+        <div className="grid gap-3 sm:grid-cols-2">
+          <Input
+            label="Name"
+            value={signer.name}
+            onChange={(e) => onChange({ ...signer, name: e.target.value })}
+            required
+          />
+          <Input
+            label="Title as printed"
+            value={signer.title}
+            onChange={(e) => onChange({ ...signer, title: e.target.value })}
+            required
+          />
+        </div>
+        <ImageUpload
+          label={`Signature for ${signer.name === '' ? roleLabel(signer.role) : signer.name}`}
+          hint="Optional. A PNG or JPEG of the signature on a white or clear background, up to 2 MB."
+          image={signer.signature}
+          onChange={(signature) => onChange({ ...signer, signature })}
+          previewClassName="max-h-12 max-w-48 rounded border border-hairline bg-surface p-1"
         />
-      </div>
-      <ImageUpload
-        label={`Signature for ${signer.name === '' ? roleLabel(signer.role) : signer.name}`}
-        hint="Optional. A PNG or JPEG of the signature on a white or clear background, up to 2 MB."
-        image={signer.signature}
-        onChange={(signature) => onChange({ ...signer, signature })}
-        previewClassName="max-h-12 max-w-48 rounded border border-hairline bg-surface p-1"
-      />
+      </fieldset>
     </li>
   )
 }

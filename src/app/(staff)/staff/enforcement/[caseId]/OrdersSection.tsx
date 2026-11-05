@@ -31,7 +31,7 @@ function motionFiledOn(order: OrderDetail): CivilDate | null {
 function OrderSummary({ order, detail }: { order: OrderDetail; detail: CaseDetail }) {
   const { row } = order
   return (
-    <p className="m-0">
+    <p>
       {`${order.rule.label} (`}
       <a href={order.rule.citation.url ?? undefined}>{order.rule.citation.label}</a>
       {`). Corrective action: ${row.correctiveAction === '' ? 'not written yet' : row.correctiveAction.replace(/\.$/, '')}`}
@@ -96,7 +96,7 @@ function OrderBlock({ order, detail, can }: { order: OrderDetail; detail: CaseDe
   const issued = row.issuedOn !== null
   return (
     <article className="record-item space-y-4">
-      <h3 className="m-0">{`${row.number}, ${ORDER_STATUS_LABELS[row.status]}`}</h3>
+      <h3>{`${row.number}, ${ORDER_STATUS_LABELS[row.status]}`}</h3>
       <OrderSummary order={order} detail={detail} />
       {row.status === 'draft' && can.manage ? <DraftForms order={order} /> : null}
       {row.status === 'draft' && can.issue ? (
@@ -123,15 +123,15 @@ function OrderBlock({ order, detail, can }: { order: OrderDetail; detail: CaseDe
           ) : null}
           {order.answerDues.map((a) => (
             <div key={a.recipientId} className="space-y-1">
-              <p className="m-0 font-medium">{a.name}</p>
+              <p className="font-medium">{a.name}</p>
               <DueLine due={a.due} today={detail.today} met={a.answeredOn !== null} />
               {a.answeredOn === null ? null : (
-                <p className="m-0">{`Answer received ${formatCivilDate(a.answeredOn)}.`}</p>
+                <p>{`Answer received ${formatCivilDate(a.answeredOn)}.`}</p>
               )}
             </div>
           ))}
           <h4>Court</h4>
-          <p className="m-0 font-medium">{motionGateText(order.gate, motionFiledOn(order))}</p>
+          <p className="font-medium">{motionGateText(order.gate, motionFiledOn(order))}</p>
           {order.appealDue === null ? null : (
             <div>
               <p className="m-0 font-medium">Appeal of the judgment</p>

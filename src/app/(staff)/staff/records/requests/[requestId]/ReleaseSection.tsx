@@ -38,7 +38,7 @@ interface Props {
 function ReleaseList({ releases }: { releases: ReleaseSummary[] }) {
   if (releases.length === 0) return <p>Nothing has been released yet.</p>
   return (
-    <ul className="m-0 list-none space-y-3 p-0">
+    <ul className="list-none space-y-3 p-0">
       {releases.map((r) => (
         <li key={r.id} className="record-item">
           <p className="m-0 font-medium">
@@ -111,7 +111,7 @@ function ApproveForm({ find, candidates }: { find: FindContext; candidates: Rele
       <summary>Approve a version for release</summary>
       <ReleaseFind {...find} />
       {options.length === 0 ? (
-        <p>
+        <p className="mt-4">
           {searched
             ? 'No document matches. Try part of its title or the application or case number.'
             : 'Search for the document to release, then pick the version.'}

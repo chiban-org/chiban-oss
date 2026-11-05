@@ -22,7 +22,10 @@ export function FactList({
   stacked?: boolean
 }) {
   return (
-    <dl className={stacked ? 'flex flex-col gap-3' : 'flex flex-wrap gap-x-10 gap-y-3'}>
+    <dl
+      data-slot="fact-list"
+      className={stacked ? 'flex flex-col gap-3' : 'flex flex-wrap gap-x-10 gap-y-3'}
+    >
       {facts.map((fact) => (
         <div key={fact.label} className="flex flex-col gap-0.5">
           <dt className={`${stacked ? 'text-sm' : 'text-xs'} font-semibold text-muted-foreground`}>

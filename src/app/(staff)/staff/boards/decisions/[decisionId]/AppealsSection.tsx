@@ -14,7 +14,7 @@ const APPEAL_STEPS: [string, string][] = [
 
 export function AppealsSection({ view, today }: { view: DecisionView; today: string }) {
   return (
-    <section aria-labelledby="appeals" className="space-y-4">
+    <section aria-labelledby="appeals">
       <h2 id="appeals">Appeals</h2>
       <AppealGraph nodes={view.graph} />
       <details>

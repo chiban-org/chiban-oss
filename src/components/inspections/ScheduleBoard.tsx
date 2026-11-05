@@ -68,7 +68,7 @@ function OpenSlots({
       </p>
       {message === null ? null : <p role="status">{message}</p>}
       {week === undefined ? (
-        <p className="m-0">No inspection days in this range.</p>
+        <p>No inspection days in this range.</p>
       ) : (
         <div className="@container">
           <div className="grid gap-x-8 gap-y-5 @4xl:grid-cols-[18rem_minmax(0,1fr)] @4xl:items-start">

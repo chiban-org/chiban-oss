@@ -65,7 +65,7 @@ function ProofForm({
 export function TransmittalSection({ view, today }: { view: DecisionView; today: string }) {
   const { transmittal } = view
   return (
-    <section aria-labelledby="transmittal" className="space-y-4">
+    <section aria-labelledby="transmittal">
       <h2 id="transmittal">Regional transmittal</h2>
       <p>
         Within 5 business days after the decision, send copies of the minutes of the decision

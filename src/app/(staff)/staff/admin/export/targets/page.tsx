@@ -89,7 +89,7 @@ export default async function ExportTargetsPage() {
       <section aria-labelledby="your-targets">
         <h2 id="your-targets">Your targets</h2>
         {listed.value.length === 0 ? <p>No targets yet. Add one with Add a target.</p> : null}
-        <ul className="m-0 list-none p-0">
+        <ul className="list-none p-0">
           {listed.value.map((target) => (
             <TargetCard key={target.id} target={target} day={day} />
           ))}

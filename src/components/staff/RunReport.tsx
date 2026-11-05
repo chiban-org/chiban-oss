@@ -1,3 +1,4 @@
+import { DescriptionList } from '@/components/ui/description-list'
 import { exceptionKindLabel } from '@/features/gis/exceptionLabels'
 import type { ImportRunReport } from '@/features/gis/import/types'
 
@@ -16,14 +17,11 @@ export function RunReport({ report }: { report: ImportRunReport }) {
   const kinds = Object.entries(report.exceptionsByKind)
   return (
     <div>
-      <dl className="grid max-w-md grid-cols-[12rem_1fr] gap-y-1">
-        {ROWS.map(([label, key]) => (
-          <div key={key} className="contents">
-            <dt className="font-semibold">{label}</dt>
-            <dd>{report[key]}</dd>
-          </div>
-        ))}
-      </dl>
+      <DescriptionList
+        labelWidth="wide"
+        className="tabular-nums"
+        items={ROWS.map(([label, key]) => ({ label, value: report[key] }))}
+      />
       {kinds.length === 0 ? null : (
         <>
           <h3 className="mt-4 text-base font-semibold">Exceptions by kind</h3>

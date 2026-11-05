@@ -30,7 +30,7 @@ export default async function MigrationPage() {
       <section aria-labelledby="batches">
         <h2 id="batches">Batches</h2>
         {listed.value.length === 0 ? <p>No batches have been scanned yet.</p> : null}
-        <ul className="m-0 list-none space-y-3 p-0">
+        <ul className="list-none space-y-3 p-0">
           {listed.value.map((batch) => (
             <li key={batch.id} className="record-item">
               <p className="m-0 font-medium">

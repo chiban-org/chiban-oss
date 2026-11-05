@@ -77,7 +77,7 @@ function NextMeeting({ detail }: { detail: Extract<HomeDetail, { kind: 'meeting'
       {next === null ? (
         <p>No meeting of your board is coming up.</p>
       ) : (
-        <p className="m-0">
+        <p>
           <span className="font-semibold">{next.label}</span>
           {next.marker === null ? null : <Marker text={next.marker} />}
           <br />
@@ -89,7 +89,7 @@ function NextMeeting({ detail }: { detail: Extract<HomeDetail, { kind: 'meeting'
         </p>
       )}
       {later > 0 ? (
-        <p className="m-0">{`${later} later ${later === 1 ? 'meeting' : 'meetings'} on the board page.`}</p>
+        <p>{`${later} later ${later === 1 ? 'meeting' : 'meetings'} on the board page.`}</p>
       ) : null}
     </section>
   )

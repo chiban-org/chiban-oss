@@ -40,7 +40,7 @@ export function TypeTiles({
   hrefFor: (typeKey: string) => string
 }) {
   return (
-    <section aria-labelledby="permit-type" className="space-y-2">
+    <section aria-labelledby="permit-type">
       <h2 id="permit-type">Permit type</h2>
       {types.length === 0 ? (
         <p>No permit type is set up for counter issue.</p>

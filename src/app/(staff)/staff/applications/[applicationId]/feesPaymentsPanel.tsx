@@ -97,7 +97,7 @@ function FeeLines({ rows, money }: { rows: FeeRow[]; money: boolean }) {
 function Ledger({ payments }: { payments: ApplicationPayments }) {
   if (payments.entries.length === 0) return <p>No money has been recorded on this application.</p>
   return (
-    <ul className="m-0 list-none p-0">
+    <ul className="list-none p-0">
       {payments.entries.map((entry) => (
         <li key={entry.id} className="record-item pb-3">
           <p className="m-0">
