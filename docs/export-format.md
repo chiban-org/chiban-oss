@@ -311,6 +311,7 @@ File: `data/association_rosters.ndjson`. Ordered by id.
 - `association_name`: text
 - `officers`: jsonb
 - `as_of`: date
+- `checked_on`: date, nullable
 - `updated_by`: uuid
 - `updated_at`: timestamp with time zone
 
@@ -1650,6 +1651,7 @@ File: `data/park_rosters.ndjson`. Ordered by id.
 - `owner_mailing_address`: text
 - `tenants`: jsonb
 - `as_of`: date
+- `checked_on`: date, nullable
 - `updated_by`: uuid
 - `updated_at`: timestamp with time zone
 
@@ -2008,6 +2010,8 @@ File: `data/restriction_holdings.ndjson`. Ordered by id.
 - `restriction_kind`: text
 - `recorded_reference`: text
 - `ended_on`: date, nullable
+- `ended_at`: timestamp with time zone, nullable
+- `checked_on`: date, nullable
 - `created_by`: uuid
 - `created_at`: timestamp with time zone
 
