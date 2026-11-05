@@ -26,6 +26,17 @@ describe('HomeContent', () => {
     )
   })
 
+  it('offers a board member their board meetings first', () => {
+    render(<HomeContent audience="resident" boardMember={true} />)
+    expect(screen.getByRole('link', { name: 'Board meetings' }).getAttribute('href')).toBe('/board')
+    expect(screen.getByRole('link', { name: 'Your applications' })).toBeTruthy()
+  })
+
+  it('offers no board meetings to a resident who is not on a board', () => {
+    render(<HomeContent audience="resident" />)
+    expect(screen.queryByRole('link', { name: 'Board meetings' })).toBeNull()
+  })
+
   it('sends signed-in staff to the staff site', () => {
     render(<HomeContent audience="staff" />)
     expect(screen.queryByText('Sign in to see your applications')).toBeNull()

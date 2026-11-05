@@ -42,7 +42,13 @@ function AccountTask({ audience }: { audience: HomeAudience }) {
   )
 }
 
-export function HomeContent({ audience }: { audience: HomeAudience }) {
+export function HomeContent({
+  audience,
+  boardMember = false,
+}: {
+  audience: HomeAudience
+  boardMember?: boolean
+}) {
   return (
     <main className="mx-auto max-w-3xl">
       <div className="border-b pb-10">
@@ -67,6 +73,11 @@ export function HomeContent({ audience }: { audience: HomeAudience }) {
         </form>
       </div>
       <ul className="mt-10 divide-y">
+        {boardMember ? (
+          <Task href="/board" title="Board meetings">
+            Read the agenda and packet for each meeting of your board.
+          </Task>
+        ) : null}
         <Task href="/parcels" title="Look up a parcel">
           See the permits, applications, and board decisions on file for any parcel in town.
         </Task>

@@ -135,6 +135,19 @@ describe('magic link verify page', () => {
     expect(await consumed()).toEqual([true])
   })
 
+  it('POST sends a board member to the board page when no page was asked for', async () => {
+    await makeUser(handle.db, {
+      email: 'member@alderpond.example',
+      roles: ['applicant', 'board_member'],
+      kind: 'public',
+    })
+    const token = await tokenFor('member@alderpond.example')
+    expect(await redirectOf(confirmMagicLinkAction(form(token, 'tok')))).toBe('/board')
+    await requestMagicLink(handle.db, mail, 'member@alderpond.example', signal, '/parcels')
+    const asked = /token=([A-Za-z0-9_-]+)/.exec(mail.sent.at(-1)?.text ?? '')?.[1] ?? ''
+    expect(await redirectOf(confirmMagicLinkAction(form(asked, 'tok')))).toBe('/parcels')
+  })
+
   it('POST without the CSRF token does not consume the link', async () => {
     const token = await tokenFor('noscrf@alderpond.example')
     const target = await redirectOf(confirmMagicLinkAction(form(token, null)))

@@ -6,10 +6,14 @@ import { PublicHeader } from '@/components/public/PublicHeader'
 
 afterEach(cleanup)
 
-function renderHeader(signedIn: boolean) {
+function renderHeader(signedIn: boolean, boardMember = false) {
   render(
     <CsrfProvider token="t">
-      <PublicHeader signedIn={signedIn} signOutAction={() => Promise.resolve()} />
+      <PublicHeader
+        signedIn={signedIn}
+        boardMember={boardMember}
+        signOutAction={() => Promise.resolve()}
+      />
     </CsrfProvider>,
   )
 }
@@ -34,5 +38,11 @@ describe('PublicHeader', () => {
     )
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Board meetings' })).toBeNull()
+  })
+
+  it('links a signed-in board member to their board meetings', () => {
+    renderHeader(true, true)
+    expect(screen.getByRole('link', { name: 'Board meetings' }).getAttribute('href')).toBe('/board')
   })
 })

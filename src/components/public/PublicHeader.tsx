@@ -4,6 +4,7 @@ import { SubmitButton } from '@/components/SubmitButton'
 
 interface PublicHeaderProps {
   signedIn: boolean
+  boardMember?: boolean
   signOutAction: (formData: FormData) => Promise<void>
 }
 
@@ -22,12 +23,17 @@ export function TownHeader({ children }: { children?: ReactNode }) {
   )
 }
 
-export function PublicHeader({ signedIn, signOutAction }: PublicHeaderProps) {
+export function PublicHeader({ signedIn, boardMember = false, signOutAction }: PublicHeaderProps) {
   return (
     <TownHeader>
       <nav aria-label="Account" className="flex items-center gap-4">
         {signedIn ? (
           <>
+            {boardMember ? (
+              <a href="/board" className={LINK}>
+                Board meetings
+              </a>
+            ) : null}
             <a href="/portal" className={LINK}>
               Your applications
             </a>

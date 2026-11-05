@@ -3,6 +3,7 @@ import { SITE_METADATA, SiteRoot } from '@/app/siteRoot'
 import { PublicHeader } from '@/components/public/PublicHeader'
 import { ServiceNotice } from '@/components/ServiceNotice'
 import { db } from '@/db/client'
+import { isBoardMember } from '@/features/access/predicates'
 import { currentServiceState } from '@/features/town/serviceStatus'
 import { getActor } from '@/server/getActor'
 import { signOutPublicAction } from './account/actions'
@@ -18,7 +19,11 @@ export default async function PublicLayout({ children }: { children: ReactNode }
   return (
     <SiteRoot>
       <div className="public-shell flex min-h-screen flex-col">
-        <PublicHeader signedIn={actor !== null} signOutAction={signOutPublicAction} />
+        <PublicHeader
+          signedIn={actor !== null}
+          boardMember={actor !== null && isBoardMember(actor)}
+          signOutAction={signOutPublicAction}
+        />
         <ServiceNotice mode={service.mode} exportUntil={service.exportUntil} />
         <div className="mx-auto w-full max-w-[var(--content-max-width)] flex-1 px-4 py-6">
           {children}

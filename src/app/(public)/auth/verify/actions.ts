@@ -4,12 +4,15 @@ import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { SESSION_COOKIE } from '@/constants/cookies'
 import { db } from '@/db/client'
+import { isBoardMember } from '@/features/access/predicates'
+import { loadActor } from '@/features/auth/actor'
 import { consumeMagicLink } from '@/features/auth/magicLink'
 import { safeNext } from '@/features/auth/safeNext'
 import { sessionCookieOptions } from '@/features/auth/session'
 import { guardAction } from '@/server/actionGuard'
 
 const SIGNED_IN_HOME = '/'
+const BOARD_HOME = '/board'
 const INVALID = '/sign-in?error=invalid'
 const SESSION_MAX_AGE_SECONDS = 7 * 24 * 60 * 60
 const ACTION_TIMEOUT_MS = 10_000
@@ -28,5 +31,7 @@ export async function confirmMagicLinkAction(formData: FormData): Promise<void> 
     ...sessionCookieOptions(),
     maxAge: SESSION_MAX_AGE_SECONDS,
   })
-  redirect(result.value.nextPath === null ? SIGNED_IN_HOME : safeNext(result.value.nextPath))
+  if (result.value.nextPath !== null) redirect(safeNext(result.value.nextPath))
+  const actor = await loadActor(db, result.value.userId, signal)
+  redirect(actor !== null && isBoardMember(actor) ? BOARD_HOME : SIGNED_IN_HOME)
 }
