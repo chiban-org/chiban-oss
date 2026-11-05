@@ -73,12 +73,12 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 
 - One list per kind of record. Status or scope is a row of `FilterTabs` with counts above the filter bar, not a second page. Tabs pick one value, and "Clear all" leaves the chosen tab alone.
 - Tabs always sit under the lead line and always use `FilterTabs`, including tabs that switch between sibling lists (the three override lists).
-- A list's Add action sits at the top, never only after the last row. The page header carries it: `ListHeader` (`src/components/layout/ListHeader.tsx`) on list pages, `SettingsHeader`'s action on settings pages, and `SectionHeader` beside the heading when the list is one section of a page (the three roster lists). Add is the page's one filled button unless the page already has one; then it is outline.
+- A list's Add action sits at the top, never only after the last row. The page header carries it: `ListHeader` (`src/components/layout/ListHeader.tsx`) on list pages, `SettingsHeader`'s action on settings pages, and `SectionHeader` beside the heading when the list is one section of a page (the three notice contact lists). Add is the page's one filled button unless the page already has one; then it is outline.
 - Add opens its form in `FormDialog` (`src/components/FormDialog.tsx`), titled for the action, with an outline submit. A form too long for a dialog sits in a disclosure directly under the header instead. A dialog closes with Escape or its close button and scrolls inside itself on a short window.
 - Every row that can be corrected has an Edit action: `RowEditDialog` opens the same form filled in with what is on file and saves through an update action. The update checks the same capability as the create action, keeps the server's own validation, and writes an audit entry with the values before and after. Rows that open their own record page (a request, a case, a meeting) take no Edit in the list; whatever that record allows changing is on its page.
 - When rows are unique by a key (a roster per parcel), Add refuses a key that is already listed and the message points to that row's Edit. Edit shows the key as text and does not change it.
 - Row actions sit in the last column under a screen-reader-only "Actions" header: Edit first, then any destructive action with its confirmation. Edit's accessible name names the row ("Edit Avery Stone").
-- A list that can grow past about 25 rows shows 25 at a time with `TablePager` under the table (requests, cases, meetings, legal holds, board members, the three override lists). Lists that stay short (rosters, enforcement officers, export targets) do not page.
+- A list that can grow past about 25 rows shows 25 at a time with `TablePager` under the table (requests, cases, meetings, legal holds, board members, the three override lists). Lists that stay short (notice contacts, enforcement officers, export targets) do not page.
 - A table's download link reads "Download CSV" and is hidden in print.
 - List pages use `<main data-wide>` so the table can use the wider list width. The lead line states the default order.
 - Every meaningful column sorts from its header with `SortHeader`, one sort link per header. Paged or growing lists sort and filter in SQL with a stable tiebreak and page with `limit` and `offset`. Lists already sorted and filtered in memory (the override lists) page after sorting with `slicePage` from `src/features/dataTable/pageSlice.ts`. Narrow layouts get the same sorts through `SortBar`.
@@ -89,6 +89,17 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 - Keyboard-driven tables move with `j` and `k`, open the selected row with Enter, and always show focus.
 - Every page with keyboard shortcuts lists them in one `KeyHints` row (`src/components/KeyHints.tsx`) directly above the table or tool, never in a sentence. Each key is a `Kbd` (`src/components/ui/kbd.tsx`), followed by a lowercase verb: "j k move", "Enter open", "/ search". The row is hidden below 640px. Do not draw keys any other way.
 - Search forms offer recent searches and a one-click example under the field.
+- A list of people inside one record (association officers, park tenants) is edited as repeatable rows: one bordered group per person with its own fields, "Add another" under the last one and Remove on each when there is more than one. Never a delimited text box.
+- Rows that can go out of date carry a checked date. "Confirm still correct" records today without retyping anything; past the town's re-check interval the row shows a "Due for a check" chip and the page header counts what is due. Due is a warning, never a block.
+- A row that other records use says so in a "Used by" column ("Used on 2 lists"), which opens to each use with its number and status, linked. A row that keeps history opens "Earlier versions" in a dialog, newest first, each with who replaced it and when.
+
+## Notice contacts
+
+- `/staff/notice-contacts` (formerly Rosters) keeps the people mailed notice instead of, or as well as, the parcel owner: condo associations, manufactured housing parks, conservation and preservation restriction holders, and a read-only view of the regional and state contacts kept in Settings. Each section opens with one plain line saying when its people are notified. Tables show full mailing addresses.
+- Each row has Edit, Confirm still correct, Earlier versions and Used by. Restriction holders also have End, which asks for a date and confirms; Undo stays until a list issued after the ending has left the holder off. The land records check ("Land records checked for new restrictions on ...", with Record a check) is the only review kept for a whole section, because a list cannot be issued until it has been done once.
+- The re-check interval is a board setting ("Re-check notice contacts every N days", 365 by default). Past it the row shows Due for a check and abutter lists print its source as out of date; they still issue.
+- Multi-unit parcels with no association on file are listed under the condo section, each with Add association already filled in with the parcel. The abutter list links its missing-association reason to the same prefilled Add, and links every notice contact source back to its row.
+- A parcel page shows a "Notice goes to" panel with that parcel's officers, park owner and tenants, or restriction holders, each with Edit.
 
 ## Actions and roles
 
