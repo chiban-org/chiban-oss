@@ -1,17 +1,17 @@
 'use server'
 
 import { errorOrOk } from '@/features/boards/actionResult'
+import { endRestriction, undoRestrictionEnd } from '@/features/rosters/restrictionEnd'
 import {
   addRestriction,
-  endRestriction,
   type RestrictionKind,
   updateRestriction,
 } from '@/features/rosters/restrictions'
 import { recordRosterReview } from '@/features/rosters/reviews'
+import { townToday } from '@/features/town/today'
 import { type ActionResult, runStaffAction, text } from '@/server/actionRunner'
 import { dateOf, INVALID, parcelOf, recordIdOf } from './rosterFields'
 
-const KINDS = ['condo', 'park', 'restrictions', 'regional_contacts'] as const
 const RESTRICTIONS: readonly RestrictionKind[] = [
   'conservation',
   'preservation',
@@ -69,28 +69,33 @@ export async function updateRestrictionAction(formData: FormData): Promise<Actio
 
 export async function endRestrictionAction(formData: FormData): Promise<ActionResult> {
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
+    const holdingId = recordIdOf(formData, 'holdingId')
     const endedOn = dateOf(formData, 'endedOn')
-    if (endedOn === null) return INVALID
+    if (holdingId === null || endedOn === null) return INVALID
     return errorOrOk(
-      await endRestriction(db, actor, { holdingId: text(formData, 'holdingId'), endedOn }, signal),
+      await endRestriction(db, actor, { holdingId, endedOn }, signal),
       'Restriction ended.',
     )
   })
 }
 
-export async function recordReviewAction(formData: FormData): Promise<ActionResult> {
+export async function undoRestrictionEndAction(formData: FormData): Promise<ActionResult> {
   return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const kind = text(formData, 'kind')
-    const reviewedOn = dateOf(formData, 'reviewedOn')
-    if (reviewedOn === null || !(KINDS as readonly string[]).includes(kind)) return INVALID
+    const holdingId = recordIdOf(formData, 'holdingId')
+    if (holdingId === null) return INVALID
     return errorOrOk(
-      await recordRosterReview(
-        db,
-        actor,
-        { kind: kind as (typeof KINDS)[number], reviewedOn },
-        signal,
-      ),
-      'Review recorded.',
+      await undoRestrictionEnd(db, actor, { holdingId }, signal),
+      'The ending was undone.',
+    )
+  })
+}
+
+export async function recordLandRecordsCheckAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffAction(formData, async ({ db, actor, signal }) => {
+    const reviewedOn = await townToday(db, new Date(), signal)
+    return errorOrOk(
+      await recordRosterReview(db, actor, { kind: 'restrictions', reviewedOn }, signal),
+      'Land records check recorded.',
     )
   })
 }

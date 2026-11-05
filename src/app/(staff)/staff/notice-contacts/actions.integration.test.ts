@@ -1,7 +1,9 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Actor } from '@/features/auth/actor'
+import { rosterStatus } from '@/features/rosters/reviews'
 import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import type { CivilDate } from '@/types/civilDate'
 
 interface MockState {
   db: unknown
@@ -33,6 +35,7 @@ vi.mock('next/headers', () => ({
 vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
 
 const actions = await import('./actions')
+const confirms = await import('./confirmActions')
 
 let handle: TestDb
 let world: BoardWorld
@@ -82,5 +85,64 @@ describe('easement and restriction holders', () => {
       }),
     )
     expect(result).toEqual({ ok: true, message: 'Restriction holder added.' })
+  })
+})
+
+describe('row actions on a holder', () => {
+  const FORBIDDEN = { ok: false, error: 'You do not have permission to do this.' }
+
+  async function holdingId(): Promise<string> {
+    const rows = await handle.db.query.restrictionHoldings.findMany()
+    return rows[0]?.id ?? ''
+  }
+
+  it('confirms a holder still correct, and refuses a reviewer', async () => {
+    const entryId = await holdingId()
+    state.actor = world.reviewer
+    expect(await confirms.confirmEntryAction(form({ kind: 'restriction', entryId }))).toEqual(
+      FORBIDDEN,
+    )
+    state.actor = world.staff
+    expect(await confirms.confirmEntryAction(form({ kind: 'restriction', entryId }))).toEqual({
+      ok: true,
+      message: 'Marked as still correct today.',
+    })
+    expect(await confirms.confirmEntryAction(form({ kind: 'nonsense', entryId }))).toEqual({
+      ok: false,
+      error: 'Check the form fields and try again.',
+    })
+  })
+
+  it('ends a holder on the chosen date, then undoes it', async () => {
+    const id = await holdingId()
+    expect(
+      await actions.endRestrictionAction(form({ holdingId: id, endedOn: '2027-01-15' })),
+    ).toEqual({ ok: true, message: 'Restriction ended.' })
+    const ended = await handle.db.query.restrictionHoldings.findFirst()
+    expect(ended?.endedOn).toBe('2027-01-15')
+    state.actor = world.reviewer
+    expect(await actions.undoRestrictionEndAction(form({ holdingId: id }))).toEqual(FORBIDDEN)
+    state.actor = world.staff
+    expect(await actions.undoRestrictionEndAction(form({ holdingId: id }))).toEqual({
+      ok: true,
+      message: 'The ending was undone.',
+    })
+  })
+
+  it('records today as the land records check, and refuses a reviewer', async () => {
+    state.actor = world.reviewer
+    expect(await actions.recordLandRecordsCheckAction(form({}))).toEqual(FORBIDDEN)
+    state.actor = world.staff
+    expect(await actions.recordLandRecordsCheckAction(form({}))).toEqual({
+      ok: true,
+      message: 'Land records check recorded.',
+    })
+    const status = await rosterStatus(
+      handle.db,
+      'restrictions',
+      '2099-01-01' as CivilDate,
+      new AbortController().signal,
+    )
+    expect(status.state).toBe('reviewed')
   })
 })

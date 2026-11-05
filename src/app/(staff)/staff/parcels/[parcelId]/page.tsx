@@ -21,11 +21,14 @@ import { loadPack } from '@/features/packs/loadPack'
 import { aliasSourceText, lineageEventText, retiredText } from '@/features/parcels/parcelText'
 import { getStaffParcelView } from '@/features/parcels/staffParcelView'
 import { withoutParcelFiles } from '@/features/parcels/withoutParcelFiles'
+import { loadParcelContacts } from '@/features/rosters/parcelContacts'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
 import { createStaffUploadIntentAction, finalizeStaffUploadAction } from '../../records/actions'
 import { PANEL_ACTIONS } from '../../records/panelActions'
-import { carryForwardAction, createAliasOverrideAction } from './actions'
+import { carryForwardAction } from './actions'
+import { noticePanel } from './NoticeGoesTo'
+import { ParcelIds } from './ParcelIds'
 
 interface ParcelPageProps {
   params: Promise<{ parcelId: string }>
@@ -64,6 +67,7 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
   const canPublish = await hasCapability(ctx.db, ctx.actor.userId, 'document.publish', ctx.signal)
   const canManage = await hasCapability(ctx.db, ctx.actor.userId, 'document.manage', ctx.signal)
   const canManageParcel = await hasCapability(ctx.db, ctx.actor.userId, 'parcel.manage', ctx.signal)
+  const contacts = await loadParcelContacts(ctx.db, ctx.actor, { parcelId }, ctx.signal)
   const series = loadPack().recordSeries.map((s) => ({
     key: s.key,
     label: s.label,
@@ -86,6 +90,12 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
     ...view.lineage.children.map((c) => ({ ...c, rel: 'Child' })),
   ]
   const parts = splitPanels([
+    noticePanel(contacts, {
+      parcelId,
+      displayId,
+      status: view.status,
+      siteAddress: view.siteAddress,
+    }),
     {
       empty: false,
       node:
@@ -173,46 +183,12 @@ export default async function StaffParcelPage({ params }: ParcelPageProps) {
     {
       empty: false,
       node: (
-        <section key="ids" aria-label="IDs">
-          <h2>IDs</h2>
-          <table className="text-sm">
-            <thead>
-              <tr>
-                <th>Format</th>
-                <th>Value</th>
-                <th>Status</th>
-                <th>Source</th>
-              </tr>
-            </thead>
-            <tbody>
-              {view.aliases.map((a) => (
-                <tr key={`${a.format}:${a.value}:${a.status}`}>
-                  <td>{a.label}</td>
-                  <td>{a.value}</td>
-                  <td>{a.status === 'retired' ? retiredText(a.retiredOn) : 'Active'}</td>
-                  <td>{aliasSourceText(a.source)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-          {canManageParcel ? (
-            <details>
-              <summary>Override an ID</summary>
-              <ActionForm action={createAliasOverrideAction} submitLabel="Save override">
-                <input type="hidden" name="parcelRef" value={displayId} />
-                <TextField
-                  label="Format key"
-                  name="format"
-                  required
-                  hint="For example cama15 or gis12."
-                />
-                <TextField label="ID value" name="value" required />
-                <TextField label="Reason" name="reason" required />
-                <TextField label="Expires on" name="expiresOn" type="date" />
-              </ActionForm>
-            </details>
-          ) : null}
-        </section>
+        <ParcelIds
+          key="ids"
+          aliases={view.aliases}
+          displayId={displayId}
+          canManage={canManageParcel}
+        />
       ),
     },
   ])

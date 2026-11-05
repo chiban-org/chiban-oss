@@ -70,10 +70,10 @@ describe('staff navigation', () => {
     expect(boardMemberHome(viewer(['reviewer']))).toBeNull()
   })
 
-  it('shows the boards and rosters pages to staff and admin only', () => {
+  it('shows the boards and notice contacts pages to staff and admin only', () => {
     for (const role of ['staff', 'admin'] as const) {
       expect(labelsFor(role)).toEqual(
-        expect.arrayContaining(['Board applications', 'Meetings', 'Rosters']),
+        expect.arrayContaining(['Board applications', 'Meetings', 'Notice contacts']),
       )
     }
     for (const role of [
@@ -86,8 +86,16 @@ describe('staff navigation', () => {
       const labels = labelsFor(role)
       expect(labels).not.toContain('Board applications')
       expect(labels).not.toContain('Meetings')
-      expect(labels).not.toContain('Rosters')
+      expect(labels).not.toContain('Notice contacts')
     }
+  })
+
+  it('lists notice contacts right after Applications, among the daily work', () => {
+    const work = STAFF_NAV_ITEMS.filter((i) => i.group === 'work').map((i) => i.label)
+    expect(work.indexOf('Notice contacts')).toBe(work.indexOf('Applications') + 1)
+    expect(STAFF_NAV_ITEMS.find((i) => i.label === 'Notice contacts')?.href).toBe(
+      '/staff/notice-contacts',
+    )
   })
 
   it('shows a reviewer reviews but not applications or the day list', () => {

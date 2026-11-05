@@ -59,10 +59,12 @@ afterAll(async () => {
   await handle.drop()
 })
 
-function form(fields: Record<string, string>): FormData {
+function form(fields: Record<string, string | string[]>): FormData {
   const f = new FormData()
   f.set('csrf_token', 'tok')
-  for (const [k, v] of Object.entries(fields)) f.set(k, v)
+  for (const [k, v] of Object.entries(fields)) {
+    for (const one of Array.isArray(v) ? v : [v]) f.append(k, one)
+  }
   return f
 }
 
@@ -76,7 +78,9 @@ async function auditFor(action: string, entityId: string) {
 const association = {
   associationName: 'Heron Landing Condominium',
   asOf: '2026-10-01',
-  officers: 'Dana Whitcomb | President | PO Box 105, Alder Pond NH 03999',
+  officerName: ['Dana Whitcomb'],
+  officerTitle: ['President'],
+  officerAddress: ['PO Box 105, Alder Pond NH 03999'],
 }
 
 const park = {
@@ -84,13 +88,16 @@ const park = {
   ownerName: 'Loon Cove LLC',
   ownerMailingAddress: '1 Cove Road, Alder Pond NH 03999',
   asOf: '2026-10-01',
-  tenants: 'Rory Pike | Site 4 | 4 Merganser Court, Alder Pond NH 03999',
+  tenantId: [''],
+  tenantName: ['Rory Pike'],
+  tenantSite: ['Site 4'],
+  tenantAddress: ['4 Merganser Court, Alder Pond NH 03999'],
 }
 
 describe('association rosters', () => {
   it('adds a roster for a parcel that has none', async () => {
     const result = await rosters.addAssociationAction(form({ parcelRef: CONDO_ID, ...association }))
-    expect(result).toEqual({ ok: true, message: 'Association roster added.' })
+    expect(result).toEqual({ ok: true, message: 'Association added.' })
     expect(await auditFor('roster.association.add', condoParcel)).toHaveLength(1)
   })
 
@@ -100,7 +107,7 @@ describe('association rosters', () => {
     )
     expect(result).toEqual({
       ok: false,
-      error: 'This parcel already has an association roster. Use Edit on its row to change it.',
+      error: 'This parcel already has an association on file. Use Edit on its row to change it.',
     })
     const [row] = await handle.db
       .select()
@@ -115,10 +122,12 @@ describe('association rosters', () => {
         parcelId: condoParcel,
         ...association,
         associationName: 'Heron Landing Owners Association',
-        officers: `${association.officers}\nLee Marsh | Treasurer | 12 Loon Road, Alder Pond NH 03999`,
+        officerName: ['Dana Whitcomb', 'Lee Marsh'],
+        officerTitle: ['President', 'Treasurer'],
+        officerAddress: ['PO Box 105, Alder Pond NH 03999', '12 Loon Road, Alder Pond NH 03999'],
       }),
     )
-    expect(result).toEqual({ ok: true, message: 'Association roster saved.' })
+    expect(result).toEqual({ ok: true, message: 'Association saved.' })
     const [row] = await handle.db
       .select()
       .from(associationRosters)
@@ -128,17 +137,23 @@ describe('association rosters', () => {
     const [entry] = await auditFor('roster.association.update', condoParcel)
     expect(entry?.before).toMatchObject({
       associationName: 'Heron Landing Condominium',
-      officers: 1,
+      officers: [
+        {
+          name: 'Dana Whitcomb',
+          title: 'President',
+          mailingAddress: 'PO Box 105, Alder Pond NH 03999',
+        },
+      ],
     })
     expect(entry?.after).toMatchObject({
       associationName: 'Heron Landing Owners Association',
-      officers: 2,
+      officers: [{ name: 'Dana Whitcomb' }, { name: 'Lee Marsh' }],
     })
   })
 
   it('refuses an edit with no officers', async () => {
     const result = await rosters.updateAssociationAction(
-      form({ parcelId: condoParcel, ...association, officers: '' }),
+      form({ parcelId: condoParcel, ...association, officerName: [''], officerAddress: [''] }),
     )
     expect(result).toEqual({
       ok: false,
@@ -167,16 +182,22 @@ describe('park rosters', () => {
   it('adds a park, refuses a second one, and edits the first', async () => {
     expect(await rosters.addParkAction(form({ parcelRef: PARK_ID, ...park }))).toEqual({
       ok: true,
-      message: 'Park roster added.',
+      message: 'Park added.',
     })
     expect(await rosters.addParkAction(form({ parcelRef: PARK_ID, ...park }))).toEqual({
       ok: false,
-      error: 'This parcel already has a park roster. Use Edit on its row to change it.',
+      error: 'This parcel already has a park on file. Use Edit on its row to change it.',
     })
     const edited = await rosters.updateParkAction(
-      form({ parcelId: parkParcel, ...park, ownerName: 'Loon Cove Holdings LLC' }),
+      form({
+        parcelId: parkParcel,
+        ...park,
+        tenantId: ['site-4'],
+        tenantSite: ['Lot 4'],
+        ownerName: 'Loon Cove Holdings LLC',
+      }),
     )
-    expect(edited).toEqual({ ok: true, message: 'Park roster saved.' })
+    expect(edited).toEqual({ ok: true, message: 'Park saved.' })
     const [row] = await handle.db
       .select()
       .from(parkRosters)
@@ -184,7 +205,11 @@ describe('park rosters', () => {
     expect(row?.ownerName).toBe('Loon Cove Holdings LLC')
     expect(row?.tenants.map((t) => t.tenantId)).toEqual(['site-4'])
     const [entry] = await auditFor('roster.park.update', parkParcel)
-    expect(entry?.before).toMatchObject({ parkName: 'Loon Cove Park', tenants: 1 })
+    expect(entry?.before).toMatchObject({
+      parkName: 'Loon Cove Park',
+      ownerName: 'Loon Cove LLC',
+      tenants: [{ tenantId: 'site-4', name: 'Rory Pike', siteLabel: 'Site 4' }],
+    })
   })
 
   it('refuses a park edit from someone who does not keep the rosters', async () => {

@@ -20,6 +20,7 @@ interface AlternateSubmit {
 interface ActionFormProps {
   action: (formData: FormData) => Promise<ActionResult>
   submitLabel: string
+  submitAccessibleLabel?: string
   alternate?: AlternateSubmit
   variant?: 'default' | 'outline' | 'destructive'
   className?: string
@@ -101,12 +102,14 @@ function clearInvalid(form: HTMLFormElement | null): void {
 
 function SubmitButtons({
   label,
+  accessibleLabel,
   variant,
   alternate,
   disabled,
   pending,
 }: {
   label: string
+  accessibleLabel: string | undefined
   variant: NonNullable<ActionFormProps['variant']>
   alternate: AlternateSubmit | undefined
   disabled: boolean
@@ -114,7 +117,7 @@ function SubmitButtons({
 }) {
   return (
     <>
-      <Button type="submit" variant={variant} disabled={disabled}>
+      <Button type="submit" variant={variant} disabled={disabled} aria-label={accessibleLabel}>
         {pending ? 'Working' : label}
       </Button>
       {alternate === undefined ? null : (
@@ -135,6 +138,7 @@ function SubmitButtons({
 export function ActionForm({
   action,
   submitLabel,
+  submitAccessibleLabel,
   alternate,
   variant = 'outline',
   className,
@@ -202,6 +206,7 @@ export function ActionForm({
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <SubmitButtons
             label={submitLabel}
+            accessibleLabel={submitAccessibleLabel}
             variant={variant}
             alternate={alternate}
             disabled={pending || !hydrated}

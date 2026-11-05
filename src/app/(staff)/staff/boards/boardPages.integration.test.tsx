@@ -42,7 +42,7 @@ vi.mock('@/components/abutters/ProjectionMap', () => ({
 const { default: BoardsPage } = await import('@/app/(staff)/staff/boards/page')
 const { default: MeetingsPage } = await import('@/app/(staff)/staff/boards/meetings/page')
 const { default: PacketsPage } = await import('@/app/(staff)/staff/boards/packets/page')
-const { default: RostersPage } = await import('@/app/(staff)/staff/rosters/page')
+const { default: NoticeContactsPage } = await import('@/app/(staff)/staff/notice-contacts/page')
 const { default: ListPage } = await import('@/app/(staff)/staff/abutters/[listId]/page')
 const { default: ApplicationPage } = await import(
   '@/app/(staff)/staff/applications/[applicationId]/page'
@@ -121,17 +121,17 @@ afterAll(async () => {
 })
 
 describe('board section pages refuse with the permission page', () => {
-  it('a reviewer gets the permission page on boards, meetings, and rosters', async () => {
+  it('a reviewer gets the permission page on boards, meetings, and notice contacts', async () => {
     await actAs('reviewer')
     expect(await page(BoardsPage(noSearch))).toContain(NO_PERMISSION)
     expect(await page(MeetingsPage(noSearch))).toContain(NO_PERMISSION)
-    expect(await page(RostersPage())).toContain(NO_PERMISSION)
+    expect(await page(NoticeContactsPage(noSearch))).toContain(NO_PERMISSION)
   })
 
-  it('an inspector gets the permission page on boards and rosters', async () => {
+  it('an inspector gets the permission page on boards and notice contacts', async () => {
     await actAs('inspector')
     expect(await page(BoardsPage(noSearch))).toContain(NO_PERMISSION)
-    expect(await page(RostersPage())).toContain(NO_PERMISSION)
+    expect(await page(NoticeContactsPage(noSearch))).toContain(NO_PERMISSION)
   })
 
   it('a record opened by id stays missing for a reviewer and a board member', async () => {
@@ -153,7 +153,7 @@ describe('board section pages refuse with the permission page', () => {
   it('a signed-out visitor is sent to sign in', async () => {
     state.actor = null
     await expect(page(BoardsPage(noSearch))).rejects.toThrow('NEXT_REDIRECT:/staff/sign-in')
-    await expect(page(RostersPage())).rejects.toThrow('NEXT_REDIRECT:/staff/sign-in')
+    await expect(page(NoticeContactsPage(noSearch))).rejects.toThrow('NEXT_REDIRECT:/staff/sign-in')
   })
 })
 
@@ -163,7 +163,7 @@ describe('board pages show words, not keys or dates', () => {
     for (const body of [
       await page(BoardsPage(noSearch)),
       await page(MeetingsPage(noSearch)),
-      await page(RostersPage()),
+      await page(NoticeContactsPage(noSearch)),
     ]) {
       expect(findIsoDates(body)).toEqual([])
       expect(findRawKeys(body, RAW_KEYS)).toEqual([])
@@ -221,9 +221,9 @@ describe('board pages show words, not keys or dates', () => {
     expect(refused).toContain('href="/staff"')
   })
 
-  it('the rosters page links each parcel and the park owner in their own columns', async () => {
+  it('the notice contacts page links each parcel and the park owner in their own columns', async () => {
     await actAs('staff')
-    const html = renderToStaticMarkup((await RostersPage()) as never)
+    const html = renderToStaticMarkup((await NoticeContactsPage(noSearch)) as never)
     expect(html).toMatch(/href="\/staff\/parcels\/[0-9a-f-]{36}"/)
     expect(html).toMatch(/href="\/staff\/parcels\?q=[^"]+"/)
     expect(text(html)).not.toMatch(/, parcel \d/)
@@ -231,10 +231,13 @@ describe('board pages show words, not keys or dates', () => {
     expect(html).toContain('<th scope="col">Parcel</th>')
   })
 
-  it('the rosters page shows the regional notice contacts it asks staff to review', async () => {
+  it('the notice contacts page shows the regional and state contacts read-only', async () => {
     await actAs('staff')
-    const staffView = await page(RostersPage())
-    expect(staffView).toContain('Regional notice contacts')
+    const staffView = await page(NoticeContactsPage(noSearch))
+    expect(staffView).toContain('Regional and state contacts')
+    expect(staffView).toContain(
+      'Used only when an application has regional impact or is within 500 feet under NH DES rules.',
+    )
     expect(staffView).toContain(
       'Alder Valley Regional Planning Commission, 18 Commission Way, Alder Valley NH 03999',
     )
@@ -242,7 +245,7 @@ describe('board pages show words, not keys or dates', () => {
     expect(staffView).toContain('NH Department of Environmental Services')
     expect(staffView).toContain('An administrator changes these in Settings.')
     await actAs('admin')
-    const adminView = renderToStaticMarkup((await RostersPage()) as never)
+    const adminView = renderToStaticMarkup((await NoticeContactsPage(noSearch)) as never)
     expect(adminView).toContain('href="/staff/settings/regional_contacts"')
   })
 

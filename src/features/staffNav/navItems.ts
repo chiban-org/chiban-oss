@@ -64,6 +64,13 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
     access: records,
   },
   {
+    href: '/staff/notice-contacts',
+    label: 'Notice contacts',
+    group: 'work',
+    icon: 'contacts',
+    access: any('abutters.manage'),
+  },
+  {
     href: '/staff/inspections',
     label: 'Inspections',
     group: 'work',
@@ -105,13 +112,6 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
     group: 'boards',
     icon: 'members',
     access: any('board.manage_members'),
-  },
-  {
-    href: '/staff/rosters',
-    label: 'Rosters',
-    group: 'boards',
-    icon: 'rosters',
-    access: any('abutters.manage'),
   },
   {
     href: '/staff/boards/packets',

@@ -18,6 +18,7 @@ export interface FormDialogProps {
   accessibleLabel?: string
   variant?: 'default' | 'outline'
   size?: 'default' | 'sm'
+  defaultOpen?: boolean
   children: ReactNode
 }
 
@@ -28,10 +29,11 @@ export function FormDialog({
   accessibleLabel,
   variant = 'outline',
   size = 'default',
+  defaultOpen = false,
   children,
 }: FormDialogProps) {
   return (
-    <Dialog>
+    <Dialog defaultOpen={defaultOpen}>
       <DialogTrigger asChild>
         <Button type="button" variant={variant} size={size} aria-label={accessibleLabel}>
           {label}
