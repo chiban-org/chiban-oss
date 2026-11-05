@@ -1,4 +1,3 @@
-import Link from 'next/link'
 import { ListHeader } from '@/components/layout/ListHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { pickedParcelFor } from '@/features/parcels/parcelPick'
@@ -13,26 +12,24 @@ import {
   RegionalSection,
   RestrictionsSection,
 } from './ContactSections'
+import { RecheckInterval } from './RecheckInterval'
 
 export const dynamic = 'force-dynamic'
 
 function DueLine({ view }: { view: RostersView }) {
   const due = view.dueCount
   return (
-    <p className="m-0">
+    <div className="grid gap-1">
       {due === 0 ? null : (
-        <>
-          <span className="bg-highlight px-1 font-semibold">{`${due} due for a check.`}</span>{' '}
-        </>
+        <p className="m-0">
+          <span className="bg-highlight px-1 font-semibold">{`${due} due for a check.`}</span>
+        </p>
       )}
-      {`An entry is due ${view.recheckDays} days after it was last checked. Lists still issue and print it as out of date.`}
-      {view.canEditSettings ? (
-        <>
-          {' '}
-          <Link href="/staff/settings/board_settings">Change the interval</Link>
-        </>
-      ) : null}
-    </p>
+      <RecheckInterval days={view.recheckDays} canEdit={view.canEditSettings} />
+      <p className="m-0 text-sm text-muted-foreground">
+        Lists still issue and print an entry past the interval as out of date.
+      </p>
+    </div>
   )
 }
 

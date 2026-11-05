@@ -3,7 +3,6 @@
 import { TextRows } from '@/components/config/plainFields'
 import { Check, FieldError, type FieldErrors, Input } from '@/components/config/primitives'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
-import { RECHECK_CONTACTS_DEFAULT_DAYS } from '@/features/boards/boardSettingsSchema'
 
 interface Props {
   body: BoardSettingsBody
@@ -152,23 +151,6 @@ export function BoardSettingsEditor({ body, onChange, errors }: Props) {
         </div>
         <FieldError errors={errors} name="abutters.layersConfirmedBy" />
         <FieldError errors={errors} name="abutters.layersConfirmedOn" />
-      </fieldset>
-      <fieldset className="rounded-md border p-3">
-        <legend className="px-1 text-sm font-medium">Notice contacts</legend>
-        <Input
-          label="Re-check notice contacts every N days"
-          hint="Past this, an association, park or restriction holder shows Due for a check and lists print it as out of date. Nothing is blocked."
-          type="number"
-          min={1}
-          max={3650}
-          value={body.abutters.recheckContactsDays ?? RECHECK_CONTACTS_DEFAULT_DAYS}
-          onChange={(e) =>
-            setAbutters({
-              recheckContactsDays: toNumberOrNull(e.target.value) ?? RECHECK_CONTACTS_DEFAULT_DAYS,
-            })
-          }
-        />
-        <FieldError errors={errors} name="abutters.recheckContactsDays" />
       </fieldset>
     </div>
   )
