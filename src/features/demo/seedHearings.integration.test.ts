@@ -152,6 +152,8 @@ describe('hearing demo data', () => {
     )
     const nov12 = page?.rows.find((r) => r.meetingDate === '2026-11-12')
     expect(nov12?.hearings).toBeGreaterThanOrEqual(2)
+    expect(nov12?.packetSent).toBe(false)
+    expect(page?.rows.find((r) => r.meetingDate === '2026-12-15')?.packetSent).toBe(true)
   })
 
   it('has a cancelled special meeting that is still ahead, with its reason', async () => {

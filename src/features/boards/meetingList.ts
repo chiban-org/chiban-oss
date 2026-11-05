@@ -130,7 +130,7 @@ export async function listMeetingTable(
         hearings: HEARINGS,
         agenda: AGENDA,
         packetSent: sql<boolean>`exists (select 1 from board_packets bp
-          where bp.meeting_id = ${m.id} and bp.sent_at is not null)`,
+          where bp.meeting_id = ${m}.id and bp.sent_at is not null)`,
       })
       .from(m)
       .where(where)
