@@ -407,12 +407,14 @@ File: `data/board_packet_access.ndjson`. Ordered by id.
 
 - `id`: uuid
 - `link_id`: uuid, nullable
+- `packet_id`: uuid, nullable
 - `user_id`: uuid, nullable
 - `version_id`: uuid, nullable
 - `accessed_at`: timestamp with time zone
 
 References:
 - `link_id` refers to `board_packet_links`
+- `packet_id` refers to `board_packets`
 
 ### board_packet_items
 
@@ -426,6 +428,10 @@ File: `data/board_packet_items.ndjson`. Ordered by packet_id, document_id.
 - `approval_id`: uuid, nullable
 - `withdrawn_at`: timestamp with time zone, nullable
 - `withdrawn_reason`: text, nullable
+- `sent_at`: timestamp with time zone, nullable
+- `removed_at`: timestamp with time zone, nullable
+- `removal_sent_at`: timestamp with time zone, nullable
+- `replaces_document_id`: uuid, nullable
 
 References:
 - `packet_id` refers to `board_packets`
@@ -451,6 +457,19 @@ References:
 
 Omitted columns: `token_hash`
 
+### board_packet_members
+
+File: `data/board_packet_members.ndjson`. Ordered by packet_id, user_id.
+
+- `packet_id`: uuid
+- `user_id`: uuid
+- `sent_at`: timestamp with time zone
+- `last_sent_at`: timestamp with time zone
+
+References:
+- `packet_id` refers to `board_packets`
+- `user_id` refers to `users`
+
 ### board_packets
 
 File: `data/board_packets.ndjson`. Ordered by id.
@@ -462,6 +481,8 @@ File: `data/board_packets.ndjson`. Ordered by id.
 - `meeting_id`: uuid, nullable
 - `created_by`: uuid
 - `created_at`: timestamp with time zone
+- `sent_at`: timestamp with time zone, nullable
+- `last_sent_at`: timestamp with time zone, nullable
 
 References:
 - `meeting_id` refers to `board_meetings`
