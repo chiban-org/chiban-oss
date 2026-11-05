@@ -1,9 +1,11 @@
 import { NH_INSPECTION_SETTINGS_DEFAULT } from '@packs/nh/starters'
 import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettings'
 import { EMPTY_REGIONAL_CONTACTS } from '@/features/boards/regionalContacts'
+import { settingDefault } from '@/features/clocks/ruleEngine'
 import type { ConfigKind } from '@/features/config/kinds'
 import { prefixFromLabel } from '@/features/config/newItemKey'
 import { slugKey } from '@/features/forms/fieldKeys'
+import { loadPack } from '@/features/packs/loadPack'
 import { EMPTY_REVIEW_ROUTES } from '@/features/reviews/routesSchema'
 import { defaultDoc } from '@/features/templates/kinds/documentKinds'
 import { TOWN_PROFILE_SKELETON } from '@/features/town/profileSchema'
@@ -45,7 +47,10 @@ export function skeletonBody(kind: ConfigKind, key: string, label: string = key)
         items: [{ key: 'item-1', label: 'Describe the check', required: true }],
       }
     case 'town_rule_setting':
-      return { ruleKey: key, value: 0 }
+      return {
+        ruleKey: key,
+        value: settingDefault(loadPack().rules.find((r) => r.key === key) ?? null),
+      }
     case 'local_code_amendment':
       return {
         title: label,
