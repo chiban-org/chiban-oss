@@ -134,11 +134,15 @@ describe('board section pages refuse with the permission page', () => {
     expect(await page(NoticeContactsPage(noSearch))).toContain(NO_PERMISSION)
   })
 
-  it('a record opened by id stays missing for a reviewer and a board member', async () => {
+  it('a list opened by id gives a reviewer and a board member the permission page', async () => {
     for (const who of ['reviewer', 'board']) {
       await actAs(who)
+      const body = await page(ListPage({ params: Promise.resolve({ listId: issuedListId }) }))
+      expect(body).toContain('You do not have permission to see abutter lists.')
       await expect(
-        page(ListPage({ params: Promise.resolve({ listId: issuedListId }) })),
+        page(
+          ListPage({ params: Promise.resolve({ listId: '00000000-0000-4000-8000-000000000000' }) }),
+        ),
       ).rejects.toThrow('NOT_FOUND')
     }
   })
