@@ -19,7 +19,7 @@ function restoreFiles(input: HTMLInputElement, files: File[]): void {
   input.files = transfer.files
 }
 
-function restoreField(field: Field, submitted: string[]): void {
+function restoreField(field: Field, submitted: string[], occurrence: number): void {
   if (field instanceof HTMLSelectElement && field.multiple) {
     for (const option of Array.from(field.options))
       option.selected = submitted.includes(option.value)
@@ -29,15 +29,18 @@ function restoreField(field: Field, submitted: string[]): void {
     field.checked = submitted.includes(field.value)
     return
   }
-  field.value = submitted[0] ?? ''
+  field.value = submitted.at(occurrence) ?? ''
 }
 
 export function restoreSubmittedValues(
   form: HTMLFormElement,
   entries: [string, FormDataEntryValue][],
 ): void {
+  const seen = new Map<string, number>()
   for (const element of Array.from(form.elements)) {
     if (!isField(element) || element.name === '') continue
+    const occurrence = seen.get(element.name) ?? 0
+    seen.set(element.name, occurrence + 1)
     if (element instanceof HTMLInputElement && UNRESTORED_TYPES.has(element.type)) continue
     const values = entries.filter(([name]) => name === element.name).map(([, value]) => value)
     if (element instanceof HTMLInputElement && element.type === 'file') {
@@ -50,6 +53,7 @@ export function restoreSubmittedValues(
     restoreField(
       element,
       values.filter((value): value is string => typeof value === 'string'),
+      occurrence,
     )
   }
 }

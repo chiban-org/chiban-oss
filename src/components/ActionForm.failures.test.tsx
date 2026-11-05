@@ -74,6 +74,25 @@ describe('ActionForm when the request itself fails', () => {
 })
 
 describe('restoreSubmittedValues', () => {
+  it('gives each repeated text field back its own submitted value', () => {
+    const form = document.createElement('form')
+    for (const name of ['officerName', 'officerName', 'officerName']) {
+      const input = document.createElement('input')
+      input.name = name
+      form.append(input)
+    }
+    restoreSubmittedValues(form, [
+      ['officerName', 'Dana Whitcomb'],
+      ['officerName', 'Lee Marsh'],
+      ['officerName', 'Rory Pike'],
+    ])
+    expect(Array.from(form.querySelectorAll('input')).map((i) => i.value)).toEqual([
+      'Dana Whitcomb',
+      'Lee Marsh',
+      'Rory Pike',
+    ])
+  })
+
   it('puts submitted files back on a file input', () => {
     const form = document.createElement('form')
     const input = document.createElement('input')

@@ -32,13 +32,16 @@ const TENANT: Shape = {
 
 const EMPTY: PersonRow = { name: '', middle: '', mailingAddress: '' }
 
-export function ContactRows({
-  kind,
-  initial,
-}: {
+interface RowsProps {
   kind: 'officer' | 'tenant'
   initial: readonly PersonRow[]
-}) {
+}
+
+export function ContactRows(props: RowsProps) {
+  return <Rows key={JSON.stringify(props.initial)} {...props} />
+}
+
+function Rows({ kind, initial }: RowsProps) {
   const shape = kind === 'officer' ? OFFICER : TENANT
   const next = useRef(initial.length + 1)
   const [rows, setRows] = useState(() =>
