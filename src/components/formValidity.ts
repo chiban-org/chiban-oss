@@ -49,10 +49,12 @@ export function markInvalid(form: HTMLFormElement, invalid: Element[], messageId
   if (first instanceof HTMLElement) first.focus()
 }
 
-export function focusFirstNamed(form: HTMLFormElement | null, names: readonly string[]): void {
+export function focusFirstRefused(form: HTMLFormElement | null, names: readonly string[]): void {
   if (form === null || names.length === 0) return
-  const first = Array.from(form.elements).find(
-    (el) => el instanceof HTMLElement && names.includes(el.getAttribute('name') ?? ''),
+  const named = Array.from(form.elements).find(
+    (el) =>
+      el.getAttribute('aria-hidden') !== 'true' && names.includes(el.getAttribute('name') ?? ''),
   )
-  if (first instanceof HTMLElement) first.focus()
+  const target = form.querySelector('[aria-invalid="true"]') ?? named
+  if (target instanceof HTMLElement) target.focus()
 }

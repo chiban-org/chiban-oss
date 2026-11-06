@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/re
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ActionForm } from '@/components/ActionForm'
 import { CsrfProvider } from '@/components/CsrfProvider'
-import { SelectField, TextField } from '@/components/staff/fields'
+import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { ActionResult } from '@/server/actionRunner'
 
 afterEach(cleanup)
@@ -106,5 +106,32 @@ describe('ActionForm with field-keyed refusals', () => {
     expect(document.querySelectorAll('[aria-invalid="true"]')).toHaveLength(0)
     finish({ ok: true, message: 'Item added.' })
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Item added.'))
+  })
+
+  it('focuses the visible checkbox, not its hidden form input, when a checkbox is refused', async () => {
+    const consent = "This extension needs the applicant's consent."
+    render(
+      <CsrfProvider token="t1">
+        <ActionForm
+          action={() =>
+            Promise.resolve({
+              ok: false,
+              error: consent,
+              fieldErrors: { applicantConsent: consent },
+            })
+          }
+          submitLabel="Apply adjustment"
+        >
+          <CheckField label="The applicant consents" name="applicantConsent" />
+        </ActionForm>
+      </CsrfProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Apply adjustment' }))
+    const box = screen.getByRole('checkbox', { name: 'The applicant consents' })
+    await waitFor(() => expect(document.activeElement).toBe(box))
+    expect(box.getAttribute('aria-invalid')).toBe('true')
+    expect(document.getElementById(box.getAttribute('aria-describedby') ?? '')?.textContent).toBe(
+      consent,
+    )
   })
 })

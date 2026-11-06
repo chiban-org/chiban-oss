@@ -58,6 +58,10 @@ describe('optionalText', () => {
     for (const raw of ['', '   ', undefined]) expect(verdict(note, raw)).toEqual({ value: null })
   })
 
+  it('refuses two values for one field instead of reading them as blank', () => {
+    expect(verdict(note, ['a', 'b'])).toEqual({ message: 'Enter a note.' })
+  })
+
   it('trims a value and still applies the max length', () => {
     expect(verdict(note, ' ok ')).toEqual({ value: 'ok' })
     expect(verdict(note, 'toolong')).toEqual({ message: 'Enter a note of 5 characters or fewer.' })

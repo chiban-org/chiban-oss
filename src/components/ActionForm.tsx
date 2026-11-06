@@ -14,7 +14,7 @@ import { useCloseEnclosingDialog } from '@/components/dialogCloseContext'
 import { FieldErrorsProvider } from '@/components/fieldErrors'
 import {
   clearInvalid,
-  focusFirstNamed,
+  focusFirstRefused,
   invalidFields,
   markInvalid,
   problemMessage,
@@ -122,7 +122,7 @@ export function ActionForm({
     checkReply ?? (busy || edited ? null : result),
   )
   useEffect(() => {
-    focusFirstNamed(form.current, Object.keys(fieldErrors))
+    focusFirstRefused(form.current, Object.keys(fieldErrors))
   }, [form, fieldErrors])
   return (
     <>

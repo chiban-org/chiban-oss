@@ -63,6 +63,14 @@ describe('optionalCivilDate', () => {
   })
 })
 
+describe('optionalCivilDate with a repeated field', () => {
+  it('refuses two values for one date instead of reading them as no date', () => {
+    expect(verdict(optionalCivilDate('the term end date'), ['2030-03-31', '2031-03-31'])).toEqual({
+      message: 'Enter the term end date.',
+    })
+  })
+})
+
 describe('endNotBefore', () => {
   const term = z
     .object({ termStart: civilDate('the term start date'), termEnd: optionalCivilDate('x') })

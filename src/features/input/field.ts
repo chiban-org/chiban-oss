@@ -19,6 +19,10 @@ export function trimmed(raw: unknown): string {
   return typeof raw === 'string' ? raw.trim() : ''
 }
 
+function isBlank(raw: unknown): boolean {
+  return raw === undefined || (typeof raw === 'string' && raw.trim() === '')
+}
+
 export function blankAsNull<T>(parse: FieldParse<T>): FieldParse<T | null> {
-  return (raw) => (trimmed(raw) === '' ? { ok: true, value: null } : parse(raw))
+  return (raw) => (isBlank(raw) ? { ok: true, value: null } : parse(raw))
 }
