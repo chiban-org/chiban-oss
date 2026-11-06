@@ -68,6 +68,7 @@ const SPECS: Spec[] = [
   ...ENFORCEMENT_SPECS,
   ...M10_SPECS,
   { table: t.aliasOverrides },
+  { table: t.applicationNotes },
   { table: t.applicationParcels },
   { table: t.appealNodes },
   { table: t.appeals },

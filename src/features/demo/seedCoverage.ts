@@ -1,4 +1,5 @@
 import type { Db } from '@/db/client'
+import { seedApplicationNotes } from '@/features/demo/seedApplicationNotes'
 import { seedApplicationStates } from '@/features/demo/seedApplicationStates'
 import { seedMeetingStates } from '@/features/demo/seedMeetingStates'
 import { seedMeetingMinutes } from '@/features/demo/seedMinutes'
@@ -47,6 +48,7 @@ export async function seedCoverage(
     await seedTodayWork(ctx),
     await seedUserStates(ctx),
     await seedResponsibleStaff(ctx),
+    await seedApplicationNotes(ctx),
   ]
   return steps.some(Boolean)
 }

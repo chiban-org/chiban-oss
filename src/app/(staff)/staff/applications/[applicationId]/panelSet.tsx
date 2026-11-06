@@ -16,6 +16,8 @@ import { FeesPaymentsPanel, feeRowsOf } from './feesPaymentsPanel'
 import { GateControls } from './gateControls'
 import { HearingsPanel } from './hearingsPanel'
 import { InspectionsPanel, type InspectionsPanelData } from './inspectionsPanel'
+import type { NotesData } from './notesData'
+import { NotesPanel } from './notesPanel'
 import { CompletenessPanel, ConditionsPanel, completenessApplies, PartiesPanel } from './panels'
 import type { loadRecordsData } from './recordsData'
 import { RecordsPanel } from './recordsPanels'
@@ -28,6 +30,7 @@ export interface RecordPanelsInput {
   inspections: InspectionsPanelData
   board: BoardPanelData | null
   hearings: ApplicationHearingsPanel | null
+  notes: NotesData
 }
 
 function reviewRequired(view: StaffApplicationView): boolean {
@@ -48,7 +51,7 @@ function GatesPanel({ view }: { view: StaffApplicationView }) {
   )
 }
 
-function workPanels({ view, records, board, hearings }: RecordPanelsInput): Panel[] {
+function workPanels({ view, records, board, hearings, notes }: RecordPanelsInput): Panel[] {
   const required = reviewRequired(view)
   return [
     {
@@ -84,6 +87,18 @@ function workPanels({ view, records, board, hearings }: RecordPanelsInput): Pane
     {
       empty: view.gates.every((g) => g.results.length === 0),
       node: view.nextTransitions.length === 0 ? null : <GatesPanel key="gates" view={view} />,
+    },
+    {
+      empty: notes.notes.length === 0,
+      node: (
+        <NotesPanel
+          key="notes"
+          applicationId={view.id}
+          notes={notes.notes}
+          canAdd={notes.canAdd}
+          zone={records.zone}
+        />
+      ),
     },
   ]
 }

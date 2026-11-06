@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { applications, users } from '@/db/schema'
+import { applicationNotes, applications, users } from '@/db/schema'
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { queueFacets } from '@/features/queue/queueFacets'
@@ -47,12 +47,16 @@ async function actorFor(local: string): Promise<Actor> {
   return actor
 }
 
-async function keyFactsAs(local: string, applicationId: string): Promise<string> {
+async function sectionAs(local: string, applicationId: string, label: string): Promise<string> {
   state.actor = await actorFor(local)
   const html = renderToStaticMarkup(
     (await ApplicationPage({ params: Promise.resolve({ applicationId }) })) as never,
   )
-  return sectionOf(html, 'Key facts') ?? ''
+  return sectionOf(html, label) ?? ''
+}
+
+async function keyFactsAs(local: string, applicationId: string): Promise<string> {
+  return await sectionAs(local, applicationId, 'Key facts')
 }
 
 beforeAll(async () => {
@@ -90,5 +94,21 @@ describe('the responsible staff member in the demo town', () => {
     const inspector = await keyFactsAs('inspector', first.id)
     expect(inspector).toContain(first.name)
     expect(inspector).not.toContain('Change who is responsible')
+  })
+
+  it('leaves Sam Clerk notes for Pat Planner that only workflow managers can add to', async () => {
+    const [noted] = await handle.db
+      .selectDistinct({ id: applications.id })
+      .from(applicationNotes)
+      .innerJoin(applications, eq(applications.id, applicationNotes.applicationId))
+      .innerJoin(users, eq(users.id, applications.responsibleUserId))
+      .where(eq(users.displayName, 'Pat Planner'))
+    if (noted === undefined) throw new Error('no notes seeded on a planner application')
+    const staff = await sectionAs('staff', noted.id, 'Staff notes')
+    expect(staff).toContain('Sam Clerk, ')
+    expect(staff).toContain('Add a note')
+    const inspector = await sectionAs('inspector', noted.id, 'Staff notes')
+    expect(inspector).toContain('Sam Clerk, ')
+    expect(inspector).not.toContain('Add a note')
   })
 })

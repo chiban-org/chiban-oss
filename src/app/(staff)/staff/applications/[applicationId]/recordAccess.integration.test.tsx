@@ -1,8 +1,11 @@
+import { and, eq, ne } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { applications } from '@/db/schema'
+import { applicationNotes, applications, users } from '@/db/schema'
+import { addApplicationNote } from '@/features/applications/notes'
 import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
+import { actorFor } from '@/features/demo/seedPermitSupport'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { findUuids } from '@/test/leaks'
@@ -43,7 +46,9 @@ const FULL_RECORD_ONLY = [
   'Conditions',
   'Records',
   'Next step',
+  'Staff notes',
 ]
+const INTERNAL_NOTE = 'Internal note for staff only about the abutter list.'
 let handle: TestDb
 let ids = new Map<string, string>()
 
@@ -63,6 +68,7 @@ async function page(number: string): Promise<string> {
 
 function expectNoFullRecord(html: string) {
   for (const label of FULL_RECORD_ONLY) expect(html).not.toContain(`aria-label="${label}"`)
+  expect(html).not.toContain(INTERNAL_NOTE)
 }
 
 beforeAll(async () => {
@@ -71,10 +77,29 @@ beforeAll(async () => {
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
   const rows = await handle.db.select().from(applications)
   ids = new Map(rows.map((r) => [r.number, r.id]))
+  const staff = await actorFor(handle.db, 'staff', signal)
+  for (const number of ['EL-2026-0003', 'VAR-2026-0003']) {
+    const added = await addApplicationNote(
+      handle.db,
+      staff,
+      { applicationId: ids.get(number) ?? '', body: INTERNAL_NOTE },
+      signal,
+    )
+    expect(added.ok).toBe(true)
+  }
 })
 
 afterAll(async () => {
   await handle.drop()
+})
+
+describe('staff notes on the full record', () => {
+  it('town staff see the staff notes panel with the note on file', async () => {
+    await actAs('staff')
+    const html = await page('EL-2026-0003')
+    expect(html).toContain('aria-label="Staff notes"')
+    expect(html).toContain(INTERNAL_NOTE)
+  })
 })
 
 describe('reviewer access to the record page', () => {

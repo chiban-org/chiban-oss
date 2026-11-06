@@ -28,6 +28,7 @@ import { ApplicationFacts, ApplicationRail, StatusStrip } from './applicationRai
 import { loadInspectionsPanelData } from './inspectionsPanel'
 import { LimitedRecord } from './limitedRecord'
 import { nextStepPlan } from './nextStepCard'
+import { loadNotesData } from './notesData'
 import { applicationPanels } from './panelSet'
 import { loadRecordsData } from './recordsData'
 import { loadResponsibleData } from './responsibleData'
@@ -64,6 +65,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     imported,
     correction,
     responsible,
+    notes,
   ] = await Promise.all([
     loading,
     loading.then((v) => (v === null ? null : loadRecordsData(ctx, applicationId, v.projectId))),
@@ -78,6 +80,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
       .where(eq(cutoverRows.applicationId, applicationId)),
     loadCorrectionForm(ctx.db, ctx.actor, applicationId, ctx.signal),
     loadResponsibleData(ctx, applicationId),
+    loadNotesData(ctx, applicationId),
   ])
   if (view === null || records === null) return null
   return {
@@ -91,6 +94,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     legacyNumber: imported[0]?.legacyNumber ?? null,
     correction,
     responsible,
+    notes,
   }
 }
 
