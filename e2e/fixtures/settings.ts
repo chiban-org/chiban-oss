@@ -2,7 +2,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { parseEnv } from 'node:util'
 
-const DEFAULT_PORT = '3100'
+const DEFAULT_PORT = '4730'
 const DEFAULT_MAILPIT_PORT = '8025'
 const DOT_ENV = path.resolve('.env')
 
@@ -45,4 +45,5 @@ export const E2E_SERVER_ENV: Readonly<Record<string, string>> = {
   BASE_URL: E2E_BASE_URL,
   PORT: String(E2E_PORT),
   S3_BUCKET: E2E_S3_BUCKET,
+  S3_CORS_ORIGINS: E2E_BASE_URL,
 }
