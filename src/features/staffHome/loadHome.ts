@@ -13,12 +13,12 @@ type SectionLoader = (ctx: HomeContext) => Promise<HomeSection | null>
 
 const ROLE_LOADERS = new Map<HomeRole, SectionLoader>([
   ['admin', loadAdminSection],
+  ['staff', loadClerkSection],
   ['reviewer', loadReviewerSection],
   ['board_member', loadBoardSection],
 ])
 
 const CAPABILITY_LOADERS: readonly SectionLoader[] = [
-  loadClerkSection,
   loadInspectorSection,
   loadFinanceSection,
   loadRecordsSection,

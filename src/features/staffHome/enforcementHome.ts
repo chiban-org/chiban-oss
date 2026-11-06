@@ -4,7 +4,6 @@ import { caseListFacets } from '@/features/enforcement/caseList'
 import { CASES_PATH } from '@/features/enforcement/caseListParams'
 import type { AssignedFilter, DueFilter } from '@/features/queue/queueParams'
 import type { HomeContext, HomeSection } from '@/features/staffHome/homeTypes'
-import { mayOpen } from '@/features/staffNav/navItems'
 
 const OPEN_CASES: EnforcementStatus[] = [
   'intake',
@@ -19,7 +18,7 @@ function openCasesHref(filter: { due: DueFilter } | { assigned: AssignedFilter }
 }
 
 export async function loadEnforcementSection(ctx: HomeContext): Promise<HomeSection | null> {
-  if (!mayOpen(CASES_PATH, ctx.viewer)) return null
+  if (!ctx.viewer.capabilities.has('enforcement.manage')) return null
   const facets = await caseListFacets(
     ctx.db,
     ctx.actor,

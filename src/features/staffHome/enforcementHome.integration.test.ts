@@ -110,8 +110,8 @@ describe('the Enforcement card on Today', () => {
     expect(rowCount(section, MINE)).toBe(2)
   })
 
-  it('is absent for a viewer who cannot open the case list', async () => {
-    const custodian = await staffActor(handle.db, 'records_custodian')
-    expect(await loadEnforcementSection(await homeContextFor(handle.db, custodian, NOW))).toBeNull()
+  it('is absent for a viewer who can open the case list but not manage cases', async () => {
+    const finance = await staffActor(handle.db, 'finance')
+    expect(await loadEnforcementSection(await homeContextFor(handle.db, finance, NOW))).toBeNull()
   })
 })

@@ -92,7 +92,16 @@ afterAll(async () => {
 describe('the staff start page for each role', () => {
   it('shows a clerk what is waiting, the next deadlines and a way to the counter', async () => {
     const html = await homeOf('staff')
-    expect(headings(html)).toEqual(['Applications'])
+    expect(new Set(headings(html))).toEqual(
+      new Set([
+        'Applications',
+        'Enforcement',
+        'Payments',
+        'Records',
+        'Board packets',
+        'Inspections',
+      ]),
+    )
     expect(html).toContain('Next deadlines')
     expect(html).toContain('href="/staff/counter"')
     expect(html).not.toContain('Waiting on fees')
@@ -101,7 +110,7 @@ describe('the staff start page for each role', () => {
   it('shows an inspector the results still owed, today, requests and their cases, not the clerk queue', async () => {
     const html = await homeOf('inspector')
     const text = visibleText(html)
-    expect(headings(html)).toEqual(['Inspections'])
+    expect(new Set(headings(html))).toEqual(new Set(['Inspections', 'Enforcement']))
     expect(text).toContain('Still need a result')
     expect(html).toContain('href="/staff/inspections/day#missing-results"')
     expect(text).toContain('Next inspection days')
@@ -138,11 +147,20 @@ describe('the staff start page for each role', () => {
 
   it('shows each role a person holds, and the board for a clerk on a board', async () => {
     expect(new Set(headings(await homeWithRoles(['finance', 'inspector'])))).toEqual(
-      new Set(['Payments', 'Inspections']),
+      new Set(['Payments', 'Inspections', 'Enforcement']),
     )
     const clerkOnBoard = await homeWithRoles(['staff', 'board_member', 'reviewer'])
     expect(new Set(headings(clerkOnBoard))).toEqual(
-      new Set(['Applications', 'Board meetings', 'Reviews']),
+      new Set([
+        'Applications',
+        'Board meetings',
+        'Reviews',
+        'Enforcement',
+        'Payments',
+        'Records',
+        'Board packets',
+        'Inspections',
+      ]),
     )
   })
 

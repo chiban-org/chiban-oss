@@ -35,23 +35,30 @@ describe('which areas Today shows', () => {
     expect(keys).not.toContain('system')
   })
 
-  it('keeps the System region for an admin and adds the areas an admin can open', async () => {
+  it('keeps the System region for an admin and adds the areas an admin can work', async () => {
     const keys = await keysOf('admin')
-    expect(keys).toEqual(
-      expect.arrayContaining(['system', 'applications', 'enforcement', 'payments', 'packets']),
-    )
-    expect(keys).not.toContain('inspections')
+    expect(keys).toEqual(expect.arrayContaining(['system', 'payments', 'packets']))
+    for (const key of ['applications', 'enforcement', 'inspections'] as const) {
+      expect(keys).not.toContain(key)
+    }
   })
 
   it('leaves out each area whose page the viewer cannot open', async () => {
     const finance = await keysOf('finance')
     expect(finance).toContain('payments')
-    for (const key of ['packets', 'records', 'inspections', 'system'] as const) {
+    for (const key of [
+      'applications',
+      'enforcement',
+      'packets',
+      'records',
+      'inspections',
+      'system',
+    ] as const) {
       expect(finance).not.toContain(key)
     }
     const inspector = await keysOf('inspector')
     expect(inspector).toEqual(expect.arrayContaining(['inspections', 'enforcement']))
-    for (const key of ['packets', 'payments', 'records'] as const) {
+    for (const key of ['applications', 'packets', 'payments', 'records'] as const) {
       expect(inspector).not.toContain(key)
     }
   })
