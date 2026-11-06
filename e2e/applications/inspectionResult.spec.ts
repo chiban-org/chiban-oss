@@ -1,5 +1,6 @@
 import { expect, test } from '../fixtures/test'
 import { inspectionOf } from './inspectionSupport'
+import { expectConfirmation } from './support'
 
 const DECK_NUMBER = 'BP-2025-0001'
 
@@ -53,6 +54,7 @@ test.describe('recording an inspection result', () => {
       await expect(page.getByText('Result: Passed')).toBeVisible()
       await page.getByRole('button', { name: 'Record result' }).click()
 
+      await expectConfirmation(page, 'Result recorded.')
       const result = page.getByRole('region', { name: 'Result' })
       await expect(result).toContainText('Structural framing: Pass')
       await expect(result).toContainText('Notes: Framing corrected and fire blocking in place.')

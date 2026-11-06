@@ -12,6 +12,7 @@ import { choice, civilDate, optionalText, requiredText } from '@/features/input/
 import { type ActionResult, errorCopy } from '@/server/actionRunner'
 import { refuseField, runStaffForm } from '@/server/formInput'
 import { runStaffFormToday } from '@/server/formInputToday'
+import type { CivilDate } from '@/types/civilDate'
 import { applicationIdField, outcome } from './actionInput'
 
 const FUTURE_FILING = 'The filing date cannot be in the future.'
@@ -29,10 +30,11 @@ const RESOLVE_FORM = z.object({
   outcome: choice('an outcome', ['permit_upheld', 'permit_revoked'] as const),
 })
 
-const RENEW_FORM = z.object({
-  applicationId: applicationIdField(),
-  renewedOn: civilDate('the renewal date'),
-})
+const renewForm = (today: CivilDate) =>
+  z.object({
+    applicationId: applicationIdField(),
+    renewedOn: civilDate('the renewal date', { latest: today }),
+  })
 
 export async function regionalImpactAction(formData: FormData): Promise<ActionResult> {
   return await runStaffFormToday(
@@ -111,7 +113,7 @@ export async function resolveAppealAction(formData: FormData): Promise<ActionRes
 }
 
 export async function renewAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffForm(formData, RENEW_FORM, async ({ db, actor, signal }, input) => {
+  return await runStaffFormToday(formData, renewForm, async ({ db, actor, signal }, input) => {
     const result = await renewPermit(db, actor, input, signal)
     return result.ok
       ? { ok: true, message: renewedMessage(result.value.newDue) }

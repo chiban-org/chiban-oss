@@ -1,5 +1,5 @@
 import { expect, test } from '../fixtures/test'
-import { demoTitle, openApplication } from './support'
+import { demoTitle, expectConfirmation, openApplication } from './support'
 
 const MUDROOM = demoTitle('Mudroom addition due this week')
 
@@ -18,6 +18,7 @@ test.describe('assigning reviewers to an application', () => {
         .selectOption({ label: 'Remy Reviewer' })
       await reviewers.getByRole('button', { name: 'Assign reviewer' }).click()
 
+      await expectConfirmation(page, 'Reviewer assigned.')
       await expect(
         reviewers.getByRole('listitem').filter({ hasText: 'Remy Reviewer, ' }),
       ).toHaveCount(1)

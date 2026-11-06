@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { toast } from 'sonner'
 import { useCsrfToken } from '@/components/CsrfProvider'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
@@ -81,6 +82,7 @@ export function ChecklistForm({
     const result = await attempt(() => action(data), setPending)
     if (!result.ok) return setMessage(result.error)
     setMessage(result.value.ok ? result.value.message : result.value.error)
+    if (result.value.ok) toast.success(result.value.message)
     router.refresh()
   }
 

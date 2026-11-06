@@ -1,5 +1,5 @@
 import { type E2eDb, expect, test } from '../fixtures/test'
-import { expectRefusedBeside } from './support'
+import { expectConfirmation, expectRefusedBeside } from './support'
 
 interface AssignmentRow {
   id: string
@@ -56,6 +56,7 @@ test.describe('reviewing an assigned application', () => {
       await page.goto(`/staff/reviews/${id}`)
       await page.getByRole('button', { name: 'Sign off' }).click()
 
+      await expectConfirmation(page, 'Review signed off.')
       await expect(page.getByText('You signed off on this review.')).toBeVisible()
       const row = await db.one<{ status: string; signed_off_at: Date | null }>(
         'select status, signed_off_at from review_assignments where id = $1',

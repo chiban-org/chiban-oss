@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test'
-import { type E2eDb, expect, test } from '../fixtures/test'
+import { type E2eDb, expect, fillDate, test } from '../fixtures/test'
 import { demoTitle, expectRefusedBeside, openApplication } from './support'
 
 const DECK = demoTitle('Deck renewed once')
@@ -94,6 +94,23 @@ test.describe('renewing an issued permit', () => {
       await nextStep.getByRole('button', { name: 'Renew permit' }).click()
 
       await expectRefusedBeside(nextStep.getByLabel('Renewed on'), 'Fill in: Renewed on.')
+      expect(await renewals(db, id)).toBe(before)
+    })
+
+    test('refuses a renewal date in the future beside the field and renews nothing', async ({
+      page,
+      db,
+    }) => {
+      const id = await openApplication(page, db, DECK)
+      const before = await renewals(db, id)
+      const nextStep = await openRenewal(page)
+      await fillDate(nextStep.getByLabel('Renewed on'), '2099-03-04')
+      await nextStep.getByRole('button', { name: 'Renew permit' }).click()
+
+      await expectRefusedBeside(
+        nextStep.getByLabel('Renewed on'),
+        'Enter the renewal date between January 1, 1900 and ',
+      )
       expect(await renewals(db, id)).toBe(before)
     })
 

@@ -1,5 +1,5 @@
 import { expect, fillDate, signInWithMagicLink, test } from '../fixtures/test'
-import { applicationIdFor, demoTitle, expectRefusedBeside } from './support'
+import { applicationIdFor, demoTitle, expectConfirmation, expectRefusedBeside } from './support'
 
 const FENCE = demoTitle('Fence along the north line')
 
@@ -62,6 +62,7 @@ test.describe('marking a building permit application complete', () => {
       const completeness = page.getByRole('region', { name: 'Completeness' })
       await completeness.getByRole('button', { name: 'Mark complete' }).click()
 
+      await expectConfirmation(page, 'Marked complete. The decision clock is running.')
       await expect
         .poll(async () => {
           const row = await db.one<{ completed_date: string | null }>(

@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { recordAppeal } from '@/features/appeals/appeals'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { CHECK_PASSED, refuseField } from '@/server/formInput'
@@ -28,6 +28,9 @@ const h = actionHarness()
 let world: PermitWorld
 const signal = new AbortController().signal
 const ISSUED = { issuedOn: '2026-03-15' }
+const RENEW_NOW = new Date('2028-06-01T16:00:00Z')
+const RENEW_TODAY = '2028-06-01'
+const RENEW_TODAY_COPY = 'June 1, 2028'
 const RANGE = 'between January 1, 1900 and December 31, 2099.'
 
 beforeAll(async () => {
@@ -127,27 +130,42 @@ async function renewable(): Promise<string> {
   return applicationId
 }
 
-describeActionCases(h, 'renewAction', {
-  invoke: renewAction,
-  actor: () => h.actorFor('staff'),
-  input: async () => ({ applicationId: await renewable(), renewedOn: '2028-03-01' }),
-  fields: {
-    applicationId: uuid({ required: true }),
-    renewedOn: date({ required: true, earliest: '1900-01-01', latest: '2099-12-31' }),
-  },
-  capability: 'permit.issue',
-  refusals: {
-    ...STAFF_REFUSALS,
-    invalid: refusalFor({
-      applicationId: 'Choose an application.',
-      renewedOn: dateCopy('the renewal date'),
-    }),
-    checkOnly: CHECK_PASSED,
-  },
-  accepted: (result, { written }) => {
-    expect(result).toEqual({ ok: true, message: 'Renewed. The permit now runs to March 1, 2029.' })
-    expect(written).toEqual(['audit_log', 'clock_adjustments', 'clocks', 'fee_assessments'])
-  },
+describe('renewAction', () => {
+  beforeAll(() => {
+    vi.useFakeTimers({ toFake: ['Date'], now: RENEW_NOW })
+  })
+  afterAll(() => {
+    vi.useRealTimers()
+  })
+
+  describeActionCases(h, 'renewAction', {
+    invoke: renewAction,
+    actor: () => h.actorFor('staff'),
+    input: async () => ({ applicationId: await renewable(), renewedOn: '2028-03-01' }),
+    fields: {
+      applicationId: uuid({ required: true }),
+      renewedOn: date({ required: true, earliest: '1900-01-01', latest: RENEW_TODAY }),
+    },
+    capability: 'permit.issue',
+    refusals: {
+      ...STAFF_REFUSALS,
+      invalid: refusalFor({
+        applicationId: 'Choose an application.',
+        renewedOn: {
+          ...dateCopy('the renewal date'),
+          otherwise: `Enter the renewal date between January 1, 1900 and ${RENEW_TODAY_COPY}.`,
+        },
+      }),
+      checkOnly: CHECK_PASSED,
+    },
+    accepted: (result, { written }) => {
+      expect(result).toEqual({
+        ok: true,
+        message: 'Renewed. The permit now runs to March 1, 2029.',
+      })
+      expect(written).toEqual(['audit_log', 'clock_adjustments', 'clocks', 'fee_assessments'])
+    },
+  })
 })
 
 describe('appeal dates after today', () => {

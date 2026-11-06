@@ -1,5 +1,5 @@
 import { type E2eDb, expect, test } from '../fixtures/test'
-import { demoTitle, openApplication } from './support'
+import { demoTitle, expectConfirmation, openApplication } from './support'
 
 interface StateRow {
   state: string
@@ -19,6 +19,7 @@ test.describe('moving an application through its workflow', () => {
       const id = await openApplication(page, db, demoTitle('Subpanel for the barn'))
       await page.getByRole('button', { name: 'Move to under review' }).click()
 
+      await expectConfirmation(page, 'Moved to under review.')
       await expect(page.getByText('Moved the application to Under review')).toBeVisible()
       expect((await stateOf(db, id)).state).toBe('under_review')
     })
@@ -45,6 +46,7 @@ test.describe('moving an application through its workflow', () => {
 
       await trigger.click()
       await dialog.getByRole('button', { name: 'Move to withdrawn' }).click()
+      await expectConfirmation(page, 'Moved to withdrawn.')
       await expect(page.getByText('Moved the application to Withdrawn')).toBeVisible()
       expect((await stateOf(db, id)).state).toBe('withdrawn')
     })

@@ -8,6 +8,8 @@ import type { ActionResult } from '@/server/actionRunner'
 afterEach(cleanup)
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
+const success = vi.fn()
+vi.mock('sonner', () => ({ toast: { success: (message: string) => success(message) } }))
 
 const items = [
   { key: 'a', label: 'Panel secured', required: true, outcome: null, note: '' },
@@ -42,6 +44,14 @@ function choose(label: string, option: 'Pass' | 'Fail' | 'N/A') {
 }
 
 describe('ChecklistForm', () => {
+  it('raises the recorded message as a notification that outlives the replaced form', async () => {
+    setup()
+    choose('Panel secured', 'Pass')
+    choose('Labels present', 'Pass')
+    fireEvent.click(screen.getByRole('button', { name: 'Record result' }))
+    await waitFor(() => expect(success).toHaveBeenCalledWith('Recorded.'))
+  })
+
   it('checklist form disables Record result until every required item is answered', () => {
     setup()
     const button = screen.getByRole('button', { name: 'Record result' })

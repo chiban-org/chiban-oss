@@ -1,5 +1,5 @@
 import { type E2eDb, expect, test } from '../fixtures/test'
-import { applicationByNumber, expectRefusedBeside } from './support'
+import { applicationByNumber, expectConfirmation, expectRefusedBeside } from './support'
 
 const PLUMBING_NUMBER = 'PL-2026-0004'
 
@@ -57,6 +57,7 @@ test.describe('correcting an issued permit', () => {
         .getByRole('button', { name: `Save and reissue as revision ${before + 1}` })
         .click()
 
+      await expectConfirmation(page, `Permit reissued as revision ${before + 1}.`)
       await expect.poll(() => revisionOf(db, id)).toBe(before + 1)
       const row = await db.one<{ permit_revision: number; title: string }>(
         'select a.permit_revision, p.title from applications a join projects p on p.id = a.project_id where a.id = $1',

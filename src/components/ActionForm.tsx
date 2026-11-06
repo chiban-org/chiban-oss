@@ -1,6 +1,7 @@
 'use client'
 
 import { type FormEvent, type ReactNode, useEffect, useId, useState } from 'react'
+import { toast } from 'sonner'
 import { type AlternateSubmit, SubmitButtons } from '@/components/ActionFormButtons'
 import {
   checkOnlyData,
@@ -62,7 +63,11 @@ export function ActionForm({
     pending,
     formProps,
   } = useFormAction<ActionResult | null>(
-    async (_previous, formData) => await sendOrExplain(action, formData),
+    async (_previous, formData) => {
+      const reply = await sendOrExplain(action, formData)
+      if (reply.ok) toast.success(reply.message)
+      return reply
+    },
     null,
     isFailure,
   )

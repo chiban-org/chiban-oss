@@ -49,3 +49,7 @@ export async function expectRefusedBeside(field: Locator, message: string): Prom
 export async function expectNotRefused(field: Locator): Promise<void> {
   await expect(field).not.toHaveAttribute('aria-invalid', 'true')
 }
+
+export async function expectConfirmation(page: Page, message: string): Promise<void> {
+  await expect(page.locator('[data-sonner-toast]').filter({ hasText: message })).toBeVisible()
+}
