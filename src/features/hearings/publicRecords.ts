@@ -1,4 +1,4 @@
-import { and, desc, eq, isNotNull, isNull } from 'drizzle-orm'
+import { and, desc, eq, isNotNull } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
   agendas,
@@ -10,6 +10,7 @@ import {
 } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
+import { documentVisibleTo } from '@/features/documents/visibility'
 import { BOARD_NAMES } from '@/features/hearings/views'
 import { formatCivilDate } from '@/lib/formatDate'
 
@@ -54,13 +55,7 @@ async function approvedMinutes(db: Db): Promise<PublicMinutesLine[]> {
     .from(meetingMinutes)
     .innerJoin(boardMeetings, eq(boardMeetings.id, meetingMinutes.meetingId))
     .innerJoin(documents, eq(documents.id, meetingMinutes.documentId))
-    .where(
-      and(
-        eq(meetingMinutes.status, 'approved'),
-        eq(documents.isPublic, true),
-        isNull(documents.disposedAt),
-      ),
-    )
+    .where(and(eq(meetingMinutes.status, 'approved'), documentVisibleTo(null)))
     .orderBy(desc(boardMeetings.meetingDate), desc(boardMeetings.id))
     .limit(LIMIT)
   return rows.map(({ meeting, minutes }) => ({

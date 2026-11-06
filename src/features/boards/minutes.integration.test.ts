@@ -1,12 +1,13 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { boardMeetings, meetingMinutes } from '@/db/schema'
+import { boardMeetings, meetingMinutes, renditionApprovals } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { recordMinutes } from '@/features/boards/minutes'
 import { loadMeetingMinutes } from '@/features/boards/minutesView'
 import { createUploadIntent } from '@/features/documents/uploads'
 import { resolveRendition } from '@/features/documents/visibility'
 import { loadPublicBoardRecords } from '@/features/hearings/publicRecords'
+import { revokeApproval } from '@/features/renditions/approvals'
 import { loadReleaseCandidates } from '@/features/rtk/requestPage'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { BOARD_FIXTURE_NOW, type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
@@ -108,6 +109,30 @@ describe('meeting minutes', () => {
     expect((await loadPublicBoardRecords(handle.db, signal)).minutes).toEqual([
       { meetingId, documentId, text: 'Planning Board, April 14, 2027, approved April 28, 2027' },
     ])
+  })
+
+  it('approved minutes leave the public meetings page once their public approval is revoked', async () => {
+    const meetingId = await meetingOn('2027-04-14')
+    const documentId = await minutesFile(meetingId)
+    await record(world.staff, {
+      meetingId,
+      documentId,
+      status: 'approved',
+      approvedOn: '2027-04-28',
+    })
+    const [approval] = await handle.db
+      .select({ id: renditionApprovals.id })
+      .from(renditionApprovals)
+      .where(eq(renditionApprovals.documentId, documentId))
+    const revoked = await revokeApproval(
+      handle.db,
+      world.staff,
+      { approvalId: approval?.id ?? '', reason: 'Names a private individual by mistake.' },
+      signal,
+    )
+    expect(revoked.ok).toBe(true)
+    expect((await resolveRendition(handle.db, null, documentId, signal)).ok).toBe(false)
+    expect((await loadPublicBoardRecords(handle.db, signal)).minutes).toEqual([])
   })
 
   it('staff without board.record cannot attach or record minutes, even with document.manage', async () => {
