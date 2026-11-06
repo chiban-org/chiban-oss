@@ -129,14 +129,13 @@ test.describe
       expect(row.held_on).toBe(meeting.date)
     })
 
-    test('records that the selectmen certified the plan', async ({ page }) => {
+    test('records a new request to the selectmen that is still waiting', async ({ page }) => {
       await page.goto(`/staff/applications/${applicationId}`)
       const follow = page.getByRole('region', { name: 'Decision follow-up' })
       await follow.getByText('Record a request to the selectmen', { exact: true }).click()
-      await follow.getByLabel(/^Outcome/).selectOption('certified')
-      await follow.getByLabel('Date decided, if certified').fill(meeting.date)
+      await follow.getByLabel(/^Outcome/).selectOption('pending')
       await follow.getByRole('button', { name: 'Record', exact: true }).click()
-      await expect(follow.getByText(/: certified by the selectmen$/)).toBeVisible()
+      await expect(follow.getByText(/: requested, waiting on the selectmen$/)).toHaveCount(2)
     })
 
     test('refuses a decision with no votes recorded and stores nothing', async ({ page, db }) => {
