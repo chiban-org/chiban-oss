@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { applicationConditions, applications } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -36,7 +36,7 @@ export async function applyCondition(
 ): Promise<
   Result<
     { conditionId: string },
-    'forbidden' | 'not_found' | 'unknown_condition' | 'application_closed'
+    'forbidden' | 'not_found' | 'unknown_condition' | 'application_closed' | 'already_applied'
   >
 > {
   signal.throwIfAborted()
@@ -50,6 +50,21 @@ export async function applyCondition(
   )
   if (condition === undefined) return err('unknown_condition')
   return await transactionResult(db, async (tx) => {
+    await tx
+      .select({ id: applications.id })
+      .from(applications)
+      .where(eq(applications.id, input.applicationId))
+      .for('update')
+    const [existing] = await tx
+      .select({ id: applicationConditions.id })
+      .from(applicationConditions)
+      .where(
+        and(
+          eq(applicationConditions.applicationId, input.applicationId),
+          eq(applicationConditions.code, condition.code),
+        ),
+      )
+    if (existing !== undefined) return err('already_applied')
     const [row] = await tx
       .insert(applicationConditions)
       .values({

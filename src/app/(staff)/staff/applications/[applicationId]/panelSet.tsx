@@ -54,16 +54,17 @@ function GatesPanel({ view }: { view: StaffApplicationView }) {
 
 function workPanels({ view, records, board, hearings, notes }: RecordPanelsInput): Panel[] {
   const required = reviewRequired(view)
+  const canAssign = records.canAssign && !TERMINAL_STATES.includes(view.state)
   return [
     {
-      empty: records.reviewers.length === 0 && !required,
+      empty: records.reviewers.length === 0 && !required && !canAssign,
       node: (
         <ReviewersPanel
           key="reviewers"
           applicationId={view.id}
           reviewers={records.reviewers}
           choices={records.choices}
-          canAssign={records.canAssign && !TERMINAL_STATES.includes(view.state)}
+          canAssign={canAssign}
           required={required}
         />
       ),
@@ -90,7 +91,7 @@ function workPanels({ view, records, board, hearings, notes }: RecordPanelsInput
       node: view.nextTransitions.length === 0 ? null : <GatesPanel key="gates" view={view} />,
     },
     {
-      empty: notes.notes.length === 0,
+      empty: notes.notes.length === 0 && !notes.canAdd,
       node: (
         <NotesPanel
           key="notes"
@@ -108,9 +109,16 @@ function workPanels({ view, records, board, hearings, notes }: RecordPanelsInput
   ]
 }
 
+function conditionsEditable(view: StaffApplicationView): boolean {
+  return (
+    view.permissions.canIssue &&
+    !TERMINAL_STATES.includes(view.state) &&
+    view.conditionLibrary.length > 0
+  )
+}
+
 function conditionsOffered(view: StaffApplicationView): boolean {
-  const editable = view.permissions.canIssue && !TERMINAL_STATES.includes(view.state)
-  return view.conditions.length > 0 || (editable && view.conditionLibrary.length > 0)
+  return view.conditions.length > 0 || conditionsEditable(view)
 }
 
 function recordPanels(input: RecordPanelsInput): Panel[] {
@@ -120,7 +128,7 @@ function recordPanels(input: RecordPanelsInput): Panel[] {
   const money = rows.length > 0 || (payments?.entries.length ?? 0) > 0
   return [
     {
-      empty: view.conditions.length === 0,
+      empty: view.conditions.length === 0 && !conditionsEditable(view),
       node: conditionsOffered(view) ? <ConditionsPanel key="conditions" view={view} /> : null,
     },
     {
