@@ -1,14 +1,18 @@
 'use server'
 
+import { z } from 'zod'
 import {
   disableAnonymousIntake,
   enableAnonymousIntake,
 } from '@/features/anonymousIntake/staffControl'
-import { type ActionResult, runStaffAction } from '@/server/actionRunner'
+import type { ActionResult } from '@/server/actionRunner'
+import { runStaffForm } from '@/server/formInput'
 import { enforcementError } from '../../enforcement/enforcementAction'
 
+const NO_FIELDS = z.object({})
+
 export async function enableAnonymousIntakeAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
+  return await runStaffForm(formData, NO_FIELDS, async ({ db, actor, signal }) => {
     const result = await enableAnonymousIntake(db, actor, signal)
     return result.ok
       ? { ok: true, message: 'Anonymous intake is on.' }
@@ -17,7 +21,7 @@ export async function enableAnonymousIntakeAction(formData: FormData): Promise<A
 }
 
 export async function disableAnonymousIntakeAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
+  return await runStaffForm(formData, NO_FIELDS, async ({ db, actor, signal }) => {
     const result = await disableAnonymousIntake(db, actor, signal)
     return result.ok
       ? { ok: true, message: 'Anonymous intake is off.' }
