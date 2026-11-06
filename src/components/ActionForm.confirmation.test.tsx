@@ -6,7 +6,7 @@ import { CsrfProvider } from '@/components/CsrfProvider'
 import type { ActionResult } from '@/server/actionRunner'
 
 const success = vi.fn()
-vi.mock('sonner', () => ({ toast: { success: (message: string) => success(message) } }))
+vi.mock('sonner', () => ({ toast: { success: (message: string) => void success(message) } }))
 
 afterEach(() => {
   cleanup()

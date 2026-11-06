@@ -9,7 +9,7 @@ afterEach(cleanup)
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 const success = vi.fn()
-vi.mock('sonner', () => ({ toast: { success: (message: string) => success(message) } }))
+vi.mock('sonner', () => ({ toast: { success: (message: string) => void success(message) } }))
 
 const items = [
   { key: 'a', label: 'Panel secured', required: true, outcome: null, note: '' },
