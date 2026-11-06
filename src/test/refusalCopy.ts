@@ -20,3 +20,8 @@ export function plainRefusalFor(copy: Record<string, FieldCopy>) {
     return { ok: false as const, error }
   }
 }
+
+export function refusalBy(copy: Record<string, (variant: InvalidVariant) => string>) {
+  return (variant: InvalidVariant) =>
+    refuseField(variant.field, copy[variant.field]?.(variant) ?? '')
+}

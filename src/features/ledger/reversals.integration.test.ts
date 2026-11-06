@@ -308,7 +308,7 @@ describe('recordReturnedCheck', () => {
     await recordReturnedCheck(handle.db, await finance(), input, signal, deps())
     expect(await recordReturnedCheck(handle.db, await finance(), input, signal, deps())).toEqual({
       ok: false,
-      error: 'over_reversed',
+      error: 'already_returned',
     })
   })
 
