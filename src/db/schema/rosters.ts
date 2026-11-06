@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import {
   boolean,
   date,
@@ -36,10 +37,14 @@ export const associationRosters = pgTable(
     officers: jsonb('officers').$type<AssociationOfficer[]>().notNull(),
     asOf: date('as_of', { mode: 'string' }).notNull(),
     checkedOn: date('checked_on', { mode: 'string' }),
+    endedOn: date('ended_on', { mode: 'string' }),
+    endedAt: timestamp('ended_at', { withTimezone: true }),
     updatedBy: uuid('updated_by').notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex('association_rosters_parcel_idx').on(t.parcelId)],
+  (t) => [
+    uniqueIndex('association_rosters_parcel_idx').on(t.parcelId).where(sql`${t.endedOn} is null`),
+  ],
 )
 
 export const parkRosters = pgTable(
@@ -55,10 +60,12 @@ export const parkRosters = pgTable(
     tenants: jsonb('tenants').$type<ParkTenant[]>().notNull(),
     asOf: date('as_of', { mode: 'string' }).notNull(),
     checkedOn: date('checked_on', { mode: 'string' }),
+    endedOn: date('ended_on', { mode: 'string' }),
+    endedAt: timestamp('ended_at', { withTimezone: true }),
     updatedBy: uuid('updated_by').notNull(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex('park_rosters_parcel_idx').on(t.parcelId)],
+  (t) => [uniqueIndex('park_rosters_parcel_idx').on(t.parcelId).where(sql`${t.endedOn} is null`)],
 )
 
 export const restrictionHoldings = pgTable(

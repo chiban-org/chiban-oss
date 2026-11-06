@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { type ParkTenant, parkRosters } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -90,17 +90,24 @@ async function savePark(
     const [before] = await tx
       .select()
       .from(parkRosters)
-      .where(eq(parkRosters.parcelId, input.parcelId))
+      .where(and(eq(parkRosters.parcelId, input.parcelId), isNull(parkRosters.endedOn)))
       .for('update')
     if (mode === 'update' && before === undefined) return err('not_found')
     const insert = tx.insert(parkRosters).values(values)
     const saved =
       mode === 'add'
         ? await insert
-            .onConflictDoNothing({ target: parkRosters.parcelId })
+            .onConflictDoNothing({
+              target: parkRosters.parcelId,
+              where: isNull(parkRosters.endedOn),
+            })
             .returning({ parcelId: parkRosters.parcelId })
         : await insert
-            .onConflictDoUpdate({ target: parkRosters.parcelId, set: values })
+            .onConflictDoUpdate({
+              target: parkRosters.parcelId,
+              targetWhere: isNull(parkRosters.endedOn),
+              set: values,
+            })
             .returning({ parcelId: parkRosters.parcelId })
     if (saved.length === 0) return err('park_exists')
     await writeAudit(
