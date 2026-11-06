@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { type E2eDb, expect } from '../fixtures/test'
+import { expectFormStatus } from './confirmation'
 import { addMeetingThroughForm, type MeetingSpec, meetingIdFor } from './meetings'
 import { applicationIdFor, daysFromToday } from './records'
 
@@ -43,14 +44,12 @@ export async function buildAndPublishAgenda(page: Page, meetingId: string): Prom
 export async function sharePacketDocument(page: Page, meetingId: string): Promise<void> {
   await page.goto(`/staff/boards/meetings/${meetingId}`)
   await page.getByRole('button', { name: 'Share with the board' }).click()
-  await expect(
-    page.getByText('Shared with the board. Check it to add it to the packet.'),
-  ).toBeVisible()
+  await expectFormStatus(page, 'Shared with the board. Check it to add it to the packet.')
 }
 
 export async function savePacket(page: Page, meetingId: string, document: string): Promise<void> {
   await page.goto(`/staff/boards/meetings/${meetingId}`)
   await page.getByLabel(document, { exact: true }).check()
   await page.getByRole('button', { name: 'Save the packet' }).click()
-  await expect(page.getByText('Packet saved.')).toBeVisible()
+  await expectFormStatus(page, 'Packet saved.')
 }

@@ -1,7 +1,7 @@
 import { expect, test } from '../fixtures/test'
 import { applicationByNumber, expectConfirmation, expectRefusedBeside } from './support'
 
-const PERMIT = 'VAR-2026-0005'
+const PERMIT = 'VAR-2026-0002'
 
 test.describe
   .serial('abutter lists from the application page', () => {
@@ -12,11 +12,15 @@ test.describe
 
       test('draws a new list and stores a draft for the application', async ({ page, db }) => {
         const applicationId = await applicationByNumber(page, db, PERMIT)
+        const drawn = await db.one<{ version: number }>(
+          'select coalesce(max(version), 0)::int as version from abutter_lists where application_id = $1',
+          [applicationId],
+        )
         const lists = page.getByRole('region', { name: 'Abutter lists' })
         await lists.getByRole('button', { name: 'Draw a new list' }).click()
-        await expectConfirmation(page, 'Draft list version 1 drawn.')
+        await expectConfirmation(page, `Draft list version ${drawn.version + 1} drawn.`)
         const row = await db.one<{ id: string; status: string }>(
-          'select id, status from abutter_lists where application_id = $1',
+          "select id, status from abutter_lists where application_id = $1 and status = 'draft'",
           [applicationId],
         )
         expect(row.status).toBe('draft')

@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import type { E2eDb } from '../fixtures/test'
+import { expectFormStatus } from './confirmation'
 
 export const MAILED_ON = '2026-09-01'
 export const CERTIFIED = [
@@ -83,7 +84,7 @@ export async function proveEveryNotice(page: Page, proofTitle: string): Promise<
   }
   for (const [method, items] of byMethod) {
     await fillProof(page, proofTitle, { method, items, reference: 'TRK 5501' })
-    await page.getByText('Proof recorded.').waitFor()
+    await expectFormStatus(page, 'Proof recorded.')
   }
 }
 

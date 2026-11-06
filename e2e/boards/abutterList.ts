@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { type E2eDb, expect } from '../fixtures/test'
+import { confirmWith } from './confirm'
 
 export async function drawAndIssueList(
   page: Page,
@@ -28,6 +29,7 @@ export async function drawAndIssueList(
     page.getByRole('button', { name: 'Confirm streets and streams were reviewed' }),
   ).toHaveCount(0)
   await page.getByRole('button', { name: 'Issue list' }).click()
+  await confirmWith(page, 'Issue this list?', 'Issue the list')
   await expect
     .poll(
       async () =>

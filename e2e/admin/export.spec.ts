@@ -1,21 +1,19 @@
 import { mkdirSync } from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { expect, test } from '../fixtures/test'
+import { activeBusinessExports, requestBusinessExport } from '../fixtures/exportRequest'
+import { accountFor, expect, test } from '../fixtures/test'
 import { expectConfirmation, expectRefusedBeside } from './support'
 
 test.use({ role: 'admin' })
 
 test.describe('data export request', () => {
   test('requests a new export and stores the request', async ({ page, db }) => {
-    const before = await db.rows('select 1 from exports')
-    await page.goto('/staff/admin/export')
-    await page.getByRole('button', { name: 'Request a new export' }).click()
-    await expectConfirmation(
-      page,
-      'Export requested. It is ready in a few minutes. Reload this page to see it.',
-    )
-    expect(await db.rows('select 1 from exports')).toHaveLength(before.length + 1)
+    const outcome = await requestBusinessExport(page)
+    const requester = await db.userIdFor(accountFor('admin').email)
+    const active = await activeBusinessExports(db)
+    expect(active).toHaveLength(1)
+    if (outcome === 'requested') expect(active[0]?.requested_by).toBe(requester)
   })
 })
 

@@ -1,5 +1,6 @@
 import { type E2eDb, expect, test } from '../fixtures/test'
 import { confirmWith, permissionAlert } from './confirm'
+import { expectFormStatus } from './confirmation'
 import { addMeetingThroughForm, type MeetingSpec, meetingIdFor } from './meetings'
 import { CERTIFIED, fillProof, hearingFor, OTHER_GROUPS, proofCount, VOTES } from './noticeProof'
 import { applicationIdFor, townToday } from './records'
@@ -82,7 +83,7 @@ test.describe
         items: CERTIFIED,
         reference: 'RR 1001',
       })
-      await expect(page.getByText('Proof recorded.')).toBeVisible()
+      await expectFormStatus(page, 'Proof recorded.')
       await expect.poll(() => proofCount(db, hearingId)).toBe(3)
     })
 
@@ -90,7 +91,7 @@ test.describe
       for (const group of OTHER_GROUPS) {
         await page.goto(`/staff/boards/hearings/${hearingId}`)
         await fillProof(page, proofTitle, group)
-        await expect(page.getByText('Proof recorded.')).toBeVisible()
+        await expectFormStatus(page, 'Proof recorded.')
       }
       await expect.poll(() => proofCount(db, hearingId)).toBe(8)
     })

@@ -1,5 +1,6 @@
 import { expect, test } from '../fixtures/test'
 import { permissionAlert } from './confirm'
+import { expectFormStatus } from './confirmation'
 import { applicationIdFor, daysFromToday, townToday } from './records'
 import { expectRefused } from './refusal'
 import { uploadPdf } from './upload'
@@ -33,9 +34,10 @@ test.describe
       expect(before.written_decision_document_id).toBeNull()
       await page.goto(`/staff/boards/decisions/${before.id}`)
       await page.getByRole('button', { name: 'Create the Notice of Decision' }).click()
-      await expect(
-        page.getByText('The Notice of Decision and the decision letter are on the application.'),
-      ).toBeVisible()
+      await expectFormStatus(
+        page,
+        'The Notice of Decision and the decision letter are on the application.',
+      )
       const after = await decisionOf(db)
       expect(after.written_decision_document_id).not.toBeNull()
       expect(after.letter_document_id).not.toBeNull()
@@ -68,7 +70,7 @@ test.describe
       await uploadPdf(filing, 'Upload the minutes', minutesTitle)
       await filing.getByLabel(/^Minutes/).selectOption({ label: minutesTitle })
       await filing.getByRole('button', { name: 'File the decision' }).click()
-      await expect(page.getByText('The decision and minutes are public.')).toBeVisible()
+      await expectFormStatus(page, 'The decision and minutes are public.')
       const filed = await decisionOf(db)
       expect(filed.filed_on).toBe(await townToday(db))
       expect(filed.minutes_document_id).not.toBeNull()
@@ -95,7 +97,7 @@ test.describe
       await page.getByLabel('Step').selectOption('rehearing_outcome')
       await page.getByLabel(/^Result/).selectOption('denied')
       await page.getByRole('button', { name: 'Record', exact: true }).click()
-      await expect(page.getByText('Recorded on the appeal graph.')).toBeVisible()
+      await expectFormStatus(page, 'Recorded on the appeal graph.')
       const nodes = await db.rows(
         "select 1 from appeal_nodes where application_id = $1 and kind = 'rehearing_outcome' and outcome = 'denied'",
         [await applicationIdFor(db, APPLICATION)],

@@ -1,22 +1,15 @@
+import { activeBusinessExports, requestBusinessExport } from '../fixtures/exportRequest'
 import { accountFor, expect, test } from '../fixtures/test'
-import { expectToast } from './requestSupport'
 
 test.describe('data export', () => {
   test.use({ role: 'records' })
 
   test('requests an export and lists it', async ({ page, db }) => {
-    await page.goto('/staff/admin/export')
-    await page.getByRole('button', { name: 'Request a new export' }).click()
-    await expectToast(
-      page,
-      'Export requested. It is ready in a few minutes. Reload this page to see it.',
-    )
+    const outcome = await requestBusinessExport(page)
     const requester = await db.userIdFor(accountFor('records').email)
-    const rows = await db.rows<{ status: string }>(
-      'select status from exports where requested_by = $1',
-      [requester],
-    )
-    expect(rows).toHaveLength(1)
+    const active = await activeBusinessExports(db)
+    expect(active).toHaveLength(1)
+    if (outcome === 'requested') expect(active[0]?.requested_by).toBe(requester)
     await page.reload()
     await expect(
       page

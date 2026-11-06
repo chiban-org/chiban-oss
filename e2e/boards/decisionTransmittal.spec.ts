@@ -1,4 +1,5 @@
 import { expect, test } from '../fixtures/test'
+import { expectFormStatus } from './confirmation'
 import { applicationIdFor } from './records'
 import { expectRefused } from './refusal'
 import { uploadPdf } from './upload'
@@ -20,9 +21,10 @@ test.describe
       decisionId = row.id
       await page.goto(`/staff/boards/decisions/${decisionId}`)
       await page.getByRole('button', { name: 'Check the transmittal' }).click()
-      await expect(
-        page.getByText('Transmittal checklist is ready. Record proof for each recipient.'),
-      ).toBeVisible()
+      await expectFormStatus(
+        page,
+        'Transmittal checklist is ready. Record proof for each recipient.',
+      )
     })
 
     test('refuses transmittal proof before a receipt is chosen', async ({ page }) => {
