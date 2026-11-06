@@ -1,17 +1,12 @@
-import { count, eq, isNotNull, type SQL, sql } from 'drizzle-orm'
-import { ledgerAllocations, paymentAttempts } from '@/db/schema'
+import { eq, sql } from 'drizzle-orm'
+import { ledgerAllocations } from '@/db/schema'
 import { rangeCountsOn } from '@/features/payments/entryList'
 import { PAYMENTS_PATH as PAYMENTS } from '@/features/payments/entryListParams'
+import { countFlagged } from '@/features/payments/flaggedAttempts'
 import { PAYMENT_ALERT_IDS } from '@/features/payments/paymentAlertIds'
 import { countWorkQueue } from '@/features/queue/workQueue'
 import type { HomeContext, HomeLink, HomeRow, HomeSection } from '@/features/staffHome/homeTypes'
 import { mayOpen } from '@/features/staffNav/navItems'
-
-async function attemptCount(ctx: HomeContext, where: SQL): Promise<number> {
-  ctx.signal.throwIfAborted()
-  const [row] = await ctx.db.select({ n: count() }).from(paymentAttempts).where(where)
-  return row?.n ?? 0
-}
 
 async function overpayments(ctx: HomeContext): Promise<number> {
   const rows = await ctx.db
@@ -45,8 +40,8 @@ export async function loadFinanceSection(ctx: HomeContext): Promise<HomeSection 
   if (!mayOpen(PAYMENTS, ctx.viewer)) return null
   ctx.signal.throwIfAborted()
   const [unknown, anomalies, fees, ranges, overpaid] = await Promise.all([
-    attemptCount(ctx, eq(paymentAttempts.outcomeUnknown, true)),
-    attemptCount(ctx, isNotNull(paymentAttempts.anomaly)),
+    countFlagged(ctx.db, 'unknown', ctx.signal),
+    countFlagged(ctx.db, 'anomalies', ctx.signal),
     waitingOnFees(ctx),
     rangeCountsOn(ctx.db, ctx.today, { types: ['payment'] }),
     overpayments(ctx),

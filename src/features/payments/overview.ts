@@ -6,7 +6,7 @@ import {
   enforcementFines,
   ledgerAllocations,
   ledgerEntries,
-  paymentAttempts,
+  type paymentAttempts,
   receipts,
 } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
@@ -20,14 +20,19 @@ import {
   rangeCountsOn,
 } from '@/features/payments/entryList'
 import { ENTRY_PAGE_SIZE } from '@/features/payments/entryListParams'
+import {
+  type FlaggedKind,
+  type FlaggedOffsets,
+  type FlaggedPage,
+  listFlagged,
+} from '@/features/payments/flaggedAttempts'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
-
-const ATTEMPT_LIMIT = 50
 
 export interface PaymentsOverview {
   unknownAttempts: (typeof paymentAttempts.$inferSelect)[]
   anomalies: (typeof paymentAttempts.$inferSelect)[]
+  flaggedPages: Record<FlaggedKind, Omit<FlaggedPage, 'rows'>>
   overpayments: { applicationId: string; applicationNumber: string; amountCents: number }[]
   entryFacets: EntryFacets
   rangeCounts: RangeCounts
@@ -88,23 +93,15 @@ async function entryRecords(
 export async function loadPaymentsOverview(
   db: Db,
   actor: Actor,
-  input: { date: CivilDate; entries?: EntryView },
+  input: { date: CivilDate; entries?: EntryView; flagged?: FlaggedOffsets },
   signal: AbortSignal,
 ): Promise<Result<PaymentsOverview, 'forbidden'>> {
   signal.throwIfAborted()
   if (!(await mayViewPayments(db, actor, signal))) return err('forbidden')
-  const unknownAttempts = await db
-    .select()
-    .from(paymentAttempts)
-    .where(eq(paymentAttempts.outcomeUnknown, true))
-    .orderBy(desc(paymentAttempts.createdAt))
-    .limit(ATTEMPT_LIMIT)
-  const anomalies = await db
-    .select()
-    .from(paymentAttempts)
-    .where(isNotNull(paymentAttempts.anomaly))
-    .orderBy(desc(paymentAttempts.updatedAt))
-    .limit(ATTEMPT_LIMIT)
+  const [unknown, anomalous] = await Promise.all([
+    listFlagged(db, 'unknown', input.flagged?.unknown ?? 0, signal),
+    listFlagged(db, 'anomalies', input.flagged?.anomalies ?? 0, signal),
+  ])
   const overpaid = await db
     .select({
       applicationId: ledgerAllocations.applicationId,
@@ -126,9 +123,12 @@ export async function loadPaymentsOverview(
     db,
     entries.map((e) => e.id),
   )
+  const { rows: unknownAttempts, ...unknownPage } = unknown
+  const { rows: anomalies, ...anomalyPage } = anomalous
   return ok({
     unknownAttempts,
     anomalies,
+    flaggedPages: { unknown: unknownPage, anomalies: anomalyPage },
     overpayments: overpaid.flatMap((o) =>
       o.applicationId === null ? [] : [{ ...o, applicationId: o.applicationId }],
     ),

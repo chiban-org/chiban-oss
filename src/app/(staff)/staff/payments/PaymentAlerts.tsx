@@ -1,5 +1,8 @@
 import Link from 'next/link'
+import { TablePager } from '@/components/dataTable/TablePager'
 import { StatusChip } from '@/components/StatusChip'
+import type { TableParams } from '@/features/dataTable/params'
+import { type FlaggedKind, flaggedPageHref } from '@/features/payments/flaggedAttempts'
 import type { PaymentsOverview } from '@/features/payments/overview'
 import { PAYMENT_ALERT_IDS } from '@/features/payments/paymentAlertIds'
 import { formatCents } from '@/lib/money'
@@ -15,18 +18,48 @@ function AttemptLink({ attempt }: { attempt: Attempt }) {
   )
 }
 
+function FlaggedPager({
+  overview,
+  params,
+  kind,
+  shown,
+}: {
+  overview: Pick<PaymentsOverview, 'flaggedPages'>
+  params: TableParams
+  kind: FlaggedKind
+  shown: number
+}) {
+  const page = overview.flaggedPages[kind]
+  const href = (offset: number | null) =>
+    flaggedPageHref(params, kind, PAYMENT_ALERT_IDS[kind], offset)
+  return (
+    <TablePager
+      offset={page.offset}
+      shown={shown}
+      total={page.total}
+      prevHref={href(page.prevOffset)}
+      nextHref={href(page.nextOffset)}
+    />
+  )
+}
+
 export function PaymentAlerts({
   overview,
+  params,
 }: {
-  overview: Pick<PaymentsOverview, 'unknownAttempts' | 'anomalies' | 'overpayments'>
+  overview: Pick<
+    PaymentsOverview,
+    'unknownAttempts' | 'anomalies' | 'overpayments' | 'flaggedPages'
+  >
+  params: TableParams
 }) {
-  const { unknownAttempts, anomalies, overpayments } = overview
-  if (unknownAttempts.length + anomalies.length + overpayments.length === 0) {
+  const { unknownAttempts, anomalies, overpayments, flaggedPages } = overview
+  if (flaggedPages.unknown.total + flaggedPages.anomalies.total + overpayments.length === 0) {
     return <p>No card payment needs attention.</p>
   }
   return (
     <>
-      {unknownAttempts.length === 0 ? null : (
+      {flaggedPages.unknown.total === 0 ? null : (
         <section id={PAYMENT_ALERT_IDS.unknown} aria-label="Outcome unknown">
           <h2>Card payments with an unknown outcome</h2>
           <ul className="space-y-2">
@@ -36,9 +69,15 @@ export function PaymentAlerts({
               </li>
             ))}
           </ul>
+          <FlaggedPager
+            overview={overview}
+            params={params}
+            kind="unknown"
+            shown={unknownAttempts.length}
+          />
         </section>
       )}
-      {anomalies.length === 0 ? null : (
+      {flaggedPages.anomalies.total === 0 ? null : (
         <section id={PAYMENT_ALERT_IDS.anomalies} aria-label="Anomalies">
           <h2>Anomalies</h2>
           <ul className="space-y-2">
@@ -49,6 +88,12 @@ export function PaymentAlerts({
               </li>
             ))}
           </ul>
+          <FlaggedPager
+            overview={overview}
+            params={params}
+            kind="anomalies"
+            shown={anomalies.length}
+          />
         </section>
       )}
       {overpayments.length === 0 ? null : (

@@ -23,6 +23,7 @@ import {
   PAYMENTS_PATH,
   readEntriesView,
 } from '@/features/payments/entryListParams'
+import { readFlaggedOffsets } from '@/features/payments/flaggedAttempts'
 import { entryTypeLabel, methodLabel } from '@/features/payments/labels'
 import { loadPaymentsOverview } from '@/features/payments/overview'
 import { mayOpen } from '@/features/staffNav/navItems'
@@ -88,7 +89,11 @@ export default async function PaymentsPage({
   const result = await loadPaymentsOverview(
     ctx.db,
     ctx.actor,
-    { date: today, entries: { filters, sort, range, offset, limit: ENTRY_PAGE_SIZE } },
+    {
+      date: today,
+      entries: { filters, sort, range, offset, limit: ENTRY_PAGE_SIZE },
+      flagged: readFlaggedOffsets(params),
+    },
     ctx.signal,
   )
   if (!result.ok) return <NoPermission title="Payments" action="view payments" />
@@ -101,7 +106,7 @@ export default async function PaymentsPage({
   return (
     <main data-wide="">
       <h1>Payments</h1>
-      <PaymentAlerts overview={result.value} />
+      <PaymentAlerts overview={result.value} params={params} />
       <section aria-label="Entries">
         <h2>Entries</h2>
         <p className="text-muted-foreground">
