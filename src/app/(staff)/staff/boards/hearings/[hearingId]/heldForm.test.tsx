@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('../actions', () => ({ markHeldAction: vi.fn() }))
 
@@ -43,7 +43,7 @@ describe('mark the hearing held', () => {
       refusal('heldOn', 'The date cannot be before the meeting.'),
     )
     show('2026-10-28')
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: /Mark/ }),
       () => screen.getByLabelText(/^Date\ held( \*)?$/),
       'The date cannot be before the meeting.',

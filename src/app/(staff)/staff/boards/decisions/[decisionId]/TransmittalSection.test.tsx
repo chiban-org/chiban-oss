@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { DecisionView } from '@/features/decisions/decisionView'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('../../hearings/decisionActions', () => ({ transmittalAction: vi.fn() }))
 vi.mock('../../hearings/actions', () => ({ recordProofAction: vi.fn() }))
@@ -42,7 +42,7 @@ describe('regional transmittal proof', () => {
     fireEvent.change(screen.getByLabelText(/^Certificate or receipt( \*)?$/), {
       target: { value: 'f1' },
     })
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'Record proof' }),
       () => screen.getByLabelText(/^Tracking number( \*)?$/),
       'Enter the tracking number from the receipt.',

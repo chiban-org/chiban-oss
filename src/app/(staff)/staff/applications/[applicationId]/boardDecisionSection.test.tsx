@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { BoardPanelData } from '@/features/boards/panelData'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('../../boards/actions', () => ({
   certificationAction: vi.fn(),
@@ -39,7 +39,7 @@ describe('decision follow-up refusals', () => {
     vi.mocked(certificationAction).mockResolvedValue(refusal('decidedOn', message))
     render2({ ...base, certification: { offered: true, history: [] } })
     fireEvent.click(screen.getByText('Record a request to the selectmen'))
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'Record' }),
       () => screen.getByLabelText(/^Date decided, if certified( \*)?$/),
       message,
@@ -50,7 +50,7 @@ describe('decision follow-up refusals', () => {
     const message = 'The date cannot be in the future.'
     vi.mocked(finalApprovalAction).mockResolvedValue(refusal('finalOn', message))
     render2({ ...base, hasExercise: true })
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'Record final approval' }),
       () => screen.getByLabelText(/^Date of final approval( \*)?$/),
       message,

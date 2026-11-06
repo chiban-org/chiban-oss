@@ -58,15 +58,9 @@ describe('docker-compose.dev.yml', () => {
     expect(garage).toMatch(/GARAGE_RPC_SECRET: "[0-9a-f]{64}"$/m)
   })
 
-  it('the dev env example uses the key garage creates and lists the dev and e2e browser origins', () => {
+  it('the dev env example uses the key garage creates and lists only the dev browser origin', () => {
     expect(garage).toContain(`GARAGE_DEFAULT_ACCESS_KEY: ${devExample.get('S3_ACCESS_KEY_ID')}`)
     expect(garage).toContain(`GARAGE_DEFAULT_SECRET_KEY: ${devExample.get('S3_SECRET_ACCESS_KEY')}`)
-    expect(devExample.get('S3_CORS_ORIGINS')?.split(',')).toEqual([
-      'http://localhost:3000',
-      'http://localhost:3100',
-      'http://localhost:3101',
-      'http://localhost:3102',
-      'http://localhost:3103',
-    ])
+    expect(devExample.get('S3_CORS_ORIGINS')?.split(',')).toEqual(['http://localhost:3000'])
   })
 })

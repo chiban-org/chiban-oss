@@ -1,6 +1,7 @@
 'use client'
 
 import { useId, useState } from 'react'
+import { toast } from 'sonner'
 import { useCsrfToken } from '@/components/CsrfProvider'
 import { Button } from '@/components/ui/button'
 import { FilePicker } from '@/components/ui/file-picker'
@@ -41,6 +42,7 @@ interface UploaderProps {
 
 const BYTES_PER_MB = 1024 * 1024
 const PERCENT = 100
+const UPLOADED = 'Uploaded.'
 
 export const putWithProgress: PutFile = (url, headers, file, onProgress) =>
   new Promise((resolve) => {
@@ -106,7 +108,8 @@ export function Uploader({
     for (const [key, value] of Object.entries(extraFields)) done.set(key, value)
     const finalized = await actions.finalize(done)
     if (!finalized.ok) return setMessage(finalized.error)
-    setMessage('Uploaded.')
+    setMessage(UPLOADED)
+    toast.success(UPLOADED)
     setFile(null)
     setPickerKey((key) => key + 1)
     setTitle('')

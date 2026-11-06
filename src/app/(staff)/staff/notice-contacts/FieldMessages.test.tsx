@@ -4,8 +4,7 @@ import type { ReactNode } from 'react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { AssociationRow, HoldingRow, ParkRow } from '@/features/rosters/contactRows'
-import { expectRefusalBeside } from '@/test/besideField'
-import { expectRefusalBeside as expectRefusalWithHint } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, expectRefusalBeside } from '@/test/besideField'
 
 const refusal = vi.hoisted(() => ({ field: '', message: '' }))
 const answer = vi.hoisted(
@@ -215,7 +214,7 @@ describe('refusals beside the field in the notice contact forms', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: /change/i }))
     const dialog = screen.getByRole('dialog')
-    await expectRefusalWithHint(
+    await expectRefusalAfterSubmit(
       within(dialog).getByRole('button', { name: 'Publish' }),
       () => within(dialog).getByLabelText(/^Days between checks/),
       'Enter the number of days as a whole number from 1 to 3650.',

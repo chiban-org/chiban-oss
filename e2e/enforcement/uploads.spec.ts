@@ -1,3 +1,4 @@
+import { expectConfirmation } from '../applications/support'
 import { expect, test } from '../fixtures/test'
 import { countRows, openSummary, region, startCase, uploadCaseDocument } from './support'
 
@@ -25,6 +26,7 @@ test.describe('case uploads', () => {
     const caseId = await startCase(page, `82 Teal Bend ${suffix}`)
     const title = `Letter to the owner ${suffix}`
     await uploadCaseDocument(page, 'Letter or other case document', title)
+    await expectConfirmation(page, 'Uploaded.')
     const row = await db.one<{ title: string }>(
       'select title from documents where record_id = $1 and title = $2',
       [caseId, title],

@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { ApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('../../boards/hearings/actions', () => ({
   scheduleHearingAction: vi.fn(),
@@ -36,7 +36,7 @@ describe('scheduling a hearing', () => {
       </CsrfProvider>,
     )
     fireEvent.click(screen.getByText('Schedule a hearing'))
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'Schedule hearing' }),
       () => screen.getByLabelText(/^Meeting( \*)?$/),
       message,
