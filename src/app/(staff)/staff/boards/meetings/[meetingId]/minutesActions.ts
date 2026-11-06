@@ -1,22 +1,16 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { MINUTES_STATUSES, type MinutesError, recordMinutes } from '@/features/boards/minutes'
+import { type MinutesError, recordMinutes } from '@/features/boards/minutes'
 import {
   createUploadIntent,
   type FinalizeError,
   finalizeUpload,
 } from '@/features/documents/uploads'
 import { getObjectStore } from '@/features/storage/objectStore'
-import {
-  type ActionResult,
-  errorCopy,
-  runStaffAction,
-  runStaffValue,
-  text,
-} from '@/server/actionRunner'
-import { isUuid } from '@/utils/uuid'
-import { dateOf } from '../../hearings/dates'
+import { type ActionResult, errorCopy, runStaffValue } from '@/server/actionRunner'
+import { parseForm, refuseField, runStaffForm } from '@/server/formInput'
+import { FINALIZE_UPLOAD_FORM, RECORD_MINUTES_FORM, UPLOAD_INTENT_FORM } from './minutesForms'
 
 type IntentResponse =
   | { ok: true; intentId: string; url: string; headers: Record<string, string> }
@@ -56,19 +50,14 @@ const meetingPath = (meetingId: string) => `/staff/boards/meetings/${meetingId}`
 export async function createMeetingUploadIntentAction(formData: FormData): Promise<IntentResponse> {
   const fail = (error: string): IntentResponse => ({ ok: false, error })
   return await runStaffValue(formData, fail, async ({ db, actor, signal }) => {
-    const meetingId = text(formData, 'targetId')
-    if (!isUuid(meetingId)) return fail(errorCopy('invalid_input'))
+    const parsed = parseForm(UPLOAD_INTENT_FORM, formData)
+    if (!parsed.ok) return fail(parsed.error.error)
+    const { targetId, title, ...file } = parsed.value
     const made = await createUploadIntent(
       db,
       getObjectStore(),
       actor,
-      {
-        target: { kind: 'meeting', id: meetingId },
-        title: text(formData, 'title'),
-        filename: text(formData, 'filename'),
-        contentType: text(formData, 'contentType'),
-        sizeBytes: Number(text(formData, 'sizeBytes')),
-      },
+      { target: { kind: 'meeting', id: targetId }, title: title ?? '', ...file },
       signal,
     )
     return made.ok ? { ok: true, ...made.value } : fail(UPLOAD_COPY[made.error])
@@ -76,36 +65,38 @@ export async function createMeetingUploadIntentAction(formData: FormData): Promi
 }
 
 export async function finalizeMeetingUploadAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const intentId = text(formData, 'intentId')
-    if (!isUuid(intentId)) return { ok: false, error: errorCopy('invalid_input') }
-    const done = await finalizeUpload(db, getObjectStore(), actor, { intentId }, signal)
-    return done.ok
-      ? { ok: true, message: 'Uploaded. Choose it below to record it as the minutes.' }
-      : { ok: false, error: UPLOAD_COPY[done.error] }
-  })
+  return await runStaffForm(
+    formData,
+    FINALIZE_UPLOAD_FORM,
+    async ({ db, actor, signal }, input) => {
+      const done = await finalizeUpload(db, getObjectStore(), actor, input, signal)
+      return done.ok
+        ? { ok: true, message: 'Uploaded. Choose it below to record it as the minutes.' }
+        : { ok: false, error: UPLOAD_COPY[done.error] }
+    },
+  )
+}
+
+const MINUTES_FIELD: Partial<Record<MinutesError, string>> = {
+  approval_date_required: 'approvedOn',
+  future_date: 'approvedOn',
+  before_meeting: 'approvedOn',
+  document_not_found: 'documentId',
 }
 
 export async function recordMinutesAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const meetingId = text(formData, 'meetingId')
-    const documentId = text(formData, 'documentId')
-    const status = MINUTES_STATUSES.find((s) => s === text(formData, 'status'))
-    if (!isUuid(meetingId) || !isUuid(documentId) || status === undefined) {
-      return { ok: false, error: errorCopy('invalid_input') }
+  return await runStaffForm(formData, RECORD_MINUTES_FORM, async ({ db, actor, signal }, input) => {
+    const recorded = await recordMinutes(db, actor, input, signal)
+    if (!recorded.ok) {
+      const copy = MINUTES_COPY[recorded.error]
+      const field = MINUTES_FIELD[recorded.error]
+      return field === undefined ? { ok: false, error: copy } : refuseField(field, copy)
     }
-    const recorded = await recordMinutes(
-      db,
-      actor,
-      { meetingId, documentId, status, approvedOn: dateOf(formData, 'approvedOn') },
-      signal,
-    )
-    if (!recorded.ok) return { ok: false, error: MINUTES_COPY[recorded.error] }
-    revalidatePath(meetingPath(meetingId))
+    revalidatePath(meetingPath(input.meetingId))
     return {
       ok: true,
       message:
-        status === 'approved'
+        input.status === 'approved'
           ? 'Approved minutes recorded. They are now public.'
           : 'Draft minutes recorded. They are not public.',
     }

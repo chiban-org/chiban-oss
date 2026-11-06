@@ -7,8 +7,17 @@ import { resendToLink, resendToMember, sendPacketToBoard } from '@/features/boar
 import { replacePacketAgenda, sendPacketUpdate } from '@/features/boards/packetUpdate'
 import { getMailTransport } from '@/features/mail/transport'
 import { getObjectStore } from '@/features/storage/objectStore'
-import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
-import { isUuid } from '@/utils/uuid'
+import { type ActionResult, errorCopy } from '@/server/actionRunner'
+import { refuseField, runStaffForm } from '@/server/formInput'
+import {
+  GATHER_PACKET_FORM,
+  MEETING_ONLY_FORM,
+  PACKET_ONLY_FORM,
+  RENAME_PACKET_FORM,
+  RESEND_FORM,
+  SEND_OUTSIDE_FORM,
+  TURN_OFF_LINK_FORM,
+} from './packetForms'
 
 const PACKET_COPY: Record<string, string> = {
   forbidden: errorCopy('forbidden'),
@@ -29,20 +38,16 @@ const PACKET_COPY: Record<string, string> = {
   invalid_audience: errorCopy('invalid_input'),
 }
 
-function failed(error: unknown): ActionResult {
-  return { ok: false, error: PACKET_COPY[String(error)] ?? errorCopy('invalid_input') }
-}
-
-function ids(formData: FormData, name: string): string[] {
-  return formData.getAll(name).filter((v): v is string => typeof v === 'string' && isUuid(v))
+function failed(error: unknown, fieldOf: Record<string, string> = {}): ActionResult {
+  const copy = PACKET_COPY[String(error)] ?? errorCopy('invalid_input')
+  const field = fieldOf[String(error)]
+  return field === undefined ? { ok: false, error: copy } : refuseField(field, copy)
 }
 
 export async function gatherPacketAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const share = text(formData, 'share')
-    if (share !== '') {
-      if (!isUuid(share)) return failed('not_found')
-      const shared = await shareWithBoard(db, actor, { documentId: share }, signal)
+  return await runStaffForm(formData, GATHER_PACKET_FORM, async ({ db, actor, signal }, input) => {
+    if (input.share !== null) {
+      const shared = await shareWithBoard(db, actor, { documentId: input.share }, signal)
       return shared.ok
         ? { ok: true, message: 'Shared with the board. Check it to add it to the packet.' }
         : failed(shared.error)
@@ -52,9 +57,9 @@ export async function gatherPacketAction(formData: FormData): Promise<ActionResu
       getObjectStore(),
       actor,
       {
-        meetingId: text(formData, 'meetingId'),
-        documentIds: ids(formData, 'documentId'),
-        trcApplicationIds: ids(formData, 'trcApplicationId'),
+        meetingId: input.meetingId,
+        documentIds: input.documentId,
+        trcApplicationIds: input.trcApplicationId,
       },
       signal,
     )
@@ -67,26 +72,17 @@ export async function gatherPacketAction(formData: FormData): Promise<ActionResu
 }
 
 export async function renamePacketAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const renamed = await renamePacket(
-      db,
-      actor,
-      { packetId: text(formData, 'packetId'), title: text(formData, 'title') },
-      signal,
-    )
-    return renamed.ok ? { ok: true, message: 'Title saved.' } : failed(renamed.error)
+  return await runStaffForm(formData, RENAME_PACKET_FORM, async ({ db, actor, signal }, input) => {
+    const renamed = await renamePacket(db, actor, input, signal)
+    return renamed.ok
+      ? { ok: true, message: 'Title saved.' }
+      : failed(renamed.error, { title_required: 'title' })
   })
 }
 
 export async function sendToBoardAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const sent = await sendPacketToBoard(
-      db,
-      getMailTransport(),
-      actor,
-      { packetId: text(formData, 'packetId') },
-      signal,
-    )
+  return await runStaffForm(formData, PACKET_ONLY_FORM, async ({ db, actor, signal }, input) => {
+    const sent = await sendPacketToBoard(db, getMailTransport(), actor, input, signal)
     return sent.ok
       ? { ok: true, message: `Sent to ${sent.value.sent} members.` }
       : failed(sent.error)
@@ -94,33 +90,24 @@ export async function sendToBoardAction(formData: FormData): Promise<ActionResul
 }
 
 export async function sendOutsideAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const days = text(formData, 'days')
+  return await runStaffForm(formData, SEND_OUTSIDE_FORM, async ({ db, actor, signal }, input) => {
+    const { days, ...rest } = input
     const sent = await sendPacketLink(
       db,
       getMailTransport(),
       actor,
-      {
-        packetId: text(formData, 'packetId'),
-        recipientName: text(formData, 'recipientName'),
-        recipientEmail: text(formData, 'recipientEmail'),
-        ...(days === '' ? {} : { expiresInDays: Number(days) }),
-      },
+      { ...rest, ...(days === null ? {} : { expiresInDays: days }) },
       signal,
     )
-    return sent.ok ? { ok: true, message: 'Private link sent.' } : failed(sent.error)
+    return sent.ok
+      ? { ok: true, message: 'Private link sent.' }
+      : failed(sent.error, { member_of_board: 'recipientEmail', expiry_too_long: 'days' })
   })
 }
 
 export async function sendUpdateAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const sent = await sendPacketUpdate(
-      db,
-      getMailTransport(),
-      actor,
-      { packetId: text(formData, 'packetId') },
-      signal,
-    )
+  return await runStaffForm(formData, PACKET_ONLY_FORM, async ({ db, actor, signal }, input) => {
+    const sent = await sendPacketUpdate(db, getMailTransport(), actor, input, signal)
     return sent.ok
       ? { ok: true, message: `Update sent to ${sent.value.recipients} recipients.` }
       : failed(sent.error)
@@ -128,13 +115,8 @@ export async function sendUpdateAction(formData: FormData): Promise<ActionResult
 }
 
 export async function replaceAgendaAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const replaced = await replacePacketAgenda(
-      db,
-      actor,
-      { meetingId: text(formData, 'meetingId') },
-      signal,
-    )
+  return await runStaffForm(formData, MEETING_ONLY_FORM, async ({ db, actor, signal }, input) => {
+    const replaced = await replacePacketAgenda(db, actor, input, signal)
     return replaced.ok
       ? { ok: true, message: 'Agenda replaced. Send the update to tell recipients.' }
       : failed(replaced.error)
@@ -142,30 +124,26 @@ export async function replaceAgendaAction(formData: FormData): Promise<ActionRes
 }
 
 export async function resendAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const linkId = text(formData, 'linkId')
+  return await runStaffForm(formData, RESEND_FORM, async ({ db, actor, signal }, input) => {
+    const { packetId, userId, linkId } = input
+    if (linkId === null && (packetId === null || userId === null)) return failed('invalid')
     const sent =
-      linkId === ''
-        ? await resendToMember(
+      linkId !== null
+        ? await resendToLink(db, getMailTransport(), actor, { linkId }, signal)
+        : await resendToMember(
             db,
             getMailTransport(),
             actor,
-            { packetId: text(formData, 'packetId'), userId: text(formData, 'userId') },
+            { packetId: packetId ?? '', userId: userId ?? '' },
             signal,
           )
-        : await resendToLink(db, getMailTransport(), actor, { linkId }, signal)
     return sent.ok ? { ok: true, message: 'Sent again.' } : failed(sent.error)
   })
 }
 
 export async function turnOffLinkAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const turnedOff = await revokePacketLink(
-      db,
-      actor,
-      { linkId: text(formData, 'linkId') },
-      signal,
-    )
+  return await runStaffForm(formData, TURN_OFF_LINK_FORM, async ({ db, actor, signal }, input) => {
+    const turnedOff = await revokePacketLink(db, actor, input, signal)
     return turnedOff.ok ? { ok: true, message: 'Link turned off.' } : failed(turnedOff.error)
   })
 }

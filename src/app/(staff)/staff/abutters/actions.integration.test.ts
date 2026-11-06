@@ -188,16 +188,21 @@ describe('board actions', () => {
   })
 
   it('schedule meeting action rejects a missing date', async () => {
-    expect(await boardActions.scheduleMeetingAction(form({ board: 'zba' }))).toEqual({
+    expect(
+      await boardActions.scheduleMeetingAction(form({ board: 'zba', kind: 'regular' })),
+    ).toEqual({
       ok: false,
-      error: 'Check the form fields and try again.',
+      error: 'Enter the meeting date.',
+      fieldErrors: { meetingDate: 'Enter the meeting date.' },
     })
   })
 
   it('schedule meeting action as reviewer is forbidden', async () => {
     state.actor = world.reviewer
     expect(
-      await boardActions.scheduleMeetingAction(form({ board: 'zba', meetingDate: '2027-08-18' })),
+      await boardActions.scheduleMeetingAction(
+        form({ board: 'zba', kind: 'regular', meetingDate: '2027-08-18' }),
+      ),
     ).toEqual({ ok: false, error: 'You do not have permission to do this.' })
   })
 

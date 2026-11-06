@@ -12,14 +12,14 @@ import {
   endNotBefore,
   optionalCivilDate,
   optionalText,
+  recordId,
+  requiredText,
 } from '@/features/input/schemas'
 import { getMailTransport } from '@/features/mail/transport'
-import { type ActionResult, runStaffAction, text } from '@/server/actionRunner'
+import type { ActionResult } from '@/server/actionRunner'
 import { refuseField, runStaffForm } from '@/server/formInput'
-import { type CivilDate, parseCivilDate } from '@/types/civilDate'
-import { isUuid } from '@/utils/uuid'
+import { errorOrField } from '../formFields'
 
-const INVALID: ActionResult = { ok: false, error: 'Check the form fields and try again.' }
 const TITLES = [
   'chair',
   'vice_chair',
@@ -27,29 +27,6 @@ const TITLES = [
   'alternate',
   'clerk',
 ] as const satisfies readonly MemberTitle[]
-
-interface Seat {
-  board: 'planning_board' | 'zba'
-  title: MemberTitle
-  termStart: CivilDate
-  termEnd: CivilDate | null
-}
-
-function seatOf(formData: FormData): Seat | null {
-  const board = BoardSchema.safeParse(text(formData, 'board'))
-  const title = TITLES.find((t) => t === text(formData, 'title'))
-  const termStart = parseCivilDate(text(formData, 'termStart'))
-  const rawEnd = text(formData, 'termEnd')
-  const termEnd = parseCivilDate(rawEnd)
-  if (!board.success || title === undefined || !termStart.ok) return null
-  if (rawEnd !== '' && !termEnd.ok) return null
-  return {
-    board: board.data,
-    title,
-    termStart: termStart.value,
-    termEnd: rawEnd === '' || !termEnd.ok ? null : termEnd.value,
-  }
-}
 
 const TERM_ORDER_COPY = 'The term cannot end before it starts.'
 
@@ -84,29 +61,40 @@ export async function inviteMemberAction(formData: FormData): Promise<ActionResu
   })
 }
 
+const END_FORM = z.object({ membershipId: recordId('a membership') })
+
 export async function endMembershipAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const ended = await endMembership(db, actor, text(formData, 'membershipId'), signal)
-    return errorOrOk(ended, 'Membership ended. Access stops now.')
+  return await runStaffForm(formData, END_FORM, async ({ db, actor, signal }, input) =>
+    errorOrOk(
+      await endMembership(db, actor, input.membershipId, signal),
+      'Membership ended. Access stops now.',
+    ),
+  )
+}
+
+const UPDATE_FORM = z
+  .object({
+    membershipId: recordId('a membership'),
+    displayName: requiredText('a name', { max: 200 }),
+    email: emailAddress('an email address'),
+    board: choice('a board', BoardSchema.options),
+    title: choice('a role on the board', TITLES),
+    termStart: civilDate('the term start date'),
+    termEnd: optionalCivilDate('the term end date'),
   })
+  .superRefine(endNotBefore('termStart', 'termEnd', TERM_ORDER_COPY))
+
+const UPDATE_FIELD: Record<string, string> = {
+  name_required: 'displayName',
+  email_taken: 'email',
+  staff_account: 'email',
+  term_order: 'termEnd',
 }
 
 export async function updateMemberAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const membershipId = text(formData, 'membershipId')
-    const seat = seatOf(formData)
-    if (!isUuid(membershipId) || seat === null) return INVALID
-    const saved = await updateBoardMember(
-      db,
-      actor,
-      {
-        membershipId,
-        displayName: text(formData, 'displayName'),
-        email: text(formData, 'email'),
-        ...seat,
-      },
-      signal,
-    )
-    return errorOrOk(saved, 'Member saved.')
+  return await runStaffForm(formData, UPDATE_FORM, async ({ db, actor, signal }, input) => {
+    const { termEnd, ...rest } = input
+    const saved = await updateBoardMember(db, actor, { ...rest, termEnd }, signal)
+    return errorOrField(saved, 'Member saved.', UPDATE_FIELD)
   })
 }

@@ -8,108 +8,97 @@ import {
   removeAgendaItem,
   reopenAgenda,
 } from '@/features/agendas/agendas'
-import { errorOrOk } from '@/features/boards/actionResult'
 import { continueHearing } from '@/features/hearings/continuations'
 import { markHearingHeld, markProperlyNoticed, scheduleHearing } from '@/features/hearings/hearings'
-import { PROOF_METHODS, type ProofMethod } from '@/features/notices/proofMethods'
 import { recordProof } from '@/features/notices/proofs'
 import { routeToTrc } from '@/features/reviews/trcRouting'
 import { getObjectStore } from '@/features/storage/objectStore'
-import { type ActionResult, runStaffAction, text } from '@/server/actionRunner'
-import { dateOf } from './dates'
-
-const INVALID: ActionResult = { ok: false, error: 'Check the form fields and try again.' }
-const KINDS = ['submission_and_hearing', 'public_hearing', 'rehearing'] as const
-const AGENDA_KINDS = ['hearing', 'business', 'minutes_approval', 'other'] as const
+import type { ActionResult } from '@/server/actionRunner'
+import { runStaffForm } from '@/server/formInput'
+import { errorOrField } from '../formFields'
+import {
+  ADD_AGENDA_ITEM_FORM,
+  CONTINUE_HEARING_FORM,
+  HEARING_ONLY_FORM,
+  MARK_HELD_FORM,
+  MEETING_ONLY_FORM,
+  MOVE_AGENDA_ITEM_FORM,
+  RECORD_PROOF_FORM,
+  REMOVE_AGENDA_ITEM_FORM,
+  ROUTE_TO_TRC_FORM,
+  SCHEDULE_HEARING_FORM,
+} from './forms'
 
 export async function scheduleHearingAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const kind = KINDS.find((k) => k === text(formData, 'kind'))
-    if (kind === undefined) return INVALID
-    const made = await scheduleHearing(
-      db,
-      actor,
-      {
-        applicationId: text(formData, 'applicationId'),
-        meetingId: text(formData, 'meetingId'),
-        kind,
-      },
-      signal,
-    )
-    return errorOrOk(made, 'Hearing scheduled. The notice checklist is ready.')
-  })
+  return await runStaffForm(formData, SCHEDULE_HEARING_FORM, async ({ db, actor, signal }, input) =>
+    errorOrField(
+      await scheduleHearing(db, actor, input, signal),
+      'Hearing scheduled. The notice checklist is ready.',
+    ),
+  )
 }
 
 export async function recordProofAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const method = PROOF_METHODS.find((m): m is ProofMethod => m === text(formData, 'method'))
-    const effectiveOn = dateOf(formData, 'effectiveOn')
-    const itemIds = formData.getAll('itemIds').filter((v): v is string => typeof v === 'string')
-    if (method === undefined || effectiveOn === null) return INVALID
-    const reference = text(formData, 'reference')
-    const recorded = await recordProof(
-      db,
-      actor,
-      {
-        itemIds,
-        method,
-        reference: reference === '' ? null : reference,
-        effectiveOn,
-        documentId: text(formData, 'documentId'),
-      },
-      signal,
-    )
-    return errorOrOk(recorded, 'Proof recorded.')
-  })
+  return await runStaffForm(formData, RECORD_PROOF_FORM, async ({ db, actor, signal }, input) =>
+    errorOrField(await recordProof(db, actor, input, signal), 'Proof recorded.', {
+      item_not_found: 'itemIds',
+      reference_required: 'reference',
+      future_date: 'effectiveOn',
+      document_not_found: 'documentId',
+      wrong_document: 'documentId',
+    }),
+  )
 }
 
 export async function markProperlyNoticedAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const marked = await markProperlyNoticed(db, actor, text(formData, 'hearingId'), signal)
-    return errorOrOk(marked, 'Marked properly noticed.')
-  })
+  return await runStaffForm(formData, HEARING_ONLY_FORM, async ({ db, actor, signal }, input) =>
+    errorOrField(
+      await markProperlyNoticed(db, actor, input.hearingId, signal),
+      'Marked properly noticed.',
+    ),
+  )
 }
 
 export async function continueHearingAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const announced = text(formData, 'announced') === 'yes'
-    const continued = await continueHearing(
-      db,
-      actor,
-      {
-        hearingId: text(formData, 'hearingId'),
-        toMeetingId: text(formData, 'toMeetingId'),
-        announcedAtMeeting: announced,
-        announcedDetails: text(formData, 'details'),
-      },
-      signal,
-    )
-    return errorOrOk(
-      continued,
-      announced
-        ? 'Hearing continued. The notice already given carries forward.'
-        : 'Hearing continued. New notice is required for the new date.',
-    )
-  })
+  return await runStaffForm(
+    formData,
+    CONTINUE_HEARING_FORM,
+    async ({ db, actor, signal }, input) => {
+      const announced = input.announced === 'yes'
+      const continued = await continueHearing(
+        db,
+        actor,
+        {
+          hearingId: input.hearingId,
+          toMeetingId: input.toMeetingId,
+          announcedAtMeeting: announced,
+          announcedDetails: input.details ?? '',
+        },
+        signal,
+      )
+      return errorOrField(
+        continued,
+        announced
+          ? 'Hearing continued. The notice already given carries forward.'
+          : 'Hearing continued. New notice is required for the new date.',
+        { details_required: 'details' },
+      )
+    },
+  )
 }
 
 export async function markHeldAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const heldOn = dateOf(formData, 'heldOn')
-    if (heldOn === null) return INVALID
-    const held = await markHearingHeld(
-      db,
-      actor,
-      { hearingId: text(formData, 'hearingId'), heldOn },
-      signal,
-    )
-    return errorOrOk(held, 'Hearing marked as held.')
-  })
+  return await runStaffForm(formData, MARK_HELD_FORM, async ({ db, actor, signal }, input) =>
+    errorOrField(await markHearingHeld(db, actor, input, signal), 'Hearing marked as held.', {
+      future_date: 'heldOn',
+      before_meeting: 'heldOn',
+    }),
+  )
 }
 
 export async function buildAgendaAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const built = await buildAgenda(db, actor, text(formData, 'meetingId'), signal)
+  return await runStaffForm(formData, MEETING_ONLY_FORM, async ({ db, actor, signal }, input) => {
+    const built = await buildAgenda(db, actor, input.meetingId, signal)
     if (built.ok && built.value.onMeeting === 0) {
       return {
         ok: true,
@@ -120,7 +109,7 @@ export async function buildAgendaAction(formData: FormData): Promise<ActionResul
     if (built.ok && built.value.added === 0) {
       return { ok: true, message: 'No new hearings to add. The agenda already lists them.' }
     }
-    return errorOrOk(
+    return errorOrField(
       built,
       built.ok && built.value.added === 1
         ? 'Added 1 hearing to the agenda.'
@@ -130,77 +119,60 @@ export async function buildAgendaAction(formData: FormData): Promise<ActionResul
 }
 
 export async function addAgendaItemAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const kind = AGENDA_KINDS.find((k) => k === text(formData, 'kind'))
-    if (kind === undefined || text(formData, 'title') === '') return INVALID
-    const added = await addAgendaItem(
-      db,
-      actor,
-      {
-        meetingId: text(formData, 'meetingId'),
-        kind,
-        title: text(formData, 'title'),
-        description: text(formData, 'description'),
-      },
-      signal,
-    )
-    return errorOrOk(added, 'Item added to the agenda.')
-  })
+  return await runStaffForm(formData, ADD_AGENDA_ITEM_FORM, async ({ db, actor, signal }, input) =>
+    errorOrField(
+      await addAgendaItem(db, actor, { ...input, description: input.description ?? '' }, signal),
+      'Item added to the agenda.',
+    ),
+  )
 }
 
 export async function moveAgendaItemAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const toPosition = Number(text(formData, 'toPosition'))
-    if (!Number.isInteger(toPosition)) return INVALID
-    const moved = await moveAgendaItem(
-      db,
-      actor,
-      { itemId: text(formData, 'itemId'), toPosition },
-      signal,
-    )
-    return errorOrOk(moved, 'Item moved.')
-  })
+  return await runStaffForm(formData, MOVE_AGENDA_ITEM_FORM, async ({ db, actor, signal }, input) =>
+    errorOrField(await moveAgendaItem(db, actor, input, signal), 'Item moved.'),
+  )
 }
 
 export async function removeAgendaItemAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const removed = await removeAgendaItem(db, actor, text(formData, 'itemId'), signal)
-    return errorOrOk(removed, 'Item removed.')
-  })
+  return await runStaffForm(
+    formData,
+    REMOVE_AGENDA_ITEM_FORM,
+    async ({ db, actor, signal }, input) =>
+      errorOrField(await removeAgendaItem(db, actor, input.itemId, signal), 'Item removed.'),
+  )
 }
 
 export async function publishAgendaAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const published = await publishAgenda(
-      db,
-      getObjectStore(),
-      actor,
-      text(formData, 'meetingId'),
-      signal,
-    )
-    return errorOrOk(published, 'Agenda published on the public site.')
-  })
+  return await runStaffForm(formData, MEETING_ONLY_FORM, async ({ db, actor, signal }, input) =>
+    errorOrField(
+      await publishAgenda(db, getObjectStore(), actor, input.meetingId, signal),
+      'Agenda published on the public site.',
+    ),
+  )
 }
 
 export async function reopenAgendaAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const reopened = await reopenAgenda(db, actor, text(formData, 'meetingId'), signal)
-    return errorOrOk(reopened, 'Agenda reopened. Publishing again creates a new revision.')
-  })
+  return await runStaffForm(formData, MEETING_ONLY_FORM, async ({ db, actor, signal }, input) =>
+    errorOrField(
+      await reopenAgenda(db, actor, input.meetingId, signal),
+      'Agenda reopened. Publishing again creates a new revision.',
+    ),
+  )
 }
 
 export async function routeToTrcAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const meetingId = text(formData, 'meetingId')
-    const routed = await routeToTrc(
-      db,
-      actor,
-      {
-        applicationId: text(formData, 'applicationId'),
-        ...(meetingId === '' ? {} : { meetingId }),
-      },
-      signal,
-    )
-    return errorOrOk(routed, 'Sent to the Technical Review Committee departments.')
-  })
+  return await runStaffForm(formData, ROUTE_TO_TRC_FORM, async ({ db, actor, signal }, input) =>
+    errorOrField(
+      await routeToTrc(
+        db,
+        actor,
+        {
+          applicationId: input.applicationId,
+          ...(input.meetingId === null ? {} : { meetingId: input.meetingId }),
+        },
+        signal,
+      ),
+      'Sent to the Technical Review Committee departments.',
+    ),
+  )
 }
