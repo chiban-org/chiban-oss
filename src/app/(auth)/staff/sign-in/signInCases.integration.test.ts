@@ -51,7 +51,7 @@ describeAnonymousCases(h, 'signInAction', {
   },
   fields: { email: text({ required: true }), password: text({ required: true }) },
   refusals: { csrf: SESSION, checkOnly: SESSION, invalid: INCORRECT },
-  accepted: async (result, { written }) => {
+  accepted: (result, { written }) => {
     expect(result).toEqual(redirectsTo('/staff'))
     expect(written).toEqual(expect.arrayContaining(['audit_log', 'sessions']))
   },

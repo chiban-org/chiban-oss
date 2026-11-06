@@ -177,6 +177,7 @@ describe('Uploader', () => {
     setup({ createIntent, finalize: vi.fn() })
     choose(file(`${'a'.repeat(400)}.pdf`, 100))
     await waitFor(() => expect(createIntent).toHaveBeenCalled())
-    expect(String(createIntent.mock.calls[0]?.[0].get('title'))).toHaveLength(300)
+    const title = createIntent.mock.calls[0]?.[0].get('title')
+    expect(typeof title === 'string' ? title : '').toHaveLength(300)
   })
 })
