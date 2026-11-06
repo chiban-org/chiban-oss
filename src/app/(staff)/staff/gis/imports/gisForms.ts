@@ -10,16 +10,13 @@ import {
   wholeNumber,
 } from '@/features/input/schemas'
 import { err, ok } from '@/types/result'
+import { BAD_CAMA_MAPPING, CAMA_TOO_LARGE, EMPTY_FILE, NO_CAMA_FILE } from './gisCopy'
 
 const MAX_STALE_DAYS = 3650
 const MAX_REFRESH_HOURS = 720
 const MAX_SOURCE_URL = 2000
 const MAX_MAPPING = 200_000
 export const MAX_CAMA_BYTES = 50 * 1024 * 1024
-export const EMPTY_FILE = 'That file is empty. Choose a file with content.'
-export const NO_CAMA_FILE = 'Choose a CSV file.'
-export const CAMA_TOO_LARGE = 'That file is larger than 50 MB.'
-export const BAD_CAMA_MAPPING = 'The column mapping is not valid. Check every picker.'
 
 export const LAYER_SETTINGS_FORM = z.object({
   key: choice('a layer', LAYER_KEYS),

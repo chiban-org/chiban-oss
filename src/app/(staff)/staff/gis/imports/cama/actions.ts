@@ -6,7 +6,8 @@ import { saveCamaMapping } from '@/features/cama/saveMapping'
 import type { ImportRunReport } from '@/features/gis/import/types'
 import { type ActionResult, errorCopy, runStaffValue } from '@/server/actionRunner'
 import { parseForm, refuseField, runStaffForm } from '@/server/formInput'
-import { BAD_CAMA_MAPPING, CAMA_MAPPING_FORM, CAMA_PREVIEW_FORM, CAMA_RUN_FORM } from '../gisForms'
+import { BAD_CAMA_MAPPING } from '../gisCopy'
+import { CAMA_MAPPING_FORM, CAMA_PREVIEW_FORM, CAMA_RUN_FORM } from '../gisForms'
 
 export type CamaPreviewResponse = { ok: true; preview: CamaPreview } | { ok: false; error: string }
 export type CamaRunResponse =

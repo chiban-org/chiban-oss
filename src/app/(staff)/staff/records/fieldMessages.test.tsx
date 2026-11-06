@@ -197,6 +197,7 @@ const document_: PanelDocument = {
   preservation: 'preserved',
   preservationRecordId: 'p1',
   series: {
+    key: 'nh.rs.building_permits',
     label: 'Building permits',
     citation: { label: 'RSA 33-A', url: 'https://example.test' },
   },
