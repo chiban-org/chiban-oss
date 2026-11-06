@@ -6,6 +6,7 @@ import {
   optionalText,
   recordId,
   requiredText,
+  wholeNumber,
 } from '@/features/input/schemas'
 import type { RequestInspectionInput } from '@/features/inspections/types'
 import { err, ok } from '@/types/result'
@@ -47,3 +48,10 @@ export function portalRequestInput(
     ...(reinspectionOf === null ? {} : { reinspectionOf }),
   }
 }
+
+const ROW_VERSION_MAX = 2_147_483_647
+
+export const PortalCancelForm = z.object({
+  inspectionId: recordId('an inspection'),
+  expectedRowVersion: wholeNumber('the version', { min: 1, max: ROW_VERSION_MAX }),
+})

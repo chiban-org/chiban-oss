@@ -1,10 +1,12 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { z } from 'zod'
+import { recordId, requiredText } from '@/features/input/schemas'
 import { RETIRED_PARCEL_COPY, startApplication } from '@/features/portal/drafts'
-import { type ActionResult, errorCopy, text } from '@/server/actionRunner'
+import type { ActionResult } from '@/server/actionRunner'
+import { parseForm } from '@/server/formInput'
 import { withPortalActor } from '@/server/portalAction'
-import { isUuid } from '@/utils/uuid'
 
 const START_COPY = {
   unknown_parcel: 'That parcel was not found.',
@@ -16,11 +18,16 @@ const START_COPY = {
 
 const fail = (error: string): ActionResult => ({ ok: false, error })
 
+const StartForm = z.object({
+  parcelId: recordId('a parcel'),
+  typeKey: requiredText('an application type', { max: 100 }),
+})
+
 export async function startApplicationAction(formData: FormData): Promise<ActionResult> {
   const created = await withPortalActor(formData, fail, async ({ db, actor, signal }) => {
-    const parcelId = text(formData, 'parcelId')
-    const applicationTypeKey = text(formData, 'typeKey')
-    if (!isUuid(parcelId) || applicationTypeKey === '') return fail(errorCopy('invalid_input'))
+    const parsed = parseForm(StartForm, formData)
+    if (!parsed.ok) return parsed.error
+    const { parcelId, typeKey: applicationTypeKey } = parsed.value
     const started = await startApplication(db, actor, { parcelId, applicationTypeKey }, signal)
     return started.ok
       ? { ok: true as const, message: started.value.applicationId }

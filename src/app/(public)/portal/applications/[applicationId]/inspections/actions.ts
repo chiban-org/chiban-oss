@@ -1,8 +1,11 @@
 'use server'
 
 import { inspectionErrorCopy } from '@/features/inspections/errorCopy'
-import { parseCancelForm } from '@/features/inspections/forms'
-import { PortalRequestForm, portalRequestInput } from '@/features/inspections/portalRequestForm'
+import {
+  PortalCancelForm,
+  PortalRequestForm,
+  portalRequestInput,
+} from '@/features/inspections/portalRequestForm'
 import { requestInspection } from '@/features/inspections/requestInspection'
 import { cancelInspection } from '@/features/inspections/schedule'
 import { enqueueCalendarPushes } from '@/jobs/calendarPush'
@@ -24,9 +27,14 @@ export async function portalRequestInspectionAction(formData: FormData): Promise
 
 export async function portalCancelInspectionAction(formData: FormData): Promise<ActionResult> {
   return await withPortalActor(formData, fail, async ({ db, actor, signal }) => {
-    const input = parseCancelForm(formData)
-    if (input === null) return fail(errorCopy('invalid_input'))
-    const cancelled = await cancelInspection(db, actor, { ...input, reason: 'requester' }, signal)
+    const parsed = parseForm(PortalCancelForm, formData)
+    if (!parsed.ok) return parsed.error
+    const cancelled = await cancelInspection(
+      db,
+      actor,
+      { ...parsed.value, reason: 'requester' },
+      signal,
+    )
     if (!cancelled.ok) return fail(inspectionErrorCopy(cancelled.error))
     await enqueueCalendarPushes(cancelled.value.pushIds, signal)
     return { ok: true, message: 'Request cancelled.' }
