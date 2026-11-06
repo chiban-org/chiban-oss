@@ -92,6 +92,20 @@ describe('starting and saving', () => {
     expect(second.value.applicationId).not.toBe(first.value.applicationId)
   })
 
+  it('an empty draft the applicant can no longer reach is not reused', async () => {
+    const lone = await staffActor(handle.db, 'applicant')
+    const input = { parcelId: world.parcelId, applicationTypeKey: 'BP' }
+    const first = await startApplication(handle.db, lone, input, signal)
+    if (!first.ok) throw new Error(first.error)
+    await handle.db
+      .update(projectParties)
+      .set({ removedAt: new Date() })
+      .where(eq(projectParties.projectId, first.value.projectId))
+    const second = await startApplication(handle.db, lone, input, signal)
+    if (!second.ok) throw new Error(second.error)
+    expect(second.value.applicationId).not.toBe(first.value.applicationId)
+  })
+
   it('another applicant starting on the same parcel and type gets their own draft', async () => {
     const input = { parcelId: world.parcelId, applicationTypeKey: 'BP' }
     const a = await startApplication(

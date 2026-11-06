@@ -1,6 +1,6 @@
-import { and, eq, sql } from 'drizzle-orm'
+import { and, eq, exists, sql } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import { applications, configVersions, parcels, projects } from '@/db/schema'
+import { applications, configVersions, parcels, projectParties, projects } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { canViewApplication } from '@/features/access/queries'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
@@ -53,6 +53,12 @@ function startLockKey(
   return `portal.start:${actor.userId}:${input.parcelId}:${input.applicationTypeKey}`
 }
 
+function activePartyOf(actor: Actor, projectId: typeof projects.id) {
+  return exists(
+    sql`(select 1 from ${projectParties} where ${projectParties.projectId} = ${projectId} and ${projectParties.userId} = ${actor.userId} and ${projectParties.removedAt} is null)`,
+  )
+}
+
 async function findUnansweredDraft(
   tx: Tx,
   actor: Actor,
@@ -73,6 +79,7 @@ async function findUnansweredDraft(
         eq(applications.state, 'draft'),
         sql`${applications.values} = '{}'::jsonb`,
         eq(projects.parcelId, input.parcelId),
+        hasFullRecordAccess(actor) ? undefined : activePartyOf(actor, projects.id),
       ),
     )
     .orderBy(applications.seq)
