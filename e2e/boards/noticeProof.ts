@@ -56,3 +56,33 @@ export async function fillProof(
   await form.getByLabel(/^Certificate or receipt/).selectOption({ label: proofTitle })
   await form.getByRole('button', { name: 'Record proof' }).click()
 }
+
+const METHOD_BY_CHANNEL: Readonly<Record<string, string>> = {
+  'Verified mail': 'Certificate of mailing',
+  'Certified mail': 'Certified mail receipt',
+  'First class mail': 'First class mail',
+  Newspaper: 'Newspaper publication',
+  'Bulletin board': 'Posting',
+  'Public posting': 'Posting',
+}
+
+export async function proveEveryNotice(page: Page, proofTitle: string): Promise<void> {
+  await page.goto(page.url())
+  const form = page.locator('#record-proof')
+  await form.locator('summary').click()
+  const labels = await form
+    .getByRole('group', { name: /Notice items/ })
+    .locator('label')
+    .allInnerTexts()
+  const byMethod = new Map<string, string[]>()
+  for (const label of labels) {
+    const channel = Object.keys(METHOD_BY_CHANNEL).find((c) => label.startsWith(c))
+    const method = channel === undefined ? undefined : METHOD_BY_CHANNEL[channel]
+    if (method === undefined) throw new Error(`no proof method known for "${label}"`)
+    byMethod.set(method, [...(byMethod.get(method) ?? []), label.trim()])
+  }
+  for (const [method, items] of byMethod) {
+    await fillProof(page, proofTitle, { method, items, reference: 'TRK 5501' })
+    await page.getByText('Proof recorded.').waitFor()
+  }
+}
