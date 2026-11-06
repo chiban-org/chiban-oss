@@ -12,6 +12,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { nextEnforcementNumber } from '@/features/enforcement/numbering'
+import { caseJustOpenedBy, lockCaseOpening } from '@/features/enforcement/openCaseReuse'
 import { linkRecordToParcel } from '@/features/parcels/recordLinks'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
@@ -49,6 +50,7 @@ export async function openCase(
   input: OpenCaseInput,
   signal: AbortSignal,
   now: Date = new Date(),
+  options: { reuseWithinSeconds?: number } = {},
 ): Promise<Result<{ caseId: string; number: string }, 'forbidden' | 'invalid'>> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'enforcement.manage', signal)
@@ -57,6 +59,11 @@ export async function openCase(
   if (!parsed.success) return err('invalid')
   const value = parsed.data
   return await transactionResult(db, async (tx) => {
+    if (options.reuseWithinSeconds !== undefined) {
+      await lockCaseOpening(tx, actor, value)
+      const repeated = await caseJustOpenedBy(tx, actor, value, options.reuseWithinSeconds)
+      if (repeated !== null) return ok(repeated)
+    }
     const { number, today } = await nextEnforcementNumber(tx, 'EC', now, signal)
     const [row] = await tx
       .insert(enforcementCases)

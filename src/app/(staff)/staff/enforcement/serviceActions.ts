@@ -1,128 +1,92 @@
 'use server'
 
-import { RECIPIENT_ROLES } from '@packs/nh/schema'
-import { z } from 'zod'
-import { COURT_STEP_KINDS, JUDGMENT_OUTCOMES, SERVER_ROLES, SERVICE_METHODS } from '@/db/schema'
 import { recordAnswer } from '@/features/enforcement/answers'
 import { recordCourtStep } from '@/features/enforcement/courtSteps'
 import { listRecipient, recordRoleCheck } from '@/features/enforcement/service'
 import { recordServiceEvent } from '@/features/enforcement/serviceEvents'
 import type { ActionResult } from '@/server/actionRunner'
-import { runEnforcement } from './enforcementAction'
-import { date, optional, uuid } from './fields'
+import { runStaffForm } from '@/server/formInput'
+import { runStaffFormToday } from '@/server/formInputToday'
+import { settled } from './enforcementResult'
+import {
+  answerForm,
+  COURT_STEP_FORM,
+  LIST_RECIPIENT_FORM,
+  roleCheckForm,
+  SERVICE_EVENT_FORM,
+} from './serviceInputs'
 
 export async function listRecipientAction(formData: FormData): Promise<ActionResult> {
-  return await runEnforcement(
-    formData,
-    z.object({
-      orderId: uuid,
-      role: z.enum(RECIPIENT_ROLES),
-      name: z.string().min(1),
-      address: z.string().min(1),
-      source: z.string().min(1),
-    }),
-    ({ db, actor, signal }, v) => listRecipient(db, actor, v, signal),
-    'Recipient added.',
+  return await runStaffForm(formData, LIST_RECIPIENT_FORM, async ({ db, actor, signal }, input) =>
+    settled(await listRecipient(db, actor, input, signal), 'Recipient added.'),
   )
 }
 
 export async function roleCheckAction(formData: FormData): Promise<ActionResult> {
-  return await runEnforcement(
-    formData,
-    z.object({
-      orderId: uuid,
-      role: z.enum(RECIPIENT_ROLES),
-      outcome: z.enum(['recipients_listed', 'none_exist', 'same_as_owner', 'owner_not_found']),
-      basis: z.string().min(1),
-      checkedOn: date,
+  return await runStaffFormToday(formData, roleCheckForm, async ({ db, actor, signal }, input) =>
+    settled(await recordRoleCheck(db, actor, input, signal), 'Check recorded.', {
+      invalid_outcome: 'outcome',
     }),
-    ({ db, actor, signal }, v) => recordRoleCheck(db, actor, v, signal),
-    'Check recorded.',
   )
 }
 
 export async function serviceEventAction(formData: FormData): Promise<ActionResult> {
-  return await runEnforcement(
-    formData,
-    z.object({
-      orderId: uuid,
-      recipientId: optional(uuid),
-      method: z.enum(SERVICE_METHODS),
-      servedOn: date,
-      serverName: optional(z.string()),
-      serverRole: optional(z.enum(SERVER_ROLES)),
-      newspaper: optional(z.string()),
-      proofDocumentId: optional(uuid),
-    }),
-    ({ db, actor, signal }, v) =>
-      recordServiceEvent(
+  return await runStaffForm(formData, SERVICE_EVENT_FORM, async ({ db, actor, signal }, input) => {
+    const { serverName, serverRole, newspaper, ...rest } = input
+    return settled(
+      await recordServiceEvent(
         db,
         actor,
         {
-          orderId: v.orderId,
-          recipientId: v.recipientId ?? null,
-          method: v.method,
-          servedOn: v.servedOn,
-          ...(v.serverName === undefined ? {} : { serverName: v.serverName }),
-          ...(v.serverRole === undefined ? {} : { serverRole: v.serverRole }),
-          ...(v.newspaper === undefined ? {} : { newspaper: v.newspaper }),
-          proofDocumentId: v.proofDocumentId ?? null,
+          ...rest,
+          ...(serverName === null ? {} : { serverName }),
+          ...(serverRole === null ? {} : { serverRole }),
+          ...(newspaper === null ? {} : { newspaper }),
         },
         signal,
         new Date(),
       ),
-    'Service recorded.',
-    { servedOn: 'Enter the date served.' },
-  )
+      'Service recorded.',
+      {
+        date_in_future: 'servedOn',
+        recipient_not_found: 'recipientId',
+        recipient_method_mismatch: 'recipientId',
+        proof_required: 'proofDocumentId',
+        server_role_required: 'serverRole',
+        fallback_needs_owner_not_found: 'method',
+      },
+    )
+  })
 }
 
 export async function answerAction(formData: FormData): Promise<ActionResult> {
-  return await runEnforcement(
-    formData,
-    z.object({ recipientId: uuid, answeredOn: date, documentId: uuid }),
-    ({ db, actor, signal }, v) => recordAnswer(db, actor, v, signal),
-    'Answer recorded.',
-    {
-      recipientId: 'Choose who answered.',
-      documentId: 'Choose the answer document. Upload it in the Documents section first.',
-      answeredOn: 'Enter the date the answer was received.',
-    },
+  return await runStaffFormToday(formData, answerForm, async ({ db, actor, signal }, input) =>
+    settled(await recordAnswer(db, actor, input, signal), 'Answer recorded.', {
+      document_invalid: 'documentId',
+    }),
   )
 }
 
 export async function courtStepAction(formData: FormData): Promise<ActionResult> {
-  return await runEnforcement(
-    formData,
-    z.object({
-      orderId: uuid,
-      kind: z.enum(COURT_STEP_KINDS),
-      occurredOn: date,
-      court: z.string().min(1),
-      docket: optional(z.string()),
-      documentId: uuid,
-      judgmentOutcome: optional(z.enum(JUDGMENT_OUTCOMES)),
-    }),
-    ({ db, actor, signal }, v) =>
-      recordCourtStep(
+  return await runStaffForm(formData, COURT_STEP_FORM, async ({ db, actor, signal }, input) => {
+    const { docket, judgmentOutcome, ...rest } = input
+    return settled(
+      await recordCourtStep(
         db,
         actor,
         {
-          orderId: v.orderId,
-          kind: v.kind,
-          occurredOn: v.occurredOn,
-          court: v.court,
-          documentId: v.documentId,
-          ...(v.docket === undefined ? {} : { docket: v.docket }),
-          ...(v.judgmentOutcome === undefined ? {} : { judgmentOutcome: v.judgmentOutcome }),
+          ...rest,
+          ...(docket === null ? {} : { docket }),
+          ...(judgmentOutcome === null ? {} : { judgmentOutcome }),
         },
         signal,
       ),
-    'Court step recorded.',
-    {
-      documentId:
-        'Choose the court document. Upload it in the Documents section first, as a court document.',
-      court: 'Enter the court.',
-      occurredOn: 'Enter the date of the step.',
-    },
-  )
+      'Court step recorded.',
+      {
+        date_in_future: 'occurredOn',
+        date_before_motion: 'occurredOn',
+        proof_required: 'documentId',
+      },
+    )
+  })
 }

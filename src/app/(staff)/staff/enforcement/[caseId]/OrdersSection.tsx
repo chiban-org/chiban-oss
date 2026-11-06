@@ -17,9 +17,10 @@ import {
   draftOrderAction,
   issueOrderAction,
   reviseDraftOrderAction,
-} from '../actions'
+} from '../orderActions'
 import { CourtForms } from './CourtForms'
 import type { Can } from './can'
+import { FindingChoices } from './FindingChoices'
 import { Hidden, Section } from './Section'
 import { ServiceForms } from './ServiceForms'
 
@@ -71,7 +72,6 @@ function DraftForms({ order }: { order: OrderDetail }) {
         <CheckField
           label="The activity must stop immediately"
           name="ceaseImmediately"
-          value="true"
           defaultChecked={row.ceaseImmediately}
         />
       </ActionForm>
@@ -158,17 +158,13 @@ export function OrdersSection({ detail, can }: { detail: CaseDetail; can: Can })
           <summary>Draft an order</summary>
           <ActionForm action={draftOrderAction} submitLabel="Draft order">
             <Hidden name="caseId" value={detail.staff.row.id} />
-            <fieldset className="space-y-2">
-              <legend className="font-medium">Findings the order is based on</legend>
-              {open.map((f) => (
-                <CheckField
-                  key={f.id}
-                  label={`${PROVISION_KIND_LABELS[f.provisionKind]}: ${f.provisionRef}`}
-                  name="findingIds"
-                  value={f.id}
-                />
-              ))}
-            </fieldset>
+            <FindingChoices
+              legend="Findings the order is based on"
+              choices={open.map((f) => ({
+                id: f.id,
+                label: `${PROVISION_KIND_LABELS[f.provisionKind]}: ${f.provisionRef}`,
+              }))}
+            />
             <AreaField label="Corrective action required" name="correctiveAction" rows={3} />
             <TextField
               label="Corrective action due"
@@ -176,11 +172,7 @@ export function OrdersSection({ detail, can }: { detail: CaseDetail; can: Can })
               type="date"
               required
             />
-            <CheckField
-              label="The activity must stop immediately"
-              name="ceaseImmediately"
-              value="true"
-            />
+            <CheckField label="The activity must stop immediately" name="ceaseImmediately" />
             <p className="m-0">
               Only an officer on record as designated by the town can issue the order.
             </p>

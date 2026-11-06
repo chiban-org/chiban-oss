@@ -3,7 +3,11 @@ import { AreaField, TextField } from '@/components/staff/fields'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import { CHANNEL_LABELS } from '@/features/enforcement/labels'
 import { formatCivilDate } from '@/lib/formatDate'
-import { complaintPublicTextAction, publishCaseAction, unpublishCaseAction } from '../actions'
+import {
+  complaintPublicTextAction,
+  publishCaseAction,
+  unpublishCaseAction,
+} from '../publishActions'
 import type { Can } from './can'
 import { Hidden, Section } from './Section'
 

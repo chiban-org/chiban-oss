@@ -1,22 +1,14 @@
 'use server'
 
-import type { DocKind } from '@/features/documents/types'
 import { createUploadIntent, finalizeUpload } from '@/features/documents/uploads'
 import { getObjectStore } from '@/features/storage/objectStore'
-import { errorCopy, runStaffValue, text } from '@/server/actionRunner'
-import { isUuid } from '@/utils/uuid'
+import { type ActionResult, runStaffValue } from '@/server/actionRunner'
+import { parseForm, runStaffForm } from '@/server/formInput'
+import { CASE_UPLOAD_FINALIZE_FORM, CASE_UPLOAD_INTENT_FORM } from './uploadForms'
 
 type IntentResponse =
   | { ok: true; intentId: string; url: string; headers: Record<string, string> }
   | { ok: false; error: string }
-type FinalizeResponse = { ok: true } | { ok: false; error: string }
-
-const CASE_KINDS: readonly string[] = [
-  'enforcement_photo',
-  'enforcement_letter',
-  'service_proof',
-  'court_document',
-]
 
 const INTENT_COPY = {
   forbidden: 'You cannot add files to this case.',
@@ -38,43 +30,31 @@ const FINALIZE_COPY = {
 } as const
 
 export async function createCaseUploadIntentAction(formData: FormData): Promise<IntentResponse> {
-  return await runStaffValue(
-    formData,
-    (error): IntentResponse => ({ ok: false, error }),
-    async ({ db, actor, signal }) => {
-      const caseId = text(formData, 'targetId')
-      const docKind = text(formData, 'docKind')
-      if (!isUuid(caseId) || !CASE_KINDS.includes(docKind)) {
-        return { ok: false, error: errorCopy('invalid_input') }
-      }
-      const made = await createUploadIntent(
-        db,
-        getObjectStore(),
-        actor,
-        {
-          target: { kind: 'enforcement_case', id: caseId },
-          title: text(formData, 'title'),
-          filename: text(formData, 'filename'),
-          contentType: text(formData, 'contentType'),
-          sizeBytes: Number(text(formData, 'sizeBytes')),
-          docKind: docKind as DocKind,
-        },
-        signal,
-      )
-      return made.ok ? { ok: true, ...made.value } : { ok: false, error: INTENT_COPY[made.error] }
-    },
-  )
+  const fail = (error: string): IntentResponse => ({ ok: false, error })
+  return await runStaffValue(formData, fail, async ({ db, actor, signal }) => {
+    const parsed = parseForm(CASE_UPLOAD_INTENT_FORM, formData)
+    if (!parsed.ok) return fail(parsed.error.error)
+    const { targetId, title, ...file } = parsed.value
+    const made = await createUploadIntent(
+      db,
+      getObjectStore(),
+      actor,
+      { target: { kind: 'enforcement_case', id: targetId }, ...file, title: title ?? '' },
+      signal,
+    )
+    return made.ok ? { ok: true, ...made.value } : fail(INTENT_COPY[made.error])
+  })
 }
 
-export async function finalizeCaseUploadAction(formData: FormData): Promise<FinalizeResponse> {
-  return await runStaffValue(
+export async function finalizeCaseUploadAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(
     formData,
-    (error): FinalizeResponse => ({ ok: false, error }),
-    async ({ db, actor, signal }) => {
-      const intentId = text(formData, 'intentId')
-      if (!isUuid(intentId)) return { ok: false, error: errorCopy('invalid_input') }
-      const done = await finalizeUpload(db, getObjectStore(), actor, { intentId }, signal)
-      return done.ok ? { ok: true } : { ok: false, error: FINALIZE_COPY[done.error] }
+    CASE_UPLOAD_FINALIZE_FORM,
+    async ({ db, actor, signal }, input) => {
+      const done = await finalizeUpload(db, getObjectStore(), actor, input, signal)
+      return done.ok
+        ? { ok: true, message: 'Uploaded.' }
+        : { ok: false, error: FINALIZE_COPY[done.error] }
     },
   )
 }

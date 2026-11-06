@@ -1,12 +1,8 @@
 import type { Metadata } from 'next'
-import { ActionForm } from '@/components/ActionForm'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { TablePager } from '@/components/dataTable/TablePager'
 import { EnforcementQueueTable } from '@/components/enforcement/EnforcementQueueTable'
-import { FormDialog } from '@/components/FormDialog'
 import { ListHeader } from '@/components/layout/ListHeader'
-import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
-import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { clearHref, pageHref, type RawSearchParams, readOffset } from '@/features/dataTable/params'
@@ -24,39 +20,13 @@ import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
-import { openCaseAction, staffComplaintAction } from './actions'
+import { NewCaseForms } from './NewCaseForms'
 
 export const metadata: Metadata = { title: 'Code enforcement' }
 
 export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 25
-
-const PARCEL_HINT = 'Without one, Chiban links the parcel whose site address matches exactly.'
-
-function NewCaseForms() {
-  return (
-    <>
-      <FormDialog label="Open a case" title="Open a case" variant="default">
-        <ActionForm action={openCaseAction} submitLabel="Open case">
-          <TextField label="Where is the property?" name="locationText" required />
-          <ParcelPicker label="Parcel, if known" name="parcelRef" hint={PARCEL_HINT} />
-        </ActionForm>
-      </FormDialog>
-      <FormDialog
-        label="Enter a complaint"
-        title="Enter a complaint taken by phone or at the counter"
-        description="Entering a complaint opens a case for it."
-      >
-        <ActionForm action={staffComplaintAction} submitLabel="Record complaint">
-          <TextField label="Where is the property?" name="locationText" required />
-          <TextField label="What was reported?" name="description" required />
-          <ParcelPicker label="Parcel, if known" name="parcelRef" hint={PARCEL_HINT} />
-        </ActionForm>
-      </FormDialog>
-    </>
-  )
-}
 
 export default async function EnforcementQueuePage({
   searchParams,

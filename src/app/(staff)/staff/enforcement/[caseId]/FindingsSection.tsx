@@ -1,6 +1,6 @@
 import { ActionForm } from '@/components/ActionForm'
 import { NEW_TAB } from '@/components/newTab'
-import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
+import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import { PROVISION_KINDS } from '@/db/schema'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import {
@@ -15,8 +15,9 @@ import {
   recordFindingAction,
   recordNoticeReceiptAction,
   sendNoticeAction,
-} from '../actions'
+} from '../findingActions'
 import type { Can } from './can'
+import { FindingChoices } from './FindingChoices'
 import { Hidden, Section } from './Section'
 
 const METHODS = Object.entries(NOTICE_METHOD_LABELS) as [string, string][]
@@ -126,17 +127,13 @@ export function FindingsSection({ detail, can }: { detail: CaseDetail; can: Can 
           <summary>Send a notice of violation</summary>
           <ActionForm action={sendNoticeAction} submitLabel="Send notice of violation">
             <Hidden name="caseId" value={caseId} />
-            <fieldset className="space-y-2">
-              <legend className="font-medium">Findings to include</legend>
-              {open.map((f) => (
-                <CheckField
-                  key={f.id}
-                  label={`${PROVISION_KIND_LABELS[f.provisionKind]}: ${f.provisionRef}`}
-                  name="findingIds"
-                  value={f.id}
-                />
-              ))}
-            </fieldset>
+            <FindingChoices
+              legend="Findings to include"
+              choices={open.map((f) => ({
+                id: f.id,
+                label: `${PROVISION_KIND_LABELS[f.provisionKind]}: ${f.provisionRef}`,
+              }))}
+            />
             <TextField
               label="Date sent"
               name="sentOn"

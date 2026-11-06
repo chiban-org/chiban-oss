@@ -1,100 +1,83 @@
 import { eq } from 'drizzle-orm'
-import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { enforcementCases } from '@/db/schema'
-import type { Actor } from '@/features/auth/actor'
-import { openCase } from '@/features/enforcement/cases'
-import { makeTestDb, type TestDb } from '@/test/db'
+import { CHECK_PASSED, refuseField } from '@/server/formInput'
+import { idMessage } from '@/test/boardCases'
+import { lazy } from '@/test/boardPanelFixtures'
+import { intakeCase } from '@/test/enforcementActionFixtures'
 import { type EnforcementWorld, setupEnforcementWorld } from '@/test/enforcementFixtures'
+import {
+  actionHarness,
+  describeActionCases,
+  type InvalidVariant,
+  STAFF_REFUSALS,
+  uuid,
+} from '@/test/testHarness/actions'
 
-interface MockState {
-  db: unknown
-  actor: Actor | null
-}
-
-const state = vi.hoisted((): MockState => ({ db: null, actor: null }))
-
-vi.mock('@/db/client', () => ({
-  get db() {
-    return state.db
-  },
-}))
-vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }))
-vi.mock('next/headers', () => ({
-  cookies: () =>
-    Promise.resolve({
-      get: (name: string) => (name === 'chiban_csrf' ? { value: 'tok' } : undefined),
-    }),
-  headers: () =>
-    Promise.resolve(
-      new Headers({
-        origin: 'https://alderpond.example',
-        host: 'alderpond.example',
-        'sec-fetch-site': 'same-origin',
-      }),
-    ),
-}))
-vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
+vi.mock('@/db/client', () => import('@/test/testHarness/actions/mocks/dbClient'))
+vi.mock('next/cache', () => import('@/test/testHarness/actions/mocks/nextCache'))
+vi.mock('next/headers', () => import('@/test/testHarness/actions/mocks/nextHeaders'))
+vi.mock('next/navigation', () => import('@/test/testHarness/actions/mocks/nextNavigation'))
+vi.mock('@/server/getActor', () => import('@/test/testHarness/actions/mocks/getActor'))
 
 const { reassignCaseAction } = await import('./assignActions')
 
-const signal = new AbortController().signal
-let handle: TestDb
+const h = actionHarness()
 let world: EnforcementWorld
 
 beforeAll(async () => {
-  handle = await makeTestDb()
-  state.db = handle.db
-  world = await setupEnforcementWorld(handle.db)
-})
-afterAll(async () => {
-  await handle.drop()
+  world = await setupEnforcementWorld(h.db)
 })
 
-function form(fields: Record<string, string>): FormData {
-  const f = new FormData()
-  f.set('csrf_token', 'tok')
-  for (const [k, v] of Object.entries(fields)) f.set(k, v)
-  return f
-}
-
-async function newCase(): Promise<string> {
-  const opened = await openCase(handle.db, world.staff, { locationText: '3 Loon Lane' }, signal)
-  if (!opened.ok) throw new Error('open failed')
-  return opened.value.caseId
-}
-
-async function assignedTo(caseId: string) {
-  const [row] = await handle.db
+const assignedTo = (caseId: string) =>
+  h.db
     .select({ id: enforcementCases.assignedTo })
     .from(enforcementCases)
     .where(eq(enforcementCases.id, caseId))
-  return row?.id ?? null
+    .then((rows) => rows[0]?.id ?? null)
+
+const forReassign = lazy(() => intakeCase(h.db, world, '3 Loon Lane'))
+
+function reassignRefusal(variant: InvalidVariant) {
+  return variant.field === 'caseId'
+    ? refuseField('caseId', idMessage('a case'))
+    : refuseField('userId', 'Choose someone to assign.')
 }
 
-describe('reassignCaseAction', () => {
-  it('lets staff hand a case to an inspector', async () => {
-    const caseId = await newCase()
-    state.actor = world.staff
-    const result = await reassignCaseAction(form({ caseId, userId: world.inspector.userId }))
+describeActionCases(h, 'reassignCaseAction', {
+  invoke: reassignCaseAction,
+  actor: () => world.staff,
+  input: async () => ({
+    caseId: (await forReassign()).caseId,
+    userId: world.inspector.userId,
+  }),
+  fields: { caseId: uuid({ required: true }), userId: uuid() },
+  capability: 'enforcement.manage',
+  refusals: { ...STAFF_REFUSALS, invalid: reassignRefusal, checkOnly: CHECK_PASSED },
+  accepted: async (result) => {
     expect(result).toEqual({ ok: true, message: 'Case reassigned.' })
-    expect(await assignedTo(caseId)).toBe(world.inspector.userId)
+    expect(await assignedTo((await forReassign()).caseId)).toBe(world.inspector.userId)
+  },
+})
+
+describe('reassignCaseAction beyond the table', () => {
+  it('unassigns the case when no one is chosen', async () => {
+    h.signIn(world.staff)
+    const { caseId } = await intakeCase(h.db, world, '4 Loon Lane')
+    const result = await reassignCaseAction(h.form({ caseId, userId: '' }))
+    expect(result).toEqual({ ok: true, message: 'Case reassigned.' })
+    expect(await assignedTo(caseId)).toBeNull()
   })
 
-  it('refuses finance, who lacks enforcement.manage, and leaves the case alone', async () => {
-    const caseId = await newCase()
-    state.actor = world.finance
-    const result = await reassignCaseAction(form({ caseId, userId: world.inspector.userId }))
-    expect(result.ok).toBe(false)
-    expect(await assignedTo(caseId)).toBe(world.staff.userId)
-  })
-
-  it('says why someone outside enforcement cannot take the case', async () => {
-    const caseId = await newCase()
-    state.actor = world.staff
-    const result = await reassignCaseAction(form({ caseId, userId: world.finance.userId }))
-    expect(result).toEqual({
-      ok: false,
-      error: 'Choose someone whose role works code enforcement cases.',
+  it('says why someone outside enforcement cannot take the case, beside the assignee', async () => {
+    h.signIn(world.staff)
+    const { caseId } = await intakeCase(h.db, world, '5 Loon Lane')
+    const { value, written } = await h.recordWrites(() =>
+      reassignCaseAction(h.form({ caseId, userId: world.finance.userId })),
+    )
+    expect({ value, written }).toEqual({
+      value: refuseField('userId', 'Choose someone whose role works code enforcement cases.'),
+      written: [],
     })
   })
 })
