@@ -1,9 +1,7 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { cookies } from 'next/headers'
 import { redirect } from 'next/navigation'
-import { z } from 'zod'
 import { SESSION_COOKIE } from '@/constants/cookies'
 import { db } from '@/db/client'
 import { changeDisplayName, changeOwnPassword } from '@/features/auth/accountChanges'
@@ -11,41 +9,38 @@ import { MIN_PASSWORD_LENGTH } from '@/features/auth/createStaffUser'
 import { logoutCore } from '@/features/auth/logout'
 import { beginTotpEnrollment, confirmTotpEnrollment } from '@/features/auth/totpEnrollment'
 import { guardAction } from '@/server/actionGuard'
+import type { ActionResult } from '@/server/actionRunner'
+import { refuseField, runStaffForm } from '@/server/formInput'
+import { CHANGE_NAME_FORM, CHANGE_PASSWORD_FORM, CONFIRM_TOTP_FORM, NO_FIELDS } from './forms'
 
 const SIGN_IN = '/staff/sign-in'
-const SESSION_EXPIRED = 'Your session expired. Reload the page and try again.'
 
-export interface TotpState {
-  error: string | null
+export async function beginTotpAction(formData: FormData): Promise<ActionResult> {
+  const outcome = { started: false }
+  const result = await runStaffForm(formData, NO_FIELDS, async ({ db, actor, signal }) => {
+    const started = await beginTotpEnrollment(db, actor.userId, signal)
+    if (!started.ok) return { ok: false, error: 'Authenticator setup is not available.' }
+    outcome.started = true
+    return { ok: true, message: 'Authenticator setup started.' }
+  })
+  if (outcome.started) redirect('/staff/account/totp')
+  return result
 }
 
-export interface AccountChangeState {
-  error: string | null
-  message: string | null
-}
-
-const codeSchema = z.object({ code: z.string().regex(/^\d{6}$/) })
-
-export async function beginTotpAction(_prev: TotpState, formData: FormData): Promise<TotpState> {
-  const signal = AbortSignal.timeout(15_000)
-  const guard = await guardAction(formData, signal)
-  if (!guard.ok) return { error: SESSION_EXPIRED }
-  if (guard.value === null || guard.value.kind !== 'staff') redirect(SIGN_IN)
-  const result = await beginTotpEnrollment(db, guard.value.userId, signal)
-  if (!result.ok) return { error: 'Authenticator setup is not available.' }
-  redirect('/staff/account/totp')
-}
-
-export async function confirmTotpAction(_prev: TotpState, formData: FormData): Promise<TotpState> {
-  const signal = AbortSignal.timeout(15_000)
-  const guard = await guardAction(formData, signal)
-  if (!guard.ok) return { error: SESSION_EXPIRED }
-  if (guard.value === null || guard.value.kind !== 'staff') redirect(SIGN_IN)
-  const parsed = codeSchema.safeParse({ code: formData.get('code') })
-  if (!parsed.success) return { error: 'Enter the 6-digit code.' }
-  const result = await confirmTotpEnrollment(db, guard.value.userId, parsed.data.code, signal)
-  if (!result.ok) return { error: 'That code did not match. Try the next one.' }
-  redirect('/staff/account?totp=enabled')
+export async function confirmTotpAction(formData: FormData): Promise<ActionResult> {
+  const outcome = { confirmed: false }
+  const result = await runStaffForm(
+    formData,
+    CONFIRM_TOTP_FORM,
+    async ({ db, actor, signal }, { code }) => {
+      const confirmed = await confirmTotpEnrollment(db, actor.userId, code, signal)
+      if (!confirmed.ok) return refuseField('code', 'That code did not match. Try the next one.')
+      outcome.confirmed = true
+      return { ok: true, message: 'Authenticator turned on.' }
+    },
+  )
+  if (outcome.confirmed) redirect('/staff/account?totp=enabled')
+  return result
 }
 
 export async function signOutAction(formData: FormData): Promise<void> {
@@ -58,60 +53,46 @@ export async function signOutAction(formData: FormData): Promise<void> {
   redirect(SIGN_IN)
 }
 
-function field(formData: FormData, name: string): string {
-  const value = formData.get(name)
-  return typeof value === 'string' ? value : ''
-}
-
-export async function changeNameAction(
-  _prev: AccountChangeState,
-  formData: FormData,
-): Promise<AccountChangeState> {
-  const signal = AbortSignal.timeout(15_000)
-  const guard = await guardAction(formData, signal)
-  if (!guard.ok) return { error: SESSION_EXPIRED, message: null }
-  if (guard.value === null || guard.value.kind !== 'staff') redirect(SIGN_IN)
-  const result = await changeDisplayName(
-    db,
-    guard.value.userId,
-    field(formData, 'displayName'),
-    signal,
-  )
-  if (!result.ok) return { error: 'Enter your name, up to 120 characters.', message: null }
-  revalidatePath('/staff', 'layout')
-  return { error: null, message: 'Name saved.' }
-}
-
-const PASSWORD_ERRORS = {
-  wrong_password: 'The current password is not right.',
-  weak_password: `Use at least ${MIN_PASSWORD_LENGTH} characters.`,
-  unchanged: 'Choose a password different from the current one.',
-  rate_limited: 'Too many wrong attempts. Wait ten minutes and try again.',
-} as const
-
-export async function changePasswordAction(
-  _prev: AccountChangeState,
-  formData: FormData,
-): Promise<AccountChangeState> {
-  const signal = AbortSignal.timeout(15_000)
-  const guard = await guardAction(formData, signal)
-  if (!guard.ok) return { error: SESSION_EXPIRED, message: null }
-  if (guard.value === null || guard.value.kind !== 'staff') redirect(SIGN_IN)
-  const next = field(formData, 'password')
-  if (next !== field(formData, 'confirm')) {
-    return { error: 'The two new passwords do not match.', message: null }
-  }
-  const jar = await cookies()
-  const result = await changeOwnPassword(
-    db,
-    {
-      userId: guard.value.userId,
-      current: field(formData, 'current'),
-      next,
-      keepSid: jar.get(SESSION_COOKIE)?.value ?? null,
+export async function changeNameAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(
+    formData,
+    CHANGE_NAME_FORM,
+    async ({ db, actor, signal }, { displayName }) => {
+      const changed = await changeDisplayName(db, actor.userId, displayName, signal)
+      if (!changed.ok) return refuseField('displayName', 'Enter your name.')
+      return { ok: true, message: 'Name saved.' }
     },
-    signal,
   )
-  if (!result.ok) return { error: PASSWORD_ERRORS[result.error], message: null }
-  return { error: null, message: 'Password changed. Other devices were signed out.' }
+}
+
+const PASSWORD_REFUSALS = {
+  wrong_password: refuseField('current', 'The current password is not right.'),
+  weak_password: refuseField('password', `Use at least ${MIN_PASSWORD_LENGTH} characters.`),
+  unchanged: refuseField('password', 'Choose a password different from the current one.'),
+  rate_limited: {
+    ok: false,
+    error: 'Too many wrong attempts. Wait ten minutes and try again.',
+  },
+} as const satisfies Record<string, ActionResult>
+
+export async function changePasswordAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(
+    formData,
+    CHANGE_PASSWORD_FORM,
+    async ({ db, actor, signal }, input) => {
+      const jar = await cookies()
+      const result = await changeOwnPassword(
+        db,
+        {
+          userId: actor.userId,
+          current: input.current,
+          next: input.password,
+          keepSid: jar.get(SESSION_COOKIE)?.value ?? null,
+        },
+        signal,
+      )
+      if (!result.ok) return PASSWORD_REFUSALS[result.error]
+      return { ok: true, message: 'Password changed. Other devices were signed out.' }
+    },
+  )
 }

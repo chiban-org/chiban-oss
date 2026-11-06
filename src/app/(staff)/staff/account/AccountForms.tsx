@@ -1,51 +1,28 @@
 'use client'
 
-import { CsrfField } from '@/components/CsrfField'
-import { SubmitButton } from '@/components/SubmitButton'
+import { ActionForm } from '@/components/ActionForm'
 import { TextField } from '@/components/staff/fields'
-import { RequiredNote } from '@/components/ui/required-mark'
-import { useFormAction } from '@/components/useFormAction'
-import { type AccountChangeState, changeNameAction, changePasswordAction } from './actions'
-
-const initial: AccountChangeState = { error: null, message: null }
-
-function failed(state: AccountChangeState): boolean {
-  return state.error !== null
-}
-
-function Outcome({ state }: { state: AccountChangeState }) {
-  if (state.error !== null) return <p role="alert">{state.error}</p>
-  return state.message === null ? null : <p role="status">{state.message}</p>
-}
+import { changeNameAction, changePasswordAction } from './actions'
+import { MAX_NAME_LENGTH } from './forms'
 
 export function ChangeNameForm({ displayName }: { displayName: string }) {
-  const { state, formProps } = useFormAction(changeNameAction, initial, failed)
   return (
-    <form {...formProps} className="flex flex-col gap-3">
-      <RequiredNote />
-      <CsrfField />
+    <ActionForm action={changeNameAction} submitLabel="Save name" className="gap-3">
       <TextField
         label="Name"
         name="displayName"
         defaultValue={displayName}
         autoComplete="name"
-        maxLength={120}
+        maxLength={MAX_NAME_LENGTH}
         required
       />
-      <Outcome state={state} />
-      <SubmitButton variant="outline" className="self-start">
-        Save name
-      </SubmitButton>
-    </form>
+    </ActionForm>
   )
 }
 
 export function ChangePasswordForm({ minLength }: { minLength: number }) {
-  const { state, formProps } = useFormAction(changePasswordAction, initial, failed)
   return (
-    <form {...formProps} className="flex flex-col gap-3">
-      <RequiredNote />
-      <CsrfField />
+    <ActionForm action={changePasswordAction} submitLabel="Change password" className="gap-3">
       <TextField
         label="Current password"
         name="current"
@@ -60,6 +37,7 @@ export function ChangePasswordForm({ minLength }: { minLength: number }) {
         autoComplete="new-password"
         minLength={minLength}
         hint={`At least ${minLength} characters.`}
+        data-restore-on-error="true"
         required
       />
       <TextField
@@ -68,12 +46,9 @@ export function ChangePasswordForm({ minLength }: { minLength: number }) {
         type="password"
         autoComplete="new-password"
         minLength={minLength}
+        data-restore-on-error="true"
         required
       />
-      <Outcome state={state} />
-      <SubmitButton variant="outline" className="self-start">
-        Change password
-      </SubmitButton>
-    </form>
+    </ActionForm>
   )
 }
