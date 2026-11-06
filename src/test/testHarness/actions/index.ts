@@ -7,7 +7,17 @@ export {
   type Refusals,
   type RoleRule,
 } from './cases'
-export { choice, date, type FieldSpec, type InvalidVariant, int, text, uuid } from './fields'
+export {
+  choice,
+  date,
+  type FieldSpec,
+  type InvalidVariant,
+  int,
+  money,
+  phone,
+  text,
+  uuid,
+} from './fields'
 export type { Fields } from './form'
 export { type ActionHarness, actionHarness } from './harness'
 export { type Outcome, redirectsTo, settle } from './outcome'

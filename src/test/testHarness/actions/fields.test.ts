@@ -1,7 +1,15 @@
 import { describe, expect, it } from 'vitest'
-import { choice, date, int, invalidVariants, text, uuid } from './fields'
+import { choice, date, int, invalidVariants, money, phone, text, uuid } from './fields'
 
-const input = { title: 'Code officer', days: '30', on: '2027-03-01', id: 'x', kind: 'a' }
+const input = {
+  title: 'Code officer',
+  days: '30',
+  on: '2027-03-01',
+  id: 'x',
+  kind: 'a',
+  tel: '603-555-0142',
+  fee: '25.00',
+}
 
 function applied(fields: Parameters<typeof invalidVariants>[0]) {
   return invalidVariants(fields).map((v) => ({ title: v.title, input: v.apply(input) }))
@@ -49,5 +57,35 @@ describe('invalidVariants', () => {
   it('reports the field and the variant kind so expectations can depend on them', () => {
     const [first] = invalidVariants({ days: int({ min: 1 }) })
     expect(first).toMatchObject({ field: 'days', kind: 'below_min' })
+  })
+
+  it('steps a bounded date one day past each bound', () => {
+    expect(
+      applied({ on: date({ earliest: '2026-11-06', latest: '2099-12-31' }) }).map((v) => [
+        v.title,
+        v.input.on,
+      ]),
+    ).toEqual([
+      ['on as an impossible date', '2027-02-30'],
+      ['on as words', 'next Tuesday'],
+      ['on before 2026-11-06', '2026-11-05'],
+      ['on after 2099-12-31', '2100-01-01'],
+    ])
+  })
+
+  it('feeds a phone letters and too few digits', () => {
+    expect(applied({ tel: phone() }).map((v) => [v.title, v.input.tel])).toEqual([
+      ['tel as letters', 'abc'],
+      ['tel with too few digits', '555-014'],
+    ])
+  })
+
+  it('feeds money below its minimum, sub-cent, negative and as words', () => {
+    expect(applied({ fee: money({ min: 1 }) }).map((v) => [v.title, v.input.fee])).toEqual([
+      ['fee below 0.01', '0.00'],
+      ['fee with a fraction of a cent', '1.005'],
+      ['fee as a negative amount', '-5'],
+      ['fee as words', 'abc'],
+    ])
   })
 })

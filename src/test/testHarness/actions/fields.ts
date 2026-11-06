@@ -1,3 +1,4 @@
+import { addDays, type CivilDate } from '@/types/civilDate'
 import type { Fields } from './form'
 
 export type VariantKind =
@@ -9,7 +10,13 @@ export type VariantKind =
   | 'fraction'
   | 'words'
   | 'impossible_date'
+  | 'too_early'
+  | 'too_late'
   | 'not_a_choice'
+  | 'letters'
+  | 'too_few_digits'
+  | 'sub_cent'
+  | 'negative'
 
 export interface FieldSpec {
   readonly required: boolean
@@ -78,10 +85,54 @@ export function int(options: Required & { min?: number; max?: number } = {}): Fi
   ])
 }
 
-export function date(options: Required = {}): FieldSpec {
+export function date(options: Required & { earliest?: string; latest?: string } = {}): FieldSpec {
+  const { earliest, latest } = options
+  const early =
+    earliest === undefined
+      ? []
+      : [
+          {
+            kind: 'too_early' as const,
+            label: `before ${earliest}`,
+            value: addDays(earliest as CivilDate, -1),
+          },
+        ]
+  const late =
+    latest === undefined
+      ? []
+      : [
+          {
+            kind: 'too_late' as const,
+            label: `after ${latest}`,
+            value: addDays(latest as CivilDate, 1),
+          },
+        ]
   return spec(options, [
     { kind: 'impossible_date', label: 'as an impossible date', value: '2027-02-30' },
     { kind: 'words', label: 'as words', value: 'next Tuesday' },
+    ...early,
+    ...late,
+  ])
+}
+
+export function phone(options: Required = {}): FieldSpec {
+  return spec(options, [
+    { kind: 'letters', label: 'as letters', value: 'abc' },
+    { kind: 'too_few_digits', label: 'with too few digits', value: '555-014' },
+  ])
+}
+
+export function money(options: Required & { min?: number } = {}): FieldSpec {
+  const min = options.min ?? 1
+  return spec(options, [
+    {
+      kind: 'below_min',
+      label: `below ${(min / 100).toFixed(2)}`,
+      value: ((min - 1) / 100).toFixed(2),
+    },
+    { kind: 'sub_cent', label: 'with a fraction of a cent', value: '1.005' },
+    { kind: 'negative', label: 'as a negative amount', value: '-5' },
+    { kind: 'words', label: 'as words', value: 'abc' },
   ])
 }
 
