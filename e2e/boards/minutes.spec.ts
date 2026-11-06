@@ -1,6 +1,6 @@
 import { expect, test } from '../fixtures/test'
 import { addMeetingThroughForm, type MeetingSpec, meetingIdFor } from './meetings'
-import { townToday } from './records'
+import { daysFromToday } from './records'
 import { expectRefused } from './refusal'
 import { uploadPdf } from './upload'
 
@@ -14,7 +14,7 @@ test.describe
     test('refuses recording minutes before any file is chosen', async ({ page, db, suffix }) => {
       spec = {
         board: 'planning_board',
-        date: await townToday(db),
+        date: await daysFromToday(db, -1),
         kind: 'special',
         location: `Minutes room ${suffix}`,
       }
