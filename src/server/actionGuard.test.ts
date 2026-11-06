@@ -29,6 +29,7 @@ vi.mock('@/features/town/serviceStatus', () => ({
 vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
 
 const { guardAction } = await import('@/server/actionGuard')
+const { CHECK_ONLY_FIELD } = await import('@/constants/formCheck')
 const signal = new AbortController().signal
 
 function form(token?: string): FormData {
@@ -66,5 +67,22 @@ describe('guardAction', () => {
       ok: true,
       value: state.actor,
     })
+  })
+
+  it('refuses a check-only request unless the caller answers checks, so no action runs on one', async () => {
+    state.actor = { userId: 'u1', kind: 'staff', roles: ['staff'] }
+    const checking = form('tok')
+    checking.set(CHECK_ONLY_FIELD, '1')
+    expect(await guardAction(checking, signal)).toEqual({ ok: false, error: 'check_unsupported' })
+    expect(await guardAction(checking, signal, { answersCheck: true })).toEqual({
+      ok: true,
+      value: state.actor,
+    })
+  })
+
+  it('reports a bad csrf token on a check-only request as csrf', async () => {
+    const checking = form('other')
+    checking.set(CHECK_ONLY_FIELD, '1')
+    expect(await guardAction(checking, signal)).toEqual({ ok: false, error: 'csrf' })
   })
 })

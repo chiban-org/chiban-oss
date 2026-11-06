@@ -1,7 +1,8 @@
 import { revalidatePath } from 'next/cache'
+import { CHECK_UNSUPPORTED_COPY } from '@/constants/formCheck'
 import { type Db, db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
-import { type GuardOptions, guardAction } from '@/server/actionGuard'
+import { type GuardOptions, guardAction, isCheckOnly } from '@/server/actionGuard'
 
 export type ActionResult =
   | { ok: true; message: string }
@@ -17,6 +18,7 @@ const ACTION_TIMEOUT_MS = 30_000
 
 export const ERROR_COPY: Record<string, string> = {
   csrf: 'Your session expired. Reload the page and try again.',
+  check_unsupported: CHECK_UNSUPPORTED_COPY,
   service_inactive:
     'This service is no longer active. Records can be exported from the admin page until the export window ends.',
   signed_out: 'Sign in to continue.',
@@ -125,7 +127,7 @@ export async function runStaffAction(
   const actor = guard.value
   if (actor?.kind !== 'staff') return { ok: false, error: errorCopy('signed_out') }
   const result = await fn({ db, actor, signal })
-  if (result.ok) revalidatePath('/staff', 'layout')
+  if (result.ok && !isCheckOnly(formData)) revalidatePath('/staff', 'layout')
   return result
 }
 
