@@ -8,6 +8,7 @@ import { REVIEWS_GATE_KEY } from '@/features/gates/coreGates'
 import type { ApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import type { ApplicationPayments } from '@/features/payments/applicationPayments'
 import { PANEL_ACTIONS } from '../../records/panelActions'
+import { ActivityPanel } from './activityPanel'
 import { AppealsPanel, hasAppeals } from './appealsPanel'
 import { BoardPanel } from './boardPanel'
 import { CodeEditionPanel, RegionalImpactPanel } from './buildingPanels'
@@ -99,6 +100,10 @@ function workPanels({ view, records, board, hearings, notes }: RecordPanelsInput
           zone={records.zone}
         />
       ),
+    },
+    {
+      empty: notes.activity.length === 0,
+      node: <ActivityPanel key="activity" entries={notes.activity} zone={records.zone} />,
     },
   ]
 }

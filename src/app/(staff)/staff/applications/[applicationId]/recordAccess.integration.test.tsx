@@ -47,6 +47,7 @@ const FULL_RECORD_ONLY = [
   'Records',
   'Next step',
   'Staff notes',
+  'Recent activity',
 ]
 const INTERNAL_NOTE = 'Internal note for staff only about the abutter list.'
 let handle: TestDb
@@ -93,12 +94,14 @@ afterAll(async () => {
   await handle.drop()
 })
 
-describe('staff notes on the full record', () => {
-  it('town staff see the staff notes panel with the note on file', async () => {
+describe('staff notes and activity on the full record', () => {
+  it('town staff see the staff notes and recent activity panels', async () => {
     await actAs('staff')
     const html = await page('EL-2026-0003')
     expect(html).toContain('aria-label="Staff notes"')
     expect(html).toContain(INTERNAL_NOTE)
+    expect(html).toContain('aria-label="Recent activity"')
+    expect(html).toContain('Added a staff note')
   })
 })
 
