@@ -1,15 +1,7 @@
-import type { z } from 'zod'
 import { ORDER_CONTENT_LABELS } from '@/features/enforcement/labels'
 import { formatCivilDate } from '@/lib/formatDate'
-import {
-  type ActionContext,
-  type ActionResult,
-  errorCopy,
-  runStaffAction,
-} from '@/server/actionRunner'
-import { type FieldCopy, invalidFieldCopy } from '@/server/fieldCopy'
+import { errorCopy } from '@/server/actionRunner'
 import type { CivilDate } from '@/types/civilDate'
-import type { Result } from '@/types/result'
 
 const COPY: Record<string, string> = {
   forbidden: errorCopy('forbidden'),
@@ -88,34 +80,4 @@ export function enforcementError(error: Failure): string {
     return `The motion cannot be filed until ${formatCivilDate(error.filingLeadUntil)}, five days after the order was filed with the clerk.`
   }
   return errorCopy('unknown')
-}
-
-export function formValues(formData: FormData): Record<string, string> {
-  const out: Record<string, string> = {}
-  for (const [key, value] of formData.entries()) {
-    if (typeof value !== 'string' || key === 'csrf_token') continue
-    const held = out[key]
-    out[key] = held === undefined ? value.trim() : `${held},${value.trim()}`
-  }
-  return out
-}
-
-export async function runEnforcement<S extends z.ZodType>(
-  formData: FormData,
-  schema: S,
-  call: (ctx: ActionContext, input: z.output<S>) => Promise<Result<unknown, Failure>>,
-  message: string,
-  fieldCopy: FieldCopy = {},
-): Promise<ActionResult> {
-  return await runStaffAction(formData, async (ctx) => {
-    const parsed = schema.safeParse(formValues(formData))
-    if (!parsed.success) {
-      return {
-        ok: false,
-        error: invalidFieldCopy(parsed.error, fieldCopy) ?? enforcementError('invalid'),
-      }
-    }
-    const result = await call(ctx, parsed.data)
-    return result.ok ? { ok: true, message } : { ok: false, error: enforcementError(result.error) }
-  })
 }
