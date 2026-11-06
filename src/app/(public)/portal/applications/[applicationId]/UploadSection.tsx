@@ -2,7 +2,7 @@
 
 import { useRouter } from 'next/navigation'
 import { Uploader } from '@/components/documents/Uploader'
-import { createUploadIntentAction, finalizeUploadAction } from './actions'
+import { createUploadIntentAction, finalizeUploadAction } from './uploadActions'
 
 export function UploadSection({
   applicationId,

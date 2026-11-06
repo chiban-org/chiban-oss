@@ -62,6 +62,54 @@ describe('starting and saving', () => {
     expect(project?.title).toContain('Building permit')
   })
 
+  it('two starts in the same instant for one applicant, parcel and type make one draft', async () => {
+    const lone = await staffActor(handle.db, 'applicant')
+    const input = { parcelId: world.parcelId, applicationTypeKey: 'BP' }
+    const [first, second] = await Promise.all([
+      startApplication(handle.db, lone, input, signal),
+      startApplication(handle.db, lone, input, signal),
+    ])
+    if (!first.ok || !second.ok) throw new Error('start failed')
+    expect(second.value).toEqual(first.value)
+    const mine = await handle.db
+      .select({ id: applications.id })
+      .from(applications)
+      .where(eq(applications.createdBy, lone.userId))
+    expect(mine).toHaveLength(1)
+  })
+
+  it('a draft that already has answers is not reused for a new start', async () => {
+    const lone = await staffActor(handle.db, 'applicant')
+    const input = { parcelId: world.parcelId, applicationTypeKey: 'BP' }
+    const first = await startApplication(handle.db, lone, input, signal)
+    if (!first.ok) throw new Error(first.error)
+    await handle.db
+      .update(applications)
+      .set({ values: { classification: 'residential' } })
+      .where(eq(applications.id, first.value.applicationId))
+    const second = await startApplication(handle.db, lone, input, signal)
+    if (!second.ok) throw new Error(second.error)
+    expect(second.value.applicationId).not.toBe(first.value.applicationId)
+  })
+
+  it('another applicant starting on the same parcel and type gets their own draft', async () => {
+    const input = { parcelId: world.parcelId, applicationTypeKey: 'BP' }
+    const a = await startApplication(
+      handle.db,
+      await staffActor(handle.db, 'applicant'),
+      input,
+      signal,
+    )
+    const b = await startApplication(
+      handle.db,
+      await staffActor(handle.db, 'applicant'),
+      input,
+      signal,
+    )
+    if (!a.ok || !b.ok) throw new Error('start failed')
+    expect(b.value.applicationId).not.toBe(a.value.applicationId)
+  })
+
   it('applicant creating a project becomes its applicant party', async () => {
     const lone = await staffActor(handle.db, 'applicant')
     const started = await startApplication(

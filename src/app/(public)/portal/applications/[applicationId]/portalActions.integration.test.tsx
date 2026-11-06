@@ -48,7 +48,11 @@ vi.mock('next/navigation', () => ({
 }))
 vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
 
-const actions = await import('./actions')
+const actions = {
+  ...(await import('./actions')),
+  ...(await import('./uploadActions')),
+  ...(await import('./paymentActions')),
+}
 const { default: Page } = await import('./page')
 const { GET: receiptGET } = await import('./receipts/[receiptId]/route')
 const { startApplicationAction } = await import('@/app/(public)/portal/apply/actions')
