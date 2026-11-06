@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { StatusChip } from '@/components/StatusChip'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
@@ -7,6 +8,8 @@ import { CORE_STATES, type CoreState } from '@/features/applications/states'
 import { getTownSettings } from '@/features/town/settings'
 import { formatInstant } from '@/lib/formatDate'
 import { requirePortalContext } from '@/server/requirePortal'
+
+export const metadata: Metadata = { title: 'Your applications' }
 
 export const dynamic = 'force-dynamic'
 

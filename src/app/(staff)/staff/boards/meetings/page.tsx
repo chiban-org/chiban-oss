@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { ActionForm } from '@/components/ActionForm'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
@@ -30,6 +31,8 @@ import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
 import { scheduleMeetingAction } from '../actions'
 import { MeetingTable } from './MeetingTable'
+
+export const metadata: Metadata = { title: 'Meetings' }
 
 export const dynamic = 'force-dynamic'
 

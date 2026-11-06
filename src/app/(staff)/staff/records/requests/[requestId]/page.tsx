@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
@@ -25,6 +26,8 @@ import { ReleaseSection } from './ReleaseSection'
 import { RequestRail } from './RequestRail'
 import { ResponseSection } from './ResponseSection'
 import { WithholdingsSection } from './WithholdingsSection'
+
+export const metadata: Metadata = { title: 'Right-to-Know request' }
 
 export const dynamic = 'force-dynamic'
 

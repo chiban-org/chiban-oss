@@ -1,4 +1,5 @@
 import { inArray } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
@@ -22,6 +23,8 @@ import {
 import { getTownSettings } from '@/features/town/settings'
 import { formatInstantDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
+
+export const metadata: Metadata = { title: 'Disposed records' }
 
 export const dynamic = 'force-dynamic'
 

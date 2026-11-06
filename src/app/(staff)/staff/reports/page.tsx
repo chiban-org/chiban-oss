@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -21,6 +22,8 @@ import { activeSortFields, scopedSort } from '@/features/staffTables/scopedSort'
 import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { ProcessingTable, ReportSection, RevenueTable, VolumeTable } from './ReportTables'
+
+export const metadata: Metadata = { title: 'Reports' }
 
 export const dynamic = 'force-dynamic'
 

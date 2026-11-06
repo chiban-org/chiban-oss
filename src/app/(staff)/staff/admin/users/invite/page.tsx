@@ -1,9 +1,12 @@
+import type { Metadata } from 'next'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { USERS_PATH } from '@/features/users/userListParams'
 import { requireStaffContext } from '@/server/requireStaff'
 import { InviteForm } from './InviteForm'
+
+export const metadata: Metadata = { title: 'Invite staff' }
 
 export const dynamic = 'force-dynamic'
 

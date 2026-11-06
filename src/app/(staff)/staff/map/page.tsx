@@ -1,7 +1,10 @@
+import type { Metadata } from 'next'
 import { LinkedParcelMap } from '@/components/map/LinkedParcelMap'
 import { configuredOverlayLayers, parcelExtent } from '@/features/gis/extent'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
+
+export const metadata: Metadata = { title: 'Map' }
 
 const KEYBOARD_HINT =
   'The map is a visual aid. Use parcel search, linked below, to find a parcel with the keyboard.'

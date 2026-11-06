@@ -1,4 +1,5 @@
 import { desc, eq } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PracticeNotice } from '@/components/PracticeNotice'
@@ -18,6 +19,8 @@ import { formatInstantLong } from '@/lib/formatDate'
 import { words } from '@/lib/words'
 import { requireStaffContext } from '@/server/requireStaff'
 import { CamaImportPanel } from './CamaImportPanel'
+
+export const metadata: Metadata = { title: 'CAMA owner import' }
 
 export const dynamic = 'force-dynamic'
 

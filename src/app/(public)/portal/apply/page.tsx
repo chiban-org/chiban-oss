@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { Button } from '@/components/ui/button'
@@ -12,6 +13,8 @@ import { listPortalTypes, RETIRED_PARCEL_COPY } from '@/features/portal/drafts'
 import { requirePortalContext } from '@/server/requirePortal'
 import { isUuid } from '@/utils/uuid'
 import { startApplicationAction } from './actions'
+
+export const metadata: Metadata = { title: 'Start an application' }
 
 export const dynamic = 'force-dynamic'
 

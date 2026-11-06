@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
@@ -19,6 +20,8 @@ import {
 import type { OverrideStatus } from '@/features/parcels/aliasOverrides'
 import { formatCents } from '@/lib/money'
 import { recordStaffContext } from '@/server/requireStaff'
+
+export const metadata: Metadata = { title: 'Fee overrides' }
 
 const CHIP: Record<
   OverrideStatus,

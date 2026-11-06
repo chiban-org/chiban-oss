@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { ActionForm } from '@/components/ActionForm'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { TextField } from '@/components/staff/fields'
@@ -10,6 +11,8 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { endDesignationAction } from './actions'
 import { DesignateOfficer, EditDesignation } from './OfficerForms'
+
+export const metadata: Metadata = { title: 'Enforcement officers' }
 
 export const dynamic = 'force-dynamic'
 

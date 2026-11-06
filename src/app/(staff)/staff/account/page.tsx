@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { CsrfField } from '@/components/CsrfField'
 import { FactList, PageHeader } from '@/components/layout/PageHeader'
@@ -9,6 +10,8 @@ import { roleLabel } from '@/features/staffNav/roleLabels'
 import { requireStaffActor } from '@/server/requireStaff'
 import { ChangeNameForm, ChangePasswordForm } from './AccountForms'
 import { signOutAction } from './actions'
+
+export const metadata: Metadata = { title: 'Your account' }
 
 export default async function StaffAccountPage({
   searchParams,

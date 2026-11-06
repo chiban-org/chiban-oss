@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { redirect } from 'next/navigation'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -5,6 +6,8 @@ import { legacyPacketPage } from '@/features/boards/packetsIndex'
 import { timeZoneOf } from '@/features/hearings/views'
 import { requireStaffContext } from '@/server/requireStaff'
 import { getsText, RecipientActions } from '../../meetings/[meetingId]/PacketSend'
+
+export const metadata: Metadata = { title: 'Board packet' }
 
 export const dynamic = 'force-dynamic'
 

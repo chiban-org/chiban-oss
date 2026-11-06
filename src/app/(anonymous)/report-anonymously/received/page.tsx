@@ -1,3 +1,6 @@
+import type { Metadata } from 'next'
+
+export const metadata: Metadata = { title: 'Report received' }
 const REFERENCE = /^CP-\d{4}-\d{4,}$/
 
 export default async function ReceivedPage({

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -41,6 +42,18 @@ function HearingsSection({ view }: { view: MeetingView }) {
 function packetStepOf(panel: PacketPanel | null): PacketStep {
   if (panel === null || !panel.state.needsWork) return null
   return panel.state.kind === 'changed' ? 'update' : 'prepare'
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ meetingId: string }>
+}): Promise<Metadata> {
+  const { meetingId } = await params
+  const ctx = await requireStaffContext()
+  if (!isUuid(meetingId)) return { title: 'Meeting' }
+  const view = await loadMeetingView(ctx.db, ctx.actor, meetingId, ctx.signal)
+  return { title: view === null ? 'Meeting' : `${view.boardName} meeting, ${view.dateText}` }
 }
 
 export default async function MeetingPage({ params }: { params: Promise<{ meetingId: string }> }) {

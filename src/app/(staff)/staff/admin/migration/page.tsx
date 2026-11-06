@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { listBatches } from '@/features/migration/batchQueries'
@@ -5,6 +6,8 @@ import { getTownSettings } from '@/features/town/settings'
 import { formatInstantDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { STATUS_COPY } from './statusCopy'
+
+export const metadata: Metadata = { title: 'Scanned property files' }
 
 export const dynamic = 'force-dynamic'
 

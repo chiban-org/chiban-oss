@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { GraphStubNotice } from '@/components/inspections/GraphStubNotice'
 import { ScheduleBoardClient } from '@/components/inspections/ScheduleBoardClient'
@@ -7,6 +8,8 @@ import { loadScheduleBoard } from '@/features/inspections/boardData'
 import { requireStaffContext } from '@/server/requireStaff'
 import { scheduleInspectionAction } from './actions'
 import { loadTakeRequest, TakeRequestSection } from './takeRequest'
+
+export const metadata: Metadata = { title: 'Inspections' }
 
 export const dynamic = 'force-dynamic'
 

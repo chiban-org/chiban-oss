@@ -1,4 +1,5 @@
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { RestoreVersion } from '@/components/config/RestoreVersion'
@@ -19,6 +20,8 @@ import {
   rollbackAction,
   saveDraftAction,
 } from '../../actions'
+
+export const metadata: Metadata = { title: 'Workflow' }
 
 export const dynamic = 'force-dynamic'
 

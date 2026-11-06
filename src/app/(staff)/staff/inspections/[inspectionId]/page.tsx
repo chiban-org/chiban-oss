@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ChecklistForm } from '@/components/inspections/ChecklistForm'
@@ -13,6 +14,8 @@ import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { recordResultAction } from './actions'
 import { inspectionFacts } from './inspectionFacts'
+
+export const metadata: Metadata = { title: 'Inspection' }
 
 export const dynamic = 'force-dynamic'
 

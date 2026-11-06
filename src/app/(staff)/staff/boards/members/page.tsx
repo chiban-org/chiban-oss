@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { ActionForm } from '@/components/ActionForm'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { SortHeader } from '@/components/dataTable/SortHeader'
@@ -20,6 +21,8 @@ import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
 import { endMembershipAction } from './actions'
 import { AddMember, EditMember } from './MemberForm'
+
+export const metadata: Metadata = { title: 'Board members' }
 
 export const dynamic = 'force-dynamic'
 

@@ -1,4 +1,5 @@
 import { inArray } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortBar } from '@/components/dataTable/SortHeader'
@@ -22,6 +23,8 @@ import { townTimeZone } from '@/features/town/timeZone'
 import { recordStaffContext } from '@/server/requireStaff'
 import { ExceptionRow } from './ExceptionRow'
 import { HeldRunsPanel } from './HeldRunAccept'
+
+export const metadata: Metadata = { title: 'Import exceptions' }
 
 interface ExceptionsPageProps {
   searchParams: Promise<RawSearchParams>

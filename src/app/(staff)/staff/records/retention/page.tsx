@@ -1,4 +1,5 @@
 import { desc } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { TablePager } from '@/components/dataTable/TablePager'
@@ -18,6 +19,8 @@ import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
 import { BatchesSection } from './BatchesSection'
 import { WorklistTable } from './WorklistTable'
+
+export const metadata: Metadata = { title: 'Retention' }
 
 export const dynamic = 'force-dynamic'
 

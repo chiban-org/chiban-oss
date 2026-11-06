@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
@@ -12,6 +13,8 @@ import { isUuid } from '@/utils/uuid'
 import { HearingRail } from './HearingRail'
 import { NoticeSection } from './NoticeSection'
 import { RecordDecisionSection } from './RecordDecisionSection'
+
+export const metadata: Metadata = { title: 'Hearing' }
 
 export const dynamic = 'force-dynamic'
 

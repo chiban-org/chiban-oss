@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -17,6 +18,8 @@ import { AccessPanel } from './AccessPanel'
 import { HistoryPanel } from './HistoryPanel'
 import { RolesPanel } from './RolesPanel'
 import { UserRail } from './UserRail'
+
+export const metadata: Metadata = { title: 'User' }
 
 export const dynamic = 'force-dynamic'
 

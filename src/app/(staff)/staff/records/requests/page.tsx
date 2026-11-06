@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { AddressTextField } from '@/components/address/AddressTextField'
@@ -27,6 +28,8 @@ import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { logRequestAction } from './actions'
+
+export const metadata: Metadata = { title: 'Right-to-Know requests' }
 
 export const dynamic = 'force-dynamic'
 

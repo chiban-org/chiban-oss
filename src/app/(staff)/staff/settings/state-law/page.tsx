@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -15,6 +16,8 @@ import { ruleSummary } from '@/features/packs/ruleSummary'
 import { scopedSort } from '@/features/staffTables/scopedSort'
 import { requireStaffContext } from '@/server/requireStaff'
 import { PackRules } from './PackRules'
+
+export const metadata: Metadata = { title: 'State law' }
 
 export default async function StateLawPage({
   searchParams,

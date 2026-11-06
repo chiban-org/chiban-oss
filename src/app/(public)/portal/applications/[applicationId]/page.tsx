@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -20,6 +21,8 @@ import { formatCents } from '@/lib/money'
 import { requirePortalContext } from '@/server/requirePortal'
 import { PortalApplicationForm, PortalPayButton } from './PayAndForm'
 import { UploadSection } from './UploadSection'
+
+export const metadata: Metadata = { title: 'Your application' }
 
 export const dynamic = 'force-dynamic'
 

@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
@@ -91,6 +92,17 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     correction,
     responsible,
   }
+}
+
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const { applicationId } = await params
+  if (!UUID.test(applicationId)) return { title: 'Application' }
+  const ctx = await requireStaffContext()
+  const number = hasFullRecordAccess(ctx.actor)
+    ? (await getStaffApplicationView(ctx.db, ctx.actor, applicationId, new Date(), ctx.signal))
+        ?.number
+    : (await getLimitedApplicationView(ctx.db, ctx.actor, applicationId, ctx.signal))?.number
+  return { title: number === undefined ? 'Application' : `Application ${number}` }
 }
 
 export default async function StaffApplicationPage({ params }: Props) {

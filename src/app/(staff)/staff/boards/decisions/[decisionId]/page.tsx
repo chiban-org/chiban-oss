@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
@@ -14,6 +15,8 @@ import { AppealsSection } from './AppealsSection'
 import { DecisionRail } from './DecisionRail'
 import { FilingSection } from './FilingSection'
 import { TransmittalSection } from './TransmittalSection'
+
+export const metadata: Metadata = { title: 'Board decision' }
 
 export const dynamic = 'force-dynamic'
 

@@ -1,4 +1,5 @@
 import { eq, inArray } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
@@ -25,6 +26,8 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { BatchRail } from './BatchRail'
+
+export const metadata: Metadata = { title: 'Disposition batch' }
 
 export const dynamic = 'force-dynamic'
 

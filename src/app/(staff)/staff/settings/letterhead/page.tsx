@@ -1,5 +1,8 @@
+import type { Metadata } from 'next'
 import { TownSettingsPage } from '@/components/settings/TownSettingsPage'
 import { requireStaffContext } from '@/server/requireStaff'
+
+export const metadata: Metadata = { title: 'Letterhead' }
 
 export const dynamic = 'force-dynamic'
 

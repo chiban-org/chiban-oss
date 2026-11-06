@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -5,6 +6,8 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { listKeysOfKind } from '@/features/config/settingsViews'
 import { requireStaffContext } from '@/server/requireStaff'
 import { StarterList } from './StarterList'
+
+export const metadata: Metadata = { title: 'Starter templates' }
 
 export const dynamic = 'force-dynamic'
 

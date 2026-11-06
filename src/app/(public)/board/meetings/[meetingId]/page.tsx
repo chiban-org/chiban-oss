@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PacketItems } from '@/components/board/PacketItems'
@@ -5,6 +6,8 @@ import { isBoardMember } from '@/features/access/predicates'
 import { getMemberPacket } from '@/features/boards/memberPackets'
 import { formatCivilDate } from '@/lib/formatDate'
 import { requirePortalContext } from '@/server/requirePortal'
+
+export const metadata: Metadata = { title: 'Board meeting' }
 
 export const dynamic = 'force-dynamic'
 

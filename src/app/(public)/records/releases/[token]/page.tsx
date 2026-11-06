@@ -1,9 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { NEW_TAB } from '@/components/newTab'
 import { db } from '@/db/client'
 import { openRelease } from '@/features/rtk/releaseLinks'
 import { formatCivilDate } from '@/lib/formatDate'
+
+export const metadata: Metadata = { title: 'Records release' }
 
 export const dynamic = 'force-dynamic'
 

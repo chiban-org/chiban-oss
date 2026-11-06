@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
@@ -28,6 +29,8 @@ import {
 import { searchExample } from '@/features/parcels/searchExample'
 import { PARCEL_PAGE_SIZE, searchParcelPage } from '@/features/parcels/searchParcels'
 import { requireStaffContext } from '@/server/requireStaff'
+
+export const metadata: Metadata = { title: 'Parcels' }
 
 interface ParcelsPageProps {
   searchParams: Promise<RawSearchParams>

@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import { CsrfField } from '@/components/CsrfField'
 import { SubmitButton } from '@/components/SubmitButton'
 import { db } from '@/db/client'
@@ -6,6 +7,8 @@ import { users } from '@/db/schema'
 import { peekMagicLink } from '@/features/auth/magicLink'
 import { getActor } from '@/server/getActor'
 import { confirmMagicLinkAction } from './actions'
+
+export const metadata: Metadata = { title: 'Sign in' }
 
 export const dynamic = 'force-dynamic'
 

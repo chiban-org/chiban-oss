@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
@@ -6,6 +7,8 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { listUnresolvedRecords, type UnresolvedRecordView } from '@/features/parcels/unresolvedView'
 import { recordStaffContext } from '@/server/requireStaff'
 import { resolveUnresolvedAction } from '../[parcelId]/actions'
+
+export const metadata: Metadata = { title: 'Unresolved records' }
 
 function RecordCell({ link }: { link: UnresolvedRecordView }) {
   if (link.recordHref === null) return <>{link.record}</>

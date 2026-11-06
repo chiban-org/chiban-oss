@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
@@ -32,6 +33,8 @@ import { getTownSettings } from '@/features/town/settings'
 import { recordStaffContext, type StaffContext } from '@/server/requireStaff'
 import { discardDraftAction, publishAction, rollbackAction, saveDraftAction } from '../../actions'
 import { templatePreviewAction, templateSamplesAction } from '../../templateActions'
+
+export const metadata: Metadata = { title: 'Settings item' }
 
 interface Props {
   params: Promise<{ kind: string; key: string }>

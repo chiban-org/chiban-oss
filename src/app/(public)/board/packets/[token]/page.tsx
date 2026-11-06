@@ -1,8 +1,11 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PacketItems } from '@/components/board/PacketItems'
 import { db } from '@/db/client'
 import { openPacket } from '@/features/boards/packetLinks'
 import { formatCivilDate } from '@/lib/formatDate'
+
+export const metadata: Metadata = { title: 'Board packet' }
 
 export const dynamic = 'force-dynamic'
 

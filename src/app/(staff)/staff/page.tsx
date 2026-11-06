@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { HomeParcelSearch } from '@/components/staff/home/HomeParcelSearch'
 import { HomeSectionPanel } from '@/components/staff/home/HomeSectionPanel'
@@ -8,6 +9,8 @@ import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffActor, requireStaffContext } from '@/server/requireStaff'
+
+export const metadata: Metadata = { title: 'Today' }
 
 const TIMEOUT_MS = 10_000
 

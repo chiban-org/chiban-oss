@@ -1,8 +1,11 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { settingsMenuFor } from '@/features/settingsMenu/settingsMenu'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { requireStaffContext } from '@/server/requireStaff'
+
+export const metadata: Metadata = { title: 'Settings' }
 
 export default async function SettingsPage() {
   const ctx = await requireStaffContext()

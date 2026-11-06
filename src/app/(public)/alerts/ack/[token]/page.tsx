@@ -1,7 +1,10 @@
+import type { Metadata } from 'next'
 import { ActionForm } from '@/components/ActionForm'
 import { db } from '@/db/client'
 import { findAlertTest } from '@/features/health/syntheticAlert'
 import { acknowledgeAlertAction } from './actions'
+
+export const metadata: Metadata = { title: 'Alert test' }
 
 export const dynamic = 'force-dynamic'
 

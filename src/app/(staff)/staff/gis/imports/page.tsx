@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { SortHeader } from '@/components/dataTable/SortHeader'
@@ -27,6 +28,8 @@ import { words } from '@/lib/words'
 import { recordStaffContext } from '@/server/requireStaff'
 import { updateLayerSettingsAction } from './actions'
 import { LayerImportAction } from './LayerImportAction'
+
+export const metadata: Metadata = { title: 'Imports' }
 
 const STATE_WORDS = {
   not_configured: 'Not configured',

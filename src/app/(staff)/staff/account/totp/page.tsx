@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import QRCode from 'qrcode'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -6,6 +7,8 @@ import { pendingTotpUri } from '@/features/auth/totpEnrollment'
 import { requireStaffActor } from '@/server/requireStaff'
 import { BeginTotpForm, ConfirmTotpForm } from '../TotpForms'
 import { EnrollmentDetails } from './EnrollmentDetails'
+
+export const metadata: Metadata = { title: 'Authenticator' }
 
 export default async function TotpPage() {
   const signal = AbortSignal.timeout(10_000)

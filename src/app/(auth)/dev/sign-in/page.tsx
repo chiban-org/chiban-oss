@@ -1,4 +1,5 @@
 import { and, eq, like } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { CsrfField } from '@/components/CsrfField'
 import { SubmitButton } from '@/components/SubmitButton'
@@ -7,6 +8,8 @@ import { userRoles, users } from '@/db/schema'
 import { isDevSignInEnabled } from '@/features/auth/devSignIn'
 import { DEMO_DOMAIN } from '@/features/demo/seedDemo'
 import { devSignInAction } from './actions'
+
+export const metadata: Metadata = { title: 'Dev sign-in' }
 
 export const dynamic = 'force-dynamic'
 

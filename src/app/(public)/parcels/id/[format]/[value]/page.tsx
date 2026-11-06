@@ -1,7 +1,10 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound, permanentRedirect } from 'next/navigation'
 import { db } from '@/db/client'
 import { resolveIdRoute } from '@/features/parcels/publicParcelView'
+
+export const metadata: Metadata = { title: 'Which parcel do you mean?' }
 
 interface IdRedirectPageProps {
   params: Promise<{ format: string; value: string }>

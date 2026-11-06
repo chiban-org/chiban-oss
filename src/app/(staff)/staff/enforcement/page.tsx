@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { ActionForm } from '@/components/ActionForm'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { TablePager } from '@/components/dataTable/TablePager'
@@ -24,6 +25,8 @@ import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
 import { openCaseAction, staffComplaintAction } from './actions'
+
+export const metadata: Metadata = { title: 'Code enforcement' }
 
 export const dynamic = 'force-dynamic'
 

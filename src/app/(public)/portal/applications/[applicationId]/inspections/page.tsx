@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
@@ -12,6 +13,8 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { requirePortalContext } from '@/server/requirePortal'
 import { isUuid } from '@/utils/uuid'
 import { portalCancelInspectionAction, portalRequestInspectionAction } from './actions'
+
+export const metadata: Metadata = { title: 'Inspections' }
 
 export const dynamic = 'force-dynamic'
 

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import {
   discardDraftAction,
   publishAction,
@@ -15,6 +16,8 @@ import { loadProcessorSettings } from '@/features/payments/settingsView'
 import { getTownSettings } from '@/features/town/settings'
 import { recordStaffContext } from '@/server/requireStaff'
 import { ProcessorSection } from './ProcessorSection'
+
+export const metadata: Metadata = { title: 'Card payments' }
 
 export const dynamic = 'force-dynamic'
 

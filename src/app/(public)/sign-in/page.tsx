@@ -1,4 +1,7 @@
+import type { Metadata } from 'next'
 import { MagicLinkForm } from './MagicLinkForm'
+
+export const metadata: Metadata = { title: 'Sign in' }
 
 interface SignInPageProps {
   searchParams: Promise<{ error?: string; next?: string }>

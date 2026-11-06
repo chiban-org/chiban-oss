@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
@@ -34,6 +35,8 @@ import { formatCents } from '@/lib/money'
 import { requireStaffContext } from '@/server/requireStaff'
 import { EntryTable } from './EntryTable'
 import { PaymentAlerts } from './PaymentAlerts'
+
+export const metadata: Metadata = { title: 'Payments' }
 
 export const dynamic = 'force-dynamic'
 

@@ -1,9 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { db } from '@/db/client'
 import { MIN_PASSWORD_LENGTH } from '@/features/auth/createStaffUser'
 import { deadLinkCopy, setPasswordTitle } from '@/features/users/linkCopy'
 import { peekStaffLink } from '@/features/users/links'
 import { SetPasswordForm } from './SetPasswordForm'
+
+export const metadata: Metadata = { title: 'Set your password' }
 
 export const dynamic = 'force-dynamic'
 

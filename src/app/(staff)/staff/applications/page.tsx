@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { redirect } from 'next/navigation'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { TablePager } from '@/components/dataTable/TablePager'
@@ -33,6 +34,8 @@ import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { requireStaffContext } from '@/server/requireStaff'
 import { assignReviewerAction } from '../reviews/actions'
+
+export const metadata: Metadata = { title: 'Applications' }
 
 export const dynamic = 'force-dynamic'
 

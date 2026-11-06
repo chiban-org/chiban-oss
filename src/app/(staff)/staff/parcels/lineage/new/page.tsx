@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { ActionForm } from '@/components/ActionForm'
 import { ParcelMultiPicker } from '@/components/parcels/picker/ParcelPicker'
 import type { PickerChoice } from '@/components/parcels/picker/pickerChoice'
@@ -8,6 +9,8 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { pickedParcelFor } from '@/features/parcels/parcelPick'
 import { requireStaffContext } from '@/server/requireStaff'
 import { recordLineageAction } from '../../[parcelId]/actions'
+
+export const metadata: Metadata = { title: 'Record lineage event' }
 
 interface NewLineagePageProps {
   searchParams: Promise<{ parent?: string }>

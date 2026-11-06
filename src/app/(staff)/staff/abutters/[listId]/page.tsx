@@ -1,4 +1,5 @@
 import { NH_ABUTTER_PARAMS } from '@packs/nh/abutters/params'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ProjectionMap } from '@/components/abutters/ProjectionMap'
@@ -12,6 +13,8 @@ import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
 import { ListRail } from './listRail'
 import { CandidatesSection, RecipientsSection } from './listSections'
+
+export const metadata: Metadata = { title: 'Abutter list' }
 
 export const dynamic = 'force-dynamic'
 

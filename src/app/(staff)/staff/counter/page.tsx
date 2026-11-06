@@ -1,6 +1,7 @@
 import { NH_LICENSE_TYPES, nhDefaultLicenseType } from '@packs/nh/licenseTypes'
 import { NH_LICENSE_LOOKUP } from '@packs/nh/links'
 import { eq } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { CounterParcelSearch } from '@/components/counter/CounterParcelSearch'
@@ -25,6 +26,8 @@ import {
   reconnectAction,
   sendClaimAction,
 } from './actions'
+
+export const metadata: Metadata = { title: 'Counter' }
 
 export const dynamic = 'force-dynamic'
 

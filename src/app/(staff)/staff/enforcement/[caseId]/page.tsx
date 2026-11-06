@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
@@ -24,6 +25,20 @@ import { MoneySection } from './MoneySection'
 import { OrdersSection } from './OrdersSection'
 
 export const dynamic = 'force-dynamic'
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ caseId: string }>
+}): Promise<Metadata> {
+  const { caseId } = await params
+  const ctx = await requireStaffContext()
+  const viewer = await loadNavViewer(ctx.db, ctx.actor, ctx.signal)
+  if (!mayOpen('/staff/enforcement', viewer) || !isUuid(caseId)) return { title: 'Case' }
+  const today = await townToday(ctx.db, new Date(), ctx.signal)
+  const loaded = await loadCaseDetail(ctx.db, ctx.actor, caseId, today, ctx.signal)
+  return { title: loaded.ok ? `Case ${loaded.value.staff.row.number}` : 'Case' }
+}
 
 export default async function CasePage({ params }: { params: Promise<{ caseId: string }> }) {
   const { caseId } = await params

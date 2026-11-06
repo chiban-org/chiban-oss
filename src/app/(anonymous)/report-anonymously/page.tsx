@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { Button } from '@/components/ui/button'
 import { FilePicker } from '@/components/ui/file-picker'
 import { Input } from '@/components/ui/input'
@@ -8,6 +9,8 @@ import { APP_VERSION } from '@/config/appVersion'
 import { env } from '@/config/env'
 import { db } from '@/db/client'
 import { intakeOpen } from '@/features/anonymousIntake/enablement'
+
+export const metadata: Metadata = { title: 'Report a possible violation anonymously' }
 
 export const MAX_DESCRIPTION_CHARS = 5000
 export const MAX_PHOTOS = 5

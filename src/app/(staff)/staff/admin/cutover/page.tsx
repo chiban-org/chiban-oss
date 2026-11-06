@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { ActionForm } from '@/components/ActionForm'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { SelectField, TextField } from '@/components/staff/fields'
@@ -10,6 +11,8 @@ import { townTimeZone } from '@/features/town/timeZone'
 import { requireStaffContext } from '@/server/requireStaff'
 import { importCutoverAction, reconcileCutoverAction } from './actions'
 import { ReconciliationTable } from './ReconciliationTable'
+
+export const metadata: Metadata = { title: 'Move open applications over' }
 
 export const dynamic = 'force-dynamic'
 

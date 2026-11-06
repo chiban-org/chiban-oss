@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
@@ -8,6 +9,8 @@ import { loadBatchDetail } from '@/features/migration/batchQueries'
 import { requireStaffContext } from '@/server/requireStaff'
 import { publishMigrationBatchAction } from '../actions'
 import { STATUS_COPY } from '../statusCopy'
+
+export const metadata: Metadata = { title: 'Scanned property files batch' }
 
 export const dynamic = 'force-dynamic'
 

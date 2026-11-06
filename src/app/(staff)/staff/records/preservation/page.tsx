@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { NEW_TAB } from '@/components/newTab'
@@ -8,6 +9,8 @@ import { listPreservationRetrying, type RetryingRow } from '@/features/preservat
 import { documentRecordLinks } from '@/features/records/staffRecordLinks'
 import { requireStaffContext } from '@/server/requireStaff'
 import { retryPreservationAction } from '../actions'
+
+export const metadata: Metadata = { title: 'Preservation' }
 
 export const dynamic = 'force-dynamic'
 

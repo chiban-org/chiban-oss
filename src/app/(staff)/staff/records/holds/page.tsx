@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
@@ -23,6 +24,8 @@ import { getTownSettings } from '@/features/town/settings'
 import { formatInstant } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { placeHoldAction, releaseHoldAction } from '../actions'
+
+export const metadata: Metadata = { title: 'Legal holds' }
 
 export const dynamic = 'force-dynamic'
 

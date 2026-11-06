@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
@@ -11,6 +12,8 @@ import { loadUserList } from '@/features/users/userList'
 import { readUserListView, USER_SORT, USERS_PATH } from '@/features/users/userListParams'
 import { requireStaffContext } from '@/server/requireStaff'
 import { STATUS_LABEL, UsersSortBar, UsersTable } from './UsersTable'
+
+export const metadata: Metadata = { title: 'Users' }
 
 export const dynamic = 'force-dynamic'
 

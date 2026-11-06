@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -9,6 +10,8 @@ import { importRunSummary, importRunTitle } from '@/features/gis/import/runText'
 import type { ImportRunReport } from '@/features/gis/import/types'
 import { townTimeZone } from '@/features/town/timeZone'
 import { recordStaffContext } from '@/server/requireStaff'
+
+export const metadata: Metadata = { title: 'Import run' }
 
 interface RunPageProps {
   params: Promise<{ runId: string }>

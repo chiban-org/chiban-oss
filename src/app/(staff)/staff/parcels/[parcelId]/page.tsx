@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
@@ -48,6 +49,16 @@ function LayerBanner({ state, text }: { state: string; text: string }) {
       {text}
     </p>
   )
+}
+
+export async function generateMetadata({ params }: ParcelPageProps): Promise<Metadata> {
+  const { parcelId } = await params
+  if (!UUID.test(parcelId)) return { title: 'Parcel' }
+  const ctx = await requireStaffContext()
+  const result = await getStaffParcelView(ctx.db, ctx.actor, parcelId, new Date(), ctx.signal)
+  if (!result.ok) return { title: 'Parcel' }
+  const id = result.value.aliases.find((a) => a.status === 'active')?.value ?? 'No map-lot ID'
+  return { title: `Parcel ${id}` }
 }
 
 export default async function StaffParcelPage({ params, searchParams }: ParcelPageProps) {

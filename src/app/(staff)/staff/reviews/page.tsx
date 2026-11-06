@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { ReviewSortBar, ReviewTable } from '@/components/reviews/ReviewTable'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -15,6 +16,8 @@ import {
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { requireStaffContext } from '@/server/requireStaff'
+
+export const metadata: Metadata = { title: 'Your reviews' }
 
 export const dynamic = 'force-dynamic'
 

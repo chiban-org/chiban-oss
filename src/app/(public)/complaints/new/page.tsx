@@ -1,9 +1,12 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { APP_VERSION } from '@/config/appVersion'
 import { env } from '@/config/env'
 import { db } from '@/db/client'
 import { intakeOpen } from '@/features/anonymousIntake/enablement'
 import { ComplaintForm } from './ComplaintForm'
+
+export const metadata: Metadata = { title: 'Report a possible violation' }
 
 export const dynamic = 'force-dynamic'
 

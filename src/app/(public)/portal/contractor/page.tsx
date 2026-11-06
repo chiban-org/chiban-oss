@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { StatusChip } from '@/components/StatusChip'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
@@ -6,6 +7,8 @@ import { listContractorProjects } from '@/features/contractors/dashboard'
 import { honestText } from '@/features/honest/honest'
 import { formatCivilDate } from '@/lib/formatDate'
 import { requirePortalContext } from '@/server/requirePortal'
+
+export const metadata: Metadata = { title: 'Your contractor projects' }
 
 export const dynamic = 'force-dynamic'
 

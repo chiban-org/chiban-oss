@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { KeyFacts } from '@/components/layout/KeyFacts'
 import { ListHeader } from '@/components/layout/ListHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -15,6 +16,8 @@ import {
   RestrictionsSection,
 } from './ContactSections'
 import { RecheckInterval } from './RecheckInterval'
+
+export const metadata: Metadata = { title: 'Notice contacts' }
 
 export const dynamic = 'force-dynamic'
 

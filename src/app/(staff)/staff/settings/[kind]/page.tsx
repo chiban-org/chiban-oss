@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { SettingsEmpty } from '@/components/settings/SettingsEmpty'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
@@ -13,6 +14,8 @@ import type { RawSearchParams } from '@/features/dataTable/params'
 import { recordStaffContext } from '@/server/requireStaff'
 import { KeyTable } from './KeyTable'
 import { NewConfigItem } from './StartDraft'
+
+export const metadata: Metadata = { title: 'Settings' }
 
 interface Props {
   params: Promise<{ kind: string }>

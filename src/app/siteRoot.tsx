@@ -9,7 +9,7 @@ import { CSRF_COOKIE } from '@/constants/cookies'
 import './globals.css'
 
 export const SITE_METADATA: Metadata = {
-  title: 'Chiban',
+  title: { default: 'Chiban', template: '%s · Chiban' },
   description: 'Land-use software for small towns.',
   icons: {
     icon: [

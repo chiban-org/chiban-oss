@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { StatusChip } from '@/components/StatusChip'
@@ -15,6 +16,8 @@ import { type RawSearchParams, readTableParams } from '@/features/dataTable/para
 import { filterTabs } from '@/features/dataTable/quickFilters'
 import type { Status } from '@/features/design/tokens'
 import { requireStaffContext } from '@/server/requireStaff'
+
+export const metadata: Metadata = { title: 'Board packets' }
 
 export const dynamic = 'force-dynamic'
 

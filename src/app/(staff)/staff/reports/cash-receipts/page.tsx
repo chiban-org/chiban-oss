@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { TextField } from '@/components/staff/fields'
@@ -26,6 +27,8 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { requireStaffContext } from '@/server/requireStaff'
 import { parseCivilDate } from '@/types/civilDate'
+
+export const metadata: Metadata = { title: 'Daily cash receipts' }
 
 export const dynamic = 'force-dynamic'
 

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { ActionForm } from '@/components/ActionForm'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -8,6 +9,8 @@ import { formatInstantLong } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { runTargetNowAction, setTargetActiveAction } from './actions'
 import { AddTarget, EditTarget, StubNote } from './TargetForms'
+
+export const metadata: Metadata = { title: 'Export storage' }
 
 export const dynamic = 'force-dynamic'
 

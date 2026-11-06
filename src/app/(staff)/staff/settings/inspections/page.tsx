@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
@@ -16,6 +17,8 @@ import {
   saveInspectorCalendarAction,
 } from '../../inspections/actions'
 import { discardDraftAction, saveDraftAction } from '../actions'
+
+export const metadata: Metadata = { title: 'Inspection schedule' }
 
 export const dynamic = 'force-dynamic'
 

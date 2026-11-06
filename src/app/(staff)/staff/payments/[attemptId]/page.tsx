@@ -1,4 +1,5 @@
 import { and, eq, inArray } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -26,6 +27,8 @@ import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { AttemptRail, isOpen } from './AttemptRail'
 import { ManualOutcomePanel } from './ManualOutcomePanel'
+
+export const metadata: Metadata = { title: 'Card payment' }
 
 export const dynamic = 'force-dynamic'
 

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { applyStarterPathsAction } from '@/app/(staff)/staff/settings/actions'
 import { ActionForm } from '@/components/ActionForm'
 import { StarterDiffReview } from '@/components/config/StarterDiffReview'
@@ -6,6 +7,8 @@ import { NoPermission } from '@/components/staff/NoPermission'
 import { requireCapability } from '@/features/authz/capabilities'
 import { loadStarterReviews } from '@/features/config/starterReview'
 import { requireStaffContext } from '@/server/requireStaff'
+
+export const metadata: Metadata = { title: 'Starter updates' }
 
 export const dynamic = 'force-dynamic'
 

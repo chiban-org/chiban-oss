@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { NEW_TAB } from '@/components/newTab'
 import { DescriptionList } from '@/components/ui/description-list'
 import { db } from '@/db/client'
@@ -5,6 +6,8 @@ import { type PaymentReturnDetails, paymentReturnDetails } from '@/features/paym
 import { formatCents } from '@/lib/money'
 import { portalActorOrNull } from '@/server/requirePortal'
 import { PaymentStatusPoller } from './PaymentStatusPoller'
+
+export const metadata: Metadata = { title: 'Payment' }
 
 export const dynamic = 'force-dynamic'
 

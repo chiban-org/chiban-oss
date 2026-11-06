@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { SortHeader } from '@/components/dataTable/SortHeader'
@@ -24,6 +25,8 @@ import { activeSortFields, scopedSort } from '@/features/staffTables/scopedSort'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
 import { classifyCensusAction } from './actions'
+
+export const metadata: Metadata = { title: 'Census building permits report' }
 
 export const dynamic = 'force-dynamic'
 

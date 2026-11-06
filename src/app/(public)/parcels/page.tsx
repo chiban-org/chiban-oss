@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { LinkedParcelMap } from '@/components/map/LinkedParcelMap'
 import { MoreMatchesNotice } from '@/components/parcels/MoreMatchesNotice'
@@ -6,6 +7,8 @@ import { db } from '@/db/client'
 import { configuredOverlayLayers, parcelExtent } from '@/features/gis/extent'
 import { searchParcelPage } from '@/features/parcels/searchParcels'
 import { getTownSettings } from '@/features/town/settings'
+
+export const metadata: Metadata = { title: 'Parcel lookup' }
 
 interface PublicParcelsPageProps {
   searchParams: Promise<{ q?: string }>

@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
@@ -7,6 +8,8 @@ import { loadDevCheckout } from '@/features/payments/simulatedCheckout'
 import { formatCents } from '@/lib/money'
 import { portalActorOrNull } from '@/server/requirePortal'
 import { approveCheckoutAction, declineCheckoutAction } from './actions'
+
+export const metadata: Metadata = { title: 'Simulated checkout' }
 
 export const dynamic = 'force-dynamic'
 

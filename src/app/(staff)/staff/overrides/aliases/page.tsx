@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
@@ -21,6 +22,8 @@ import { listAliasOverrides, type OverrideStatus } from '@/features/parcels/alia
 import { formatCivilDate } from '@/lib/formatDate'
 import { recordStaffContext } from '@/server/requireStaff'
 import { AddAliasOverride, EditAliasOverride } from './AliasOverrideForms'
+
+export const metadata: Metadata = { title: 'Parcel ID overrides' }
 
 const PAGE_SIZE = 25
 

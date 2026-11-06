@@ -1,4 +1,5 @@
 import { desc, eq } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import { ActionForm } from '@/components/ActionForm'
 import { KeyFacts } from '@/components/layout/KeyFacts'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
@@ -14,6 +15,8 @@ import { getTownSettings } from '@/features/town/settings'
 import { formatInstantLong } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { disableAnonymousIntakeAction, enableAnonymousIntakeAction } from './actions'
+
+export const metadata: Metadata = { title: 'Anonymous intake' }
 
 export const dynamic = 'force-dynamic'
 

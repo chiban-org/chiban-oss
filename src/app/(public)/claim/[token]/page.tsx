@@ -1,7 +1,10 @@
+import type { Metadata } from 'next'
 import { ActionForm } from '@/components/ActionForm'
 import { Button } from '@/components/ui/button'
 import { portalActorOrNull } from '@/server/requirePortal'
 import { claimProjectAction } from './actions'
+
+export const metadata: Metadata = { title: 'Claim your project' }
 
 export const dynamic = 'force-dynamic'
 

@@ -1,4 +1,5 @@
 import { eq } from 'drizzle-orm'
+import type { Metadata } from 'next'
 import { PracticeNotice } from '@/components/PracticeNotice'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -13,6 +14,8 @@ import { DEFAULT_TIME_ZONE } from '@/features/town/timeZone'
 import { formatInstantOrNever } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { JobList } from './JobList'
+
+export const metadata: Metadata = { title: 'Health' }
 
 export const dynamic = 'force-dynamic'
 

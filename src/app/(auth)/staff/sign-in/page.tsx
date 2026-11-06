@@ -1,4 +1,7 @@
+import type { Metadata } from 'next'
 import { SignInForm } from './SignInForm'
+
+export const metadata: Metadata = { title: 'Staff sign-in' }
 
 export default async function StaffSignInPage({
   searchParams,

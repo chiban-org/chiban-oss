@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -14,6 +15,8 @@ import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { addReviewCommentAction } from '../actions'
 import { ReviewRail } from './reviewRail'
+
+export const metadata: Metadata = { title: 'Review' }
 
 export const dynamic = 'force-dynamic'
 

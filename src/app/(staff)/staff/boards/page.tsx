@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
@@ -22,6 +23,8 @@ import { clearHref, type RawSearchParams } from '@/features/dataTable/params'
 import { type SortLink, sortLinks } from '@/features/dataTable/sort'
 import { requireStaffContext } from '@/server/requireStaff'
 import type { CivilDate } from '@/types/civilDate'
+
+export const metadata: Metadata = { title: 'Board applications' }
 
 export const dynamic = 'force-dynamic'
 

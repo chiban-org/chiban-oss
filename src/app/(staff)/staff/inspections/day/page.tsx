@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import Link from 'next/link'
 import { DayList } from '@/components/inspections/DayList'
 import { InspectorPicker } from '@/components/inspections/InspectorPicker'
@@ -13,6 +14,8 @@ import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
 import { addDays, type CivilDate, parseCivilDate } from '@/types/civilDate'
 import { isUuid } from '@/utils/uuid'
+
+export const metadata: Metadata = { title: 'My day' }
 
 export const dynamic = 'force-dynamic'
 

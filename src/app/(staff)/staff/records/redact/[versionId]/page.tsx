@@ -1,4 +1,5 @@
 import { NH_RTK_EXEMPTIONS, OTHER_LAW_EXEMPTION_KEY } from '@packs/nh/rtkExemptions'
+import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
 import { PageHeader } from '@/components/layout/PageHeader'
@@ -13,6 +14,8 @@ import { isUuid } from '@/utils/uuid'
 import { requestRedactionAction } from '../actions'
 import { ApprovalHint } from './ApprovalHint'
 import { staffRecordHref } from './recordHref'
+
+export const metadata: Metadata = { title: 'Redact a document' }
 
 export const dynamic = 'force-dynamic'
 

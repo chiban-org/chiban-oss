@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { ActionForm } from '@/components/ActionForm'
 import { CsrfField } from '@/components/CsrfField'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
@@ -12,6 +13,8 @@ import { DEFAULT_TIME_ZONE } from '@/features/town/timeZone'
 import { formatCivilDate, formatInstantLong } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { requestExportAction } from './actions'
+
+export const metadata: Metadata = { title: 'Data export' }
 
 export const dynamic = 'force-dynamic'
 

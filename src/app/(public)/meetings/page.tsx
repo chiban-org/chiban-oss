@@ -1,6 +1,9 @@
+import type { Metadata } from 'next'
 import { NEW_TAB } from '@/components/newTab'
 import { db } from '@/db/client'
 import { loadPublicBoardRecords, type PublicPage } from '@/features/hearings/publicRecords'
+
+export const metadata: Metadata = { title: 'Board meetings and decisions' }
 
 export const dynamic = 'force-dynamic'
 

@@ -1,9 +1,12 @@
+import type { Metadata } from 'next'
 import { CodeEditionTable } from '@/components/config/CodeEditionTable'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { loadPack } from '@/features/packs/loadPack'
 import { requireStaffContext } from '@/server/requireStaff'
+
+export const metadata: Metadata = { title: 'Building code editions' }
 
 export default async function CodeEditionsPage() {
   const ctx = await requireStaffContext()

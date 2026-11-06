@@ -1,3 +1,4 @@
+import type { Metadata } from 'next'
 import { ClockAdjustmentsTable } from '@/components/clocks/ClockAdjustmentsTable'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { TablePager } from '@/components/dataTable/TablePager'
@@ -15,6 +16,8 @@ import {
   readClockAdjustmentView,
 } from '@/features/overrides/clockOverrideView'
 import { recordStaffContext } from '@/server/requireStaff'
+
+export const metadata: Metadata = { title: 'Clock adjustments' }
 
 const PAGE_SIZE = 25
 
