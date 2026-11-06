@@ -46,8 +46,9 @@ export function dueClause(value: DueFilter, today: CivilDate): SQL {
 
 export function assignedClause(value: AssignedFilter, actor: Actor): SQL {
   return value === 'me'
-    ? sql`exists (${ACTIVE_ASSIGNMENT} and ra.reviewer_user_id = ${actor.userId})`
-    : sql`not exists (${ACTIVE_ASSIGNMENT})`
+    ? sql`(${applications.responsibleUserId} = ${actor.userId}
+        or exists (${ACTIVE_ASSIGNMENT} and ra.reviewer_user_id = ${actor.userId}))`
+    : sql`(${applications.responsibleUserId} is null and not exists (${ACTIVE_ASSIGNMENT}))`
 }
 
 export function flagClause(value: FlagFilter, actor: Actor): SQL {
@@ -121,6 +122,9 @@ const FIRST_REVIEWER = sql`(select min(${users.displayName}) from ${reviewAssign
   where ${reviewAssignments.applicationId} = ${applications.id}
     and ${reviewAssignments.removedAt} is null)`
 
+export const RESPONSIBLE_NAME = sql<string | null>`(select ${users.displayName} from ${users}
+  where ${users.id} = ${applications.responsibleUserId})`
+
 const PARCEL_DISPLAY_ID = sql`(
   select a.value from parcel_aliases a
   join parcel_id_formats f on f.key = a.format and f.is_display
@@ -136,6 +140,7 @@ export const QUEUE_SORT_COLUMNS: Readonly<Record<QueueSortKey, SQLWrapper>> = {
   due: EARLIEST_DUE,
   fees: FEES_DUE,
   reviewers: FIRST_REVIEWER,
+  responsible: RESPONSIBLE_NAME,
   received: applications.receivedDate,
 }
 

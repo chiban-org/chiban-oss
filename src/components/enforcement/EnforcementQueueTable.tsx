@@ -15,7 +15,7 @@ export function EnforcementQueueTable({
 }) {
   if (rows.length === 0) return <p className="px-5 py-8">No cases match.</p>
   return (
-    <table className="w-full min-w-[44rem] text-left">
+    <table className="w-full min-w-[52rem] text-left">
       <thead>
         <tr>
           <SortHeader label="Case" link={links.number} />
@@ -24,6 +24,7 @@ export function EnforcementQueueTable({
           <SortHeader label="Opened" link={links.opened} />
           <SortHeader label="Next date" link={links.next} />
           <SortHeader label="Appeal stay" link={links.stay} />
+          <SortHeader label="Assigned to" link={links.assigned} />
         </tr>
       </thead>
       <tbody>
@@ -56,6 +57,9 @@ export function EnforcementQueueTable({
               ) : (
                 <span>Not stayed</span>
               )}
+            </td>
+            <td>
+              {row.assignedToName ?? <span className="text-muted-foreground">Unassigned</span>}
             </td>
           </tr>
         ))}

@@ -31,6 +31,7 @@ export function row(overrides: Partial<WorkQueueRow>): WorkQueueRow {
     feesDueCents: 0,
     unknownPayment: false,
     reviewers: [],
+    responsible: null,
     preservationIncomplete: false,
     ...overrides,
   }

@@ -29,6 +29,8 @@ import { LimitedRecord } from './limitedRecord'
 import { nextStepPlan } from './nextStepCard'
 import { applicationPanels } from './panelSet'
 import { loadRecordsData } from './recordsData'
+import { loadResponsibleData } from './responsibleData'
+import { ResponsibleStaff } from './responsibleStaff'
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -60,6 +62,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     hearings,
     imported,
     correction,
+    responsible,
   ] = await Promise.all([
     loading,
     loading.then((v) => (v === null ? null : loadRecordsData(ctx, applicationId, v.projectId))),
@@ -73,6 +76,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
       .from(cutoverRows)
       .where(eq(cutoverRows.applicationId, applicationId)),
     loadCorrectionForm(ctx.db, ctx.actor, applicationId, ctx.signal),
+    loadResponsibleData(ctx, applicationId),
   ])
   if (view === null || records === null) return null
   return {
@@ -85,6 +89,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     hearings,
     legacyNumber: imported[0]?.legacyNumber ?? null,
     correction,
+    responsible,
   }
 }
 
@@ -105,6 +110,7 @@ export default async function StaffApplicationPage({ params }: Props) {
     />
   )
   const notice = <BalanceDueNotice notices={balanceNotices} />
+  const responsible = <ResponsibleStaff applicationId={view.id} data={loaded.responsible} />
   return (
     <main>
       <PageHeader
@@ -115,7 +121,9 @@ export default async function StaffApplicationPage({ params }: Props) {
       />
       <RecordLayout
         rail={<ApplicationRail view={view} plan={plan} notice={notice} correction={correction} />}
-        railFooter={<ApplicationFacts view={view} legacyNumber={legacyNumber} />}
+        railFooter={
+          <ApplicationFacts view={view} legacyNumber={legacyNumber} responsible={responsible} />
+        }
         strip={
           <StatusStrip
             view={view}
@@ -124,6 +132,7 @@ export default async function StaffApplicationPage({ params }: Props) {
             notice={notice}
             legacyNumber={legacyNumber}
             correction={correction}
+            responsible={responsible}
           />
         }
         empty={parts.empty}

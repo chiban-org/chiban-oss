@@ -4,6 +4,7 @@ import { RecordLayout } from '@/components/layout/RecordLayout'
 import { splitPanels } from '@/components/layout/splitPanels'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { assigneeChoices, caseAssignee } from '@/features/enforcement/caseAssignment'
 import { loadCaseDetail } from '@/features/enforcement/caseDetail'
 import { caseChipStatus } from '@/features/enforcement/chipStatus'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
@@ -36,6 +37,10 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
   if (!loaded.ok) notFound()
   const detail = loaded.value
   const can = await loadCan(ctx.db, ctx.actor, ctx.signal)
+  const assignee = {
+    current: await caseAssignee(ctx.db, caseId),
+    choices: can.manage ? await assigneeChoices(ctx.db) : [],
+  }
   const { row } = detail.staff
   const sections = splitPanels([
     {
@@ -86,7 +91,10 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
           {detail.banner}
         </p>
       )}
-      <RecordLayout rail={<CaseRail detail={detail} can={can} />} empty={sections.empty}>
+      <RecordLayout
+        rail={<CaseRail detail={detail} can={can} assignee={assignee} />}
+        empty={sections.empty}
+      >
         {sections.filled}
       </RecordLayout>
     </main>

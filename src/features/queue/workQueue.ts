@@ -11,7 +11,12 @@ import { orderBySql } from '@/features/dataTable/sortSql'
 import { ruleLabel } from '@/features/packs/ruleLabel'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { headlineDeadline } from '@/features/queue/headlineDeadline'
-import { QUEUE_SORT_COLUMNS, QUEUE_TIEBREAK, queueWhere } from '@/features/queue/queueFilterSql'
+import {
+  QUEUE_SORT_COLUMNS,
+  QUEUE_TIEBREAK,
+  queueWhere,
+  RESPONSIBLE_NAME,
+} from '@/features/queue/queueFilterSql'
 import {
   type AssignedFilter,
   type DueFilter,
@@ -69,6 +74,7 @@ export interface WorkQueueRow {
   feesDueCents: number
   unknownPayment: boolean
   reviewers: { name: string; status: string }[]
+  responsible: string | null
   preservationIncomplete: boolean
 }
 
@@ -189,6 +195,7 @@ export async function listWorkQueue(
       feesDue: FEES_DUE,
       unknownPayment: UNKNOWN_PAYMENT,
       preservationIncomplete: preservationIncompleteFor(actor),
+      responsible: RESPONSIBLE_NAME,
     })
     .from(applications)
     .innerJoin(projects, eq(projects.id, applications.projectId))
@@ -239,6 +246,7 @@ export async function listWorkQueue(
         feesDueCents: r.feesDue,
         unknownPayment: r.unknownPayment,
         reviewers: reviewers.get(r.id) ?? [],
+        responsible: r.responsible,
         preservationIncomplete: r.preservationIncomplete,
       }
     }),
