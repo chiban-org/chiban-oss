@@ -86,11 +86,15 @@ async function schedule(
   }
 }
 
-export async function heldZbaHearing(
+export interface ScheduledHearing extends HeldHearing {
+  noticeSetId: string
+}
+
+export async function scheduledZbaHearing(
   db: Db,
   world: BoardWorld,
   options: { date?: string; regional?: 'yes' | 'no' } = {},
-): Promise<HeldHearing> {
+): Promise<ScheduledHearing> {
   const date = options.date ?? '2027-04-15'
   const applicationId = await submitBoardApplication(db, world, world.zbaTypeKey, '2027-03-02')
   await recordNoRegionalImpact(db, world, applicationId, options.regional ?? 'no')
@@ -101,12 +105,27 @@ export async function heldZbaHearing(
       ? [recipient(3, ['regional_planning_commission']), recipient(4, ['affected_municipality'])]
       : []),
   ])
-  return await noticeAndHold(
-    db,
-    world,
-    await schedule(db, world, applicationId, date, 'zba', 'public_hearing'),
-    date,
-  )
+  return await schedule(db, world, applicationId, date, 'zba', 'public_hearing')
+}
+
+export async function provenZbaHearing(
+  db: Db,
+  world: BoardWorld,
+  options: { date?: string; regional?: 'yes' | 'no' } = {},
+): Promise<ScheduledHearing> {
+  const hearing = await scheduledZbaHearing(db, world, options)
+  const now = new Date(`${options.date ?? '2027-04-15'}T16:00:00Z`)
+  await proveEverything(db, world, hearing.applicationId, hearing.noticeSetId, d('2027-03-30'), now)
+  return hearing
+}
+
+export async function heldZbaHearing(
+  db: Db,
+  world: BoardWorld,
+  options: { date?: string; regional?: 'yes' | 'no' } = {},
+): Promise<HeldHearing> {
+  const date = options.date ?? '2027-04-15'
+  return await noticeAndHold(db, world, await scheduledZbaHearing(db, world, options), date)
 }
 
 export async function heldPbHearing(

@@ -6,10 +6,6 @@ import { refuseField } from '@/server/formInput'
 import { err, ok } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
 
-export function yesFlag() {
-  return inputField((raw) => ok(raw === 'yes'))
-}
-
 export function valueList() {
   return inputField((raw) => {
     const all = Array.isArray(raw) ? raw : raw === undefined ? [] : [raw]

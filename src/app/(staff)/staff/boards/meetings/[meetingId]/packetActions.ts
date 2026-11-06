@@ -126,7 +126,8 @@ export async function replaceAgendaAction(formData: FormData): Promise<ActionRes
 export async function resendAction(formData: FormData): Promise<ActionResult> {
   return await runStaffForm(formData, RESEND_FORM, async ({ db, actor, signal }, input) => {
     const { packetId, userId, linkId } = input
-    if (linkId === null && (packetId === null || userId === null)) return failed('invalid')
+    if (linkId === null && packetId === null) return refuseField('packetId', 'Choose a packet.')
+    if (linkId === null && userId === null) return refuseField('userId', 'Choose a member.')
     const sent =
       linkId !== null
         ? await resendToLink(db, getMailTransport(), actor, { linkId }, signal)
