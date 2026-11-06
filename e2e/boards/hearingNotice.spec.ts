@@ -1,18 +1,11 @@
 import { type E2eDb, expect, test } from '../fixtures/test'
 import { confirmWith, permissionAlert } from './confirm'
 import { addMeetingThroughForm, type MeetingSpec, meetingIdFor } from './meetings'
-import { CERTIFIED, fillProof, hearingFor, OTHER_GROUPS, proofCount } from './noticeProof'
+import { CERTIFIED, fillProof, hearingFor, OTHER_GROUPS, proofCount, VOTES } from './noticeProof'
 import { applicationIdFor, townToday } from './records'
 import { expectRefused } from './refusal'
 import { uploadPdf } from './upload'
 
-const VOTES = [
-  'Robin Vale: for',
-  'Morgan Reed: for',
-  'Casey Lund: for',
-  'Avery Stone: against',
-  'Lee Thorn: abstain',
-].join('\n')
 const APPLICATION = 'Brookview minor site plan'
 test.describe
   .serial('hearing notice proof and noticing', () => {
@@ -134,6 +127,16 @@ test.describe
         [hearingId],
       )
       expect(row.held_on).toBe(meeting.date)
+    })
+
+    test('records that the selectmen certified the plan', async ({ page }) => {
+      await page.goto(`/staff/applications/${applicationId}`)
+      const follow = page.getByRole('region', { name: 'Decision follow-up' })
+      await follow.getByText('Record a request to the selectmen', { exact: true }).click()
+      await follow.getByLabel(/^Outcome/).selectOption('certified')
+      await follow.getByLabel('Date decided, if certified').fill(meeting.date)
+      await follow.getByRole('button', { name: 'Record', exact: true }).click()
+      await expect(follow.getByText(/: certified by the selectmen$/)).toBeVisible()
     })
 
     test('refuses a decision with no votes recorded and stores nothing', async ({ page, db }) => {

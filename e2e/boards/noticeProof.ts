@@ -86,3 +86,11 @@ export async function proveEveryNotice(page: Page, proofTitle: string): Promise<
     await page.getByText('Proof recorded.').waitFor()
   }
 }
+
+export const VOTES = [
+  'Robin Vale: for',
+  'Morgan Reed: for',
+  'Casey Lund: for',
+  'Avery Stone: against',
+  'Lee Thorn: abstain',
+].join('\n')

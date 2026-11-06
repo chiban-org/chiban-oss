@@ -1,5 +1,5 @@
 import { expect, test } from '../fixtures/test'
-import { applicationIdFor, townToday } from './records'
+import { applicationIdFor } from './records'
 import { expectRefused } from './refusal'
 
 test.describe
@@ -25,31 +25,5 @@ test.describe
       await lists.getByRole('button', { name: 'Add parcel' }).click()
       await expect(lists.getByText('Parcels for this application updated.')).toBeVisible()
       await expect(lists.getByText(/^Parcels: .*009014000000/)).toBeVisible()
-    })
-  })
-
-test.describe
-  .serial('selectmen certification after a decision', () => {
-    test.use({ role: 'staff' })
-
-    test('records that the selectmen certified the plan', async ({ page, db }) => {
-      test.setTimeout(120_000)
-      const id = await applicationIdFor(db, 'Brookview minor site plan')
-      await expect
-        .poll(
-          async () =>
-            (await db.rows('select 1 from board_decisions where application_id = $1', [id])).length,
-          {
-            timeout: 90_000,
-          },
-        )
-        .toBeGreaterThan(0)
-      await page.goto(`/staff/applications/${id}`)
-      const follow = page.getByRole('region', { name: 'Decision follow-up' })
-      await follow.getByText('Record a request to the selectmen', { exact: true }).click()
-      await follow.getByLabel(/^Outcome/).selectOption('certified')
-      await follow.getByLabel('Date decided, if certified').fill(await townToday(db))
-      await follow.getByRole('button', { name: 'Record', exact: true }).click()
-      await expect(follow.getByText(/: certified by the selectmen$/)).toBeVisible()
     })
   })
