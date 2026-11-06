@@ -106,6 +106,32 @@ describe('refusals beside their fields on the board panel', () => {
     )
   })
 
+  it('shows a refused municipality choice once, however many municipalities are listed', async () => {
+    const message = 'Choose at least one affected municipality.'
+    vi.mocked(boardRegionalImpactAction).mockResolvedValue(refusal('municipalityKeys', message))
+    const options = [
+      { key: 'dunmore', name: 'Town of Dunmore' },
+      { key: 'pine_river', name: 'Town of Pine River' },
+    ]
+    render(
+      <CsrfProvider token="t">
+        <DeterminationSection
+          data={{
+            ...data('not_within'),
+            canDetermine: true,
+            regional: { text: null, summary: 'x', options, chosen: [] },
+          }}
+        />
+      </CsrfProvider>,
+    )
+    fireEvent.click(screen.getByText('Record the regional impact determination'))
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Record determination' })[0] as HTMLElement,
+    )
+    await screen.findAllByText(message)
+    expect(document.querySelectorAll('[id$="-municipalityKeys-error"]')).toHaveLength(1)
+  })
+
   it('shows a refused board reference beside the Board reference field', async () => {
     const message = 'Enter the board reference for the earlier determination.'
     vi.mocked(boardRegionalImpactAction).mockResolvedValue(refusal('previousBoardRef', message))
