@@ -7,7 +7,7 @@ import type { ObjectStore } from '@/features/storage/objectStore'
 import { SIGNER_ROLES } from '@/features/town/profileSchema'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeUser } from '@/test/factories'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld } from '@/test/parcels'
 
 const signal = new AbortController().signal

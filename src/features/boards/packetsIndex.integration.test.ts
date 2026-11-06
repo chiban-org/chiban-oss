@@ -5,7 +5,7 @@ import { loadPacketsIndex } from '@/features/boards/packetsIndex'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { type PacketFlow, packetFlow } from '@/test/packetFlowFixtures'
 
 const signal = new AbortController().signal

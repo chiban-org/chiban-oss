@@ -9,7 +9,7 @@ import {
   setupEnforcementWorld,
   uploadProof,
 } from '@/test/enforcementFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { makeParcel } from '@/test/parcels'
 
 const signal = new AbortController().signal

@@ -15,7 +15,7 @@ import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { findIsoDates } from '@/test/leaks'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 
 interface MockState {
   db: unknown

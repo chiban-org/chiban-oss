@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { parseBackupArgs, parseVerifyArgs } from '@/features/backup/cliArgs'
+import {
+  parseBackupArgs,
+  parseRestoreObjectsArgs,
+  parseVerifyArgs,
+} from '@/features/backup/cliArgs'
 
 describe('backup arguments', () => {
   it('accepts a directory', () => {
@@ -40,5 +44,17 @@ describe('restore verify arguments', () => {
     expect(parseVerifyArgs([]).ok).toBe(false)
     expect(parseVerifyArgs(['--keep']).ok).toBe(false)
     expect(parseVerifyArgs(['--file', 'b.bin', '--nope']).ok).toBe(false)
+  })
+})
+
+describe('restore objects arguments', () => {
+  it('requires a folder and nothing else', () => {
+    expect(parseRestoreObjectsArgs(['--dir', '/objects'])).toEqual({
+      ok: true,
+      value: { dir: '/objects' },
+    })
+    expect(parseRestoreObjectsArgs([]).ok).toBe(false)
+    expect(parseRestoreObjectsArgs(['--dir', '']).ok).toBe(false)
+    expect(parseRestoreObjectsArgs(['--dir', '/objects', '--nope']).ok).toBe(false)
   })
 })

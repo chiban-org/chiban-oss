@@ -6,7 +6,7 @@ Open-source land-use software for small US towns: building and trade permits, in
 
 - Node.js 24 or newer
 - pnpm 9
-- Docker with Compose (Postgres with PostGIS, MinIO, and Mailpit run in containers)
+- Docker with Compose (Postgres with PostGIS, Garage for S3-compatible object storage, and Mailpit run in containers)
 - Ghostscript 10 on the PATH for PDF/A preservation (`brew install ghostscript` or `apt-get install ghostscript`)
 - OCRmyPDF with the English Tesseract data on the PATH, only to migrate scanned legacy files (`brew install ocrmypdf` or `apt-get install ocrmypdf tesseract-ocr-eng`)
 
@@ -26,7 +26,7 @@ node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 Start the backing services, apply migrations, seed the fictional Town of Alder Pond, and run the app:
 
 ```bash
-docker compose -f docker-compose.dev.yml up -d
+docker compose -f docker-compose.dev.yml up -d --wait
 pnpm db:migrate
 pnpm storage:init
 pnpm db:seed:demo
@@ -41,7 +41,7 @@ pnpm worker
 
 `pnpm db:seed:demo` can be run again on a seeded database: it adds only what is missing, and on a day with no demo counter payments or inspector stops it adds them for that day, so the Today views are never empty. Some demo data is only created on an empty database. To start over, `pnpm db:reset:demo` drops every table in the database that `DATABASE_URL` names, then migrates and seeds again. It refuses to run unless `ENABLE_DEV_SIGN_IN=true`.
 
-The app serves on http://localhost:3000. Mailpit shows outgoing mail on http://localhost:8025. If another process holds host port 1025 or 8025, set `MAILPIT_SMTP_PORT` or `MAILPIT_UI_PORT` before `docker compose up` and match `SMTP_URL` in `.env`. To serve the app from another origin, such as a second checkout on port 3100, set `MINIO_CORS_ORIGIN=http://localhost:3100` (comma-separated for several) before `docker compose up` so browser uploads to storage are allowed.
+The app serves on http://localhost:3000. Mailpit shows outgoing mail on http://localhost:8025. If another process holds host port 1025 or 8025, set `MAILPIT_SMTP_PORT` or `MAILPIT_UI_PORT` before `docker compose up` and match `SMTP_URL` in `.env`. Browsers upload files straight to object storage, and `pnpm storage:init` sets each bucket to accept uploads only from the origins in `S3_CORS_ORIGINS` (comma-separated), or from the origin of `BASE_URL` when that is unset. `.env.example` lists port 3000 and the e2e ports 3100 to 3103. To serve the app from another origin, add it to `S3_CORS_ORIGINS` and run `pnpm storage:init` again.
 
 ## Dev sign-in
 

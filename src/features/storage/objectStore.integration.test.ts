@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto'
 import { Readable } from 'node:stream'
 import { describe, expect, it } from 'vitest'
 import { ensureBucket } from '@/features/storage/objectStore'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 
 const FIVE_BYTES = new TextEncoder().encode('hello')
 
@@ -56,7 +56,7 @@ describe('object store', () => {
     expect(res.headers.get('access-control-allow-origin')).toBe('http://localhost:3000')
   })
 
-  it('presigned get signed ten minutes ago with 60 second expiry is rejected', async () => {
+  it('presigned get signed ten minutes ago with 60 second expiry is rejected as too old', async () => {
     const { store } = await makeTestStore()
     const key = `blobs/${randomUUID()}`
     await store.putBytes(key, FIVE_BYTES, 'application/pdf', AbortSignal.timeout(10_000))
@@ -67,7 +67,9 @@ describe('object store', () => {
       disposition: 'inline',
       signingDate: new Date(Date.now() - 10 * 60 * 1000),
     })
-    expect((await fetch(url)).status).toBe(403)
+    const res = await fetch(url)
+    expect(res.status).toBe(400)
+    expect(await res.text()).toContain('Date is too old')
   })
 
   it('presigned get serves the bytes with the content disposition', async () => {

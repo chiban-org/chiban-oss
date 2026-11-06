@@ -12,8 +12,8 @@ import {
 } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba } from '@/test/hearingFixtures'
-import { makeTestStore } from '@/test/minio'
 import { issueListWithRecipients, recipient } from '@/test/noticeFixtures'
+import { makeTestStore } from '@/test/objectStore'
 
 const signal = new AbortController().signal
 let handle: TestDb

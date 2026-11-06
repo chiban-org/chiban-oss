@@ -5,7 +5,7 @@ import { files } from '@/db/schema'
 import { blobKey, ingestTempObject, sha256Hex, storeGeneratedBytes } from '@/features/files/ingest'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 
 const PDF = new TextEncoder().encode('%PDF-1.4\nbody one\n')
 

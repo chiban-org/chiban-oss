@@ -15,7 +15,7 @@ import {
   scheduledInspection,
   setupInspectionWorld,
 } from '@/test/inspectionFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 
 const signal = new AbortController().signal
 let handle: TestDb

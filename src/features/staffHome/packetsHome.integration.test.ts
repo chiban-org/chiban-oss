@@ -8,7 +8,7 @@ import { loadPacketsSection } from '@/features/staffHome/packetsHome'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { homeContextFor, rowCount, rowHref, searchOf } from '@/test/homeFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { type PacketFlow, packetFlow } from '@/test/packetFlowFixtures'
 
 const signal = new AbortController().signal

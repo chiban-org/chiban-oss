@@ -1,6 +1,6 @@
 # Self-hosting Chiban
 
-This guide covers running one town's Chiban on a single Linux host with Docker Compose. The stack is a reverse proxy (Caddy), the application, a background worker, a one-shot migration step, PostgreSQL with PostGIS, and S3-compatible object storage (MinIO).
+This guide covers running one town's Chiban on a single Linux host with Docker Compose. The stack is a reverse proxy (Caddy), the application, a background worker, a one-shot migration step, PostgreSQL with PostGIS, and S3-compatible object storage (Garage).
 
 ## Requirements
 
@@ -33,7 +33,10 @@ chmod 600 .env
 Set at least:
 
 - `APP_DOMAIN` and `BASE_URL`. `BASE_URL` is `https://` followed by the domain.
-- `POSTGRES_PASSWORD` and `MINIO_ROOT_PASSWORD`. Use long random values made of letters and digits, because they are embedded in connection URLs.
+- `POSTGRES_PASSWORD` and `S3_SECRET_ACCESS_KEY`. Use long random values made of letters and digits, because they are embedded in connection URLs.
+- `S3_ACCESS_KEY_ID`, the name of the storage access key. It must be at least 8 characters long.
+- `GARAGE_RPC_SECRET`, exactly 64 hexadecimal characters, for example the output of `openssl rand -hex 32`.
+- `GARAGE_ADMIN_TOKEN`, a long random value. Only the storage setup step uses it.
 - `SMTP_URL` and `MAIL_FROM` for outgoing mail.
 - `CHIBAN_SECRET_KEYS` and `CHIBAN_ACTIVE_KEY_ID`. The keys value is a JSON object that maps a key id to a base64 encoding of exactly 32 random bytes, for example the output of `openssl rand -base64 32`. Keep a copy of this value somewhere safe: encrypted data cannot be read without it.
 
@@ -49,32 +52,40 @@ Every image in `deploy/docker-compose.yml` is a variable, and every value in `.e
 | --- | --- |
 | `CHIBAN_IMAGE` | The application, worker, and migration step |
 | `POSTGIS_IMAGE` | PostgreSQL 16 with PostGIS |
-| `MINIO_IMAGE` | Object storage |
-| `MC_IMAGE` | The one-shot step that creates the storage bucket |
+| `GARAGE_IMAGE` | Object storage |
 | `CADDY_IMAGE` | The reverse proxy |
 
 The PostgreSQL major version must stay at 16 to match the client tools inside the application image.
 
-### Object storage image and mirroring
+### Mirroring images
 
-The upstream `minio/minio` image can no longer be pulled without a registry login, so the example file points `MINIO_IMAGE` at the Chainguard build, which pulls anonymously:
-
-```
-MINIO_IMAGE=cgr.dev/chainguard/minio@sha256:0a01100085e30fb08d2f39e39c9f5c9d83a95707f220b007d813b690cd41622d
-MC_IMAGE=cgr.dev/chainguard/minio-client@sha256:3b67177c0e12f44f646a5cf21b20fc5a79dd2d7a6b4db632b436f0b9e2e46717
-```
-
-To serve these from your own registry instead, copy each image with its digest preserved and change the variable to the new reference:
+The example file pins every image by digest, for example the Garage object store from Docker Hub:
 
 ```
-docker pull cgr.dev/chainguard/minio@sha256:0a01100085e30fb08d2f39e39c9f5c9d83a95707f220b007d813b690cd41622d
-docker tag cgr.dev/chainguard/minio@sha256:0a01100085e30fb08d2f39e39c9f5c9d83a95707f220b007d813b690cd41622d registry.example.org/mirror/minio:pinned
-docker push registry.example.org/mirror/minio:pinned
+GARAGE_IMAGE=dxflrs/garage:v2.5.0@sha256:677e5b758e4425a325b811c425c026bf35a4bf42f7ddbaa773de3f4fd779a5a5
 ```
 
-Pushing prints the digest of the copy in your registry. Put that value in `.env`, for example `MINIO_IMAGE=registry.example.org/mirror/minio@sha256:<digest>`. A tool such as `skopeo copy --all` or `crane copy` preserves digests exactly and is a good fit for this. The same steps apply to the other third-party images. Run `docker login` on the host first if your registry needs credentials.
+To serve an image from your own registry instead, copy it with its digest preserved and change the variable to the new reference:
 
-The MinIO image runs as an unprivileged user (uid 65532). A new named Docker volume is writable by that user, so no extra permission setup is needed on a fresh install.
+```
+docker pull dxflrs/garage:v2.5.0@sha256:677e5b758e4425a325b811c425c026bf35a4bf42f7ddbaa773de3f4fd779a5a5
+docker tag dxflrs/garage:v2.5.0@sha256:677e5b758e4425a325b811c425c026bf35a4bf42f7ddbaa773de3f4fd779a5a5 registry.example.org/mirror/garage:pinned
+docker push registry.example.org/mirror/garage:pinned
+```
+
+Pushing prints the digest of the copy in your registry. Put that value in `.env`, for example `GARAGE_IMAGE=registry.example.org/mirror/garage@sha256:<digest>`. A tool such as `skopeo copy --all` or `crane copy` preserves digests exactly and is a good fit for this. The same steps apply to the other third-party images. Run `docker login` on the host first if your registry needs credentials.
+
+Garage v2.5 cannot be downgraded once it has written its data, so change `GARAGE_IMAGE` to an older version only together with a restore from backup.
+
+## Object storage
+
+Object storage is [Garage](https://garagehq.deuxfleurs.fr), configured by `deploy/garage.toml`. The file holds no secret: Garage reads `GARAGE_RPC_SECRET` and `GARAGE_ADMIN_TOKEN` from the environment. What to know before you rely on it:
+
+- It runs as one node with no replication (`replication_factor = 1`), and its metadata and file data live in the `garagedata` volume. If that disk is lost, the files are gone except for what is in your backups, so keep the nightly backups below and copy them off the host.
+- Metadata is kept in SQLite with `metadata_fsync` and `data_fsync` on, which trades some write speed for surviving a power cut.
+- On its first start Garage creates the access key named by `S3_ACCESS_KEY_ID` with the secret in `S3_SECRET_ACCESS_KEY`. After that it refuses to start if `S3_SECRET_ACCESS_KEY` no longer matches, and it never accepts a deleted key name again. To rotate the credentials, pick a new `S3_ACCESS_KEY_ID` and a new `S3_SECRET_ACCESS_KEY` together, then run `docker compose up -d` and `docker compose run --rm storageinit` so the new key gets access to the bucket. Remove the old key afterwards with `docker compose exec garage /garage key delete --yes <old key name>`.
+- The `storageinit` step creates the bucket through Garage's admin API, grants the access key read, write, and owner rights on it, and sets the bucket's browser upload rule (CORS) to the origin of `BASE_URL`. Every deploy runs it again, so after changing `BASE_URL` the next deploy updates the rule. The admin API listens on port 3903 inside the Compose network only, and only `storageinit` is given the token.
+- An expired download link is answered with status 400 (`Date is too old`) rather than 403.
 
 ## First deploy
 
@@ -88,7 +99,7 @@ The script:
 
 1. Refuses a reference that is not pinned by digest.
 2. Records the current image as `CHIBAN_IMAGE_PREVIOUS` in `.env`, writes the new image as `CHIBAN_IMAGE`, and appends a line to `releases.log`.
-3. Pulls images, creates the storage bucket, applies database migrations, and starts the application and worker.
+3. Pulls images, starts object storage and prepares its bucket, applies database migrations, and starts the application and worker.
 4. Polls the application until `/api/health` answers and `/api/version` reports the image you asked for. The default limit is two minutes.
 5. On success, removes images older than seven days that no container uses.
 6. On failure, restores the previous image, restarts the application and worker on it, appends a `rolled_back` line to `releases.log`, and exits with status 1. On the very first deploy there is no previous image, so the script records `failed_no_previous` and exits with status 1.
@@ -162,7 +173,7 @@ To check an older file, run `./restore-verify.sh backups/chiban-backup-YYYY-MM-D
 
 ### Restoring for real
 
-1. On the new host, install the stack as described above with the same `CHIBAN_SECRET_KEYS` and `CHIBAN_ACTIVE_KEY_ID` (they are also inside the backup in `secrets.json`), but start only `postgres` and `minio`.
+1. On the new host, install the stack as described above with the same `CHIBAN_SECRET_KEYS` and `CHIBAN_ACTIVE_KEY_ID` (they are also inside the backup in `secrets.json`), but start only `postgres` and `garage`.
 2. Decrypt the backup. The passphrase is typed at the terminal:
 
    ```
@@ -177,12 +188,24 @@ To check an older file, run `./restore-verify.sh backups/chiban-backup-YYYY-MM-D
    docker compose exec -T postgres pg_restore --clean --if-exists --no-owner --no-privileges -U chiban -d chiban < restore/database.dump
    ```
 
-4. Copy the files back into the bucket:
+4. Create the bucket, then copy the files back into it:
 
    ```
-   docker compose run --rm --no-deps -v "$PWD/restore/objects:/objects" --entrypoint mc createbucket mirror /objects local/chiban
+   docker compose run --rm storageinit
+   docker compose run --rm --no-deps -v "$PWD/restore/objects:/objects:ro" app node dist/restore-objects.mjs --dir /objects
    ```
 
 5. Delete the `restore` folder, which now holds readable copies, and start the application with `docker compose up -d`.
 
 The mirroring advice for the object storage image above applies to backups too: keep a mirrored copy of the pinned images, so a restore does not depend on a registry being reachable.
+
+### Moving an existing install from MinIO
+
+Installs made before the switch to Garage keep their files in the old `miniodata` volume. To move them:
+
+1. Stop the application and worker with `docker compose stop app worker`, so no file is written to MinIO after the backup is taken.
+2. Take a backup with `./backup.sh` and decrypt it as in step 2 above.
+3. Update the deploy files, then in `.env` replace `MINIO_IMAGE`, `MC_IMAGE`, `MINIO_ROOT_USER`, and `MINIO_ROOT_PASSWORD` with the settings from the current `.env.example`: `GARAGE_IMAGE`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `GARAGE_RPC_SECRET`, and `GARAGE_ADMIN_TOKEN`.
+4. Deploy an image that includes Garage support with `./deploy.sh --image ...`. The deploy script does not restart Caddy, so recreate it to load the new storage upstream: `docker compose up -d --force-recreate caddy`. Existing documents do not open until the next step.
+5. Copy the files in with the second command of step 4 above. The database does not change.
+6. Once the town's documents open, remove the old containers and volume with `docker compose up -d --remove-orphans` and `docker volume rm <project>_miniodata`.

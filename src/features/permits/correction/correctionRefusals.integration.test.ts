@@ -8,7 +8,7 @@ import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/appl
 import { saveAndPublish } from '@/test/configFixtures'
 import { CORRECTED_AT, type IssuedPermit, issuedTradePermit } from '@/test/correctionFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 
 const signal = new AbortController().signal
 let handle: TestDb

@@ -19,7 +19,7 @@ import type { ObjectStore } from '@/features/storage/objectStore'
 import { createRateLimiter } from '@/server/rateLimiter'
 import { openAnonymousIntake } from '@/test/anonymousFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { makeParcel, seedParcelWorld, staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 

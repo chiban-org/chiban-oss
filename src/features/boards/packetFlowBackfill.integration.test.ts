@@ -14,7 +14,7 @@ import {
 import { makeApplication, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 
 const MIGRATION = new URL('../../../drizzle/0088_packet_flow.sql', import.meta.url)
 const BY = randomUUID()

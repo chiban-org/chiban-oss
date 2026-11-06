@@ -7,7 +7,7 @@ import { listTombstones } from '@/features/disposition/tombstones'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { DISPOSITION_NOW, eligibleCase } from '@/test/dispositionFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 

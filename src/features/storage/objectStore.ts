@@ -66,11 +66,15 @@ export interface ObjectStore {
   bucketExists(signal: AbortSignal): Promise<boolean>
 }
 
-function clientFor(endpoint: string, config: ObjectStoreConfig): S3Client {
+type ChecksumMode = 'WHEN_SUPPORTED' | 'WHEN_REQUIRED'
+
+function clientFor(endpoint: string, config: ObjectStoreConfig, checksums: ChecksumMode): S3Client {
   return new S3Client({
     endpoint,
     region: config.region,
     forcePathStyle: true,
+    requestChecksumCalculation: checksums,
+    responseChecksumValidation: checksums,
     credentials: { accessKeyId: config.accessKeyId, secretAccessKey: config.secretAccessKey },
   })
 }
@@ -90,8 +94,8 @@ export function contentDisposition(kind: 'inline' | 'attachment', filename: stri
 }
 
 export function createObjectStore(config: ObjectStoreConfig): ObjectStore {
-  const server = clientFor(config.endpoint, config)
-  const presigner = clientFor(config.publicEndpoint, config)
+  const server = clientFor(config.endpoint, config, 'WHEN_SUPPORTED')
+  const presigner = clientFor(config.publicEndpoint, config, 'WHEN_REQUIRED')
   const Bucket = config.bucket
   return {
     bucket: Bucket,

@@ -15,8 +15,8 @@ import {
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba } from '@/test/hearingFixtures'
 import { findIsoDates, findRawKeys, findUuids } from '@/test/leaks'
-import { makeTestStore } from '@/test/minio'
 import { issueListWithRecipients, proofDocument, recipient } from '@/test/noticeFixtures'
+import { makeTestStore } from '@/test/objectStore'
 import { staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 

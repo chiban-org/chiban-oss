@@ -6,7 +6,7 @@ import type { Actor } from '@/features/auth/actor'
 import { deriveRenditions } from '@/features/renditions/derive'
 import { SWEEP_TARGETS } from '@/jobs/sweepTargets'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { uploadRedactionFixture } from '@/test/redactionFixtures'
 

@@ -14,7 +14,7 @@ import { createLocalFsTarget } from '@/features/export/targets/localFs'
 import type { StorageTarget } from '@/features/export/targets/types'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { makeParcel, seedFormats, seedTown } from '@/test/parcels'
 import { err } from '@/types/result'
 

@@ -17,8 +17,8 @@ import {
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba } from '@/test/hearingFixtures'
-import { makeTestStore } from '@/test/minio'
 import { proofDocument } from '@/test/noticeFixtures'
+import { makeTestStore } from '@/test/objectStore'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal

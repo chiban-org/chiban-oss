@@ -4,7 +4,7 @@ import { readMeetingListView } from '@/features/boards/meetingListParams'
 import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba } from '@/test/hearingFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 
 const signal = new AbortController().signal
 let handle: TestDb

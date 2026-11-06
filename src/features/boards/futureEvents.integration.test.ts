@@ -15,8 +15,8 @@ import {
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba, FIXTURE_VOTES, heldZbaHearing } from '@/test/hearingFixtures'
 import { issueFixtureList } from '@/test/listFixtures'
-import { makeTestStore } from '@/test/minio'
 import { issueListWithRecipients, proveEverything, recipient } from '@/test/noticeFixtures'
+import { makeTestStore } from '@/test/objectStore'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal

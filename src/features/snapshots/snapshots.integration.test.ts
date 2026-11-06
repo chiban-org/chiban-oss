@@ -18,7 +18,7 @@ import { appTypeBody, FORM_BODY, saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { expectDbError } from '@/test/dbErrors'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { pdfPages } from '@/test/pdfText'
 import { approvePublic } from '@/test/renditionFixtures'
 

@@ -7,7 +7,7 @@ import { migrate } from 'drizzle-orm/node-postgres/migrator'
 import { Pool } from 'pg'
 import type { TestProject } from 'vitest/node'
 import { POSTGIS_IMAGE, TEMPLATE_DB } from './src/constants/infra.ts'
-import { type MinioTestConfig, startMinio } from './src/test/minioContainer.ts'
+import { type ObjectStoreTestConfig, startObjectStore } from './src/test/objectStoreContainer.ts'
 
 const MIGRATIONS_FOLDER = fileURLToPath(new URL('./drizzle', import.meta.url))
 const MIGRATIONS_JOURNAL = fileURLToPath(new URL('./drizzle/meta/_journal.json', import.meta.url))
@@ -24,15 +24,15 @@ export interface TestPgConnection {
 declare module 'vitest' {
   interface ProvidedContext {
     testPg: TestPgConnection
-    testMinio: MinioTestConfig
+    testObjectStore: ObjectStoreTestConfig
   }
 }
 
 let container: StartedPostgreSqlContainer | undefined
-let minio: Awaited<ReturnType<typeof startMinio>> | undefined
+let objectStore: Awaited<ReturnType<typeof startObjectStore>> | undefined
 
 export default async function setup(project: TestProject): Promise<() => Promise<void>> {
-  const minioStarting = startMinio()
+  const objectStoreStarting = startObjectStore()
   container = await new PostgreSqlContainer(POSTGIS_IMAGE)
     .withCommand([
       'postgres',
@@ -67,12 +67,12 @@ export default async function setup(project: TestProject): Promise<() => Promise
   }
   await templatePool.end()
 
-  minio = await minioStarting
+  objectStore = await objectStoreStarting
   project.provide('testPg', { ...base, adminDatabase, template: TEMPLATE_DB })
-  project.provide('testMinio', minio.config)
+  project.provide('testObjectStore', objectStore.config)
 
   return async () => {
     await container?.stop()
-    await minio?.stop()
+    await objectStore?.stop()
   }
 }

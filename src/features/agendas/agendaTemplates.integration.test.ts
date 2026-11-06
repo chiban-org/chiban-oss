@@ -12,9 +12,9 @@ import {
   submitBoardApplication,
 } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
 import { issueListWithRecipients, recipient } from '@/test/noticeFixtures'
 import { downloadObject } from '@/test/objectBytes'
+import { makeTestStore } from '@/test/objectStore'
 import { pdfText } from '@/test/pdfText'
 import { publishWordingTemplate, TOWN_WORDING } from '@/test/wordingTemplate'
 

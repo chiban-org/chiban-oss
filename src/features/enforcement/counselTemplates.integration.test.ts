@@ -12,8 +12,8 @@ import {
   issuedOrder,
   setupEnforcementWorld,
 } from '@/test/enforcementFixtures'
-import { makeTestStore } from '@/test/minio'
 import { downloadObject } from '@/test/objectBytes'
+import { makeTestStore } from '@/test/objectStore'
 import { pdfText } from '@/test/pdfText'
 import { publishWordingTemplate, TOWN_WORDING } from '@/test/wordingTemplate'
 import type { CivilDate } from '@/types/civilDate'

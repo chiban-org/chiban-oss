@@ -21,7 +21,7 @@ import { createRateLimiter, type RateLimiter } from '@/server/rateLimiter'
 import { openAnonymousIntake } from '@/test/anonymousFixtures'
 import { databaseContains } from '@/test/databaseSearch'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 
 const signal = new AbortController().signal

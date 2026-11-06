@@ -6,7 +6,7 @@ import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { approvePublic } from '@/test/renditionFixtures'
 
 const signal = new AbortController().signal

@@ -11,7 +11,7 @@ import { createLocalFsTarget } from '@/features/export/targets/localFs'
 import { saveTarget } from '@/features/export/targets/manageTargets'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { makeParcel, seedParcelWorld, staffActor } from '@/test/parcels'
 
 const signal = new AbortController().signal

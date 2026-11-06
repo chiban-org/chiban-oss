@@ -171,9 +171,6 @@ importers:
       '@tailwindcss/postcss':
         specifier: ^4.3.3
         version: 4.3.3
-      '@testcontainers/minio':
-        specifier: 12.2.1
-        version: 12.2.1
       '@testcontainers/postgresql':
         specifier: ^12.2.1
         version: 12.2.1
@@ -2383,9 +2380,6 @@ packages:
     peerDependenciesMeta:
       '@types/react':
         optional: true
-
-  '@testcontainers/minio@12.2.1':
-    resolution: {integrity: sha512-ulwdPa9mxaMkJDDdl/MeVteSj6+tSJ0clhn+8hyRwVzgGwy9iL6WIegiKgHocteFns+uWbEpdUp3Z9HGooJdrg==}
 
   '@testcontainers/postgresql@12.2.1':
     resolution: {integrity: sha512-MIbI5KjZ9M4SY4+xzxg/w4ZLBeV+Jd6ognXoWn7dh/mhIhBbn7ss0MiZHNg2XbCbu03BW9YQ9+H9xW8PFkJWaA==}
@@ -7287,15 +7281,6 @@ snapshots:
       react: 19.3.1
     optionalDependencies:
       '@types/react': 19.3.0
-
-  '@testcontainers/minio@12.2.1':
-    dependencies:
-      testcontainers: 12.2.1
-    transitivePeerDependencies:
-      - bare-abort-controller
-      - bare-buffer
-      - react-native-b4a
-      - supports-color
 
   '@testcontainers/postgresql@12.2.1':
     dependencies:

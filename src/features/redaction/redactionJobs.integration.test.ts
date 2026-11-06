@@ -15,7 +15,7 @@ import { requestRedaction } from '@/features/redaction/redactionJobs'
 import { runRedactionJob } from '@/features/redaction/runRedactionJob'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import {
   FIXTURE_PHONE,

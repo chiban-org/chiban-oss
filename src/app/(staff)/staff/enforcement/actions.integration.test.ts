@@ -8,7 +8,7 @@ import {
   issuedOrder,
   setupEnforcementWorld,
 } from '@/test/enforcementFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { makeParcel } from '@/test/parcels'
 
 interface MockState {

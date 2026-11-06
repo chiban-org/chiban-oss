@@ -6,7 +6,8 @@ import { envExampleValues, readDeployFile, serviceBlock, serviceNames } from './
 const compose = readDeployFile('docker-compose.yml')
 const example = envExampleValues(readDeployFile('.env.example'))
 
-const THIRD_PARTY_IMAGE_VARS = ['POSTGIS_IMAGE', 'MINIO_IMAGE', 'MC_IMAGE', 'CADDY_IMAGE']
+const THIRD_PARTY_IMAGE_VARS = ['POSTGIS_IMAGE', 'GARAGE_IMAGE', 'CADDY_IMAGE']
+const CHIBAN_IMAGE_SERVICES = ['app', 'worker', 'migrate', 'storageinit']
 const KEYS_OWNED_BY_HEALTH_WORK = ['HEALTH_DISK_PATHS']
 
 function variableNames(text: string): string[] {
@@ -16,7 +17,7 @@ function variableNames(text: string): string[] {
 describe('production compose', () => {
   it('defines exactly the expected services', () => {
     expect(serviceNames(compose).sort()).toEqual(
-      ['app', 'caddy', 'createbucket', 'migrate', 'minio', 'postgres', 'worker'].sort(),
+      ['app', 'caddy', 'garage', 'migrate', 'postgres', 'storageinit', 'worker'].sort(),
     )
   })
 
@@ -24,7 +25,7 @@ describe('production compose', () => {
     const images = [...compose.matchAll(/^\s+image:\s*(\S+)$/gm)].map((m) => m[1] ?? '')
     const used = images.flatMap(variableNames).sort()
     expect(used).toEqual(
-      [...THIRD_PARTY_IMAGE_VARS, 'CHIBAN_IMAGE', 'CHIBAN_IMAGE', 'CHIBAN_IMAGE'].sort(),
+      [...THIRD_PARTY_IMAGE_VARS, ...CHIBAN_IMAGE_SERVICES.map(() => 'CHIBAN_IMAGE')].sort(),
     )
     for (const image of images) expect(image, image).toMatch(/^\$\{[A-Z_]+\}$/)
     for (const variable of [...THIRD_PARTY_IMAGE_VARS, 'CHIBAN_IMAGE']) {
@@ -32,16 +33,16 @@ describe('production compose', () => {
     }
   })
 
-  it('app, worker, and migrate share CHIBAN_IMAGE and pass CHIBAN_IMAGE_REF', () => {
-    for (const name of ['app', 'worker', 'migrate']) {
+  it('app, worker, migrate, and storageinit share CHIBAN_IMAGE and pass CHIBAN_IMAGE_REF', () => {
+    for (const name of CHIBAN_IMAGE_SERVICES) {
       const block = serviceBlock(compose, name)
       expect(block, name).toMatch(/image:\s*\$\{CHIBAN_IMAGE\}/)
       expect(block, name).toMatch(/CHIBAN_IMAGE_REF:\s*\$\{CHIBAN_IMAGE\}/)
     }
   })
 
-  it('postgres and minio publish no ports', () => {
-    for (const name of ['postgres', 'minio', 'createbucket', 'app', 'worker', 'migrate']) {
+  it('postgres and garage publish no ports', () => {
+    for (const name of ['postgres', 'garage', 'storageinit', 'app', 'worker', 'migrate']) {
       expect(serviceBlock(compose, name), name).not.toMatch(/^\s+ports:/m)
     }
     expect(serviceBlock(compose, 'caddy')).toContain('"80:80"')
@@ -51,8 +52,8 @@ describe('production compose', () => {
   it('worker mounts both data volumes read-only for disk checks', () => {
     const worker = serviceBlock(compose, 'worker')
     expect(worker).toContain('pgdata:/monitor/pg:ro')
-    expect(worker).toContain('miniodata:/monitor/minio:ro')
-    expect(worker).toMatch(/HEALTH_DISK_PATHS:\s*\/monitor\/pg,\/monitor\/minio/)
+    expect(worker).toContain('garagedata:/monitor/garage:ro')
+    expect(worker).toMatch(/HEALTH_DISK_PATHS:\s*\/monitor\/pg,\/monitor\/garage/)
   })
 
   it('worker runs the bundled worker entrypoint', () => {
@@ -71,22 +72,54 @@ describe('production compose', () => {
     )
   })
 
-  it('minio allows CORS from BASE_URL', () => {
-    expect(serviceBlock(compose, 'minio')).toContain('MINIO_API_CORS_ALLOW_ORIGIN: ${BASE_URL}')
+  it('garage runs as a single node with the app access key and keeps its data on a volume', () => {
+    const block = serviceBlock(compose, 'garage')
+    expect(block).toContain(
+      'command: ["/garage", "server", "--single-node", "--default-access-key"]',
+    )
+    expect(block).toContain('GARAGE_DEFAULT_ACCESS_KEY: ${S3_ACCESS_KEY_ID}')
+    expect(block).toContain('GARAGE_DEFAULT_SECRET_KEY: ${S3_SECRET_ACCESS_KEY}')
+    expect(block).toContain('GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}')
+    expect(block).toContain('GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}')
+    expect(block).toContain('./garage.toml:/etc/garage.toml:ro')
+    expect(block).toContain('garagedata:/var/lib/garage')
+    expect(block).toContain('test: ["CMD", "/garage", "health"]')
   })
 
-  it('createbucket is a one-shot that creates the bucket without a shell', () => {
-    const block = serviceBlock(compose, 'createbucket')
-    expect(block).toContain('image: ${MC_IMAGE}')
-    expect(block).toContain('restart: on-failure')
-    expect(block).toContain('mb')
-    expect(block).toContain('--ignore-existing')
+  it('the app reaches garage on its S3 port with the shared access key', () => {
+    const anchor = compose.slice(0, compose.indexOf('\nservices:'))
+    expect(anchor).toContain('S3_ENDPOINT: http://garage:3900')
+    expect(anchor).toContain('S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}')
+    expect(anchor).toContain('S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}')
+    expect(anchor).not.toContain('GARAGE_ADMIN_TOKEN')
+  })
+
+  it('storageinit prepares the bucket through the admin API once garage is healthy', () => {
+    const block = serviceBlock(compose, 'storageinit')
+    expect(block).toContain('command: ["node", "dist/storage-init.mjs"]')
+    expect(block).toContain('restart: "no"')
+    expect(block).toContain('GARAGE_ADMIN_ENDPOINT: http://garage:3903')
+    expect(block).toContain('GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}')
+    expect(block).toMatch(/garage:\n\s+condition: service_healthy/)
+    expect(serviceBlock(compose, 'migrate')).toMatch(
+      /storageinit:\n\s+condition: service_completed_successfully/,
+    )
+  })
+
+  it('the env example sizes the Garage secrets and key id the way Garage requires', () => {
+    expect(example.get('S3_ACCESS_KEY_ID')?.length).toBeGreaterThanOrEqual(8)
+    expect(example.has('S3_SECRET_ACCESS_KEY')).toBe(true)
+    expect(example.has('GARAGE_RPC_SECRET')).toBe(true)
+    expect(example.has('GARAGE_ADMIN_TOKEN')).toBe(true)
+    expect([...example.keys()].filter((k) => k.startsWith('MINIO_') || k === 'MC_IMAGE')).toEqual(
+      [],
+    )
   })
 
   it('declares both data volumes', () => {
     expect(compose).toMatch(/^volumes:\n/m)
     expect(compose).toMatch(/^ {2}pgdata:/m)
-    expect(compose).toMatch(/^ {2}miniodata:/m)
+    expect(compose).toMatch(/^ {2}garagedata:/m)
   })
 
   it('passes the optional USPS credentials to every app container, blank when unset', () => {

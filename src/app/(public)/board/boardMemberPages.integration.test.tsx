@@ -16,8 +16,8 @@ import {
 } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { findIsoDates, findUuids } from '@/test/leaks'
-import { makeTestStore } from '@/test/minio'
 import { issueListWithRecipients, recipient } from '@/test/noticeFixtures'
+import { makeTestStore } from '@/test/objectStore'
 import type { CivilDate } from '@/types/civilDate'
 
 interface MockState {

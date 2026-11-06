@@ -31,7 +31,7 @@ import {
 } from '@/features/enforcement/orders'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { pdfText } from '@/test/pdfText'
 import type { CivilDate } from '@/types/civilDate'
