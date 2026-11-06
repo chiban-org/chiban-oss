@@ -124,6 +124,22 @@ function RouteRow({
   )
 }
 
+function renameDepartment(body: ReviewRoutesBody, index: number, next: Department) {
+  const previous = body.departments[index]?.key
+  const routes =
+    previous === undefined || previous === next.key
+      ? body.routes
+      : body.routes.map((route) => ({
+          ...route,
+          departmentKeys: route.departmentKeys.map((k) => (k === previous ? next.key : k)),
+        }))
+  return {
+    ...body,
+    routes,
+    departments: body.departments.map((x, n) => (n === index ? next : x)),
+  }
+}
+
 export function ReviewRoutesEditor({ body, onChange }: Props) {
   return (
     <div className="space-y-4">
@@ -132,9 +148,7 @@ export function ReviewRoutesEditor({ body, onChange }: Props) {
         <DepartmentRow
           key={rowKey('department', i)}
           department={d}
-          onChange={(next) =>
-            onChange({ ...body, departments: body.departments.map((x, n) => (n === i ? next : x)) })
-          }
+          onChange={(next) => onChange(renameDepartment(body, i, next))}
           onRemove={() =>
             onChange({ ...body, departments: body.departments.filter((_, n) => n !== i) })
           }

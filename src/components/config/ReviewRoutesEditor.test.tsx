@@ -49,6 +49,14 @@ describe('ReviewRoutesEditor', () => {
     })
   })
 
+  it('renaming a department keeps the routes that name it pointing at it', () => {
+    const onChange = renderEditor(BODY)
+    fireEvent.change(screen.getByLabelText('Department name'), {
+      target: { value: 'Public Works' },
+    })
+    expect(onChange.mock.calls[0]?.[0].routes[0].departmentKeys).toEqual(['public_works'])
+  })
+
   it('unchecking a department on a route removes it', () => {
     const onChange = renderEditor(BODY)
     fireEvent.click(screen.getByRole('checkbox', { name: 'Fire' }))
