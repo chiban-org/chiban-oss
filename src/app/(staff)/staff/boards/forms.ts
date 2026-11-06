@@ -1,6 +1,7 @@
 import { BoardSchema } from '@packs/nh/schema'
 import { z } from 'zod'
 import {
+  checkbox,
   choice,
   civilDate,
   optionalCivilDate,
@@ -8,7 +9,7 @@ import {
   recordId,
   requiredText,
 } from '@/features/input/schemas'
-import { valueList, yesFlag } from './formFields'
+import { valueList } from './formFields'
 
 const applicationId = () => recordId('an application')
 
@@ -24,7 +25,7 @@ export const SCHEDULE_MEETING_FORM = z.object({
 export const CANCEL_MEETING_FORM = z.object({
   meetingId: recordId('a meeting'),
   reason: requiredText('a reason', { max: 500 }),
-  tellRecipients: yesFlag(),
+  tellRecipients: checkbox(),
 })
 
 export const ACCEPTANCE_MEETING_FORM = z.object({
