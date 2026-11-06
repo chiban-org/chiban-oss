@@ -1,10 +1,11 @@
 'use client'
 
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useEffect, useRef, useState } from 'react'
 import { useCsrfToken } from '@/components/CsrfProvider'
 import type {
   CounterActions,
   CounterOutcome,
+  FieldErrors,
   LicenseGroup,
 } from '@/components/counter/counterTypes'
 import { IssuedPanel, type IssuedReceipt } from '@/components/counter/IssuedPanel'
@@ -17,6 +18,8 @@ import {
   WorkSection,
 } from '@/components/counter/QuickIssueSections'
 import { ReaderPanel } from '@/components/counter/ReaderPanel'
+import { FieldErrorsProvider } from '@/components/fieldErrors'
+import { focusFirstRefused } from '@/components/formValidity'
 import { NEW_TAB } from '@/components/newTab'
 import { Button } from '@/components/ui/button'
 import { RequiredNote } from '@/components/ui/required-mark'
@@ -41,6 +44,8 @@ interface Props {
   lookup: { label: string; url: string }
   actions: CounterActions
 }
+
+const NO_FIELD_ERRORS: FieldErrors = {}
 
 function openPrintouts(result: CounterOutcome): void {
   if (!result.ok || result.state !== 'issued' || result.links === null) return
@@ -79,6 +84,12 @@ export function QuickIssueForm(props: Props) {
   const [outcome, setOutcome] = useState<CounterOutcome | null>(null)
   const [declinedApplicationId, setDeclinedApplicationId] = useState<string | null>(null)
   const [receipt, setReceipt] = useState<IssuedReceipt | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<FieldErrors>(NO_FIELD_ERRORS)
+  const form = useRef<HTMLFormElement>(null)
+
+  useEffect(() => {
+    focusFirstRefused(form.current, Object.keys(fieldErrors))
+  }, [fieldErrors])
 
   const channel = method === 'card' ? 'card_present' : method
   const convenienceCents = computeConvenienceFee(props.baseCents, props.convenienceFee, channel)
@@ -95,8 +106,11 @@ export function QuickIssueForm(props: Props) {
     setReceipt(receiptFor(props, data, method, props.baseCents + convenienceCents))
     if (declinedApplicationId !== null) data.set('applicationId', declinedApplicationId)
     setDeclinedApplicationId(null)
+    setFieldErrors(NO_FIELD_ERRORS)
     const result = await attempt(() => props.actions.issue(data), setPending)
-    show(result.ok ? result.value : { ok: false, error: result.error })
+    const outcome: CounterOutcome = result.ok ? result.value : { ok: false, error: result.error }
+    if (!outcome.ok && outcome.fieldErrors !== undefined) setFieldErrors(outcome.fieldErrors)
+    show(outcome)
   }
 
   const issued = accepted(outcome, 'issued')
@@ -108,29 +122,37 @@ export function QuickIssueForm(props: Props) {
   }
 
   return (
-    <form onSubmit={(event) => void submit(event)} className="space-y-6">
+    <form
+      ref={form}
+      noValidate
+      onSubmit={(event) => void submit(event)}
+      onInput={() => setFieldErrors(NO_FIELD_ERRORS)}
+      className="space-y-6"
+    >
       {props.summary}
       <RequiredNote />
-      <input type="hidden" name="parcelId" value={props.parcelId} />
-      <input type="hidden" name="typeKey" value={props.typeKey} />
-      <ContractorSection
-        licenseRequired={props.licenseRequired}
-        licenseGroups={props.licenseGroups}
-        defaultLicenseType={props.defaultLicenseType ?? ''}
-        lookup={props.lookup}
-      />
-      <WorkSection fields={props.fields} />
-      <FeeSection
-        baseCents={props.baseCents}
-        convenienceCents={convenienceCents}
-        card={method === 'card'}
-      />
-      <PaymentSection
-        method={method}
-        onMethod={setMethod}
-        cardAvailable={props.cardAvailable}
-        readerSimulated={props.readerSimulated}
-      />
+      <FieldErrorsProvider errors={fieldErrors}>
+        <input type="hidden" name="parcelId" value={props.parcelId} />
+        <input type="hidden" name="typeKey" value={props.typeKey} />
+        <ContractorSection
+          licenseRequired={props.licenseRequired}
+          licenseGroups={props.licenseGroups}
+          defaultLicenseType={props.defaultLicenseType ?? ''}
+          lookup={props.lookup}
+        />
+        <WorkSection fields={props.fields} />
+        <FeeSection
+          baseCents={props.baseCents}
+          convenienceCents={convenienceCents}
+          card={method === 'card'}
+        />
+        <PaymentSection
+          method={method}
+          onMethod={setMethod}
+          cardAvailable={props.cardAvailable}
+          readerSimulated={props.readerSimulated}
+        />
+      </FieldErrorsProvider>
       <div className="flex items-center gap-3">
         <Button type="submit" disabled={pending || readerBusy}>
           Issue and print

@@ -19,6 +19,8 @@ interface Props {
   onDeclined?: () => void
 }
 
+const NOT_REPORTED = 'The processor has not reported an outcome yet. Check again in a moment.'
+
 type Phase = 'waiting' | 'unknown' | 'declined' | 'issuing' | 'done'
 
 function payload(csrf: string, fields: Record<string, string>): FormData {
@@ -71,9 +73,11 @@ export function ReaderPanel({
     } else setPhase('waiting')
   }
 
-  const run = async (call: () => Promise<ReaderStatus>) => {
+  const run = async (call: () => Promise<ReaderStatus>, explainsWaiting = false) => {
     const result = await attempt(call, setPending)
-    await apply(result.ok ? result.value : { ok: false, error: result.error })
+    const status: ReaderStatus = result.ok ? result.value : { ok: false, error: result.error }
+    await apply(status)
+    if (explainsWaiting && status.ok && status.outcomeUnknown) setMessage(NOT_REPORTED)
   }
 
   const readerButton = (label: string, outcome: 'captured' | 'declined' | 'unknown') => (
@@ -92,7 +96,7 @@ export function ReaderPanel({
       type="button"
       variant="outline"
       disabled={pending}
-      onClick={() => void run(() => actions.reconnect(payload(csrf, { attemptId, outcome })))}
+      onClick={() => void run(() => actions.reconnect(payload(csrf, { attemptId, outcome })), true)}
     >
       {label}
     </Button>
@@ -124,7 +128,7 @@ export function ReaderPanel({
           <Button
             type="button"
             disabled={pending}
-            onClick={() => void run(() => actions.check(payload(csrf, { attemptId })))}
+            onClick={() => void run(() => actions.check(payload(csrf, { attemptId })), true)}
           >
             Check with processor
           </Button>

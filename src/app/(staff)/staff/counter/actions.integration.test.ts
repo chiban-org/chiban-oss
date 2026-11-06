@@ -37,7 +37,10 @@ vi.mock('next/headers', () => ({
 }))
 vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
 
-const actions = await import('@/app/(staff)/staff/counter/actions')
+const actions = {
+  ...(await import('@/app/(staff)/staff/counter/actions')),
+  ...(await import('@/app/(staff)/staff/counter/readerActions')),
+}
 
 let handle: TestDb
 let world: PermitWorld
@@ -115,7 +118,11 @@ describe('counter server actions', () => {
 
   it('invalid input is reported', async () => {
     const r = await actions.quickIssueAction(form({ ...issueFields(), parcelId: 'nope' }))
-    expect(r).toEqual({ ok: false, error: 'Check the form fields and try again.' })
+    expect(r).toEqual({
+      ok: false,
+      error: 'Choose a parcel.',
+      fieldErrors: { parcelId: 'Choose a parcel.' },
+    })
   })
 
   it('a not-active license is explained', async () => {

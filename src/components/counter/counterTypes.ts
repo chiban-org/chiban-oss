@@ -4,8 +4,10 @@ export interface CounterLinks {
   receipt: string | null
 }
 
+export type FieldErrors = Readonly<Record<string, string>>
+
 export type CounterOutcome =
-  | { ok: false; error: string }
+  | { ok: false; error: string; fieldErrors?: FieldErrors }
   | {
       ok: true
       state: 'issued' | 'submitted'
