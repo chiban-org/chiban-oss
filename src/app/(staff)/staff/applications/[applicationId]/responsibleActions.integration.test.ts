@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { applications } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { refuseField } from '@/server/formInput'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { staffActor } from '@/test/parcels'
@@ -95,9 +96,11 @@ describe('setResponsibleStaffAction', () => {
     const result = await setResponsibleStaffAction(
       form({ applicationId, userId: world.reviewer.userId }),
     )
-    expect(result).toEqual({
-      ok: false,
-      error: 'Choose an active town staff member. Reviewers and applicants cannot be responsible.',
-    })
+    expect(result).toEqual(
+      refuseField(
+        'userId',
+        'Choose an active town staff member. Reviewers and applicants cannot be responsible.',
+      ),
+    )
   })
 })

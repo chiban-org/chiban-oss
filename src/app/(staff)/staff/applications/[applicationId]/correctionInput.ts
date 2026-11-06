@@ -4,6 +4,7 @@ import type { ContractorChoice } from '@/features/permits/correction/contractor'
 import type { CorrectionError } from '@/features/permits/correction/correctPermit'
 import { fieldErrorCopy } from '@/features/portal/formData'
 import { type ActionResult, errorCopy, text } from '@/server/actionRunner'
+import { refuseField } from '@/server/formInput'
 import { idOf } from './actionInput'
 
 const NOT_A_CORRECTION = 'so it is not a correction. Start an amended application instead.'
@@ -66,8 +67,17 @@ export function fieldErrorsOf(errors: FieldError[]): Record<string, string> {
   return Object.fromEntries(errors.map((e) => [e.field, fieldErrorCopy(e.code)]))
 }
 
+const FIELD_OF_ERROR: Partial<Record<Exclude<CorrectionError, object>, string>> = {
+  reason_required: 'reason',
+  title_required: 'projectTitle',
+  contractor_name_required: 'contractorName',
+}
+
 export function correctionFailure(error: CorrectionError): ActionResult {
-  if (typeof error === 'string') return { ok: false, error: COPY[error] }
+  if (typeof error === 'string') {
+    const field = FIELD_OF_ERROR[error]
+    return field === undefined ? { ok: false, error: COPY[error] } : refuseField(field, COPY[error])
+  }
   if ('review' in error) return { ok: false, error: reviewRefusal(error.review) }
   return {
     ok: false,

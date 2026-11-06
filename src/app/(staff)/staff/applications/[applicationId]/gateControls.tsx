@@ -2,7 +2,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { AreaField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import type { GateResult } from '@/features/gates/evaluateGates'
-import { overrideGateAction, revokeOverrideAction, statutoryExceptionAction } from './actions'
+import { overrideGateAction, revokeOverrideAction, statutoryExceptionAction } from './gateActions'
 
 export function GateControls({ view, result }: { view: StaffApplicationView; result: GateResult }) {
   const { canOverrideGate, canRecordStatutoryException } = view.permissions

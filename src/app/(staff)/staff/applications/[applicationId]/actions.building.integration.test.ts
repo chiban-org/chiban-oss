@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { applications, clocks, feeOverrides, gateOverrides } from '@/db/schema'
 import { startClocksFor } from '@/features/clocks/startClocks'
+import { refuseField } from '@/server/formInput'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { staffActor } from '@/test/parcels'
@@ -98,7 +99,7 @@ describe('application building actions', () => {
       await actions.feeOverrideAction(
         form({ applicationId: app.applicationId, feeCode: 'el', kind: 'waive', reason: ' ' }),
       ),
-    ).toMatchObject({ ok: false, error: 'A reason is required.' })
+    ).toEqual(refuseField('reason', 'Enter a reason.'))
     expect(
       await actions.feeOverrideAction(
         form({
@@ -125,7 +126,7 @@ describe('application building actions', () => {
           reason: 'Hardship',
         }),
       ),
-    ).toMatchObject({ ok: false })
+    ).toEqual(refuseField('amount', 'Enter the amount in dollars and cents, like 25.00.'))
   })
 
   it('clock adjustments are refused where the rule forbids them and need clock.adjust', async () => {
@@ -183,7 +184,7 @@ describe('application building actions', () => {
         form({
           applicationId: app.applicationId,
           determination: 'yes',
-          determinedOn: '2027-06-01',
+          determinedOn: '2026-06-01',
         }),
       ),
     ).toMatchObject({ ok: false, error: expect.stringContaining('permission') })
@@ -193,7 +194,7 @@ describe('application building actions', () => {
         form({
           applicationId: app.applicationId,
           determination: 'previously_determined',
-          determinedOn: '2027-06-01',
+          determinedOn: '2026-06-01',
         }),
       ),
     ).toMatchObject({ ok: false, error: expect.stringContaining('board') })
@@ -202,7 +203,7 @@ describe('application building actions', () => {
         form({
           applicationId: app.applicationId,
           determination: 'yes',
-          determinedOn: '2027-06-01',
+          determinedOn: '2026-06-01',
         }),
       ),
     ).toMatchObject({ ok: true })
@@ -210,7 +211,7 @@ describe('application building actions', () => {
       applicationId: app.applicationId,
       recipientKind: 'regional_planning_commission',
       recipientName: 'Alder Pond RPC',
-      mailedOn: '2027-06-04',
+      mailedOn: '2026-06-04',
     }
     expect(await actions.regionalNoticeAction(form({ ...notice, method: 'email' }))).toMatchObject({
       ok: false,
@@ -228,11 +229,11 @@ describe('application building actions', () => {
       await actions.recordAppealAction(
         form({
           applicationId: app.applicationId,
-          filedOn: '2999-01-01',
+          filedOn: '2098-01-01',
           appellantName: 'Abutter Smith',
         }),
       ),
-    ).toEqual({ ok: false, error: 'The filing date cannot be in the future.' })
+    ).toEqual(refuseField('filedOn', 'The filing date cannot be in the future.'))
     expect(
       await actions.recordAppealAction(
         form({
@@ -274,6 +275,6 @@ describe('application building actions', () => {
       await actions.markCompleteAction(
         form({ applicationId: '00000000-0000-4000-8000-000000000000', completedDate: 'soon' }),
       ),
-    ).toMatchObject({ ok: false, error: 'Enter a valid date.' })
+    ).toEqual(refuseField('completedDate', 'Enter the completed date as a date.'))
   })
 })

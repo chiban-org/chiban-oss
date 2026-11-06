@@ -1,5 +1,6 @@
 'use server'
 
+import { z } from 'zod'
 import type { Db } from '@/db/client'
 import { chooseSubstep } from '@/features/applications/chooseSubstep'
 import { loadApplicationContext } from '@/features/applications/context'
@@ -10,18 +11,32 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { recordCodeEdition } from '@/features/building/codeEdition'
 import { markComplete } from '@/features/building/completeness'
-import { applyCondition, setConditionStatus } from '@/features/conditions/applicationConditions'
-import {
-  overrideAdministrativeGate,
-  recordStatutoryException,
-  revokeGateOverride,
-} from '@/features/gates/overrides'
+import { choice, civilDate, optionalText, requiredText } from '@/features/input/schemas'
 import { issueApplication } from '@/features/issuance/issueApplication'
-import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
-import { dateOf, done, INVALID, INVALID_DATE, idOf } from './actionInput'
+import { type ActionResult, errorCopy } from '@/server/actionRunner'
+import { refuseField, runStaffForm } from '@/server/formInput'
+import { runStaffFormToday } from '@/server/formInputToday'
+import { applicationIdField, outcome, rowVersionField } from './actionInput'
 
 const BOARD_DECISION_ONLY =
   'Record the board decision from its hearing; that sets the outcome and the state.'
+
+const TRANSITION_FORM = z.object({
+  applicationId: applicationIdField(),
+  to: choice('a step', CORE_STATES),
+  expectedRowVersion: rowVersionField(),
+})
+
+const SUBSTEP_FORM = z.object({
+  applicationId: applicationIdField(),
+  substep: requiredText('a step', { max: 200 }),
+  expectedRowVersion: rowVersionField(),
+})
+
+const CODE_EDITION_FORM = z.object({
+  applicationId: applicationIdField(),
+  election: optionalText('a code edition', { max: 100 }),
+})
 
 async function isBareBoardDecision(
   db: Db,
@@ -37,17 +52,8 @@ async function isBareBoardDecision(
 }
 
 export async function transitionAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const applicationId = idOf(formData)
-    const to = text(formData, 'to')
-    const expectedRowVersion = Number(text(formData, 'expectedRowVersion'))
-    if (
-      applicationId === null ||
-      !(CORE_STATES as readonly string[]).includes(to) ||
-      !Number.isInteger(expectedRowVersion)
-    ) {
-      return INVALID
-    }
+  return await runStaffForm(formData, TRANSITION_FORM, async ({ db, actor, signal }, input) => {
+    const { applicationId, to, expectedRowVersion } = input
     if (await isBareBoardDecision(db, actor, applicationId, to, signal)) {
       return { ok: false, error: BOARD_DECISION_ONLY }
     }
@@ -55,12 +61,7 @@ export async function transitionAction(formData: FormData): Promise<ActionResult
       to === 'issued'
         ? await issueApplication(db, actor, { applicationId, expectedRowVersion }, signal)
         : await db.transaction((tx) =>
-            transitionApplication(
-              tx,
-              actor,
-              { applicationId, to: to as CoreState, expectedRowVersion },
-              signal,
-            ),
+            transitionApplication(tx, actor, { applicationId, to, expectedRowVersion }, signal),
           )
     if (result.ok) return { ok: true, message: `Moved to ${to.replaceAll('_', ' ')}.` }
     if (typeof result.error === 'string') return { ok: false, error: errorCopy(result.error) }
@@ -72,124 +73,43 @@ export async function transitionAction(formData: FormData): Promise<ActionResult
 }
 
 export async function setSubstepAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const applicationId = idOf(formData)
-    const expectedRowVersion = Number(text(formData, 'expectedRowVersion'))
-    if (applicationId === null || !Number.isInteger(expectedRowVersion)) return INVALID
-    const result = await db.transaction((tx) =>
-      chooseSubstep(
-        tx,
-        actor,
-        { applicationId, substep: text(formData, 'substep'), expectedRowVersion },
-        signal,
-      ),
-    )
-    return result.ok
-      ? { ok: true, message: 'Step updated.' }
-      : {
-          ok: false,
-          error:
-            result.error === 'invalid_substep'
-              ? errorCopy('invalid_input')
-              : errorCopy(result.error),
-        }
+  return await runStaffForm(formData, SUBSTEP_FORM, async ({ db, actor, signal }, input) => {
+    const result = await db.transaction((tx) => chooseSubstep(tx, actor, input, signal))
+    if (!result.ok && result.error === 'invalid_substep') {
+      return refuseField('substep', 'Choose a step from the list.')
+    }
+    return outcome(result, 'Step updated.')
   })
 }
 
 export async function markCompleteAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const applicationId = idOf(formData)
-    const completedDate = dateOf(formData, 'completedDate')
-    if (applicationId === null) return INVALID
-    if (completedDate === null) return INVALID_DATE
-    return done(
-      await markComplete(db, actor, { applicationId, completedDate }, signal),
-      'Marked complete. The decision clock is running.',
-    )
-  })
+  return await runStaffFormToday(
+    formData,
+    (today) =>
+      z.object({
+        applicationId: applicationIdField(),
+        completedDate: civilDate('the completed date', { latest: today }),
+      }),
+    async ({ db, actor, signal }, input) =>
+      outcome(
+        await markComplete(db, actor, input, signal),
+        'Marked complete. The decision clock is running.',
+        { before_receipt: 'completedDate', future_date: 'completedDate' },
+      ),
+  )
 }
 
 export async function recordCodeEditionAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const applicationId = idOf(formData)
-    if (applicationId === null) return INVALID
-    const election = text(formData, 'election')
+  return await runStaffForm(formData, CODE_EDITION_FORM, async ({ db, actor, signal }, input) => {
     const result = await recordCodeEdition(
       db,
       actor,
-      { applicationId, ...(election === '' ? {} : { election }) },
-      signal,
-    )
-    return done(result, 'Code edition recorded.')
-  })
-}
-
-export async function overrideGateAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const applicationId = idOf(formData)
-    if (applicationId === null) return INVALID
-    const result = await overrideAdministrativeGate(
-      db,
-      actor,
-      { applicationId, gateKey: text(formData, 'gateKey'), reason: text(formData, 'reason') },
-      signal,
-    )
-    return done(result, 'Gate overridden. The reason is on record.')
-  })
-}
-
-export async function statutoryExceptionAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const applicationId = idOf(formData)
-    if (applicationId === null) return INVALID
-    const result = await recordStatutoryException(
-      db,
-      actor,
       {
-        applicationId,
-        gateKey: text(formData, 'gateKey'),
-        legalAuthority: {
-          citation: text(formData, 'citation'),
-          explanation: text(formData, 'explanation'),
-        },
+        applicationId: input.applicationId,
+        ...(input.election === null ? {} : { election: input.election }),
       },
       signal,
     )
-    return done(result, 'Statutory exception recorded.')
-  })
-}
-
-export async function revokeOverrideAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const overrideId = idOf(formData, 'overrideId')
-    if (overrideId === null) return INVALID
-    return done(await revokeGateOverride(db, actor, overrideId, signal), 'Override revoked.')
-  })
-}
-
-export async function applyConditionAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const applicationId = idOf(formData)
-    if (applicationId === null) return INVALID
-    return done(
-      await applyCondition(db, actor, { applicationId, code: text(formData, 'code') }, signal),
-      'Condition applied.',
-    )
-  })
-}
-
-export async function setConditionStatusAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const conditionId = idOf(formData, 'conditionId')
-    const status = text(formData, 'status')
-    if (conditionId === null || !['unmet', 'met', 'waived'].includes(status)) return INVALID
-    const reason = text(formData, 'reason')
-    const result = await setConditionStatus(
-      db,
-      actor,
-      { conditionId, status: status as 'met', ...(reason === '' ? {} : { reason }) },
-      signal,
-    )
-    return done(result, 'Condition updated.')
+    return outcome(result, 'Code edition recorded.', { election_not_allowed: 'election' })
   })
 }
