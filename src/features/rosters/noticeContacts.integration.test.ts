@@ -102,7 +102,7 @@ describe('earlier versions', () => {
       parcelIds: [parcelId],
       timeZone: 'America/New_York',
     })
-    const kept = versions.get(parcelId) ?? []
+    const kept = [...versions.values()].flat()
     expect(kept).toHaveLength(1)
     expect(kept[0]?.lines).toEqual([
       'Pond View Condominium',
@@ -135,7 +135,7 @@ describe('earlier versions', () => {
       parcelIds: [parcelId],
       timeZone: 'America/New_York',
     })
-    expect(versions.get(parcelId)?.[0]?.lines).toEqual([
+    expect([...versions.values()].flat()[0]?.lines).toEqual([
       'Heron Park',
       'Owner: Heron Park LLC, 1 Heron Road, Alder Pond NH',
       'Cass Pryor, Site 4, 4 Heron Road',

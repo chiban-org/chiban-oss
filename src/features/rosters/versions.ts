@@ -64,6 +64,38 @@ const CHANGE_ACTIONS: Record<EntryKind, string[]> = {
   ],
 }
 
+export function legacyHistoryKey(parcelId: string): string {
+  return `parcel:${parcelId}`
+}
+
+type Version = EarlierVersion & { entryKey: string }
+
+export function historyByEntry<R extends { id: string; parcelId: string; endedAt: Date | null }>(
+  rows: readonly R[],
+  history: ReadonlyMap<string, Version[]>,
+): Map<string, Version[]> {
+  const firstOnParcel = new Map<string, R>()
+  for (const row of rows) {
+    const held = firstOnParcel.get(row.parcelId)
+    const endedFirst =
+      held !== undefined &&
+      row.endedAt !== null &&
+      (held.endedAt === null || row.endedAt < held.endedAt)
+    if (held === undefined || endedFirst) firstOnParcel.set(row.parcelId, row)
+  }
+  return new Map(
+    rows.map((row) => [
+      row.id,
+      [
+        ...(history.get(row.id) ?? []),
+        ...(firstOnParcel.get(row.parcelId) === row
+          ? (history.get(legacyHistoryKey(row.parcelId)) ?? [])
+          : []),
+      ],
+    ]),
+  )
+}
+
 export async function earlierVersions(
   db: DbOrTx,
   input: { kind: EntryKind; parcelIds: string[]; timeZone: string },
@@ -90,7 +122,10 @@ export async function earlierVersions(
     .orderBy(desc(auditLog.at))
   for (const row of rows) {
     const before = row.before as Before
-    const entryKey = input.kind === 'restriction' ? text(before.holdingId) : row.entityId
+    const entryKey =
+      input.kind === 'restriction'
+        ? text(before.holdingId)
+        : text(before.entryId) || legacyHistoryKey(row.entityId)
     const changed = formatCivilDate(todayInTimeZone(input.timeZone, row.at))
     const version = {
       entryKey,

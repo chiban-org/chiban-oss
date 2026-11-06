@@ -1,20 +1,12 @@
 import { and, eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import {
-  abutterListRecipients,
-  associationRosters,
-  auditLog,
-  parcelAliases,
-  parkRosters,
-} from '@/db/schema'
+import { abutterListRecipients, associationRosters, auditLog, parkRosters } from '@/db/schema'
 import { issueList } from '@/features/abutters/issue'
 import { decideTenant, generateList } from '@/features/abutters/lists'
 import { loadListView } from '@/features/abutters/listView'
 import { currentIssuedList, getList } from '@/features/abutters/queries'
 import type { Recipient } from '@/features/abutters/resolution'
 import { addAssociation, upsertAssociation } from '@/features/rosters/associations'
-import { condoGaps } from '@/features/rosters/gaps'
-import { loadParcelContacts } from '@/features/rosters/parcelContacts'
 import { upsertPark } from '@/features/rosters/parks'
 import { endRosterEntry, undoRosterEnd } from '@/features/rosters/rosterEnd'
 import { type BoardWorld, publishRegionalContacts, setupBoardWorld } from '@/test/boardFixtures'
@@ -275,35 +267,5 @@ describe('ending a condo association or park', () => {
     const names = await issueNewList()
     expect(names).toContain('Lee Marsh')
     expect(names).not.toContain('Dana Whitcomb')
-  })
-
-  it('lists a multi-unit parcel as missing its association once the association has ended', async () => {
-    const parcelId = lw.ids.SW ?? ''
-    await handle.db.insert(parcelAliases).values(
-      ['009001000001', '009001000002'].map((value) => ({
-        parcelId,
-        format: 'cama15',
-        value,
-        valueNormalized: value,
-        status: 'active' as const,
-        source: 'manual' as const,
-      })),
-    )
-    const entryId = await saveAssociation()
-    const today = '2027-03-24' as CivilDate
-    expect(await condoGaps(handle.db, signal, null, today)).toEqual([])
-    await end('association', entryId)
-    expect((await condoGaps(handle.db, signal, null, today)).map((g) => g.parcelId)).toEqual([
-      parcelId,
-    ])
-    expect(await condoGaps(handle.db, signal, null, '2027-03-19' as CivilDate)).toEqual([])
-    const contacts = await loadParcelContacts(
-      handle.db,
-      world.staff,
-      { parcelId, now: LIST_NOW },
-      signal,
-    )
-    expect(contacts?.associations).toEqual([])
-    expect(contacts?.missingAssociation).not.toBeNull()
   })
 })

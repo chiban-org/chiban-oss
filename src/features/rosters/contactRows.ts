@@ -14,7 +14,7 @@ import { endingUsed } from '@/features/rosters/restrictionEnd'
 import type { RestrictionKind } from '@/features/rosters/restrictions'
 import { rosterEndingUsed } from '@/features/rosters/rosterEnd'
 import { type ListUse, listsUsing } from '@/features/rosters/usedBy'
-import { type EarlierVersion, earlierVersions } from '@/features/rosters/versions'
+import { type EarlierVersion, earlierVersions, historyByEntry } from '@/features/rosters/versions'
 import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 
@@ -195,10 +195,12 @@ export async function loadContactRows(
     const base = meta(row, lastChecked(row.asOf, row.checkedOn), versions)
     return { ...base, ...ended, due: ended.active && base.due }
   }
+  const associationVersions = historyByEntry(associations, associationHistory)
+  const parkVersions = historyByEntry(parks, parkHistory)
   const associationRows: AssociationRow[] = []
   for (const a of associations) {
     associationRows.push({
-      ...(await rosterMeta(a, associationHistory.get(a.parcelId) ?? [])),
+      ...(await rosterMeta(a, associationVersions.get(a.id) ?? [])),
       name: a.associationName,
       officers: a.officers,
       asOf: a.asOf,
@@ -207,7 +209,7 @@ export async function loadContactRows(
   const parkRows: ParkRow[] = []
   for (const p of parks) {
     parkRows.push({
-      ...(await rosterMeta(p, parkHistory.get(p.parcelId) ?? [])),
+      ...(await rosterMeta(p, parkVersions.get(p.id) ?? [])),
       name: p.parkName,
       owner: p.ownerName,
       ownerMailingAddress: p.ownerMailingAddress,

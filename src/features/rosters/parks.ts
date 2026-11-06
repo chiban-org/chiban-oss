@@ -101,14 +101,14 @@ async function savePark(
               target: parkRosters.parcelId,
               where: isNull(parkRosters.endedOn),
             })
-            .returning({ parcelId: parkRosters.parcelId })
+            .returning({ id: parkRosters.id })
         : await insert
             .onConflictDoUpdate({
               target: parkRosters.parcelId,
               targetWhere: isNull(parkRosters.endedOn),
               set: values,
             })
-            .returning({ parcelId: parkRosters.parcelId })
+            .returning({ id: parkRosters.id })
     if (saved.length === 0) return err('park_exists')
     await writeAudit(
       tx,
@@ -117,8 +117,8 @@ async function savePark(
         action: `roster.park.${mode}`,
         entityType: 'parcel',
         entityId: input.parcelId,
-        before: before === undefined ? null : summary(before),
-        after: summary(values),
+        before: before === undefined ? null : { entryId: before.id, ...summary(before) },
+        after: { entryId: saved[0]?.id ?? null, ...summary(values) },
       },
       signal,
     )

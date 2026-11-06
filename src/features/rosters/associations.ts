@@ -91,14 +91,14 @@ async function saveAssociation(
               target: associationRosters.parcelId,
               where: isNull(associationRosters.endedOn),
             })
-            .returning({ parcelId: associationRosters.parcelId })
+            .returning({ id: associationRosters.id })
         : await insert
             .onConflictDoUpdate({
               target: associationRosters.parcelId,
               targetWhere: isNull(associationRosters.endedOn),
               set: values,
             })
-            .returning({ parcelId: associationRosters.parcelId })
+            .returning({ id: associationRosters.id })
     if (saved.length === 0) return err('association_exists')
     await writeAudit(
       tx,
@@ -107,8 +107,8 @@ async function saveAssociation(
         action: `roster.association.${mode}`,
         entityType: 'parcel',
         entityId: input.parcelId,
-        before: before === undefined ? null : summary(before),
-        after: summary(values),
+        before: before === undefined ? null : { entryId: before.id, ...summary(before) },
+        after: { entryId: saved[0]?.id ?? null, ...summary(values) },
       },
       signal,
     )
