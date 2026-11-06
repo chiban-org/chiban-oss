@@ -3,7 +3,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { TextField } from '@/components/staff/fields'
 import { changeNameAction, changePasswordAction } from './actions'
-import { MAX_NAME_LENGTH } from './forms'
+import { MAX_NAME_LENGTH } from './limits'
 
 export function ChangeNameForm({ displayName }: { displayName: string }) {
   return (

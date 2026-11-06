@@ -2,8 +2,7 @@ import { z } from 'zod'
 import { emailAddress, inputField, recordId, requiredText } from '@/features/input/schemas'
 import { MAX_REASON_LENGTH } from '@/features/users/manage'
 import { ok } from '@/types/result'
-
-export const MAX_DISPLAY_NAME_LENGTH = 120
+import { MAX_DISPLAY_NAME_LENGTH } from './limits'
 
 function roleList() {
   return inputField((raw) => {

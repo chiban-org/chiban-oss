@@ -1,7 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { TextField } from '@/components/staff/fields'
 import { inviteStaffAction } from '../actions'
-import { MAX_DISPLAY_NAME_LENGTH } from '../forms'
+import { MAX_DISPLAY_NAME_LENGTH } from '../limits'
 import { RoleChecks } from '../RoleChecks'
 
 export function InviteForm() {

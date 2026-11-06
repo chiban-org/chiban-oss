@@ -2,8 +2,7 @@ import { z } from 'zod'
 import { MIN_PASSWORD_LENGTH } from '@/features/auth/createStaffUser'
 import { inputField, requiredText } from '@/features/input/schemas'
 import { err, ok } from '@/types/result'
-
-export const MAX_NAME_LENGTH = 120
+import { MAX_NAME_LENGTH } from './limits'
 
 function password(missing: string, minLength = 1) {
   return inputField((raw) => {
