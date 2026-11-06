@@ -67,6 +67,7 @@ export async function changeOwnPassword(
 ): Promise<Result<void, ChangePasswordError>> {
   signal.throwIfAborted()
   if (limiter.isLimited(input.userId)) return err('rate_limited')
+  limiter.recordFailure(input.userId)
   if (input.next.length < MIN_PASSWORD_LENGTH) return err('weak_password')
   const [user] = await db
     .select({ passwordHash: users.passwordHash, isActive: users.isActive })
@@ -74,11 +75,11 @@ export async function changeOwnPassword(
     .where(eq(users.id, input.userId))
   const stored = user?.isActive === true ? user.passwordHash : null
   const verified = await verifyPassword(input.current, stored ?? DUMMY_HASH, signal)
-  if (stored === null || !verified) {
-    limiter.recordFailure(input.userId)
-    return err('wrong_password')
+  if (stored === null || !verified) return err('wrong_password')
+  if (input.next === input.current) {
+    limiter.clear(input.userId)
+    return err('unchanged')
   }
-  if (input.next === input.current) return err('unchanged')
   const passwordHash = await hashPassword(input.next, signal)
   return await transactionResult<void, ChangePasswordError>(db, async (tx) => {
     const updated = await tx

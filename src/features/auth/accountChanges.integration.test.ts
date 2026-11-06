@@ -128,6 +128,23 @@ describe('changing your own password', () => {
     expect(result).toEqual({ ok: false, error: 'rate_limited' })
   })
 
+  it('caps wrong current passwords at five even when the attempts arrive together', async () => {
+    const userId = await userWithPassword()
+    const results = await Promise.all(
+      Array.from({ length: 20 }, () =>
+        changeOwnPassword(
+          handle.db,
+          { userId, current: 'wrong password 1', next: NEW, keepSid: null },
+          signal,
+        ),
+      ),
+    )
+    const verified = results.filter((r) => !r.ok && r.error === 'wrong_password')
+    const refused = results.filter((r) => !r.ok && r.error === 'rate_limited')
+    expect(verified).toHaveLength(5)
+    expect(refused).toHaveLength(15)
+  })
+
   it('refuses an account that has no password', async () => {
     const userId = await makeUser(handle.db)
     const result = await changeOwnPassword(
