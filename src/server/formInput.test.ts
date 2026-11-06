@@ -1,6 +1,12 @@
 import { describe, expect, it, vi } from 'vitest'
 import { z } from 'zod'
-import { civilDate, requiredText, wholeNumber } from '@/features/input/schemas'
+import {
+  checkbox,
+  civilDate,
+  optionalText,
+  requiredText,
+  wholeNumber,
+} from '@/features/input/schemas'
 
 vi.mock('@/db/client', () => ({ db: {} }))
 vi.mock('next/cache', () => ({ revalidatePath: () => undefined }))
@@ -66,6 +72,24 @@ describe('parseForm', () => {
           days: 'Enter the number of days as a whole number from 1 to 365.',
         },
       },
+    })
+  })
+})
+
+describe('parseForm with fields the browser did not send', () => {
+  it('reads an absent optional field as null, an unticked box as false and an absent required field as missing', () => {
+    const schema = z.object({
+      title: requiredText('a title'),
+      note: optionalText('a note'),
+      consent: checkbox(),
+    })
+    expect(parseForm(schema, formOf([['title', 'Minutes']]))).toEqual({
+      ok: true,
+      value: { title: 'Minutes', note: null, consent: false },
+    })
+    expect(parseForm(schema, formOf([]))).toEqual({
+      ok: false,
+      error: { ok: false, error: 'Enter a title.', fieldErrors: { title: 'Enter a title.' } },
     })
   })
 })

@@ -4,12 +4,15 @@ import type { Result } from '@/types/result'
 export type FieldParse<T> = (raw: unknown) => Result<T, string>
 
 export function inputField<T>(parse: FieldParse<T>): z.ZodType<T> {
-  return z.unknown().transform((raw, ctx) => {
-    const parsed = parse(raw)
-    if (parsed.ok) return parsed.value
-    ctx.addIssue({ code: 'custom', message: parsed.error })
-    return z.NEVER
-  })
+  return z
+    .unknown()
+    .optional()
+    .transform((raw, ctx) => {
+      const parsed = parse(raw)
+      if (parsed.ok) return parsed.value
+      ctx.addIssue({ code: 'custom', message: parsed.error })
+      return z.NEVER
+    })
 }
 
 export function trimmed(raw: unknown): string {
