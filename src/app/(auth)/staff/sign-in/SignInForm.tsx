@@ -10,7 +10,7 @@ import { type SignInState, signInAction } from './actions'
 const initial: SignInState = { error: null, needTotp: false }
 
 function failed(state: SignInState): boolean {
-  return state.error !== null
+  return state.error !== null || state.needTotp
 }
 
 export function SignInForm() {
@@ -26,6 +26,7 @@ export function SignInForm() {
         name="password"
         type="password"
         autoComplete="current-password"
+        data-restore-on-error={state.needTotp ? 'true' : undefined}
         required
       />
       {state.needTotp ? (
