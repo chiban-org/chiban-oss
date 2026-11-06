@@ -1,4 +1,5 @@
 import { type E2eDb, expect, test } from '../fixtures/test'
+import { expectToast } from '../records/requestSupport'
 import { confirmWith, permissionAlert } from './confirm'
 import { expectFormStatus } from './confirmation'
 import { addMeetingThroughForm, type MeetingSpec, meetingIdFor } from './meetings'
@@ -32,9 +33,8 @@ test.describe
       await panel.getByLabel('Meeting').selectOption(await meetingIdFor(db, meeting))
       await panel.getByLabel('Kind').selectOption('public_hearing')
       await panel.getByRole('button', { name: 'Schedule hearing' }).click()
-      await expect(
-        panel.getByText('Hearing scheduled. The notice checklist is ready.'),
-      ).toBeVisible()
+      await expectToast(page, 'Hearing scheduled. The notice checklist is ready.')
+      await expect(panel.getByText('No hearing is scheduled yet.')).toHaveCount(0)
       hearingId = await hearingFor(db, applicationId)
     })
 

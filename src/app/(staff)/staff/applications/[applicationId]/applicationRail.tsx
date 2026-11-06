@@ -152,7 +152,6 @@ export function ApplicationFacts({
 export function StatusStrip({
   view,
   plan,
-  status,
   notice,
   legacyNumber,
   correction,
@@ -160,7 +159,6 @@ export function StatusStrip({
 }: {
   view: StaffApplicationView
   plan: RailPlan
-  status: ReactNode
   notice: ReactNode
   legacyNumber: string | null
   correction: CorrectionFormData | null
@@ -169,7 +167,6 @@ export function StatusStrip({
   return (
     <section aria-label="Status" data-plain className="rail-card flex flex-col gap-3 [&>*]:m-0">
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-        {status}
         <DueNext clock={dueNext(view.clocks)} />
         <LateNotice view={view} />
       </div>

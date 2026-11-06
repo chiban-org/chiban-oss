@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test'
 import { daysFromToday, townToday } from '../boards/records'
+import { openRecordHistory } from '../fixtures/recordHistory'
 import { type E2eDb, expect, fillDate, test } from '../fixtures/test'
 import { expectRefusedBeside } from './refusal'
 import { expectToast, openDetails } from './requestSupport'
@@ -11,6 +12,8 @@ async function openRecordsPanel(page: Page, db: E2eDb) {
     APPLICATION,
   ])
   await page.goto(`/staff/applications/${row.id}`)
+  await expect(page.locator('main:not([aria-busy])')).toBeVisible()
+  await openRecordHistory(page)
   const panel = page.getByRole('region', { name: 'Records' })
   await expect(panel).toBeVisible()
   return { panel, applicationId: row.id }
@@ -41,6 +44,7 @@ test.describe('records panel on an application as the records custodian', () => 
     )
     expect(hold).toEqual({ target_kind: 'application', target_id: applicationId })
     await page.reload()
+    await openRecordHistory(page)
     await expect(
       page.getByRole('region', { name: 'Records' }).getByText(`application hold: ${text}`),
     ).toBeVisible()

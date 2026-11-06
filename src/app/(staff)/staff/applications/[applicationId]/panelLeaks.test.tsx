@@ -174,6 +174,12 @@ describe('staff application panels', () => {
     )
     expect(getByRole('button', { name: 'Remove Remy Reviewer' })).toBeTruthy()
     expect(getByRole('button', { name: 'Remove Faye Fire' })).toBeTruthy()
+    const disclosures = [...document.querySelectorAll('summary')].map((s) =>
+      s.getAttribute('aria-label'),
+    )
+    expect(disclosures).toEqual(
+      expect.arrayContaining(['Remove Remy Reviewer', 'Remove Faye Fire']),
+    )
     expect(queryByRole('option', { name: 'Faye Fire' })).toBeNull()
     expect(getByRole('option', { name: 'Wes Works' })).toBeTruthy()
   })

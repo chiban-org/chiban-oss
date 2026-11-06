@@ -1,3 +1,4 @@
+import { openRecordHistory } from '../fixtures/recordHistory'
 import { type E2eDb, expect, test } from '../fixtures/test'
 import { demoTitle, expectConfirmation, openApplication } from './support'
 
@@ -20,6 +21,7 @@ test.describe('moving an application through its workflow', () => {
       await page.getByRole('button', { name: 'Move to under review' }).click()
 
       await expectConfirmation(page, 'Moved to under review.')
+      await openRecordHistory(page)
       await expect(page.getByText('Moved the application to Under review')).toBeVisible()
       expect((await stateOf(db, id)).state).toBe('under_review')
     })
@@ -47,6 +49,7 @@ test.describe('moving an application through its workflow', () => {
       await trigger.click()
       await dialog.getByRole('button', { name: 'Move to withdrawn' }).click()
       await expectConfirmation(page, 'Moved to withdrawn.')
+      await openRecordHistory(page)
       await expect(page.getByText('Moved the application to Withdrawn')).toBeVisible()
       expect((await stateOf(db, id)).state).toBe('withdrawn')
     })

@@ -1,3 +1,4 @@
+import { openRecordHistory } from '../fixtures/recordHistory'
 import { expect, fillDate, signInWithMagicLink, test } from '../fixtures/test'
 import { applicationIdFor, demoTitle, expectConfirmation, expectRefusedBeside } from './support'
 
@@ -73,6 +74,7 @@ test.describe('marking a building permit application complete', () => {
         })
         .not.toBeNull()
       await page.reload()
+      await openRecordHistory(page)
       await expect(page.getByText('Marked the application complete')).toBeVisible()
     })
   })

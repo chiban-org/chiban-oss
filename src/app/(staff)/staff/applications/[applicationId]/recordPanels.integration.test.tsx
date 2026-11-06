@@ -116,12 +116,17 @@ describe('panels fit the application type and state', () => {
     expect(await page('BP-2026-0003')).not.toContain('Take an inspection request')
   })
 
-  it('treats a review stage with nobody assigned as a filled Reviewers panel, not an empty row', async () => {
+  it('files a review stage with nobody assigned under nothing recorded yet, still naming the block', async () => {
     const html = await page('BP-2026-0002')
-    const reviewers = sectionOf(html, 'Reviewers') ?? ''
-    expect(reviewers).toContain('No reviewer is assigned')
     const empty = html.slice(html.indexOf('data-empty-group'))
-    expect(empty).not.toContain('aria-label="Reviewers"')
+    expect(empty).toContain('aria-label="Reviewers"')
+    expect(sectionOf(empty, 'Reviewers') ?? '').toContain('No reviewer is assigned')
+  })
+
+  it('names a placeholder applicant party from its account instead of a bare role', async () => {
+    const parties = sectionOf(await page('BP-2026-0004'), 'Parties') ?? ''
+    expect(parties).toContain('Alex Applicant, Applicant')
+    expect(parties).not.toMatch(/<li>Applicant<\/li>/)
   })
 })
 
@@ -144,11 +149,17 @@ describe('finished applications offer no actions that change them', () => {
     }
   })
 
-  it('a closed permit offers no reviewer or code edition changes but keeps records work', async () => {
+  it('a closed permit offers no reviewer, code edition, note or responsible changes but keeps records work', async () => {
     const html = await page('BP-2026-0004')
     expect(html).not.toContain('Assign a reviewer')
     expect(html).not.toContain('Record the edition again')
+    expect(html).not.toContain('Add a note')
+    expect(html).not.toContain('Assign a responsible staff member')
     expect(html).toContain('Record the building removed')
+  })
+
+  it('an issued permit no longer offers to assign a reviewer', async () => {
+    expect(await page('BP-2025-0001')).not.toContain('Assign a reviewer')
   })
 
   it('an application still in progress keeps the board actions', async () => {

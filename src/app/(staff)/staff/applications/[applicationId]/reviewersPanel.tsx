@@ -16,7 +16,12 @@ interface Props {
 function RemoveReviewer({ reviewer }: { reviewer: ApplicationReviewer }) {
   return (
     <details>
-      <summary className="text-sm font-normal text-status-failed-fg">Remove</summary>
+      <summary
+        aria-label={`Remove ${reviewer.name}`}
+        className="text-sm font-normal text-status-failed-fg"
+      >
+        Remove
+      </summary>
       <ActionForm
         action={removeReviewerAction}
         submitLabel={`Remove ${reviewer.name}`}

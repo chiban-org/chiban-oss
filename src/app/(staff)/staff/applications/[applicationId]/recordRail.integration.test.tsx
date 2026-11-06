@@ -134,10 +134,9 @@ describe('the next step follows the gates', () => {
     expect(html).toContain('Resolve the appeal first.')
   })
 
-  it('puts terminal moves behind More actions', async () => {
+  it('does not offer closing while the appeal blocks it, and links the blocker to Appeals', async () => {
     const rail = nextStep(await page('BP-2026-0003'))
-    const more = rail.slice(rail.indexOf('More actions'))
-    expect(more).toContain('Move to closed')
+    expect(rail).not.toContain('Move to closed')
     expect(rail).toContain('href="#appeals"')
   })
 
@@ -176,6 +175,11 @@ describe('deadlines above the fold', () => {
     expect(facts).not.toContain('more overdue')
     const header = html.slice(0, html.indexOf('</header>'))
     expect(header).toContain('data-status="overdue"')
+  })
+
+  it('keeps the status chip in the header only, not again in the phone status strip', async () => {
+    const html = await page('BP-2026-0005')
+    expect(sectionOf(html, 'Status') ?? 'missing').not.toContain('data-status=')
   })
 
   it('lists clocks overdue first and folds met and stopped clocks to one line', async () => {

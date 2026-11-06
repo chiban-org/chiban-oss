@@ -30,6 +30,7 @@ import { LimitedRecord } from './limitedRecord'
 import { nextStepPlan } from './nextStepCard'
 import { loadNotesData } from './notesData'
 import { applicationPanels } from './panelSet'
+import { mayAddToRecord } from './recordStage'
 import { loadRecordsData } from './recordsData'
 import { loadResponsibleData } from './responsibleData'
 import { ResponsibleStaff } from './responsibleStaff'
@@ -126,7 +127,11 @@ export default async function StaffApplicationPage({ params }: Props) {
     />
   )
   const notice = <BalanceDueNotice notices={balanceNotices} />
-  const responsible = <ResponsibleStaff applicationId={view.id} data={loaded.responsible} />
+  const responsibleData = {
+    ...loaded.responsible,
+    canManage: loaded.responsible.canManage && mayAddToRecord(view.state),
+  }
+  const responsible = <ResponsibleStaff applicationId={view.id} data={responsibleData} />
   return (
     <main>
       <PageHeader
@@ -144,7 +149,6 @@ export default async function StaffApplicationPage({ params }: Props) {
           <StatusStrip
             view={view}
             plan={plan}
-            status={status}
             notice={notice}
             legacyNumber={legacyNumber}
             correction={correction}
@@ -152,6 +156,7 @@ export default async function StaffApplicationPage({ params }: Props) {
           />
         }
         empty={parts.empty}
+        history={parts.history}
       >
         {parts.filled}
       </RecordLayout>

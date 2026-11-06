@@ -1,4 +1,5 @@
 import { type E2eDb, expect, test } from '../fixtures/test'
+import { expectToast } from '../records/requestSupport'
 import { drawAndIssueList } from './abutterList'
 import { confirmWith } from './confirm'
 import { addMeetingThroughForm, type MeetingSpec, meetingIdFor } from './meetings'
@@ -119,9 +120,7 @@ test.describe
       await panel.getByLabel('Meeting').selectOption(await meetingIdFor(db, later))
       await panel.getByLabel('Kind').selectOption('public_hearing')
       await panel.getByRole('button', { name: 'Schedule hearing' }).click()
-      await expect(
-        panel.getByText('Hearing scheduled. The notice checklist is ready.'),
-      ).toBeVisible()
+      await expectToast(page, 'Hearing scheduled. The notice checklist is ready.')
       const hearing = await db.one<{ status: string; kind: string }>(
         'select status, kind from hearings where id = $1',
         [await hearingIdAt(db, applicationId, later)],

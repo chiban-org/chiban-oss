@@ -9,7 +9,6 @@ import {
   codeEditionRecords,
   feeAssessments,
   feeOverrides,
-  projectParties,
   projects,
   regionalImpactDeterminations,
   regionalImpactNotices,
@@ -43,6 +42,7 @@ import { displayIdsFor } from '@/features/parcels/displayId'
 import { hasFullRecordAccess } from '@/features/projects/access'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
+import { loadViewParties, type ViewParty } from './viewParties'
 
 const MANUAL_TARGETS_EXCLUDED: readonly CoreState[] = ['suspended', 'expired', 'submitted']
 const BOARD_DECISION_STATES: readonly CoreState[] = ['decided', 'denied']
@@ -64,13 +64,7 @@ export interface StaffApplicationView {
   receivedDate: CivilDate | null
   completedDate: CivilDate | null
   issuedOn: CivilDate | null
-  parties: {
-    id: string
-    name: string
-    role: string
-    ownerAuthorizationOnFile: boolean
-    linked: boolean
-  }[]
+  parties: ViewParty[]
   clocks: (ClockExplanation & { clockId: string })[]
   noticeDeadlines: NoticeDeadline[]
   nextTransitions: CoreState[]
@@ -228,18 +222,7 @@ export async function getStaffApplicationView(
     receivedDate: app.receivedDate,
     completedDate: app.completedDate,
     issuedOn: app.issuedOn,
-    parties: (
-      await db
-        .select()
-        .from(projectParties)
-        .where(and(eq(projectParties.projectId, app.projectId), isNull(projectParties.removedAt)))
-    ).map((p) => ({
-      id: p.id,
-      name: p.name,
-      role: p.role,
-      ownerAuthorizationOnFile: p.ownerAuthorizationOnFile,
-      linked: p.userId !== null,
-    })),
+    parties: await loadViewParties(db, app.projectId),
     clocks: await clockExplanations(db, applicationId, today),
     noticeDeadlines: await loadNoticeDeadlines(db, applicationId, today, signal),
     nextTransitions,

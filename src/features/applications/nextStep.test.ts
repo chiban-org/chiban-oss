@@ -99,6 +99,14 @@ describe('next step plan', () => {
     expect(p.terminal).toEqual(['withdrawn'])
   })
 
+  it('does not offer a terminal move while its own requirements block it', () => {
+    const p = plan(['closed', 'expired', 'withdrawn'], {
+      closed: [gate('closure.requirement_met', true, 'No final inspection has passed.')],
+    })
+    expect(p.lead?.blockers.map((b) => b.key)).toEqual(['closure.requirement_met'])
+    expect(p.terminal).toEqual(['expired', 'withdrawn'])
+  })
+
   it('offers only the moves this viewer may make', () => {
     const p = plan(['under_review', 'issued', 'closed', 'withdrawn'], {}, ['withdrawn'])
     expect(p.lead?.to).toBe('under_review')

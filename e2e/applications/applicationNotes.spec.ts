@@ -1,5 +1,5 @@
 import { accountFor, type E2eDb, expect, test } from '../fixtures/test'
-import { expectRefusedBeside } from './support'
+import { expectConfirmation, expectRefusedBeside } from './support'
 
 const PROJECT_TITLE = 'Demo permit: Addition under review'
 const ADD_NOTE = 'Add a note'
@@ -37,7 +37,7 @@ test.describe('staff notes on an application', () => {
       await notes.getByLabel('Note').fill(body)
       await notes.getByRole('button', { name: 'Add note' }).click()
 
-      await expect(notes.getByRole('status')).toHaveText('Note added.')
+      await expectConfirmation(page, 'Note added.')
       const item = notes.getByRole('listitem').filter({ hasText: body })
       await expect(item).toHaveCount(1)
       await expect(item.locator('p').first()).toHaveText(/^Sam Clerk, /)

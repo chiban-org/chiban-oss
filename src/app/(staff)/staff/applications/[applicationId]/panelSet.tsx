@@ -1,28 +1,14 @@
-import { DocumentPanel } from '@/components/documents/DocumentPanel'
-import { GatePanel } from '@/components/gates/GatePanel'
-import { type Panel, splitPanels } from '@/components/layout/splitPanels'
+import { arrangePanels } from '@/components/layout/splitPanels'
+import { historyPanels, panelPriority } from '@/features/applications/panelPriority'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
-import { TERMINAL_STATES } from '@/features/applications/states'
 import type { BoardPanelData } from '@/features/boards/panelData'
-import { REVIEWS_GATE_KEY } from '@/features/gates/coreGates'
 import type { ApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import type { ApplicationPayments } from '@/features/payments/applicationPayments'
-import { PANEL_ACTIONS } from '../../records/panelActions'
-import { ActivityPanel } from './activityPanel'
-import { AppealsPanel, hasAppeals } from './appealsPanel'
-import { BoardPanel } from './boardPanel'
-import { CodeEditionPanel, RegionalImpactPanel } from './buildingPanels'
-import { ClocksPanel, noDeadlines } from './clocksPanel'
-import { FeesPaymentsPanel, feeRowsOf } from './feesPaymentsPanel'
-import { GateControls } from './gateControls'
-import { HearingsPanel } from './hearingsPanel'
-import { InspectionsPanel, type InspectionsPanelData } from './inspectionsPanel'
+import type { InspectionsPanelData } from './inspectionsPanel'
 import type { NotesData } from './notesData'
-import { NotesPanel } from './notesPanel'
-import { CompletenessPanel, ConditionsPanel, completenessApplies, PartiesPanel } from './panels'
+import { recordPanels } from './recordPanelList'
 import type { loadRecordsData } from './recordsData'
-import { RecordsPanel } from './recordsPanels'
-import { ReviewersPanel } from './reviewersPanel'
+import { workPanels } from './workPanels'
 
 export interface RecordPanelsInput {
   view: StaffApplicationView
@@ -34,161 +20,11 @@ export interface RecordPanelsInput {
   notes: NotesData
 }
 
-function reviewRequired(view: StaffApplicationView): boolean {
-  return view.gates.some((g) =>
-    g.results.some((r) => r.key === REVIEWS_GATE_KEY && r.effective === 'blocked'),
-  )
-}
-
-function GatesPanel({ view }: { view: StaffApplicationView }) {
-  return (
-    <section aria-label="Gates" id="gates">
-      <h2>Gates</h2>
-      <GatePanel
-        groups={view.gates}
-        renderControls={(result) => <GateControls view={view} result={result} />}
-      />
-    </section>
-  )
-}
-
-function workPanels({ view, records, board, hearings, notes }: RecordPanelsInput): Panel[] {
-  const required = reviewRequired(view)
-  const canAssign = records.canAssign && !TERMINAL_STATES.includes(view.state)
-  return [
-    {
-      empty: records.reviewers.length === 0 && !required && !canAssign,
-      node: (
-        <ReviewersPanel
-          key="reviewers"
-          applicationId={view.id}
-          reviewers={records.reviewers}
-          choices={records.choices}
-          canAssign={canAssign}
-          required={required}
-        />
-      ),
-    },
-    {
-      empty: false,
-      node:
-        board === null ? null : (
-          <BoardPanel
-            key="board"
-            data={board}
-            hearings={hearings?.hearings.map((h) => h.text) ?? []}
-          />
-        ),
-    },
-    { empty: false, node: <HearingsPanel key="hearings" data={hearings} /> },
-    {
-      empty: false,
-      node: completenessApplies(view) ? <CompletenessPanel key="completeness" view={view} /> : null,
-    },
-    { empty: noDeadlines(view), node: <ClocksPanel key="clocks" view={view} /> },
-    {
-      empty: view.gates.every((g) => g.results.length === 0),
-      node: view.nextTransitions.length === 0 ? null : <GatesPanel key="gates" view={view} />,
-    },
-    {
-      empty: notes.notes.length === 0 && !notes.canAdd,
-      node: (
-        <NotesPanel
-          key="notes"
-          applicationId={view.id}
-          notes={notes.notes}
-          canAdd={notes.canAdd}
-          zone={records.zone}
-        />
-      ),
-    },
-    {
-      empty: notes.activity.length === 0,
-      node: <ActivityPanel key="activity" entries={notes.activity} zone={records.zone} />,
-    },
-  ]
-}
-
-function conditionsEditable(view: StaffApplicationView): boolean {
-  return (
-    view.permissions.canIssue &&
-    !TERMINAL_STATES.includes(view.state) &&
-    view.conditionLibrary.length > 0
-  )
-}
-
-function conditionsOffered(view: StaffApplicationView): boolean {
-  return view.conditions.length > 0 || conditionsEditable(view)
-}
-
-function recordPanels(input: RecordPanelsInput): Panel[] {
-  const { view, records, payments, inspections, hearings } = input
-  const graph = hearings?.graph ?? []
-  const rows = feeRowsOf(view, payments)
-  const money = rows.length > 0 || (payments?.entries.length ?? 0) > 0
-  return [
-    {
-      empty: view.conditions.length === 0 && !conditionsEditable(view),
-      node: conditionsOffered(view) ? <ConditionsPanel key="conditions" view={view} /> : null,
-    },
-    {
-      empty: !money,
-      node: <FeesPaymentsPanel key="fees" view={view} payments={payments} rows={rows} />,
-    },
-    {
-      empty: inspections.history.length === 0,
-      node:
-        inspections.history.length === 0 && !inspections.takesRequests ? null : (
-          <InspectionsPanel
-            key="inspections"
-            data={inspections}
-            applicationId={view.id}
-            number={view.number}
-          />
-        ),
-    },
-    {
-      empty: records.documents.length === 0,
-      node: (
-        <DocumentPanel
-          key="documents"
-          documents={records.documents}
-          canPublish={records.canPublish}
-          canManage={records.canManageDocuments}
-          actions={PANEL_ACTIONS}
-          target={{ kind: 'application', id: view.id }}
-        />
-      ),
-    },
-    { empty: view.parties.length === 0, node: <PartiesPanel key="parties" view={view} /> },
-    { empty: false, node: <CodeEditionPanel key="edition" view={view} /> },
-    { empty: false, node: <RegionalImpactPanel key="regional" view={view} /> },
-    {
-      empty: !hasAppeals(view, graph),
-      node:
-        hasAppeals(view, graph) || (view.state === 'issued' && view.permissions.canIssue) ? (
-          <AppealsPanel key="appeals" view={view} graph={graph} />
-        ) : null,
-    },
-    {
-      empty: false,
-      node: (
-        <RecordsPanel
-          key="records"
-          applicationId={view.id}
-          projectId={view.projectId}
-          snapshots={records.snapshots}
-          holds={records.appHolds}
-          canHold={records.canHold}
-          canManage={records.canManageDocuments}
-          buildingRemoval={view.classification === 'nh.building_permit'}
-          zone={records.zone}
-        />
-      ),
-    },
-  ]
-}
-
 export function applicationPanels(input: RecordPanelsInput) {
-  return splitPanels([...workPanels(input), ...recordPanels(input)])
+  const { state } = input.view
+  const board = input.board !== null
+  return arrangePanels([...workPanels(input), ...recordPanels(input)], {
+    lead: panelPriority(state, board),
+    history: historyPanels(state, board),
+  })
 }

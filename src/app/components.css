@@ -97,6 +97,14 @@
     margin-top: calc(var(--space-base) * 3);
   }
 
+  .record-history {
+    margin-top: calc(var(--space-base) * 3);
+  }
+
+  :where(main) .record-history > section:not([data-plain]) {
+    margin-block: 0 calc(var(--space-base) * 5);
+  }
+
   .record-empty-title {
     margin-bottom: calc(var(--space-base) * 2);
     font-size: var(--text-sm);

@@ -82,11 +82,11 @@ describe('the rail offers only moves this viewer can make', () => {
     expect(admin).not.toContain('Move to decided')
   })
 
-  it('offers no move to closed on an issued permit to finance or admin', async () => {
-    expect(await railAs('staff', 'BP-2025-0001')).toContain('Move to closed')
-    for (const role of ['finance', 'admin']) {
+  it('offers no move to closed on an issued permit whose closing is blocked, to any role', async () => {
+    expect(await railAs('staff', 'BP-2025-0001')).toContain('href="#inspections"')
+    for (const role of ['staff', 'finance', 'admin']) {
       const rail = await railAs(role, 'BP-2025-0001')
-      expect(rail).not.toContain('move to closed')
+      expect(rail).not.toMatch(/move to closed/i)
     }
   })
 

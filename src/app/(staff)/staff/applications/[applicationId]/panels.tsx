@@ -5,7 +5,7 @@ import type { StaffApplicationView } from '@/features/applications/staffApplicat
 import { TERMINAL_STATES } from '@/features/applications/states'
 import { MAX_ADJUSTMENT_DAYS } from '@/features/clocks/adjustmentKinds'
 import type { AdjustmentKind } from '@/features/clocks/explainClock'
-import { partyLine } from '@/features/projects/partyRoleLabels'
+import { partyLine, partyRoleLabel } from '@/features/projects/partyRoleLabels'
 import { formatCivilDate } from '@/lib/formatDate'
 import { markCompleteAction } from './actions'
 import { adjustClockAction } from './clockFeeActions'
@@ -19,7 +19,9 @@ export function PartiesPanel({ view }: { view: StaffApplicationView }) {
       <ul>
         {view.parties.map((p) => (
           <li key={p.id}>
-            {partyLine(p.name, p.role)}
+            {p.name === null
+              ? `${partyRoleLabel(p.role)}, name not recorded`
+              : partyLine(p.name, p.role)}
             {p.role === 'agent'
               ? p.ownerAuthorizationOnFile
                 ? ', owner authorization on file'

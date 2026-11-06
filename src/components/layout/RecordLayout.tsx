@@ -1,149 +1,7 @@
 'use client'
 
 import { type ReactNode, useEffect, useRef, useState } from 'react'
-import { Label } from '@/components/ui/label'
-import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-
-interface IndexEntry {
-  id: string
-  label: string
-}
-
-interface FoundSection extends IndexEntry {
-  element: HTMLElement
-}
-
-const ACTIVE_BAND = '0px 0px -70% 0px'
-
-function slug(text: string): string {
-  return `section-${text
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)/g, '')}`
-}
-
-function labelOf(section: HTMLElement): string {
-  const named = section.getAttribute('aria-label')
-  if (named !== null) return named
-  const heading = section.querySelector('h2')
-  return heading?.textContent.trim() ?? ''
-}
-
-function uniqueId(base: string, taken: Set<string>): string {
-  let id = base
-  for (let n = 2; taken.has(id); n += 1) id = `${base}-${n}`
-  taken.add(id)
-  return id
-}
-
-function collectSections(body: HTMLElement): FoundSection[] {
-  const taken = new Set<string>()
-  const found: FoundSection[] = []
-  for (const element of body.querySelectorAll<HTMLElement>('section:not([data-plain])')) {
-    if (element.parentElement?.closest('section, [data-empty-group]') !== null) continue
-    const label = labelOf(element)
-    if (label === '') continue
-    if (element.id === '' || taken.has(element.id)) element.id = uniqueId(slug(label), taken)
-    else taken.add(element.id)
-    found.push({ element, id: element.id, label })
-  }
-  return found
-}
-
-function entriesKey(list: readonly IndexEntry[]): string {
-  return list.map((e) => `${e.id}|${e.label}`).join('\n')
-}
-
-function useSectionIndex() {
-  const body = useRef<HTMLDivElement>(null)
-  const [entries, setEntries] = useState<IndexEntry[]>([])
-  const [active, setActive] = useState<string | null>(null)
-
-  useEffect(() => {
-    const root = body.current
-    if (root === null) return
-    const visibility = new IntersectionObserver(
-      (records) => {
-        const first = records.find((r) => r.isIntersecting)
-        if (first !== undefined) setActive(first.target.id)
-      },
-      { rootMargin: ACTIVE_BAND },
-    )
-    let frame = 0
-    const scan = () => {
-      const found = collectSections(root)
-      visibility.disconnect()
-      for (const section of found) visibility.observe(section.element)
-      const next = found.map(({ id, label }) => ({ id, label }))
-      setEntries((previous) => (entriesKey(previous) === entriesKey(next) ? previous : next))
-      setActive((current) => (next.some((e) => e.id === current) ? current : null))
-    }
-    const mutations = new MutationObserver(() => {
-      cancelAnimationFrame(frame)
-      frame = requestAnimationFrame(scan)
-    })
-    scan()
-    mutations.observe(root, { childList: true, subtree: true })
-    return () => {
-      cancelAnimationFrame(frame)
-      mutations.disconnect()
-      visibility.disconnect()
-    }
-  }, [])
-
-  return { body, entries, active }
-}
-
-interface SectionIndexProps {
-  entries: IndexEntry[]
-  active: string | null
-  className: string
-}
-
-function SectionIndex({ entries, active, className }: SectionIndexProps) {
-  if (entries.length < 4) return null
-  return (
-    <nav aria-label="On this page" className={`no-print ${className}`}>
-      <p className="mb-2 text-sm font-semibold text-muted-foreground">On this page</p>
-      <ul className="flex flex-col border-l">
-        {entries.map((entry) => (
-          <li key={entry.id}>
-            <a
-              href={`#${entry.id}`}
-              aria-current={entry.id === active ? 'location' : undefined}
-              className="-ml-px block border-l-2 border-transparent py-1 pl-3 text-sm text-muted-foreground no-underline hover:text-ink aria-[current=location]:border-action aria-[current=location]:font-semibold aria-[current=location]:text-ink"
-            >
-              {entry.label}
-            </a>
-          </li>
-        ))}
-      </ul>
-    </nav>
-  )
-}
-
-function JumpMenu({ entries }: { entries: IndexEntry[] }) {
-  if (entries.length < 4) return null
-  return (
-    <nav aria-label="Jump to a section" className="no-print lg:hidden">
-      <Label className="flex-col items-stretch gap-2 font-semibold text-muted-foreground">
-        On this page
-        <NativeSelect
-          value=""
-          onChange={(event) => document.getElementById(event.target.value)?.scrollIntoView()}
-          className="font-normal"
-        >
-          <NativeSelectOption value="">Choose a section</NativeSelectOption>
-          {entries.map((entry) => (
-            <NativeSelectOption key={entry.id} value={entry.id}>
-              {entry.label}
-            </NativeSelectOption>
-          ))}
-        </NativeSelect>
-      </Label>
-    </nav>
-  )
-}
+import { JumpMenu, SectionIndex, useSectionIndex } from './sectionIndex'
 
 interface RecordLayoutProps {
   children: ReactNode
@@ -151,6 +9,7 @@ interface RecordLayoutProps {
   railFooter?: ReactNode
   strip?: ReactNode
   empty?: ReactNode[]
+  history?: ReactNode[]
 }
 
 const STICKY_MARGIN_PX = 48
@@ -175,7 +34,24 @@ function useTallRail() {
   return { aside, tall }
 }
 
-export function RecordLayout({ children, rail, railFooter, strip, empty }: RecordLayoutProps) {
+function HistoryGroup({ panels }: { panels: ReactNode[] | undefined }) {
+  if (panels === undefined || panels.length === 0) return null
+  return (
+    <details data-history-group="" className="record-history">
+      <summary>Record and history</summary>
+      {panels}
+    </details>
+  )
+}
+
+export function RecordLayout({
+  children,
+  rail,
+  railFooter,
+  strip,
+  empty,
+  history,
+}: RecordLayoutProps) {
   const { body, entries, active } = useSectionIndex()
   const { aside, tall } = useTallRail()
   const collapsed = strip !== undefined
@@ -199,6 +75,7 @@ export function RecordLayout({ children, rail, railFooter, strip, empty }: Recor
       <div ref={body} className="record-body flex min-w-0 flex-col gap-5">
         <JumpMenu entries={entries} />
         {children}
+        <HistoryGroup panels={history} />
         {empty === undefined ? null : (
           <div data-empty-group="" className="record-empty">
             <p className="record-empty-title">Nothing recorded yet</p>

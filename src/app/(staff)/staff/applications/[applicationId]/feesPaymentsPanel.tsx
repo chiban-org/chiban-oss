@@ -21,12 +21,9 @@ export function feeRowsOf(view: StaffApplicationView, payments: ApplicationPayme
   )
 }
 
-function Cents({ cents }: { cents: number | null }) {
-  return cents === null ? (
-    <span className="text-muted-foreground">Not assessed</span>
-  ) : (
-    <>{formatCents(cents)}</>
-  )
+function Cents({ cents, preview }: { cents: number | null; preview: boolean }) {
+  if (cents !== null) return <>{formatCents(cents)}</>
+  return <span className="text-muted-foreground">{preview ? 'Not yet due' : 'Not assessed'}</span>
 }
 
 function FeeLine({ row, money }: { row: FeeRow; money: boolean }) {
@@ -52,10 +49,10 @@ function FeeLine({ row, money }: { row: FeeRow; money: boolean }) {
       {money ? (
         <>
           <td className="text-right">
-            <Cents cents={row.paidCents} />
+            <Cents cents={row.paidCents} preview={row.preview} />
           </td>
           <td className="text-right">
-            <Cents cents={row.dueCents} />
+            <Cents cents={row.dueCents} preview={row.preview} />
           </td>
         </>
       ) : null}

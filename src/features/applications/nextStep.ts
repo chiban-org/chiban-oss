@@ -74,6 +74,6 @@ export function planNextStep(
     secondary: forward.filter(
       (to) => to !== leadTo && may(to) && blockersOf(gates, to).length === 0,
     ),
-    terminal: terminal.filter(may),
+    terminal: terminal.filter((to) => may(to) && blockersOf(gates, to).length === 0),
   }
 }
