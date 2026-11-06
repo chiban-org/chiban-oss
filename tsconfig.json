@@ -36,6 +36,8 @@
     "vitest.classify.test.ts",
     "vitest.setup.ts",
     "vitest.globalSetup.ts",
+    "playwright.config.ts",
+    "e2e/**/*.ts",
     ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],

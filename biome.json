@@ -105,7 +105,7 @@
   },
   "overrides": [
     {
-      "includes": ["**/*.{test,spec}.{ts,tsx}", "**/tests/**/*.{ts,tsx}"],
+      "includes": ["**/*.{test,spec}.{ts,tsx}", "**/tests/**/*.{ts,tsx}", "e2e/**/*.ts"],
       "linter": {
         "rules": {
           "style": { "noNonNullAssertion": "off" }
