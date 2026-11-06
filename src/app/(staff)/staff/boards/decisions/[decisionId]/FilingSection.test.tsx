@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { DecisionView } from '@/features/decisions/decisionView'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('../../hearings/decisionActions', () => ({ fileDecisionAction: vi.fn() }))
 vi.mock('@/components/documents/ApplicationFileUploader', () => ({
@@ -35,7 +35,7 @@ describe('filing the decision', () => {
       </CsrfProvider>,
     )
     fireEvent.change(screen.getByLabelText(/^Minutes( \*)?$/), { target: { value: 'm1' } })
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'File the decision' }),
       () => screen.getByLabelText(/^Date filed( \*)?$/),
       'The decision cannot be filed before the date of the vote.',

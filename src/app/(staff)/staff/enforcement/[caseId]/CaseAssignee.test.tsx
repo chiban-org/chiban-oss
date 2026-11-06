@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
-import { expectRefusalBeside } from '@/test/besideField'
+import { expectRefusalBeside, refusal } from '@/test/besideField'
 import { openSection, renderForm } from '@/test/enforcementRender'
-import { refusal } from '@/test/refusalBeside'
 
 vi.mock('../assignActions', () => ({ reassignCaseAction: vi.fn() }))
 

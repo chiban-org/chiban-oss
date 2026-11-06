@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { HearingView } from '@/features/hearings/views'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('../actions', () => ({ recordProofAction: vi.fn() }))
 vi.mock('./uploads', () => ({
@@ -43,7 +43,7 @@ describe('proof of notice', () => {
     fireEvent.change(screen.getByLabelText(/^Certificate or receipt( \*)?$/), {
       target: { value: 'f1' },
     })
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'Record proof' }),
       () => screen.getByLabelText(/^Date of mailing, posting, or publication( \*)?$/),
       'The date cannot be in the future.',

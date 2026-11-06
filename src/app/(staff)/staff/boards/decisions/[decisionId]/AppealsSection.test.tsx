@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { DecisionView } from '@/features/decisions/decisionView'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('../../hearings/decisionActions', () => ({ addAppealNodeAction: vi.fn() }))
 vi.mock('@/components/appeals/AppealGraph', () => ({ AppealGraph: () => null }))
@@ -29,7 +29,7 @@ describe('recording an appeal step', () => {
       </CsrfProvider>,
     )
     fireEvent.click(screen.getByText('Record an appeal step'))
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'Record' }),
       () => screen.getByLabelText(/^Date( \*)?$/),
       'The date cannot be before the step it follows.',

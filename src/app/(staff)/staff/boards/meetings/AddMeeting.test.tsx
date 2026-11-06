@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('../actions', () => ({ scheduleMeetingAction: vi.fn() }))
 
@@ -23,7 +23,7 @@ describe('adding a meeting', () => {
     )
     fireEvent.click(screen.getByRole('button', { name: 'Add meeting' }))
     fireEvent.change(screen.getByLabelText(/^Date( \*)?$/), { target: { value: '2027-05-05' } })
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getAllByRole('button', { name: 'Add meeting' }).at(-1) as HTMLElement,
       () => screen.getByLabelText(/^Location( \*)?$/),
       'Enter a location of 200 characters or fewer.',

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
-import { expectRefusalBeside } from '@/test/besideField'
+import { expectRefusalBeside, refusal } from '@/test/besideField'
 import {
   ALL_CAN,
   fillField,
@@ -10,7 +10,6 @@ import {
   renderForm,
   stubDetail,
 } from '@/test/enforcementRender'
-import { refusal } from '@/test/refusalBeside'
 
 vi.mock('../moneyActions', () => ({ outcomeAction: vi.fn(), referAction: vi.fn() }))
 

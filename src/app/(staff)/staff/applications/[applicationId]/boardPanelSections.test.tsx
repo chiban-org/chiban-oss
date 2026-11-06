@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { BoardPanelData } from '@/features/boards/panelData'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('../../abutters/actions', () => ({}))
 vi.mock('../../boards/actions', () => ({
@@ -99,7 +99,7 @@ describe('refusals beside their fields on the board panel', () => {
       </CsrfProvider>,
     )
     fireEvent.click(screen.getByText('Record the NH DES determination'))
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getAllByRole('button', { name: 'Record determination' }).at(-1) as HTMLElement,
       () => screen.getByLabelText(/^Reason( \*)?$/),
       message,
@@ -141,7 +141,7 @@ describe('refusals beside their fields on the board panel', () => {
       </CsrfProvider>,
     )
     fireEvent.click(screen.getByText('Record the regional impact determination'))
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getAllByRole('button', { name: 'Record determination' })[0] as HTMLElement,
       () => screen.getByLabelText(/^Board reference, if determined earlier( \*)?$/),
       message,
@@ -164,7 +164,7 @@ describe('refusals beside their fields on the board panel', () => {
     )
     fireEvent.click(screen.getByText('End this application for unpaid notice costs'))
     fireEvent.change(screen.getByLabelText(/^Reason( \*)?$/), { target: { value: 'x' } })
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'End the application' }),
       () => screen.getByLabelText(/^Reason( \*)?$/),
       message,

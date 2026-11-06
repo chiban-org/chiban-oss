@@ -1,4 +1,4 @@
-import { waitFor } from '@testing-library/react'
+import { fireEvent, waitFor } from '@testing-library/react'
 import { expect } from 'vitest'
 
 function describedBy(control: HTMLElement): HTMLElement[] {
@@ -20,4 +20,18 @@ export async function expectGroupRefusal(member: HTMLElement, message: string): 
   const note = describedBy(member).find((n) => n.textContent === message)
   expect(note?.textContent).toBe(message)
   expect(member.closest('fieldset, form')?.contains(note ?? null)).toBe(true)
+}
+
+export async function expectRefusalAfterSubmit(
+  submit: HTMLElement,
+  control: () => HTMLElement,
+  message: string,
+): Promise<void> {
+  fireEvent.click(submit)
+  await waitFor(() => expect(control().getAttribute('aria-invalid')).toBe('true'))
+  await expectRefusalBeside(control(), message)
+}
+
+export function refusal(field: string, error: string) {
+  return { ok: false as const, error, fieldErrors: { [field]: error } }
 }
