@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import { RequestForm } from '@/components/inspections/RequestForm'
@@ -52,5 +52,36 @@ describe('RequestForm', () => {
       expect(classes.filter((c) => /^(?:(?:sm|md|lg|xl|2xl):)?text-(?:sm|xs)$/.test(c))).toEqual([])
       expect(classes).toContain('md:text-base')
     }
+  })
+
+  it('shows a refusal beside the contact name and caps the notes at the server limit', async () => {
+    const action = vi.fn(() =>
+      Promise.resolve({
+        ok: false as const,
+        error: 'Enter a contact name.',
+        fieldErrors: { contactName: 'Enter a contact name.' },
+      }),
+    )
+    render(
+      <CsrfProvider token="t1">
+        <RequestForm
+          applicationId="a1"
+          types={[{ checklistVersionId: 'c1', label: 'Final' }]}
+          dates={[]}
+          action={action}
+          channels={[{ value: 'portal', label: 'Portal' }]}
+          phoneHoursText="weekdays"
+          outsidePhoneHours={false}
+        />
+      </CsrfProvider>,
+    )
+    const name = screen.getByRole('textbox', { name: /Contact name/ })
+    fireEvent.change(name, { target: { value: 'x' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Request inspection' }))
+    await waitFor(() => expect(name.getAttribute('aria-invalid')).toBe('true'))
+    expect(name.closest('[data-slot="field"]')?.textContent).toContain('Enter a contact name.')
+    expect(screen.getByRole('textbox', { name: 'Access notes' }).getAttribute('maxlength')).toBe(
+      '1000',
+    )
   })
 })
