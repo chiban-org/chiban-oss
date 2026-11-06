@@ -1,0 +1,69 @@
+import { expect, test } from '../fixtures/test'
+import { inspectionOf } from './inspectionSupport'
+
+const DECK_NUMBER = 'BP-2025-0001'
+
+async function passEveryItem(page: import('@playwright/test').Page): Promise<void> {
+  const groups = page.getByRole('radiogroup')
+  await expect(groups.first()).toBeVisible()
+  const count = await groups.count()
+  for (let index = 0; index < count; index += 1) {
+    await groups.nth(index).getByRole('radio', { name: 'Pass' }).click()
+  }
+}
+
+test.describe('recording an inspection result', () => {
+  test.describe('as the inspector', () => {
+    test.use({ role: 'inspector' })
+
+    test('a failed item without notes keeps the button disabled and stores nothing', async ({
+      page,
+      db,
+    }) => {
+      const booked = await inspectionOf(db, DECK_NUMBER, 'framing', 'scheduled')
+      await page.goto(`/staff/inspections/${booked.id}`)
+      await page.getByRole('radiogroup').first().getByRole('radio', { name: 'Fail' }).click()
+
+      await expect(page.getByText('Write at least 10 characters about what failed.')).toBeVisible()
+      await expect(page.getByRole('button', { name: 'Record result' })).toBeDisabled()
+      expect((await inspectionOf(db, DECK_NUMBER, 'framing', 'scheduled')).id).toBe(booked.id)
+    })
+
+    test('passes the framing reinspection and stores the result', async ({ page, db }) => {
+      const booked = await inspectionOf(db, DECK_NUMBER, 'framing', 'scheduled')
+      await page.goto(`/staff/inspections/${booked.id}`)
+      await expect(page.getByRole('button', { name: 'Record result' })).toBeDisabled()
+      await passEveryItem(page)
+      await page
+        .getByLabel('Notes for the permit holder')
+        .fill('Framing corrected and fire blocking in place.')
+      await expect(page.getByText('Result: Passed')).toBeVisible()
+      await page.getByRole('button', { name: 'Record result' }).click()
+
+      const result = page.getByRole('region', { name: 'Result' })
+      await expect(result).toContainText('Structural framing: Pass')
+      await expect(result).toContainText('Notes: Framing corrected and fire blocking in place.')
+      const row = await db.one<{ status: string; result_notes: string }>(
+        'select status, result_notes from inspections where id = $1',
+        [booked.id],
+      )
+      expect(row).toEqual({
+        status: 'passed',
+        result_notes: 'Framing corrected and fire blocking in place.',
+      })
+    })
+  })
+
+  test.describe('as the finance clerk', () => {
+    test.use({ role: 'finance' })
+
+    test('cannot open an inspection', async ({ page, db }) => {
+      const booked = await inspectionOf(db, DECK_NUMBER, 'framing')
+      await page.goto(`/staff/inspections/${booked.id}`)
+      await expect(page.getByRole('button', { name: 'Record result' })).toHaveCount(0)
+      await expect(
+        page.getByText('You do not have permission to see this inspection.'),
+      ).toBeVisible()
+    })
+  })
+})
