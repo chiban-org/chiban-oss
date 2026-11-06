@@ -5,6 +5,7 @@ export {
   type Expected,
   MISMATCHED_CSRF_TOKEN,
   type Refusals,
+  type RoleRule,
 } from './cases'
 export { choice, date, type FieldSpec, type InvalidVariant, int, text, uuid } from './fields'
 export type { Fields } from './form'

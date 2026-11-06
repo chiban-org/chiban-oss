@@ -24,17 +24,21 @@ export interface AcceptedContext<I extends Fields> {
   written: string[]
 }
 
-export interface ActionCases<R, I extends Fields = Fields> {
+interface CaseTable<R, I extends Fields> {
   invoke: (form: FormData) => Promise<R>
   actor: () => Actor | Promise<Actor>
   input: () => I | Promise<I>
-  fields?: Readonly<Record<string, FieldSpec>>
-  capability?: CapabilityRule
-  refusedRoles?: readonly Role[]
+  fields: Readonly<Record<string, FieldSpec>>
   refusals: Refusals<R>
   accepted: (result: Outcome<R>, context: AcceptedContext<I>) => void | Promise<void>
   ignoreWrites?: readonly string[]
 }
+
+export type RoleRule =
+  | { capability: CapabilityRule; refusedRoles?: never }
+  | { refusedRoles: readonly Role[]; capability?: never }
+
+export type ActionCases<R, I extends Fields = Fields> = CaseTable<R, I> & RoleRule
 
 export const MISMATCHED_CSRF_TOKEN = 'not-the-cookie-token'
 
@@ -49,7 +53,7 @@ export function describeActionCases<R, I extends Fields>(
 ): void {
   const ignored = new Set(cases.ignoreWrites ?? [])
   const refusedRoles =
-    cases.refusedRoles ?? (cases.capability === undefined ? [] : rolesLacking(cases.capability))
+    cases.capability === undefined ? cases.refusedRoles : rolesLacking(cases.capability)
 
   async function expectRefused(
     actor: Actor | null,
@@ -76,7 +80,7 @@ export function describeActionCases<R, I extends Fields>(
       await cases.accepted(value, { db: h.db, input, written })
     })
 
-    for (const variant of invalidVariants(cases.fields ?? {})) {
+    for (const variant of invalidVariants(cases.fields)) {
       it(`refuses ${variant.title}`, async () => {
         const input = variant.apply(await cases.input())
         await expectRefused(
