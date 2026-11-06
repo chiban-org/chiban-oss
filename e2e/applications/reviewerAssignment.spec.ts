@@ -37,12 +37,16 @@ test.describe('assigning reviewers to an application', () => {
       await expect(
         reviewers.getByRole('listitem').filter({ hasText: 'Remy Reviewer, ' }),
       ).toHaveCount(0)
-      const left = await db.one<{ count: string }>(
-        `select count(*) from review_assignments ra join users u on u.id = ra.reviewer_user_id
+      await expect
+        .poll(async () => {
+          const left = await db.one<{ count: string }>(
+            `select count(*) from review_assignments ra join users u on u.id = ra.reviewer_user_id
           where ra.application_id = $1 and u.display_name = 'Remy Reviewer' and ra.removed_at is null`,
-        [id],
-      )
-      expect(Number(left.count)).toBe(0)
+            [id],
+          )
+          return Number(left.count)
+        })
+        .toBe(0)
     })
   })
 

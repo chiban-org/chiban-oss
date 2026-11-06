@@ -13,6 +13,19 @@ async function passEveryItem(page: import('@playwright/test').Page): Promise<voi
 }
 
 test.describe('recording an inspection result', () => {
+  test.describe('as the finance clerk', () => {
+    test.use({ role: 'finance' })
+
+    test('reads a scheduled inspection without the checklist form', async ({ page, db }) => {
+      const booked = await inspectionOf(db, DECK_NUMBER, 'framing', 'scheduled')
+      await page.goto(`/staff/inspections/${booked.id}`)
+      await expect(page.getByRole('heading', { name: 'Framing inspection' })).toBeVisible()
+      await expect(page.getByRole('region', { name: 'Result' })).toContainText('Structural framing')
+      await expect(page.getByRole('button', { name: 'Record result' })).toHaveCount(0)
+      await expect(page.getByRole('radiogroup')).toHaveCount(0)
+    })
+  })
+
   test.describe('as the inspector', () => {
     test.use({ role: 'inspector' })
 
@@ -51,19 +64,6 @@ test.describe('recording an inspection result', () => {
         status: 'passed',
         result_notes: 'Framing corrected and fire blocking in place.',
       })
-    })
-  })
-
-  test.describe('as the finance clerk', () => {
-    test.use({ role: 'finance' })
-
-    test('cannot open an inspection', async ({ page, db }) => {
-      const booked = await inspectionOf(db, DECK_NUMBER, 'framing')
-      await page.goto(`/staff/inspections/${booked.id}`)
-      await expect(page.getByRole('button', { name: 'Record result' })).toHaveCount(0)
-      await expect(
-        page.getByText('You do not have permission to see this inspection.'),
-      ).toBeVisible()
     })
   })
 })

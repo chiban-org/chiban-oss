@@ -18,7 +18,10 @@ export interface Assessed {
 }
 
 function same(a: FieldValue | undefined, b: FieldValue | undefined): boolean {
-  return JSON.stringify(a ?? null) === JSON.stringify(b ?? null)
+  return (
+    JSON.stringify(a === false ? null : (a ?? null)) ===
+    JSON.stringify(b === false ? null : (b ?? null))
+  )
 }
 
 export function reviewChanges(

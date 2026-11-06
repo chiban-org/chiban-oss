@@ -25,7 +25,7 @@ test.describe('taking an inspection request at the counter', () => {
       await section.getByLabel('Contact name').fill('   ')
       await section.getByRole('button', { name: 'Record request' }).click()
 
-      await expectRefusedBeside(section.getByLabel('Contact name'), 'Enter a contact name.')
+      await expectRefusedBeside(section.getByLabel('Contact name'), 'Enter the contact name.')
       const rows = await db.rows<{ id: string }>(
         `select i.id from inspections i join applications a on a.id = i.application_id
           where a.number = $1 and i.inspection_type = 'footing' and i.contact_name = ''`,

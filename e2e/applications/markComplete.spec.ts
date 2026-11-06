@@ -17,14 +17,18 @@ test.describe('marking a building permit application complete', () => {
       await page.getByLabel('Description of work').fill(`Cedar fence, 60 feet, ref ${suffix}`)
       await page.getByLabel('Use classification').click()
       await page.getByRole('option', { name: 'Residential', exact: true }).click()
+      await page.getByLabel('Number of dwelling units').fill('1')
       await page.getByLabel(/I attest that the information/).check()
       await page.getByRole('button', { name: 'Submit application' }).click()
-
-      await expect(page.getByText('Submitted', { exact: true }).first()).toBeVisible()
-      const row = await db.one<{ state: string }>('select state from applications where id = $1', [
-        id,
-      ])
-      expect(row.state).toBe('submitted')
+      await expect
+        .poll(async () => {
+          const row = await db.one<{ state: string }>(
+            'select state from applications where id = $1',
+            [id],
+          )
+          return row.state
+        })
+        .toBe('submitted')
     })
   })
 
@@ -58,14 +62,17 @@ test.describe('marking a building permit application complete', () => {
       const completeness = page.getByRole('region', { name: 'Completeness' })
       await completeness.getByRole('button', { name: 'Mark complete' }).click()
 
-      await expect(completeness.getByRole('status')).toHaveText(
-        'Marked complete. The decision clock is running.',
-      )
-      const row = await db.one<{ completed_date: string | null }>(
-        'select completed_date from applications where id = $1',
-        [id],
-      )
-      expect(row.completed_date).not.toBeNull()
+      await expect
+        .poll(async () => {
+          const row = await db.one<{ completed_date: string | null }>(
+            'select completed_date from applications where id = $1',
+            [id],
+          )
+          return row.completed_date
+        })
+        .not.toBeNull()
+      await page.reload()
+      await expect(page.getByText('Marked the application complete')).toBeVisible()
     })
   })
 })

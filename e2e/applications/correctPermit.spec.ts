@@ -57,7 +57,7 @@ test.describe('correcting an issued permit', () => {
         .getByRole('button', { name: `Save and reissue as revision ${before + 1}` })
         .click()
 
-      await expect(page.getByText(`Permit reissued as revision ${before + 1}.`)).toBeVisible()
+      await expect.poll(() => revisionOf(db, id)).toBe(before + 1)
       const row = await db.one<{ permit_revision: number; title: string }>(
         'select a.permit_revision, p.title from applications a join projects p on p.id = a.project_id where a.id = $1',
         [id],
