@@ -1,13 +1,22 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { BoardPanelData } from '@/features/boards/panelData'
+import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
 
 vi.mock('../../abutters/actions', () => ({}))
-vi.mock('../../boards/actions', () => ({ desDeterminationAction: vi.fn() }))
+vi.mock('../../boards/actions', () => ({
+  desDeterminationAction: vi.fn(),
+  boardRegionalImpactAction: vi.fn(),
+  terminateUnpaidAction: vi.fn(),
+  addApplicantParcelAction: vi.fn(),
+}))
 
-const { DeterminationSection, ListSection } = await import('./boardPanelSections')
+const { DeterminationSection, ListSection, CostSection } = await import('./boardPanelSections')
+const { desDeterminationAction, boardRegionalImpactAction, terminateUnpaidAction } = await import(
+  '../../boards/actions'
+)
 
 afterEach(cleanup)
 
@@ -77,5 +86,62 @@ describe('abutter lists on the board panel', () => {
     render(<ListSection data={lists(false)} />)
     expect(screen.queryByRole('link', { name: 'Version 1' })).toBeNull()
     expect(screen.getByText('Version 1, Issued, drawn October 2, 2026')).toBeTruthy()
+  })
+})
+
+describe('refusals beside their fields on the board panel', () => {
+  it('shows a refused DES reason beside the Reason field', async () => {
+    const message = 'Enter a reason of at least 10 characters.'
+    vi.mocked(desDeterminationAction).mockResolvedValue(refusal('reason', message))
+    render(
+      <CsrfProvider token="t">
+        <DeterminationSection data={data('not_within')} />
+      </CsrfProvider>,
+    )
+    fireEvent.click(screen.getByText('Record the NH DES determination'))
+    await expectRefusalBeside(
+      screen.getAllByRole('button', { name: 'Record determination' }).at(-1) as HTMLElement,
+      () => screen.getByLabelText(/^Reason( \*)?$/),
+      message,
+    )
+  })
+
+  it('shows a refused board reference beside the Board reference field', async () => {
+    const message = 'Enter the board reference for the earlier determination.'
+    vi.mocked(boardRegionalImpactAction).mockResolvedValue(refusal('previousBoardRef', message))
+    render(
+      <CsrfProvider token="t">
+        <DeterminationSection data={{ ...data('not_within'), canDetermine: true }} />
+      </CsrfProvider>,
+    )
+    fireEvent.click(screen.getByText('Record the regional impact determination'))
+    await expectRefusalBeside(
+      screen.getAllByRole('button', { name: 'Record determination' })[0] as HTMLElement,
+      () => screen.getByLabelText(/^Board reference, if determined earlier( \*)?$/),
+      message,
+    )
+  })
+
+  it('shows a refused reason beside the Reason field when ending an application', async () => {
+    const message = 'Enter a reason of 1000 characters or fewer.'
+    vi.mocked(terminateUnpaidAction).mockResolvedValue(refusal('reason', message))
+    const costs = {
+      applicationId: 'a1',
+      canRecord: true,
+      state: 'submitted',
+      notice: { mailings: 3, dueCents: 9000 },
+    } as unknown as BoardPanelData
+    render(
+      <CsrfProvider token="t">
+        <CostSection data={costs} />
+      </CsrfProvider>,
+    )
+    fireEvent.click(screen.getByText('End this application for unpaid notice costs'))
+    fireEvent.change(screen.getByLabelText(/^Reason( \*)?$/), { target: { value: 'x' } })
+    await expectRefusalBeside(
+      screen.getByRole('button', { name: 'End the application' }),
+      () => screen.getByLabelText(/^Reason( \*)?$/),
+      message,
+    )
   })
 })
