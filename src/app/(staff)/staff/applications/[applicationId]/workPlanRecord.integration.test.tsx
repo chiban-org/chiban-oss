@@ -162,11 +162,15 @@ describe('the ends of the workflow', () => {
     expect(countSections(html, 'Do this now')).toBe(0)
   })
 
-  it('a closed permit shows its outcome and print links, with no card or requirements', async () => {
+  it('a closed permit shows its outcome with no card, requirements or dead print links', async () => {
     const html = await page('BP-2026-0004')
     expect(sentence(html)).toBe('This permit is closed.')
     expect(countSections(html, 'Do this now')).toBe(0)
     expect(countSections(html, 'Requirements')).toBe(0)
-    expect(html).toContain('Print permit')
+    expect(html).not.toContain('Print permit')
+  })
+
+  it('an issued permit keeps its print links, which the PDF endpoints serve only while issued', async () => {
+    expect(await page('BP-2025-0001')).toContain('Print permit')
   })
 })

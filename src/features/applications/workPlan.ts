@@ -86,6 +86,9 @@ function groupRows(view: PlanView, board: PlanBoard | null, to: CoreState, extra
   const facts: RowFacts = {
     reviewers: extras.reviewers,
     regionalDetermined: view.regionalImpact.determination !== null,
+    commissionNotified: view.regionalImpact.notices.some(
+      (n) => n.recipientKind === 'regional_planning_commission' && n.method === 'certified_mail',
+    ),
     abilities: extras.abilities,
   }
   const results = [...view.gates, ...view.gatesAhead].find((g) => g.to === to)?.results ?? []

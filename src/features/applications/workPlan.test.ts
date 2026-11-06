@@ -237,3 +237,42 @@ describe('the work plan for a filed board application', () => {
     })
   })
 })
+
+describe('the regional impact requirement once the determination is yes', () => {
+  const regional = gate(
+    'nh.bp.regional_impact',
+    'Regional impact determination and comment period',
+    'Regional planning commission not yet notified by certified mail.',
+  )
+  const decided = (notices: unknown[]) =>
+    view({
+      state: 'decided',
+      nextTransitions: ['issued', 'withdrawn'],
+      allowedMoves: ['issued', 'withdrawn'],
+      gates: [{ to: 'issued', results: [regional] }],
+      gatesAhead: [],
+      regionalImpact: {
+        applies: true,
+        determination: { determination: 'yes' },
+        notices,
+      } as unknown as PlanView['regionalImpact'],
+    })
+
+  it('asks for the certified notice to the commission when none is recorded', () => {
+    const plan = planWork(decided([]), null, extras(['record_regional_impact']))
+    expect(plan.now).toMatchObject({
+      task: 'Record the certified notice to the regional planning commission',
+      actor: 'town',
+      action: null,
+    })
+  })
+
+  it('waits out the comment period once the commission has its certified notice', () => {
+    const mailed = [{ recipientKind: 'regional_planning_commission', method: 'certified_mail' }]
+    const plan = planWork(decided(mailed), null, extras(['record_regional_impact']))
+    expect(plan.now).toMatchObject({
+      task: 'Wait for the regional comment period to end',
+      action: null,
+    })
+  })
+})

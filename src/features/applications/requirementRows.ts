@@ -83,6 +83,7 @@ const GATE_COPY: ReadonlyMap<string, GateCopy> = new Map([
 export interface RowFacts {
   reviewers: number
   regionalDetermined: boolean
+  commissionNotified: boolean
   abilities: ReadonlySet<PlanActionKind>
 }
 
@@ -91,7 +92,10 @@ function adjusted(gate: GateResult, copy: GateCopy, facts: RowFacts): GateCopy {
     return { ...copy, task: 'Assign a reviewer', actor: 'town', action: 'assign_reviewer' }
   }
   if (gate.key === 'nh.bp.regional_impact' && facts.regionalDetermined) {
-    return { label: copy.label, task: 'Wait for the regional comment period to end', actor: 'town' }
+    const task = facts.commissionNotified
+      ? 'Wait for the regional comment period to end'
+      : 'Record the certified notice to the regional planning commission'
+    return { label: copy.label, task, actor: 'town' }
   }
   if (gate.key === 'closure.requirement_met' && /certificate/i.test(reasonOf(gate))) {
     return { ...copy, task: 'Issue the certificate of occupancy', actor: 'town' }

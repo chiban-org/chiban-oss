@@ -126,7 +126,7 @@ export function ApplicationRail({
     <div className="rail-card empty:hidden">
       {notice}
       <Deadlines view={view} />
-      {view.issuedOn === null ? null : <PrintLinks applicationId={view.id} />}
+      {view.state === 'issued' ? <PrintLinks applicationId={view.id} /> : null}
       <CorrectPermit data={correction} />
       <MoreActions view={view} moves={plan.terminal} />
     </div>
@@ -172,7 +172,7 @@ export function StatusStrip({
         <LateNotice view={view} />
       </div>
       {notice}
-      {view.issuedOn === null ? null : <PrintLinks applicationId={view.id} />}
+      {view.state === 'issued' ? <PrintLinks applicationId={view.id} /> : null}
       <details>
         <summary className="text-sm">Facts and more actions</summary>
         <div className="flex flex-col gap-4">
