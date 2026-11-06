@@ -22,7 +22,7 @@ export const MEMBER_TITLE_LABELS: Record<MemberTitle, string> = {
   clerk: 'Clerk',
 }
 
-export type InviteError = 'forbidden' | 'staff_account' | 'send_failed'
+export type InviteError = 'forbidden' | 'staff_account' | 'send_failed' | 'term_order'
 
 interface InviteInput {
   email: string
@@ -44,6 +44,7 @@ export async function inviteBoardMember(
   if (!(await hasCapability(db, actor.userId, 'board.manage_members', signal))) {
     return err('forbidden')
   }
+  if (input.termEnd !== undefined && input.termEnd < input.termStart) return err('term_order')
   const email = input.email.trim().toLowerCase()
   const created = await transactionResult<{ userId: string; membershipId: string }, InviteError>(
     db,

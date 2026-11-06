@@ -1,16 +1,32 @@
 'use server'
 
 import { BoardSchema } from '@packs/nh/schema'
+import { z } from 'zod'
 import { errorOrOk } from '@/features/boards/actionResult'
 import { updateBoardMember } from '@/features/boards/memberEdit'
 import { endMembership, inviteBoardMember, type MemberTitle } from '@/features/boards/members'
+import {
+  choice,
+  civilDate,
+  emailAddress,
+  endNotBefore,
+  optionalCivilDate,
+  optionalText,
+} from '@/features/input/schemas'
 import { getMailTransport } from '@/features/mail/transport'
 import { type ActionResult, runStaffAction, text } from '@/server/actionRunner'
+import { refuseField, runStaffForm } from '@/server/formInput'
 import { type CivilDate, parseCivilDate } from '@/types/civilDate'
 import { isUuid } from '@/utils/uuid'
 
 const INVALID: ActionResult = { ok: false, error: 'Check the form fields and try again.' }
-const TITLES: readonly MemberTitle[] = ['chair', 'vice_chair', 'member', 'alternate', 'clerk']
+const TITLES = [
+  'chair',
+  'vice_chair',
+  'member',
+  'alternate',
+  'clerk',
+] as const satisfies readonly MemberTitle[]
 
 interface Seat {
   board: 'planning_board' | 'zba'
@@ -35,24 +51,35 @@ function seatOf(formData: FormData): Seat | null {
   }
 }
 
+const TERM_ORDER_COPY = 'The term cannot end before it starts.'
+
+const INVITE_FORM = z
+  .object({
+    displayName: optionalText('a name', { max: 200 }),
+    email: emailAddress('an email address'),
+    board: choice('a board', BoardSchema.options),
+    title: choice('a role on the board', TITLES),
+    termStart: civilDate('the term start date'),
+    termEnd: optionalCivilDate('the term end date'),
+  })
+  .superRefine(endNotBefore('termStart', 'termEnd', TERM_ORDER_COPY))
+
 export async function inviteMemberAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const seat = seatOf(formData)
-    const email = text(formData, 'email')
-    if (seat === null || email === '') return INVALID
-    const { termEnd, ...rest } = seat
+  return await runStaffForm(formData, INVITE_FORM, async ({ db, actor, signal }, input) => {
+    const { termEnd, displayName, ...rest } = input
     const invited = await inviteBoardMember(
       db,
       getMailTransport(),
       actor,
       {
-        email,
-        displayName: text(formData, 'displayName') || email,
         ...rest,
+        displayName: displayName ?? input.email,
         ...(termEnd === null ? {} : { termEnd }),
       },
       signal,
     )
+    if (!invited.ok && invited.error === 'term_order')
+      return refuseField('termEnd', TERM_ORDER_COPY)
     return errorOrOk(invited, 'Member added. They were emailed how to sign in.')
   })
 }

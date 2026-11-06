@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { MemberRow } from '@/features/boards/membersView'
@@ -7,6 +7,7 @@ import type { MemberRow } from '@/features/boards/membersView'
 vi.mock('./actions', () => ({ inviteMemberAction: vi.fn(), updateMemberAction: vi.fn() }))
 
 const { AddMember, EditMember } = await import('./MemberForm')
+const { inviteMemberAction } = await import('./actions')
 
 afterEach(cleanup)
 
@@ -70,5 +71,39 @@ describe('board member dialogs', () => {
       'Alder Pond Planning Board',
       'Alder Pond Zoning Board of Adjustment',
     ])
+  })
+
+  it('shows a refused term end beside the Term ends field with its hint still described', async () => {
+    vi.mocked(inviteMemberAction).mockResolvedValue({
+      ok: false,
+      error: 'The term cannot end before it starts.',
+      fieldErrors: { termEnd: 'The term cannot end before it starts.' },
+    })
+    render(
+      <CsrfProvider token="t1">
+        <AddMember today="2026-11-04" boards={BOARD_OPTIONS} />
+      </CsrfProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Add member' }))
+    fireEvent.change(screen.getByLabelText(/^Name( \*)?$/), { target: { value: 'Avery Stone' } })
+    fireEvent.change(screen.getByLabelText(/^Email address( \*)?$/), {
+      target: { value: 'avery@alderpond.example' },
+    })
+    fireEvent.change(screen.getByLabelText(/^Term ends( \*)?$/), {
+      target: { value: '2026-10-01' },
+    })
+    fireEvent.click(screen.getAllByRole('button', { name: 'Add member' }).at(-1) as HTMLElement)
+    const termEnd = screen.getByLabelText<HTMLInputElement>(/^Term ends( \*)?$/)
+    await waitFor(() => expect(termEnd.getAttribute('aria-invalid')).toBe('true'))
+    const described = (termEnd.getAttribute('aria-describedby') ?? '')
+      .split(' ')
+      .map((id) => document.getElementById(id)?.textContent)
+    expect(described).toEqual([
+      'Leave blank if there is no end date.',
+      'The term cannot end before it starts.',
+    ])
+    expect(
+      screen.getByLabelText<HTMLInputElement>(/^Term starts( \*)?$/).getAttribute('aria-invalid'),
+    ).toBeNull()
   })
 })
