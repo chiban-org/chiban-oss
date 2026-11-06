@@ -134,7 +134,10 @@ export function Uploader({
           id={fileId}
           accept={accept}
           {...(capture === undefined ? {} : { capture })}
-          onFilesChange={(files) => setFile(files[0] ?? null)}
+          onFilesChange={(files) => {
+            setFile(files[0] ?? null)
+            setMessage(null)
+          }}
         />
       </div>
       <div className="space-y-1.5">

@@ -96,7 +96,7 @@ export default async function ApplyPage({
           Search
         </Button>
       </form>
-      {query.length > 0 && query.length < MIN_QUERY ? <p>Enter at least two characters.</p> : null}
+      {q !== '' && query.length < MIN_QUERY ? <p>Enter at least two characters.</p> : null}
       {query.length >= MIN_QUERY && hits.length === 0 ? <p>No parcels match that search.</p> : null}
       <ul className="list-none divide-y p-0">
         {hits.map((h) => (

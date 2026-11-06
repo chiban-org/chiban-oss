@@ -156,4 +156,15 @@ describe('Uploader', () => {
     expect(titles).toHaveLength(2)
     expect(new Set(titles.map((t) => t.id)).size).toBe(2)
   })
+
+  it('drops the choose-a-file message when a rejected file is picked next', () => {
+    setup({ createIntent: vi.fn(), finalize: vi.fn() })
+    fireEvent.click(screen.getByRole('button', { name: 'Upload' }))
+    expect(screen.getByText('Choose a file first.')).toBeTruthy()
+    fireEvent.change(screen.getByLabelText('File'), {
+      target: { files: [file('notes.txt', 10, 'text/plain')] },
+    })
+    expect(screen.getByRole('alert').textContent).toContain('notes.txt is not an accepted file type.')
+    expect(screen.queryByText('Choose a file first.')).toBeNull()
+  })
 })

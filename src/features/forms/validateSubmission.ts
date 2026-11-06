@@ -43,7 +43,8 @@ const PHONE_DIGITS = 7
 type Parsed = { ok: true; value: FieldValue } | { ok: false; code: FieldErrorCode }
 
 function isBlank(raw: unknown): boolean {
-  return raw === undefined || raw === null || raw === '' || (Array.isArray(raw) && raw.length === 0)
+  if (typeof raw === 'string') return raw.trim() === ''
+  return raw === undefined || raw === null || (Array.isArray(raw) && raw.length === 0)
 }
 
 type NumberKind = 'integer' | 'decimal' | 'money'
