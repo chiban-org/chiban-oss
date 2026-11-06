@@ -1,4 +1,5 @@
 import { ActionForm } from '@/components/ActionForm'
+import { GroupFieldError } from '@/components/fieldErrors'
 import { NEW_TAB } from '@/components/newTab'
 import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import { RTK_METHOD_LABELS } from '@/features/rtk/labels'
@@ -152,11 +153,13 @@ function ReleaseForm({
         <Hidden name="requestId" value={requestId} />
         <fieldset className="space-y-2 border-0 p-0">
           <legend className="text-sm font-medium">Records in this release</legend>
+          <GroupFieldError name="items" />
           {active.map((a) => (
             <CheckField
               key={a.approvalId}
               label={`${a.title}: ${ROLE_LABELS[a.role] ?? a.role}`}
               name="items"
+              groupMember
               value={`${a.documentId}:${a.approvalId}`}
             />
           ))}

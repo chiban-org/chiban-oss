@@ -1,5 +1,4 @@
 import { ActionForm } from '@/components/ActionForm'
-import { TextField } from '@/components/staff/fields'
 import { costTotal, RTK_RESPONSE_LABELS } from '@/features/rtk/labels'
 import type { RtkRequestView } from '@/features/rtk/requests'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -30,8 +29,6 @@ function ResponseForm({ requestId, today }: { requestId: string; today: CivilDat
           records the response.
         </p>
         <ResponseKindFields options={FORM_RESPONSE_OPTIONS} today={today} />
-        <TextField label="Charge, if any (what it is for)" name="costLabel" />
-        <TextField label="Charge in dollars" name="costDollars" type="number" min="0" step="0.01" />
       </ActionForm>
     </details>
   )

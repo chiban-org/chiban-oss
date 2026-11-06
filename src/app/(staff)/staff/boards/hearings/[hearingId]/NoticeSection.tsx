@@ -1,7 +1,7 @@
 import {
   createStaffUploadIntentAction,
   finalizeStaffUploadAction,
-} from '@/app/(staff)/staff/records/actions'
+} from '@/app/(staff)/staff/records/uploadActions'
 import { ActionForm } from '@/components/ActionForm'
 import { ApplicationFileUploader } from '@/components/documents/ApplicationFileUploader'
 import { NEW_TAB } from '@/components/newTab'

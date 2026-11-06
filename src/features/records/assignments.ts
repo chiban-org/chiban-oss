@@ -7,6 +7,7 @@ import {
   documentVersions,
   inspections,
   preservationRecords,
+  projects,
   recordEvents,
   retentionAssignments,
 } from '@/db/schema'
@@ -159,11 +160,16 @@ export async function recordBuildingRemoved(
   actor: Actor,
   input: { projectId: string; occurredOn: CivilDate },
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden'>> {
+): Promise<Result<void, 'forbidden' | 'not_found'>> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'document.manage', signal)
   if (!allowed.ok) return err('forbidden')
-  return await transactionResult(db, async (tx) => {
+  return await transactionResult<void, 'not_found'>(db, async (tx) => {
+    const [project] = await tx
+      .select({ id: projects.id })
+      .from(projects)
+      .where(eq(projects.id, input.projectId))
+    if (project === undefined) return err('not_found')
     await tx.insert(recordEvents).values({
       projectId: input.projectId,
       kind: 'building_removed',
