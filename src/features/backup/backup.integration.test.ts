@@ -108,7 +108,7 @@ beforeAll(async () => {
   source = await makeTestDb()
   await seedExportTown(source.db, signal)
   await store.putBytes(
-    'exports/leftover/chiban-export.tar',
+    'exports/leftover/chiban-export.zip',
     Buffer.from('not part of a backup'),
     'application/x-tar',
     signal,

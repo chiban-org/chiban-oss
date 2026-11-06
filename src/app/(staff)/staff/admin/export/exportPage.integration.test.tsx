@@ -42,7 +42,7 @@ beforeAll(async () => {
   await handle.db.insert(exportsTable).values({
     kind: 'business',
     status: 'ready',
-    storageKey: 'exports/x/chiban-export-2026-11-02.tar',
+    storageKey: 'exports/x/chiban-export-2026-11-02.zip',
     sizeBytes: 2048,
     requestedBy: admin.userId,
     requestedAt: new Date('2026-11-03T01:00:00Z'),

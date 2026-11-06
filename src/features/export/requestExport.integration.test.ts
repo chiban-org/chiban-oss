@@ -95,8 +95,10 @@ describe('self-service export', () => {
     expect(res.status).toBe(302)
     const location = res.headers.get('location') ?? ''
     expect(new URL(location).searchParams.get('X-Amz-Expires')).toBe('60')
+    expect(new URL(location).pathname.endsWith('.zip')).toBe(true)
     const bytes = new Uint8Array(await (await fetch(location)).arrayBuffer())
-    expect(new TextDecoder().decode(bytes.subarray(0, 13))).toBe('manifest.json')
+    expect(Array.from(bytes.subarray(0, 4))).toEqual([0x50, 0x4b, 0x03, 0x04])
+    expect(new TextDecoder().decode(bytes.subarray(30, 43))).toBe('manifest.json')
   })
 
   it('records custodian can export; staff is forbidden', async () => {

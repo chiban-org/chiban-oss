@@ -8,7 +8,7 @@ import { importArchive } from '@/features/export/importArchive'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { seedExportTown } from '@/test/exportFixtures'
-import { buildTar, collectEntries, freshTarget, rebuildTar, sourceOf } from '@/test/roundTrip'
+import { buildZip, collectEntries, freshTarget, rebuildZip, sourceOf } from '@/test/roundTrip'
 
 const signal = new AbortController().signal
 const sourceStore = getObjectStore()
@@ -18,7 +18,7 @@ let tar: Buffer
 beforeAll(async () => {
   source = await makeTestDb()
   await seedExportTown(source.db, signal)
-  tar = await buildTar(source.db, sourceStore, signal)
+  tar = await buildZip(source.db, sourceStore, signal)
 }, 300_000)
 afterAll(async () => {
   await source.drop()
@@ -77,7 +77,7 @@ describe('archive round trip', () => {
       const result = await importArchive(
         target.db,
         store,
-        sourceOf(await rebuildTar(entries)),
+        sourceOf(await rebuildZip(entries)),
         signal,
       )
       expect(result).toMatchObject({
@@ -101,7 +101,7 @@ describe('archive round trip', () => {
       const result = await importArchive(
         target.db,
         store,
-        sourceOf(await rebuildTar(entries)),
+        sourceOf(await rebuildZip(entries)),
         signal,
       )
       expect(result).toMatchObject({ ok: false, error: { hashMismatch: [victim] } })
@@ -120,7 +120,7 @@ describe('archive round trip', () => {
       const result = await importArchive(
         target.db,
         store,
-        sourceOf(await rebuildTar(entries)),
+        sourceOf(await rebuildZip(entries)),
         signal,
       )
       expect(result).toMatchObject({ ok: false, error: 'manifest_mismatch' })

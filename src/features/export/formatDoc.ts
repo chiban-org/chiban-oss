@@ -6,9 +6,10 @@ const INTRO = `# Chiban export format
 
 Format version ${EXPORT_FORMAT_VERSION}.
 
-This archive holds one town's records exported from Chiban. It is an uncompressed pax tar. Any
-tar tool opens it. Every file is plain text or the original bytes of a stored document, so the
-records stay readable without Chiban.
+This archive holds one town's records exported from Chiban. It is a standard zip file, so it
+opens on any computer without extra software. Every file inside is plain text or the original
+bytes of a stored document, so the records stay readable without Chiban. Data files are
+compressed; stored documents are kept as they are.
 
 ## Layout
 

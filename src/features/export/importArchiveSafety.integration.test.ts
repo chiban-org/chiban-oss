@@ -9,7 +9,7 @@ import { manifestChecksumLine } from '@/features/export/manifest'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { seedExportTown } from '@/test/exportFixtures'
-import { buildTar, collectEntries, freshTarget, rebuildTar, sourceOf } from '@/test/roundTrip'
+import { buildZip, collectEntries, freshTarget, rebuildZip, sourceOf } from '@/test/roundTrip'
 
 const signal = new AbortController().signal
 let source: TestDb
@@ -18,7 +18,7 @@ let tar: Buffer
 beforeAll(async () => {
   source = await makeTestDb()
   await seedExportTown(source.db, signal)
-  tar = await buildTar(source.db, getObjectStore(), signal)
+  tar = await buildZip(source.db, getObjectStore(), signal)
 }, 300_000)
 afterAll(async () => {
   await source.drop()
@@ -44,7 +44,7 @@ async function withEditedManifest(edit: (manifest: Record<string, unknown>) => v
   const bytes = Buffer.from(JSON.stringify(manifest))
   entries.set('manifest.json', bytes)
   entries.set('manifest.sha256', Buffer.from(manifestChecksumLine(bytes)))
-  return await rebuildTar(entries)
+  return await rebuildZip(entries)
 }
 
 describe('importArchive upload and path safety', () => {

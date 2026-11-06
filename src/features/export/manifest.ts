@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import { canonicalJson } from '@/features/export/canonical'
 
-export const EXPORT_FORMAT_VERSION = '1.0.0'
+export const EXPORT_FORMAT_VERSION = '2.0.0'
 
 const sha256 = z.string().regex(/^[0-9a-f]{64}$/)
 

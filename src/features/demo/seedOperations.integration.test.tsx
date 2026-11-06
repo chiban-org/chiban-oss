@@ -8,7 +8,7 @@ import { importArchive } from '@/features/export/importArchive'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { demoSeedDeps } from '@/test/demoSeedDeps'
-import { buildTar, freshTarget, sourceOf } from '@/test/roundTrip'
+import { buildZip, freshTarget, sourceOf } from '@/test/roundTrip'
 
 interface MockState {
   db: unknown
@@ -81,7 +81,7 @@ describe('seeded operations screens', () => {
 
   it('seeded export round-trips', async () => {
     const store = getObjectStore()
-    const tar = await buildTar(handle.db, store, signal)
+    const tar = await buildZip(handle.db, store, signal)
     const { target, store: targetStore } = await freshTarget()
     try {
       const result = await importArchive(target.db, targetStore, sourceOf(tar), signal)

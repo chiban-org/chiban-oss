@@ -1,19 +1,18 @@
-import { createReadStream } from 'node:fs'
 import { parseArgs } from 'node:util'
 import { db, pool } from '@/db/client'
 import { importArchive } from '@/features/export/importArchive'
-import { tarSource } from '@/features/export/readArchive'
+import { zipSourceFromFile } from '@/features/export/readZip'
 import { getObjectStore } from '@/features/storage/objectStore'
 
 const { values } = parseArgs({ options: { file: { type: 'string' } } })
 if (values.file === undefined) {
-  process.stderr.write('usage: import-archive --file <archive.tar>\n')
+  process.stderr.write('usage: import-archive --file <archive.zip>\n')
   process.exit(2)
 }
 const result = await importArchive(
   db,
   getObjectStore(),
-  tarSource(createReadStream(values.file)),
+  zipSourceFromFile(values.file),
   AbortSignal.timeout(6 * 60 * 60 * 1000),
 )
 await pool.end()

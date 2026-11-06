@@ -6,8 +6,8 @@ import type { Db } from '@/db/client'
 import { exportsTable, exportTargets } from '@/db/schema'
 import { manifestBytes } from '@/features/export/manifest'
 import { pruneExpiredExports } from '@/features/export/pruneExports'
-import { createTarSink } from '@/features/export/tarSink'
 import { writeArchive } from '@/features/export/writeArchive'
+import { createZipSink } from '@/features/export/zipSink'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { ok } from '@/types/result'
@@ -18,7 +18,7 @@ const DAY_MS = 24 * 60 * 60 * 1000
 const RETENTION_DAYS = 7
 
 export function exportObjectKey(exportId: string, today: string): string {
-  return `exports/${exportId}/chiban-export-${today}.tar`
+  return `exports/${exportId}/chiban-export-${today}.zip`
 }
 
 export async function buildBusinessExport(
@@ -33,23 +33,23 @@ export async function buildBusinessExport(
     .update(exportsTable)
     .set({ status: 'running', storageKey: key })
     .where(eq(exportsTable.id, exportId))
-  const tar = createTarSink()
+  const zip = createZipSink()
   const counted = new PassThrough()
   let size = 0
   counted.on('data', (chunk: Buffer) => {
     size += chunk.length
   })
-  tar.stream.pipe(counted)
-  const uploading = store.upload(key, counted, 'application/x-tar', signal)
+  zip.stream.pipe(counted)
+  const uploading = store.upload(key, counted, 'application/zip', signal)
   try {
     const manifest = await writeArchive(
       db,
       store,
       { exportId, kind: 'business', base: null },
-      tar.sink,
+      zip.sink,
       signal,
     )
-    tar.finish()
+    zip.finish()
     await uploading
     await db
       .update(exportsTable)
@@ -66,7 +66,7 @@ export async function buildBusinessExport(
   } catch (e) {
     const message = e instanceof Error ? e.message : String(e)
     try {
-      tar.stream.destroy()
+      zip.stream.destroy()
       counted.destroy()
       await uploading.catch(() => undefined)
       await store.delete(key, signal).catch(() => undefined)

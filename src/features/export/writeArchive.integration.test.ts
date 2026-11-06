@@ -41,7 +41,7 @@ async function archive(db = handle.db, base = null as Parameters<typeof writeArc
 }
 
 describe('writeArchive', () => {
-  it('manifest is the first tar entry and manifest.sha256 matches it', async () => {
+  it('manifest is the first entry and manifest.sha256 matches it', async () => {
     const { entries, order } = await archive()
     expect(order[0]).toBe('manifest.json')
     expect(order[1]).toBe('manifest.sha256')
@@ -157,8 +157,8 @@ describe('writeArchive', () => {
   })
 
   it('prune expires a 7-day-old export and deletes its object', async () => {
-    const key = `exports/${crypto.randomUUID()}/old.tar`
-    await store.putBytes(key, Buffer.from('x'), 'application/x-tar', signal)
+    const key = `exports/${crypto.randomUUID()}/old.zip`
+    await store.putBytes(key, Buffer.from('x'), 'application/zip', signal)
     const [row] = await handle.db
       .insert(exportsTable)
       .values({

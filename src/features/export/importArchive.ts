@@ -15,7 +15,7 @@ import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
 
 const MANIFEST_LIMIT = 256 * 1024 * 1024
-const SUPPORTED_MAJOR = '1'
+const SUPPORTED_MAJOR = '2'
 
 export interface ImportArchiveReport {
   exportId: string

@@ -76,8 +76,8 @@ export async function downloadLink(
   if (row?.status !== 'ready' || row.storageKey === null) return err('not_found')
   const url = await store.presignGet(row.storageKey, {
     expiresSeconds: DOWNLOAD_LINK_SECONDS,
-    filename: row.storageKey.split('/').pop() ?? 'chiban-export.tar',
-    contentType: 'application/x-tar',
+    filename: row.storageKey.split('/').pop() ?? 'chiban-export.zip',
+    contentType: 'application/zip',
     disposition: 'attachment',
   })
   await writeAudit(
