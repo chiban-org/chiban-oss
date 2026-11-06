@@ -1,18 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ActionForm } from '@/components/ActionForm'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { Button } from '@/components/ui/button'
-import { CENSUS_EXCLUDED_REASONS } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { censusBpsReport, incompleteCopy } from '@/features/census/bpsReport'
-import {
-  CENSUS_CATEGORY_LABELS,
-  CENSUS_PHASE_LABELS,
-  CENSUS_REASON_LABELS,
-} from '@/features/census/labels'
 import { censusPeriod } from '@/features/census/period'
 import { type CensusSuggestion, suggestCensus } from '@/features/census/suggest'
 import { firstParam, type RawSearchParams, readTableParams } from '@/features/dataTable/params'
