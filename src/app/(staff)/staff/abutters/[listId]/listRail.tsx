@@ -81,7 +81,17 @@ export function ListRail({ view }: { view: ListView }) {
       {view.canEdit ? (
         <div className="rail-card">
           <NextStep>
-            <ActionForm action={issueListAction} submitLabel="Issue list" variant="default">
+            <ActionForm
+              action={issueListAction}
+              submitLabel="Issue list"
+              variant="default"
+              confirm={{
+                title: 'Issue this list?',
+                body: 'Notice costs are calculated from it and any earlier issued list is replaced. This cannot be undone.',
+                confirmLabel: 'Issue the list',
+                tone: 'default',
+              }}
+            >
               <input type="hidden" name="listId" value={view.listId} />
             </ActionForm>
           </NextStep>

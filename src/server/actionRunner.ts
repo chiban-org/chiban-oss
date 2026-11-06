@@ -98,6 +98,7 @@ export const ERROR_COPY: Record<string, string> = {
   over_reversed: 'That is more than was paid.',
   not_a_payment: 'Only a payment can be refunded.',
   not_a_check: 'That payment was not made by check.',
+  already_returned: 'This check has already been recorded as returned.',
   not_a_card_payment: 'That payment was not made by card.',
   simulated_disabled: 'The simulated processor is turned off in this environment.',
   outcome_unknown: 'The outcome is still unknown. Check with the processor first.',

@@ -6,7 +6,7 @@ import { ActionsHeader, Checked, ParcelLink, PersonLines, RowActions, UsedBy } f
 export function RestrictionTable({ rows, today }: { rows: HoldingRow[]; today: string }) {
   return (
     <div className="table-panel">
-      <table className="w-full min-w-[60rem] text-sm">
+      <table className="w-full text-sm">
         <caption className="sr-only">Restriction holders</caption>
         <thead>
           <tr>

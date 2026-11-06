@@ -5,7 +5,12 @@ import type { Actor } from '@/features/auth/actor'
 import { postEntry } from '@/features/ledger/postEntry'
 import { returnedCheckReason } from '@/features/ledger/returnedReason'
 import { allocateReversal, netAllocations } from '@/features/ledger/reversalAllocations'
-import { authorizeReversal, loadEntry, type ReversalDeps } from '@/features/ledger/reversalSupport'
+import {
+  authorizeReversal,
+  hasReturnedCheck,
+  loadEntry,
+  type ReversalDeps,
+} from '@/features/ledger/reversalSupport'
 import type { AllocationInput } from '@/features/ledger/types'
 import { findProcessorEntry } from '@/features/payments/reconcileSupport'
 import type { CivilDate } from '@/types/civilDate'
@@ -76,12 +81,13 @@ export async function recordReturnedCheck(
   input: { entryId: string; reason: string; returnedOn: CivilDate },
   signal: AbortSignal,
   deps: ReversalDeps = {},
-): Promise<Result<{ entryId: string }, Base | 'not_a_check'>> {
+): Promise<Result<{ entryId: string }, Base | 'not_a_check' | 'already_returned'>> {
   signal.throwIfAborted()
   const authorized = await authorizeReversal(db, actor, input.reason, signal)
   if (!authorized.ok) return err(authorized.error)
   const entry = await loadEntry(db, input.entryId)
   if (entry?.entryType !== 'payment' || entry.method !== 'check') return err('not_a_check')
+  if (await hasReturnedCheck(db, entry.id)) return err('already_returned')
   const remaining = (await netAllocations(db, entry.id))
     .filter((n) => n.cents > 0)
     .reduce((sum, n) => sum + n.cents, 0)

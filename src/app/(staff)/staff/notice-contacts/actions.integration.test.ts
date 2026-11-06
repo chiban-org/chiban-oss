@@ -71,6 +71,9 @@ describe('easement and restriction holders', () => {
     expect(result).toEqual({
       ok: false,
       error: 'No parcel has the ID 999999999999. Check the parcel ID and try again.',
+      fieldErrors: {
+        parcelRef: 'No parcel has the ID 999999999999. Check the parcel ID and try again.',
+      },
     })
   })
 
@@ -109,17 +112,18 @@ describe('row actions on a holder', () => {
     })
     expect(await confirms.confirmEntryAction(form({ kind: 'nonsense', entryId }))).toEqual({
       ok: false,
-      error: 'Check the form fields and try again.',
+      error: 'Choose what to confirm.',
+      fieldErrors: { kind: 'Choose what to confirm.' },
     })
   })
 
   it('ends a holder on the chosen date, then undoes it', async () => {
     const id = await holdingId()
     expect(
-      await actions.endRestrictionAction(form({ holdingId: id, endedOn: '2027-01-15' })),
+      await actions.endRestrictionAction(form({ holdingId: id, endedOn: '2026-01-15' })),
     ).toEqual({ ok: true, message: 'Restriction ended.' })
     const ended = await handle.db.query.restrictionHoldings.findFirst()
-    expect(ended?.endedOn).toBe('2027-01-15')
+    expect(ended?.endedOn).toBe('2026-01-15')
     state.actor = world.reviewer
     expect(await actions.undoRestrictionEndAction(form({ holdingId: id }))).toEqual(FORBIDDEN)
     state.actor = world.staff

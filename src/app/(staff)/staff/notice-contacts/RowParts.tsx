@@ -9,7 +9,10 @@ import { confirmEntryAction } from './confirmActions'
 
 export function ParcelLink({ parcelId, label }: { parcelId: string; label: string }) {
   return (
-    <Link href={`/staff/parcels/${parcelId}`} className="font-semibold tabular-nums">
+    <Link
+      href={`/staff/parcels/${parcelId}`}
+      className="whitespace-nowrap font-semibold tabular-nums"
+    >
       {label}
     </Link>
   )

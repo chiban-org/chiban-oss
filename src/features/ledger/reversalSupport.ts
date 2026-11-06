@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { Db, DbOrTx } from '@/db/client'
 import { type LedgerEntryRow, ledgerEntries } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
@@ -27,4 +27,18 @@ export async function authorizeReversal(
 export async function loadEntry(db: DbOrTx, entryId: string): Promise<LedgerEntryRow | undefined> {
   const [row] = await db.select().from(ledgerEntries).where(eq(ledgerEntries.id, entryId))
   return row
+}
+
+export async function hasReturnedCheck(db: DbOrTx, entryId: string): Promise<boolean> {
+  const [row] = await db
+    .select({ id: ledgerEntries.id })
+    .from(ledgerEntries)
+    .where(
+      and(
+        eq(ledgerEntries.reversesEntryId, entryId),
+        eq(ledgerEntries.entryType, 'returned_check'),
+      ),
+    )
+    .limit(1)
+  return row !== undefined
 }

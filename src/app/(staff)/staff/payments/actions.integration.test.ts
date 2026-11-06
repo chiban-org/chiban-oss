@@ -157,7 +157,11 @@ describe('refund and correction actions', () => {
     const r = await actions.refundAction(
       form({ entryId, amount: '999.00', reason: 'Permit pulled in error' }),
     )
-    expect(r.ok === false && r.error).toBe('That is more than was paid.')
+    expect(r).toEqual({
+      ok: false,
+      error: 'That is more than was paid.',
+      fieldErrors: { amount: 'That is more than was paid.' },
+    })
   })
 
   it('a bad amount is invalid input', async () => {
@@ -166,14 +170,18 @@ describe('refund and correction actions', () => {
     const r = await actions.refundAction(
       form({ entryId, amount: 'ten', reason: 'Permit pulled in error' }),
     )
-    expect(r).toEqual({ ok: false, error: 'Check the form fields and try again.' })
+    expect(r).toEqual({
+      ok: false,
+      error: 'Enter the refund amount in dollars and cents, like 25.00.',
+      fieldErrors: { amount: 'Enter the refund amount in dollars and cents, like 25.00.' },
+    })
   })
 
   it('a returned check on cash payment is explained', async () => {
     const entryId = await cashEntry()
     state.actor = await staffActor(handle.db, 'finance')
     const r = await actions.returnedCheckAction(
-      form({ entryId, returnedOn: '2027-03-05', reason: 'Insufficient funds notice' }),
+      form({ entryId, returnedOn: '2026-03-05', reason: 'Insufficient funds notice' }),
     )
     expect(r.ok === false && r.error).toBe('That payment was not made by check.')
   })
@@ -245,7 +253,11 @@ describe('refund and correction actions', () => {
         amount: '45.00',
       }),
     )
-    expect(r).toEqual({ ok: false, error: 'No fee line on that application can take this amount.' })
+    expect(r).toEqual({
+      ok: false,
+      error: 'No fee line on that application can take this amount.',
+      fieldErrors: { amount: 'No fee line on that application can take this amount.' },
+    })
   })
 
   it('a correction that moves nothing is refused', async () => {
@@ -322,7 +334,11 @@ describe('record payment action', () => {
         payerName: 'Pat',
       }),
     )
-    expect(over).toEqual({ ok: false, error: 'That payment is more than what is due.' })
+    expect(over).toEqual({
+      ok: false,
+      error: 'That payment is more than what is due.',
+      fieldErrors: { amount: 'That payment is more than what is due.' },
+    })
     const r = await actions.recordPaymentAction(
       form({
         applicationId: fresh.applicationId,
