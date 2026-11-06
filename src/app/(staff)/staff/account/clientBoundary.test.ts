@@ -10,5 +10,5 @@ const CLIENT_FILES = [
 
 it.each(CLIENT_FILES)('%s does not import a server validation module', (file) => {
   const source = readFileSync(join(__dirname, '..', file), 'utf8')
-  expect(source).not.toMatch(/from '(\.\.?\/)+forms'/)
+  expect(source).not.toMatch(/from '\.{1,2}\/(?:\.\.\/)*forms'/)
 })
