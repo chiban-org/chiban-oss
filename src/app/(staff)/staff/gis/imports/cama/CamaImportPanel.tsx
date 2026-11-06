@@ -14,6 +14,7 @@ import {
 } from '@/features/cama/mapping'
 import type { CamaPreview } from '@/features/cama/previewCama'
 import { attempt } from '@/lib/attempt'
+import { NO_CAMA_FILE } from '../gisCopy'
 import { previewCamaAction, runCamaImportAction, saveCamaMappingAction } from './actions'
 import { ColumnList } from './ColumnList'
 import { IdPartsEditor } from './IdPartsEditor'
@@ -68,9 +69,13 @@ export function CamaImportPanel({
     setMessage(text)
     setRunId(null)
   }
+  const noFileChosen = () =>
+    (formRef.current?.querySelector<HTMLInputElement>('input[name="file"]')?.files?.length ?? 0) ===
+    0
   const failed = () => report('The request could not be sent. Check your connection and try again.')
 
   const onPreview = async () => {
+    if (noFileChosen()) return report(NO_CAMA_FILE)
     const result = await attempt(() => previewCamaAction(body()), setPending)
     if (!result.ok) return failed()
     if (!result.value.ok) return report(result.value.error)
@@ -84,6 +89,7 @@ export function CamaImportPanel({
     report(result.value.ok ? result.value.message : result.value.error)
   }
   const onRun = async () => {
+    if (noFileChosen()) return report(NO_CAMA_FILE)
     const result = await attempt(() => runCamaImportAction(body()), setPending)
     if (!result.ok) return failed()
     if (!result.value.ok) return report(result.value.error)

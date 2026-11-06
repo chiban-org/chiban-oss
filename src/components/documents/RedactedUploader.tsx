@@ -8,11 +8,12 @@ interface Props {
   documentId: string
   target: RecordRef
   actions: UploaderActions
+  seriesKey?: string | undefined
 }
 
 const MAX_BYTES = 100 * 1024 * 1024
 
-export function RedactedUploader({ documentId, target, actions }: Props) {
+export function RedactedUploader({ documentId, target, actions, seriesKey }: Props) {
   const router = useRouter()
   const finalize: UploaderActions['finalize'] = async (formData) => {
     formData.set('documentId', documentId)
@@ -25,6 +26,7 @@ export function RedactedUploader({ documentId, target, actions }: Props) {
         target={target}
         maxBytes={MAX_BYTES}
         actions={{ createIntent: actions.createIntent, finalize }}
+        extraFields={seriesKey === undefined ? {} : { seriesKey }}
         onUploaded={() => router.refresh()}
       />
     </details>

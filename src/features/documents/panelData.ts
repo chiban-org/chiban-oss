@@ -28,7 +28,7 @@ export interface PanelDocument extends DocumentListRow {
   canRedact: boolean
   preservation: PreservationState
   preservationRecordId: string | null
-  series: { label: string; citation: { label: string; url: string } } | null
+  series: { key: string; label: string; citation: { label: string; url: string } } | null
   retention: string
   holdCount: number
   uploadedBy: string
@@ -172,7 +172,11 @@ export async function loadPanelDocuments(
       series:
         retention === null
           ? null
-          : { label: retention.series.label, citation: retention.series.citation },
+          : {
+              key: retention.series.key,
+              label: retention.series.label,
+              citation: retention.series.citation,
+            },
       retention: retentionText(retention?.status ?? null),
       holdCount: retention?.holds.length ?? 0,
       uploadedBy: uploadedBy.get(row.documentId) ?? 'Unknown',

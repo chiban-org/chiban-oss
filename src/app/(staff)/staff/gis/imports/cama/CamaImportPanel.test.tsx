@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import { DEFAULT_CAMA_MAPPING } from '@/features/cama/mapping'
@@ -12,7 +12,22 @@ const { CamaImportPanel } = await import('./CamaImportPanel')
 
 afterEach(cleanup)
 
+const FORMATS = [{ key: 'cama15', label: 'CAMA number' }]
+
 describe('CamaImportPanel', () => {
+  it.each([
+    ['Read the file and preview'],
+    ['Run import'],
+  ])('asks for a file instead of calling %s with an empty picker', (button) => {
+    render(
+      <CsrfProvider token="t">
+        <CamaImportPanel saved={DEFAULT_CAMA_MAPPING} formats={FORMATS} />
+      </CsrfProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: button }))
+    expect(screen.getByRole('status').textContent).toContain('Choose a CSV file.')
+  })
+
   it('shows the parcel ID format by its name, not its key', () => {
     const { container } = render(
       <CsrfProvider token="t">
