@@ -1,4 +1,5 @@
 import { type PDFFont, type PDFPage, rgb } from 'pdf-lib'
+import { splitToWidth } from '@/features/pdf/fitWidth'
 import { printable } from '@/features/pdf/pdfFonts'
 
 export const PAGE_WIDTH = 612
@@ -21,13 +22,11 @@ export function wrapLines(text: string, font: PDFFont, size: number, width: numb
     line = ''
   }
   for (const word of safe.split(' ')) {
-    let rest = word
-    while (font.widthOfTextAtSize(rest, size) > width) {
-      let cut = rest.length - 1
-      while (cut > 1 && font.widthOfTextAtSize(rest.slice(0, cut), size) > width) cut -= 1
+    const parts = splitToWidth(font, word, size, width)
+    const rest = parts.pop() ?? ''
+    for (const part of parts) {
       flush()
-      lines.push(rest.slice(0, cut))
-      rest = rest.slice(cut)
+      lines.push(part)
     }
     const candidate = line === '' ? rest : `${line} ${rest}`
     if (font.widthOfTextAtSize(candidate, size) > width) {

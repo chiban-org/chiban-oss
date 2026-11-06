@@ -1,4 +1,5 @@
 import type { PDFFont } from 'pdf-lib'
+import { splitToWidth } from '@/features/pdf/fitWidth'
 import { type Fonts, printable } from '@/features/pdf/pdfFonts'
 import { CONTENT_WIDTH, drawText, LEADING, MARGIN } from '@/features/pdf/pdfLayout'
 import type { PageCursor } from '@/features/pdf/pdfPage'
@@ -50,15 +51,10 @@ function runWords(runs: readonly TextRun[], fonts: Fonts): Word[] {
 }
 
 function splitPiece(piece: Piece, size: number, width: number): Piece[] {
-  const parts: Piece[] = []
-  let rest = piece.text
-  while (piece.font.widthOfTextAtSize(rest, size) > width && rest.length > 1) {
-    let cut = rest.length - 1
-    while (cut > 1 && piece.font.widthOfTextAtSize(rest.slice(0, cut), size) > width) cut -= 1
-    parts.push({ text: rest.slice(0, cut), font: piece.font })
-    rest = rest.slice(cut)
-  }
-  return [...parts, { text: rest, font: piece.font }]
+  return splitToWidth(piece.font, piece.text, size, width).map((text) => ({
+    text,
+    font: piece.font,
+  }))
 }
 
 function fitWords(words: Word[], size: number, width: number): Word[] {
