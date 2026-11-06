@@ -2,7 +2,7 @@ import { expect, test } from '../fixtures/test'
 import { confirmWith } from './confirm'
 import { addMeetingThroughForm, type MeetingSpec, meetingIdFor } from './meetings'
 import { hearingFor, proofCount, proveEveryNotice } from './noticeProof'
-import { applicationIdFor, townToday } from './records'
+import { applicationIdFor, daysFromToday } from './records'
 import { uploadPdf } from './upload'
 
 const APPLICATION = 'Marsh Lane lot coverage variance'
@@ -25,7 +25,7 @@ test.describe
     test('schedules a public hearing at a meeting dated today', async ({ page, db, suffix }) => {
       meeting = {
         board: 'zba',
-        date: await townToday(db),
+        date: await daysFromToday(db, -1),
         kind: 'special',
         location: `Approval chain room ${suffix}`,
       }

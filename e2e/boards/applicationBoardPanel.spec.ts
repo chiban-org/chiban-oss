@@ -1,7 +1,7 @@
 import { expect, test } from '../fixtures/test'
 import { confirmWith } from './confirm'
 import { addMeetingThroughForm, type MeetingSpec, meetingIdFor } from './meetings'
-import { applicationIdFor, daysFromToday, townToday } from './records'
+import { applicationIdFor, daysFromToday } from './records'
 import { expectRefused } from './refusal'
 
 const APPLICATION = 'Osprey Point site plan'
@@ -20,7 +20,7 @@ test.describe
       applicationId = await applicationIdFor(db, APPLICATION)
       const soon: MeetingSpec = {
         board: 'planning_board',
-        date: await townToday(db),
+        date: await daysFromToday(db, 1),
         kind: 'special',
         location: `Panel too soon room ${suffix}`,
       }

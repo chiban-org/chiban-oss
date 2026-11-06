@@ -2,7 +2,7 @@ import { type E2eDb, expect, test } from '../fixtures/test'
 import { confirmWith, permissionAlert } from './confirm'
 import { addMeetingThroughForm, type MeetingSpec, meetingIdFor } from './meetings'
 import { CERTIFIED, fillProof, hearingFor, OTHER_GROUPS, proofCount } from './noticeProof'
-import { applicationIdFor, townToday } from './records'
+import { applicationIdFor, daysFromToday } from './records'
 import { expectRefused } from './refusal'
 import { uploadPdf } from './upload'
 
@@ -25,7 +25,7 @@ test.describe
     test('schedules a public hearing at a meeting dated today', async ({ page, db, suffix }) => {
       meeting = {
         board: 'planning_board',
-        date: await townToday(db),
+        date: await daysFromToday(db, -1),
         kind: 'special',
         location: `Notice chain room ${suffix}`,
       }
