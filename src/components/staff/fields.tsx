@@ -1,5 +1,7 @@
+'use client'
+
 import { type ComponentProps, type ReactNode, useId } from 'react'
-import { Checkbox, CheckLine } from '@/components/ui/checkbox'
+import { FieldErrorMessage, type FieldErrorView, useControlAria } from '@/components/fieldErrors'
 import { FilePicker } from '@/components/ui/file-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -16,6 +18,7 @@ interface FieldProps {
   className?: string | undefined
   action?: ReactNode
   required?: boolean | undefined
+  error?: FieldErrorView | null
   children: ReactNode
 }
 
@@ -27,6 +30,7 @@ export function Field({
   className,
   action,
   required,
+  error,
   children,
 }: FieldProps) {
   return (
@@ -47,6 +51,7 @@ export function Field({
           {hint}
         </p>
       )}
+      <FieldErrorMessage error={error} />
     </div>
   )
 }
@@ -89,6 +94,7 @@ export function TextField({
   ...props
 }: ComponentProps<'input'> & ActionProps & { label: string; hint?: string }) {
   const { controlId, hintId } = useFieldIds(id, hint)
+  const { error, aria } = useControlAria(props.name, hintId)
   return (
     <Field
       label={label}
@@ -97,11 +103,12 @@ export function TextField({
       hintId={hintId}
       action={action}
       required={props.required}
+      error={error}
     >
       {props.type === 'file' ? (
-        <FilePicker id={controlId} aria-describedby={hintId} {...omitType(props)} />
+        <FilePicker id={controlId} {...aria} {...omitType(props)} />
       ) : (
-        <Input id={controlId} aria-describedby={hintId} {...props} />
+        <Input id={controlId} {...aria} {...props} />
       )}
     </Field>
   )
@@ -115,6 +122,7 @@ export function AreaField({
   ...props
 }: ComponentProps<'textarea'> & ActionProps & { label: string; hint?: string }) {
   const { controlId, hintId } = useFieldIds(id, hint)
+  const { error, aria } = useControlAria(props.name, hintId)
   return (
     <Field
       label={label}
@@ -123,10 +131,11 @@ export function AreaField({
       hintId={hintId}
       action={action}
       required={props.required}
+      error={error}
     >
       <Textarea
         id={controlId}
-        aria-describedby={hintId}
+        {...aria}
         {...props}
         className={cn('field-sizing-fixed', props.className)}
       />
@@ -148,6 +157,7 @@ export function SelectField({
     options: readonly (readonly [string, string])[]
   }) {
   const { controlId, hintId } = useFieldIds(id, hint)
+  const { error, aria } = useControlAria(props.name, hintId)
   return (
     <Field
       label={label}
@@ -156,8 +166,9 @@ export function SelectField({
       hintId={hintId}
       action={action}
       required={props.required}
+      error={error}
     >
-      <NativeSelect id={controlId} aria-describedby={hintId} {...props}>
+      <NativeSelect id={controlId} {...aria} {...props}>
         {options.map(([value, text]) => (
           <NativeSelectOption key={value} value={value}>
             {text}
@@ -168,28 +179,4 @@ export function SelectField({
   )
 }
 
-export function CheckField({
-  label,
-  id,
-  className,
-  ...props
-}: ComponentProps<typeof Checkbox> & { label: ReactNode }) {
-  const generated = useId()
-  const controlId = id ?? generated
-  return (
-    <div
-      data-slot="check-field"
-      className={cn('flex items-start gap-2 text-sm leading-snug', className)}
-    >
-      <CheckLine>
-        <Checkbox id={controlId} {...props} />
-      </CheckLine>
-      <Label htmlFor={controlId} className="leading-snug font-normal">
-        <span>
-          {label}
-          {props.required === true ? <RequiredMark /> : null}
-        </span>
-      </Label>
-    </div>
-  )
-}
+export { CheckField } from '@/components/staff/CheckField'

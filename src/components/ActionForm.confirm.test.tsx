@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ActionForm } from '@/components/ActionForm'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { ConfirmStep } from '@/components/useConfirmStep'
+import { CHECK_ONLY_FIELD } from '@/constants/formCheck'
 
 afterEach(cleanup)
 
@@ -33,27 +34,31 @@ function renderForm(
   return action
 }
 
-function openDialog() {
+async function openDialog() {
   fireEvent.click(screen.getByRole('button', { name: 'Cancel meeting' }))
-  return screen.getByRole('dialog')
+  return await screen.findByRole('dialog')
+}
+
+function sent(action: ReturnType<typeof renderForm>): FormData[] {
+  return action.mock.calls.map(([formData]) => formData).filter((f) => !f.has(CHECK_ONLY_FIELD))
 }
 
 describe('ActionForm with a confirm step', () => {
-  it('opens a dialog naming what will happen instead of submitting', () => {
+  it('opens a dialog naming what will happen instead of submitting', async () => {
     const action = renderForm()
-    const dialog = openDialog()
+    const dialog = await openDialog()
     expect(screen.getByRole('heading', { name: CANCEL_MEETING.title })).toBeTruthy()
     expect(dialog.getAttribute('aria-labelledby')).toBe(
       screen.getByRole('heading', { name: CANCEL_MEETING.title }).id,
     )
     const described = document.getElementById(dialog.getAttribute('aria-describedby') ?? '')
     expect(described?.textContent).toBe(CANCEL_MEETING.body)
-    expect(action).not.toHaveBeenCalled()
+    expect(sent(action)).toEqual([])
   })
 
   it('starts focus on Cancel and styles the confirm button as destructive', async () => {
     renderForm()
-    openDialog()
+    await openDialog()
     const cancel = screen.getByRole('button', { name: 'Cancel' })
     await waitFor(() => expect(document.activeElement).toBe(cancel))
     const confirm = screen.getByRole('button', { name: 'Cancel the meeting' })
@@ -63,10 +68,10 @@ describe('ActionForm with a confirm step', () => {
 
   it('sends nothing when Cancel is pressed', async () => {
     const action = renderForm()
-    openDialog()
+    await openDialog()
     fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    expect(action).not.toHaveBeenCalled()
+    expect(sent(action)).toEqual([])
     await waitFor(() =>
       expect(document.activeElement).toBe(screen.getByRole('button', { name: 'Cancel meeting' })),
     )
@@ -74,20 +79,18 @@ describe('ActionForm with a confirm step', () => {
 
   it('sends nothing when Escape is pressed', async () => {
     const action = renderForm()
-    const dialog = openDialog()
+    const dialog = await openDialog()
     fireEvent.keyDown(dialog, { key: 'Escape' })
     await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    expect(action).not.toHaveBeenCalled()
+    expect(sent(action)).toEqual([])
   })
 
   it('submits the original form exactly once on confirm', async () => {
     const action = renderForm()
-    openDialog()
+    await openDialog()
     fireEvent.click(screen.getByRole('button', { name: 'Cancel the meeting' }))
-    await waitFor(() => expect(action).toHaveBeenCalledTimes(1))
-    expect(action.mock.calls[0]?.[0].get('meetingId')).toBe('m1')
     await waitFor(() => expect(screen.getByText('Done.')).toBeTruthy())
-    expect(action).toHaveBeenCalledTimes(1)
+    expect(sent(action).map((f) => f.get('meetingId'))).toEqual(['m1'])
   })
 
   it('asks for a missing reason before it asks for confirmation', async () => {
@@ -101,11 +104,12 @@ describe('ActionForm with a confirm step', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Cancel meeting' }))
     await waitFor(() => expect(screen.getByText('Fill in: Reason.')).toBeTruthy())
     expect(screen.queryByRole('dialog')).toBeNull()
+    expect(action).not.toHaveBeenCalled()
     fireEvent.change(screen.getByLabelText('Reason'), { target: { value: 'Snow' } })
-    openDialog()
+    await openDialog()
     fireEvent.click(screen.getByRole('button', { name: 'Cancel the meeting' }))
-    await waitFor(() => expect(action).toHaveBeenCalledTimes(1))
-    expect(action.mock.calls[0]?.[0].get('reason')).toBe('Snow')
+    await waitFor(() => expect(sent(action)).toHaveLength(1))
+    expect(sent(action)[0]?.get('reason')).toBe('Snow')
   })
 
   it('asks only when the chosen value is one the step names', async () => {
@@ -121,8 +125,8 @@ describe('ActionForm with a confirm step', () => {
     expect(screen.queryByRole('dialog')).toBeNull()
     await screen.findByText('Done.')
     fireEvent.change(screen.getByLabelText('Move to'), { target: { value: 'closed' } })
-    openDialog()
-    expect(action).toHaveBeenCalledTimes(1)
+    await openDialog()
+    expect(sent(action)).toHaveLength(1)
   })
 
   it('treats an unticked box as the empty value', async () => {
@@ -134,7 +138,7 @@ describe('ActionForm with a confirm step', () => {
     await waitFor(() => expect(action).toHaveBeenCalledTimes(1))
     await screen.findByText('Done.')
     fireEvent.click(screen.getByLabelText('Public'))
-    openDialog()
-    expect(action).toHaveBeenCalledTimes(1)
+    await openDialog()
+    expect(sent(action)).toHaveLength(1)
   })
 })

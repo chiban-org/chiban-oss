@@ -20,19 +20,31 @@ function applies(step: ConfirmStep, form: HTMLFormElement): boolean {
   return chosen.some((value) => typeof value === 'string' && oneOf.includes(value))
 }
 
-export function useConfirmStep(step: ConfirmStep | undefined) {
+export type ConfirmCheck = (
+  form: HTMLFormElement,
+  submitter: HTMLElement | null,
+) => Promise<boolean>
+
+export function useConfirmStep(step: ConfirmStep | undefined, check?: ConfirmCheck) {
   const [open, setOpen] = useState(false)
   const confirmed = useRef(false)
   const held = useRef<Held | null>(null)
   const trigger = useRef<HTMLElement | null>(null)
+  const openAfterCheck = async (waiting: Held) => {
+    const passes = check === undefined || (await check(waiting.form, waiting.submitter))
+    if (held.current !== waiting) return
+    if (passes) setOpen(true)
+    else held.current = null
+  }
   const intercept = (event: FormEvent<HTMLFormElement>): boolean => {
     if (confirmed.current) return false
     if (step === undefined || !applies(step, event.currentTarget)) return false
     event.preventDefault()
     const submitter = (event.nativeEvent as SubmitEvent).submitter ?? null
-    held.current = { form: event.currentTarget, submitter }
+    const waiting = { form: event.currentTarget, submitter }
+    held.current = waiting
     trigger.current = submitter
-    setOpen(true)
+    void openAfterCheck(waiting)
     return true
   }
   const accept = () => {

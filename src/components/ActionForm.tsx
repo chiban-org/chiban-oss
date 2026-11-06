@@ -1,23 +1,30 @@
 'use client'
 
 import { type FormEvent, type ReactNode, useEffect, useId, useState } from 'react'
+import { type AlternateSubmit, SubmitButtons } from '@/components/ActionFormButtons'
+import {
+  checkOnlyData,
+  checkPasses,
+  formDisplay,
+  sendOrExplain,
+} from '@/components/actionFormCheck'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { CsrfField } from '@/components/CsrfField'
 import { useCloseEnclosingDialog } from '@/components/dialogCloseContext'
-import { SubmitButton } from '@/components/SubmitButton'
-import { Button } from '@/components/ui/button'
+import { FieldErrorsProvider } from '@/components/fieldErrors'
+import {
+  clearInvalid,
+  focusFirstNamed,
+  invalidFields,
+  markInvalid,
+  problemMessage,
+} from '@/components/formValidity'
 import { RequiredNote } from '@/components/ui/required-mark'
 import { type ConfirmStep, useConfirmStep } from '@/components/useConfirmStep'
 import { isRestoringValues, useFormAction } from '@/components/useFormAction'
 import { useHydrated } from '@/components/useHydrated'
 import { cn } from '@/lib/utils'
 import type { ActionResult } from '@/server/actionRunner'
-
-interface AlternateSubmit {
-  label: string
-  name: string
-  value: string
-}
 
 interface ActionFormProps {
   action: (formData: FormData) => Promise<ActionResult>
@@ -33,111 +40,8 @@ interface ActionFormProps {
   children: ReactNode
 }
 
-const UNSENT_COPY =
-  'The form could not be sent. Check your connection and any attached files, then try again.'
-
-const TEXT_NODE = 3
-
-function labelOf(element: Element): string {
-  const label = (element as HTMLInputElement).labels?.[0]
-  if (label === undefined) return element.getAttribute('name') ?? 'a required field'
-  return visibleText(label).trim()
-}
-
-function visibleText(node: Node): string {
-  if (node.nodeType === TEXT_NODE) return node.textContent ?? ''
-  if (node instanceof Element && node.getAttribute('aria-hidden') === 'true') return ''
-  return Array.from(node.childNodes).map(visibleText).join('')
-}
-
-function invalidFields(form: HTMLFormElement): Element[] {
-  return Array.from(form.elements).filter(
-    (el) =>
-      el instanceof HTMLElement && 'validity' in el && !(el as HTMLInputElement).validity.valid,
-  )
-}
-
-function problemMessage(invalid: Element[]): string | null {
-  if (invalid.length === 0) return null
-  const empty = invalid.filter((el) => (el as HTMLInputElement).validity.valueMissing)
-  const wrong = invalid.filter((el) => !(el as HTMLInputElement).validity.valueMissing)
-  return [
-    empty.length > 0 ? `Fill in: ${empty.map(labelOf).join(', ')}.` : '',
-    wrong.length > 0 ? `Check: ${wrong.map(labelOf).join(', ')}.` : '',
-  ]
-    .filter((part) => part !== '')
-    .join(' ')
-}
-
-async function sendOrExplain(
-  action: (formData: FormData) => Promise<ActionResult>,
-  formData: FormData,
-): Promise<ActionResult> {
-  try {
-    return await action(formData)
-  } catch {
-    return { ok: false, error: UNSENT_COPY }
-  }
-}
-
 function isFailure(result: ActionResult | null): boolean {
   return result !== null && !result.ok
-}
-
-function markInvalid(form: HTMLFormElement, invalid: Element[], messageId: string): void {
-  for (const el of form.querySelectorAll('[aria-invalid="true"]')) {
-    el.removeAttribute('aria-invalid')
-    el.removeAttribute('aria-describedby')
-  }
-  for (const el of invalid) {
-    el.setAttribute('aria-invalid', 'true')
-    el.setAttribute('aria-describedby', messageId)
-  }
-  const first = invalid[0]
-  if (first instanceof HTMLElement) first.focus()
-}
-
-function clearInvalid(form: HTMLFormElement | null): void {
-  if (form === null) return
-  for (const el of form.querySelectorAll('[aria-invalid="true"]')) {
-    el.removeAttribute('aria-invalid')
-    el.removeAttribute('aria-describedby')
-  }
-}
-
-function SubmitButtons({
-  label,
-  accessibleLabel,
-  variant,
-  alternate,
-  disabled,
-  pending,
-}: {
-  label: string
-  accessibleLabel: string | undefined
-  variant: NonNullable<ActionFormProps['variant']>
-  alternate: AlternateSubmit | undefined
-  disabled: boolean
-  pending: boolean
-}) {
-  return (
-    <>
-      <Button type="submit" variant={variant} disabled={disabled} aria-label={accessibleLabel}>
-        {pending ? 'Working' : label}
-      </Button>
-      {alternate === undefined ? null : (
-        <Button
-          type="submit"
-          variant="outline"
-          name={alternate.name}
-          value={alternate.value}
-          disabled={disabled}
-        >
-          {alternate.label}
-        </Button>
-      )}
-    </>
-  )
 }
 
 export function ActionForm({
@@ -164,7 +68,16 @@ export function ActionForm({
   )
   const hydrated = useHydrated()
   const closeDialog = useCloseEnclosingDialog()
-  const step = useConfirmStep(confirm)
+  const [checking, setChecking] = useState(false)
+  const [checkReply, setCheckReply] = useState<ActionResult | null>(null)
+  const step = useConfirmStep(confirm, async (form, submitter) => {
+    setChecking(true)
+    const reply = await sendOrExplain(action, checkOnlyData(form, submitter))
+    setChecking(false)
+    const passes = checkPasses(reply)
+    setCheckReply(passes ? null : reply)
+    return passes
+  })
   const messageId = useId()
   const [problem, setProblem] = useState<string | null>(null)
   const [edited, setEdited] = useState(false)
@@ -173,6 +86,7 @@ export function ActionForm({
     if (isRestoringValues()) return
     setProblem(null)
     setEdited(true)
+    setCheckReply(null)
     clearInvalid(form.current)
   }
   useEffect(() => {
@@ -180,6 +94,7 @@ export function ActionForm({
       if (event.target === form.current) return
       setProblem(null)
       setEdited(true)
+      setCheckReply(null)
     }
     document.addEventListener('submit', onOtherSubmit, true)
     return () => document.removeEventListener('submit', onOtherSubmit, true)
@@ -193,6 +108,7 @@ export function ActionForm({
     const found = problemMessage(invalid) ?? checkBeforeSubmit?.(event.currentTarget) ?? null
     setProblem(found)
     setEdited(false)
+    setCheckReply(null)
     if (found !== null) {
       event.preventDefault()
       return
@@ -200,9 +116,14 @@ export function ActionForm({
     if (step.intercept(event)) return
     formProps.onSubmit(event)
   }
-  const answer = result === null || edited ? null : result.ok ? result.message : result.error
-  const message = problem ?? answer
-  const failed = problem !== null || (answer !== null && result?.ok === false)
+  const busy = pending || checking
+  const { message, failed, fieldErrors } = formDisplay(
+    problem,
+    checkReply ?? (busy || edited ? null : result),
+  )
+  useEffect(() => {
+    focusFirstNamed(form.current, Object.keys(fieldErrors))
+  }, [form, fieldErrors])
   return (
     <>
       <form
@@ -214,15 +135,15 @@ export function ActionForm({
       >
         <CsrfField />
         {compact ? null : <RequiredNote />}
-        {children}
+        <FieldErrorsProvider errors={fieldErrors}>{children}</FieldErrorsProvider>
         <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
           <SubmitButtons
             label={submitLabel}
             accessibleLabel={submitAccessibleLabel}
             variant={variant}
             alternate={alternate}
-            disabled={pending || !hydrated}
-            pending={pending}
+            disabled={busy || !hydrated}
+            pending={busy}
           />
           <p
             id={messageId}

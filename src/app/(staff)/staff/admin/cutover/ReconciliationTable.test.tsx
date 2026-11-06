@@ -2,6 +2,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
+import { CHECK_ONLY_FIELD } from '@/constants/formCheck'
 
 afterEach(cleanup)
 
@@ -26,10 +27,11 @@ describe('ReconciliationTable sign-off', () => {
         <ReconciliationTable rows={[ROW]} isAdmin={true} timeZone="America/New_York" />
       </CsrfProvider>,
     )
+    const signedOff = () => signOff.mock.calls.filter(([f]) => !f.has(CHECK_ONLY_FIELD))
     fireEvent.click(screen.getByRole('button', { name: 'Sign off' }))
-    expect(screen.getByRole('dialog')).toBeTruthy()
-    expect(signOff).not.toHaveBeenCalled()
+    expect(await screen.findByRole('dialog')).toBeTruthy()
+    expect(signedOff()).toEqual([])
     fireEvent.click(screen.getByRole('button', { name: 'Sign off this comparison' }))
-    await vi.waitFor(() => expect(signOff).toHaveBeenCalledTimes(1))
+    await vi.waitFor(() => expect(signedOff()).toHaveLength(1))
   })
 })
