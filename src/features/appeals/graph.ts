@@ -24,6 +24,8 @@ export type AppealError =
   | 'not_issued'
   | 'wrong_outcome'
   | 'future_date'
+  | 'before_parent'
+  | 'duplicate_step'
 
 export interface AddNodeInput {
   parentId: string
@@ -238,6 +240,8 @@ export async function addAppealNode(
   if (parent === undefined) return err('not_found')
   const route = chooseRoute(parent, input)
   if (!route.ok) return route
+  if (compareCivil(input.occurredOn, parent.occurredOn as CivilDate) < 0)
+    return err('before_parent')
   if (
     input.kind === 'rehearing_outcome' &&
     input.outcome !== 'denied' &&
@@ -255,6 +259,15 @@ export async function addAppealNode(
       input.kind === 'court_petition' &&
       parent.kind === 'rehearing_outcome' &&
       parent.linkedPbNodeId !== null
+    const followedId = toPbDecision ? parent.linkedPbNodeId : parent.id
+    if (input.kind === 'court_petition' && followedId !== null) {
+      const [existing] = await tx
+        .select({ id: appealNodes.id })
+        .from(appealNodes)
+        .where(and(eq(appealNodes.parentId, followedId), eq(appealNodes.kind, 'court_petition')))
+        .limit(1)
+      if (existing !== undefined) return err('duplicate_step')
+    }
     let untimely = false
     if (route.value.windowRuleKey !== null) {
       const due = await windowDue(tx, parent, clockApplicationId, route.value.windowRuleKey)
@@ -278,7 +291,7 @@ export async function addAppealNode(
       .values({
         kind: input.kind,
         applicationId,
-        parentId: toPbDecision ? parent.linkedPbNodeId : parent.id,
+        parentId: followedId,
         linkedPbNodeId,
         occurredOn: input.occurredOn,
         outcome: input.outcome ?? null,

@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { MeetingView } from '@/features/hearings/meetingView'
@@ -13,6 +13,7 @@ vi.mock('../../hearings/actions', () => ({
 }))
 
 const { AgendaSection } = await import('./AgendaSection')
+const { addAgendaItemAction } = await import('../../hearings/actions')
 
 afterEach(cleanup)
 
@@ -78,5 +79,23 @@ describe('meeting agenda section', () => {
   it('offers no reopen on a cancelled meeting with a published agenda', () => {
     renderSection(view(true, 'published'))
     expect(screen.queryByRole('button', { name: 'Reopen the agenda' })).toBeNull()
+  })
+
+  it('shows a refused title beside the Title field', async () => {
+    vi.mocked(addAgendaItemAction).mockResolvedValue({
+      ok: false,
+      error: 'Enter a title.',
+      fieldErrors: { title: 'Enter a title.' },
+    })
+    renderSection(view(false, 'draft'))
+    fireEvent.click(screen.getByText('Add an item'))
+    fireEvent.change(screen.getByLabelText(/^Title( \*)?$/), { target: { value: '   ' } })
+    fireEvent.click(screen.getByRole('button', { name: 'Add item' }))
+    const title = screen.getByLabelText<HTMLInputElement>(/^Title( \*)?$/)
+    await waitFor(() => expect(title.getAttribute('aria-invalid')).toBe('true'))
+    const described = (title.getAttribute('aria-describedby') ?? '')
+      .split(' ')
+      .map((id) => document.getElementById(id)?.textContent)
+    expect(described).toContain('Enter a title.')
   })
 })

@@ -1,80 +1,60 @@
 'use server'
 
-import { DECISION_OUTCOMES } from '@packs/nh/schema'
 import { addAppealNode } from '@/features/appeals/graph'
-import { errorOrOk } from '@/features/boards/actionResult'
 import { generateDecisionDocuments } from '@/features/decisions/decisionDocuments'
 import { fileDecision } from '@/features/decisions/fileDecision'
-import { parseConditions, parseVotes } from '@/features/decisions/formParsing'
 import { recordDecision } from '@/features/decisions/recordDecision'
 import { recordRegionalTransmittal } from '@/features/decisions/regionalTransmittal'
 import { getObjectStore } from '@/features/storage/objectStore'
-import { type ActionResult, runStaffAction, text } from '@/server/actionRunner'
-import { dateOf } from './dates'
-
-const INVALID: ActionResult = { ok: false, error: 'Check the form fields and try again.' }
-const APPEAL_KINDS = [
-  'zba_appeal',
-  'rehearing_motion',
-  'rehearing_outcome',
-  'court_petition',
-  'zba_decision',
-] as const
+import type { ActionResult } from '@/server/actionRunner'
+import { runStaffForm } from '@/server/formInput'
+import { errorOrField } from '../formFields'
+import {
+  ADD_APPEAL_NODE_FORM,
+  DECISION_ONLY_FORM,
+  FILE_DECISION_FORM,
+  RECORD_DECISION_FORM,
+} from './forms'
 
 export async function recordDecisionAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const outcome = DECISION_OUTCOMES.find((o) => o === text(formData, 'outcome'))
-    const votedOn = dateOf(formData, 'votedOn')
-    const votes = parseVotes(text(formData, 'votes'))
-    if (outcome === undefined || votedOn === null || votes === null) return INVALID
-    const recorded = await recordDecision(
-      db,
-      actor,
-      {
-        applicationId: text(formData, 'applicationId'),
-        hearingId: text(formData, 'hearingId'),
-        votedOn,
-        outcome,
-        motion: text(formData, 'motion'),
-        votes,
-        findings: text(formData, 'findings'),
-        conditions: parseConditions(text(formData, 'conditions')),
-        reasonsForDisapproval: text(formData, 'reasons'),
-      },
-      signal,
-    )
-    return errorOrOk(recorded, 'Decision recorded. The filing deadline has started.')
-  })
+  return await runStaffForm(
+    formData,
+    RECORD_DECISION_FORM,
+    async ({ db, actor, signal }, input) => {
+      const { reasons, ...rest } = input
+      const recorded = await recordDecision(
+        db,
+        actor,
+        { ...rest, reasonsForDisapproval: reasons ?? '' },
+        signal,
+      )
+      return errorOrField(recorded, 'Decision recorded. The filing deadline has started.', {
+        future_date: 'votedOn',
+      })
+    },
+  )
 }
 
 export async function generateDecisionDocumentsAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const made = await generateDecisionDocuments(
-      db,
-      getObjectStore(),
-      actor,
-      text(formData, 'decisionId'),
-      signal,
-    )
-    return errorOrOk(made, 'Notice of Decision and decision letter created.')
-  })
+  return await runStaffForm(formData, DECISION_ONLY_FORM, async ({ db, actor, signal }, input) =>
+    errorOrField(
+      await generateDecisionDocuments(db, getObjectStore(), actor, input.decisionId, signal),
+      'Notice of Decision and decision letter created.',
+    ),
+  )
 }
 
 export async function fileDecisionAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const filedOn = dateOf(formData, 'filedOn')
-    if (filedOn === null) return INVALID
-    const filed = await fileDecision(
-      db,
-      actor,
-      {
-        decisionId: text(formData, 'decisionId'),
-        filedOn,
-        minutesDocumentId: text(formData, 'minutesDocumentId'),
-      },
-      signal,
-    )
-    if (!filed.ok) return errorOrOk(filed, '')
+  return await runStaffForm(formData, FILE_DECISION_FORM, async ({ db, actor, signal }, input) => {
+    const filed = await fileDecision(db, actor, input, signal)
+    if (!filed.ok) {
+      return errorOrField(filed, '', {
+        future_date: 'filedOn',
+        before_vote: 'filedOn',
+        document_not_found: 'minutesDocumentId',
+        wrong_document: 'minutesDocumentId',
+      })
+    }
     return {
       ok: true,
       message: filed.value.late
@@ -85,9 +65,9 @@ export async function fileDecisionAction(formData: FormData): Promise<ActionResu
 }
 
 export async function transmittalAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const result = await recordRegionalTransmittal(db, actor, text(formData, 'decisionId'), signal)
-    if (!result.ok) return errorOrOk(result, '')
+  return await runStaffForm(formData, DECISION_ONLY_FORM, async ({ db, actor, signal }, input) => {
+    const result = await recordRegionalTransmittal(db, actor, input.decisionId, signal)
+    if (!result.ok) return errorOrField(result, '')
     return {
       ok: true,
       message: result.value.met
@@ -98,23 +78,28 @@ export async function transmittalAction(formData: FormData): Promise<ActionResul
 }
 
 export async function addAppealNodeAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const kind = APPEAL_KINDS.find((k) => k === text(formData, 'kind'))
-    const occurredOn = dateOf(formData, 'occurredOn')
-    if (kind === undefined || occurredOn === null) return INVALID
-    const outcome = text(formData, 'outcome')
-    const added = await addAppealNode(
-      db,
-      actor,
-      {
-        parentId: text(formData, 'parentId'),
-        kind,
-        occurredOn,
-        ...(outcome === '' ? {} : { outcome }),
-        linkedComponent: text(formData, 'linked') === 'yes',
-      },
-      signal,
-    )
-    return errorOrOk(added, 'Recorded on the appeal graph.')
-  })
+  return await runStaffForm(
+    formData,
+    ADD_APPEAL_NODE_FORM,
+    async ({ db, actor, signal }, input) => {
+      const { outcome, linked, ...rest } = input
+      const added = await addAppealNode(
+        db,
+        actor,
+        {
+          ...rest,
+          ...(outcome === '' ? {} : { outcome }),
+          linkedComponent: linked === 'yes',
+        },
+        signal,
+      )
+      return errorOrField(added, 'Recorded on the appeal graph.', {
+        future_date: 'occurredOn',
+        before_parent: 'occurredOn',
+        duplicate_step: 'kind',
+        route_not_allowed: 'kind',
+        wrong_outcome: 'outcome',
+      })
+    },
+  )
 }

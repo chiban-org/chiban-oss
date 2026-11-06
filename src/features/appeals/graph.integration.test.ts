@@ -218,6 +218,36 @@ describe('planning board routes', () => {
     expect(await nodeOf(added.value.nodeId)).toMatchObject({ untimely: false, status: 'open' })
   })
 
+  it('refuses a court petition dated before the planning board decision it follows and records nothing', async () => {
+    const { nodeId, applicationId } = await pbDecision()
+    const before = (await nodesOf(applicationId)).length
+    expect(await add(nodeId, 'court_petition', '2020-01-01')).toEqual({
+      ok: false,
+      error: 'before_parent',
+    })
+    expect((await nodesOf(applicationId)).length).toBe(before)
+  })
+
+  it('accepts a court petition dated the same day as the decision', async () => {
+    const { nodeId } = await pbDecision()
+    const decided = (await nodeOf(nodeId)).occurredOn
+    const added = await add(nodeId, 'court_petition', decided)
+    expect(added.ok).toBe(true)
+  })
+
+  it('refuses a second court petition on the same parent and records nothing', async () => {
+    const { nodeId, applicationId } = await pbDecision()
+    const decided = (await nodeOf(nodeId)).occurredOn
+    const first = await add(nodeId, 'court_petition', decided)
+    if (!first.ok) throw new Error(first.error)
+    const before = (await nodesOf(applicationId)).length
+    expect(await add(nodeId, 'court_petition', decided)).toEqual({
+      ok: false,
+      error: 'duplicate_step',
+    })
+    expect((await nodesOf(applicationId)).length).toBe(before)
+  })
+
   it('court petition while a linked zba component is open is stayed', async () => {
     const { nodeId } = await pbDecision()
     const linked = await add(nodeId, 'zba_appeal', '2027-06-20', { linkedComponent: true })

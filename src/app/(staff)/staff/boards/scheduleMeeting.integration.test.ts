@@ -1,0 +1,132 @@
+import { count, eq } from 'drizzle-orm'
+import { describe, expect, it, vi } from 'vitest'
+import { boardMeetings } from '@/db/schema'
+import { CHECK_PASSED, refuseField } from '@/server/formInput'
+import { dateMessage, textMessage } from '@/test/boardCases'
+import {
+  actionHarness,
+  choice,
+  date,
+  describeActionCases,
+  type InvalidVariant,
+  STAFF_REFUSALS,
+  text,
+} from '@/test/testHarness/actions'
+
+vi.mock('@/db/client', () => import('@/test/testHarness/actions/mocks/dbClient'))
+vi.mock('next/cache', () => import('@/test/testHarness/actions/mocks/nextCache'))
+vi.mock('next/headers', () => import('@/test/testHarness/actions/mocks/nextHeaders'))
+vi.mock('next/navigation', () => import('@/test/testHarness/actions/mocks/nextNavigation'))
+vi.mock('@/server/getActor', () => import('@/test/testHarness/actions/mocks/getActor'))
+vi.mock('@/features/mail/transport', () => import('@/test/testHarness/actions/mocks/mailTransport'))
+
+const { scheduleMeetingAction } = await import('./actions')
+
+const h = actionHarness()
+
+let day = 0
+function nextMeeting(overrides: Record<string, string> = {}) {
+  day += 1
+  return {
+    board: 'zba',
+    meetingDate: `2031-03-${String(day).padStart(2, '0')}`,
+    kind: 'regular',
+    location: 'Town Hall, Room 2',
+    ...overrides,
+  }
+}
+
+function refusalFor(variant: InvalidVariant) {
+  switch (variant.field) {
+    case 'board':
+      return refuseField('board', 'Choose a board.')
+    case 'meetingDate':
+      return refuseField('meetingDate', dateMessage('the meeting date', variant))
+    case 'kind':
+      return refuseField('kind', 'Choose a kind of meeting.')
+    default:
+      return refuseField('location', textMessage('a location', 200, variant))
+  }
+}
+
+describeActionCases(h, 'scheduleMeetingAction', {
+  invoke: scheduleMeetingAction,
+  actor: () => h.actorFor('admin'),
+  input: () => nextMeeting(),
+  fields: {
+    board: choice({ required: true }),
+    meetingDate: date({ required: true, earliest: '1900-01-01', latest: '2099-12-31' }),
+    kind: choice({ required: true }),
+    location: text({ max: 200 }),
+  },
+  capability: 'board.record',
+  refusals: { ...STAFF_REFUSALS, invalid: refusalFor, checkOnly: CHECK_PASSED },
+  accepted: async (result, { db, input, written }) => {
+    expect(result).toEqual({ ok: true, message: 'Meeting added to the calendar.' })
+    expect(written).toEqual(['audit_log', 'board_meetings'])
+    const rows = await db
+      .select({
+        board: boardMeetings.board,
+        meetingDate: boardMeetings.meetingDate,
+        kind: boardMeetings.kind,
+        location: boardMeetings.location,
+      })
+      .from(boardMeetings)
+      .where(eq(boardMeetings.meetingDate, String(input.meetingDate)))
+    expect(rows).toEqual([
+      { board: 'zba', meetingDate: input.meetingDate, kind: 'regular', location: input.location },
+    ])
+  },
+})
+
+describe('scheduleMeetingAction with the findings from the forms sweep', () => {
+  it('refuses a meeting in the year 9999 beside the Date field and stores nothing', async () => {
+    h.signIn(await h.actorFor('admin'))
+    const form = h.form(nextMeeting({ meetingDate: '9999-12-31' }))
+    const { value, written } = await h.recordWrites(() => scheduleMeetingAction(form))
+    expect({ value, written }).toEqual({
+      value: refuseField(
+        'meetingDate',
+        'Enter the meeting date between January 1, 1900 and December 31, 2099.',
+      ),
+      written: [],
+    })
+  })
+
+  it('refuses a 5000 character location beside the Location field', async () => {
+    h.signIn(await h.actorFor('admin'))
+    const form = h.form(nextMeeting({ location: 'x'.repeat(5000) }))
+    const { value, written } = await h.recordWrites(() => scheduleMeetingAction(form))
+    expect({ value, written }).toEqual({
+      value: refuseField('location', 'Enter a location of 200 characters or fewer.'),
+      written: [],
+    })
+  })
+
+  it('reports success, not an error, when the same meeting is submitted twice', async () => {
+    h.signIn(await h.actorFor('admin'))
+    const input = nextMeeting({ meetingDate: '2032-05-05', location: 'Library' })
+    const first = await scheduleMeetingAction(h.form(input))
+    const { value: second, written } = await h.recordWrites(() =>
+      scheduleMeetingAction(h.form(input)),
+    )
+    expect(first).toEqual({ ok: true, message: 'Meeting added to the calendar.' })
+    expect({ second, written }).toEqual({
+      second: { ok: true, message: 'That meeting is already on the calendar.' },
+      written: [],
+    })
+    const [rows] = await h.db
+      .select({ n: count() })
+      .from(boardMeetings)
+      .where(eq(boardMeetings.meetingDate, '2032-05-05'))
+    expect(rows?.n).toBe(1)
+  })
+
+  it('still refuses a different meeting that lands on a taken date and kind', async () => {
+    h.signIn(await h.actorFor('admin'))
+    const input = nextMeeting({ meetingDate: '2032-06-06', location: 'Library' })
+    await scheduleMeetingAction(h.form(input))
+    const clash = await scheduleMeetingAction(h.form({ ...input, location: 'Town Hall' }))
+    expect(clash).toEqual(refuseField('meetingDate', 'That meeting is already on the calendar.'))
+  })
+})

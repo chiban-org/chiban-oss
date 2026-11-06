@@ -1,5 +1,5 @@
 import type { Board } from '@packs/nh/schema'
-import { asc, eq } from 'drizzle-orm'
+import { and, asc, eq } from 'drizzle-orm'
 import type { Db, DbOrTx, Tx } from '@/db/client'
 import { boardMeetings } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -126,4 +126,28 @@ export async function cancelMeeting(
     if (meeting.kind === 'regular') await recomputeMeetingBoundClocks(tx, meeting.board, signal)
     return ok(undefined)
   })
+}
+
+export async function isAlreadyScheduledByActor(
+  db: DbOrTx,
+  actor: Actor,
+  input: { board: Board; meetingDate: CivilDate; kind: 'regular' | 'special'; location: string },
+  signal: AbortSignal,
+): Promise<boolean> {
+  signal.throwIfAborted()
+  const rows = await db
+    .select({ id: boardMeetings.id })
+    .from(boardMeetings)
+    .where(
+      and(
+        eq(boardMeetings.board, input.board),
+        eq(boardMeetings.meetingDate, input.meetingDate),
+        eq(boardMeetings.kind, input.kind),
+        eq(boardMeetings.status, 'scheduled'),
+        eq(boardMeetings.location, input.location),
+        eq(boardMeetings.createdBy, actor.userId),
+      ),
+    )
+    .limit(1)
+  return rows.length > 0
 }

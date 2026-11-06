@@ -78,6 +78,8 @@ const COPY: Record<string, string> = {
   no_clock: 'The transmittal deadline was not started for this application.',
   route_not_allowed: 'That step does not follow from the one you chose.',
   wrong_outcome: 'Choose whether the rehearing was granted or denied.',
+  before_parent: 'The date cannot be before the step it follows.',
+  duplicate_step: 'That step is already recorded after the one it follows.',
   no_route: 'No Technical Review Committee route is set for this application type.',
   staff_account: 'That email belongs to a staff account. Board members need their own account.',
   send_failed:
