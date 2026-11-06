@@ -4,6 +4,7 @@ import { documents, legalHolds, projects } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { holdSubjects } from '@/features/records/holds'
 import type { ObjectStore } from '@/features/storage/objectStore'
+import { refuseField } from '@/server/formInput'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
@@ -43,6 +44,7 @@ vi.mock('next/headers', () => ({
 vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
 
 const actions = await import('./actions')
+const uploadActions = await import('./uploadActions')
 
 let handle: TestDb
 let world: PermitWorld
@@ -86,14 +88,14 @@ beforeEach(() => {
 
 describe('records actions', () => {
   it('setPublicAction without csrf is refused', async () => {
-    const result = await actions.setPublicAction(form({ documentId, isPublic: 'true' }, null))
+    const result = await actions.setPublicAction(form({ documentId, isPublic: 'yes' }, null))
     expect(result).toMatchObject({ ok: false, error: expect.stringContaining('expired') })
     const [doc] = await handle.db.select().from(documents).where(eq(documents.id, documentId))
     expect(doc?.isPublic).toBe(false)
   })
 
   it('setPublicAction without an approved version tells staff to approve one first', async () => {
-    expect(await actions.setPublicAction(form({ documentId, isPublic: 'true' }))).toMatchObject({
+    expect(await actions.setPublicAction(form({ documentId, isPublic: 'yes' }))).toMatchObject({
       ok: false,
       error: expect.stringContaining('Approve a version'),
     })
@@ -101,7 +103,7 @@ describe('records actions', () => {
 
   it('staff can publish and set audiences; a reviewer cannot', async () => {
     await approvePublic(handle.db, world.staff, versionId, testStore)
-    expect(await actions.setPublicAction(form({ documentId, isPublic: 'true' }))).toMatchObject({
+    expect(await actions.setPublicAction(form({ documentId, isPublic: 'yes' }))).toMatchObject({
       ok: true,
     })
     const set = await actions.setAudiencesAction(
@@ -194,10 +196,12 @@ describe('records actions', () => {
     for (const targetRef of ['Disposed letter for the hold test', gone.documentId]) {
       expect(
         await actions.placeHoldAction(form({ targetKind: 'document', targetRef, reason })),
-      ).toEqual({
-        ok: false,
-        error: 'That document was already disposed of, so there is nothing left to hold.',
-      })
+      ).toEqual(
+        refuseField(
+          'targetRef',
+          'That document was already disposed of, so there is nothing left to hold.',
+        ),
+      )
     }
     const held = await handle.db
       .select()
@@ -243,11 +247,11 @@ describe('records actions', () => {
 
   it('recording a building removal needs document.manage', async () => {
     expect(
-      await actions.recordBuildingRemovedAction(form({ projectId, occurredOn: '2040-06-01' })),
+      await actions.recordBuildingRemovedAction(form({ projectId, occurredOn: '2026-06-01' })),
     ).toMatchObject({ ok: true })
     state.actor = world.reviewer
     expect(
-      await actions.recordBuildingRemovedAction(form({ projectId, occurredOn: '2040-06-01' })),
+      await actions.recordBuildingRemovedAction(form({ projectId, occurredOn: '2026-06-01' })),
     ).toMatchObject({ ok: false })
   })
 
@@ -260,9 +264,11 @@ describe('records actions', () => {
       contentType: 'application/pdf',
       sizeBytes: '20',
     }
-    expect(await actions.createStaffUploadIntentAction(form(base))).toMatchObject({ ok: false })
+    expect(await uploadActions.createStaffUploadIntentAction(form(base))).toMatchObject({
+      ok: false,
+    })
     expect(
-      await actions.createStaffUploadIntentAction(
+      await uploadActions.createStaffUploadIntentAction(
         form({ ...base, seriesKey: 'nh.rs.blueprints_architectural' }),
       ),
     ).toMatchObject({ ok: true })

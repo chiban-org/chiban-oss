@@ -11,8 +11,9 @@ export function CheckField({
   label,
   id,
   className,
+  groupMember = false,
   ...props
-}: ComponentProps<typeof Checkbox> & { label: ReactNode }) {
+}: ComponentProps<typeof Checkbox> & { label: ReactNode; groupMember?: boolean }) {
   const generated = useId()
   const controlId = id ?? generated
   const { error, aria } = useControlAria(props.name, undefined)
@@ -31,7 +32,7 @@ export function CheckField({
             {props.required === true ? <RequiredMark /> : null}
           </span>
         </Label>
-        <FieldErrorMessage error={error} />
+        {groupMember ? null : <FieldErrorMessage error={error} />}
       </div>
     </div>
   )

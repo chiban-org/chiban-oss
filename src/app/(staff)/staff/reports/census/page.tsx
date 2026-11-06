@@ -1,18 +1,11 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ActionForm } from '@/components/ActionForm'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { Button } from '@/components/ui/button'
-import { CENSUS_EXCLUDED_REASONS } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { censusBpsReport, incompleteCopy } from '@/features/census/bpsReport'
-import {
-  CENSUS_CATEGORY_LABELS,
-  CENSUS_PHASE_LABELS,
-  CENSUS_REASON_LABELS,
-} from '@/features/census/labels'
 import { censusPeriod } from '@/features/census/period'
 import { type CensusSuggestion, suggestCensus } from '@/features/census/suggest'
 import { firstParam, type RawSearchParams, readTableParams } from '@/features/dataTable/params'
@@ -25,7 +18,7 @@ import {
 import { activeSortFields, scopedSort } from '@/features/staffTables/scopedSort'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
-import { classifyCensusAction } from './actions'
+import { ClassifyForm } from './ClassifyForm'
 
 export const metadata: Metadata = { title: 'Census building permits report' }
 
@@ -213,56 +206,7 @@ export default async function CensusPage({
                     ? 'Suggested from the application.'
                     : 'No suggestion: enter the counts.'}
                 </p>
-                <ActionForm action={classifyCensusAction} submitLabel="Save classification">
-                  <Hidden name="applicationId" value={row.applicationId} />
-                  <SelectField
-                    label="Kind of structure"
-                    name="category"
-                    defaultValue={suggestion.category}
-                    options={Object.entries<string>(CENSUS_CATEGORY_LABELS)}
-                  />
-                  <SelectField
-                    label="If left out of the count, why"
-                    name="excludedReason"
-                    defaultValue={suggestion.excludedReason ?? ''}
-                    options={[
-                      ['', 'Not left out'],
-                      ...CENSUS_EXCLUDED_REASONS.map(
-                        (x) => [x, CENSUS_REASON_LABELS[x]] as [string, string],
-                      ),
-                    ]}
-                  />
-                  <SelectField
-                    label="Phase"
-                    name="phase"
-                    defaultValue={suggestion.phase}
-                    options={Object.entries<string>(CENSUS_PHASE_LABELS)}
-                  />
-                  <TextField
-                    label="Buildings"
-                    name="buildings"
-                    type="number"
-                    min="0"
-                    defaultValue={suggestion.buildings}
-                    required
-                  />
-                  <TextField
-                    label="Housing units"
-                    name="housingUnits"
-                    type="number"
-                    min="0"
-                    defaultValue={suggestion.housingUnits}
-                    required
-                  />
-                  <TextField
-                    label="Valuation in whole dollars"
-                    name="valuationDollars"
-                    type="number"
-                    min="0"
-                    defaultValue={suggestion.valuationDollars}
-                    required
-                  />
-                </ActionForm>
+                <ClassifyForm applicationId={row.applicationId} suggestion={suggestion} />
               </li>
             ))}
           </ul>

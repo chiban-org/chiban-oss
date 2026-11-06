@@ -16,6 +16,7 @@ export {
   type WholeNumberBounds,
   wholeNumber,
 } from './numbers'
+export { optionalChoice } from './optionalChoice'
 export {
   checkbox,
   choice,
@@ -29,3 +30,4 @@ export {
   requiredText,
   type TextBounds,
 } from './text'
+export { optionalWebAddress } from './webAddress'

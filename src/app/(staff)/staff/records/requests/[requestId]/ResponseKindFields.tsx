@@ -28,19 +28,17 @@ export function ResponseKindFields({
         defaultValue={today}
         required
       />
-      <TextField
-        label="Web address, if posted online"
-        name="websiteUrl"
-        type="url"
-        required={kind === 'website_reference'}
-      />
-      <TextField
-        label="Date the town will respond by, if more time is needed"
-        name="statedDate"
-        type="date"
-        required={kind === 'time_statement'}
-      />
-      <AreaField label="Why more time is needed" name="delayReason" rows={2} />
+      {kind === 'website_reference' ? (
+        <TextField label="Web address where the records are posted" name="websiteUrl" required />
+      ) : null}
+      {kind === 'time_statement' ? (
+        <>
+          <TextField label="Date the town will respond by" name="statedDate" type="date" required />
+          <AreaField label="Why more time is needed" name="delayReason" rows={2} required />
+          <TextField label="Charge, if any (what it is for)" name="costLabel" />
+          <TextField label="Charge in dollars" name="costDollars" inputMode="decimal" />
+        </>
+      ) : null}
     </>
   )
 }

@@ -1,18 +1,6 @@
-import { civilDateSchema } from '@packs/nh/schema'
-import { z } from 'zod'
-import {
-  type ActionContext,
-  type ActionResult,
-  errorCopy,
-  runStaffAction,
-} from '@/server/actionRunner'
-import { type FieldCopy, invalidFieldCopy } from '@/server/fieldCopy'
+import { type ActionResult, errorCopy } from '@/server/actionRunner'
+import { refuseField } from '@/server/formInput'
 import type { Result } from '@/types/result'
-
-export const uuidField = z.string().uuid()
-export const dateField = civilDateSchema
-export const optionalField = <T extends z.ZodType>(schema: T) =>
-  z.preprocess((v) => (v === '' ? undefined : v), schema.optional())
 
 export const RECORDS_COPY: Record<string, string> = {
   forbidden: errorCopy('forbidden'),
@@ -72,32 +60,15 @@ export function recordsError(error: unknown): string {
   return errorCopy('unknown')
 }
 
-export function formStrings(formData: FormData): Record<string, string> {
-  const out: Record<string, string> = {}
-  for (const [key, value] of formData.entries()) {
-    if (typeof value !== 'string' || key === 'csrf_token') continue
-    const held = out[key]
-    out[key] = held === undefined ? value.trim() : `${held},${value.trim()}`
-  }
-  return out
-}
+export type FieldOf = Readonly<Record<string, string>>
 
-export async function runRecords<S extends z.ZodType>(
-  formData: FormData,
-  schema: S,
-  call: (ctx: ActionContext, input: z.output<S>) => Promise<Result<unknown, unknown>>,
+export function recordsOutcome(
+  result: Result<unknown, unknown>,
   message: string,
-  fieldCopy: FieldCopy = {},
-): Promise<ActionResult> {
-  return await runStaffAction(formData, async (ctx) => {
-    const parsed = schema.safeParse(formStrings(formData))
-    if (!parsed.success) {
-      return {
-        ok: false,
-        error: invalidFieldCopy(parsed.error, fieldCopy) ?? recordsError('invalid'),
-      }
-    }
-    const result = await call(ctx, parsed.data)
-    return result.ok ? { ok: true, message } : { ok: false, error: recordsError(result.error) }
-  })
+  fieldOf: FieldOf = {},
+): ActionResult {
+  if (result.ok) return { ok: true, message }
+  const copy = recordsError(result.error)
+  const field = typeof result.error === 'string' ? fieldOf[result.error] : undefined
+  return field === undefined ? { ok: false, error: copy } : refuseField(field, copy)
 }

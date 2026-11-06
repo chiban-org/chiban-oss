@@ -2,6 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { dispositionBatches, redactionJobs, renditionApprovals, rtkRequests } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import type { ObjectStore } from '@/features/storage/objectStore'
+import { refuseField } from '@/server/formInput'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
@@ -201,10 +202,7 @@ describe('records server actions', () => {
           explanation: 'The email is a confidential communication seeking legal advice.',
         }),
       ),
-    ).toEqual({
-      ok: false,
-      error: 'Choose an exemption from the list for every withheld or redacted record.',
-    })
+    ).toEqual(refuseField('exemptionKey', 'Choose an exemption.'))
   })
 
   it('a release with no record ticked says to tick one', async () => {

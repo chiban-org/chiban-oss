@@ -1,6 +1,7 @@
 'use client'
 
 import { useId, useRef, useState } from 'react'
+import { useControlAria } from '@/components/fieldErrors'
 import { Field } from '@/components/staff/fields'
 import { ChosenParcel } from './ChosenParcel'
 import { ParcelCombobox } from './ParcelCombobox'
@@ -29,6 +30,7 @@ export function ParcelMultiPickerView({
 }: ParcelMultiPickerProps & { search: ParcelSearch }) {
   const id = useId()
   const hintId = hint === undefined ? undefined : `${id}-hint`
+  const { error, aria } = useControlAria(name, hintId)
   const inputRef = useRef<HTMLInputElement>(null)
   const [chosen, setChosen] = useState<PickerChoice[]>(initial)
   const fieldRef = useSubmittedValue(chosen.map(choiceValue).join(' '), () => setChosen(initial))
@@ -41,7 +43,7 @@ export function ParcelMultiPickerView({
     inputRef.current?.focus()
   }
   return (
-    <Field label={label} htmlFor={id} hint={hint} hintId={hintId} required={required}>
+    <Field label={label} htmlFor={id} hint={hint} hintId={hintId} required={required} error={error}>
       <SubmittedField
         fieldRef={fieldRef}
         name={name}
@@ -67,7 +69,8 @@ export function ParcelMultiPickerView({
         search={search}
         allowUnknown={allowUnknown}
         required={required && chosen.length === 0}
-        describedBy={hintId}
+        describedBy={aria['aria-describedby']}
+        invalid={error !== null}
         onPick={add}
       />
     </Field>

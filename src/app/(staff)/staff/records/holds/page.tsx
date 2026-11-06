@@ -1,12 +1,9 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ActionForm } from '@/components/ActionForm'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { TablePager } from '@/components/dataTable/TablePager'
-import { FormDialog } from '@/components/FormDialog'
 import { ListHeader } from '@/components/layout/ListHeader'
-import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { pagerLinks } from '@/features/dataTable/pageSlice'
 import { type RawSearchParams, readOffset } from '@/features/dataTable/params'
@@ -23,17 +20,12 @@ import {
 import { getTownSettings } from '@/features/town/settings'
 import { formatInstant } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
-import { placeHoldAction, releaseHoldAction } from '../actions'
+import { PlaceHold, ReleaseHold } from './HoldForms'
 
 export const metadata: Metadata = { title: 'Legal holds' }
 
 export const dynamic = 'force-dynamic'
 
-const TARGETS: [string, string][] = [
-  ['project', 'Project'],
-  ['application', 'Application'],
-  ['document', 'Document'],
-]
 const KIND_LABELS: Record<HoldListRow['targetKind'], string> = {
   project: 'Project',
   application: 'Application',
@@ -47,42 +39,6 @@ const PAGE_SIZE = 25
 function Subject({ row }: { row: HoldListRow }) {
   const label = row.subject === '' ? 'Record no longer found' : row.subject
   return row.href === null ? label : <Link href={row.href}>{label}</Link>
-}
-
-function ReleaseHold({ holdId }: { holdId: string }) {
-  return (
-    <details>
-      <summary>Release</summary>
-      <ActionForm
-        action={releaseHoldAction}
-        submitLabel="Release hold"
-        confirm={{
-          title: 'Release this hold?',
-          body: 'The records it covers are no longer protected from disposal by this hold.',
-          confirmLabel: 'Release the hold',
-        }}
-      >
-        <input type="hidden" name="holdId" value={holdId} />
-        <TextField label="Release reason (at least 10 characters)" name="reason" required />
-      </ActionForm>
-    </details>
-  )
-}
-
-function PlaceHold() {
-  return (
-    <FormDialog label="Place a hold" title="Place a legal hold" variant="default">
-      <ActionForm action={placeHoldAction} submitLabel="Place hold">
-        <SelectField label="Hold on" name="targetKind" options={TARGETS} />
-        <TextField
-          label="Application number, project title, or document title"
-          name="targetRef"
-          required
-        />
-        <TextField label="Reason (at least 10 characters)" name="reason" required />
-      </ActionForm>
-    </FormDialog>
-  )
 }
 
 function emptyText(state: HoldState): string {

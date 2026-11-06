@@ -1,18 +1,14 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ActionForm } from '@/components/ActionForm'
-import { AddressTextField } from '@/components/address/AddressTextField'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { TablePager } from '@/components/dataTable/TablePager'
-import { FormDialog } from '@/components/FormDialog'
 import { ListHeader } from '@/components/layout/ListHeader'
 import { StatusChip } from '@/components/StatusChip'
-import { AreaField, SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { clearHref, pageHref, type RawSearchParams, readOffset } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
-import { RTK_STATUS_LABELS, RTK_VIA_LABELS } from '@/features/rtk/labels'
+import { RTK_STATUS_LABELS } from '@/features/rtk/labels'
 import { listRtkRequestPage, rtkRequestFacets } from '@/features/rtk/requestList'
 import { requestChipGroups } from '@/features/rtk/requestListChips'
 import {
@@ -27,37 +23,13 @@ import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
-import { logRequestAction } from './actions'
+import { LogRequest } from './LogRequestForm'
 
 export const metadata: Metadata = { title: 'Right-to-Know requests' }
 
 export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 25
-
-function LogRequest({ today }: { today: string }) {
-  return (
-    <FormDialog label="Log a request" title="Log a Right-to-Know request" variant="default">
-      <ActionForm action={logRequestAction} submitLabel="Log request">
-        <TextField
-          label="Date received"
-          name="receivedOn"
-          type="date"
-          defaultValue={today}
-          required
-        />
-        <SelectField
-          label="How it arrived"
-          name="receivedVia"
-          options={Object.entries(RTK_VIA_LABELS)}
-        />
-        <TextField label="Requester name" name="requesterName" />
-        <AddressTextField label="Requester email, phone, or address" name="requesterContact" />
-        <AreaField label="What was asked for" name="description" rows={3} required />
-      </ActionForm>
-    </FormDialog>
-  )
-}
 
 export default async function RightToKnowLogPage({
   searchParams,

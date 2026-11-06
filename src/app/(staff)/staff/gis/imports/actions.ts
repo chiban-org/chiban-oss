@@ -2,7 +2,9 @@
 
 import { updateLayerSettings } from '@/features/gis/layerSettings'
 import { refreshLayer } from '@/features/gis/refreshLayer'
-import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
+import { type ActionResult, errorCopy } from '@/server/actionRunner'
+import { refuseField, runStaffForm } from '@/server/formInput'
+import { LAYER_SETTINGS_FORM, REFRESH_FORM } from './gisForms'
 
 const COPY = {
   invalid_settings: 'Check the adapter, source URL, and numbers.',
@@ -12,27 +14,18 @@ const COPY = {
 } as const
 
 export async function updateLayerSettingsAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const adapter = text(formData, 'adapter')
-    const sourceUrl = text(formData, 'sourceUrl')
+  return await runStaffForm(formData, LAYER_SETTINGS_FORM, async ({ db, actor, signal }, input) => {
     const result = await updateLayerSettings(
       db,
       actor,
-      {
-        key: text(formData, 'key') as 'parcels',
-        adapter: adapter === '' ? null : (adapter as 'esri_rest'),
-        sourceUrl: sourceUrl === '' ? null : sourceUrl,
-        mapping: text(formData, 'mapping'),
-        staleAfterDays: Number(text(formData, 'staleAfterDays')),
-        refreshIntervalHours: Number(text(formData, 'refreshIntervalHours')),
-      },
+      { ...input, mapping: input.mapping ?? '' },
       signal,
     )
     if (result.ok) return { ok: true, message: 'Layer settings saved.' }
-    return {
-      ok: false,
-      error: result.error === 'forbidden' ? errorCopy('forbidden') : COPY[result.error],
-    }
+    if (result.error === 'forbidden') return { ok: false, error: errorCopy('forbidden') }
+    return result.error === 'invalid_settings'
+      ? { ok: false, error: COPY.invalid_settings }
+      : refuseField('mapping', COPY[result.error])
   })
 }
 
@@ -45,14 +38,11 @@ const IMPORT_COPY = {
 } as const
 
 export async function runLayerRefreshAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const key = text(formData, 'key')
-    if (key !== 'parcels' && key !== 'roads' && key !== 'water')
-      return { ok: false, error: errorCopy('invalid_input') }
+  return await runStaffForm(formData, REFRESH_FORM, async ({ db, actor, signal }, input) => {
     const result = await refreshLayer(
       db,
       { kind: 'user', userId: actor.userId },
-      key,
+      input.key,
       { fetch },
       signal,
     )

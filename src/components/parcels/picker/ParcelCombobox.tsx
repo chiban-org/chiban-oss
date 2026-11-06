@@ -24,6 +24,7 @@ interface ParcelComboboxProps {
   allowUnknown: boolean
   required: boolean
   describedBy?: string | undefined
+  invalid?: boolean | undefined
   className?: string | undefined
   onPick: (choice: PickerChoice) => void
 }
@@ -40,6 +41,7 @@ export function ParcelCombobox({
   allowUnknown,
   required,
   describedBy,
+  invalid,
   className,
   onPick,
 }: ParcelComboboxProps) {
@@ -97,6 +99,7 @@ export function ParcelCombobox({
           aria-controls={expanded ? listId : undefined}
           aria-activedescendant={expanded && active >= 0 ? optionId(listId, active) : undefined}
           aria-describedby={describedBy}
+          aria-invalid={invalid === true ? true : undefined}
           placeholder="Address, owner, or parcel ID"
           required={required}
           value={query}

@@ -39,7 +39,7 @@ describe('first response form', () => {
     submitAs('time_statement')
     const date = screen.getByLabelText(/^Date the town will respond by/)
     expect(screen.getByRole('status').textContent).toBe(
-      'Fill in: Date the town will respond by, if more time is needed.',
+      'Fill in: Date the town will respond by, Why more time is needed.',
     )
     expect(document.activeElement).toBe(date)
     expect(date.getAttribute('aria-invalid')).toBe('true')
@@ -49,17 +49,25 @@ describe('first response form', () => {
   it('a posted-online response without its web address names that field', () => {
     renderForm()
     submitAs('website_reference')
-    expect(screen.getByRole('status').textContent).toBe('Fill in: Web address, if posted online.')
+    expect(screen.getByRole('status').textContent).toBe(
+      'Fill in: Web address where the records are posted.',
+    )
     expect(document.activeElement).toBe(screen.getByLabelText(/^Web address/))
   })
 
-  it('a denial asks for neither the date nor the web address', () => {
+  it('a denial offers neither the date, the web address nor a charge', () => {
     renderForm()
     fireEvent.change(screen.getByLabelText(/^Response/), { target: { value: 'denied' } })
-    expect(screen.getByLabelText<HTMLInputElement>(/^Date the town will respond by/).required).toBe(
-      false,
-    )
-    expect(screen.getByLabelText<HTMLInputElement>(/^Web address/).required).toBe(false)
+    expect(screen.queryByLabelText(/^Date the town will respond by/)).toBeNull()
+    expect(screen.queryByLabelText(/^Web address/)).toBeNull()
+    expect(screen.queryByLabelText(/^Charge/)).toBeNull()
+  })
+
+  it('a time statement offers the charge beside the date it belongs to', () => {
+    renderForm()
+    fireEvent.change(screen.getByLabelText(/^Response/), { target: { value: 'time_statement' } })
+    expect(screen.getByLabelText(/^Charge in dollars/)).toBeTruthy()
+    expect(screen.getByLabelText(/^Charge, if any/)).toBeTruthy()
   })
 })
 

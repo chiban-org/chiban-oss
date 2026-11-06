@@ -52,3 +52,7 @@ export function FieldErrorMessage({ error }: { error: FieldErrorView | null | un
     </p>
   )
 }
+
+export function GroupFieldError({ name }: { name: string }) {
+  return <FieldErrorMessage error={useFieldError(name)} />
+}

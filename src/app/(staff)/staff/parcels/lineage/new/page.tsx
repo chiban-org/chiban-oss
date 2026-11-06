@@ -1,34 +1,18 @@
 import type { Metadata } from 'next'
-import { ActionForm } from '@/components/ActionForm'
-import { ParcelMultiPicker } from '@/components/parcels/picker/ParcelPicker'
 import type { PickerChoice } from '@/components/parcels/picker/pickerChoice'
-import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import type { Db } from '@/db/client'
 import { hasCapability } from '@/features/authz/capabilities'
+import { displayFormatHint } from '@/features/parcels/displayFormat'
 import { pickedParcelFor } from '@/features/parcels/parcelPick'
 import { requireStaffContext } from '@/server/requireStaff'
-import { recordLineageAction } from '../../[parcelId]/actions'
+import { LineageForm, newChildHint } from './LineageForm'
 
 export const metadata: Metadata = { title: 'Record lineage event' }
 
 interface NewLineagePageProps {
   searchParams: Promise<{ parent?: string }>
 }
-
-const KINDS = [
-  ['subdivision', 'Subdivision'],
-  ['lot_line_adjustment', 'Lot-line adjustment'],
-  ['merge', 'Merge'],
-] as const
-
-const CHILD_HINT =
-  'A child ID that is not in the parcel layer yet can be added with "Use this ID anyway".'
-
-const BASES = [
-  ['recording', 'Recording date'],
-  ['approval', 'Approval date'],
-] as const
 
 async function startingParents(db: Db, ref: string, signal: AbortSignal): Promise<PickerChoice[]> {
   if (ref.trim() === '') return []
@@ -43,6 +27,7 @@ export default async function NewLineageEventPage({ searchParams }: NewLineagePa
   }
   const { parent = '' } = await searchParams
   const parents = await startingParents(ctx.db, parent, ctx.signal)
+  const childHint = newChildHint(await displayFormatHint(ctx.db))
   return (
     <main>
       <h1>Record lineage event</h1>
@@ -50,29 +35,7 @@ export default async function NewLineageEventPage({ searchParams }: NewLineagePa
         The effective date is the legal date. Parents that are not also children are retired on that
         date. Child IDs that Chiban does not know yet are created without a shape.
       </p>
-      <ActionForm
-        action={recordLineageAction}
-        submitLabel="Record lineage event"
-        variant="default"
-        className="mt-4 max-w-xl"
-      >
-        <SelectField label="Kind" name="kind" options={KINDS} />
-        <TextField label="Effective date" name="effectiveDate" type="date" required />
-        <SelectField label="Date basis" name="effectiveBasis" options={BASES} />
-        <TextField
-          label="Recording reference"
-          name="reference"
-          hint="Book and page, if recorded."
-        />
-        <ParcelMultiPicker label="Parent parcels" name="parents" initial={parents} required />
-        <ParcelMultiPicker
-          label="Child parcels"
-          name="children"
-          required
-          allowUnknown
-          hint={CHILD_HINT}
-        />
-      </ActionForm>
+      <LineageForm parents={parents} childHint={childHint} />
     </main>
   )
 }

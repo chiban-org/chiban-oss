@@ -4,15 +4,9 @@ import { type CamaPreview, previewCamaFile } from '@/features/cama/previewCama'
 import { runCamaImport } from '@/features/cama/runCamaImport'
 import { saveCamaMapping } from '@/features/cama/saveMapping'
 import type { ImportRunReport } from '@/features/gis/import/types'
-import {
-  type ActionResult,
-  errorCopy,
-  runStaffAction,
-  runStaffValue,
-  text,
-} from '@/server/actionRunner'
-
-const MAX_FILE_BYTES = 50 * 1024 * 1024
+import { type ActionResult, errorCopy, runStaffValue } from '@/server/actionRunner'
+import { parseForm, refuseField, runStaffForm } from '@/server/formInput'
+import { BAD_CAMA_MAPPING, CAMA_MAPPING_FORM, CAMA_PREVIEW_FORM, CAMA_RUN_FORM } from '../gisForms'
 
 export type CamaPreviewResponse = { ok: true; preview: CamaPreview } | { ok: false; error: string }
 export type CamaRunResponse =
@@ -21,26 +15,11 @@ export type CamaRunResponse =
 
 const COPY = {
   forbidden: errorCopy('forbidden'),
-  invalid_mapping: 'The column mapping is not valid. Check every picker.',
-  invalid_file: 'Choose a CSV file under 50 MB.',
+  invalid_mapping: BAD_CAMA_MAPPING,
   layer_not_configured: 'Save a column mapping first.',
   import_in_progress: 'Another CAMA import is running. Try again in a moment.',
   import_failed: 'The import failed. The details are on the Imports page.',
 } as const
-
-async function fileBytes(formData: FormData): Promise<Uint8Array | null> {
-  const file = formData.get('file')
-  if (!(file instanceof File) || file.size === 0 || file.size > MAX_FILE_BYTES) return null
-  return new Uint8Array(await file.arrayBuffer())
-}
-
-function mappingFrom(formData: FormData): unknown {
-  try {
-    return JSON.parse(text(formData, 'mapping')) as unknown
-  } catch {
-    return null
-  }
-}
 
 function describeError(error: unknown): string {
   if (typeof error === 'string')
@@ -57,15 +36,17 @@ function summary(r: ImportRunReport): string {
   return `Imported ${r.countIn} rows: ${r.countApplied} filled or updated, ${r.countUnchanged} unchanged, ${r.countExcepted} sent to the exception queue (${held} owner changes held), ${missing} parcels missing from the file. The column mapping used for this run is now the saved mapping.`
 }
 
+const bytesOf = async (file: File) => new Uint8Array(await file.arrayBuffer())
+
 export async function previewCamaAction(formData: FormData): Promise<CamaPreviewResponse> {
   const fail = (error: string): CamaPreviewResponse => ({ ok: false, error })
   return await runStaffValue(formData, fail, async ({ db, actor, signal }) => {
-    const bytes = await fileBytes(formData)
-    if (bytes === null) return fail(COPY.invalid_file)
+    const parsed = parseForm(CAMA_PREVIEW_FORM, formData)
+    if (!parsed.ok) return fail(parsed.error.error)
     const result = await previewCamaFile(
       db,
       actor,
-      { bytes, mapping: mappingFrom(formData) },
+      { bytes: await bytesOf(parsed.value.file), mapping: parsed.value.mapping },
       signal,
     )
     return result.ok ? { ok: true, preview: result.value } : fail(describeError(result.error))
@@ -73,23 +54,28 @@ export async function previewCamaAction(formData: FormData): Promise<CamaPreview
 }
 
 export async function saveCamaMappingAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const result = await saveCamaMapping(db, actor, mappingFrom(formData), signal)
-    if (!result.ok) return { ok: false, error: COPY[result.error] }
-    return { ok: true, message: 'Column mapping saved.' }
+  return await runStaffForm(formData, CAMA_MAPPING_FORM, async ({ db, actor, signal }, input) => {
+    const result = await saveCamaMapping(db, actor, input.mapping, signal)
+    if (result.ok) return { ok: true, message: 'Column mapping saved.' }
+    return result.error === 'invalid_mapping'
+      ? refuseField('mapping', COPY.invalid_mapping)
+      : { ok: false, error: COPY[result.error] }
   })
 }
 
 export async function runCamaImportAction(formData: FormData): Promise<CamaRunResponse> {
   const fail = (error: string): CamaRunResponse => ({ ok: false, error })
   return await runStaffValue(formData, fail, async ({ db, actor, signal }) => {
-    const bytes = await fileBytes(formData)
-    if (bytes === null) return fail(COPY.invalid_file)
-    const fullLayer = text(formData, 'fullLayer') === 'on'
+    const parsed = parseForm(CAMA_RUN_FORM, formData)
+    if (!parsed.ok) return fail(parsed.error.error)
     const result = await runCamaImport(
       db,
       actor,
-      { bytes, fullLayer, mapping: mappingFrom(formData) },
+      {
+        bytes: await bytesOf(parsed.value.file),
+        fullLayer: parsed.value.fullLayer,
+        mapping: parsed.value.mapping,
+      },
       signal,
     )
     if (!result.ok) return fail(describeError(result.error))

@@ -3,6 +3,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { RecordKeeping } from '@/components/documents/RecordKeeping'
 import { RedactedUploader } from '@/components/documents/RedactedUploader'
 import type { UploaderActions } from '@/components/documents/Uploader'
+import { GroupFieldError } from '@/components/fieldErrors'
 import { NEW_TAB } from '@/components/newTab'
 import { StatusChip } from '@/components/StatusChip'
 import { CheckField, SelectField, TextField } from '@/components/staff/fields'
@@ -126,12 +127,14 @@ function ManageControls({
         {props.canManage ? (
           <ActionForm action={props.actions.setAudiences} submitLabel="Save audiences">
             <input type="hidden" name="documentId" value={doc.documentId} />
+            <GroupFieldError name="audience" />
             <div className="flex flex-wrap gap-4">
               {AUDIENCES.map((a) => (
                 <CheckField
                   key={a}
                   label={AUDIENCE_LABELS[a]}
                   name="audience"
+                  groupMember
                   value={a}
                   defaultChecked={doc.audiences.includes(a)}
                 />
@@ -159,7 +162,7 @@ function ManageControls({
               <CheckField
                 label="Public"
                 name="isPublic"
-                value="true"
+                value="yes"
                 defaultChecked={doc.isPublic}
               />
             </ActionForm>

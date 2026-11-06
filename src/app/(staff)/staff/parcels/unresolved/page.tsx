@@ -1,12 +1,10 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ActionForm } from '@/components/ActionForm'
-import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { listUnresolvedRecords, type UnresolvedRecordView } from '@/features/parcels/unresolvedView'
 import { recordStaffContext } from '@/server/requireStaff'
-import { resolveUnresolvedAction } from '../[parcelId]/actions'
+import { ResolveForm } from './ResolveForm'
 
 export const metadata: Metadata = { title: 'Unresolved records' }
 
@@ -36,21 +34,7 @@ function UnresolvedTable({ links }: { links: UnresolvedRecordView[] }) {
               <td className="tabular-nums">{link.namedId}</td>
               <td>{link.idType}</td>
               <td>
-                <ActionForm
-                  action={resolveUnresolvedAction}
-                  submitLabel="Link to parcel"
-                  className="flex flex-wrap items-center gap-x-3"
-                  compact
-                >
-                  <input type="hidden" name="linkId" value={link.linkId} />
-                  <ParcelPicker
-                    name="parcelRef"
-                    label={`Parcel for ${link.record}`}
-                    labelHidden
-                    required
-                    className="w-64"
-                  />
-                </ActionForm>
+                <ResolveForm linkId={link.linkId} record={link.record} />
               </td>
             </tr>
           ))}
