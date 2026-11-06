@@ -32,19 +32,17 @@ test.describe('moving an application through its workflow', () => {
     }) => {
       const id = await openApplication(page, db, demoTitle('Brookside setback variance'))
       await openMoreActions(page)
-      const trigger = page.getByRole('button', { name: 'Move to withdrawn' })
+      const trigger = page.getByRole('button', { name: 'Withdraw the application' })
       await trigger.click()
 
-      const dialog = page.getByRole('dialog', { name: 'Move VAR-2026-0001 to withdrawn?' })
-      await expect(dialog).toContainText(
-        'Moving to withdrawn ends this application. It cannot be undone.',
-      )
+      const dialog = page.getByRole('dialog', { name: 'Withdraw VAR-2026-0001?' })
+      await expect(dialog).toContainText('This ends the application. It cannot be undone.')
       await dialog.getByRole('button', { name: 'Cancel' }).click()
       await expect(dialog).toHaveCount(0)
       expect((await stateOf(db, id)).state).toBe('submitted')
 
       await trigger.click()
-      await dialog.getByRole('button', { name: 'Move to withdrawn' }).click()
+      await dialog.getByRole('button', { name: 'Withdraw the application' }).click()
       await expectConfirmation(page, 'Moved to withdrawn.')
       await openRecordHistory(page)
       await expect(page.getByText('Moved the application to Withdrawn')).toBeVisible()
@@ -65,7 +63,11 @@ test.describe('moving an application through its workflow', () => {
 
     test('sees no move buttons on a submitted permit', async ({ page, db }) => {
       await openApplication(page, db, demoTitle('Panel upgrade with documents'))
-      await expect(page.getByRole('button', { name: /^Move to / })).toHaveCount(0)
+      await expect(
+        page.getByRole('button', {
+          name: /^(Start the review|Issue the permit|Withdraw the application)$/,
+        }),
+      ).toHaveCount(0)
       await expect(page.getByText('More actions', { exact: true })).toHaveCount(0)
     })
   })

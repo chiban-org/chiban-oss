@@ -107,12 +107,12 @@ describe('the rail offers only moves this viewer can make', () => {
     for (const role of ['staff', 'admin']) {
       const rail = await railAs(role, 'SPR-2026-0001')
       expect(rail).toContain('Set step')
-      expect(rail).toContain('Move to withdrawn')
+      expect(rail).toContain('Withdraw the application')
     }
     for (const role of ['finance', 'inspector']) {
       const rail = await railAs(role, 'SPR-2026-0001')
       expect(rail).not.toContain('Set step')
-      expect(rail).not.toContain('withdrawn')
+      expect(rail).not.toContain('Withdraw the application')
     }
   })
 })

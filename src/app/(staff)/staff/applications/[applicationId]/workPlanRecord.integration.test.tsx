@@ -50,7 +50,7 @@ async function page(number: string): Promise<string> {
 }
 
 function sentence(html: string): string {
-  return /data-slot="status-sentence">([^<]*)</.exec(html)?.[1] ?? ''
+  return /data-slot="status-sentence"[^>]*>([^<]*)</.exec(html)?.[1] ?? ''
 }
 
 async function nextDue(number: string): Promise<string> {
@@ -105,6 +105,37 @@ describe('the building permit under review, as the clerk', () => {
     expect(requirements).toContain('Before the decision')
     expect(requirements).toContain('Before it can be issued')
     expect(sectionOf(requirements, 'Before it can be issued') ?? '').toContain('Fees paid')
+  })
+})
+
+function stages(html: string): string[] {
+  const strip = /<ol aria-label="Progress"[\s\S]*?<\/ol>/.exec(html)?.[0] ?? ''
+  return [
+    ...strip.matchAll(/<li[^>]*data-status="([a-z]+)"[^>]*>[\s\S]*?<span>([^<]+)<\/span>/g),
+  ].map((m) => `${m[2]}:${m[1]}`)
+}
+
+describe('the stage strip', () => {
+  it('marks review as the current stage of the building permit in review', async () => {
+    expect(stages(await page('BP-2026-0001'))).toEqual([
+      'Submitted:done',
+      'Complete:done',
+      'Review:current',
+      'Decided:upcoming',
+      'Issued:upcoming',
+      'Inspections:upcoming',
+      'Closed:upcoming',
+    ])
+  })
+
+  it('marks acceptance as the current stage of the filed site plan', async () => {
+    expect(stages(await page('SPR-2026-0001'))).toEqual([
+      'Filed:done',
+      'Accepted:current',
+      'Hearing:upcoming',
+      'Decision:upcoming',
+      'Appeal period:upcoming',
+    ])
   })
 })
 

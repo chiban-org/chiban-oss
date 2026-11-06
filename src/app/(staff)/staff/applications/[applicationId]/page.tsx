@@ -8,7 +8,6 @@ import { BalanceDueNotice } from '@/components/staff/BalanceDueNotice'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { cutoverRows } from '@/db/schema'
 import { hasFullRecordAccess } from '@/features/access/roles'
-import { applicationChipStatus } from '@/features/applications/chipStatus'
 import { getLimitedApplicationView } from '@/features/applications/limitedApplicationView'
 import {
   getStaffApplicationView,
@@ -18,10 +17,7 @@ import { applicationStatusText } from '@/features/applications/statusText'
 import { planWork } from '@/features/applications/workPlan'
 import { hostedActions } from '@/features/applications/workPlanTypes'
 import { loadBoardPanel } from '@/features/boards/panelData'
-import { overdueCount } from '@/features/clocks/clockSummary'
-import type { Status } from '@/features/design/tokens'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
-import { lateNotice } from '@/features/hearings/noticeDeadlines'
 import { returnedCheckNotices } from '@/features/ledger/balanceNotice'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
 import { loadCorrectionForm } from '@/features/permits/correction/correctionForm'
@@ -34,6 +30,7 @@ import { loadNotesData } from './notesData'
 import { applicationPanels } from './panelSet'
 import { abilitiesOf } from './planAbilities'
 import { mayAddToRecord } from './recordStage'
+import { headerStatus, RecordSummary } from './recordSummary'
 import { loadRecordsData } from './recordsData'
 import { RequirementsList } from './requirementsList'
 import { loadResponsibleData } from './responsibleData'
@@ -43,12 +40,6 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 interface Props {
   params: Promise<{ applicationId: string }>
-}
-
-function headerStatus(view: StaffApplicationView): Status {
-  const status = applicationChipStatus(view.state)
-  const late = overdueCount(view.clocks) > 0 || lateNotice(view.noticeDeadlines) !== null
-  return late && status !== 'failed' ? 'overdue' : status
 }
 
 async function limitedPage(ctx: StaffContext, applicationId: string) {
@@ -147,7 +138,7 @@ export default async function StaffApplicationPage({ params }: Props) {
         title={view.number}
         status={status}
         lead={view.projectTitle}
-        summary={<p data-slot="status-sentence">{plan.sentence}</p>}
+        summary={<RecordSummary view={view} plan={plan} board={loaded.board !== null} />}
       />
       <RecordLayout
         rail={<ApplicationRail view={view} plan={plan} notice={notice} correction={correction} />}

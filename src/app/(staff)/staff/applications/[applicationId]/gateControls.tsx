@@ -15,7 +15,7 @@ export function GateControls({ view, result }: { view: StaffApplicationView; res
         submitLabel="Revoke override"
         confirm={{
           title: `Revoke the override on ${result.label}?`,
-          body: 'The gate is checked again and blocks the application until it passes or is overridden again.',
+          body: 'The requirement is checked again and blocks the application until it is met or overridden again.',
           confirmLabel: 'Revoke the override',
         }}
       >
@@ -27,7 +27,7 @@ export function GateControls({ view, result }: { view: StaffApplicationView; res
   if (result.kind === 'administrative' && canOverrideGate) {
     return (
       <details>
-        <summary>Override this gate</summary>
+        <summary>Override this requirement</summary>
         <ActionForm action={overrideGateAction} submitLabel="Override with reason">
           <input type="hidden" name="applicationId" value={view.id} />
           <input type="hidden" name="gateKey" value={result.key} />

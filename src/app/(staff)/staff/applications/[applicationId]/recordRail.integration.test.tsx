@@ -169,7 +169,7 @@ describe('deadlines above the fold', () => {
   it('shows the next deadline and the overdue count, and tints the header chip', async () => {
     const html = await page('BP-2026-0005')
     const facts = sectionOf(html, 'Deadlines') ?? ''
-    const sentence = /data-slot="status-sentence">([^<]*)</.exec(html)?.[1] ?? ''
+    const sentence = /data-slot="status-sentence"[^>]*>([^<]*)</.exec(html)?.[1] ?? ''
     expect(sentence).toMatch(/\d+ days? overdue\.$/)
     expect(facts).toContain('Due next')
     expect(facts).toMatch(/\d+ days? overdue/)

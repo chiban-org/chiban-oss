@@ -11,7 +11,7 @@ test.describe('overriding an administrative gate', () => {
     test('refuses a short reason beside the field and records nothing', async ({ page, db }) => {
       const id = await openApplication(page, db, demoTitle('Addition under review'))
       const gates = page.getByRole('region', { name: 'Requirements', exact: true })
-      await gates.getByText('Override this gate', { exact: true }).click()
+      await gates.getByText('Override this requirement', { exact: true }).click()
       await gates.getByLabel('Reason (at least 10 characters)').fill('too short')
       await gates.getByRole('button', { name: 'Override with reason' }).click()
 
@@ -34,7 +34,7 @@ test.describe('overriding an administrative gate', () => {
       const id = await openApplication(page, db, demoTitle('Addition under review'))
       const reason = `Reviewer on leave, cleared by the building official ${suffix}`
       const gates = page.getByRole('region', { name: 'Requirements', exact: true })
-      await gates.getByText('Override this gate', { exact: true }).click()
+      await gates.getByText('Override this requirement', { exact: true }).click()
       await gates.getByLabel('Reason (at least 10 characters)').fill(reason)
       await gates.getByRole('button', { name: 'Override with reason' }).click()
 
@@ -48,7 +48,7 @@ test.describe('overriding an administrative gate', () => {
       await gates.getByRole('button', { name: 'Revoke override' }).click()
       const dialog = page.getByRole('dialog', { name: `Revoke the override on ${GATE}?` })
       await dialog.getByRole('button', { name: 'Revoke the override' }).click()
-      await expect(gates.getByText('Override this gate', { exact: true })).toBeVisible()
+      await expect(gates.getByText('Override this requirement', { exact: true })).toBeVisible()
       const left = await db.one<{ count: string }>(
         'select count(*) from gate_overrides where application_id = $1 and revoked_at is null',
         [id],
@@ -64,7 +64,7 @@ test.describe('overriding an administrative gate', () => {
       await openApplication(page, db, demoTitle('Mudroom addition due this week'))
       const gates = page.getByRole('region', { name: 'Requirements', exact: true })
       await expect(gates).toContainText(ROW)
-      await expect(gates.getByText('Override this gate', { exact: true })).toHaveCount(0)
+      await expect(gates.getByText('Override this requirement', { exact: true })).toHaveCount(0)
     })
   })
 })

@@ -101,6 +101,14 @@
     margin-top: calc(var(--space-base) * 3);
   }
 
+  .stage-strip > li + li::before {
+    content: "";
+    width: calc(var(--space-base) * 5);
+    height: 1px;
+    margin-inline: calc(var(--space-base) * 1.5);
+    background: var(--control-border);
+  }
+
   :where(main) .record-history > section:not([data-plain]) {
     margin-block: 0 calc(var(--space-base) * 5);
   }
