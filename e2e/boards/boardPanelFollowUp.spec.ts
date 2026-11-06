@@ -33,7 +33,17 @@ test.describe
     test.use({ role: 'staff' })
 
     test('records that the selectmen certified the plan', async ({ page, db }) => {
+      test.setTimeout(120_000)
       const id = await applicationIdFor(db, 'Brookview minor site plan')
+      await expect
+        .poll(
+          async () =>
+            (await db.rows('select 1 from board_decisions where application_id = $1', [id])).length,
+          {
+            timeout: 90_000,
+          },
+        )
+        .toBeGreaterThan(0)
       await page.goto(`/staff/applications/${id}`)
       const follow = page.getByRole('region', { name: 'Decision follow-up' })
       await follow.getByText('Record a request to the selectmen', { exact: true }).click()

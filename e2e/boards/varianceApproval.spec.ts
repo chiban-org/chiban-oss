@@ -26,7 +26,7 @@ test.describe
       meeting = {
         board: 'zba',
         date: await townToday(db),
-        kind: 'special',
+        kind: 'regular',
         location: `Approval chain room ${suffix}`,
       }
       proofTitle = `Receipt ${suffix}`
