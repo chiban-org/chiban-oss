@@ -2,6 +2,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
+import type { MeetingMinutesView } from '@/features/boards/minutesView'
 import type { MeetingView } from '@/features/hearings/meetingView'
 
 vi.mock('../../hearings/actions', () => ({
@@ -34,12 +35,29 @@ function emptyMeeting(hearings: (typeof HEARING)[]): MeetingView {
   } as unknown as MeetingView
 }
 
-function renderRail(v: MeetingView, packetStep: 'prepare' | 'update' | null = null) {
+function renderRail(
+  v: MeetingView,
+  packetStep: 'prepare' | 'update' | null = null,
+  minutes: MeetingMinutesView | null = null,
+) {
   render(
     <CsrfProvider token="t">
-      <MeetingRail view={v} packetStep={packetStep} />
+      <MeetingRail view={v} packetStep={packetStep} minutes={minutes} />
     </CsrfProvider>,
   )
+}
+
+const NO_MINUTES: MeetingMinutesView = {
+  held: true,
+  today: '2027-05-02',
+  current: null,
+  choices: [],
+}
+const APPROVED: MeetingMinutesView = {
+  held: true,
+  today: '2027-05-02',
+  current: { documentId: 'd1', title: 'Minutes', status: 'approved', approvedText: 'May 1, 2027' },
+  choices: [],
 }
 
 function published(): MeetingView {
@@ -66,6 +84,18 @@ describe('meeting rail next step', () => {
     renderRail({ ...emptyMeeting([HEARING]), past: true })
     expect(screen.queryByRole('button', { name: 'Add the scheduled hearings' })).toBeNull()
     expect(screen.queryByText('Next step')).toBeNull()
+  })
+
+  it('asks for the minutes of a held meeting until approved minutes are recorded', () => {
+    renderRail({ ...emptyMeeting([HEARING]), past: true }, null, NO_MINUTES)
+    expect(screen.getByRole('link', { name: 'Record the minutes' }).getAttribute('href')).toBe(
+      '#minutes',
+    )
+    expect(screen.getByText('Not attached yet')).toBeTruthy()
+    cleanup()
+    renderRail({ ...emptyMeeting([HEARING]), past: true }, null, APPROVED)
+    expect(screen.queryByText('Next step')).toBeNull()
+    expect(screen.getByText('Approved May 1, 2027. Public.')).toBeTruthy()
   })
 
   it('jumps to the packet section once the agenda is published', () => {

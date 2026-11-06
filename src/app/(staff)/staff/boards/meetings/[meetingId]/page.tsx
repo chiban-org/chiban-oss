@@ -6,12 +6,14 @@ import { splitPanels } from '@/components/layout/splitPanels'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
+import { loadMeetingMinutes } from '@/features/boards/minutesView'
 import { loadPacketPanel, type PacketPanel } from '@/features/boards/packetPanel'
 import { loadMeetingView, type MeetingView } from '@/features/hearings/meetingView'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { AgendaSection } from './AgendaSection'
 import { MeetingRail, type PacketStep } from './MeetingRail'
+import { MinutesSection } from './MinutesSection'
 import { PacketSection } from './PacketSection'
 
 export const dynamic = 'force-dynamic'
@@ -51,11 +53,29 @@ export default async function MeetingPage({ params }: { params: Promise<{ meetin
   const view = await loadMeetingView(ctx.db, ctx.actor, meetingId, ctx.signal)
   if (view === null) notFound()
   const panel = await loadPacketPanel(ctx.db, ctx.actor, meetingId, ctx.signal)
+  const minutes = await loadMeetingMinutes(ctx.db, meetingId, ctx.signal)
+  const minutesOpen = !view.cancelled && minutes.held
+  const canApprove = await hasCapability(ctx.db, ctx.actor.userId, 'document.publish', ctx.signal)
   const sections = splitPanels([
     { empty: view.hearings.length === 0, node: <HearingsSection key="hearings" view={view} /> },
     {
       empty: view.agenda === null || view.agenda.items.length === 0,
       node: <AgendaSection key="agenda" view={view} />,
+    },
+    {
+      empty: false,
+      node:
+        minutes.current === null && !minutesOpen ? null : (
+          <MinutesSection
+            key="minutes"
+            meetingId={meetingId}
+            minutes={minutes}
+            open={minutesOpen}
+            meetingDate={view.meetingDate}
+            today={minutes.today}
+            canApprove={canApprove}
+          />
+        ),
     },
     {
       empty: panel?.state.kind === 'no_agenda',
@@ -75,6 +95,7 @@ export default async function MeetingPage({ params }: { params: Promise<{ meetin
             view={view}
             packetStep={packetStepOf(panel)}
             packetLabel={panel?.state.label ?? null}
+            minutes={minutes}
           />
         }
         empty={sections.empty}

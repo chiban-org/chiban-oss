@@ -1,6 +1,6 @@
 import { and, desc, eq, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { boardDecisions, clocks, documents, documentVersions } from '@/db/schema'
+import { boardDecisions, clocks, documents } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -11,7 +11,7 @@ import { noticeProofDocumentIds } from '@/features/documents/evidence'
 import { isEvidenceKind } from '@/features/documents/types'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
-import { insertSystemApproval } from '@/features/renditions/approvals'
+import { approveLatestForPublic } from '@/features/renditions/publicApproval'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -29,34 +29,6 @@ export type FileError =
   | 'wrong_document'
 
 type FilingTx = Parameters<Parameters<typeof transactionResult>[1]>[0]
-
-async function approveFiledDocuments(tx: FilingTx, documentIds: string[]): Promise<void> {
-  const versions = await tx
-    .select({
-      id: documentVersions.id,
-      documentId: documentVersions.documentId,
-      role: documentVersions.role,
-    })
-    .from(documentVersions)
-    .where(
-      and(
-        inArray(documentVersions.documentId, documentIds),
-        inArray(documentVersions.role, ['public_redacted', 'original']),
-      ),
-    )
-    .orderBy(desc(documentVersions.createdAt), desc(documentVersions.id))
-  for (const documentId of documentIds) {
-    const own = versions.filter((v) => v.documentId === documentId)
-    const chosen =
-      own.find((v) => v.role === 'public_redacted') ?? own.find((v) => v.role === 'original')
-    if (chosen === undefined) continue
-    await insertSystemApproval(tx, {
-      documentId,
-      versionId: chosen.id,
-      statement: 'Published when the board decision was filed.',
-    })
-  }
-}
 
 async function filingDue(
   tx: FilingTx,
@@ -120,7 +92,11 @@ export async function fileDecision(
       .update(documents)
       .set({ isPublic: true, publicChangedBy: actor.userId, publicChangedAt: now })
       .where(inArray(documents.id, [input.minutesDocumentId, decision.writtenDecisionDocumentId]))
-    await approveFiledDocuments(tx, [input.minutesDocumentId, decision.writtenDecisionDocumentId])
+    await approveLatestForPublic(
+      tx,
+      [input.minutesDocumentId, decision.writtenDecisionDocumentId],
+      'Published when the board decision was filed.',
+    )
     await tx
       .update(boardDecisions)
       .set({ filedOn: input.filedOn, minutesDocumentId: input.minutesDocumentId })

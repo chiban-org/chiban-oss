@@ -61,6 +61,19 @@ export default async function PublicMeetingsPage({ searchParams }: Props) {
         </ul>
         <AgendaPager {...records.agendaPage} />
       </section>
+      <section aria-label="Minutes">
+        <h2>Minutes</h2>
+        {records.minutes.length === 0 ? <p>No approved minutes have been posted yet.</p> : null}
+        <ul className="list-none space-y-2 p-0">
+          {records.minutes.map((m) => (
+            <li key={m.meetingId}>
+              <a {...NEW_TAB} href={`/api/documents/${m.documentId}`} className={LINK}>
+                {`Minutes: ${m.text}`}
+              </a>
+            </li>
+          ))}
+        </ul>
+      </section>
       <section aria-label="Decisions">
         <h2>Decisions</h2>
         {records.decisions.length === 0 ? <p>No decisions have been filed yet.</p> : null}

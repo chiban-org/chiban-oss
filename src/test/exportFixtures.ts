@@ -120,6 +120,12 @@ const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
       select meeting_id, 0, 'hearing', id, 'Coverage item' from hearings limit 1`,
   },
   {
+    table: 'meeting_minutes',
+    statement: sql`insert into meeting_minutes (meeting_id, document_id, status, recorded_by)
+      select meeting_id, (select id from documents limit 1), 'draft', gen_random_uuid()
+      from hearings limit 1`,
+  },
+  {
     table: 'board_decisions',
     statement: sql`insert into board_decisions (application_id, hearing_id, meeting_id, voted_on, outcome, motion, votes, findings, conditions, recorded_by)
       select application_id, id, meeting_id, '2027-04-15', 'approved', 'Coverage motion',

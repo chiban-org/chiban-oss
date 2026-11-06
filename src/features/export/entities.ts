@@ -159,6 +159,7 @@ const SPECS: Spec[] = [
     ],
   },
   { table: t.licenseChecks },
+  { table: t.meetingMinutes },
   { table: t.migrationBatches },
   { table: t.migrationItems },
   { table: t.noticeItems },
