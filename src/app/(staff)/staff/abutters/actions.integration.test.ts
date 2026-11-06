@@ -146,7 +146,11 @@ describe('abutter list actions', () => {
     const result = await actions.selectParcelAction(
       form({ listId, parcelRef: '999999999999', crossing: 'street', note: 'Across the road' }),
     )
-    expect(result).toEqual({ ok: false, error: 'That parcel ID was not found.' })
+    expect(result).toEqual({
+      ok: false,
+      error: 'That parcel ID was not found.',
+      fieldErrors: { parcelRef: 'That parcel ID was not found.' },
+    })
   })
 
   it('selecting a parcel by its ID adds it', async () => {
