@@ -3,6 +3,7 @@
 import {
   ENDABLE_KINDS,
   type EndableKind,
+  type EndRosterError,
   endRosterEntry,
   type UndoRosterEndError,
   undoRosterEnd,
@@ -15,7 +16,8 @@ const ENDED: Record<EndableKind, string> = {
   park: 'Park ended.',
 }
 
-const COPY: Record<UndoRosterEndError, string> = {
+const COPY: Record<UndoRosterEndError | EndRosterError, string> = {
+  already_ended: 'This entry has already been ended. Reload the page to see its ending.',
   forbidden: errorCopy('forbidden'),
   not_found: errorCopy('not_found'),
   not_ended: 'This entry has not been ended.',

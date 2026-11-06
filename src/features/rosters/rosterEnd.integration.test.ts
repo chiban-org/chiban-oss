@@ -182,6 +182,22 @@ describe('ending a condo association or park', () => {
     ).toEqual({ ok: false, error: 'ending_used' })
   })
 
+  it('refuses to end an entry twice, so a used ending cannot be undone by ending again', async () => {
+    const entryId = await saveAssociation()
+    await end('association', entryId)
+    await issueNewList()
+    const again = await endRosterEntry(
+      handle.db,
+      world.staff,
+      { kind: 'association', entryId, endedOn: ENDED_ON, now: new Date('2027-03-25T16:00:00Z') },
+      signal,
+    )
+    expect(again).toEqual({ ok: false, error: 'already_ended' })
+    expect(
+      await undoRosterEnd(handle.db, world.staff, { kind: 'association', entryId }, signal),
+    ).toEqual({ ok: false, error: 'ending_used' })
+  })
+
   it('takes a new association on the parcel once the old one has ended', async () => {
     const entryId = await saveAssociation()
     await end('association', entryId)

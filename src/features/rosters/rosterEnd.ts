@@ -20,6 +20,8 @@ export type UndoRosterEndError =
   | 'ending_used'
   | 'replaced'
 
+export type EndRosterError = 'forbidden' | 'not_found' | 'already_ended'
+
 const TABLES = { association: associationRosters, park: parkRosters } as const
 
 export async function rosterEndingUsed(
@@ -47,19 +49,20 @@ export async function endRosterEntry(
   actor: Actor,
   input: { kind: EndableKind; entryId: string; endedOn: CivilDate; now?: Date },
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden' | 'not_found'>> {
+): Promise<Result<void, EndRosterError>> {
   signal.throwIfAborted()
   if (!(await mayManageAbutters(db, actor.userId, signal))) return err('forbidden')
   const now = input.now ?? new Date()
   const today = await townToday(db, now, signal)
   const table = TABLES[input.kind]
-  return await transactionResult<void, 'forbidden' | 'not_found'>(db, async (tx) => {
+  return await transactionResult<void, EndRosterError>(db, async (tx) => {
     const [before] = await tx
       .select({ parcelId: table.parcelId, endedOn: table.endedOn })
       .from(table)
       .where(eq(table.id, input.entryId))
       .for('update')
     if (before === undefined) return err('not_found')
+    if (before.endedOn !== null) return err('already_ended')
     await tx
       .update(table)
       .set({ endedOn: input.endedOn, endedAt: now })
