@@ -68,7 +68,9 @@ test.describe
       await area.getByText('Record the regional impact determination', { exact: true }).click()
       await area.getByLabel('Determination').first().selectOption('yes')
       await area.getByRole('button', { name: 'Record determination' }).first().click()
-      await expect(area.getByText('Choose at least one affected municipality.')).toBeVisible()
+      await expect(area.locator('[id$="-municipalityKeys-error"]')).toHaveText(
+        'Choose at least one affected municipality.',
+      )
     })
 
     test('records a no-impact finding and stores it', async ({ page, db }) => {
@@ -85,7 +87,7 @@ test.describe
       expect(row.determination).toBe('no')
     })
 
-    test('refuses a water body answer that differs from the map without a reason', async ({
+    test('refuses a water body notice that does not apply without a reason', async ({
       page,
       db,
     }) => {
@@ -93,11 +95,11 @@ test.describe
       const area = page.getByRole('region', { name: 'Determinations' })
       await area.getByText('Record the NH DES determination', { exact: true }).click()
       const form = area.locator('form').last()
-      await form.getByLabel('Determination').selectOption('within_500ft')
+      await form.getByLabel('Determination').selectOption('not_applicable')
       await form.getByRole('button', { name: 'Record determination' }).click()
       await expectRefused(form.getByLabel(/^Reason/), 'Enter a reason of at least 10 characters.')
       const rows = await db.rows(
-        "select 1 from des_determinations where application_id = $1 and determination = 'within_500ft'",
+        "select 1 from des_proximity_determinations where application_id = $1 and determination = 'not_applicable'",
         [applicationId],
       )
       expect(rows).toHaveLength(0)
