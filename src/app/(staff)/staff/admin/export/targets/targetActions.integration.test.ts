@@ -122,7 +122,11 @@ describe('export target actions', () => {
       .where(eq(exportTargets.id, row?.id ?? ''))
     expect(after).toMatchObject({ name: 'Renamed', credentialsEnc: row?.credentialsEnc })
     const bad = await actions.saveTargetAction(form({ ...LOCAL, dayOfMonth: '31' }))
-    expect(bad).toEqual({ ok: false, error: 'Check the form fields and try again.' })
+    expect(bad).toEqual({
+      ok: false,
+      error: 'Enter the day of the month as a whole number from 1 to 28.',
+      fieldErrors: { dayOfMonth: 'Enter the day of the month as a whole number from 1 to 28.' },
+    })
   })
 
   it('turns a target off and back on and queues a run for an active one', async () => {
