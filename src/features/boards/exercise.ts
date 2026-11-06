@@ -13,6 +13,7 @@ import { relianceFloorDue } from '@/features/clocks/relianceFloor'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { effectiveBindings } from '@/features/config/bindings'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -40,11 +41,16 @@ export async function recordFinalApproval(
   actor: AnyActor,
   input: { applicationId: string; finalOn: CivilDate },
   signal: AbortSignal,
-): Promise<Result<{ dueOn: CivilDate }, 'forbidden' | 'not_decided' | 'not_bound'>> {
+  today?: CivilDate,
+): Promise<
+  Result<{ dueOn: CivilDate }, 'forbidden' | 'not_decided' | 'not_bound' | 'future_date'>
+> {
   signal.throwIfAborted()
   if (actor.kind !== 'system' && !(await hasCapability(tx, actor.userId, 'board.record', signal))) {
     return err('forbidden')
   }
+  const asOf = today ?? (await townToday(tx, new Date(), signal))
+  if (compareCivil(input.finalOn, asOf) > 0) return err('future_date')
   await lockApplication(tx, input.applicationId)
   const app = await loadApplicationContext(tx, input.applicationId, signal)
   if (app === null || (app.state !== 'decided' && app.state !== 'issued')) return err('not_decided')

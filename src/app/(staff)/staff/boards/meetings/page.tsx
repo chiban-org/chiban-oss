@@ -1,11 +1,8 @@
 import type { Metadata } from 'next'
-import { ActionForm } from '@/components/ActionForm'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { TablePager } from '@/components/dataTable/TablePager'
-import { FormDialog } from '@/components/FormDialog'
 import { ListHeader } from '@/components/layout/ListHeader'
-import { SelectField, TextField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { listMeetingTable, type MeetingListPage } from '@/features/boards/meetingList'
@@ -29,7 +26,7 @@ import { chipGroups, filterTabs, labeledOptions } from '@/features/dataTable/qui
 import { sortLinks } from '@/features/dataTable/sort'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
-import { scheduleMeetingAction } from '../actions'
+import { AddMeeting } from './AddMeeting'
 import { MeetingTable } from './MeetingTable'
 
 export const metadata: Metadata = { title: 'Meetings' }
@@ -37,26 +34,6 @@ export const metadata: Metadata = { title: 'Meetings' }
 export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 25
-
-function AddMeeting({ boards }: { boards: [string, string][] }) {
-  return (
-    <FormDialog label="Add meeting" title="Add a meeting" variant="default">
-      <ActionForm action={scheduleMeetingAction} submitLabel="Add meeting" className="max-w-md">
-        <SelectField label="Board" name="board" options={boards} />
-        <TextField label="Date" name="meetingDate" type="date" required />
-        <SelectField
-          label="Kind"
-          name="kind"
-          options={[
-            ['regular', 'Regular meeting'],
-            ['special', 'Special meeting'],
-          ]}
-        />
-        <TextField label="Location" name="location" />
-      </ActionForm>
-    </FormDialog>
-  )
-}
 
 function chips(
   params: TableParams,

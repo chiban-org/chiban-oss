@@ -3,12 +3,14 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { BoardPanelData } from '@/features/boards/panelData'
+import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
 
 vi.mock('../../boards/actions', () => ({ completenessVoteAction: vi.fn() }))
 vi.mock('./boardPanelSections', () => ({}))
 vi.mock('./boardDecisionSection', () => ({}))
 
 const { VoteForm } = await import('./boardPanel')
+const { completenessVoteAction } = await import('../../boards/actions')
 
 afterEach(cleanup)
 
@@ -43,5 +45,22 @@ describe('completeness vote form', () => {
     const input = screen.getByLabelText(/^Date\ of\ the\ vote( \*)?$/)
     expect(input.getAttribute('min')).toBe('2026-10-28')
     expect(input.getAttribute('max')).toBe('2026-11-02')
+  })
+})
+
+describe('completeness vote refusals', () => {
+  it('shows a refused reason beside the Reason field', async () => {
+    const message = 'Enter a reason of 1000 characters or fewer.'
+    vi.mocked(completenessVoteAction).mockResolvedValue(refusal('reason', message))
+    render(
+      <CsrfProvider token="t">
+        <VoteForm data={data('2026-10-28')} />
+      </CsrfProvider>,
+    )
+    await expectRefusalBeside(
+      screen.getByRole('button', { name: 'Record vote' }),
+      () => screen.getByLabelText(/^Reason, if not accepted( \*)?$/),
+      message,
+    )
   })
 })

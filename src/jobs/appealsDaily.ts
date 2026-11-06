@@ -72,6 +72,7 @@ export async function closeAppealPeriods(
         SYSTEM_ACTOR,
         { applicationId, finalOn: result.finalOn },
         signal,
+        today,
       )
     }
   }

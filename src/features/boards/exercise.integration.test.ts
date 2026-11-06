@@ -24,6 +24,7 @@ import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 const d = (s: string) => s as CivilDate
+const TODAY = d('2028-01-03')
 let handle: TestDb
 let world: BoardWorld
 
@@ -54,11 +55,40 @@ async function exerciseClock(applicationId: string) {
 
 async function finalize(applicationId: string, on = '2027-05-12') {
   return await handle.db.transaction((tx) =>
-    recordFinalApproval(tx, world.staff, { applicationId, finalOn: d(on) }, signal),
+    recordFinalApproval(tx, world.staff, { applicationId, finalOn: d(on) }, signal, TODAY),
   )
 }
 
 describe('recordFinalApproval', () => {
+  it('refuses a final approval dated after today and starts no clock', async () => {
+    const id = await decidedVariance()
+    const result = await handle.db.transaction((tx) =>
+      recordFinalApproval(
+        tx,
+        world.staff,
+        { applicationId: id, finalOn: d('2028-02-01') },
+        signal,
+        d('2028-01-03'),
+      ),
+    )
+    expect(result).toEqual({ ok: false, error: 'future_date' })
+    expect(await exerciseClock(id)).toBeUndefined()
+  })
+
+  it('accepts a final approval dated today', async () => {
+    const id = await decidedVariance()
+    const result = await handle.db.transaction((tx) =>
+      recordFinalApproval(
+        tx,
+        world.staff,
+        { applicationId: id, finalOn: d('2028-01-03') },
+        signal,
+        d('2028-01-03'),
+      ),
+    )
+    expect(result.ok).toBe(true)
+  })
+
   it('final approval 2027-05-12 sets exercise due 2029-05-12', async () => {
     const id = await decidedVariance()
     expect(await finalize(id)).toEqual({ ok: true, value: { dueOn: '2029-05-12' } })
@@ -116,6 +146,7 @@ describe('recordFinalApproval', () => {
         world.reviewer,
         { applicationId: id, finalOn: d('2027-05-12') },
         signal,
+        TODAY,
       ),
     )
     expect(result).toEqual({ ok: false, error: 'forbidden' })
@@ -124,7 +155,13 @@ describe('recordFinalApproval', () => {
   it('a second final approval while the first is uncommitted leaves one running exercise clock', async () => {
     const id = await decidedVariance()
     const first = await holdOpen(handle.db, (tx) =>
-      recordFinalApproval(tx, world.staff, { applicationId: id, finalOn: d('2027-05-12') }, signal),
+      recordFinalApproval(
+        tx,
+        world.staff,
+        { applicationId: id, finalOn: d('2027-05-12') },
+        signal,
+        TODAY,
+      ),
     )
     const second = finalize(id)
     await blockedOrSettled(handle.db, second)
@@ -144,6 +181,7 @@ describe('recordFinalApproval', () => {
         { kind: 'system', job: 'appeals.daily' },
         { applicationId: id, finalOn: d('2027-05-12') },
         signal,
+        TODAY,
       ),
     )
     expect(result.ok).toBe(true)
