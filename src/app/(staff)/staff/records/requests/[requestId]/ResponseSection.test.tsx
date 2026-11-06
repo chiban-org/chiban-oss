@@ -62,3 +62,32 @@ describe('first response form', () => {
     expect(screen.getByLabelText<HTMLInputElement>(/^Web address/).required).toBe(false)
   })
 })
+
+describe('recorded first response', () => {
+  function renderRecorded(firstResponseOn: string | null) {
+    const recorded = {
+      ...request,
+      firstResponseKind: 'time_statement',
+      firstResponseOn,
+    } as unknown as RtkRequestView
+    render(
+      <CsrfProvider token="t1">
+        <ResponseSection request={recorded} today={'2026-11-05' as CivilDate} working />
+      </CsrfProvider>,
+    )
+  }
+
+  it('puts a comma and a space between the response and its date', () => {
+    renderRecorded('2026-11-05')
+    expect(screen.getByText(/^Written statement of the time needed/).textContent).toBe(
+      'Written statement of the time needed, November 5, 2026.',
+    )
+  })
+
+  it('shows the response alone when no date is recorded', () => {
+    renderRecorded(null)
+    expect(screen.getByText(/^Written statement of the time needed/).textContent).toBe(
+      'Written statement of the time needed.',
+    )
+  })
+})

@@ -16,6 +16,20 @@ export const HOME_ROLES = [
 
 export type HomeRole = (typeof HOME_ROLES)[number]
 
+export const SECTION_KEYS = [
+  'system',
+  'applications',
+  'inspections',
+  'payments',
+  'records',
+  'enforcement',
+  'packets',
+  'reviews',
+  'board',
+] as const
+
+export type SectionKey = (typeof SECTION_KEYS)[number]
+
 export const WORK_ROLES: readonly HomeRole[] = [
   'admin',
   'staff',
@@ -47,7 +61,7 @@ export type HomeDetail =
   | { kind: 'meeting'; next: HomeMeetingLine | null; later: number }
 
 export interface HomeSection {
-  role: HomeRole
+  key: SectionKey
   title: string
   urgency: number
   rows: HomeRow[]
@@ -60,5 +74,6 @@ export interface HomeContext {
   actor: Actor
   viewer: NavViewer
   today: CivilDate
+  now: Date
   signal: AbortSignal
 }

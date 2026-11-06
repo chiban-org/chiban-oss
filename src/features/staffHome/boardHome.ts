@@ -16,7 +16,7 @@ export async function loadBoardSection(ctx: HomeContext): Promise<HomeSection | 
     (row) => row !== null && !row.cancelled && row.marker !== null,
   )
   return {
-    role: 'board_member',
+    key: 'board',
     title: 'Board meetings',
     urgency: 0,
     rows: [{ label: 'Packets new or updated for you', count: fresh.length, href: BOARD }],
@@ -51,7 +51,7 @@ export async function loadReviewerSection(ctx: HomeContext): Promise<HomeSection
       ),
     )
   return {
-    role: 'reviewer',
+    key: 'reviews',
     title: 'Reviews',
     urgency: 0,
     rows: [{ label: 'Reviews waiting on you', count: row?.n ?? 0, href: REVIEWS_PATH }],

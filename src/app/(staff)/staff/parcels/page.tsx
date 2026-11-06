@@ -1,13 +1,21 @@
 import Link from 'next/link'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
+import { BrowseParcels } from '@/components/parcels/BrowseParcels'
 import { MoreMatchesNotice } from '@/components/parcels/MoreMatchesNotice'
 import { RecentParcelSearches } from '@/components/parcels/RecentParcelSearches'
 import { SearchExamples } from '@/components/parcels/SearchExamples'
 import { TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
-import { clearHref, paramValues, type RawSearchParams } from '@/features/dataTable/params'
+import { pagerLinks } from '@/features/dataTable/pageSlice'
+import {
+  clearHref,
+  paramValues,
+  type RawSearchParams,
+  readOffset,
+} from '@/features/dataTable/params'
 import { DIR_PARAM, SORT_PARAM, sortLinks } from '@/features/dataTable/sort'
+import { browseParcels } from '@/features/parcels/browseParcels'
 import { arrangeHits, hitFacets } from '@/features/parcels/hitList'
 import { hitChipGroups } from '@/features/parcels/hitListChips'
 import {
@@ -18,7 +26,7 @@ import {
   readHitsView,
 } from '@/features/parcels/hitListParams'
 import { searchExample } from '@/features/parcels/searchExample'
-import { searchParcelPage } from '@/features/parcels/searchParcels'
+import { PARCEL_PAGE_SIZE, searchParcelPage } from '@/features/parcels/searchParcels'
 import { requireStaffContext } from '@/server/requireStaff'
 
 interface ParcelsPageProps {
@@ -30,9 +38,13 @@ const CARRIED_PARAMS = [SORT_PARAM, DIR_PARAM, ...HIT_FILTER_PARAMS]
 export default async function StaffParcelsPage({ searchParams }: ParcelsPageProps) {
   const { q, params, sort, filters } = readHitsView(await searchParams)
   const ctx = await requireStaffContext()
-  const [{ hits, more }, example] = await Promise.all([
+  const browsing = q.trim() === ''
+  const [{ hits, more }, example, browsed] = await Promise.all([
     searchParcelPage(ctx.db, q, ctx.signal),
     searchExample(ctx.db, ctx.signal),
+    browsing
+      ? browseParcels(ctx.db, { offset: readOffset(params), limit: PARCEL_PAGE_SIZE }, ctx.signal)
+      : null,
   ])
   const shown = arrangeHits(hits, sort, filters)
   const links = sortLinks(PARCELS_PATH, params, HIT_SORT, sort)
@@ -62,7 +74,9 @@ export default async function StaffParcelsPage({ searchParams }: ParcelsPageProp
           hrefBase="/staff/parcels"
         />
       </div>
-      {q.trim().length < 2 ? (
+      {browsed !== null ? (
+        <BrowseParcels rows={browsed.rows} pager={pagerLinks(PARCELS_PATH, params, browsed)} />
+      ) : q.trim().length < 2 ? (
         <p className="text-muted-foreground">Enter at least two characters.</p>
       ) : hits.length === 0 ? (
         <p>No parcels match that search.</p>

@@ -5,7 +5,7 @@ import { HomeDetailBlock } from './HomeDetails'
 
 export function HomeSectionPanel({ section }: { section: HomeSection }) {
   const rows = shownRows(section)
-  const headingId = `home-${section.role}`
+  const headingId = `home-${section.key}`
   return (
     <section aria-labelledby={headingId}>
       <h2 id={headingId}>{section.title}</h2>

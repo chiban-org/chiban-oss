@@ -1,8 +1,18 @@
 import Link from 'next/link'
+import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import type { PacketStateKind } from '@/features/boards/packetState'
+import {
+  filterPacketRows,
+  PACKETS_FILTER_PARAM,
+  PACKETS_PATH,
+  readPacketsFilter,
+  UNSENT_PACKETS,
+} from '@/features/boards/packetsFilter'
 import { loadPacketsIndex } from '@/features/boards/packetsIndex'
+import { type RawSearchParams, readTableParams } from '@/features/dataTable/params'
+import { filterTabs } from '@/features/dataTable/quickFilters'
 import type { Status } from '@/features/design/tokens'
 import { requireStaffContext } from '@/server/requireStaff'
 
@@ -16,11 +26,42 @@ const CHIP: Record<PacketStateKind, Status> = {
   cancelled: 'neutral',
 }
 
-export default async function PacketsPage() {
+function NoPackets({ allSent }: { allSent: boolean }) {
+  if (allSent) return <p>No packet for an upcoming meeting is waiting to be sent.</p>
+  return (
+    <p>
+      {'No meetings are coming up. '}
+      <Link href="/staff/boards/meetings">Add the next meeting</Link>
+      {' to prepare its packet.'}
+    </p>
+  )
+}
+
+export default async function PacketsPage({
+  searchParams,
+}: {
+  searchParams: Promise<RawSearchParams>
+}) {
+  const raw = await searchParams
   const ctx = await requireStaffContext()
   const index = await loadPacketsIndex(ctx.db, ctx.actor, ctx.signal)
   if (!index.ok) return <NoPermission title="Board packets" action="manage board packets" />
-  const rows = index.value.meetings
+  const filter = readPacketsFilter(raw)
+  const upcoming = index.value.meetings
+  const rows = filterPacketRows(upcoming, filter)
+  const tabs = filterTabs(PACKETS_PATH, readTableParams(raw), {
+    param: PACKETS_FILTER_PARAM,
+    label: 'Packets',
+    defaultTab: 'all',
+    options: [
+      { value: 'all', label: 'All upcoming', count: upcoming.length },
+      {
+        value: UNSENT_PACKETS,
+        label: 'Not sent yet',
+        count: filterPacketRows(upcoming, { unsentOnly: true }).length,
+      },
+    ],
+  })
   return (
     <main data-wide="">
       <h1>Board packets</h1>
@@ -28,12 +69,9 @@ export default async function PacketsPage() {
         Upcoming meetings, soonest first. Each packet is gathered, sent and tracked on its meeting
         page.
       </p>
+      {upcoming.length === 0 ? null : <FilterTabs label="Packets" tabs={tabs} />}
       {rows.length === 0 ? (
-        <p>
-          {'No meetings are coming up. '}
-          <Link href="/staff/boards/meetings">Add the next meeting</Link>
-          {' to prepare its packet.'}
-        </p>
+        <NoPackets allSent={upcoming.length > 0} />
       ) : (
         <div className="table-panel">
           <table className="w-full min-w-[36rem] text-sm">

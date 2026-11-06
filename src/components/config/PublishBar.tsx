@@ -1,7 +1,7 @@
 'use client'
 
 import { type ReactNode, useRef, useState } from 'react'
-import { ConfirmDialog } from '@/components/ConfirmDialog'
+import { type ConfirmCopy, ConfirmDialog } from '@/components/ConfirmDialog'
 import { invalidFieldsText } from '@/components/config/formValidity'
 import { Button } from '@/components/ui/button'
 
@@ -14,18 +14,39 @@ export function publishImpact(pinned: boolean): string {
     : 'Chiban starts using it as soon as you publish.'
 }
 
+export interface DiscardOffer {
+  neverPublished: boolean
+}
+
+function discardCopy(offer: DiscardOffer): ConfirmCopy {
+  return {
+    title: 'Discard this draft?',
+    body: offer.neverPublished
+      ? 'This has never been published, so discarding the draft removes it entirely.'
+      : 'Your unpublished changes are removed. The published version stays in use.',
+    confirmLabel: 'Discard now',
+    cancelLabel: 'Keep the draft',
+    tone: 'destructive',
+  }
+}
+
 export function PublishBar({
   pinned,
   disabled,
   status,
   extra,
+  discard,
 }: {
   pinned: boolean
   disabled: boolean
   status: string | null
   extra?: ReactNode
+  discard?: DiscardOffer
 }) {
   const [open, setOpen] = useState(false)
+  const [discarding, setDiscarding] = useState(false)
+  const discardSubmitter = useRef<HTMLButtonElement>(null)
+  const discardTrigger = useRef<HTMLButtonElement>(null)
   const [blocked, setBlocked] = useState<string | null>(null)
   const submitter = useRef<HTMLButtonElement>(null)
   const trigger = useRef<HTMLButtonElement>(null)
@@ -53,6 +74,28 @@ export function PublishBar({
           Save draft
         </Button>
         {extra}
+        {discard === undefined ? null : (
+          <>
+            <Button
+              ref={discardTrigger}
+              type="button"
+              variant="outline"
+              disabled={disabled}
+              onClick={() => setDiscarding(true)}
+            >
+              Discard draft
+            </Button>
+            <button
+              ref={discardSubmitter}
+              type="submit"
+              name="intent"
+              value="discard"
+              formNoValidate
+              hidden
+              tabIndex={-1}
+            />
+          </>
+        )}
         <p role="status" className="m-0 text-sm">
           {status}
         </p>
@@ -75,6 +118,19 @@ export function PublishBar({
         onCancel={() => setOpen(false)}
         returnFocusTo={() => trigger.current}
       />
+      {discard === undefined ? null : (
+        <ConfirmDialog
+          open={discarding}
+          copy={discardCopy(discard)}
+          onConfirm={() => {
+            setDiscarding(false)
+            const button = discardSubmitter.current
+            button?.form?.requestSubmit(button)
+          }}
+          onCancel={() => setDiscarding(false)}
+          returnFocusTo={() => discardTrigger.current}
+        />
+      )}
     </div>
   )
 }

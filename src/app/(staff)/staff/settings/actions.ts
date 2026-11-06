@@ -4,7 +4,13 @@ import { redirect } from 'next/navigation'
 import type { PreviewActionResult } from '@/components/config/WorkflowEditor'
 import { adoptStarter } from '@/features/config/adoptStarter'
 import { applyStarterPaths } from '@/features/config/applyStarterPaths'
-import { type ConfigIssue, type ConfigKind, isConfigKind } from '@/features/config/kinds'
+import { discardDraft } from '@/features/config/discard'
+import {
+  type ConfigIssue,
+  type ConfigKind,
+  isConfigKind,
+  isSingletonKind,
+} from '@/features/config/kinds'
 import { newItemKey } from '@/features/config/newItemKey'
 import { publishConfig, rollbackConfig } from '@/features/config/publish'
 import { fieldErrorsFor } from '@/features/config/publishErrors'
@@ -51,6 +57,30 @@ export async function saveDraftAction(formData: FormData): Promise<ActionResult>
     if (saved.ok) return { ok: true, message: 'Draft saved.' }
     return refusedDraft(saved.error)
   })
+}
+
+export async function discardDraftAction(formData: FormData): Promise<ActionResult> {
+  const kind = kindOf(formData)
+  const outcome = { emptied: false }
+  const result = await runStaffAction(formData, async ({ db, actor, signal }) => {
+    if (kind === null) return INVALID
+    const discarded = await discardDraft(db, actor, { kind, key: text(formData, 'key') }, signal)
+    if (!discarded.ok) {
+      return {
+        ok: false,
+        error:
+          discarded.error === 'forbidden'
+            ? errorCopy('forbidden')
+            : 'There is no draft to discard.',
+      }
+    }
+    outcome.emptied = discarded.value.remaining === 0
+    return { ok: true, message: 'Draft discarded.' }
+  })
+  if (result.ok && kind !== null && outcome.emptied && !isSingletonKind(kind)) {
+    redirect(`/staff/settings/${kind}`)
+  }
+  return result
 }
 
 export async function publishAction(formData: FormData): Promise<ActionResult> {

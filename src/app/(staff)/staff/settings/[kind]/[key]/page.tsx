@@ -6,6 +6,7 @@ import { VersionHistory } from '@/components/config/VersionHistory'
 import { type SettingsBackLink, SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
+import { discardOffer } from '@/features/config/discardOffer'
 import { type EditorContext, editorContext } from '@/features/config/editorContext'
 import { KIND_DESCRIPTIONS, KIND_LABELS } from '@/features/config/kindLabels'
 import {
@@ -29,7 +30,7 @@ import { loadTownProfile } from '@/features/pdf/documentFrame'
 import { listReviewerChoices } from '@/features/reviews/reviewerView'
 import { getTownSettings } from '@/features/town/settings'
 import { recordStaffContext, type StaffContext } from '@/server/requireStaff'
-import { publishAction, rollbackAction, saveDraftAction } from '../../actions'
+import { discardDraftAction, publishAction, rollbackAction, saveDraftAction } from '../../actions'
 import { templatePreviewAction, templateSamplesAction } from '../../templateActions'
 
 interface Props {
@@ -129,6 +130,7 @@ export default async function SettingsKeyPage({ params }: Props) {
         context={builderContext}
         saveAction={saveDraftAction}
         publishAction={publishAction}
+        {...discardOffer(state.versions, discardDraftAction)}
       />
       <h2 className="mt-10">Version history</h2>
       <VersionHistory

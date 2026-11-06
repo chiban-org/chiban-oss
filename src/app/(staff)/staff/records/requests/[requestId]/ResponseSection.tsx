@@ -37,13 +37,18 @@ function ResponseForm({ requestId, today }: { requestId: string; today: CivilDat
   )
 }
 
+function recordedLine(request: RtkRequestView): string {
+  const label = RTK_RESPONSE_LABELS[request.firstResponseKind as keyof typeof RTK_RESPONSE_LABELS]
+  return request.firstResponseOn === null
+    ? `${label}.`
+    : `${label}, ${formatCivilDate(request.firstResponseOn)}.`
+}
+
 function RecordedResponse({ request }: { request: RtkRequestView }) {
   const late = timelinessText(request)
   return (
     <>
-      <p className="m-0">
-        {`${RTK_RESPONSE_LABELS[request.firstResponseKind as keyof typeof RTK_RESPONSE_LABELS]},${request.firstResponseOn === null ? '' : formatCivilDate(request.firstResponseOn)}.`}
-      </p>
+      <p className="m-0">{recordedLine(request)}</p>
       {late === null ? null : <p className="m-0">{late}</p>}
       {request.timeStatements.map((s) => (
         <p key={s.id} className="m-0">
