@@ -26,8 +26,8 @@ import { getTownSettings } from '@/features/town/settings'
 import { formatInstantLong } from '@/lib/formatDate'
 import { words } from '@/lib/words'
 import { recordStaffContext } from '@/server/requireStaff'
-import { updateLayerSettingsAction } from './actions'
 import { LayerImportAction } from './LayerImportAction'
+import { LayerSettingsForm } from './LayerSettingsForm'
 
 export const metadata: Metadata = { title: 'Imports' }
 
@@ -38,17 +38,6 @@ const STATE_WORDS = {
   stale: 'Stale',
   fresh: 'Fresh',
 } as const
-
-const ADAPTER_OPTIONS = [
-  ['', 'None (upload a file)'],
-  ['esri_rest', 'Esri REST feature service'],
-  ['axisgis', 'AxisGIS'],
-] as const
-
-const CAMA_ADAPTER_OPTIONS = [
-  ['', 'None'],
-  ['file_cama_csv', 'CAMA CSV file'],
-] as const
 
 const adapterStatus: string = AXISGIS_ADAPTER_STATUS
 const DEFAULT_ZONE = 'America/New_York'
@@ -116,44 +105,7 @@ export default async function StaffImportsPage({
             {canConfigure ? (
               <details className="mt-4">
                 <summary className="cursor-pointer font-medium">Layer settings</summary>
-                <ActionForm
-                  action={updateLayerSettingsAction}
-                  submitLabel="Save settings"
-                  className="mt-3 max-w-xl"
-                >
-                  <input type="hidden" name="key" value={key} />
-                  <SelectField
-                    label="Source"
-                    name="adapter"
-                    defaultValue={layer.adapter ?? ''}
-                    options={key === 'cama' ? CAMA_ADAPTER_OPTIONS : ADAPTER_OPTIONS}
-                  />
-                  <TextField
-                    label="Source URL"
-                    name="sourceUrl"
-                    defaultValue={layer.sourceUrl ?? ''}
-                  />
-                  <AreaField
-                    label="Field mapping (JSON)"
-                    name="mapping"
-                    rows={8}
-                    defaultValue={JSON.stringify(layer.mapping, null, 2)}
-                  />
-                  <TextField
-                    label="Mark stale after (days)"
-                    name="staleAfterDays"
-                    type="number"
-                    min={1}
-                    defaultValue={layer.staleAfterDays}
-                  />
-                  <TextField
-                    label="Refresh every (hours)"
-                    name="refreshIntervalHours"
-                    type="number"
-                    min={1}
-                    defaultValue={layer.refreshIntervalHours}
-                  />
-                </ActionForm>
+                <LayerSettingsForm layer={layer} />
               </details>
             ) : null}
           </section>

@@ -59,6 +59,7 @@ export async function processUpload(
   if (!fields.success || !(file instanceof File)) {
     return { status: 400, body: { error: 'bad_request' } }
   }
+  if (file.size === 0) return { status: 400, body: { error: 'empty' } }
   if (file.size > UPLOAD_LIMIT_BYTES) return { status: 413, body: { error: 'too_large' } }
   const read = await readerFor(
     fields.data.adapter,

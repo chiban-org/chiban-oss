@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useId, useRef, useState } from 'react'
+import { FieldErrorMessage, useControlAria } from '@/components/fieldErrors'
 import { Field } from '@/components/staff/fields'
 import { Label } from '@/components/ui/label'
 import { ChosenParcel } from './ChosenParcel'
@@ -33,6 +34,7 @@ export function ParcelPickerView({
 }: ParcelPickerProps & { search: ParcelSearch }) {
   const id = useId()
   const hintId = hint === undefined ? undefined : `${id}-hint`
+  const { error, aria } = useControlAria(name, hintId)
   const inputRef = useRef<HTMLInputElement>(null)
   const [chosen, setChosen] = useState<PickerChoice | null>(initial)
   const refocus = useRef(false)
@@ -57,7 +59,8 @@ export function ParcelPickerView({
           search={search}
           allowUnknown={allowUnknown}
           required={required}
-          describedBy={hintId}
+          describedBy={aria['aria-describedby']}
+          invalid={error !== null}
           className={className}
           onPick={setChosen}
         />
@@ -76,7 +79,14 @@ export function ParcelPickerView({
   )
   if (!labelHidden)
     return (
-      <Field label={label} htmlFor={id} hint={hint} hintId={hintId} required={required}>
+      <Field
+        label={label}
+        htmlFor={id}
+        hint={hint}
+        hintId={hintId}
+        required={required}
+        error={error}
+      >
         {body}
       </Field>
     )
@@ -86,6 +96,7 @@ export function ParcelPickerView({
         {label}
       </Label>
       {body}
+      <FieldErrorMessage error={error} />
     </div>
   )
 }

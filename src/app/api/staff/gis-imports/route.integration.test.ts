@@ -112,6 +112,23 @@ describe('POST /api/staff/gis-imports', () => {
     expect((await POST(req)).status).toBe(413)
   })
 
+  it('says an empty file is empty with 400, not that it is not valid JSON', async () => {
+    state.actor = await staffActor(handle.db)
+    const form = new FormData()
+    form.set('csrf_token', 'tok')
+    form.set('layerKey', 'parcels')
+    form.set('adapter', 'file_geojson')
+    form.set('file', new File([], 'empty.geojson'))
+    const res = await POST(
+      new Request('https://alderpond.example/api/staff/gis-imports', {
+        method: 'POST',
+        body: form,
+      }),
+    )
+    expect(res.status).toBe(400)
+    expect(await res.json()).toEqual({ error: 'empty' })
+  })
+
   it('rejects an unreadable file with 400', async () => {
     state.actor = await staffActor(handle.db)
     const res = await POST(upload('tok', 'alder-pond-parcels.geojson', 'file_shapefile'))

@@ -43,4 +43,27 @@ describe('ImportUploadForm', () => {
     await waitFor(() => expect(screen.getByText(/larger than 100 MB/)).toBeTruthy())
     expect(refresh).not.toHaveBeenCalled()
   })
+
+  it('says an empty file is empty', async () => {
+    vi.stubGlobal('fetch', () =>
+      Promise.resolve({ json: () => Promise.resolve({ error: 'empty' }) }),
+    )
+    submitFile()
+    await waitFor(() =>
+      expect(screen.getByText('That file is empty. Choose a file with content.')).toBeTruthy(),
+    )
+  })
+
+  it('offers only the files the chosen format can read', () => {
+    render(
+      <CsrfProvider token="t">
+        <ImportUploadForm layerKey="parcels" primary />
+      </CsrfProvider>,
+    )
+    const picker = screen.getByLabelText(/^File( \*)?$/)
+    expect(picker.getAttribute('accept')).toContain('.geojson')
+    expect(picker.getAttribute('accept')).not.toContain('.zip')
+    fireEvent.change(screen.getByLabelText('File format'), { target: { value: 'file_shapefile' } })
+    expect(picker.getAttribute('accept')).toBe('.zip,application/zip')
+  })
 })

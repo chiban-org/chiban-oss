@@ -128,5 +128,11 @@ describe('record administration pages', () => {
     const staffPage = await html((await page('parcels/[parcelId]'))(props()))
     expect(staffPage).toContain('Override an ID')
     expect(staffPage).toContain('Record lineage event')
+    const lineagePage = await html(
+      (await page('parcels/lineage/new'))({ searchParams: Promise.resolve({ parent: '' }) }),
+    )
+    expect(lineagePage).toContain(
+      'if it is a new ID in this shape. Map-lot ID: exactly 12 digits, counting leading zeros.',
+    )
   })
 })

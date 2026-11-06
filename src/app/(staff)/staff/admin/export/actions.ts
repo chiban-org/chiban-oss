@@ -1,7 +1,9 @@
 'use server'
 
+import { z } from 'zod'
 import { requestExport } from '@/features/export/requestExport'
-import { type ActionResult, errorCopy, runStaffAction } from '@/server/actionRunner'
+import { type ActionResult, errorCopy } from '@/server/actionRunner'
+import { runStaffForm } from '@/server/formInput'
 
 const EXPORT_COPY = {
   forbidden: errorCopy('forbidden'),
@@ -9,8 +11,9 @@ const EXPORT_COPY = {
 } as const
 
 export async function requestExportAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(
+  return await runStaffForm(
     formData,
+    z.object({}),
     async ({ db, actor, signal }) => {
       const requested = await requestExport(db, actor, signal)
       if (!requested.ok) return { ok: false, error: EXPORT_COPY[requested.error] }

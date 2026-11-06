@@ -1,6 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 import { gisLayers, importExceptions, parcelLineageEvents } from '@/db/schema'
+import { refuseField } from '@/server/formInput'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { configureLayer, PARCEL_MAPPING } from '@/test/gisFixtures'
 import { makeParcel, seedParcelWorld, staffActor } from '@/test/parcels'
@@ -132,11 +133,12 @@ describe('staff actions', () => {
     const result = await parcelActions.createAliasOverrideAction(
       form({ format: 'cama15', value: '12345', parcelId, reason: 'Assessor typo' }),
     )
-    expect(result).toEqual({
-      ok: false,
-      error:
+    expect(result).toEqual(
+      refuseField(
+        'value',
         'The ID does not match the selected format. CAMA number: exactly 15 digits, counting leading zeros.',
-    })
+      ),
+    )
   })
 
   it('the parcel pickers submit record ids for chosen parcels and raw IDs for new children', async () => {
@@ -175,7 +177,7 @@ describe('staff actions', () => {
         children: '1 2',
       }),
     )
-    expect(result).toEqual({ ok: false, error: 'No parcel found for 999999999999.' })
+    expect(result).toEqual(refuseField('parents', 'No parcel found for 999999999999.'))
   })
 
   it('dismiss without reason is refused', async () => {
@@ -183,7 +185,7 @@ describe('staff actions', () => {
     const result = await exceptionActions.dismissExceptionAction(
       form({ exceptionId: '00000000-0000-4000-8000-000000000000', reason: '  ' }),
     )
-    expect(result).toEqual({ ok: false, error: 'A reason is required.' })
+    expect(result).toEqual(refuseField('reason', 'Enter a reason.'))
     expect(await handle.db.select().from(importExceptions)).toHaveLength(0)
   })
 
@@ -224,6 +226,6 @@ describe('staff actions', () => {
         refreshIntervalHours: '24',
       }),
     )
-    expect(result).toEqual({ ok: false, error: 'The mapping is not valid JSON for this layer.' })
+    expect(result).toEqual(refuseField('mapping', 'The mapping is not valid JSON for this layer.'))
   })
 })

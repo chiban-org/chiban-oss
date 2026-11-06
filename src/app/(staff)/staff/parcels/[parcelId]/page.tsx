@@ -27,8 +27,11 @@ import { getStaffParcelView } from '@/features/parcels/staffParcelView'
 import { loadParcelContacts } from '@/features/rosters/parcelContacts'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
-import { createStaffUploadIntentAction, finalizeStaffUploadAction } from '../../records/actions'
 import { PANEL_ACTIONS } from '../../records/panelActions'
+import {
+  createStaffUploadIntentAction,
+  finalizeStaffUploadAction,
+} from '../../records/uploadActions'
 import { carryForwardAction } from './actions'
 import { noticePanel } from './NoticeGoesTo'
 import { ParcelIds } from './ParcelIds'
