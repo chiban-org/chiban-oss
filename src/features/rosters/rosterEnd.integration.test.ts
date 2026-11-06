@@ -8,7 +8,7 @@ import {
   parkRosters,
 } from '@/db/schema'
 import { issueList } from '@/features/abutters/issue'
-import { generateList } from '@/features/abutters/lists'
+import { decideTenant, generateList } from '@/features/abutters/lists'
 import { loadListView } from '@/features/abutters/listView'
 import { currentIssuedList, getList } from '@/features/abutters/queries'
 import type { Recipient } from '@/features/abutters/resolution'
@@ -152,6 +152,54 @@ describe('ending a condo association or park', () => {
     const view = await loadListView(handle.db, world.staff, draft?.id ?? '', signal)
     const sw = view?.candidates.find((c) => c.parcelId === lw.ids.SW)
     expect(sw?.noticeTo).toBeNull()
+  })
+
+  it('names the park owner on an issued list only when the issued recipients do', async () => {
+    await upsertPark(
+      handle.db,
+      world.staff,
+      {
+        parcelId: lw.ids.SW ?? '',
+        parkName: 'Heron Park',
+        ownerName: 'Heron Park LLC',
+        ownerMailingAddress: '1 Heron Road, Alder Pond NH',
+        tenants: [
+          { tenantId: 's4', name: 'Lee Marsh', siteLabel: 'Site 4', mailingAddress: '4 Heron' },
+        ],
+        asOf: '2027-02-01' as CivilDate,
+        now: new Date('2027-02-01T16:00:00Z'),
+      },
+      signal,
+    )
+    const park = await handle.db.query.parkRosters.findFirst()
+    await end('park', park?.id ?? '')
+    const drawn = await generateList(
+      handle.db,
+      world.staff,
+      { applicationId: lw.applicationId },
+      signal,
+      new Date('2027-03-15T16:00:00Z'),
+    )
+    if (!drawn.ok) throw new Error(JSON.stringify(drawn.error))
+    const listId = drawn.value.listId
+    const tenant = (await handle.db.query.abutterListRecipients.findMany()).find(
+      (r) => r.listId === listId && (r.data as Recipient).name === 'Lee Marsh',
+    )
+    if (tenant !== undefined) {
+      await decideTenant(
+        handle.db,
+        world.staff,
+        { listId, recipientId: tenant.id, qualifies: true, reason: 'Adjoins' },
+        signal,
+        LIST_NOW,
+      )
+    }
+    const issued = await issueList(handle.db, world.staff, { listId }, signal, LIST_NOW)
+    if (!issued.ok) throw new Error(JSON.stringify(issued.error))
+    const view = await loadListView(handle.db, world.staff, listId, signal)
+    const owners = view?.recipients.filter((r) => r.name === 'Heron Park LLC') ?? []
+    const sw = view?.candidates.find((c) => c.parcelId === lw.ids.SW)
+    expect(sw?.noticeTo ?? null).toBe(owners.length > 0 ? 'Heron Park LLC' : null)
   })
 
   it('refuses someone without abutters.manage', async () => {
