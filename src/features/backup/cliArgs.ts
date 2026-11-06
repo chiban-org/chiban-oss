@@ -10,6 +10,7 @@ export interface VerifyArgs {
 
 export const BACKUP_USAGE = 'usage: backup (--dir <folder> | --target <export target name>)'
 export const VERIFY_USAGE = 'usage: restore-verify --file <backup.bin> [--keep]'
+export const RESTORE_OBJECTS_USAGE = 'usage: restore-objects --dir <folder>'
 
 function parse<T extends Record<string, { type: 'string' | 'boolean' }>>(
   argv: string[],
@@ -35,4 +36,10 @@ export function parseVerifyArgs(argv: string[]): Result<VerifyArgs, string> {
   const values = parse(argv, { file: { type: 'string' }, keep: { type: 'boolean' } } as const)
   if (values === null || (values.file ?? '') === '') return err(VERIFY_USAGE)
   return ok({ file: values.file ?? '', keep: values.keep === true })
+}
+
+export function parseRestoreObjectsArgs(argv: string[]): Result<{ dir: string }, string> {
+  const values = parse(argv, { dir: { type: 'string' } } as const)
+  if (values === null || (values.dir ?? '') === '') return err(RESTORE_OBJECTS_USAGE)
+  return ok({ dir: values.dir ?? '' })
 }

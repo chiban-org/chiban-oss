@@ -25,9 +25,9 @@ describe('Caddyfile', () => {
     expect(block).toContain('Strict-Transport-Security "max-age=31536000"')
   })
 
-  it('s3 vhost proxies to minio:9000 with nosniff and a sandbox CSP', () => {
+  it('s3 vhost proxies to the garage S3 port with nosniff and a sandbox CSP', () => {
     const block = siteBlock('s3.{$APP_DOMAIN}')
-    expect(block).toContain('reverse_proxy minio:9000')
+    expect(block).toContain('reverse_proxy garage:3900')
     expect(block).toContain('X-Content-Type-Options "nosniff"')
     expect(block).toContain(
       `Content-Security-Policy "sandbox; default-src 'none'; frame-ancestors 'none'"`,

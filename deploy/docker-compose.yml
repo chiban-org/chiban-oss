@@ -1,11 +1,11 @@
 x-app-environment: &app-environment
   BASE_URL: ${BASE_URL}
   DATABASE_URL: postgres://chiban:${POSTGRES_PASSWORD}@postgres:5432/chiban
-  S3_ENDPOINT: http://minio:9000
+  S3_ENDPOINT: http://garage:3900
   S3_PUBLIC_ENDPOINT: https://s3.${APP_DOMAIN}
   S3_BUCKET: ${S3_BUCKET}
-  S3_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
-  S3_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID}
+  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY}
   SMTP_URL: ${SMTP_URL}
   MAIL_FROM: ${MAIL_FROM}
   CHIBAN_ACTIVE_KEY_ID: ${CHIBAN_ACTIVE_KEY_ID}
@@ -28,7 +28,7 @@ services:
       - caddyconfig:/config
     depends_on:
       - app
-      - minio
+      - garage
 
   app:
     image: ${CHIBAN_IMAGE}
@@ -53,10 +53,10 @@ services:
     environment:
       <<: *app-environment
       CHIBAN_IMAGE_REF: ${CHIBAN_IMAGE}
-      HEALTH_DISK_PATHS: /monitor/pg,/monitor/minio
+      HEALTH_DISK_PATHS: /monitor/pg,/monitor/garage
     volumes:
       - pgdata:/monitor/pg:ro
-      - miniodata:/monitor/minio:ro
+      - garagedata:/monitor/garage:ro
     depends_on:
       migrate:
         condition: service_completed_successfully
@@ -71,7 +71,7 @@ services:
     depends_on:
       postgres:
         condition: service_healthy
-      createbucket:
+      storageinit:
         condition: service_completed_successfully
 
   postgres:
@@ -89,28 +89,39 @@ services:
       timeout: 3s
       retries: 20
 
-  minio:
-    image: ${MINIO_IMAGE}
+  garage:
+    image: ${GARAGE_IMAGE}
     restart: unless-stopped
-    command: ["server", "/data"]
+    command: ["/garage", "server", "--single-node", "--default-access-key"]
     environment:
-      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
-      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-      MINIO_API_CORS_ALLOW_ORIGIN: ${BASE_URL}
+      GARAGE_RPC_SECRET: ${GARAGE_RPC_SECRET}
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}
+      GARAGE_DEFAULT_ACCESS_KEY: ${S3_ACCESS_KEY_ID}
+      GARAGE_DEFAULT_SECRET_KEY: ${S3_SECRET_ACCESS_KEY}
     volumes:
-      - miniodata:/data
+      - ./garage.toml:/etc/garage.toml:ro
+      - garagedata:/var/lib/garage
+    healthcheck:
+      test: ["CMD", "/garage", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
-  createbucket:
-    image: ${MC_IMAGE}
-    restart: on-failure
-    command: ["mb", "--ignore-existing", "local/${S3_BUCKET}"]
+  storageinit:
+    image: ${CHIBAN_IMAGE}
+    restart: "no"
+    command: ["node", "dist/storage-init.mjs"]
     environment:
-      MC_HOST_local: http://${MINIO_ROOT_USER}:${MINIO_ROOT_PASSWORD}@minio:9000
+      <<: *app-environment
+      CHIBAN_IMAGE_REF: ${CHIBAN_IMAGE}
+      GARAGE_ADMIN_ENDPOINT: http://garage:3903
+      GARAGE_ADMIN_TOKEN: ${GARAGE_ADMIN_TOKEN}
     depends_on:
-      - minio
+      garage:
+        condition: service_healthy
 
 volumes:
   pgdata:
-  miniodata:
+  garagedata:
   caddydata:
   caddyconfig:
