@@ -216,11 +216,11 @@ describe('board pages show words, not keys or dates', () => {
 
   it('the packets page is a read-only list of upcoming meetings and refuses with the shared permission page', async () => {
     await actAs('staff')
-    const html = renderToStaticMarkup((await PacketsPage()) as never)
+    const html = renderToStaticMarkup((await PacketsPage(noSearch)) as never)
     expect(html).not.toContain('<form')
     expect(html).toMatch(/href="\/staff\/boards\/meetings\/[0-9a-f-]{36}#packet"/)
     await actAs('reviewer')
-    const refused = renderToStaticMarkup((await PacketsPage()) as never)
+    const refused = renderToStaticMarkup((await PacketsPage(noSearch)) as never)
     expect(refused).toContain(NO_PERMISSION)
     expect(refused).toContain('href="/staff"')
   })

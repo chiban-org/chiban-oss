@@ -101,7 +101,7 @@ export async function loadRecordsSection(ctx: HomeContext): Promise<HomeSection 
   const all = [...requests, ...others.flat()]
   if (all.length === 0) return null
   return {
-    role: 'records_custodian',
+    key: 'records',
     title: 'Records',
     urgency: requests[0]?.count ?? 0,
     rows: all,

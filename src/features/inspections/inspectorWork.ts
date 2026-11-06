@@ -1,6 +1,6 @@
 import { and, asc, count, eq, gt, inArray, lt } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { applications, inspections } from '@/db/schema'
+import { applications, inspections, users } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { mayReadDay } from '@/features/inspections/dayList'
 import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
@@ -122,4 +122,27 @@ export async function countRequestedInspections(
     .from(inspections)
     .where(and(eq(inspections.status, 'requested'), inspectionVisibleTo(actor)))
   return row?.n ?? 0
+}
+
+export async function stopsByInspectorOn(
+  db: DbOrTx,
+  actor: Actor,
+  date: CivilDate,
+  signal: AbortSignal,
+): Promise<{ inspectorUserId: string; name: string; count: number }[]> {
+  signal.throwIfAborted()
+  const rows = await db
+    .select({ inspectorUserId: users.id, name: users.displayName, n: count() })
+    .from(inspections)
+    .innerJoin(users, eq(users.id, inspections.inspectorUserId))
+    .where(
+      and(
+        eq(inspections.scheduledDate, date),
+        inArray(inspections.status, [...BOOKED]),
+        inspectionVisibleTo(actor),
+      ),
+    )
+    .groupBy(users.id, users.displayName)
+    .orderBy(asc(users.displayName), asc(users.id))
+  return rows.map((row) => ({ inspectorUserId: row.inspectorUserId, name: row.name, count: row.n }))
 }

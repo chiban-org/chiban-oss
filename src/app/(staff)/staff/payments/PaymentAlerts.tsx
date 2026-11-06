@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { StatusChip } from '@/components/StatusChip'
 import type { PaymentsOverview } from '@/features/payments/overview'
+import { PAYMENT_ALERT_IDS } from '@/features/payments/paymentAlertIds'
 import { formatCents } from '@/lib/money'
 import { words } from '@/lib/words'
 
@@ -26,7 +27,7 @@ export function PaymentAlerts({
   return (
     <>
       {unknownAttempts.length === 0 ? null : (
-        <section aria-label="Outcome unknown">
+        <section id={PAYMENT_ALERT_IDS.unknown} aria-label="Outcome unknown">
           <h2>Card payments with an unknown outcome</h2>
           <ul className="space-y-2">
             {unknownAttempts.map((a) => (
@@ -38,7 +39,7 @@ export function PaymentAlerts({
         </section>
       )}
       {anomalies.length === 0 ? null : (
-        <section aria-label="Anomalies">
+        <section id={PAYMENT_ALERT_IDS.anomalies} aria-label="Anomalies">
           <h2>Anomalies</h2>
           <ul className="space-y-2">
             {anomalies.map((a) => (

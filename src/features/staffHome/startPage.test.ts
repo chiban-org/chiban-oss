@@ -15,8 +15,8 @@ function viewerOf(...roles: Role[]): NavViewer {
   }
 }
 
-function section(role: HomeSection['role'], urgency: number): HomeSection {
-  return { role, title: role, urgency, rows: [], links: [], detail: null }
+function section(key: HomeSection['key'], urgency: number): HomeSection {
+  return { key, title: key, urgency, rows: [], links: [], detail: null }
 }
 
 describe('the staff start page for each role', () => {
@@ -45,14 +45,23 @@ describe('the staff start page for each role', () => {
 })
 
 describe('section order and rows', () => {
-  it('puts the most urgent section first and keeps role order on a tie', () => {
+  it('puts the most urgent section first and keeps area order on a tie', () => {
     const ordered = orderSections([
-      section('staff', 0),
-      section('finance', 2),
-      section('inspector', 5),
-      section('admin', 0),
+      section('packets', 0),
+      section('applications', 0),
+      section('payments', 2),
+      section('inspections', 5),
+      section('enforcement', 2),
+      section('system', 0),
     ])
-    expect(ordered.map((s) => s.role)).toEqual(['inspector', 'finance', 'admin', 'staff'])
+    expect(ordered.map((s) => s.key)).toEqual([
+      'inspections',
+      'payments',
+      'enforcement',
+      'system',
+      'applications',
+      'packets',
+    ])
   })
 
   it('drops rows with a zero count so the section can say nothing is waiting', () => {
@@ -60,6 +69,6 @@ describe('section order and rows', () => {
       { label: 'Past a deadline', count: 0, href: '/a' },
       { label: 'Submitted', count: 3, href: '/b' },
     ]
-    expect(shownRows({ ...section('staff', 0), rows })).toEqual([rows[1]])
+    expect(shownRows({ ...section('applications', 0), rows })).toEqual([rows[1]])
   })
 })

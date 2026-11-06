@@ -17,9 +17,10 @@ export default async function StaffHome() {
   const viewer = await loadNavViewer(ctx.db, ctx.actor, ctx.signal)
   const start = startPageFor(viewer)
   if (start.kind === 'redirect') redirect(start.to)
-  const today = await townToday(ctx.db, new Date(), ctx.signal)
+  const now = new Date()
+  const today = await townToday(ctx.db, now, ctx.signal)
   const [sections, example] = await Promise.all([
-    loadHomeSections({ ...ctx, viewer, today }, start.roles),
+    loadHomeSections({ ...ctx, viewer, today, now }, start.roles),
     searchExample(ctx.db, ctx.signal),
   ])
   return (
@@ -35,7 +36,7 @@ export default async function StaffHome() {
         className={`grid gap-5 lg:items-start [&>section]:m-0 ${sections.length > 1 ? 'lg:grid-cols-2' : ''}`}
       >
         {sections.map((section) => (
-          <HomeSectionPanel key={section.role} section={section} />
+          <HomeSectionPanel key={section.key} section={section} />
         ))}
       </div>
     </main>

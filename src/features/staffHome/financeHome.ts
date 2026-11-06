@@ -1,17 +1,15 @@
-import { count, eq, isNotNull, or, sql } from 'drizzle-orm'
+import { count, eq, isNotNull, type SQL, sql } from 'drizzle-orm'
 import { ledgerAllocations, paymentAttempts } from '@/db/schema'
 import { rangeCountsOn } from '@/features/payments/entryList'
+import { PAYMENTS_PATH as PAYMENTS } from '@/features/payments/entryListParams'
+import { PAYMENT_ALERT_IDS } from '@/features/payments/paymentAlertIds'
 import { countWorkQueue } from '@/features/queue/workQueue'
 import type { HomeContext, HomeLink, HomeRow, HomeSection } from '@/features/staffHome/homeTypes'
 import { mayOpen } from '@/features/staffNav/navItems'
 
-const PAYMENTS = '/staff/payments'
-
-async function paymentProblems(ctx: HomeContext): Promise<number> {
-  const [row] = await ctx.db
-    .select({ n: count() })
-    .from(paymentAttempts)
-    .where(or(eq(paymentAttempts.outcomeUnknown, true), isNotNull(paymentAttempts.anomaly)))
+async function attemptCount(ctx: HomeContext, where: SQL): Promise<number> {
+  ctx.signal.throwIfAborted()
+  const [row] = await ctx.db.select({ n: count() }).from(paymentAttempts).where(where)
   return row?.n ?? 0
 }
 
@@ -46,8 +44,9 @@ async function waitingOnFees(ctx: HomeContext): Promise<HomeRow[]> {
 export async function loadFinanceSection(ctx: HomeContext): Promise<HomeSection | null> {
   if (!mayOpen(PAYMENTS, ctx.viewer)) return null
   ctx.signal.throwIfAborted()
-  const [problems, fees, ranges, overpaid] = await Promise.all([
-    paymentProblems(ctx),
+  const [unknown, anomalies, fees, ranges, overpaid] = await Promise.all([
+    attemptCount(ctx, eq(paymentAttempts.outcomeUnknown, true)),
+    attemptCount(ctx, isNotNull(paymentAttempts.anomaly)),
     waitingOnFees(ctx),
     rangeCountsOn(ctx.db, ctx.today, { types: ['payment'] }),
     overpayments(ctx),
@@ -60,11 +59,20 @@ export async function loadFinanceSection(ctx: HomeContext): Promise<HomeSection 
     })
   }
   return {
-    role: 'finance',
+    key: 'payments',
     title: 'Payments',
-    urgency: problems,
+    urgency: unknown + anomalies,
     rows: [
-      { label: 'Payment problems to sort out', count: problems, href: PAYMENTS },
+      {
+        label: 'Card payments with an unknown outcome',
+        count: unknown,
+        href: `${PAYMENTS}#${PAYMENT_ALERT_IDS.unknown}`,
+      },
+      {
+        label: 'Card payments with an anomaly',
+        count: anomalies,
+        href: `${PAYMENTS}#${PAYMENT_ALERT_IDS.anomalies}`,
+      },
       ...fees,
       {
         label: 'Receipts today',

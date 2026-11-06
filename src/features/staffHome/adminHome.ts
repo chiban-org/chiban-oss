@@ -59,7 +59,7 @@ async function importRows(ctx: HomeContext, now: Date): Promise<HomeRow[]> {
 }
 
 export async function loadAdminSection(ctx: HomeContext): Promise<HomeSection | null> {
-  const now = new Date()
+  const now = ctx.now
   const [health, users, drafts, imports, exports] = await Promise.all([
     when(mayOpen(HEALTH, ctx.viewer), async () => [
       {
@@ -82,7 +82,7 @@ export async function loadAdminSection(ctx: HomeContext): Promise<HomeSection | 
   const rows = [...health, ...users, ...drafts, ...imports, ...exports]
   if (rows.length === 0) return null
   return {
-    role: 'admin',
+    key: 'system',
     title: 'System',
     urgency: health[0]?.count ?? 0,
     rows,

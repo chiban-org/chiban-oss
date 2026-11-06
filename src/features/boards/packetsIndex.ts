@@ -20,6 +20,7 @@ export interface PacketsIndexRow {
   kindText: string
   state: string
   stateKind: PacketStateKind
+  needsWork: boolean
   href: string
 }
 
@@ -75,6 +76,7 @@ export async function loadPacketsIndex(
       kindText: meeting.kind === 'special' ? 'Special meeting' : 'Regular meeting',
       state: state.label,
       stateKind: state.kind,
+      needsWork: state.needsWork,
       href: `/staff/boards/meetings/${meeting.id}#packet`,
     })
   }

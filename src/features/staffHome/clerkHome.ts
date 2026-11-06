@@ -36,7 +36,7 @@ export async function loadClerkSection(ctx: HomeContext): Promise<HomeSection | 
     links.push({ label: 'Start at the counter', href: '/staff/counter' })
   }
   return {
-    role: 'staff',
+    key: 'applications',
     title: 'Applications',
     urgency: counts[0] ?? 0,
     rows: WAITING.map((w, i) => ({ label: w.label, href: w.href, count: counts.at(i) ?? 0 })),
