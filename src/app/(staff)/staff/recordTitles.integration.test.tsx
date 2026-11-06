@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { applications, boardMeetings, enforcementCases, parcels } from '@/db/schema'
 import { loadActor } from '@/features/auth/actor'
@@ -81,7 +82,13 @@ describe('record page titles', () => {
   })
 
   it('stay generic for a viewer who may not open the record', async () => {
-    const [app] = await handle.db.select().from(applications).limit(1)
+    const [app] = await handle.db
+      .select()
+      .from(applications)
+      .where(
+        sql`not exists (select 1 from review_assignments ra where ra.application_id = ${applications.id}) and not exists (select 1 from hearings h where h.application_id = ${applications.id})`,
+      )
+      .limit(1)
     const [kase] = await handle.db.select().from(enforcementCases).limit(1)
     const [meet] = await handle.db.select().from(boardMeetings).limit(1)
     for (const who of ['reviewer', 'board']) {

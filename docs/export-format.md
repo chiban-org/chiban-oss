@@ -222,6 +222,19 @@ File: `data/application_conditions.ndjson`. Ordered by id.
 References:
 - `application_id` refers to `applications`
 
+### application_notes
+
+File: `data/application_notes.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `application_id`: uuid
+- `body`: text
+- `author_id`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+
 ### application_number_counters
 
 File: `data/application_number_counters.ndjson`. Ordered by prefix, year.
