@@ -43,8 +43,34 @@ export function completenessApplies(view: StaffApplicationView): boolean {
   )
 }
 
-export function CompletenessPanel({ view }: { view: StaffApplicationView }) {
-  const applies = completenessApplies(view)
+export function MarkCompleteForm({
+  view,
+  variant = 'outline',
+}: {
+  view: StaffApplicationView
+  variant?: 'default' | 'outline'
+}) {
+  return (
+    <ActionForm action={markCompleteAction} submitLabel="Mark complete" variant={variant}>
+      <input type="hidden" name="applicationId" value={view.id} />
+      <TextField
+        label="Completed on"
+        name="completedDate"
+        type="date"
+        defaultValue={view.today}
+        required
+      />
+    </ActionForm>
+  )
+}
+
+export function CompletenessPanel({
+  view,
+  formElsewhere = false,
+}: {
+  view: StaffApplicationView
+  formElsewhere?: boolean
+}) {
   return (
     <section aria-label="Completeness" id="completeness">
       <h2>Completeness</h2>
@@ -53,18 +79,7 @@ export function CompletenessPanel({ view }: { view: StaffApplicationView }) {
           ? 'The application has not been marked complete, so the decision clock has not started.'
           : `Marked complete on ${formatCivilDate(view.completedDate)}.`}
       </p>
-      {applies ? (
-        <ActionForm action={markCompleteAction} submitLabel="Mark complete">
-          <input type="hidden" name="applicationId" value={view.id} />
-          <TextField
-            label="Completed on"
-            name="completedDate"
-            type="date"
-            defaultValue={view.today}
-            required
-          />
-        </ActionForm>
-      ) : null}
+      {completenessApplies(view) && !formElsewhere ? <MarkCompleteForm view={view} /> : null}
     </section>
   )
 }

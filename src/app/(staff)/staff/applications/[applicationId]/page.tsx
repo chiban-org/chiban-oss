@@ -15,6 +15,8 @@ import {
   type StaffApplicationView,
 } from '@/features/applications/staffApplicationView'
 import { applicationStatusText } from '@/features/applications/statusText'
+import { planWork } from '@/features/applications/workPlan'
+import { hostedActions } from '@/features/applications/workPlanTypes'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { overdueCount } from '@/features/clocks/clockSummary'
 import type { Status } from '@/features/design/tokens'
@@ -25,13 +27,15 @@ import { loadApplicationPayments } from '@/features/payments/applicationPayments
 import { loadCorrectionForm } from '@/features/permits/correction/correctionForm'
 import { requireStaffContext, type StaffContext } from '@/server/requireStaff'
 import { ApplicationFacts, ApplicationRail, StatusStrip } from './applicationRail'
+import { DoThisNow } from './doThisNow'
 import { loadInspectionsPanelData } from './inspectionsPanel'
 import { LimitedRecord } from './limitedRecord'
-import { nextStepPlan } from './nextStepCard'
 import { loadNotesData } from './notesData'
 import { applicationPanels } from './panelSet'
+import { abilitiesOf } from './planAbilities'
 import { mayAddToRecord } from './recordStage'
 import { loadRecordsData } from './recordsData'
+import { RequirementsList } from './requirementsList'
 import { loadResponsibleData } from './responsibleData'
 import { ResponsibleStaff } from './responsibleStaff'
 
@@ -118,8 +122,12 @@ export default async function StaffApplicationPage({ params }: Props) {
   const loaded = await loadAll(ctx, applicationId)
   if (loaded === null) notFound()
   const { view, balanceNotices, legacyNumber, correction } = loaded
-  const parts = applicationPanels(loaded)
-  const plan = nextStepPlan(view, loaded.board)
+  const plan = planWork(view, loaded.board, {
+    reviewers: loaded.records.reviewers.length,
+    abilities: abilitiesOf(loaded),
+    responsible: loaded.responsible.current?.name ?? null,
+  })
+  const parts = applicationPanels({ ...loaded, hosted: hostedActions(plan) })
   const status = (
     <StatusChip
       status={headerStatus(view)}
@@ -139,6 +147,7 @@ export default async function StaffApplicationPage({ params }: Props) {
         title={view.number}
         status={status}
         lead={view.projectTitle}
+        summary={<p data-slot="status-sentence">{plan.sentence}</p>}
       />
       <RecordLayout
         rail={<ApplicationRail view={view} plan={plan} notice={notice} correction={correction} />}
@@ -158,6 +167,8 @@ export default async function StaffApplicationPage({ params }: Props) {
         empty={parts.empty}
         history={parts.history}
       >
+        <DoThisNow plan={plan} input={loaded} />
+        <RequirementsList plan={plan} input={loaded} />
         {parts.filled}
       </RecordLayout>
     </main>

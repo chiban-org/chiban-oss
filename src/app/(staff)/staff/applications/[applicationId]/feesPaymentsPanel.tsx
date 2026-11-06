@@ -133,17 +133,19 @@ export function FeesPaymentsPanel({
   view,
   payments,
   rows,
+  paymentElsewhere = false,
 }: {
   view: StaffApplicationView
   payments: ApplicationPayments | null
   rows: FeeRow[]
+  paymentElsewhere?: boolean
 }) {
   return (
     <section aria-label="Fees and payments" id="fees-and-payments">
       <h2>Fees and payments</h2>
       <FeeLines rows={rows} money={payments !== null} />
       {payments === null ? null : <Balance payments={payments} rows={rows} />}
-      {payments === null ? null : <RecordPaymentForm payments={payments} />}
+      {payments === null || paymentElsewhere ? null : <RecordPaymentForm payments={payments} />}
       <FeeOverrideForm view={view} dueCents={payments?.balance.dueCents ?? null} />
       {payments === null ? null : (
         <>

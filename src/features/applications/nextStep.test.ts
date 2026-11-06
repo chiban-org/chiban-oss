@@ -126,6 +126,6 @@ describe('next step plan', () => {
     expect(gateAnchor('nh.bp.code_edition_recorded')).toBe('code-edition')
     expect(gateAnchor('nh.bp.regional_impact')).toBe('regional-impact')
     expect(gateAnchor('nh.appeal.suspension')).toBe('appeals')
-    expect(gateAnchor('something.new')).toBe('gates')
+    expect(gateAnchor('something.new')).toBe('requirements')
   })
 })

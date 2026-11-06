@@ -8,52 +8,26 @@ import type { BoardPanelData } from '@/features/boards/panelData'
 import { addProfessionalAction, generateListAction } from '../../abutters/actions'
 import {
   addApplicantParcelAction,
-  boardRegionalImpactAction,
   desDeterminationAction,
   terminateUnpaidAction,
 } from '../../boards/actions'
+import { BoardRegionalForm } from './boardForms'
 
-export function DeterminationSection({ data }: { data: BoardPanelData }) {
+export function DeterminationSection({
+  data,
+  formElsewhere = false,
+}: {
+  data: BoardPanelData
+  formElsewhere?: boolean
+}) {
   return (
     <section aria-label="Determinations">
       <h3>Regional impact and water bodies</h3>
       <p>{data.regional.summary}</p>
-      {data.canDetermine ? (
+      {data.canDetermine && !formElsewhere ? (
         <details>
           <summary>Record the regional impact determination</summary>
-          <ActionForm
-            action={boardRegionalImpactAction}
-            submitLabel="Record determination"
-            className="max-w-md"
-          >
-            <input type="hidden" name="applicationId" value={data.applicationId} />
-            <SelectField
-              label="Determination"
-              name="determination"
-              options={[
-                ['no', 'No regional impact'],
-                ['yes', 'Regional impact'],
-                ['previously_determined', 'Previously determined by another board'],
-              ]}
-            />
-            <fieldset className="space-y-2">
-              <legend className="text-sm font-medium">
-                Affected municipalities, if there is regional impact
-              </legend>
-              {data.regional.options.map((o) => (
-                <CheckField
-                  key={o.key}
-                  label={o.name}
-                  name="municipalityKeys"
-                  groupMember
-                  value={o.key}
-                  defaultChecked={data.regional.chosen.includes(o.key)}
-                />
-              ))}
-              <GroupFieldError name="municipalityKeys" />
-            </fieldset>
-            <TextField label="Board reference, if determined earlier" name="previousBoardRef" />
-          </ActionForm>
+          <BoardRegionalForm data={data} />
         </details>
       ) : null}
       {data.des.applies ? (

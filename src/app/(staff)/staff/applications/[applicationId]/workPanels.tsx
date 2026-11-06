@@ -1,11 +1,9 @@
-import { GatePanel } from '@/components/gates/GatePanel'
 import type { Panel } from '@/components/layout/splitPanels'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { REVIEWS_GATE_KEY } from '@/features/gates/coreGates'
 import { ActivityPanel } from './activityPanel'
 import { BoardPanel } from './boardPanel'
 import { ClocksPanel, noDeadlines } from './clocksPanel'
-import { GateControls } from './gateControls'
 import { HearingsPanel } from './hearingsPanel'
 import { NotesPanel } from './notesPanel'
 import type { RecordPanelsInput } from './panelSet'
@@ -19,18 +17,6 @@ function reviewRequired(view: StaffApplicationView): boolean {
   )
 }
 
-function GatesPanel({ view }: { view: StaffApplicationView }) {
-  return (
-    <section aria-label="Gates" id="gates">
-      <h2>Gates</h2>
-      <GatePanel
-        groups={view.gates}
-        renderControls={(result) => <GateControls view={view} result={result} />}
-      />
-    </section>
-  )
-}
-
 function hearingsEmpty(hearings: RecordPanelsInput['hearings']): boolean {
   if (hearings === null) return true
   return (
@@ -38,7 +24,9 @@ function hearingsEmpty(hearings: RecordPanelsInput['hearings']): boolean {
   )
 }
 
-export function workPanels({ view, records, board, hearings, notes }: RecordPanelsInput): Panel[] {
+export function workPanels(input: RecordPanelsInput): Panel[] {
+  const { view, records, board, hearings, notes } = input
+  const hosted = input.hosted ?? new Set()
   return [
     {
       key: 'reviewers',
@@ -51,6 +39,7 @@ export function workPanels({ view, records, board, hearings, notes }: RecordPane
           choices={records.choices}
           canAssign={records.canAssign && mayAssignReviewers(view.state)}
           required={reviewRequired(view)}
+          assignElsewhere={hosted.has('assign_reviewer')}
         />
       ),
     },
@@ -63,6 +52,7 @@ export function workPanels({ view, records, board, hearings, notes }: RecordPane
             key="board"
             data={board}
             hearings={hearings?.hearings.map((h) => h.text) ?? []}
+            hosted={hosted}
           />
         ),
     },
@@ -74,14 +64,15 @@ export function workPanels({ view, records, board, hearings, notes }: RecordPane
     {
       key: 'completeness',
       empty: true,
-      node: completenessApplies(view) ? <CompletenessPanel key="completeness" view={view} /> : null,
+      node: completenessApplies(view) ? (
+        <CompletenessPanel
+          key="completeness"
+          view={view}
+          formElsewhere={hosted.has('mark_complete')}
+        />
+      ) : null,
     },
     { key: 'clocks', empty: noDeadlines(view), node: <ClocksPanel key="clocks" view={view} /> },
-    {
-      key: 'gates',
-      empty: view.gates.every((g) => g.results.length === 0),
-      node: view.nextTransitions.length === 0 ? null : <GatesPanel key="gates" view={view} />,
-    },
     {
       key: 'notes',
       empty: notes.notes.length === 0,

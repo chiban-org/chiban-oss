@@ -23,7 +23,7 @@ function regionalEmpty(view: StaffApplicationView): boolean {
   return view.regionalImpact.determination === null && view.regionalImpact.notices.length === 0
 }
 
-function moneyPanels({ view, payments, inspections }: RecordPanelsInput): Panel[] {
+function moneyPanels({ view, payments, inspections, hosted }: RecordPanelsInput): Panel[] {
   const rows = feeRowsOf(view, payments)
   const money = rows.length > 0 || (payments?.entries.length ?? 0) > 0
   return [
@@ -35,7 +35,15 @@ function moneyPanels({ view, payments, inspections }: RecordPanelsInput): Panel[
     {
       key: 'fees',
       empty: !money,
-      node: <FeesPaymentsPanel key="fees" view={view} payments={payments} rows={rows} />,
+      node: (
+        <FeesPaymentsPanel
+          key="fees"
+          view={view}
+          payments={payments}
+          rows={rows}
+          paymentElsewhere={hosted?.has('record_payment') === true}
+        />
+      ),
     },
     {
       key: 'inspections',
@@ -80,12 +88,24 @@ export function recordPanels(input: RecordPanelsInput): Panel[] {
     {
       key: 'edition',
       empty: view.codeEdition === null,
-      node: <CodeEditionPanel key="edition" view={view} />,
+      node: (
+        <CodeEditionPanel
+          key="edition"
+          view={view}
+          formElsewhere={input.hosted?.has('record_code_edition') === true}
+        />
+      ),
     },
     {
       key: 'regional',
       empty: regionalEmpty(view),
-      node: <RegionalImpactPanel key="regional" view={view} />,
+      node: (
+        <RegionalImpactPanel
+          key="regional"
+          view={view}
+          formElsewhere={input.hosted?.has('record_regional_impact') === true}
+        />
+      ),
     },
     {
       key: 'appeals',

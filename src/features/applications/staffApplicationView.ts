@@ -35,13 +35,13 @@ import { effectiveBindings } from '@/features/config/bindings'
 import { getVersion } from '@/features/config/store'
 import type { FeeComputation } from '@/features/fees/computeFees'
 import { previewFees } from '@/features/fees/preview'
-import { evaluateGates, type GateResult } from '@/features/gates/evaluateGates'
 import { loadNoticeDeadlines, type NoticeDeadline } from '@/features/hearings/noticeDeadlines'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { hasFullRecordAccess } from '@/features/projects/access'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
+import { evaluateViewGates, type GateGroups } from './viewGates'
 import { loadViewParties, type ViewParty } from './viewParties'
 
 const MANUAL_TARGETS_EXCLUDED: readonly CoreState[] = ['suspended', 'expired', 'submitted']
@@ -69,7 +69,9 @@ export interface StaffApplicationView {
   noticeDeadlines: NoticeDeadline[]
   nextTransitions: CoreState[]
   allowedMoves: CoreState[]
-  gates: { to: CoreState; results: GateResult[] }[]
+  gates: GateGroups
+  gatesAhead: GateGroups
+  allowsDirectIssue: boolean
   conditions: (typeof applicationConditions.$inferSelect)[]
   conditionLibrary: { code: string; text: string; blocksIssuance: boolean }[]
   classification: string | null
@@ -173,12 +175,7 @@ export async function getStaffApplicationView(
   if (project === undefined) return null
   const display = await displayIdsFor(db, [project.parcelId])
   const nextTransitions = CORE_TRANSITIONS[app.state].filter((to) => offersMove(app, to))
-  const gates = await db.transaction(async (tx) => {
-    const out: StaffApplicationView['gates'] = []
-    for (const to of nextTransitions)
-      out.push({ to, results: await evaluateGates(tx, app, to, today, signal) })
-    return out
-  })
+  const { gates, gatesAhead } = await evaluateViewGates(db, { app, nextTransitions, today }, signal)
   const assessments = await db
     .select()
     .from(feeAssessments)
@@ -228,6 +225,8 @@ export async function getStaffApplicationView(
     nextTransitions,
     allowedMoves: await movesFor(db, actor, app, nextTransitions, signal),
     gates,
+    gatesAhead,
+    allowsDirectIssue: app.typeBody.workflow.allowsDirectIssue,
     conditionLibrary: library,
     classification: app.typeBody.classification ?? null,
     conditions: await db

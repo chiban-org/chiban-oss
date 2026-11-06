@@ -1,6 +1,7 @@
 import { arrangePanels } from '@/components/layout/splitPanels'
 import { historyPanels, panelPriority } from '@/features/applications/panelPriority'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
+import type { PlanActionKind } from '@/features/applications/workPlanTypes'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import type { ApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import type { ApplicationPayments } from '@/features/payments/applicationPayments'
@@ -18,6 +19,7 @@ export interface RecordPanelsInput {
   board: BoardPanelData | null
   hearings: ApplicationHearingsPanel | null
   notes: NotesData
+  hosted?: ReadonlySet<PlanActionKind>
 }
 
 export function applicationPanels(input: RecordPanelsInput) {

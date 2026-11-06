@@ -11,6 +11,38 @@ interface Props {
   choices: { id: string; name: string }[]
   canAssign: boolean
   required?: boolean
+  assignElsewhere?: boolean
+}
+
+type Variant = 'default' | 'outline'
+
+export function offeredReviewers(
+  reviewers: Pick<ApplicationReviewer, 'reviewerUserId'>[],
+  choices: { id: string; name: string }[],
+) {
+  const assigned = new Set(reviewers.map((r) => r.reviewerUserId))
+  return choices.filter((c) => !assigned.has(c.id))
+}
+
+export function AssignReviewerForm({
+  applicationId,
+  offered,
+  variant = 'outline',
+}: {
+  applicationId: string
+  offered: { id: string; name: string }[]
+  variant?: Variant
+}) {
+  return (
+    <ActionForm action={assignReviewerAction} submitLabel="Assign reviewer" variant={variant}>
+      <input type="hidden" name="applicationId" value={applicationId} />
+      <SelectField
+        label="Reviewer"
+        name="reviewerUserId"
+        options={offered.map((c): [string, string] => [c.id, c.name])}
+      />
+    </ActionForm>
+  )
 }
 
 function RemoveReviewer({ reviewer }: { reviewer: ApplicationReviewer }) {
@@ -55,9 +87,9 @@ export function ReviewersPanel({
   choices,
   canAssign,
   required = false,
+  assignElsewhere = false,
 }: Props) {
-  const assigned = new Set(reviewers.map((r) => r.reviewerUserId))
-  const offered = choices.filter((c) => !assigned.has(c.id))
+  const offered = offeredReviewers(reviewers, choices)
   return (
     <section aria-label="Reviewers" id="reviewers">
       <h2>Reviewers</h2>
@@ -73,17 +105,10 @@ export function ReviewersPanel({
           </li>
         ))}
       </ul>
-      {canAssign && offered.length > 0 ? (
+      {canAssign && offered.length > 0 && !assignElsewhere ? (
         <details open={required && reviewers.length === 0}>
           <summary>Assign a reviewer</summary>
-          <ActionForm action={assignReviewerAction} submitLabel="Assign reviewer">
-            <input type="hidden" name="applicationId" value={applicationId} />
-            <SelectField
-              label="Reviewer"
-              name="reviewerUserId"
-              options={offered.map((c): [string, string] => [c.id, c.name])}
-            />
-          </ActionForm>
+          <AssignReviewerForm applicationId={applicationId} offered={offered} />
         </details>
       ) : null}
     </section>

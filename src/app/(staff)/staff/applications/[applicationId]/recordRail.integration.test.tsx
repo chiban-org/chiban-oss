@@ -9,7 +9,7 @@ import { evaluateGates } from '@/features/gates/evaluateGates'
 import { overrideAdministrativeGate, recordStatutoryException } from '@/features/gates/overrides'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { filledButtons, sectionOf } from '@/test/htmlSections'
+import { filledButtons, sectionOf, workArea } from '@/test/htmlSections'
 import type { CivilDate } from '@/types/civilDate'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
@@ -61,7 +61,7 @@ async function page(number: string): Promise<string> {
 }
 
 function nextStep(html: string): string {
-  return sectionOf(html, 'Next step') ?? ''
+  return workArea(html)
 }
 
 beforeAll(async () => {
@@ -81,10 +81,11 @@ afterAll(async () => {
 describe('the next step follows the gates', () => {
   it('lists each blocker with a link to its panel and offers no filled move while blocked', async () => {
     const rail = nextStep(await page('SPR-2026-0002'))
-    expect(rail).toContain('Before issued')
+    expect(rail).toContain('Before it can be issued')
     expect(rail).toContain('href="#fees-and-payments"')
     expect(rail).toContain('href="#conditions"')
-    expect(filledButtons(rail)).toEqual([])
+    expect(filledButtons(rail)).not.toContain('Issue the permit')
+    expect(filledButtons(rail).length).toBeLessThanOrEqual(1)
   })
 
   it('makes the move the filled primary once every gate is cleared by override', async () => {
@@ -116,14 +117,15 @@ describe('the next step follows the gates', () => {
       expect(done).toEqual({ ok: true, value: undefined })
     }
     const rail = nextStep(await page('SPR-2026-0002'))
-    expect(filledButtons(rail)).toEqual(['Move to issued'])
-    expect(rail).not.toContain('Before issued')
+    expect(filledButtons(rail)).toEqual(['Issue the permit'])
+    expect(sectionOf(rail, 'Before it can be issued') ?? '').not.toContain('Not done: ')
+    expect(rail).toContain('Overridden: Cleared for the rail test.')
   })
 
   it('never makes withdrawn, denied, closed or expired the filled move', async () => {
     for (const number of ids.keys()) {
       const filled = filledButtons(nextStep(await page(number)))
-      expect(filled.filter((label) => /withdrawn|denied|closed|expired/.test(label))).toEqual([])
+      expect(filled.filter((label) => /withdraw|deny|close|expire/i.test(label))).toEqual([])
     }
   })
 
@@ -137,6 +139,7 @@ describe('the next step follows the gates', () => {
   it('does not offer closing while the appeal blocks it, and links the blocker to Appeals', async () => {
     const rail = nextStep(await page('BP-2026-0003'))
     expect(rail).not.toContain('Move to closed')
+    expect(rail).not.toContain('>Close the permit<')
     expect(rail).toContain('href="#appeals"')
   })
 
@@ -144,7 +147,7 @@ describe('the next step follows the gates', () => {
     const rail = nextStep(await page('BP-2026-0002'))
     expect(rail).toContain('No reviewer is assigned.')
     expect(rail).toContain('href="#reviewers"')
-    expect(filledButtons(rail)).toEqual([])
+    expect(filledButtons(rail)).toEqual(['Assign reviewer'])
   })
 
   it('surfaces a missing code edition as an issuance blocker', async () => {
@@ -157,7 +160,7 @@ describe('the next step follows the gates', () => {
       .set({ state: 'decided' })
       .where(eq(applications.id, applicationId))
     const rail = nextStep(await page('BP-2025-0001'))
-    expect(rail).toContain('Code edition recorded before issuance')
+    expect(rail).toContain('Code edition recorded')
     expect(rail).toContain('href="#code-edition"')
   })
 })
@@ -166,9 +169,8 @@ describe('deadlines above the fold', () => {
   it('shows the next deadline and the overdue count, and tints the header chip', async () => {
     const html = await page('BP-2026-0005')
     const facts = sectionOf(html, 'Deadlines') ?? ''
-    expect(html.indexOf('aria-label="Deadlines"')).toBeLessThan(
-      html.indexOf('aria-label="Next step"'),
-    )
+    const sentence = /data-slot="status-sentence">([^<]*)</.exec(html)?.[1] ?? ''
+    expect(sentence).toMatch(/\d+ days? overdue\.$/)
     expect(facts).toContain('Due next')
     expect(facts).toMatch(/\d+ days? overdue/)
     expect(facts).not.toContain('Overdue clocks')

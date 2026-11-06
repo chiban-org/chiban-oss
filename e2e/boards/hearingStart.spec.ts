@@ -48,7 +48,7 @@ test.describe
 
     test('refuses setting the hearing meeting before one is chosen', async ({ page, db }) => {
       await page.goto(`/staff/applications/${applicationId}`)
-      const hearing = page.getByRole('region', { name: 'Hearing', exact: true })
+      const hearing = page.getByRole('region', { name: 'Do this now' })
       await hearing.getByRole('button', { name: 'Set the meeting' }).click()
       await expectRefused(hearing.getByLabel('Hearing meeting'), 'Fill in: Hearing meeting.')
       const rows = await db.rows('select 1 from acceptance_schedules where application_id = $1', [
@@ -59,11 +59,11 @@ test.describe
 
     test('sets the hearing meeting and stores the schedule', async ({ page, db }) => {
       await page.goto(`/staff/applications/${applicationId}`)
-      const hearing = page.getByRole('region', { name: 'Hearing', exact: true })
+      const hearing = page.getByRole('region', { name: 'Do this now' })
       const meetingId = await meetingIdFor(db, today)
       await hearing.getByLabel('Hearing meeting').selectOption(meetingId)
       await hearing.getByRole('button', { name: 'Set the meeting' }).click()
-      await expect(hearing.getByText(SET_MEETING_COPY)).toBeVisible()
+      await expectToast(page, SET_MEETING_COPY)
       const row = await db.one<{ meeting_id: string }>(
         'select meeting_id from acceptance_schedules where application_id = $1',
         [applicationId],
@@ -73,8 +73,8 @@ test.describe
 
     test('refuses a vote dated after today and records nothing', async ({ page, db }) => {
       await page.goto(`/staff/applications/${applicationId}`)
-      const hearing = page.getByRole('region', { name: 'Hearing', exact: true })
-      await hearing.getByText('Open the hearing', { exact: true }).click()
+      const hearing = page.getByRole('region', { name: 'Do this now' })
+      await expect(hearing).toContainText('Open the hearing')
       await hearing.getByLabel('Date of the vote').fill(await daysFromToday(db, 3))
       await hearing.getByRole('button', { name: 'Record vote' }).click()
       await expectRefused(hearing.getByLabel('Date of the vote'), 'Check: Date of the vote.')
@@ -87,8 +87,8 @@ test.describe
 
     test('records an accepted vote after the confirmation', async ({ page, db }) => {
       await page.goto(`/staff/applications/${applicationId}`)
-      const hearing = page.getByRole('region', { name: 'Hearing', exact: true })
-      await hearing.getByText('Open the hearing', { exact: true }).click()
+      const hearing = page.getByRole('region', { name: 'Do this now' })
+      await expect(hearing).toContainText('Open the hearing')
       await hearing.getByRole('button', { name: 'Record vote' }).click()
       await confirmWith(page, 'Record this vote?', 'Record vote')
       await expect

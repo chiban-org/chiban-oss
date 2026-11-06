@@ -1,5 +1,5 @@
 import { expect, test } from '../fixtures/test'
-import { demoTitle, openApplication } from './support'
+import { demoTitle, openApplication, openMoreActions } from './support'
 
 test.describe('choosing the workflow step', () => {
   test.describe('as the clerk', () => {
@@ -7,10 +7,11 @@ test.describe('choosing the workflow step', () => {
 
     test('sets the step to zoning review and stores it', async ({ page, db }) => {
       const id = await openApplication(page, db, demoTitle('Mudroom addition due this week'))
-      await page.getByLabel('Step', { exact: true }).selectOption({ label: 'Zoning review' })
-      await page.getByRole('button', { name: 'Set step' }).click()
+      const more = await openMoreActions(page)
+      await more.getByLabel('Step', { exact: true }).selectOption({ label: 'Zoning review' })
+      await more.getByRole('button', { name: 'Set step' }).click()
 
-      await expect(page.getByRole('status').filter({ hasText: 'Step updated.' })).toBeVisible()
+      await expect(more.getByRole('status').filter({ hasText: 'Step updated.' })).toBeVisible()
       const row = await db.one<{ substep: string }>(
         'select substep from applications where id = $1',
         [id],

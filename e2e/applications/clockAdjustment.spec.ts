@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test'
 import { type E2eDb, expect, fillDate, test } from '../fixtures/test'
-import { demoTitle, expectRefusedBeside, openApplication } from './support'
+import { demoTitle, expectRefusedBeside, openApplication, openMoreActions } from './support'
 
 const DECK = demoTitle('Deck renewed once')
 
@@ -65,8 +65,7 @@ test.describe('adjusting a clock', () => {
 })
 
 async function openRenewal(page: Page) {
-  const nextStep = page.getByRole('region', { name: 'Next step' })
-  await nextStep.getByText('More actions', { exact: true }).click()
+  const nextStep = await openMoreActions(page)
   await nextStep.getByText('Renew the permit', { exact: true }).click()
   return nextStep
 }

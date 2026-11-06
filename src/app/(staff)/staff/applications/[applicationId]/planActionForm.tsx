@@ -1,0 +1,98 @@
+import { isTerminalState } from '@/features/applications/states'
+import { moveTask } from '@/features/applications/workPlan'
+import type { PlanAction } from '@/features/applications/workPlanTypes'
+import type { BoardPanelData } from '@/features/boards/panelData'
+import { BoardRegionalForm, MeetingForm, VoteFormBody } from './boardForms'
+import { CodeEditionForm, RegionalDeterminationForm } from './buildingForms'
+import { MoveForm } from './nextStepCard'
+import type { RecordPanelsInput } from './panelSet'
+import { MarkCompleteForm } from './panels'
+import { PaymentForm } from './paymentControls'
+import { AssignReviewerForm, offeredReviewers } from './reviewersPanel'
+
+export type PlanFormInput = Pick<RecordPanelsInput, 'view' | 'records' | 'payments' | 'board'>
+
+export function actionSummary(action: PlanAction, input: PlanFormInput): string {
+  switch (action.kind) {
+    case 'assign_reviewer':
+      return 'Assign a reviewer'
+    case 'mark_complete':
+      return 'Mark complete'
+    case 'record_code_edition':
+      return 'Record the code edition'
+    case 'record_regional_impact':
+      return 'Record a determination'
+    case 'record_payment':
+      return 'Record a cash or check payment'
+    case 'set_board_meeting':
+      return 'Set the meeting'
+    case 'record_board_vote':
+      return input.board?.board === 'zba' ? 'Open the hearing' : 'Record the completeness vote'
+    case 'record_board_regional_impact':
+      return 'Record the regional impact determination'
+    case 'move':
+      return moveTask(action.to)
+  }
+}
+
+type Variant = 'default' | 'outline'
+
+function BoardActionForm({
+  kind,
+  board,
+  variant,
+}: {
+  kind: 'set_board_meeting' | 'record_board_vote' | 'record_board_regional_impact'
+  board: BoardPanelData
+  variant: Variant
+}) {
+  if (kind === 'set_board_meeting') return <MeetingForm data={board} variant={variant} />
+  if (kind === 'record_board_vote') return <VoteFormBody data={board} variant={variant} />
+  return <BoardRegionalForm data={board} variant={variant} />
+}
+
+export function PlanActionForm({
+  action,
+  input,
+  primary,
+}: {
+  action: PlanAction
+  input: PlanFormInput
+  primary: boolean
+}) {
+  const variant: Variant = primary ? 'default' : 'outline'
+  const { view, records, payments, board } = input
+  switch (action.kind) {
+    case 'assign_reviewer':
+      return (
+        <AssignReviewerForm
+          applicationId={view.id}
+          offered={offeredReviewers(records.reviewers, records.choices)}
+          variant={variant}
+        />
+      )
+    case 'mark_complete':
+      return <MarkCompleteForm view={view} variant={variant} />
+    case 'record_code_edition':
+      return <CodeEditionForm view={view} variant={variant} />
+    case 'record_regional_impact':
+      return <RegionalDeterminationForm view={view} variant={variant} />
+    case 'record_payment':
+      return payments === null ? null : <PaymentForm payments={payments} variant={variant} />
+    case 'set_board_meeting':
+    case 'record_board_vote':
+    case 'record_board_regional_impact':
+      return board === null ? null : (
+        <BoardActionForm kind={action.kind} board={board} variant={variant} />
+      )
+    case 'move':
+      return (
+        <MoveForm
+          view={view}
+          to={action.to}
+          label={moveTask(action.to)}
+          variant={isTerminalState(action.to) ? 'destructive' : variant}
+        />
+      )
+  }
+}

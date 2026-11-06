@@ -18,6 +18,16 @@ export async function openApplication(page: Page, db: E2eDb, title: string): Pro
   return id
 }
 
+export function doThisNow(page: Page): Locator {
+  return page.getByRole('region', { name: 'Do this now' })
+}
+
+export async function openMoreActions(page: Page): Promise<Locator> {
+  const more = page.locator('aside details.more-actions')
+  if ((await more.getAttribute('open')) === null) await more.locator('summary').first().click()
+  return more
+}
+
 export function visibleSummary(page: Page, text: string | RegExp): Locator {
   return page.locator('summary:visible').filter({ hasText: text })
 }

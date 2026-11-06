@@ -10,6 +10,7 @@ interface PageHeaderProps {
   kicker?: ReactNode
   status?: ReactNode
   lead?: ReactNode
+  summary?: ReactNode
   facts?: readonly Fact[]
   actions?: ReactNode
 }
@@ -38,7 +39,15 @@ export function FactList({
   )
 }
 
-export function PageHeader({ title, kicker, status, lead, facts, actions }: PageHeaderProps) {
+export function PageHeader({
+  title,
+  kicker,
+  status,
+  lead,
+  summary,
+  facts,
+  actions,
+}: PageHeaderProps) {
   return (
     <header className="mb-8 flex flex-col gap-4 border-b pb-8">
       <div className="flex flex-col gap-2">
@@ -53,6 +62,7 @@ export function PageHeader({ title, kicker, status, lead, facts, actions }: Page
           <p className="max-w-[65ch] text-lg text-ink-secondary">{lead}</p>
         )}
       </div>
+      {summary}
       {facts === undefined || facts.length === 0 ? null : <FactList facts={facts} />}
       {actions}
     </header>

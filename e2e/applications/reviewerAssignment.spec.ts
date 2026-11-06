@@ -1,5 +1,5 @@
 import { expect, test } from '../fixtures/test'
-import { demoTitle, expectConfirmation, openApplication } from './support'
+import { demoTitle, doThisNow, expectConfirmation, openApplication } from './support'
 
 const MUDROOM = demoTitle('Mudroom addition due this week')
 
@@ -12,11 +12,11 @@ test.describe('assigning reviewers to an application', () => {
       db,
     }) => {
       const id = await openApplication(page, db, MUDROOM)
+      const card = doThisNow(page)
+      await expect(card).toContainText('Assign a reviewer')
+      await card.getByLabel('Reviewer', { exact: true }).selectOption({ label: 'Remy Reviewer' })
+      await card.getByRole('button', { name: 'Assign reviewer' }).click()
       const reviewers = page.getByRole('region', { name: 'Reviewers' })
-      await reviewers
-        .getByLabel('Reviewer', { exact: true })
-        .selectOption({ label: 'Remy Reviewer' })
-      await reviewers.getByRole('button', { name: 'Assign reviewer' }).click()
 
       await expectConfirmation(page, 'Reviewer assigned.')
       await expect(
@@ -57,7 +57,7 @@ test.describe('assigning reviewers to an application', () => {
     test('is not offered reviewer assignment', async ({ page, db }) => {
       await openApplication(page, db, MUDROOM)
       await expect(page.getByRole('button', { name: 'Assign reviewer' })).toHaveCount(0)
-      await expect(page.getByText('Assign a reviewer', { exact: true })).toHaveCount(0)
+      await expect(page.getByLabel('Reviewer', { exact: true })).toHaveCount(0)
     })
   })
 })

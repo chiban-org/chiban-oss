@@ -4,13 +4,14 @@ import { type Fact, FactList } from '@/components/layout/PageHeader'
 import { NEW_TAB } from '@/components/newTab'
 import { CorrectPermitDialog } from '@/components/permits/CorrectPermitDialog'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
+import type { WorkPlan } from '@/features/applications/workPlanTypes'
 import { dueNext, otherOverdue } from '@/features/clocks/clockSummary'
 import { NOTICE_DEADLINE_LABEL } from '@/features/hearings/labels'
 import { lateNotice } from '@/features/hearings/noticeDeadlines'
 import type { CorrectionFormData } from '@/features/permits/correction/correctionForm'
 import { formatCivilDate } from '@/lib/formatDate'
 import { checkCorrectionAction, correctPermitAction } from './correctionActions'
-import { LeadStatus, MoreActions, NextStepCard, PrimaryMove, type RailPlan } from './nextStepCard'
+import { MoreActions } from './nextStepCard'
 
 function PrintLinks({ applicationId }: { applicationId: string }) {
   return (
@@ -117,7 +118,7 @@ export function ApplicationRail({
   correction,
 }: {
   view: StaffApplicationView
-  plan: RailPlan
+  plan: WorkPlan
   notice: ReactNode
   correction: CorrectionFormData | null
 }) {
@@ -125,9 +126,9 @@ export function ApplicationRail({
     <div className="rail-card empty:hidden">
       {notice}
       <Deadlines view={view} />
-      <NextStepCard view={view} plan={plan} />
-      {view.state === 'issued' ? <PrintLinks applicationId={view.id} /> : null}
+      {view.issuedOn === null ? null : <PrintLinks applicationId={view.id} />}
       <CorrectPermit data={correction} />
+      <MoreActions view={view} moves={plan.terminal} />
     </div>
   )
 }
@@ -158,7 +159,7 @@ export function StatusStrip({
   responsible,
 }: {
   view: StaffApplicationView
-  plan: RailPlan
+  plan: WorkPlan
   notice: ReactNode
   legacyNumber: string | null
   correction: CorrectionFormData | null
@@ -171,8 +172,7 @@ export function StatusStrip({
         <LateNotice view={view} />
       </div>
       {notice}
-      <PrimaryMove view={view} plan={plan} />
-      <LeadStatus plan={plan} />
+      {view.issuedOn === null ? null : <PrintLinks applicationId={view.id} />}
       <details>
         <summary className="text-sm">Facts and more actions</summary>
         <div className="flex flex-col gap-4">

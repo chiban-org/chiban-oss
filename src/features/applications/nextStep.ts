@@ -16,7 +16,7 @@ const GATE_PANELS: ReadonlyMap<string, string> = new Map([
 ])
 
 export function gateAnchor(key: string): string {
-  return GATE_PANELS.get(key) ?? 'gates'
+  return GATE_PANELS.get(key) ?? 'requirements'
 }
 
 export interface Blocker {

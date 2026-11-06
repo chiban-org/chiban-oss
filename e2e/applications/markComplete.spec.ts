@@ -1,6 +1,12 @@
 import { openRecordHistory } from '../fixtures/recordHistory'
 import { expect, fillDate, signInWithMagicLink, test } from '../fixtures/test'
-import { applicationIdFor, demoTitle, expectConfirmation, expectRefusedBeside } from './support'
+import {
+  applicationIdFor,
+  demoTitle,
+  doThisNow,
+  expectConfirmation,
+  expectRefusedBeside,
+} from './support'
 
 const FENCE = demoTitle('Fence along the north line')
 
@@ -42,7 +48,7 @@ test.describe('marking a building permit application complete', () => {
     }) => {
       const id = await applicationIdFor(db, FENCE)
       await page.goto(`/staff/applications/${id}`)
-      const completeness = page.getByRole('region', { name: 'Completeness' })
+      const completeness = doThisNow(page)
       await fillDate(completeness.getByLabel('Completed on'), '2099-01-02')
       await completeness.getByRole('button', { name: 'Mark complete' }).click()
 
@@ -60,7 +66,7 @@ test.describe('marking a building permit application complete', () => {
     test('marks it complete today and starts the decision clock', async ({ page, db }) => {
       const id = await applicationIdFor(db, FENCE)
       await page.goto(`/staff/applications/${id}`)
-      const completeness = page.getByRole('region', { name: 'Completeness' })
+      const completeness = doThisNow(page)
       await completeness.getByRole('button', { name: 'Mark complete' }).click()
 
       await expectConfirmation(page, 'Marked complete. The decision clock is running.')

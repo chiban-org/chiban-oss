@@ -27,3 +27,14 @@ export function filledButtons(html: string): string[] {
     (m) => m[1] ?? '',
   )
 }
+
+export function railOf(html: string): string {
+  const start = html.indexOf('<aside')
+  return start < 0 ? '' : html.slice(start, html.indexOf('</aside>', start))
+}
+
+export function workArea(html: string): string {
+  return [sectionOf(html, 'Do this now'), sectionOf(html, 'Requirements'), railOf(html)]
+    .filter((part) => part !== null)
+    .join('\n')
+}

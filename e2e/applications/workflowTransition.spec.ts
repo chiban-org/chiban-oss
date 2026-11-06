@@ -1,6 +1,6 @@
 import { openRecordHistory } from '../fixtures/recordHistory'
 import { type E2eDb, expect, test } from '../fixtures/test'
-import { demoTitle, expectConfirmation, openApplication } from './support'
+import { demoTitle, expectConfirmation, openApplication, openMoreActions } from './support'
 
 interface StateRow {
   state: string
@@ -18,7 +18,7 @@ test.describe('moving an application through its workflow', () => {
       db,
     }) => {
       const id = await openApplication(page, db, demoTitle('Subpanel for the barn'))
-      await page.getByRole('button', { name: 'Move to under review' }).click()
+      await page.getByRole('button', { name: 'Start the review' }).click()
 
       await expectConfirmation(page, 'Moved to under review.')
       await openRecordHistory(page)
@@ -31,10 +31,7 @@ test.describe('moving an application through its workflow', () => {
       db,
     }) => {
       const id = await openApplication(page, db, demoTitle('Brookside setback variance'))
-      await page
-        .getByRole('region', { name: 'Next step' })
-        .getByText('More actions', { exact: true })
-        .click()
+      await openMoreActions(page)
       const trigger = page.getByRole('button', { name: 'Move to withdrawn' })
       await trigger.click()
 
@@ -56,10 +53,10 @@ test.describe('moving an application through its workflow', () => {
 
     test('lists what blocks the next move instead of offering it', async ({ page, db }) => {
       await openApplication(page, db, demoTitle('Addition under review'))
-      const blockers = page.getByRole('list', { name: 'What blocks decided' })
-      await expect(blockers).toContainText('Assigned reviews signed off')
+      const blockers = page.getByRole('list', { name: 'Before the decision' })
+      await expect(blockers).toContainText('Reviews signed off')
       await expect(blockers).toContainText('No reviewer is assigned.')
-      await expect(page.getByRole('button', { name: 'Move to decided' })).toHaveCount(0)
+      await expect(page.getByRole('button', { name: 'Record the decision' })).toHaveCount(0)
     })
   })
 

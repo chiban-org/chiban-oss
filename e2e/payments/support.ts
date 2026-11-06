@@ -42,9 +42,15 @@ export async function openEntryControls(item: Locator): Promise<Locator> {
 }
 
 export async function openRecordPayment(page: Page): Promise<Locator> {
-  const details = ledgerSection(page).locator('details', {
-    has: page.locator('summary', { hasText: 'Record a cash or check payment' }),
-  })
+  const card = page.getByRole('region', { name: 'Do this now' })
+  if ((await card.getByRole('button', { name: 'Record payment', exact: true }).count()) > 0) {
+    return card
+  }
+  const details = page
+    .locator('details', {
+      has: page.locator('summary', { hasText: 'Record a cash or check payment' }),
+    })
+    .first()
   if ((await details.getAttribute('open')) === null) {
     await details.locator('summary').click()
   }

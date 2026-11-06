@@ -5,7 +5,7 @@ import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { countSections, sectionOf } from '@/test/htmlSections'
+import { countSections, sectionOf, workArea } from '@/test/htmlSections'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
 
@@ -213,16 +213,16 @@ describe('destructive actions look destructive', () => {
 
 describe('quick wins', () => {
   it('drops the citation that repeats the gate label and empty gate groups', async () => {
-    const gates = sectionOf(await page('BP-2026-0003'), 'Gates') ?? ''
+    const gates = sectionOf(await page('BP-2026-0003'), 'Requirements') ?? ''
+    expect(gates).toContain('Appeal resolved')
     expect(gates).not.toContain('No gates apply to this step')
     expect(gates.match(/RSA 676:6/g)?.length ?? 0).toBeLessThanOrEqual(2)
     expect(gates).not.toMatch(/<p[^>]*>RSA 676:6<\/p>/)
   })
 
   it('offers a Not set step when the substep is empty instead of preselecting one', async () => {
-    const rail = sectionOf(await page('SPR-2026-0002'), 'Next step') ?? ''
-    if (rail.includes('name="substep"')) {
-      expect(rail).toMatch(/<option value="">Not set<\/option>|value="" selected/)
-    }
+    const rail = workArea(await page('SPR-2026-0002'))
+    expect(rail).toContain('name="substep"')
+    expect(rail).toMatch(/<option value="">Not set<\/option>|value="" selected/)
   })
 })

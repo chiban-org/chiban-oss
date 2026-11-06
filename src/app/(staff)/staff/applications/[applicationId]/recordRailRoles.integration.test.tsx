@@ -5,7 +5,7 @@ import { type Actor, loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { sectionOf } from '@/test/htmlSections'
+import { workArea } from '@/test/htmlSections'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
 
@@ -54,7 +54,7 @@ async function railAs(role: string, number: string): Promise<string> {
       params: Promise.resolve({ applicationId: ids.get(number) ?? '' }),
     })) as never,
   )
-  return sectionOf(html, 'Next step') ?? ''
+  return workArea(html)
 }
 
 beforeAll(async () => {
@@ -75,30 +75,32 @@ describe('the rail offers only moves this viewer can make', () => {
   it('shows admin the blockers before a decision without a move admin cannot make', async () => {
     const staff = await railAs('staff', 'BP-2026-0001')
     const admin = await railAs('admin', 'BP-2026-0001')
-    expect(staff).toContain('Before decided')
-    expect(admin).toContain('Before decided')
+    expect(staff).toContain('Before the decision')
+    expect(admin).toContain('Before the decision')
     expect(admin).toContain('No reviewer is assigned.')
     expect(admin).toContain('href="#reviewers"')
-    expect(admin).not.toContain('Move to decided')
+    expect(admin).not.toContain('>Record the decision<')
   })
 
   it('offers no move to closed on an issued permit whose closing is blocked, to any role', async () => {
     expect(await railAs('staff', 'BP-2025-0001')).toContain('href="#inspections"')
     for (const role of ['staff', 'finance', 'admin']) {
       const rail = await railAs(role, 'BP-2025-0001')
-      expect(rail).not.toMatch(/move to closed/i)
+      expect(rail).not.toMatch(/move to closed|>Close the permit</i)
     }
   })
 
   it('points a submitted board application at the completeness vote, not a bare move', async () => {
     const staff = await railAs('staff', 'SPR-2026-0001')
     expect(staff).not.toContain('Move to under review')
+    expect(staff).not.toContain('Start the review')
     expect(staff).toContain('href="#board"')
-    expect(staff).toContain('Record the completeness vote')
+    expect(staff).toMatch(/Vote on completeness at the meeting on [A-Z][a-z]+ \d+, 2026/)
     const finance = await railAs('finance', 'SPR-2026-0001')
-    expect(finance).not.toContain('Move to under review')
-    expect(finance).not.toContain('Record the completeness vote')
-    expect(finance).toContain('The board votes on whether the application is complete.')
+    expect(finance).not.toContain('Start the review')
+    expect(finance).toMatch(/Vote on completeness at the meeting on/)
+    expect(finance).not.toContain('name="outcome"')
+    expect(finance).not.toContain('Set the meeting')
   })
 
   it('offers the step and the withdrawal only to roles that manage the workflow', async () => {

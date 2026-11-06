@@ -96,36 +96,52 @@ export function EntryControls({
   )
 }
 
+export function PaymentForm({
+  payments,
+  variant = 'outline',
+}: {
+  payments: ApplicationPayments
+  variant?: 'default' | 'outline'
+}) {
+  return (
+    <ActionForm action={recordPaymentAction} submitLabel="Record payment" variant={variant}>
+      <input type="hidden" name="applicationId" value={payments.applicationId} />
+      <SelectField
+        label="Paid by"
+        name="method"
+        options={[
+          ['check', 'Check'],
+          ['cash', 'Cash'],
+        ]}
+      />
+      <TextField
+        label="Amount in dollars"
+        name="amount"
+        inputMode="decimal"
+        defaultValue={centsToDollarInput(payments.balance.dueCents)}
+        required
+      />
+      <TextField label="Check number (checks only)" name="checkNumber" />
+      <TextField
+        label="Cash tendered in dollars (cash only, to work out change)"
+        name="tendered"
+        inputMode="decimal"
+      />
+      <TextField label="Payer name" name="payerName" required />
+    </ActionForm>
+  )
+}
+
+export function mayRecordPayment(payments: ApplicationPayments | null): boolean {
+  return payments?.canCollect === true && payments.balance.dueCents > 0
+}
+
 export function RecordPaymentForm({ payments }: { payments: ApplicationPayments }) {
-  if (!payments.canCollect || payments.balance.dueCents <= 0) return null
+  if (!mayRecordPayment(payments)) return null
   return (
     <details>
       <summary>Record a cash or check payment</summary>
-      <ActionForm action={recordPaymentAction} submitLabel="Record payment">
-        <input type="hidden" name="applicationId" value={payments.applicationId} />
-        <SelectField
-          label="Paid by"
-          name="method"
-          options={[
-            ['check', 'Check'],
-            ['cash', 'Cash'],
-          ]}
-        />
-        <TextField
-          label="Amount in dollars"
-          name="amount"
-          inputMode="decimal"
-          defaultValue={centsToDollarInput(payments.balance.dueCents)}
-          required
-        />
-        <TextField label="Check number (checks only)" name="checkNumber" />
-        <TextField
-          label="Cash tendered in dollars (cash only, to work out change)"
-          name="tendered"
-          inputMode="decimal"
-        />
-        <TextField label="Payer name" name="payerName" required />
-      </ActionForm>
+      <PaymentForm payments={payments} />
     </details>
   )
 }
