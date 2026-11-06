@@ -23,9 +23,9 @@ describe('docker-compose.dev.yml', () => {
     expect(images).toEqual(expect.arrayContaining([POSTGIS_IMAGE, MINIO_IMAGE, MAILPIT_IMAGE]))
   })
 
-  it('takes the MinIO CORS origin from MINIO_CORS_ORIGIN and defaults to the standard dev origin', () => {
+  it('takes the MinIO CORS origin from MINIO_CORS_ORIGIN and defaults to the dev origin plus the e2e ports', () => {
     expect(compose).toContain(
-      'MINIO_API_CORS_ALLOW_ORIGIN: ${MINIO_CORS_ORIGIN:-http://localhost:3000}',
+      'MINIO_API_CORS_ALLOW_ORIGIN: ${MINIO_CORS_ORIGIN:-http://localhost:3000,http://localhost:3100,http://localhost:3101,http://localhost:3102,http://localhost:3103}',
     )
   })
 })
