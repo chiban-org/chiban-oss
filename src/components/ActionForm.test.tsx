@@ -66,6 +66,24 @@ describe('ActionForm', () => {
     expect(screen.queryByText('Fill in: Returned on.')).toBeNull()
   })
 
+  it('names an empty required field without doubling the punctuation of a question label', async () => {
+    render(
+      <CsrfProvider token="t1">
+        <ActionForm
+          action={() => Promise.resolve({ ok: true as const, message: 'ok' })}
+          submitLabel="Record complaint"
+        >
+          <label>
+            What was reported?
+            <input name="description" required />
+          </label>
+        </ActionForm>
+      </CsrfProvider>,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Record complaint' }))
+    await waitFor(() => expect(screen.getByText('Fill in: What was reported.')).toBeTruthy())
+  })
+
   describe('values after a server answer', () => {
     function renderForm(result: ActionResult) {
       return render(

@@ -6,10 +6,12 @@ function visibleText(node: Node): string {
   return Array.from(node.childNodes).map(visibleText).join('')
 }
 
+const TRAILING_PUNCTUATION = /[.?!:]+$/
+
 function labelOf(element: Element): string {
   const label = (element as HTMLInputElement).labels?.[0]
   if (label === undefined) return element.getAttribute('name') ?? 'a required field'
-  return visibleText(label).trim()
+  return visibleText(label).trim().replace(TRAILING_PUNCTUATION, '')
 }
 
 export function invalidFields(form: HTMLFormElement): Element[] {
