@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Actor } from '@/features/auth/actor'
+import { PARCEL_PAGE_SIZE } from '@/features/parcels/searchParcels'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeParcel, seedParcelWorld, staffActor } from '@/test/parcels'
 
@@ -94,5 +95,41 @@ describe('staff parcel search page', () => {
     expect(html).toContain('name="status" value="active"')
     expect(html).not.toContain('name="status" value="retired"')
     expect(html).not.toContain('No parcels match these filters.')
+  })
+
+  it('lists parcels before any search is typed', async () => {
+    const html = renderToStaticMarkup(await StaffParcelsPage({ searchParams: Promise.resolve({}) }))
+    expect(html).toContain('All parcels')
+    expect(html).toContain('16 Larkspur Lane')
+    expect(html).toContain('007015000000')
+    expect(html).not.toContain('Enter at least two characters.')
+    expect(html).not.toContain('aria-label="Pages"')
+  })
+
+  it('pages the browse list when there are more parcels than one page holds', async () => {
+    for (let i = 0; i < PARCEL_PAGE_SIZE; i += 1) {
+      await makeParcel(
+        handle.db,
+        [{ format: 'gis12', value: `0090${String(i).padStart(8, '0')}` }],
+        { siteAddress: `${i} Filler Street` },
+      )
+    }
+    const first = renderToStaticMarkup(
+      await StaffParcelsPage({ searchParams: Promise.resolve({}) }),
+    )
+    expect(first).toContain('aria-label="Pages"')
+    expect(first).toContain('href="/staff/parcels?cursor=20"')
+    const second = renderToStaticMarkup(
+      await StaffParcelsPage({ searchParams: Promise.resolve({ cursor: '20' }) }),
+    )
+    expect(second).toContain('Previous page')
+    expect(second).not.toContain('Next page')
+  })
+
+  it('still asks for more characters when a one-character search is typed', async () => {
+    const html = renderToStaticMarkup(
+      await StaffParcelsPage({ searchParams: Promise.resolve({ q: 'L' }) }),
+    )
+    expect(html).toContain('Enter at least two characters.')
   })
 })

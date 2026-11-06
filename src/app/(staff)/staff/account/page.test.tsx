@@ -5,11 +5,20 @@ vi.mock('@/server/requireStaff', () => ({
   requireStaffActor: () =>
     Promise.resolve({ userId: 'u', kind: 'staff', roles: ['records_custodian', 'staff'] }),
 }))
-vi.mock('./actions', () => ({ signOutAction: () => undefined }))
+vi.mock('./actions', () => ({
+  signOutAction: () => undefined,
+  changeNameAction: () => ({ error: null, message: null }),
+  changePasswordAction: () => ({ error: null, message: null }),
+}))
 vi.mock('@/db/client', () => ({ db: {} }))
 vi.mock('@/features/auth/accountSummary', () => ({
   loadAccountSummary: () =>
-    Promise.resolve({ displayName: 'Rae Records', email: 'rae@example.test', totpEnabled: false }),
+    Promise.resolve({
+      displayName: 'Rae Records',
+      email: 'rae@example.test',
+      totpEnabled: false,
+      hasPassword: true,
+    }),
 }))
 vi.mock('@/components/CsrfField', () => ({ CsrfField: () => null }))
 
@@ -45,5 +54,13 @@ describe('staff account page', () => {
     expect(page).toContain('Rae Records')
     expect(page).toContain('rae@example.test')
     expect(page).toContain('Not set up. Sign-in asks only for your password.')
+  })
+
+  it('offers a name field filled in and a password change that asks for the current password', async () => {
+    const page = await html({})
+    expect(page).toMatch(/<input[^>]*name="displayName"[^>]*value="Rae Records"/)
+    expect(page).toContain('Current password')
+    expect(page).toContain('New password')
+    expect(page).toContain('Change password')
   })
 })
