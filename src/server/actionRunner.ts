@@ -2,7 +2,7 @@ import { revalidatePath } from 'next/cache'
 import { CHECK_UNSUPPORTED_COPY } from '@/constants/formCheck'
 import { type Db, db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
-import { type GuardOptions, guardAction, isCheckOnly } from '@/server/actionGuard'
+import { type GuardOptions, guardAction } from '@/server/actionGuard'
 
 export type ActionResult =
   | { ok: true; message: string }
@@ -127,7 +127,7 @@ export async function runStaffAction(
   const actor = guard.value
   if (actor?.kind !== 'staff') return { ok: false, error: errorCopy('signed_out') }
   const result = await fn({ db, actor, signal })
-  if (result.ok && !isCheckOnly(formData)) revalidatePath('/staff', 'layout')
+  if (result.ok) revalidatePath('/staff', 'layout')
   return result
 }
 

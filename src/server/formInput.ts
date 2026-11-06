@@ -1,5 +1,5 @@
 import type { z } from 'zod'
-import { CHECK_ONLY_FIELD } from '@/constants/formCheck'
+import { CHECK_ONLY_FIELD, CHECK_PASSED_COPY } from '@/constants/formCheck'
 import { CSRF_FIELD, type GuardOptions, isCheckOnly } from '@/server/actionGuard'
 import { type ActionContext, type ActionResult, runStaffAction } from '@/server/actionRunner'
 import { err, ok, type Result } from '@/types/result'
@@ -12,7 +12,7 @@ const NOT_INPUT = new Set([CSRF_FIELD, CHECK_ONLY_FIELD])
 
 const PLAIN_MESSAGE = 'Check this field.'
 
-export const CHECKED: ActionResult = { ok: true, message: '' }
+export const CHECK_PASSED: ActionFailure = { ok: false, error: CHECK_PASSED_COPY }
 
 export function formValues(formData: FormData): FormValues {
   const values: FormValues = {}
@@ -60,7 +60,7 @@ export async function runStaffForm<S extends z.ZodType>(
     async (ctx) => {
       const parsed = parseForm(schema, formData)
       if (!parsed.ok) return parsed.error
-      if (isCheckOnly(formData)) return CHECKED
+      if (isCheckOnly(formData)) return CHECK_PASSED
       return await fn(ctx, parsed.value)
     },
     { ...options, answersCheck: true },

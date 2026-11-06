@@ -4,7 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ActionForm } from '@/components/ActionForm'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import { TextField } from '@/components/staff/fields'
-import { CHECK_ONLY_FIELD, CHECK_UNSUPPORTED_COPY } from '@/constants/formCheck'
+import { CHECK_ONLY_FIELD, CHECK_PASSED_COPY, CHECK_UNSUPPORTED_COPY } from '@/constants/formCheck'
 import type { ActionResult } from '@/server/actionRunner'
 
 afterEach(cleanup)
@@ -61,7 +61,7 @@ describe('ActionForm with a confirm step and an action that checks input', () =>
   })
 
   it('opens the dialog after a passing check and sends the form once, unmarked, on confirm', async () => {
-    const action = renderRefund({ ok: true, message: '' })
+    const action = renderRefund({ ok: false, error: CHECK_PASSED_COPY })
     submitReason('Paid twice by mistake')
     fireEvent.click(await screen.findByRole('button', { name: 'Refund' }))
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Refunded.'))

@@ -1,4 +1,4 @@
-import { CHECK_ONLY_FIELD, CHECK_UNSUPPORTED_COPY } from '@/constants/formCheck'
+import { CHECK_ONLY_FIELD, CHECK_PASSED_COPY, CHECK_UNSUPPORTED_COPY } from '@/constants/formCheck'
 import type { ActionResult } from '@/server/actionRunner'
 
 export const UNSENT_COPY =
@@ -21,8 +21,10 @@ export function checkOnlyData(form: HTMLFormElement, submitter: HTMLElement | nu
   return data
 }
 
+const OPENS_CONFIRM = new Set([CHECK_PASSED_COPY, CHECK_UNSUPPORTED_COPY])
+
 export function checkPasses(reply: ActionResult): boolean {
-  return reply.ok || reply.error === CHECK_UNSUPPORTED_COPY
+  return reply.ok || OPENS_CONFIRM.has(reply.error)
 }
 
 const NO_FIELD_ERRORS: Readonly<Record<string, string>> = {}
