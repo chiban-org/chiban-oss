@@ -13,6 +13,7 @@ import {
   CENSUS_PHASE_LABELS,
   CENSUS_REASON_LABELS,
 } from '@/features/census/labels'
+import { censusPeriod } from '@/features/census/period'
 import { type CensusSuggestion, suggestCensus } from '@/features/census/suggest'
 import { firstParam, type RawSearchParams, readTableParams } from '@/features/dataTable/params'
 import {
@@ -53,11 +54,6 @@ const EMPTY: CensusSuggestion = {
   valuationDollars: 0,
 }
 
-function numberParam(value: string | undefined, fallback: number): number {
-  const n = Number(value)
-  return Number.isInteger(n) ? n : fallback
-}
-
 function Hidden({ name, value }: { name: string; value: string | number }) {
   return <input type="hidden" name={name} value={String(value)} />
 }
@@ -73,8 +69,7 @@ export default async function CensusPage({
   const largeSort = scopedSort(CENSUS_PATH, tableParams, LARGE_PERMIT_SORT, LARGE_SCOPE)
   const ctx = await requireStaffContext()
   const today = await townToday(ctx.db, new Date(), ctx.signal)
-  const year = numberParam(yearParam, Number(today.slice(0, 4)))
-  const month = monthParam === 'year' ? null : numberParam(monthParam, Number(today.slice(5, 7)))
+  const { year, month } = censusPeriod(yearParam, monthParam, today)
   const report = await censusBpsReport(ctx.db, ctx.actor, { year, month }, ctx.signal)
   if (!report.ok) return <NoPermission title="Census report" action="see the Census report" />
   const r = report.value

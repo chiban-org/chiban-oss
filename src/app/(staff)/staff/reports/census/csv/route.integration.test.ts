@@ -56,4 +56,12 @@ describe('census csv route', () => {
       'This report is not complete. 1 issued building permit needs classification before it can be exported.',
     )
   })
+
+  it('answers year 0 with the town year instead of a server error', async () => {
+    const res = await GET(
+      new Request('https://alderpond.example/staff/reports/census/csv?year=0&month=year'),
+    )
+    expect(res.status).not.toBe(500)
+    expect(res.headers.get('content-disposition') ?? '').not.toContain('census-building-permits-0')
+  })
 })
