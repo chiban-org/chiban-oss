@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { HearingView } from '@/features/hearings/views'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('../actions', () => ({
   continueHearingAction: vi.fn(),
@@ -44,7 +44,7 @@ describe('continuing a hearing', () => {
       </CsrfProvider>,
     )
     fireEvent.click(screen.getByText('Continue to another meeting'))
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'Continue hearing' }),
       () => screen.getByLabelText(/^What was announced( \*)?$/),
       message,

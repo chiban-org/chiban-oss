@@ -170,6 +170,7 @@ function ManageControls({
             <RedactedUploader
               documentId={doc.documentId}
               target={props.target}
+              seriesKey={doc.series?.key}
               actions={props.actions.uploadRedacted}
             />
           </>

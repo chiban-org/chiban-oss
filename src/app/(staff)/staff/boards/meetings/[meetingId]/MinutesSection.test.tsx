@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { MeetingMinutesView } from '@/features/boards/minutesView'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('./minutesActions', () => ({
   recordMinutesAction: vi.fn(),
@@ -42,7 +42,7 @@ describe('recording minutes', () => {
       target: { value: 'f1' },
     })
     fireEvent.change(screen.getByLabelText(/^Status( \*)?$/), { target: { value: 'approved' } })
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'Record the minutes' }),
       () => screen.getByLabelText(/^Date approved( \*)?$/),
       message,

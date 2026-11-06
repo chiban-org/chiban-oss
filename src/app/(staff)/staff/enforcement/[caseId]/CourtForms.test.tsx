@@ -2,9 +2,8 @@
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
 import type { OrderDetail } from '@/features/enforcement/caseDetail'
-import { expectRefusalBeside } from '@/test/besideField'
+import { expectRefusalBeside, refusal } from '@/test/besideField'
 import { fillField, labelled, openSection, renderForm, stubDetail } from '@/test/enforcementRender'
-import { refusal } from '@/test/refusalBeside'
 
 vi.mock('../serviceActions', () => ({ courtStepAction: vi.fn() }))
 

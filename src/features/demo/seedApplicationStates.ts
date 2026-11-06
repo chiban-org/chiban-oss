@@ -20,6 +20,7 @@ import { addDays } from '@/types/civilDate'
 const BP_DECISION_DAYS = 30
 const ZBA_HEARING_DAYS = 45
 const DAYS_LEFT = 3
+const ISSUED_LEAD_DAYS = 10
 
 type Step = (ctx: CoverageContext, title: string) => Promise<void>
 
@@ -83,6 +84,23 @@ async function readyAtCounter(ctx: CoverageContext, title: string): Promise<void
   await readyToIssue(s, '2026-10-28')
 }
 
+async function issuedAwaitingCensus(ctx: CoverageContext, title: string): Promise<void> {
+  const s = await open(ctx.db, ctx.cast, ctx.signal, {
+    parcel: '007012000000',
+    title,
+    typeKey: 'BP',
+    values: { ...BUILDING_VALUES, description: 'Single-car detached garage with a loft' },
+    submittedOn: addDays(ctx.today, -ISSUED_LEAD_DAYS),
+  })
+  await completeAndReview(
+    s,
+    addDays(ctx.today, -ISSUED_LEAD_DAYS + 1),
+    addDays(ctx.today, -ISSUED_LEAD_DAYS + 2),
+  )
+  await readyToIssue(s, addDays(ctx.today, -1))
+  await s.step('issued', ctx.today)
+}
+
 async function buildingDueSoon(ctx: CoverageContext, title: string): Promise<void> {
   const completed = addDays(ctx.today, DAYS_LEFT - BP_DECISION_DAYS)
   const s = await open(ctx.db, ctx.cast, ctx.signal, {
@@ -119,6 +137,7 @@ const STATES: readonly [string, Step][] = [
   ['Fence along the north line', draft],
   ['Porch withdrawn by the owner', withdrawn],
   ['Shed ready to issue', readyAtCounter],
+  ['Garage issued, awaiting Census count', issuedAwaitingCensus],
   ['Mudroom addition due this week', buildingDueSoon],
   ['Pintail Way setback variance', varianceDueSoon],
 ]

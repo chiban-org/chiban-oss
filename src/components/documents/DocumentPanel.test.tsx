@@ -35,6 +35,7 @@ function doc(overrides: Partial<PanelDocument> = {}): PanelDocument {
     preservation: 'preserved',
     preservationRecordId: 'p1',
     series: {
+      key: 'nh.rs.building_permits',
       label: 'Building permits: applications and approvals',
       citation: {
         label: 'RSA 33-A:3-a XV',

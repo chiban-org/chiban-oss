@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('./packetActions', () => ({
   sendToBoardAction: vi.fn(),
@@ -38,7 +38,7 @@ describe('sending the packet outside the board', () => {
     fireEvent.change(screen.getByLabelText(/^Email( \*)?$/), {
       target: { value: 'counsel@alderpond.example' },
     })
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'Send the link' }),
       () => screen.getByLabelText(/^Name( \*)?$/),
       'Enter a name.',
