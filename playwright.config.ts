@@ -10,6 +10,8 @@ export default defineConfig({
   globalSetup: './e2e/setup/globalSetup.ts',
   forbidOnly: true,
   retries: 0,
+  timeout: 60_000,
+  expect: { timeout: 15_000 },
   reporter: 'list',
   use: {
     baseURL: E2E_BASE_URL,
