@@ -17,6 +17,11 @@ const WAITING: readonly { label: string; href: string; filters: WorkQueueFilters
     href: `${APPLICATIONS}?flag=reviewed`,
     filters: { flags: ['reviewed'] },
   },
+  {
+    label: 'Assigned to you',
+    href: `${APPLICATIONS}?assigned=me`,
+    filters: { assigned: ['me'] },
+  },
 ]
 
 export async function loadClerkSection(ctx: HomeContext): Promise<HomeSection | null> {
