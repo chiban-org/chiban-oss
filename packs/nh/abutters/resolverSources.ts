@@ -1,4 +1,5 @@
-import { and, asc, eq, inArray, sql } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, isNull, or, type SQL, sql } from 'drizzle-orm'
+import type { PgColumn } from 'drizzle-orm/pg-core'
 import type { DbOrTx } from '@/db/client'
 import {
   applications,
@@ -11,6 +12,7 @@ import {
 } from '@/db/schema'
 import { uuidArray } from '@/db/uuidList'
 import { formApplicantName, namedParty } from '@/features/applications/applicantName'
+import type { CivilDate } from '@/types/civilDate'
 
 export interface ParcelFacts {
   id: string
@@ -42,18 +44,32 @@ export async function loadParcelFacts(
   return new Map(rows.map((r) => [r.id, { ...r, unitCount: byParcel.get(r.id) ?? 0 }]))
 }
 
-export async function loadAssociations(db: DbOrTx, parcelIds: string[]) {
+function inForce(endedOn: PgColumn, today: CivilDate): SQL | undefined {
+  return or(isNull(endedOn), gt(endedOn, today))
+}
+
+export async function loadAssociations(db: DbOrTx, parcelIds: string[], today: CivilDate) {
   if (parcelIds.length === 0) return new Map<string, typeof associationRosters.$inferSelect>()
   const rows = await db
     .select()
     .from(associationRosters)
-    .where(inArray(associationRosters.parcelId, parcelIds))
+    .where(
+      and(
+        inArray(associationRosters.parcelId, parcelIds),
+        inForce(associationRosters.endedOn, today),
+      ),
+    )
+    .orderBy(sql`${associationRosters.endedOn} is null`)
   return new Map(rows.map((r) => [r.parcelId, r]))
 }
 
-export async function loadParks(db: DbOrTx, parcelIds: string[]) {
+export async function loadParks(db: DbOrTx, parcelIds: string[], today: CivilDate) {
   if (parcelIds.length === 0) return new Map<string, typeof parkRosters.$inferSelect>()
-  const rows = await db.select().from(parkRosters).where(inArray(parkRosters.parcelId, parcelIds))
+  const rows = await db
+    .select()
+    .from(parkRosters)
+    .where(and(inArray(parkRosters.parcelId, parcelIds), inForce(parkRosters.endedOn, today)))
+    .orderBy(sql`${parkRosters.endedOn} is null`)
   return new Map(rows.map((r) => [r.parcelId, r]))
 }
 
