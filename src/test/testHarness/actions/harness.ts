@@ -7,10 +7,12 @@ import type { Actor } from '@/features/auth/actor'
 import { seedDefaultGrants } from '@/features/authz/defaultGrants'
 import type { MemoryMailTransport } from '@/features/mail/memoryTransport'
 import type { ObjectStore } from '@/features/storage/objectStore'
+import { clearBoss, setBoss } from '@/jobs/boss'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/minio'
 import { staffWith } from '@/test/staffUsers'
 import { buildForm, type Fields } from './form'
+import { recordingBoss, type SentJob } from './jobs'
 import { CSRF_TOKEN, harnessState, resetRequest } from './state'
 import { recordWrites } from './writes'
 
@@ -19,6 +21,7 @@ export interface ActionHarness {
   readonly pool: Pool
   readonly mail: MemoryMailTransport
   readonly store: ObjectStore
+  readonly jobs: readonly SentJob[]
   signIn(actor: Actor): void
   signOut(): void
   form(fields: Fields, csrfToken?: string | null): FormData
@@ -53,9 +56,13 @@ export function actionHarness(): ActionHarness {
   afterAll(async () => {
     harnessState.db = null
     harnessState.store = null
+    clearBoss()
     await handle?.drop()
   })
-  beforeEach(resetRequest)
+  beforeEach(() => {
+    resetRequest()
+    setBoss(recordingBoss(harnessState.jobs))
+  })
 
   const db = () => required(handle, 'The harness database').db
   return {
@@ -67,6 +74,9 @@ export function actionHarness(): ActionHarness {
     },
     get mail() {
       return harnessState.mail
+    },
+    get jobs() {
+      return harnessState.jobs
     },
     get store() {
       return required(harnessState.store, 'The object store (call useObjectStore at file scope)')

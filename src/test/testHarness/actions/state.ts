@@ -3,6 +3,7 @@ import type { Db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { createMemoryTransport, type MemoryMailTransport } from '@/features/mail/memoryTransport'
 import type { ObjectStore } from '@/features/storage/objectStore'
+import type { SentJob } from './jobs'
 
 export const CSRF_TOKEN = 'tok'
 
@@ -19,6 +20,7 @@ export interface HarnessState {
   headers: Map<string, string>
   mail: MemoryMailTransport
   store: ObjectStore | null
+  jobs: SentJob[]
 }
 
 export const harnessState: HarnessState = {
@@ -28,6 +30,7 @@ export const harnessState: HarnessState = {
   headers: new Map(),
   mail: createMemoryTransport(),
   store: null,
+  jobs: [],
 }
 
 export function resetRequest(): void {
@@ -35,4 +38,5 @@ export function resetRequest(): void {
   harnessState.cookies = new Map([[CSRF_COOKIE, CSRF_TOKEN]])
   harnessState.headers = new Map(Object.entries(SAME_ORIGIN_HEADERS))
   harnessState.mail = createMemoryTransport()
+  harnessState.jobs = []
 }

@@ -22,6 +22,9 @@ vi.mock(
 )
 
 const { guardAction } = await import('@/server/actionGuard')
+const { calendarPushJob } = await import('@/jobs/calendarPush')
+const { enqueue } = await import('@/jobs/defineJob')
+const { ensureQueue } = await import('@/jobs/queues')
 const { getMailTransport } = await import('@/features/mail/transport')
 const { getObjectStore } = await import('@/features/storage/objectStore')
 const { redirect, notFound } = await import('next/navigation')
@@ -104,5 +107,21 @@ describe('actionHarness', () => {
 
   it('serves the object store from a bucket made for this file', () => {
     expect(getObjectStore()).toBe(h.store)
+  })
+
+  it('records the jobs an action enqueues with their dedup keys', async () => {
+    await enqueue(calendarPushJob, { pushId: 'p1', attempts: 0 }, signal)
+    await ensureQueue(calendarPushJob.name)
+    expect(h.jobs).toEqual([
+      {
+        name: calendarPushJob.name,
+        data: { pushId: 'p1', attempts: 0 },
+        singletonKey: calendarPushJob.dedupKey({ pushId: 'p1', attempts: 0 }),
+      },
+    ])
+  })
+
+  it('starts each test with no jobs recorded', () => {
+    expect(h.jobs).toEqual([])
   })
 })

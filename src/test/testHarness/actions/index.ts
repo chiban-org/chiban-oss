@@ -3,6 +3,7 @@ export {
   type ActionCases,
   describeActionCases,
   type Expected,
+  FOREIGN_ORIGIN,
   MISMATCHED_CSRF_TOKEN,
   type Refusals,
   type RoleRule,
@@ -20,7 +21,8 @@ export {
 } from './fields'
 export type { Fields } from './form'
 export { type ActionHarness, actionHarness } from './harness'
+export type { SentJob } from './jobs'
 export { type Outcome, redirectsTo, settle } from './outcome'
-export { STAFF_REFUSALS } from './refusals'
+export { PORTAL_REFUSALS, STAFF_REFUSALS } from './refusals'
 export { isPublicRole, rolesHolding, rolesLacking } from './roles'
 export { CSRF_TOKEN } from './state'
