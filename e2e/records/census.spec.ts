@@ -23,28 +23,54 @@ test.describe('Census report as the clerk', () => {
     ).toBeVisible()
   })
 
-  test('classifies a permit that needs it, refusing counts that do not fit the kind first', async ({
+  test('classifies the issued permit that needs it, refusing counts that do not fit the kind first', async ({
     page,
     db,
   }) => {
     await page.goto(`/staff/reports/census?year=${await townYear(db)}&month=year`)
     const needs = page.getByRole('region', { name: 'Needs classification' })
-    test.skip(
-      (await needs.count()) === 0,
-      'no issued building permit awaits classification in the period',
+    const card = needs.getByRole('listitem').filter({ hasText: /^Permit BP-/ })
+    await expect(card).toHaveCount(1)
+    const number = ((await card.getByText(/^Permit BP-/).textContent()) ?? '').replace(
+      'Permit ',
+      '',
     )
-    const card = needs.getByRole('listitem').first()
     const units = card.getByLabel('Housing units')
     await card.getByLabel('Kind of structure').selectOption('single_family')
     await card.getByLabel('Buildings').fill('1')
     await units.fill('9')
     await card.getByRole('button', { name: 'Save classification' }).click()
     await expectRefusedBeside(units, 'The housing units do not fit that kind of structure')
+    const refused = await db.rows(
+      `select 1 from census_classifications c join applications a on a.id = c.application_id
+       where a.number = $1`,
+      [number],
+    )
+    expect(refused).toHaveLength(0)
+
     await units.fill('1')
+    await card.getByLabel('Valuation in whole dollars').fill('185000')
     await card.getByRole('button', { name: 'Save classification' }).click()
     await expectToast(page, 'Classification saved.')
-    const rows = await db.rows('select 1 from census_classifications')
-    expect(rows.length).toBeGreaterThan(3)
+    const stored = await db.one<{
+      category: string
+      buildings: number
+      housing_units: number
+      valuation_dollars: number
+    }>(
+      `select c.category, c.buildings, c.housing_units, c.valuation_dollars
+       from census_classifications c join applications a on a.id = c.application_id
+       where a.number = $1`,
+      [number],
+    )
+    expect(stored).toEqual({
+      category: 'single_family',
+      buildings: 1,
+      housing_units: 1,
+      valuation_dollars: 185000,
+    })
+    await page.reload()
+    await expect(page.getByRole('region', { name: 'Needs classification' })).toHaveCount(0)
   })
 })
 
