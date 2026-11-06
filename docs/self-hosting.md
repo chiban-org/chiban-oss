@@ -203,8 +203,9 @@ The mirroring advice for the object storage image above applies to backups too: 
 
 Installs made before the switch to Garage keep their files in the old `miniodata` volume. To move them:
 
-1. On the old stack, take a backup with `./backup.sh` and decrypt it as in step 2 above.
-2. Update the deploy files, then in `.env` replace `MINIO_IMAGE`, `MC_IMAGE`, `MINIO_ROOT_USER`, and `MINIO_ROOT_PASSWORD` with the settings from the current `.env.example`: `GARAGE_IMAGE`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `GARAGE_RPC_SECRET`, and `GARAGE_ADMIN_TOKEN`.
-3. Deploy an image that includes Garage support with `./deploy.sh --image ...`. Documents do not open until the next step.
-4. Copy the files in with the second command of step 4 above. The database does not change.
-5. Once the town's documents open, remove the old containers and volume with `docker compose up -d --remove-orphans` and `docker volume rm <project>_miniodata`.
+1. Stop the application and worker with `docker compose stop app worker`, so no file is written to MinIO after the backup is taken.
+2. Take a backup with `./backup.sh` and decrypt it as in step 2 above.
+3. Update the deploy files, then in `.env` replace `MINIO_IMAGE`, `MC_IMAGE`, `MINIO_ROOT_USER`, and `MINIO_ROOT_PASSWORD` with the settings from the current `.env.example`: `GARAGE_IMAGE`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `GARAGE_RPC_SECRET`, and `GARAGE_ADMIN_TOKEN`.
+4. Deploy an image that includes Garage support with `./deploy.sh --image ...`. The deploy script does not restart Caddy, so recreate it to load the new storage upstream: `docker compose up -d --force-recreate caddy`. Existing documents do not open until the next step.
+5. Copy the files in with the second command of step 4 above. The database does not change.
+6. Once the town's documents open, remove the old containers and volume with `docker compose up -d --remove-orphans` and `docker volume rm <project>_miniodata`.
