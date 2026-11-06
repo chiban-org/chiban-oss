@@ -170,7 +170,10 @@ describe('inspection actions', () => {
     const r = await actions.recordResultAction(
       form({ inspectionId: 'nope', expectedRowVersion: 'x', result: 'maybe' }),
     )
-    expect(r).toEqual({ ok: false, error: 'Check the form fields and try again.' })
+    expect(r).toMatchObject({
+      ok: false,
+      fieldErrors: { inspectionId: 'Choose an inspection.', result: 'Choose a result.' },
+    })
   })
 
   it('the photo intent action is forbidden for an inspector who is not assigned', async () => {

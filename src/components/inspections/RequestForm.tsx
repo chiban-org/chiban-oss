@@ -5,7 +5,6 @@ import { AreaField, TextField } from '@/components/staff/fields'
 import { Label } from '@/components/ui/label'
 import { Legend } from '@/components/ui/legend'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { RequiredMark } from '@/components/ui/required-mark'
 import {
   Select,
   SelectContent,

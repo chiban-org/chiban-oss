@@ -9,41 +9,62 @@ import { publishConfig } from '@/features/config/publish'
 import { fieldErrorsFor } from '@/features/config/publishErrors'
 import { saveDraft } from '@/features/config/store'
 import { inspectionErrorCopy } from '@/features/inspections/errorCopy'
-import {
-  parseAccountForm,
-  parseCalendarForm,
-  parseCancelForm,
-  parseCertificateForm,
-  parseRequestForm,
-  parseScheduleForm,
-} from '@/features/inspections/forms'
+import { parseAccountForm, parseCalendarForm } from '@/features/inspections/forms'
 import { requestInspection } from '@/features/inspections/requestInspection'
 import { cancelInspection, scheduleInspection } from '@/features/inspections/schedule'
+import {
+  CANCEL_FORM,
+  certificateForm,
+  SCHEDULE_FORM,
+  STAFF_REQUEST_FORM,
+} from '@/features/inspections/staffForms'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { enqueueCalendarPushes } from '@/jobs/calendarPush'
 import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
+import { refuseField, runStaffForm } from '@/server/formInput'
+import { runStaffFormToday } from '@/server/formInputToday'
 
 const INVALID: ActionResult = { ok: false, error: errorCopy('invalid_input') }
-const STAFF_CHANNELS = ['phone', 'counter'] as const
 
 function failure(code: string): { ok: false; error: string } {
   return { ok: false, error: inspectionErrorCopy(code) }
 }
 
+function refused(code: string, field: string): ActionResult {
+  return refuseField(field, inspectionErrorCopy(code))
+}
+
 export async function requestInspectionAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const input = parseRequestForm(formData, STAFF_CHANNELS)
-    if (input === null) return INVALID
-    const made = await requestInspection(db, actor, input, signal)
-    return made.ok ? { ok: true, message: 'Request taken.' } : failure(made.error)
+  return await runStaffForm(formData, STAFF_REQUEST_FORM, async ({ db, actor, signal }, input) => {
+    const { preferredDate, contactPhone, accessNotes, reinspectionOf, ...rest } = input
+    const made = await requestInspection(
+      db,
+      actor,
+      {
+        ...rest,
+        ...(preferredDate === null ? {} : { preferredDate }),
+        ...(contactPhone === null ? {} : { contactPhone }),
+        ...(accessNotes === null ? {} : { accessNotes }),
+        ...(reinspectionOf === null ? {} : { reinspectionOf }),
+      },
+      signal,
+    )
+    if (made.ok) return { ok: true, message: 'Request taken.' }
+    return made.error === 'preferred_date_unavailable'
+      ? refused(made.error, 'preferredDate')
+      : failure(made.error)
   })
 }
 
 export async function scheduleInspectionAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const input = parseScheduleForm(formData)
-    if (input === null) return INVALID
-    const booked = await scheduleInspection(db, actor, input, signal)
+  return await runStaffForm(formData, SCHEDULE_FORM, async ({ db, actor, signal }, input) => {
+    const { offGridReason, ...rest } = input
+    const booked = await scheduleInspection(
+      db,
+      actor,
+      { ...rest, ...(offGridReason === null ? {} : { offGrid: { reason: offGridReason } }) },
+      signal,
+    )
     if (!booked.ok) return failure(booked.error)
     await enqueueCalendarPushes(booked.value.pushIds, signal)
     return { ok: true, message: 'Scheduled. The inspector gets a calendar invite.' }
@@ -51,9 +72,7 @@ export async function scheduleInspectionAction(formData: FormData): Promise<Acti
 }
 
 export async function cancelInspectionAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const input = parseCancelForm(formData)
-    if (input === null) return INVALID
+  return await runStaffForm(formData, CANCEL_FORM, async ({ db, actor, signal }, input) => {
     const cancelled = await cancelInspection(db, actor, { ...input, reason: 'staff' }, signal)
     if (!cancelled.ok) return failure(cancelled.error)
     await enqueueCalendarPushes(cancelled.value.pushIds, signal)
@@ -62,16 +81,20 @@ export async function cancelInspectionAction(formData: FormData): Promise<Action
 }
 
 export async function issueCertificateAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const input = parseCertificateForm(formData)
-    if (input === null) return INVALID
-    const issued = await issueCertificateOfOccupancy(db, getObjectStore(), actor, input, signal)
-    if (issued.ok) return { ok: true, message: `Certificate ${issued.value.number} issued.` }
-    if (typeof issued.error === 'object') {
-      return { ok: false, error: 'The permit cannot be closed yet. Check its open gates.' }
-    }
-    return failure(issued.error)
-  })
+  return await runStaffFormToday(
+    formData,
+    certificateForm,
+    async ({ db, actor, signal }, input) => {
+      const issued = await issueCertificateOfOccupancy(db, getObjectStore(), actor, input, signal)
+      if (issued.ok) return { ok: true, message: `Certificate ${issued.value.number} issued.` }
+      if (typeof issued.error === 'object') {
+        return { ok: false, error: 'The permit cannot be closed yet. Check its open gates.' }
+      }
+      return issued.error === 'future_date'
+        ? refused(issued.error, 'issuedOn')
+        : failure(issued.error)
+    },
+  )
 }
 
 export async function saveInspectorCalendarAction(formData: FormData): Promise<ActionResult> {

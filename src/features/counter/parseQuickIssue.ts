@@ -1,15 +1,67 @@
+import { z } from 'zod'
 import { LICENSE_RESULTS, type LicenseResult } from '@/db/schema/licenseChecks'
 import type { QuickIssueInput } from '@/features/counter/quickIssue'
+import { blankAsNull, inputField } from '@/features/input/field'
+import { optionalRecordId } from '@/features/input/optionalRecordId'
+import {
+  choice,
+  emailAddress,
+  optionalMoneyCents,
+  optionalText,
+  recordId,
+  requiredText,
+} from '@/features/input/schemas'
 import { dollarsToCents } from '@/lib/money'
+import { type ActionFailure, parseForm } from '@/server/formInput'
 import { err, ok, type Result } from '@/types/result'
-import { isUuid } from '@/utils/uuid'
 
 const VALUE_PREFIX = 'value.'
+const LICENSE_FIELDS = ['licenseNumber', 'licenseType', 'licenseResult'] as const
 
-function field(data: FormData, key: string): string {
-  const value = data.get(key)
-  return typeof value === 'string' ? value.trim() : ''
+export { dollarsToCents }
+
+function optionalEmail(noun: string) {
+  const email = emailAddress(noun)
+  return inputField(
+    blankAsNull((raw) => {
+      const parsed = email.safeParse(raw)
+      return parsed.success ? ok(parsed.data) : err(parsed.error.issues[0]?.message ?? '')
+    }),
+  )
 }
+
+const QUICK_ISSUE_FORM = z
+  .object({
+    parcelId: recordId('a parcel'),
+    typeKey: requiredText('a permit type', { max: 100 }),
+    contractorName: requiredText('the contractor name', { max: 200 }),
+    contractorEmail: optionalEmail('the contractor email'),
+    licenseNumber: optionalText('the license number', { max: 100 }),
+    licenseType: optionalText('the license type', { max: 100 }),
+    licenseResult: optionalText('the result of the state lookup', { max: 50 }),
+    licenseNote: optionalText('the license note', { max: 500 }),
+    payerName: optionalText('the payer name', { max: 200 }),
+    method: choice('a payment method', ['cash', 'check', 'card'] as const),
+    checkNumber: optionalText('the check number', { max: 50 }),
+    tendered: optionalMoneyCents('the cash tendered'),
+    applicationId: optionalRecordId('Start the permit again from the parcel.'),
+  })
+  .superRefine((value, ctx) => {
+    if (value.method === 'check' && value.checkNumber === null) {
+      ctx.addIssue({ code: 'custom', path: ['checkNumber'], message: 'Enter the check number.' })
+    }
+    const result = value.licenseResult
+    if (result !== null && !(LICENSE_RESULTS as readonly string[]).includes(result)) {
+      ctx.addIssue({ code: 'custom', path: ['licenseResult'], message: 'Choose a result.' })
+    }
+    const given = LICENSE_FIELDS.filter((f) => value[f] !== null)
+    if (given.length === 0 || given.length === LICENSE_FIELDS.length) return
+    for (const field of LICENSE_FIELDS) {
+      if (value[field] === null) {
+        ctx.addIssue({ code: 'custom', path: [field], message: 'Fill in all the license fields.' })
+      }
+    }
+  })
 
 function workValues(data: FormData): Record<string, unknown> {
   const values: Record<string, unknown> = {}
@@ -22,48 +74,39 @@ function workValues(data: FormData): Record<string, unknown> {
   return values
 }
 
-function paymentOf(data: FormData): QuickIssueInput['payment'] | null {
-  const method = field(data, 'method')
-  if (method === 'card') return { method: 'card' }
-  if (method === 'check') return { method: 'check', checkNumber: field(data, 'checkNumber') }
-  if (method !== 'cash') return null
-  const tendered = field(data, 'tendered')
-  if (tendered === '') return { method: 'cash' }
-  const cents = dollarsToCents(tendered)
-  return cents === null ? null : { method: 'cash', tenderedCents: cents }
+function paymentOf(form: z.output<typeof QUICK_ISSUE_FORM>): QuickIssueInput['payment'] {
+  if (form.method === 'card') return { method: 'card' }
+  if (form.method === 'check') return { method: 'check', checkNumber: form.checkNumber ?? '' }
+  return form.tendered === null
+    ? { method: 'cash' }
+    : { method: 'cash', tenderedCents: form.tendered }
 }
 
-export { dollarsToCents }
-
-function licenseOf(data: FormData): QuickIssueInput['license'] | null | undefined {
-  const number = field(data, 'licenseNumber')
-  const type = field(data, 'licenseType')
-  const result = field(data, 'licenseResult')
-  if (number === '' && type === '' && result === '') return undefined
-  if (number === '' || type === '' || !(LICENSE_RESULTS as readonly string[]).includes(result)) {
-    return null
-  }
-  const note = field(data, 'licenseNote')
-  return { number, type, result: result as LicenseResult, ...(note === '' ? {} : { note }) }
-}
-
-export function parseQuickIssue(data: FormData): Result<QuickIssueInput, 'invalid_input'> {
-  const parcelId = field(data, 'parcelId')
-  const payment = paymentOf(data)
-  const license = licenseOf(data)
-  const name = field(data, 'contractorName')
-  const fieldsOk = isUuid(parcelId) && name !== '' && field(data, 'typeKey') !== ''
-  if (!fieldsOk || payment === null || license === null) return err('invalid_input')
-  const retry = field(data, 'applicationId')
-  const email = field(data, 'contractorEmail')
+export function parseQuickIssue(data: FormData): Result<QuickIssueInput, ActionFailure> {
+  const parsed = parseForm(QUICK_ISSUE_FORM, data)
+  if (!parsed.ok) return parsed
+  const form = parsed.value
+  const { licenseNumber, licenseType, licenseResult, licenseNote } = form
   return ok({
-    parcelId,
-    applicationTypeKey: field(data, 'typeKey'),
+    parcelId: form.parcelId,
+    applicationTypeKey: form.typeKey,
     values: workValues(data),
-    contractor: { name, ...(email === '' ? {} : { email }) },
-    ...(license === undefined ? {} : { license }),
-    payerName: field(data, 'payerName') || name,
-    payment,
-    ...(isUuid(retry) ? { applicationId: retry } : {}),
+    contractor: {
+      name: form.contractorName,
+      ...(form.contractorEmail === null ? {} : { email: form.contractorEmail }),
+    },
+    ...(licenseNumber === null || licenseType === null || licenseResult === null
+      ? {}
+      : {
+          license: {
+            number: licenseNumber,
+            type: licenseType,
+            result: licenseResult as LicenseResult,
+            ...(licenseNote === null ? {} : { note: licenseNote }),
+          },
+        }),
+    payerName: form.payerName ?? form.contractorName,
+    payment: paymentOf(form),
+    ...(form.applicationId === null ? {} : { applicationId: form.applicationId }),
   })
 }

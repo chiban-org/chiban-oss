@@ -7,28 +7,32 @@ import { createFeeOverride } from '@/features/fees/feeOverrides'
 import {
   checkbox,
   choice,
+  optionalMoneyCents,
   optionalText,
   optionalWholeNumber,
   recordId,
   requiredText,
 } from '@/features/input/schemas'
 import { formatCivilDate } from '@/lib/formatDate'
-import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
+import { type ActionResult, errorCopy } from '@/server/actionRunner'
 import { refuseField, runStaffForm } from '@/server/formInput'
 import type { CivilDate } from '@/types/civilDate'
 import type { Result } from '@/types/result'
-import { done, INVALID, idOf } from './actionInput'
+import { applicationIdField, outcome } from './actionInput'
 
-const MAX_CENT_DIGITS = 2
-
-function cents(value: string): number | null {
-  const [dollars = '', fraction = '', ...rest] = value.split('.')
-  const wholeOk = rest.length === 0 && /^\d+$/.test(dollars)
-  const fractionOk =
-    !value.includes('.') ||
-    (fraction.length > 0 && fraction.length <= MAX_CENT_DIGITS && /^\d+$/.test(fraction))
-  return wholeOk && fractionOk ? Math.round(Number(value) * 100) : null
-}
+const FEE_OVERRIDE_FORM = z
+  .object({
+    applicationId: applicationIdField(),
+    feeCode: requiredText('a fee', { max: 100 }),
+    kind: choice('an override', ['waive', 'set_amount'] as const),
+    amount: optionalMoneyCents('the amount'),
+    reason: requiredText('a reason', { max: 2000 }),
+  })
+  .superRefine((value, ctx) => {
+    if (value.kind === 'set_amount' && value.amount === null) {
+      ctx.addIssue({ code: 'custom', path: ['amount'], message: errorCopy('amount_required') })
+    }
+  })
 
 const ADJUSTMENT_FORM = z.object({
   clockId: recordId('a clock'),
@@ -88,25 +92,22 @@ export async function adjustClockAction(formData: FormData): Promise<ActionResul
 }
 
 export async function feeOverrideAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const applicationId = idOf(formData)
-    const kind = text(formData, 'kind')
-    if (applicationId === null || (kind !== 'waive' && kind !== 'set_amount')) return INVALID
-    const amount = text(formData, 'amount')
-    const amountCents = amount === '' ? null : cents(amount)
-    if (amount !== '' && amountCents === null) return INVALID
+  return await runStaffForm(formData, FEE_OVERRIDE_FORM, async ({ db, actor, signal }, input) => {
     const result = await createFeeOverride(
       db,
       actor,
       {
-        applicationId,
-        feeCode: text(formData, 'feeCode'),
-        kind,
-        ...(amountCents === null ? {} : { amountCents }),
-        reason: text(formData, 'reason'),
+        applicationId: input.applicationId,
+        feeCode: input.feeCode,
+        kind: input.kind,
+        ...(input.amount === null ? {} : { amountCents: input.amount }),
+        reason: input.reason,
       },
       signal,
     )
-    return done(result, 'Fee override saved. It applies at the next assessment.')
+    return outcome(result, 'Fee override saved. It applies at the next assessment.', {
+      reason_required: 'reason',
+      amount_required: 'amount',
+    })
   })
 }

@@ -7,8 +7,9 @@ import { MAX_ADJUSTMENT_DAYS } from '@/features/clocks/adjustmentKinds'
 import type { AdjustmentKind } from '@/features/clocks/explainClock'
 import { partyLine } from '@/features/projects/partyRoleLabels'
 import { formatCivilDate } from '@/lib/formatDate'
-import { applyConditionAction, markCompleteAction, setConditionStatusAction } from './actions'
+import { markCompleteAction } from './actions'
 import { adjustClockAction } from './clockFeeActions'
+import { applyConditionAction, setConditionStatusAction } from './conditionActions'
 
 export function PartiesPanel({ view }: { view: StaffApplicationView }) {
   return (
@@ -115,6 +116,8 @@ export function ClockAdjustForm({
 
 export function ConditionsPanel({ view }: { view: StaffApplicationView }) {
   const editable = view.permissions.canIssue && !TERMINAL_STATES.includes(view.state)
+  const appliedCodes = new Set(view.conditions.map((c) => c.code))
+  const available = view.conditionLibrary.filter((c) => !appliedCodes.has(c.code))
   return (
     <section aria-label="Conditions" id="conditions">
       <h2>Conditions</h2>
@@ -146,7 +149,7 @@ export function ConditionsPanel({ view }: { view: StaffApplicationView }) {
           </li>
         ))}
       </ul>
-      {!editable || view.conditionLibrary.length === 0 ? null : (
+      {!editable || available.length === 0 ? null : (
         <details>
           <summary>Apply a condition</summary>
           <ActionForm action={applyConditionAction} submitLabel="Apply condition">
@@ -154,7 +157,7 @@ export function ConditionsPanel({ view }: { view: StaffApplicationView }) {
             <SelectField
               label="Condition"
               name="code"
-              options={view.conditionLibrary.map((c): [string, string] => [c.code, c.text])}
+              options={available.map((c): [string, string] => [c.code, c.text])}
             />
           </ActionForm>
         </details>

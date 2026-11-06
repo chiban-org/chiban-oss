@@ -48,6 +48,8 @@ vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.acto
 
 const actions = {
   ...(await import('@/app/(staff)/staff/applications/[applicationId]/actions')),
+  ...(await import('@/app/(staff)/staff/applications/[applicationId]/gateActions')),
+  ...(await import('@/app/(staff)/staff/applications/[applicationId]/conditionActions')),
   ...(await import('@/app/(staff)/staff/applications/[applicationId]/clockFeeActions')),
   ...(await import('@/app/(staff)/staff/applications/[applicationId]/buildingActions')),
 }

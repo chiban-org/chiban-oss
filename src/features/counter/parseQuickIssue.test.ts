@@ -66,23 +66,25 @@ describe('parseQuickIssue', () => {
     expect(card.ok && card.value.payment).toEqual({ method: 'card' })
   })
 
-  it('rejects a bad parcel id, license result, method, or tendered amount', () => {
-    const cases: Record<string, string>[] = [
-      { parcelId: 'x' },
-      { licenseResult: 'maybe' },
-      { licenseResult: '' },
-      { licenseNumber: '' },
-      { licenseType: '' },
-      { method: 'barter' },
-      { tendered: 'lots' },
-      { contractorName: '' },
-    ]
-    for (const bad of cases) {
-      expect(parseQuickIssue(form({ ...BASE, ...bad }))).toEqual({
-        ok: false,
-        error: 'invalid_input',
-      })
-    }
+  it.each([
+    [{ parcelId: 'x' }, 'parcelId', 'Choose a parcel.'],
+    [{ licenseResult: 'maybe' }, 'licenseResult', 'Choose a result.'],
+    [{ licenseResult: '' }, 'licenseResult', 'Fill in all the license fields.'],
+    [{ licenseNumber: '' }, 'licenseNumber', 'Fill in all the license fields.'],
+    [{ licenseType: '' }, 'licenseType', 'Fill in all the license fields.'],
+    [{ method: 'barter' }, 'method', 'Choose a payment method.'],
+    [{ tendered: 'lots' }, 'tendered', 'Enter the cash tendered in dollars and cents, like 25.00.'],
+    [{ contractorName: '' }, 'contractorName', 'Enter the contractor name.'],
+    [{ contractorName: '   ' }, 'contractorName', 'Enter the contractor name.'],
+    [
+      { contractorEmail: 'nope' },
+      'contractorEmail',
+      'Enter the contractor email like name@example.com.',
+    ],
+    [{ method: 'check', checkNumber: '' }, 'checkNumber', 'Enter the check number.'],
+  ])('refuses %j beside %s', (bad, field, message) => {
+    const parsed = parseQuickIssue(form({ ...BASE, ...bad }))
+    expect(parsed).toMatchObject({ ok: false, error: { fieldErrors: { [field]: message } } })
   })
 
   it('takes no license when every license field is blank', () => {
@@ -92,13 +94,16 @@ describe('parseQuickIssue', () => {
     expect(parsed.ok && 'license' in parsed.value).toBe(false)
   })
 
-  it('carries a retry application id only when it is a uuid', () => {
+  it('carries a retry application id and refuses one that is not a uuid', () => {
     const id = '00000000-0000-4000-8000-0000000000aa'
     expect(parseQuickIssue(form({ ...BASE, applicationId: id }))).toMatchObject({
       ok: true,
       value: { applicationId: id },
     })
     const bad = parseQuickIssue(form({ ...BASE, applicationId: 'not-a-uuid' }))
-    expect(bad.ok && 'applicationId' in bad.value).toBe(false)
+    expect(bad).toMatchObject({
+      ok: false,
+      error: { fieldErrors: { applicationId: expect.any(String) } },
+    })
   })
 })

@@ -18,14 +18,8 @@ import { searchExample } from '@/features/parcels/searchExample'
 import { searchParcels } from '@/features/parcels/searchParcels'
 import { requireStaffContext, type StaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
-import {
-  checkAction,
-  completeAction,
-  quickIssueAction,
-  readerAction,
-  reconnectAction,
-  sendClaimAction,
-} from './actions'
+import { completeAction, quickIssueAction, sendClaimAction } from './actions'
+import { checkAction, readerAction, reconnectAction } from './readerActions'
 
 export const metadata: Metadata = { title: 'Counter' }
 
