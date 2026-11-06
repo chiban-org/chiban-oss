@@ -164,7 +164,19 @@ describe('Uploader', () => {
     fireEvent.change(screen.getByLabelText('File'), {
       target: { files: [file('notes.txt', 10, 'text/plain')] },
     })
-    expect(screen.getByRole('alert').textContent).toContain('notes.txt is not an accepted file type.')
+    expect(screen.getByRole('alert').textContent).toContain(
+      'notes.txt is not an accepted file type.',
+    )
     expect(screen.queryByText('Choose a file first.')).toBeNull()
+  })
+
+  it('sends a title no longer than the server accepts when the file name is very long', async () => {
+    const createIntent = vi.fn((_form: FormData) =>
+      Promise.resolve({ ok: false as const, error: 'stop here' }),
+    )
+    setup({ createIntent, finalize: vi.fn() })
+    choose(file(`${'a'.repeat(400)}.pdf`, 100))
+    await waitFor(() => expect(createIntent).toHaveBeenCalled())
+    expect(String(createIntent.mock.calls[0]?.[0].get('title'))).toHaveLength(300)
   })
 })

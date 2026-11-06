@@ -7,6 +7,7 @@ import { FilePicker } from '@/components/ui/file-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { RecordRef } from '@/features/documents/types'
+import { TITLE_MAX } from '@/features/documents/uploadLimits'
 import { attempt } from '@/lib/attempt'
 
 export type IntentResult =
@@ -85,7 +86,7 @@ export function Uploader({
     data.set('csrf_token', csrf)
     data.set('targetKind', target.kind)
     data.set('targetId', target.id)
-    data.set('title', title.trim() === '' ? chosen.name : title.trim())
+    data.set('title', (title.trim() === '' ? chosen.name : title.trim()).slice(0, TITLE_MAX))
     data.set('filename', chosen.name)
     data.set('contentType', chosen.type)
     data.set('sizeBytes', String(chosen.size))
@@ -147,6 +148,7 @@ export function Uploader({
         <Input
           id={titleId}
           value={title}
+          maxLength={TITLE_MAX}
           className="min-h-11 text-base"
           onChange={(event) => setTitle(event.target.value)}
         />

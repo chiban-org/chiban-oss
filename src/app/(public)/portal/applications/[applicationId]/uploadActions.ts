@@ -1,11 +1,13 @@
 'use server'
 
+import { z } from 'zod'
 import { env } from '@/config/env'
+import { FILENAME_MAX, TITLE_MAX } from '@/features/documents/uploadLimits'
 import { createUploadIntent, finalizeUpload } from '@/features/documents/uploads'
+import { choice, optionalText, recordId, requiredText, wholeNumber } from '@/features/input/schemas'
 import { getObjectStore } from '@/features/storage/objectStore'
-import { errorCopy, text } from '@/server/actionRunner'
+import { parseForm } from '@/server/formInput'
 import { withPortalActor } from '@/server/portalAction'
-import { isUuid } from '@/utils/uuid'
 
 export type IntentResponse =
   | { ok: true; intentId: string; url: string; headers: Record<string, string> }
@@ -13,6 +15,8 @@ export type IntentResponse =
 export type FinalizeResponse = { ok: true } | { ok: false; error: string }
 
 const MB = 1024 * 1024
+
+const CONTENT_TYPE_MAX = 200
 
 const CANNOT_ADD = 'You cannot add files here.'
 
@@ -35,26 +39,35 @@ const FINALIZE_COPY = {
   type_mismatch: 'That file is not the kind of file it says it is.',
 } as const
 
+const IntentForm = z.object({
+  targetKind: choice('where to attach the file', ['application', 'project']),
+  targetId: recordId('a record'),
+  title: requiredText('a document name', { max: TITLE_MAX }),
+  filename: requiredText('a file name', { max: FILENAME_MAX }),
+  contentType: optionalText('a file type', { max: CONTENT_TYPE_MAX }),
+  sizeBytes: wholeNumber('the file size', { min: 0, max: Number.MAX_SAFE_INTEGER }),
+})
+
+const FinalizeForm = z.object({ intentId: recordId('an upload') })
+
 export async function createUploadIntentAction(formData: FormData): Promise<IntentResponse> {
   return await withPortalActor(
     formData,
     (error): IntentResponse => ({ ok: false, error }),
     async ({ db, actor, signal }) => {
-      const kind = text(formData, 'targetKind')
-      const id = text(formData, 'targetId')
-      if ((kind !== 'application' && kind !== 'project') || !isUuid(id)) {
-        return { ok: false, error: errorCopy('invalid_input') }
-      }
+      const parsed = parseForm(IntentForm, formData)
+      if (!parsed.ok) return { ok: false, error: parsed.error.error }
+      const { targetKind, targetId, title, filename, contentType, sizeBytes } = parsed.value
       const made = await createUploadIntent(
         db,
         getObjectStore(),
         actor,
         {
-          target: { kind, id },
-          title: text(formData, 'title'),
-          filename: text(formData, 'filename'),
-          contentType: text(formData, 'contentType'),
-          sizeBytes: Number(text(formData, 'sizeBytes')),
+          target: { kind: targetKind, id: targetId },
+          title,
+          filename,
+          contentType: contentType ?? '',
+          sizeBytes,
         },
         signal,
       )
@@ -68,8 +81,9 @@ export async function finalizeUploadAction(formData: FormData): Promise<Finalize
     formData,
     (error): FinalizeResponse => ({ ok: false, error }),
     async ({ db, actor, signal }) => {
-      const intentId = text(formData, 'intentId')
-      if (!isUuid(intentId)) return { ok: false, error: errorCopy('invalid_input') }
+      const parsed = parseForm(FinalizeForm, formData)
+      if (!parsed.ok) return { ok: false, error: parsed.error.error }
+      const { intentId } = parsed.value
       const done = await finalizeUpload(db, getObjectStore(), actor, { intentId }, signal)
       return done.ok ? { ok: true } : { ok: false, error: FINALIZE_COPY[done.error] }
     },
