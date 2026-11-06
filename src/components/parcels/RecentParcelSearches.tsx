@@ -58,9 +58,11 @@ export function RecentParcelSearches({
           asChild
           variant="outline"
           size="xs"
-          className="text-sm font-normal no-underline"
+          className="max-w-full shrink text-sm font-normal no-underline"
         >
-          <Link href={searchHref(hrefBase, param, q, query)}>{q}</Link>
+          <Link href={searchHref(hrefBase, param, q, query)} title={q}>
+            <span className="truncate">{q}</span>
+          </Link>
         </Button>
       ))}
       <button

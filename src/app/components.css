@@ -1,4 +1,8 @@
 @layer components {
+  :where(main) {
+    overflow-wrap: break-word;
+  }
+
   :where(main) > :where(* + *) {
     margin-top: calc(var(--space-base) * 5);
   }
@@ -230,6 +234,10 @@
     padding-block: calc(var(--space-base) * 2.5);
     padding-inline-end: calc(var(--space-base) * 4);
     vertical-align: top;
+  }
+
+  :where(main) :where(td) {
+    overflow-wrap: anywhere;
   }
 
   :where(main) :where(thead th) {
