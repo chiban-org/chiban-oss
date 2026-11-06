@@ -16,19 +16,23 @@ export interface ReconciliationReport {
   documentCounts: Record<string, number>
 }
 
-function legacyNumbersOf(bytes: Uint8Array): string[] | null {
+export type ListParseError = 'malformed' | 'no_rows' | 'missing_legacy_number'
+
+function legacyNumbersOf(bytes: Uint8Array): Result<string[], ListParseError> {
   try {
-    const records = parse(Buffer.from(bytes), {
-      columns: true,
+    const table = parse(Buffer.from(bytes), {
+      columns: false,
       bom: true,
       skip_empty_lines: true,
       trim: true,
-    }) as Record<string, string>[]
-    if (records.length === 0 || records[0] === undefined || !('legacy_number' in records[0]))
-      return null
-    return [...new Set(records.map((r) => r.legacy_number ?? '').filter((n) => n !== ''))]
+    }) as string[][]
+    const column = table[0]?.indexOf('legacy_number') ?? -1
+    if (column < 0) return err('missing_legacy_number')
+    if (table.length === 1) return err('no_rows')
+    const numbers = table.slice(1).map((r) => r[column] ?? '')
+    return ok([...new Set(numbers.filter((n) => n !== ''))])
   } catch {
-    return null
+    return err('malformed')
   }
 }
 
@@ -37,12 +41,13 @@ export async function reconcileCutover(
   actor: Actor,
   input: { listBytes: Uint8Array },
   signal: AbortSignal,
-): Promise<Result<{ id: string; report: ReconciliationReport }, 'forbidden' | 'malformed'>> {
+): Promise<Result<{ id: string; report: ReconciliationReport }, 'forbidden' | ListParseError>> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'cutover.import', signal)
   if (!allowed.ok) return err('forbidden')
-  const listed = legacyNumbersOf(input.listBytes)
-  if (listed === null) return err('malformed')
+  const parsed = legacyNumbersOf(input.listBytes)
+  if (!parsed.ok) return parsed
+  const listed = parsed.value
   const imported = await db.select().from(cutoverRows)
   const importedNumbers = new Set(imported.map((r) => r.legacyNumber))
   const listedSet = new Set(listed)

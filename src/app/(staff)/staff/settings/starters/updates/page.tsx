@@ -1,5 +1,5 @@
 import type { Metadata } from 'next'
-import { applyStarterPathsAction } from '@/app/(staff)/staff/settings/actions'
+import { applyStarterPathsAction } from '@/app/(staff)/staff/settings/starterActions'
 import { ActionForm } from '@/components/ActionForm'
 import { StarterDiffReview } from '@/components/config/StarterDiffReview'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'

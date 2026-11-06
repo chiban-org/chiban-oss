@@ -32,6 +32,7 @@ function DesignationFields({ current, today }: { current?: DesignationRow; today
         name="adoptedOn"
         type="date"
         defaultValue={current?.adoptedOn ?? today}
+        max={today}
         required
       />
     </>

@@ -25,7 +25,7 @@ vi.mock('next/navigation', () => ({
     throw new Error(`NEXT_REDIRECT:${url}`)
   },
 }))
-vi.mock('@/app/(staff)/staff/settings/actions', () => ({
+vi.mock('@/app/(staff)/staff/settings/starterActions', () => ({
   adoptStarterAction: () => Promise.resolve({ ok: true, message: '' }),
 }))
 

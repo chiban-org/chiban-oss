@@ -2,8 +2,13 @@
 
 import { rollbackAction } from '@/app/(staff)/staff/settings/actions'
 import { ActionForm } from '@/components/ActionForm'
-import { publishImpact } from '@/components/config/PublishBar'
 import type { ConfigKind } from '@/features/config/kinds'
+
+function restoreImpact(pinned: boolean): string {
+  return pinned
+    ? 'New applications use it from now on. Open applications keep the version they started under.'
+    : 'Chiban starts using it now.'
+}
 
 export function RestoreVersion({
   kind,
@@ -24,7 +29,7 @@ export function RestoreVersion({
       compact
       confirm={{
         title: `${label}?`,
-        body: `Version ${String(version)} is published again as a new version, replacing what is published now. ${publishImpact(pinned)}`,
+        body: `Version ${String(version)} goes live at once as a new version, replacing what is published now. ${restoreImpact(pinned)}`,
         confirmLabel: label,
       }}
     >

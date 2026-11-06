@@ -9,7 +9,6 @@ import { FieldError, type FieldErrors } from '@/components/config/primitives'
 import { RequiredNote } from '@/components/ui/required-mark'
 import { useHydrated } from '@/components/useHydrated'
 import type { EditorContext } from '@/features/config/editorContext'
-import { issueFieldName } from '@/features/config/issueFieldNames'
 import { type ConfigKind, isPinnedKind } from '@/features/config/kinds'
 import type { ActionResult } from '@/server/actionRunner'
 
@@ -57,8 +56,14 @@ export function ConfigEditorForm({
     null,
   )
   const hydrated = useHydrated()
+  const [dismissed, setDismissed] = useState<ActionResult | null>(null)
+  const edit = (next: unknown) => {
+    setBody(next)
+    setDismissed(result)
+  }
   const Editor = CONFIG_EDITORS[kind]
-  const errors: FieldErrors = result !== null && !result.ok ? (result.fieldErrors ?? {}) : {}
+  const refused = result !== null && !result.ok && result !== dismissed
+  const errors: FieldErrors = refused ? (result.fieldErrors ?? {}) : {}
   const listed = Object.entries(errors).filter(([path]) => path !== '_form')
   return (
     <form
@@ -74,7 +79,7 @@ export function ConfigEditorForm({
       <EditorContextProvider value={context}>
         <Editor
           body={body}
-          onChange={setBody}
+          onChange={edit}
           issues={Object.entries(errors).map(([path, message]) => ({ path, message }))}
         />
       </EditorContextProvider>
@@ -82,13 +87,13 @@ export function ConfigEditorForm({
       <PublishBar
         pinned={isPinnedKind(kind)}
         disabled={pending || !hydrated}
-        status={statusText(pending, result)}
+        status={statusText(pending, refused || result?.ok === true ? result : null)}
         {...(discard === undefined ? {} : { discard })}
       />
       {listed.length === 0 ? null : (
         <ul role="alert" className="mt-2 list-disc pl-5 text-sm text-status-failed-fg">
           {listed.map(([path, message]) => (
-            <li key={path}>{`${issueFieldName(path)}: ${message}`}</li>
+            <li key={path}>{message}</li>
           ))}
         </ul>
       )}

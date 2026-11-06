@@ -5,7 +5,7 @@ import { transactionResult } from '@/db/transactionResult'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { importRow } from '@/features/cutover/importRow'
-import { parseCutoverCsv } from '@/features/cutover/parseRows'
+import { type CutoverParseError, parseCutoverCsv } from '@/features/cutover/parseRows'
 import { err, ok, type Result } from '@/types/result'
 
 export interface CutoverReport {
@@ -34,9 +34,9 @@ async function runRows(
   bytes: Uint8Array,
   signal: AbortSignal,
   now: Date,
-): Promise<Result<CutoverReport, 'malformed'>> {
+): Promise<Result<CutoverReport, CutoverParseError>> {
   const parsed = parseCutoverCsv(bytes)
-  if (!parsed.ok) return err('malformed')
+  if (!parsed.ok) return parsed
   const known = await db
     .select({ legacyNumber: cutoverRows.legacyNumber })
     .from(cutoverRows)
@@ -94,7 +94,7 @@ export async function importCutoverCsv(
   actor: Actor,
   input: { bytes: Uint8Array; dryRun: boolean; now?: Date },
   signal: AbortSignal,
-): Promise<Result<CutoverReport, 'forbidden' | 'malformed'>> {
+): Promise<Result<CutoverReport, 'forbidden' | CutoverParseError>> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'cutover.import', signal)
   if (!allowed.ok) return err('forbidden')

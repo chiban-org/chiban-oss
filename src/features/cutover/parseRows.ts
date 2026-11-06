@@ -7,6 +7,7 @@ import {
   CUTOVER_STATES,
   type CutoverState,
 } from '@/features/cutover/columns'
+import { emailAddress } from '@/features/input/schemas'
 import { type CivilDate, parseCivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -41,6 +42,13 @@ export interface ParsedCutover {
 
 type Raw = Record<string, string>
 
+const EMAIL = emailAddress('an email address')
+
+const EMAIL_COLUMNS = [
+  ['applicant_email', 'invalid_applicant_email'],
+  ['contractor_email', 'invalid_contractor_email'],
+] as const
+
 const clean = (v: string | undefined): string | undefined => {
   const t = v?.trim() ?? ''
   return t === '' ? undefined : t
@@ -55,6 +63,13 @@ function dateOf(raw: Raw, key: string, errors: string[]): CivilDate | null {
     return null
   }
   return parsed.value
+}
+
+function emailErrors(raw: Raw): string[] {
+  return EMAIL_COLUMNS.filter(([column]) => {
+    const email = clean(raw[column])
+    return email !== undefined && !EMAIL.safeParse(email).success
+  }).map(([, code]) => code)
 }
 
 function toRow(raw: Raw, line: number): CutoverRow {
@@ -82,6 +97,7 @@ function toRow(raw: Raw, line: number): CutoverRow {
   for (const [key, value] of Object.entries(raw)) {
     if (key.startsWith('field.') && clean(value) !== undefined) fields[key.slice(6)] = value.trim()
   }
+  errors.push(...emailErrors(raw))
   const legacyNumber = clean(raw.legacy_number) ?? ''
   if (legacyNumber === '') errors.push('legacy_number_required')
   return {
@@ -109,22 +125,32 @@ function toRow(raw: Raw, line: number): CutoverRow {
   }
 }
 
-export function parseCutoverCsv(bytes: Uint8Array): Result<ParsedCutover, 'malformed'> {
+export type CutoverParseError = 'malformed' | 'no_rows' | 'missing_columns'
+
+function recordsOf(bytes: Uint8Array): string[][] | null {
   try {
-    const records = parse(Buffer.from(bytes), {
-      columns: true,
+    return parse(Buffer.from(bytes), {
+      columns: false,
       bom: true,
       skip_empty_lines: true,
       trim: true,
-    }) as Raw[]
-    const first = records[0]
-    const headers = first === undefined ? [] : Object.keys(first)
-    if (CUTOVER_REQUIRED_COLUMNS.some((c) => !headers.includes(c))) return err('malformed')
-    return ok({
-      rows: records.map((raw, i) => toRow(raw, i + 2)),
-      sourceSha256: createHash('sha256').update(bytes).digest('hex'),
-    })
+    }) as string[][]
   } catch {
-    return err('malformed')
+    return null
   }
+}
+
+export function parseCutoverCsv(bytes: Uint8Array): Result<ParsedCutover, CutoverParseError> {
+  const table = recordsOf(bytes)
+  const headers = table?.[0]
+  if (table === null || headers === undefined) return err('malformed')
+  if (CUTOVER_REQUIRED_COLUMNS.some((c) => !headers.includes(c))) return err('missing_columns')
+  if (table.length === 1) return err('no_rows')
+  const records = table
+    .slice(1)
+    .map((cells): Raw => Object.fromEntries(headers.map((header, i) => [header, cells[i] ?? ''])))
+  return ok({
+    rows: records.map((raw, i) => toRow(raw, i + 2)),
+    sourceSha256: createHash('sha256').update(bytes).digest('hex'),
+  })
 }

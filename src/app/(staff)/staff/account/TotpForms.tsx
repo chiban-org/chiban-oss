@@ -1,37 +1,25 @@
 'use client'
 
-import { useActionState } from 'react'
-import { CsrfField } from '@/components/CsrfField'
-import { SubmitButton } from '@/components/SubmitButton'
+import { ActionForm } from '@/components/ActionForm'
 import { TextField } from '@/components/staff/fields'
-import { RequiredNote } from '@/components/ui/required-mark'
-import { useFormAction } from '@/components/useFormAction'
-import { beginTotpAction, confirmTotpAction, type TotpState } from './actions'
-
-const initial: TotpState = { error: null }
-
-function failed(state: TotpState): boolean {
-  return state.error !== null
-}
+import { beginTotpAction, confirmTotpAction } from './actions'
 
 export function BeginTotpForm() {
-  const [state, action] = useActionState(beginTotpAction, initial)
   return (
-    <form action={action} className="flex flex-col gap-3">
-      <RequiredNote />
-      <CsrfField />
-      {state.error === null ? null : <p role="alert">{state.error}</p>}
-      <SubmitButton className="self-start">Set up authenticator</SubmitButton>
-    </form>
+    <ActionForm
+      action={beginTotpAction}
+      submitLabel="Set up authenticator"
+      variant="default"
+      compact
+    >
+      {null}
+    </ActionForm>
   )
 }
 
 export function ConfirmTotpForm() {
-  const { state, formProps } = useFormAction(confirmTotpAction, initial, failed)
   return (
-    <form {...formProps} className="flex flex-col gap-3">
-      <RequiredNote />
-      <CsrfField />
+    <ActionForm action={confirmTotpAction} submitLabel="Confirm" variant="default">
       <TextField
         label="6-digit code"
         name="code"
@@ -41,8 +29,6 @@ export function ConfirmTotpForm() {
         required
         className="max-w-48"
       />
-      {state.error === null ? null : <p role="alert">{state.error}</p>}
-      <SubmitButton className="self-start">Confirm</SubmitButton>
-    </form>
+    </ActionForm>
   )
 }

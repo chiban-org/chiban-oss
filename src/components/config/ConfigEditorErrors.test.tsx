@@ -42,8 +42,98 @@ describe('ConfigEditorForm errors', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
     fireEvent.click(screen.getByRole('button', { name: 'Publish now' }))
     await waitFor(() => expect(screen.getByText('The draft has errors.')).toBeTruthy())
-    expect(screen.getByText('Number prefix: Use one to four capital letters.')).toBeTruthy()
-    expect(screen.getByText('Inspection checklists: Leave no checklist key blank.')).toBeTruthy()
+    expect(screen.getByText('Use one to four capital letters.')).toBeTruthy()
+    expect(screen.getByText('Leave no checklist key blank.')).toBeTruthy()
+  })
+})
+
+describe('ConfigEditorForm refusals beside the field', () => {
+  const PAYMENT = skeletonBody('payment_settings', 'default')
+  const refuse = () =>
+    Promise.resolve({
+      ok: false as const,
+      error: 'This version cannot be published yet.',
+      fieldErrors: { convenienceFee: 'Enter the percent of the payment as 100 or less.' },
+    })
+
+  function renderPayment() {
+    render(
+      <ConfigEditorForm
+        kind="payment_settings"
+        configKey="default"
+        initialBody={PAYMENT}
+        resetKey="v1"
+        context={context}
+        saveAction={refuse}
+        publishAction={refuse}
+      />,
+    )
+  }
+
+  it('shows a payment settings refusal inside the convenience fee group', async () => {
+    renderPayment()
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Publish now' }))
+    const beside = await waitFor(() => {
+      const found = document.querySelector('[data-field-error="convenienceFee"]')
+      if (found === null) throw new Error('not shown yet')
+      return found
+    })
+    expect(beside.closest('fieldset')?.textContent).toContain(
+      'Enter the percent of the payment as 100 or less.',
+    )
+  })
+
+  it('drops the refusals once the person edits the form', async () => {
+    renderPayment()
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Publish now' }))
+    await waitFor(() => expect(document.querySelector('[role="alert"] li')).not.toBeNull())
+    fireEvent.change(screen.getByLabelText(/Checks payable to/), { target: { value: 'Town Hall' } })
+    expect(document.querySelector('[data-field-error]')).toBeNull()
+    expect(document.querySelector('[role="alert"] li')).toBeNull()
+  })
+})
+
+describe('ConfigEditorForm town rule refusals', () => {
+  it('shows the value refusal inside the Town value group', async () => {
+    const message = 'Enter a whole number of months from 1 to 120.'
+    const refuse = () =>
+      Promise.resolve({
+        ok: false as const,
+        error: 'This version cannot be published yet.',
+        fieldErrors: { value: message },
+      })
+    render(
+      <ConfigEditorForm
+        kind="town_rule_setting"
+        configKey="town.bp.validity"
+        initialBody={{ ruleKey: 'town.bp.validity', value: -3 }}
+        resetKey="v1"
+        context={{
+          ...context,
+          townRules: {
+            'town.bp.validity': {
+              label: 'Building permit validity period',
+              policy: 'The town chooses.',
+              settable: true,
+              unit: 'months',
+              citation: { label: 'Town rule', url: null },
+            },
+          },
+        }}
+        saveAction={refuse}
+        publishAction={refuse}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Publish now' }))
+    const beside = await waitFor(() => {
+      const found = document.querySelector('[data-field-error="value"]')
+      if (found === null) throw new Error('not shown yet')
+      return found
+    })
+    expect(beside.closest('fieldset')?.textContent).toContain(message)
   })
 })
 

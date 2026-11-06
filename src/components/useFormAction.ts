@@ -38,6 +38,11 @@ function restoreField(
   field.value = submitted.at(occurrence) ?? ''
 }
 
+function isUnrestored(input: HTMLInputElement): boolean {
+  if (input.type === 'password' && input.dataset.restoreOnError === 'true') return false
+  return UNRESTORED_TYPES.has(input.type)
+}
+
 let restoring = false
 
 export function isRestoringValues(): boolean {
@@ -81,7 +86,7 @@ function restoreAll(form: HTMLFormElement, entries: [string, FormDataEntryValue]
     if (!isField(element) || element.name === '') continue
     const occurrence = seen.get(element.name) ?? 0
     seen.set(element.name, occurrence + 1)
-    if (element instanceof HTMLInputElement && UNRESTORED_TYPES.has(element.type)) continue
+    if (element instanceof HTMLInputElement && isUnrestored(element)) continue
     const values = entries.filter(([name]) => name === element.name).map(([, value]) => value)
     if (element instanceof HTMLInputElement && element.type === 'file') {
       restoreFiles(

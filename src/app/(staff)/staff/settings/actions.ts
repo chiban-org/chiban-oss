@@ -1,94 +1,55 @@
 'use server'
 
 import { redirect } from 'next/navigation'
-import type { PreviewActionResult } from '@/components/config/WorkflowEditor'
-import { adoptStarter } from '@/features/config/adoptStarter'
-import { applyStarterPaths } from '@/features/config/applyStarterPaths'
 import { discardDraft } from '@/features/config/discard'
-import {
-  type ConfigIssue,
-  type ConfigKind,
-  isConfigKind,
-  isSingletonKind,
-} from '@/features/config/kinds'
+import { isSingletonKind } from '@/features/config/kinds'
 import { newItemKey } from '@/features/config/newItemKey'
 import { publishConfig, rollbackConfig } from '@/features/config/publish'
 import { fieldErrorsFor } from '@/features/config/publishErrors'
 import { listKeysOfKind } from '@/features/config/settingsViews'
 import { skeletonBody } from '@/features/config/skeletons'
 import { saveDraft } from '@/features/config/store'
-import { previewWorkflow } from '@/features/workflow/previewWorkflow'
-import {
-  type ActionResult,
-  errorCopy,
-  runStaffAction,
-  runStaffValue,
-  text,
-} from '@/server/actionRunner'
-import { type CivilDate, parseCivilDate } from '@/types/civilDate'
-
-function parseBody(formData: FormData): unknown {
-  try {
-    return JSON.parse(text(formData, 'body')) as unknown
-  } catch {
-    return undefined
-  }
-}
-
-function kindOf(formData: FormData): ConfigKind | null {
-  const kind = text(formData, 'kind')
-  return isConfigKind(kind) ? kind : null
-}
-
-const INVALID: ActionResult = { ok: false, error: errorCopy('invalid_input') }
-
-function refusedDraft(error: 'forbidden' | { invalid: ConfigIssue[] }): ActionResult {
-  const fieldErrors = fieldErrorsFor(error)
-  if (error === 'forbidden') return { ok: false, error: errorCopy('forbidden'), fieldErrors }
-  return { ok: false, error: 'The draft has errors.', fieldErrors }
-}
+import { type ActionResult, errorCopy } from '@/server/actionRunner'
+import { refuseField, runStaffForm } from '@/server/formInput'
+import { refusedDraft } from './draftRefusal'
+import { DISCARD_FORM, DRAFT_FORM, ROLLBACK_FORM, START_DRAFT_FORM } from './forms'
 
 export async function saveDraftAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const kind = kindOf(formData)
-    const body = parseBody(formData)
-    if (kind === null || body === undefined) return INVALID
-    const saved = await saveDraft(db, actor, { kind, key: text(formData, 'key'), body }, signal)
-    if (saved.ok) return { ok: true, message: 'Draft saved.' }
-    return refusedDraft(saved.error)
+  return await runStaffForm(formData, DRAFT_FORM, async ({ db, actor, signal }, input) => {
+    const saved = await saveDraft(db, actor, input, signal)
+    return saved.ok ? { ok: true, message: 'Draft saved.' } : refusedDraft(saved.error)
   })
 }
 
 export async function discardDraftAction(formData: FormData): Promise<ActionResult> {
-  const kind = kindOf(formData)
-  const outcome = { emptied: false }
-  const result = await runStaffAction(formData, async ({ db, actor, signal }) => {
-    if (kind === null) return INVALID
-    const discarded = await discardDraft(db, actor, { kind, key: text(formData, 'key') }, signal)
-    if (!discarded.ok) {
-      return {
-        ok: false,
-        error:
-          discarded.error === 'forbidden'
-            ? errorCopy('forbidden')
-            : 'There is no draft to discard.',
+  const outcome: { emptied: string | null } = { emptied: null }
+  const result = await runStaffForm(
+    formData,
+    DISCARD_FORM,
+    async ({ db, actor, signal }, input) => {
+      const discarded = await discardDraft(db, actor, input, signal)
+      if (!discarded.ok) {
+        return {
+          ok: false,
+          error:
+            discarded.error === 'forbidden'
+              ? errorCopy('forbidden')
+              : 'There is no draft to discard.',
+        }
       }
-    }
-    outcome.emptied = discarded.value.remaining === 0
-    return { ok: true, message: 'Draft discarded.' }
-  })
-  if (result.ok && kind !== null && outcome.emptied && !isSingletonKind(kind)) {
-    redirect(`/staff/settings/${kind}`)
-  }
+      if (discarded.value.remaining === 0 && !isSingletonKind(input.kind)) {
+        outcome.emptied = input.kind
+      }
+      return { ok: true, message: 'Draft discarded.' }
+    },
+  )
+  if (result.ok && outcome.emptied !== null) redirect(`/staff/settings/${outcome.emptied}`)
   return result
 }
 
 export async function publishAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const kind = kindOf(formData)
-    const body = parseBody(formData)
-    if (kind === null || body === undefined) return INVALID
-    const saved = await saveDraft(db, actor, { kind, key: text(formData, 'key'), body }, signal)
+  return await runStaffForm(formData, DRAFT_FORM, async ({ db, actor, signal }, input) => {
+    const saved = await saveDraft(db, actor, input, signal)
     if (!saved.ok) return refusedDraft(saved.error)
     const published = await publishConfig(db, actor, saved.value.versionId, signal)
     if (published.ok) return { ok: true, message: `Published version ${published.value.version}.` }
@@ -101,23 +62,15 @@ export async function publishAction(formData: FormData): Promise<ActionResult> {
 }
 
 export async function rollbackAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const kind = kindOf(formData)
-    const toVersion = Number(text(formData, 'toVersion'))
-    if (kind === null || !Number.isInteger(toVersion)) return INVALID
-    const result = await rollbackConfig(
-      db,
-      actor,
-      { kind, key: text(formData, 'key'), toVersion },
-      signal,
-    )
+  return await runStaffForm(formData, ROLLBACK_FORM, async ({ db, actor, signal }, input) => {
+    const result = await rollbackConfig(db, actor, input, signal)
     if (result.ok) {
       return {
         ok: true,
-        message: `Rolled back to version ${toVersion} as version ${result.value.version}.`,
+        message: `Rolled back to version ${input.toVersion} as version ${result.value.version}.`,
       }
     }
-    if (result.error === 'no_such_version') return { ok: false, error: errorCopy(result.error) }
+    if (typeof result.error === 'string') return { ok: false, error: errorCopy(result.error) }
     return {
       ok: false,
       error: 'That version cannot be restored.',
@@ -126,129 +79,30 @@ export async function rollbackAction(formData: FormData): Promise<ActionResult> 
   })
 }
 
-export async function adoptStarterAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const result = await adoptStarter(db, actor, text(formData, 'starterId'), signal)
-    if (result.ok)
-      return { ok: true, message: `Adopted ${result.value.versionIds.length} configuration items.` }
-    if (typeof result.error === 'string') return { ok: false, error: errorCopy(result.error) }
-    return {
-      ok: false,
-      error: 'The starter did not pass the publish checks.',
-      fieldErrors: fieldErrorsFor(result.error),
-    }
-  })
-}
-
 export async function startDraftAction(formData: FormData): Promise<ActionResult> {
-  const kind = kindOf(formData)
-  let key = ''
-  const result = await runStaffAction(formData, async ({ db, actor, signal }) => {
-    if (kind === null) return INVALID
-    const taken = new Set((await listKeysOfKind(db, kind, signal)).map((row) => row.key))
-    if (kind === 'town_rule_setting') {
-      key = text(formData, 'key')
-      if (key === '') return INVALID
+  const outcome: { kind: string; key: string } = { kind: '', key: '' }
+  const result = await runStaffForm(formData, START_DRAFT_FORM, async (ctx, input) => {
+    const { db, actor, signal } = ctx
+    const taken = new Set((await listKeysOfKind(db, input.kind, signal)).map((row) => row.key))
+    let key: string
+    if (input.kind === 'town_rule_setting') {
+      if (input.key === null) return refuseField('key', 'Choose a rule.')
+      key = input.key
       if (taken.has(key)) return { ok: true, message: 'This rule is already set.' }
     } else {
-      const chosen = newItemKey(text(formData, 'label'), text(formData, 'key'), taken)
-      if (!chosen.ok) {
-        return { ok: false, error: chosen.message, fieldErrors: { [chosen.field]: chosen.message } }
-      }
+      const chosen = newItemKey(input.label ?? '', input.key ?? '', taken)
+      if (!chosen.ok) return refuseField(chosen.field, chosen.message)
       key = chosen.key
     }
-    const label = text(formData, 'label').trim() || key
-    const body = skeletonBody(kind, key, label)
-    const saved = await saveDraft(db, actor, { kind, key, body }, signal)
-    if (saved.ok) return { ok: true, message: 'Draft created.' }
-    return refusedDraft(saved.error)
+    const body = skeletonBody(input.kind, key, input.label ?? key)
+    const saved = await saveDraft(db, actor, { kind: input.kind, key, body }, signal)
+    if (!saved.ok) return refusedDraft(saved.error)
+    outcome.kind = input.kind
+    outcome.key = key
+    return { ok: true, message: 'Draft created.' }
   })
-  if (result.ok && kind !== null) redirect(`/staff/settings/${kind}/${encodeURIComponent(key)}`)
-  return result
-}
-
-const PATH_FIELD = 'path:'
-
-function selectedPaths(
-  formData: FormData,
-): Map<string, { kind: ConfigKind; key: string; paths: string[] }> {
-  const grouped = new Map<string, { kind: ConfigKind; key: string; paths: string[] }>()
-  for (const [name, value] of formData.entries()) {
-    if (!name.startsWith(PATH_FIELD) || typeof value !== 'string') continue
-    const [kind = '', key = ''] = name.slice(PATH_FIELD.length).split(':')
-    if (!isConfigKind(kind)) continue
-    const held = grouped.get(name) ?? { kind, key, paths: [] }
-    held.paths.push(value)
-    grouped.set(name, held)
+  if (result.ok && outcome.kind !== '') {
+    redirect(`/staff/settings/${outcome.kind}/${encodeURIComponent(outcome.key)}`)
   }
-  return grouped
-}
-
-export async function applyStarterPathsAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const selections = [...selectedPaths(formData).values()]
-    if (selections.length === 0) return { ok: false, error: 'Select at least one change to apply.' }
-    for (const selection of selections) {
-      const result = await applyStarterPaths(db, actor, selection, signal)
-      if (result.ok) continue
-      if (typeof result.error === 'string') return { ok: false, error: errorCopy(result.error) }
-      return {
-        ok: false,
-        error: `The change to ${selection.key} did not pass the publish checks.`,
-        fieldErrors: fieldErrorsFor(result.error),
-      }
-    }
-    return { ok: true, message: `Applied changes to ${selections.length} configuration items.` }
-  })
-}
-
-function previewFailure(result: ActionResult): PreviewActionResult {
-  return result.ok ? { ok: false, error: errorCopy('invalid_input') } : result
-}
-
-function sampleDate(formData: FormData, name: string): CivilDate | undefined {
-  const parsed = parseCivilDate(text(formData, name))
-  return parsed.ok ? parsed.value : undefined
-}
-
-export async function previewWorkflowAction(formData: FormData): Promise<PreviewActionResult> {
-  return await runStaffValue<PreviewActionResult>(
-    formData,
-    (error) => ({ ok: false, error }),
-    async ({ db, actor, signal }) => {
-      const body = parseBody(formData)
-      const received = sampleDate(formData, 'previewReceived')
-      if (body === undefined || received === undefined) return previewFailure(INVALID)
-      const saved = await saveDraft(
-        db,
-        actor,
-        { kind: 'application_type', key: text(formData, 'key'), body },
-        signal,
-      )
-      if (!saved.ok) return previewFailure(refusedDraft(saved.error))
-      const accepted = sampleDate(formData, 'previewAccepted')
-      const meeting = sampleDate(formData, 'previewMeeting')
-      const shown = await previewWorkflow(
-        db,
-        actor,
-        {
-          versionId: saved.value.versionId,
-          sampleFacts: {
-            classification: null,
-            dwellingUnits: null,
-            afterTheFact: false,
-            regionalImpact: text(formData, 'previewRegionalImpact') !== '',
-          },
-          sampleDates: {
-            received,
-            ...(accepted === undefined ? {} : { accepted }),
-            ...(meeting === undefined ? {} : { meeting }),
-          },
-        },
-        signal,
-      )
-      if (!shown.ok) return { ok: false, error: errorCopy(shown.error) }
-      return { ok: true, message: 'Preview updated. Nothing was published.', preview: shown.value }
-    },
-  )
+  return result
 }

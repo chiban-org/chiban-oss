@@ -80,6 +80,6 @@ describe('board settings filing deadline', () => {
     publishNow()
     await waitFor(() => expect(within(planning).getByText('Too long.')).toBeTruthy())
     expect(within(planning).getByText('Enter who adopted it.')).toBeTruthy()
-    expect(screen.getByText('Filing deadline: Too long.')).toBeTruthy()
+    expect(screen.getAllByText('Too long.')).toHaveLength(2)
   })
 })

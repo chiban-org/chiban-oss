@@ -1,71 +1,59 @@
 'use server'
 
-import { z } from 'zod'
 import { env } from '@/config/env'
-import { PROCESSORS } from '@/features/ledger/types'
 import { saveProcessorAccount } from '@/features/payments/processorAccounts'
-import {
-  CloverCredentialsSchema,
-  CloverSettingsSchema,
-} from '@/features/payments/processors/clover'
-import { StripeCredentialsSchema } from '@/features/payments/processors/stripe'
-import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
+import { type ActionResult, errorCopy } from '@/server/actionRunner'
+import { refuseField, runStaffForm } from '@/server/formInput'
+import { PROCESSOR_FORM, type ProcessorValues } from './forms'
 
-const INVALID: ActionResult = { ok: false, error: errorCopy('invalid_input') }
-const FormSchema = z.object({
-  processor: z.enum(PROCESSORS),
-  mode: z.enum(['test', 'live']),
-  accountRef: z.string().min(1),
-})
-
-function material(
-  processor: (typeof PROCESSORS)[number],
-  data: FormData,
-): { credentials: Record<string, unknown>; settings: Record<string, unknown> } | null {
-  const secretKey = text(data, 'secretKey')
-  const webhookSecret = text(data, 'webhookSecret')
-  const deviceId = text(data, 'deviceId')
-  const device = deviceId === '' ? {} : { deviceId }
-  if (processor === 'stripe') {
-    const credentials = StripeCredentialsSchema.safeParse({ secretKey })
-    return credentials.success ? { credentials: credentials.data, settings: device } : null
-  }
-  if (processor === 'clover') {
-    const credentials = CloverCredentialsSchema.safeParse({
-      privateToken: secretKey,
-      webhookSigningSecret: webhookSecret,
-    })
-    const settings = CloverSettingsSchema.safeParse({
-      apiBase: text(data, 'apiBase'),
-      ecommBase: text(data, 'ecommBase'),
-      ...device,
-    })
-    return credentials.success && settings.success
-      ? { credentials: credentials.data, settings: settings.data }
-      : null
+function material(input: ProcessorValues): {
+  credentials: Record<string, unknown>
+  settings: Record<string, unknown>
+} {
+  const secretKey = trimmedText(input.secretKey)
+  const device = input.deviceId === null ? {} : { deviceId: input.deviceId }
+  if (input.processor === 'stripe') return { credentials: { secretKey }, settings: device }
+  if (input.processor === 'clover') {
+    return {
+      credentials: { privateToken: secretKey, webhookSigningSecret: input.webhookSecret },
+      settings: {
+        apiBase: trimmedText(input.apiBase),
+        ecommBase: trimmedText(input.ecommBase),
+        ...device,
+      },
+    }
   }
   return { credentials: {}, settings: {} }
 }
 
+function trimmedText(raw: unknown): string {
+  return typeof raw === 'string' ? raw.trim() : ''
+}
+
 export async function saveProcessorAccountAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const parsed = FormSchema.safeParse({
-      processor: text(formData, 'processor'),
-      mode: text(formData, 'mode'),
-      accountRef: text(formData, 'accountRef'),
-    })
-    const webhookSecret = text(formData, 'webhookSecret')
-    const parts = parsed.success ? material(parsed.data.processor, formData) : null
-    if (!parsed.success || parts === null || webhookSecret === '') return INVALID
+  return await runStaffForm(formData, PROCESSOR_FORM, async ({ db, actor, signal }, input) => {
     const result = await saveProcessorAccount(
       db,
       actor,
-      { ...parsed.data, ...parts, webhookSecret },
+      {
+        processor: input.processor,
+        mode: input.mode,
+        accountRef: input.accountRef,
+        webhookSecret: input.webhookSecret,
+        ...material(input),
+      },
       signal,
       { simulatedEnabled: env.ENABLE_SIMULATED_PAYMENTS },
     )
-    return result.ok
-      ? { ok: true, message: 'Processor account saved. The connection has not been verified yet.' }
-      : { ok: false, error: errorCopy(result.error) }
+    if (result.ok) {
+      return {
+        ok: true,
+        message: 'Processor account saved. The connection has not been verified yet.',
+      }
+    }
+    if (result.error === 'simulated_disabled') {
+      return refuseField('processor', errorCopy(result.error))
+    }
+    return { ok: false, error: errorCopy(result.error) }
   })
 }
