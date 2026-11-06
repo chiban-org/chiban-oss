@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { HearingView } from '@/features/hearings/views'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('../decisionActions', () => ({ recordDecisionAction: vi.fn() }))
 
@@ -35,7 +35,7 @@ describe('recording the decision', () => {
     fireEvent.change(screen.getByLabelText(/^Findings of fact( \*)?$/), {
       target: { value: 'It meets the ordinance.' },
     })
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'Record decision' }),
       () => screen.getByLabelText(/^How each member voted( \*)?$/),
       message,

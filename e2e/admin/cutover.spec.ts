@@ -1,6 +1,6 @@
 import { createHash } from 'node:crypto'
 import { expect, test } from '../fixtures/test'
-import { expectRefusedBeside } from './support'
+import { expectConfirmation, expectRefusedBeside } from './support'
 
 test.use({ role: 'admin' })
 
@@ -75,5 +75,51 @@ test.describe('cutover import and comparison', () => {
           ).signed,
       )
       .toBe(true)
+  })
+
+  test('imports one row from a file built on the downloaded template', async ({
+    page,
+    db,
+    suffix,
+  }) => {
+    const legacy = `E2E-IMPORT-${suffix}`
+    const template = await page.request.get('/staff/admin/cutover/template.csv?type=BP')
+    const header = (await template.text()).trim().split('\n')[0] ?? ''
+    const values: Record<string, string> = {
+      legacy_number: legacy,
+      application_type_key: 'BP',
+      parcel_id_format: 'gis12',
+      parcel_id: '007001000000',
+      project_title: 'Garage',
+      applicant_name: 'Pat Applicant',
+      state: 'submitted',
+      received_date: '2026-03-02',
+      'field.work_type': 'building',
+      'field.description': 'Two car garage',
+      'field.classification': 'residential',
+      'field.dwelling_units': '1',
+    }
+    const row = header
+      .split(',')
+      .map((column) => values[column] ?? '')
+      .join(',')
+    await page.goto('/staff/admin/cutover')
+    const file = csv(`${header}\n${row}\n`)
+    await page.locator('#cutover-file').setInputFiles(file)
+    await page.getByRole('button', { name: 'Check the file' }).click()
+    await expectConfirmation(
+      page,
+      'Dry run, nothing saved: 1 would import, 0 already imported, 0 with errors.',
+    )
+    expect(
+      await db.rows('select 1 from cutover_rows where legacy_number = $1', [legacy]),
+    ).toHaveLength(0)
+
+    await page.locator('#cutover-file').setInputFiles(file)
+    await page.getByRole('button', { name: 'Import the file' }).click()
+    await expectConfirmation(page, 'Imported: 1 imported, 0 already imported, 0 with errors.')
+    expect(
+      await db.rows('select 1 from cutover_rows where legacy_number = $1', [legacy]),
+    ).toHaveLength(1)
   })
 })

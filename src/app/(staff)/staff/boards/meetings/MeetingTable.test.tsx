@@ -3,7 +3,7 @@ import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { MeetingListRow } from '@/features/boards/meetingList'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('../actions', () => ({ cancelMeetingAction: vi.fn() }))
 
@@ -44,7 +44,7 @@ describe('cancelling a meeting', () => {
     )
     fireEvent.click(screen.getByText('Cancel', { selector: 'summary' }))
     fireEvent.change(screen.getByLabelText(/^Reason( \*)?$/), { target: { value: 'x' } })
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'Cancel meeting' }),
       () => screen.getByLabelText(/^Reason( \*)?$/),
       'Enter a reason of 500 characters or fewer.',

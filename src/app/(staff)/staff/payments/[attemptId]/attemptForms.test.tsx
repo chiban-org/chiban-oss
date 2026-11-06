@@ -4,8 +4,7 @@ import type { ReactNode } from 'react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { paymentAttempts } from '@/db/schema'
-import { expectRefusalBeside } from '@/test/besideField'
-import { expectRefusalBeside as expectRefusalWithHint } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, expectRefusalBeside } from '@/test/besideField'
 
 const refusal = vi.hoisted(() => ({ field: '', message: '' }))
 const answer = vi.hoisted(
@@ -71,7 +70,7 @@ describe('payment attempt forms', () => {
       target: { value: 'declined' },
     })
     fireEvent.change(screen.getByLabelText(/^Note/), { target: { value: 'short' } })
-    await expectRefusalWithHint(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'Record outcome' }),
       () => screen.getByLabelText(/^Note/),
       'Enter a note of at least 10 characters.',

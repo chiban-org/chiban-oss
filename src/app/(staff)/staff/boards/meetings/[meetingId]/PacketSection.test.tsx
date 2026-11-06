@@ -2,7 +2,7 @@
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('./packetActions', () => ({
   renamePacketAction: vi.fn(),
@@ -44,7 +44,7 @@ describe('renaming the packet', () => {
         <PacketSection panel={panel} />
       </CsrfProvider>,
     )
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'Save title' }),
       () => screen.getByLabelText(/^Title( \*)?$/),
       'Enter a title of 200 characters or fewer.',

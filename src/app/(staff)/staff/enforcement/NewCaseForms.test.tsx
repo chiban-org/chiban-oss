@@ -1,9 +1,8 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, screen } from '@testing-library/react'
 import { afterEach, describe, it, vi } from 'vitest'
-import { expectRefusalBeside } from '@/test/besideField'
+import { expectRefusalBeside, refusal } from '@/test/besideField'
 import { fillField, labelled, renderForm } from '@/test/enforcementRender'
-import { refusal } from '@/test/refusalBeside'
 
 vi.mock('./actions', () => ({ openCaseAction: vi.fn(), staffComplaintAction: vi.fn() }))
 vi.mock('@/components/parcels/picker/ParcelPicker', async () => {

@@ -3,7 +3,7 @@ import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { BoardPanelData } from '@/features/boards/panelData'
-import { expectRefusalBeside, refusal } from '@/test/refusalBeside'
+import { expectRefusalAfterSubmit, refusal } from '@/test/besideField'
 
 vi.mock('../../boards/actions', () => ({ completenessVoteAction: vi.fn() }))
 vi.mock('./boardPanelSections', () => ({}))
@@ -57,7 +57,7 @@ describe('completeness vote refusals', () => {
         <VoteForm data={data('2026-10-28')} />
       </CsrfProvider>,
     )
-    await expectRefusalBeside(
+    await expectRefusalAfterSubmit(
       screen.getByRole('button', { name: 'Record vote' }),
       () => screen.getByLabelText(/^Reason, if not accepted( \*)?$/),
       message,
