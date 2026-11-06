@@ -131,6 +131,8 @@ describe('recordId', () => {
 describe('checkbox', () => {
   it('is true only for a ticked box', () => {
     expect(verdict(checkbox(), 'on')).toEqual({ value: true })
+    expect(verdict(checkbox(), 'yes')).toEqual({ value: true })
+    expect(verdict(checkbox(), 'no')).toEqual({ value: false })
     expect(verdict(checkbox(), undefined)).toEqual({ value: false })
     expect(verdict(checkbox(), '')).toEqual({ value: false })
   })

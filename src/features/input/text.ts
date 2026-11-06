@@ -92,6 +92,8 @@ export function recordId(noun: string) {
   })
 }
 
+const TICKED_VALUES: ReadonlySet<unknown> = new Set(['on', 'yes'])
+
 export function checkbox() {
-  return inputField((raw): Result<boolean, string> => ok(raw === 'on'))
+  return inputField((raw): Result<boolean, string> => ok(TICKED_VALUES.has(raw)))
 }
