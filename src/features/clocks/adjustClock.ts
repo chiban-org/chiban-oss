@@ -7,6 +7,7 @@ import { type AnyActor, actorLabel, toAuditActor } from '@/features/audit/actorR
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { MAX_ADJUSTMENT_DAYS } from '@/features/clocks/adjustmentKinds'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 import { addDays, type CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -32,6 +33,7 @@ export type AdjustError =
   | 'consent_required'
   | 'reason_required'
   | 'due_required'
+  | 'days_out_of_range'
 
 export interface RecordedAdjustment {
   kind: 'extension' | 'waiver' | 'renewal' | 'tolling' | 'statutory_exception' | 'statutory_floor'
@@ -86,6 +88,10 @@ export async function recordAdjustment(
   )
 }
 
+function daysInRange(days: number): boolean {
+  return Number.isInteger(days) && days >= 1 && days <= MAX_ADJUSTMENT_DAYS
+}
+
 export function checkAdjustment(
   rule: ClockRule,
   input: Pick<AdjustInput, 'kind' | 'applicantConsent'>,
@@ -100,27 +106,27 @@ export function checkAdjustment(
   return null
 }
 
+function capabilityFor(kind: AdjustInput['kind'], rule: ReturnType<typeof ruleByKey> | null) {
+  if (kind === 'statutory_exception') return 'gate.record_statutory_exception'
+  const goodCause =
+    kind === 'extension' &&
+    rule?.kind === 'clock' &&
+    rule.extension.allowed &&
+    rule.extension.by === 'board_good_cause'
+  return goodCause ? 'board.record' : 'clock.adjust'
+}
+
 export async function adjustClock(
   db: Db,
   actor: Actor,
   input: AdjustInput,
   signal: AbortSignal,
   pack: Pack = loadPack(),
-): Promise<Result<void, AdjustError>> {
+): Promise<Result<{ newDue: CivilDate | null }, AdjustError>> {
   signal.throwIfAborted()
   const [clock] = await db.select().from(clocks).where(eq(clocks.id, input.clockId))
   const rule = clock === undefined ? null : ruleByKey(pack, clock.ruleKey, clock.ruleVersion)
-  const goodCause =
-    input.kind === 'extension' &&
-    rule?.kind === 'clock' &&
-    rule.extension.allowed &&
-    rule.extension.by === 'board_good_cause'
-  const capability =
-    input.kind === 'statutory_exception'
-      ? 'gate.record_statutory_exception'
-      : goodCause
-        ? 'board.record'
-        : 'clock.adjust'
+  const capability = capabilityFor(input.kind, rule)
   if (!(await hasCapability(db, actor.userId, capability, signal))) return err('forbidden')
   const reason = input.reason.trim()
   if (reason === '') return err('reason_required')
@@ -132,6 +138,7 @@ export async function adjustClock(
   if (input.kind === 'statutory_exception' && (citation === '' || explanation === '')) {
     return err('authority_required')
   }
+  if (input.days !== undefined && !daysInRange(input.days)) return err('days_out_of_range')
   const movesDue = input.kind !== 'waiver'
   const newDue =
     input.newDue ??
@@ -154,6 +161,6 @@ export async function adjustClock(
       },
       signal,
     )
-    return ok(undefined)
+    return ok({ newDue: movesDue ? newDue : null })
   })
 }

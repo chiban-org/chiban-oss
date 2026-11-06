@@ -3,6 +3,7 @@ import { StatusChip } from '@/components/StatusChip'
 import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { TERMINAL_STATES } from '@/features/applications/states'
+import { MAX_ADJUSTMENT_DAYS } from '@/features/clocks/adjustmentKinds'
 import type { AdjustmentKind } from '@/features/clocks/explainClock'
 import { partyLine } from '@/features/projects/partyRoleLabels'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -95,7 +96,14 @@ export function ClockAdjustForm({
           name="kind"
           options={offered.map((kind) => ADJUSTMENT_OPTIONS[kind])}
         />
-        <TextField label="Days" name="days" type="number" />
+        <TextField
+          label="Days"
+          name="days"
+          type="number"
+          min={1}
+          max={MAX_ADJUSTMENT_DAYS}
+          step={1}
+        />
         <TextField label="Reason" name="reason" required />
         <TextField label="Legal authority: citation" name="citation" />
         <TextField label="Legal authority: explanation" name="explanation" />

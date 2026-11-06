@@ -9,6 +9,8 @@ export const ADJUSTMENT_KINDS = [
 
 export type AdjustmentKind = (typeof ADJUSTMENT_KINDS)[number]
 
+export const MAX_ADJUSTMENT_DAYS = 365
+
 export const ADJUSTMENT_KIND_LABELS: ReadonlyMap<AdjustmentKind, string> = new Map([
   ['extension', 'Extension'],
   ['waiver', 'Waiver'],

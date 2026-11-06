@@ -2,6 +2,7 @@ import { revalidatePath } from 'next/cache'
 import { CHECK_UNSUPPORTED_COPY } from '@/constants/formCheck'
 import { type Db, db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
+import { MAX_ADJUSTMENT_DAYS } from '@/features/clocks/adjustmentKinds'
 import { type GuardOptions, guardAction } from '@/server/actionGuard'
 
 export type ActionResult =
@@ -64,6 +65,7 @@ export const ERROR_COPY: Record<string, string> = {
   not_waivable: 'This clock cannot be waived.',
   consent_required: "This extension needs the applicant's consent.",
   due_required: 'Enter the number of days or a new due date.',
+  days_out_of_range: `Enter the number of days as a whole number from 1 to ${MAX_ADJUSTMENT_DAYS}.`,
   amount_required: 'Enter the amount.',
   board_ref_required: 'Enter the board reference for the earlier determination.',
   certified_mail_required:
