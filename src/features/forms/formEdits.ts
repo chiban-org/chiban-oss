@@ -19,11 +19,17 @@ function otherKeys(body: FormBody, index: number): Set<string> {
   return new Set(body.fields.filter((_, i) => i !== index).map((f) => f.key))
 }
 
+export const UNTITLED_QUESTION = 'Untitled question'
+export const UNTITLED_SECTION = 'New section'
+
+const STARTING_CHOICE_LABELS = ['Choice 1', 'Choice 2'] as const
+
+export function isStartingChoiceLabel(label: string): boolean {
+  return (STARTING_CHOICE_LABELS as readonly string[]).includes(label)
+}
+
 function startingChoices(): NonNullable<FormField['options']> {
-  return [
-    { value: 'choice_1', label: 'Choice 1' },
-    { value: 'choice_2', label: 'Choice 2' },
-  ]
+  return STARTING_CHOICE_LABELS.map((label, i) => ({ value: `choice_${i + 1}`, label }))
 }
 
 export function addEntry(
@@ -31,7 +37,7 @@ export function addEntry(
   type: FieldType,
   after: number | null,
 ): { body: FormBody; index: number } {
-  const label = type === 'section' ? 'New section' : 'Untitled question'
+  const label = type === 'section' ? UNTITLED_SECTION : UNTITLED_QUESTION
   const key = keyForLabel(label, new Set(body.fields.map((f) => f.key)))
   const entry: FormField = {
     key,

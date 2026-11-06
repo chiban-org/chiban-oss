@@ -1,42 +1,58 @@
 'use client'
 
-import { Area, Input } from '@/components/config/primitives'
+import { Area, FieldError, type FieldErrors, Input } from '@/components/config/primitives'
 import { WordDiffPreview } from '@/components/config/TextDiff'
 import type { LocalCodeAmendmentBody } from '@/features/config/kinds'
 
 export function LocalAmendmentEditor({
   body,
   onChange,
+  errors,
 }: {
   body: LocalCodeAmendmentBody
   onChange: (next: LocalCodeAmendmentBody) => void
+  errors: FieldErrors
 }) {
   return (
     <div className="grid gap-3 sm:grid-cols-2">
-      <Input
-        label="Title"
-        hint="A short name for the change, for example Snow load for roofs."
-        value={body.title}
-        onChange={(e) => onChange({ ...body, title: e.target.value })}
-      />
-      <Input
-        label="Code section"
-        hint="The section of the state building code it changes, for example IRC R301.2."
-        value={body.codeSection}
-        onChange={(e) => onChange({ ...body, codeSection: e.target.value })}
-      />
-      <Input
-        label="Adopted by"
-        hint="The body that voted it in, for example Town Meeting."
-        value={body.adoptingAuthority}
-        onChange={(e) => onChange({ ...body, adoptingAuthority: e.target.value })}
-      />
-      <Input
-        label="Adopted on"
-        type="date"
-        value={body.adoptedOn}
-        onChange={(e) => onChange({ ...body, adoptedOn: e.target.value as typeof body.adoptedOn })}
-      />
+      <div>
+        <Input
+          label="Title"
+          hint="A short name for the change, for example Snow load for roofs."
+          value={body.title}
+          onChange={(e) => onChange({ ...body, title: e.target.value })}
+        />
+        <FieldError errors={errors} name="title" />
+      </div>
+      <div>
+        <Input
+          label="Code section"
+          hint="The section of the state building code it changes, for example IRC R301.2."
+          value={body.codeSection}
+          onChange={(e) => onChange({ ...body, codeSection: e.target.value })}
+        />
+        <FieldError errors={errors} name="codeSection" />
+      </div>
+      <div>
+        <Input
+          label="Adopted by"
+          hint="The body that voted it in, for example Town Meeting."
+          value={body.adoptingAuthority}
+          onChange={(e) => onChange({ ...body, adoptingAuthority: e.target.value })}
+        />
+        <FieldError errors={errors} name="adoptingAuthority" />
+      </div>
+      <div>
+        <Input
+          label="Adopted on"
+          type="date"
+          value={body.adoptedOn}
+          onChange={(e) =>
+            onChange({ ...body, adoptedOn: e.target.value as typeof body.adoptedOn })
+          }
+        />
+        <FieldError errors={errors} name="adoptedOn" />
+      </div>
       <Input
         label="Confirmed by the building code review board on"
         hint="Leave empty until the state board confirms it."

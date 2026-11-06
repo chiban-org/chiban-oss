@@ -2,8 +2,18 @@ import type { Tx } from '@/db/client'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
 import { checkBoardSettings } from '@/features/boards/boardSettingsChecks'
-import type { ConfigIssue, ConfigKind, TownRuleSettingBody } from '@/features/config/kinds'
+import type {
+  ConfigIssue,
+  ConfigKind,
+  LocalCodeAmendmentBody,
+  TownRuleSettingBody,
+} from '@/features/config/kinds'
+import {
+  checkAmendmentPlaceholders,
+  checkFormPlaceholders,
+} from '@/features/config/placeholderChecks'
 import { type ConfigVersionRow, getPublished } from '@/features/config/store'
+import { townRuleValueIssue } from '@/features/config/townRuleBounds'
 import { exprFieldRefs, type FeeScheduleBody } from '@/features/fees/feeSchema'
 import type { FormBody } from '@/features/forms/formSchema'
 import { type ChecklistBody, isFinalChecklist } from '@/features/inspections/checklistSchema'
@@ -42,10 +52,8 @@ function checkTownRule(body: TownRuleSettingBody, key: string): PublishError | n
   if (key !== body.ruleKey) {
     return { invalid: [{ path: 'ruleKey', message: 'the configuration key must be the rule key' }] }
   }
-  const clockBacked = rule.kind === 'town_setting'
-  if (clockBacked && !Number.isInteger(body.value)) {
-    return { invalid: [{ path: 'value', message: 'Enter a whole number.' }] }
-  }
+  const valueIssue = townRuleValueIssue(rule, body.value)
+  if (valueIssue !== null) return { invalid: [{ path: 'value', message: valueIssue }] }
   const checked = checkTownValue(rule, {
     value: body.value,
     adoptingAuthority: body.adoptingAuthority,
@@ -107,6 +115,10 @@ export async function checkApplicationType(
   return null
 }
 
+function placeholderError(issues: ConfigIssue[]): PublishError | null {
+  return issues.length === 0 ? null : { invalid: issues }
+}
+
 export async function runPublishChecks(
   tx: Tx,
   kind: ConfigKind,
@@ -118,6 +130,10 @@ export async function runPublishChecks(
     return await checkApplicationType(tx, body as ApplicationTypeBody, signal)
   }
   if (kind === 'template') return checkTemplate(body as TemplateBody)
+  if (kind === 'form') return placeholderError(checkFormPlaceholders(body as FormBody))
+  if (kind === 'local_code_amendment') {
+    return placeholderError(checkAmendmentPlaceholders(body as LocalCodeAmendmentBody))
+  }
   if (kind === 'town_rule_setting') return checkTownRule(body as TownRuleSettingBody, key)
   if (kind === 'board_settings') return checkBoardSettings(body as BoardSettingsBody)
   if (kind === 'town_profile') return checkTownProfile(body as TownProfileBody)

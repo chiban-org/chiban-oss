@@ -4,6 +4,11 @@ import { EMPTY_REGIONAL_CONTACTS } from '@/features/boards/regionalContacts'
 import { settingDefault } from '@/features/clocks/ruleEngine'
 import type { ConfigKind } from '@/features/config/kinds'
 import { prefixFromLabel } from '@/features/config/newItemKey'
+import {
+  PLACEHOLDER_ADOPTED_ON,
+  PLACEHOLDER_AUTHORITY,
+  PLACEHOLDER_CODE_SECTION,
+} from '@/features/config/placeholderChecks'
 import { slugKey } from '@/features/forms/fieldKeys'
 import { loadPack } from '@/features/packs/loadPack'
 import { EMPTY_REVIEW_ROUTES } from '@/features/reviews/routesSchema'
@@ -54,9 +59,9 @@ export function skeletonBody(kind: ConfigKind, key: string, label: string = key)
     case 'local_code_amendment':
       return {
         title: label,
-        codeSection: 'Section',
-        adoptingAuthority: 'Governing body',
-        adoptedOn: '2027-01-01',
+        codeSection: PLACEHOLDER_CODE_SECTION,
+        adoptingAuthority: PLACEHOLDER_AUTHORITY,
+        adoptedOn: PLACEHOLDER_ADOPTED_ON,
         reviewBoardConfirmedOn: null,
       }
     case 'payment_settings':

@@ -27,7 +27,11 @@ export const FeeSourceSchema: z.ZodType<FeeSource> = z.union([
   }),
 ])
 
-const cents = z.number().int().nonnegative()
+export const MAX_FEE_CENTS = 100_000_000
+export const MAX_FEE_MULTIPLIER = 100
+
+const cents = z.number().int().nonnegative().max(MAX_FEE_CENTS)
+const centsPerUnit = z.number().nonnegative().max(MAX_FEE_CENTS)
 
 export const FeeExprSchema: z.ZodType<FeeExpr> = z.lazy(() =>
   z.union([
@@ -35,7 +39,7 @@ export const FeeExprSchema: z.ZodType<FeeExpr> = z.lazy(() =>
     z.object({
       op: z.literal('per_unit'),
       source: FeeSourceSchema,
-      centsPerUnit: z.number().nonnegative(),
+      centsPerUnit,
     }),
     z.object({ op: z.literal('minimum'), cents, of: FeeExprSchema }),
     z.object({
@@ -46,7 +50,7 @@ export const FeeExprSchema: z.ZodType<FeeExpr> = z.lazy(() =>
         .array(
           z.object({
             upTo: z.number().positive().nullable(),
-            centsPerUnit: z.number().nonnegative().optional(),
+            centsPerUnit: centsPerUnit.optional(),
             flatCents: cents.optional(),
           }),
         )
@@ -56,7 +60,7 @@ export const FeeExprSchema: z.ZodType<FeeExpr> = z.lazy(() =>
     z.object({
       op: z.literal('conditional_multiplier'),
       when: ConditionSchema,
-      factor: z.number().positive(),
+      factor: z.number().positive().max(MAX_FEE_MULTIPLIER),
       of: FeeExprSchema,
     }),
   ]),
@@ -72,8 +76,8 @@ export const FeeScheduleBodySchema = z
     lines: z
       .array(
         z.object({
-          code: z.string().min(1),
-          label: z.string().min(1),
+          code: z.string().trim().min(1),
+          label: z.string().trim().min(1),
           expr: FeeExprSchema,
           due: z.enum(FEE_STAGES),
         }),

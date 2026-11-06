@@ -7,8 +7,8 @@ export const ConditionLibraryBodySchema = z
     conditions: z
       .array(
         z.object({
-          code: z.string().min(1),
-          text: z.string().min(1),
+          code: z.string().trim().min(1),
+          text: z.string().trim().min(1),
           blocksIssuance: z.boolean(),
         }),
       )

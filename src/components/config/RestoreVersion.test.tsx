@@ -14,12 +14,23 @@ vi.mock('@/features/auth/csrfRefresh', () => ({ ensureCsrfAction: () => Promise.
 vi.mock('@/app/(staff)/staff/settings/actions', () => ({ rollbackAction: rollback }))
 
 describe('restoring a version asks first', () => {
+  it('says plainly that an unpinned setting is used at once', async () => {
+    render(
+      <RestoreVersion kind="payment_settings" configKey="default" version={3} pinned={false} />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Restore version 3' }))
+    const dialog = await screen.findByRole('dialog')
+    expect(dialog.textContent).toContain('Chiban starts using it now.')
+    expect(dialog.textContent).not.toContain('as soon as you publish')
+  })
+
   it('explains what happens and restores only after the second click', async () => {
     render(<RestoreVersion kind="fee_schedule" configKey="bp-fees" version={2} pinned />)
     const restored = () => rollback.mock.calls.filter(([f]) => !f.has(CHECK_ONLY_FIELD))
     fireEvent.click(screen.getByRole('button', { name: 'Restore version 2' }))
     const dialog = await screen.findByRole('dialog')
-    expect(dialog.textContent).toContain('published again as a new version')
+    expect(dialog.textContent).toContain('goes live at once as a new version')
+    expect(dialog.textContent).not.toContain('as soon as you publish')
     expect(dialog.textContent).toContain('Open applications keep the version they started under.')
     expect(restored()).toEqual([])
     fireEvent.click(

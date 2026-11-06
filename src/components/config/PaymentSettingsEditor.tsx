@@ -1,7 +1,7 @@
 'use client'
 
 import { DollarsInput, PercentInput } from '@/components/config/plainFields'
-import { Check, Input } from '@/components/config/primitives'
+import { Check, FieldError, type FieldErrors, Input } from '@/components/config/primitives'
 import { Legend } from '@/components/ui/legend'
 import { convenienceExample } from '@/features/payments/feeInputs'
 import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
@@ -9,6 +9,7 @@ import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
 interface Props {
   body: PaymentSettingsBody
   onChange: (next: PaymentSettingsBody) => void
+  errors: FieldErrors
 }
 
 const CHANNELS = [
@@ -16,7 +17,7 @@ const CHANNELS = [
   ['card_present', 'Card payments at the counter'],
 ] as const
 
-export function PaymentSettingsEditor({ body, onChange }: Props) {
+export function PaymentSettingsEditor({ body, onChange, errors }: Props) {
   const fee = body.convenienceFee
   const setFee = (next: Partial<typeof fee>) =>
     onChange({ ...body, convenienceFee: { ...fee, ...next } })
@@ -58,6 +59,7 @@ export function PaymentSettingsEditor({ body, onChange }: Props) {
         <p className="m-0 mt-3 text-sm" aria-live="polite">
           {convenienceExample(fee)}
         </p>
+        <FieldError errors={errors} name="convenienceFee" />
       </fieldset>
       <Input
         label="Checks payable to"
@@ -65,6 +67,7 @@ export function PaymentSettingsEditor({ body, onChange }: Props) {
         value={body.checksPayableTo}
         onChange={(e) => onChange({ ...body, checksPayableTo: e.target.value })}
       />
+      <FieldError errors={errors} name="checksPayableTo" />
       <Input
         label="Receipt footer"
         hint="A line printed at the bottom of every receipt."

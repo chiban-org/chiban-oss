@@ -91,8 +91,14 @@ export function ChecklistAdapter({ body, onChange, issues }: EditorProps) {
   )
 }
 
-export function PaymentAdapter({ body, onChange }: EditorProps) {
-  return <PaymentSettingsEditor body={body as PaymentSettingsBody} onChange={onChange} />
+export function PaymentAdapter({ body, onChange, issues }: EditorProps) {
+  return (
+    <PaymentSettingsEditor
+      body={body as PaymentSettingsBody}
+      onChange={onChange}
+      errors={errorsOf(issues)}
+    />
+  )
 }
 
 export function InspectionAdapter({ body, onChange, issues }: EditorProps) {
@@ -105,8 +111,14 @@ export function InspectionAdapter({ body, onChange, issues }: EditorProps) {
   )
 }
 
-export function AmendmentAdapter({ body, onChange }: EditorProps) {
-  return <LocalAmendmentEditor body={body as LocalCodeAmendmentBody} onChange={onChange} />
+export function AmendmentAdapter({ body, onChange, issues }: EditorProps) {
+  return (
+    <LocalAmendmentEditor
+      body={body as LocalCodeAmendmentBody}
+      onChange={onChange}
+      errors={errorsOf(issues)}
+    />
+  )
 }
 
 export function TownRuleAdapter({ body, onChange, issues }: EditorProps) {

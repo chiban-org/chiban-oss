@@ -19,11 +19,13 @@ export type FieldType = (typeof FIELD_TYPES)[number]
 
 export const FormFieldSchema = z.object({
   key: z.string().regex(/^[a-z][a-z0-9_]*$/),
-  label: z.string().min(1),
+  label: z.string().trim().min(1),
   help: z.string().optional(),
   type: z.enum(FIELD_TYPES),
   required: z.boolean(),
-  options: z.array(z.object({ value: z.string().min(1), label: z.string().min(1) })).optional(),
+  options: z
+    .array(z.object({ value: z.string().trim().min(1), label: z.string().trim().min(1) }))
+    .optional(),
   validation: z
     .object({
       minLength: z.number().optional(),
@@ -74,7 +76,7 @@ function sectionIssue(field: FormField): string | null {
 export const FormBodySchema = z
   .object({
     key: z.string().min(1),
-    label: z.string().min(1),
+    label: z.string().trim().min(1),
     fields: z.array(FormFieldSchema).min(1),
   })
   .superRefine((form, ctx) => {

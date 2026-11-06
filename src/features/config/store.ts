@@ -5,6 +5,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { configIssueCopy } from '@/features/config/issueCopy'
 import {
   CONFIG_KEY_ISSUE,
   CONFIG_SCHEMAS,
@@ -24,7 +25,7 @@ export function validateBody(
   if (parsed.success) return { ok: true, body: parsed.data }
   return {
     ok: false,
-    issues: parsed.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+    issues: parsed.error.issues.map((i) => configIssueCopy(kind, i)),
   }
 }
 
