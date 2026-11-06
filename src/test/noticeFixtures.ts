@@ -98,7 +98,7 @@ export async function proofDocument(
   return attached.documentId
 }
 
-const METHOD_FOR_CHANNEL: Record<string, ProofMethod> = {
+export const METHOD_FOR_CHANNEL: Record<string, ProofMethod> = {
   verified_mail: 'certificate_of_mailing',
   certified_mail: 'certified_mail',
   first_class_mail: 'first_class_mail',
@@ -135,5 +135,23 @@ export async function proveEverything(
     )
     if (!proved.ok)
       throw new AppError(ErrorIds.DB_INVARIANT, `proof ${channel}: ${JSON.stringify(proved.error)}`)
+  }
+}
+
+export async function firstChannelProof(
+  db: Db,
+  world: BoardWorld,
+  applicationId: string,
+  setId: string,
+): Promise<{ itemIds: string[]; method: ProofMethod; reference: string; documentId: string }> {
+  const status = await noticeStatus(db, setId, signal)
+  const channel = status.items[0]?.channel ?? ''
+  const method = METHOD_FOR_CHANNEL[channel]
+  if (method === undefined) throw new AppError(ErrorIds.DB_INVARIANT, `no method for ${channel}`)
+  return {
+    itemIds: status.items.filter((i) => i.channel === channel).map((i) => i.itemId),
+    method,
+    reference: 'RR-0001',
+    documentId: await proofDocument(db, world, applicationId),
   }
 }
