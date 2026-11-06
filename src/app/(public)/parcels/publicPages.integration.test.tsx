@@ -113,4 +113,13 @@ describe('public parcel search', () => {
     expect(html).toContain('12 Heron Cove Road')
     expect(html).not.toContain('Showing the first')
   })
+
+  it('gives the same hint for a whitespace-only search as for one character', async () => {
+    expect(await search('   ')).toContain('Enter at least two characters.')
+    expect(await search('a')).toContain('Enter at least two characters.')
+  })
+
+  it('shows no hint before anything is typed', async () => {
+    expect(await search('')).not.toContain('Enter at least two characters.')
+  })
 })

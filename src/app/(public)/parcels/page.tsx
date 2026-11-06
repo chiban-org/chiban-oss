@@ -30,7 +30,7 @@ export default async function PublicParcelsPage({ searchParams }: PublicParcelsP
     <main className="text-base">
       <h1>Parcel lookup</h1>
       <ParcelSearchBox defaultValue={q} />
-      {q.trim().length === 0 ? null : q.trim().length < 2 ? (
+      {q === '' ? null : q.trim().length < 2 ? (
         <p>Enter at least two characters.</p>
       ) : hits.length === 0 ? (
         <p>No parcels match that search.</p>

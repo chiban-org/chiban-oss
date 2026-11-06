@@ -3,7 +3,8 @@
 import { ApplicationForm, type ApplicationFormActions } from '@/components/portal/ApplicationForm'
 import { PayButton } from '@/components/portal/PayButton'
 import type { FormBody } from '@/features/forms/formSchema'
-import { saveDraftAction, startPaymentAction, submitApplicationAction } from './actions'
+import { saveDraftAction, submitApplicationAction } from './actions'
+import { startPaymentAction } from './paymentActions'
 
 const FORM_ACTIONS: ApplicationFormActions = {
   save: saveDraftAction,

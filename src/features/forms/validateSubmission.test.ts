@@ -133,4 +133,27 @@ describe('validateSubmission', () => {
     expect(r.ok).toBe(true)
     if (r.ok) expect('about' in r.value.values).toBe(false)
   })
+
+  it('a whitespace-only answer to a required text question is refused as missing', () => {
+    const form: FormBody = FormBodySchema.parse({
+      key: 'alarm',
+      label: 'Alarm',
+      fields: [
+        { key: 'description', label: 'Description', type: 'textarea', required: true },
+        { key: 'contact', label: 'Contact', type: 'text', required: false },
+      ],
+    })
+    const r = validateSubmission(form, { description: '     ', contact: '   ' }, { asStaff: false })
+    expect(r).toEqual({ ok: false, error: [{ field: 'description', code: 'required' }] })
+  })
+
+  it('a whitespace-only answer to an optional text question is left out', () => {
+    const form: FormBody = FormBodySchema.parse({
+      key: 'alarm',
+      label: 'Alarm',
+      fields: [{ key: 'contact', label: 'Contact', type: 'text', required: false }],
+    })
+    const r = validateSubmission(form, { contact: '   ' }, { asStaff: false })
+    expect(r.ok && r.value.values).toEqual({})
+  })
 })

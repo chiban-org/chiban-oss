@@ -60,4 +60,13 @@ describe('portal apply page', () => {
     expect(html).not.toContain('Application type')
     await handle.db.update(parcels).set({ status: 'active' }).where(eq(parcels.id, world.parcelId))
   })
+
+  it('gives the same hint for a whitespace-only search as for one character', async () => {
+    expect(await render({ q: '   ' })).toContain('Enter at least two characters.')
+    expect(await render({ q: 'a' })).toContain('Enter at least two characters.')
+  })
+
+  it('shows no hint before anything is typed', async () => {
+    expect(await render({ q: '' })).not.toContain('Enter at least two characters.')
+  })
 })

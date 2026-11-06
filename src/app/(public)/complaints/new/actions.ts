@@ -7,29 +7,23 @@ import { sanitizeImage } from '@/features/anonymousIntake/sanitizeImage'
 import { parcelForLocation } from '@/features/enforcement/caseParcel'
 import type { CleanPhoto } from '@/features/enforcement/complaintPhotos'
 import { MAX_COMPLAINT_CHARS, recordComplaint } from '@/features/enforcement/complaints'
+import { optionalEmail } from '@/features/input/optionalEmail'
+import { optionalPhone, optionalText, requiredText } from '@/features/input/schemas'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { ACTION_FILES_LIMIT_MB, complaintPhotosProblem } from '@/lib/uploadLimits'
 import { guardAction } from '@/server/actionGuard'
-import type { ActionResult } from '@/server/actionRunner'
+import { type ActionResult, errorCopy } from '@/server/actionRunner'
+import { parseForm, refuseField } from '@/server/formInput'
 
 const MAX_PHOTOS = 5
 const TIMEOUT_MS = 30_000
 
-const optionalText = (max: number) =>
-  z.preprocess(
-    (v) => (v === '' || v === null ? undefined : v),
-    z.string().trim().max(max).optional(),
-  )
-
 const FieldsSchema = z.object({
-  locationText: z.string().trim().min(1).max(300),
-  description: z.string().trim().min(1).max(MAX_COMPLAINT_CHARS),
-  name: optionalText(200),
-  email: z.preprocess(
-    (v) => (v === '' || v === null ? undefined : v),
-    z.email().max(320).optional(),
-  ),
-  phone: optionalText(40),
+  locationText: requiredText('where the property is', { max: 300 }),
+  description: requiredText('what you saw', { max: MAX_COMPLAINT_CHARS }),
+  name: optionalText('your name', { max: 200 }),
+  email: optionalEmail('your email'),
+  phone: optionalPhone('your phone'),
 })
 
 async function cleanPhotos(formData: FormData): Promise<CleanPhoto[] | null> {
@@ -49,29 +43,17 @@ async function cleanPhotos(formData: FormData): Promise<CleanPhoto[] | null> {
 export async function submitComplaintAction(formData: FormData): Promise<ActionResult> {
   const signal = AbortSignal.timeout(TIMEOUT_MS)
   const guard = await guardAction(formData, signal, { exempt: 'session' })
-  if (!guard.ok) return { ok: false, error: 'Your session expired. Reload the page and try again.' }
-  const fields = FieldsSchema.safeParse({
-    locationText: formData.get('locationText'),
-    description: formData.get('description'),
-    name: formData.get('name'),
-    email: formData.get('email'),
-    phone: formData.get('phone'),
-  })
-  if (!fields.success) {
-    return {
-      ok: false,
-      error:
-        'Enter the location and what you saw. If you give an email address, check that it is valid.',
-    }
-  }
+  if (!guard.ok) return { ok: false, error: errorCopy(guard.error) }
+  const fields = parseForm(FieldsSchema, formData)
+  if (!fields.ok) return fields.error
   const photos = await cleanPhotos(formData)
   if (photos === null) {
-    return {
-      ok: false,
-      error: `Attach no more than 5 photos, use JPEG or PNG files only, and keep them under ${ACTION_FILES_LIMIT_MB} MB in all.`,
-    }
+    return refuseField(
+      'photos',
+      `Attach no more than 5 photos, use JPEG or PNG files only, and keep them under ${ACTION_FILES_LIMIT_MB} MB in all.`,
+    )
   }
-  const v = fields.data
+  const v = fields.value
   const parcelId = await parcelForLocation(db, v.locationText, signal)
   const result = await recordComplaint(
     db,
@@ -80,9 +62,9 @@ export async function submitComplaintAction(formData: FormData): Promise<ActionR
       channel: 'public_named',
       locationText: v.locationText,
       description: v.description,
-      ...(v.name === undefined ? {} : { name: v.name }),
-      ...(v.email === undefined ? {} : { email: v.email }),
-      ...(v.phone === undefined ? {} : { phone: v.phone }),
+      ...(v.name === null ? {} : { name: v.name }),
+      ...(v.email === null ? {} : { email: v.email }),
+      ...(v.phone === null ? {} : { phone: v.phone }),
       ...(parcelId === undefined ? {} : { parcelId }),
     },
     signal,

@@ -3,14 +3,16 @@
 import { z } from 'zod'
 import { db } from '@/db/client'
 import { requestMagicLink } from '@/features/auth/magicLink'
+import { emailAddress } from '@/features/input/schemas'
 import { getMailTransport } from '@/features/mail/transport'
 import { guardAction } from '@/server/actionGuard'
+import { parseForm } from '@/server/formInput'
 
 export interface MagicLinkState {
   message: string | null
 }
 
-const emailSchema = z.object({ email: z.email() })
+const emailSchema = z.object({ email: emailAddress('an email address') })
 const nextSchema = z.string().max(300).optional()
 
 export async function requestMagicLinkAction(
@@ -20,13 +22,13 @@ export async function requestMagicLinkAction(
   const signal = AbortSignal.timeout(15_000)
   const guard = await guardAction(formData, signal, { exempt: 'session' })
   if (!guard.ok) return { message: 'Your session expired. Reload the page and try again.' }
-  const parsed = emailSchema.safeParse({ email: formData.get('email') })
-  if (!parsed.success) return { message: 'Enter a valid email address.' }
+  const parsed = parseForm(emailSchema, formData)
+  if (!parsed.ok) return { message: parsed.error.error }
   const next = nextSchema.safeParse(formData.get('next') ?? undefined)
   const result = await requestMagicLink(
     db,
     getMailTransport(),
-    parsed.data.email,
+    parsed.value.email,
     signal,
     next.success ? next.data : undefined,
   )

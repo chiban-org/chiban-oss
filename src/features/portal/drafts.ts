@@ -1,6 +1,6 @@
-import { and, eq } from 'drizzle-orm'
-import type { Db } from '@/db/client'
-import { applications, configVersions, parcels } from '@/db/schema'
+import { and, eq, exists, sql } from 'drizzle-orm'
+import type { Db, Tx } from '@/db/client'
+import { applications, configVersions, parcels, projectParties, projects } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { canViewApplication } from '@/features/access/queries'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
@@ -46,6 +46,47 @@ export type StartError =
   | 'config_inconsistent'
   | 'forbidden'
 
+function startLockKey(
+  actor: Actor,
+  input: { parcelId: string; applicationTypeKey: string },
+): string {
+  return `portal.start:${actor.userId}:${input.parcelId}:${input.applicationTypeKey}`
+}
+
+function activePartyOf(actor: Actor, projectId: typeof projects.id) {
+  return exists(
+    sql`(select 1 from ${projectParties} where ${projectParties.projectId} = ${projectId} and ${projectParties.userId} = ${actor.userId} and ${projectParties.removedAt} is null)`,
+  )
+}
+
+async function findUnansweredDraft(
+  tx: Tx,
+  actor: Actor,
+  input: { parcelId: string; applicationTypeKey: string },
+): Promise<{ applicationId: string; number: string; projectId: string } | null> {
+  const [row] = await tx
+    .select({
+      applicationId: applications.id,
+      number: applications.number,
+      projectId: applications.projectId,
+    })
+    .from(applications)
+    .innerJoin(projects, eq(projects.id, applications.projectId))
+    .where(
+      and(
+        eq(applications.createdBy, actor.userId),
+        eq(applications.applicationTypeKey, input.applicationTypeKey),
+        eq(applications.state, 'draft'),
+        sql`${applications.values} = '{}'::jsonb`,
+        eq(projects.parcelId, input.parcelId),
+        hasFullRecordAccess(actor) ? undefined : activePartyOf(actor, projects.id),
+      ),
+    )
+    .orderBy(applications.seq)
+    .limit(1)
+  return row ?? null
+}
+
 export async function startApplication(
   db: Db,
   actor: Actor,
@@ -61,12 +102,17 @@ export async function startApplication(
     { applicationId: string; number: string; projectId: string },
     StartError
   >(db, async (tx) => {
+    await tx.execute(
+      sql`select pg_advisory_xact_lock(hashtextextended(${startLockKey(actor, input)}, 0))`,
+    )
     const [parcel] = await tx
       .select({ siteAddress: parcels.siteAddress, status: parcels.status })
       .from(parcels)
       .where(eq(parcels.id, input.parcelId))
     if (parcel === undefined) return err('unknown_parcel')
     if (parcel.status === 'retired') return err('retired_parcel')
+    const unanswered = await findUnansweredDraft(tx, actor, input)
+    if (unanswered !== null) return ok(unanswered)
     const display = await displayIdsFor(tx, [input.parcelId])
     const where = parcel.siteAddress ?? display.get(input.parcelId) ?? 'parcel on file'
     const project = await createProject(
