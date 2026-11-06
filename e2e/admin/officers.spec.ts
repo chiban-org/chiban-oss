@@ -56,4 +56,38 @@ test.describe('enforcement officer designations', () => {
     )
     expect(ended.ended_on).not.toBeNull()
   })
+
+  test('edits the title of a designation and keeps it in force', async ({ page, db, suffix }) => {
+    const authority = `Select Board ${suffix}`
+    await page.goto('/staff/admin/enforcement-officers')
+    await page.getByRole('button', { name: 'Designate an officer' }).click()
+    const dialog = page.getByRole('dialog')
+    await dialog.getByLabel('Officer').selectOption({ label: OFFICER })
+    await dialog.getByLabel('Designated by').fill(authority)
+    await dialog.getByRole('button', { name: 'Designate officer' }).click()
+    await expectConfirmation(page, 'Officer designated.')
+
+    await page.reload()
+    const item = page.getByRole('listitem').filter({ hasText: authority })
+    await item.getByRole('button', { name: `Edit ${OFFICER}'s designation` }).click()
+    const edit = page.getByRole('dialog')
+    const title = edit.getByLabel('Title')
+    await expect(title).toHaveValue('Code Enforcement Officer')
+    await title.fill(`Zoning Officer ${suffix}`)
+    await edit.getByRole('button', { name: 'Save changes' }).click()
+    await expectConfirmation(page, 'Designation saved.')
+    const row = await db.one<{ title: string; ended_on: string | null }>(
+      'select title, ended_on from enforcement_designations where adopting_authority = $1',
+      [authority],
+    )
+    expect(row.title).toBe(`Zoning Officer ${suffix}`)
+    expect(row.ended_on).toBeNull()
+
+    await page.reload()
+    const after = page.getByRole('listitem').filter({ hasText: authority })
+    await expect(after).toContainText(`${OFFICER}, Zoning Officer ${suffix}.`)
+    await after.getByRole('button', { name: 'End this designation' }).click()
+    await page.getByRole('dialog').getByRole('button', { name: 'End the designation' }).click()
+    await expectConfirmation(page, 'Designation ended.')
+  })
 })
