@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import { RequestForm } from '@/components/inspections/RequestForm'
+import { expectRefusalBeside } from '@/test/besideField'
 
 class ResizeObserverStub {
   observe = vi.fn()
@@ -52,5 +53,37 @@ describe('RequestForm', () => {
       expect(classes.filter((c) => /^(?:(?:sm|md|lg|xl|2xl):)?text-(?:sm|xs)$/.test(c))).toEqual([])
       expect(classes).toContain('md:text-base')
     }
+  })
+
+  it('shows a refused contact phone beside the phone field', async () => {
+    const message = 'Enter the contact phone with 7 to 15 digits.'
+    const action = vi.fn(() =>
+      Promise.resolve({
+        ok: false as const,
+        error: message,
+        fieldErrors: { contactPhone: message },
+      }),
+    )
+    render(
+      <CsrfProvider token="t1">
+        <RequestForm
+          applicationId="a1"
+          types={[{ checklistVersionId: 'c1', label: 'Final' }]}
+          dates={[]}
+          action={action}
+          channels={[{ value: 'phone', label: 'Phone' }]}
+          phoneHoursText="weekdays"
+          outsidePhoneHours={false}
+        />
+      </CsrfProvider>,
+    )
+    fireEvent.change(screen.getByRole('textbox', { name: /Contact name/ }), {
+      target: { value: 'Pat' },
+    })
+    fireEvent.change(screen.getByRole('textbox', { name: 'Contact phone' }), {
+      target: { value: 'abc' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: 'Request inspection' }))
+    await expectRefusalBeside(screen.getByRole('textbox', { name: 'Contact phone' }), message)
   })
 })

@@ -164,7 +164,17 @@ describe('staff inspection actions', () => {
         contactName: '',
       }),
     )
-    expect(r).toEqual({ ok: false, error: 'Check the form fields and try again.' })
+    expect(r).toEqual({
+      ok: false,
+      error:
+        'Choose a permit. Choose an inspection. Choose how the request came in. Enter the contact name.',
+      fieldErrors: {
+        applicationId: 'Choose a permit.',
+        checklistVersionId: 'Choose an inspection.',
+        channel: 'Choose how the request came in.',
+        contactName: 'Enter the contact name.',
+      },
+    })
   })
 
   it('a slot already taken says so', async () => {

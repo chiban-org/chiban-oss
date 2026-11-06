@@ -21,6 +21,7 @@ type Offered = { checklistVersionId: string; label: string }
 
 export interface TakeRequestData {
   number: string
+  searched: boolean
   target: Target | null
   blockedCopy: string | null
   offered: Offered[]
@@ -41,10 +42,18 @@ async function offeredTypes(ctx: StaffContext, applicationId: string, reinspect:
 
 export async function loadTakeRequest(
   ctx: StaffContext,
-  number: string,
+  asked: string | undefined,
   reinspect: string,
 ): Promise<TakeRequestData> {
-  const empty = { number, target: null, blockedCopy: null, offered: [], reinspectionOf: null }
+  const number = asked ?? ''
+  const empty = {
+    number,
+    searched: asked !== undefined,
+    target: null,
+    blockedCopy: null,
+    offered: [],
+    reinspectionOf: null,
+  }
   if (number.trim() === '') return empty
   const target = await findIssuedApplicationByNumber(ctx.db, ctx.actor, number, ctx.signal)
   if (target === null) return empty
@@ -52,6 +61,7 @@ export async function loadTakeRequest(
   const { offered, reinspection } = await offeredTypes(ctx, target.id, reinspect)
   return {
     number,
+    searched: true,
     target,
     blockedCopy,
     offered: offered.map((t) => ({ checklistVersionId: t.checklistVersionId, label: t.label })),
@@ -62,7 +72,8 @@ export async function loadTakeRequest(
 function Outcome({ data, board }: { data: TakeRequestData; board: ScheduleBoardData }) {
   const { target } = data
   if (target === null) {
-    return data.number.trim() === '' ? null : <p>No permit has that number.</p>
+    if (data.number.trim() !== '') return <p>No permit has that number.</p>
+    return data.searched ? <p role="alert">Enter a permit number.</p> : null
   }
   if (data.blockedCopy !== null) return <p>{data.blockedCopy}</p>
   if (data.offered.length === 0) return <p>{NOTHING_TO_REQUEST}</p>

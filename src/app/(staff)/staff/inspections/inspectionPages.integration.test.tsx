@@ -122,6 +122,20 @@ describe('the inspection board', () => {
     )
   })
 
+  it('says to enter a permit number when Find permit is pressed with the box empty or blank', async () => {
+    await actAs('staff')
+    for (const number of ['', '   ']) {
+      const body = await html(InspectionsPage({ searchParams: Promise.resolve({ number }) }))
+      expect(body).toContain('Enter a permit number.')
+    }
+  })
+
+  it('does not scold before a permit number has been looked up', async () => {
+    await actAs('staff')
+    const body = await html(InspectionsPage({ searchParams: Promise.resolve({}) }))
+    expect(body).not.toContain('Enter a permit number.')
+  })
+
   it('opens with a lead line, the day list link in the header, and Take a request above the queue', async () => {
     await actAs('staff')
     const body = await html(InspectionsPage({ searchParams: Promise.resolve({}) }))

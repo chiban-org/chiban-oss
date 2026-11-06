@@ -21,7 +21,7 @@ export default async function ScheduleBoardPage({
 }: {
   searchParams: Promise<{ number?: string; reinspect?: string }>
 }) {
-  const { number = '', reinspect = '' } = await searchParams
+  const { number, reinspect = '' } = await searchParams
   const ctx = await requireStaffContext()
   const loaded = await loadScheduleBoard(ctx.db, ctx.actor, ctx.signal)
   if (!loaded.ok) return <NoPermission title="Inspections" action="schedule inspections" />

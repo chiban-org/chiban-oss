@@ -1,11 +1,10 @@
 'use client'
 
 import { ActionForm } from '@/components/ActionForm'
-import { Input } from '@/components/ui/input'
+import { AreaField, TextField } from '@/components/staff/fields'
 import { Label } from '@/components/ui/label'
 import { Legend } from '@/components/ui/legend'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
-import { RequiredMark } from '@/components/ui/required-mark'
 import {
   Select,
   SelectContent,
@@ -13,7 +12,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { Textarea } from '@/components/ui/textarea'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { ActionResult } from '@/server/actionRunner'
 
@@ -112,37 +110,19 @@ export function RequestForm({
           </SelectContent>
         </Select>
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="contactName" className="text-base font-medium">
-          <span>
-            Contact name
-            <RequiredMark />
-          </span>
-        </Label>
-        <Input
-          id="contactName"
-          name="contactName"
-          required
-          className="min-h-11 text-base md:text-base"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="contactPhone" className="text-base font-medium">
-          Contact phone
-        </Label>
-        <Input
-          id="contactPhone"
-          name="contactPhone"
-          type="tel"
-          className="min-h-11 text-base md:text-base"
-        />
-      </div>
-      <div className="space-y-1.5">
-        <Label htmlFor="accessNotes" className="text-base font-medium">
-          Access notes
-        </Label>
-        <Textarea id="accessNotes" name="accessNotes" className="min-h-20 text-base" />
-      </div>
+      <TextField
+        label="Contact name"
+        name="contactName"
+        required
+        className="min-h-11 text-base md:text-base"
+      />
+      <TextField
+        label="Contact phone"
+        name="contactPhone"
+        type="tel"
+        className="min-h-11 text-base md:text-base"
+      />
+      <AreaField label="Access notes" name="accessNotes" className="min-h-20 text-base" />
     </ActionForm>
   )
 }

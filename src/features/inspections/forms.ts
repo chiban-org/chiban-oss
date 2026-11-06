@@ -1,6 +1,5 @@
 import { z } from 'zod'
 import type { CalendarAccountInput } from '@/features/calendar/calendarAccounts'
-import type { ScheduleInput } from '@/features/inspections/schedule'
 import type { RequestInspectionInput } from '@/features/inspections/types'
 import { parseCivilDate } from '@/types/civilDate'
 
@@ -32,23 +31,8 @@ const RequestSchema = z.object({
   reinspectionOf: Optional(z.uuid()),
 })
 
-const ScheduleSchema = z.object({
-  inspectionId: z.uuid(),
-  inspectorUserId: z.uuid(),
-  date: CivilField,
-  startMinute: z.coerce.number().int().min(0).max(1439),
-  expectedRowVersion: z.coerce.number().int().min(1),
-  offGridReason: Optional(z.string().max(500)),
-})
-
 const CancelSchema = z.object({
   inspectionId: z.uuid(),
-  expectedRowVersion: z.coerce.number().int().min(1),
-})
-
-const CertificateSchema = z.object({
-  applicationId: z.uuid(),
-  issuedOn: CivilField,
   expectedRowVersion: z.coerce.number().int().min(1),
 })
 
@@ -89,24 +73,8 @@ export function parseRequestForm(
   }
 }
 
-export function parseScheduleForm(formData: FormData): ScheduleInput | null {
-  const parsed = ScheduleSchema.safeParse(entries(formData))
-  if (!parsed.success) return null
-  const { offGridReason, date, ...rest } = parsed.data
-  return {
-    ...rest,
-    date,
-    ...(offGridReason === undefined ? {} : { offGrid: { reason: offGridReason } }),
-  }
-}
-
 export function parseCancelForm(formData: FormData) {
   const parsed = CancelSchema.safeParse(entries(formData))
-  return parsed.success ? parsed.data : null
-}
-
-export function parseCertificateForm(formData: FormData) {
-  const parsed = CertificateSchema.safeParse(entries(formData))
   return parsed.success ? parsed.data : null
 }
 

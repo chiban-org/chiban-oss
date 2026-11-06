@@ -2,15 +2,10 @@
 
 import { createUploadIntent, finalizeUpload } from '@/features/documents/uploads'
 import { recordInspectionResult } from '@/features/inspections/recordResult'
-import { parseResultForm } from '@/features/inspections/resultForm'
+import { itemsOf, RESULT_FORM } from '@/features/inspections/resultForm'
 import { getObjectStore } from '@/features/storage/objectStore'
-import {
-  type ActionResult,
-  errorCopy,
-  runStaffAction,
-  runStaffValue,
-  text,
-} from '@/server/actionRunner'
+import { type ActionResult, errorCopy, runStaffValue, text } from '@/server/actionRunner'
+import { refuseField, runStaffForm } from '@/server/formInput'
 import { isUuid } from '@/utils/uuid'
 
 const STALE_COPY = 'This inspection changed since you opened it'
@@ -55,10 +50,16 @@ const FINALIZE_COPY = {
 } as const
 
 export async function recordResultAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const input = parseResultForm(formData)
-    if (input === null) return { ok: false, error: errorCopy('invalid_input') }
-    const result = await recordInspectionResult(db, actor, input, signal)
+  return await runStaffForm(formData, RESULT_FORM, async ({ db, actor, signal }, form) => {
+    const items = itemsOf(formData)
+    if (items === null) return { ok: false, error: errorCopy('invalid_input') }
+    const { notes, ...rest } = form
+    const result = await recordInspectionResult(
+      db,
+      actor,
+      { ...rest, items, ...(notes === null ? {} : { notes }) },
+      signal,
+    )
     if (result.ok) {
       return {
         ok: true,
@@ -70,7 +71,10 @@ export async function recordResultAction(formData: FormData): Promise<ActionResu
     if (typeof result.error === 'object') {
       return { ok: false, error: 'The permit cannot be closed yet. Ask the land use office.' }
     }
-    return { ok: false, error: RESULT_COPY[result.error] ?? errorCopy(result.error) }
+    const copy = RESULT_COPY[result.error] ?? errorCopy(result.error)
+    return result.error === 'notes_required'
+      ? refuseField('notes', copy)
+      : { ok: false, error: copy }
   })
 }
 
