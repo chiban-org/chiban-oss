@@ -1,101 +1,75 @@
 'use server'
 
-import { errorOrOk } from '@/features/boards/actionResult'
 import { endRestriction, undoRestrictionEnd } from '@/features/rosters/restrictionEnd'
-import {
-  addRestriction,
-  type RestrictionKind,
-  updateRestriction,
-} from '@/features/rosters/restrictions'
+import { addRestriction, updateRestriction } from '@/features/rosters/restrictions'
 import { recordRosterReview } from '@/features/rosters/reviews'
-import { townToday } from '@/features/town/today'
-import { type ActionResult, runStaffAction, text } from '@/server/actionRunner'
-import { dateOf, INVALID, parcelOf, recordIdOf } from './rosterFields'
+import type { ActionResult } from '@/server/actionRunner'
+import { runStaffForm } from '@/server/formInput'
+import { runStaffFormToday } from '@/server/formInputToday'
+import {
+  ADD_RESTRICTION_FORM,
+  endRestrictionForm,
+  NO_INPUT_FORM,
+  UNDO_RESTRICTION_END_FORM,
+  UPDATE_RESTRICTION_FORM,
+} from './noticeForms'
+import { parcelFor } from './rosterFields'
+import { settled } from './rosterResult'
 
-const RESTRICTIONS: readonly RestrictionKind[] = [
-  'conservation',
-  'preservation',
-  'agricultural_preservation',
-]
-
-function restrictionKindOf(formData: FormData): RestrictionKind | null {
-  const kind = text(formData, 'restrictionKind')
-  return RESTRICTIONS.find((k) => k === kind) ?? null
-}
-
-function holder(formData: FormData) {
-  return {
-    holderName: text(formData, 'holderName'),
-    holderMailingAddress: text(formData, 'holderMailingAddress'),
-    recordedReference: text(formData, 'recordedReference'),
-  }
-}
+const HOLDER_FIELDS = { holder_required: 'holderName', address_required: 'holderMailingAddress' }
 
 export async function addRestrictionAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const parcelId = await parcelOf(formData, db, signal)
-    const restrictionKind = restrictionKindOf(formData)
-    if (parcelId === null) {
-      return {
-        ok: false,
-        error: `No parcel has the ID ${text(formData, 'parcelRef')}. Check the parcel ID and try again.`,
-      }
-    }
-    if (restrictionKind === null) return INVALID
-    const added = await addRestriction(
-      db,
-      actor,
-      { parcelId, restrictionKind, ...holder(formData) },
-      signal,
-    )
-    return errorOrOk(added, 'Restriction holder added.')
-  })
+  return await runStaffForm(
+    formData,
+    ADD_RESTRICTION_FORM,
+    async ({ db, actor, signal }, { parcelRef, ...input }) => {
+      const parcel = await parcelFor(db, parcelRef, signal)
+      if (!('parcelId' in parcel)) return parcel
+      const added = await addRestriction(db, actor, { ...input, ...parcel }, signal)
+      return settled(added, 'Restriction holder added.', HOLDER_FIELDS)
+    },
+  )
 }
 
 export async function updateRestrictionAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const holdingId = recordIdOf(formData, 'holdingId')
-    const restrictionKind = restrictionKindOf(formData)
-    if (holdingId === null || restrictionKind === null) return INVALID
-    const saved = await updateRestriction(
-      db,
-      actor,
-      { holdingId, restrictionKind, ...holder(formData) },
-      signal,
-    )
-    return errorOrOk(saved, 'Restriction holder saved.')
-  })
+  return await runStaffForm(
+    formData,
+    UPDATE_RESTRICTION_FORM,
+    async ({ db, actor, signal }, input) =>
+      settled(
+        await updateRestriction(db, actor, input, signal),
+        'Restriction holder saved.',
+        HOLDER_FIELDS,
+      ),
+  )
 }
 
 export async function endRestrictionAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const holdingId = recordIdOf(formData, 'holdingId')
-    const endedOn = dateOf(formData, 'endedOn')
-    if (holdingId === null || endedOn === null) return INVALID
-    return errorOrOk(
-      await endRestriction(db, actor, { holdingId, endedOn }, signal),
-      'Restriction ended.',
-    )
-  })
+  return await runStaffFormToday(
+    formData,
+    endRestrictionForm,
+    async ({ db, actor, signal }, input) =>
+      settled(await endRestriction(db, actor, input, signal), 'Restriction ended.'),
+  )
 }
 
 export async function undoRestrictionEndAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const holdingId = recordIdOf(formData, 'holdingId')
-    if (holdingId === null) return INVALID
-    return errorOrOk(
-      await undoRestrictionEnd(db, actor, { holdingId }, signal),
-      'The ending was undone.',
-    )
-  })
+  return await runStaffForm(
+    formData,
+    UNDO_RESTRICTION_END_FORM,
+    async ({ db, actor, signal }, input) =>
+      settled(await undoRestrictionEnd(db, actor, input, signal), 'The ending was undone.'),
+  )
 }
 
 export async function recordLandRecordsCheckAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const reviewedOn = await townToday(db, new Date(), signal)
-    return errorOrOk(
-      await recordRosterReview(db, actor, { kind: 'restrictions', reviewedOn }, signal),
-      'Land records check recorded.',
-    )
-  })
+  return await runStaffFormToday(
+    formData,
+    () => NO_INPUT_FORM,
+    async ({ db, actor, signal }, _input, today) =>
+      settled(
+        await recordRosterReview(db, actor, { kind: 'restrictions', reviewedOn: today }, signal),
+        'Land records check recorded.',
+      ),
+  )
 }

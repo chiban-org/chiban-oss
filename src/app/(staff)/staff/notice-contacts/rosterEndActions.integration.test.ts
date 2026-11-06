@@ -66,7 +66,7 @@ async function association(): Promise<string> {
       parcelId: world.parcelId,
       associationName: 'Heron Landing Condominium',
       officers: [{ name: 'Dana Whitcomb', title: 'President', mailingAddress: 'PO Box 105' }],
-      asOf: '2027-01-10' as CivilDate,
+      asOf: '2026-01-10' as CivilDate,
     },
     signal,
   )
@@ -90,7 +90,7 @@ describe('ending a condo association from Notice contacts', () => {
     const entryId = await association()
     state.actor = await staffActor(handle.db, 'finance')
     const ended = await endRosterEntryAction(
-      form({ kind: 'association', entryId, endedOn: '2027-03-01' }),
+      form({ kind: 'association', entryId, endedOn: '2026-03-01' }),
     )
     expect(ended.ok).toBe(false)
     expect(await endedOn(entryId)).toBeNull()
@@ -102,9 +102,9 @@ describe('ending a condo association from Notice contacts', () => {
     const entryId = await association()
     state.actor = world.staff
     expect(
-      await endRosterEntryAction(form({ kind: 'association', entryId, endedOn: '2027-03-01' })),
+      await endRosterEntryAction(form({ kind: 'association', entryId, endedOn: '2026-03-01' })),
     ).toEqual({ ok: true, message: 'Condo association ended.' })
-    expect(await endedOn(entryId)).toBe('2027-03-01')
+    expect(await endedOn(entryId)).toBe('2026-03-01')
     expect(await undoRosterEndAction(form({ kind: 'association', entryId }))).toEqual({
       ok: true,
       message: 'The ending was undone.',
@@ -115,7 +115,7 @@ describe('ending a condo association from Notice contacts', () => {
   it('rejects a kind that cannot be ended this way', async () => {
     state.actor = world.staff
     const result = await endRosterEntryAction(
-      form({ kind: 'restriction', entryId: crypto.randomUUID(), endedOn: '2027-03-01' }),
+      form({ kind: 'restriction', entryId: crypto.randomUUID(), endedOn: '2026-03-01' }),
     )
     expect(result.ok).toBe(false)
   })

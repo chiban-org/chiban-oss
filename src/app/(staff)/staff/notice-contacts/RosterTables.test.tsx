@@ -15,8 +15,15 @@ vi.mock('./rosterEndActions', () => ({
   undoRosterEndAction: vi.fn(),
 }))
 vi.mock('./confirmActions', () => ({ confirmEntryAction: vi.fn() }))
+vi.mock('./actions', () => ({
+  addRestrictionAction: vi.fn(),
+  updateRestrictionAction: vi.fn(),
+  endRestrictionAction: vi.fn(),
+  undoRestrictionEndAction: vi.fn(),
+}))
 
 const { AssociationTable, ParkTable } = await import('./RosterTables')
+const { RestrictionTable } = await import('./ContactTables')
 
 afterEach(cleanup)
 
@@ -94,5 +101,33 @@ describe('condo association and park tables', () => {
   it('offers End on a park too', () => {
     show(<ParkTable rows={[park]} today="2026-11-04" />)
     expect(screen.getByRole('button', { name: 'End Loon Cove on 021-005' })).toBeTruthy()
+  })
+
+  it('lets every roster table shrink to the content width so the row actions stay visible', () => {
+    show(
+      <>
+        <AssociationTable rows={[association({})]} today="2026-11-04" />
+        <ParkTable rows={[park]} today="2026-11-04" />
+        <RestrictionTable
+          rows={[
+            {
+              ...active,
+              entryId: crypto.randomUUID(),
+              parcelId: crypto.randomUUID(),
+              parcel: '021-006',
+              holder: 'Heron Land Trust',
+              holderMailingAddress: '2 Trust Way',
+              kind: 'conservation',
+              kindText: 'Conservation',
+              reference: 'Book 1204, page 88',
+            } as never,
+          ]}
+          today="2026-11-04"
+        />
+      </>,
+    )
+    for (const table of screen.getAllByRole('table')) {
+      expect(table.className).not.toMatch(/(^|\s)min-w-/)
+    }
   })
 })

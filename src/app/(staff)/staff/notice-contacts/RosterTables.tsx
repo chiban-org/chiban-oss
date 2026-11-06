@@ -10,7 +10,7 @@ import { ActionsHeader, Checked, ParcelLink, PersonLines, RowActions, UsedBy } f
 export function AssociationTable({ rows, today }: { rows: AssociationRow[]; today: string }) {
   return (
     <div className="table-panel">
-      <table className="w-full min-w-[62rem] text-sm">
+      <table className="w-full text-sm">
         <caption className="sr-only">Condo associations</caption>
         <thead>
           <tr>
@@ -65,7 +65,7 @@ export function AssociationTable({ rows, today }: { rows: AssociationRow[]; toda
 export function ParkTable({ rows, today }: { rows: ParkRow[]; today: string }) {
   return (
     <div className="table-panel">
-      <table className="w-full min-w-[66rem] text-sm">
+      <table className="w-full text-sm">
         <caption className="sr-only">Manufactured housing parks</caption>
         <thead>
           <tr>

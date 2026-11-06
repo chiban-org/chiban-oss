@@ -108,6 +108,10 @@ describe('association rosters', () => {
     expect(result).toEqual({
       ok: false,
       error: 'This parcel already has an association on file. Use Edit on its row to change it.',
+      fieldErrors: {
+        parcelRef:
+          'This parcel already has an association on file. Use Edit on its row to change it.',
+      },
     })
     const [row] = await handle.db
       .select()
@@ -158,6 +162,9 @@ describe('association rosters', () => {
     expect(result).toEqual({
       ok: false,
       error: 'Enter at least one officer, each with a name and a mailing address.',
+      fieldErrors: {
+        officerName: 'Enter at least one officer, each with a name and a mailing address.',
+      },
     })
   })
 
@@ -187,6 +194,9 @@ describe('park rosters', () => {
     expect(await rosters.addParkAction(form({ parcelRef: PARK_ID, ...park }))).toEqual({
       ok: false,
       error: 'This parcel already has a park on file. Use Edit on its row to change it.',
+      fieldErrors: {
+        parcelRef: 'This parcel already has a park on file. Use Edit on its row to change it.',
+      },
     })
     const edited = await rosters.updateParkAction(
       form({
@@ -260,7 +270,11 @@ describe('restriction holders', () => {
       await holders.updateRestrictionAction(
         form({ holdingId, ...holder, holderMailingAddress: ' ' }),
       ),
-    ).toEqual({ ok: false, error: 'Enter a mailing address.' })
+    ).toEqual({
+      ok: false,
+      error: 'Enter the holder mailing address.',
+      fieldErrors: { holderMailingAddress: 'Enter the holder mailing address.' },
+    })
     state.actor = world.reviewer
     const refused = await holders.updateRestrictionAction(form({ holdingId, ...holder }))
     state.actor = world.staff

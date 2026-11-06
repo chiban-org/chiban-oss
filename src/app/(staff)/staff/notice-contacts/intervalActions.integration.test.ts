@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { beforeAll, expect, vi } from 'vitest'
 import { auditLog, configVersions } from '@/db/schema'
+import { CHECK_PASSED, refuseField } from '@/server/formInput'
 import { seedParcelWorld } from '@/test/parcels'
 import { actionHarness, describeActionCases, int, STAFF_REFUSALS } from '@/test/testHarness/actions'
 
@@ -25,7 +26,14 @@ describeActionCases(h, 'changeRecheckIntervalAction', {
   capability: 'config.edit',
   refusals: {
     ...STAFF_REFUSALS,
-    invalid: { ok: false, error: 'Enter a whole number of days from 1 to 3650.' },
+    invalid: (variant) =>
+      refuseField(
+        'days',
+        variant.kind === 'missing'
+          ? 'Enter the number of days.'
+          : 'Enter the number of days as a whole number from 1 to 3650.',
+      ),
+    checkOnly: CHECK_PASSED,
   },
   accepted: async (result, { db, written }) => {
     expect(result).toEqual({

@@ -1,18 +1,13 @@
 'use server'
 
-import { errorOrOk } from '@/features/boards/actionResult'
-import { confirmEntry, ENTRY_KINDS } from '@/features/rosters/confirm'
-import { type ActionResult, runStaffAction, text } from '@/server/actionRunner'
-import { INVALID, recordIdOf } from './rosterFields'
+import { confirmEntry } from '@/features/rosters/confirm'
+import type { ActionResult } from '@/server/actionRunner'
+import { runStaffForm } from '@/server/formInput'
+import { CONFIRM_ENTRY_FORM } from './noticeForms'
+import { settled } from './rosterResult'
 
 export async function confirmEntryAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const kind = ENTRY_KINDS.find((k) => k === text(formData, 'kind'))
-    const entryId = recordIdOf(formData, 'entryId')
-    if (kind === undefined || entryId === null) return INVALID
-    return errorOrOk(
-      await confirmEntry(db, actor, { kind, entryId }, signal),
-      'Marked as still correct today.',
-    )
-  })
+  return await runStaffForm(formData, CONFIRM_ENTRY_FORM, async ({ db, actor, signal }, input) =>
+    settled(await confirmEntry(db, actor, input, signal), 'Marked as still correct today.'),
+  )
 }

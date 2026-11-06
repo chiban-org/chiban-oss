@@ -20,7 +20,7 @@ export type UndoRosterEndError =
   | 'ending_used'
   | 'replaced'
 
-export type EndRosterError = 'forbidden' | 'not_found' | 'already_ended'
+export type EndRosterError = 'forbidden' | 'not_found' | 'already_ended' | 'before_list_date'
 
 const TABLES = { association: associationRosters, park: parkRosters } as const
 
@@ -57,12 +57,13 @@ export async function endRosterEntry(
   const table = TABLES[input.kind]
   return await transactionResult<void, EndRosterError>(db, async (tx) => {
     const [before] = await tx
-      .select({ parcelId: table.parcelId, endedOn: table.endedOn })
+      .select({ parcelId: table.parcelId, endedOn: table.endedOn, asOf: table.asOf })
       .from(table)
       .where(eq(table.id, input.entryId))
       .for('update')
     if (before === undefined) return err('not_found')
     if (before.endedOn !== null) return err('already_ended')
+    if (input.endedOn < before.asOf) return err('before_list_date')
     await tx
       .update(table)
       .set({ endedOn: input.endedOn, endedAt: now })
