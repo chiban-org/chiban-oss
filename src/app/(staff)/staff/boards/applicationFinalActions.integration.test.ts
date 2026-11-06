@@ -112,6 +112,19 @@ describe('desDeterminationAction without a reason', () => {
   })
 })
 
+describe('finalApprovalAction with a future date', () => {
+  it('refuses beside the Date field and starts no clock', async () => {
+    h.signIn(await h.actorFor('admin'))
+    const applicationId = await decidedVariance(h.db, world)
+    const form = h.form({ applicationId, finalOn: '2028-06-01' })
+    const { value, written } = await h.recordWrites(() => actions.finalApprovalAction(form))
+    expect({ value, written }).toEqual({
+      value: refuseField('finalOn', 'The date cannot be in the future.'),
+      written: [],
+    })
+  })
+})
+
 function finalRefusal(variant: InvalidVariant) {
   return variant.field === 'applicationId'
     ? refuseField('applicationId', idMessage('an application'))

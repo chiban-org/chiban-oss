@@ -61,6 +61,7 @@ describe('review: reliance pending blocks the lapse', () => {
         world.staff,
         { applicationId: variance, finalOn: d('2027-05-12') },
         signal,
+        d('2028-01-03'),
       ),
     )
     const planning = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-06-02')
