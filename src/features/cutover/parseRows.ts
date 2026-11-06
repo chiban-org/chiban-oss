@@ -65,6 +65,13 @@ function dateOf(raw: Raw, key: string, errors: string[]): CivilDate | null {
   return parsed.value
 }
 
+function emailErrors(raw: Raw): string[] {
+  return EMAIL_COLUMNS.filter(([column]) => {
+    const email = clean(raw[column])
+    return email !== undefined && !EMAIL.safeParse(email).success
+  }).map(([, code]) => code)
+}
+
 function toRow(raw: Raw, line: number): CutoverRow {
   const errors: string[] = []
   const state = CUTOVER_STATES.find((s) => s === clean(raw.state))
@@ -90,10 +97,7 @@ function toRow(raw: Raw, line: number): CutoverRow {
   for (const [key, value] of Object.entries(raw)) {
     if (key.startsWith('field.') && clean(value) !== undefined) fields[key.slice(6)] = value.trim()
   }
-  for (const [column, code] of EMAIL_COLUMNS) {
-    const email = clean(raw[column])
-    if (email !== undefined && !EMAIL.safeParse(email).success) errors.push(code)
-  }
+  errors.push(...emailErrors(raw))
   const legacyNumber = clean(raw.legacy_number) ?? ''
   if (legacyNumber === '') errors.push('legacy_number_required')
   return {

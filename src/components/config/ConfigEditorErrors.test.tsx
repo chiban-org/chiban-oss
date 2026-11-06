@@ -95,6 +95,48 @@ describe('ConfigEditorForm refusals beside the field', () => {
   })
 })
 
+describe('ConfigEditorForm town rule refusals', () => {
+  it('shows the value refusal inside the Town value group', async () => {
+    const message = 'Enter a whole number of months from 1 to 120.'
+    const refuse = () =>
+      Promise.resolve({
+        ok: false as const,
+        error: 'This version cannot be published yet.',
+        fieldErrors: { value: message },
+      })
+    render(
+      <ConfigEditorForm
+        kind="town_rule_setting"
+        configKey="town.bp.validity"
+        initialBody={{ ruleKey: 'town.bp.validity', value: -3 }}
+        resetKey="v1"
+        context={{
+          ...context,
+          townRules: {
+            'town.bp.validity': {
+              label: 'Building permit validity period',
+              policy: 'The town chooses.',
+              settable: true,
+              unit: 'months',
+              citation: { label: 'Town rule', url: null },
+            },
+          },
+        }}
+        saveAction={refuse}
+        publishAction={refuse}
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Publish now' }))
+    const beside = await waitFor(() => {
+      const found = document.querySelector('[data-field-error="value"]')
+      if (found === null) throw new Error('not shown yet')
+      return found
+    })
+    expect(beside.closest('fieldset')?.textContent).toContain(message)
+  })
+})
+
 describe('ConfigEditorForm while a request runs', () => {
   it('says it is working until the server answers', async () => {
     const never = () => new Promise<never>(() => undefined)

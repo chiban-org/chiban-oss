@@ -44,7 +44,7 @@ describeActionCases(h, 'importCutoverAction', {
     invalid: refuseField('file', 'Choose a CSV file.'),
     checkOnly: CHECK_PASSED,
   },
-  accepted: async (result, { written }) => {
+  accepted: (result, { written }) => {
     expect(result).toEqual({
       ok: true,
       message:
@@ -116,7 +116,7 @@ describeActionCases(h, 'reconcileCutoverAction', {
     invalid: refuseField('file', "Choose the town's list as a CSV file."),
     checkOnly: CHECK_PASSED,
   },
-  accepted: async (result, { written }) => {
+  accepted: (result, { written }) => {
     expect(result).toEqual({
       ok: true,
       message:
@@ -186,7 +186,7 @@ describeActionCases(h, 'signOffReconciliationAction', {
     invalid: refuseField('reconciliationId', 'Choose a comparison.'),
     checkOnly: CHECK_PASSED,
   },
-  accepted: async (result, { written }) => {
+  accepted: (result, { written }) => {
     expect(result).toEqual({ ok: true, message: 'Reconciliation signed off.' })
     expect(written).toEqual(expect.arrayContaining(['cutover_reconciliations']))
   },

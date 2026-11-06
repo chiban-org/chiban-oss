@@ -22,6 +22,9 @@ import { cancelInspection, scheduleInspection } from '@/features/inspections/sch
 import { getObjectStore } from '@/features/storage/objectStore'
 import { enqueueCalendarPushes } from '@/jobs/calendarPush'
 import { type ActionResult, errorCopy, runStaffAction, text } from '@/server/actionRunner'
+import { runStaffForm } from '@/server/formInput'
+import { refusedDraft } from '../settings/draftRefusal'
+import { SETTINGS_BODY_FORM } from '../settings/forms'
 
 const INVALID: ActionResult = { ok: false, error: errorCopy('invalid_input') }
 const STAFF_CHANNELS = ['phone', 'counter'] as const
@@ -126,26 +129,14 @@ export async function saveCalendarAccountAction(formData: FormData): Promise<Act
 }
 
 export async function publishInspectionSettingsAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    let body: unknown
-    try {
-      body = JSON.parse(text(formData, 'body')) as unknown
-    } catch {
-      return INVALID
-    }
+  return await runStaffForm(formData, SETTINGS_BODY_FORM, async ({ db, actor, signal }, input) => {
     const saved = await saveDraft(
       db,
       actor,
-      { kind: 'inspection_settings', key: 'default', body },
+      { kind: 'inspection_settings', key: 'default', body: input.body },
       signal,
     )
-    if (!saved.ok) {
-      return {
-        ok: false,
-        error: saved.error === 'forbidden' ? failure('forbidden').error : 'The draft has errors.',
-        fieldErrors: fieldErrorsFor(saved.error),
-      }
-    }
+    if (!saved.ok) return refusedDraft(saved.error)
     const published = await publishConfig(db, actor, saved.value.versionId, signal)
     if (published.ok) return { ok: true, message: `Published version ${published.value.version}.` }
     return {

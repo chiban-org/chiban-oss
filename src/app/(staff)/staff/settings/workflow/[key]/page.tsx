@@ -13,13 +13,8 @@ import { discardOffer } from '@/features/config/discardOffer'
 import { getEditorState } from '@/features/config/settingsViews'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
-import {
-  discardDraftAction,
-  previewWorkflowAction,
-  publishAction,
-  rollbackAction,
-  saveDraftAction,
-} from '../../actions'
+import { discardDraftAction, publishAction, rollbackAction, saveDraftAction } from '../../actions'
+import { previewWorkflowAction } from '../../previewActions'
 
 export const metadata: Metadata = { title: 'Workflow' }
 

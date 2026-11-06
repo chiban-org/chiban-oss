@@ -1,5 +1,5 @@
 import { NH_STARTERS } from '@packs/nh/starters'
-import { adoptStarterAction } from '@/app/(staff)/staff/settings/actions'
+import { adoptStarterAction } from '@/app/(staff)/staff/settings/starterActions'
 import { ActionForm } from '@/components/ActionForm'
 
 export function StarterList({ adopted }: { adopted: ReadonlySet<string> }) {

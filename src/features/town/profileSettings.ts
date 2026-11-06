@@ -2,6 +2,7 @@ import type { Db, DbOrTx } from '@/db/client'
 import { transactionResult } from '@/db/transactionResult'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { configIssueCopy } from '@/features/config/issueCopy'
 import { type PublishError, publishNewVersion } from '@/features/config/publish'
 import { getPublished, lockConfigKey } from '@/features/config/store'
 import {
@@ -68,7 +69,7 @@ export async function publishTownProfileSection(
     })
     if (!merged.success) {
       return err({
-        invalid: merged.error.issues.map((i) => ({ path: i.path.join('.'), message: i.message })),
+        invalid: merged.error.issues.map((i) => configIssueCopy('town_profile', i)),
       })
     }
     const published = await publishNewVersion(

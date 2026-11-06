@@ -6,7 +6,9 @@ export const ChecklistBodySchema = z.object({
   label: z.string().trim().min(1),
   final: z.boolean().optional(),
   items: z
-    .array(z.object({ key: z.string().min(1), label: z.string().trim().min(1), required: z.boolean() }))
+    .array(
+      z.object({ key: z.string().min(1), label: z.string().trim().min(1), required: z.boolean() }),
+    )
     .min(1),
 })
 export type ChecklistBody = z.infer<typeof ChecklistBodySchema>

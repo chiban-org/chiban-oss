@@ -61,11 +61,8 @@ describeActionCases(h, 'enableAnonymousIntakeAction', {
 
 describe('enableAnonymousIntakeAction without a passing retention check', () => {
   it('refuses in words and leaves intake off', async () => {
-    await h.db
-      .update(townSettings)
-      .set({ anonymousIntakeEnabled: false })
-      .where(eq(townSettings.id, 1))
-    await h.db.execute(`delete from anonymous_intake_verifications` as never)
+    await setIntake(false)
+    await verifyRunningBuild(false)
     h.signIn(await h.actorFor('admin'))
     const result = await enableAnonymousIntakeAction(h.form({}))
     expect(result).toEqual({

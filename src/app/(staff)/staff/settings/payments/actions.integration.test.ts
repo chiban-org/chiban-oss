@@ -95,6 +95,7 @@ describe('settings actions', () => {
     expect(r).toEqual({
       ok: false,
       error: 'The simulated processor is turned off in this environment.',
+      fieldErrors: { processor: 'The simulated processor is turned off in this environment.' },
     })
   })
 
@@ -103,7 +104,11 @@ describe('settings actions', () => {
     const r = await settingsActions.saveProcessorAccountAction(
       h.form({ ...stripeFields, secretKey: '' }),
     )
-    expect(r).toEqual({ ok: false, error: 'Check the form fields and try again.' })
+    expect(r).toEqual({
+      ok: false,
+      error: 'Enter the secret key.',
+      fieldErrors: { secretKey: 'Enter the secret key.' },
+    })
   })
 
   it('admin publishes the convenience fee and it is read back', async () => {

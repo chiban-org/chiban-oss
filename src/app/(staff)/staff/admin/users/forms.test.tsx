@@ -56,7 +56,7 @@ describe('invite form', () => {
 
 describe('disable account', () => {
   it('shows the reason refusal beside the Reason field and never opens the confirm', async () => {
-    actions.disableAction.mockImplementation(async (form: FormData) =>
+    actions.disableAction.mockImplementation((form: FormData) =>
       form.has(CHECK_ONLY_FIELD)
         ? {
             ok: false,

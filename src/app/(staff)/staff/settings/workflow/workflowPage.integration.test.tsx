@@ -49,7 +49,7 @@ vi.mock('@/server/trpc/context', () => ({
 }))
 
 const { default: WorkflowPage } = await import('./[key]/page')
-const actions = await import('@/app/(staff)/staff/settings/actions')
+const actions = await import('@/app/(staff)/staff/settings/previewActions')
 
 let handle: TestDb
 let world: BoardWorld

@@ -78,6 +78,17 @@ const NOUNS: Table = {
     adoptedOn: 'the date it was adopted',
   },
   town_rule_setting: { value: "the town's value" },
+  town_profile: {
+    officeName: 'the office name',
+    addressLines: 'an address line',
+    phone: 'the phone number',
+    email: 'the email address',
+    website: 'the website',
+    officeHours: 'the office hours',
+    signers: 'a signer',
+    'signers.*.name': 'the signer name',
+    'signers.*.title': 'the signer title',
+  },
 }
 
 const ROWS: Table = {
@@ -85,6 +96,7 @@ const ROWS: Table = {
   condition_library: { conditions: 'Condition' },
   form: { fields: 'Question', 'fields.*.options': 'Choice' },
   inspection_checklist: { items: 'Check' },
+  town_profile: { signers: 'Signer' },
   board_settings: { boards: 'Board', 'boards.*.publicNotice.bulletinBoards': 'Bulletin board' },
 }
 

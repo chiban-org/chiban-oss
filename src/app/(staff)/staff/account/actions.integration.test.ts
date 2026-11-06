@@ -79,7 +79,7 @@ describeActionCases(h, 'changePasswordAction', {
   fields: {},
   refusedRoles: PUBLIC_ROLES,
   refusals: { ...REFUSALS, invalid: refuseField('current', 'Enter your current password.') },
-  accepted: async (result, { written }) => {
+  accepted: (result, { written }) => {
     expect(result).toEqual({
       ok: true,
       message: 'Password changed. Other devices were signed out.',
@@ -153,7 +153,7 @@ describeActionCases(h, 'confirmTotpAction', {
   fields: {},
   refusedRoles: PUBLIC_ROLES,
   refusals: { ...REFUSALS, invalid: refuseField('code', 'Enter the 6-digit code.') },
-  accepted: async (result) => {
+  accepted: (result) => {
     expect(result).toEqual(refuseField('code', 'That code did not match. Try the next one.'))
   },
 })
@@ -174,7 +174,7 @@ describeActionCases(h, 'beginTotpAction', {
   fields: {},
   refusedRoles: PUBLIC_ROLES,
   refusals: REFUSALS,
-  accepted: async (result, { written }) => {
+  accepted: (result, { written }) => {
     expect(result).toEqual(redirectsTo('/staff/account/totp'))
     expect(written).toEqual(['users'])
   },

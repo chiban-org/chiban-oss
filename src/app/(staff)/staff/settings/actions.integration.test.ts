@@ -47,6 +47,7 @@ vi.mock('next/headers', () => ({
 vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(state.actor) }))
 
 const actions = await import('@/app/(staff)/staff/settings/actions')
+const starterActions = await import('@/app/(staff)/staff/settings/starterActions')
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -80,7 +81,7 @@ const ALL = {
   saveDraftAction: actions.saveDraftAction,
   publishAction: actions.publishAction,
   rollbackAction: actions.rollbackAction,
-  adoptStarterAction: actions.adoptStarterAction,
+  adoptStarterAction: starterActions.adoptStarterAction,
   startDraftAction: actions.startDraftAction,
   discardDraftAction: actions.discardDraftAction,
 }
@@ -157,7 +158,7 @@ describe('settings actions', () => {
 
   it('applying starter changes with nothing ticked says to select a change', async () => {
     state.actor = await staffActor(handle.db, 'admin')
-    expect(await actions.applyStarterPathsAction(form({}))).toEqual({
+    expect(await starterActions.applyStarterPathsAction(form({}))).toEqual({
       ok: false,
       error: 'Select at least one change to apply.',
     })
@@ -207,7 +208,11 @@ describe('settings actions', () => {
     expect(bad).toMatchObject({ ok: false, fieldErrors: { fields: expect.any(String) } })
     expect(
       await actions.saveDraftAction(form({ kind: 'form', key: 'bad', body: 'not json' })),
-    ).toMatchObject({ ok: false, error: expect.stringContaining('Check') })
+    ).toEqual({
+      ok: false,
+      error: 'The settings could not be read. Reload the page and try again.',
+      fieldErrors: { body: 'The settings could not be read. Reload the page and try again.' },
+    })
     expect(
       await actions.saveDraftAction(form({ kind: 'nonsense', key: 'bad', body: '{}' })),
     ).toMatchObject({ ok: false })
@@ -231,14 +236,14 @@ describe('settings actions', () => {
   it('adopting a starter publishes it once and says so on the second try', async () => {
     state.actor = await staffActor(handle.db, 'admin')
     expect(
-      await actions.adoptStarterAction(form({ starterId: 'nh.starter.electrical' })),
+      await starterActions.adoptStarterAction(form({ starterId: 'nh.starter.electrical' })),
     ).toMatchObject({ ok: true })
     expect(
-      await actions.adoptStarterAction(form({ starterId: 'nh.starter.electrical' })),
+      await starterActions.adoptStarterAction(form({ starterId: 'nh.starter.electrical' })),
     ).toMatchObject({ ok: false, error: expect.stringContaining('already') })
     state.actor = await staffActor(handle.db, 'staff')
     expect(
-      await actions.adoptStarterAction(form({ starterId: 'nh.starter.plumbing' })),
+      await starterActions.adoptStarterAction(form({ starterId: 'nh.starter.plumbing' })),
     ).toMatchObject({ ok: false, error: expect.stringContaining('permission') })
   })
 
