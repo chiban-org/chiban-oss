@@ -12,8 +12,9 @@ import { displayIdsFor } from '@/features/parcels/displayId'
 import { isDue, lastChecked } from '@/features/rosters/recheck'
 import { endingUsed } from '@/features/rosters/restrictionEnd'
 import type { RestrictionKind } from '@/features/rosters/restrictions'
+import { rosterEndingUsed } from '@/features/rosters/rosterEnd'
 import { type ListUse, listsUsing } from '@/features/rosters/usedBy'
-import { type EarlierVersion, earlierVersions } from '@/features/rosters/versions'
+import { type EarlierVersion, earlierVersions, historyByEntry } from '@/features/rosters/versions'
 import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 
@@ -33,19 +34,28 @@ export interface EntryMeta {
   versions: EarlierVersion[]
 }
 
-export type AssociationRow = EntryMeta & {
-  name: string
-  officers: AssociationOfficer[]
-  asOf: string
+export interface EndState {
+  statusText: string
+  endedOn: string | null
+  active: boolean
+  undoable: boolean
 }
 
-export type ParkRow = EntryMeta & {
-  name: string
-  owner: string
-  ownerMailingAddress: string
-  tenants: ParkTenant[]
-  asOf: string
-}
+export type AssociationRow = EntryMeta &
+  EndState & {
+    name: string
+    officers: AssociationOfficer[]
+    asOf: string
+  }
+
+export type ParkRow = EntryMeta &
+  EndState & {
+    name: string
+    owner: string
+    ownerMailingAddress: string
+    tenants: ParkTenant[]
+    asOf: string
+  }
 
 export type HoldingRow = EntryMeta & {
   holder: string
@@ -160,21 +170,52 @@ export async function loadContactRows(
       undoable: h.endedOn !== null && !(await endingUsed(db, h)),
     })
   }
-  return {
-    associations: associations.map((a) => ({
-      ...meta(a, lastChecked(a.asOf, a.checkedOn), associationHistory.get(a.parcelId) ?? []),
+  const endState = async (row: {
+    id: string
+    parcelId: string
+    endedOn: string | null
+    endedAt: Date | null
+  }): Promise<EndState> => {
+    const [statusText, active] = holdingStatus(row.endedOn, input.today)
+    return {
+      statusText,
+      endedOn: row.endedOn,
+      active,
+      undoable: row.endedOn !== null && !(await rosterEndingUsed(db, row)),
+    }
+  }
+  const rosterMeta = async (
+    row: { id: string; parcelId: string; asOf: string; checkedOn: string | null } & {
+      endedOn: string | null
+      endedAt: Date | null
+    },
+    versions: EarlierVersion[],
+  ) => {
+    const ended = await endState(row)
+    const base = meta(row, lastChecked(row.asOf, row.checkedOn), versions)
+    return { ...base, ...ended, due: ended.active && base.due }
+  }
+  const associationVersions = historyByEntry(associations, associationHistory)
+  const parkVersions = historyByEntry(parks, parkHistory)
+  const associationRows: AssociationRow[] = []
+  for (const a of associations) {
+    associationRows.push({
+      ...(await rosterMeta(a, associationVersions.get(a.id) ?? [])),
       name: a.associationName,
       officers: a.officers,
       asOf: a.asOf,
-    })),
-    parks: parks.map((p) => ({
-      ...meta(p, lastChecked(p.asOf, p.checkedOn), parkHistory.get(p.parcelId) ?? []),
+    })
+  }
+  const parkRows: ParkRow[] = []
+  for (const p of parks) {
+    parkRows.push({
+      ...(await rosterMeta(p, parkVersions.get(p.id) ?? [])),
       name: p.parkName,
       owner: p.ownerName,
       ownerMailingAddress: p.ownerMailingAddress,
       tenants: p.tenants,
       asOf: p.asOf,
-    })),
-    restrictions,
+    })
   }
+  return { associations: associationRows, parks: parkRows, restrictions }
 }

@@ -10,6 +10,7 @@ import {
   FeesCell,
   ParcelCell,
   ReceivedCell,
+  ResponsibleCell,
   ReviewersCell,
 } from '@/components/queue/QueueCells'
 import type { SortLink } from '@/features/dataTable/sort'
@@ -35,6 +36,7 @@ function sortOptions(sort: Record<QueueSortKey, SortLink>) {
     { label: 'Due', link: sort.due },
     { label: 'Fees', link: sort.fees },
     { label: 'Reviewers', link: sort.reviewers },
+    { label: 'Responsible', link: sort.responsible },
     { label: 'Received', link: sort.received },
   ]
 }
@@ -49,6 +51,7 @@ function QueueHead({ sort }: { sort: Record<QueueSortKey, SortLink> | undefined 
         <SortHeader label="Due" link={sort?.due} />
         <SortHeader label="Fees" link={sort?.fees} className="md:text-right" />
         <SortHeader label="Reviewers" link={sort?.reviewers} />
+        <SortHeader label="Responsible" link={sort?.responsible} />
         <SortHeader label="Received" link={sort?.received} />
       </tr>
     </thead>
@@ -98,6 +101,7 @@ export function QueueTable({ rows, reviewers, assign, empty, sort }: Props) {
                 <DueCell row={row} />
                 <FeesCell cents={row.feesDueCents} />
                 <ReviewersCell row={row} onAssign={canAssign ? () => setAssigning(row) : null} />
+                <ResponsibleCell name={row.responsible} />
                 <ReceivedCell row={row} />
               </tr>
             ))}

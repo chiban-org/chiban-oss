@@ -73,6 +73,7 @@ export const applications = pgTable(
     closureReason: text('closure_reason'),
     permitRevision: integer('permit_revision').notNull().default(0),
     permitCorrectedOn: date('permit_corrected_on', { mode: 'string' }),
+    responsibleUserId: uuid('responsible_user_id'),
     createdBy: uuid('created_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -80,6 +81,7 @@ export const applications = pgTable(
   (t) => [
     index('applications_project_idx').on(t.projectId),
     index('applications_state_idx').on(t.state),
+    index('applications_responsible_idx').on(t.responsibleUserId),
   ],
 )
 

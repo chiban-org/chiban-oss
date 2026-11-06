@@ -29,6 +29,7 @@ export interface CaseListRow {
   locationText: string
   openedOn: CivilDate
   nextDueOn: CivilDate | null
+  assignedToName: string | null
 }
 
 export interface CaseListPage {
@@ -75,6 +76,9 @@ function stayedOn(today: CivilDate): SQL {
             and (ro.dissolved_on is null or ro.dissolved_on > ${today}::date))))`
 }
 
+const ASSIGNEE_NAME = sql<string | null>`(select u.display_name from users u
+  where u.id = ${enforcementCases.assignedTo})`
+
 const STATUS_ORDER = sql`array_position(array[${sql.join(
   ENFORCEMENT_STATUSES.map((status) => sql`${status}`),
   sql`, `,
@@ -88,6 +92,7 @@ function sortColumns(today: CivilDate): Readonly<Record<CaseSortKey, SQLWrapper>
     opened: enforcementCases.openedOn,
     next: nextAnswerDue(),
     stay: stayedOn(today),
+    assigned: ASSIGNEE_NAME,
   }
 }
 
@@ -157,6 +162,7 @@ export async function listCasePage(
       locationText: enforcementCases.locationText,
       openedOn: enforcementCases.openedOn,
       nextDueOn: sql<string | null>`${nextAnswerDue()}::text`,
+      assignedToName: ASSIGNEE_NAME,
     })
     .from(enforcementCases)
     .where(where)

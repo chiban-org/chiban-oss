@@ -28,6 +28,10 @@ const meta = {
   due: false,
   uses: [],
   versions: [],
+  statusText: 'Active',
+  endedOn: null,
+  active: true,
+  undoable: false,
 }
 
 const association: AssociationRow = {

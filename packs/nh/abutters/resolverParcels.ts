@@ -32,8 +32,8 @@ function pushOwner(
 export async function resolveParcels(ctx: Context): Promise<void> {
   const ids = ctx.input.candidates.map((c) => c.parcelId)
   const facts = await loadParcelFacts(ctx.tx, ids)
-  const associations = await loadAssociations(ctx.tx, ids)
-  const parks = await loadParks(ctx.tx, ids)
+  const associations = await loadAssociations(ctx.tx, ids, ctx.today)
+  const parks = await loadParks(ctx.tx, ids, ctx.today)
   for (const id of ids) {
     const parcel = facts.get(id)
     if (parcel === undefined) continue

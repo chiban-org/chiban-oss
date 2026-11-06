@@ -71,6 +71,7 @@ export default async function ApplicationsPage({
   const reviewers = canAssign ? await listReviewerChoices(ctx.db) : []
   const labels = activeFilterLabels(params, new Map(facets.types.map((t) => [t.value, t.label])))
   const clear = clearHref(APPLICATIONS_PATH, params, QUEUE_FILTER_PARAMS)
+  const fullRecordAccess = hasFullRecordAccess(ctx.actor)
   return (
     <main data-wide="">
       <h1>Applications</h1>
@@ -78,12 +79,15 @@ export default async function ApplicationsPage({
         Needs action lists applications that are submitted or under review, and any other with a
         deadline running or overdue, soonest due first. The other tabs show the rest, drafts
         included.
+        {fullRecordAccess
+          ? ' Mine counts applications you are responsible for or reviewing; Unassigned, those with neither.'
+          : null}
       </p>
       <FilterTabs label="Status" tabs={statusTabs(params, facets)} />
       <QueueFilters
         search={firstParam(params, 'q') ?? ''}
         carried={carriedParams(params)}
-        chips={queueChipGroups(params, facets, hasFullRecordAccess(ctx.actor))}
+        chips={queueChipGroups(params, facets, fullRecordAccess)}
         clearHref={clear}
       />
       <QueueSummary total={page.total} filters={labels} />

@@ -1,13 +1,7 @@
 import { NH_ABUTTER_PARAMS } from '@packs/nh/abutters/params'
 import { asc, eq, inArray } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import {
-  abutterListCandidates,
-  abutterListRecipients,
-  applications,
-  parcels,
-  parkRosters,
-} from '@/db/schema'
+import { abutterListCandidates, abutterListRecipients, applications, parcels } from '@/db/schema'
 import { applicantParcelIds } from '@/features/abutters/applicantParcels'
 import { openIncomplete } from '@/features/abutters/draft'
 import { type NoticeCostSummary, noticeCostSummary } from '@/features/abutters/noticeCosts'
@@ -95,6 +89,14 @@ function layerNote(name: string, status: LayerStatus, zone: string): string {
   return `${name} imported ${when}${ageText(status.ageDays)}${status.state === 'stale' ? ', out of date' : ''}`
 }
 
+function parkOwners(recipients: readonly Recipient[]): Map<string, string> {
+  return new Map(
+    recipients
+      .filter((r) => r.roles.includes('mhp_owner'))
+      .flatMap((r) => r.parcelIds.map((id): [string, string] => [id, r.name])),
+  )
+}
+
 function boundsOf(overlay: Overlay): [number, number, number, number] | null {
   const coords: number[][] = []
   const visit = (value: unknown): void => {
@@ -110,7 +112,11 @@ function boundsOf(overlay: Overlay): [number, number, number, number] | null {
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]
 }
 
-async function candidateRows(tx: Tx, listId: string): Promise<CandidateRow[]> {
+async function candidateRows(
+  tx: Tx,
+  listId: string,
+  parkOwnerOf: ReadonlyMap<string, string>,
+): Promise<CandidateRow[]> {
   const rows = await tx
     .select()
     .from(abutterListCandidates)
@@ -127,14 +133,6 @@ async function candidateRows(tx: Tx, listId: string): Promise<CandidateRow[]> {
   const ownerOf = new Map(
     owners.flatMap((o): [string, string][] => (o.owner === null ? [] : [[o.id, o.owner]])),
   )
-  const parks =
-    ids.length === 0
-      ? []
-      : await tx
-          .select({ parcelId: parkRosters.parcelId, ownerName: parkRosters.ownerName })
-          .from(parkRosters)
-          .where(inArray(parkRosters.parcelId, ids))
-  const parkOwnerOf = new Map(parks.map((p) => [p.parcelId, p.ownerName]))
   const built = rows.map((r) => {
     const reasons = r.reasons as Candidate['reasons']
     return {
@@ -208,6 +206,10 @@ export async function loadListView(
         open.flatMap((i) => (i.parcelId === undefined ? [] : [i.parcelId])),
       ),
     )
+    const resolved =
+      list.snapshot === null
+        ? recipientRows.map((r) => r.data as Recipient)
+        : (list.snapshot as ListSnapshot).recipients
     const recipients =
       list.snapshot === null
         ? recipientRows.map(recipientView)
@@ -225,7 +227,7 @@ export async function loadListView(
       fingerprint: list.snapshotSha256 === null ? null : list.snapshotSha256.slice(0, 12),
       layerNotes: notes,
       incomplete,
-      candidates: await candidateRows(tx, listId),
+      candidates: await candidateRows(tx, listId, parkOwners(resolved)),
       recipients,
       attestedText: attested,
       overlay,

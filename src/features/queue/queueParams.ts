@@ -29,6 +29,7 @@ export type QueueSortKey =
   | 'due'
   | 'fees'
   | 'reviewers'
+  | 'responsible'
   | 'received'
 
 export const QUEUE_SORT: SortConfig<QueueSortKey> = {
@@ -41,6 +42,7 @@ export const QUEUE_SORT: SortConfig<QueueSortKey> = {
     due: 'asc',
     fees: 'desc',
     reviewers: 'asc',
+    responsible: 'asc',
     received: 'desc',
   },
 }

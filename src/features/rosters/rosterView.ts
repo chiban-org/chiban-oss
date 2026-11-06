@@ -74,7 +74,7 @@ export async function loadRostersView(
       text: landRecordsText(review),
       due: isDue(review.reviewedOn, today, days),
     },
-    gaps: await condoGaps(db, signal),
+    gaps: await condoGaps(db, signal, null, today),
     regionalContacts: contactLines(await getRegionalContacts(db, signal)),
     canEditSettings: await hasCapability(db, actor.userId, 'config.edit', signal),
   }

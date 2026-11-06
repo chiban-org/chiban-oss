@@ -54,10 +54,17 @@ describe('QueueTable cells', () => {
   it('gives the Application heading a single sort link', () => {
     const link = (key: string) => ({ href: `/staff/applications?sort=${key}`, direction: null })
     const sort = Object.fromEntries(
-      ['number', 'project', 'parcel', 'status', 'due', 'fees', 'reviewers', 'received'].map((k) => [
-        k,
-        link(k),
-      ]),
+      [
+        'number',
+        'project',
+        'parcel',
+        'status',
+        'due',
+        'fees',
+        'reviewers',
+        'responsible',
+        'received',
+      ].map((k) => [k, link(k)]),
     ) as unknown as Parameters<typeof QueueTable>[0]['sort']
     render(
       <CsrfProvider token="t1">
@@ -95,6 +102,16 @@ describe('QueueTable cells', () => {
     ])
     expect(screen.getByText('Issued, certificate of occupancy pending')).toBeTruthy()
     expect(screen.getByText('Remy Reviewer (Signed off)')).toBeTruthy()
+  })
+
+  it('names the responsible staff member, or says nobody is', () => {
+    setup([
+      row({ number: 'BP-2027-0001', responsible: 'Pat Planner' }),
+      row({ number: 'BP-2027-0002', responsible: null }),
+    ])
+    expect(screen.getByRole('columnheader', { name: 'Responsible' })).toBeTruthy()
+    expect(screen.getByText('Pat Planner')).toBeTruthy()
+    expect(screen.getByText('Nobody yet')).toBeTruthy()
   })
 
   it('names the running clock and its date', () => {

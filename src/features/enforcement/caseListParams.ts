@@ -15,7 +15,7 @@ import {
 
 export const CASES_PATH = '/staff/enforcement'
 
-export type CaseSortKey = 'number' | 'where' | 'status' | 'opened' | 'next' | 'stay'
+export type CaseSortKey = 'number' | 'where' | 'status' | 'opened' | 'next' | 'stay' | 'assigned'
 
 export const CASE_SORT: SortConfig<CaseSortKey> = {
   defaultKey: 'number',
@@ -26,6 +26,7 @@ export const CASE_SORT: SortConfig<CaseSortKey> = {
     opened: 'desc',
     next: 'asc',
     stay: 'desc',
+    assigned: 'asc',
   },
 }
 

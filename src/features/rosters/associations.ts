@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { type AssociationOfficer, associationRosters } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -78,18 +78,27 @@ async function saveAssociation(
     const [before] = await tx
       .select()
       .from(associationRosters)
-      .where(eq(associationRosters.parcelId, input.parcelId))
+      .where(
+        and(eq(associationRosters.parcelId, input.parcelId), isNull(associationRosters.endedOn)),
+      )
       .for('update')
     if (mode === 'update' && before === undefined) return err('not_found')
     const insert = tx.insert(associationRosters).values(values)
     const saved =
       mode === 'add'
         ? await insert
-            .onConflictDoNothing({ target: associationRosters.parcelId })
-            .returning({ parcelId: associationRosters.parcelId })
+            .onConflictDoNothing({
+              target: associationRosters.parcelId,
+              where: isNull(associationRosters.endedOn),
+            })
+            .returning({ id: associationRosters.id })
         : await insert
-            .onConflictDoUpdate({ target: associationRosters.parcelId, set: values })
-            .returning({ parcelId: associationRosters.parcelId })
+            .onConflictDoUpdate({
+              target: associationRosters.parcelId,
+              targetWhere: isNull(associationRosters.endedOn),
+              set: values,
+            })
+            .returning({ id: associationRosters.id })
     if (saved.length === 0) return err('association_exists')
     await writeAudit(
       tx,
@@ -98,8 +107,8 @@ async function saveAssociation(
         action: `roster.association.${mode}`,
         entityType: 'parcel',
         entityId: input.parcelId,
-        before: before === undefined ? null : summary(before),
-        after: summary(values),
+        before: before === undefined ? null : { entryId: before.id, ...summary(before) },
+        after: { entryId: saved[0]?.id ?? null, ...summary(values) },
       },
       signal,
     )

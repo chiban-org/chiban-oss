@@ -7,9 +7,10 @@ import type { PickedParcel } from '@/features/parcels/parcelPick'
 import type { RostersView } from '@/features/rosters/rosterView'
 import { AddAssociation } from './AssociationForms'
 import { recordLandRecordsCheckAction } from './actions'
-import { AssociationTable, ParkTable, RestrictionTable } from './ContactTables'
+import { RestrictionTable } from './ContactTables'
 import { AddHolder } from './HolderForms'
 import { AddPark } from './ParkForms'
+import { AssociationTable, ParkTable } from './RosterTables'
 import { ParcelLink } from './RowParts'
 
 export const NOTICE_CONTACTS_LEAD =

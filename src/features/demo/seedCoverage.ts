@@ -4,6 +4,7 @@ import { seedMeetingStates } from '@/features/demo/seedMeetingStates'
 import { seedMeetingMinutes } from '@/features/demo/seedMinutes'
 import { actorFor, type Cast } from '@/features/demo/seedPermitSupport'
 import { seedRecordStates } from '@/features/demo/seedRecordStates'
+import { seedResponsibleStaff } from '@/features/demo/seedResponsibleStaff'
 import { seedTodayWork } from '@/features/demo/seedToday'
 import { seedUserStates } from '@/features/demo/seedUserStates'
 import type { MailTransport } from '@/features/mail/transport'
@@ -45,6 +46,7 @@ export async function seedCoverage(
     await seedRecordStates(ctx),
     await seedTodayWork(ctx),
     await seedUserStates(ctx),
+    await seedResponsibleStaff(ctx),
   ]
   return steps.some(Boolean)
 }

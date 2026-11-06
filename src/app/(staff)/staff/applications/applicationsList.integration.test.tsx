@@ -73,6 +73,14 @@ describe('/staff/applications page', () => {
     expect(html).not.toContain(`>${draftNumber}<`)
   })
 
+  it('says what Mine and Unassigned count', async () => {
+    const html = await render({})
+    expect(html).toContain(
+      'Mine counts applications you are responsible for or reviewing; Unassigned, those with neither.',
+    )
+    expect(html).toContain('>Responsible<')
+  })
+
   it('counts every tab and keeps drafts in open and all only', async () => {
     const html = await render({})
     expect(tab(html, 'Needs action')).toContain('>26</span>')

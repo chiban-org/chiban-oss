@@ -31,15 +31,17 @@ export async function loadParcelContacts(
     signal,
   )
   const restrictions = rows.restrictions.filter((r) => r.active)
-  const [gap] = await condoGaps(db, signal, parcelId)
+  const associations = rows.associations.filter((r) => r.active)
+  const parks = rows.parks.filter((r) => r.active)
+  const [gap] = await condoGaps(db, signal, parcelId, today)
   const missingAssociation = gap === undefined ? null : { units: gap.units }
   return {
-    ...rows,
+    associations,
+    parks,
     restrictions,
     today,
     missingAssociation,
     empty:
-      rows.associations.length + rows.parks.length + restrictions.length === 0 &&
-      missingAssociation === null,
+      associations.length + parks.length + restrictions.length === 0 && missingAssociation === null,
   }
 }

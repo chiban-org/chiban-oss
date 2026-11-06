@@ -185,3 +185,11 @@ export function ReviewersCell({
     </td>
   )
 }
+
+export function ResponsibleCell({ name }: { name: string | null }) {
+  return (
+    <td data-label="Responsible" className={cn(CARD_CELL, STACKED_CELL)}>
+      {name ?? <span className="text-muted-foreground">Nobody yet</span>}
+    </td>
+  )
+}

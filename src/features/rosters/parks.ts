@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { and, eq, isNull } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { type ParkTenant, parkRosters } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -90,18 +90,25 @@ async function savePark(
     const [before] = await tx
       .select()
       .from(parkRosters)
-      .where(eq(parkRosters.parcelId, input.parcelId))
+      .where(and(eq(parkRosters.parcelId, input.parcelId), isNull(parkRosters.endedOn)))
       .for('update')
     if (mode === 'update' && before === undefined) return err('not_found')
     const insert = tx.insert(parkRosters).values(values)
     const saved =
       mode === 'add'
         ? await insert
-            .onConflictDoNothing({ target: parkRosters.parcelId })
-            .returning({ parcelId: parkRosters.parcelId })
+            .onConflictDoNothing({
+              target: parkRosters.parcelId,
+              where: isNull(parkRosters.endedOn),
+            })
+            .returning({ id: parkRosters.id })
         : await insert
-            .onConflictDoUpdate({ target: parkRosters.parcelId, set: values })
-            .returning({ parcelId: parkRosters.parcelId })
+            .onConflictDoUpdate({
+              target: parkRosters.parcelId,
+              targetWhere: isNull(parkRosters.endedOn),
+              set: values,
+            })
+            .returning({ id: parkRosters.id })
     if (saved.length === 0) return err('park_exists')
     await writeAudit(
       tx,
@@ -110,8 +117,8 @@ async function savePark(
         action: `roster.park.${mode}`,
         entityType: 'parcel',
         entityId: input.parcelId,
-        before: before === undefined ? null : summary(before),
-        after: summary(values),
+        before: before === undefined ? null : { entryId: before.id, ...summary(before) },
+        after: { entryId: saved[0]?.id ?? null, ...summary(values) },
       },
       signal,
     )

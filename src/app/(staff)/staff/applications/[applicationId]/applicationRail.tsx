@@ -135,12 +135,15 @@ export function ApplicationRail({
 export function ApplicationFacts({
   view,
   legacyNumber,
+  responsible,
 }: {
   view: StaffApplicationView
   legacyNumber: string | null
+  responsible: ReactNode
 }) {
   return (
-    <section aria-label="Key facts" data-plain className="rail-card">
+    <section aria-label="Key facts" data-plain className="rail-card space-y-3">
+      {responsible}
       <FactList facts={applicationFacts(view, legacyNumber)} stacked />
     </section>
   )
@@ -153,6 +156,7 @@ export function StatusStrip({
   notice,
   legacyNumber,
   correction,
+  responsible,
 }: {
   view: StaffApplicationView
   plan: RailPlan
@@ -160,6 +164,7 @@ export function StatusStrip({
   notice: ReactNode
   legacyNumber: string | null
   correction: CorrectionFormData | null
+  responsible: ReactNode
 }) {
   return (
     <section aria-label="Status" data-plain className="rail-card flex flex-col gap-3 [&>*]:m-0">
@@ -174,6 +179,7 @@ export function StatusStrip({
       <details>
         <summary className="text-sm">Facts and more actions</summary>
         <div className="flex flex-col gap-4">
+          {responsible}
           <FactList facts={applicationFacts(view, legacyNumber)} stacked />
           <MoreActions view={view} moves={plan.terminal} />
           <CorrectPermit data={correction} />
