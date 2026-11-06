@@ -3,7 +3,7 @@ import { beforeAll, describe, expect, it } from 'vitest'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { readTownImage, storeTownImage, TOWN_IMAGE_MAX_BYTES } from '@/features/town/townImages'
 import { pngBytes } from '@/test/frameFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 
 const signal = new AbortController().signal
 let store: ObjectStore

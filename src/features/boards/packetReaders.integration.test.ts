@@ -16,7 +16,7 @@ import { sendPacketUpdate } from '@/features/boards/packetUpdate'
 import { createMemoryTransport, type MemoryMailTransport } from '@/features/mail/memoryTransport'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import {
   applicationDocument,
   type PacketFlow,

@@ -5,7 +5,7 @@ import { createTarSink } from '@/features/export/tarSink'
 import { writeArchive } from '@/features/export/writeArchive'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 
 export async function buildTar(db: Db, store: ObjectStore, signal: AbortSignal): Promise<Buffer> {
   const out = createTarSink()

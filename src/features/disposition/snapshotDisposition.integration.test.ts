@@ -12,7 +12,7 @@ import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/appl
 import { appTypeBody, FORM_BODY, saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { expectDbError } from '@/test/dbErrors'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 

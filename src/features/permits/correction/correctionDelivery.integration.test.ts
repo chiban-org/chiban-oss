@@ -14,7 +14,7 @@ import {
 } from '@/test/correctionFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { setupTradeWorld } from '@/test/ledgerFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 
 const signal = new AbortController().signal
 let handle: TestDb

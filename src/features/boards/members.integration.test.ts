@@ -43,8 +43,8 @@ import {
 } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeUser } from '@/test/factories'
-import { makeTestStore } from '@/test/minio'
 import { issueListWithRecipients, proofDocument, recipient } from '@/test/noticeFixtures'
+import { makeTestStore } from '@/test/objectStore'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal

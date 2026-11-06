@@ -3,7 +3,7 @@ import { dispositionBatches, redactionJobs, renditionApprovals, rtkRequests } fr
 import type { Actor } from '@/features/auth/actor'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { LETTER_PHONE_BOX, uploadRedactionFixture } from '@/test/redactionFixtures'
 import { EXPLANATION, redactedVersionOf } from '@/test/renditionFixtures'

@@ -22,8 +22,8 @@ import {
 } from '@/test/correctionFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { setupTradeWorld } from '@/test/ledgerFixtures'
-import { makeTestStore } from '@/test/minio'
 import { downloadObject } from '@/test/objectBytes'
+import { makeTestStore } from '@/test/objectStore'
 import { pdfText } from '@/test/pdfText'
 
 const signal = new AbortController().signal

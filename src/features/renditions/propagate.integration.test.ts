@@ -15,7 +15,7 @@ import { approveRendition, revokeApproval } from '@/features/renditions/approval
 import { deriveRenditions, serveDerivative } from '@/features/renditions/derive'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { packetMeeting } from '@/test/packetFixtures'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { uploadRedactionFixture } from '@/test/redactionFixtures'

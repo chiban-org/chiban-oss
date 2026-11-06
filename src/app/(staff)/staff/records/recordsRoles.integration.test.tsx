@@ -14,7 +14,7 @@ import { recordFirstResponse } from '@/features/rtk/responses'
 import { recordWithholding } from '@/features/rtk/withholdings'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { visibleText } from '@/test/leaks'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import type { CivilDate } from '@/types/civilDate'
 
 interface MockState {

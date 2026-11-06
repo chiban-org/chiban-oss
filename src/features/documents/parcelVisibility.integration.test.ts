@@ -6,7 +6,7 @@ import { resolveRendition } from '@/features/documents/visibility'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { makeParcel, seedParcelWorld, staffActor } from '@/test/parcels'
 
 const signal = new AbortController().signal

@@ -24,8 +24,8 @@ import {
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { findIsoDates, findRawKeys, findUuids } from '@/test/leaks'
-import { makeTestStore } from '@/test/minio'
 import { issueListWithRecipients, proofDocument, recipient } from '@/test/noticeFixtures'
+import { makeTestStore } from '@/test/objectStore'
 import { staffActor } from '@/test/parcels'
 
 const signal = new AbortController().signal

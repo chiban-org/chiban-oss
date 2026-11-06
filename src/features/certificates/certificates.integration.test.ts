@@ -17,8 +17,8 @@ import {
   scheduledInspection,
   setupInspectionWorld,
 } from '@/test/inspectionFixtures'
-import { makeTestStore } from '@/test/minio'
 import { downloadObject } from '@/test/objectBytes'
+import { makeTestStore } from '@/test/objectStore'
 import { pdfText } from '@/test/pdfText'
 
 const signal = new AbortController().signal

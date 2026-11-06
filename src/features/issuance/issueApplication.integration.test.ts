@@ -12,7 +12,7 @@ import {
   submittedTrade,
   type TradeFixture,
 } from '@/test/ledgerFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { setupPayments } from '@/test/paymentFixtures'
 import { pdfPages } from '@/test/pdfText'
 

@@ -6,7 +6,7 @@ import { routeToTrc } from '@/features/reviews/trcRouting'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { applicationDocument, type PacketFlow, packetFlow } from '@/test/packetFlowFixtures'
 import { staffActor } from '@/test/parcels'
 

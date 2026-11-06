@@ -10,7 +10,7 @@ import { makeApplication } from '@/test/applicationFixtures'
 import { BOARD_FIXTURE_NOW, type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba, FIXTURE_VOTES, heldPbHearing } from '@/test/hearingFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal

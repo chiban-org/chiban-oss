@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest'
 import { readAll } from '@/features/export/readArchive'
 import { createLocalFsTarget } from '@/features/export/targets/localFs'
 import { createS3Target } from '@/features/export/targets/s3Target'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 
 const signal = new AbortController().signal
 
@@ -100,7 +100,7 @@ describe('local filesystem target', () => {
 })
 
 describe('s3 target', () => {
-  it('s3 target writes to a second MinIO bucket', async () => {
+  it('s3 target writes to a second object store bucket', async () => {
     const { store: source } = await makeTestStore()
     const { store: second, config } = await makeTestStore()
     const target = createS3Target(

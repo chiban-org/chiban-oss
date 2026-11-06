@@ -13,7 +13,7 @@ import {
   setupEnforcementWorld,
   uploadProof,
 } from '@/test/enforcementFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 

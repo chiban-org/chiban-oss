@@ -8,7 +8,7 @@ import { publishTownProfileSection } from '@/features/town/profileSettings'
 import { storeTownImage } from '@/features/town/townImages'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pngBytes } from '@/test/frameFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 
 const signal = new AbortController().signal

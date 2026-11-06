@@ -5,7 +5,7 @@ import type { ObjectStore } from '@/features/storage/objectStore'
 import { type BoardWorld, setupBoardWorld, submitBoardApplication } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { packetMeeting } from '@/test/packetFixtures'
 import type { CivilDate } from '@/types/civilDate'
 

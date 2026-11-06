@@ -14,19 +14,25 @@ services:
       timeout: 3s
       retries: 10
 
-  minio:
-    image: cgr.dev/chainguard/minio@sha256:0a01100085e30fb08d2f39e39c9f5c9d83a95707f220b007d813b690cd41622d
-    user: "0:0"
-    command: server /data --console-address ":9001"
+  garage:
+    image: dxflrs/garage:v2.5.0@sha256:677e5b758e4425a325b811c425c026bf35a4bf42f7ddbaa773de3f4fd779a5a5
+    command: ["/garage", "server", "--single-node", "--default-access-key"]
     environment:
-      MINIO_API_CORS_ALLOW_ORIGIN: ${MINIO_CORS_ORIGIN:-http://localhost:3000,http://localhost:3100,http://localhost:3101,http://localhost:3102,http://localhost:3103}
-      MINIO_ROOT_USER: chiban
-      MINIO_ROOT_PASSWORD: chiban-dev-secret
+      GARAGE_RPC_SECRET: "0000000000000000000000000000000000000000000000000000000000000001"
+      GARAGE_ADMIN_TOKEN: chiban-dev-admin-token
+      GARAGE_DEFAULT_ACCESS_KEY: chiban-dev
+      GARAGE_DEFAULT_SECRET_KEY: chiban-dev-secret
     ports:
-      - "9010:9000"
-      - "9011:9001"
+      - "9010:3900"
+      - "9011:3903"
     volumes:
-      - chiban-minio:/data
+      - ./deploy/garage.toml:/etc/garage.toml:ro
+      - chiban-garage:/var/lib/garage
+    healthcheck:
+      test: ["CMD", "/garage", "health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   stripe-mock:
     image: stripe/stripe-mock:v0.206.0
@@ -41,4 +47,4 @@ services:
 
 volumes:
   chiban-pg:
-  chiban-minio:
+  chiban-garage:

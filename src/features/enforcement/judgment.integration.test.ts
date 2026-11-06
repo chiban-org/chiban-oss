@@ -11,7 +11,7 @@ import {
   makeStepper,
   setupEnforcementWorld,
 } from '@/test/enforcementFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 
 const LATER = new Date('2027-07-20T15:00:00Z')
 let handle: TestDb

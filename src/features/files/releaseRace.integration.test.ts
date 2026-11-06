@@ -11,7 +11,7 @@ import { makeTestDb, type TestDb } from '@/test/db'
 import { DISPOSITION_NOW } from '@/test/dispositionFixtures'
 import { pdfBytes } from '@/test/documentFixtures'
 import { blockedOrSettled, holdOpen } from '@/test/lockWait'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 
 const signal = new AbortController().signal

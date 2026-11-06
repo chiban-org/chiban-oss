@@ -27,7 +27,7 @@ import {
   insertInspection,
   setupInspectionWorld,
 } from '@/test/inspectionFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { ok } from '@/types/result'
 
 const signal = new AbortController().signal

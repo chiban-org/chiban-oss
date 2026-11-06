@@ -16,8 +16,8 @@ import {
   scheduledInspection,
   setupInspectionWorld,
 } from '@/test/inspectionFixtures'
-import { makeTestStore } from '@/test/minio'
 import { downloadObject } from '@/test/objectBytes'
+import { makeTestStore } from '@/test/objectStore'
 import { staffActor } from '@/test/parcels'
 import { pdfText } from '@/test/pdfText'
 import { publishWordingTemplate, TOWN_WORDING } from '@/test/wordingTemplate'

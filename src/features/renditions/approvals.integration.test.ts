@@ -13,7 +13,7 @@ import { approveRendition, revokeApproval } from '@/features/renditions/approval
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes } from '@/test/documentFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { FIXTURE_PHONE, uploadRedactionFixture } from '@/test/redactionFixtures'
 import { activePublicApproval, redactedVersionOf, STATEMENT } from '@/test/renditionFixtures'

@@ -25,7 +25,7 @@ import { createMemoryTransport, type MemoryMailTransport } from '@/features/mail
 import type { MailTransport } from '@/features/mail/transport'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { applicationDocument, type PacketFlow, packetFlow } from '@/test/packetFlowFixtures'
 import { approvePublic } from '@/test/renditionFixtures'
 

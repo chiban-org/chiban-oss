@@ -6,7 +6,7 @@ import { buildSampleLetterPdf } from '@/features/town/samplePdf'
 import { TOWN_IMAGE_MAX_BYTES } from '@/features/town/townImages'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pngBytes } from '@/test/frameFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { pdfText } from '@/test/pdfText'
 

@@ -11,7 +11,7 @@ import { cancelMeeting } from '@/features/boards/meetings'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 
 const signal = new AbortController().signal
 const PAST = '2020-01-08'

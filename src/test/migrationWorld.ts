@@ -27,7 +27,7 @@ import {
   LOT_15,
   SERIES_KEY,
 } from '@/test/migrationFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { makeParcel, seedParcelWorld, staffActor } from '@/test/parcels'
 
 export const signal = new AbortController().signal

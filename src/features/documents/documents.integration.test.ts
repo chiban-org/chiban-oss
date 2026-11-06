@@ -17,7 +17,7 @@ import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/appl
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeUser } from '@/test/factories'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { staffActor } from '@/test/parcels'
 import { approvePublic } from '@/test/renditionFixtures'
 

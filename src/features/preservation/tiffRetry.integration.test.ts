@@ -14,7 +14,7 @@ import { processPreservation, retryPreservation } from '@/features/preservation/
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { FOLDER_PATTERN, importerActor, LOT_14, SERIES_KEY } from '@/test/migrationFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { makeParcel, seedParcelWorld } from '@/test/parcels'
 import { err, ok } from '@/types/result'
 

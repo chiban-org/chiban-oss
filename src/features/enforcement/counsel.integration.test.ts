@@ -15,7 +15,7 @@ import {
   setupEnforcementWorld,
   uploadProof,
 } from '@/test/enforcementFixtures'
-import { makeTestStore } from '@/test/minio'
+import { makeTestStore } from '@/test/objectStore'
 import { pdfText } from '@/test/pdfText'
 import type { CivilDate } from '@/types/civilDate'
 
