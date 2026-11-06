@@ -18,6 +18,7 @@ import {
 } from '@/db/schema'
 import { transitionApplication } from '@/features/applications/transition'
 import { attachCutoverFolder } from '@/features/cutover/attachFolder'
+import { CUTOVER_REQUIRED_COLUMNS } from '@/features/cutover/columns'
 import { cutoverErrorSentence } from '@/features/cutover/errorSentences'
 import { importCutoverCsv } from '@/features/cutover/importCutover'
 import { reconcileCutover, signOffReconciliation } from '@/features/cutover/reconcile'
@@ -268,7 +269,18 @@ describe('cutover import', () => {
       { bytes: encoder.encode('a,b\n1,2'), dryRun: false },
       signal,
     )
-    expect(result).toEqual({ ok: false, error: 'malformed' })
+    expect(result).toEqual({ ok: false, error: 'missing_columns' })
+  })
+
+  it('a header with no rows is refused as having no rows', async () => {
+    const header = CUTOVER_REQUIRED_COLUMNS.join(',')
+    const result = await importCutoverCsv(
+      handle.db,
+      world.staff,
+      { bytes: encoder.encode(`${header}\n`), dryRun: false },
+      signal,
+    )
+    expect(result).toEqual({ ok: false, error: 'no_rows' })
   })
 
   it('cutover option without cutover.import is forbidden', async () => {

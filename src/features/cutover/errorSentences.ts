@@ -13,6 +13,9 @@ const SENTENCES: Record<string, string> = {
   received_date_required: 'The received date is required.',
   issued_on_required: 'An issued application needs an issued date.',
   decided_on_required: 'A decided application needs a decided date.',
+  invalid_applicant_email: 'The applicant email must look like name@example.com, or be left empty.',
+  invalid_contractor_email:
+    'The contractor email must look like name@example.com, or be left empty.',
   legacy_number_required: 'The legacy number is required.',
   invalid_fees_paid_in_prior_system:
     'Fees paid in the prior system must be yes or no (or left empty), not an amount.',
