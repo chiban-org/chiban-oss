@@ -9,6 +9,7 @@ import {
 } from '@/db/schema'
 import { issueList } from '@/features/abutters/issue'
 import { generateList } from '@/features/abutters/lists'
+import { loadListView } from '@/features/abutters/listView'
 import { currentIssuedList, getList } from '@/features/abutters/queries'
 import type { Recipient } from '@/features/abutters/resolution'
 import { addAssociation, upsertAssociation } from '@/features/rosters/associations'
@@ -145,6 +146,12 @@ describe('ending a condo association or park', () => {
     const names = await draftNames()
     expect(names).not.toContain('Heron Park LLC')
     expect(names).not.toContain('Lee Marsh')
+    const draft = await handle.db.query.abutterLists.findFirst({
+      where: (l, { eq: is }) => is(l.applicationId, lw.applicationId),
+    })
+    const view = await loadListView(handle.db, world.staff, draft?.id ?? '', signal)
+    const sw = view?.candidates.find((c) => c.parcelId === lw.ids.SW)
+    expect(sw?.noticeTo).toBeNull()
   })
 
   it('refuses someone without abutters.manage', async () => {

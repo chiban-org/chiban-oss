@@ -297,6 +297,7 @@ File: `data/applications.ndjson`. Ordered by id.
 - `closure_reason`: text, nullable
 - `permit_revision`: integer
 - `permit_corrected_on`: date, nullable
+- `responsible_user_id`: uuid, nullable
 - `created_by`: uuid
 - `created_at`: timestamp with time zone
 - `updated_at`: timestamp with time zone
@@ -314,6 +315,8 @@ File: `data/association_rosters.ndjson`. Ordered by id.
 - `officers`: jsonb
 - `as_of`: date
 - `checked_on`: date, nullable
+- `ended_on`: date, nullable
+- `ended_at`: timestamp with time zone, nullable
 - `updated_by`: uuid
 - `updated_at`: timestamp with time zone
 
@@ -1353,6 +1356,21 @@ File: `data/license_checks.ndjson`. Ordered by id.
 References:
 - `application_id` refers to `applications`
 
+### meeting_minutes
+
+File: `data/meeting_minutes.ndjson`. Ordered by meeting_id.
+
+- `meeting_id`: uuid
+- `document_id`: uuid
+- `status`: text
+- `approved_on`: date, nullable
+- `recorded_by`: uuid
+- `recorded_at`: timestamp with time zone
+
+References:
+- `meeting_id` refers to `board_meetings`
+- `document_id` refers to `documents`
+
 ### migration_batches
 
 File: `data/migration_batches.ndjson`. Ordered by id.
@@ -1656,6 +1674,8 @@ File: `data/park_rosters.ndjson`. Ordered by id.
 - `tenants`: jsonb
 - `as_of`: date
 - `checked_on`: date, nullable
+- `ended_on`: date, nullable
+- `ended_at`: timestamp with time zone, nullable
 - `updated_by`: uuid
 - `updated_at`: timestamp with time zone
 

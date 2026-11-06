@@ -1,5 +1,5 @@
 import { NH_ABUTTER_PARAMS } from '@packs/nh/abutters/params'
-import { asc, eq, inArray } from 'drizzle-orm'
+import { and, asc, eq, gt, inArray, isNull, or } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import {
   abutterListCandidates,
@@ -110,11 +110,14 @@ function boundsOf(overlay: Overlay): [number, number, number, number] | null {
   return [Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)]
 }
 
-async function candidateRows(tx: Tx, listId: string): Promise<CandidateRow[]> {
+async function candidateRows(
+  tx: Tx,
+  list: { id: string; drawnOn: string },
+): Promise<CandidateRow[]> {
   const rows = await tx
     .select()
     .from(abutterListCandidates)
-    .where(eq(abutterListCandidates.listId, listId))
+    .where(eq(abutterListCandidates.listId, list.id))
   const ids = rows.map((r) => r.parcelId)
   const labels = await displayIdsFor(tx, ids)
   const owners =
@@ -133,7 +136,12 @@ async function candidateRows(tx: Tx, listId: string): Promise<CandidateRow[]> {
       : await tx
           .select({ parcelId: parkRosters.parcelId, ownerName: parkRosters.ownerName })
           .from(parkRosters)
-          .where(inArray(parkRosters.parcelId, ids))
+          .where(
+            and(
+              inArray(parkRosters.parcelId, ids),
+              or(isNull(parkRosters.endedOn), gt(parkRosters.endedOn, list.drawnOn)),
+            ),
+          )
   const parkOwnerOf = new Map(parks.map((p) => [p.parcelId, p.ownerName]))
   const built = rows.map((r) => {
     const reasons = r.reasons as Candidate['reasons']
@@ -225,7 +233,7 @@ export async function loadListView(
       fingerprint: list.snapshotSha256 === null ? null : list.snapshotSha256.slice(0, 12),
       layerNotes: notes,
       incomplete,
-      candidates: await candidateRows(tx, listId),
+      candidates: await candidateRows(tx, list),
       recipients,
       attestedText: attested,
       overlay,
