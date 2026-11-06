@@ -1,19 +1,12 @@
-import { count, eq, isNotNull, or, sql } from 'drizzle-orm'
-import { ledgerAllocations, paymentAttempts } from '@/db/schema'
+import { eq, sql } from 'drizzle-orm'
+import { ledgerAllocations } from '@/db/schema'
 import { rangeCountsOn } from '@/features/payments/entryList'
+import { PAYMENTS_PATH as PAYMENTS } from '@/features/payments/entryListParams'
+import { countFlagged } from '@/features/payments/flaggedAttempts'
+import { PAYMENT_ALERT_IDS } from '@/features/payments/paymentAlertIds'
 import { countWorkQueue } from '@/features/queue/workQueue'
 import type { HomeContext, HomeLink, HomeRow, HomeSection } from '@/features/staffHome/homeTypes'
 import { mayOpen } from '@/features/staffNav/navItems'
-
-const PAYMENTS = '/staff/payments'
-
-async function paymentProblems(ctx: HomeContext): Promise<number> {
-  const [row] = await ctx.db
-    .select({ n: count() })
-    .from(paymentAttempts)
-    .where(or(eq(paymentAttempts.outcomeUnknown, true), isNotNull(paymentAttempts.anomaly)))
-  return row?.n ?? 0
-}
 
 async function overpayments(ctx: HomeContext): Promise<number> {
   const rows = await ctx.db
@@ -46,8 +39,9 @@ async function waitingOnFees(ctx: HomeContext): Promise<HomeRow[]> {
 export async function loadFinanceSection(ctx: HomeContext): Promise<HomeSection | null> {
   if (!mayOpen(PAYMENTS, ctx.viewer)) return null
   ctx.signal.throwIfAborted()
-  const [problems, fees, ranges, overpaid] = await Promise.all([
-    paymentProblems(ctx),
+  const [unknown, anomalies, fees, ranges, overpaid] = await Promise.all([
+    countFlagged(ctx.db, 'unknown', ctx.signal),
+    countFlagged(ctx.db, 'anomalies', ctx.signal),
     waitingOnFees(ctx),
     rangeCountsOn(ctx.db, ctx.today, { types: ['payment'] }),
     overpayments(ctx),
@@ -60,11 +54,20 @@ export async function loadFinanceSection(ctx: HomeContext): Promise<HomeSection 
     })
   }
   return {
-    role: 'finance',
+    key: 'payments',
     title: 'Payments',
-    urgency: problems,
+    urgency: unknown + anomalies,
     rows: [
-      { label: 'Payment problems to sort out', count: problems, href: PAYMENTS },
+      {
+        label: 'Card payments with an unknown outcome',
+        count: unknown,
+        href: `${PAYMENTS}#${PAYMENT_ALERT_IDS.unknown}`,
+      },
+      {
+        label: 'Card payments with an anomaly',
+        count: anomalies,
+        href: `${PAYMENTS}#${PAYMENT_ALERT_IDS.anomalies}`,
+      },
       ...fees,
       {
         label: 'Receipts today',

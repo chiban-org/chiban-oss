@@ -1,9 +1,9 @@
 import { REVIEWS_PATH } from '@/features/reviews/reviewList'
 import {
-  HOME_ROLES,
   type HomeRole,
   type HomeRow,
   type HomeSection,
+  SECTION_KEYS,
   WORK_ROLES,
 } from '@/features/staffHome/homeTypes'
 import { boardMemberHome } from '@/features/staffNav/navItems'
@@ -27,7 +27,7 @@ export function startPageFor(viewer: NavViewer): StartPage {
 }
 
 export function orderSections(sections: readonly HomeSection[]): HomeSection[] {
-  const rank = (s: HomeSection) => HOME_ROLES.indexOf(s.role)
+  const rank = (s: HomeSection) => SECTION_KEYS.indexOf(s.key)
   return [...sections].sort((a, b) => b.urgency - a.urgency || rank(a) - rank(b))
 }
 

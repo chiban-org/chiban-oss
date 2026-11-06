@@ -44,8 +44,8 @@ export function pageHref(path: string, params: TableParams, cursor: string | nul
   return tableHref(path, params, { [PAGE_PARAM]: cursor === '0' ? null : cursor })
 }
 
-export function readOffset(params: TableParams): number {
-  const raw = firstParam(params, PAGE_PARAM)
+export function readOffset(params: TableParams, name: string = PAGE_PARAM): number {
+  const raw = firstParam(params, name)
   if (raw === undefined || !/^\d+$/.test(raw)) return 0
   const offset = Number(raw)
   return Number.isSafeInteger(offset) ? offset : 0

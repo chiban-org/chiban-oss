@@ -5,6 +5,7 @@ import { MissingResults } from '@/components/inspections/MissingResults'
 import { NoPermission } from '@/components/staff/NoPermission'
 import type { Actor } from '@/features/auth/actor'
 import { listInspectors } from '@/features/inspections/availability'
+import { inspectorDayHref } from '@/features/inspections/dayHref'
 import { getDayList, nextDayWithInspections } from '@/features/inspections/dayList'
 import { listMissingResults } from '@/features/inspections/inspectorWork'
 import { managesAllInspectors } from '@/features/inspections/visibility'
@@ -23,10 +24,6 @@ interface SearchParams {
 type Inspector = { userId: string; name: string }
 
 const MISSING_LIMIT = 20
-
-function href(date: CivilDate, inspector: string): string {
-  return `/staff/inspections/day?date=${date}&inspector=${inspector}`
-}
 
 function chosenInspector(actor: Actor, requested: string | undefined): string | null {
   if (requested !== undefined && isUuid(requested)) return requested
@@ -55,7 +52,7 @@ function InspectorLinks({
         {inspectors.map((i) => (
           <li key={i.userId}>
             <Link
-              href={href(date, i.userId)}
+              href={inspectorDayHref(date, i.userId)}
               aria-current={i.userId === selected ? 'page' : undefined}
               className="inline-flex min-h-11 items-center aria-[current=page]:font-semibold aria-[current=page]:text-ink aria-[current=page]:no-underline"
             >
@@ -81,7 +78,7 @@ export default async function InspectorDayPage({
   const inspectors = managesAllInspectors(ctx.actor) ? await listInspectors(ctx.db, ctx.signal) : []
   const inspectorUserId = chosenInspector(ctx.actor, params.inspector)
   if (inspectorUserId === null) {
-    return <InspectorPicker inspectors={inspectors} href={(id) => href(date, id)} />
+    return <InspectorPicker inspectors={inspectors} href={(id) => inspectorDayHref(date, id)} />
   }
   const list = await getDayList(ctx.db, ctx.actor, { inspectorUserId, date }, ctx.signal)
   if (!list.ok) return <NoPermission title="My day" action="see this inspector's day" />
@@ -102,11 +99,13 @@ export default async function InspectorDayPage({
       <DayList
         date={date}
         stops={list.value}
-        previousHref={href(addDays(date, -1), inspectorUserId)}
-        nextHref={href(addDays(date, 1), inspectorUserId)}
+        previousHref={inspectorDayHref(addDays(date, -1), inspectorUserId)}
+        nextHref={inspectorDayHref(addDays(date, 1), inspectorUserId)}
         whose={whoseDay(ctx.actor, inspectorUserId, inspectors)}
         nextBusy={
-          nextBusy === null ? null : { date: nextBusy, href: href(nextBusy, inspectorUserId) }
+          nextBusy === null
+            ? null
+            : { date: nextBusy, href: inspectorDayHref(nextBusy, inspectorUserId) }
         }
       />
     </main>

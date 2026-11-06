@@ -28,6 +28,7 @@ describe('the System section of Today', () => {
       actor: admin,
       viewer: await loadNavViewer(handle.db, admin, signal),
       today: today.ok ? today.value : expect.unreachable(),
+      now: new Date('2026-11-05T15:00:00Z'),
       signal,
     })
     const row = section?.rows.find((r) => r.label.endsWith('drafts not yet published'))

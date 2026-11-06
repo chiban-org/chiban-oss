@@ -5,10 +5,11 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { packetStateForMeeting } from '@/features/boards/packetPanel'
-import type { PacketStateKind } from '@/features/boards/packetState'
+import type { PacketState, PacketStateKind } from '@/features/boards/packetState'
 import { type TrackRow, trackPacket } from '@/features/boards/packetTrack'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
+import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
 
@@ -20,6 +21,7 @@ export interface PacketsIndexRow {
   kindText: string
   state: string
   stateKind: PacketStateKind
+  needsWork: boolean
   href: string
 }
 
@@ -49,6 +51,25 @@ async function unlinkedPackets(db: Db): Promise<UnlinkedPacket[]> {
   }))
 }
 
+export async function upcomingPacketStates(
+  db: Db,
+  today: CivilDate,
+  signal: AbortSignal,
+): Promise<{ meeting: typeof boardMeetings.$inferSelect; state: PacketState }[]> {
+  signal.throwIfAborted()
+  const meetings = await db
+    .select()
+    .from(boardMeetings)
+    .where(gte(boardMeetings.meetingDate, today))
+    .orderBy(asc(boardMeetings.meetingDate), asc(boardMeetings.board), asc(boardMeetings.id))
+  return await Promise.all(
+    meetings.map(async (meeting) => ({
+      meeting,
+      state: await packetStateForMeeting(db, meeting, signal),
+    })),
+  )
+}
+
 export async function loadPacketsIndex(
   db: Db,
   actor: Actor,
@@ -58,27 +79,23 @@ export async function loadPacketsIndex(
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'packet.manage', signal))) return err('forbidden')
   const today = await townToday(db, now, signal)
-  const settings = await getBoardSettings(db, signal)
-  const meetings = await db
-    .select()
-    .from(boardMeetings)
-    .where(gte(boardMeetings.meetingDate, today))
-    .orderBy(asc(boardMeetings.meetingDate), asc(boardMeetings.board), asc(boardMeetings.id))
-  const rows: PacketsIndexRow[] = []
-  for (const meeting of meetings) {
-    const state = await packetStateForMeeting(db, meeting, signal)
-    rows.push({
-      meetingId: meeting.id,
-      meetingDate: meeting.meetingDate,
-      dateText: formatCivilDate(meeting.meetingDate),
-      boardName: boardLabel(settings, meeting.board),
-      kindText: meeting.kind === 'special' ? 'Special meeting' : 'Regular meeting',
-      state: state.label,
-      stateKind: state.kind,
-      href: `/staff/boards/meetings/${meeting.id}#packet`,
-    })
-  }
-  return ok({ meetings: rows, unlinked: await unlinkedPackets(db) })
+  const [settings, upcoming, unlinked] = await Promise.all([
+    getBoardSettings(db, signal),
+    upcomingPacketStates(db, today, signal),
+    unlinkedPackets(db),
+  ])
+  const rows: PacketsIndexRow[] = upcoming.map(({ meeting, state }) => ({
+    meetingId: meeting.id,
+    meetingDate: meeting.meetingDate,
+    dateText: formatCivilDate(meeting.meetingDate),
+    boardName: boardLabel(settings, meeting.board),
+    kindText: meeting.kind === 'special' ? 'Special meeting' : 'Regular meeting',
+    state: state.label,
+    stateKind: state.kind,
+    needsWork: state.needsWork,
+    href: `/staff/boards/meetings/${meeting.id}#packet`,
+  }))
+  return ok({ meetings: rows, unlinked })
 }
 
 export type LegacyPacketPage =
