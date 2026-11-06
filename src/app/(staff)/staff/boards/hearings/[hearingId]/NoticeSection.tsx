@@ -4,6 +4,7 @@ import {
 } from '@/app/(staff)/staff/records/uploadActions'
 import { ActionForm } from '@/components/ActionForm'
 import { ApplicationFileUploader } from '@/components/documents/ApplicationFileUploader'
+import { GroupFieldError } from '@/components/fieldErrors'
 import { NEW_TAB } from '@/components/newTab'
 import { NoticeChecklist } from '@/components/notices/NoticeChecklist'
 import { CheckField, SelectField, TextField } from '@/components/staff/fields'
@@ -27,8 +28,9 @@ function ProofForm({ view, today }: { view: HearingView; today: string }) {
         <fieldset className="space-y-2 rounded-md border p-3">
           <legend className="px-1 text-sm font-medium">Notice items this proof covers</legend>
           {view.itemChoices.map((c) => (
-            <CheckField key={c.id} label={c.label} name="itemIds" value={c.id} />
+            <CheckField key={c.id} label={c.label} name="itemIds" value={c.id} groupMember />
           ))}
+          <GroupFieldError name="itemIds" />
         </fieldset>
         <SelectField
           label="Proof"

@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { AddressTextField } from '@/components/address/AddressTextField'
+import { GroupFieldError } from '@/components/fieldErrors'
 import { ParcelPicker } from '@/components/parcels/picker/ParcelPicker'
 import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { BoardPanelData } from '@/features/boards/panelData'
@@ -44,10 +45,12 @@ export function DeterminationSection({ data }: { data: BoardPanelData }) {
                   key={o.key}
                   label={o.name}
                   name="municipalityKeys"
+                  groupMember
                   value={o.key}
                   defaultChecked={data.regional.chosen.includes(o.key)}
                 />
               ))}
+              <GroupFieldError name="municipalityKeys" />
             </fieldset>
             <TextField label="Board reference, if determined earlier" name="previousBoardRef" />
           </ActionForm>
