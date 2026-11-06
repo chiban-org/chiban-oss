@@ -1,11 +1,7 @@
 'use client'
 
 import { ActionForm } from '@/components/ActionForm'
-import { FilePicker } from '@/components/ui/file-picker'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { RequiredMark } from '@/components/ui/required-mark'
-import { Textarea } from '@/components/ui/textarea'
+import { AreaField, TextField } from '@/components/staff/fields'
 import { ACTION_FILES_LIMIT_MB, complaintPhotosProblem } from '@/lib/uploadLimits'
 import { submitComplaintAction } from './actions'
 
@@ -24,41 +20,31 @@ export function ComplaintForm() {
       checkBeforeSubmit={photosProblem}
       className="flex max-w-xl flex-col gap-5"
     >
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="locationText">
-          <span>
-            Where is the property?
-            <RequiredMark />
-          </span>
-        </Label>
-        <Input id="locationText" name="locationText" required maxLength={300} />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="description">
-          <span>
-            What did you see?
-            <RequiredMark />
-          </span>
-        </Label>
-        <Textarea id="description" name="description" required maxLength={5000} rows={6} />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="photos">{`Photos (up to 5, JPEG or PNG, ${ACTION_FILES_LIMIT_MB} MB in all)`}</Label>
-        <FilePicker id="photos" name="photos" accept="image/jpeg,image/png" multiple />
-      </div>
+      <TextField label="Where is the property?" name="locationText" required maxLength={300} />
+      <AreaField label="What did you see?" name="description" required maxLength={5000} rows={6} />
+      <TextField
+        label={`Photos (up to 5, JPEG or PNG, ${ACTION_FILES_LIMIT_MB} MB in all)`}
+        name="photos"
+        type="file"
+        accept="image/jpeg,image/png"
+        multiple
+      />
       <p className="m-0 text-base">Your name and contact details are seen only by town staff.</p>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="name">Your name (optional)</Label>
-        <Input id="name" name="name" maxLength={200} autoComplete="name" />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="email">Your email (optional)</Label>
-        <Input id="email" name="email" type="email" maxLength={320} autoComplete="email" />
-      </div>
-      <div className="flex flex-col gap-2">
-        <Label htmlFor="phone">Your phone (optional)</Label>
-        <Input id="phone" name="phone" type="tel" maxLength={40} autoComplete="tel" />
-      </div>
+      <TextField label="Your name (optional)" name="name" maxLength={200} autoComplete="name" />
+      <TextField
+        label="Your email (optional)"
+        name="email"
+        type="email"
+        maxLength={320}
+        autoComplete="email"
+      />
+      <TextField
+        label="Your phone (optional)"
+        name="phone"
+        type="tel"
+        maxLength={40}
+        autoComplete="tel"
+      />
     </ActionForm>
   )
 }
