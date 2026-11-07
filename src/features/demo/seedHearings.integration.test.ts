@@ -119,9 +119,9 @@ describe('hearing demo data', () => {
     expect(seats).toEqual([{ boardId: await boardIdOf(handle.db, 'zba') }])
   })
 
-  it('has a published agenda for each board and one draft agenda', async () => {
+  it('has published agendas for the Planning Board, the Zoning Board and the Conservation Commission, and one draft agenda', async () => {
     const rows = await handle.db.select().from(agendas)
-    expect(rows.filter((a) => a.status === 'published')).toHaveLength(2)
+    expect(rows.filter((a) => a.status === 'published')).toHaveLength(3)
     expect(rows.filter((a) => a.status === 'draft')).toHaveLength(1)
   })
 

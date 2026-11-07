@@ -1,8 +1,12 @@
-import { and, eq, gte, lte } from 'drizzle-orm'
+import { and, eq, gte, lte, sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
   abutterLists,
+  agendas,
   applications,
+  boardMeetings,
+  boardMemberships,
+  boards,
   clocks,
   completenessVotes,
   dispositionBatches,
@@ -10,9 +14,10 @@ import {
   meetingMinutes,
   reviewAssignments,
   selectmenCertifications,
+  users,
 } from '@/db/schema'
 import { CORE_STATES } from '@/features/applications/states'
-import { seedDemo } from '@/features/demo/seedDemo'
+import { DEMO_USERS, seedDemo } from '@/features/demo/seedDemo'
 import { seededInspectionDay } from '@/features/demo/seedInspections'
 import { seedMeetingMinutes } from '@/features/demo/seedMinutes'
 import { seedNoticeContacts } from '@/features/demo/seedNoticeContacts'
@@ -39,6 +44,102 @@ beforeAll(async () => {
 })
 afterAll(async () => {
   await handle.drop()
+})
+
+describe('the town boards in the demo', () => {
+  const boardNamed = async (name: string) => {
+    const [row] = await handle.db.select().from(boards).where(eq(boards.name, name))
+    if (row === undefined) throw new Error(`no board named ${name}`)
+    return row
+  }
+
+  it('has four active boards, two of them the commissions added for the story', async () => {
+    const rows = await handle.db.select().from(boards)
+    expect(rows.map((b) => [b.kind, b.name, b.shortName, b.archivedAt]).sort()).toEqual(
+      [
+        [
+          'conservation_commission',
+          'Alder Pond Conservation Commission',
+          'Conservation Commission',
+          null,
+        ],
+        [
+          'historic_district_commission',
+          'Alder Pond Historic District Commission',
+          'Historic District Commission',
+          null,
+        ],
+        ['planning_board', 'Alder Pond Planning Board', 'Planning Board', null],
+        ['zba', 'Alder Pond Zoning Board of Adjustment', 'Zoning Board of Adjustment', null],
+      ].sort(),
+    )
+  })
+
+  it('seats three members on the Conservation Commission, one of them the demo sign-in', async () => {
+    const board = await boardNamed('Alder Pond Conservation Commission')
+    const seats = await handle.db
+      .select({ email: users.email, title: boardMemberships.title })
+      .from(boardMemberships)
+      .innerJoin(users, eq(users.id, boardMemberships.userId))
+      .where(eq(boardMemberships.boardId, board.id))
+    expect(seats.map((s) => s.email).sort()).toEqual([
+      'concom.alder@alderpond.example',
+      'concom.member@alderpond.example',
+      'concom.pike@alderpond.example',
+    ])
+    expect(DEMO_USERS.map((u) => u.email)).toContain('concom.member@alderpond.example')
+  })
+
+  it('gives the Conservation Commission a past meeting with approved minutes and an upcoming one with a shown agenda', async () => {
+    const board = await boardNamed('Alder Pond Conservation Commission')
+    const meetings = await handle.db
+      .select()
+      .from(boardMeetings)
+      .where(eq(boardMeetings.boardId, board.id))
+      .orderBy(boardMeetings.meetingDate)
+    expect(meetings.map((m) => m.meetingDate)).toEqual(['2026-10-07', '2026-11-18'])
+    const [past, upcoming] = meetings
+    const [minutes] = await handle.db
+      .select()
+      .from(meetingMinutes)
+      .where(eq(meetingMinutes.meetingId, past?.id ?? ''))
+    expect([minutes?.status, minutes?.approvedOn]).toEqual(['approved', '2026-10-21'])
+    const [agenda] = await handle.db
+      .select()
+      .from(agendas)
+      .where(eq(agendas.meetingId, upcoming?.id ?? ''))
+    expect(agenda?.status).toBe('published')
+  })
+
+  it('gives the Historic District Commission members and one upcoming meeting', async () => {
+    const board = await boardNamed('Alder Pond Historic District Commission')
+    const seats = await handle.db
+      .select()
+      .from(boardMemberships)
+      .where(eq(boardMemberships.boardId, board.id))
+    expect(seats).toHaveLength(3)
+    const meetings = await handle.db
+      .select()
+      .from(boardMeetings)
+      .where(eq(boardMeetings.boardId, board.id))
+    expect(meetings.map((m) => [m.meetingDate, m.status])).toEqual([['2026-11-19', 'scheduled']])
+  })
+
+  it('has one application with a comment from the Conservation Commission and one still waiting', async () => {
+    const board = await boardNamed('Alder Pond Conservation Commission')
+    const rows = await handle.db
+      .select({
+        status: reviewAssignments.status,
+        commentBy: reviewAssignments.commentBy,
+        comments: sql<number>`(select count(*)::int from review_comments c where c.assignment_id = review_assignments.id)`,
+      })
+      .from(reviewAssignments)
+      .where(eq(reviewAssignments.boardId, board.id))
+    expect(rows.map((r) => [r.status, r.commentBy, r.comments]).sort()).toEqual([
+      ['commented', '2026-11-20', 1],
+      ['pending', '2026-11-27', 0],
+    ])
+  })
 })
 
 describe('board demo data', () => {
@@ -154,16 +255,18 @@ describe('states the screens tell apart', () => {
     expect(again?.dueCount).toBe(view?.dueCount)
   })
 
-  it('has approved minutes for two past Planning Board meetings and a draft for the latest', async () => {
+  it('has approved minutes for two past Planning Board meetings and one Conservation Commission meeting, and a draft for the latest Planning Board meeting', async () => {
     const rows = await handle.db.select().from(meetingMinutes)
     expect(rows.map((r) => [r.status, r.approvedOn]).sort()).toEqual([
       ['approved', '2026-10-14'],
+      ['approved', '2026-10-21'],
       ['approved', '2026-10-28'],
       ['draft', null],
     ])
     const published = await loadPublicBoardRecords(handle.db, signal)
     expect(published.minutes.map((m) => m.text)).toEqual([
       'Planning Board, October 14, 2026, approved October 28, 2026',
+      'Conservation Commission, October 7, 2026, approved October 21, 2026',
       'Planning Board, September 23, 2026, approved October 14, 2026',
     ])
     const staff = await actorFor(handle.db, 'staff', signal)

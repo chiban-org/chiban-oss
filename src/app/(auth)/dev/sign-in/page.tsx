@@ -1,10 +1,10 @@
-import { and, eq, like } from 'drizzle-orm'
+import { and, eq, isNull, like } from 'drizzle-orm'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { CsrfField } from '@/components/CsrfField'
 import { SubmitButton } from '@/components/SubmitButton'
 import { db } from '@/db/client'
-import { userRoles, users } from '@/db/schema'
+import { boardMemberships, boards, userRoles, users } from '@/db/schema'
 import { isDevSignInEnabled } from '@/features/auth/devSignIn'
 import { devSignInEntries } from '@/features/auth/devSignInEntries'
 import { DEMO_DOMAIN } from '@/features/demo/seedDemo'
@@ -22,7 +22,18 @@ export default async function DevSignInPage() {
     .innerJoin(userRoles, eq(userRoles.userId, users.id))
     .where(and(like(users.email, `%@${DEMO_DOMAIN}`), eq(users.isActive, true)))
     .orderBy(users.email)
-  const rows = devSignInEntries(found)
+  const seats = await db
+    .select({ email: users.email, board: boards.shortName })
+    .from(boardMemberships)
+    .innerJoin(users, eq(users.id, boardMemberships.userId))
+    .innerJoin(boards, eq(boards.id, boardMemberships.boardId))
+    .where(and(like(users.email, `%@${DEMO_DOMAIN}`), isNull(boardMemberships.termEnd)))
+    .orderBy(boards.shortName)
+  const boardsByEmail = new Map<string, string[]>()
+  for (const seat of seats) {
+    boardsByEmail.set(seat.email, [...(boardsByEmail.get(seat.email) ?? []), seat.board])
+  }
+  const rows = devSignInEntries(found, boardsByEmail)
 
   return (
     <main className="mx-auto max-w-md p-6">
@@ -38,9 +49,7 @@ export default async function DevSignInPage() {
               <CsrfField />
               <input type="hidden" name="email" value={row.email} />
               <input type="hidden" name="kind" value={row.kind} />
-              <SubmitButton variant="outline">
-                {row.name} ({row.roles})
-              </SubmitButton>
+              <SubmitButton variant="outline">{row.label}</SubmitButton>
             </form>
           </li>
         ))}

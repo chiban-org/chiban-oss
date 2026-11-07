@@ -11,7 +11,7 @@ import { renderPdf } from '@/features/pdf/renderPdf'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 
-interface DemoMinutes {
+export interface DemoMinutes {
   meetingDate: string
   approvedOn: string | null
   body: string
@@ -35,8 +35,15 @@ const PLANNING_BOARD_MINUTES: readonly DemoMinutes[] = [
   },
 ]
 
-async function attachMinutes(ctx: CoverageContext, meetingId: string, entry: DemoMinutes) {
-  const title = `Planning Board minutes, ${formatCivilDate(entry.meetingDate)}`
+export type MinutesContext = Pick<CoverageContext, 'db' | 'store' | 'signal' | 'cast' | 'now'>
+
+export async function attachMinutes(
+  ctx: MinutesContext,
+  meetingId: string,
+  entry: DemoMinutes,
+  boardName = 'Planning Board',
+) {
+  const title = `${boardName} minutes, ${formatCivilDate(entry.meetingDate)}`
   const bytes = await renderPdf({
     title,
     frame: plainFrame('Town of Alder Pond'),

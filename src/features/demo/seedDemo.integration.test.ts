@@ -164,7 +164,7 @@ describe('seedDemo', () => {
     expect(emails.every((e) => e.endsWith('@alderpond.example'))).toBe(true)
   })
 
-  it('names the fourteen seeded users by short role', () => {
+  it('names the fifteen seeded users by short role', () => {
     expect(DEMO_USERS.map((u) => u.email).sort()).toEqual(
       [
         'admin',
@@ -179,6 +179,7 @@ describe('seedDemo', () => {
         'works',
         'pb.member',
         'zba.member',
+        'concom.member',
         'applicant',
         'contractor',
       ]
@@ -484,11 +485,11 @@ describe('seeded records', () => {
     expect(page.rows.flatMap((r) => r.applications)).toHaveLength(2)
   })
 
-  it('seeds a reviewer comment, a legal hold, a live board link, and a redacted public copy', async () => {
+  it('seeds a reviewer comment, a board comment, a legal hold, a live board link, and a redacted public copy', async () => {
     const roles = await handle.db.select().from(documentVersions)
     expect(roles.filter((v) => v.role === 'public_redacted').length).toBeGreaterThanOrEqual(1)
     expect(await handle.db.select().from(legalHolds)).toHaveLength(1)
-    expect(await handle.db.select().from(reviewComments)).toHaveLength(1)
+    expect(await handle.db.select().from(reviewComments)).toHaveLength(2)
     const links = await handle.db.select().from(boardPacketLinks)
     expect(links).toHaveLength(1)
     expect(links[0]?.revokedAt).toBeNull()

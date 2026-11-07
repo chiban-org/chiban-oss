@@ -25,6 +25,7 @@ import { actorFor } from '@/features/demo/seedPermitSupport'
 import { seedPermits } from '@/features/demo/seedPermits'
 import { type SeedRecordsDeps, seedRecords } from '@/features/demo/seedRecords'
 import { seedRecordsM10 } from '@/features/demo/seedRtk'
+import { seedTownBoards } from '@/features/demo/seedTownBoards'
 import { seedTownProfile } from '@/features/demo/seedTownProfile'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { getMailTransport } from '@/features/mail/transport'
@@ -90,6 +91,12 @@ export const DEMO_USERS: readonly DemoUser[] = [
   {
     email: `zba.member@${DEMO_DOMAIN}`,
     displayName: 'Drew Hale',
+    roles: ['board_member'],
+    kind: 'public',
+  },
+  {
+    email: `concom.member@${DEMO_DOMAIN}`,
+    displayName: 'Cleo Marsh',
     roles: ['board_member'],
     kind: 'public',
   },
@@ -196,12 +203,9 @@ export async function seedDemo(
   const paymentsSeeded = await seedPayments(db, signal)
   const recordsSeeded = await seedRecords(db, signal, deps.records)
   const inspectionsSeeded = await seedInspections(db, signal, deps.inspections)
-  const boardsSeeded = await seedBoards(
-    db,
-    signal,
-    deps.boards?.now,
-    deps.operations?.store ?? deps.records?.store,
-  )
+  const boardStore = deps.operations?.store ?? deps.records?.store
+  const boardsSeeded = await seedBoards(db, signal, deps.boards?.now, boardStore)
+  await seedTownBoards(db, boardStore ?? getObjectStore(), signal, deps.boards?.now)
   await seedBoardPacket(db, signal, deps.records?.mail)
   await seedNoticeContacts(db, signal, deps.boards?.now)
   const operationsSeeded = await seedOperations(db, signal, deps.operations ?? {})
