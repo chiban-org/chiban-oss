@@ -110,7 +110,7 @@ async function agendaView(
 
 export function agendaStatusText(agenda: MeetingAgendaView): string {
   return agenda.publishedText === null
-    ? 'Draft. Not yet public.'
+    ? 'Draft. Not on the public site yet.'
     : `Shown on the public site on ${agenda.publishedText}. Revision ${agenda.revision}.`
 }
 

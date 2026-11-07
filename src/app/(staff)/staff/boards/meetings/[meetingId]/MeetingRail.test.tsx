@@ -120,7 +120,7 @@ describe('meeting rail next step', () => {
     expect(screen.getByRole('button', { name: 'Show the agenda on the public site' })).toBeTruthy()
     expect(
       screen.getByText(
-        'The agenda then shows on the board page and the meetings page of the public site.',
+        'Once shown, the agenda appears on the board page and the meetings page of the public site.',
       ),
     ).toBeTruthy()
   })

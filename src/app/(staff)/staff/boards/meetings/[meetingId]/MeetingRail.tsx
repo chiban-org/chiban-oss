@@ -48,7 +48,7 @@ function Step({ view, kind }: { view: MeetingView; kind: StepKind }) {
         >
           <input type="hidden" name="meetingId" value={view.meetingId} />
           <p className="m-0">
-            The agenda then shows on the board page and the meetings page of the public site.
+            Once shown, the agenda appears on the board page and the meetings page of the public site.
           </p>
         </ActionForm>
       )
