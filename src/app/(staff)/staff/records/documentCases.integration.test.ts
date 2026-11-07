@@ -108,7 +108,10 @@ describeActionCases(h, 'setPublicAction', {
     checkOnly: CHECK_PASSED,
   },
   accepted: (result, { written }) => {
-    expect(result).toEqual({ ok: true, message: 'The document is not public.' })
+    expect(result).toEqual({
+      ok: true,
+      message: 'Saved. The document is hidden from the public site.',
+    })
     expect(written).toEqual(['audit_log', 'documents'])
   },
 })

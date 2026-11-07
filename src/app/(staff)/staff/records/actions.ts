@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { heldByPrivateCase, publicSettingMessage } from '@/features/documents/publicSettingMessage'
 import { setAudiences, setPublic } from '@/features/documents/publish'
 import { retryPreservation } from '@/features/preservation/preserve'
 import { recordBuildingRemoved, setDocumentSeries } from '@/features/records/assignments'
@@ -61,7 +62,10 @@ export async function setPublicAction(formData: FormData): Promise<ActionResult>
     if (!result.ok) return failure(DOC_COPY[result.error])
     return {
       ok: true,
-      message: input.isPublic ? 'The document is public.' : 'The document is not public.',
+      message: publicSettingMessage({
+        isPublic: input.isPublic,
+        heldByPrivateCase: input.isPublic && (await heldByPrivateCase(db, input.documentId)),
+      }),
     }
   })
 }
