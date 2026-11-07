@@ -1,6 +1,6 @@
 import type { NoticeRequirementRule, ProceedingClassification } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
-import type { Tx } from '@/db/client'
+import type { DbOrTx, Tx } from '@/db/client'
 import {
   desProximityDeterminations,
   noticeItems,
@@ -43,8 +43,8 @@ type PublicNotice = BoardSettingsBody['boards'][number]['publicNotice']
 const BULLETIN_KEY = 'town.notice.bulletin_board'
 const WEBSITE_KEY = 'town.notice.website'
 
-async function townLeads(
-  tx: Tx,
+export async function townLeads(
+  tx: DbOrTx,
   requirements: NoticeRequirementRule[],
   signal: AbortSignal,
 ): Promise<Record<string, number>> {

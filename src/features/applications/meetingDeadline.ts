@@ -34,10 +34,6 @@ export interface MeetingConflict {
   target: string | null
 }
 
-export function voteClockKey(board: Board): string {
-  return VOTE_CLOCK.get(board) ?? ''
-}
-
 export function meetingDeadline(clocks: readonly Clock[], board: Board): MeetingDeadline | null {
   const clock = dueNext(clocks.filter((c) => c.ruleKey === VOTE_CLOCK.get(board)))
   return clock === null ? null : { label: clock.ruleLabel, due: clock.currentDue.value }
