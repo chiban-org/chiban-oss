@@ -7,6 +7,10 @@ import { VersionHistory } from '@/components/config/VersionHistory'
 import { type SettingsBackLink, SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
+import {
+  type BoardSettingsBody,
+  reconcileBoardSettings,
+} from '@/features/boards/boardSettingsSchema'
 import { activeBoards } from '@/features/boards/townBoards'
 import { discardOffer } from '@/features/config/discardOffer'
 import { type EditorContext, editorContext } from '@/features/config/editorContext'
@@ -104,7 +108,12 @@ export default async function SettingsKeyPage({ params }: Props) {
   if (!(await hasCapability(ctx.db, ctx.actor.userId, 'config.edit', ctx.signal))) {
     return <NoPermission title="Settings" action="change settings" />
   }
-  const state = await getEditorState(ctx.db, kind, key, ctx.signal)
+  const loaded = await getEditorState(ctx.db, kind, key, ctx.signal)
+  const boardRows = await activeBoards(ctx.db)
+  const state =
+    kind === 'board_settings'
+      ? { ...loaded, body: reconcileBoardSettings(loaded.body as BoardSettingsBody, boardRows) }
+      : loaded
   const town = await getTownSettings(ctx.db, ctx.signal)
   const timeZone = town.ok ? town.value.timeZone : 'America/New_York'
   const referenceRows = await loadReferenceRows(ctx.db, ctx.signal)
@@ -112,7 +121,7 @@ export default async function SettingsKeyPage({ params }: Props) {
   const context = {
     ...editorContext(
       await listReviewerChoices(ctx.db),
-      (await activeBoards(ctx.db)).map((b) => ({
+      boardRows.map((b) => ({
         id: b.id,
         kind: b.kind,
         name: b.name,

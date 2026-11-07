@@ -12,6 +12,7 @@ import {
   type MeetingSortKey,
   type MeetingWhen,
 } from '@/features/boards/meetingListParams'
+import { allBoards, type BoardRow } from '@/features/boards/townBoards'
 import { anyOf, countFacets, type FacetCounts, facet, whereAll } from '@/features/dataTable/facets'
 import type { SortState } from '@/features/dataTable/sort'
 import { orderBySql } from '@/features/dataTable/sortSql'
@@ -66,6 +67,19 @@ function groupClauses(filters: MeetingFilters) {
     ['kinds', kinds.length === 0 ? undefined : inArray(m.kind, kinds)],
     ['agendas', anyOf((filters.agendas ?? []).map((a) => sql`${AGENDA} = ${a}`))],
   ])
+}
+
+export async function meetingFilterBoards(
+  db: Db,
+  when: MeetingWhen,
+  today: string,
+): Promise<BoardRow[]> {
+  const listed = await db
+    .selectDistinct({ boardId: m.boardId })
+    .from(m)
+    .where(whenClause(when, today))
+  const withMeetings = new Set(listed.map((r) => r.boardId))
+  return (await allBoards(db)).filter((b) => b.archivedAt === null || withMeetings.has(b.id))
 }
 
 async function usualLocation(db: Db): Promise<string> {

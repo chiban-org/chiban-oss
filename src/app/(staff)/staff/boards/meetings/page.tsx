@@ -4,7 +4,11 @@ import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { TablePager } from '@/components/dataTable/TablePager'
 import { ListHeader } from '@/components/layout/ListHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { listMeetingTable, type MeetingListPage } from '@/features/boards/meetingList'
+import {
+  listMeetingTable,
+  type MeetingListPage,
+  meetingFilterBoards,
+} from '@/features/boards/meetingList'
 import {
   AGENDA_STATE_LABELS,
   MEETING_FILTER_PARAMS,
@@ -74,10 +78,16 @@ export default async function MeetingsPage({
   searchParams: Promise<RawSearchParams>
 }) {
   const ctx = await requireStaffContext()
+  const raw = await searchParams
   const boardRows = await activeBoards(ctx.db)
-  const boardIds = boardRows.map((b) => b.id)
-  const { params, when, sort, filters } = readMeetingListView(await searchParams, boardIds)
+  const everyBoard = await allBoards(ctx.db)
+  const { params, when, sort, filters } = readMeetingListView(
+    raw,
+    everyBoard.map((b) => b.id),
+  )
   const today = await townToday(ctx.db, new Date(), ctx.signal)
+  const filterable = await meetingFilterBoards(ctx.db, when, today)
+  const boardIds = filterable.map((b) => b.id)
   const list = await listMeetingTable(
     ctx.db,
     ctx.actor,
@@ -86,7 +96,8 @@ export default async function MeetingsPage({
   )
   if (list === null) return <NoPermission title="Meetings" action="keep the meeting calendar" />
   const activeNames = new Map(boardRows.map((b) => [b.id, boardLabel(b)]))
-  const boardNames = new Map((await allBoards(ctx.db)).map((b) => [b.id, boardLabel(b)]))
+  const boardNames = new Map(everyBoard.map((b) => [b.id, boardLabel(b)]))
+  const filterNames = new Map(filterable.map((b) => [b.id, boardLabel(b)]))
   const tabs = filterTabs(MEETINGS_PATH, params, {
     param: 'when',
     label: 'Meetings',
@@ -110,7 +121,7 @@ export default async function MeetingsPage({
       <div className="toolbar">
         <QuickFilters
           label="Quick filters"
-          groups={chips(params, list, activeNames)}
+          groups={chips(params, list, filterNames)}
           clearHref={clear}
         />
       </div>

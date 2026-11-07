@@ -93,3 +93,11 @@ export function boardSettingsDefault(
 ): BoardSettingsBody {
   return { ...BOARD_SETTINGS_DEFAULT, boards: boards.map(defaultBoardEntry) }
 }
+
+export function reconcileBoardSettings(
+  body: BoardSettingsBody,
+  active: readonly { id: string; kind: BoardKind }[],
+): BoardSettingsBody {
+  const entries = new Map(body.boards.map((e) => [e.boardId, e]))
+  return { ...body, boards: active.map((b) => entries.get(b.id) ?? defaultBoardEntry(b)) }
+}

@@ -1,11 +1,13 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { listMeetingTable } from '@/features/boards/meetingList'
+import { archiveBoard, createBoard } from '@/features/boards/boardAdmin'
+import { listMeetingTable, meetingFilterBoards } from '@/features/boards/meetingList'
 import { readMeetingListView } from '@/features/boards/meetingListParams'
 import { activeBoards } from '@/features/boards/townBoards'
 import { type BoardWorld, scheduleMeetings, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba } from '@/test/hearingFixtures'
 import { makeTestStore } from '@/test/objectStore'
+import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -58,5 +60,35 @@ describe('the meeting table', () => {
       [...ordered].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())),
     )
     expect(new Set(ordered).size).toBe(2)
+  })
+
+  it('offers archived boards only while they have meetings in the range shown', async () => {
+    const made = await createBoard(
+      handle.db,
+      world.admin,
+      { name: 'Old Commission', shortName: 'Old', kind: 'other' },
+      signal,
+    )
+    if (!made.ok) throw new Error('create failed')
+    const { scheduleMeeting } = await import('@/features/boards/meetings')
+    await scheduleMeeting(
+      handle.db,
+      world.staff,
+      { boardId: made.value.boardId, meetingDate: '2027-01-10' as CivilDate, kind: 'regular' },
+      signal,
+    )
+    const archived = await archiveBoard(
+      handle.db,
+      world.admin,
+      { boardId: made.value.boardId },
+      signal,
+      new Date('2027-02-01T16:00:00Z'),
+    )
+    expect(archived.ok).toBe(true)
+    const names = async (when: 'upcoming' | 'past') =>
+      (await meetingFilterBoards(handle.db, when, '2027-02-01')).map((b) => b.name)
+    expect(await names('past')).toContain('Old Commission')
+    expect(await names('upcoming')).not.toContain('Old Commission')
+    expect(await names('upcoming')).toContain('Alder Pond Planning Board')
   })
 })
