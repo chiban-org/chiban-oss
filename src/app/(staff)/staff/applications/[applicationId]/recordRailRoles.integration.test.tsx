@@ -90,14 +90,15 @@ describe('the rail offers only moves this viewer can make', () => {
     }
   })
 
-  it('points a submitted board application at its meeting and vote, not a bare move', async () => {
+  it('points a submitted board application at the completeness vote, not a bare move', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-11-06T16:00:00Z'))
     const staff = await railAs('staff', 'SPR-2026-0001')
     expect(staff).not.toContain('Move to under review')
     expect(staff).not.toContain('Start the review')
     expect(staff).toContain('href="#board"')
-    expect(staff).toContain('Move the acceptance meeting')
+    expect(staff).toMatch(/Vote on completeness at the meeting on [A-Z][a-z]+ \d+, 2026/)
+    expect(staff).not.toContain('Move the meeting')
     const finance = await railAs('finance', 'SPR-2026-0001')
     expect(finance).not.toContain('Start the review')
     expect(finance).toMatch(/Vote on completeness at the meeting on [A-Z][a-z]+ \d+, 2026/)

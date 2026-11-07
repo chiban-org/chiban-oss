@@ -5,6 +5,7 @@ import { meetingIsAhead } from '@/features/applications/boardRequirements'
 import {
   type MeetingDeadline,
   meetingConflict,
+  meetingHint,
   meetingOptionText,
 } from '@/features/applications/meetingDeadline'
 import type { BoardPanelData } from '@/features/boards/panelData'
@@ -13,30 +14,13 @@ import {
   completenessVoteAction,
   setAcceptanceMeetingAction,
 } from '../../boards/actions'
+import { MeetingSelect } from './meetingSelect'
 
 type Variant = 'default' | 'outline'
 
-function MeetingSelect({
-  data,
-  deadline,
-  chosen,
-}: {
-  data: BoardPanelData
-  deadline: MeetingDeadline | null
-  chosen: string
-}) {
-  return (
-    <SelectField
-      label={data.board === 'zba' ? 'Hearing meeting' : 'Meeting'}
-      name="meetingId"
-      defaultValue={data.meetings.some((m) => m.id === chosen) ? chosen : ''}
-      required
-      options={[
-        ['', 'Choose an upcoming meeting'],
-        ...data.meetings.map((m): [string, string] => [m.id, meetingOptionText(m, deadline)]),
-      ]}
-    />
-  )
+function chosenMeeting(data: BoardPanelData, target: string | null): string {
+  const chosen = target ?? data.acceptanceMeetingId ?? ''
+  return data.meetings.some((m) => m.id === chosen) ? chosen : ''
 }
 
 export function MeetingForm({
@@ -58,9 +42,13 @@ export function MeetingForm({
     >
       <input type="hidden" name="applicationId" value={data.applicationId} />
       <MeetingSelect
-        data={data}
-        deadline={deadline}
-        chosen={target ?? data.acceptanceMeetingId ?? ''}
+        label={data.board === 'zba' ? 'Hearing meeting' : 'Meeting'}
+        options={data.meetings.map((m) => ({
+          value: m.id,
+          text: meetingOptionText(m, deadline),
+          hint: meetingHint(m, deadline),
+        }))}
+        defaultValue={chosenMeeting(data, target)}
       />
     </ActionForm>
   )

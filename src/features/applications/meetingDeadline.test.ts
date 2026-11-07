@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { meetingConflict, meetingDeadline, meetingOptionText } from './meetingDeadline'
+import { meetingConflict, meetingDeadline, meetingHint, meetingOptionText } from './meetingDeadline'
 import type { PlanBoard } from './workPlanTypes'
 
 function clock(ruleKey: string, due: string, o: Record<string, unknown> = {}) {
@@ -14,9 +14,27 @@ function clock(ruleKey: string, due: string, o: Record<string, unknown> = {}) {
 }
 
 const MEETINGS = [
-  { id: 'm12', date: '2026-11-12', text: 'November 12, 2026, regular meeting', filedInTime: true },
-  { id: 'm25', date: '2026-11-25', text: 'November 25, 2026, regular meeting', filedInTime: true },
-  { id: 'd09', date: '2026-12-09', text: 'December 9, 2026, regular meeting', filedInTime: true },
+  {
+    id: 'm12',
+    date: '2026-11-12',
+    text: 'November 12, 2026, regular meeting',
+    filedInTime: true,
+    noticeable: true,
+  },
+  {
+    id: 'm25',
+    date: '2026-11-25',
+    text: 'November 25, 2026, regular meeting',
+    filedInTime: true,
+    noticeable: true,
+  },
+  {
+    id: 'd09',
+    date: '2026-12-09',
+    text: 'December 9, 2026, regular meeting',
+    filedInTime: true,
+    noticeable: true,
+  },
 ]
 
 const PLANNING: PlanBoard = {
@@ -75,7 +93,7 @@ describe('meeting choices against the deadline', () => {
 
   it('finds a conflict when the meeting set is after the due date and offers the latest meeting that meets it', () => {
     const meetings = [
-      { id: 'm10', date: '2026-11-10', text: 'November 10', filedInTime: true },
+      { id: 'm10', date: '2026-11-10', text: 'November 10', filedInTime: true, noticeable: true },
       ...MEETINGS,
     ]
     expect(meetingConflict({ ...PLANNING, meetings }, deadline)).toEqual({
@@ -114,5 +132,46 @@ describe('meeting choices against the deadline', () => {
     expect(meetingOptionText(meetings[0] as never, deadline)).toBe(
       'November 12, 2026, regular meeting · filed too late for this meeting',
     )
+  })
+
+  it('never offers a meeting there is no longer time to mail notice for', () => {
+    const meetings = MEETINGS.map((m) => (m.id === 'm12' ? { ...m, noticeable: false } : m))
+    expect(meetingConflict({ ...PLANNING, meetings }, deadline)).toEqual({
+      warning:
+        'The meeting set, November 25, 2026, is after this deadline: Completeness, November 12, 2026. There is not enough time left to mail notice for any meeting on or before it.',
+      target: null,
+    })
+    expect(meetingOptionText(meetings[0] as never, deadline)).toBe(
+      'November 12, 2026, regular meeting · too soon to mail notice',
+    )
+  })
+
+  it('offers the latest meeting that is both filed in time and noticeable', () => {
+    const meetings = [
+      { id: 'm05', date: '2026-11-05', text: 'November 5', filedInTime: false, noticeable: true },
+      { id: 'm08', date: '2026-11-08', text: 'November 8', filedInTime: true, noticeable: true },
+      ...MEETINGS.map((m) => (m.id === 'm12' ? { ...m, noticeable: false } : m)),
+    ]
+    const today = { ...PLANNING, meetings, today: '2026-11-04' }
+    expect(meetingConflict(today, deadline)?.target).toBe('m08')
+  })
+
+  it('says the filing came too late before it says notice is too soon', () => {
+    const both = { ...MEETINGS[0], filedInTime: false, noticeable: false } as never
+    expect(meetingOptionText(both, deadline)).toBe(
+      'November 12, 2026, regular meeting · filed too late for this meeting',
+    )
+  })
+
+  it('repeats the chosen meeting mark as a sentence under the picker', () => {
+    expect(meetingHint(MEETINGS[0] as never, deadline)).toBe('This meeting meets the deadline.')
+    expect(meetingHint(MEETINGS[1] as never, deadline)).toBe('This meeting is after the deadline.')
+    expect(meetingHint({ ...MEETINGS[0], noticeable: false } as never, deadline)).toBe(
+      'It is too soon to mail notice for this meeting.',
+    )
+    expect(meetingHint({ ...MEETINGS[0], filedInTime: false } as never, deadline)).toBe(
+      'The application was filed too late for this meeting.',
+    )
+    expect(meetingHint(MEETINGS[1] as never, null)).toBeUndefined()
   })
 })

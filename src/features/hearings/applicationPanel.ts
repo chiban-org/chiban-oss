@@ -7,7 +7,7 @@ import { TERMINAL_STATES } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
-import { filedInTime, filingLeadFor } from '@/features/boards/filingLead'
+import { type MeetingEligibility, meetingEligibility } from '@/features/boards/meetingEligibility'
 import { toGraphNodes } from '@/features/decisions/decisionView'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
@@ -22,7 +22,7 @@ export interface ApplicationHearingsPanel {
   canRecord: boolean
   canRoute: boolean
   canSchedule: boolean
-  scheduleMeetings: { id: string; date: string; text: string; filedInTime: boolean }[]
+  scheduleMeetings: ({ id: string; date: string; text: string } & MeetingEligibility)[]
   scheduleKinds: [string, string][]
   hearings: { id: string; text: string }[]
   decisions: { id: string; text: string }[]
@@ -63,7 +63,7 @@ export async function loadApplicationHearingsPanel(
     .where(eq(boardDecisions.applicationId, applicationId))
     .orderBy(asc(boardDecisions.votedOn))
   const summary = await trcSummary(db, actor, applicationId, signal)
-  const lead = app.state === 'submitted' ? await filingLeadFor(db, app, board, signal) : null
+  const eligible = await meetingEligibility(db, app, board, today, signal)
   const kinds: [string, string][] =
     app.state === 'submitted' && board === 'planning_board'
       ? [['submission_and_hearing', HEARING_KIND_LABELS.submission_and_hearing]]
@@ -82,7 +82,7 @@ export async function loadApplicationHearingsPanel(
         id: m.id,
         date: m.meetingDate,
         text: formatCivilDate(m.meetingDate),
-        filedInTime: filedInTime(lead, app.receivedDate, m.meetingDate as CivilDate),
+        ...eligible(m.meetingDate),
       })),
     scheduleKinds: kinds,
     hearings: held.map(({ hearing, meeting }) => ({

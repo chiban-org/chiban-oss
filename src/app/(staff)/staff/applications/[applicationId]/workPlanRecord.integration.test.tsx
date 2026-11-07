@@ -140,7 +140,7 @@ describe('the stage strip', () => {
 })
 
 describe('the filed site plan, as the clerk', () => {
-  it('waits on the town to move an acceptance meeting set after the completeness deadline', async () => {
+  it('waits on the Planning Board for the vote at the meeting on file, warning that it is after the deadline', async () => {
     const [meeting] = await handle.db
       .select({ date: boardMeetings.meetingDate })
       .from(acceptanceSchedules)
@@ -149,7 +149,9 @@ describe('the filed site plan, as the clerk', () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-11-06T16:00:00Z'))
     const html = await page('SPR-2026-0001').finally(() => vi.useRealTimers())
-    expect(sentence(html)).toContain('Waiting on: Town. Move the acceptance meeting.')
+    expect(sentence(html)).toContain(
+      `Waiting on: Alder Pond Planning Board. Vote on completeness at the meeting on ${formatCivilDate(meeting?.date ?? '')}.`,
+    )
     expect(sectionOf(html, 'Do this now') ?? '').toContain(
       `The meeting set, ${formatCivilDate(meeting?.date ?? '')}, is after this deadline`,
     )

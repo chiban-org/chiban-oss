@@ -5,10 +5,12 @@ import { acceptanceSchedules, applications, boardMeetings, clocks } from '@/db/s
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { setAcceptanceMeeting } from '@/features/boards/acceptance'
 import { seedDemo } from '@/features/demo/seedDemo'
+import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { formatCivilDate } from '@/lib/formatDate'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { demoSeedDeps } from '@/test/demoSeedDeps'
 import { filledButtons, sectionOf } from '@/test/htmlSections'
+import { addDays, type CivilDate } from '@/types/civilDate'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
 
@@ -70,7 +72,7 @@ async function meetingSet(number: string): Promise<string> {
   return row?.date ?? ''
 }
 
-async function upcoming(board: 'planning_board' | 'zba') {
+async function upcoming(board: 'planning_board' | 'zba', from: string = TODAY) {
   return await handle.db
     .select({ id: boardMeetings.id, date: boardMeetings.meetingDate, kind: boardMeetings.kind })
     .from(boardMeetings)
@@ -78,7 +80,7 @@ async function upcoming(board: 'planning_board' | 'zba') {
       and(
         eq(boardMeetings.board, board),
         eq(boardMeetings.status, 'scheduled'),
-        gte(boardMeetings.meetingDate, TODAY),
+        gte(boardMeetings.meetingDate, from),
       ),
     )
     .orderBy(asc(boardMeetings.meetingDate))
@@ -116,49 +118,76 @@ afterAll(async () => {
   await handle.drop()
 })
 
-describe('a site plan whose acceptance meeting falls after the completeness deadline', () => {
-  it('warns in Do this now with the seeded clock due date and the meeting on file', async () => {
+const EARLIER = '2026-11-02'
+
+function noticeLeadDays(): number {
+  const rule = ruleByKey(loadPack(), 'nh.pb.notice.mail')
+  return rule.kind === 'clock' && 'value' in rule.length ? rule.length.value : 0
+}
+
+function siteOption(m: { date: string; kind: string }, due: string, today: string): string {
+  const soon = m.date < addDays(today as CivilDate, noticeLeadDays())
+  const mark = soon
+    ? 'too soon to mail notice'
+    : m.date <= due
+      ? 'meets the deadline'
+      : 'after the deadline'
+  return `${formatCivilDate(m.date)}, ${m.kind} meeting · ${mark}`
+}
+
+describe('a site plan whose acceptance meeting falls after the completeness deadline, on the demo day', () => {
+  it('warns that no meeting on or before the seeded due date can still be noticed, and keeps the vote as the step', async () => {
     const due = await clockDue('SPR-2026-0001', 'nh.pb.completeness')
     const set = await meetingSet('SPR-2026-0001')
     expect(set > due).toBe(true)
-    const card = sectionOf(await page('SPR-2026-0001'), 'Do this now') ?? ''
-    expect(card).toContain('Move the acceptance meeting')
-    expect(card).toContain(
-      `The meeting set, ${formatCivilDate(set)}, is after this deadline: Planning Board completeness determination, ${formatCivilDate(due)}.`,
-    )
-  })
-
-  it('hosts the meeting picker in the card as the one filled button, marking each meeting against the due date', async () => {
-    const due = await clockDue('SPR-2026-0001', 'nh.pb.completeness')
-    const meetings = await upcoming('planning_board')
-    const target = meetings.filter((m) => m.date <= due).at(-1)
-    expect(target).toBeDefined()
     const html = await page('SPR-2026-0001')
     const card = sectionOf(html, 'Do this now') ?? ''
+    expect(card).toContain(`Vote on completeness at the meeting on ${formatCivilDate(set)}`)
+    expect(card).toContain(
+      `The meeting set, ${formatCivilDate(set)}, is after this deadline: Planning Board completeness determination, ${formatCivilDate(due)}. There is not enough time left to mail notice for any meeting on or before it.`,
+    )
+    expect(card).not.toContain('name="meetingId"')
+    expect(filledButtons(html)).toEqual([])
+  })
+
+  it('marks a meeting too soon to notice in the board panel picker and the hearing scheduler', async () => {
+    const due = await clockDue('SPR-2026-0001', 'nh.pb.completeness')
+    const meetings = await upcoming('planning_board')
+    const html = await page('SPR-2026-0001')
+    const board = sectionOf(html, 'Acceptance') ?? ''
+    expect(
+      optionsOf(board)
+        .filter((o) => o.value !== '')
+        .map((o) => o.text),
+    ).toEqual(meetings.map((m) => siteOption(m, due, TODAY)))
+    expect(board).toContain('This meeting is after the deadline.')
+    const scheduler = sectionOf(html, 'Hearings and decisions') ?? ''
+    expect(
+      optionsOf(scheduler)
+        .filter((o) => /^[0-9a-f-]{36}$/.test(o.value))
+        .map((o) => o.text),
+    ).toEqual(meetings.map((m) => siteOption(m, due, TODAY).replace(`, ${m.kind} meeting`, '')))
+  })
+})
+
+describe('the same site plan while a meeting before the deadline can still be noticed', () => {
+  it('hosts the move in the card as the one filled button, choosing that meeting', async () => {
+    const due = await clockDue('SPR-2026-0001', 'nh.pb.completeness')
+    const meetings = await upcoming('planning_board', EARLIER)
+    const target = meetings
+      .filter((m) => m.date <= due && m.date >= addDays(EARLIER as CivilDate, noticeLeadDays()))
+      .at(-1)
+    expect(target).toBeDefined()
+    const html = await page('SPR-2026-0001', EARLIER)
+    const card = sectionOf(html, 'Do this now') ?? ''
+    expect(card).toContain('Move the acceptance meeting')
     expect(filledButtons(html)).toEqual(['Move the meeting'])
     expect(card.match(/name="meetingId"/g)).toHaveLength(1)
     expect(sectionOf(html, 'Board') ?? '').not.toContain('name="meetingId"')
     const options = optionsOf(card).filter((o) => o.value !== '')
-    expect(options.map((o) => o.value)).toEqual(meetings.map((m) => m.id))
-    expect(options.map((o) => o.text)).toEqual(meetings.map((m) => optionText(m, due)))
+    expect(options.map((o) => o.text)).toEqual(meetings.map((m) => siteOption(m, due, EARLIER)))
     expect(options.filter((o) => o.selected).map((o) => o.value)).toEqual([target?.id])
-  })
-
-  it('marks the same meetings in the hearing scheduler, which also sets the acceptance meeting', async () => {
-    const due = await clockDue('SPR-2026-0001', 'nh.pb.completeness')
-    const meetings = await upcoming('planning_board')
-    const panel = sectionOf(await page('SPR-2026-0001'), 'Hearings and decisions') ?? ''
-    const options = optionsOf(panel).filter((o) => /^[0-9a-f-]{36}$/.test(o.value))
-    expect(options.map((o) => o.text)).toEqual(
-      meetings.map(
-        (m) =>
-          `${formatCivilDate(m.date)} · ${m.date <= due ? 'meets the deadline' : 'after the deadline'}`,
-      ),
-    )
-  })
-
-  it('names the town as the actor in the status sentence', async () => {
-    const html = await page('SPR-2026-0001')
+    expect(card).toContain('This meeting meets the deadline.')
     expect(html).toMatch(
       /data-slot="status-sentence"[^>]*>Waiting on: Town\. Move the acceptance meeting\./,
     )

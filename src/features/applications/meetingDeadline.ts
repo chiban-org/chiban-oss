@@ -26,11 +26,16 @@ export interface MeetingChoice {
   date: string
   text: string
   filedInTime: boolean
+  noticeable: boolean
 }
 
 export interface MeetingConflict {
   warning: string
   target: string | null
+}
+
+export function voteClockKey(board: Board): string {
+  return VOTE_CLOCK.get(board) ?? ''
 }
 
 export function meetingDeadline(clocks: readonly Clock[], board: Board): MeetingDeadline | null {
@@ -42,16 +47,44 @@ function meets(date: string, deadline: MeetingDeadline): boolean {
   return compareCivil(date as CivilDate, deadline.due) <= 0
 }
 
-export function meetingOptionText(meeting: MeetingChoice, deadline: MeetingDeadline | null) {
-  if (!meeting.filedInTime) return `${meeting.text} · filed too late for this meeting`
-  if (deadline === null) return meeting.text
-  return `${meeting.text} · ${meets(meeting.date, deadline) ? 'meets the deadline' : 'after the deadline'}`
+type Mark = 'filed_too_late' | 'too_soon' | 'meets' | 'after'
+
+const OPTION_MARK: ReadonlyMap<Mark, string> = new Map([
+  ['filed_too_late', 'filed too late for this meeting'],
+  ['too_soon', 'too soon to mail notice'],
+  ['meets', 'meets the deadline'],
+  ['after', 'after the deadline'],
+])
+
+const HINT: ReadonlyMap<Mark, string> = new Map([
+  ['filed_too_late', 'The application was filed too late for this meeting.'],
+  ['too_soon', 'It is too soon to mail notice for this meeting.'],
+  ['meets', 'This meeting meets the deadline.'],
+  ['after', 'This meeting is after the deadline.'],
+])
+
+function markOf(meeting: MeetingChoice, deadline: MeetingDeadline | null): Mark | null {
+  if (!meeting.filedInTime) return 'filed_too_late'
+  if (!meeting.noticeable) return 'too_soon'
+  if (deadline === null) return null
+  return meets(meeting.date, deadline) ? 'meets' : 'after'
 }
 
-function noTargetReason(filedTooLate: boolean): string {
-  return filedTooLate
-    ? 'The application was filed too late for every meeting on or before it.'
-    : 'No upcoming meeting is on or before it.'
+export function meetingOptionText(meeting: MeetingChoice, deadline: MeetingDeadline | null) {
+  const mark = markOf(meeting, deadline)
+  return mark === null ? meeting.text : `${meeting.text} · ${OPTION_MARK.get(mark) ?? ''}`
+}
+
+export function meetingHint(meeting: MeetingChoice, deadline: MeetingDeadline | null) {
+  const mark = markOf(meeting, deadline)
+  return mark === null ? undefined : HINT.get(mark)
+}
+
+function noTargetReason(onTime: readonly MeetingChoice[]): string {
+  if (onTime.length === 0) return 'No upcoming meeting is on or before it.'
+  return onTime.some((m) => m.filedInTime)
+    ? 'There is not enough time left to mail notice for any meeting on or before it.'
+    : 'The application was filed too late for every meeting on or before it.'
 }
 
 type ConflictBoard = Pick<PlanBoard, 'acceptanceDate' | 'meetings' | 'today'>
@@ -66,10 +99,10 @@ export function meetingConflict(
   const onTime: MeetingChoice[] = board.meetings.filter(
     (m) => m.date >= board.today && meets(m.date, deadline),
   )
-  const target = onTime.filter((m) => m.filedInTime).at(-1)?.id ?? null
+  const target = onTime.filter((m) => m.filedInTime && m.noticeable).at(-1)?.id ?? null
   const warning = `The meeting set, ${formatCivilDate(set)}, is after this deadline: ${deadline.label}, ${formatCivilDate(deadline.due)}.`
   return {
-    warning: target === null ? `${warning} ${noTargetReason(onTime.length > 0)}` : warning,
+    warning: target === null ? `${warning} ${noTargetReason(onTime)}` : warning,
     target,
   }
 }

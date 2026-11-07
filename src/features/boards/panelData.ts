@@ -23,7 +23,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { desRule, suggestDesProximity } from '@/features/boards/des500'
-import { filedInTime, filingLeadFor } from '@/features/boards/filingLead'
+import { type MeetingEligibility, meetingEligibility } from '@/features/boards/meetingEligibility'
 import { getRegionalContacts } from '@/features/boards/regionalContacts'
 import { loadPack } from '@/features/packs/loadPack'
 import { displayIdsFor } from '@/features/parcels/displayId'
@@ -45,7 +45,7 @@ export interface BoardPanelData {
   acceptanceText: string | null
   acceptanceMeetingId: string | null
   acceptanceDate: string | null
-  meetings: { id: string; date: string; text: string; filedInTime: boolean }[]
+  meetings: ({ id: string; date: string; text: string } & MeetingEligibility)[]
   today: string
   regional: {
     text: string | null
@@ -172,7 +172,7 @@ export async function loadBoardPanel(
       ),
     )
     .orderBy(asc(boardMeetings.meetingDate))
-  const lead = await filingLeadFor(db, app, board, signal)
+  const eligible = await meetingEligibility(db, app, board, today, signal)
   const [schedule] = await db
     .select({ id: boardMeetings.id, date: boardMeetings.meetingDate })
     .from(acceptanceSchedules)
@@ -244,7 +244,7 @@ export async function loadBoardPanel(
     meetings: meetings.map((m) => ({
       id: m.id,
       date: m.meetingDate,
-      filedInTime: filedInTime(lead, app.receivedDate, m.meetingDate as CivilDate),
+      ...eligible(m.meetingDate),
       text: `${formatCivilDate(m.meetingDate)}, ${m.kind === 'special' ? 'special' : 'regular'} meeting`,
     })),
     today,
