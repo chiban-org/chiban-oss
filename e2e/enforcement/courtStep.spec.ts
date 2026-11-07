@@ -4,6 +4,7 @@ import {
   countRows,
   expectConfirmation,
   expectRefusedBeside,
+  formFor,
   named,
   openSummary,
   region,
@@ -12,6 +13,7 @@ import {
 
 const MILL_BROOK = '41 Mill Brook Lane'
 const COURT = 'District Court, Alder Pond Division'
+const ORDERS = 'Cease and desist orders'
 const STEPS =
   'select count(*) from order_court_steps s join enforcement_orders o on o.id = s.order_id where o.case_id = $1 and s.docket = $2'
 
@@ -32,8 +34,7 @@ test.describe
       documentTitle = `Filed order ${suffix}`
       await page.goto(`/staff/enforcement/${caseId}`)
       await uploadCaseDocument(page, 'Court document', documentTitle)
-      const orders = region(page, 'Cease and desist orders')
-      const form = await openSummary(orders, 'Record a court step')
+      const form = await formFor(page, ORDERS, 'Record a court step', 'Record court step')
       await form.getByLabel('Step').selectOption({ label: 'Judgment entered' })
       await named(form, 'court').fill(COURT)
       await form.getByLabel('Docket number').fill(docket)
@@ -45,15 +46,14 @@ test.describe
 
     test('records the order as filed with the clerk', async ({ page, db }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
-      const orders = region(page, 'Cease and desist orders')
-      const form = await openSummary(orders, 'Record a court step')
+      const form = await formFor(page, ORDERS, 'Record a court step', 'Record court step')
       await named(form, 'court').fill(COURT)
       await form.getByLabel('Docket number').fill(docket)
       await form.getByLabel('Court document').selectOption({ label: documentTitle })
       await form.getByRole('button', { name: 'Record court step' }).click()
       await expectConfirmation(page, 'Court step recorded.')
       await expect(
-        orders.getByText(`Filed with the court clerk, ${COURT}, docket ${docket}.`),
+        region(page, ORDERS).getByText(`Filed with the court clerk, ${COURT}, docket ${docket}.`),
       ).toBeVisible()
       expect(await countRows(db, STEPS, [caseId, docket])).toBe(1)
     })

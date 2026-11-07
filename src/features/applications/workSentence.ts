@@ -1,5 +1,6 @@
 import { dueNext } from '@/features/clocks/clockSummary'
 import type { ClockExplanation } from '@/features/clocks/explainClock'
+import { daysLeftPhrase } from '@/lib/dayCount'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CoreState } from './states'
 import type { NowStep, PlanActor } from './workPlanTypes'
@@ -26,19 +27,12 @@ function actorLabel(actor: PlanActor, names: Names): string {
   return 'Inspector'
 }
 
-function days(n: number): string {
-  return `${n} ${n === 1 ? 'day' : 'days'}`
-}
-
 type Clock = Pick<ClockExplanation, 'status' | 'daysRemaining' | 'ruleLabel' | 'currentDue'>
 
 export function duePhrase(clocks: readonly Clock[]): string | null {
   const clock = dueNext(clocks)
   if (clock === null) return null
-  const left =
-    clock.daysRemaining < 0
-      ? `${days(-clock.daysRemaining)} overdue`
-      : `${days(clock.daysRemaining)} left`
+  const left = daysLeftPhrase(clock.daysRemaining)
   return `${clock.ruleLabel}: ${formatCivilDate(clock.currentDue.value)}, ${left}.`
 }
 

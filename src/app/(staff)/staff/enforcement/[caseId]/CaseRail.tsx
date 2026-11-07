@@ -1,20 +1,23 @@
 import Link from 'next/link'
 import { FactList } from '@/components/layout/PageHeader'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
+import type { CaseWorkPlan } from '@/features/enforcement/workPlanTypes'
 import { formatCivilDate } from '@/lib/formatDate'
 import { CaseAssignee, type CaseAssigneeData } from './CaseAssignee'
 import { CaseParcel } from './CaseParcel'
-import { CaseStatusForm } from './CaseStatusForm'
+import { CaseMoreActions } from './CaseStatusForm'
 import type { Can } from './can'
 
 export function CaseRail({
   detail,
   can,
   assignee,
+  plan,
 }: {
   detail: CaseDetail
   can: Can
   assignee: CaseAssigneeData
+  plan: CaseWorkPlan
 }) {
   const { row } = detail.staff
   const facts = [
@@ -36,11 +39,11 @@ export function CaseRail({
   ]
   return (
     <>
-      {can.manage ? (
-        <div className="rail-card empty:hidden">
-          <CaseStatusForm detail={detail} />
+      {plan.moves.length === 0 ? null : (
+        <div className="rail-card">
+          <CaseMoreActions detail={detail} moves={plan.moves} />
         </div>
-      ) : null}
+      )}
       <CaseAssignee caseId={row.id} data={assignee} canManage={can.manage} />
       <div className="rail-card">
         <FactList facts={facts} stacked />

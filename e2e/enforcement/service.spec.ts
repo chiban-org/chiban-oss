@@ -3,6 +3,7 @@ import {
   countRows,
   expectConfirmation,
   expectRefusedBeside,
+  formFor,
   issuedOrderCase,
   named,
   openSummary,
@@ -11,6 +12,7 @@ import {
 } from './support'
 
 const FUTURE = '2099-01-01'
+const ORDERS = 'Cease and desist orders'
 
 test.describe
   .serial('service on an issued order', () => {
@@ -25,8 +27,7 @@ test.describe
         `Stop the rental, ref ${suffix}`,
       )
       ownerName = `Pat Plover ${suffix}`
-      const orders = region(page, 'Cease and desist orders')
-      const form = await openSummary(orders, 'Add a recipient')
+      const form = await formFor(page, ORDERS, 'Add a recipient', 'Add recipient')
       await named(form, 'name').fill(ownerName)
       await form.getByLabel('Address').fill('PO Box 9, Alder Pond NH')
       await form.getByLabel(/^Where the name came from/).fill('CAMA owner')
@@ -45,8 +46,7 @@ test.describe
       suffix,
     }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
-      const orders = region(page, 'Cease and desist orders')
-      const form = await openSummary(orders, 'Record the check for a role')
+      const form = await formFor(page, ORDERS, 'Record the check for a role', 'Record check')
       await form.getByLabel('Role').selectOption({ label: 'Taxpayer' })
       await form.getByLabel('Result').selectOption({ label: 'Same as the owner' })
       await form.getByLabel('What was searched').fill(`Tax bill goes to the owner, ref ${suffix}`)
@@ -62,8 +62,7 @@ test.describe
 
     test('records a role check', async ({ page, db, suffix }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
-      const orders = region(page, 'Cease and desist orders')
-      const form = await openSummary(orders, 'Record the check for a role')
+      const form = await formFor(page, ORDERS, 'Record the check for a role', 'Record check')
       await form.getByLabel('Role').selectOption({ label: 'Taxpayer' })
       await form.getByLabel('Result').selectOption({ label: 'Same as the owner' })
       await form.getByLabel('What was searched').fill(`Tax bill goes to the owner, ref ${suffix}`)
@@ -78,8 +77,7 @@ test.describe
       suffix,
     }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
-      const orders = region(page, 'Cease and desist orders')
-      const form = await openSummary(orders, 'Record the check for a role')
+      const form = await formFor(page, ORDERS, 'Record the check for a role', 'Record check')
       await form.getByLabel('Role').selectOption({ label: 'Owner of record' })
       await form.getByLabel('Result').selectOption({ label: 'None exist' })
       await form.getByLabel('What was searched').fill(`Not allowed, ref ${suffix}`)
@@ -92,8 +90,7 @@ test.describe
 
     test('refuses hand service with no proof beside the proof field', async ({ page, db }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
-      const orders = region(page, 'Cease and desist orders')
-      const form = await openSummary(orders, 'Record service')
+      const form = await formFor(page, ORDERS, 'Record service', 'Record service')
       await form.getByLabel('Recipient').selectOption({ label: `${ownerName}, Owner of record` })
       await form.getByLabel('Served by (name)').fill('Deputy Marsh')
       await form.getByLabel('Server is a').selectOption({ label: 'Deputy sheriff' })
@@ -114,8 +111,7 @@ test.describe
     test('uploads the proof and records service with it', async ({ page, db, suffix }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
       await uploadCaseDocument(page, 'Proof of service', `Return of service ${suffix}`)
-      const orders = region(page, 'Cease and desist orders')
-      const form = await openSummary(orders, 'Record service')
+      const form = await formFor(page, ORDERS, 'Record service', 'Record service')
       await form.getByLabel('Recipient').selectOption({ label: `${ownerName}, Owner of record` })
       await form.getByLabel('Served by (name)').fill('Deputy Marsh')
       await form.getByLabel('Server is a').selectOption({ label: 'Deputy sheriff' })
@@ -159,8 +155,7 @@ test.describe
       db,
     }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
-      const orders = region(page, 'Cease and desist orders')
-      const form = await openSummary(orders, 'Record a court step')
+      const form = await formFor(page, ORDERS, 'Record a court step', 'Record court step')
       await named(form, 'court').fill('District Court, Alder Pond Division')
       await form.getByRole('button', { name: 'Record court step' }).click()
       await expectRefusedBeside(

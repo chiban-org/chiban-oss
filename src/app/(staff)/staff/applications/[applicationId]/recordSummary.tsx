@@ -1,3 +1,4 @@
+import { StageStrip } from '@/components/layout/StageStrip'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { type StageInput, stagesFor } from '@/features/applications/stageStrip'
@@ -5,7 +6,6 @@ import type { WorkPlan } from '@/features/applications/workPlanTypes'
 import { overdueCount } from '@/features/clocks/clockSummary'
 import type { Status } from '@/features/design/tokens'
 import { lateNotice } from '@/features/hearings/noticeDeadlines'
-import { StageStrip } from './stageStrip'
 
 function isLate(view: StaffApplicationView): boolean {
   return overdueCount(view.clocks) > 0 || lateNotice(view.noticeDeadlines) !== null

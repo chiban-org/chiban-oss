@@ -3,6 +3,7 @@ import { SelectField, TextField } from '@/components/staff/fields'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import { FINE_KIND_LABELS } from '@/features/enforcement/labels'
 import { PENALTY_EXPOSURE_AFTER_FINE_LABEL } from '@/features/enforcement/penaltyExposure'
+import { NO_HOSTED } from '@/features/enforcement/workPlanTypes'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { fineAction, finePaymentAction } from '../moneyActions'
@@ -15,7 +16,40 @@ const METHODS: [string, string][] = [
   ['check', 'Check'],
 ]
 
-export function MoneySection({ detail, can }: { detail: CaseDetail; can: Can }) {
+export function FinePaymentForm({
+  fineId,
+  variant,
+}: {
+  fineId: string
+  variant: 'default' | 'outline'
+}) {
+  return (
+    <ActionForm action={finePaymentAction} submitLabel="Record payment" variant={variant}>
+      <Hidden name="fineId" value={fineId} />
+      <TextField
+        label="Amount in dollars"
+        name="dollars"
+        type="number"
+        step="0.01"
+        min="0.01"
+        required
+      />
+      <SelectField label="Paid by" name="method" options={METHODS} />
+      <TextField label="Check number" name="checkNumber" />
+      <TextField label="Payer name" name="payerName" required />
+    </ActionForm>
+  )
+}
+
+export function MoneySection({
+  detail,
+  can,
+  hosted = NO_HOSTED,
+}: {
+  detail: CaseDetail
+  can: Can
+  hosted?: ReadonlySet<string>
+}) {
   const judgments = detail.orders.flatMap((o) =>
     o.steps
       .filter((s) => s.kind === 'judgment' && s.judgmentOutcome !== 'annulled')
@@ -51,21 +85,8 @@ export function MoneySection({ detail, can }: { detail: CaseDetail; can: Can }) 
         <article key={f.row.id} className="record-item space-y-2">
           <p className="font-medium">{`${FINE_KIND_LABELS[f.row.kind]}, ${formatCents(f.row.amountCents)}, imposed ${formatCivilDate(f.row.imposedOn)} by ${f.row.court}, docket ${f.row.docket}`}</p>
           <p>{`Paid ${formatCents(f.paidCents)}. Balance due ${formatCents(f.dueCents)}.`}</p>
-          {can.collect && f.dueCents > 0 ? (
-            <ActionForm action={finePaymentAction} submitLabel="Record payment">
-              <Hidden name="fineId" value={f.row.id} />
-              <TextField
-                label="Amount in dollars"
-                name="dollars"
-                type="number"
-                step="0.01"
-                min="0.01"
-                required
-              />
-              <SelectField label="Paid by" name="method" options={METHODS} />
-              <TextField label="Check number" name="checkNumber" />
-              <TextField label="Payer name" name="payerName" required />
-            </ActionForm>
+          {can.collect && f.dueCents > 0 && !hosted.has(`record_fine_payment:${f.row.id}`) ? (
+            <FinePaymentForm fineId={f.row.id} variant="outline" />
           ) : null}
         </article>
       ))}

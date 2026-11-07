@@ -1,12 +1,8 @@
+import type { Stage } from '@/components/layout/StageStrip'
 import { type CoreState, isTerminalState, STATE_LABELS } from './states'
 import { mainPath } from './workPath'
 
-export interface Stage {
-  key: string
-  label: string
-  status: 'done' | 'current' | 'upcoming'
-  overdue: boolean
-}
+export type { Stage }
 
 export interface StageInput {
   state: CoreState

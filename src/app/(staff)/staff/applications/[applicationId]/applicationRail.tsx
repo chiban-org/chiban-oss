@@ -9,6 +9,7 @@ import { dueNext, otherOverdue } from '@/features/clocks/clockSummary'
 import { NOTICE_DEADLINE_LABEL } from '@/features/hearings/labels'
 import { lateNotice } from '@/features/hearings/noticeDeadlines'
 import type { CorrectionFormData } from '@/features/permits/correction/correctionForm'
+import { dayCount } from '@/lib/dayCount'
 import { formatCivilDate } from '@/lib/formatDate'
 import { checkCorrectionAction, correctPermitAction } from './correctionActions'
 import { MoreActions } from './nextStepCard'
@@ -36,10 +37,6 @@ function CorrectPermit({ data }: { data: CorrectionFormData | null }) {
   )
 }
 
-function days(n: number): string {
-  return `${n} ${n === 1 ? 'day' : 'days'}`
-}
-
 type Clock = StaffApplicationView['clocks'][number]
 
 function DueNext({ clock }: { clock: Clock | null }) {
@@ -48,9 +45,9 @@ function DueNext({ clock }: { clock: Clock | null }) {
     <span>
       {`${clock.ruleLabel}, ${formatCivilDate(clock.currentDue.value)}, `}
       {clock.daysRemaining < 0 ? (
-        <span className="attention font-semibold">{`${days(-clock.daysRemaining)} overdue`}</span>
+        <span className="attention font-semibold">{`${dayCount(-clock.daysRemaining)} overdue`}</span>
       ) : (
-        `${days(clock.daysRemaining)} left`
+        `${dayCount(clock.daysRemaining)} left`
       )}
     </span>
   )
