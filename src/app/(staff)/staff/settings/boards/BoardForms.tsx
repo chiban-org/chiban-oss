@@ -24,7 +24,7 @@ function KindChoice({
   return (
     <fieldset className="space-y-2 border-0 p-0">
       <Legend>Kind of board</Legend>
-      <p className="m-0 text-sm text-muted-foreground">
+      <p className="text-sm text-muted-foreground">
         The kind is fixed once the board is added. To change it, add a new board and archive this
         one.
       </p>
