@@ -73,7 +73,7 @@ test.describe('moving, assigning and locating a case', () => {
     suffix,
   }) => {
     const caseId = await startCase(page, `63 Wren Pass ${suffix}`)
-    const form = await openSummary(page.getByRole('main'), 'Link a parcel')
+    const form = await openSummary(page.locator('aside'), 'Link a parcel')
     const picker = form.getByRole('combobox', { name: 'Parcel' })
     await picker.fill('12 Tamarack Way')
     await form.getByRole('button', { name: 'Link the case to a parcel' }).click()
