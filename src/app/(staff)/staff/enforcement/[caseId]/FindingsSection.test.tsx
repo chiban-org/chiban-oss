@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, screen } from '@testing-library/react'
-import { afterEach, describe, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { expectRefusalBeside, refusal } from '@/test/besideField'
 import {
   ALL_CAN,
@@ -112,5 +112,41 @@ describe('sending a notice of violation', () => {
     openSection('Send a notice of violation')
     fireEvent.click(screen.getByRole('button', { name: 'Send notice of violation' }))
     await expectRefusalBeside(screen.getByLabelText(labelled('Date sent')), message)
+  })
+})
+
+describe('offering finding and receipt forms only when they apply', () => {
+  const summaries = () =>
+    screen.queryAllByText(/./, { selector: 'summary' }).map((s) => s.textContent)
+
+  it('offers no finding form at intake, where a finding is refused', () => {
+    renderForm(
+      <FindingsSection
+        detail={stubDetail({
+          staff: { ...detail.staff, row: { ...detail.staff.row, status: 'intake' } },
+        })}
+        can={ALL_CAN}
+      />,
+    )
+    expect(summaries()).not.toContain('Record a finding')
+  })
+
+  it('offers no receipt form for a notice whose receipt is recorded', () => {
+    const received = { ...detail.notices[0], receivedOn: '2027-07-05', receiptBasis: 'Green card' }
+    renderForm(
+      <FindingsSection detail={{ ...detail, notices: [received] } as never} can={ALL_CAN} />,
+    )
+    expect(summaries()).not.toContain('Record receipt')
+  })
+
+  it('drops the forms the Do this now card holds', () => {
+    renderForm(
+      <FindingsSection
+        detail={detail}
+        can={ALL_CAN}
+        hosted={new Set(['record_finding', 'record_notice_receipt:n1', 'send_notice'])}
+      />,
+    )
+    expect(summaries()).toEqual([])
   })
 })

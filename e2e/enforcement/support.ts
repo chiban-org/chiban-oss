@@ -39,19 +39,56 @@ export async function startCase(page: Page, location: string): Promise<string> {
   return caseIdFrom(page)
 }
 
-export async function moveCaseTo(page: Page, label: string, button = 'Change status') {
-  await page.getByLabel('Move the case to').selectOption({ label })
-  await page.getByRole('button', { name: button, exact: true }).click()
+const MOVE_BUTTONS = new Map([
+  ['Under investigation', 'Start the investigation'],
+  ['No violation found', 'Record no violation'],
+  ['Resolved', 'Resolve the case'],
+])
+
+export function doThisNow(page: Page): Locator {
+  return region(page, 'Do this now')
+}
+
+export async function moreActions(page: Page): Promise<Locator> {
+  return await openSummary(page.locator('aside'), 'More actions')
+}
+
+export async function formFor(
+  page: Page,
+  panel: string,
+  summary: string | null,
+  submit: string,
+): Promise<Locator> {
+  const card = doThisNow(page)
+  if ((await card.getByRole('button', { name: submit, exact: true }).count()) > 0) return card
+  const scope = region(page, panel)
+  return summary === null ? scope : await openSummary(scope, summary)
+}
+
+export async function moveCaseTo(page: Page, label: string) {
+  const name = MOVE_BUTTONS.get(label) ?? label
+  const inCard = doThisNow(page).getByRole('button', { name, exact: true })
+  const button =
+    (await inCard.count()) > 0
+      ? inCard
+      : (await moreActions(page)).getByRole('button', { name, exact: true })
+  await button.click()
+  if (label === 'No violation found') {
+    await page
+      .getByRole('dialog', { name: /^Record no violation for / })
+      .getByRole('button', { name: 'Record no violation' })
+      .click()
+  }
   await expect(page.getByRole('main').getByText(label, { exact: true }).first()).toBeVisible()
 }
 
 export async function recordZoningFinding(page: Page, ref: string, facts: string): Promise<void> {
-  const findings = region(page, 'Findings and notices of violation')
-  await openSummary(findings, 'Record a finding')
-  await findings.getByLabel('Section or condition').fill(ref)
-  await findings.getByLabel('Facts').fill(facts)
-  await findings.getByRole('button', { name: 'Record finding' }).click()
-  await expect(findings.getByText(`Zoning ordinance: ${ref} (Open)`)).toBeVisible()
+  const panel = 'Findings and notices of violation'
+  const form = await formFor(page, panel, 'Record a finding', 'Record finding')
+  await form.getByLabel('Section or condition').fill(ref)
+  await form.getByLabel('Facts').fill(facts)
+  await form.getByRole('button', { name: 'Record finding' }).click()
+  await expect(region(page, panel).getByText(`Zoning ordinance: ${ref} (Open)`)).toBeVisible()
 }
 
 export async function caseNumber(db: E2eDb, caseId: string): Promise<string> {
@@ -81,8 +118,7 @@ export async function caseWithOpenFinding(page: Page, location: string): Promise
 }
 
 export async function draftOrderFor(page: Page, action: string): Promise<void> {
-  const orders = region(page, 'Cease and desist orders')
-  await openSummary(orders, 'Draft an order')
+  const orders = await formFor(page, 'Cease and desist orders', 'Draft an order', 'Draft order')
   await orders.getByRole('checkbox', { name: `Zoning ordinance: ${ZONING_REF}` }).check()
   await orders.getByLabel('Corrective action required').fill(action)
   await fillDate(orders.getByLabel('Corrective action due'), DEADLINE)
@@ -91,7 +127,7 @@ export async function draftOrderFor(page: Page, action: string): Promise<void> {
 }
 
 export async function issueOrderOnPage(page: Page): Promise<void> {
-  const orders = region(page, 'Cease and desist orders')
+  const orders = await formFor(page, 'Cease and desist orders', null, 'Issue order')
   await orders.getByRole('button', { name: 'Issue order' }).click()
   await expectConfirmation(page, 'Order issued.')
 }

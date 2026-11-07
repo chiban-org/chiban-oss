@@ -10,6 +10,8 @@ import { assigneeChoices, caseAssignee } from '@/features/enforcement/caseAssign
 import { loadCaseDetail } from '@/features/enforcement/caseDetail'
 import { caseChipStatus } from '@/features/enforcement/chipStatus'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
+import { planCaseWork } from '@/features/enforcement/workPlan'
+import { hostedActions } from '@/features/enforcement/workPlanTypes'
 import { casePublicHref } from '@/features/publicSite/publicHref'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
@@ -18,6 +20,7 @@ import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
 import { AppealsSection } from './AppealsSection'
 import { CaseRail } from './CaseRail'
+import { CaseDoThisNow, CaseRequirements, CaseSummary } from './CaseWork'
 import { ComplaintsSection } from './ComplaintsSection'
 import { CounselSection } from './CounselSection'
 import { loadCan } from './can'
@@ -25,6 +28,7 @@ import { DocumentsSection } from './DocumentsSection'
 import { FindingsSection, NotesSection } from './FindingsSection'
 import { MoneySection } from './MoneySection'
 import { OrdersSection } from './OrdersSection'
+import { caseAbilities } from './planAbilities'
 
 export const dynamic = 'force-dynamic'
 
@@ -53,12 +57,17 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
   const loaded = await loadCaseDetail(ctx.db, ctx.actor, caseId, today, ctx.signal)
   if (!loaded.ok) notFound()
   const detail = loaded.value
-  const can = await loadCan(ctx.db, ctx.actor, ctx.signal)
-  const assignee = {
-    current: await caseAssignee(ctx.db, caseId),
-    choices: can.manage ? await assigneeChoices(ctx.db) : [],
-  }
+  const [can, current] = await Promise.all([
+    loadCan(ctx.db, ctx.actor, ctx.signal),
+    caseAssignee(ctx.db, caseId),
+  ])
+  const assignee = { current, choices: can.manage ? await assigneeChoices(ctx.db) : [] }
   const { row } = detail.staff
+  const plan = planCaseWork(detail, {
+    abilities: caseAbilities(can),
+    responsible: assignee.current?.name ?? null,
+  })
+  const hosted = hostedActions(plan)
   const sections = splitPanels([
     {
       empty: detail.staff.complaints.length === 0,
@@ -70,11 +79,11 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
     },
     {
       empty: detail.findings.length === 0 && detail.notices.length === 0,
-      node: <FindingsSection key="findings" detail={detail} can={can} />,
+      node: <FindingsSection key="findings" detail={detail} can={can} hosted={hosted} />,
     },
     {
       empty: detail.orders.length === 0,
-      node: <OrdersSection key="orders" detail={detail} can={can} />,
+      node: <OrdersSection key="orders" detail={detail} can={can} hosted={hosted} />,
     },
     {
       empty: detail.appeals.length === 0,
@@ -82,7 +91,7 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
     },
     {
       empty: detail.fines.length === 0 && detail.exposure === null,
-      node: <MoneySection key="money" detail={detail} can={can} />,
+      node: <MoneySection key="money" detail={detail} can={can} hosted={hosted} />,
     },
     {
       empty: detail.referrals.length === 0,
@@ -102,17 +111,15 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
           <StatusChip status={caseChipStatus(row.status)} label={CASE_STATUS_LABELS[row.status]} />
         }
         lead={row.locationText}
+        summary={<CaseSummary detail={detail} plan={plan} />}
         actions={<SeePublicLink href={casePublicHref(row)} />}
       />
-      {detail.banner === null ? null : (
-        <p role="status" className="mb-6 rounded-md bg-highlight p-3 font-semibold">
-          {detail.banner}
-        </p>
-      )}
       <RecordLayout
-        rail={<CaseRail detail={detail} can={can} assignee={assignee} />}
+        rail={<CaseRail detail={detail} can={can} assignee={assignee} plan={plan} />}
         empty={sections.empty}
       >
+        <CaseDoThisNow detail={detail} plan={plan} />
+        <CaseRequirements plan={plan} />
         {sections.filled}
       </RecordLayout>
     </main>

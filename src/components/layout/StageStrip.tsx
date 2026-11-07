@@ -1,5 +1,11 @@
 import { Circle, CircleCheck, CircleDot, Clock } from 'lucide-react'
-import type { Stage } from '@/features/applications/stageStrip'
+
+export interface Stage {
+  key: string
+  label: string
+  status: 'done' | 'current' | 'upcoming'
+  overdue: boolean
+}
 
 const STATUS_TEXT: Record<Stage['status'], string> = {
   done: 'done',

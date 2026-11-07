@@ -6,10 +6,12 @@ import {
   draftOrderFor,
   expectConfirmation,
   expectRefusedBeside,
+  formFor,
   openSummary,
   region,
 } from './support'
 
+const ORDERS = 'Cease and desist orders'
 const ORDERS_FOR_CASE = 'select count(*) from enforcement_orders where case_id = $1 and status = $2'
 
 test.describe
@@ -94,7 +96,7 @@ test.describe
       db,
     }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
-      const orders = region(page, 'Cease and desist orders')
+      const orders = await formFor(page, ORDERS, null, 'Issue order')
       await fillDate(orders.getByLabel('Issue date'), '2099-01-01')
       await orders.getByRole('button', { name: 'Issue order' }).click()
       await expectRefusedBeside(
@@ -110,7 +112,7 @@ test.describe
     }) => {
       const inspector = await pageAs('inspector')
       await inspector.goto(`/staff/enforcement/${caseId}`)
-      const orders = region(inspector, 'Cease and desist orders')
+      const orders = await formFor(inspector, ORDERS, null, 'Issue order')
       await orders.getByRole('button', { name: 'Issue order' }).click()
       await expectRefusedBeside(
         orders.getByLabel('Issue date'),
@@ -121,9 +123,11 @@ test.describe
 
     test('issues the order as the designated clerk and stores the PDF', async ({ page, db }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
-      const orders = region(page, 'Cease and desist orders')
-      await orders.getByRole('button', { name: 'Issue order' }).click()
+      await (await formFor(page, ORDERS, null, 'Issue order'))
+        .getByRole('button', { name: 'Issue order' })
+        .click()
       await expectConfirmation(page, 'Order issued.')
+      const orders = region(page, ORDERS)
       await expect(orders.getByRole('link', { name: 'Open order' })).toBeVisible()
       await expect(orders.getByRole('heading', { level: 4, name: 'Service' })).toBeVisible()
       const row = await db.one<{

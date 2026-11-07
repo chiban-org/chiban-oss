@@ -7,10 +7,9 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { mayRecordFinding } from '@/features/enforcement/caseTransitions'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
-
-const FINDING_STATUSES = ['investigating', 'violation_found', 'order_issued', 'in_court'] as const
 
 const FindingSchema = z.object({
   caseId: z.string().uuid(),
@@ -44,7 +43,7 @@ export async function recordFinding(
       .where(eq(enforcementCases.id, value.caseId))
       .for('update')
     if (row === undefined) return err('not_found')
-    if (!(FINDING_STATUSES as readonly string[]).includes(row.status)) {
+    if (!mayRecordFinding(row.status)) {
       return err('case_not_investigating')
     }
     const today = await townToday(tx, now, signal)

@@ -2,6 +2,7 @@ import { accountFor, expect, test } from '../fixtures/test'
 import {
   expectConfirmation,
   expectRefusedBeside,
+  moreActions,
   moveCaseTo,
   openSummary,
   startCase,
@@ -16,17 +17,16 @@ test.describe('moving, assigning and locating a case', () => {
     const caseId = await startCase(page, `61 Wren Pass ${suffix}`)
     await moveCaseTo(page, 'Under investigation')
     await moveCaseTo(page, 'No violation found')
-    await page.getByLabel('Move the case to').selectOption({ label: 'Closed' })
-    await page.getByRole('button', { name: 'Change status', exact: true }).click()
+    const more = await moreActions(page)
+    const close = await openSummary(more, 'Close the case')
+    const reasonField = close.getByLabel(/^Reason for closing/)
+    await close.getByRole('button', { name: 'Close the case', exact: true }).click()
     await expect(page.getByRole('dialog', { name: 'Close this case?' })).toHaveCount(0)
-    await expect(page.getByLabel(/^Reason \(needed to close\)/)).toHaveAttribute(
-      'aria-invalid',
-      'true',
-    )
+    await expect(reasonField).toHaveAttribute('aria-invalid', 'true')
 
     const reason = `No violation on re-inspection, ref ${suffix}`
-    await page.getByLabel(/^Reason \(needed to close\)/).fill(reason)
-    await page.getByRole('button', { name: 'Change status', exact: true }).click()
+    await reasonField.fill(reason)
+    await close.getByRole('button', { name: 'Close the case', exact: true }).click()
     const dialog = page.getByRole('dialog', { name: 'Close this case?' })
     await dialog.getByRole('button', { name: 'Cancel' }).click()
     await expect(dialog).toHaveCount(0)
@@ -36,7 +36,7 @@ test.describe('moving, assigning and locating a case', () => {
     )
     expect(open.status).toBe('no_violation')
 
-    await page.getByRole('button', { name: 'Change status', exact: true }).click()
+    await close.getByRole('button', { name: 'Close the case', exact: true }).click()
     await dialog.getByRole('button', { name: 'Close the case' }).click()
     await expectConfirmation(page, 'Status changed.')
     await expect

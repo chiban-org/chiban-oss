@@ -8,6 +8,7 @@ import {
   SERVER_ROLE_LABELS,
   SERVICE_METHOD_LABELS,
 } from '@/features/enforcement/labels'
+import { NO_HOSTED } from '@/features/enforcement/workPlanTypes'
 import {
   answerAction,
   listRecipientAction,
@@ -24,8 +25,63 @@ const SERVERS: [string, string][] = [
   ...(Object.entries(SERVER_ROLE_LABELS) as [string, string][]),
 ]
 
-export function ServiceForms({ order, detail }: { order: OrderDetail; detail: CaseDetail }) {
-  const orderId = order.row.id
+type Variant = 'default' | 'outline'
+
+interface OrderFormProps {
+  order: OrderDetail
+  detail: CaseDetail
+  variant: Variant
+}
+
+export function AddRecipientForm({
+  order,
+  role,
+  variant,
+}: Omit<OrderFormProps, 'detail'> & { role?: string }) {
+  return (
+    <ActionForm action={listRecipientAction} submitLabel="Add recipient" variant={variant}>
+      <Hidden name="orderId" value={order.row.id} />
+      <SelectField label="Role" name="role" options={ROLES} defaultValue={role} />
+      <TextField label="Name" name="name" required />
+      <AddressTextField label="Address" name="address" required />
+      <TextField
+        label="Where the name came from, such as the CAMA owner or a registry book and page"
+        name="source"
+        required
+      />
+    </ActionForm>
+  )
+}
+
+export function RoleCheckForm({
+  order,
+  detail,
+  role,
+  variant,
+}: OrderFormProps & { role?: string }) {
+  return (
+    <ActionForm action={roleCheckAction} submitLabel="Record check" variant={variant}>
+      <Hidden name="orderId" value={order.row.id} />
+      <SelectField label="Role" name="role" options={ROLES} defaultValue={role} />
+      <SelectField label="Result" name="outcome" options={CHECKS} />
+      <TextField label="What was searched" name="basis" required />
+      <TextField
+        label="Date checked"
+        name="checkedOn"
+        type="date"
+        defaultValue={detail.today}
+        required
+      />
+    </ActionForm>
+  )
+}
+
+export function RecordServiceForm({
+  order,
+  detail,
+  recipientId,
+  variant,
+}: OrderFormProps & { recipientId?: string | null }) {
   const proofs = detail.documents.filter((d) => d.docKind === 'service_proof')
   const proofOptions: [string, string][] = [
     ['', 'Choose an uploaded proof'],
@@ -37,76 +93,87 @@ export function ServiceForms({ order, detail }: { order: OrderDetail; detail: Ca
     ),
     ['', 'No one person: posting or publication'],
   ]
+  return (
+    <>
+      <p className="m-0">Upload the proof on the Documents section first, as proof of service.</p>
+      <ActionForm action={serviceEventAction} submitLabel="Record service" variant={variant}>
+        <Hidden name="orderId" value={order.row.id} />
+        <SelectField
+          label="Recipient"
+          name="recipientId"
+          options={recipients}
+          defaultValue={recipientId ?? undefined}
+        />
+        <SelectField label="Method" name="method" options={METHODS} />
+        <TextField
+          label="Date served"
+          name="servedOn"
+          type="date"
+          defaultValue={detail.today}
+          required
+        />
+        <TextField label="Served by (name)" name="serverName" />
+        <SelectField label="Server is a" name="serverRole" options={SERVERS} />
+        <TextField label="Newspaper (for publication)" name="newspaper" />
+        <SelectField label="Proof of service" name="proofDocumentId" options={proofOptions} />
+      </ActionForm>
+    </>
+  )
+}
+
+function AnswerForm({ order, detail }: Omit<OrderFormProps, 'variant'>) {
   const answerDocs: [string, string][] = detail.documents.map((d) => [d.documentId, d.title])
   const answerRecipients: [string, string][] = order.service.recipients.map((r) => [r.id, r.name])
+  if (answerRecipients.length === 0) return null
+  return (
+    <details>
+      <summary className="cursor-pointer font-medium">Record an answer</summary>
+      <ActionForm action={answerAction} submitLabel="Record answer">
+        <SelectField label="Who answered" name="recipientId" options={answerRecipients} />
+        <TextField
+          label="Date received"
+          name="answeredOn"
+          type="date"
+          defaultValue={detail.today}
+          required
+        />
+        <SelectField label="The answer document" name="documentId" options={answerDocs} />
+      </ActionForm>
+    </details>
+  )
+}
+
+export function ServiceForms({
+  order,
+  detail,
+  hosted = NO_HOSTED,
+}: {
+  order: OrderDetail
+  detail: CaseDetail
+  hosted?: ReadonlySet<string>
+}) {
+  const orderId = order.row.id
   return (
     <div className="space-y-4">
-      <details>
-        <summary className="cursor-pointer font-medium">Add a recipient</summary>
-        <ActionForm action={listRecipientAction} submitLabel="Add recipient">
-          <Hidden name="orderId" value={orderId} />
-          <SelectField label="Role" name="role" options={ROLES} />
-          <TextField label="Name" name="name" required />
-          <AddressTextField label="Address" name="address" required />
-          <TextField
-            label="Where the name came from, such as the CAMA owner or a registry book and page"
-            name="source"
-            required
-          />
-        </ActionForm>
-      </details>
-      <details>
-        <summary className="cursor-pointer font-medium">Record the check for a role</summary>
-        <ActionForm action={roleCheckAction} submitLabel="Record check">
-          <Hidden name="orderId" value={orderId} />
-          <SelectField label="Role" name="role" options={ROLES} />
-          <SelectField label="Result" name="outcome" options={CHECKS} />
-          <TextField label="What was searched" name="basis" required />
-          <TextField
-            label="Date checked"
-            name="checkedOn"
-            type="date"
-            defaultValue={detail.today}
-            required
-          />
-        </ActionForm>
-      </details>
-      <details>
-        <summary className="cursor-pointer font-medium">Record service</summary>
-        <p className="m-0">Upload the proof on the Documents section first, as proof of service.</p>
-        <ActionForm action={serviceEventAction} submitLabel="Record service">
-          <Hidden name="orderId" value={orderId} />
-          <SelectField label="Recipient" name="recipientId" options={recipients} />
-          <SelectField label="Method" name="method" options={METHODS} />
-          <TextField
-            label="Date served"
-            name="servedOn"
-            type="date"
-            defaultValue={detail.today}
-            required
-          />
-          <TextField label="Served by (name)" name="serverName" />
-          <SelectField label="Server is a" name="serverRole" options={SERVERS} />
-          <TextField label="Newspaper (for publication)" name="newspaper" />
-          <SelectField label="Proof of service" name="proofDocumentId" options={proofOptions} />
-        </ActionForm>
-      </details>
-      {answerRecipients.length === 0 ? null : (
+      {hosted.has(`list_recipient:${orderId}`) ? null : (
         <details>
-          <summary className="cursor-pointer font-medium">Record an answer</summary>
-          <ActionForm action={answerAction} submitLabel="Record answer">
-            <SelectField label="Who answered" name="recipientId" options={answerRecipients} />
-            <TextField
-              label="Date received"
-              name="answeredOn"
-              type="date"
-              defaultValue={detail.today}
-              required
-            />
-            <SelectField label="The answer document" name="documentId" options={answerDocs} />
-          </ActionForm>
+          <summary className="cursor-pointer font-medium">Add a recipient</summary>
+          <AddRecipientForm order={order} variant="outline" />
         </details>
       )}
+      {hosted.has(`record_role_check:${orderId}`) ? null : (
+        <details>
+          <summary className="cursor-pointer font-medium">Record the check for a role</summary>
+          <RoleCheckForm order={order} detail={detail} variant="outline" />
+        </details>
+      )}
+      {hosted.has(`record_service:${orderId}`) ? null : (
+        <details>
+          <summary className="cursor-pointer font-medium">Record service</summary>
+          <RecordServiceForm order={order} detail={detail} variant="outline" />
+        </details>
+      )}
+      <AnswerForm order={order} detail={detail} />
     </div>
   )
 }

@@ -3,6 +3,7 @@ import {
   countRows,
   expectConfirmation,
   expectRefusedBeside,
+  formFor,
   moveCaseTo,
   openSummary,
   recordZoningFinding,
@@ -11,6 +12,8 @@ import {
 } from './support'
 
 const BEFORE_TODAY = 'between January 1, 1900 and'
+const FINDINGS = 'Findings and notices of violation'
+const SEND = 'Send a notice of violation'
 const FUTURE = '2099-01-01'
 
 test.describe
@@ -70,8 +73,7 @@ test.describe
       db,
     }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
-      const findings = region(page, 'Findings and notices of violation')
-      await openSummary(findings, 'Record a finding')
+      const findings = await formFor(page, FINDINGS, 'Record a finding', 'Record finding')
       await findings.getByLabel('Section or condition').fill('Future finding')
       await findings.getByLabel('Facts').fill('Should not be stored')
       await fillDate(findings.getByLabel('Inspection date'), FUTURE)
@@ -110,8 +112,7 @@ test.describe
       db,
     }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
-      const findings = region(page, 'Findings and notices of violation')
-      await openSummary(findings, 'Send a notice of violation')
+      const findings = await formFor(page, FINDINGS, SEND, 'Send notice of violation')
       await findings.getByRole('button', { name: 'Send notice of violation' }).click()
       const group = findings.getByRole('group', { name: 'Findings to include' })
       await expect(group.getByText('Choose at least one finding.')).toHaveCount(1)
@@ -125,12 +126,12 @@ test.describe
 
     test('sends a notice for one finding, stores the PDF and lists it', async ({ page, db }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
-      const findings = region(page, 'Findings and notices of violation')
-      await openSummary(findings, 'Send a notice of violation')
-      await findings.getByRole('checkbox', { name: /Section 4\.2 side setback/ }).check()
-      await findings.getByLabel('How it was sent').selectOption({ label: 'Certified mail' })
-      await findings.getByRole('button', { name: 'Send notice of violation' }).click()
+      const form = await formFor(page, FINDINGS, SEND, 'Send notice of violation')
+      await form.getByRole('checkbox', { name: /Section 4\.2 side setback/ }).check()
+      await form.getByLabel('How it was sent').selectOption({ label: 'Certified mail' })
+      await form.getByRole('button', { name: 'Send notice of violation' }).click()
       await expectConfirmation(page, 'Notice of violation recorded.')
+      const findings = region(page, FINDINGS)
       await expect(
         findings.getByText(/Sent by certified mail on .*Receipt not recorded\./),
       ).toBeVisible()
@@ -149,13 +150,15 @@ test.describe
       suffix,
     }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
-      const findings = region(page, 'Findings and notices of violation')
       const basis = `Green card signed, ref ${suffix}`
-      await openSummary(findings, 'Record receipt')
-      await findings.getByLabel('How receipt is known').fill(basis)
-      await findings.getByRole('button', { name: 'Record receipt' }).click()
+      const form = await formFor(page, FINDINGS, 'Record receipt', 'Record receipt')
+      await form.getByLabel('How receipt is known').fill(basis)
+      await form.getByRole('button', { name: 'Record receipt' }).click()
       await expectConfirmation(page, 'Receipt recorded.')
-      await expect(findings.getByText(`: ${basis}.`)).toBeVisible()
+      await expect(region(page, FINDINGS).getByText(`: ${basis}.`)).toBeVisible()
+      await expect(
+        region(page, FINDINGS).locator('summary', { hasText: 'Record receipt' }),
+      ).toHaveCount(0)
       const row = await db.one<{ receipt_basis: string }>(
         'select receipt_basis from violation_notices where case_id = $1',
         [caseId],

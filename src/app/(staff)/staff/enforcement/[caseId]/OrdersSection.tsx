@@ -10,6 +10,7 @@ import {
   ORDER_STATUS_LABELS,
   PROVISION_KIND_LABELS,
 } from '@/features/enforcement/labels'
+import { NO_HOSTED } from '@/features/enforcement/workPlanTypes'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 import {
@@ -91,7 +92,62 @@ function DraftForms({ order }: { order: OrderDetail }) {
   )
 }
 
-function OrderBlock({ order, detail, can }: { order: OrderDetail; detail: CaseDetail; can: Can }) {
+type Variant = 'default' | 'outline'
+
+export function IssueOrderForm({
+  order,
+  detail,
+  variant,
+}: {
+  order: OrderDetail
+  detail: CaseDetail
+  variant: Variant
+}) {
+  return (
+    <ActionForm action={issueOrderAction} submitLabel="Issue order" variant={variant}>
+      <Hidden name="orderId" value={order.row.id} />
+      <Hidden name="expectedRowVersion" value={order.row.rowVersion} />
+      <TextField
+        label="Issue date"
+        name="issuedOn"
+        type="date"
+        defaultValue={detail.today}
+        required
+      />
+    </ActionForm>
+  )
+}
+
+export function DraftOrderForm({ detail, variant }: { detail: CaseDetail; variant: Variant }) {
+  const open = detail.findings.filter((f) => f.status === 'open')
+  return (
+    <ActionForm action={draftOrderAction} submitLabel="Draft order" variant={variant}>
+      <Hidden name="caseId" value={detail.staff.row.id} />
+      <FindingChoices
+        legend="Findings the order is based on"
+        choices={open.map((f) => ({
+          id: f.id,
+          label: `${PROVISION_KIND_LABELS[f.provisionKind]}: ${f.provisionRef}`,
+        }))}
+      />
+      <AreaField label="Corrective action required" name="correctiveAction" rows={3} />
+      <TextField label="Corrective action due" name="correctiveDeadline" type="date" required />
+      <CheckField label="The activity must stop immediately" name="ceaseImmediately" />
+      <p className="m-0">
+        Only an officer on record as designated by the town can issue the order.
+      </p>
+    </ActionForm>
+  )
+}
+
+interface BlockProps {
+  order: OrderDetail
+  detail: CaseDetail
+  can: Can
+  hosted: ReadonlySet<string>
+}
+
+function OrderBlock({ order, detail, can, hosted }: BlockProps) {
   const { row } = order
   const issued = row.issuedOn !== null
   return (
@@ -99,24 +155,14 @@ function OrderBlock({ order, detail, can }: { order: OrderDetail; detail: CaseDe
       <h3>{`${row.number}, ${ORDER_STATUS_LABELS[row.status]}`}</h3>
       <OrderSummary order={order} detail={detail} />
       {row.status === 'draft' && can.manage ? <DraftForms order={order} /> : null}
-      {row.status === 'draft' && can.issue ? (
-        <ActionForm action={issueOrderAction} submitLabel="Issue order">
-          <Hidden name="orderId" value={row.id} />
-          <Hidden name="expectedRowVersion" value={row.rowVersion} />
-          <TextField
-            label="Issue date"
-            name="issuedOn"
-            type="date"
-            defaultValue={detail.today}
-            required
-          />
-        </ActionForm>
+      {row.status === 'draft' && can.issue && !hosted.has(`issue_order:${row.id}`) ? (
+        <IssueOrderForm order={order} detail={detail} variant="outline" />
       ) : null}
       {issued ? (
         <>
           <h4>Service</h4>
           <ServiceChecklist rule={order.rule} status={order.status} state={order.service} />
-          {can.service ? <ServiceForms order={order} detail={detail} /> : null}
+          {can.service ? <ServiceForms order={order} detail={detail} hosted={hosted} /> : null}
           <h4>Answer periods</h4>
           {order.answerDues.length === 0 ? (
             <p>No answer period is running. It starts when a recipient is served.</p>
@@ -138,45 +184,33 @@ function OrderBlock({ order, detail, can }: { order: OrderDetail; detail: CaseDe
               <DueLine due={order.appealDue} today={detail.today} />
             </div>
           )}
-          {can.service ? <CourtForms order={order} detail={detail} /> : null}
+          {can.service ? <CourtForms order={order} detail={detail} hosted={hosted} /> : null}
         </>
       ) : null}
     </article>
   )
 }
 
-export function OrdersSection({ detail, can }: { detail: CaseDetail; can: Can }) {
+export function OrdersSection({
+  detail,
+  can,
+  hosted = NO_HOSTED,
+}: {
+  detail: CaseDetail
+  can: Can
+  hosted?: ReadonlySet<string>
+}) {
   const open = detail.findings.filter((f) => f.status === 'open')
   return (
     <Section id="orders" title="Cease and desist orders">
       {detail.orders.length === 0 ? <p>No order has been drafted.</p> : null}
       {detail.orders.map((o) => (
-        <OrderBlock key={o.row.id} order={o} detail={detail} can={can} />
+        <OrderBlock key={o.row.id} order={o} detail={detail} can={can} hosted={hosted} />
       ))}
-      {can.manage && open.length > 0 ? (
+      {can.manage && open.length > 0 && !hosted.has('draft_order') ? (
         <details>
           <summary>Draft an order</summary>
-          <ActionForm action={draftOrderAction} submitLabel="Draft order">
-            <Hidden name="caseId" value={detail.staff.row.id} />
-            <FindingChoices
-              legend="Findings the order is based on"
-              choices={open.map((f) => ({
-                id: f.id,
-                label: `${PROVISION_KIND_LABELS[f.provisionKind]}: ${f.provisionRef}`,
-              }))}
-            />
-            <AreaField label="Corrective action required" name="correctiveAction" rows={3} />
-            <TextField
-              label="Corrective action due"
-              name="correctiveDeadline"
-              type="date"
-              required
-            />
-            <CheckField label="The activity must stop immediately" name="ceaseImmediately" />
-            <p className="m-0">
-              Only an officer on record as designated by the town can issue the order.
-            </p>
-          </ActionForm>
+          <DraftOrderForm detail={detail} variant="outline" />
         </details>
       ) : null}
     </Section>

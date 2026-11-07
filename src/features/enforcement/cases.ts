@@ -11,22 +11,15 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import {
+  CASE_TRANSITIONS,
+  STATUSES_SET_BY_THEIR_STEP,
+} from '@/features/enforcement/caseTransitions'
 import { nextEnforcementNumber } from '@/features/enforcement/numbering'
 import { caseJustOpenedBy, lockCaseOpening } from '@/features/enforcement/openCaseReuse'
 import { linkRecordToParcel } from '@/features/parcels/recordLinks'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
-
-export const CASE_TRANSITIONS: Record<EnforcementStatus, readonly EnforcementStatus[]> = {
-  intake: ['investigating'],
-  investigating: ['violation_found', 'no_violation'],
-  violation_found: ['order_issued', 'resolved'],
-  no_violation: ['closed'],
-  order_issued: ['in_court', 'resolved'],
-  in_court: ['resolved'],
-  resolved: ['closed'],
-  closed: [],
-}
 
 const OpenCaseSchema = z.object({
   parcelId: z.string().uuid().optional(),
@@ -111,8 +104,6 @@ export type SetStatusError =
   | 'stale_version'
   | 'reason_required'
   | 'finding_required'
-
-export const STATUSES_SET_BY_THEIR_STEP: readonly EnforcementStatus[] = ['order_issued', 'in_court']
 
 async function transitionBlock(
   tx: Tx,
