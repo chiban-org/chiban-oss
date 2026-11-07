@@ -122,7 +122,7 @@ function PublicForm({ doc, props }: { doc: PanelDocument; props: DocumentPanelPr
 export function WhoCanSee({ doc, props }: { doc: PanelDocument; props: DocumentPanelProps }) {
   const audienceChoices = props.canManage && audiencesFor(doc.recordKind).length > 0
   return (
-    <section aria-label="Who can see this" data-slot="who-can-see" className="grid gap-1">
+    <div role="group" aria-label="Who can see this" data-slot="who-can-see" className="grid gap-1">
       <p className="text-sm">
         <span className="font-semibold">Who can see this: </span>
         {whoCanSeeSentence(doc)}
@@ -148,6 +148,6 @@ export function WhoCanSee({ doc, props }: { doc: PanelDocument; props: DocumentP
           </div>
         </details>
       ) : null}
-    </section>
+    </div>
   )
 }

@@ -105,7 +105,7 @@ describe('DocumentPanel', () => {
 
   it('states who can see the document even to someone who can change nothing', () => {
     view([doc({ isPublic: false, rendition: 'none', approvalId: null })], false, false)
-    const block = screen.getByRole('region', { name: 'Who can see this' })
+    const block = screen.getByRole('group', { name: 'Who can see this' })
     expect(
       within(block).getByText(
         'Town staff, project parties and assigned reviewers. Not on the public site: no copy is approved for the public yet.',

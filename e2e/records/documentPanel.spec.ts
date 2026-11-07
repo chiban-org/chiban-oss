@@ -25,7 +25,7 @@ async function openDocument(page: Page, db: E2eDb) {
 }
 
 function whoCanSee(doc: Locator): Locator {
-  return doc.getByRole('region', { name: 'Who can see this' }).locator('p').first()
+  return doc.getByRole('group', { name: 'Who can see this' }).locator('p').first()
 }
 
 async function redactedVersions(db: E2eDb): Promise<number> {
