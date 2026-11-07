@@ -2,7 +2,6 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Actor } from '@/features/auth/actor'
 import { setAudiences } from '@/features/documents/publish'
-import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { addReviewComment } from '@/features/reviews/assignments'
 import { assignBoardForComment } from '@/features/reviews/boardAssignments'
 import { makeApplication } from '@/test/applicationFixtures'
@@ -102,7 +101,6 @@ beforeAll(async () => {
   }
   const sent = await assignBoardForComment(
     handle.db,
-    createMemoryTransport(),
     world.staff,
     {
       applicationId: app.applicationId,

@@ -5,7 +5,6 @@ import { z } from 'zod'
 import { NOTE_MAX_LENGTH } from '@/features/applications/noteLimits'
 import { boardErrorCopy } from '@/features/boards/errorCopy'
 import { optionalCivilDate, recordId, requiredText } from '@/features/input/schemas'
-import { getMailTransport } from '@/features/mail/transport'
 import {
   addReviewComment,
   assignReviewer,
@@ -70,16 +69,14 @@ export async function removeReviewerAction(formData: FormData): Promise<ActionRe
   })
 }
 
-function emailedText(sent: { emailed: number; unsent: number }): string {
-  const emailed =
-    sent.emailed === 1 ? '1 member was emailed.' : `${sent.emailed} members were emailed.`
-  if (sent.unsent === 0) return emailed
-  return `${emailed} The email to ${sent.unsent} could not be sent.`
+function notifiedText(notified: number): string {
+  if (notified === 0) return 'Nobody is seated on that board yet, so no one was emailed.'
+  return notified === 1 ? '1 member will be emailed.' : `${notified} members will be emailed.`
 }
 
 export async function sendToBoardAction(formData: FormData): Promise<ActionResult> {
   return await runStaffForm(formData, SEND_TO_BOARD_FORM, async ({ db, actor, signal }, input) => {
-    const result = await assignBoardForComment(db, getMailTransport(), actor, input, signal)
+    const result = await assignBoardForComment(db, actor, input, signal)
     if (!result.ok) {
       return result.error === 'board_not_assignable'
         ? refuseField('boardId', COPY.board_not_assignable)
@@ -90,7 +87,7 @@ export async function sendToBoardAction(formData: FormData): Promise<ActionResul
       ok: true,
       message: result.value.alreadyAssigned
         ? 'That board already has this application for comment.'
-        : `Sent to the board for comment. ${emailedText(result.value)}`,
+        : `Sent to the board for comment. ${notifiedText(result.value.notified)}`,
     }
   })
 }

@@ -1,5 +1,5 @@
 import { and, eq, isNotNull, isNull } from 'drizzle-orm'
-import type { Db, DbOrTx } from '@/db/client'
+import type { DbOrTx, Tx } from '@/db/client'
 import { applications, projects, reviewAssignments } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { loadApplicationContext } from '@/features/applications/context'
@@ -10,8 +10,7 @@ import { requireCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { boardMembersOf } from '@/features/boards/packetSend'
 import { activeBoards, type BoardRow, boardForKind } from '@/features/boards/townBoards'
-import type { MailTransport } from '@/features/mail/transport'
-import { boardCommentMail } from '@/features/reviews/boardCommentMail'
+import { queueNotification } from '@/features/notifications/queue'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -24,8 +23,7 @@ export type BoardAssignError =
 export interface BoardAssigned {
   assignmentId: string
   alreadyAssigned: boolean
-  emailed: number
-  unsent: number
+  notified: number
 }
 
 export async function assignableBoards(
@@ -40,82 +38,87 @@ export async function assignableBoards(
   return (await activeBoards(db)).filter((board) => board.id !== deciding?.id)
 }
 
+type BoardAssignInput = { applicationId: string; board: BoardRow; commentBy: CivilDate | null }
+
 async function insertBoardAssignment(
   db: DbOrTx,
   actor: Actor,
-  input: { applicationId: string; boardId: string; commentBy: CivilDate | null },
+  input: BoardAssignInput,
   signal: AbortSignal,
-): Promise<Result<{ assignmentId: string; alreadyAssigned: boolean }, never>> {
-  return await transactionResult<{ assignmentId: string; alreadyAssigned: boolean }, never>(
-    db,
-    async (tx) => {
-      const [created] = await tx
-        .insert(reviewAssignments)
-        .values({
-          applicationId: input.applicationId,
-          boardId: input.boardId,
-          commentBy: input.commentBy,
-          assignedBy: actor.userId,
-        })
-        .onConflictDoNothing()
-        .returning({ id: reviewAssignments.id })
-      if (created === undefined) {
-        const [active] = await tx
-          .select({ id: reviewAssignments.id })
-          .from(reviewAssignments)
-          .where(
-            and(
-              eq(reviewAssignments.applicationId, input.applicationId),
-              eq(reviewAssignments.boardId, input.boardId),
-              isNull(reviewAssignments.removedAt),
-            ),
-          )
-        return ok({ assignmentId: active?.id ?? '', alreadyAssigned: true })
-      }
-      await writeAudit(
-        tx,
-        {
-          actor: { kind: 'user', userId: actor.userId },
-          action: 'review.board_assign',
-          entityType: 'application',
-          entityId: input.applicationId,
-          after: { boardId: input.boardId, assignmentId: created.id, commentBy: input.commentBy },
-        },
-        signal,
-      )
-      return ok({ assignmentId: created.id, alreadyAssigned: false })
-    },
-  )
+): Promise<Result<BoardAssigned, never>> {
+  return await transactionResult<BoardAssigned, never>(db, async (tx) => {
+    const [created] = await tx
+      .insert(reviewAssignments)
+      .values({
+        applicationId: input.applicationId,
+        boardId: input.board.id,
+        commentBy: input.commentBy,
+        assignedBy: actor.userId,
+      })
+      .onConflictDoNothing()
+      .returning({ id: reviewAssignments.id })
+    if (created === undefined) {
+      const [active] = await tx
+        .select({ id: reviewAssignments.id })
+        .from(reviewAssignments)
+        .where(
+          and(
+            eq(reviewAssignments.applicationId, input.applicationId),
+            eq(reviewAssignments.boardId, input.board.id),
+            isNull(reviewAssignments.removedAt),
+          ),
+        )
+      return ok({ assignmentId: active?.id ?? '', alreadyAssigned: true, notified: 0 })
+    }
+    await writeAudit(
+      tx,
+      {
+        actor: { kind: 'user', userId: actor.userId },
+        action: 'review.board_assign',
+        entityType: 'application',
+        entityId: input.applicationId,
+        after: { boardId: input.board.id, assignmentId: created.id, commentBy: input.commentBy },
+      },
+      signal,
+    )
+    const notified = await queueSeatedMembers(tx, created.id, input, signal)
+    return ok({ assignmentId: created.id, alreadyAssigned: false, notified })
+  })
 }
 
-async function emailSeatedMembers(
-  db: Db,
-  mail: MailTransport,
-  input: { applicationId: string; board: BoardRow; commentBy: CivilDate | null },
+async function queueSeatedMembers(
+  tx: Tx,
+  assignmentId: string,
+  input: BoardAssignInput,
   signal: AbortSignal,
-): Promise<{ emailed: number; unsent: number }> {
-  const [app] = await db
-    .select({ number: applications.number, projectTitle: projects.title })
+): Promise<number> {
+  const [app] = await tx
+    .select({ projectTitle: projects.title })
     .from(applications)
     .innerJoin(projects, eq(projects.id, applications.projectId))
     .where(eq(applications.id, input.applicationId))
-  const members = await boardMembersOf(db, input.board.id)
-  let emailed = 0
-  for (const member of members) {
-    const message = boardCommentMail(member.email, {
-      boardName: input.board.name,
-      number: app?.number ?? '',
-      projectTitle: app?.projectTitle ?? '',
-      commentBy: input.commentBy,
-    })
-    if ((await mail.send(message, signal)).ok) emailed += 1
-  }
-  return { emailed, unsent: members.length - emailed }
+  const members = await boardMembersOf(tx, input.board.id)
+  await queueNotification(
+    tx,
+    {
+      event: 'board_comment_requested',
+      applicationId: input.applicationId,
+      recipientUserIds: members.map((m) => m.userId),
+      discriminator: assignmentId,
+      extra: {
+        assignmentId,
+        boardName: input.board.name,
+        projectTitle: app?.projectTitle ?? '',
+        ...(input.commentBy === null ? {} : { commentBy: input.commentBy }),
+      },
+    },
+    signal,
+  )
+  return members.length
 }
 
 export async function assignBoardForComment(
-  db: Db,
-  mail: MailTransport,
+  db: DbOrTx,
   actor: Actor,
   input: { applicationId: string; boardId: string; commentBy: CivilDate | null },
   signal: AbortSignal,
@@ -133,16 +136,12 @@ export async function assignBoardForComment(
     (b) => b.id === input.boardId,
   )
   if (board === undefined) return err('board_not_assignable')
-  const inserted = await insertBoardAssignment(db, actor, input, signal)
-  if (!inserted.ok) return inserted
-  if (inserted.value.alreadyAssigned) return ok({ ...inserted.value, emailed: 0, unsent: 0 })
-  const sent = await emailSeatedMembers(
+  return await insertBoardAssignment(
     db,
-    mail,
+    actor,
     { applicationId: input.applicationId, board, commentBy: input.commentBy },
     signal,
   )
-  return ok({ ...inserted.value, ...sent })
 }
 
 export async function withdrawBoardAssignment(

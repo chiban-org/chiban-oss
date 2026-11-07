@@ -1,7 +1,6 @@
 import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { ROLES } from '@/constants/roles'
 import { boardIdOf } from '@/features/boards/townBoards'
-import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { assignReviewer } from '@/features/reviews/assignments'
 import { assignBoardForComment } from '@/features/reviews/boardAssignments'
 import { CHECK_PASSED, refuseField } from '@/server/formInput'
@@ -150,7 +149,6 @@ describeActionCases(h, 'signOffReviewAction', {
 async function boardAssignment(): Promise<string> {
   const sent = await assignBoardForComment(
     h.db,
-    createMemoryTransport(),
     await h.actorFor('admin'),
     { applicationId: await underReview(), boardId: planningBoard, commentBy: null },
     signal,
@@ -185,10 +183,9 @@ describeActionCases(h, 'sendToBoardAction', {
   accepted: (result, { written }) => {
     expect(result).toEqual({
       ok: true,
-      message: 'Sent to the board for comment. 1 member was emailed.',
+      message: 'Sent to the board for comment. 1 member will be emailed.',
     })
-    expect(written).toEqual(['audit_log', 'review_assignments'])
-    expect(h.mail.sent.map((m) => m.to)).toEqual(['robin.vale@alderpond.example'])
+    expect(written).toEqual(['audit_log', 'notification_outbox', 'review_assignments'])
   },
 })
 

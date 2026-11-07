@@ -1,4 +1,4 @@
-import { expect, fillDate, test, waitForEmail } from '../fixtures/test'
+import { expect, fillDate, test } from '../fixtures/test'
 import { applicationIdFor, daysFromToday } from './records'
 
 const APPLICATION = 'Loon Cove site plan'
@@ -27,7 +27,6 @@ test.describe
       test('sends the site plan to the zoning board for comment', async ({ page, db }) => {
         applicationId = await applicationIdFor(db, APPLICATION)
         commentBy = await daysFromToday(db, 14)
-        const since = new Date()
         await page.goto(`/staff/applications/${applicationId}`)
         const reviewers = page.getByRole('region', { name: 'Reviewers' })
         await reviewers.getByText('Send to a board for comment', { exact: true }).click()
@@ -48,9 +47,12 @@ test.describe
           [applicationId],
         )
         assignmentId = row.id
-        const mail = await waitForEmail({ to: ZBA_MEMBER, since, subject: 'Comments requested' })
-        expect(mail.text).toContain('/board')
-        expect(mail.text).toContain(`Comments by ${longDate(commentBy)}.`)
+        const queued = await db.one<{ count: string }>(
+          `select count(*) from notification_outbox n join users u on u.id = n.recipient_user_id
+            where n.event = 'board_comment_requested' and n.application_id = $1 and u.email = $2`,
+          [applicationId, ZBA_MEMBER],
+        )
+        expect(Number(queued.count)).toBe(1)
       })
     })
 

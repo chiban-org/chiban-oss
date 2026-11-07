@@ -4,7 +4,6 @@ import { ROLES } from '@/constants/roles'
 import { reviewComments } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { boardIdOf } from '@/features/boards/townBoards'
-import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { assignBoardForComment } from '@/features/reviews/boardAssignments'
 import { applicationIn } from '@/test/applicationCases'
 import { type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
@@ -46,7 +45,6 @@ async function assignment(): Promise<string> {
   const applicationId = (await applicationIn(h.db, world, 'under_review')).applicationId
   const sent = await assignBoardForComment(
     h.db,
-    createMemoryTransport(),
     await h.actorFor('admin'),
     { applicationId, boardId, commentBy: null },
     signal,

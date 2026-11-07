@@ -5,7 +5,6 @@ import { listDocuments } from '@/features/documents/listDocuments'
 import { setAudiences } from '@/features/documents/publish'
 import type { Audience, RecordRef } from '@/features/documents/types'
 import { resolveRendition } from '@/features/documents/visibility'
-import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { createProject } from '@/features/projects/projects'
 import { assignBoardForComment, withdrawBoardAssignment } from '@/features/reviews/boardAssignments'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -130,10 +129,8 @@ beforeAll(async () => {
   docs.withdrawnReviewers = await doc({ kind: 'application', id: withdrawnApp }, 'Barn plan', [
     'reviewers',
   ])
-  const mail = createMemoryTransport()
   const sent = await assignBoardForComment(
     handle.db,
-    mail,
     world.staff,
     { applicationId: assignedApp, boardId: conservation, commentBy: null },
     signal,
@@ -141,7 +138,6 @@ beforeAll(async () => {
   if (!sent.ok) throw new Error(sent.error)
   const toWithdraw = await assignBoardForComment(
     handle.db,
-    mail,
     world.staff,
     { applicationId: withdrawnApp, boardId: conservation, commentBy: null },
     signal,

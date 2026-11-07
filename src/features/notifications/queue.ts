@@ -19,6 +19,9 @@ export interface NotificationPayload {
   result?: string
   revision?: number
   contractorRemoved?: boolean
+  boardName?: string
+  projectTitle?: string
+  commentBy?: string
 }
 
 export interface QueueInput {
