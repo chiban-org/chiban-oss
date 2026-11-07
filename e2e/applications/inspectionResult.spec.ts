@@ -1,17 +1,8 @@
 import { expect, test } from '../fixtures/test'
-import { inspectionOf } from './inspectionSupport'
+import { inspectionOf, passEveryItem } from './inspectionSupport'
 import { expectConfirmation } from './support'
 
 const DECK_NUMBER = 'BP-2025-0001'
-
-async function passEveryItem(page: import('@playwright/test').Page): Promise<void> {
-  const groups = page.getByRole('radiogroup')
-  await expect(groups.first()).toBeVisible()
-  const count = await groups.count()
-  for (let index = 0; index < count; index += 1) {
-    await groups.nth(index).getByRole('radio', { name: 'Pass' }).click()
-  }
-}
 
 test.describe('recording an inspection result', () => {
   test.describe('as the finance clerk', () => {

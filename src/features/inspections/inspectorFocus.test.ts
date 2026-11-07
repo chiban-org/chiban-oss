@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import {
+  dueFor,
   type FocusRow,
   inspectionName,
   inspectorSentence,
@@ -118,5 +119,27 @@ describe('the status sentence on the inspection view', () => {
     expect(inspectorSentence({ ...base, inspectorName: null, rows: [failed] })).toBe(
       'No inspection is scheduled or requested.',
     )
+  })
+})
+
+describe('the inspection that is due for one viewer', () => {
+  const TODAY = '2026-11-06'
+  const mine = row({ id: 'm', scheduledDate: TODAY })
+  const others = row({ id: 'o', inspectorUserId: 'user-dana', scheduledDate: '2026-11-05' })
+  const later = row({ id: 'l', scheduledDate: '2026-11-09' })
+  const owed = row({ id: 'w', scheduledDate: '2026-11-03', startMinute: 540 })
+
+  it('takes the viewer own scheduled inspection on or before today', () => {
+    expect(dueFor([mine, others, later], ME, TODAY)?.id).toBe('m')
+  })
+
+  it('leads with an owed result before today', () => {
+    expect(dueFor([mine, owed], ME, TODAY)?.id).toBe('w')
+  })
+
+  it('ignores other inspectors, future dates, recorded results and unassigned rows', () => {
+    expect(dueFor([others, later, failed], ME, TODAY)).toBeNull()
+    expect(dueFor([row({ id: 'u', inspectorUserId: null })], ME, TODAY)).toBeNull()
+    expect(dueFor([row({ id: 'n', scheduledDate: null })], ME, TODAY)).toBeNull()
   })
 })

@@ -49,3 +49,12 @@ export async function bookSlot(page: Page, longDate: string, clock: string): Pro
       .filter({ hasText: 'Scheduled. The inspector gets a calendar invite.' }),
   ).toBeVisible()
 }
+
+export async function passEveryItem(page: Page): Promise<void> {
+  const groups = page.getByRole('radiogroup')
+  await expect(groups.first()).toBeVisible()
+  const count = await groups.count()
+  for (let index = 0; index < count; index += 1) {
+    await groups.nth(index).getByRole('radio', { name: 'Pass' }).click()
+  }
+}

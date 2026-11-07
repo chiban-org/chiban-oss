@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import type { CoreState } from './states'
 import { type PlanView, planWork, type WorkPlanExtras } from './workPlan'
-import type { PlanActionKind, PlanBoard } from './workPlanTypes'
+import { hostedActions, type PlanActionKind, type PlanBoard } from './workPlanTypes'
 
 function gate(key: string, label: string, reason: string | null): GateResult {
   return {
@@ -275,5 +275,80 @@ describe('the regional impact requirement once the determination is yes', () => 
       task: 'Wait for the regional comment period to end',
       action: null,
     })
+  })
+})
+
+const DUE_INSPECTION = {
+  task: 'Framing reinspection',
+  note: 'Today at 10:30 AM',
+  sentence: 'Waiting on: Inspector (you). Framing reinspection today at 10:30 AM.',
+}
+
+function issued(o: Partial<PlanView> = {}): PlanView {
+  return view({
+    state: 'issued',
+    nextTransitions: ['closed'],
+    allowedMoves: ['closed'],
+    gates: [
+      {
+        to: 'closed',
+        results: [
+          gate(
+            'inspections.final_passed',
+            'Final inspection passed',
+            'No final inspection has passed.',
+          ),
+        ],
+      },
+    ],
+    gatesAhead: [],
+    ...o,
+  })
+}
+
+describe('the work plan for an official who also records inspections', () => {
+  const OFFICIAL = {
+    ...extras(['record_inspection_result']),
+    inspection: DUE_INSPECTION,
+  }
+
+  it('puts the due inspection in the card with the result form as its action', () => {
+    const plan = planWork(issued(), null, OFFICIAL)
+    expect(plan.now).toMatchObject({
+      task: 'Framing reinspection',
+      note: 'Today at 10:30 AM',
+      actor: 'inspector',
+      action: { kind: 'record_inspection_result' },
+    })
+    expect(plan.sentence).toBe(
+      'Waiting on: Inspector (you). Framing reinspection today at 10:30 AM.',
+    )
+    expect(hostedActions(plan).has('record_inspection_result')).toBe(true)
+  })
+
+  it('keeps the requirement groups as they were', () => {
+    const plain = planWork(issued(), null, extras())
+    const official = planWork(issued(), null, OFFICIAL)
+    expect(official.groups).toEqual(plain.groups)
+    expect(official.terminal).toEqual(plain.terminal)
+  })
+
+  it('changes nothing without the ability or without a due inspection', () => {
+    const plain = planWork(issued(), null, extras())
+    expect(planWork(issued(), null, { ...extras(), inspection: DUE_INSPECTION })).toEqual(plain)
+    expect(planWork(issued(), null, extras(['record_inspection_result']))).toEqual(plain)
+  })
+
+  it('leaves a draft and an ended record alone', () => {
+    const draft = view({
+      state: 'draft',
+      nextTransitions: ['withdrawn'],
+      gates: [],
+      gatesAhead: [],
+    })
+    expect(planWork(draft, null, OFFICIAL).now).toBeNull()
+    expect(planWork(issued({ state: 'closed' }), null, OFFICIAL).sentence).toBe(
+      'This permit is closed.',
+    )
   })
 })

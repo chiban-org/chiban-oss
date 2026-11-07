@@ -7,6 +7,7 @@ import type { PlanAction } from '@/features/applications/workPlanTypes'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import { BoardRegionalForm, MeetingForm, VoteFormBody } from './boardForms'
 import { CodeEditionForm, RegionalDeterminationForm } from './buildingForms'
+import { InspectionResultForm } from './inspectionResultForm'
 import { MoveForm } from './nextStepCard'
 import type { RecordPanelsInput } from './panelSet'
 import { MarkCompleteForm } from './panels'
@@ -14,7 +15,10 @@ import { PaymentForm } from './paymentControls'
 import { draftAbutterList } from './planAbilities'
 import { AssignReviewerForm, offeredReviewers } from './reviewersPanel'
 
-export type PlanFormInput = Pick<RecordPanelsInput, 'view' | 'records' | 'payments' | 'board'>
+export type PlanFormInput = Pick<
+  RecordPanelsInput,
+  'view' | 'records' | 'payments' | 'board' | 'due'
+>
 
 export function actionSummary(action: PlanAction, input: PlanFormInput): string {
   switch (action.kind) {
@@ -36,6 +40,8 @@ export function actionSummary(action: PlanAction, input: PlanFormInput): string 
       return 'Record the regional impact determination'
     case 'open_abutter_list':
       return 'Open the draft abutter list'
+    case 'record_inspection_result':
+      return 'Record the inspection result'
     case 'move':
       return moveTask(action.to)
   }
@@ -85,7 +91,7 @@ export function PlanActionForm({
   primary: boolean
 }) {
   const variant: Variant = primary ? 'default' : 'outline'
-  const { view, records, payments, board } = input
+  const { view, records, payments, board, due } = input
   switch (action.kind) {
     case 'assign_reviewer':
       return (
@@ -111,6 +117,8 @@ export function PlanActionForm({
       )
     case 'open_abutter_list':
       return board === null ? null : <OpenDraftList board={board} variant={variant} />
+    case 'record_inspection_result':
+      return due == null ? null : <InspectionResultForm due={due} number={view.number} />
     case 'move':
       return (
         <MoveForm

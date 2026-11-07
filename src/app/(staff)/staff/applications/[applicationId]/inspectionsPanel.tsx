@@ -135,10 +135,12 @@ export function InspectionRow({
   row,
   data,
   number,
+  withActions = true,
 }: {
   row: InspectionHistoryRow
   data: InspectionsPanelData
   number: string
+  withActions?: boolean
 }) {
   const when = whenText(row)
   const result = resultText(row)
@@ -153,7 +155,7 @@ export function InspectionRow({
         {when === null ? null : <span className="text-sm text-muted-foreground">{when}</span>}
       </div>
       {result === '' ? null : <p className="m-0 text-sm text-ink-secondary">{result}</p>}
-      <RowActions row={row} data={data} number={number} />
+      {withActions ? <RowActions row={row} data={data} number={number} /> : null}
     </li>
   )
 }
@@ -162,10 +164,12 @@ export function InspectionsPanel({
   data,
   applicationId,
   number,
+  hostedId = null,
 }: {
   data: InspectionsPanelData
   applicationId: string
   number: string
+  hostedId?: string | null
 }) {
   const { history, canSchedule, certificateReady, rowVersion, today } = data
   return (
@@ -174,7 +178,13 @@ export function InspectionsPanel({
       {history.length === 0 ? <p>No inspections have been requested.</p> : null}
       <ul className="list-none p-0">
         {history.map((row) => (
-          <InspectionRow key={row.id} row={row} data={data} number={number} />
+          <InspectionRow
+            key={row.id}
+            row={row}
+            data={data}
+            number={number}
+            withActions={row.id !== hostedId}
+          />
         ))}
       </ul>
       {canSchedule && data.takesRequests ? (

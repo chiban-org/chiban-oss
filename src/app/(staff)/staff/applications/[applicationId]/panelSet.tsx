@@ -5,6 +5,7 @@ import type { PlanActionKind } from '@/features/applications/workPlanTypes'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import type { ApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import type { ApplicationPayments } from '@/features/payments/applicationPayments'
+import type { DueInspection } from './dueInspection'
 import type { InspectionsPanelData } from './inspectionsPanel'
 import type { NotesData } from './notesData'
 import { recordPanels } from './recordPanelList'
@@ -20,6 +21,7 @@ export interface RecordPanelsInput {
   hearings: ApplicationHearingsPanel | null
   notes: NotesData
   hosted?: ReadonlySet<PlanActionKind>
+  due?: DueInspection | null
 }
 
 export function applicationPanels(input: RecordPanelsInput) {

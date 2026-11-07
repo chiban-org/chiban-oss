@@ -14,7 +14,13 @@ interface SectionProps {
   number: string
 }
 
-function PreviousResult({ next, data }: { next: InspectionView; data: InspectionsPanelData }) {
+export function PreviousResult({
+  next,
+  data,
+}: {
+  next: InspectionView
+  data: InspectionsPanelData
+}) {
   const previous = data.history.find((r) => r.id === next.inspection.reinspectionOf)
   if (previous?.scheduledDate == null) return null
   if (previous.status !== 'failed' && previous.status !== 'passed') return null

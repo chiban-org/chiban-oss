@@ -24,6 +24,7 @@ import { loadCorrectionForm } from '@/features/permits/correction/correctionForm
 import { requireStaffContext, type StaffContext } from '@/server/requireStaff'
 import { ApplicationFacts, ApplicationRail, StatusStrip } from './applicationRail'
 import { DoThisNow } from './doThisNow'
+import { loadDueInspection } from './dueInspection'
 import { loadInspectionsPanelData } from './inspectionsPanel'
 import { loadInspectorWork, seesInspectorView } from './inspectorData'
 import { InspectorRecord } from './inspectorRecord'
@@ -118,13 +119,16 @@ export default async function StaffApplicationPage({ params }: Props) {
     const work = await loadInspectorWork(ctx, loaded.inspections)
     return <InspectorRecord input={loaded} work={work} viewerId={ctx.actor.userId} />
   }
-  const { view, balanceNotices, legacyNumber, correction } = loaded
-  const plan = planWork(view, loaded.board, {
-    reviewers: loaded.records.reviewers.length,
-    abilities: abilitiesOf(loaded),
-    responsible: loaded.responsible.current?.name ?? null,
+  const due = await loadDueInspection(ctx, loaded.inspections)
+  const ready = { ...loaded, due }
+  const { view, balanceNotices, legacyNumber, correction } = ready
+  const plan = planWork(view, ready.board, {
+    reviewers: ready.records.reviewers.length,
+    abilities: abilitiesOf(ready),
+    responsible: ready.responsible.current?.name ?? null,
+    inspection: due?.step ?? null,
   })
-  const parts = applicationPanels({ ...loaded, hosted: hostedActions(plan) })
+  const parts = applicationPanels({ ...ready, hosted: hostedActions(plan) })
   const status = (
     <StatusChip
       status={headerStatus(view)}
@@ -164,8 +168,8 @@ export default async function StaffApplicationPage({ params }: Props) {
         empty={parts.empty}
         history={parts.history}
       >
-        <DoThisNow plan={plan} input={loaded} />
-        <RequirementsList plan={plan} input={loaded} />
+        <DoThisNow plan={plan} input={ready} />
+        <RequirementsList plan={plan} input={ready} />
         {parts.filled}
       </RecordLayout>
     </main>

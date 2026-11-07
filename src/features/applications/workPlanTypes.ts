@@ -25,6 +25,7 @@ export type PlanAction =
   | { kind: 'record_board_vote' }
   | { kind: 'record_board_regional_impact' }
   | { kind: 'open_abutter_list' }
+  | { kind: 'record_inspection_result' }
   | { kind: 'move'; to: CoreState }
 
 export type PlanActionKind = PlanAction['kind']
@@ -45,6 +46,12 @@ export interface RequirementGroup {
   to: CoreState
   title: string
   rows: Requirement[]
+}
+
+export interface InspectionStep {
+  task: string
+  note: string
+  sentence: string
 }
 
 export interface PlanWarning {

@@ -24,6 +24,18 @@ export function nextScheduled<T extends FocusRow>(rows: readonly T[]): T | null 
   return [...scheduled].sort((a, b) => slotKey(a).localeCompare(slotKey(b)))[0] ?? null
 }
 
+export function dueFor<T extends FocusRow>(
+  rows: readonly T[],
+  viewerId: string,
+  today: string,
+): T | null {
+  return nextScheduled(
+    rows.filter(
+      (r) => r.inspectorUserId === viewerId && r.scheduledDate !== null && r.scheduledDate <= today,
+    ),
+  )
+}
+
 export function lastResult<T extends FocusRow>(rows: readonly T[]): T | null {
   const recorded = rows.filter((r) => r.status === 'passed' || r.status === 'failed')
   return (

@@ -5,6 +5,7 @@ import { E2E_AUTH_DIR } from './settings'
 export const STAFF_ROLE_KEYS = [
   'admin',
   'staff',
+  'official',
   'inspector',
   'finance',
   'records',
@@ -35,6 +36,7 @@ const demo = (local: string) => `${local}@${DEMO_DOMAIN}`
 const ACCOUNTS: Readonly<Record<SignedInRoleKey, Account>> = {
   admin: { email: demo('admin'), displayName: 'Avery Admin', signIn: 'password' },
   staff: { email: demo('staff'), displayName: 'Sam Clerk', signIn: 'password' },
+  official: { email: demo('official'), displayName: 'Dana Booth', signIn: 'password' },
   inspector: { email: demo('inspector'), displayName: 'Ira Inspector', signIn: 'password' },
   finance: { email: demo('finance'), displayName: 'Fern Finance', signIn: 'password' },
   records: { email: demo('records'), displayName: 'Rae Records', signIn: 'password' },

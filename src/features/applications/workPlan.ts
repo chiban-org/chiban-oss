@@ -7,6 +7,7 @@ import { type CoreState, isTerminalState } from './states'
 import { requirementTargets } from './workPath'
 import {
   addWarning,
+  type InspectionStep,
   type NowStep,
   type PlanAction,
   type PlanActionKind,
@@ -36,6 +37,7 @@ export interface WorkPlanExtras {
   reviewers: number
   abilities: ReadonlySet<PlanActionKind>
   responsible: string | null
+  inspection?: InspectionStep | null
 }
 
 const MOVE_TASKS: ReadonlyMap<CoreState, string> = new Map([
@@ -177,6 +179,20 @@ function nowStep(
   return moveStep(moves, secondary)
 }
 
+function inspectionNow(now: NowStep | null, extras: WorkPlanExtras): NowStep | null {
+  const step = extras.inspection
+  if (now === null || step == null || !extras.abilities.has('record_inspection_result')) return now
+  return {
+    key: 'inspection.result',
+    task: step.task,
+    actor: 'inspector',
+    note: step.note,
+    action: { kind: 'record_inspection_result' },
+    secondary: now.secondary,
+    warnings: now.warnings,
+  }
+}
+
 export function planWork(
   view: PlanView,
   board: PlanBoard | null,
@@ -188,14 +204,20 @@ export function planWork(
     board === null || view.state !== 'submitted'
       ? null
       : meetingConflict(board, meetingDeadline(view.clocks, board.board))
-  const now = meetingStep(nowStep(view, board, groups, moves), board, conflict, extras.abilities)
+  const now = inspectionNow(
+    meetingStep(nowStep(view, board, groups, moves), board, conflict, extras.abilities),
+    extras,
+  )
   const inCard = now?.action?.kind === 'move' ? now.action.to : null
   const plan: WorkPlan = {
     state: view.state,
-    sentence: workSentence(view, now, {
-      board: board?.boardName ?? null,
-      responsible: extras.responsible,
-    }),
+    sentence:
+      now?.key === 'inspection.result' && extras.inspection != null
+        ? extras.inspection.sentence
+        : workSentence(view, now, {
+            board: board?.boardName ?? null,
+            responsible: extras.responsible,
+          }),
     now,
     groups,
     terminal: moves.terminal.filter((to) => to !== inCard),
