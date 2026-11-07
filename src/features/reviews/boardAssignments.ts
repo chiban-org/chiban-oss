@@ -40,50 +40,68 @@ export async function assignableBoards(
 
 type BoardAssignInput = { applicationId: string; board: BoardRow; commentBy: CivilDate | null }
 
+async function lockOpenApplication(
+  tx: Tx,
+  applicationId: string,
+): Promise<Result<void, 'not_found' | 'application_closed'>> {
+  const [app] = await tx
+    .select({ state: applications.state })
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+    .for('update')
+  if (app === undefined) return err('not_found')
+  return isTerminalState(app.state) ? err('application_closed') : ok(undefined)
+}
+
 async function insertBoardAssignment(
   db: DbOrTx,
   actor: Actor,
   input: BoardAssignInput,
   signal: AbortSignal,
-): Promise<Result<BoardAssigned, never>> {
-  return await transactionResult<BoardAssigned, never>(db, async (tx) => {
-    const [created] = await tx
-      .insert(reviewAssignments)
-      .values({
-        applicationId: input.applicationId,
-        boardId: input.board.id,
-        commentBy: input.commentBy,
-        assignedBy: actor.userId,
-      })
-      .onConflictDoNothing()
-      .returning({ id: reviewAssignments.id })
-    if (created === undefined) {
-      const [active] = await tx
-        .select({ id: reviewAssignments.id })
-        .from(reviewAssignments)
-        .where(
-          and(
-            eq(reviewAssignments.applicationId, input.applicationId),
-            eq(reviewAssignments.boardId, input.board.id),
-            isNull(reviewAssignments.removedAt),
-          ),
-        )
-      return ok({ assignmentId: active?.id ?? '', alreadyAssigned: true, notified: 0 })
-    }
-    await writeAudit(
-      tx,
-      {
-        actor: { kind: 'user', userId: actor.userId },
-        action: 'review.board_assign',
-        entityType: 'application',
-        entityId: input.applicationId,
-        after: { boardId: input.board.id, assignmentId: created.id, commentBy: input.commentBy },
-      },
-      signal,
-    )
-    const notified = await queueSeatedMembers(tx, created.id, input, signal)
-    return ok({ assignmentId: created.id, alreadyAssigned: false, notified })
-  })
+): Promise<Result<BoardAssigned, 'not_found' | 'application_closed'>> {
+  return await transactionResult<BoardAssigned, 'not_found' | 'application_closed'>(
+    db,
+    async (tx) => {
+      const open = await lockOpenApplication(tx, input.applicationId)
+      if (!open.ok) return open
+      const [created] = await tx
+        .insert(reviewAssignments)
+        .values({
+          applicationId: input.applicationId,
+          boardId: input.board.id,
+          commentBy: input.commentBy,
+          assignedBy: actor.userId,
+        })
+        .onConflictDoNothing()
+        .returning({ id: reviewAssignments.id })
+      if (created === undefined) {
+        const [active] = await tx
+          .select({ id: reviewAssignments.id })
+          .from(reviewAssignments)
+          .where(
+            and(
+              eq(reviewAssignments.applicationId, input.applicationId),
+              eq(reviewAssignments.boardId, input.board.id),
+              isNull(reviewAssignments.removedAt),
+            ),
+          )
+        return ok({ assignmentId: active?.id ?? '', alreadyAssigned: true, notified: 0 })
+      }
+      await writeAudit(
+        tx,
+        {
+          actor: { kind: 'user', userId: actor.userId },
+          action: 'review.board_assign',
+          entityType: 'application',
+          entityId: input.applicationId,
+          after: { boardId: input.board.id, assignmentId: created.id, commentBy: input.commentBy },
+        },
+        signal,
+      )
+      const notified = await queueSeatedMembers(tx, created.id, input, signal)
+      return ok({ assignmentId: created.id, alreadyAssigned: false, notified })
+    },
+  )
 }
 
 async function queueSeatedMembers(
@@ -149,11 +167,18 @@ export async function withdrawBoardAssignment(
   actor: Actor,
   input: { assignmentId: string },
   signal: AbortSignal,
-): Promise<Result<void, 'forbidden' | 'not_found'>> {
+): Promise<Result<void, 'forbidden' | 'not_found' | 'application_closed'>> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'review.assign', signal)
   if (!allowed.ok) return err('forbidden')
-  return await transactionResult(db, async (tx) => {
+  const [target] = await db
+    .select({ applicationId: reviewAssignments.applicationId })
+    .from(reviewAssignments)
+    .where(eq(reviewAssignments.id, input.assignmentId))
+  if (target === undefined) return err('not_found')
+  return await transactionResult<void, 'not_found' | 'application_closed'>(db, async (tx) => {
+    const open = await lockOpenApplication(tx, target.applicationId)
+    if (!open.ok) return open
     const [row] = await tx
       .update(reviewAssignments)
       .set({ removedAt: new Date() })

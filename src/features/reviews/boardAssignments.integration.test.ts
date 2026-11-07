@@ -1,6 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import {
+  applications,
   auditLog,
   boardMemberships,
   boards,
@@ -31,6 +32,7 @@ import { makeApplication } from '@/test/applicationFixtures'
 import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { addBoard, seatMember } from '@/test/boardReviewFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { blockedOrSettled, holdOpen } from '@/test/lockWait'
 import type { CivilDate } from '@/types/civilDate'
 import { err } from '@/types/result'
 
@@ -208,6 +210,44 @@ describe('sending an application to a board', () => {
       .from(auditLog)
       .where(and(eq(auditLog.action, 'review.board_withdraw'), eq(auditLog.entityId, app)))
     expect(audits).toHaveLength(1)
+  })
+})
+
+describe('a finished application', () => {
+  it('refuses a withdraw once the application is closed', async () => {
+    const app = (
+      await makeApplication(handle.db, world, { state: 'under_review' }, undefined, 'SPR')
+    ).applicationId
+    const sent = await send(world.staff, { applicationId: app, boardId: conservation })
+    if (!sent.ok) throw new Error(sent.error)
+    await handle.db.update(applications).set({ state: 'withdrawn' }).where(eq(applications.id, app))
+    expect(
+      await withdrawBoardAssignment(
+        handle.db,
+        world.staff,
+        { assignmentId: sent.value.assignmentId },
+        signal,
+      ),
+    ).toEqual({ ok: false, error: 'application_closed' })
+  })
+
+  it('waits for a transition that is closing the application, then refuses to send', async () => {
+    const app = (
+      await makeApplication(handle.db, world, { state: 'under_review' }, undefined, 'SPR')
+    ).applicationId
+    const closing = await holdOpen(handle.db, async (tx) => {
+      await tx.select().from(applications).where(eq(applications.id, app)).for('update')
+      await tx.update(applications).set({ state: 'withdrawn' }).where(eq(applications.id, app))
+    })
+    const sending = send(world.staff, { applicationId: app, boardId: conservation })
+    expect(await blockedOrSettled(handle.db, sending)).toBe('blocked')
+    await closing.commit()
+    expect(await sending).toEqual({ ok: false, error: 'application_closed' })
+    const rows = await handle.db
+      .select()
+      .from(reviewAssignments)
+      .where(eq(reviewAssignments.applicationId, app))
+    expect(rows).toEqual([])
   })
 })
 
