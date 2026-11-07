@@ -91,6 +91,8 @@ describe('the rail offers only moves this viewer can make', () => {
   })
 
   it('points a submitted board application at its meeting and vote, not a bare move', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-06T16:00:00Z'))
     const staff = await railAs('staff', 'SPR-2026-0001')
     expect(staff).not.toContain('Move to under review')
     expect(staff).not.toContain('Start the review')
@@ -103,6 +105,7 @@ describe('the rail offers only moves this viewer can make', () => {
     expect(finance).not.toContain('name="outcome"')
     expect(finance).not.toContain('Set the meeting')
     expect(finance).not.toContain('Move the meeting')
+    vi.useRealTimers()
   })
 
   it('offers the step and the withdrawal only to roles that manage the workflow', async () => {

@@ -146,7 +146,9 @@ describe('the filed site plan, as the clerk', () => {
       .from(acceptanceSchedules)
       .innerJoin(boardMeetings, eq(boardMeetings.id, acceptanceSchedules.meetingId))
       .where(eq(acceptanceSchedules.applicationId, ids.get('SPR-2026-0001') ?? ''))
-    const html = await page('SPR-2026-0001')
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(new Date('2026-11-06T16:00:00Z'))
+    const html = await page('SPR-2026-0001').finally(() => vi.useRealTimers())
     expect(sentence(html)).toContain('Waiting on: Town. Move the acceptance meeting.')
     expect(sectionOf(html, 'Do this now') ?? '').toContain(
       `The meeting set, ${formatCivilDate(meeting?.date ?? '')}, is after this deadline`,
