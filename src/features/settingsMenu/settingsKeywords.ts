@@ -19,6 +19,10 @@ export const SETTINGS_KEYWORDS: ReadonlyMap<string, string> = new Map([
   ['/staff/settings/state-law', 'statute rsa citation rules policy'],
   ['/staff/settings/code-editions', 'ibc irc energy code edition adoption date'],
   [
+    '/staff/settings/boards',
+    'add board commission committee conservation historic heritage archive rename kind',
+  ],
+  [
     '/staff/settings/board_settings',
     'planning board zoning board zba hearing meeting notice days quorum',
   ],

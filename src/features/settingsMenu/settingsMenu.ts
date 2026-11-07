@@ -129,6 +129,12 @@ export const SETTINGS_MENU_ITEMS: readonly SettingsMenuItem[] = [
     access: config,
   },
   {
+    href: '/staff/settings/boards',
+    label: 'Boards',
+    group: 'boards',
+    access: config,
+  },
+  {
     href: kind('board_settings'),
     label: 'Board settings',
     group: 'boards',

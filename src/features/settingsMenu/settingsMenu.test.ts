@@ -113,6 +113,7 @@ describe('settings menu', () => {
     ])
     const boards = filterSettingsSections(sections, 'boards')
     expect(boards[0]?.items.map((i) => i.label)).toEqual([
+      'Boards',
       'Board settings',
       'Regional notice contacts',
       'Review committee routes',
