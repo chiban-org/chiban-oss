@@ -60,7 +60,7 @@ export function EnforcementQueueTable({
           <tbody className="max-md:block">
             {rows.map((row) => (
               <tr key={row.caseId} className={ROW_CLASS}>
-                <td data-label="Case" className="max-md:block max-md:p-0">
+                <td data-label="Case" className="max-md:order-[-2] max-md:block max-md:p-0">
                   <Link
                     href={`/staff/enforcement/${row.caseId}`}
                     className="font-semibold whitespace-nowrap"
@@ -68,14 +68,14 @@ export function EnforcementQueueTable({
                     {row.number}
                   </Link>
                 </td>
-                <td
-                  data-label="Status"
-                  className="max-md:block max-md:max-w-44 max-md:justify-self-end max-md:p-0"
-                >
-                  <StatusChip status={row.statusChip} label={row.statusLabel} />
-                </td>
                 <td data-label="Where" className={STACKED_CELL}>
                   {row.locationText}
+                </td>
+                <td
+                  data-label="Status"
+                  className="max-md:order-[-1] max-md:block max-md:max-w-44 max-md:justify-self-end max-md:p-0"
+                >
+                  <StatusChip status={row.statusChip} label={row.statusLabel} />
                 </td>
                 <td data-label="Opened" className={STACKED_CELL}>
                   {formatCivilDate(row.openedOn)}
