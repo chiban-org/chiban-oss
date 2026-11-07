@@ -6,6 +6,7 @@ import { formatCents } from '@/lib/money'
 import {
   type CasePlanInput,
   type CasePlanOrder,
+  counselState,
   draftOrderOf,
   filingLead,
   gateBlocks,
@@ -133,18 +134,11 @@ function answerStep(input: CasePlanInput, order: CasePlanOrder): Step {
   }
 }
 
-const COUNSEL_ENDINGS: readonly string[] = [
-  'judgment_for_respondent',
-  'settled',
-  'dismissed',
-  'withdrawn',
-]
-
 function counselStep(input: CasePlanInput): Step {
-  const outcomes = input.referrals.flatMap((r) => r.outcomes.map((o) => o.kind))
-  if (outcomes.includes('judgment_for_town')) return judgmentStep(input)
-  if (outcomes.some((kind) => COUNSEL_ENDINGS.includes(kind))) return resolveStep()
-  if (input.referrals.length > 0) {
+  const counsel = counselState(input)
+  if (counsel === 'won') return judgmentStep(input)
+  if (counsel === 'ended') return resolveStep()
+  if (counsel === 'open') {
     const task = 'Take the answered order to court'
     return waiting({ key: 'court.answered', actor: 'counsel', ask: task, task })
   }
@@ -201,11 +195,10 @@ function orderStep(input: CasePlanInput, order: CasePlanOrder): Step {
 }
 
 function afterOrderStep(input: CasePlanInput): Step {
-  const live = liveOrder(input)
-  if (live !== null) return orderStep(input, live)
   const draft = draftOrderOf(input)
   if (draft !== null && input.staff.row.status === 'order_issued') return issueStep(draft)
-  return resolveStep()
+  const live = liveOrder(input)
+  return live === null ? resolveStep() : orderStep(input, live)
 }
 
 function stayStep(): Step {

@@ -95,4 +95,66 @@ describe('the case work plan across orders, owners and counsel', () => {
     )
     expect(p.now?.actor).toBe('counsel')
   })
+
+  it('issues an outstanding draft before the issued order goes to court', () => {
+    const issued = planOrder()
+    const draft = planOrder(
+      {},
+      { id: 'o2', number: 'CD-2026-0002', status: 'draft', issuedOn: null },
+    )
+    const p = planFor(planInput('order_issued', { orders: [issued, draft] }))
+    expect(p.now?.action).toEqual({ kind: 'issue_order', orderId: 'o2' })
+  })
+
+  it('keeps waiting on counsel while any referral is still open', () => {
+    const open = planFor(
+      planInput('in_court', {
+        orders: [answered],
+        referrals: [
+          { outcomes: [{ kind: 'dismissed' }] },
+          { outcomes: [{ kind: 'motion_filed' }] },
+        ],
+      }),
+    )
+    expect(open.now?.actor).toBe('counsel')
+    const appealed = planFor(
+      planInput('in_court', {
+        orders: [answered],
+        referrals: [
+          { outcomes: [{ kind: 'judgment_for_town' }, { kind: 'appealed_to_superior_court' }] },
+        ],
+      }),
+    )
+    expect(appealed.now?.actor).toBe('counsel')
+  })
+
+  it('takes the soonest running answer across the active orders', () => {
+    const first = planOrder({ gate: { open: false, blocks: ['not_filed_with_clerk'] } })
+    const second = planOrder(
+      {
+        answerDues: [
+          { name: 'Robin Renter', due: { due: '2026-11-20' as CivilDate }, answeredOn: null },
+        ],
+      },
+      { id: 'o2', number: 'CD-2026-0002' },
+    )
+    const p = planFor(planInput('order_issued', { orders: [first, second] }))
+    expect(p.due).toMatchObject({ key: 'answer', date: '2026-11-20' })
+  })
+
+  it('lists counsel requirements for an answered order once it is referred', () => {
+    const p = planFor(
+      planInput('in_court', {
+        orders: [answered],
+        referrals: [{ outcomes: [{ kind: 'judgment_for_town' }] }],
+        fines: [{ row: { id: 'f1' }, dueCents: 7500 }],
+      }),
+    )
+    expect(p.groups[0]?.title).toBe('Before the case is resolved')
+    expect(p.groups[0]?.rows.map((r) => [r.label, r.done])).toEqual([
+      ['Referred to town counsel', true],
+      ['Counsel proceedings decided', true],
+      ['Fines paid', false],
+    ])
+  })
 })

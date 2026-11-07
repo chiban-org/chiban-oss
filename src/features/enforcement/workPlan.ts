@@ -8,7 +8,7 @@ import {
   type CasePlanInput,
   type CasePlanOrder,
   liveOrder,
-  runningAnswers,
+  soonestAnswer,
   stepOf,
 } from './workPlanInput'
 import { requirementGroups } from './workPlanRequirements'
@@ -50,7 +50,7 @@ function correctiveDue(order: CasePlanOrder | null, today: CivilDate): CaseDue |
 export function caseDue(input: CasePlanInput): CaseDue | null {
   if (input.stay.stayed || !DUE_STATUSES.includes(input.staff.row.status)) return null
   const order = liveOrder(input)
-  const answer = order === null ? undefined : runningAnswers(order, input.today)[0]
+  const answer = soonestAnswer(input)
   if (answer !== undefined) return dueAt('answer', 'Answer due', answer.due.due, input.today)
   return appealDue(input) ?? correctiveDue(order, input.today)
 }

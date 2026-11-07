@@ -11,7 +11,7 @@ import type { SubjectDue } from '@/features/clocks/subjectDue'
 import type { MotionBlock } from '@/features/enforcement/motionGate'
 import type { ServiceStatus } from '@/features/enforcement/serviceStatus'
 import type { StayState } from '@/features/enforcement/stay'
-import type { CivilDate } from '@/types/civilDate'
+import { type CivilDate, compareCivil } from '@/types/civilDate'
 import type { CaseActionKind } from './workPlanTypes'
 
 type OrderRow = typeof enforcementOrders.$inferSelect
@@ -50,9 +50,30 @@ export interface CasePlanExtras {
 
 const NOT_LIVE: readonly OrderRow['status'][] = ['draft', 'annulled', 'withdrawn', 'complied']
 
+export function liveOrders(input: CasePlanInput): CasePlanOrder[] {
+  return input.orders.filter((o) => !NOT_LIVE.includes(o.row.status))
+}
+
 export function liveOrder(input: CasePlanInput): CasePlanOrder | null {
-  const live = input.orders.filter((o) => !NOT_LIVE.includes(o.row.status))
+  const live = liveOrders(input)
   return live.find((o) => stepOf(o, 'judgment') === null) ?? live[0] ?? null
+}
+
+const COUNSEL_DECIDED: readonly string[] = [
+  'judgment_for_town',
+  'judgment_for_respondent',
+  'settled',
+  'dismissed',
+  'withdrawn',
+]
+
+export type CounselState = 'none' | 'open' | 'won' | 'ended'
+
+export function counselState(input: CasePlanInput): CounselState {
+  if (input.referrals.length === 0) return 'none'
+  const latest = input.referrals.map((r) => r.outcomes.at(-1)?.kind ?? '')
+  if (latest.some((kind) => !COUNSEL_DECIDED.includes(kind))) return 'open'
+  return latest.includes('judgment_for_town') ? 'won' : 'ended'
 }
 
 export function unservedFor(order: CasePlanOrder, role: RecipientRole) {
@@ -82,5 +103,11 @@ export function filingLead(order: CasePlanOrder): CivilDate | null {
 export function runningAnswers(order: CasePlanOrder, today: CivilDate) {
   return order.answerDues
     .filter((a) => a.answeredOn === null && a.due.due >= today)
-    .sort((a, b) => a.due.due.localeCompare(b.due.due))
+    .sort((a, b) => compareCivil(a.due.due, b.due.due))
+}
+
+export function soonestAnswer(input: CasePlanInput) {
+  return liveOrders(input)
+    .flatMap((o) => runningAnswers(o, input.today))
+    .sort((a, b) => compareCivil(a.due.due, b.due.due))[0]
 }

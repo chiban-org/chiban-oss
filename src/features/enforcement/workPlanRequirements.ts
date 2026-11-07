@@ -5,6 +5,7 @@ import { formatCents } from '@/lib/money'
 import {
   type CasePlanInput,
   type CasePlanOrder,
+  counselState,
   filingLead,
   gateBlocks,
   liveOrder,
@@ -20,6 +21,7 @@ const ANCHORS: readonly [string, string][] = [
   ['notice.', 'findings'],
   ['fines.', 'fines'],
   ['stay', 'appeals'],
+  ['counsel.', 'counsel'],
 ]
 
 function anchorOf(key: string): string {
@@ -120,19 +122,37 @@ function motionGroup(input: CasePlanInput, order: CasePlanOrder): CaseRequiremen
   }
 }
 
-function resolveGroup(input: CasePlanInput, order: CasePlanOrder): CaseRequirementGroup {
+function fineRows(input: CasePlanInput): CaseRequirement[] {
   const owed = input.fines.reduce((sum, f) => sum + f.dueCents, 0)
-  const fines =
-    input.fines.length === 0
-      ? []
-      : [row('fines.paid', 'Fines paid', owed === 0, `Balance due ${formatCents(owed)}.`)]
+  if (input.fines.length === 0) return []
+  return [row('fines.paid', 'Fines paid', owed === 0, `Balance due ${formatCents(owed)}.`)]
+}
+
+function resolveGroup(input: CasePlanInput, order: CasePlanOrder): CaseRequirementGroup {
   return {
     key: 'resolve',
     title: 'Before the case is resolved',
     rows: [
       row('court.motion', 'Motion to enforce filed', true),
       row('court.judgment', 'Judgment entered', stepOf(order, 'judgment') !== null),
-      ...fines,
+      ...fineRows(input),
+    ],
+  }
+}
+
+function counselGroup(input: CasePlanInput): CaseRequirementGroup {
+  const counsel = counselState(input)
+  return {
+    key: 'resolve',
+    title: 'Before the case is resolved',
+    rows: [
+      row('counsel.referred', 'Referred to town counsel', counsel !== 'none'),
+      row(
+        'counsel.decided',
+        'Counsel proceedings decided',
+        counsel === 'won' || counsel === 'ended',
+      ),
+      ...fineRows(input),
     ],
   }
 }
@@ -141,6 +161,9 @@ function courtGroups(input: CasePlanInput): CaseRequirementGroup[] {
   const order = liveOrder(input)
   if (order === null) return []
   if (stepOf(order, 'motion_to_enforce') !== null) return [resolveGroup(input, order)]
+  if (gateBlocks(order).includes('answered') && counselState(input) !== 'none') {
+    return [counselGroup(input)]
+  }
   return [motionGroup(input, order)]
 }
 
