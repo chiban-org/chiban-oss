@@ -66,11 +66,13 @@ test.describe('records panel on an application as the clerk', () => {
     await panel.getByRole('button', { name: 'Record building removed' }).click()
     await expectRefusedBeside(date, 'Enter the date the building was removed between')
 
-    await fillDate(date, await townToday(db))
+    const today = await townToday(db)
+    await fillDate(date, today)
     await panel.getByRole('button', { name: 'Record building removed' }).click()
     await expectToast(page, 'Removal recorded.')
     const events = await db.rows(
-      "select 1 from record_events where kind = 'building_removed' and occurred_on = current_date",
+      "select 1 from record_events where kind = 'building_removed' and occurred_on = $1",
+      [today],
     )
     expect(events.length).toBeGreaterThan(0)
   })
