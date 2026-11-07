@@ -2,12 +2,14 @@ import { randomUUID } from 'node:crypto'
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { noticeItems, noticeProofSupersessions, noticeProofs, noticeSets } from '@/db/schema'
-import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettingsSchema'
+import { boardSettingsDefault } from '@/features/boards/boardSettingsSchema'
+import { activeBoards } from '@/features/boards/townBoards'
 import { deriveNoticeItems } from '@/features/notices/deriveItems'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { recordProof } from '@/features/notices/proofs'
 import {
   type BoardWorld,
+  boardIdOf,
   recordNoRegionalImpact,
   setupBoardWorld,
   submitBoardApplication,
@@ -131,19 +133,24 @@ describe('deriveNoticeItems', () => {
     const items = await itemsOf(await setFor(id, '2027-04-14'))
     const boards = items.filter((i) => i.channel === 'bulletin_board')
     expect(boards.map((i) => i.recipientName).sort()).toEqual(
-      [...(BOARD_SETTINGS_DEFAULT.boards[0]?.publicNotice.bulletinBoards ?? [])].sort(),
+      [
+        ...(boardSettingsDefault(await activeBoards(handle.db)).boards[0]?.publicNotice
+          .bulletinBoards ?? []),
+      ].sort(),
     )
     expect(boards.every((i) => i.source === 'town_setting')).toBe(true)
   })
 
   it('a town website adds one website item', async () => {
-    const board = BOARD_SETTINGS_DEFAULT.boards.map((b) =>
-      b.board === 'planning_board'
+    const defaults = boardSettingsDefault(await activeBoards(handle.db))
+    const planningId = await boardIdOf(handle.db, 'planning_board')
+    const board = defaults.boards.map((b) =>
+      b.boardId === planningId
         ? { ...b, publicNotice: { ...b.publicNotice, websiteUrl: 'https://alderpond.example.org' } }
         : b,
     )
     await saveAndPublish(handle.db, world.admin, 'board_settings', 'default', {
-      ...BOARD_SETTINGS_DEFAULT,
+      ...defaults,
       boards: board,
     })
     const id = await pbApplication()

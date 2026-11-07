@@ -10,7 +10,8 @@ function meeting(
 ): MemberMeetingRow {
   return {
     meetingId: id,
-    board: 'planning_board',
+    boardId: '11111111-1111-4111-8111-111111111111',
+    boardShortName: 'Planning Board',
     meetingDate: date as CivilDate,
     agendaDocumentId: null,
     cancelled: false,

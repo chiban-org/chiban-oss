@@ -1,6 +1,12 @@
 import { expect, test } from '../fixtures/test'
 import { confirmWith, permissionAlert } from './confirm'
-import { addMeetingThroughForm, type MeetingSpec, meetingIdFor } from './meetings'
+import {
+  addMeetingThroughForm,
+  BOARD_OPTION_LABELS,
+  boardIdFor,
+  type MeetingSpec,
+  meetingIdFor,
+} from './meetings'
 import { expectRefused } from './refusal'
 
 test.describe
@@ -23,8 +29,8 @@ test.describe
     }) => {
       await addMeetingThroughForm(page, spec)
       const row = await db.one<{ status: string }>(
-        'select status from board_meetings where board = $1 and meeting_date = $2 and kind = $3 and location = $4',
-        [spec.board, spec.date, spec.kind, spec.location],
+        'select status from board_meetings where board_id = $1 and meeting_date = $2 and kind = $3 and location = $4',
+        [await boardIdFor(db, spec.board), spec.date, spec.kind, spec.location],
       )
       expect(row.status).toBe('scheduled')
     })
@@ -53,7 +59,7 @@ test.describe
       await page.goto('/staff/boards/meetings')
       await page.getByRole('button', { name: 'Add meeting' }).click()
       const dialog = page.getByRole('dialog', { name: 'Add a meeting' })
-      await dialog.getByLabel('Board').selectOption(spec.board)
+      await dialog.getByLabel('Board').selectOption({ label: BOARD_OPTION_LABELS[spec.board] })
       await dialog.getByLabel('Date').fill(spec.date)
       await dialog.getByLabel('Kind').selectOption(spec.kind)
       await dialog.getByRole('button', { name: 'Add meeting' }).click()
@@ -62,7 +68,7 @@ test.describe
     })
 
     test('cancel asks for a reason before it opens the confirmation', async ({ page, db }) => {
-      await page.goto('/staff/boards/meetings?board=zba&kind=special')
+      await page.goto(`/staff/boards/meetings?board=${await boardIdFor(db, 'zba')}&kind=special`)
       const row = page.getByRole('row').filter({ hasText: spec.location })
       await row.getByText('Cancel', { exact: true }).click()
       await row.getByRole('button', { name: 'Cancel meeting' }).click()
@@ -79,7 +85,7 @@ test.describe
       page,
       db,
     }) => {
-      await page.goto('/staff/boards/meetings?board=zba&kind=special')
+      await page.goto(`/staff/boards/meetings?board=${await boardIdFor(db, 'zba')}&kind=special`)
       const row = page.getByRole('row').filter({ hasText: spec.location })
       await row.getByText('Cancel', { exact: true }).click()
       await row.getByLabel('Reason').fill('Hearing moved to the next quarter')

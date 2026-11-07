@@ -2,6 +2,7 @@ import type { Tx } from '@/db/client'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
 import { checkBoardSettings } from '@/features/boards/boardSettingsChecks'
+import { activeBoards } from '@/features/boards/townBoards'
 import type {
   ConfigIssue,
   ConfigKind,
@@ -135,7 +136,8 @@ export async function runPublishChecks(
     return placeholderError(checkAmendmentPlaceholders(body as LocalCodeAmendmentBody))
   }
   if (kind === 'town_rule_setting') return checkTownRule(body as TownRuleSettingBody, key)
-  if (kind === 'board_settings') return await checkBoardSettings(tx, body as BoardSettingsBody)
+  if (kind === 'board_settings')
+    return checkBoardSettings(body as BoardSettingsBody, await activeBoards(tx))
   if (kind === 'town_profile') return checkTownProfile(body as TownProfileBody)
   return null
 }

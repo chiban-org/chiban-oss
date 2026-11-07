@@ -26,7 +26,7 @@ function dueFor(
   return computeRuleDue(rule, length, d(start), packHolidayCalendar()).due
 }
 
-const BOARD_CLASSIFICATIONS = NH_CLASSIFICATIONS.filter((c) => c.board !== null)
+const BOARD_CLASSIFICATIONS = NH_CLASSIFICATIONS.filter((c) => c.boardKind !== null)
 
 describe('nh board rules', () => {
   it('nh pack validates with board rules', () => {

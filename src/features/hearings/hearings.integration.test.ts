@@ -12,6 +12,7 @@ import { noticeStatus } from '@/features/notices/noticeStatus'
 import {
   BOARD_FIXTURE_NOW,
   type BoardWorld,
+  boardIdSql,
   boardTypeBody,
   recordNoRegionalImpact,
   setupBoardWorld,
@@ -45,7 +46,8 @@ afterEach(async () => {
 
 async function meetingIdOn(date: string, board: 'planning_board' | 'zba') {
   const rows = await handle.db.query.boardMeetings.findMany({
-    where: (m, { and, eq: equals }) => and(equals(m.meetingDate, date), equals(m.board, board)),
+    where: (m, { and, eq: equals }) =>
+      and(equals(m.meetingDate, date), equals(m.boardId, boardIdSql(board))),
   })
   return rows[0]?.id ?? ''
 }

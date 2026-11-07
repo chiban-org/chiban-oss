@@ -17,7 +17,9 @@ const FULL: TownProfileBody = {
   website: 'https://alderpond.example',
   officeHours: 'Monday to Thursday, 8 to 4',
   logo: { objectKey: `town-assets/${SHA}`, contentType: 'image/png', width: 240, height: 240 },
-  boardOverrides: { zba: { officeName: 'Zoning Board of Adjustment' } },
+  boardOverrides: {
+    '22222222-2222-4222-8222-222222222222': { officeName: 'Zoning Board of Adjustment' },
+  },
   signers: [
     {
       role: 'building_official',

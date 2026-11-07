@@ -7,6 +7,7 @@ import { fileDecision } from '@/features/decisions/fileDecision'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import {
   type BoardWorld,
+  boardIdSql,
   publishRegionalContacts,
   recordNoRegionalImpact,
   setupBoardWorld,
@@ -161,7 +162,7 @@ describe('hearing actions', () => {
     state.actor = world.staff
     const [meeting] = await handle.db.query.boardMeetings.findMany({
       where: (m, { and, eq: equals }) =>
-        and(equals(m.meetingDate, '2027-03-10'), equals(m.board, 'planning_board')),
+        and(equals(m.meetingDate, '2027-03-10'), equals(m.boardId, boardIdSql('planning_board'))),
     })
     expect(await actions.buildAgendaAction(form({ meetingId: meeting?.id ?? '' }))).toEqual({
       ok: true,

@@ -3,8 +3,9 @@ import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import { abutterLists, applications } from '@/db/schema'
 import { setApplicantParcels } from '@/features/abutters/applicantParcels'
-import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettingsSchema'
+import { boardSettingsDefault } from '@/features/boards/boardSettingsSchema'
 import { recordDesDetermination } from '@/features/boards/des500'
+import { activeBoards } from '@/features/boards/townBoards'
 import { recordRosterReview } from '@/features/rosters/reviews'
 import { importScenario } from '@/test/abutterWorld'
 import {
@@ -25,10 +26,11 @@ export interface ListWorld {
 }
 
 export async function publishProjectionSettings(db: Db, world: BoardWorld): Promise<void> {
+  const defaults = boardSettingsDefault(await activeBoards(db))
   await saveAndPublish(db, world.admin, 'board_settings', 'default', {
-    ...BOARD_SETTINGS_DEFAULT,
+    ...defaults,
     abutters: {
-      ...BOARD_SETTINGS_DEFAULT.abutters,
+      ...defaults.abutters,
       projectionEnabled: true,
       layersConfirmedBy: 'Land Use Technician',
       layersConfirmedOn: '2027-02-01',

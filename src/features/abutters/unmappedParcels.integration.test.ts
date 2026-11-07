@@ -5,7 +5,8 @@ import { setApplicantParcels } from '@/features/abutters/applicantParcels'
 import type { StoredIncomplete } from '@/features/abutters/draft'
 import { issueList } from '@/features/abutters/issue'
 import { attestCrossings, generateList } from '@/features/abutters/lists'
-import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettingsSchema'
+import { boardSettingsDefault } from '@/features/boards/boardSettingsSchema'
+import { activeBoards } from '@/features/boards/townBoards'
 import { type BoardWorld, publishRegionalContacts, setupBoardWorld } from '@/test/boardFixtures'
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -52,7 +53,7 @@ describe('an applicant parcel without geometry', () => {
       world.admin,
       'board_settings',
       'default',
-      BOARD_SETTINGS_DEFAULT,
+      boardSettingsDefault(await activeBoards(handle.db)),
     )
     await unmap('A')
     const listId = await draft()

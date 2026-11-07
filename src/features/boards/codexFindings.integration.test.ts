@@ -14,6 +14,7 @@ import { runJob } from '@/jobs/defineJob'
 import {
   BOARD_FIXTURE_NOW,
   type BoardWorld,
+  boardIdOf,
   publishRegionalContacts,
   recordNoRegionalImpact,
   setupBoardWorld,
@@ -37,8 +38,9 @@ afterEach(async () => {
 })
 
 async function meetingId(date: string): Promise<string> {
+  const boardId = await boardIdOf(handle.db, 'planning_board')
   const rows = await handle.db.query.boardMeetings.findMany()
-  return rows.find((m) => m.meetingDate === date && m.board === 'planning_board')?.id ?? ''
+  return rows.find((m) => m.meetingDate === date && m.boardId === boardId)?.id ?? ''
 }
 
 async function filedWithList(received = '2027-03-24'): Promise<string> {

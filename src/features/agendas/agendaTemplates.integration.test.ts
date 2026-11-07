@@ -7,6 +7,7 @@ import { AGENDA_SOURCE } from '@/features/templates/preview/boardSources'
 import { renderDocument } from '@/features/templates/templateBlocks'
 import {
   type BoardWorld,
+  boardIdSql,
   recordNoRegionalImpact,
   setupBoardWorld,
   submitBoardApplication,
@@ -30,7 +31,7 @@ beforeEach(async () => {
   store = (await makeTestStore()).store
   const rows = await handle.db.query.boardMeetings.findMany({
     where: (m, { and, eq: equals }) =>
-      and(equals(m.meetingDate, '2027-04-15'), equals(m.board, 'zba')),
+      and(equals(m.meetingDate, '2027-04-15'), equals(m.boardId, boardIdSql('zba'))),
   })
   meetingId = rows[0]?.id ?? ''
   const applicationId = await submitBoardApplication(

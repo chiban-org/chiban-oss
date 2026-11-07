@@ -1,5 +1,6 @@
 import { expect, test, waitForEmail } from '../fixtures/test'
 import { confirmWith } from './confirm'
+import { boardIdFor } from './meetings'
 import {
   buildAndPublishAgenda,
   meetingWithHearing,
@@ -76,7 +77,9 @@ test.describe
         db,
       }) => {
         const since = new Date()
-        await page.goto('/staff/boards/meetings?board=planning_board&kind=special')
+        await page.goto(
+          `/staff/boards/meetings?board=${await boardIdFor(db, 'planning_board')}&kind=special`,
+        )
         const row = page.getByRole('row').filter({ hasText: meeting.spec.location })
         await row.getByText('Cancel', { exact: true }).click()
         await row.getByLabel('Reason').fill('Quorum cannot be reached')

@@ -4,6 +4,7 @@ import { abutterLists, applications } from '@/db/schema'
 import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
+import { boardIdOf } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { findIsoDates, findRawKeys } from '@/test/leaks'
 
@@ -209,7 +210,9 @@ describe('board pages show words, not keys or dates', () => {
     const past = await page(MeetingsPage({ searchParams: Promise.resolve({ when: 'past' }) }))
     expect(past).toContain('July 8, 2026')
     expect(past.indexOf('October 28, 2026')).toBeLessThan(past.indexOf('July 8, 2026'))
-    const zba = await page(MeetingsPage({ searchParams: Promise.resolve({ board: 'zba' }) }))
+    const zba = await page(
+      MeetingsPage({ searchParams: Promise.resolve({ board: await boardIdOf(handle.db, 'zba') }) }),
+    )
     expect(zba).toContain('November 17, 2026')
     expect(zba).not.toContain('November 12, 2026')
   })

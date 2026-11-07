@@ -8,6 +8,7 @@ import { markHearingHeld, markProperlyNoticed, scheduleHearing } from '@/feature
 import type { ObjectStore } from '@/features/storage/objectStore'
 import {
   type BoardWorld,
+  boardIdSql,
   recordNoRegionalImpact,
   setupBoardWorld,
   submitBoardApplication,
@@ -38,7 +39,8 @@ afterEach(async () => {
 
 async function meetingIdOn(date: string, board: 'planning_board' | 'zba') {
   const rows = await handle.db.query.boardMeetings.findMany({
-    where: (m, { and, eq: equals }) => and(equals(m.meetingDate, date), equals(m.board, board)),
+    where: (m, { and, eq: equals }) =>
+      and(equals(m.meetingDate, date), equals(m.boardId, boardIdSql(board))),
   })
   return rows[0]?.id ?? ''
 }

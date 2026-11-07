@@ -5,6 +5,7 @@ import { createPacket } from '@/features/boards/packets'
 import { setAudiences } from '@/features/documents/publish'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
+import { boardIdOf } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/objectStore'
@@ -66,7 +67,11 @@ describe('a packet belongs to a scheduled meeting', () => {
       .select()
       .from(boardPackets)
       .where(eq(boardPackets.id, made.value.packetId))
-    expect(row).toMatchObject({ meetingId, board: 'zba', meetingDate: '2027-04-15' })
+    expect(row).toMatchObject({
+      meetingId,
+      boardId: await boardIdOf(handle.db, 'zba'),
+      meetingDate: '2027-04-15',
+    })
   })
 
   it('refuses a meeting that is not on the calendar', async () => {

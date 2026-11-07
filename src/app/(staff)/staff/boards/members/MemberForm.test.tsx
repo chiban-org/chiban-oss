@@ -15,7 +15,7 @@ const row: MemberRow = {
   membershipId: '5c6d7e8f-9a0b-4c1d-8e2f-3a4b5c6d7e8f',
   name: 'Avery Stone',
   email: 'avery@alderpond.example',
-  board: 'zba',
+  boardId: '22222222-2222-4222-8222-222222222222',
   title: 'vice_chair',
   termStart: '2025-04-01',
   termEnd: '2028-03-31',
@@ -27,8 +27,8 @@ const row: MemberRow = {
 }
 
 const BOARD_OPTIONS = [
-  ['planning_board', 'Alder Pond Planning Board'],
-  ['zba', 'Alder Pond Zoning Board of Adjustment'],
+  ['11111111-1111-4111-8111-111111111111', 'Alder Pond Planning Board'],
+  ['22222222-2222-4222-8222-222222222222', 'Alder Pond Zoning Board of Adjustment'],
 ] as const
 
 function value(label: string): string {
@@ -46,7 +46,7 @@ describe('board member dialogs', () => {
     const dialog = screen.getByRole('dialog')
     expect(value('Name')).toBe('Avery Stone')
     expect(value('Email address')).toBe('avery@alderpond.example')
-    expect(value('Board')).toBe('zba')
+    expect(value('Board')).toBe('22222222-2222-4222-8222-222222222222')
     expect(value('Role on the board')).toBe('vice_chair')
     expect(value('Term starts')).toBe('2025-04-01')
     expect(value('Term ends')).toBe('2028-03-31')

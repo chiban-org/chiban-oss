@@ -15,6 +15,7 @@ import { dateMessage, idMessage, textMessage } from '@/test/boardCases'
 import {
   BOARD_FIXTURE_NOW,
   type BoardWorld,
+  boardIdSql,
   publishRegionalContacts,
   setupBoardWorld,
   submitBoardApplication,
@@ -189,7 +190,7 @@ const forRouting = lazy(async () => {
   const applicationId = await submitBoardApplication(h.db, world, world.pbTypeKey, '2027-03-24')
   const meeting = await h.db.query.boardMeetings.findFirst({
     where: (m, { and, eq: equals }) =>
-      and(equals(m.meetingDate, '2027-04-14'), equals(m.board, 'planning_board')),
+      and(equals(m.meetingDate, '2027-04-14'), equals(m.boardId, boardIdSql('planning_board'))),
   })
   return { applicationId, meetingId: meeting?.id ?? '' }
 })

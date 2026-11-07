@@ -25,12 +25,14 @@ import { listMemberMeetings } from '@/features/boards/memberPackets'
 import { pendingChanges } from '@/features/boards/packetChanges'
 import { packetItemRows } from '@/features/boards/packetContents'
 import { trackPacket } from '@/features/boards/packetTrack'
+import { activeBoards } from '@/features/boards/townBoards'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { actorFor } from '@/features/demo/seedPermitSupport'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { trcSummary } from '@/features/reviews/trcSummary'
 import { townToday } from '@/features/town/today'
+import { boardIdOf } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { demoSeedDeps } from '@/test/demoSeedDeps'
 
@@ -64,10 +66,11 @@ async function packetFor(meetingId: string) {
 }
 
 async function meetingOn(board: 'planning_board' | 'zba', date: string): Promise<string> {
+  const boardId = await boardIdOf(handle.db, board)
   const [row] = await handle.db
     .select({ id: boardMeetings.id })
     .from(boardMeetings)
-    .where(and(eq(boardMeetings.board, board), eq(boardMeetings.meetingDate, date)))
+    .where(and(eq(boardMeetings.boardId, boardId), eq(boardMeetings.meetingDate, date)))
   return row?.id ?? ''
 }
 
@@ -98,8 +101,10 @@ describe('hearing demo data', () => {
     const rows = await handle.db.select().from(boardMemberships)
     const bea = await member('board')
     const seats = rows.filter((r) => r.userId !== bea.userId)
-    expect(seats.filter((r) => r.board === 'planning_board')).toHaveLength(5)
-    expect(seats.filter((r) => r.board === 'zba')).toHaveLength(5)
+    const planningId = await boardIdOf(handle.db, 'planning_board')
+    const zbaId = await boardIdOf(handle.db, 'zba')
+    expect(seats.filter((r) => r.boardId === planningId)).toHaveLength(5)
+    expect(seats.filter((r) => r.boardId === zbaId)).toHaveLength(5)
     expect((await member('pb.member')).kind).toBe('public')
   })
 
@@ -108,10 +113,10 @@ describe('hearing demo data', () => {
     expect(bea.kind).toBe('staff')
     await seedDemo(handle.db, signal, { ...(await demoSeedDeps()), screenStates: true })
     const seats = await handle.db
-      .select({ board: boardMemberships.board })
+      .select({ boardId: boardMemberships.boardId })
       .from(boardMemberships)
       .where(eq(boardMemberships.userId, bea.userId))
-    expect(seats).toEqual([{ board: 'zba' }])
+    expect(seats).toEqual([{ boardId: await boardIdOf(handle.db, 'zba') }])
   })
 
   it('has a published agenda for each board and one draft agenda', async () => {
@@ -127,9 +132,13 @@ describe('hearing demo data', () => {
       { limit: 25 },
       signal,
     )
-    expect(zba.rows.map((r) => [r.board, r.hasPacket])).toEqual([['zba', true]])
+    expect(zba.rows.map((r) => [r.boardId, r.hasPacket])).toEqual([
+      [await boardIdOf(handle.db, 'zba'), true],
+    ])
     const pb = await listMemberMeetings(handle.db, await member('pb.member'), { limit: 25 }, signal)
-    expect(pb.rows.map((r) => [r.board, r.hasPacket])).toEqual([['planning_board', true]])
+    expect(pb.rows.map((r) => [r.boardId, r.hasPacket])).toEqual([
+      [await boardIdOf(handle.db, 'planning_board'), true],
+    ])
   })
 
   it('the November 12 Planning Board meeting has hearings that are not on an agenda yet', async () => {
@@ -145,10 +154,11 @@ describe('hearing demo data', () => {
   })
 
   it('the meeting table counts the hearings at each meeting', async () => {
+    const boardIds = (await activeBoards(handle.db)).map((b) => b.id)
     const page = await listMeetingTable(
       handle.db,
       await actorFor(handle.db, 'staff', signal),
-      { ...readMeetingListView({}), today: '2026-11-01', limit: 50, offset: 0 },
+      { ...readMeetingListView({}, boardIds), boardIds, today: '2026-11-01', limit: 50, offset: 0 },
       signal,
     )
     const nov12 = page?.rows.find((r) => r.meetingDate === '2026-11-12')
@@ -205,7 +215,7 @@ describe('hearing demo data', () => {
       .insert(boardPackets)
       .values({
         title: 'Planning Board agenda',
-        board: 'planning_board',
+        boardId: await boardIdOf(handle.db, 'planning_board'),
         meetingDate: '2026-07-14',
         createdBy: staff.userId,
       })

@@ -5,6 +5,7 @@ import { documents } from '@/db/schema'
 import { buildAgenda, publishAgenda } from '@/features/agendas/agendas'
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { inviteBoardMember } from '@/features/boards/members'
+import { boardIdOf } from '@/features/boards/townBoards'
 import type { Audience } from '@/features/documents/types'
 import { scheduleHearing } from '@/features/hearings/hearings'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
@@ -30,9 +31,10 @@ export interface PacketFlow {
 }
 
 async function zbaMeetingId(db: Db): Promise<string> {
+  const boardId = await boardIdOf(db, 'zba')
   const rows = await db.query.boardMeetings.findMany({
     where: (m, { and, eq: equals }) =>
-      and(equals(m.meetingDate, FLOW_MEETING), equals(m.board, 'zba')),
+      and(equals(m.meetingDate, FLOW_MEETING), equals(m.boardId, boardId)),
   })
   return rows[0]?.id ?? ''
 }
@@ -86,7 +88,7 @@ export async function seatedMember(db: Db, flow: PacketFlow, email: string): Pro
     {
       email,
       displayName: 'Seated Member',
-      board: 'zba',
+      boardId: await boardIdOf(db, 'zba'),
       title: 'member',
       termStart: '2020-01-01' as CivilDate,
     },

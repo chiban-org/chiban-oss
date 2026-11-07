@@ -80,6 +80,7 @@ const SPECS: Spec[] = [
   { table: t.attestations },
   { table: t.associationRosters },
   { table: t.auditLog },
+  { table: t.boards, importMode: 'replace' },
   { table: t.boardPacketAccess },
   { table: t.boardPacketItems },
   { table: t.boardPacketMembers },

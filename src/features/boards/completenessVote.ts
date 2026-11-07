@@ -71,6 +71,17 @@ async function checkVoteMeeting(
     : ok(meeting)
 }
 
+async function votingBoardKind(
+  tx: Tx,
+  app: NonNullable<Awaited<ReturnType<typeof loadApplicationContext>>>,
+  signal: AbortSignal,
+): Promise<Result<BoardKind, VoteError>> {
+  const boardKind = boardOfApplication(app)
+  if (boardKind === null) return err('wrong_board')
+  if ((await boardForKind(tx, boardKind, signal)) === null) return err({ noBoard: boardKind })
+  return ok(boardKind)
+}
+
 function voteErrorFrom(error: TransitionError): VoteError {
   if (typeof error !== 'string') return error
   if (error === 'forbidden' || error === 'not_found') return error
@@ -103,9 +114,9 @@ export async function recordCompletenessVote(
       .for('update')
     const app = await loadApplicationContext(tx, input.applicationId, signal)
     if (app === null) return err('not_found')
-    const boardKind = boardOfApplication(app)
-    if (boardKind === null) return err('wrong_board')
-    if ((await boardForKind(tx, boardKind, signal)) === null) return err({ noBoard: boardKind })
+    const seated = await votingBoardKind(tx, app, signal)
+    if (!seated.ok) return seated
+    const boardKind = seated.value
     if (app.state !== 'submitted') return err('not_submitted')
     const checked = await checkVoteMeeting(
       tx,

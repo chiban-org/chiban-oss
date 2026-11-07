@@ -101,7 +101,7 @@ test.describe('meeting page without the capability', () => {
 
   test('offers no agenda forms', async ({ page, db }) => {
     const row = await db.one<{ id: string }>(
-      "select id from board_meetings where board = 'planning_board' order by meeting_date limit 1",
+      "select m.id from board_meetings m join boards b on b.id = m.board_id where b.kind = 'planning_board' order by m.meeting_date limit 1",
     )
     await page.goto(`/staff/boards/meetings/${row.id}`)
     await expect(permissionAlert(page)).toHaveText(

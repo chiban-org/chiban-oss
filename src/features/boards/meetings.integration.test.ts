@@ -1,13 +1,14 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { clocks } from '@/db/schema'
-import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettings'
+import { boardSettingsDefault } from '@/features/boards/boardSettings'
 import { cancelMeeting, nextRegularMeeting, scheduleMeeting } from '@/features/boards/meetings'
+import { activeBoards } from '@/features/boards/townBoards'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { publishConfig } from '@/features/config/publish'
 import { getVersion, saveDraft } from '@/features/config/store'
 import { makeApplication } from '@/test/applicationFixtures'
-import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
+import { type BoardWorld, boardIdOf, setupBoardWorld } from '@/test/boardFixtures'
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import type { CivilDate } from '@/types/civilDate'
@@ -119,7 +120,11 @@ describe('meeting-bound completeness clock', () => {
     const made = await scheduleMeeting(
       handle.db,
       world.staff,
-      { board: 'planning_board', meetingDate: d('2027-06-16'), kind: 'regular' },
+      {
+        boardId: await boardIdOf(handle.db, 'planning_board'),
+        meetingDate: d('2027-06-16'),
+        kind: 'regular',
+      },
       signal,
     )
     expect(made.ok).toBe(true)
@@ -159,7 +164,11 @@ describe('meetings', () => {
     await scheduleMeeting(
       handle.db,
       world.staff,
-      { board: 'planning_board', meetingDate: d('2027-04-05'), kind: 'special' },
+      {
+        boardId: await boardIdOf(handle.db, 'planning_board'),
+        meetingDate: d('2027-04-05'),
+        kind: 'special',
+      },
       signal,
     )
     expect(await nextRegularMeeting(handle.db, 'planning_board', d('2027-04-03'), signal)).toBe(
@@ -172,7 +181,11 @@ describe('meetings', () => {
     const again = await scheduleMeeting(
       handle.db,
       world.staff,
-      { board: 'planning_board', meetingDate: d('2027-04-14'), kind: 'regular' },
+      {
+        boardId: await boardIdOf(handle.db, 'planning_board'),
+        meetingDate: d('2027-04-14'),
+        kind: 'regular',
+      },
       signal,
     )
     expect(again).toEqual({ ok: false, error: 'already_scheduled' })
@@ -182,7 +195,11 @@ describe('meetings', () => {
     const made = await scheduleMeeting(
       handle.db,
       world.reviewer,
-      { board: 'planning_board', meetingDate: d('2027-08-11'), kind: 'regular' },
+      {
+        boardId: await boardIdOf(handle.db, 'planning_board'),
+        meetingDate: d('2027-08-11'),
+        kind: 'regular',
+      },
       signal,
     )
     expect(made).toEqual({ ok: false, error: 'forbidden' })
@@ -223,19 +240,25 @@ describe('board settings publish', () => {
     return await publishConfig(handle.db, world.admin, saved.value.versionId, signal)
   }
 
+  async function defaults() {
+    return boardSettingsDefault(await activeBoards(handle.db))
+  }
+
   it('projection enabled without a layer confirmation is rejected at publish', async () => {
+    const settings = await defaults()
     const result = await publish({
-      ...BOARD_SETTINGS_DEFAULT,
-      abutters: { ...BOARD_SETTINGS_DEFAULT.abutters, projectionEnabled: true },
+      ...settings,
+      abutters: { ...settings.abutters, projectionEnabled: true },
     })
     expect(result.ok).toBe(false)
   })
 
   it('projection enabled with a confirmation publishes', async () => {
+    const settings = await defaults()
     const result = await publish({
-      ...BOARD_SETTINGS_DEFAULT,
+      ...settings,
       abutters: {
-        ...BOARD_SETTINGS_DEFAULT.abutters,
+        ...settings.abutters,
         projectionEnabled: true,
         layersConfirmedBy: 'Land Use Technician',
         layersConfirmedOn: '2027-02-01',
@@ -245,24 +268,28 @@ describe('board settings publish', () => {
   })
 
   it('a filing lead of 14 needs an adoption record', async () => {
-    const boards = BOARD_SETTINGS_DEFAULT.boards.map((b) =>
-      b.board === 'planning_board' ? { ...b, filingLeadDays: 14 } : b,
+    const settings = await defaults()
+    const planningId = await boardIdOf(handle.db, 'planning_board')
+    const boards = settings.boards.map((b) =>
+      b.boardId === planningId ? { ...b, filingLeadDays: 14 } : b,
     )
-    expect((await publish({ ...BOARD_SETTINGS_DEFAULT, boards })).ok).toBe(false)
+    expect((await publish({ ...settings, boards })).ok).toBe(false)
     const adopted = boards.map((b) =>
-      b.board === 'planning_board'
+      b.boardId === planningId
         ? {
             ...b,
             filingLeadAdoption: { adoptingAuthority: 'Planning Board', adoptedOn: '2027-01-12' },
           }
         : b,
     )
-    expect((await publish({ ...BOARD_SETTINGS_DEFAULT, boards: adopted })).ok).toBe(true)
+    expect((await publish({ ...settings, boards: adopted })).ok).toBe(true)
   })
 
   it('a filing lead of 22 is refused even with an adoption record', async () => {
-    const boards = BOARD_SETTINGS_DEFAULT.boards.map((b) =>
-      b.board === 'planning_board'
+    const settings = await defaults()
+    const planningId = await boardIdOf(handle.db, 'planning_board')
+    const boards = settings.boards.map((b) =>
+      b.boardId === planningId
         ? {
             ...b,
             filingLeadDays: 22,
@@ -270,6 +297,13 @@ describe('board settings publish', () => {
           }
         : b,
     )
-    expect((await publish({ ...BOARD_SETTINGS_DEFAULT, boards })).ok).toBe(false)
+    expect((await publish({ ...settings, boards })).ok).toBe(false)
+  })
+
+  it('settings without an entry for an active hearing board are refused', async () => {
+    const settings = await defaults()
+    const zbaId = await boardIdOf(handle.db, 'zba')
+    const boards = settings.boards.filter((b) => b.boardId !== zbaId)
+    expect((await publish({ ...settings, boards })).ok).toBe(false)
   })
 })

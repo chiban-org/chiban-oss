@@ -1,17 +1,24 @@
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
-import { and, eq } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import { boardMemberships, users } from '@/db/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
 import type { Actor } from '@/features/auth/actor'
-import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettings'
+import { boardSettingsDefault } from '@/features/boards/boardSettings'
 import { scheduleMeeting } from '@/features/boards/meetings'
+import { activeBoards, boardIdOf } from '@/features/boards/townBoards'
 import { recordRegionalImpactDetermination } from '@/features/building/regionalImpact'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { appTypeBody, saveAndPublish } from '@/test/configFixtures'
 import type { CivilDate } from '@/types/civilDate'
+
+export { boardIdOf }
+
+export function boardIdSql(kind: 'planning_board' | 'zba') {
+  return sql`(select id from boards where kind = ${kind} and archived_at is null)`
+}
 
 const signal = new AbortController().signal
 
@@ -99,7 +106,11 @@ export async function scheduleMeetings(
     const made = await scheduleMeeting(
       db,
       actor,
-      { board, meetingDate: meetingDate as CivilDate, kind: 'regular' },
+      {
+        boardId: await boardIdOf(db, board),
+        meetingDate: meetingDate as CivilDate,
+        kind: 'regular',
+      },
       signal,
     )
     if (!made.ok) throw new AppError(ErrorIds.DB_INVARIANT, `meeting ${meetingDate} failed`)
@@ -124,7 +135,7 @@ async function seatFixtureMembers(db: Db, createdBy: string): Promise<void> {
     for (const board of ['planning_board', 'zba'] as const) {
       await db.insert(boardMemberships).values({
         userId: user?.id ?? '',
-        board,
+        boardId: await boardIdOf(db, board),
         title: 'member',
         termStart: '2026-01-01',
         createdBy,
@@ -143,7 +154,12 @@ export async function endFixtureTerm(
   await db
     .update(boardMemberships)
     .set({ termEnd })
-    .where(and(eq(boardMemberships.userId, user?.id ?? ''), eq(boardMemberships.board, board)))
+    .where(
+      and(
+        eq(boardMemberships.userId, user?.id ?? ''),
+        eq(boardMemberships.boardId, await boardIdOf(db, board)),
+      ),
+    )
 }
 
 export async function setupBoardWorld(
@@ -152,7 +168,13 @@ export async function setupBoardWorld(
 ): Promise<BoardWorld> {
   const world = await setupPermitWorld(db)
   await saveAndPublish(db, world.admin, 'fee_schedule', 'board-fees', BOARD_FEES)
-  await saveAndPublish(db, world.admin, 'board_settings', 'default', BOARD_SETTINGS_DEFAULT)
+  await saveAndPublish(
+    db,
+    world.admin,
+    'board_settings',
+    'default',
+    boardSettingsDefault(await activeBoards(db)),
+  )
   const pbTypeKey = 'SPR'
   const zbaTypeKey = 'VAR'
   await saveAndPublish(

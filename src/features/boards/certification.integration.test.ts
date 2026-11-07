@@ -10,6 +10,7 @@ import { adjustClock } from '@/features/clocks/adjustClock'
 import {
   BOARD_FIXTURE_NOW,
   type BoardWorld,
+  boardIdSql,
   recordNoRegionalImpact,
   setupBoardWorld,
   submitBoardApplication,
@@ -34,7 +35,8 @@ afterEach(async () => {
 
 async function meetingIdOn(date: string, board: 'planning_board' | 'zba' = 'planning_board') {
   const rows = await handle.db.query.boardMeetings.findMany({
-    where: (m, { and, eq: equals }) => and(equals(m.meetingDate, date), equals(m.board, board)),
+    where: (m, { and, eq: equals }) =>
+      and(equals(m.meetingDate, date), equals(m.boardId, boardIdSql(board))),
   })
   return rows[0]?.id ?? ''
 }

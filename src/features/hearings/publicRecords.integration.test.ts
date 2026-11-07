@@ -4,7 +4,7 @@ import { agendas, files } from '@/db/schema'
 import { scheduleMeeting } from '@/features/boards/meetings'
 import { attachDocument } from '@/features/documents/attach'
 import { loadPublicBoardRecords } from '@/features/hearings/publicRecords'
-import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
+import { type BoardWorld, boardIdOf, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { addDays, type CivilDate } from '@/types/civilDate'
 
@@ -26,7 +26,7 @@ async function publishedAgendas(count: number, privateCount = 0) {
       handle.db,
       world.staff,
       {
-        board: 'planning_board',
+        boardId: await boardIdOf(handle.db, 'planning_board'),
         meetingDate: addDays('2027-01-06' as CivilDate, i * 7),
         kind: 'regular',
       },

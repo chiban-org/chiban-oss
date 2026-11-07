@@ -42,8 +42,9 @@ function filed(o: Partial<PlanView> = {}): PlanView {
 }
 
 const PLANNING: PlanBoard = {
-  board: 'planning_board',
+  boardKind: 'planning_board',
   boardName: 'Planning Board',
+  missingBoard: null,
   acceptanceMeetingId: 'm25',
   acceptanceDate: '2026-11-25',
   acceptanceText: 'November 25, 2026',
@@ -121,7 +122,7 @@ describe('a board meeting set after the deadline it must meet', () => {
   })
 
   it('names the hearing meeting on a zoning board application', () => {
-    const zba = { ...PLANNING, board: 'zba' as const }
+    const zba = { ...PLANNING, boardKind: 'zba' as const }
     const hearing = {
       ...COMPLETENESS,
       ruleKey: 'nh.zba.hearing',
@@ -147,7 +148,7 @@ describe('the hearing step while a requirement before it is unmet', () => {
   })
   const past = {
     ...PLANNING,
-    board: 'zba' as const,
+    boardKind: 'zba' as const,
     acceptanceDate: '2026-11-02',
     acceptanceText: 'November 2, 2026',
   }

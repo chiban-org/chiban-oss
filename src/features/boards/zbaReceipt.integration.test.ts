@@ -5,6 +5,7 @@ import { recordCompletenessVote, setAcceptanceMeeting } from '@/features/boards/
 import {
   BOARD_FIXTURE_NOW,
   type BoardWorld,
+  boardIdOf,
   recordNoRegionalImpact,
   scheduleMeetings,
   setupBoardWorld,
@@ -49,8 +50,9 @@ describe('zba hearing opened', () => {
     await recordNoRegionalImpact(handle.db, world, id)
     await issueFixtureList(handle.db, world, id, '2027-03-02')
     await scheduleMeetings(handle.db, world.staff, 'zba', ['2027-04-07'])
+    const zbaId = await boardIdOf(handle.db, 'zba')
     const meetings = await handle.db.query.boardMeetings.findMany()
-    const meetingId = meetings.find((m) => m.board === 'zba')?.id ?? ''
+    const meetingId = meetings.find((m) => m.boardId === zbaId)?.id ?? ''
     await setAcceptanceMeeting(handle.db, world.staff, { applicationId: id, meetingId }, signal)
     const vote = await recordCompletenessVote(
       handle.db,

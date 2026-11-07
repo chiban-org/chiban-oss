@@ -49,6 +49,8 @@ describe('renderTemplate', () => {
       'conditions.list',
       'codeEdition.label',
       'board.name',
+      'board.short_name',
+      'board.chair.name',
       'meeting.date',
       'meeting.location',
       'meeting.time',

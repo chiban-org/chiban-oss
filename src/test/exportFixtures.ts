@@ -85,8 +85,8 @@ const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
   },
   {
     table: 'board_memberships',
-    statement: sql`insert into board_memberships (user_id, board, title, term_start, created_by)
-      select id, 'zba', 'member', '2027-01-01', id from users limit 1`,
+    statement: sql`insert into board_memberships (user_id, board_id, title, term_start, created_by)
+      select u.id, (select id from boards where kind = 'zba'), 'member', '2027-01-01', u.id from users u limit 1`,
   },
   {
     table: 'notice_sets',

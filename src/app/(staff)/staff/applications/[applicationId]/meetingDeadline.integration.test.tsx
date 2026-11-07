@@ -7,6 +7,7 @@ import { setAcceptanceMeeting } from '@/features/boards/acceptance'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { formatCivilDate } from '@/lib/formatDate'
+import { boardIdSql } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { demoSeedDeps } from '@/test/demoSeedDeps'
 import { filledButtons, sectionOf } from '@/test/htmlSections'
@@ -78,7 +79,7 @@ async function upcoming(board: 'planning_board' | 'zba', from: string = TODAY) {
     .from(boardMeetings)
     .where(
       and(
-        eq(boardMeetings.board, board),
+        eq(boardMeetings.boardId, boardIdSql(board)),
         eq(boardMeetings.status, 'scheduled'),
         gte(boardMeetings.meetingDate, from),
       ),

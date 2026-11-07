@@ -4,7 +4,7 @@ import { auditLog, boardMemberships, users } from '@/db/schema'
 import { updateBoardMember } from '@/features/boards/memberEdit'
 import { inviteBoardMember } from '@/features/boards/members'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
-import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
+import { type BoardWorld, boardIdOf, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -14,6 +14,8 @@ let handle: TestDb
 let world: BoardWorld
 let robin: string
 let robinUser: string
+let zbaId = ''
+let planningId = ''
 
 async function invite(name: string): Promise<{ membershipId: string; userId: string }> {
   const made = await inviteBoardMember(
@@ -23,7 +25,7 @@ async function invite(name: string): Promise<{ membershipId: string; userId: str
     {
       email: `${name.toLowerCase()}@alderpond.example`,
       displayName: name,
-      board: 'planning_board',
+      boardId: await boardIdOf(handle.db, 'planning_board'),
       title: 'member',
       termStart: d('2026-01-01'),
     },
@@ -37,7 +39,7 @@ const change = (fields: Partial<Parameters<typeof updateBoardMember>[2]> = {}) =
   membershipId: robin,
   displayName: 'Robin Alder',
   email: 'robin.alder@alderpond.example',
-  board: 'zba' as const,
+  boardId: zbaId,
   title: 'chair' as const,
   termStart: d('2026-02-01'),
   termEnd: d('2029-01-31'),
@@ -47,6 +49,8 @@ const change = (fields: Partial<Parameters<typeof updateBoardMember>[2]> = {}) =
 beforeAll(async () => {
   handle = await makeTestDb()
   world = await setupBoardWorld(handle.db)
+  zbaId = await boardIdOf(handle.db, 'zba')
+  planningId = await boardIdOf(handle.db, 'planning_board')
   const made = await invite('Robin')
   robin = made.membershipId
   robinUser = made.userId
@@ -72,7 +76,7 @@ describe('editing a board member', () => {
       .from(boardMemberships)
       .where(eq(boardMemberships.id, robin))
     expect(seat).toMatchObject({
-      board: 'zba',
+      boardId: zbaId,
       title: 'chair',
       termStart: '2026-02-01',
       termEnd: '2029-01-31',
@@ -84,11 +88,15 @@ describe('editing a board member', () => {
     expect(entry?.before).toMatchObject({
       displayName: 'Robin',
       email: 'robin@alderpond.example',
-      board: 'planning_board',
+      boardId: planningId,
       title: 'member',
       termEnd: null,
     })
-    expect(entry?.after).toMatchObject({ displayName: 'Robin Alder', board: 'zba', title: 'chair' })
+    expect(entry?.after).toMatchObject({
+      displayName: 'Robin Alder',
+      boardId: zbaId,
+      title: 'chair',
+    })
   })
 
   it('refuses someone who cannot manage members', async () => {

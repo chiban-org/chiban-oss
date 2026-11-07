@@ -3,6 +3,7 @@ import { boardMemberships, users } from '@/db/schema'
 import { inviteBoardMember } from '@/features/boards/members'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
+import { boardIdOf } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -29,7 +30,7 @@ describe('inviteBoardMember term order', () => {
       {
         email: 'early.end@alderpond.example',
         displayName: 'Early End',
-        board: 'zba',
+        boardId: await boardIdOf(handle.db, 'zba'),
         title: 'member',
         termStart: d('2026-11-01'),
         termEnd: d('2026-10-01'),

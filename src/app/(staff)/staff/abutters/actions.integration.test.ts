@@ -3,7 +3,7 @@ import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vites
 import { abutterLists } from '@/db/schema'
 import { generateList } from '@/features/abutters/lists'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
-import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
+import { type BoardWorld, boardIdOf, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { LIST_NOW, type ListWorld, prepareListWorld } from '@/test/listFixtures'
 
@@ -193,7 +193,9 @@ describe('board actions', () => {
 
   it('schedule meeting action rejects a missing date', async () => {
     expect(
-      await boardActions.scheduleMeetingAction(form({ board: 'zba', kind: 'regular' })),
+      await boardActions.scheduleMeetingAction(
+        form({ boardId: await boardIdOf(handle.db, 'zba'), kind: 'regular' }),
+      ),
     ).toEqual({
       ok: false,
       error: 'Enter the meeting date.',
@@ -205,7 +207,11 @@ describe('board actions', () => {
     state.actor = world.reviewer
     expect(
       await boardActions.scheduleMeetingAction(
-        form({ board: 'zba', kind: 'regular', meetingDate: '2027-08-18' }),
+        form({
+          boardId: await boardIdOf(handle.db, 'zba'),
+          kind: 'regular',
+          meetingDate: '2027-08-18',
+        }),
       ),
     ).toEqual({ ok: false, error: 'You do not have permission to do this.' })
   })

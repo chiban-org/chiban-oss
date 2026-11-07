@@ -2,6 +2,7 @@ import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { applications } from '@/db/schema'
 import { recordCompletenessVote, setAcceptanceMeeting } from '@/features/boards/acceptance'
+import { boardIdOf } from '@/features/boards/townBoards'
 import {
   BOARD_FIXTURE_NOW,
   type BoardWorld,
@@ -26,8 +27,9 @@ export async function meetingIdOn(
   date: string,
   board: 'planning_board' | 'zba' = 'planning_board',
 ): Promise<string> {
+  const boardId = await boardIdOf(db, board)
   const rows = await db.query.boardMeetings.findMany({
-    where: (m, { and, eq: equals }) => and(equals(m.meetingDate, date), equals(m.board, board)),
+    where: (m, { and, eq: equals }) => and(equals(m.meetingDate, date), equals(m.boardId, boardId)),
   })
   return rows[0]?.id ?? ''
 }

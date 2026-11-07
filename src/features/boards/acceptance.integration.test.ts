@@ -3,12 +3,15 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { applications, clocks } from '@/db/schema'
 import { summarizeApplications } from '@/features/applications/recordSource'
 import { recordCompletenessVote, setAcceptanceMeeting } from '@/features/boards/acceptance'
-import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettings'
+import { boardSettingsDefault } from '@/features/boards/boardSettings'
 import { recordSelectmenCertification } from '@/features/boards/certification'
 import { scheduleMeeting } from '@/features/boards/meetings'
+import { activeBoards } from '@/features/boards/townBoards'
 import { adjustClock } from '@/features/clocks/adjustClock'
 import {
   type BoardWorld,
+  boardIdOf,
+  boardIdSql,
   recordNoRegionalImpact,
   setupBoardWorld,
   submitBoardApplication,
@@ -32,7 +35,8 @@ afterEach(async () => {
 
 async function meetingIdOn(date: string, board: 'planning_board' | 'zba' = 'planning_board') {
   const rows = await handle.db.query.boardMeetings.findMany({
-    where: (m, { and, eq: equals }) => and(equals(m.meetingDate, date), equals(m.board, board)),
+    where: (m, { and, eq: equals }) =>
+      and(equals(m.meetingDate, date), equals(m.boardId, boardIdSql(board))),
   })
   return rows[0]?.id ?? ''
 }
@@ -83,10 +87,12 @@ describe('setAcceptanceMeeting', () => {
   })
 
   it('town lead of 14 lets 2027-03-31 make 2027-04-14', async () => {
+    const defaults = boardSettingsDefault(await activeBoards(handle.db))
+    const planningId = await boardIdOf(handle.db, 'planning_board')
     await saveAndPublish(handle.db, world.admin, 'board_settings', 'default', {
-      ...BOARD_SETTINGS_DEFAULT,
-      boards: BOARD_SETTINGS_DEFAULT.boards.map((b) =>
-        b.board === 'planning_board'
+      ...defaults,
+      boards: defaults.boards.map((b) =>
+        b.boardId === planningId
           ? {
               ...b,
               filingLeadDays: 14,

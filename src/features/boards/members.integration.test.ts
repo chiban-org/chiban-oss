@@ -37,6 +37,8 @@ import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import {
   type BoardWorld,
+  boardIdOf,
+  boardIdSql,
   recordNoRegionalImpact,
   setupBoardWorld,
   submitBoardApplication,
@@ -78,7 +80,7 @@ async function invite(
     {
       email,
       displayName: 'Member',
-      board,
+      boardId: await boardIdOf(handle.db, board),
       title: 'member',
       termStart: d(extra.termStart ?? '2020-01-01'),
       ...(extra.termEnd === undefined ? {} : { termEnd: d(extra.termEnd) }),
@@ -93,7 +95,8 @@ async function invite(
 
 async function meetingId(date: string, board: 'planning_board' | 'zba') {
   const rows = await handle.db.query.boardMeetings.findMany({
-    where: (m, { and, eq: equals }) => and(equals(m.meetingDate, date), equals(m.board, board)),
+    where: (m, { and, eq: equals }) =>
+      and(equals(m.meetingDate, date), equals(m.boardId, boardIdSql(board))),
   })
   return rows[0]?.id ?? ''
 }
@@ -252,7 +255,13 @@ describe('inviting members', () => {
       handle.db,
       mail,
       world.staff,
-      { email, displayName: 'Clerk', board: 'zba', title: 'clerk', termStart: d('2027-01-01') },
+      {
+        email,
+        displayName: 'Clerk',
+        boardId: await boardIdOf(handle.db, 'zba'),
+        title: 'clerk',
+        termStart: d('2027-01-01'),
+      },
       signal,
     )
     expect(result).toEqual({ ok: false, error: 'staff_account' })
@@ -278,7 +287,7 @@ describe('inviting members', () => {
       {
         email: 'x@alderpond.example',
         displayName: 'X',
-        board: 'zba',
+        boardId: await boardIdOf(handle.db, 'zba'),
         title: 'member',
         termStart: d('2027-01-01'),
       },
@@ -499,8 +508,8 @@ describe('packets for members', () => {
     const zba = await invite('zba.member@alderpond.example', 'zba')
     await packet()
     const list = await listMemberMeetings(handle.db, zba.actor, { limit: 25 }, signal)
-    expect(list.rows.map((r) => [r.board, r.meetingDate, r.hasPacket])).toEqual([
-      ['zba', '2027-04-15', true],
+    expect(list.rows.map((r) => [r.boardShortName, r.meetingDate, r.hasPacket])).toEqual([
+      ['Zoning Board of Adjustment', '2027-04-15', true],
     ])
   })
 })

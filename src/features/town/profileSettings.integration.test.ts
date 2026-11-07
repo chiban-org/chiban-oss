@@ -6,6 +6,7 @@ import type { ObjectStore } from '@/features/storage/objectStore'
 import type { TownProfileBody } from '@/features/town/profileSchema'
 import { publishTownProfileSection } from '@/features/town/profileSettings'
 import { storeTownImage } from '@/features/town/townImages'
+import { boardIdOf } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pngBytes } from '@/test/frameFixtures'
 import { makeTestStore } from '@/test/objectStore'
@@ -108,12 +109,19 @@ describe('town profile sections', () => {
         section: 'letterhead',
         slice: {
           letterhead: current.letterhead,
-          boardOverrides: { zba: { officeName: 'Zoning Board of Adjustment' } },
+          boardOverrides: {
+            [await boardIdOf(handle.db, 'zba')]: { officeName: 'Zoning Board of Adjustment' },
+          },
         },
       },
       signal,
     )
-    const zba = await documentFrame(handle.db, { board: 'zba' }, signal, store)
+    const zba = await documentFrame(
+      handle.db,
+      { boardId: await boardIdOf(handle.db, 'zba') },
+      signal,
+      store,
+    )
     const plain = await documentFrame(handle.db, {}, signal, store)
     expect(zba.officeName).toBe('Zoning Board of Adjustment')
     expect(plain.officeName).toBe('Land Use Office')

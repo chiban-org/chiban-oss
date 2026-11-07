@@ -38,8 +38,9 @@ const MEETINGS = [
 ]
 
 const PLANNING: PlanBoard = {
-  board: 'planning_board',
+  boardKind: 'planning_board',
   boardName: 'Planning Board',
+  missingBoard: null,
   acceptanceMeetingId: 'm25',
   acceptanceDate: '2026-11-25',
   acceptanceText: 'November 25, 2026',

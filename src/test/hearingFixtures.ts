@@ -2,6 +2,7 @@ import { NH_STARTERS } from '@packs/nh/starters'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import { recordCompletenessVote } from '@/features/boards/acceptance'
+import { boardIdOf } from '@/features/boards/townBoards'
 import { generateDecisionDocuments } from '@/features/decisions/decisionDocuments'
 import { recordDecision } from '@/features/decisions/recordDecision'
 import { markHearingHeld, markProperlyNoticed, scheduleHearing } from '@/features/hearings/hearings'
@@ -31,8 +32,9 @@ export interface HeldHearing {
 }
 
 async function meetingOn(db: Db, date: string, board: 'planning_board' | 'zba') {
+  const boardId = await boardIdOf(db, board)
   const rows = await db.query.boardMeetings.findMany({
-    where: (m, { and, eq }) => and(eq(m.meetingDate, date), eq(m.board, board)),
+    where: (m, { and, eq }) => and(eq(m.meetingDate, date), eq(m.boardId, boardId)),
   })
   const id = rows[0]?.id
   if (id === undefined) throw new AppError(ErrorIds.DB_INVARIANT, `no ${board} meeting on ${date}`)

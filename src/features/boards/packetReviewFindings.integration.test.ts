@@ -24,6 +24,7 @@ import { sendPacketUpdate } from '@/features/boards/packetUpdate'
 import { createMemoryTransport, type MemoryMailTransport } from '@/features/mail/memoryTransport'
 import type { MailTransport } from '@/features/mail/transport'
 import type { ObjectStore } from '@/features/storage/objectStore'
+import { boardIdOf, boardIdSql } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/objectStore'
 import { applicationDocument, type PacketFlow, packetFlow } from '@/test/packetFlowFixtures'
@@ -85,7 +86,7 @@ describe('findings from the packet review', () => {
       .where(eq(documentVersions.documentId, photo))
     await approvePublic(handle.db, flow.world.staff, version?.id ?? '', store)
     const packetId = await save([flow.agendaDocumentId])
-    const meeting = { id: flow.meetingId, board: 'zba' as const }
+    const meeting = { id: flow.meetingId, boardId: await boardIdOf(handle.db, 'zba') }
     const stale = await packetCandidates(handle.db, meeting, flow.agendaDocumentId, signal)
     await handle.db.update(renditionApprovals).set({ revokedAt: new Date() })
     await handle.db.transaction(async (tx) => {
@@ -126,7 +127,12 @@ describe('findings from the packet review', () => {
       .select({ id: boardMemberships.id })
       .from(boardMemberships)
       .innerJoin(users, eq(users.id, boardMemberships.userId))
-      .where(and(eq(users.email, 'member1@alderpond.example'), eq(boardMemberships.board, 'zba')))
+      .where(
+        and(
+          eq(users.email, 'member1@alderpond.example'),
+          eq(boardMemberships.boardId, boardIdSql('zba')),
+        ),
+      )
     await endMembership(handle.db, flow.world.staff, left?.id ?? '', signal)
     await save([flow.agendaDocumentId, await plan('Planner memo')])
     mail.sent.length = 0
@@ -190,7 +196,7 @@ describe('findings from the packet review', () => {
   it('lists older packets that belong to no meeting so their links can still be managed', async () => {
     await handle.db.insert(boardPackets).values({
       title: 'Old packet',
-      board: 'zba',
+      boardId: await boardIdOf(handle.db, 'zba'),
       meetingDate: '2026-07-14',
       createdBy: flow.world.staff.userId,
     })

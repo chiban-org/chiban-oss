@@ -5,6 +5,7 @@ import { inviteBoardMember } from '@/features/boards/members'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { CHECK_PASSED, refuseField } from '@/server/formInput'
 import { dateMessage, idMessage, textMessage } from '@/test/boardCases'
+import { boardIdOf } from '@/test/boardFixtures'
 import {
   actionHarness,
   choice,
@@ -30,9 +31,11 @@ const { updateMemberAction, endMembershipAction } = await import('./actions')
 const h = actionHarness()
 
 let membershipId = ''
+let zbaId = ''
 const SEATED_EMAIL = 'seated@alderpond.example'
 
 beforeAll(async () => {
+  zbaId = await boardIdOf(h.db, 'zba')
   const invited = await inviteBoardMember(
     h.db,
     createMemoryTransport(),
@@ -40,7 +43,7 @@ beforeAll(async () => {
     {
       displayName: 'Seated Member',
       email: SEATED_EMAIL,
-      board: 'zba',
+      boardId: zbaId,
       title: 'member',
       termStart: '2026-11-01' as CivilDate,
     },
@@ -73,8 +76,8 @@ function updateRefusal(variant: InvalidVariant) {
           ? 'Enter an email address.'
           : 'Enter an email address like name@example.com.',
       )
-    case 'board':
-      return refuseField('board', 'Choose a board.')
+    case 'boardId':
+      return refuseField('boardId', idMessage('a board'))
     case 'title':
       return refuseField('title', 'Choose a role on the board.')
     case 'termStart':
@@ -91,7 +94,7 @@ describeActionCases(h, 'updateMemberAction', {
     membershipId,
     displayName: 'Seated Member Jr',
     email: SEATED_EMAIL,
-    board: 'zba',
+    boardId: zbaId,
     title: 'vice_chair',
     termStart: '2026-11-01',
     termEnd: '2029-10-31',
@@ -100,7 +103,7 @@ describeActionCases(h, 'updateMemberAction', {
     membershipId: uuid({ required: true }),
     displayName: text({ required: true, max: 200 }),
     email: EMAIL,
-    board: choice({ required: true }),
+    boardId: uuid({ required: true }),
     title: choice({ required: true }),
     termStart: date({ required: true, earliest: '1900-01-01', latest: '2099-12-31' }),
     termEnd: date({ earliest: '1900-01-01', latest: '2099-12-31' }),
@@ -129,7 +132,7 @@ describe('updateMemberAction with the term order from the forms sweep', () => {
       membershipId,
       displayName: 'Seated Member Jr',
       email: SEATED_EMAIL,
-      board: 'zba',
+      boardId: zbaId,
       title: 'member',
       termStart: '2026-11-01',
       termEnd: '2026-10-01',

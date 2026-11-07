@@ -1,28 +1,53 @@
 import { describe, expect, it } from 'vitest'
 import {
-  BOARD_SETTINGS_DEFAULT,
   type BoardSettingsBody,
   BoardSettingsBodySchema,
+  boardSettingsDefault,
 } from '@/features/boards/boardSettings'
 import { checkBoardSettings } from '@/features/boards/boardSettingsChecks'
+import type { BoardRow } from '@/features/boards/townBoards'
 import { fieldErrorsFor } from '@/features/config/publishErrors'
 import type { CivilDate } from '@/types/civilDate'
+
+function board(id: string, kind: BoardRow['kind'], name: string): BoardRow {
+  return {
+    id,
+    kind,
+    name,
+    shortName: name,
+    archivedAt: null,
+    createdBy: null,
+    createdAt: new Date('2026-01-01T00:00:00Z'),
+  }
+}
+
+const PLANNING = board(
+  '11111111-1111-4111-8111-111111111111',
+  'planning_board',
+  'Alder Pond Planning Board',
+)
+const ZBA = board(
+  '22222222-2222-4222-8222-222222222222',
+  'zba',
+  'Alder Pond Zoning Board of Adjustment',
+)
+const ACTIVE = [PLANNING, ZBA]
+
+const DEFAULT_BODY = boardSettingsDefault(ACTIVE)
 
 type Adoption = BoardSettingsBody['boards'][number]['filingLeadAdoption']
 
 function withFilingLead(days: number, adoption: Adoption): BoardSettingsBody {
   return {
-    ...BOARD_SETTINGS_DEFAULT,
-    boards: BOARD_SETTINGS_DEFAULT.boards.map((b) =>
-      b.board === 'planning_board'
-        ? { ...b, filingLeadDays: days, filingLeadAdoption: adoption }
-        : b,
+    ...DEFAULT_BODY,
+    boards: DEFAULT_BODY.boards.map((b) =>
+      b.boardId === PLANNING.id ? { ...b, filingLeadDays: days, filingLeadAdoption: adoption } : b,
     ),
   }
 }
 
 function errorsFor(body: BoardSettingsBody) {
-  const refused = checkBoardSettings(body)
+  const refused = checkBoardSettings(body, ACTIVE)
   return refused === null ? {} : fieldErrorsFor(refused)
 }
 
@@ -53,6 +78,7 @@ describe('board settings filing deadline', () => {
     expect(
       checkBoardSettings(
         withFilingLead(14, { adoptingAuthority: 'Planning Board', adoptedOn: ADOPTED_ON }),
+        ACTIVE,
       ),
     ).toBeNull()
   })
@@ -60,5 +86,33 @@ describe('board settings filing deadline', () => {
   it('keeps a half-entered adoption record in a draft', () => {
     const draft = withFilingLead(14, { adoptingAuthority: 'Planning Board', adoptedOn: null })
     expect(BoardSettingsBodySchema.safeParse(draft).success).toBe(true)
+  })
+
+  it('refuses a filing deadline on a board that does not have one', () => {
+    const body = {
+      ...DEFAULT_BODY,
+      boards: DEFAULT_BODY.boards.map((b) =>
+        b.boardId === ZBA.id ? { ...b, filingLeadDays: 14 } : b,
+      ),
+    }
+    expect(errorsFor(body).boards).toBe('Only the Planning Board has a filing lead time.')
+  })
+
+  it('refuses an entry for a board that is not active', () => {
+    expect(checkBoardSettings(DEFAULT_BODY, [PLANNING])).toEqual({
+      invalid: [
+        { path: 'boards', message: 'Each entry has to name a board that is still active.' },
+      ],
+    })
+  })
+
+  it('refuses settings that leave an active hearing board without notice settings', () => {
+    const body = {
+      ...DEFAULT_BODY,
+      boards: DEFAULT_BODY.boards.filter((b) => b.boardId !== ZBA.id),
+    }
+    expect(errorsFor(body).boards).toBe(
+      'Add the notice settings for the Alder Pond Zoning Board of Adjustment.',
+    )
   })
 })

@@ -1,7 +1,6 @@
 import { BOARD_KIND_TRAITS, type PackRule } from '@packs/nh/schema'
-import type { DbOrTx } from '@/db/client'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
-import { activeBoards, type BoardRow } from '@/features/boards/townBoards'
+import type { BoardRow } from '@/features/boards/townBoards'
 import type { PublishError } from '@/features/config/publishChecks'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { checkTownValue, type TownValueError } from '@/features/packs/overridePolicy'
@@ -83,13 +82,12 @@ function entryIssue(entries: Board[], active: BoardRow[]): PublishError | null {
   return null
 }
 
-export async function checkBoardSettings(
-  db: DbOrTx,
+export function checkBoardSettings(
   body: BoardSettingsBody,
-): Promise<PublishError | null> {
+  active: BoardRow[],
+): PublishError | null {
   const abutters = abuttersIssue(body.abutters)
   if (abutters !== null) return abutters
-  const active = await activeBoards(db)
   const entries = entryIssue(body.boards, active)
   if (entries !== null) return entries
   const rule = ruleByKey(loadPack(), FILING_LEAD_KEY)

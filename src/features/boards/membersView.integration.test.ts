@@ -4,7 +4,7 @@ import { MEMBER_SORT } from '@/features/boards/membersParams'
 import { loadMembersView } from '@/features/boards/membersView'
 import { defaultSort } from '@/features/dataTable/sort'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
-import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
+import { type BoardWorld, boardIdOf, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -30,7 +30,7 @@ async function invite(name: string, board: 'planning_board' | 'zba', termEnd?: s
     {
       email: `${name.toLowerCase()}@alderpond.example`,
       displayName: name,
-      board,
+      boardId: await boardIdOf(handle.db, board),
       title: 'member',
       termStart: '2020-01-01' as CivilDate,
       ...(termEnd === undefined ? {} : { termEnd: termEnd as CivilDate }),
@@ -95,7 +95,7 @@ describe('board members list', () => {
       {
         email: 'later@alderpond.example',
         displayName: 'Later',
-        board: 'zba',
+        boardId: await boardIdOf(handle.db, 'zba'),
         title: 'member',
         termStart: '2099-01-01' as CivilDate,
       },
@@ -107,10 +107,10 @@ describe('board members list', () => {
     ).toEqual({ ok: false, error: 'not_started' })
   })
 
-  it('offers each board under the name the board settings give it', async () => {
+  it('offers each active board under its name', async () => {
     expect((await view('active'))?.boardOptions).toEqual([
-      ['planning_board', 'Alder Pond Planning Board'],
-      ['zba', 'Alder Pond Zoning Board of Adjustment'],
+      [await boardIdOf(handle.db, 'planning_board'), 'Alder Pond Planning Board'],
+      [await boardIdOf(handle.db, 'zba'), 'Alder Pond Zoning Board of Adjustment'],
     ])
   })
 

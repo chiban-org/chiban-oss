@@ -8,7 +8,7 @@ import { sendPacketToBoard } from '@/features/boards/packetSend'
 import { createPacket } from '@/features/boards/packets'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import type { ObjectStore } from '@/features/storage/objectStore'
-import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
+import { type BoardWorld, boardIdOf, boardIdSql, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/objectStore'
 import type { CivilDate } from '@/types/civilDate'
@@ -30,7 +30,8 @@ afterEach(async () => {
 
 async function publishedMeeting(kind: 'regular' | 'special') {
   const rows = await handle.db.query.boardMeetings.findMany({
-    where: (m, { and, eq: equals }) => and(equals(m.board, 'zba'), equals(m.kind, kind)),
+    where: (m, { and, eq: equals }) =>
+      and(equals(m.boardId, boardIdSql('zba')), equals(m.kind, kind)),
   })
   const meetingId = rows[0]?.id ?? ''
   await addAgendaItem(
@@ -52,7 +53,7 @@ async function zbaMember() {
     {
       email: 'zba.member@alderpond.example',
       displayName: 'Member',
-      board: 'zba',
+      boardId: await boardIdOf(handle.db, 'zba'),
       title: 'member',
       termStart: '2020-01-01' as CivilDate,
     },
@@ -69,7 +70,7 @@ describe('member packets follow the meeting a packet was made for', () => {
     const made = await scheduleMeeting(
       handle.db,
       world.staff,
-      { board: 'zba', meetingDate: DATE, kind: 'special' },
+      { boardId: await boardIdOf(handle.db, 'zba'), meetingDate: DATE, kind: 'special' },
       signal,
     )
     expect(made.ok).toBe(true)

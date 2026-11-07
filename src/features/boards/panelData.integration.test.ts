@@ -11,6 +11,7 @@ import { scheduleHearing } from '@/features/hearings/hearings'
 import { townToday } from '@/features/town/today'
 import {
   type BoardWorld,
+  boardIdOf,
   publishRegionalContacts,
   setupBoardWorld,
   submitBoardApplication,
@@ -56,7 +57,11 @@ describe('meeting choices', () => {
     await scheduleMeeting(
       handle.db,
       world.staff,
-      { board: 'planning_board', meetingDate: '2025-01-08' as CivilDate, kind: 'regular' },
+      {
+        boardId: await boardIdOf(handle.db, 'planning_board'),
+        meetingDate: '2025-01-08' as CivilDate,
+        kind: 'regular',
+      },
       signal,
     )
     const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')
@@ -82,7 +87,11 @@ describe('meetings the application was filed too late for', () => {
     const special = await scheduleMeeting(
       handle.db,
       world.staff,
-      { board: 'planning_board', meetingDate: '2027-04-07' as CivilDate, kind: 'special' },
+      {
+        boardId: await boardIdOf(handle.db, 'planning_board'),
+        meetingDate: '2027-04-07' as CivilDate,
+        kind: 'special',
+      },
       signal,
     )
     const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')
@@ -111,7 +120,11 @@ describe('meetings too soon to mail notice for', () => {
       const made = await scheduleMeeting(
         handle.db,
         world.staff,
-        { board: 'planning_board', meetingDate: addDays(today, days), kind: 'special' },
+        {
+          boardId: await boardIdOf(handle.db, 'planning_board'),
+          meetingDate: addDays(today, days),
+          kind: 'special',
+        },
         signal,
       )
       return made.ok ? made.value.meetingId : ''

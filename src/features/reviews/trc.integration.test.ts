@@ -8,7 +8,12 @@ import { addReviewComment, signOffReview } from '@/features/reviews/assignments'
 import { type ReviewRoutesBody, ReviewRoutesBodySchema } from '@/features/reviews/routesSchema'
 import { routeToTrc } from '@/features/reviews/trcRouting'
 import { trcSummary, trcSummaryPdf } from '@/features/reviews/trcSummary'
-import { type BoardWorld, setupBoardWorld, submitBoardApplication } from '@/test/boardFixtures'
+import {
+  type BoardWorld,
+  boardIdSql,
+  setupBoardWorld,
+  submitBoardApplication,
+} from '@/test/boardFixtures'
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { staffActor } from '@/test/parcels'
@@ -60,7 +65,7 @@ async function spr(meeting = '2027-04-14') {
   const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')
   const meetings = await handle.db.query.boardMeetings.findMany({
     where: (m, { and: both, eq: equals }) =>
-      both(equals(m.meetingDate, meeting), equals(m.board, 'planning_board')),
+      both(equals(m.meetingDate, meeting), equals(m.boardId, boardIdSql('planning_board'))),
   })
   return { applicationId: id, meetingId: meetings[0]?.id ?? '' }
 }

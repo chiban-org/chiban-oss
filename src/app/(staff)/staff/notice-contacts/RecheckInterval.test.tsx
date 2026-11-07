@@ -56,7 +56,14 @@ describe('RecheckInterval', () => {
 
 describe('BoardSettingsEditor', () => {
   it('no longer shows the re-check interval', () => {
-    render(<BoardSettingsEditor body={BOARD_SETTINGS_DEFAULT} onChange={vi.fn()} errors={{}} />)
+    render(
+      <BoardSettingsEditor
+        body={BOARD_SETTINGS_DEFAULT}
+        boards={[]}
+        onChange={vi.fn()}
+        errors={{}}
+      />,
+    )
     expect(screen.queryByText('Notice contacts')).toBeNull()
     expect(screen.queryByLabelText(/Re-check notice contacts/)).toBeNull()
   })

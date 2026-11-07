@@ -3,17 +3,36 @@ import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-li
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ConfigEditorForm } from '@/components/config/ConfigEditorForm'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
-import { skeletonBody } from '@/features/config/skeletons'
+import { boardSettingsDefault } from '@/features/boards/boardSettings'
 import type { ActionResult } from '@/server/actionRunner'
 
 afterEach(cleanup)
 
 vi.mock('@/features/auth/csrfRefresh', () => ({ ensureCsrfAction: () => Promise.resolve('tok') }))
 
+const PLANNING_ID = '11111111-1111-4111-8111-111111111111'
+const ZBA_ID = '22222222-2222-4222-8222-222222222222'
+
+const boards = [
+  {
+    id: PLANNING_ID,
+    kind: 'planning_board' as const,
+    name: 'Alder Pond Planning Board',
+    shortName: 'Planning Board',
+  },
+  {
+    id: ZBA_ID,
+    kind: 'zba' as const,
+    name: 'Alder Pond Zoning Board of Adjustment',
+    shortName: 'Zoning Board of Adjustment',
+  },
+]
+
 const context = {
   packRules: [],
   classifications: [],
   mergeFields: [],
+  boards,
   reviewers: [],
   townRules: {},
 }
@@ -23,7 +42,7 @@ function renderBoardSettings(publish: (formData: FormData) => Promise<ActionResu
     <ConfigEditorForm
       kind="board_settings"
       configKey="default"
-      initialBody={skeletonBody('board_settings', 'default')}
+      initialBody={boardSettingsDefault(boards)}
       resetKey="v1"
       context={context}
       saveAction={publish}
@@ -57,7 +76,7 @@ describe('board settings filing deadline', () => {
     await waitFor(() => expect(publish).toHaveBeenCalledTimes(1))
     const raw = publish.mock.calls[0]?.[0].get('body')
     const sent = JSON.parse(typeof raw === 'string' ? raw : '{}') as BoardSettingsBody
-    expect(sent.boards.find((b) => b.board === 'planning_board')).toMatchObject({
+    expect(sent.boards.find((b) => b.boardId === PLANNING_ID)).toMatchObject({
       filingLeadDays: 14,
       filingLeadAdoption: { adoptingAuthority: 'Planning Board', adoptedOn: '2027-01-12' },
     })

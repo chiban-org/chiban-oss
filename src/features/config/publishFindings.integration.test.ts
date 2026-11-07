@@ -228,8 +228,7 @@ describe('plain copy for schema refusals (FS-A-09)', () => {
       key: 'default',
       boards: [
         {
-          board: 'zba',
-          label: 'ZBA',
+          boardId: '22222222-2222-4222-8222-222222222222',
           publicNotice: {
             posting: true,
             publication: false,

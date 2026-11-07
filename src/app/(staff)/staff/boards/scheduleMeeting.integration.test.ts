@@ -1,8 +1,9 @@
 import { count, eq } from 'drizzle-orm'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { boardMeetings } from '@/db/schema'
 import { CHECK_PASSED, refuseField } from '@/server/formInput'
-import { dateMessage, textMessage } from '@/test/boardCases'
+import { dateMessage, idMessage, textMessage } from '@/test/boardCases'
+import { boardIdOf } from '@/test/boardFixtures'
 import {
   actionHarness,
   choice,
@@ -11,6 +12,7 @@ import {
   type InvalidVariant,
   STAFF_REFUSALS,
   text,
+  uuid,
 } from '@/test/testHarness/actions'
 
 vi.mock('@/db/client', () => import('@/test/testHarness/actions/mocks/dbClient'))
@@ -25,10 +27,14 @@ const { scheduleMeetingAction } = await import('./actions')
 const h = actionHarness()
 
 let day = 0
+let zbaId = ''
+beforeAll(async () => {
+  zbaId = await boardIdOf(h.db, 'zba')
+})
 function nextMeeting(overrides: Record<string, string> = {}) {
   day += 1
   return {
-    board: 'zba',
+    boardId: zbaId,
     meetingDate: `2031-03-${String(day).padStart(2, '0')}`,
     kind: 'regular',
     location: 'Town Hall, Room 2',
@@ -38,8 +44,8 @@ function nextMeeting(overrides: Record<string, string> = {}) {
 
 function refusalFor(variant: InvalidVariant) {
   switch (variant.field) {
-    case 'board':
-      return refuseField('board', 'Choose a board.')
+    case 'boardId':
+      return refuseField('boardId', idMessage('a board'))
     case 'meetingDate':
       return refuseField('meetingDate', dateMessage('the meeting date', variant))
     case 'kind':
@@ -54,7 +60,7 @@ describeActionCases(h, 'scheduleMeetingAction', {
   actor: () => h.actorFor('admin'),
   input: () => nextMeeting(),
   fields: {
-    board: choice({ required: true }),
+    boardId: uuid({ required: true }),
     meetingDate: date({ required: true, earliest: '1900-01-01', latest: '2099-12-31' }),
     kind: choice({ required: true }),
     location: text({ max: 200 }),
@@ -66,7 +72,7 @@ describeActionCases(h, 'scheduleMeetingAction', {
     expect(written).toEqual(['audit_log', 'board_meetings'])
     const rows = await db
       .select({
-        board: boardMeetings.board,
+        boardId: boardMeetings.boardId,
         meetingDate: boardMeetings.meetingDate,
         kind: boardMeetings.kind,
         location: boardMeetings.location,
@@ -74,7 +80,7 @@ describeActionCases(h, 'scheduleMeetingAction', {
       .from(boardMeetings)
       .where(eq(boardMeetings.meetingDate, String(input.meetingDate)))
     expect(rows).toEqual([
-      { board: 'zba', meetingDate: input.meetingDate, kind: 'regular', location: input.location },
+      { boardId: zbaId, meetingDate: input.meetingDate, kind: 'regular', location: input.location },
     ])
   },
 })

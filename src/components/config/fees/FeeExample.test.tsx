@@ -25,6 +25,7 @@ const context = {
   packRules: [],
   classifications: [],
   mergeFields: [],
+  boards: [],
   reviewers: [],
   townRules: {},
   feeQuestions: QUESTIONS,

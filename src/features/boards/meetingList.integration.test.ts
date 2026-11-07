@@ -1,6 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { listMeetingTable } from '@/features/boards/meetingList'
 import { readMeetingListView } from '@/features/boards/meetingListParams'
+import { activeBoards } from '@/features/boards/townBoards'
 import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba } from '@/test/hearingFixtures'
@@ -22,11 +23,12 @@ describe('the meeting table', () => {
   it('counts the hearings scheduled at each meeting', async () => {
     const { store } = await makeTestStore()
     const made = await decidedZba(handle.db, world, store, { documents: false })
-    const view = readMeetingListView({})
+    const boardIds = (await activeBoards(handle.db)).map((b) => b.id)
+    const view = readMeetingListView({}, boardIds)
     const page = await listMeetingTable(
       handle.db,
       world.staff,
-      { ...view, today: '2027-01-04', limit: 50, offset: 0 },
+      { ...view, boardIds, today: '2027-01-04', limit: 50, offset: 0 },
       signal,
     )
     const row = page?.rows.find((r) => r.id === made.meetingId)

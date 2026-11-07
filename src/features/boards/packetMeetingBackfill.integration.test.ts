@@ -3,6 +3,7 @@ import { readFileSync } from 'node:fs'
 import { asc, sql } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { boardMeetings, boardPackets } from '@/db/schema'
+import { boardIdOf } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 
 const MIGRATION = new URL('../../../drizzle/0085_packet_meeting.sql', import.meta.url)
@@ -22,7 +23,11 @@ async function backfill(): Promise<void> {
     .split('--> statement-breakpoint')
     .map((s) => s.trim())
     .filter((s) => s.startsWith('WITH'))
-  for (const statement of statements) await handle.db.execute(sql.raw(statement))
+  for (const statement of statements) {
+    await handle.db.execute(
+      sql.raw(statement.replace('"m"."board" = "bp"."board"', '"m"."board_id" = "bp"."board_id"')),
+    )
+  }
 }
 
 async function meeting(
@@ -33,7 +38,7 @@ async function meeting(
   const [row] = await handle.db
     .insert(boardMeetings)
     .values({
-      board,
+      boardId: await boardIdOf(handle.db, board),
       meetingDate,
       kind: extra.kind ?? 'regular',
       status: extra.status,
@@ -49,7 +54,7 @@ async function packet(title: string, board: 'planning_board' | 'zba', meetingDat
   created += 1
   await handle.db.insert(boardPackets).values({
     title,
-    board,
+    boardId: await boardIdOf(handle.db, board),
     meetingDate,
     createdBy: BY,
     createdAt: new Date(Date.UTC(2027, 0, 1, created)),

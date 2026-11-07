@@ -17,6 +17,7 @@ import { routeToTrc } from '@/features/reviews/trcRouting'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import {
   type BoardWorld,
+  boardIdSql,
   recordNoRegionalImpact,
   setupBoardWorld,
   submitBoardApplication,
@@ -45,7 +46,7 @@ afterEach(async () => {
 async function zbaMeetingId() {
   const rows = await handle.db.query.boardMeetings.findMany({
     where: (m, { and, eq: equals }) =>
-      and(equals(m.meetingDate, '2027-04-15'), equals(m.board, 'zba')),
+      and(equals(m.meetingDate, '2027-04-15'), equals(m.boardId, boardIdSql('zba'))),
   })
   return rows[0]?.id ?? ''
 }
@@ -239,6 +240,8 @@ describe('agenda pdf', () => {
   it('agenda pdf lists the application number and site address', () => {
     const blocks = agendaBlocks({
       boardName: 'Alder Pond Zoning Board of Adjustment',
+      boardShortName: 'Zoning Board of Adjustment',
+      boardChairName: '',
       meetingDate: 'April 15, 2027',
       location: 'Town Hall',
       time: '7:00 PM',

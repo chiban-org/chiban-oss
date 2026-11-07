@@ -10,6 +10,8 @@ import { scheduleHearing } from '@/features/hearings/hearings'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import {
   type BoardWorld,
+  boardIdOf,
+  boardIdSql,
   recordNoRegionalImpact,
   setupBoardWorld,
   submitBoardApplication,
@@ -60,11 +62,18 @@ let meetingId = ''
 let versionId = ''
 
 async function member(email: string, board: 'planning_board' | 'zba'): Promise<Actor> {
+  const boardId = await boardIdOf(handle.db, board)
   const invited = await inviteBoardMember(
     handle.db,
     createMemoryTransport(),
     world.staff,
-    { email, displayName: 'Member', board, title: 'member', termStart: '2020-01-01' as CivilDate },
+    {
+      email,
+      displayName: 'Member',
+      boardId,
+      title: 'member',
+      termStart: '2020-01-01' as CivilDate,
+    },
     signal,
   )
   if (!invited.ok) throw new Error(invited.error)
@@ -86,7 +95,7 @@ beforeAll(async () => {
   await issueListWithRecipients(handle.db, world, id, [recipient(1)])
   const meeting = (
     await handle.db.query.boardMeetings.findMany({
-      where: (m, { eq }) => eq(m.board, 'zba'),
+      where: (m, { eq }) => eq(m.boardId, boardIdSql('zba')),
     })
   )[0]
   meetingId = meeting?.id ?? ''

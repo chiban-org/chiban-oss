@@ -6,7 +6,12 @@ import { addReviewComment, signOffReview } from '@/features/reviews/assignments'
 import type { ReviewRoutesBody } from '@/features/reviews/routesSchema'
 import { routeToTrc } from '@/features/reviews/trcRouting'
 import { trcSummaryPdf } from '@/features/reviews/trcSummary'
-import { type BoardWorld, setupBoardWorld, submitBoardApplication } from '@/test/boardFixtures'
+import {
+  type BoardWorld,
+  boardIdSql,
+  setupBoardWorld,
+  submitBoardApplication,
+} from '@/test/boardFixtures'
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { staffActor } from '@/test/parcels'
@@ -66,7 +71,7 @@ describe('technical review committee summary wording', () => {
     )
     const meetings = await handle.db.query.boardMeetings.findMany({
       where: (m, { and: both, eq: equals }) =>
-        both(equals(m.meetingDate, '2027-04-14'), equals(m.board, 'planning_board')),
+        both(equals(m.meetingDate, '2027-04-14'), equals(m.boardId, boardIdSql('planning_board'))),
     })
     await routeToTrc(
       handle.db,

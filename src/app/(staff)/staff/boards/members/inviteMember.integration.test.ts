@@ -1,7 +1,9 @@
 import { eq } from 'drizzle-orm'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeAll, describe, expect, it, vi } from 'vitest'
 import { boardMemberships, users } from '@/db/schema'
 import { CHECK_PASSED, refuseField } from '@/server/formInput'
+import { idMessage } from '@/test/boardCases'
+import { boardIdOf } from '@/test/boardFixtures'
 import {
   actionHarness,
   choice,
@@ -11,6 +13,7 @@ import {
   type InvalidVariant,
   STAFF_REFUSALS,
   text,
+  uuid,
 } from '@/test/testHarness/actions'
 
 vi.mock('@/db/client', () => import('@/test/testHarness/actions/mocks/dbClient'))
@@ -23,6 +26,11 @@ vi.mock('@/features/mail/transport', () => import('@/test/testHarness/actions/mo
 const { inviteMemberAction } = await import('./actions')
 
 const h = actionHarness()
+
+let zbaId = ''
+beforeAll(async () => {
+  zbaId = await boardIdOf(h.db, 'zba')
+})
 
 let invited = 0
 function nextEmail(): string {
@@ -55,8 +63,8 @@ function refusalFor(variant: InvalidVariant) {
           ? 'Enter an email address.'
           : 'Enter an email address like name@example.com.',
       )
-    case 'board':
-      return refuseField('board', 'Choose a board.')
+    case 'boardId':
+      return refuseField('boardId', idMessage('a board'))
     case 'title':
       return refuseField('title', 'Choose a role on the board.')
     case 'termStart':
@@ -72,7 +80,7 @@ describeActionCases(h, 'inviteMemberAction', {
   input: () => ({
     displayName: 'Avery Stone',
     email: nextEmail(),
-    board: 'zba',
+    boardId: zbaId,
     title: 'member',
     termStart: '2026-11-01',
     termEnd: '2029-10-31',
@@ -80,7 +88,7 @@ describeActionCases(h, 'inviteMemberAction', {
   fields: {
     displayName: text({ max: 200 }),
     email: EMAIL,
-    board: choice({ required: true }),
+    boardId: uuid({ required: true }),
     title: choice({ required: true }),
     termStart: date({ required: true, earliest: '1900-01-01', latest: '2099-12-31' }),
     termEnd: date({ earliest: '1900-01-01', latest: '2099-12-31' }),
@@ -106,7 +114,7 @@ describe('inviteMemberAction with the term order from the forms sweep', () => {
     const form = h.form({
       displayName: 'Avery Stone',
       email: nextEmail(),
-      board: 'zba',
+      boardId: zbaId,
       title: 'member',
       termStart: '2026-11-01',
       termEnd: '2026-10-01',

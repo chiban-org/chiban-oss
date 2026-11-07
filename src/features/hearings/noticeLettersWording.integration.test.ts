@@ -3,6 +3,7 @@ import { scheduleHearing } from '@/features/hearings/hearings'
 import { renderNoticeLetters } from '@/features/hearings/noticeLetters'
 import {
   type BoardWorld,
+  boardIdSql,
   boardTypeBody,
   recordNoRegionalImpact,
   setupBoardWorld,
@@ -46,7 +47,8 @@ describe('hearing notice letter wording', () => {
     await recordNoRegionalImpact(handle.db, world, id)
     await issueListWithRecipients(handle.db, world, id, [recipient(1), recipient(2)])
     const rows = await handle.db.query.boardMeetings.findMany({
-      where: (m, { and, eq }) => and(eq(m.meetingDate, '2027-04-15'), eq(m.board, 'zba')),
+      where: (m, { and, eq }) =>
+        and(eq(m.meetingDate, '2027-04-15'), eq(m.boardId, boardIdSql('zba'))),
     })
     const scheduled = await scheduleHearing(
       handle.db,

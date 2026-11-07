@@ -5,7 +5,7 @@ import { cancelMeeting, scheduleMeeting } from '@/features/boards/meetings'
 import { adjustClock } from '@/features/clocks/adjustClock'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { makeApplication } from '@/test/applicationFixtures'
-import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
+import { type BoardWorld, boardIdOf, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -59,7 +59,11 @@ describe('recomputing a meeting-bound clock that carries an adjustment', () => {
     await scheduleMeeting(
       handle.db,
       world.staff,
-      { board: 'planning_board', meetingDate: d('2027-09-08'), kind: 'regular' },
+      {
+        boardId: await boardIdOf(handle.db, 'planning_board'),
+        meetingDate: d('2027-09-08'),
+        kind: 'regular',
+      },
       signal,
     )
     const running = await runningCompleteness(id)

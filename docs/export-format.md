@@ -398,7 +398,7 @@ References:
 File: `data/board_meetings.ndjson`. Ordered by id.
 
 - `id`: uuid
-- `board`: text
+- `board_id`: uuid
 - `meeting_date`: date
 - `kind`: text
 - `status`: text
@@ -408,18 +408,24 @@ File: `data/board_meetings.ndjson`. Ordered by id.
 - `created_by`: uuid
 - `created_at`: timestamp with time zone
 
+References:
+- `board_id` refers to `boards`
+
 ### board_memberships
 
 File: `data/board_memberships.ndjson`. Ordered by id.
 
 - `id`: uuid
 - `user_id`: uuid
-- `board`: text
+- `board_id`: uuid
 - `title`: text
 - `term_start`: date
 - `term_end`: date, nullable
 - `created_by`: uuid
 - `created_at`: timestamp with time zone
+
+References:
+- `board_id` refers to `boards`
 
 ### board_packet_access
 
@@ -496,7 +502,7 @@ File: `data/board_packets.ndjson`. Ordered by id.
 
 - `id`: uuid
 - `title`: text
-- `board`: text
+- `board_id`: uuid
 - `meeting_date`: date
 - `meeting_id`: uuid, nullable
 - `created_by`: uuid
@@ -505,7 +511,20 @@ File: `data/board_packets.ndjson`. Ordered by id.
 - `last_sent_at`: timestamp with time zone, nullable
 
 References:
+- `board_id` refers to `boards`
 - `meeting_id` refers to `board_meetings`
+
+### boards
+
+File: `data/boards.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `kind`: text
+- `name`: text
+- `short_name`: text
+- `archived_at`: timestamp with time zone, nullable
+- `created_by`: uuid, nullable
+- `created_at`: timestamp with time zone
 
 ### calendar_accounts
 

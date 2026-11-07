@@ -8,7 +8,9 @@ import type { CivilDate } from '@/types/civilDate'
 const VIEW: PacketView = {
   packetId: 'packet-1',
   title: 'April meeting packet',
-  board: 'zba',
+  boardId: '22222222-2222-4222-8222-222222222222',
+  boardName: 'Zoning Board of Adjustment',
+  boardShortName: 'Zoning Board of Adjustment',
   meetingDate: '2027-04-15' as CivilDate,
   expiresAt: '2027-05-15T00:00:00Z',
   items: [

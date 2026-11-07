@@ -130,7 +130,7 @@ describe('nh decision and appeal clocks', () => {
 })
 
 describe('nh board classifications', () => {
-  const boards = NH_CLASSIFICATIONS.filter((c) => c.board !== null)
+  const boards = NH_CLASSIFICATIONS.filter((c) => c.boardKind !== null)
 
   it("every board classification's notice requirement keys exist", () => {
     const requirements = new Set(

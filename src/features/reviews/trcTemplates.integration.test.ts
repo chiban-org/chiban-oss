@@ -7,7 +7,12 @@ import { routeToTrc } from '@/features/reviews/trcRouting'
 import { trcSummaryPdf } from '@/features/reviews/trcSummary'
 import { TRC_SUMMARY_SOURCE } from '@/features/templates/preview/extraSources'
 import { renderDocument } from '@/features/templates/templateBlocks'
-import { type BoardWorld, setupBoardWorld, submitBoardApplication } from '@/test/boardFixtures'
+import {
+  type BoardWorld,
+  boardIdSql,
+  setupBoardWorld,
+  submitBoardApplication,
+} from '@/test/boardFixtures'
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { staffActor } from '@/test/parcels'
@@ -38,7 +43,7 @@ beforeEach(async () => {
   applicationId = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')
   const meetings = await handle.db.query.boardMeetings.findMany({
     where: (m, { and: both, eq: equals }) =>
-      both(equals(m.meetingDate, '2027-04-14'), equals(m.board, 'planning_board')),
+      both(equals(m.meetingDate, '2027-04-14'), equals(m.boardId, boardIdSql('planning_board'))),
   })
   await routeToTrc(
     handle.db,

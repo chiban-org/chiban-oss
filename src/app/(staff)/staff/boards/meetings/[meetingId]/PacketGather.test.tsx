@@ -13,7 +13,7 @@ afterEach(cleanup)
 function gather(trc: 'make' | 'made' | 'none'): PacketGather {
   return {
     meetingId: 'm1',
-    board: 'zba',
+    boardId: '22222222-2222-4222-8222-222222222222',
     boardName: 'Zoning Board of Adjustment',
     title: 'Packet',
     packetId: null,

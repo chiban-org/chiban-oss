@@ -5,6 +5,7 @@ import { seedTownProfile } from '@/features/demo/seedTownProfile'
 import { documentFrame } from '@/features/pdf/documentFrame'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { SIGNER_ROLES } from '@/features/town/profileSchema'
+import { boardIdOf } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeUser } from '@/test/factories'
 import { makeTestStore } from '@/test/objectStore'
@@ -27,7 +28,12 @@ afterAll(async () => {
 describe('seedTownProfile', () => {
   it('publishes a full profile with a logo and every signer', async () => {
     expect(await seedTownProfile(handle.db, store, signal)).toBe(true)
-    const frame = await documentFrame(handle.db, { board: 'zba' }, signal, store)
+    const frame = await documentFrame(
+      handle.db,
+      { boardId: await boardIdOf(handle.db, 'zba') },
+      signal,
+      store,
+    )
     expect(frame.officeName).toBe('Alder Pond Zoning Board of Adjustment')
     expect(frame.logo).not.toBeNull()
     expect(frame.signers.map((s) => s.role).sort()).toEqual([...SIGNER_ROLES].sort())

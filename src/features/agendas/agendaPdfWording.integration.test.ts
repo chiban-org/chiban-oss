@@ -5,6 +5,8 @@ import { pdfWording } from '@/test/pdfWording'
 
 const MODEL: AgendaModel = {
   boardName: 'Zoning Board of Adjustment',
+  boardShortName: 'Zoning Board of Adjustment',
+  boardChairName: '',
   meetingDate: 'April 15, 2027',
   location: '',
   time: '7:00 PM',

@@ -11,6 +11,7 @@ import { recordProof } from '@/features/notices/proofs'
 import { townToday } from '@/features/town/today'
 import {
   type BoardWorld,
+  boardIdOf,
   publishRegionalContacts,
   setupBoardWorld,
   submitBoardApplication,
@@ -42,7 +43,11 @@ async function meetingIn(board: 'planning_board' | 'zba', days: number): Promise
   const made = await scheduleMeeting(
     handle.db,
     world.staff,
-    { board, meetingDate: addDays(today, days), kind: 'special' },
+    {
+      boardId: await boardIdOf(handle.db, board),
+      meetingDate: addDays(today, days),
+      kind: 'special',
+    },
     signal,
   )
   expect(made.ok).toBe(true)

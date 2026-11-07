@@ -12,6 +12,7 @@ import {
   users,
 } from '@/db/schema'
 import { makeApplication, setupPermitWorld } from '@/test/applicationFixtures'
+import { boardIdOf } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/objectStore'
@@ -55,7 +56,7 @@ async function legacyPacket() {
     .insert(boardPackets)
     .values({
       title: 'Legacy',
-      board: 'zba',
+      boardId: await boardIdOf(handle.db, 'zba'),
       meetingDate: '2027-03-18',
       createdBy: BY,
       createdAt: CREATED,

@@ -32,12 +32,15 @@ test.describe
       const dialog = page.getByRole('dialog', { name: 'Add a board member' })
       await dialog.getByLabel(/^Name/).fill(name)
       await dialog.getByLabel(/^Email address/).fill(email)
-      await dialog.getByLabel('Board', { exact: true }).selectOption('zba')
+      await dialog
+        .getByLabel('Board', { exact: true })
+        .selectOption({ label: 'Alder Pond Zoning Board of Adjustment' })
       await dialog.getByLabel('Role on the board').selectOption('alternate')
       await dialog.getByRole('button', { name: 'Add member' }).click()
       await waitForEmail({ to: email, since })
       const seat = await db.one<{ board: string; title: string; term_end: string | null }>(
-        `select m.board, m.title, m.term_end::text from board_memberships m
+        `select b.kind as board, m.title, m.term_end::text from board_memberships m
+       join boards b on b.id = m.board_id
        join users u on u.id = m.user_id where u.email = $1`,
         [email],
       )

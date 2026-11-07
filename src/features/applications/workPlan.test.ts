@@ -172,8 +172,9 @@ describe('the work plan sentence at the ends of the workflow', () => {
 })
 
 const PLANNING: PlanBoard = {
-  board: 'planning_board',
+  boardKind: 'planning_board',
   boardName: 'Planning Board',
+  missingBoard: null,
   acceptanceMeetingId: 'm1',
   acceptanceDate: '2026-11-25',
   acceptanceText: 'November 25, 2026',

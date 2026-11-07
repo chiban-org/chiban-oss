@@ -28,13 +28,13 @@ const CLASSIFICATIONS = [
     key: 'nh.building_permit',
     label: 'Building permit',
     mandatoryRuleKeys: ['nh.bp.decision'],
-    board: null,
+    boardKind: null,
   },
   {
     key: 'nh.trade_permit',
     label: 'Trade permit',
     mandatoryRuleKeys: ['nh.appeal.suspension'],
-    board: null,
+    boardKind: null,
   },
 ]
 
