@@ -26,6 +26,11 @@ export async function getBoard(db: DbOrTx, id: string): Promise<BoardRow | null>
   return row ?? null
 }
 
+export async function getBoardLocked(db: DbOrTx, id: string): Promise<BoardRow | null> {
+  const [row] = await db.select().from(boards).where(eq(boards.id, id)).for('update')
+  return row ?? null
+}
+
 export async function boardsById(
   db: DbOrTx,
   ids: readonly string[],

@@ -13,7 +13,7 @@ import {
   nextRegularMeetingOfBoard,
 } from '@/features/boards/calendar'
 import { closeMeetingPacket } from '@/features/boards/packetCancel'
-import { getBoard } from '@/features/boards/townBoards'
+import { getBoardLocked } from '@/features/boards/townBoards'
 import { recomputeMeetingBoundClocks } from '@/features/clocks/recomputeMeetingBound'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
@@ -67,7 +67,7 @@ export async function scheduleMeeting(
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
   return await transactionResult(db, async (tx: Tx) => {
-    const board = await getBoard(tx, input.boardId)
+    const board = await getBoardLocked(tx, input.boardId)
     if (board === null || board.archivedAt !== null) return err('unknown_board')
     const [row] = await tx
       .insert(boardMeetings)

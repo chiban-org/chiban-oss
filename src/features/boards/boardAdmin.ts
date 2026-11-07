@@ -9,7 +9,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
-import { activeBoards, type BoardRow, getBoard } from '@/features/boards/townBoards'
+import { activeBoards, type BoardRow, getBoardLocked } from '@/features/boards/townBoards'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
 
@@ -25,6 +25,10 @@ export type ArchiveBoardError =
   | 'not_found'
   | 'already_archived'
   | { blocked: string[] }
+
+async function lockBoardNames(tx: Tx): Promise<void> {
+  await tx.execute(sql`select pg_advisory_xact_lock(hashtext('boards.names'))`)
+}
 
 function sameName(a: string, b: string): boolean {
   return a.trim().toLowerCase() === b.trim().toLowerCase()
@@ -45,6 +49,7 @@ export async function createBoard(
     return err('forbidden')
   }
   return await transactionResult(db, async (tx: Tx) => {
+    await lockBoardNames(tx)
     const active = await activeBoards(tx)
     if (nameTaken(active, input.name)) return err('name_taken')
     if (BOARD_KIND_TRAITS[input.kind].uniquePerTown && active.some((b) => b.kind === input.kind)) {
@@ -86,9 +91,10 @@ export async function renameBoard(
     return err('forbidden')
   }
   return await transactionResult(db, async (tx: Tx) => {
-    const board = await getBoard(tx, input.boardId)
+    const board = await getBoardLocked(tx, input.boardId)
     if (board === null) return err('not_found')
     if (board.archivedAt !== null) return err('archived')
+    await lockBoardNames(tx)
     if (nameTaken(await activeBoards(tx), input.name, board.id)) return err('name_taken')
     const next = { name: input.name.trim(), shortName: input.shortName.trim() }
     await tx.update(boards).set(next).where(eq(boards.id, board.id))
@@ -210,7 +216,7 @@ export async function archiveBoard(
     return err('forbidden')
   }
   return await transactionResult<void, ArchiveBoardError>(db, async (tx: Tx) => {
-    const board = await getBoard(tx, input.boardId)
+    const board = await getBoardLocked(tx, input.boardId)
     if (board === null) return err('not_found')
     if (board.archivedAt !== null) return err('already_archived')
     const blocked = await archiveBlockers(tx, board, signal, now)
