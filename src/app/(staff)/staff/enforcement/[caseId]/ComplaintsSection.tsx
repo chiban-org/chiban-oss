@@ -1,13 +1,9 @@
 import { ActionForm } from '@/components/ActionForm'
-import { AreaField, TextField } from '@/components/staff/fields'
+import { AreaField } from '@/components/staff/fields'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import { CHANNEL_LABELS } from '@/features/enforcement/labels'
 import { formatCivilDate } from '@/lib/formatDate'
-import {
-  complaintPublicTextAction,
-  publishCaseAction,
-  unpublishCaseAction,
-} from '../publishActions'
+import { complaintPublicTextAction } from '../publishActions'
 import type { Can } from './can'
 import { Hidden, Section } from './Section'
 
@@ -28,7 +24,7 @@ function ComplaintSummary({ complaint }: { complaint: Complaint }) {
   )
 }
 
-function ManagedComplaint({ complaint: c }: { complaint: Complaint }) {
+function ManagedComplaint({ complaint: c, readOnly }: { complaint: Complaint; readOnly: boolean }) {
   return (
     <article className="record-item space-y-2">
       <ComplaintLine complaint={c} />
@@ -47,66 +43,45 @@ function ManagedComplaint({ complaint: c }: { complaint: Complaint }) {
           <p className="m-0 whitespace-pre-wrap">{c.descriptionPublic ?? 'Not written yet.'}</p>
         </div>
       </div>
-      <details>
-        <summary>Write the public text</summary>
-        <ActionForm action={complaintPublicTextAction} submitLabel="Save public text">
-          <Hidden name="complaintId" value={c.id} />
-          <AreaField
-            label="Public text. Remove anything that could identify the complainant."
-            name="text"
-            rows={3}
-            defaultValue={c.descriptionPublic ?? ''}
-            required
-          />
-        </ActionForm>
-      </details>
+      {readOnly ? null : (
+        <details>
+          <summary>Write the public text</summary>
+          <ActionForm action={complaintPublicTextAction} submitLabel="Save public text">
+            <Hidden name="complaintId" value={c.id} />
+            <AreaField
+              label="Public text. Remove anything that could identify the complainant."
+              name="text"
+              rows={3}
+              defaultValue={c.descriptionPublic ?? ''}
+              required
+            />
+          </ActionForm>
+        </details>
+      )}
     </article>
   )
 }
 
-export function ComplaintsSection({ detail, can }: { detail: CaseDetail; can: Can }) {
-  const { complaints, row } = detail.staff
+export function ComplaintsSection({
+  detail,
+  can,
+  readOnly = false,
+}: {
+  detail: CaseDetail
+  can: Can
+  readOnly?: boolean
+}) {
+  const { complaints } = detail.staff
   return (
     <Section id="complaints" title="Complaints">
       {complaints.length === 0 ? <p>No complaint is linked to this case.</p> : null}
       {complaints.map((c) =>
         can.manage ? (
-          <ManagedComplaint key={c.id} complaint={c} />
+          <ManagedComplaint key={c.id} complaint={c} readOnly={readOnly} />
         ) : (
           <ComplaintSummary key={c.id} complaint={c} />
         ),
       )}
-      {can.manage ? (
-        row.isPublic ? (
-          <div className="space-y-2">
-            <p>{`This case is shown on the public site. Summary: ${row.publicSummary ?? ''}`}</p>
-            <ActionForm
-              action={unpublishCaseAction}
-              submitLabel="Hide the case from the public site"
-              confirm={{
-                title: 'Hide this case from the public site?',
-                body: 'The public site stops showing the case, its summary and its public complaint text.',
-                confirmLabel: 'Hide it',
-              }}
-            >
-              <Hidden name="caseId" value={row.id} />
-            </ActionForm>
-          </div>
-        ) : (
-          <details>
-            <summary>Show the case on the public site</summary>
-            <ActionForm action={publishCaseAction} submitLabel="Show the case on the public site">
-              <Hidden name="caseId" value={row.id} />
-              <TextField label="Public summary" name="summary" required />
-              <p className="m-0">
-                The public page for the parcel shows the case number, status, dates, summary, public
-                complaint text, the provisions cited, and issued order numbers. Photos stay private
-                until you show them one by one.
-              </p>
-            </ActionForm>
-          </details>
-        )
-      ) : null}
     </Section>
   )
 }

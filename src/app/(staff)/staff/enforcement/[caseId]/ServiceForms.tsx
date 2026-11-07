@@ -2,12 +2,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { AddressTextField } from '@/components/address/AddressTextField'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { CaseDetail, OrderDetail } from '@/features/enforcement/caseDetail'
-import {
-  ROLE_CHECK_LABELS,
-  ROLE_LABELS,
-  SERVER_ROLE_LABELS,
-  SERVICE_METHOD_LABELS,
-} from '@/features/enforcement/labels'
+import { ROLE_CHECK_LABELS, ROLE_LABELS } from '@/features/enforcement/labels'
 import { NO_HOSTED } from '@/features/enforcement/workPlanTypes'
 import {
   answerAction,
@@ -15,15 +10,13 @@ import {
   roleCheckAction,
   serviceEventAction,
 } from '../serviceActions'
+import { CaseFileUpload } from './CaseFileUpload'
+import { NewestChoiceSelect } from './NewestChoiceSelect'
 import { Hidden } from './Section'
+import { ServiceMethodFields } from './ServiceMethodFields'
 
 const ROLES = Object.entries(ROLE_LABELS) as [string, string][]
 const CHECKS = Object.entries(ROLE_CHECK_LABELS) as [string, string][]
-const METHODS = Object.entries(SERVICE_METHOD_LABELS) as [string, string][]
-const SERVERS: [string, string][] = [
-  ['', 'Not applicable'],
-  ...(Object.entries(SERVER_ROLE_LABELS) as [string, string][]),
-]
 
 type Variant = 'default' | 'outline'
 
@@ -94,8 +87,15 @@ export function RecordServiceForm({
     ['', 'No one person: posting or publication'],
   ]
   return (
-    <>
-      <p className="m-0">Upload the proof on the Documents section first, as proof of service.</p>
+    <div className="space-y-4">
+      <details>
+        <summary>Upload the proof of service</summary>
+        <CaseFileUpload
+          caseId={detail.staff.row.id}
+          kind="service_proof"
+          label="Proof of service"
+        />
+      </details>
       <ActionForm action={serviceEventAction} submitLabel="Record service" variant={variant}>
         <Hidden name="orderId" value={order.row.id} />
         <SelectField
@@ -104,7 +104,6 @@ export function RecordServiceForm({
           options={recipients}
           defaultValue={recipientId === null ? '' : recipientId}
         />
-        <SelectField label="Method" name="method" options={METHODS} />
         <TextField
           label="Date served"
           name="servedOn"
@@ -112,12 +111,16 @@ export function RecordServiceForm({
           defaultValue={detail.today}
           required
         />
-        <TextField label="Served by (name)" name="serverName" />
-        <SelectField label="Server is a" name="serverRole" options={SERVERS} />
-        <TextField label="Newspaper (for publication)" name="newspaper" />
-        <SelectField label="Proof of service" name="proofDocumentId" options={proofOptions} />
+        <ServiceMethodFields
+          defaultMethod={recipientId === null ? 'posting_on_property' : 'in_hand'}
+        />
+        <NewestChoiceSelect
+          label="Proof of service"
+          name="proofDocumentId"
+          options={proofOptions}
+        />
       </ActionForm>
-    </>
+    </div>
   )
 }
 

@@ -3,6 +3,7 @@ import { ENFORCEMENT_APPEAL_OUTCOMES, PERIL_CATEGORIES } from '@/db/schema'
 import { choice, civilDate, recordId, requiredText } from '@/features/input/schemas'
 import type { CivilDate } from '@/types/civilDate'
 import { prefixedRecordId, requiredRecordId } from './inputFields'
+import { COURT_DOCUMENT_MESSAGE } from './serviceInputs'
 
 const APPEAL_TARGETS = ['order', 'notice'] as const
 
@@ -34,9 +35,7 @@ export const restrainingOrderForm = (today: CivilDate) =>
     appealId: recordId('an appeal'),
     issuedBy: choice('who issued it', ['zba', 'superior_court'] as const),
     issuedOn: civilDate('the date issued', { latest: today }),
-    documentId: requiredRecordId(
-      'Choose the court document. Upload it in the Documents section first, as a court document.',
-    ),
+    documentId: requiredRecordId(COURT_DOCUMENT_MESSAGE),
   })
 
 export const dissolveRestrainingOrderForm = (today: CivilDate) =>

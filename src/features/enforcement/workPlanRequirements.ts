@@ -2,6 +2,7 @@ import type { RecipientRole } from '@packs/nh/schema'
 import { MOTION_BLOCK_TEXT } from '@/features/enforcement/labels'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
+import { rolesToServe } from './serviceStatus'
 import {
   type CasePlanInput,
   type CasePlanOrder,
@@ -71,9 +72,7 @@ function serviceDetail(order: CasePlanOrder, role: RecipientRole): string {
 }
 
 function serviceRows(order: CasePlanOrder): CaseRequirement[] {
-  const coveredByOwner = order.rule.ownerRoles.slice(1)
-  const roles = order.rule.recipientRoles.filter((role) => !coveredByOwner.includes(role))
-  return roles.map((role) =>
+  return rolesToServe(order.rule).map((role) =>
     row(
       `service:${role}`,
       `Service on the ${roleName({ role })}`,

@@ -31,6 +31,7 @@ vi.mock('../moneyActions', () => ({
   referAction: vi.fn(),
 }))
 vi.mock('../actions', () => ({ setCaseStatusAction: vi.fn() }))
+vi.mock('./CaseFileUpload', () => ({ CaseFileUpload: () => null }))
 
 const { CaseDoThisNow } = await import('./CaseWork')
 
@@ -87,6 +88,7 @@ describe('the case Do this now card', () => {
       </CsrfProvider>,
     )
     expect(select('Recipient').value).toBe('')
+    expect(select('Method').value).toBe('posting_on_property')
   })
 
   it('resets the chosen role when the next step checks another role', () => {

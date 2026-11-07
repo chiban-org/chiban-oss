@@ -1,4 +1,5 @@
 import { ActionForm } from '@/components/ActionForm'
+import { AnswerPeriods } from '@/components/enforcement/AnswerPeriods'
 import { DueLine } from '@/components/enforcement/DueLine'
 import { ServiceChecklist } from '@/components/enforcement/ServiceChecklist'
 import { NEW_TAB } from '@/components/newTab'
@@ -19,7 +20,7 @@ import {
   issueOrderAction,
   reviseDraftOrderAction,
 } from '../orderActions'
-import { CourtForms } from './CourtForms'
+import { CourtForms, CourtStepList } from './CourtForms'
 import type { Can } from './can'
 import { FindingChoices } from './FindingChoices'
 import { Hidden, Section } from './Section'
@@ -145,9 +146,47 @@ interface BlockProps {
   detail: CaseDetail
   can: Can
   hosted: ReadonlySet<string>
+  withService: boolean
 }
 
-function OrderBlock({ order, detail, can, hosted }: BlockProps) {
+export function OrderService({ order, detail, can, hosted }: Omit<BlockProps, 'withService'>) {
+  return (
+    <>
+      <ServiceChecklist rule={order.rule} status={order.status} state={order.service} />
+      {can.service ? <ServiceForms order={order} detail={detail} hosted={hosted} /> : null}
+    </>
+  )
+}
+
+function IssuedParts({ order, detail, can, hosted, withService }: BlockProps) {
+  return (
+    <>
+      {withService ? (
+        <>
+          <h4>Service</h4>
+          <OrderService order={order} detail={detail} can={can} hosted={hosted} />
+        </>
+      ) : null}
+      <h4>Answer periods</h4>
+      <AnswerPeriods dues={order.answerDues} today={detail.today} />
+      <h4>Court</h4>
+      <p className="font-medium">{motionGateText(order.gate, motionFiledOn(order))}</p>
+      {order.appealDue === null ? null : (
+        <div>
+          <p className="m-0 font-medium">Appeal of the judgment</p>
+          <DueLine due={order.appealDue} today={detail.today} />
+        </div>
+      )}
+      {can.service ? (
+        <CourtForms order={order} detail={detail} hosted={hosted} />
+      ) : (
+        <CourtStepList order={order} />
+      )}
+    </>
+  )
+}
+
+function OrderBlock({ order, detail, can, hosted, withService }: BlockProps) {
   const { row } = order
   const issued = row.issuedOn !== null
   return (
@@ -158,35 +197,7 @@ function OrderBlock({ order, detail, can, hosted }: BlockProps) {
       {row.status === 'draft' && can.issue && !hosted.has(`issue_order:${row.id}`) ? (
         <IssueOrderForm order={order} detail={detail} variant="outline" />
       ) : null}
-      {issued ? (
-        <>
-          <h4>Service</h4>
-          <ServiceChecklist rule={order.rule} status={order.status} state={order.service} />
-          {can.service ? <ServiceForms order={order} detail={detail} hosted={hosted} /> : null}
-          <h4>Answer periods</h4>
-          {order.answerDues.length === 0 ? (
-            <p>No answer period is running. It starts when a recipient is served.</p>
-          ) : null}
-          {order.answerDues.map((a) => (
-            <div key={a.recipientId} className="space-y-1">
-              <p className="font-medium">{a.name}</p>
-              <DueLine due={a.due} today={detail.today} met={a.answeredOn !== null} />
-              {a.answeredOn === null ? null : (
-                <p>{`Answer received ${formatCivilDate(a.answeredOn)}.`}</p>
-              )}
-            </div>
-          ))}
-          <h4>Court</h4>
-          <p className="font-medium">{motionGateText(order.gate, motionFiledOn(order))}</p>
-          {order.appealDue === null ? null : (
-            <div>
-              <p className="m-0 font-medium">Appeal of the judgment</p>
-              <DueLine due={order.appealDue} today={detail.today} />
-            </div>
-          )}
-          {can.service ? <CourtForms order={order} detail={detail} hosted={hosted} /> : null}
-        </>
-      ) : null}
+      {issued ? <IssuedParts {...{ order, detail, can, hosted, withService }} /> : null}
     </article>
   )
 }
@@ -195,17 +206,19 @@ export function OrdersSection({
   detail,
   can,
   hosted = NO_HOSTED,
+  withService = true,
 }: {
   detail: CaseDetail
   can: Can
   hosted?: ReadonlySet<string>
+  withService?: boolean
 }) {
   const open = detail.findings.filter((f) => f.status === 'open')
   return (
     <Section id="orders" title="Cease and desist orders">
       {detail.orders.length === 0 ? <p>No order has been drafted.</p> : null}
       {detail.orders.map((o) => (
-        <OrderBlock key={o.row.id} order={o} detail={detail} can={can} hosted={hosted} />
+        <OrderBlock key={o.row.id} {...{ order: o, detail, can, hosted, withService }} />
       ))}
       {can.manage && open.length > 0 && !hosted.has('draft_order') ? (
         <details>

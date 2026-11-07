@@ -6,6 +6,8 @@ import { COURT_STEP_LABELS, JUDGMENT_OUTCOME_LABELS } from '@/features/enforceme
 import type { CourtStepKind } from '@/features/enforcement/workPlanTypes'
 import { formatCivilDate } from '@/lib/formatDate'
 import { courtStepAction } from '../serviceActions'
+import { CaseFileUpload } from './CaseFileUpload'
+import { NewestChoiceSelect } from './NewestChoiceSelect'
 import { Hidden } from './Section'
 
 const STEPS = Object.entries(COURT_STEP_LABELS) as [string, string][]
@@ -27,14 +29,18 @@ export function CourtStepForm({
   step?: CourtStepKind
   variant: Variant
 }) {
-  const docs: [string, string][] = detail.documents
-    .filter((d) => d.docKind === 'court_document')
-    .map((d) => [d.documentId, d.title])
+  const docs: [string, string][] = [
+    ['', 'Choose an uploaded court document'],
+    ...detail.documents
+      .filter((d) => d.docKind === 'court_document')
+      .map((d) => [d.documentId, d.title] as [string, string]),
+  ]
   return (
-    <>
-      <p className="m-0">
-        Upload the court document in the Documents section first, as a court document.
-      </p>
+    <div className="space-y-4">
+      <details>
+        <summary>Upload the court document</summary>
+        <CaseFileUpload caseId={detail.staff.row.id} kind="court_document" label="Court document" />
+      </details>
       <ActionForm action={courtStepAction} submitLabel="Record court step" variant={variant}>
         <Hidden name="orderId" value={order.row.id} />
         <SelectField label="Step" name="kind" options={STEPS} defaultValue={step} />
@@ -47,10 +53,26 @@ export function CourtStepForm({
         />
         <TextField label="Court" name="court" required />
         <TextField label="Docket number" name="docket" />
-        <SelectField label="Court document" name="documentId" options={docs} />
+        <NewestChoiceSelect label="Court document" name="documentId" options={docs} />
         <SelectField label="Judgment result" name="judgmentOutcome" options={OUTCOMES} />
       </ActionForm>
-    </>
+    </div>
+  )
+}
+
+export function CourtStepList({ order }: { order: OrderDetail }) {
+  if (order.steps.length === 0) return <p>No court step has been recorded.</p>
+  return (
+    <ul className="list-none space-y-1 p-0">
+      {order.steps.map((s) => (
+        <li key={s.id}>
+          {`${formatCivilDate(s.occurredOn)}: ${COURT_STEP_LABELS[s.kind]}, ${s.court}${s.docket === null ? '' : `, docket ${s.docket}`}${s.judgmentOutcome === null ? '' : `, ${JUDGMENT_OUTCOME_LABELS[s.judgmentOutcome].toLowerCase()}`}. `}
+          <a {...NEW_TAB} href={`/api/documents/${s.documentId}`}>
+            Open document
+          </a>
+        </li>
+      ))}
+    </ul>
   )
 }
 
@@ -65,17 +87,7 @@ export function CourtForms({
 }) {
   return (
     <div className="space-y-3">
-      {order.steps.length === 0 ? <p>No court step has been recorded.</p> : null}
-      <ul className="list-none space-y-1 p-0">
-        {order.steps.map((s) => (
-          <li key={s.id}>
-            {`${formatCivilDate(s.occurredOn)}: ${COURT_STEP_LABELS[s.kind]}, ${s.court}${s.docket === null ? '' : `, docket ${s.docket}`}${s.judgmentOutcome === null ? '' : `, ${JUDGMENT_OUTCOME_LABELS[s.judgmentOutcome].toLowerCase()}`}. `}
-            <a {...NEW_TAB} href={`/api/documents/${s.documentId}`}>
-              Open document
-            </a>
-          </li>
-        ))}
-      </ul>
+      <CourtStepList order={order} />
       {hosted?.has(`record_court_step:${order.row.id}`) === true ? null : (
         <details>
           <summary className="cursor-pointer font-medium">Record a court step</summary>

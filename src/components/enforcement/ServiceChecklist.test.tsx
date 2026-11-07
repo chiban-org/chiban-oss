@@ -83,14 +83,27 @@ describe('ServiceChecklist', () => {
     ).not.toBeNull()
   })
 
-  it('every role with no check yet says so, the owner agent included', () => {
+  it('every role the plan counts says Not yet checked, and the owner agent is covered by the owner of record', () => {
     const empty: ServiceState = { checks: [], recipients: [], events: [] }
     const { container } = render(
       <ServiceChecklist rule={rule} status={serviceStatus(rule, empty)} state={empty} />,
     )
     const rows = Array.from(container.querySelectorAll(':scope > div > ul > li'))
     expect(rows.length).toBe(rule.recipientRoles.length)
-    expect(rows.every((li) => li.textContent.includes('Not yet checked'))).toBe(true)
+    const agent = rows.find((li) => li.textContent.startsWith('Owner agent'))
+    expect(agent?.textContent).toBe('Owner agentCovered by service on the owner of record.')
+    expect(agent?.querySelector('.bg-highlight')).toBeNull()
+    const others = rows.filter((li) => li !== agent)
+    expect(others.every((li) => li.textContent.includes('Not yet checked'))).toBe(true)
+  })
+
+  it('draws each role as a record-item row, not a bordered box', () => {
+    const { container } = render(
+      <ServiceChecklist rule={rule} status={serviceStatus(rule, state)} state={state} />,
+    )
+    const rows = Array.from(container.querySelectorAll(':scope > div > ul > li'))
+    expect(rows.every((li) => li.classList.contains('record-item'))).toBe(true)
+    expect(container.querySelector('.border')).toBeNull()
   })
 
   it('ServiceChecklist marks the unserved tenant with a text label', () => {

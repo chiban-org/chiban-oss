@@ -1,9 +1,7 @@
 import { DocumentPanel } from '@/components/documents/DocumentPanel'
-import { env } from '@/config/env'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import { PANEL_ACTIONS } from '../../records/panelActions'
-import { createCaseUploadIntentAction, finalizeCaseUploadAction } from '../uploadActions'
-import { CaseUploader } from './CaseUploader'
+import { CaseUploadAll } from './CaseFileUpload'
 import type { Can } from './can'
 
 const KINDS: [string, string][] = [
@@ -34,15 +32,7 @@ export function DocumentsSection({ detail, can }: { detail: CaseDetail; can: Can
       {can.manage || can.service ? (
         <details>
           <summary>Upload a document or photo</summary>
-          <CaseUploader
-            caseId={caseId}
-            kinds={KINDS}
-            maxBytes={env.MAX_UPLOAD_BYTES}
-            actions={{
-              createIntent: createCaseUploadIntentAction,
-              finalize: finalizeCaseUploadAction,
-            }}
-          />
+          <CaseUploadAll caseId={caseId} kinds={KINDS} />
         </details>
       ) : null}
     </DocumentPanel>

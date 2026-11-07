@@ -1,11 +1,15 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, screen } from '@testing-library/react'
-import { afterEach, describe, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { OrderDetail } from '@/features/enforcement/caseDetail'
 import { expectRefusalBeside, refusal } from '@/test/besideField'
 import { fillField, labelled, openSection, renderForm, stubDetail } from '@/test/enforcementRender'
 
 vi.mock('../serviceActions', () => ({ courtStepAction: vi.fn() }))
+
+vi.mock('./CaseFileUpload', () => ({
+  CaseFileUpload: ({ label }: { label: string }) => <p>{`Uploader for ${label}`}</p>,
+}))
 
 const { CourtForms } = await import('./CourtForms')
 const { courtStepAction } = await import('../serviceActions')
@@ -36,5 +40,15 @@ describe('recording a court step', () => {
     fillField(labelled('Court'), 'District Court')
     fireEvent.click(screen.getByRole('button', { name: 'Record court step' }))
     await expectRefusalBeside(screen.getByLabelText(labelled('Judgment result')), message)
+  })
+})
+
+describe('the court document', () => {
+  it('can be uploaded inside the court step form', () => {
+    renderForm(<CourtForms order={order} detail={detail} />)
+    const step = screen.getByText('Record a court step', { selector: 'summary' }).closest('details')
+    expect(step?.textContent).toContain('Upload the court document')
+    expect(step?.textContent).toContain('Uploader for Court document')
+    expect(step?.textContent).not.toContain('Documents section')
   })
 })

@@ -41,15 +41,7 @@ export function FinePaymentForm({
   )
 }
 
-export function MoneySection({
-  detail,
-  can,
-  hosted = NO_HOSTED,
-}: {
-  detail: CaseDetail
-  can: Can
-  hosted?: ReadonlySet<string>
-}) {
+export function fineBases(detail: CaseDetail): [string, string][] {
   const judgments = detail.orders.flatMap((o) =>
     o.steps
       .filter((s) => s.kind === 'judgment' && s.judgmentOutcome !== 'annulled')
@@ -72,7 +64,23 @@ export function MoneySection({
           ],
       ),
   )
-  const bases: [string, string][] = [...judgments, ...wins]
+  return [...judgments, ...wins]
+}
+
+export function fineApplies(detail: CaseDetail): boolean {
+  return fineBases(detail).length > 0 && !detail.stay.stayed
+}
+
+export function MoneySection({
+  detail,
+  can,
+  hosted = NO_HOSTED,
+}: {
+  detail: CaseDetail
+  can: Can
+  hosted?: ReadonlySet<string>
+}) {
+  const bases = fineBases(detail)
   return (
     <Section id="fines" title="Fines">
       {detail.stay.stayed ? (
@@ -86,7 +94,10 @@ export function MoneySection({
           <p className="font-medium">{`${FINE_KIND_LABELS[f.row.kind]}, ${formatCents(f.row.amountCents)}, imposed ${formatCivilDate(f.row.imposedOn)} by ${f.row.court}, docket ${f.row.docket}`}</p>
           <p>{`Paid ${formatCents(f.paidCents)}. Balance due ${formatCents(f.dueCents)}.`}</p>
           {can.collect && f.dueCents > 0 && !hosted.has(`record_fine_payment:${f.row.id}`) ? (
-            <FinePaymentForm fineId={f.row.id} variant="outline" />
+            <details>
+              <summary className="cursor-pointer font-medium">Record a payment</summary>
+              <FinePaymentForm fineId={f.row.id} variant="outline" />
+            </details>
           ) : null}
         </article>
       ))}

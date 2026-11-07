@@ -2,12 +2,12 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
-import { splitPanels } from '@/components/layout/splitPanels'
 import { SeePublicLink } from '@/components/SeePublicLink'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { assigneeChoices, caseAssignee } from '@/features/enforcement/caseAssignment'
 import { loadCaseDetail } from '@/features/enforcement/caseDetail'
+import { type CaseView, caseViewFor } from '@/features/enforcement/caseView'
 import { caseChipStatus } from '@/features/enforcement/chipStatus'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
 import { planCaseWork } from '@/features/enforcement/workPlan'
@@ -18,16 +18,12 @@ import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
-import { AppealsSection } from './AppealsSection'
-import { CaseRail } from './CaseRail'
+import { CaseRail, type CaseRailProps, CaseStrip } from './CaseRail'
 import { CaseDoThisNow, CaseRequirements, CaseSummary } from './CaseWork'
-import { ComplaintsSection } from './ComplaintsSection'
-import { CounselSection } from './CounselSection'
+import { CounselCase } from './CounselCase'
 import { loadCan } from './can'
-import { DocumentsSection } from './DocumentsSection'
-import { FindingsSection, NotesSection } from './FindingsSection'
-import { MoneySection } from './MoneySection'
-import { OrdersSection } from './OrdersSection'
+import { arrangeCasePanels, casePanels } from './casePanels'
+import { FieldCase } from './FieldCase'
 import { caseAbilities } from './planAbilities'
 
 export const dynamic = 'force-dynamic'
@@ -44,6 +40,37 @@ export async function generateMetadata({
   const today = await townToday(ctx.db, new Date(), ctx.signal)
   const loaded = await loadCaseDetail(ctx.db, ctx.actor, caseId, today, ctx.signal)
   return { title: loaded.ok ? `Case ${loaded.value.staff.row.number}` : 'Case' }
+}
+
+function OfficeCase(props: CaseRailProps) {
+  const { detail, can, plan } = props
+  const sections = arrangeCasePanels(
+    detail,
+    casePanels({ detail, can, hosted: hostedActions(plan) }),
+  )
+  return (
+    <RecordLayout
+      rail={<CaseRail {...props} />}
+      strip={<CaseStrip {...props} />}
+      empty={sections.empty}
+      history={sections.history}
+    >
+      <CaseDoThisNow detail={detail} plan={plan} />
+      <CaseRequirements plan={plan} />
+      {sections.filled}
+    </RecordLayout>
+  )
+}
+
+function CaseBody({ view, props }: { view: CaseView; props: CaseRailProps }) {
+  switch (view) {
+    case 'field':
+      return <FieldCase {...props} />
+    case 'counsel':
+      return <CounselCase {...props} />
+    case 'office':
+      return <OfficeCase {...props} />
+  }
 }
 
 export default async function CasePage({ params }: { params: Promise<{ caseId: string }> }) {
@@ -67,41 +94,13 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
     abilities: caseAbilities(can),
     responsible: assignee.current?.name ?? null,
   })
-  const hosted = hostedActions(plan)
-  const sections = splitPanels([
-    {
-      empty: detail.staff.complaints.length === 0,
-      node: <ComplaintsSection key="complaints" detail={detail} can={can} />,
-    },
-    {
-      empty: detail.staff.notes.length === 0,
-      node: <NotesSection key="notes" detail={detail} can={can} />,
-    },
-    {
-      empty: detail.findings.length === 0 && detail.notices.length === 0,
-      node: <FindingsSection key="findings" detail={detail} can={can} hosted={hosted} />,
-    },
-    {
-      empty: detail.orders.length === 0,
-      node: <OrdersSection key="orders" detail={detail} can={can} hosted={hosted} />,
-    },
-    {
-      empty: detail.appeals.length === 0,
-      node: <AppealsSection key="appeals" detail={detail} can={can} />,
-    },
-    {
-      empty: detail.fines.length === 0 && detail.exposure === null,
-      node: <MoneySection key="money" detail={detail} can={can} hosted={hosted} />,
-    },
-    {
-      empty: detail.referrals.length === 0,
-      node: <CounselSection key="counsel" detail={detail} can={can} />,
-    },
-    {
-      empty: detail.documents.length === 0,
-      node: <DocumentsSection key="documents" detail={detail} can={can} />,
-    },
-  ])
+  const view = caseViewFor({
+    roles: ctx.actor.roles,
+    manages: can.manage,
+    recordsService: can.service,
+    refersCounsel: can.counsel,
+    assigned: current?.userId === ctx.actor.userId,
+  })
   return (
     <main>
       <PageHeader
@@ -114,14 +113,7 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
         summary={<CaseSummary detail={detail} plan={plan} />}
         actions={<SeePublicLink href={casePublicHref(row)} />}
       />
-      <RecordLayout
-        rail={<CaseRail detail={detail} can={can} assignee={assignee} plan={plan} />}
-        empty={sections.empty}
-      >
-        <CaseDoThisNow detail={detail} plan={plan} />
-        <CaseRequirements plan={plan} />
-        {sections.filled}
-      </RecordLayout>
+      <CaseBody view={view} props={{ detail, can, assignee, plan }} />
     </main>
   )
 }

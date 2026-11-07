@@ -25,6 +25,22 @@ import { Hidden, Section } from './Section'
 const METHODS = Object.entries(NOTICE_METHOD_LABELS) as [string, string][]
 const KINDS = PROVISION_KINDS.map((k) => [k, PROVISION_KIND_LABELS[k]] as [string, string])
 
+export function AddNoteForm({ detail }: { detail: CaseDetail }) {
+  return (
+    <ActionForm action={addNoteAction} submitLabel="Add note">
+      <Hidden name="caseId" value={detail.staff.row.id} />
+      <TextField
+        label="Date observed"
+        name="observedOn"
+        type="date"
+        defaultValue={detail.today}
+        required
+      />
+      <AreaField label="Note" name="body" rows={3} required />
+    </ActionForm>
+  )
+}
+
 export function NotesSection({ detail, can }: { detail: CaseDetail; can: Can }) {
   return (
     <Section id="notes" title="Investigation notes">
@@ -40,17 +56,7 @@ export function NotesSection({ detail, can }: { detail: CaseDetail; can: Can }) 
       {can.manage ? (
         <details>
           <summary>Add a note</summary>
-          <ActionForm action={addNoteAction} submitLabel="Add note">
-            <Hidden name="caseId" value={detail.staff.row.id} />
-            <TextField
-              label="Date observed"
-              name="observedOn"
-              type="date"
-              defaultValue={detail.today}
-              required
-            />
-            <AreaField label="Note" name="body" rows={3} required />
-          </ActionForm>
+          <AddNoteForm detail={detail} />
         </details>
       ) : null}
     </Section>

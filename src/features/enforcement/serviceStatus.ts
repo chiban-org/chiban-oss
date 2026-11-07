@@ -170,3 +170,13 @@ export function serviceStatus(rule: CeaseAndDesistRule, input: Input): ServiceSt
   ]
   return { complete: missing.length === 0, servedOn, fallbackCompletedOn, missing }
 }
+
+type RoleRule = Pick<CeaseAndDesistRule, 'recipientRoles' | 'ownerRoles'>
+
+export function coveredByOwner(rule: RoleRule, role: RecipientRole): boolean {
+  return rule.ownerRoles.slice(1).includes(role)
+}
+
+export function rolesToServe(rule: RoleRule): RecipientRole[] {
+  return rule.recipientRoles.filter((role) => !coveredByOwner(rule, role))
+}

@@ -159,3 +159,105 @@ describe('the case page status sentence, stage strip and Do this now card', () =
     expect(more).toMatch(/<button[^>]*data-variant="outline"[^>]*>[\s\S]*?Resolve the case/)
   })
 })
+
+function panelOrder(page: string): string[] {
+  const body = /class="record-body[\s\S]*/.exec(page)?.[0] ?? ''
+  const history = body.indexOf('data-history-group')
+  const empty = body.indexOf('data-empty-group')
+  const cut = Math.min(...[history, empty, body.length].filter((i) => i >= 0))
+  return [...body.slice(0, cut).matchAll(/<h2 id="([a-z]+)"/g)].map((m) => m[1] ?? '')
+}
+
+function historyOf(page: string): string {
+  return (
+    /<details data-history-group=""[\s\S]*?<\/details>\s*(?=<div data-empty-group|<\/div>)/.exec(
+      page,
+    )?.[0] ?? ''
+  )
+}
+
+describe('the case page panels, strip and views', () => {
+  it('leads an order in court with its orders, fines and counsel', async () => {
+    await actAs('staff')
+    const page = await pageFor(byNumber('EC-2026-0005'))
+    expect(panelOrder(page).slice(0, 3)).toEqual(['orders', 'fines', 'counsel'])
+  })
+
+  it('folds complaints and notes into Record and history once the order is out', async () => {
+    await actAs('staff')
+    const page = await pageFor(byNumber('EC-2026-0002'))
+    expect(panelOrder(page)[0]).toBe('orders')
+    expect(panelOrder(page)).not.toContain('complaints')
+    expect(panelOrder(page)).not.toContain('notes')
+  })
+
+  it('leads an investigation with its notes and keeps complaints in the body', async () => {
+    await actAs('staff')
+    const page = await pageFor(byNumber('EC-2026-0007'))
+    expect(panelOrder(page).filter((key) => key !== 'requirements')[0]).not.toBe('orders')
+    expect(historyOf(page)).toBe('')
+  })
+
+  it('moves the public site control from Complaints to the rail with its sentence', async () => {
+    await actAs('staff')
+    const page = await pageFor(byNumber('EC-2026-0006'))
+    const rail = /<aside[\s\S]*?<\/aside>/.exec(page)?.[0] ?? ''
+    expect(visibleText(rail)).toContain('This case is shown on the public site. Summary:')
+    const complaints = /aria-labelledby="complaints"[\s\S]*?<\/section>/.exec(page)?.[0] ?? ''
+    expect(complaints).not.toContain('public site')
+  })
+
+  it('gives phones a status strip with the due date and Facts and more actions', async () => {
+    await actAs('staff')
+    const page = await pageFor(byNumber('EC-2026-0002'))
+    const strip = /class="record-strip[\s\S]*?<\/section>/.exec(page)?.[0] ?? ''
+    expect(visibleText(strip)).toMatch(/Answer due [A-Z][a-z]+ \d{1,2}, \d{4}, \d+ days? left\./)
+    expect(visibleText(strip)).toContain('Facts and more actions')
+    expect(page).toMatch(/<aside class="record-rail[^"]* hidden"/)
+  })
+
+  it('says the answer counting rule once on the order', async () => {
+    await actAs('staff')
+    const text = visibleText(await pageFor(byNumber('EC-2026-0002')))
+    expect(text.match(/RSA 21:35 II/g)?.length).toBe(1)
+  })
+
+  it('gives the unassigned inspector the field view: the step, quick actions, service, history, then facts', async () => {
+    await actAs('inspector')
+    const page = await pageFor(byNumber('EC-2026-0002'))
+    const text = visibleText(page)
+    const at = (needle: string) => text.indexOf(needle)
+    expect(at('Do this now')).toBeGreaterThanOrEqual(0)
+    expect(at('Add a photo')).toBeGreaterThan(at('Do this now'))
+    expect(at('Add a note')).toBeGreaterThan(at('Add a photo'))
+    expect(at('Service is not complete.')).toBeGreaterThan(at('Add a note'))
+    expect(at('Findings and notices of violation')).toBeGreaterThan(at('Service is not complete.'))
+    expect(at('Case facts and more actions')).toBeGreaterThan(
+      at('Findings and notices of violation'),
+    )
+    expect(text).not.toContain('Requirements')
+    expect(visibleText(/<aside[\s\S]*?<\/aside>/.exec(page)?.[0] ?? '').trim()).toBe('')
+    expect(text.match(/Service is not complete\./g)?.length).toBe(1)
+    expect(cardOf(page)).toMatch(/<button[^>]*data-variant="default"[^>]*>[\s\S]*?Record service/)
+  })
+
+  it('gives the administrator the counsel view with the summary and only the actions that apply', async () => {
+    await actAs('admin')
+    const page = await pageFor(byNumber('EC-2026-0005'))
+    const text = visibleText(page)
+    expect(sentenceOf(page)).toMatch(/^Waiting on: Town/)
+    expect(page).not.toContain('aria-label="Do this now"')
+    expect(text).toContain('Case summary')
+    expect(text).toContain('Record a court-imposed fine')
+    expect(text).toContain('Refer to counsel')
+    expect(panelOrder(page)).toEqual(['summary', 'counsel', 'fines'])
+    expect(historyOf(page)).toContain('Cease and desist orders')
+  })
+
+  it('offers the administrator no counsel referral before an order is in force', async () => {
+    await actAs('admin')
+    const text = visibleText(await pageFor(byNumber('EC-2026-0001')))
+    expect(text).not.toContain('Refer to counsel')
+    expect(text).not.toContain('Record a court-imposed fine')
+  })
+})

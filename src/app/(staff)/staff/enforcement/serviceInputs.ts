@@ -16,6 +16,9 @@ export const ROLE_CHECK_OUTCOMES = [
 export const COURT_DOCUMENT_MESSAGE =
   'Choose the court document. Upload it in the Documents section first, as a court document.'
 
+export const COURT_STEP_DOCUMENT_MESSAGE =
+  'Choose the court document. Upload it above the form if it is not listed.'
+
 export const LIST_RECIPIENT_FORM = z.object({
   orderId: recordId('an order'),
   role: choice('a role', RECIPIENT_ROLES),
@@ -60,7 +63,7 @@ export const COURT_STEP_FORM = z
     occurredOn: civilDate('the date of the step'),
     court: requiredText('the court', { max: 200 }),
     docket: optionalText('the docket number', { max: 100 }),
-    documentId: requiredRecordId(COURT_DOCUMENT_MESSAGE),
+    documentId: requiredRecordId(COURT_STEP_DOCUMENT_MESSAGE),
     judgmentOutcome: optionalChoice('a judgment result', JUDGMENT_OUTCOMES),
   })
   .superRefine((value, ctx) => {

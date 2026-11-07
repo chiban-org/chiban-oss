@@ -127,6 +127,47 @@ test.describe
       expect(row).toEqual({ method: 'in_hand', server_name: 'Deputy Marsh' })
     })
 
+    test('uploads the proof inside the service form, which then chooses it', async ({
+      page,
+      db,
+      suffix,
+    }) => {
+      await page.goto(`/staff/enforcement/${caseId}`)
+      const form = await formFor(page, ORDERS, 'Record service', 'Record service')
+      const upload = await openSummary(form, 'Upload the proof of service')
+      await upload.getByLabel('File', { exact: true }).setInputFiles({
+        name: 'return.pdf',
+        mimeType: 'application/pdf',
+        buffer: Buffer.from('%PDF-1.4\n%%EOF\n'),
+      })
+      await upload.getByLabel('Name for this document').fill(`Second return ${suffix}`)
+      await upload.getByRole('button', { name: 'Upload' }).click()
+      const proof = form.getByLabel('Proof of service')
+      await expect(proof.locator('option:checked')).toHaveText(`Second return ${suffix}`)
+      await form.getByLabel('Recipient').selectOption({ label: `${ownerName}, Owner of record` })
+      await form.getByLabel('Served by (name)').fill('Deputy Marsh')
+      await form.getByLabel('Server is a').selectOption({ label: 'Deputy sheriff' })
+      await form.getByRole('button', { name: 'Record service' }).click()
+      await expectConfirmation(page, 'Service recorded.')
+      expect(
+        await countRows(
+          db,
+          'select count(*) from order_service_events e join enforcement_orders o on o.id = e.order_id where o.case_id = $1',
+          [caseId],
+        ),
+      ).toBe(2)
+    })
+
+    test('asks for the newspaper only when the method is publication', async ({ page }) => {
+      await page.goto(`/staff/enforcement/${caseId}`)
+      const form = await formFor(page, ORDERS, 'Record service', 'Record service')
+      await expect(form.getByLabel('Server is a')).toBeVisible()
+      await expect(form.getByLabel('Newspaper')).toHaveCount(0)
+      await form.getByLabel('Method').selectOption({ label: 'Published in a newspaper' })
+      await expect(form.getByLabel('Newspaper')).toBeVisible()
+      await expect(form.getByLabel('Server is a')).toHaveCount(0)
+    })
+
     test('records an answer from the served recipient with an uploaded document', async ({
       page,
       db,
@@ -160,7 +201,7 @@ test.describe
       await form.getByRole('button', { name: 'Record court step' }).click()
       await expectRefusedBeside(
         form.getByLabel('Court document'),
-        'Choose the court document. Upload it in the Documents section first, as a court document.',
+        'Choose the court document. Upload it above the form if it is not listed.',
       )
       expect(
         await countRows(

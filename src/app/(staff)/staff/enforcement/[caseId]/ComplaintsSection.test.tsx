@@ -11,7 +11,7 @@ vi.mock('../publishActions', () => ({
 }))
 
 const { ComplaintsSection } = await import('./ComplaintsSection')
-const { complaintPublicTextAction, publishCaseAction } = await import('../publishActions')
+const { complaintPublicTextAction } = await import('../publishActions')
 
 afterEach(cleanup)
 
@@ -40,20 +40,9 @@ describe('writing the public text of a complaint', () => {
   })
 })
 
-describe('making a case public', () => {
-  it('shows a refused summary beside the summary field', async () => {
-    const message = 'Enter a public summary of 1000 characters or fewer.'
-    vi.mocked(publishCaseAction).mockResolvedValue(refusal('summary', message))
+describe('the case visibility control', () => {
+  it('is no longer inside the complaints panel', () => {
     renderForm(<ComplaintsSection detail={stubDetail()} can={ALL_CAN} />)
-    openSection('Show the case on the public site')
-    fillField(/^Public summary/, 'Something')
-    fireEvent.click(screen.getByRole('button', { name: 'Show the case on the public site' }))
-    await expectRefusalBeside(screen.getByLabelText(/^Public summary/), message)
-  })
-
-  it('says the public page for the parcel shows the case', () => {
-    renderForm(<ComplaintsSection detail={stubDetail()} can={ALL_CAN} />)
-    openSection('Show the case on the public site')
-    expect(screen.getByText(/^The public page for the parcel shows the case number/)).toBeTruthy()
+    expect(screen.queryByText('Show the case on the public site')).toBeNull()
   })
 })

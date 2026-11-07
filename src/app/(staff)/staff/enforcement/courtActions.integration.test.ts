@@ -23,7 +23,7 @@ import {
   text,
   uuid,
 } from '@/test/testHarness/actions'
-import { COURT_DOCUMENT_MESSAGE } from './serviceInputs'
+import { COURT_STEP_DOCUMENT_MESSAGE } from './serviceInputs'
 
 vi.mock('@/db/client', () => import('@/test/testHarness/actions/mocks/dbClient'))
 vi.mock('next/cache', () => import('@/test/testHarness/actions/mocks/nextCache'))
@@ -85,7 +85,7 @@ function courtRefusal(variant: InvalidVariant) {
     case 'docket':
       return refuseField('docket', textMessage('the docket number', 100, variant))
     case 'documentId':
-      return refuseField('documentId', COURT_DOCUMENT_MESSAGE)
+      return refuseField('documentId', COURT_STEP_DOCUMENT_MESSAGE)
     default:
       return refuseField('judgmentOutcome', 'Choose a judgment result.')
   }

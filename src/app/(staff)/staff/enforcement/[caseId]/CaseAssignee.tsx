@@ -12,10 +12,12 @@ export function CaseAssignee({
   caseId,
   data,
   canManage,
+  card = true,
 }: {
   caseId: string
   data: CaseAssigneeData
   canManage: boolean
+  card?: boolean
 }) {
   const name =
     data.current === null ? (
@@ -28,7 +30,11 @@ export function CaseAssignee({
     ...data.choices.map((c): [string, string] => [c.id, c.name]),
   ]
   return (
-    <section aria-label="Assignment" data-plain className="rail-card space-y-3">
+    <section
+      aria-label="Assignment"
+      data-plain
+      className={card ? 'rail-card space-y-3' : 'space-y-3'}
+    >
       <FactList facts={[{ label: 'Assigned to', value: name }]} stacked />
       {canManage ? (
         <details>

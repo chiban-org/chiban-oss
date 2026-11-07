@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, screen } from '@testing-library/react'
-import { afterEach, describe, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { OrderDetail } from '@/features/enforcement/caseDetail'
 import { expectRefusalBeside, refusal } from '@/test/besideField'
 import { fillField, labelled, openSection, renderForm, stubDetail } from '@/test/enforcementRender'
@@ -19,6 +19,10 @@ vi.mock('@/components/address/AddressTextField', async () => {
     ),
   }
 })
+
+vi.mock('./CaseFileUpload', () => ({
+  CaseFileUpload: ({ label }: { label: string }) => <p>{`Uploader for ${label}`}</p>,
+}))
 
 const { ServiceForms } = await import('./ServiceForms')
 const { answerAction, listRecipientAction, roleCheckAction, serviceEventAction } = await import(
@@ -77,6 +81,34 @@ describe('recording service', () => {
     openSection('Record service')
     fireEvent.click(screen.getByRole('button', { name: 'Record service' }))
     await expectRefusalBeside(screen.getByLabelText(labelled('Proof of service')), message)
+  })
+})
+
+describe('the service form fields', () => {
+  it('asks for the server only for hand, abode or summons service and the newspaper only for publication', () => {
+    renderForm(<ServiceForms order={order} detail={detail} />)
+    openSection('Record service')
+    expect(screen.queryByLabelText(labelled('Server is a'))).not.toBeNull()
+    expect(screen.queryByLabelText(labelled('Newspaper'))).toBeNull()
+    fireEvent.change(screen.getByLabelText(labelled('Method')), {
+      target: { value: 'newspaper_publication' },
+    })
+    expect(screen.queryByLabelText(labelled('Server is a'))).toBeNull()
+    expect(screen.queryByLabelText(labelled('Served by (name)'))).toBeNull()
+    expect(screen.queryByLabelText(labelled('Newspaper'))).not.toBeNull()
+    fireEvent.change(screen.getByLabelText(labelled('Method')), {
+      target: { value: 'posting_on_property' },
+    })
+    expect(screen.queryByLabelText(labelled('Server is a'))).toBeNull()
+    expect(screen.queryByLabelText(labelled('Served by (name)'))).not.toBeNull()
+  })
+
+  it('offers the proof upload inside the service form instead of sending the officer to Documents', () => {
+    renderForm(<ServiceForms order={order} detail={detail} />)
+    const service = screen.getByText('Record service', { selector: 'summary' }).closest('details')
+    expect(service?.textContent).toContain('Upload the proof of service')
+    expect(service?.textContent).toContain('Uploader for Proof of service')
+    expect(service?.textContent).not.toContain('Documents section')
   })
 })
 

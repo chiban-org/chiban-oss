@@ -11,7 +11,15 @@ import { Hidden, Section } from './Section'
 const PURPOSES = Object.entries(COUNSEL_PURPOSE_LABELS) as [string, string][]
 const OUTCOMES = Object.entries(COUNSEL_OUTCOME_LABELS) as [string, string][]
 
-export function CounselSection({ detail, can }: { detail: CaseDetail; can: Can }) {
+export function CounselSection({
+  detail,
+  can,
+  mayRefer = can.counsel,
+}: {
+  detail: CaseDetail
+  can: Can
+  mayRefer?: boolean
+}) {
   const courtDocs: [string, string][] = [
     ['', 'No document'],
     ...detail.documents
@@ -58,7 +66,7 @@ export function CounselSection({ detail, can }: { detail: CaseDetail; can: Can }
           ) : null}
         </article>
       ))}
-      {can.counsel ? (
+      {mayRefer ? (
         <details>
           <summary>Refer to counsel</summary>
           <ActionForm action={referAction} submitLabel="Refer to counsel">
