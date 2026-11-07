@@ -306,6 +306,37 @@ describe('a board member commenting', () => {
     ])
   })
 
+  it('keeps received comments in the staff record after a withdraw, and drops a withdrawn request with none', async () => {
+    const app = (
+      await makeApplication(handle.db, world, { state: 'under_review' }, undefined, 'SPR')
+    ).applicationId
+    const commented = await send(world.staff, { applicationId: app, boardId: conservation })
+    const silent = await send(world.staff, { applicationId: app, boardId: historic })
+    if (!commented.ok || !silent.ok) throw new Error('send')
+    await addReviewComment(
+      handle.db,
+      lee,
+      { assignmentId: commented.value.assignmentId, body: 'Mind the brook.' },
+      signal,
+    )
+    for (const sent of [commented, silent]) {
+      await withdrawBoardAssignment(
+        handle.db,
+        world.staff,
+        { assignmentId: sent.value.assignmentId },
+        signal,
+      )
+    }
+    expect(await listApplicationBoardAssignments(handle.db, app)).toEqual([
+      expect.objectContaining({
+        assignmentId: commented.value.assignmentId,
+        withdrawn: true,
+        statusLabel: 'Withdrawn',
+        comments: [expect.objectContaining({ body: 'Mind the brook.' })],
+      }),
+    ])
+  })
+
   it('has no sign-off', async () => {
     const app = (
       await makeApplication(handle.db, world, { state: 'under_review' }, undefined, 'SPR')

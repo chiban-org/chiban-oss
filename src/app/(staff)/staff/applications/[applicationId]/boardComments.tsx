@@ -6,10 +6,10 @@ import { formatCivilDate, formatInstant } from '@/lib/formatDate'
 import { sendToBoardAction, withdrawBoardAction } from '../../reviews/actions'
 
 export function offeredBoards(
-  assignments: Pick<ApplicationBoardAssignment, 'boardId'>[],
+  assignments: Pick<ApplicationBoardAssignment, 'boardId' | 'withdrawn'>[],
   choices: { id: string; name: string }[],
 ) {
-  const assigned = new Set(assignments.map((a) => a.boardId))
+  const assigned = new Set(assignments.filter((a) => !a.withdrawn).map((a) => a.boardId))
   return choices.filter((c) => !assigned.has(c.id))
 }
 
@@ -76,7 +76,9 @@ function BoardAssignmentItem({
           <p className="flex flex-wrap items-center gap-2">
             <span>{assignment.boardName}</span>
             <StatusChip
-              status={assignment.status === 'commented' ? 'passed' : 'neutral'}
+              status={
+                assignment.status === 'commented' && !assignment.withdrawn ? 'passed' : 'neutral'
+              }
               label={assignment.statusLabel}
             />
           </p>
@@ -84,7 +86,7 @@ function BoardAssignmentItem({
             <p className="text-sm">{`Comments by ${formatCivilDate(assignment.commentBy)}`}</p>
           )}
         </div>
-        {canManage ? <WithdrawBoard assignment={assignment} /> : null}
+        {canManage && !assignment.withdrawn ? <WithdrawBoard assignment={assignment} /> : null}
       </div>
       {assignment.comments.length === 0 ? null : (
         <ul aria-label={`Comments from the ${assignment.boardName}`} className="space-y-2 pl-4">

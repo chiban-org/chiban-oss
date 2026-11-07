@@ -23,6 +23,7 @@ const CONSERVATION: ApplicationBoardAssignment = {
   status: 'commented',
   statusLabel: 'Comments received',
   commentBy: '2026-11-20',
+  withdrawn: false,
   comments: [
     {
       id: 'c1',
@@ -81,6 +82,18 @@ describe('board assignments on the reviewers panel', () => {
     ])
     expect(screen.getByLabelText<HTMLInputElement>(/^Comment by/).type).toBe('date')
     expect(screen.getByLabelText('Withdraw Alder Pond Conservation Commission')).toBeTruthy()
+  })
+
+  it('keeps a withdrawn request with its comments read-only and offers the board again', () => {
+    renderPanel(true, [{ ...CONSERVATION, withdrawn: true, statusLabel: 'Withdrawn' }])
+    expect(screen.getByText('Withdrawn')).toBeTruthy()
+    expect(screen.getByText('Keep the 50 foot wetland buffer.')).toBeTruthy()
+    expect(screen.queryByLabelText('Withdraw Alder Pond Conservation Commission')).toBeNull()
+    const board = screen.getByLabelText<HTMLSelectElement>('Board')
+    expect([...board.options].map((o) => o.text)).toEqual([
+      'Alder Pond Conservation Commission',
+      'Alder Pond Historic District Commission',
+    ])
   })
 
   it('reads Waiting for comments before any comment arrives', () => {

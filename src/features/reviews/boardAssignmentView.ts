@@ -32,6 +32,7 @@ export interface ApplicationBoardAssignment {
   status: string
   statusLabel: string
   commentBy: string | null
+  withdrawn: boolean
   comments: BoardComment[]
 }
 
@@ -109,11 +110,16 @@ export async function listApplicationBoardAssignments(
       boardShortName: boards.shortName,
       status: reviewAssignments.status,
       commentBy: reviewAssignments.commentBy,
+      withdrawn: sql<boolean>`${reviewAssignments.removedAt} is not null`,
     })
     .from(reviewAssignments)
     .innerJoin(boards, eq(boards.id, reviewAssignments.boardId))
     .where(
-      and(eq(reviewAssignments.applicationId, applicationId), isNull(reviewAssignments.removedAt)),
+      and(
+        eq(reviewAssignments.applicationId, applicationId),
+        sql`(${reviewAssignments.removedAt} is null or exists (
+          select 1 from review_comments rc where rc.assignment_id = ${reviewAssignments.id}))`,
+      ),
     )
     .orderBy(asc(reviewAssignments.assignedAt))
   const comments = await commentsFor(
@@ -122,7 +128,7 @@ export async function listApplicationBoardAssignments(
   )
   return rows.map((row) => ({
     ...row,
-    statusLabel: boardReviewStatusLabel(row.status),
+    statusLabel: row.withdrawn ? 'Withdrawn' : boardReviewStatusLabel(row.status),
     comments: comments.get(row.assignmentId) ?? [],
   }))
 }
