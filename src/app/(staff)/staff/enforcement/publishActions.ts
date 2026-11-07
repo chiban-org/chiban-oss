@@ -21,12 +21,12 @@ export async function complaintPublicTextAction(formData: FormData): Promise<Act
 
 export async function publishCaseAction(formData: FormData): Promise<ActionResult> {
   return await runStaffForm(formData, PUBLISH_CASE_FORM, async ({ db, actor, signal }, input) =>
-    settled(await publishCase(db, actor, input, signal), 'The case is now public.'),
+    settled(await publishCase(db, actor, input, signal), 'The case is now shown on the public site.'),
   )
 }
 
 export async function unpublishCaseAction(formData: FormData): Promise<ActionResult> {
   return await runStaffForm(formData, UNPUBLISH_CASE_FORM, async ({ db, actor, signal }, input) =>
-    settled(await unpublishCase(db, actor, input, signal), 'The case is no longer public.'),
+    settled(await unpublishCase(db, actor, input, signal), 'The case is hidden from the public site.'),
   )
 }

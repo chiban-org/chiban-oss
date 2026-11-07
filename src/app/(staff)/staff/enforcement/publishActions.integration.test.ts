@@ -107,7 +107,7 @@ describeActionCases(h, 'publishCaseAction', {
     checkOnly: CHECK_PASSED,
   },
   accepted: async (result) => {
-    expect(result).toEqual({ ok: true, message: 'The case is now public.' })
+    expect(result).toEqual({ ok: true, message: 'The case is now shown on the public site.' })
     expect(await caseRow((await forPublish()).caseId)).toMatchObject({
       isPublic: true,
       publicSummary: 'A stop-work order was issued for unpermitted construction.',
@@ -152,7 +152,7 @@ describeActionCases(h, 'unpublishCaseAction', {
     checkOnly: CHECK_PASSED,
   },
   accepted: async (result) => {
-    expect(result).toEqual({ ok: true, message: 'The case is no longer public.' })
+    expect(result).toEqual({ ok: true, message: 'The case is hidden from the public site.' })
     expect((await caseRow(await forUnpublish()))?.isPublic).toBe(false)
   },
 })

@@ -89,7 +89,7 @@ test.describe
 
       await form.getByLabel('Public summary').fill(summary(suffix))
       await form.getByRole('button', { name: 'Show the case on the public site' }).click()
-      await expectConfirmation(page, 'The case is now public.')
+      await expectConfirmation(page, 'The case is now shown on the public site.')
       await expect(
         complaints.getByText(`This case is shown on the public site. Summary: ${summary(suffix)}`),
       ).toBeVisible()
@@ -114,8 +114,8 @@ test.describe
       expect(still.is_public).toBe(true)
 
       await complaints.getByRole('button', { name: 'Hide the case from the public site' }).click()
-      await dialog.getByRole('button', { name: 'Make it private' }).click()
-      await expectConfirmation(page, 'The case is no longer public.')
+      await dialog.getByRole('button', { name: 'Hide it' }).click()
+      await expectConfirmation(page, 'The case is hidden from the public site.')
       const row = await db.one<{ is_public: boolean }>(
         'select is_public from enforcement_cases where id = $1',
         [caseId],
