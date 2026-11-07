@@ -84,7 +84,8 @@ describe('the inspector day list', () => {
     )
     expect(chosen).toContain('Ira Inspector')
     expect(chosen).not.toContain('Your day')
-    expect(chosen).not.toContain('aria-label="Inspectors"')
+    expect(chosen).toContain('aria-label="Inspectors"')
+    expect(chosen).toContain('Dana Booth')
   })
 
   it('marks the chosen inspector when there is more than one to choose from', async () => {
