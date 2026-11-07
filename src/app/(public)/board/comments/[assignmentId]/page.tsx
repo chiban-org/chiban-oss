@@ -25,12 +25,10 @@ const DEFAULT_ZONE = 'America/New_York'
 function Facts({ view }: { view: BoardAssignmentView }) {
   return (
     <div className="space-y-1">
-      <p className="m-0">{`Sent to the ${view.boardName} for comment.`}</p>
-      {view.commentBy === null ? null : (
-        <p className="m-0">{`Comments by ${formatCivilDate(view.commentBy)}.`}</p>
-      )}
-      <p className="m-0">{view.statusLabel}</p>
-      <p className="m-0">
+      <p>{`Sent to the ${view.boardName} for comment.`}</p>
+      {view.commentBy === null ? null : <p>{`Comments by ${formatCivilDate(view.commentBy)}.`}</p>}
+      <p>{view.statusLabel}</p>
+      <p>
         {view.parcelDisplayId === null
           ? view.typeLabel
           : `${view.typeLabel}, parcel ${view.parcelDisplayId}`}

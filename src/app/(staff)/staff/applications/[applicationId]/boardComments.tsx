@@ -73,7 +73,7 @@ function BoardAssignmentItem({
     <li className="record-item space-y-2 pb-3">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div className="space-y-1">
-          <p className="m-0 flex flex-wrap items-center gap-2">
+          <p className="flex flex-wrap items-center gap-2">
             <span>{assignment.boardName}</span>
             <StatusChip
               status={assignment.status === 'commented' ? 'passed' : 'neutral'}
@@ -81,7 +81,7 @@ function BoardAssignmentItem({
             />
           </p>
           {assignment.commentBy === null ? null : (
-            <p className="m-0 text-sm">{`Comments by ${formatCivilDate(assignment.commentBy)}`}</p>
+            <p className="text-sm">{`Comments by ${formatCivilDate(assignment.commentBy)}`}</p>
           )}
         </div>
         {canManage ? <WithdrawBoard assignment={assignment} /> : null}
