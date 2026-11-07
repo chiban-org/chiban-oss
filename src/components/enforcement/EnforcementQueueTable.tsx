@@ -6,7 +6,7 @@ import type { SortLink } from '@/features/dataTable/sort'
 import type { CaseSortKey } from '@/features/enforcement/caseListParams'
 import type { QueueRow } from '@/features/enforcement/caseQueue'
 import { daysLeftPhrase } from '@/lib/dayCount'
-import { formatCivilDate } from '@/lib/formatDate'
+import { formatCivilDate, formatCivilDateShort } from '@/lib/formatDate'
 
 const ROW_CLASS =
   'max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-2 max-md:px-4 max-md:py-3'
@@ -92,8 +92,8 @@ export function EnforcementQueueTable({
                 >
                   <StatusChip status={row.statusChip} label={row.statusLabel} />
                 </td>
-                <td data-label="Opened" className={STACKED_CELL}>
-                  {formatCivilDate(row.openedOn)}
+                <td data-label="Opened" className={`${STACKED_CELL} whitespace-nowrap`}>
+                  {formatCivilDateShort(row.openedOn)}
                 </td>
                 <td
                   data-label="Next step"
@@ -104,7 +104,7 @@ export function EnforcementQueueTable({
                 <td data-label="Due" className={STACKED_CELL}>
                   <DueCell row={row} />
                 </td>
-                <td data-label="Appeal stay" className={STACKED_CELL}>
+                <td data-label="Appeal stay" className={`${STACKED_CELL} whitespace-nowrap`}>
                   {row.stay.stayed ? (
                     <StatusChip status="overdue" label="Stayed" />
                   ) : (
