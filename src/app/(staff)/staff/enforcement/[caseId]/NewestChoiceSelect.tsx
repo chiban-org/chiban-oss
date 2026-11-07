@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { SelectField } from '@/components/staff/fields'
+import { useUploadPair } from './UploadPair'
 
 const HINT = 'Upload it above if it is not listed. It is chosen here once uploaded.'
 
@@ -18,10 +19,15 @@ export function NewestChoiceSelect({
 }) {
   const [known, setKnown] = useState<ReadonlySet<string>>(() => new Set(options.map(([id]) => id)))
   const [value, setValue] = useState(options[0]?.[0] ?? '')
+  const armed = useUploadPair()?.armed ?? 0
+  const [handled, setHandled] = useState(armed)
   const fresh = options.find(([id]) => !known.has(id))
   if (fresh !== undefined) {
     setKnown(new Set(options.map(([id]) => id)))
-    setValue(fresh[0])
+    if (armed > handled) {
+      setHandled(armed)
+      setValue(fresh[0])
+    }
   }
   return (
     <SelectField

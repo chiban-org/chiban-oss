@@ -103,6 +103,17 @@ describe('the service form fields', () => {
     expect(screen.queryByLabelText(labelled('Served by (name)'))).not.toBeNull()
   })
 
+  it('goes back to the default method and its fields when the form resets', () => {
+    renderForm(<ServiceForms order={order} detail={detail} />)
+    openSection('Record service')
+    const method = screen.getByLabelText<HTMLSelectElement>(labelled('Method'))
+    fireEvent.change(method, { target: { value: 'newspaper_publication' } })
+    expect(screen.queryByLabelText(labelled('Server is a'))).toBeNull()
+    fireEvent.reset(method.form as HTMLFormElement)
+    expect(method.value).toBe('in_hand')
+    expect(screen.queryByLabelText(labelled('Server is a'))).not.toBeNull()
+  })
+
   it('starts the newspaper empty after a server name was typed', () => {
     renderForm(<ServiceForms order={order} detail={detail} />)
     openSection('Record service')

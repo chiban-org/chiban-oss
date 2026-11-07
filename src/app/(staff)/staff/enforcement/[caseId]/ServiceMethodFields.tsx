@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { SERVER_ROLE_LABELS, SERVICE_METHOD_LABELS } from '@/features/enforcement/labels'
 import type { ServiceMethod } from '@/features/enforcement/serviceStatus'
@@ -19,8 +19,16 @@ function isMethod(value: string): value is ServiceMethod {
 
 export function ServiceMethodFields({ defaultMethod }: { defaultMethod: ServiceMethod }) {
   const [method, setMethod] = useState<ServiceMethod>(defaultMethod)
+  const field = useRef<HTMLDivElement>(null)
+  useEffect(() => {
+    const form = field.current?.closest('form')
+    if (form === null || form === undefined) return
+    const reset = () => setMethod(defaultMethod)
+    form.addEventListener('reset', reset)
+    return () => form.removeEventListener('reset', reset)
+  }, [defaultMethod])
   return (
-    <>
+    <div ref={field} className="contents">
       <SelectField
         label="Method"
         name="method"
@@ -38,6 +46,6 @@ export function ServiceMethodFields({ defaultMethod }: { defaultMethod: ServiceM
       {BY_A_SERVER.includes(method) ? (
         <SelectField label="Server is a" name="serverRole" options={SERVERS} />
       ) : null}
-    </>
+    </div>
   )
 }

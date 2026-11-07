@@ -5,6 +5,7 @@ import { useId, useState } from 'react'
 import { Uploader, type UploaderActions } from '@/components/documents/Uploader'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
+import { useUploadPair } from './UploadPair'
 
 function KindPicker({
   kinds,
@@ -51,6 +52,7 @@ export function CaseUploader({
   capture?: 'environment'
 }) {
   const router = useRouter()
+  const pair = useUploadPair()
   const [docKind, setDocKind] = useState(kinds[0]?.[0] ?? '')
   return (
     <div className="space-y-3">
@@ -60,7 +62,10 @@ export function CaseUploader({
         maxBytes={maxBytes}
         actions={actions}
         extraFields={{ docKind }}
-        onUploaded={() => router.refresh()}
+        onUploaded={() => {
+          pair?.arm()
+          router.refresh()
+        }}
         {...(capture === undefined ? {} : { capture })}
       />
     </div>

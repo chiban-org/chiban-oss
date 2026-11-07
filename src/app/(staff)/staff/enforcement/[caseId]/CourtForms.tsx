@@ -9,6 +9,7 @@ import { courtStepAction } from '../serviceActions'
 import { CaseFileUpload } from './CaseFileUpload'
 import { NewestChoiceSelect } from './NewestChoiceSelect'
 import { Hidden } from './Section'
+import { UploadPair } from './UploadPair'
 
 const STEPS = Object.entries(COURT_STEP_LABELS) as [string, string][]
 const OUTCOMES: [string, string][] = [
@@ -36,27 +37,33 @@ export function CourtStepForm({
       .map((d) => [d.documentId, d.title] as [string, string]),
   ]
   return (
-    <div className="space-y-4">
-      <details>
-        <summary>Upload the court document</summary>
-        <CaseFileUpload caseId={detail.staff.row.id} kind="court_document" label="Court document" />
-      </details>
-      <ActionForm action={courtStepAction} submitLabel="Record court step" variant={variant}>
-        <Hidden name="orderId" value={order.row.id} />
-        <SelectField label="Step" name="kind" options={STEPS} defaultValue={step} />
-        <TextField
-          label="Date"
-          name="occurredOn"
-          type="date"
-          defaultValue={detail.today}
-          required
-        />
-        <TextField label="Court" name="court" required />
-        <TextField label="Docket number" name="docket" />
-        <NewestChoiceSelect label="Court document" name="documentId" options={docs} />
-        <SelectField label="Judgment result" name="judgmentOutcome" options={OUTCOMES} />
-      </ActionForm>
-    </div>
+    <UploadPair>
+      <div className="space-y-4">
+        <details>
+          <summary>Upload the court document</summary>
+          <CaseFileUpload
+            caseId={detail.staff.row.id}
+            kind="court_document"
+            label="Court document"
+          />
+        </details>
+        <ActionForm action={courtStepAction} submitLabel="Record court step" variant={variant}>
+          <Hidden name="orderId" value={order.row.id} />
+          <SelectField label="Step" name="kind" options={STEPS} defaultValue={step} />
+          <TextField
+            label="Date"
+            name="occurredOn"
+            type="date"
+            defaultValue={detail.today}
+            required
+          />
+          <TextField label="Court" name="court" required />
+          <TextField label="Docket number" name="docket" />
+          <NewestChoiceSelect label="Court document" name="documentId" options={docs} />
+          <SelectField label="Judgment result" name="judgmentOutcome" options={OUTCOMES} />
+        </ActionForm>
+      </div>
+    </UploadPair>
   )
 }
 

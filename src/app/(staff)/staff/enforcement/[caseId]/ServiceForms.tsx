@@ -14,6 +14,7 @@ import { CaseFileUpload } from './CaseFileUpload'
 import { NewestChoiceSelect } from './NewestChoiceSelect'
 import { Hidden } from './Section'
 import { ServiceMethodFields } from './ServiceMethodFields'
+import { UploadPair } from './UploadPair'
 
 const ROLES = Object.entries(ROLE_LABELS) as [string, string][]
 const CHECKS = Object.entries(ROLE_CHECK_LABELS) as [string, string][]
@@ -87,40 +88,42 @@ export function RecordServiceForm({
     ['', 'No one person: posting or publication'],
   ]
   return (
-    <div className="space-y-4">
-      <details>
-        <summary>Upload the proof of service</summary>
-        <CaseFileUpload
-          caseId={detail.staff.row.id}
-          kind="service_proof"
-          label="Proof of service"
-        />
-      </details>
-      <ActionForm action={serviceEventAction} submitLabel="Record service" variant={variant}>
-        <Hidden name="orderId" value={order.row.id} />
-        <SelectField
-          label="Recipient"
-          name="recipientId"
-          options={recipients}
-          defaultValue={recipientId === null ? '' : recipientId}
-        />
-        <TextField
-          label="Date served"
-          name="servedOn"
-          type="date"
-          defaultValue={detail.today}
-          required
-        />
-        <ServiceMethodFields
-          defaultMethod={recipientId === null ? 'posting_on_property' : 'in_hand'}
-        />
-        <NewestChoiceSelect
-          label="Proof of service"
-          name="proofDocumentId"
-          options={proofOptions}
-        />
-      </ActionForm>
-    </div>
+    <UploadPair>
+      <div className="space-y-4">
+        <details>
+          <summary>Upload the proof of service</summary>
+          <CaseFileUpload
+            caseId={detail.staff.row.id}
+            kind="service_proof"
+            label="Proof of service"
+          />
+        </details>
+        <ActionForm action={serviceEventAction} submitLabel="Record service" variant={variant}>
+          <Hidden name="orderId" value={order.row.id} />
+          <SelectField
+            label="Recipient"
+            name="recipientId"
+            options={recipients}
+            defaultValue={recipientId === null ? '' : recipientId}
+          />
+          <TextField
+            label="Date served"
+            name="servedOn"
+            type="date"
+            defaultValue={detail.today}
+            required
+          />
+          <ServiceMethodFields
+            defaultMethod={recipientId === null ? 'posting_on_property' : 'in_hand'}
+          />
+          <NewestChoiceSelect
+            label="Proof of service"
+            name="proofDocumentId"
+            options={proofOptions}
+          />
+        </ActionForm>
+      </div>
+    </UploadPair>
   )
 }
 
@@ -134,25 +137,27 @@ function AnswerForm({ order, detail }: Omit<OrderFormProps, 'variant'>) {
   return (
     <details>
       <summary className="cursor-pointer font-medium">Record an answer</summary>
-      <details>
-        <summary>Upload the answer</summary>
-        <CaseFileUpload
-          caseId={detail.staff.row.id}
-          kind="enforcement_letter"
-          label="Letter or other case document"
-        />
-      </details>
-      <ActionForm action={answerAction} submitLabel="Record answer">
-        <SelectField label="Who answered" name="recipientId" options={answerRecipients} />
-        <TextField
-          label="Date received"
-          name="answeredOn"
-          type="date"
-          defaultValue={detail.today}
-          required
-        />
-        <NewestChoiceSelect label="The answer document" name="documentId" options={answerDocs} />
-      </ActionForm>
+      <UploadPair>
+        <details>
+          <summary>Upload the answer</summary>
+          <CaseFileUpload
+            caseId={detail.staff.row.id}
+            kind="enforcement_letter"
+            label="Letter or other case document"
+          />
+        </details>
+        <ActionForm action={answerAction} submitLabel="Record answer">
+          <SelectField label="Who answered" name="recipientId" options={answerRecipients} />
+          <TextField
+            label="Date received"
+            name="answeredOn"
+            type="date"
+            defaultValue={detail.today}
+            required
+          />
+          <NewestChoiceSelect label="The answer document" name="documentId" options={answerDocs} />
+        </ActionForm>
+      </UploadPair>
     </details>
   )
 }
