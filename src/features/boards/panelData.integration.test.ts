@@ -85,6 +85,10 @@ describe('meetings the application was filed too late for', () => {
     const byDate = new Map(panel?.meetings.map((m) => [m.date, m.filedInTime]))
     expect(byDate.get('2027-04-07')).toBe(false)
     expect(byDate.get('2027-04-14')).toBe(true)
+    const hearings = await loadApplicationHearingsPanel(handle.db, world.staff, id, signal)
+    const scheduler = new Map(hearings?.scheduleMeetings.map((m) => [m.date, m.filedInTime]))
+    expect(scheduler.get('2027-04-07')).toBe(false)
+    expect(scheduler.get('2027-04-14')).toBe(true)
     const refused = await setAcceptanceMeeting(
       handle.db,
       world.staff,

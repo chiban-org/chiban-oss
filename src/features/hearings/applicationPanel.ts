@@ -7,6 +7,7 @@ import { TERMINAL_STATES } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
+import { filedInTime, filingLeadFor } from '@/features/boards/filingLead'
 import { toGraphNodes } from '@/features/decisions/decisionView'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
@@ -14,13 +15,14 @@ import { hearingText, loadApplicationAppealNodes } from '@/features/hearings/vie
 import { type TrcDepartmentSummary, trcSummary } from '@/features/reviews/trcSummary'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
+import type { CivilDate } from '@/types/civilDate'
 
 export interface ApplicationHearingsPanel {
   applicationId: string
   canRecord: boolean
   canRoute: boolean
   canSchedule: boolean
-  scheduleMeetings: { id: string; date: string; text: string }[]
+  scheduleMeetings: { id: string; date: string; text: string; filedInTime: boolean }[]
   scheduleKinds: [string, string][]
   hearings: { id: string; text: string }[]
   decisions: { id: string; text: string }[]
@@ -61,6 +63,7 @@ export async function loadApplicationHearingsPanel(
     .where(eq(boardDecisions.applicationId, applicationId))
     .orderBy(asc(boardDecisions.votedOn))
   const summary = await trcSummary(db, actor, applicationId, signal)
+  const lead = app.state === 'submitted' ? await filingLeadFor(db, app, board, signal) : null
   const kinds: [string, string][] =
     app.state === 'submitted' && board === 'planning_board'
       ? [['submission_and_hearing', HEARING_KIND_LABELS.submission_and_hearing]]
@@ -75,7 +78,12 @@ export async function loadApplicationHearingsPanel(
     canSchedule: !finished,
     scheduleMeetings: meetings
       .filter((m) => m.status === 'scheduled' && m.meetingDate >= today)
-      .map((m) => ({ id: m.id, date: m.meetingDate, text: formatCivilDate(m.meetingDate) })),
+      .map((m) => ({
+        id: m.id,
+        date: m.meetingDate,
+        text: formatCivilDate(m.meetingDate),
+        filedInTime: filedInTime(lead, app.receivedDate, m.meetingDate as CivilDate),
+      })),
     scheduleKinds: kinds,
     hearings: held.map(({ hearing, meeting }) => ({
       id: hearing.id,

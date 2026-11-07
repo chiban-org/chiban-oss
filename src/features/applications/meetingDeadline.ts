@@ -42,11 +42,8 @@ function meets(date: string, deadline: MeetingDeadline): boolean {
   return compareCivil(date as CivilDate, deadline.due) <= 0
 }
 
-export function meetingOptionText(
-  meeting: Pick<MeetingChoice, 'date' | 'text'> & Partial<MeetingChoice>,
-  deadline: MeetingDeadline | null,
-) {
-  if (meeting.filedInTime === false) return `${meeting.text} · filed too late for this meeting`
+export function meetingOptionText(meeting: MeetingChoice, deadline: MeetingDeadline | null) {
+  if (!meeting.filedInTime) return `${meeting.text} · filed too late for this meeting`
   if (deadline === null) return meeting.text
   return `${meeting.text} · ${meets(meeting.date, deadline) ? 'meets the deadline' : 'after the deadline'}`
 }
