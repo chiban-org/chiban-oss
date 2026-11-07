@@ -60,7 +60,7 @@ afterAll(async () => {
   await handle.drop()
 })
 
-async function nextDueOf(caseId: string) {
+async function dueOf(caseId: string) {
   const queue = await listCaseQueue(
     handle.db,
     staff,
@@ -68,22 +68,52 @@ async function nextDueOf(caseId: string) {
     TODAY,
     signal,
   )
-  return queue.rows.find((r) => r.caseId === caseId)?.nextDue
+  return queue.rows.find((r) => r.caseId === caseId)?.due
 }
 
-describe('next date on the enforcement list', () => {
-  it('is the earlier of the live answer date and the corrective action deadline', async () => {
+describe('due date on the enforcement list', () => {
+  it('is the running answer date while one runs, then the corrective action deadline', async () => {
     const answerFirst = await liveCase('1 Oak Lane', 'EO-A', '2027-03-10', '2027-04-10')
-    const correctiveFirst = await liveCase('2 Pine Lane', 'EO-B', '2027-03-20', '2027-03-12')
-    expect(await nextDueOf(answerFirst)).toEqual({ date: '2027-03-10', label: 'Answer due' })
-    expect(await nextDueOf(correctiveFirst)).toEqual({
-      date: '2027-03-12',
-      label: 'Corrective action due',
+    const laterAnswer = await liveCase('2 Pine Lane', 'EO-B', '2027-03-20', '2027-03-12')
+    expect(await dueOf(answerFirst)).toMatchObject({ date: '2027-03-10', label: 'Answer due' })
+    expect(await dueOf(laterAnswer)).toMatchObject({
+      date: '2027-03-20',
+      label: 'Answer due',
     })
   })
 
-  it('leaves out a corrective action deadline that has already passed', async () => {
-    const passed = await liveCase('3 Fir Lane', 'EO-C', '2027-03-15', '2027-02-20')
-    expect(await nextDueOf(passed)).toEqual({ date: '2027-03-15', label: 'Answer due' })
+  it('moves to the corrective action deadline once the answer period has lapsed', async () => {
+    const lapsed = await liveCase('4 Ash Lane', 'EO-D', '2027-02-20', '2027-03-12')
+    expect(await dueOf(lapsed)).toMatchObject({
+      date: '2027-03-12',
+      label: 'Corrective action due',
+      daysLeft: 10,
+    })
+  })
+
+  it('keeps a running answer date on a case in court, as the case page does', async () => {
+    const inCourt = await liveCase('5 Elm Lane', 'EO-E', '2027-03-18', '2027-04-20')
+    await handle.db
+      .update(enforcementCases)
+      .set({ status: 'in_court' })
+      .where(eq(enforcementCases.id, inCourt))
+    expect(await dueOf(inCourt)).toMatchObject({ date: '2027-03-18', label: 'Answer due' })
+  })
+
+  it('keeps a passed corrective action deadline as overdue when nothing else is running', async () => {
+    const passed = await liveCase('3 Fir Lane', 'EO-C', '2027-02-18', '2027-02-20')
+    expect(await dueOf(passed)).toMatchObject({
+      date: '2027-02-20',
+      label: 'Corrective action due',
+      daysLeft: -10,
+    })
+    const overdue = await listCaseQueue(
+      handle.db,
+      staff,
+      { filters: { due: ['overdue'] }, limit: 25, offset: 0 },
+      TODAY,
+      signal,
+    )
+    expect(overdue.rows.map((r) => r.caseId)).toContain(passed)
   })
 })

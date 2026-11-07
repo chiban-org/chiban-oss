@@ -168,9 +168,9 @@ describe('enforcement case list sorting', () => {
     expect(await ids(by('opened', 'asc'))).toEqual([cedar, birch, dune, alder, ivy, elm])
   })
 
-  it('sorts by the next date, overdue first, with cases that have none last both ways', async () => {
-    expect(await ids(by('next', 'asc'))).toEqual([dune, elm, ivy, cedar, birch, alder])
-    expect(await ids(by('next', 'desc'))).toEqual([elm, dune, ivy, cedar, birch, alder])
+  it('sorts by the due date with cases that have none last both ways', async () => {
+    expect(await ids(by('next', 'asc'))).toEqual([elm, dune, ivy, cedar, birch, alder])
+    expect(await ids(by('next', 'desc'))).toEqual([dune, elm, ivy, cedar, birch, alder])
   })
 
   it('sorts stayed cases first on the first click and last on the second', async () => {
@@ -189,8 +189,8 @@ describe('enforcement case quick filters', () => {
     expect(await ids({ filters: { statuses: ['closed', 'in_court'] } })).toEqual([ivy, cedar])
   })
 
-  it('overdue lists cases with a live unanswered answer date in the past', async () => {
-    expect(await ids({ filters: { due: ['overdue'] } })).toEqual([dune])
+  it('overdue lists cases whose due date has passed and ignores a lapsed answer period', async () => {
+    expect(await ids({ filters: { due: ['overdue'] } })).toEqual([])
   })
 
   it('due this week lists cases whose next date falls within seven days', async () => {
@@ -215,7 +215,8 @@ describe('enforcement case quick filters', () => {
     const all = await caseListFacets(handle.db, staff, { filters: {} }, TODAY, signal)
     expect(all.statuses.get('investigating')).toBe(1)
     expect(all.statuses.get('resolved')).toBe(0)
-    expect(all.due.get('overdue')).toBe(1)
+    expect(all.due.get('overdue')).toBe(0)
+    expect(all.due.get('week')).toBe(1)
     expect(all.due.get('none')).toBe(4)
     expect(all.assigned.get('me')).toBe(3)
     const narrowed = await caseListFacets(
@@ -232,7 +233,7 @@ describe('enforcement case quick filters', () => {
 })
 
 describe('enforcement case queue rows', () => {
-  it('shows the next date from the same expression the sort uses', async () => {
+  it('shows the due date the sort and the filters use', async () => {
     const queue = await listCaseQueue(
       handle.db,
       staff,
@@ -240,25 +241,30 @@ describe('enforcement case queue rows', () => {
       TODAY,
       signal,
     )
-    expect(queue.rows[0]?.nextDue?.label).toBe('Answer overdue')
-    expect(queue.rows[1]?.nextDue).toEqual({
+    expect(queue.rows[0]?.due).toMatchObject({
+      key: 'corrective_action',
       date: '2027-03-08',
       label: 'Corrective action due',
     })
-    expect(queue.rows.at(-1)?.nextDue).toBeNull()
+    expect(queue.rows[1]?.due).toMatchObject({
+      key: 'answer',
+      date: '2027-03-20',
+      label: 'Answer due',
+    })
+    expect(queue.rows.at(-1)?.due).toBeNull()
   })
 
-  it('shows an unanswered past answer date as overdue instead of none running', async () => {
+  it('takes the running answer date and leaves out the lapsed one on the same case', async () => {
     const queue = await listCaseQueue(
       handle.db,
       staff,
-      { filters: { due: ['overdue'] }, limit: 25, offset: 0 },
+      { filters: {}, limit: 25, offset: 0 },
       TODAY,
       signal,
     )
     const row = queue.rows.find((r) => r.caseId === dune)
-    expect(row?.nextDue?.label).toBe('Answer overdue')
-    expect(row?.nextDue?.date !== undefined && row.nextDue.date < TODAY).toBe(true)
+    expect(row?.due?.date).toBe('2027-03-20')
+    expect(row?.nextStep?.actor).toBe('Town')
   })
 
   it('agrees with the stay lookup on which cases are stayed', async () => {
@@ -269,7 +275,7 @@ describe('enforcement case queue rows', () => {
 })
 
 describe('enforcement case next date', () => {
-  it('shows no date for a case in court or stayed by an appeal even with an unanswered answer date', async () => {
+  it('shows no due date for a case in court with a lapsed answer date or stayed by an appeal', async () => {
     const queue = await listCaseQueue(
       handle.db,
       staff,
@@ -277,8 +283,12 @@ describe('enforcement case next date', () => {
       TODAY,
       signal,
     )
-    expect(queue.rows.find((r) => r.caseId === ivy)?.nextDue).toBeNull()
-    expect(queue.rows.find((r) => r.caseId === birch)?.nextDue).toBeNull()
+    expect(queue.rows.find((r) => r.caseId === ivy)?.due).toBeNull()
+    expect(queue.rows.find((r) => r.caseId === birch)?.due).toBeNull()
+    expect(queue.rows.find((r) => r.caseId === birch)?.nextStep).toEqual({
+      actor: 'ZBA',
+      ask: 'decide the appeal',
+    })
   })
 
   it('does not count a case in court or stayed as overdue', async () => {

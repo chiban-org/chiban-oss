@@ -5,7 +5,8 @@ import { StatusChip } from '@/components/StatusChip'
 import type { SortLink } from '@/features/dataTable/sort'
 import type { CaseSortKey } from '@/features/enforcement/caseListParams'
 import type { QueueRow } from '@/features/enforcement/caseQueue'
-import { formatCivilDate } from '@/lib/formatDate'
+import { daysLeftPhrase } from '@/lib/dayCount'
+import { formatCivilDate, formatCivilDateShort } from '@/lib/formatDate'
 
 const ROW_CLASS =
   'max-md:grid max-md:grid-cols-[minmax(0,1fr)_auto] max-md:gap-x-3 max-md:gap-y-2 max-md:px-4 max-md:py-3'
@@ -16,19 +17,32 @@ function sortOptions(links: Record<CaseSortKey, SortLink>) {
     { label: 'Where', link: links.where },
     { label: 'Status', link: links.status },
     { label: 'Opened', link: links.opened },
-    { label: 'Next date', link: links.next },
+    { label: 'Due', link: links.next },
     { label: 'Appeal stay', link: links.stay },
     { label: 'Assigned to', link: links.assigned },
   ]
 }
 
-function NextDate({ row }: { row: QueueRow }) {
-  if (row.nextDue === null) return <span className="text-muted-foreground">None running</span>
+function NextStepCell({ row }: { row: QueueRow }) {
+  if (row.nextStep === null) return <span className="text-muted-foreground">Nothing waiting</span>
   return (
-    <span
-      className={row.nextDue.label === 'Answer overdue' ? 'attention font-semibold' : undefined}
-    >
-      {`${row.nextDue.label} ${formatCivilDate(row.nextDue.date)}`}
+    <>
+      <span className="font-semibold">{row.nextStep.actor}:</span> {row.nextStep.ask}
+    </>
+  )
+}
+
+function DueCell({ row }: { row: QueueRow }) {
+  if (row.due === null) return <span className="text-muted-foreground">None</span>
+  const overdue = row.due.daysLeft < 0
+  return (
+    <span className="grid">
+      <span className={overdue ? 'attention font-semibold' : undefined}>
+        {formatCivilDate(row.due.date)}
+      </span>
+      <span className="text-sm text-muted-foreground">
+        {`${row.due.label}, ${daysLeftPhrase(row.due.daysLeft)}`}
+      </span>
     </span>
   )
 }
@@ -52,7 +66,8 @@ export function EnforcementQueueTable({
               <SortHeader label="Where" link={links.where} />
               <SortHeader label="Status" link={links.status} />
               <SortHeader label="Opened" link={links.opened} />
-              <SortHeader label="Next date" link={links.next} />
+              <SortHeader label="Next step" />
+              <SortHeader label="Due" link={links.next} />
               <SortHeader label="Appeal stay" link={links.stay} />
               <SortHeader label="Assigned to" link={links.assigned} />
             </tr>
@@ -60,7 +75,7 @@ export function EnforcementQueueTable({
           <tbody className="max-md:block">
             {rows.map((row) => (
               <tr key={row.caseId} className={ROW_CLASS}>
-                <td data-label="Case" className="max-md:order-[-2] max-md:block max-md:p-0">
+                <td data-label="Case" className="max-md:order-[-3] max-md:block max-md:p-0">
                   <Link
                     href={`/staff/enforcement/${row.caseId}`}
                     className="font-semibold whitespace-nowrap"
@@ -73,17 +88,23 @@ export function EnforcementQueueTable({
                 </td>
                 <td
                   data-label="Status"
-                  className="max-md:order-[-1] max-md:block max-md:max-w-44 max-md:justify-self-end max-md:p-0"
+                  className="max-md:order-[-2] max-md:block max-md:max-w-44 max-md:justify-self-end max-md:p-0"
                 >
                   <StatusChip status={row.statusChip} label={row.statusLabel} />
                 </td>
-                <td data-label="Opened" className={STACKED_CELL}>
-                  {formatCivilDate(row.openedOn)}
+                <td data-label="Opened" className={`${STACKED_CELL} whitespace-nowrap`}>
+                  {formatCivilDateShort(row.openedOn)}
                 </td>
-                <td data-label="Next date" className={STACKED_CELL}>
-                  <NextDate row={row} />
+                <td
+                  data-label="Next step"
+                  className="max-md:order-[-1] max-md:col-span-2 max-md:block max-md:p-0"
+                >
+                  <NextStepCell row={row} />
                 </td>
-                <td data-label="Appeal stay" className={STACKED_CELL}>
+                <td data-label="Due" className={STACKED_CELL}>
+                  <DueCell row={row} />
+                </td>
+                <td data-label="Appeal stay" className={`${STACKED_CELL} whitespace-nowrap`}>
                   {row.stay.stayed ? (
                     <StatusChip status="overdue" label="Stayed" />
                   ) : (

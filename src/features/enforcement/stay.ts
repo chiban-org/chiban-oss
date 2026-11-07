@@ -1,4 +1,4 @@
-import { and, asc, eq, gt, isNull, lte, or } from 'drizzle-orm'
+import { and, asc, gt, inArray, isNull, lte, or } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { enforcementAppeals, perilCertifications, restrainingOrders } from '@/db/schema'
 import { loadPack } from '@/features/packs/loadPack'
@@ -24,29 +24,60 @@ export function stayRuleActive(): boolean {
   return stayRule() !== null
 }
 
-async function appealStay(
+export async function staysFor(
   db: DbOrTx,
-  appealId: string,
+  caseIds: readonly string[],
   today: CivilDate,
-): Promise<StayState | null> {
-  const [certification] = await db
-    .select({ id: perilCertifications.id })
-    .from(perilCertifications)
-    .where(
-      and(eq(perilCertifications.appealId, appealId), lte(perilCertifications.certifiedOn, today)),
-    )
-  if (certification === undefined) return { stayed: true, reason: 'appeal_pending', appealId }
-  const [restraint] = await db
-    .select({ id: restrainingOrders.id })
-    .from(restrainingOrders)
+  signal: AbortSignal,
+): Promise<Map<string, StayState>> {
+  signal.throwIfAborted()
+  const states = new Map<string, StayState>(caseIds.map((id) => [id, NOT_STAYED]))
+  if (stayRule() === null || caseIds.length === 0) return states
+  const open = await db
+    .select({ id: enforcementAppeals.id, caseId: enforcementAppeals.caseId })
+    .from(enforcementAppeals)
     .where(
       and(
-        eq(restrainingOrders.appealId, appealId),
-        lte(restrainingOrders.issuedOn, today),
-        or(isNull(restrainingOrders.dissolvedOn), gt(restrainingOrders.dissolvedOn, today)),
+        inArray(enforcementAppeals.caseId, [...caseIds]),
+        lte(enforcementAppeals.filedOn, today),
+        or(isNull(enforcementAppeals.resolvedOn), gt(enforcementAppeals.resolvedOn, today)),
       ),
     )
-  return restraint === undefined ? null : { stayed: true, reason: 'restraining_order', appealId }
+    .orderBy(asc(enforcementAppeals.filedOn))
+  if (open.length === 0) return states
+  const appealIds = open.map((a) => a.id)
+  const [certified, restrained] = await Promise.all([
+    db
+      .select({ appealId: perilCertifications.appealId })
+      .from(perilCertifications)
+      .where(
+        and(
+          inArray(perilCertifications.appealId, appealIds),
+          lte(perilCertifications.certifiedOn, today),
+        ),
+      ),
+    db
+      .select({ appealId: restrainingOrders.appealId })
+      .from(restrainingOrders)
+      .where(
+        and(
+          inArray(restrainingOrders.appealId, appealIds),
+          lte(restrainingOrders.issuedOn, today),
+          or(isNull(restrainingOrders.dissolvedOn), gt(restrainingOrders.dissolvedOn, today)),
+        ),
+      ),
+  ])
+  const certifiedIds = new Set(certified.map((c) => c.appealId))
+  const restrainedIds = new Set(restrained.map((r) => r.appealId))
+  for (const appeal of open) {
+    if (states.get(appeal.caseId)?.stayed === true) continue
+    if (!certifiedIds.has(appeal.id)) {
+      states.set(appeal.caseId, { stayed: true, reason: 'appeal_pending', appealId: appeal.id })
+    } else if (restrainedIds.has(appeal.id)) {
+      states.set(appeal.caseId, { stayed: true, reason: 'restraining_order', appealId: appeal.id })
+    }
+  }
+  return states
 }
 
 export async function stayFor(
@@ -55,24 +86,7 @@ export async function stayFor(
   today: CivilDate,
   signal: AbortSignal,
 ): Promise<StayState> {
-  signal.throwIfAborted()
-  if (stayRule() === null) return NOT_STAYED
-  const open = await db
-    .select({ id: enforcementAppeals.id })
-    .from(enforcementAppeals)
-    .where(
-      and(
-        eq(enforcementAppeals.caseId, caseId),
-        lte(enforcementAppeals.filedOn, today),
-        or(isNull(enforcementAppeals.resolvedOn), gt(enforcementAppeals.resolvedOn, today)),
-      ),
-    )
-    .orderBy(asc(enforcementAppeals.filedOn))
-  for (const appeal of open) {
-    const state = await appealStay(db, appeal.id, today)
-    if (state !== null) return state
-  }
-  return NOT_STAYED
+  return (await staysFor(db, [caseId], today, signal)).get(caseId) ?? NOT_STAYED
 }
 
 export function stayBanner(

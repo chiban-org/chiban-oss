@@ -1,17 +1,19 @@
 import { type SQL, type SQLWrapper, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { ENFORCEMENT_STATUSES, enforcementCases } from '@/db/schema'
+import { ENFORCEMENT_STATUSES, type EnforcementStatus, enforcementCases } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { anyOf, countFacets, facet, whereAll } from '@/features/dataTable/facets'
 import { defaultSort, type SortState } from '@/features/dataTable/sort'
 import { orderBySql } from '@/features/dataTable/sortSql'
 import type { Status } from '@/features/design/tokens'
 import { enforcementCaseVisibleTo } from '@/features/enforcement/access'
+import { type CaseDueIndex, loadCaseDueIndex } from '@/features/enforcement/caseDueIndex'
 import type { CaseListFilters, CaseSortKey } from '@/features/enforcement/caseListParams'
 import { CASE_SORT } from '@/features/enforcement/caseListParams'
 import { caseChipStatus } from '@/features/enforcement/chipStatus'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
 import { stayRuleActive } from '@/features/enforcement/stay'
+import type { CaseDue } from '@/features/enforcement/workPlanTypes'
 import { DUE_WEEK_DAYS } from '@/features/queue/queueFilterSql'
 import {
   ASSIGNED_FILTERS,
@@ -24,12 +26,11 @@ import { addDays, type CivilDate } from '@/types/civilDate'
 export interface CaseListRow {
   caseId: string
   number: string
+  status: EnforcementStatus
   statusLabel: string
   statusChip: Status
   locationText: string
   openedOn: CivilDate
-  nextDueOn: CivilDate | null
-  nextDueKind: 'answer' | 'corrective' | null
   assignedToName: string | null
 }
 
@@ -49,39 +50,19 @@ export interface CaseListFacets {
 
 type ListGroup = 'statuses' | 'due' | 'assigned'
 
-const ANSWER_DATE = sql`(r.answer_due->>'due')::date`
-
-const LIVE_ORDER_STATUSES = ['issued', 'served', 'answered']
-
-function liveOrder(today: CivilDate): SQL {
-  return sql`${enforcementCases.status} = 'order_issued'
-    and o.status in ${LIVE_ORDER_STATUSES}
-    and not ${stayedOn(today)}`
+function dueDates(index: CaseDueIndex): SQL {
+  const pairs = [...index.dues].map(([caseId, due]) => sql`(${caseId}::uuid, ${due.date}::date)`)
+  if (pairs.length === 0) return sql`null::date`
+  return sql`(select v.due from (values ${sql.join(pairs, sql`, `)}) as v(id, due)
+    where v.id = ${enforcementCases.id})`
 }
 
-function nextAnswerDue(today: CivilDate): SQL {
-  return sql`(select min(${ANSWER_DATE}) from order_service_recipients r
-    join enforcement_orders o on o.id = r.order_id
-    where o.case_id = ${enforcementCases.id} and r.answer_due is not null
-      and r.answered_on is null and ${liveOrder(today)})`
+function inCases(caseIds: string[]): SQL {
+  return caseIds.length === 0 ? sql`false` : sql`${enforcementCases.id} in ${caseIds}`
 }
 
-function nextCorrectiveDeadline(today: CivilDate): SQL {
-  return sql`(select min(o.corrective_deadline) from enforcement_orders o
-    where o.case_id = ${enforcementCases.id} and o.corrective_deadline >= ${today}::date
-      and ${liveOrder(today)})`
-}
-
-function nextDate(today: CivilDate): SQL {
-  return sql`least(${nextAnswerDue(today)}, ${nextCorrectiveDeadline(today)})`
-}
-
-function unansweredPastDue(today: CivilDate): SQL {
-  return sql`exists (select 1 from order_service_recipients r
-    join enforcement_orders o on o.id = r.order_id
-    where o.case_id = ${enforcementCases.id} and r.answer_due is not null
-      and r.answered_on is null and ${ANSWER_DATE} < ${today}::date
-      and ${liveOrder(today)})`
+function casesDue(index: CaseDueIndex, within: (due: CaseDue) => boolean): SQL {
+  return inCases([...index.dues].filter(([, due]) => within(due)).map(([caseId]) => caseId))
 }
 
 function stayedOn(today: CivilDate): SQL {
@@ -96,17 +77,6 @@ function stayedOn(today: CivilDate): SQL {
             and (ro.dissolved_on is null or ro.dissolved_on > ${today}::date))))`
 }
 
-function nextDateOf(
-  answer: CivilDate | null,
-  corrective: CivilDate | null,
-): Pick<CaseListRow, 'nextDueOn' | 'nextDueKind'> {
-  if (answer !== null && (corrective === null || answer <= corrective)) {
-    return { nextDueOn: answer, nextDueKind: 'answer' }
-  }
-  if (corrective !== null) return { nextDueOn: corrective, nextDueKind: 'corrective' }
-  return { nextDueOn: null, nextDueKind: null }
-}
-
 const ASSIGNEE_NAME = sql<string | null>`(select u.display_name from users u
   where u.id = ${enforcementCases.assignedTo})`
 
@@ -115,13 +85,16 @@ const STATUS_ORDER = sql`array_position(array[${sql.join(
   sql`, `,
 )}]::text[], ${enforcementCases.status})`
 
-function sortColumns(today: CivilDate): Readonly<Record<CaseSortKey, SQLWrapper>> {
+function sortColumns(
+  today: CivilDate,
+  index: CaseDueIndex,
+): Readonly<Record<CaseSortKey, SQLWrapper>> {
   return {
     number: enforcementCases.number,
     where: enforcementCases.locationText,
     status: STATUS_ORDER,
     opened: enforcementCases.openedOn,
-    next: nextDate(today),
+    next: dueDates(index),
     stay: stayedOn(today),
     assigned: ASSIGNEE_NAME,
   }
@@ -129,14 +102,17 @@ function sortColumns(today: CivilDate): Readonly<Record<CaseSortKey, SQLWrapper>
 
 const TIEBREAK: readonly SQL[] = [sql`${enforcementCases.number} desc`]
 
-function dueClause(value: DueFilter, today: CivilDate): SQL {
+function dueClause(value: DueFilter, today: CivilDate, index: CaseDueIndex): SQL {
   switch (value) {
     case 'overdue':
-      return unansweredPastDue(today)
+      return casesDue(index, (due) => due.date < today)
     case 'week':
-      return sql`(${nextDate(today)} between ${today}::date and ${addDays(today, DUE_WEEK_DAYS)}::date)`
+      return casesDue(
+        index,
+        (due) => due.date >= today && due.date <= addDays(today, DUE_WEEK_DAYS),
+      )
     case 'none':
-      return sql`${nextDate(today)} is null`
+      return sql`not (${casesDue(index, () => true)})`
   }
 }
 
@@ -145,14 +121,19 @@ function assignedClause(value: AssignedFilter, actor: Actor | null): SQL {
   return actor === null ? sql`false` : sql`${enforcementCases.assignedTo} = ${actor.userId}`
 }
 
-function groupClauses(actor: Actor | null, filters: CaseListFilters, today: CivilDate) {
+function groupClauses(
+  actor: Actor | null,
+  filters: CaseListFilters,
+  today: CivilDate,
+  index: CaseDueIndex,
+) {
   const statuses = filters.statuses ?? []
   return new Map<ListGroup, SQL | undefined>([
     [
       'statuses',
       statuses.length === 0 ? undefined : sql`${enforcementCases.status} in ${statuses}`,
     ],
-    ['due', anyOf((filters.due ?? []).map((value) => dueClause(value, today)))],
+    ['due', anyOf((filters.due ?? []).map((value) => dueClause(value, today, index)))],
     ['assigned', anyOf((filters.assigned ?? []).map((value) => assignedClause(value, actor)))],
   ])
 }
@@ -161,9 +142,14 @@ function listWhere(
   actor: Actor | null,
   filters: CaseListFilters,
   today: CivilDate,
+  index: CaseDueIndex,
   except?: ListGroup,
 ) {
-  return whereAll([enforcementCaseVisibleTo(actor)], groupClauses(actor, filters, today), except)
+  return whereAll(
+    [enforcementCaseVisibleTo(actor)],
+    groupClauses(actor, filters, today, index),
+    except,
+  )
 }
 
 export async function listCasePage(
@@ -177,9 +163,11 @@ export async function listCasePage(
   },
   today: CivilDate,
   signal: AbortSignal,
+  index?: CaseDueIndex,
 ): Promise<CaseListPage> {
   signal.throwIfAborted()
-  const where = listWhere(actor, input.filters, today)
+  const due = index ?? (await loadCaseDueIndex(db, actor, today, signal))
+  const where = listWhere(actor, input.filters, today, due)
   const sort = input.sort ?? defaultSort(CASE_SORT)
   const [count] = await db
     .select({ n: sql<number>`count(*)::int` })
@@ -192,22 +180,20 @@ export async function listCasePage(
       status: enforcementCases.status,
       locationText: enforcementCases.locationText,
       openedOn: enforcementCases.openedOn,
-      nextAnswerOn: sql<string | null>`${nextAnswerDue(today)}::text`,
-      nextCorrectiveOn: sql<string | null>`${nextCorrectiveDeadline(today)}::text`,
       assignedToName: ASSIGNEE_NAME,
     })
     .from(enforcementCases)
     .where(where)
-    .orderBy(...orderBySql(sort, sortColumns(today), TIEBREAK))
+    .orderBy(...orderBySql(sort, sortColumns(today, due), TIEBREAK))
     .limit(input.limit + 1)
     .offset(input.offset)
   return {
-    rows: rows.slice(0, input.limit).map(({ status, nextAnswerOn, nextCorrectiveOn, ...row }) => ({
+    rows: rows.slice(0, input.limit).map(({ status, ...row }) => ({
       ...row,
+      status,
       statusLabel: CASE_STATUS_LABELS[status],
       statusChip: caseChipStatus(status),
       openedOn: row.openedOn as CivilDate,
-      ...nextDateOf(nextAnswerOn as CivilDate | null, nextCorrectiveOn as CivilDate | null),
     })),
     total: count?.n ?? 0,
     offset: input.offset,
@@ -222,19 +208,21 @@ export async function caseListFacets(
   input: { filters: CaseListFilters },
   today: CivilDate,
   signal: AbortSignal,
+  index?: CaseDueIndex,
 ): Promise<CaseListFacets> {
   signal.throwIfAborted()
+  const due = index ?? (await loadCaseDueIndex(db, actor, today, signal))
   const counts = await countFacets(db, {
     table: enforcementCases,
     scope: enforcementCaseVisibleTo(actor),
-    others: (group: ListGroup) => listWhere(actor, input.filters, today, group),
+    others: (group: ListGroup) => listWhere(actor, input.filters, today, due, group),
     facets: [
       facet(
         'statuses',
         ENFORCEMENT_STATUSES,
         (status) => sql`${enforcementCases.status} = ${status}`,
       ),
-      facet('due', DUE_FILTERS, (value) => dueClause(value, today)),
+      facet('due', DUE_FILTERS, (value) => dueClause(value, today, due)),
       facet('assigned', ASSIGNED_FILTERS, (value) => assignedClause(value, actor)),
     ],
   })

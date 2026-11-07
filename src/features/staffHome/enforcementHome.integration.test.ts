@@ -50,6 +50,7 @@ async function caseWith(status: EnforcementStatus, assignedTo: string | null, du
       ruleKey: 'nh.enf.cd_zoning',
       ruleVersion: 1,
       correctiveAction: 'Remove it',
+      correctiveDeadline: due,
       status: 'issued',
       draftedBy: staff.userId,
     })
