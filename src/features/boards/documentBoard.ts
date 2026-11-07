@@ -1,12 +1,13 @@
-import type { Board } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { boardMeetings } from '@/db/schema'
+import { boardMeetings, boards } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { boardOfApplication } from '@/features/boards/boardOf'
+import { boardForKind } from '@/features/boards/townBoards'
 
 export interface DocumentOwner {
-  board: Board
+  boardId: string
+  boardShortName: string
   applicationNumber: string | null
 }
 
@@ -18,14 +19,26 @@ export function documentOwners(db: DbOrTx, signal: AbortSignal) {
     let owner: DocumentOwner | null = null
     if (doc.recordKind === 'application') {
       const app = await loadApplicationContext(db, doc.recordId, signal)
-      const board = app === null ? null : boardOfApplication(app)
-      owner = board === null || app === null ? null : { board, applicationNumber: app.number }
+      const kind = app === null ? null : boardOfApplication(app)
+      const board = kind === null ? null : await boardForKind(db, kind, signal)
+      owner =
+        board === null || app === null
+          ? null
+          : { boardId: board.id, boardShortName: board.shortName, applicationNumber: app.number }
     } else if (doc.recordKind === 'meeting') {
       const [meeting] = await db
-        .select({ board: boardMeetings.board })
+        .select({ boardId: boardMeetings.boardId, shortName: boards.shortName })
         .from(boardMeetings)
+        .innerJoin(boards, eq(boards.id, boardMeetings.boardId))
         .where(eq(boardMeetings.id, doc.recordId))
-      owner = meeting === undefined ? null : { board: meeting.board, applicationNumber: null }
+      owner =
+        meeting === undefined
+          ? null
+          : {
+              boardId: meeting.boardId,
+              boardShortName: meeting.shortName,
+              applicationNumber: null,
+            }
     }
     cache.set(key, owner)
     return owner

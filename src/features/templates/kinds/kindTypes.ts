@@ -58,6 +58,8 @@ export const APPLICATION_FIELDS: readonly MergeField[] = [
 
 export const MEETING_FIELDS: readonly MergeField[] = [
   'board.name',
+  'board.short_name',
+  'board.chair.name',
   'meeting.date',
   'meeting.location',
   'meeting.time',

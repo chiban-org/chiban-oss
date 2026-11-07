@@ -1,9 +1,12 @@
+import type { BoardKind } from '@packs/nh/schema'
+import { missingBoardMessage } from '@/features/boards/townBoards'
 import { channelLabel } from '@/features/notices/channels'
 import { formatCivilDate } from '@/lib/formatDate'
 
 const COPY: Record<string, string> = {
   forbidden: 'You do not have permission to do this.',
   not_found: 'That record was not found.',
+  unknown_board: 'Choose a board that is still active.',
   wrong_board: 'That meeting belongs to a different board than this application.',
   meeting_not_set: 'Set that meeting for this application before recording the vote.',
   meeting_cancelled: 'That meeting was cancelled. Choose another one.',
@@ -120,6 +123,9 @@ function noticeItemsText(
 
 function objectErrorCopy(error: object): string | null {
   {
+    if ('noBoard' in error) {
+      return missingBoardMessage((error as { noBoard: BoardKind }).noBoard)
+    }
     if ('filedTooLate' in error) {
       const late = (
         error as { filedTooLate: { lastFilingDay: string; earliestMeeting: string | null } }

@@ -1,4 +1,3 @@
-import type { Board } from '@packs/nh/schema'
 import { and, asc, eq, inArray, isNull, or, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
@@ -14,7 +13,7 @@ import { type FrozenVersion, frozenVersion } from '@/features/boards/packets'
 
 export type Exclusion =
   | { kind: 'not_shared' }
-  | { kind: 'other_board'; board: Board }
+  | { kind: 'other_board'; boardShortName: string }
   | { kind: 'no_public_copy' }
 
 export interface Candidate {
@@ -37,10 +36,12 @@ export const TRC_SUMMARY_TITLE = 'Technical Review Committee summary'
 export function exclusionOf(
   doc: { isPublic: boolean },
   frozen: FrozenVersion | null,
-  owner: Board | null,
-  meetingBoard: Board,
+  owner: { boardId: string; boardShortName: string } | null,
+  meetingBoardId: string,
 ): Exclusion | null {
-  if (owner !== null && owner !== meetingBoard) return { kind: 'other_board', board: owner }
+  if (owner !== null && owner.boardId !== meetingBoardId) {
+    return { kind: 'other_board', boardShortName: owner.boardShortName }
+  }
   if (frozen !== null) return null
   return doc.isPublic ? { kind: 'no_public_copy' } : { kind: 'not_shared' }
 }
@@ -94,7 +95,7 @@ async function frozenVersions(db: DbOrTx, documentIds: string[]) {
 
 export async function packetCandidates(
   db: DbOrTx,
-  meeting: { id: string; board: Board },
+  meeting: { id: string; boardId: string },
   currentAgendaId: string | null,
   signal: AbortSignal,
 ): Promise<{ groups: CandidateGroup[]; candidates: Candidate[] }> {
@@ -138,7 +139,7 @@ export async function packetCandidates(
       title: doc.title,
       groupKey: doc.recordKind === 'meeting' ? MEETING_GROUP : doc.recordId,
       frozen,
-      exclusion: exclusionOf(doc, frozen, owner?.board ?? null, meeting.board),
+      exclusion: exclusionOf(doc, frozen, owner, meeting.boardId),
     })
   }
   return { groups, candidates }

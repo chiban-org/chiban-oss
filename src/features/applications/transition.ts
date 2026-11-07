@@ -1,3 +1,4 @@
+import type { BoardKind } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { DbOrTx, Tx } from '@/db/client'
 import { applications } from '@/db/schema'
@@ -61,9 +62,9 @@ export interface TransitionOutcome {
 const NEEDS_ISSUE_CAPABILITY: readonly CoreState[] = ['issued', 'decided', 'denied']
 const BOARD_RECORD_STATES: readonly CoreState[] = ['under_review', 'decided', 'denied']
 
-function boardOf(app: ApplicationContext): 'planning_board' | 'zba' | null {
+function boardOf(app: ApplicationContext): BoardKind | null {
   return (
-    loadPack().classifications.find((c) => c.key === app.typeBody.classification)?.board ?? null
+    loadPack().classifications.find((c) => c.key === app.typeBody.classification)?.boardKind ?? null
   )
 }
 

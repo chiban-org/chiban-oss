@@ -80,7 +80,10 @@ const LengthSchema = z.union([
   z.object({
     unit: z.literal('days'),
     value: z.number().int().positive(),
-    earlierOfNextRegularMeeting: z.object({ boardKind: BoardKindSchema, noticeRuleKey: z.string().min(1) }),
+    earlierOfNextRegularMeeting: z.object({
+      boardKind: BoardKindSchema,
+      noticeRuleKey: z.string().min(1),
+    }),
   }),
   z.object({
     unit: z.enum(['days', 'months', 'business_days']),

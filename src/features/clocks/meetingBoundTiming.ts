@@ -30,7 +30,7 @@ export async function meetingBoundTiming(
   if (spec === null) return null
   const noticeLeadDays = input.noticeLeadDays ?? spec.noticeLeadDays
   const meeting = await input.calendar.nextRegularMeeting(
-    spec.board,
+    spec.boardKind,
     earliestNoticeableDate(input.onDate, noticeLeadDays),
     signal,
   )

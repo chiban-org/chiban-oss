@@ -6,6 +6,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import type { MemberTitle } from '@/features/boards/members'
+import { getBoard } from '@/features/boards/townBoards'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -13,7 +14,7 @@ export interface MemberChange {
   membershipId: string
   displayName: string
   email: string
-  board: 'planning_board' | 'zba'
+  boardId: string
   title: MemberTitle
   termStart: CivilDate
   termEnd: CivilDate | null
@@ -26,6 +27,7 @@ export type MemberEditError =
   | 'term_order'
   | 'email_taken'
   | 'staff_account'
+  | 'unknown_board'
 
 async function emailProblem(
   tx: DbOrTx,
@@ -68,12 +70,16 @@ export async function updateBoardMember(
       .where(eq(boardMemberships.id, input.membershipId))
       .for('update')
     if (current === undefined) return err('not_found')
+    const board = await getBoard(tx, input.boardId)
+    if (board === null || (board.archivedAt !== null && board.id !== current.m.boardId)) {
+      return err('unknown_board')
+    }
     const userId = current.m.userId
     const taken = await emailProblem(tx, userId, email)
     if (taken !== null) return err(taken)
     await tx.update(users).set({ displayName, email }).where(eq(users.id, userId))
     const change = {
-      board: input.board,
+      boardId: input.boardId,
       title: input.title,
       termStart: input.termStart,
       termEnd: input.termEnd,
@@ -90,7 +96,7 @@ export async function updateBoardMember(
           membershipId: input.membershipId,
           displayName: current.name,
           email: current.email,
-          board: current.m.board,
+          boardId: current.m.boardId,
           title: current.m.title,
           termStart: current.m.termStart,
           termEnd: current.m.termEnd,

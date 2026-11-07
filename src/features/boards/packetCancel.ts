@@ -1,4 +1,3 @@
-import type { Board } from '@packs/nh/schema'
 import { and, desc, eq, gt, gte, inArray, isNull, or, sql } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import {
@@ -31,7 +30,7 @@ export async function closeMeetingPacket(tx: Tx, meetingId: string): Promise<voi
 
 async function cancelledRecipients(
   db: Db,
-  packet: { id: string; board: Board },
+  packet: { id: string; boardId: string },
   cancelledAt: Date,
 ) {
   const packetId = packet.id
@@ -39,7 +38,7 @@ async function cancelledRecipients(
     .select({ email: users.email })
     .from(boardPacketMembers)
     .innerJoin(users, eq(users.id, boardPacketMembers.userId))
-    .where(and(eq(boardPacketMembers.packetId, packetId), stillSeated(packet.board)))
+    .where(and(eq(boardPacketMembers.packetId, packetId), stillSeated(packet.boardId)))
   const links = await db
     .select({ email: boardPacketLinks.recipientEmail })
     .from(boardPacketLinks)

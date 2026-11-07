@@ -235,7 +235,7 @@ export async function publishAgenda(
     const [meeting] = await tx.select().from(boardMeetings).where(eq(boardMeetings.id, meetingId))
     if (meeting === undefined) return err('not_found')
     const date = formatCivilDate(meeting.meetingDate)
-    const frame = await documentFrame(tx, { board: meeting.board }, signal, store)
+    const frame = await documentFrame(tx, { boardId: meeting.boardId }, signal, store)
     const model = await agendaModelOf(tx, meeting, items, signal)
     const template = await publishedTemplate(tx, 'agenda', signal)
     const bytes = await renderAgendaPdf(frame, model, template)

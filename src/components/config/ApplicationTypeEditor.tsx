@@ -18,7 +18,7 @@ export interface ClassificationOption {
   key: string
   label: string
   mandatoryRuleKeys: string[]
-  board: string | null
+  boardKind: string | null
 }
 
 interface Props {

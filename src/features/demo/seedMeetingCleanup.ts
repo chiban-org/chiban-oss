@@ -7,6 +7,7 @@ import {
   boardPackets,
 } from '@/db/schema'
 import { cancelMeeting, scheduleMeeting } from '@/features/boards/meetings'
+import { boardIdOf } from '@/features/boards/townBoards'
 import type { CoverageContext } from '@/features/demo/seedCoverage'
 import { must } from '@/features/demo/seedPermitSupport'
 import { addDays } from '@/types/civilDate'
@@ -25,7 +26,7 @@ export async function removeStaleDemoPacket(ctx: CoverageContext): Promise<boole
         eq(boardPackets.title, STALE_PACKET_TITLE),
         eq(boardPackets.createdBy, ctx.cast.staff.userId),
         sql`not exists (select 1 from board_meetings m
-          where m.board = ${boardPackets}.board and m.meeting_date = ${boardPackets}.meeting_date)`,
+          where m.board_id = ${boardPackets}.board_id and m.meeting_date = ${boardPackets}.meeting_date)`,
       ),
     )
   const ids = stale.map((p) => p.id)
@@ -57,7 +58,7 @@ export async function seedCancelledMeeting(ctx: CoverageContext): Promise<boolea
       ctx.db,
       ctx.cast.staff,
       {
-        board: 'zba',
+        boardId: await boardIdOf(ctx.db, 'zba'),
         meetingDate: addDays(ctx.today, CANCELLED_LEAD_DAYS + offset),
         kind: 'special',
         location: 'Alder Pond Town Hall, Meeting Room 2',

@@ -1,6 +1,6 @@
 import type { DbOrTx } from '@/db/client'
 import type { agendaItems, boardMeetings } from '@/db/schema'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
+import { boardChairName, getBoard } from '@/features/boards/townBoards'
 import { formatMinuteOfDay } from '@/features/hearings/labels'
 import { formatCivilDate } from '@/lib/formatDate'
 import { modelItems } from './agendaModel'
@@ -15,9 +15,12 @@ export async function agendaModelOf(
   items: ItemRow[],
   signal: AbortSignal,
 ): Promise<AgendaModel> {
-  const settings = await getBoardSettings(db, signal)
+  signal.throwIfAborted()
+  const board = await getBoard(db, meeting.boardId)
   return {
-    boardName: boardLabel(settings, meeting.board),
+    boardName: board?.name ?? '',
+    boardShortName: board?.shortName ?? '',
+    boardChairName: board === null ? '' : await boardChairName(db, board.id),
     meetingDate: formatCivilDate(meeting.meetingDate),
     location: meeting.location,
     time: formatMinuteOfDay(meeting.startsAtMinute),

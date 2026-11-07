@@ -143,7 +143,7 @@ export function clockProbes(): Record<string, FieldProbe> {
     'clock.length.cases.when.is': clockProbe('nh.pb.decision', (r) =>
       mapCases(r, (c, i) => (i === 0 ? { ...c, when: { fact: 'regionalImpact', is: false } } : c)),
     ),
-    'clock.length.earlierOfNextRegularMeeting.board': clockProbe('nh.pb.completeness', (r) =>
+    'clock.length.earlierOfNextRegularMeeting.boardKind': clockProbe('nh.pb.completeness', (r) =>
       'earlierOfNextRegularMeeting' in r.length
         ? {
             ...r,
@@ -151,7 +151,7 @@ export function clockProbes(): Record<string, FieldProbe> {
               ...r.length,
               earlierOfNextRegularMeeting: {
                 ...r.length.earlierOfNextRegularMeeting,
-                board: 'zba',
+                boardKind: 'zba',
               },
             },
           }

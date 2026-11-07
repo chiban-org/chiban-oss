@@ -7,7 +7,7 @@ export function AddMeeting({ boards }: { boards: [string, string][] }) {
   return (
     <FormDialog label="Add meeting" title="Add a meeting" variant="default">
       <ActionForm action={scheduleMeetingAction} submitLabel="Add meeting" className="max-w-md">
-        <SelectField label="Board" name="board" options={boards} />
+        <SelectField label="Board" name="boardId" options={boards} />
         <TextField label="Date" name="meetingDate" type="date" required />
         <SelectField
           label="Kind"

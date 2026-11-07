@@ -1,4 +1,3 @@
-import type { Board } from '@packs/nh/boardSchema'
 import type { DbOrTx } from '@/db/client'
 import { getPublished } from '@/features/config/store'
 import { buildFrame, type DocumentFrame, type FrameImage } from '@/features/pdf/frame'
@@ -52,7 +51,7 @@ export async function loadFrameImages(
 
 export async function documentFrame(
   db: DbOrTx,
-  scope: { board?: Board | null },
+  scope: { boardId?: string | null },
   signal: AbortSignal,
   store: ObjectStore = getObjectStore(),
 ): Promise<DocumentFrame> {
@@ -61,5 +60,5 @@ export async function documentFrame(
   const townName = town.ok ? town.value.name : ''
   const profile = await loadTownProfile(db, signal)
   const images = profile === null ? new Map() : await loadFrameImages(store, profile, signal)
-  return buildFrame(townName, profile, scope.board ?? undefined, images)
+  return buildFrame(townName, profile, scope.boardId ?? undefined, images)
 }

@@ -51,7 +51,7 @@ export async function continueHearing(
     if (app === null) return err('not_found')
     const meeting = await getMeeting(tx, input.toMeetingId, signal)
     if (meeting === null) return err('not_found')
-    if (meeting.board !== boardOfApplication(app)) return err('wrong_board')
+    if (meeting.boardKind !== boardOfApplication(app)) return err('wrong_board')
     if (meeting.status === 'cancelled') return err('meeting_cancelled')
     const hearingId = randomUUID()
     let noticeSetId: string

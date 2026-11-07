@@ -1,4 +1,3 @@
-import type { Board } from '@packs/nh/schema'
 import { and, eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { hearings } from '@/db/schema'
@@ -46,13 +45,13 @@ async function noticedMeetings(
 export async function meetingEligibility(
   db: DbOrTx,
   app: ApplicationContext,
-  board: Board,
+  boardId: string,
   today: CivilDate,
   signal: AbortSignal,
 ): Promise<(meeting: { id: string; meetingDate: string }) => MeetingEligibility> {
   if (isTerminalState(app.state)) return () => ANY_MEETING
   const [lead, noticeDue, noticed] = await Promise.all([
-    app.state === 'submitted' ? filingLeadFor(db, app, board, signal) : null,
+    app.state === 'submitted' ? filingLeadFor(db, app, boardId, signal) : null,
     earliestNoticeDue(db, app, signal),
     noticedMeetings(db, app.id, today, signal),
   ])

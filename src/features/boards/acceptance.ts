@@ -1,3 +1,4 @@
+import type { BoardKind } from '@packs/nh/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { acceptanceSchedules, applications, clocks, completenessVotes } from '@/db/schema'
@@ -12,9 +13,10 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication, declaresSubstep } from '@/features/boards/boardOf'
-import { nextRegularMeeting } from '@/features/boards/calendar'
+import { nextRegularMeetingOfBoard } from '@/features/boards/calendar'
 import { FILING_LEAD_KEY, filingLeadFor, filingLeadRule } from '@/features/boards/filingLead'
 import { getMeeting } from '@/features/boards/meetings'
+import { boardForKind } from '@/features/boards/townBoards'
 import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import { createClock, markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import type { GateResult } from '@/features/gates/evaluateGates'
@@ -30,6 +32,7 @@ export type AcceptanceError =
   | 'not_submitted'
   | 'wrong_board'
   | 'meeting_cancelled'
+  | { noBoard: BoardKind }
   | { filedTooLate: { lastFilingDay: CivilDate; earliestMeeting: CivilDate | null } }
 
 async function replaceFilingClock(
@@ -90,23 +93,24 @@ export async function setAcceptanceMeetingTx(
     .for('update')
   const app = await loadApplicationContext(tx, input.applicationId, signal)
   if (app === null) return err('not_found')
-  const board = boardOfApplication(app)
-  if (board === null) return err('wrong_board')
+  const boardKind = boardOfApplication(app)
+  if (boardKind === null) return err('wrong_board')
+  if ((await boardForKind(tx, boardKind, signal)) === null) return err({ noBoard: boardKind })
   if (app.state !== 'submitted' || app.receivedDate === null) return err('not_submitted')
   const meeting = await getMeeting(tx, input.meetingId, signal)
   if (meeting === null) return err('not_found')
-  if (meeting.board !== board) return err('wrong_board')
+  if (meeting.boardKind !== boardKind) return err('wrong_board')
   if (meeting.status === 'cancelled') return err('meeting_cancelled')
   const meetingDate = meeting.meetingDate as CivilDate
   let lastFilingDay: CivilDate | null = null
-  const lead = await filingLeadFor(tx, app, board, signal)
+  const lead = await filingLeadFor(tx, app, meeting.boardId, signal)
   if (lead !== null) {
     const { leadDays } = lead
     lastFilingDay = lead.lastFilingDay(meetingDate)
     if (compareCivil(app.receivedDate, lastFilingDay) > 0) {
-      const earliestMeeting = await nextRegularMeeting(
+      const earliestMeeting = await nextRegularMeetingOfBoard(
         tx,
-        board,
+        meeting.boardId,
         addDays(app.receivedDate, leadDays),
         signal,
       )

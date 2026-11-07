@@ -19,7 +19,7 @@ export function boardMeetingRow(
   board: BoardFacts,
   abilities: ReadonlySet<PlanActionKind>,
 ): Requirement {
-  const planning = board.board === 'planning_board'
+  const planning = board.boardKind === 'planning_board'
   const done = board.acceptanceMeetingId !== null
   return {
     key: 'board.meeting',
@@ -48,7 +48,7 @@ export function boardVoteRow(
   abilities: ReadonlySet<PlanActionKind>,
   unmet: boolean,
 ): Requirement {
-  const planning = board.board === 'planning_board'
+  const planning = board.boardKind === 'planning_board'
   const ahead = meetingIsAhead(board)
   const set = board.acceptanceMeetingId !== null
   return {
@@ -75,7 +75,9 @@ export function meetingStep(
   return {
     key: 'board.meeting.move',
     task:
-      board.board === 'planning_board' ? 'Move the acceptance meeting' : 'Move the hearing meeting',
+      board.boardKind === 'planning_board'
+        ? 'Move the acceptance meeting'
+        : 'Move the hearing meeting',
     actor: 'town',
     note: null,
     action: { kind: 'set_board_meeting' },

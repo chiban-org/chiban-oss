@@ -1,4 +1,4 @@
-import type { Board } from '@packs/nh/schema'
+import { BOARD_KIND_TRAITS, type BoardKind } from '@packs/nh/schema'
 import { and, asc, eq, inArray, ne, or } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { acceptanceSchedules, applications, boardMeetings, projects } from '@/db/schema'
@@ -8,7 +8,7 @@ import type { CoreState } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
+import { activeBoards, boardLabel } from '@/features/boards/townBoards'
 import { headlineDeadline } from '@/features/queue/headlineDeadline'
 import { DEADLINE_OPEN, NEXT_DUE, NEXT_DUE_RULE_KEY, NOTICE_DUE } from '@/features/queue/queueSql'
 import { townToday } from '@/features/town/today'
@@ -41,7 +41,8 @@ export interface BoardApplicationLine {
 }
 
 export interface BoardSection {
-  board: Board
+  boardId: string
+  boardKind: BoardKind
   label: string
   meetings: MeetingLine[]
   applications: BoardApplicationLine[]
@@ -56,10 +57,11 @@ const OPEN_STATES: CoreState[] = ['submitted', 'under_review', 'decided']
 
 async function applicationLines(
   db: Db,
-  board: Board,
+  boardKind: BoardKind,
   today: string,
   signal: AbortSignal,
 ): Promise<BoardApplicationLine[]> {
+  if (!BOARD_KIND_TRAITS[boardKind].decidesApplications) return []
   const rows = await db
     .select({
       row: applications,
@@ -79,7 +81,7 @@ async function applicationLines(
   const lines: BoardApplicationLine[] = []
   for (const { row, clockDue, clockRuleKey, noticeDue } of rows) {
     const app = await loadApplicationContext(db, row.id, signal)
-    if (app === null || boardOfApplication(app) !== board) continue
+    if (app === null || boardOfApplication(app) !== boardKind) continue
     const [schedule] = await db
       .select({ date: boardMeetings.meetingDate })
       .from(acceptanceSchedules)
@@ -118,17 +120,18 @@ export async function loadBoardsView(
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return null
   const today = await townToday(db, now, signal)
-  const settings = await getBoardSettings(db, signal)
+  const boardRows = await activeBoards(db)
   const sections: BoardSection[] = []
-  for (const board of ['planning_board', 'zba'] as const) {
+  for (const board of boardRows) {
     const meetings = await db
       .select()
       .from(boardMeetings)
-      .where(eq(boardMeetings.board, board))
+      .where(eq(boardMeetings.boardId, board.id))
       .orderBy(asc(boardMeetings.meetingDate))
     sections.push({
-      board,
-      label: boardLabel(settings, board),
+      boardId: board.id,
+      boardKind: board.kind,
+      label: boardLabel(board),
       meetings: meetings.map((m) => ({
         id: m.id,
         dateText: formatCivilDate(m.meetingDate),
@@ -138,7 +141,7 @@ export async function loadBoardsView(
         cancelReason: m.cancelReason,
         past: m.meetingDate < today,
       })),
-      applications: await applicationLines(db, board, today, signal),
+      applications: await applicationLines(db, board.kind, today, signal),
     })
   }
   return { today, sections }

@@ -2,9 +2,9 @@ import { desc, eq, exists } from 'drizzle-orm'
 import { agendaItems, boardMeetings, boardPackets } from '@/db/schema'
 import { agendaModelOf } from '@/features/agendas/agendaMeetingModel'
 import { agendaDocumentInput } from '@/features/agendas/agendaPdf'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { packetCoverInput } from '@/features/boards/cover'
 import { loadPacketView } from '@/features/boards/packetView'
+import { allBoards, boardLabel } from '@/features/boards/townBoards'
 import { documentFrame } from '@/features/pdf/documentFrame'
 import { type PreviewSource, SAMPLE_LIMIT } from '@/features/templates/preview/previewTypes'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -12,9 +12,13 @@ import { formatCivilDate } from '@/lib/formatDate'
 export const AGENDA_SOURCE: PreviewSource = {
   async samples({ db, signal }) {
     signal.throwIfAborted()
-    const settings = await getBoardSettings(db, signal)
+    const boardRows = await allBoards(db)
     const rows = await db
-      .select({ id: boardMeetings.id, board: boardMeetings.board, date: boardMeetings.meetingDate })
+      .select({
+        id: boardMeetings.id,
+        boardId: boardMeetings.boardId,
+        date: boardMeetings.meetingDate,
+      })
       .from(boardMeetings)
       .where(
         exists(
@@ -28,7 +32,7 @@ export const AGENDA_SOURCE: PreviewSource = {
       .limit(SAMPLE_LIMIT)
     return rows.map((r) => ({
       id: r.id,
-      label: `${boardLabel(settings, r.board)}, ${formatCivilDate(r.date)}`,
+      label: `${boardLabel(boardRows.find((b) => b.id === r.boardId) ?? { name: '' })}, ${formatCivilDate(r.date)}`,
     }))
   },
   async input({ db, signal }, id) {
@@ -40,7 +44,7 @@ export const AGENDA_SOURCE: PreviewSource = {
       .where(eq(agendaItems.meetingId, id))
       .orderBy(agendaItems.position, agendaItems.id)
     if (items.length === 0) return null
-    const frame = await documentFrame(db, { board: meeting.board }, signal)
+    const frame = await documentFrame(db, { boardId: meeting.boardId }, signal)
     return agendaDocumentInput(frame, await agendaModelOf(db, meeting, items, signal))
   },
 }
@@ -58,6 +62,6 @@ export const BOARD_PACKET_COVER_SOURCE: PreviewSource = {
   async input({ db, signal }, id) {
     const view = await loadPacketView(db, id, '', signal)
     if (view === null) return null
-    return packetCoverInput(view, await documentFrame(db, { board: view.board }, signal))
+    return packetCoverInput(view, await documentFrame(db, { boardId: view.boardId }, signal))
   },
 }

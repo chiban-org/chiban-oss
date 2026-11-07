@@ -1,4 +1,5 @@
 import { randomUUID } from 'node:crypto'
+import type { BoardKind } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { applications, hearings } from '@/db/schema'
@@ -11,6 +12,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { type AcceptanceError, setAcceptanceMeetingTx } from '@/features/boards/acceptance'
 import { boardOfApplication, declaresSubstep } from '@/features/boards/boardOf'
 import { getMeeting } from '@/features/boards/meetings'
+import { boardForKind } from '@/features/boards/townBoards'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { deriveNoticeItems } from '@/features/notices/deriveItems'
@@ -31,6 +33,7 @@ export type ScheduleError =
   | 'no_issued_list'
   | 'determination_missing'
   | 'list_out_of_date'
+  | { noBoard: BoardKind }
   | { filedTooLate: { lastFilingDay: CivilDate; earliestMeeting: CivilDate | null } }
   | { gateBlocked: GateResult[] }
 
@@ -85,14 +88,14 @@ async function bringToHearing(
   actor: Actor,
   input: { applicationId: string; meetingId: string; kind: HearingKind },
   state: string,
-  board: 'planning_board' | 'zba',
+  boardKind: BoardKind,
   signal: AbortSignal,
 ): Promise<Result<void, ScheduleError>> {
   if (state === 'under_review') {
     return input.kind === 'submission_and_hearing' ? err('invalid_state') : ok(undefined)
   }
   if (state !== 'submitted') return err('invalid_state')
-  if (board === 'zba') return await openZbaHearing(tx, actor, input.applicationId, signal)
+  if (boardKind === 'zba') return await openZbaHearing(tx, actor, input.applicationId, signal)
   if (input.kind !== 'submission_and_hearing') return err('invalid_state')
   const set = await setAcceptanceMeetingTx(tx, actor, input, signal)
   return set.ok ? ok(undefined) : err(acceptanceFailure(set.error))
@@ -114,11 +117,12 @@ export async function scheduleHearing(
       .for('update')
     const app = await loadApplicationContext(tx, input.applicationId, signal)
     if (app === null) return err('not_found')
-    const board = boardOfApplication(app)
-    if (board === null) return err('wrong_board')
+    const boardKind = boardOfApplication(app)
+    if (boardKind === null) return err('wrong_board')
+    if ((await boardForKind(tx, boardKind, signal)) === null) return err({ noBoard: boardKind })
     const meeting = await getMeeting(tx, input.meetingId, signal)
     if (meeting === null) return err('not_found')
-    if (meeting.board !== board) return err('wrong_board')
+    if (meeting.boardKind !== boardKind) return err('wrong_board')
     if (meeting.status === 'cancelled') return err('meeting_cancelled')
     const hearingId = randomUUID()
     const derived = await deriveNoticeItems(
@@ -132,7 +136,7 @@ export async function scheduleHearing(
       signal,
     )
     if (!derived.ok) return err(derived.error)
-    const brought = await bringToHearing(tx, actor, input, app.state, board, signal)
+    const brought = await bringToHearing(tx, actor, input, app.state, boardKind, signal)
     if (!brought.ok) return brought
     await tx.insert(hearings).values({
       id: hearingId,

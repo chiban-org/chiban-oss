@@ -7,7 +7,7 @@ import { newItemKey } from '@/features/config/newItemKey'
 import { publishConfig, rollbackConfig } from '@/features/config/publish'
 import { fieldErrorsFor } from '@/features/config/publishErrors'
 import { listKeysOfKind } from '@/features/config/settingsViews'
-import { skeletonBody } from '@/features/config/skeletons'
+import { skeletonBodyFor } from '@/features/config/skeletons'
 import { saveDraft } from '@/features/config/store'
 import { type ActionResult, errorCopy } from '@/server/actionRunner'
 import { refuseField, runStaffForm } from '@/server/formInput'
@@ -95,7 +95,7 @@ export async function startDraftAction(formData: FormData): Promise<ActionResult
       if (!chosen.ok) return refuseField(chosen.field, chosen.message)
       key = chosen.key
     }
-    const body = skeletonBody(input.kind, key, input.label ?? key)
+    const body = await skeletonBodyFor(db, input.kind, key, input.label ?? key)
     const saved = await saveDraft(db, actor, { kind: input.kind, key, body }, signal)
     if (!saved.ok) return refusedDraft(saved.error)
     outcome.kind = input.kind

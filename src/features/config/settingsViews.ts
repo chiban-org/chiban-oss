@@ -3,7 +3,7 @@ import type { DbOrTx } from '@/db/client'
 import { configVersions, users } from '@/db/schema'
 import { FIELD_LABELS } from '@/features/config/fieldLabels'
 import type { ConfigKind } from '@/features/config/kinds'
-import { skeletonBody } from '@/features/config/skeletons'
+import { skeletonBodyFor } from '@/features/config/skeletons'
 import { type FieldChange, versionChanges } from '@/features/config/versionChanges'
 import { loadPack } from '@/features/packs/loadPack'
 import { DOCUMENT_KINDS } from '@/features/templates/kinds/documentKinds'
@@ -124,6 +124,6 @@ export async function getEditorState(
   })
   const draft = rows.find((r) => r.v.status === 'draft')
   const published = rows.find((r) => r.v.status === 'published')
-  const body = draft?.v.body ?? published?.v.body ?? skeletonBody(kind, key)
+  const body = draft?.v.body ?? published?.v.body ?? (await skeletonBodyFor(db, kind, key))
   return { body, versions }
 }

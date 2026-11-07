@@ -1,4 +1,3 @@
-import type { Board } from '@packs/nh/schema'
 import { and, asc, desc, eq, inArray, isNull } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
@@ -14,7 +13,6 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { documentOwners } from '@/features/boards/documentBoard'
-import { BOARD_NAMES } from '@/features/hearings/views'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
 
@@ -89,7 +87,7 @@ export async function createPacket(
   if (!allowed.ok) return err('forbidden')
   const meeting = await packetMeeting(db, input.meetingId)
   if (!meeting.ok) return meeting
-  const board = meeting.value.board
+  const boardId = meeting.value.boardId
   const docs = await db.select().from(documents).where(inArray(documents.id, input.documentIds))
   const versions = await db
     .select()
@@ -126,7 +124,7 @@ export async function createPacket(
   const otherBoard = new Set<string>()
   for (const doc of docs) {
     const owner = await ownerOf(doc)
-    if (owner !== null && owner.board !== board) otherBoard.add(doc.id)
+    if (owner !== null && owner.boardId !== boardId) otherBoard.add(doc.id)
   }
   const refused = picked.filter((p) => p.frozen === null || otherBoard.has(p.id)).map((p) => p.id)
   if (refused.length > 0) return err({ notForBoard: refused })
@@ -135,7 +133,7 @@ export async function createPacket(
       .insert(boardPackets)
       .values({
         title: input.title,
-        board,
+        boardId,
         meetingDate: meeting.value.meetingDate,
         meetingId: meeting.value.id,
         createdBy: actor.userId,

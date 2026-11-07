@@ -1,9 +1,9 @@
-import type { Board, ClockRule } from '@packs/nh/schema'
+import type { BoardKind, ClockRule } from '@packs/nh/schema'
 import { type Pack, ruleByKey } from '@/features/packs/loadPack'
 import { addDays, type CivilDate, compareCivil } from '@/types/civilDate'
 
 export interface MeetingBoundSpec {
-  board: Board
+  boardKind: BoardKind
   days: number
   noticeLeadDays: number
 }
@@ -11,11 +11,11 @@ export interface MeetingBoundSpec {
 export function meetingBoundSpec(rule: ClockRule, pack: Pack): MeetingBoundSpec | null {
   const length = rule.length
   if (!('earlierOfNextRegularMeeting' in length)) return null
-  const { board, noticeRuleKey } = length.earlierOfNextRegularMeeting
+  const { boardKind, noticeRuleKey } = length.earlierOfNextRegularMeeting
   const notice = ruleByKey(pack, noticeRuleKey)
   const noticeLeadDays =
     notice.kind === 'clock' && 'value' in notice.length ? notice.length.value : 0
-  return { board, days: length.value, noticeLeadDays }
+  return { boardKind, days: length.value, noticeLeadDays }
 }
 
 export interface MeetingBoundInput {

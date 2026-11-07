@@ -1,4 +1,4 @@
-import type { Board, ClockRule } from '@packs/nh/schema'
+import type { BoardKind, ClockRule } from '@packs/nh/schema'
 import { asc, eq, inArray } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import { clockAdjustments, clocks } from '@/db/schema'
@@ -35,7 +35,7 @@ async function carryAdjustments(tx: Tx, fromClockId: string, toClockId: string):
 
 export async function recomputeMeetingBoundClocks(
   tx: Tx,
-  board: Board,
+  boardKind: BoardKind,
   signal: AbortSignal,
 ): Promise<void> {
   signal.throwIfAborted()
@@ -49,7 +49,7 @@ export async function recomputeMeetingBoundClocks(
     const rule = ruleByKey(pack, clock.ruleKey, clock.ruleVersion)
     if (rule.kind !== 'clock') continue
     const spec = meetingBoundSpec(rule, pack)
-    if (spec === null || spec.board !== board) continue
+    if (spec === null || spec.boardKind !== boardKind) continue
     const app = await loadApplicationContext(tx, clock.applicationId, signal)
     if (app === null) continue
     const facts = await factsWithDeterminations(tx, clock.applicationId, app.facts)

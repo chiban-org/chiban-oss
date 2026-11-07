@@ -1,6 +1,5 @@
 'use server'
 
-import { BoardSchema } from '@packs/nh/schema'
 import { z } from 'zod'
 import { errorOrOk } from '@/features/boards/actionResult'
 import { updateBoardMember } from '@/features/boards/memberEdit'
@@ -34,7 +33,7 @@ const INVITE_FORM = z
   .object({
     displayName: optionalText('a name', { max: 200 }),
     email: emailAddress('an email address'),
-    board: choice('a board', BoardSchema.options),
+    boardId: recordId('a board'),
     title: choice('a role on the board', TITLES),
     termStart: civilDate('the term start date'),
     termEnd: optionalCivilDate('the term end date'),
@@ -77,7 +76,7 @@ const UPDATE_FORM = z
     membershipId: recordId('a membership'),
     displayName: requiredText('a name', { max: 200 }),
     email: emailAddress('an email address'),
-    board: choice('a board', BoardSchema.options),
+    boardId: recordId('a board'),
     title: choice('a role on the board', TITLES),
     termStart: civilDate('the term start date'),
     termEnd: optionalCivilDate('the term end date'),

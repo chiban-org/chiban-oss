@@ -6,6 +6,7 @@ import { VersionHistory } from '@/components/config/VersionHistory'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
+import { activeBoards } from '@/features/boards/townBoards'
 import { getEditorState } from '@/features/config/settingsViews'
 import { type TownProfileSection, townProfileForEditing } from '@/features/town/profileSettings'
 import { getTownSettings } from '@/features/town/settings'
@@ -22,10 +23,11 @@ export async function TownSettingsPage({ ctx, section, title, lead }: Props) {
   if (!(await hasCapability(ctx.db, ctx.actor.userId, 'config.edit', ctx.signal))) {
     return <NoPermission title={title} action="change town settings" />
   }
-  const [profile, town, history] = await Promise.all([
+  const [profile, town, history, boardRows] = await Promise.all([
     townProfileForEditing(ctx.db, ctx.signal),
     getTownSettings(ctx.db, ctx.signal),
     getEditorState(ctx.db, 'town_profile', 'default', ctx.signal),
+    activeBoards(ctx.db),
   ])
   return (
     <main>
@@ -41,6 +43,12 @@ export async function TownSettingsPage({ ctx, section, title, lead }: Props) {
         initial={profile.body}
         resetKey={String(profile.version)}
         townName={town.ok ? town.value.name : ''}
+        boards={boardRows.map((b) => ({
+          id: b.id,
+          kind: b.kind,
+          name: b.name,
+          shortName: b.shortName,
+        }))}
       />
       <details id="version-history" className="mt-8">
         <summary>Version history</summary>

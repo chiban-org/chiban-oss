@@ -1,4 +1,4 @@
-import type { Board } from '@packs/nh/schema'
+import { BOARD_KIND_TRAITS, type BoardKind } from '@packs/nh/schema'
 import { and, asc, desc, eq, gte, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
@@ -21,10 +21,10 @@ import { type CoreState, TERMINAL_STATES } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { desRule, suggestDesProximity } from '@/features/boards/des500'
 import { type MeetingEligibility, meetingEligibility } from '@/features/boards/meetingEligibility'
 import { getRegionalContacts } from '@/features/boards/regionalContacts'
+import { boardForKind, missingBoardMessage } from '@/features/boards/townBoards'
 import { loadPack } from '@/features/packs/loadPack'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { mayManageAbutters } from '@/features/rosters/manage'
@@ -34,8 +34,9 @@ import type { CivilDate } from '@/types/civilDate'
 
 export interface BoardPanelData {
   applicationId: string
-  board: Board
+  boardKind: BoardKind
   boardName: string
+  missingBoard: string | null
   state: string
   canRecord: boolean
   canManage: boolean
@@ -161,25 +162,28 @@ export async function loadBoardPanel(
   if (!hasFullRecordAccess(actor)) return null
   const app = await loadApplicationContext(db, applicationId, signal)
   if (app === null) return null
-  const board = boardOfApplication(app)
-  if (board === null) return null
+  const boardKind = boardOfApplication(app)
+  if (boardKind === null) return null
+  const boardRow = await boardForKind(db, boardKind, signal)
   const today = await townToday(db, new Date(), signal)
   const pack = loadPack()
   const classification = pack.classifications.find((c) => c.key === app.typeBody.classification)
-  const settings = await getBoardSettings(db, signal)
   const contacts = await getRegionalContacts(db, signal)
-  const meetings = await db
-    .select()
-    .from(boardMeetings)
-    .where(
-      and(
-        eq(boardMeetings.board, board),
-        eq(boardMeetings.status, 'scheduled'),
-        gte(boardMeetings.meetingDate, today),
-      ),
-    )
-    .orderBy(asc(boardMeetings.meetingDate))
-  const eligible = await meetingEligibility(db, app, board, today, signal)
+  const meetings =
+    boardRow === null
+      ? []
+      : await db
+          .select()
+          .from(boardMeetings)
+          .where(
+            and(
+              eq(boardMeetings.boardId, boardRow.id),
+              eq(boardMeetings.status, 'scheduled'),
+              gte(boardMeetings.meetingDate, today),
+            ),
+          )
+          .orderBy(asc(boardMeetings.meetingDate))
+  const eligible = await meetingEligibility(db, app, boardRow?.id ?? '', today, signal)
   const [schedule] = await db
     .select({ id: boardMeetings.id, date: boardMeetings.meetingDate })
     .from(acceptanceSchedules)
@@ -239,8 +243,9 @@ export async function loadBoardPanel(
     )
   return {
     applicationId,
-    board,
-    boardName: boardLabel(settings, board),
+    boardKind,
+    boardName: boardRow?.name ?? BOARD_KIND_TRAITS[boardKind].label,
+    missingBoard: boardRow === null ? missingBoardMessage(boardKind) : null,
     state: app.state,
     ...(await changePermissions(db, actor, app.state, signal)),
     canOpenLists: await mayManageAbutters(db, actor.userId, signal),

@@ -43,7 +43,7 @@ export function MeetingForm({
       <input type="hidden" name="applicationId" value={data.applicationId} />
       <MeetingSelect
         key={chosenMeeting(data, target)}
-        label={data.board === 'zba' ? 'Hearing meeting' : 'Meeting'}
+        label={data.boardKind === 'zba' ? 'Hearing meeting' : 'Meeting'}
         options={data.meetings.map((m) => ({
           value: m.id,
           text: meetingOptionText(m, deadline),
@@ -71,7 +71,7 @@ export function VoteFormBody({
   variant?: Variant
   rejectOnly?: boolean
 }) {
-  const planning = data.board === 'planning_board'
+  const planning = data.boardKind === 'planning_board'
   if (meetingIsAhead(data)) {
     return <p>{`Record the vote once the meeting on ${data.acceptanceText ?? ''} has happened.`}</p>
   }

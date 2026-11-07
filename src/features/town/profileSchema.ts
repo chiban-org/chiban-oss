@@ -1,4 +1,4 @@
-import { type Board, BoardSchema } from '@packs/nh/boardSchema'
+import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import { z } from 'zod'
 
 export const TOWN_ASSET_PREFIX = 'town-assets/'
@@ -27,8 +27,8 @@ export type SignerRole = z.infer<typeof SignerRoleSchema>
 export const SIGNER_ROLE_LABELS: Record<SignerRole, string> = {
   building_official: 'Building official',
   land_use_administrator: 'Land use administrator',
-  planning_board_chair: 'Planning Board chair',
-  zba_chair: 'Zoning Board of Adjustment chair',
+  planning_board_chair: `${BOARD_KIND_TRAITS.planning_board.label} chair`,
+  zba_chair: `${BOARD_KIND_TRAITS.zba.label} chair`,
   code_enforcement_officer: 'Code enforcement officer',
   town_clerk: 'Town clerk',
 }
@@ -54,11 +54,6 @@ export const BoardOverrideSchema = z.object({
   footerText: z.string().trim().optional(),
 })
 export type BoardOverride = z.infer<typeof BoardOverrideSchema>
-
-export const TOWN_BOARD_LABELS: readonly (readonly [Board, string])[] = [
-  ['planning_board', 'Planning Board'],
-  ['zba', 'Zoning Board of Adjustment'],
-]
 
 export const CONTACT_LINES = ['address', 'phone', 'email', 'website', 'officeHours'] as const
 export type ContactLine = (typeof CONTACT_LINES)[number]
@@ -90,7 +85,7 @@ export const TownProfileBodySchema = z.object({
   officeHours: z.string().trim(),
   logo: TownImageSchema.nullable(),
   letterhead: LetterheadSchema,
-  boardOverrides: z.partialRecord(BoardSchema, BoardOverrideSchema),
+  boardOverrides: z.record(z.uuid(), BoardOverrideSchema),
   signers: z.array(SignerSchema),
 })
 export type TownProfileBody = z.infer<typeof TownProfileBodySchema>

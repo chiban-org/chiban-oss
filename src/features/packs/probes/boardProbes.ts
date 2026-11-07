@@ -45,7 +45,7 @@ function observeClassification(c: ProceedingClassification): unknown {
     { regionalImpact: true, desWithin: true },
   ]
   return {
-    board: c.board,
+    boardKind: c.boardKind,
     strategyKey: c.abutters?.strategyKey ?? null,
     resolverKey: c.abutters?.resolverKey ?? null,
     roles: spec === null ? null : flags.map((f) => recipientRolesFor(spec, f)),
@@ -92,7 +92,7 @@ export function boardProbes(): Record<string, FieldProbe> {
       mutate: (r) => ({ ...r, recipientRole: 'applicant' as never }),
       observe: observeProximity,
     }),
-    'classification.board': abuttersProbe((c) => ({ ...c, board: 'zba' })),
+    'classification.boardKind': abuttersProbe((c) => ({ ...c, boardKind: 'zba' })),
     'classification.abutters.strategyKey': abuttersProbe((c) =>
       withAbutters(c, (a) => {
         a.strategyKey = 'other.strategy'

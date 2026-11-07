@@ -145,9 +145,11 @@ export function ApplicationTypeAdapter({ body, onChange, issues }: EditorProps) 
 }
 
 export function BoardSettingsAdapter({ body, onChange, issues }: EditorProps) {
+  const { boards } = useEditorContext()
   return (
     <BoardSettingsEditor
       body={body as BoardSettingsBody}
+      boards={boards}
       onChange={onChange}
       errors={errorsOf(issues)}
     />

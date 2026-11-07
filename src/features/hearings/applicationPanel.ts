@@ -8,6 +8,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { type MeetingEligibility, meetingEligibility } from '@/features/boards/meetingEligibility'
+import { boardForKind } from '@/features/boards/townBoards'
 import { toGraphNodes } from '@/features/decisions/decisionView'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
@@ -39,18 +40,22 @@ export async function loadApplicationHearingsPanel(
   signal.throwIfAborted()
   const app = await loadApplicationContext(db, applicationId, signal)
   if (app === null) return null
-  const board = boardOfApplication(app)
-  if (board === null) return null
+  const boardKind = boardOfApplication(app)
+  if (boardKind === null) return null
+  const boardRow = await boardForKind(db, boardKind, signal)
   const canRecord = await hasCapability(db, actor.userId, 'board.record', signal)
   if (!canRecord) return null
   const finished = TERMINAL_STATES.includes(app.state)
   const canRoute = !finished && (await hasCapability(db, actor.userId, 'review.assign', signal))
   const today = await townToday(db, new Date(), signal)
-  const meetings = await db
-    .select()
-    .from(boardMeetings)
-    .where(eq(boardMeetings.board, board))
-    .orderBy(asc(boardMeetings.meetingDate))
+  const meetings =
+    boardRow === null
+      ? []
+      : await db
+          .select()
+          .from(boardMeetings)
+          .where(eq(boardMeetings.boardId, boardRow.id))
+          .orderBy(asc(boardMeetings.meetingDate))
   const held = await db
     .select({ hearing: hearings, meeting: boardMeetings })
     .from(hearings)
@@ -63,9 +68,9 @@ export async function loadApplicationHearingsPanel(
     .where(eq(boardDecisions.applicationId, applicationId))
     .orderBy(asc(boardDecisions.votedOn))
   const summary = await trcSummary(db, actor, applicationId, signal)
-  const eligible = await meetingEligibility(db, app, board, today, signal)
+  const eligible = await meetingEligibility(db, app, boardRow?.id ?? '', today, signal)
   const kinds: [string, string][] =
-    app.state === 'submitted' && board === 'planning_board'
+    app.state === 'submitted' && boardKind === 'planning_board'
       ? [['submission_and_hearing', HEARING_KIND_LABELS.submission_and_hearing]]
       : [
           ['public_hearing', HEARING_KIND_LABELS.public_hearing],

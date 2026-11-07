@@ -1,20 +1,20 @@
 'use client'
 
-import type { Board } from '@packs/nh/boardSchema'
 import { AddressCheck } from '@/components/address/AddressCheck'
 import { TextRows } from '@/components/config/plainFields'
 import { Check, Input, Pick } from '@/components/config/primitives'
 import { Legend } from '@/components/ui/legend'
-import {
-  type BoardOverride,
-  type ContactLine,
-  type Letterhead,
-  TOWN_BOARD_LABELS,
-  type TownProfileBody,
+import type { EditorBoard } from '@/features/config/editorContext'
+import type {
+  BoardOverride,
+  ContactLine,
+  Letterhead,
+  TownProfileBody,
 } from '@/features/town/profileSchema'
 
 interface Props {
   body: TownProfileBody
+  boards: readonly EditorBoard[]
   onChange: (next: TownProfileBody) => void
 }
 
@@ -26,8 +26,8 @@ const CONTACT_LABELS: readonly (readonly [ContactLine, string])[] = [
   ['officeHours', 'Office hours'],
 ]
 
-function overrideOf(body: TownProfileBody, board: Board): BoardOverride {
-  return new Map(Object.entries(body.boardOverrides)).get(board) ?? {}
+function overrideOf(body: TownProfileBody, boardId: string): BoardOverride {
+  return new Map(Object.entries(body.boardOverrides)).get(boardId) ?? {}
 }
 
 function shown(lines: Letterhead['contactLines'], line: ContactLine): boolean {
@@ -77,7 +77,7 @@ function BoardOverrideFields({
   )
 }
 
-export function LetterheadFields({ body, onChange }: Props) {
+export function LetterheadFields({ body, boards, onChange }: Props) {
   const letterhead = body.letterhead
   const set = (next: Partial<Letterhead>) =>
     onChange({ ...body, letterhead: { ...letterhead, ...next } })
@@ -126,13 +126,13 @@ export function LetterheadFields({ body, onChange }: Props) {
           Notices, decisions and agendas for a board can carry its own office name, address and
           footer.
         </p>
-        {TOWN_BOARD_LABELS.map(([board, label]) => (
+        {boards.map((board) => (
           <BoardOverrideFields
-            key={board}
-            label={label}
-            value={overrideOf(body, board)}
+            key={board.id}
+            label={board.shortName}
+            value={overrideOf(body, board.id)}
             onChange={(next) =>
-              onChange({ ...body, boardOverrides: { ...body.boardOverrides, [board]: next } })
+              onChange({ ...body, boardOverrides: { ...body.boardOverrides, [board.id]: next } })
             }
           />
         ))}

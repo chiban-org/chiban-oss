@@ -26,11 +26,7 @@ const MAX_DAYS = 30
 
 export { hashPacketToken }
 
-async function isActiveMemberOf(
-  db: Db,
-  email: string,
-  board: 'planning_board' | 'zba',
-): Promise<boolean> {
+async function isActiveMemberOf(db: Db, email: string, boardId: string): Promise<boolean> {
   const rows = await db
     .select({ id: boardMemberships.id })
     .from(boardMemberships)
@@ -39,8 +35,8 @@ async function isActiveMemberOf(
       and(
         eq(users.email, email),
         eq(users.isActive, true),
-        eq(boardMemberships.board, board),
-        activeMembershipOn(sql`${boardMemberships.userId}`, sql`${board}`),
+        eq(boardMemberships.boardId, boardId),
+        activeMembershipOn(sql`${boardMemberships.userId}`, sql`${boardId}`),
       ),
     )
     .limit(1)
@@ -76,7 +72,7 @@ export async function sendPacketLink(
   const found = await sendablePacket(db, actor, input.packetId, signal)
   if (!found.ok) return found
   const recipientEmail = input.recipientEmail.trim().toLowerCase()
-  if (await isActiveMemberOf(db, recipientEmail, found.value.board)) return err('member_of_board')
+  if (await isActiveMemberOf(db, recipientEmail, found.value.boardId)) return err('member_of_board')
   await stampSent(db, found.value, now)
   const issued = await issuePacketLink(
     db,

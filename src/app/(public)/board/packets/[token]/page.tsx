@@ -10,7 +10,6 @@ export const metadata: Metadata = { title: 'Board packet' }
 export const dynamic = 'force-dynamic'
 
 const TIMEOUT_MS = 10_000
-const BOARD_NAMES = { planning_board: 'Planning Board', zba: 'Zoning Board of Adjustment' } as const
 
 export default async function BoardPacketPage({ params }: { params: Promise<{ token: string }> }) {
   const { token } = await params
@@ -31,7 +30,7 @@ export default async function BoardPacketPage({ params }: { params: Promise<{ to
     <main className="space-y-4">
       <meta name="robots" content="noindex" />
       <h1>{packet.title}</h1>
-      <p>{`${BOARD_NAMES[packet.board]}, meeting ${formatCivilDate(packet.meetingDate)}`}</p>
+      <p>{`${packet.boardShortName}, meeting ${formatCivilDate(packet.meetingDate)}`}</p>
       <PacketItems items={packet.items} base={base} />
     </main>
   )

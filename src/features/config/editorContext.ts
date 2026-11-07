@@ -1,3 +1,4 @@
+import type { BoardKind } from '@packs/nh/schema'
 import type { NamedChoice, ReferenceChoices } from '@/features/config/referenceChoices'
 import type { FormBuilderData } from '@/features/forms/formReferences'
 import { loadPack } from '@/features/packs/loadPack'
@@ -6,15 +7,23 @@ import type { TemplateBuilderData } from '@/features/templates/builderData'
 import { MERGE_FIELDS } from '@/features/templates/mergeFields'
 import { lowerFirst, words } from '@/lib/words'
 
+export interface EditorBoard {
+  id: string
+  kind: BoardKind
+  name: string
+  shortName: string
+}
+
 export interface EditorContext {
   packRules: { key: string; label: string }[]
   classifications: {
     key: string
     label: string
     mandatoryRuleKeys: string[]
-    board: string | null
+    boardKind: string | null
   }[]
   mergeFields: string[]
+  boards: EditorBoard[]
   reviewers: { id: string; name: string }[]
   townRules: Record<
     string,
@@ -61,7 +70,10 @@ function distinctRuleLabels(rules: PackRuleLabelSource[]): EditorContext['packRu
   })
 }
 
-export function editorContext(reviewers: { id: string; name: string }[] = []): EditorContext {
+export function editorContext(
+  reviewers: { id: string; name: string }[] = [],
+  boards: EditorBoard[] = [],
+): EditorContext {
   const pack = loadPack()
   const townRules: EditorContext['townRules'] = {}
   for (const rule of pack.rules) {
@@ -83,9 +95,10 @@ export function editorContext(reviewers: { id: string; name: string }[] = []): E
       key: c.key,
       label: c.label,
       mandatoryRuleKeys: c.mandatoryRuleKeys,
-      board: c.board ?? null,
+      boardKind: c.boardKind ?? null,
     })),
     mergeFields: [...MERGE_FIELDS],
+    boards,
     reviewers,
     townRules,
   }

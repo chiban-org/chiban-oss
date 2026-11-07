@@ -30,7 +30,7 @@ export async function GET(
     const opened = await openPacket(db, token, now, signal)
     if (!opened.ok)
       return opened.error === 'expired' ? plain(410, EXPIRED_COPY) : plain(404, 'Not found')
-    const frame = await documentFrame(db, { board: opened.value.board }, signal)
+    const frame = await documentFrame(db, { boardId: opened.value.boardId }, signal)
     const template = await publishedTemplate(db, 'board_packet_cover', signal)
     const bytes = await packetCoverPdf(opened.value, frame, template)
     return toResponse(pdfOk(bytes), request.headers.get('accept'))

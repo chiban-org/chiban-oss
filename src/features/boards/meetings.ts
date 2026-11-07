@@ -1,7 +1,7 @@
-import type { Board } from '@packs/nh/schema'
+import type { BoardKind } from '@packs/nh/boardSchema'
 import { and, asc, eq } from 'drizzle-orm'
 import type { Db, DbOrTx, Tx } from '@/db/client'
-import { boardMeetings } from '@/db/schema'
+import { boardMeetings, boards } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -10,8 +10,10 @@ import {
   boardMeetingCalendar,
   type MeetingCalendar,
   nextRegularMeeting,
+  nextRegularMeetingOfBoard,
 } from '@/features/boards/calendar'
 import { closeMeetingPacket } from '@/features/boards/packetCancel'
+import { getBoard } from '@/features/boards/townBoards'
 import { recomputeMeetingBoundClocks } from '@/features/clocks/recomputeMeetingBound'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
@@ -19,18 +21,20 @@ import { err, ok, type Result } from '@/types/result'
 
 export type MeetingRow = typeof boardMeetings.$inferSelect
 
-export { boardMeetingCalendar, type MeetingCalendar, nextRegularMeeting }
+export type MeetingWithBoard = MeetingRow & { boardKind: BoardKind }
+
+export { boardMeetingCalendar, type MeetingCalendar, nextRegularMeeting, nextRegularMeetingOfBoard }
 
 export async function listMeetings(
   db: DbOrTx,
-  board: Board,
+  boardId: string,
   signal: AbortSignal,
 ): Promise<MeetingRow[]> {
   signal.throwIfAborted()
   return await db
     .select()
     .from(boardMeetings)
-    .where(eq(boardMeetings.board, board))
+    .where(eq(boardMeetings.boardId, boardId))
     .orderBy(asc(boardMeetings.meetingDate))
 }
 
@@ -38,31 +42,37 @@ export async function getMeeting(
   db: DbOrTx,
   meetingId: string,
   signal: AbortSignal,
-): Promise<MeetingRow | null> {
+): Promise<MeetingWithBoard | null> {
   signal.throwIfAborted()
-  const [row] = await db.select().from(boardMeetings).where(eq(boardMeetings.id, meetingId))
-  return row ?? null
+  const [row] = await db
+    .select({ meeting: boardMeetings, boardKind: boards.kind })
+    .from(boardMeetings)
+    .innerJoin(boards, eq(boards.id, boardMeetings.boardId))
+    .where(eq(boardMeetings.id, meetingId))
+  return row === undefined ? null : { ...row.meeting, boardKind: row.boardKind }
 }
 
 export async function scheduleMeeting(
   db: Db,
   actor: Actor,
   input: {
-    board: Board
+    boardId: string
     meetingDate: CivilDate
     kind: 'regular' | 'special'
     location?: string
     startsAtMinute?: number
   },
   signal: AbortSignal,
-): Promise<Result<{ meetingId: string }, 'forbidden' | 'already_scheduled'>> {
+): Promise<Result<{ meetingId: string }, 'forbidden' | 'already_scheduled' | 'unknown_board'>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
   return await transactionResult(db, async (tx: Tx) => {
+    const board = await getBoard(tx, input.boardId)
+    if (board === null || board.archivedAt !== null) return err('unknown_board')
     const [row] = await tx
       .insert(boardMeetings)
       .values({
-        board: input.board,
+        boardId: input.boardId,
         meetingDate: input.meetingDate,
         kind: input.kind,
         location: input.location ?? '',
@@ -79,11 +89,11 @@ export async function scheduleMeeting(
         action: 'board.meeting.schedule',
         entityType: 'board_meeting',
         entityId: row.id,
-        after: { board: input.board, meetingDate: input.meetingDate, kind: input.kind },
+        after: { boardId: input.boardId, meetingDate: input.meetingDate, kind: input.kind },
       },
       signal,
     )
-    if (input.kind === 'regular') await recomputeMeetingBoundClocks(tx, input.board, signal)
+    if (input.kind === 'regular') await recomputeMeetingBoundClocks(tx, board.kind, signal)
     return ok({ meetingId: row.id })
   })
 }
@@ -123,7 +133,7 @@ export async function cancelMeeting(
       },
       signal,
     )
-    if (meeting.kind === 'regular') await recomputeMeetingBoundClocks(tx, meeting.board, signal)
+    if (meeting.kind === 'regular') await recomputeMeetingBoundClocks(tx, meeting.boardKind, signal)
     return ok(undefined)
   })
 }
@@ -131,7 +141,7 @@ export async function cancelMeeting(
 export async function isAlreadyScheduledByActor(
   db: DbOrTx,
   actor: Actor,
-  input: { board: Board; meetingDate: CivilDate; kind: 'regular' | 'special'; location: string },
+  input: { boardId: string; meetingDate: CivilDate; kind: 'regular' | 'special'; location: string },
   signal: AbortSignal,
 ): Promise<boolean> {
   signal.throwIfAborted()
@@ -140,7 +150,7 @@ export async function isAlreadyScheduledByActor(
     .from(boardMeetings)
     .where(
       and(
-        eq(boardMeetings.board, input.board),
+        eq(boardMeetings.boardId, input.boardId),
         eq(boardMeetings.meetingDate, input.meetingDate),
         eq(boardMeetings.kind, input.kind),
         eq(boardMeetings.status, 'scheduled'),

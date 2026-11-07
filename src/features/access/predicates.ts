@@ -29,9 +29,9 @@ export function isBoardMember(actor: Actor): boolean {
   return actor.roles.includes('board_member')
 }
 
-export function activeMembershipOn(userId: string | SQL, boardColumn: SQL): SQL {
+export function activeMembershipOn(userId: string | SQL, boardIdColumn: SQL): SQL {
   return sql`exists (select 1 from board_memberships bm
-    where bm.user_id = ${userId} and bm.board = ${boardColumn}
+    where bm.user_id = ${userId} and bm.board_id = ${boardIdColumn}
       and bm.term_start <= ${TOWN_TODAY} and (bm.term_end is null or bm.term_end >= ${TOWN_TODAY}))`
 }
 
@@ -42,14 +42,14 @@ export function memberCanSeeApplication(userId: string, applicationIdColumn: SQL
     join agenda_items ai on ai.meeting_id = m.id and ai.hearing_id = h.id
     where h.application_id = ${applicationIdColumn}
       and h.status in ('scheduled', 'held')
-      and ${activeMembershipOn(userId, sql`m.board`)})`
+      and ${activeMembershipOn(userId, sql`m.board_id`)})`
 }
 
 export function memberCanSeeMeeting(userId: string, meetingIdColumn: SQL): SQL {
   return sql`exists (select 1 from board_meetings m
     join agendas a on a.meeting_id = m.id and a.status = 'published'
     where m.id = ${meetingIdColumn} and m.status = 'scheduled'
-      and ${activeMembershipOn(userId, sql`m.board`)})`
+      and ${activeMembershipOn(userId, sql`m.board_id`)})`
 }
 
 export function applicationPartyOf(actor: Actor | null): SQL {

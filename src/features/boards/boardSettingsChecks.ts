@@ -1,5 +1,7 @@
-import type { PackRule } from '@packs/nh/schema'
+import { BOARD_KIND_TRAITS, type PackRule } from '@packs/nh/schema'
+import type { DbOrTx } from '@/db/client'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
+import { activeBoards, type BoardRow } from '@/features/boards/townBoards'
 import type { PublishError } from '@/features/config/publishChecks'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { checkTownValue, type TownValueError } from '@/features/packs/overridePolicy'
@@ -33,13 +35,17 @@ function abuttersIssue(abutters: BoardSettingsBody['abutters']): PublishError | 
   return null
 }
 
-function filingLeadIssue(rule: PackRule, board: Board, error: TownValueError): PublishError {
+function filingLeadIssue(
+  rule: PackRule,
+  board: Pick<BoardRow, 'name'>,
+  error: TownValueError,
+): PublishError {
   if (error === 'adoption_record_missing') {
     return {
       invalid: [
         {
           path: 'filingLeadAdoption',
-          message: `Enter who adopted the ${board.label}'s filing deadline and the date they adopted it.`,
+          message: `Enter who adopted the ${board.name}'s filing deadline and the date they adopted it.`,
         },
       ],
     }
@@ -47,26 +53,58 @@ function filingLeadIssue(rule: PackRule, board: Board, error: TownValueError): P
   const policy = rule.overridePolicy
   const message =
     error === 'above_maximum' && policy.policy === 'maximum'
-      ? `State law lets the ${board.label} set a filing deadline of at most ${String(policy.ceiling)} days.`
-      : `State law does not allow this filing deadline for the ${board.label}.`
+      ? `State law lets the ${board.name} set a filing deadline of at most ${String(policy.ceiling)} days.`
+      : `State law does not allow this filing deadline for the ${board.name}.`
   return { invalid: [{ path: 'filingLeadDays', message }] }
 }
 
-export function checkBoardSettings(body: BoardSettingsBody): PublishError | null {
+function entryIssue(entries: Board[], active: BoardRow[]): PublishError | null {
+  const activeIds = new Set(active.map((b) => b.id))
+  if (entries.some((e) => !activeIds.has(e.boardId))) {
+    return {
+      invalid: [
+        { path: 'boards', message: 'Each entry has to name a board that is still active.' },
+      ],
+    }
+  }
+  const seen = new Set<string>()
+  for (const entry of entries) {
+    if (seen.has(entry.boardId)) {
+      return { invalid: [{ path: 'boards', message: 'Each board can appear only once.' }] }
+    }
+    seen.add(entry.boardId)
+  }
+  const missing = active.find((b) => BOARD_KIND_TRAITS[b.kind].holdsHearings && !seen.has(b.id))
+  if (missing !== undefined) {
+    return {
+      invalid: [{ path: 'boards', message: `Add the notice settings for the ${missing.name}.` }],
+    }
+  }
+  return null
+}
+
+export async function checkBoardSettings(
+  db: DbOrTx,
+  body: BoardSettingsBody,
+): Promise<PublishError | null> {
   const abutters = abuttersIssue(body.abutters)
   if (abutters !== null) return abutters
+  const active = await activeBoards(db)
+  const entries = entryIssue(body.boards, active)
+  if (entries !== null) return entries
   const rule = ruleByKey(loadPack(), FILING_LEAD_KEY)
-  for (const board of body.boards) {
-    if (board.filingLeadDays === null) continue
-    if (board.board !== 'planning_board') {
+  for (const entry of body.boards) {
+    if (entry.filingLeadDays === null) continue
+    const board = active.find((b) => b.id === entry.boardId)
+    if (board === undefined || !BOARD_KIND_TRAITS[board.kind].hasFilingLead) {
       return {
         invalid: [{ path: 'boards', message: 'Only the Planning Board has a filing lead time.' }],
       }
     }
     const checked = checkTownValue(rule, {
-      value: board.filingLeadDays,
-      adoptingAuthority: board.filingLeadAdoption?.adoptingAuthority,
-      adoptedOn: board.filingLeadAdoption?.adoptedOn ?? undefined,
+      value: entry.filingLeadDays,
+      adoptingAuthority: entry.filingLeadAdoption?.adoptingAuthority,
+      adoptedOn: entry.filingLeadAdoption?.adoptedOn ?? undefined,
     })
     if (!checked.ok) return filingLeadIssue(rule, board, checked.error)
   }

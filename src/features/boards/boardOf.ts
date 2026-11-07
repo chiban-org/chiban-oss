@@ -1,10 +1,10 @@
-import type { Board } from '@packs/nh/schema'
+import type { BoardKind } from '@packs/nh/schema'
 import type { ApplicationContext } from '@/features/applications/context'
 import { loadPack } from '@/features/packs/loadPack'
 
-export function boardOfApplication(app: ApplicationContext): Board | null {
+export function boardOfApplication(app: ApplicationContext): BoardKind | null {
   return (
-    loadPack().classifications.find((c) => c.key === app.typeBody.classification)?.board ?? null
+    loadPack().classifications.find((c) => c.key === app.typeBody.classification)?.boardKind ?? null
   )
 }
 

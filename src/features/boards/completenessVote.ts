@@ -1,4 +1,4 @@
-import type { Board } from '@packs/nh/schema'
+import type { BoardKind } from '@packs/nh/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
@@ -15,8 +15,8 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication, declaresSubstep } from '@/features/boards/boardOf'
 import { getBoardSettings } from '@/features/boards/boardSettings'
-import { nextRegularMeeting } from '@/features/boards/calendar'
 import { getMeeting } from '@/features/boards/meetings'
+import { boardForKind } from '@/features/boards/townBoards'
 import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import {
@@ -46,19 +46,20 @@ export type VoteError =
   | 'not_submitted'
   | 'invalid_state'
   | 'future_date'
+  | { noBoard: BoardKind }
   | { gateBlocked: GateResult[] }
 
 async function checkVoteMeeting(
   tx: Tx,
   applicationId: string,
-  board: Board,
+  boardKind: BoardKind,
   meetingId: string,
   votedOn: CivilDate,
   signal: AbortSignal,
 ): Promise<Result<NonNullable<Awaited<ReturnType<typeof getMeeting>>>, VoteError>> {
   const meeting = await getMeeting(tx, meetingId, signal)
   if (meeting === null) return err('not_found')
-  if (meeting.board !== board) return err('wrong_board')
+  if (meeting.boardKind !== boardKind) return err('wrong_board')
   if (meeting.status === 'cancelled') return err('meeting_cancelled')
   const [scheduled] = await tx
     .select({ meetingId: acceptanceSchedules.meetingId })
@@ -102,13 +103,14 @@ export async function recordCompletenessVote(
       .for('update')
     const app = await loadApplicationContext(tx, input.applicationId, signal)
     if (app === null) return err('not_found')
-    const board = boardOfApplication(app)
-    if (board === null) return err('wrong_board')
+    const boardKind = boardOfApplication(app)
+    if (boardKind === null) return err('wrong_board')
+    if ((await boardForKind(tx, boardKind, signal)) === null) return err({ noBoard: boardKind })
     if (app.state !== 'submitted') return err('not_submitted')
     const checked = await checkVoteMeeting(
       tx,
       app.id,
-      board,
+      boardKind,
       input.meetingId,
       input.votedOn,
       signal,
@@ -116,7 +118,7 @@ export async function recordCompletenessVote(
     if (!checked.ok) return checked
     const meeting = checked.value
     await markClockMet(tx, app.id, COMPLETENESS_KEY, input.votedOn, signal)
-    if (board === 'zba') await markClockMet(tx, app.id, 'nh.zba.hearing', input.votedOn, signal)
+    if (boardKind === 'zba') await markClockMet(tx, app.id, 'nh.zba.hearing', input.votedOn, signal)
     const moved = await transitionApplication(
       tx,
       actor,

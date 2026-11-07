@@ -96,7 +96,7 @@ export function MeetingTable({
                 </span>
               ) : null}
             </td>
-            <td>{boardNames.get(r.board) ?? r.board}</td>
+            <td>{boardNames.get(r.boardId) ?? ''}</td>
             <td>{MEETING_KIND_LABELS.get(r.kind)}</td>
             {showLocation ? <td>{r.location === usualLocation ? '' : r.location}</td> : null}
             <td className="tabular-nums">{r.hearings === 0 ? 'None' : r.hearings}</td>
@@ -106,7 +106,7 @@ export function MeetingTable({
                 {r.cancelled ? null : (
                   <CancelMeeting
                     meetingId={r.id}
-                    name={`${formatCivilDate(r.meetingDate)} ${boardNames.get(r.board) ?? r.board}`}
+                    name={`${formatCivilDate(r.meetingDate)} ${boardNames.get(r.boardId) ?? ''}`}
                     packetSent={r.packetSent}
                   />
                 )}

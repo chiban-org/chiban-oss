@@ -11,9 +11,6 @@ export const MEETINGS_PATH = '/staff/boards/meetings'
 export const MEETING_WHEN = ['upcoming', 'past'] as const
 export type MeetingWhen = (typeof MEETING_WHEN)[number]
 
-export const MEETING_BOARDS = ['planning_board', 'zba'] as const
-export type MeetingBoard = (typeof MEETING_BOARDS)[number]
-
 export const MEETING_KINDS = ['regular', 'special'] as const
 export type MeetingKind = (typeof MEETING_KINDS)[number]
 
@@ -49,7 +46,7 @@ export const MEETING_SORT: Record<MeetingWhen, SortConfig<MeetingSortKey>> = {
 export const MEETING_FILTER_PARAMS = ['board', 'kind', 'agenda'] as const
 
 export interface MeetingFilters {
-  boards?: MeetingBoard[]
+  boards?: string[]
   kinds?: MeetingKind[]
   agendas?: AgendaState[]
 }
@@ -61,7 +58,10 @@ export interface MeetingListView {
   filters: MeetingFilters
 }
 
-export function readMeetingListView(raw: RawSearchParams): MeetingListView {
+export function readMeetingListView(
+  raw: RawSearchParams,
+  boardIds: readonly string[],
+): MeetingListView {
   const params = readTableParams(raw)
   const when: MeetingWhen = params.get('when')?.[0] === 'past' ? 'past' : 'upcoming'
   return {
@@ -69,7 +69,7 @@ export function readMeetingListView(raw: RawSearchParams): MeetingListView {
     when,
     sort: parseSort(MEETING_SORT[when], params),
     filters: {
-      ...whenAny('boards', singleValue(params, 'board', MEETING_BOARDS)),
+      ...whenAny('boards', singleValue(params, 'board', boardIds)),
       ...whenAny('kinds', singleValue(params, 'kind', MEETING_KINDS)),
       ...whenAny('agendas', singleValue(params, 'agenda', AGENDA_STATES)),
     },

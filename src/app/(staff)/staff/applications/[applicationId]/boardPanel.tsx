@@ -8,7 +8,7 @@ import { CostSection, DeterminationSection, ListSection } from './boardPanelSect
 
 function voteSummary(data: BoardPanelData, rejectOnly: boolean): string {
   if (rejectOnly) return 'Record that the board did not accept it'
-  return data.board === 'planning_board' ? 'Record the completeness vote' : 'Open the hearing'
+  return data.boardKind === 'planning_board' ? 'Record the completeness vote' : 'Open the hearing'
 }
 
 export function VoteForm({
@@ -29,7 +29,7 @@ export function VoteForm({
 const FILING_STATES: readonly string[] = ['draft', 'submitted']
 
 function acceptanceSummary(data: BoardPanelData, hearings: readonly string[]): string {
-  const planning = data.board === 'planning_board'
+  const planning = data.boardKind === 'planning_board'
   if (!planning && hearings.length > 0)
     return 'The hearings are listed under Hearings and decisions.'
   if (data.acceptanceText === null) {
@@ -54,7 +54,7 @@ function AcceptanceSection({
   deadline,
   voteBlocked,
 }: { data: BoardPanelData; hearings: string[] } & Hosted & Reconciled) {
-  const planning = data.board === 'planning_board'
+  const planning = data.boardKind === 'planning_board'
   const open = data.canRecord && data.state === 'submitted'
   const voteReady = data.acceptanceMeetingId !== null && !meetingIsAhead(data)
   return (
@@ -86,6 +86,7 @@ export function BoardPanel({
   return (
     <section aria-label="Board" id="board">
       <h2>{data.boardName}</h2>
+      {data.missingBoard === null ? null : <p role="alert">{data.missingBoard}</p>}
       <AcceptanceSection
         data={data}
         hearings={hearings}

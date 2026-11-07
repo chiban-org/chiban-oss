@@ -1,25 +1,22 @@
 'use client'
 
-import type { Board } from '@packs/nh/boardSchema'
 import { useState } from 'react'
 import { Pick } from '@/components/config/primitives'
 import { LetterheadHeader } from '@/components/config/town/LetterheadHeader'
+import type { EditorBoard } from '@/features/config/editorContext'
 import { buildFrame } from '@/features/pdf/frame'
-import { TOWN_BOARD_LABELS, type TownProfileBody } from '@/features/town/profileSchema'
+import type { TownProfileBody } from '@/features/town/profileSchema'
 
 interface Props {
   townName: string
   body: TownProfileBody
+  boards: readonly EditorBoard[]
 }
 
 const SAMPLE_PATH = '/staff/settings/letterhead/sample.pdf'
 
-function boardOf(value: string): Board | undefined {
-  return TOWN_BOARD_LABELS.find(([board]) => board === value)?.[0]
-}
-
-export function LetterheadPreview({ townName, body }: Props) {
-  const [board, setBoard] = useState<Board | undefined>(undefined)
+export function LetterheadPreview({ townName, body, boards }: Props) {
+  const [board, setBoard] = useState<string | undefined>(undefined)
   const frame = buildFrame(townName, body, board, new Map())
   const sampleHref = board === undefined ? SAMPLE_PATH : `${SAMPLE_PATH}?board=${board}`
   return (
@@ -32,8 +29,8 @@ export function LetterheadPreview({ townName, body }: Props) {
           <Pick
             label="Preview for"
             value={board ?? ''}
-            options={[['', 'Town documents'], ...TOWN_BOARD_LABELS]}
-            onChange={(e) => setBoard(boardOf(e.target.value))}
+            options={[['', 'Town documents'], ...boards.map((b) => [b.id, b.shortName] as const)]}
+            onChange={(e) => setBoard(boards.find((b) => b.id === e.target.value)?.id)}
           />
         </div>
       </div>

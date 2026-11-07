@@ -1,4 +1,3 @@
-import type { Board } from '@packs/nh/boardSchema'
 import type { Db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -13,11 +12,11 @@ const SAMPLE_SIGNER: SignerRole = 'land_use_administrator'
 export async function buildSampleLetterPdf(
   db: Db,
   actor: Actor,
-  scope: { board?: Board; store?: ObjectStore },
+  scope: { boardId?: string; store?: ObjectStore },
   signal: AbortSignal,
 ): Promise<Result<Uint8Array, 'forbidden'>> {
   if (!(await hasCapability(db, actor.userId, 'config.edit', signal))) return err('forbidden')
-  const frame = await documentFrame(db, { board: scope.board ?? null }, signal, scope.store)
+  const frame = await documentFrame(db, { boardId: scope.boardId ?? null }, signal, scope.store)
   const role = frame.signers.find((s) => s.role === SAMPLE_SIGNER)?.role ?? frame.signers[0]?.role
   return ok(
     await renderPdf({

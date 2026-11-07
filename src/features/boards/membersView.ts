@@ -3,9 +3,9 @@ import type { Db } from '@/db/client'
 import { boardMemberships as bm, users } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import type { MemberTitle } from '@/features/boards/members'
 import type { MemberSortKey, MemberTab } from '@/features/boards/membersParams'
+import { activeBoards, allBoards, boardLabel } from '@/features/boards/townBoards'
 import { type PageWindow, pageWindow } from '@/features/dataTable/pageSlice'
 import type { SortState } from '@/features/dataTable/sort'
 import { orderBySql } from '@/features/dataTable/sortSql'
@@ -15,7 +15,7 @@ export interface MemberRow {
   membershipId: string
   name: string
   email: string
-  board: 'planning_board' | 'zba'
+  boardId: string
   title: MemberTitle
   termStart: string
   termEnd: string | null
@@ -26,7 +26,7 @@ export interface MemberRow {
   active: boolean
 }
 
-export type BoardOption = readonly [MemberRow['board'], string]
+export type BoardOption = readonly [string, string]
 
 export interface MembersView extends PageWindow {
   rows: MemberRow[]
@@ -52,7 +52,7 @@ function sortColumns(today: string) {
   return {
     name: sql`lower(${users.displayName})`,
     email: sql`lower(${users.email})`,
-    board: bm.board,
+    board: sql`lower((select b.name from boards b where b.id = ${bm.boardId}))`,
     role: ROLE_ORDER,
     term: bm.termStart,
     status: sql`case when ${bm.termStart} > ${today} then 1 else 0 end`,
@@ -85,7 +85,7 @@ export async function loadMembersView(
 ): Promise<MembersView | null> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'board.manage_members', signal))) return null
-  const settings = await getBoardSettings(db, signal)
+  const [allRows, activeRows] = await Promise.all([allBoards(db), activeBoards(db)])
   const ended = endedClause(input.today)
   const [rows, [tally]] = await Promise.all([
     db
@@ -119,17 +119,17 @@ export async function loadMembersView(
       membershipId: m.id,
       name,
       email,
-      board: m.board,
+      boardId: m.boardId,
       title: m.title,
       termStart: m.termStart,
       termEnd: m.termEnd,
-      boardName: boardLabel(settings, m.board),
+      boardName: boardLabel(allRows.find((b) => b.id === m.boardId) ?? { name: '' }),
       titleText: TITLE_TEXT[m.title],
       termText: termText(m),
       statusText: statusText(m, input.today),
       active: m.termStart <= input.today,
     })),
     counts,
-    boardOptions: settings.boards.map((b) => [b.board, b.label] as const),
+    boardOptions: activeRows.map((b) => [b.id, boardLabel(b)] as const),
   }
 }

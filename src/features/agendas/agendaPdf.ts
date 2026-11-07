@@ -18,6 +18,8 @@ export interface AgendaModelItem {
 
 export interface AgendaModel {
   boardName: string
+  boardShortName: string
+  boardChairName: string
   meetingDate: string
   location: string
   time: string
@@ -78,6 +80,8 @@ export function agendaDocumentInput(frame: DocumentFrame, model: AgendaModel): D
     context: {
       values: {
         'board.name': model.boardName,
+        'board.short_name': model.boardShortName,
+        'board.chair.name': model.boardChairName,
         'meeting.date': model.meetingDate,
         'meeting.time': model.time,
         'meeting.location': model.location === '' ? NONE : model.location,

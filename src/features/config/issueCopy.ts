@@ -60,7 +60,7 @@ const NOUNS: Table = {
   },
   board_settings: {
     boards: 'a board',
-    'boards.*.label': 'the board name',
+    'boards.*.boardId': 'the board',
     'boards.*.publicNotice.newspaper': 'the newspaper name',
     'boards.*.publicNotice.bulletinBoards': 'a bulletin board',
     'boards.*.publicNotice.bulletinBoards.*': 'the bulletin board name',

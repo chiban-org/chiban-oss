@@ -5,13 +5,13 @@ import {
   applications,
   boardDecisions,
   boardMeetings,
+  boards,
   documents,
   meetingMinutes,
 } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { documentVisibleTo } from '@/features/documents/visibility'
-import { BOARD_NAMES } from '@/features/hearings/views'
 import { formatCivilDate } from '@/lib/formatDate'
 
 export interface PublicAgendaLine {
@@ -51,17 +51,18 @@ export interface PublicBoardRecords {
 
 async function approvedMinutes(db: Db): Promise<PublicMinutesLine[]> {
   const rows = await db
-    .select({ meeting: boardMeetings, minutes: meetingMinutes })
+    .select({ meeting: boardMeetings, minutes: meetingMinutes, boardShortName: boards.shortName })
     .from(meetingMinutes)
     .innerJoin(boardMeetings, eq(boardMeetings.id, meetingMinutes.meetingId))
+    .innerJoin(boards, eq(boards.id, boardMeetings.boardId))
     .innerJoin(documents, eq(documents.id, meetingMinutes.documentId))
     .where(and(eq(meetingMinutes.status, 'approved'), documentVisibleTo(null)))
     .orderBy(desc(boardMeetings.meetingDate), desc(boardMeetings.id))
     .limit(LIMIT)
-  return rows.map(({ meeting, minutes }) => ({
+  return rows.map(({ meeting, minutes, boardShortName }) => ({
     meetingId: meeting.id,
     documentId: minutes.documentId,
-    text: `${BOARD_NAMES[meeting.board]}, ${formatCivilDate(meeting.meetingDate)}, approved ${formatCivilDate(minutes.approvedOn ?? meeting.meetingDate)}`,
+    text: `${boardShortName}, ${formatCivilDate(meeting.meetingDate)}, approved ${formatCivilDate(minutes.approvedOn ?? meeting.meetingDate)}`,
   }))
 }
 
@@ -73,9 +74,10 @@ export async function loadPublicBoardRecords(
   signal.throwIfAborted()
   const page = Math.max(1, Math.floor(options.agendaPage ?? 1))
   const agendaRows = await db
-    .select({ meeting: boardMeetings, documentId: documents.id })
+    .select({ meeting: boardMeetings, documentId: documents.id, boardShortName: boards.shortName })
     .from(agendas)
     .innerJoin(boardMeetings, eq(boardMeetings.id, agendas.meetingId))
+    .innerJoin(boards, eq(boards.id, boardMeetings.boardId))
     .innerJoin(documents, eq(documents.id, agendas.documentId))
     .where(and(eq(agendas.status, 'published'), eq(documents.isPublic, true)))
     .orderBy(desc(boardMeetings.meetingDate), desc(boardMeetings.id))
@@ -102,7 +104,7 @@ export async function loadPublicBoardRecords(
   return {
     agendas: agendaRows.slice(0, AGENDA_PAGE_SIZE).map((r) => ({
       meetingId: r.meeting.id,
-      text: `${BOARD_NAMES[r.meeting.board]}, ${formatCivilDate(r.meeting.meetingDate)}`,
+      text: `${r.boardShortName}, ${formatCivilDate(r.meeting.meetingDate)}`,
       documentId: r.documentId,
     })),
     agendaPage: { page, hasNext: agendaRows.length > AGENDA_PAGE_SIZE },

@@ -3,6 +3,7 @@ import type { Db } from '@/db/client'
 import { boardMeetings, boardPackets, documents } from '@/db/schema'
 import { sendPacketLink } from '@/features/boards/packetLinks'
 import { createPacket } from '@/features/boards/packets'
+import { boardIdOf } from '@/features/boards/townBoards'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { actorFor, must, noon } from '@/features/demo/seedPermitSupport'
 import { RECORDS_MARKER_TITLE } from '@/features/demo/seedRecords'
@@ -12,12 +13,13 @@ const PACKET_MEETING = '2026-07-22'
 const PACKET_FILES = [RECORDS_MARKER_TITLE, 'Septic approval']
 
 async function packetMeetingId(db: Db): Promise<string | null> {
+  const boardId = await boardIdOf(db, 'planning_board')
   const [meeting] = await db
     .select({ id: boardMeetings.id })
     .from(boardMeetings)
     .where(
       and(
-        eq(boardMeetings.board, 'planning_board'),
+        eq(boardMeetings.boardId, boardId),
         eq(boardMeetings.meetingDate, PACKET_MEETING),
         eq(boardMeetings.status, 'scheduled'),
       ),

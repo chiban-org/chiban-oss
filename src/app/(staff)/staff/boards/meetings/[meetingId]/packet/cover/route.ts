@@ -28,7 +28,7 @@ export async function GET(
       ? plain(403, 'You do not have permission to prepare board packets.')
       : plain(404, 'Not found')
   }
-  const frame = await documentFrame(db, { board: view.value.board }, signal)
+  const frame = await documentFrame(db, { boardId: view.value.boardId }, signal)
   const template = await publishedTemplate(db, 'board_packet_cover', signal)
   const bytes = await packetCoverPdf(view.value, frame, template)
   return toResponse(pdfOk(bytes), request.headers.get('accept'))

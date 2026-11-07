@@ -1,5 +1,5 @@
 import { type AppealNodeKind, type AppealRoute, NH_APPEAL_ROUTES } from '@packs/nh/appealRoutes'
-import type { DecisionOutcome } from '@packs/nh/schema'
+import type { BoardKind, DecisionOutcome } from '@packs/nh/schema'
 import { and, desc, eq, ne } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { appealNodes, clocks } from '@/db/schema'
@@ -44,14 +44,14 @@ export async function recordDecisionNode(
   input: {
     applicationId: string
     decisionId: string
-    board: 'planning_board' | 'zba'
+    boardKind: BoardKind
     outcome: DecisionOutcome
     occurredOn: CivilDate
     createdBy: string
   },
 ): Promise<void> {
   await tx.insert(appealNodes).values({
-    kind: input.board === 'zba' ? 'zba_decision' : 'pb_decision',
+    kind: input.boardKind === 'zba' ? 'zba_decision' : 'pb_decision',
     applicationId: input.applicationId,
     decisionId: input.decisionId,
     occurredOn: input.occurredOn,

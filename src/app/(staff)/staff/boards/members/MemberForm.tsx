@@ -29,7 +29,7 @@ function MemberFields({ current, today, boards }: MemberFieldsProps) {
         defaultValue={current?.email}
         required
       />
-      <SelectField label="Board" name="board" options={boards} defaultValue={current?.board} />
+      <SelectField label="Board" name="boardId" options={boards} defaultValue={current?.boardId} />
       <SelectField
         label="Role on the board"
         name="title"

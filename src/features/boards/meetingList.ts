@@ -6,9 +6,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import {
   AGENDA_STATES,
   type AgendaState,
-  MEETING_BOARDS,
   MEETING_KINDS,
-  type MeetingBoard,
   type MeetingFilters,
   type MeetingKind,
   type MeetingSortKey,
@@ -20,7 +18,7 @@ import { orderBySql } from '@/features/dataTable/sortSql'
 
 export interface MeetingListRow {
   id: string
-  board: MeetingBoard
+  boardId: string
   meetingDate: string
   kind: MeetingKind
   location: string
@@ -49,7 +47,7 @@ const AGENDA = sql<AgendaState>`coalesce((select a.status from agendas a where a
 
 const SORT_COLUMNS = {
   date: m.meetingDate,
-  board: m.board,
+  board: m.boardId,
   kind: m.kind,
   location: sql`lower(${m.location})`,
   hearings: HEARINGS,
@@ -64,7 +62,7 @@ function groupClauses(filters: MeetingFilters) {
   const boards = filters.boards ?? []
   const kinds = filters.kinds ?? []
   return new Map<MeetingGroup, SQL | undefined>([
-    ['boards', boards.length === 0 ? undefined : inArray(m.board, boards)],
+    ['boards', boards.length === 0 ? undefined : inArray(m.boardId, boards)],
     ['kinds', kinds.length === 0 ? undefined : inArray(m.kind, kinds)],
     ['agendas', anyOf((filters.agendas ?? []).map((a) => sql`${AGENDA} = ${a}`))],
   ])
@@ -103,6 +101,7 @@ export async function listMeetingTable(
     today: string
     sort: SortState<MeetingSortKey>
     filters: MeetingFilters
+    boardIds: readonly string[]
     limit: number
     offset: number
   },
@@ -121,7 +120,7 @@ export async function listMeetingTable(
     db
       .select({
         id: m.id,
-        board: m.board,
+        boardId: m.boardId,
         meetingDate: m.meetingDate,
         kind: m.kind,
         location: m.location,
@@ -144,7 +143,7 @@ export async function listMeetingTable(
       scope,
       others: (group) => whereAll([], groups, group),
       facets: [
-        facet('boards', MEETING_BOARDS, (b) => sql`${m.board} = ${b}`),
+        facet('boards', input.boardIds, (b) => sql`${m.boardId} = ${b}`),
         facet('kinds', MEETING_KINDS, (k) => sql`${m.kind} = ${k}`),
         facet('agendas', AGENDA_STATES, (a) => sql`${AGENDA} = ${a}`),
       ],

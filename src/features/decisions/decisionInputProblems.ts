@@ -41,14 +41,14 @@ export function votesConsistent(votes: DecisionVotes): boolean {
 
 export async function inputProblem(
   tx: Tx,
-  board: 'planning_board' | 'zba' | null,
+  boardId: string | null,
   input: RecordDecisionInput,
 ): Promise<DecisionError | null> {
   const missing = missingFieldsOf(input)
   if (missing.length > 0) return { missingFields: missing }
   if (!votesConsistent(input.votes)) return 'votes_inconsistent'
-  if (board === null) return null
+  if (boardId === null) return null
   const voters = input.votes.members.map((m) => m.name)
-  const notSeated = await unseatedVoters(tx, board, input.votedOn, voters)
+  const notSeated = await unseatedVoters(tx, boardId, input.votedOn, voters)
   return notSeated.length > 0 ? { notSeated } : null
 }

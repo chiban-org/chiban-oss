@@ -6,14 +6,12 @@ import type { Exclusion } from '@/features/boards/packetCandidates'
 import type { GatherCandidate, GatherGroup, PacketGather } from '@/features/boards/packetGather'
 import { gatherPacketAction } from './packetActions'
 
-const SHORT_BOARD_NAMES = { planning_board: 'Planning Board', zba: 'ZBA' } as const
-
 export function exclusionText(exclusion: Exclusion): string {
   switch (exclusion.kind) {
     case 'not_shared':
       return 'Not shared with the board'
     case 'other_board':
-      return `Belongs to the ${SHORT_BOARD_NAMES[exclusion.board]}`
+      return `Belongs to the ${exclusion.boardShortName}`
     case 'no_public_copy':
       return 'No approved public copy'
   }

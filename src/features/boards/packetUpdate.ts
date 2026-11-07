@@ -34,7 +34,7 @@ async function updateRecipients(db: Db, packet: PacketRow, now: Date) {
     .select({ email: users.email })
     .from(boardPacketMembers)
     .innerJoin(users, eq(users.id, boardPacketMembers.userId))
-    .where(and(eq(boardPacketMembers.packetId, packetId), stillSeated(packet.board)))
+    .where(and(eq(boardPacketMembers.packetId, packetId), stillSeated(packet.boardId)))
   const links = await db
     .select({ email: boardPacketLinks.recipientEmail })
     .from(boardPacketLinks)

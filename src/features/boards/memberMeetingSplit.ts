@@ -2,11 +2,6 @@ import type { MemberMeetingRow } from '@/features/boards/memberPackets'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 
-export const MEMBER_BOARD_NAMES = {
-  planning_board: 'Planning Board',
-  zba: 'Zoning Board of Adjustment',
-} as const
-
 export interface MemberMeetingSplit {
   next: MemberMeetingRow | null
   later: MemberMeetingRow[]
@@ -35,5 +30,5 @@ export function markerText(row: MemberMeetingRow): string | null {
 }
 
 export function meetingTitle(row: MemberMeetingRow): string {
-  return `${MEMBER_BOARD_NAMES[row.board]}, ${formatCivilDate(row.meetingDate)}`
+  return `${row.boardShortName}, ${formatCivilDate(row.meetingDate)}`
 }

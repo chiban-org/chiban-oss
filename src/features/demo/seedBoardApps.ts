@@ -6,6 +6,7 @@ import { recordSelectmenCertification } from '@/features/boards/certification'
 import { recordDesDetermination } from '@/features/boards/des500'
 import { linkReliance, recordFinalApproval } from '@/features/boards/exercise'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
+import { boardIdOf } from '@/features/boards/townBoards'
 import { type Cast, d, must, open, type Scenario } from '@/features/demo/seedPermitSupport'
 import { addProfessional } from '@/features/rosters/professionals'
 import type { CivilDate } from '@/types/civilDate'
@@ -18,8 +19,9 @@ export const COMMON = {
 }
 
 async function meetingId(db: Db, board: 'planning_board' | 'zba', date: string): Promise<string> {
+  const boardId = await boardIdOf(db, board)
   const rows = await db.query.boardMeetings.findMany({
-    where: (m, { and, eq: equals }) => and(equals(m.board, board), equals(m.meetingDate, date)),
+    where: (m, { and, eq: equals }) => and(equals(m.boardId, boardId), equals(m.meetingDate, date)),
   })
   return rows[0]?.id ?? ''
 }

@@ -1,13 +1,16 @@
 'use client'
 
+import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import { FilingLeadFields } from '@/components/config/FilingLeadFields'
 import { TextRows } from '@/components/config/plainFields'
 import { Check, FieldError, type FieldErrors, Input } from '@/components/config/primitives'
 import { Legend } from '@/components/ui/legend'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
+import type { EditorBoard } from '@/features/config/editorContext'
 
 interface Props {
   body: BoardSettingsBody
+  boards: readonly EditorBoard[]
   onChange: (next: BoardSettingsBody) => void
   errors: FieldErrors
 }
@@ -17,7 +20,7 @@ function toNumberOrNull(raw: string): number | null {
   return Number.isNaN(parsed) ? null : parsed
 }
 
-export function BoardSettingsEditor({ body, onChange, errors }: Props) {
+export function BoardSettingsEditor({ body, boards, onChange, errors }: Props) {
   const setBoard = (index: number, next: Partial<BoardSettingsBody['boards'][number]>) =>
     onChange({
       ...body,
@@ -27,82 +30,80 @@ export function BoardSettingsEditor({ body, onChange, errors }: Props) {
     onChange({ ...body, abutters: { ...body.abutters, ...next } })
   return (
     <div className="space-y-4">
-      {body.boards.map((board, index) => (
-        <fieldset key={board.board} className="rounded-md border p-3">
-          <Legend bordered>{board.label}</Legend>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Input
-              label="Board name"
-              value={board.label}
-              onChange={(e) => setBoard(index, { label: e.target.value })}
-            />
-            <Input
-              label="Newspaper of record"
-              hint="Where legal notices for this board are published."
-              value={board.publicNotice.newspaper ?? ''}
-              onChange={(e) =>
-                setBoard(index, {
-                  publicNotice: {
-                    ...board.publicNotice,
-                    newspaper: e.target.value === '' ? null : e.target.value,
-                  },
-                })
-              }
-            />
-            <Input
-              label="Website for notices"
-              value={board.publicNotice.websiteUrl ?? ''}
-              onChange={(e) =>
-                setBoard(index, {
-                  publicNotice: {
-                    ...board.publicNotice,
-                    websiteUrl: e.target.value === '' ? null : e.target.value,
-                  },
-                })
-              }
-            />
-            {board.board === 'planning_board' ? (
-              <FilingLeadFields
-                board={board}
-                onChange={(next) => setBoard(index, next)}
-                errors={errors}
+      {body.boards.map((board, index) => {
+        const named = boards.find((b) => b.id === board.boardId)
+        return (
+          <fieldset key={board.boardId} className="rounded-md border p-3">
+            <Legend bordered>{named?.name ?? ''}</Legend>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input
+                label="Newspaper of record"
+                hint="Where legal notices for this board are published."
+                value={board.publicNotice.newspaper ?? ''}
+                onChange={(e) =>
+                  setBoard(index, {
+                    publicNotice: {
+                      ...board.publicNotice,
+                      newspaper: e.target.value === '' ? null : e.target.value,
+                    },
+                  })
+                }
               />
-            ) : null}
-          </div>
-          <div className="mt-2 space-y-1">
-            <Check
-              label="Notice by posting"
-              checked={board.publicNotice.posting}
-              onChange={(checked) =>
-                setBoard(index, {
-                  publicNotice: { ...board.publicNotice, posting: checked },
-                })
-              }
-            />
-            <Check
-              label="Notice by publication"
-              checked={board.publicNotice.publication}
-              onChange={(checked) =>
-                setBoard(index, {
-                  publicNotice: { ...board.publicNotice, publication: checked },
-                })
-              }
-            />
-          </div>
-          <div className="mt-3">
-            <TextRows
-              legend="Places where notices are posted"
-              hint="Each place a paper notice goes up, for example Town Hall lobby."
-              rowLabel="Place"
-              addLabel="Add a place"
-              values={board.publicNotice.bulletinBoards}
-              onChange={(next) =>
-                setBoard(index, { publicNotice: { ...board.publicNotice, bulletinBoards: next } })
-              }
-            />
-          </div>
-        </fieldset>
-      ))}
+              <Input
+                label="Website for notices"
+                value={board.publicNotice.websiteUrl ?? ''}
+                onChange={(e) =>
+                  setBoard(index, {
+                    publicNotice: {
+                      ...board.publicNotice,
+                      websiteUrl: e.target.value === '' ? null : e.target.value,
+                    },
+                  })
+                }
+              />
+              {named !== undefined && BOARD_KIND_TRAITS[named.kind].hasFilingLead ? (
+                <FilingLeadFields
+                  board={board}
+                  onChange={(next) => setBoard(index, next)}
+                  errors={errors}
+                />
+              ) : null}
+            </div>
+            <div className="mt-2 space-y-1">
+              <Check
+                label="Notice by posting"
+                checked={board.publicNotice.posting}
+                onChange={(checked) =>
+                  setBoard(index, {
+                    publicNotice: { ...board.publicNotice, posting: checked },
+                  })
+                }
+              />
+              <Check
+                label="Notice by publication"
+                checked={board.publicNotice.publication}
+                onChange={(checked) =>
+                  setBoard(index, {
+                    publicNotice: { ...board.publicNotice, publication: checked },
+                  })
+                }
+              />
+            </div>
+            <div className="mt-3">
+              <TextRows
+                legend="Places where notices are posted"
+                hint="Each place a paper notice goes up, for example Town Hall lobby."
+                rowLabel="Place"
+                addLabel="Add a place"
+                values={board.publicNotice.bulletinBoards}
+                onChange={(next) =>
+                  setBoard(index, { publicNotice: { ...board.publicNotice, bulletinBoards: next } })
+                }
+              />
+            </div>
+          </fieldset>
+        )
+      })}
       <fieldset className="rounded-md border p-3">
         <Legend bordered>Abutters across a street or stream</Legend>
         <p className="m-0 mb-2 text-sm text-muted-foreground">

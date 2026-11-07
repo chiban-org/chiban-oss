@@ -135,7 +135,7 @@ export async function runPublishChecks(
     return placeholderError(checkAmendmentPlaceholders(body as LocalCodeAmendmentBody))
   }
   if (kind === 'town_rule_setting') return checkTownRule(body as TownRuleSettingBody, key)
-  if (kind === 'board_settings') return checkBoardSettings(body as BoardSettingsBody)
+  if (kind === 'board_settings') return await checkBoardSettings(tx, body as BoardSettingsBody)
   if (kind === 'town_profile') return checkTownProfile(body as TownProfileBody)
   return null
 }

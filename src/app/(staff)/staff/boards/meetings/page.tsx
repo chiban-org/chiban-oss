@@ -4,17 +4,16 @@ import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { TablePager } from '@/components/dataTable/TablePager'
 import { ListHeader } from '@/components/layout/ListHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { listMeetingTable, type MeetingListPage } from '@/features/boards/meetingList'
 import {
   AGENDA_STATE_LABELS,
-  MEETING_BOARDS,
   MEETING_FILTER_PARAMS,
   MEETING_KIND_LABELS,
   MEETING_SORT,
   MEETINGS_PATH,
   readMeetingListView,
 } from '@/features/boards/meetingListParams'
+import { activeBoards, allBoards, boardLabel } from '@/features/boards/townBoards'
 import {
   clearHref,
   pageHref,
@@ -74,18 +73,20 @@ export default async function MeetingsPage({
 }: {
   searchParams: Promise<RawSearchParams>
 }) {
-  const { params, when, sort, filters } = readMeetingListView(await searchParams)
   const ctx = await requireStaffContext()
+  const boardRows = await activeBoards(ctx.db)
+  const boardIds = boardRows.map((b) => b.id)
+  const { params, when, sort, filters } = readMeetingListView(await searchParams, boardIds)
   const today = await townToday(ctx.db, new Date(), ctx.signal)
   const list = await listMeetingTable(
     ctx.db,
     ctx.actor,
-    { when, today, sort, filters, limit: PAGE_SIZE, offset: readOffset(params) },
+    { when, today, sort, filters, boardIds, limit: PAGE_SIZE, offset: readOffset(params) },
     ctx.signal,
   )
   if (list === null) return <NoPermission title="Meetings" action="keep the meeting calendar" />
-  const settings = await getBoardSettings(ctx.db, ctx.signal)
-  const boardNames = new Map(MEETING_BOARDS.map((b) => [b, boardLabel(settings, b)]))
+  const activeNames = new Map(boardRows.map((b) => [b.id, boardLabel(b)]))
+  const boardNames = new Map((await allBoards(ctx.db)).map((b) => [b.id, boardLabel(b)]))
   const tabs = filterTabs(MEETINGS_PATH, params, {
     param: 'when',
     label: 'Meetings',
@@ -103,13 +104,13 @@ export default async function MeetingsPage({
       <ListHeader
         title="Meetings"
         lead={leadText(when === 'upcoming', list.usualLocation)}
-        actions={<AddMeeting boards={[...boardNames]} />}
+        actions={<AddMeeting boards={[...activeNames]} />}
       />
       <FilterTabs label="Meetings" tabs={tabs} />
       <div className="toolbar">
         <QuickFilters
           label="Quick filters"
-          groups={chips(params, list, boardNames)}
+          groups={chips(params, list, activeNames)}
           clearHref={clear}
         />
       </div>

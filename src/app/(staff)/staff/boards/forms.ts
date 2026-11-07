@@ -1,4 +1,3 @@
-import { BoardSchema } from '@packs/nh/schema'
 import { z } from 'zod'
 import {
   checkbox,
@@ -16,7 +15,7 @@ const applicationId = () => recordId('an application')
 export const MEETING_KINDS = ['regular', 'special'] as const
 
 export const SCHEDULE_MEETING_FORM = z.object({
-  board: choice('a board', BoardSchema.options),
+  boardId: recordId('a board'),
   meetingDate: civilDate('the meeting date'),
   kind: choice('a kind of meeting', MEETING_KINDS),
   location: optionalText('a location', { max: 200 }),

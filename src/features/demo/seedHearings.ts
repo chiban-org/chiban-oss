@@ -9,6 +9,7 @@ import { recordCompletenessVote, setAcceptanceMeeting } from '@/features/boards/
 import { recordDesDetermination } from '@/features/boards/des500'
 import { inviteBoardMember } from '@/features/boards/members'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
+import { boardIdOf } from '@/features/boards/townBoards'
 import { publishNewVersion } from '@/features/config/publish'
 import { generateDecisionDocuments } from '@/features/decisions/decisionDocuments'
 import { fileDecision } from '@/features/decisions/fileDecision'
@@ -82,7 +83,12 @@ export async function meetingId(
   const [row] = await db
     .select({ id: boardMeetings.id })
     .from(boardMeetings)
-    .where(and(eq(boardMeetings.board, board), eq(boardMeetings.meetingDate, date)))
+    .where(
+      and(
+        eq(boardMeetings.boardId, await boardIdOf(db, board)),
+        eq(boardMeetings.meetingDate, date),
+      ),
+    )
   return row?.id ?? ''
 }
 
@@ -221,7 +227,7 @@ export async function seedMembers(db: Db, cast: Cast, signal: AbortSignal) {
         {
           email: `${local}@${DEMO_DOMAIN}`,
           displayName: name,
-          board,
+          boardId: await boardIdOf(db, board),
           title: 'member',
           termStart: d('2026-01-01'),
         },

@@ -6,8 +6,7 @@ import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { boardOfApplication } from '@/features/boards/boardOf'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
+import { boardMergeValues, getBoard } from '@/features/boards/townBoards'
 import { appealRightsFor } from '@/features/decisions/appealRights'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { attachDocument } from '@/features/documents/attach'
@@ -45,16 +44,15 @@ export async function decisionDocumentInput(
     .from(boardMeetings)
     .where(eq(boardMeetings.id, decision.meetingId))
   if (app === null || data === null || meeting === undefined) return err('not_found')
-  const board = boardOfApplication(app)
-  const settings = await getBoardSettings(db, signal)
-  const frame = await documentFrame(db, { board }, signal)
+  const board = await getBoard(db, meeting.boardId)
+  const frame = await documentFrame(db, { boardId: meeting.boardId }, signal)
   const reasonsText = decision.reasonsForDisapproval?.trim() ?? ''
   const reasons = reasonsText === '' ? null : reasonsText
   const conditions = decision.conditions.map((c) => c.text)
   const appealRights = appealRightsFor(app.typeBody.classification ?? '')
   const values = {
     ...mergeContextOf(data),
-    'board.name': board === null ? '' : boardLabel(settings, board),
+    ...(await boardMergeValues(db, board)),
     'meeting.date': formatCivilDate(meeting.meetingDate),
     'meeting.location': meeting.location,
     'meeting.time': formatMinuteOfDay(meeting.startsAtMinute),

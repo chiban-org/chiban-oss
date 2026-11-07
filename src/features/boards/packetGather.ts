@@ -1,10 +1,8 @@
-import type { Board } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { agendas, boardMeetings, boardPackets } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import {
   type Candidate,
   type Exclusion,
@@ -12,6 +10,7 @@ import {
   TRC_SUMMARY_TITLE,
 } from '@/features/boards/packetCandidates'
 import { packetItemRows } from '@/features/boards/packetContents'
+import { boardLabel, getBoard } from '@/features/boards/townBoards'
 import { trcSummary } from '@/features/reviews/trcSummary'
 import { formatCivilDate } from '@/lib/formatDate'
 import { err, ok, type Result } from '@/types/result'
@@ -35,7 +34,7 @@ export interface GatherGroup {
 
 export interface PacketGather {
   meetingId: string
-  board: Board
+  boardId: string
   boardName: string
   title: string
   packetId: string | null
@@ -70,7 +69,8 @@ export async function packetMeetingOf(
   const [agenda] = await db.select().from(agendas).where(eq(agendas.meetingId, meetingId))
   if (agenda?.status !== 'published') return err('agenda_not_published')
   const [packet] = await db.select().from(boardPackets).where(eq(boardPackets.meetingId, meetingId))
-  const boardName = boardLabel(await getBoardSettings(db, signal), meeting.board)
+  const board = await getBoard(db, meeting.boardId)
+  const boardName = board === null ? '' : boardLabel(board)
   return ok({
     meeting,
     agendaDocumentId: agenda.documentId,
@@ -158,7 +158,7 @@ export async function gatherPacket(
   }
   return ok({
     meetingId,
-    board: meeting.board,
+    boardId: meeting.boardId,
     boardName: context.value.boardName,
     title: packet?.title ?? context.value.defaultTitle,
     packetId: packet?.id ?? null,

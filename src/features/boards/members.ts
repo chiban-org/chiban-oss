@@ -6,7 +6,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
+import { boardLabel, getBoard } from '@/features/boards/townBoards'
 import type { MailTransport } from '@/features/mail/transport'
 import { townToday } from '@/features/town/today'
 import { addDays, type CivilDate } from '@/types/civilDate'
@@ -22,12 +22,17 @@ export const MEMBER_TITLE_LABELS: Record<MemberTitle, string> = {
   clerk: 'Clerk',
 }
 
-export type InviteError = 'forbidden' | 'staff_account' | 'send_failed' | 'term_order'
+export type InviteError =
+  | 'forbidden'
+  | 'staff_account'
+  | 'send_failed'
+  | 'term_order'
+  | 'unknown_board'
 
 interface InviteInput {
   email: string
   displayName: string
-  board: 'planning_board' | 'zba'
+  boardId: string
   title: MemberTitle
   termStart: CivilDate
   termEnd?: CivilDate
@@ -45,6 +50,8 @@ export async function inviteBoardMember(
     return err('forbidden')
   }
   if (input.termEnd !== undefined && input.termEnd < input.termStart) return err('term_order')
+  const board = await getBoard(db, input.boardId)
+  if (board === null || board.archivedAt !== null) return err('unknown_board')
   const email = input.email.trim().toLowerCase()
   const created = await transactionResult<{ userId: string; membershipId: string }, InviteError>(
     db,
@@ -69,7 +76,7 @@ export async function inviteBoardMember(
         .insert(boardMemberships)
         .values({
           userId,
-          board: input.board,
+          boardId: input.boardId,
           title: input.title,
           termStart: input.termStart,
           termEnd: input.termEnd ?? null,
@@ -83,7 +90,7 @@ export async function inviteBoardMember(
           action: 'board.member.invite',
           entityType: 'user',
           entityId: userId,
-          after: { board: input.board, title: input.title, termStart: input.termStart },
+          after: { boardId: input.boardId, title: input.title, termStart: input.termStart },
         },
         signal,
       )
@@ -91,12 +98,11 @@ export async function inviteBoardMember(
     },
   )
   if (!created.ok) return created
-  const settings = await getBoardSettings(db, signal)
-  const body = `You have been added to the ${boardLabel(settings, input.board)} as ${MEMBER_TITLE_LABELS[input.title].toLowerCase()}. Sign in with your email address at ${env.BASE_URL}/board to read meeting packets. We will email you a one-time sign-in link when you ask for it.\n`
+  const body = `You have been added to the ${boardLabel(board)} as ${MEMBER_TITLE_LABELS[input.title].toLowerCase()}. Sign in with your email address at ${env.BASE_URL}/board to read meeting packets. We will email you a one-time sign-in link when you ask for it.\n`
   const sent = await mail.send(
     {
       to: email,
-      subject: `Board membership: ${boardLabel(settings, input.board)}`,
+      subject: `Board membership: ${boardLabel(board)}`,
       text: body,
       html: `<p>${body}</p>`,
     },

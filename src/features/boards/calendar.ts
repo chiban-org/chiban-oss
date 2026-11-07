@@ -1,20 +1,20 @@
-import type { Board } from '@packs/nh/schema'
-import { and, asc, eq, gte } from 'drizzle-orm'
+import type { BoardKind } from '@packs/nh/boardSchema'
+import { and, asc, eq, gte, isNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { boardMeetings } from '@/db/schema'
+import { boardMeetings, boards } from '@/db/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 export interface MeetingCalendar {
   nextRegularMeeting(
-    board: Board,
+    boardKind: BoardKind,
     onOrAfter: CivilDate,
     signal: AbortSignal,
   ): Promise<CivilDate | null>
 }
 
-export async function nextRegularMeeting(
+export async function nextRegularMeetingOfBoard(
   db: DbOrTx,
-  board: Board,
+  boardId: string,
   onOrAfter: CivilDate,
   signal: AbortSignal,
 ): Promise<CivilDate | null> {
@@ -24,7 +24,32 @@ export async function nextRegularMeeting(
     .from(boardMeetings)
     .where(
       and(
-        eq(boardMeetings.board, board),
+        eq(boardMeetings.boardId, boardId),
+        eq(boardMeetings.kind, 'regular'),
+        eq(boardMeetings.status, 'scheduled'),
+        gte(boardMeetings.meetingDate, onOrAfter),
+      ),
+    )
+    .orderBy(asc(boardMeetings.meetingDate))
+    .limit(1)
+  return (row?.meetingDate as CivilDate | undefined) ?? null
+}
+
+export async function nextRegularMeeting(
+  db: DbOrTx,
+  boardKind: BoardKind,
+  onOrAfter: CivilDate,
+  signal: AbortSignal,
+): Promise<CivilDate | null> {
+  signal.throwIfAborted()
+  const [row] = await db
+    .select({ meetingDate: boardMeetings.meetingDate })
+    .from(boardMeetings)
+    .innerJoin(boards, eq(boards.id, boardMeetings.boardId))
+    .where(
+      and(
+        eq(boards.kind, boardKind),
+        isNull(boards.archivedAt),
         eq(boardMeetings.kind, 'regular'),
         eq(boardMeetings.status, 'scheduled'),
         gte(boardMeetings.meetingDate, onOrAfter),
@@ -37,7 +62,7 @@ export async function nextRegularMeeting(
 
 export function boardMeetingCalendar(tx: DbOrTx): MeetingCalendar {
   return {
-    nextRegularMeeting: (board, onOrAfter, signal) =>
-      nextRegularMeeting(tx, board, onOrAfter, signal),
+    nextRegularMeeting: (boardKind, onOrAfter, signal) =>
+      nextRegularMeeting(tx, boardKind, onOrAfter, signal),
   }
 }

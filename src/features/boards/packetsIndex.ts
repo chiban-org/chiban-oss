@@ -3,10 +3,10 @@ import type { Db } from '@/db/client'
 import { boardMeetings, boardPackets } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { packetStateForMeeting } from '@/features/boards/packetPanel'
 import type { PacketState, PacketStateKind } from '@/features/boards/packetState'
 import { type TrackRow, trackPacket } from '@/features/boards/packetTrack'
+import { allBoards, boardLabel } from '@/features/boards/townBoards'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
@@ -61,7 +61,7 @@ export async function upcomingPacketStates(
     .select()
     .from(boardMeetings)
     .where(gte(boardMeetings.meetingDate, today))
-    .orderBy(asc(boardMeetings.meetingDate), asc(boardMeetings.board), asc(boardMeetings.id))
+    .orderBy(asc(boardMeetings.meetingDate), asc(boardMeetings.boardId), asc(boardMeetings.id))
   return await Promise.all(
     meetings.map(async (meeting) => ({
       meeting,
@@ -79,8 +79,8 @@ export async function loadPacketsIndex(
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'packet.manage', signal))) return err('forbidden')
   const today = await townToday(db, now, signal)
-  const [settings, upcoming, unlinked] = await Promise.all([
-    getBoardSettings(db, signal),
+  const [boardRows, upcoming, unlinked] = await Promise.all([
+    allBoards(db),
     upcomingPacketStates(db, today, signal),
     unlinkedPackets(db),
   ])
@@ -88,7 +88,7 @@ export async function loadPacketsIndex(
     meetingId: meeting.id,
     meetingDate: meeting.meetingDate,
     dateText: formatCivilDate(meeting.meetingDate),
-    boardName: boardLabel(settings, meeting.board),
+    boardName: boardLabel(boardRows.find((b) => b.id === meeting.boardId) ?? { name: '' }),
     kindText: meeting.kind === 'special' ? 'Special meeting' : 'Regular meeting',
     state: state.label,
     stateKind: state.kind,

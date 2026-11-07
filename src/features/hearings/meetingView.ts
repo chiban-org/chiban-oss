@@ -1,4 +1,3 @@
-import type { Board } from '@packs/nh/schema'
 import { asc, eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { agendaItems, agendas, boardMeetings, hearings } from '@/db/schema'
@@ -6,7 +5,7 @@ import { meetingPacketId } from '@/features/agendas/meetingPacket'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
+import { boardLabel, getBoard } from '@/features/boards/townBoards'
 import { HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { HEARING_STATUS_LABELS, timeZoneOf } from '@/features/hearings/views'
 import { townToday } from '@/features/town/today'
@@ -33,7 +32,7 @@ export interface MeetingAgendaView {
 
 export interface MeetingView {
   meetingId: string
-  board: Board
+  boardId: string
   boardName: string
   meetingDate: string
   dateText: string
@@ -124,7 +123,7 @@ export async function loadMeetingView(
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return null
   const [meeting] = await db.select().from(boardMeetings).where(eq(boardMeetings.id, meetingId))
   if (meeting === undefined) return null
-  const settings = await getBoardSettings(db, signal)
+  const board = await getBoard(db, meeting.boardId)
   const [agenda] = await db.select().from(agendas).where(eq(agendas.meetingId, meetingId))
   const items =
     agenda === undefined
@@ -136,8 +135,8 @@ export async function loadMeetingView(
           .orderBy(asc(agendaItems.position))
   return {
     meetingId,
-    board: meeting.board,
-    boardName: boardLabel(settings, meeting.board),
+    boardId: meeting.boardId,
+    boardName: board === null ? '' : boardLabel(board),
     meetingDate: meeting.meetingDate,
     dateText: formatCivilDate(meeting.meetingDate),
     kindText: meeting.kind === 'special' ? 'Special meeting' : 'Regular meeting',

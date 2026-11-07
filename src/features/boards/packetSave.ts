@@ -49,7 +49,7 @@ async function packetIdFor(tx: Tx, actor: Actor, context: PacketMeeting): Promis
     .insert(boardPackets)
     .values({
       title: context.defaultTitle,
-      board: context.meeting.board,
+      boardId: context.meeting.boardId,
       meetingDate: context.meeting.meetingDate,
       meetingId: context.meeting.id,
       createdBy: actor.userId,

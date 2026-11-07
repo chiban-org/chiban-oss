@@ -11,6 +11,7 @@ import { SignersFields } from '@/components/config/town/SignersFields'
 import { Button } from '@/components/ui/button'
 import { RequiredNote } from '@/components/ui/required-mark'
 import { useHydrated } from '@/components/useHydrated'
+import type { EditorBoard } from '@/features/config/editorContext'
 import type { TownProfileBody } from '@/features/town/profileSchema'
 import type { TownProfileSection } from '@/features/town/profileSettings'
 import { words } from '@/lib/words'
@@ -21,6 +22,7 @@ interface Props {
   initial: TownProfileBody
   resetKey: string
   townName: string
+  boards: readonly EditorBoard[]
 }
 
 function statusText(pending: boolean, result: ActionResult | null): string | null {
@@ -35,6 +37,7 @@ function SectionFields({
   onChange,
   errors,
   townName,
+  boards,
 }: Omit<Props, 'initial' | 'resetKey'> & {
   body: TownProfileBody
   onChange: (b: TownProfileBody) => void
@@ -46,15 +49,15 @@ function SectionFields({
     return <SignersFields body={body} onChange={onChange} errors={errors} />
   return (
     <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-      <LetterheadFields body={body} onChange={onChange} />
+      <LetterheadFields body={body} boards={boards} onChange={onChange} />
       <div className="lg:sticky lg:top-6 lg:self-start">
-        <LetterheadPreview townName={townName} body={body} />
+        <LetterheadPreview townName={townName} body={body} boards={boards} />
       </div>
     </div>
   )
 }
 
-export function TownSectionForm({ section, initial, resetKey, townName }: Props) {
+export function TownSectionForm({ section, initial, resetKey, townName, boards }: Props) {
   const [body, setBody] = useState(initial)
   const [seenKey, setSeenKey] = useState(resetKey)
   if (seenKey !== resetKey) {
@@ -83,6 +86,7 @@ export function TownSectionForm({ section, initial, resetKey, townName }: Props)
       <SectionFields
         section={section}
         townName={townName}
+        boards={boards}
         body={body}
         onChange={setBody}
         errors={errors}

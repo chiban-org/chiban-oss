@@ -8,6 +8,7 @@ import {
   readerItems,
   type WithdrawnWhy,
 } from '@/features/boards/packetContents'
+import { getBoard } from '@/features/boards/townBoards'
 import { getTownSettings } from '@/features/town/settings'
 import { type CivilDate, todayInTimeZone } from '@/types/civilDate'
 
@@ -23,7 +24,9 @@ export interface PacketViewItem {
 export interface PacketView {
   packetId: string
   title: string
-  board: 'planning_board' | 'zba'
+  boardId: string
+  boardName: string
+  boardShortName: string
   meetingDate: CivilDate
   expiresAt: string
   items: PacketViewItem[]
@@ -60,10 +63,13 @@ export async function loadPacketView(
   const [packet] = await db.select().from(boardPackets).where(eq(boardPackets.id, packetId))
   if (packet === undefined) return null
   const rows = await packetItemRows(db, packet.id)
+  const board = await getBoard(db, packet.boardId)
   return {
     packetId: packet.id,
     title: packet.title,
-    board: packet.board,
+    boardId: packet.boardId,
+    boardName: board?.name ?? '',
+    boardShortName: board?.shortName ?? '',
     meetingDate: packet.meetingDate as CivilDate,
     expiresAt,
     items: await viewItems(db, readerItems(rows, packet), signal),

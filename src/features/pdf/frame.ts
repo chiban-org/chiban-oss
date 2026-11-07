@@ -1,4 +1,3 @@
-import type { Board } from '@packs/nh/boardSchema'
 import type {
   Letterhead,
   SignerRole,
@@ -89,12 +88,12 @@ function imageOf(images: FrameImages, key: string | undefined): FrameImage | nul
 export function buildFrame(
   townName: string,
   profile: TownProfileBody | null,
-  board: Board | undefined,
+  boardId: string | undefined,
   images: FrameImages,
 ): DocumentFrame {
   if (profile === null) return plainFrame(townName)
   const override =
-    board === undefined ? undefined : new Map(Object.entries(profile.boardOverrides)).get(board)
+    boardId === undefined ? undefined : new Map(Object.entries(profile.boardOverrides)).get(boardId)
   const addressLines =
     override?.addressLines !== undefined && override.addressLines.length > 0
       ? override.addressLines

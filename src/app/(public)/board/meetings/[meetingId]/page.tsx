@@ -11,7 +11,6 @@ export const metadata: Metadata = { title: 'Board meeting' }
 
 export const dynamic = 'force-dynamic'
 
-const BOARD_NAMES = { planning_board: 'Planning Board', zba: 'Zoning Board of Adjustment' } as const
 const LINK = 'tap-target inline-flex items-center'
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
@@ -35,7 +34,7 @@ export default async function BoardMeetingPage({
         </Link>
       </p>
       <h1>{packet.value.title}</h1>
-      <p>{`${BOARD_NAMES[packet.value.board]}, meeting ${formatCivilDate(packet.value.meetingDate)}`}</p>
+      <p>{`${packet.value.boardShortName}, meeting ${formatCivilDate(packet.value.meetingDate)}`}</p>
       <PacketItems items={packet.value.items} base={base} />
     </main>
   )

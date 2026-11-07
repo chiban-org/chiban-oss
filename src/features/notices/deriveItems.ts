@@ -11,6 +11,7 @@ import { drawnForCurrentParcels } from '@/features/abutters/listCurrency'
 import { currentIssuedList } from '@/features/abutters/queries'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { BoardSettingsBody } from '@/features/boards/boardSettingsSchema'
+import { boardForKind } from '@/features/boards/townBoards'
 import { getPublished } from '@/features/config/store'
 import type { NoticeChannel } from '@/features/notices/channels'
 import {
@@ -142,8 +143,12 @@ async function loadContext(
   )
   if (flags === null) return err('determination_missing')
   const settings = await getPublished(tx, 'board_settings', 'default', signal)
-  const boards = (settings?.body as BoardSettingsBody | undefined)?.boards ?? []
-  const notice = boards.find((b) => b.board === classification.board)?.publicNotice ?? null
+  const entries = (settings?.body as BoardSettingsBody | undefined)?.boards ?? []
+  const board =
+    classification.boardKind === null
+      ? null
+      : await boardForKind(tx, classification.boardKind, signal)
+  const notice = entries.find((b) => b.boardId === board?.id)?.publicNotice ?? null
   return ok({ classification, list, flags, notice, leads: await townLeads(tx, all, signal), all })
 }
 

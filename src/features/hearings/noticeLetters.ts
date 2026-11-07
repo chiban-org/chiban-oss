@@ -5,8 +5,7 @@ import { boardMeetings, hearings } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { boardOfApplication } from '@/features/boards/boardOf'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
+import { boardMergeValues, getBoard } from '@/features/boards/townBoards'
 import { formatMinuteOfDay, HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { documentFrame } from '@/features/pdf/documentFrame'
@@ -43,19 +42,21 @@ export async function hearingNoticeInput(
   const app = await loadApplicationContext(db, hearing.hearing.applicationId, signal)
   const data = await loadPermitData(db, hearing.hearing.applicationId, signal)
   if (app === null || data === null) return null
-  const board = boardOfApplication(app)
-  const settings = await getBoardSettings(db, signal)
+  const board = await getBoard(db, hearing.meeting.boardId)
   const status = await noticeStatus(db, setId, signal)
   const values = {
     ...mergeContextOf(data),
-    'board.name': board === null ? '' : boardLabel(settings, board),
+    ...(await boardMergeValues(db, board)),
     'meeting.date': formatCivilDate(hearing.meeting.meetingDate),
     'meeting.location': hearing.meeting.location,
     'meeting.time': formatMinuteOfDay(hearing.meeting.startsAtMinute),
     'hearing.kind': HEARING_KIND_LABELS[hearing.hearing.kind],
   }
   return {
-    input: { frame: await documentFrame(db, { board }, signal), context: { values } },
+    input: {
+      frame: await documentFrame(db, { boardId: hearing.meeting.boardId }, signal),
+      context: { values },
+    },
     recipients: status.items.filter((i) => MAIL_CHANNELS.has(i.channel)),
     pins: app.pins.templates,
   }

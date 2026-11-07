@@ -1,6 +1,8 @@
 import { NH_INSPECTION_SETTINGS_DEFAULT } from '@packs/nh/starters'
-import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettings'
+import type { DbOrTx } from '@/db/client'
+import { BOARD_SETTINGS_DEFAULT, boardSettingsDefault } from '@/features/boards/boardSettings'
 import { EMPTY_REGIONAL_CONTACTS } from '@/features/boards/regionalContacts'
+import { activeBoards } from '@/features/boards/townBoards'
 import { settingDefault } from '@/features/clocks/ruleEngine'
 import type { ConfigKind } from '@/features/config/kinds'
 import { prefixFromLabel } from '@/features/config/newItemKey'
@@ -14,6 +16,16 @@ import { loadPack } from '@/features/packs/loadPack'
 import { EMPTY_REVIEW_ROUTES } from '@/features/reviews/routesSchema'
 import { defaultDoc } from '@/features/templates/kinds/documentKinds'
 import { TOWN_PROFILE_SKELETON } from '@/features/town/profileSchema'
+
+export async function skeletonBodyFor(
+  db: DbOrTx,
+  kind: ConfigKind,
+  key: string,
+  label: string = key,
+): Promise<unknown> {
+  if (kind === 'board_settings') return boardSettingsDefault(await activeBoards(db))
+  return skeletonBody(kind, key, label)
+}
 
 function inspectionTypeFor(label: string): string {
   return slugKey(label.replace(/\s*inspection\s*$/i, ''))

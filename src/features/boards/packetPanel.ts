@@ -3,7 +3,6 @@ import type { Db } from '@/db/client'
 import { agendas, boardMeetings, boardPacketMembers, boardPackets } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
 import { agendaReplacement } from '@/features/boards/packetAgenda'
 import {
   changeCount,
@@ -17,6 +16,7 @@ import { type ReviewLine, reviewLines } from '@/features/boards/packetReview'
 import { boardMembersOf } from '@/features/boards/packetSend'
 import { type PacketState, packetStateOf } from '@/features/boards/packetState'
 import { type TrackRow, trackPacket } from '@/features/boards/packetTrack'
+import { boardLabel, getBoard } from '@/features/boards/townBoards'
 import { timeZoneOf } from '@/features/hearings/views'
 import { todayInTimeZone } from '@/types/civilDate'
 
@@ -93,7 +93,7 @@ async function sendView(
   packet: typeof boardPackets.$inferSelect,
   changes: PendingChanges,
 ): Promise<PacketSendView> {
-  const members = await boardMembersOf(db, packet.board)
+  const members = await boardMembersOf(db, packet.boardId)
   const sentTo = await db
     .select({ userId: boardPacketMembers.userId })
     .from(boardPacketMembers)
@@ -131,7 +131,7 @@ export async function loadPacketPanel(
   const open = packet !== null && state.kind !== 'cancelled'
   return {
     meetingId,
-    boardName: boardLabel(await getBoardSettings(db, signal), meeting.board),
+    boardName: boardLabel((await getBoard(db, meeting.boardId)) ?? { name: '' }),
     state,
     zone,
     canShare: await hasCapability(db, actor.userId, 'document.manage', signal),

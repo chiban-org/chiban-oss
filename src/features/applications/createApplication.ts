@@ -31,11 +31,8 @@ export async function nextNumber(tx: Tx, prefix: string, year: number): Promise<
 }
 
 function isBoardType(typeBody: ApplicationTypeBody): boolean {
-  return (
-    loadPack().classifications.find((c) => c.key === typeBody.classification)?.board !==
-      undefined &&
-    loadPack().classifications.find((c) => c.key === typeBody.classification)?.board !== null
-  )
+  const kind = loadPack().classifications.find((c) => c.key === typeBody.classification)?.boardKind
+  return kind !== undefined && kind !== null
 }
 
 export async function createApplication(

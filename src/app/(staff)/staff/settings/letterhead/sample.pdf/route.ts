@@ -1,4 +1,4 @@
-import { BoardSchema } from '@packs/nh/boardSchema'
+import { z } from 'zod'
 import { db } from '@/db/client'
 import { FORBIDDEN, pdfOk, toResponse } from '@/features/pdf/pdfResponse'
 import { buildSampleLetterPdf } from '@/features/town/samplePdf'
@@ -14,11 +14,11 @@ export async function GET(request: Request): Promise<Response> {
   const accept = request.headers.get('accept')
   const actor = await staffActorOrNull(signal)
   if (actor === null) return toResponse(FORBIDDEN, accept)
-  const board = BoardSchema.safeParse(new URL(request.url).searchParams.get('board'))
+  const boardId = z.uuid().safeParse(new URL(request.url).searchParams.get('board'))
   const built = await buildSampleLetterPdf(
     db,
     actor,
-    board.success ? { board: board.data } : {},
+    boardId.success ? { boardId: boardId.data } : {},
     signal,
   )
   return toResponse(built.ok ? pdfOk(built.value) : FORBIDDEN, accept)

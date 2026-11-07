@@ -1,7 +1,7 @@
 import { z } from 'zod'
-import { BOARD_KINDS } from './boardKinds'
 import { RecipientRoleSchema } from '@/features/abutters/roles'
 import { CORE_STATES } from '@/features/applications/states'
+import { BOARD_KINDS } from './boardKinds'
 
 export const BoardKindSchema = z.enum(BOARD_KINDS)
 export type BoardKind = z.infer<typeof BoardKindSchema>

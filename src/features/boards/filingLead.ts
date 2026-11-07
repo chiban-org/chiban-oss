@@ -1,4 +1,3 @@
-import type { Board } from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { DbOrTx } from '@/db/client'
 import type { ApplicationContext } from '@/features/applications/context'
@@ -29,7 +28,7 @@ export interface FilingLead {
 export async function filingLeadFor(
   db: DbOrTx,
   app: ApplicationContext,
-  board: Board,
+  boardId: string,
   signal: AbortSignal,
 ): Promise<FilingLead | null> {
   if (!effectiveBindings(app.typeBody, loadPack()).includes(FILING_LEAD_KEY)) return null
@@ -37,7 +36,8 @@ export async function filingLeadFor(
   const settings = await getBoardSettings(db, signal)
   const facts = await factsWithDeterminations(db, app.id, app.facts)
   const resolved = await resolveClockLength(db, rule, facts, loadPack(), signal)
-  const leadDays = settings.boards.find((b) => b.board === board)?.filingLeadDays ?? resolved.value
+  const leadDays =
+    settings.boards.find((b) => b.boardId === boardId)?.filingLeadDays ?? resolved.value
   const length = { unit: 'days' as const, value: leadDays }
   return {
     leadDays,

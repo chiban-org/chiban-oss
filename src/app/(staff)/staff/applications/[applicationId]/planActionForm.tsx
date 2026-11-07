@@ -35,7 +35,7 @@ export function actionSummary(action: PlanAction, input: PlanFormInput): string 
     case 'set_board_meeting':
       return 'Set the meeting'
     case 'record_board_vote':
-      return input.board?.board === 'zba' ? 'Open the hearing' : 'Record the completeness vote'
+      return input.board?.boardKind === 'zba' ? 'Open the hearing' : 'Record the completeness vote'
     case 'record_board_regional_impact':
       return 'Record the regional impact determination'
     case 'open_abutter_list':
@@ -62,7 +62,11 @@ function BoardActionForm({
 }) {
   if (kind === 'set_board_meeting') {
     return (
-      <MeetingForm data={board} deadline={meetingDeadline(clocks, board.board)} variant={variant} />
+      <MeetingForm
+        data={board}
+        deadline={meetingDeadline(clocks, board.boardKind)}
+        variant={variant}
+      />
     )
   }
   if (kind === 'record_board_vote') return <VoteFormBody data={board} variant={variant} />

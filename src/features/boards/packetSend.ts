@@ -1,4 +1,3 @@
-import type { Board } from '@packs/nh/schema'
 import { and, eq, isNull, sql } from 'drizzle-orm'
 import type { Db, DbOrTx } from '@/db/client'
 import {
@@ -62,23 +61,23 @@ export async function stampSent(db: DbOrTx, packet: PacketRow, now: Date): Promi
     .where(and(eq(boardPacketItems.packetId, packet.id), isNull(boardPacketItems.sentAt)))
 }
 
-export function stillSeated(board: Board) {
+export function stillSeated(boardId: string) {
   return and(
     eq(users.isActive, true),
-    activeMembershipOn(sql`${boardPacketMembers.userId}`, sql`${board}`),
+    activeMembershipOn(sql`${boardPacketMembers.userId}`, sql`${boardId}`),
   )
 }
 
-export async function boardMembersOf(db: DbOrTx, board: Board) {
+export async function boardMembersOf(db: DbOrTx, boardId: string) {
   return await db
     .selectDistinct({ userId: users.id, email: users.email, name: users.displayName })
     .from(boardMemberships)
     .innerJoin(users, eq(users.id, boardMemberships.userId))
     .where(
       and(
-        eq(boardMemberships.board, board),
+        eq(boardMemberships.boardId, boardId),
         eq(users.isActive, true),
-        activeMembershipOn(sql`${boardMemberships.userId}`, sql`${board}`),
+        activeMembershipOn(sql`${boardMemberships.userId}`, sql`${boardId}`),
       ),
     )
     .orderBy(users.displayName)
@@ -95,7 +94,7 @@ export async function sendPacketToBoard(
   const found = await sendablePacket(db, actor, input.packetId, signal)
   if (!found.ok) return found
   const packet = found.value
-  const members = await boardMembersOf(db, packet.board)
+  const members = await boardMembersOf(db, packet.boardId)
   if (members.length === 0) return err('no_members')
   const already = await db
     .select({ userId: boardPacketMembers.userId })
@@ -145,7 +144,7 @@ export async function resendToMember(
       and(
         eq(boardPacketMembers.packetId, input.packetId),
         eq(boardPacketMembers.userId, input.userId),
-        stillSeated(found.value.board),
+        stillSeated(found.value.boardId),
       ),
     )
   if (member === undefined) return err('not_found')

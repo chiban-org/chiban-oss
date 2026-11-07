@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import type { Db } from '@/db/client'
+import { boardIdOf } from '@/features/boards/townBoards'
 import { publishConfig } from '@/features/config/publish'
 import { getPublished, saveDraft } from '@/features/config/store'
 import { actorFor, must } from '@/features/demo/seedPermitSupport'
@@ -13,11 +14,14 @@ async function fixtureImage(store: ObjectStore, file: string, signal: AbortSigna
   return must(await storeTownImage(store, new Uint8Array(bytes), signal), `store ${file}`)
 }
 
-function demoProfile(images: {
-  seal: TownImage
-  building: TownImage
-  landUse: TownImage
-}): TownProfileBody {
+function demoProfile(
+  images: {
+    seal: TownImage
+    building: TownImage
+    landUse: TownImage
+  },
+  boardIds: { planningBoard: string; zba: string },
+): TownProfileBody {
   return {
     key: 'default',
     officeName: 'Land Use Office',
@@ -34,11 +38,11 @@ function demoProfile(images: {
       pageNumbers: true,
     },
     boardOverrides: {
-      planning_board: {
+      [boardIds.planningBoard]: {
         officeName: 'Alder Pond Planning Board',
         footerText: 'Planning Board meetings are open to the public.',
       },
-      zba: {
+      [boardIds.zba]: {
         officeName: 'Alder Pond Zoning Board of Adjustment',
         footerText: 'Zoning Board of Adjustment meetings are open to the public.',
       },
@@ -86,11 +90,14 @@ export async function seedTownProfile(
 ): Promise<boolean> {
   if ((await getPublished(db, 'town_profile', 'default', signal)) !== null) return false
   const admin = await actorFor(db, 'admin', signal)
-  const body = demoProfile({
-    seal: await fixtureImage(store, 'alder-pond-seal.png', signal),
-    building: await fixtureImage(store, 'signature-building-official.png', signal),
-    landUse: await fixtureImage(store, 'signature-land-use.png', signal),
-  })
+  const body = demoProfile(
+    {
+      seal: await fixtureImage(store, 'alder-pond-seal.png', signal),
+      building: await fixtureImage(store, 'signature-building-official.png', signal),
+      landUse: await fixtureImage(store, 'signature-land-use.png', signal),
+    },
+    { planningBoard: await boardIdOf(db, 'planning_board'), zba: await boardIdOf(db, 'zba') },
+  )
   const draft = must(
     await saveDraft(db, admin, { kind: 'town_profile', key: 'default', body }, signal),
     'save the town profile',

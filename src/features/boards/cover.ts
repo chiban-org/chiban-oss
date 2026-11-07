@@ -4,17 +4,16 @@ import { type DocumentInput, renderDocumentOrDefault } from '@/features/template
 import type { TemplateBody } from '@/features/templates/templateSchema'
 import { formatCivilDate } from '@/lib/formatDate'
 
-const BOARD_NAMES = { planning_board: 'Planning Board', zba: 'Zoning Board of Adjustment' } as const
-
 export function packetCoverInput(view: PacketView, frame: DocumentFrame): DocumentInput {
   return {
     title: view.title,
-    subtitle: `${BOARD_NAMES[view.board]}, meeting ${formatCivilDate(view.meetingDate)}`,
+    subtitle: `${view.boardShortName}, meeting ${formatCivilDate(view.meetingDate)}`,
     frame,
     context: {
       values: {
         'packet.title': view.title,
-        'board.name': BOARD_NAMES[view.board],
+        'board.name': view.boardShortName,
+        'board.short_name': view.boardShortName,
         'meeting.date': formatCivilDate(view.meetingDate),
       },
       sections: new Map([

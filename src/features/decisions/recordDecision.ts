@@ -5,6 +5,7 @@ import {
   applicationConditions,
   applications,
   boardDecisions,
+  boardMeetings,
   type DecisionCondition,
   type DecisionVotes,
   hearings,
@@ -107,7 +108,15 @@ export async function recordDecision(
       .from(boardDecisions)
       .where(eq(boardDecisions.hearingId, hearing.id))
     if (already !== undefined) return err('invalid_state')
-    const problem = await inputProblem(tx, boardOfApplication(app), input)
+    const [meeting] = await tx
+      .select({ boardId: boardMeetings.boardId })
+      .from(boardMeetings)
+      .where(eq(boardMeetings.id, hearing.meetingId))
+    const problem = await inputProblem(
+      tx,
+      boardOfApplication(app) === null ? null : (meeting?.boardId ?? null),
+      input,
+    )
     if (problem !== null) return err(problem)
     const moved = await transitionApplication(
       tx,
@@ -143,12 +152,12 @@ export async function recordDecision(
       })
       .returning({ id: boardDecisions.id })
     await applyConditions(tx, actor, app.id, input.conditions ?? [])
-    const board = boardOfApplication(app)
-    if (board !== null && !input.outcome.startsWith('rehearing')) {
+    const boardKind = boardOfApplication(app)
+    if (boardKind !== null && !input.outcome.startsWith('rehearing')) {
       await recordDecisionNode(tx, {
         applicationId: app.id,
         decisionId: row?.id ?? '',
-        board,
+        boardKind,
         outcome: input.outcome,
         occurredOn: input.votedOn,
         createdBy: actor.userId,

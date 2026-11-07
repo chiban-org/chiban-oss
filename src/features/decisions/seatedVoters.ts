@@ -9,7 +9,7 @@ function nameKey(name: string): string {
 
 export async function seatedMemberNames(
   db: DbOrTx,
-  board: 'planning_board' | 'zba',
+  boardId: string,
   onDate: CivilDate,
 ): Promise<string[]> {
   const rows = await db
@@ -18,7 +18,7 @@ export async function seatedMemberNames(
     .innerJoin(users, eq(users.id, boardMemberships.userId))
     .where(
       and(
-        eq(boardMemberships.board, board),
+        eq(boardMemberships.boardId, boardId),
         lte(boardMemberships.termStart, onDate),
         or(isNull(boardMemberships.termEnd), gte(boardMemberships.termEnd, onDate)),
       ),
@@ -29,10 +29,10 @@ export async function seatedMemberNames(
 
 export async function unseatedVoters(
   db: DbOrTx,
-  board: 'planning_board' | 'zba',
+  boardId: string,
   onDate: CivilDate,
   voterNames: string[],
 ): Promise<string[]> {
-  const seated = new Set((await seatedMemberNames(db, board, onDate)).map(nameKey))
+  const seated = new Set((await seatedMemberNames(db, boardId, onDate)).map(nameKey))
   return voterNames.filter((name) => !seated.has(nameKey(name)))
 }

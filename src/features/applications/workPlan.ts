@@ -203,7 +203,7 @@ export function planWork(
   const conflict =
     board === null || view.state !== 'submitted'
       ? null
-      : meetingConflict(board, meetingDeadline(view.clocks, board.board))
+      : meetingConflict(board, meetingDeadline(view.clocks, board.boardKind))
   const now = inspectionNow(
     meetingStep(nowStep(view, board, groups, moves), board, conflict, extras.abilities),
     extras,
@@ -222,7 +222,11 @@ export function planWork(
     groups,
     terminal: moves.terminal.filter((to) => to !== inCard),
   }
-  return conflict === null
-    ? plan
-    : addWarning(plan, { key: 'board.meeting.deadline', text: conflict.warning })
+  const withConflict =
+    conflict === null
+      ? plan
+      : addWarning(plan, { key: 'board.meeting.deadline', text: conflict.warning })
+  return board?.missingBoard == null
+    ? withConflict
+    : addWarning(withConflict, { key: 'board.missing', text: board.missingBoard })
 }

@@ -5,6 +5,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { packetItemRows } from '@/features/boards/packetContents'
 import type { PacketView } from '@/features/boards/packetView'
+import { getBoard } from '@/features/boards/townBoards'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
@@ -20,10 +21,13 @@ export async function packetCoverPreview(
   const [packet] = await db.select().from(boardPackets).where(eq(boardPackets.meetingId, meetingId))
   if (packet === undefined) return err('not_found')
   const rows = await packetItemRows(db, packet.id)
+  const board = await getBoard(db, packet.boardId)
   return ok({
     packetId: packet.id,
     title: packet.title,
-    board: packet.board,
+    boardId: packet.boardId,
+    boardName: board?.name ?? '',
+    boardShortName: board?.shortName ?? '',
     meetingDate: packet.meetingDate as CivilDate,
     expiresAt: '',
     items: rows

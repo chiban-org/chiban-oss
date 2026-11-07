@@ -1,6 +1,6 @@
 import { and, desc, eq, lt, or, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { agendas, boardMeetings, boardPacketAccess, boardPackets } from '@/db/schema'
+import { agendas, boardMeetings, boardPacketAccess, boardPackets, boards } from '@/db/schema'
 import {
   activeMembershipOn,
   isBoardMember,
@@ -10,6 +10,7 @@ import type { Actor } from '@/features/auth/actor'
 import { packetItemRows, readerItems } from '@/features/boards/packetContents'
 import { type PacketDocumentError, packetDocument } from '@/features/boards/packetDocument'
 import { type PacketViewItem, townDateOf, viewItems } from '@/features/boards/packetView'
+import { getBoard } from '@/features/boards/townBoards'
 import type { StoredObject } from '@/features/storage/delivery'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -17,7 +18,9 @@ import { err, ok, type Result } from '@/types/result'
 export interface MemberPacketView {
   packetId: string
   title: string
-  board: 'planning_board' | 'zba'
+  boardId: string
+  boardName: string
+  boardShortName: string
   meetingDate: CivilDate
   items: PacketViewItem[]
 }
@@ -26,7 +29,8 @@ export type MemberMarker = { kind: 'new' } | { kind: 'updated'; on: CivilDate } 
 
 export interface MemberMeetingRow {
   meetingId: string
-  board: 'planning_board' | 'zba'
+  boardId: string
+  boardShortName: string
   meetingDate: CivilDate
   agendaDocumentId: string | null
   cancelled: boolean
@@ -83,7 +87,8 @@ export async function listMemberMeetings(
   const rows = await db
     .select({
       meetingId: boardMeetings.id,
-      board: boardMeetings.board,
+      boardId: boardMeetings.boardId,
+      boardShortName: boards.shortName,
       meetingDate: boardMeetings.meetingDate,
       status: boardMeetings.status,
       agendaDocumentId: agendas.documentId,
@@ -96,11 +101,12 @@ export async function listMemberMeetings(
       ),
     })
     .from(boardMeetings)
+    .innerJoin(boards, eq(boards.id, boardMeetings.boardId))
     .innerJoin(
       agendas,
       and(eq(agendas.meetingId, boardMeetings.id), eq(agendas.status, 'published')),
     )
-    .where(and(activeMembershipOn(actor.userId, sql`${boardMeetings.board}`), afterClause))
+    .where(and(activeMembershipOn(actor.userId, sql`${boardMeetings.boardId}`), afterClause))
     .orderBy(desc(boardMeetings.meetingDate), desc(boardMeetings.id))
     .limit(input.limit + 1)
   const page = rows.slice(0, input.limit)
@@ -110,7 +116,8 @@ export async function listMemberMeetings(
     const cancelled = r.status === 'cancelled'
     out.push({
       meetingId: r.meetingId,
-      board: r.board,
+      boardId: r.boardId,
+      boardShortName: r.boardShortName,
       meetingDate: r.meetingDate as CivilDate,
       agendaDocumentId: r.agendaDocumentId,
       cancelled,
@@ -152,10 +159,13 @@ export async function memberPacketView(
   const packet = await sentPacketFor(db, actor, meetingId)
   if (packet === null) return err('not_found')
   const rows = await packetItemRows(db, packet.id)
+  const board = await getBoard(db, packet.boardId)
   return ok({
     packetId: packet.id,
     title: packet.title,
-    board: packet.board,
+    boardId: packet.boardId,
+    boardName: board?.name ?? '',
+    boardShortName: board?.shortName ?? '',
     meetingDate: packet.meetingDate as CivilDate,
     items: await viewItems(db, readerItems(rows, packet), signal),
   })

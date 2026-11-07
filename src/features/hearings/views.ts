@@ -1,4 +1,3 @@
-import type { Board } from '@packs/nh/schema'
 import { asc, desc, eq } from 'drizzle-orm'
 import type { ChecklistItem } from '@/components/notices/NoticeChecklist'
 import type { Db } from '@/db/client'
@@ -6,7 +5,7 @@ import { appealNodes, boardDecisions, boardMeetings, documents, hearings } from 
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { boardLabel, getBoardSettings } from '@/features/boards/boardSettings'
+import { boardLabel, getBoard } from '@/features/boards/townBoards'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { seatedMemberNames } from '@/features/decisions/seatedVoters'
 import { evidenceOf } from '@/features/documents/evidence'
@@ -18,11 +17,6 @@ import { displayIdsFor } from '@/features/parcels/displayId'
 import { getTownSettings } from '@/features/town/settings'
 import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, todayInTimeZone } from '@/types/civilDate'
-
-export const BOARD_NAMES: Record<Board, string> = {
-  planning_board: 'Planning Board',
-  zba: 'Zoning Board of Adjustment',
-}
 
 export const HEARING_STATUS_LABELS = {
   scheduled: 'Scheduled',
@@ -114,7 +108,7 @@ export async function loadHearingView(
   const app = await loadApplicationContext(db, row.hearing.applicationId, signal)
   if (app === null) return null
   const status = await noticeStatus(db, row.hearing.noticeSetId, signal)
-  const settings = await getBoardSettings(db, signal)
+  const board = await getBoard(db, row.meeting.boardId)
   const zone = await timeZoneOf(db, signal)
   const [decision] = await db
     .select()
@@ -128,7 +122,7 @@ export async function loadHearingView(
   const upcoming = await db
     .select()
     .from(boardMeetings)
-    .where(eq(boardMeetings.board, row.meeting.board))
+    .where(eq(boardMeetings.boardId, row.meeting.boardId))
     .orderBy(asc(boardMeetings.meetingDate))
   const checklist: ChecklistItem[] = status.items.map((i) => ({
     itemId: i.itemId,
@@ -151,7 +145,7 @@ export async function loadHearingView(
     applicationId: app.id,
     applicationNumber: app.number,
     typeLabel: app.typeBody.label,
-    boardName: boardLabel(settings, row.meeting.board),
+    boardName: board === null ? '' : boardLabel(board),
     meetingId: row.meeting.id,
     meetingText: formatCivilDate(row.meeting.meetingDate),
     kindText: HEARING_KIND_LABELS[row.hearing.kind],
@@ -189,7 +183,7 @@ export async function loadHearingView(
     defaultVotedOn: row.hearing.heldOn ?? row.meeting.meetingDate,
     seatedMembers: await seatedMemberNames(
       db,
-      row.meeting.board,
+      row.meeting.boardId,
       (row.hearing.heldOn ?? row.meeting.meetingDate) as CivilDate,
     ),
   }

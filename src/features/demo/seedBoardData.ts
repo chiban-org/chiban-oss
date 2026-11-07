@@ -4,8 +4,9 @@ import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { gisLayers } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
-import { BOARD_SETTINGS_DEFAULT } from '@/features/boards/boardSettingsSchema'
+import { BOARD_SETTINGS_DEFAULT, boardSettingsDefault } from '@/features/boards/boardSettingsSchema'
 import { scheduleMeeting } from '@/features/boards/meetings'
+import { activeBoards, boardIdOf } from '@/features/boards/townBoards'
 import { publishNewVersion } from '@/features/config/publish'
 import { must } from '@/features/demo/seedPermitSupport'
 import type { LayerKey } from '@/features/gis/exceptionKinds'
@@ -84,7 +85,7 @@ export const DEMO_CONTACTS = {
 
 export async function publishBoardConfig(db: Db, admin: Actor, signal: AbortSignal) {
   const settings = {
-    ...BOARD_SETTINGS_DEFAULT,
+    ...boardSettingsDefault(await activeBoards(db)),
     abutters: {
       ...BOARD_SETTINGS_DEFAULT.abutters,
       projectionEnabled: true,
@@ -114,7 +115,7 @@ export async function scheduleBoardMeetings(db: Db, staff: Actor, signal: AbortS
           db,
           staff,
           {
-            board,
+            boardId: await boardIdOf(db, board),
             meetingDate: d(meetingDate),
             kind: 'regular',
             location: 'Alder Pond Town Hall, Meeting Room 2',

@@ -7,6 +7,7 @@ import { VersionHistory } from '@/components/config/VersionHistory'
 import { type SettingsBackLink, SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
+import { activeBoards } from '@/features/boards/townBoards'
 import { discardOffer } from '@/features/config/discardOffer'
 import { type EditorContext, editorContext } from '@/features/config/editorContext'
 import { KIND_DESCRIPTIONS, KIND_LABELS } from '@/features/config/kindLabels'
@@ -109,7 +110,15 @@ export default async function SettingsKeyPage({ params }: Props) {
   const referenceRows = await loadReferenceRows(ctx.db, ctx.signal)
   const references = choicesFromRows(referenceRows)
   const context = {
-    ...editorContext(await listReviewerChoices(ctx.db)),
+    ...editorContext(
+      await listReviewerChoices(ctx.db),
+      (await activeBoards(ctx.db)).map((b) => ({
+        id: b.id,
+        kind: b.kind,
+        name: b.name,
+        shortName: b.shortName,
+      })),
+    ),
     references,
     feeQuestions: kind === 'fee_schedule' ? numberQuestionsFor(referenceRows, key) : [],
   }

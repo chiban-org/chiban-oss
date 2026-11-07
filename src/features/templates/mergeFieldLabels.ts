@@ -16,6 +16,8 @@ export const MERGE_FIELD_LABELS: Record<MergeField, string> = {
   'conditions.list': 'Conditions of approval',
   'codeEdition.label': 'Building code edition',
   'board.name': 'Board name',
+  'board.short_name': 'Board short name',
+  'board.chair.name': 'Board chair name',
   'meeting.date': 'Meeting date',
   'meeting.location': 'Meeting location',
   'meeting.time': 'Meeting time',
