@@ -666,6 +666,13 @@
       "when": 1794083588790,
       "tag": "0094_town_boards",
       "breakpoints": true
+    },
+    {
+      "idx": 95,
+      "version": "7",
+      "when": 1794089941224,
+      "tag": "0095_board_reviewers",
+      "breakpoints": true
     }
   ]
 }

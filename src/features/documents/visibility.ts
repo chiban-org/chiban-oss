@@ -12,6 +12,8 @@ import {
   isBoardMember,
   memberCanSeeApplication,
   memberCanSeeMeeting,
+  memberOfAssignedBoard,
+  memberOfAssignedBoardInProject,
 } from '@/features/access/predicates'
 import { hasFullRecordAccess, isReviewer } from '@/features/access/roles'
 import type { Actor } from '@/features/auth/actor'
@@ -46,6 +48,13 @@ function reviewerClause(userId: string): SQL {
   ))`
 }
 
+function boardReviewerClause(userId: string): SQL {
+  return sql`('reviewers' = any(${documents.audiences}) and (
+    (${documents.recordKind} = 'application' and ${memberOfAssignedBoard(userId, sql`${documents.recordId}`)})
+    or (${documents.recordKind} = 'project' and ${memberOfAssignedBoardInProject(userId, sql`${documents.recordId}`)})
+  ))`
+}
+
 function boardMemberClause(userId: string): SQL {
   return sql`('board' = any(${documents.audiences}) and (
     (${documents.recordKind} = 'application' and ${memberCanSeeApplication(userId, sql`${documents.recordId}`)})
@@ -58,7 +67,9 @@ export function documentPrivateAccess(actor: Actor | null): SQL {
   if (hasFullRecordAccess(actor)) return sql`true`
   const clauses = [partyClause(actor.userId)]
   if (isReviewer(actor)) clauses.push(reviewerClause(actor.userId))
-  if (isBoardMember(actor)) clauses.push(boardMemberClause(actor.userId))
+  if (isBoardMember(actor)) {
+    clauses.push(boardMemberClause(actor.userId), boardReviewerClause(actor.userId))
+  }
   return sql`(${sql.join(clauses, sql` or `)})`
 }
 

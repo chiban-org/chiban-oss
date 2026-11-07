@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { reviewChipStatus, reviewStatusLabel } from '@/features/reviews/statusLabels'
+import {
+  boardReviewStatusLabel,
+  reviewChipStatus,
+  reviewStatusLabel,
+} from '@/features/reviews/statusLabels'
 
 describe('review status', () => {
   it('shows a signed-off review as passed and an open one as neutral', () => {
@@ -14,5 +18,10 @@ describe('review status', () => {
 
   it('labels each status in plain words', () => {
     expect(reviewStatusLabel('signed_off')).toBe('Signed off')
+  })
+
+  it('labels a board assignment by whether its comments are in', () => {
+    expect(boardReviewStatusLabel('pending')).toBe('Waiting for comments')
+    expect(boardReviewStatusLabel('commented')).toBe('Comments received')
   })
 })

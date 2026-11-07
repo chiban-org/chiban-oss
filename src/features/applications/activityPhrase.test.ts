@@ -24,6 +24,16 @@ describe('activity phrases', () => {
     )
   })
 
+  it('names the board comment actions', () => {
+    expect(activityPhrase('review.board_assign', null)).toBe(
+      'Sent the application to a board for comment',
+    )
+    expect(activityPhrase('review.board_withdraw', null)).toBe(
+      'Withdrew a request for board comment',
+    )
+    expect(activityPhrase('review.board_comment', null)).toBe('Added a board comment')
+  })
+
   it('says whether the responsible staff member was set or cleared', () => {
     expect(activityPhrase('application.responsible_staff', { responsibleUserId: null })).toBe(
       'Cleared who is responsible',

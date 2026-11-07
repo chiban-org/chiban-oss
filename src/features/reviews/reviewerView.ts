@@ -105,7 +105,7 @@ export async function listApplicationReviewers(
   return await db
     .select({
       assignmentId: reviewAssignments.id,
-      reviewerUserId: reviewAssignments.reviewerUserId,
+      reviewerUserId: users.id,
       name: users.displayName,
       status: reviewAssignments.status,
     })
