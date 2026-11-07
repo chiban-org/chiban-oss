@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
+import { SeePublicLink } from '@/components/SeePublicLink'
 import { StatusChip } from '@/components/StatusChip'
 import { BalanceDueNotice } from '@/components/staff/BalanceDueNotice'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -21,6 +22,7 @@ import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPan
 import { returnedCheckNotices } from '@/features/ledger/balanceNotice'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
 import { loadCorrectionForm } from '@/features/permits/correction/correctionForm'
+import { applicationPublicHref } from '@/features/publicSite/publicHref'
 import { requireStaffContext, type StaffContext } from '@/server/requireStaff'
 import { ApplicationFacts, ApplicationRail, StatusStrip } from './applicationRail'
 import { DoThisNow } from './doThisNow'
@@ -149,6 +151,7 @@ export default async function StaffApplicationPage({ params }: Props) {
         status={status}
         lead={view.projectTitle}
         summary={<RecordSummary view={view} plan={plan} board={loaded.board !== null} />}
+        actions={<SeePublicLink href={applicationPublicHref(view)} />}
       />
       <RecordLayout
         rail={<ApplicationRail view={view} plan={plan} notice={notice} correction={correction} />}

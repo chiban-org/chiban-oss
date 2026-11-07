@@ -10,6 +10,7 @@ import { splitPanels } from '@/components/layout/splitPanels'
 import { LinkedParcelMap } from '@/components/map/LinkedParcelMap'
 import { HonestText } from '@/components/parcels/HonestText'
 import { ParcelRecordsPanel } from '@/components/parcels/ParcelRecordsPanel'
+import { SeePublicLink } from '@/components/SeePublicLink'
 import { StatusChip } from '@/components/StatusChip'
 import { BalanceDueNotice } from '@/components/staff/BalanceDueNotice'
 import { TextField } from '@/components/staff/fields'
@@ -24,6 +25,7 @@ import { aliasSourceText, lineageEventText, retiredText } from '@/features/parce
 import { buildRecordTable } from '@/features/parcels/recordTable'
 import { arrangeRecordTable, readRecordTableView } from '@/features/parcels/recordTableView'
 import { getStaffParcelView } from '@/features/parcels/staffParcelView'
+import { parcelPublicHref } from '@/features/publicSite/publicHref'
 import { loadParcelContacts } from '@/features/rosters/parcelContacts'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -225,6 +227,7 @@ export default async function StaffParcelPage({ params, searchParams }: ParcelPa
           ) : undefined
         }
         lead={<HonestText value={view.siteAddress} timeZone={timeZone} />}
+        actions={<SeePublicLink href={parcelPublicHref(parcelId)} />}
       />
       <RecordLayout
         rail={

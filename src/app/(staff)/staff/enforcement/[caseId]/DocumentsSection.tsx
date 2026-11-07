@@ -21,8 +21,8 @@ export function DocumentsSection({ detail, can }: { detail: CaseDetail; can: Can
       emptyText="No documents yet."
       intro={
         <p>
-          A document reaches the public only once it is approved for the public and the case is
-          public.
+          A document shows on the public site only while the case is public, and only once a copy is
+          approved for the public and Show on the public site is ticked.
         </p>
       }
       documents={detail.documents}

@@ -1,14 +1,13 @@
 import type { ReactNode } from 'react'
 import { ActionForm } from '@/components/ActionForm'
 import { RecordKeeping } from '@/components/documents/RecordKeeping'
-import { RedactedUploader } from '@/components/documents/RedactedUploader'
 import type { UploaderActions } from '@/components/documents/Uploader'
-import { GroupFieldError } from '@/components/fieldErrors'
+import { WhoCanSee } from '@/components/documents/WhoCanSee'
 import { NEW_TAB } from '@/components/newTab'
 import { StatusChip } from '@/components/StatusChip'
-import { CheckField, SelectField, TextField } from '@/components/staff/fields'
-import type { PanelDocument, RenditionState } from '@/features/documents/panelData'
-import { AUDIENCES, type Audience, type RecordRef } from '@/features/documents/types'
+import type { PanelDocument } from '@/features/documents/panelData'
+import type { RecordRef } from '@/features/documents/types'
+import { publicChip } from '@/features/documents/whoCanSee'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { ActionResult } from '@/server/actionRunner'
 
@@ -35,79 +34,8 @@ export interface DocumentPanelProps {
   children?: ReactNode
 }
 
-const AUDIENCE_LABELS: Record<Audience, string> = {
-  project_parties: 'Project parties',
-  reviewers: 'Reviewers',
-  board: 'Board',
-}
-
-type Chip = { status: 'passed' | 'failed' | 'overdue' | 'neutral'; label: string }
-
-const RENDITION_CHIP: Record<Exclude<RenditionState, 'approved'>, Chip> = {
-  public_no_copy: { status: 'failed', label: 'Public, no approved copy' },
-  redacted_waiting: { status: 'overdue', label: 'Redacted, awaiting approval' },
-  revoked: { status: 'failed', label: 'Revoked' },
-  none: { status: 'neutral', label: 'Not public' },
-}
-
-function publicChip(doc: PanelDocument): Chip {
-  if (doc.rendition !== 'approved') return RENDITION_CHIP[doc.rendition]
-  if (!doc.isPublic) return { status: 'neutral', label: 'Approved, not public' }
-  return {
-    status: 'passed',
-    label:
-      doc.approvedRole === 'public_redacted' ? 'Public copy: redacted' : 'Public copy: original',
-  }
-}
-
-const VERSION_LABELS = { original: 'Original', public_redacted: 'Redacted copy' } as const
-
-function versionLabel(v: PanelDocument['approvable'][number]): string {
-  const day = formatCivilDate(v.createdAt.slice(0, 10))
-  const time = v.role === 'public_redacted' ? ` ${v.createdAt.slice(11, 16)} UTC` : ''
-  return `${VERSION_LABELS[v.role]}, ${day}${time}`
-}
-
-function ApprovalControls({ doc, actions }: { doc: PanelDocument; actions: DocumentPanelActions }) {
-  const candidates = doc.approvable.filter((v) => v.id !== doc.approvedVersionId)
-  return (
-    <>
-      {actions.approve !== undefined && candidates.length > 0 ? (
-        <ActionForm action={actions.approve} submitLabel="Approve for the public">
-          <input type="hidden" name="purpose" value="public" />
-          {doc.approvalId === null ? null : (
-            <p className="m-0 text-sm">
-              Approving another version replaces the current public copy.
-            </p>
-          )}
-          <SelectField
-            label="Version to approve"
-            name="versionId"
-            options={candidates.map((v) => [v.id, versionLabel(v)] as const)}
-          />
-          <TextField label="What you checked before approving" name="reviewStatement" required />
-        </ActionForm>
-      ) : null}
-      {actions.revoke !== undefined && doc.approvalId !== null ? (
-        <ActionForm
-          action={actions.revoke}
-          submitLabel="Revoke the approval"
-          confirm={{
-            title: `Revoke the approval of ${doc.title}?`,
-            body: 'The approved version is no longer cleared for the public until someone approves a version again.',
-            confirmLabel: 'Revoke the approval',
-          }}
-        >
-          <input type="hidden" name="approvalId" value={doc.approvalId} />
-          <TextField label="Why it is being revoked" name="reason" required />
-        </ActionForm>
-      ) : null}
-    </>
-  )
-}
-
 function mayAct(doc: PanelDocument, props: DocumentPanelProps): boolean {
-  return props.canManage || props.canPublish || (doc.canRedact && doc.originalVersionId !== null)
+  return props.canManage || (doc.canRedact && doc.originalVersionId !== null)
 }
 
 function ManageControls({
@@ -124,57 +52,6 @@ function ManageControls({
       <summary className="text-sm">{mayAct(doc, props) ? 'Manage' : 'Details'}</summary>
       <div className="mt-3 space-y-4 rounded-md bg-canvas p-4">
         <RecordKeeping doc={doc} seriesShown={seriesShown} />
-        {props.canManage ? (
-          <ActionForm action={props.actions.setAudiences} submitLabel="Save audiences">
-            <input type="hidden" name="documentId" value={doc.documentId} />
-            <GroupFieldError name="audience" />
-            <div className="flex flex-wrap gap-4">
-              {AUDIENCES.map((a) => (
-                <CheckField
-                  key={a}
-                  label={AUDIENCE_LABELS[a]}
-                  name="audience"
-                  groupMember
-                  value={a}
-                  defaultChecked={doc.audiences.includes(a)}
-                />
-              ))}
-            </div>
-          </ActionForm>
-        ) : null}
-        {props.canPublish ? (
-          <>
-            <ActionForm
-              action={props.actions.setPublic}
-              submitLabel="Save public setting"
-              confirm={
-                doc.isPublic
-                  ? {
-                      title: `Take ${doc.title} off the public site?`,
-                      body: 'With Public unticked, the public can no longer see or download this document.',
-                      confirmLabel: 'Make it private',
-                      when: { name: 'isPublic', oneOf: [''] },
-                    }
-                  : undefined
-              }
-            >
-              <input type="hidden" name="documentId" value={doc.documentId} />
-              <CheckField
-                label="Public"
-                name="isPublic"
-                value="yes"
-                defaultChecked={doc.isPublic}
-              />
-            </ActionForm>
-            <ApprovalControls doc={doc} actions={props.actions} />
-            <RedactedUploader
-              documentId={doc.documentId}
-              target={props.target}
-              seriesKey={doc.series?.key}
-              actions={props.actions.uploadRedacted}
-            />
-          </>
-        ) : null}
         {doc.canRedact && doc.originalVersionId !== null ? (
           <a href={`/staff/records/redact/${doc.originalVersionId}`} className="inline-block">
             Redact this document
@@ -215,6 +92,7 @@ export function DocumentRow({
       <p className="text-sm text-muted-foreground">
         {`Added ${formatCivilDate(doc.createdAt.slice(0, 10))} by ${doc.uploadedBy}`}
       </p>
+      <WhoCanSee doc={doc} props={props} />
       <div className="mt-1">
         <ManageControls doc={doc} props={props} seriesShown={seriesShown} />
       </div>
