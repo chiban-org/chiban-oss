@@ -59,6 +59,11 @@ export async function formFor(
   summary: string | null,
   submit: string,
 ): Promise<Locator> {
+  await page
+    .getByRole('main')
+    .getByRole('button', { name: submit, exact: true, includeHidden: true })
+    .first()
+    .waitFor({ state: 'attached' })
   const card = doThisNow(page)
   if ((await card.getByRole('button', { name: submit, exact: true }).count()) > 0) return card
   const scope = region(page, panel)
