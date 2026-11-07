@@ -31,6 +31,21 @@ describe('RecordLayout rail', () => {
     const { container } = render(<RecordLayout rail={<p>Next step</p>}>body</RecordLayout>)
     expect(container.querySelector('aside')?.hasAttribute('data-tall')).toBe(true)
   })
+
+  it('leaves no empty band on a phone when the page has nothing for the rail', () => {
+    railHeight(400)
+    const { container } = render(<RecordLayout>body</RecordLayout>)
+    const classes = container.querySelector('aside')?.className.split(' ') ?? []
+    expect(classes).toContain('hidden')
+    expect(classes).not.toContain('flex')
+    expect(classes).toContain('lg:flex')
+  })
+
+  it('shows the rail on a phone when it has something in it', () => {
+    railHeight(400)
+    const { container } = render(<RecordLayout rail={<p>Next step</p>}>body</RecordLayout>)
+    expect(container.querySelector('aside')?.className.split(' ')).toContain('flex')
+  })
 })
 
 describe('RecordLayout section index', () => {

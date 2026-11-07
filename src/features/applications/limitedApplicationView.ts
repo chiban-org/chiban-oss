@@ -10,10 +10,15 @@ import { isReviewer } from '@/features/access/roles'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { CoreState } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
+import { getVersion } from '@/features/config/store'
 import { listDocuments } from '@/features/documents/listDocuments'
 import type { DocumentListRow } from '@/features/documents/types'
+import { displayFieldValue } from '@/features/forms/displayValue'
+import type { FormBody } from '@/features/forms/formSchema'
+import type { FieldValue } from '@/features/forms/validateSubmission'
 import { hearingText } from '@/features/hearings/views'
 import { displayIdsFor } from '@/features/parcels/displayId'
+import { COMMENT_DUE } from '@/features/reviews/reviewList'
 
 export interface LimitedApplicationView {
   id: string
@@ -25,15 +30,20 @@ export interface LimitedApplicationView {
   projectTitle: string
   parcelId: string
   parcelDisplayId: string
-  assignments: { assignmentId: string; status: string }[]
+  assignments: { assignmentId: string; status: string; commentDue: string | null }[]
   hearings: { id: string; meetingId: string; text: string; hasPacket: boolean }[]
   documents: DocumentListRow[]
+  summary: { label: string; text: string }[]
 }
 
 async function ownAssignments(db: Db, actor: Actor, applicationId: string) {
   if (!isReviewer(actor)) return []
   return await db
-    .select({ assignmentId: reviewAssignments.id, status: reviewAssignments.status })
+    .select({
+      assignmentId: reviewAssignments.id,
+      status: reviewAssignments.status,
+      commentDue: COMMENT_DUE,
+    })
     .from(reviewAssignments)
     .where(
       and(
@@ -80,6 +90,21 @@ async function memberHearings(db: Db, actor: Actor, applicationId: string) {
   }))
 }
 
+async function summaryOf(
+  db: Db,
+  formVersionId: string,
+  values: Record<string, FieldValue>,
+  signal: AbortSignal,
+) {
+  const form = (await getVersion(db, formVersionId, signal))?.body as FormBody | undefined
+  return (form?.fields ?? []).flatMap((field) => {
+    const value = values[field.key]
+    if (field.staffOnly === true || value === undefined) return []
+    const text = displayFieldValue(field, value)
+    return text === '' ? [] : [{ label: field.label, text }]
+  })
+}
+
 export async function getLimitedApplicationView(
   db: Db,
   actor: Actor,
@@ -99,7 +124,7 @@ export async function getLimitedApplicationView(
     .from(projects)
     .where(eq(projects.id, app.projectId))
   if (project === undefined) return null
-  const [display, documents] = await Promise.all([
+  const [display, documents, summary] = await Promise.all([
     displayIdsFor(db, [project.parcelId]),
     listDocuments(
       db,
@@ -107,6 +132,7 @@ export async function getLimitedApplicationView(
       { record: { kind: 'application', id: applicationId }, limit: 100 },
       signal,
     ),
+    summaryOf(db, app.pins.form, app.values, signal),
   ])
   return {
     id: app.id,
@@ -123,5 +149,6 @@ export async function getLimitedApplicationView(
     assignments,
     hearings: heard,
     documents: documents.rows,
+    summary,
   }
 }

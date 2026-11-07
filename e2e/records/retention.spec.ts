@@ -19,7 +19,8 @@ test.describe('retention events', () => {
     await row.getByRole('button', { name: 'Record event' }).click()
     await expectRefusedBeside(date, 'Enter the date it happened between')
     const before = await db.rows(
-      "select 1 from record_events where kind = 'appeal_period_expired' and occurred_on > current_date",
+      "select 1 from record_events where kind = 'appeal_period_expired' and occurred_on > $1",
+      [await townToday(db)],
     )
     expect(before).toHaveLength(0)
 
