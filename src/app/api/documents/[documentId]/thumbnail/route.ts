@@ -4,9 +4,10 @@ export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ documentId: string }> },
 ): Promise<Response> {
   const { documentId } = await params
-  return await derivativeResponse(documentId, 'thumbnail', 1)
+  const asPublic = new URL(request.url).searchParams.get('as') === 'public'
+  return await derivativeResponse(documentId, 'thumbnail', 1, { asPublic })
 }

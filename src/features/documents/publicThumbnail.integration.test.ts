@@ -34,7 +34,7 @@ describe('public parcel record list', () => {
     await approvePublic(handle.db, staff, redacted, store)
     const rows = await publicSummary(doc.documentId)
     expect(rows).toHaveLength(1)
-    expect(rows[0]?.thumbnailHref).toBe(`/api/documents/${doc.documentId}/thumbnail`)
+    expect(rows[0]?.thumbnailHref).toBe(`/api/documents/${doc.documentId}/thumbnail?as=public`)
     expect(rows[0]?.thumbnailHref).not.toContain(doc.versionId)
     expect(rows[0]?.thumbnailHref).not.toContain(redacted)
   })

@@ -23,9 +23,9 @@ export async function GET(
   const { documentId } = await params
   if (!UUID.test(documentId)) return notFound()
   const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-  const actor = await getActor(signal)
-  const rendition =
-    new URL(request.url).searchParams.get('rendition') === 'pdfa' ? 'pdfa' : 'default'
+  const query = new URL(request.url).searchParams
+  const actor = query.get('as') === 'public' ? null : await getActor(signal)
+  const rendition = query.get('rendition') === 'pdfa' ? 'pdfa' : 'default'
   const result = await downloadDocument(db, getObjectStore(), actor, documentId, rendition, signal)
   if (!result.ok) return notFound()
   if (result.value.kind === 'stream') {
