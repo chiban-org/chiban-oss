@@ -24,6 +24,7 @@ export type PlanAction =
   | { kind: 'set_board_meeting' }
   | { kind: 'record_board_vote' }
   | { kind: 'record_board_regional_impact' }
+  | { kind: 'open_abutter_list' }
   | { kind: 'move'; to: CoreState }
 
 export type PlanActionKind = PlanAction['kind']

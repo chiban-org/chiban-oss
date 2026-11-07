@@ -1,7 +1,7 @@
 import { and, asc, eq, inArray } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { acceptanceSchedules, applications, boardMeetings, clocks } from '@/db/schema'
+import { abutterLists, acceptanceSchedules, applications, boardMeetings, clocks } from '@/db/schema'
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -157,6 +157,29 @@ describe('the filed site plan, as the clerk', () => {
     )
     expect(sentence(html)).toContain(await nextDue('SPR-2026-0001'))
     expect(sectionOf(html, 'Requirements') ?? '').toContain('Before the hearing')
+  })
+})
+
+describe('the variance waiting on its abutter list, as the clerk', () => {
+  it('links the draft list from Do this now as the one filled control', async () => {
+    const [draft] = await handle.db
+      .select({ id: abutterLists.id, version: abutterLists.version })
+      .from(abutterLists)
+      .where(
+        and(
+          eq(abutterLists.applicationId, ids.get('VAR-2026-0001') ?? ''),
+          eq(abutterLists.status, 'draft'),
+        ),
+      )
+    const html = await page('VAR-2026-0001')
+    const card = sectionOf(html, 'Do this now') ?? ''
+    expect(card).toContain('Issue the abutter list')
+    expect(card).toMatch(
+      new RegExp(
+        `<a[^>]*data-variant="default"[^>]*href="/staff/abutters/${draft?.id}"[^>]*>Open version ${draft?.version} to issue it</a>`,
+      ),
+    )
+    expect(filledButtons(html)).toEqual([])
   })
 })
 

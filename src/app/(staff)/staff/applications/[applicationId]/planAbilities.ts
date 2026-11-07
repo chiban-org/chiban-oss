@@ -8,6 +8,11 @@ import { mayRecordPayment } from './paymentControls'
 import { mayAssignReviewers } from './recordStage'
 import { offeredReviewers } from './reviewersPanel'
 
+export function draftAbutterList(board: BoardPanelData): BoardPanelData['lists'][number] | null {
+  if (!board.canOpenLists) return null
+  return board.lists.find((list) => list.draft) ?? null
+}
+
 function boardAbilities(board: BoardPanelData | null): PlanActionKind[] {
   if (board === null) return []
   const filing = board.canRecord && board.state === 'submitted'
@@ -17,6 +22,7 @@ function boardAbilities(board: BoardPanelData | null): PlanActionKind[] {
       ? (['record_board_vote'] as const)
       : []),
     ...(board.canDetermine ? (['record_board_regional_impact'] as const) : []),
+    ...(draftAbutterList(board) === null ? [] : (['open_abutter_list'] as const)),
   ]
 }
 

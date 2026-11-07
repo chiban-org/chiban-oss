@@ -160,6 +160,20 @@ describe('the hearing step while a requirement before it is unmet', () => {
     expect(rows.find((r) => r.key === 'board.vote')?.action).toBeNull()
   })
 
+  it('puts opening the draft list in the card when the viewer may manage abutter lists', () => {
+    const plan = planWork(blocked, past, extras(['open_abutter_list']))
+    expect(plan.now?.action).toEqual({ kind: 'open_abutter_list' })
+    const rows = plan.groups.flatMap((g) => g.rows)
+    expect(rows.find((r) => r.key === 'abutters.list_issued')?.action).toEqual({
+      kind: 'open_abutter_list',
+    })
+  })
+
+  it('offers no way to open the list to a viewer who may not manage abutter lists', () => {
+    const plan = planWork(blocked, past, extras([]))
+    expect(plan.now?.action).toBeNull()
+  })
+
   it('keeps the meeting row to a check, leaving the date to the board panel', () => {
     const plan = planWork(blocked, past, extras([]))
     expect(plan.groups[0]?.rows.find((r) => r.key === 'board.meeting')).toMatchObject({

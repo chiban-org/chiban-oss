@@ -70,7 +70,14 @@ describe('abutter lists on the board panel', () => {
       parcels: ['009001000000'],
       professionals: [],
       lists: [
-        { id: 'l1', version: 1, statusText: 'Issued', drawnText: 'October 2, 2026', issued: true },
+        {
+          id: 'l1',
+          version: 1,
+          statusText: 'Issued',
+          drawnText: 'October 2, 2026',
+          issued: true,
+          draft: false,
+        },
       ],
     }
   }

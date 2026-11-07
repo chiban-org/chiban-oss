@@ -64,7 +64,12 @@ const GATE_COPY: ReadonlyMap<string, GateCopy> = new Map([
   ],
   [
     'abutters.list_issued',
-    { label: 'Abutter list issued', task: 'Issue the abutter list', actor: 'town' },
+    {
+      label: 'Abutter list issued',
+      task: 'Issue the abutter list',
+      actor: 'town',
+      action: 'open_abutter_list',
+    },
   ],
   [
     'nh.pb.abutter_list_fresh',

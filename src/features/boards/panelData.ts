@@ -60,7 +60,14 @@ export interface BoardPanelData {
     distanceText: string
     suggestedDetermination: 'within_500ft' | 'not_within' | null
   }
-  lists: { id: string; version: number; statusText: string; drawnText: string; issued: boolean }[]
+  lists: {
+    id: string
+    version: number
+    statusText: string
+    drawnText: string
+    issued: boolean
+    draft: boolean
+  }[]
   notice: NoticeCostSummary
   professionals: { id: string; text: string }[]
   parcels: string[]
@@ -273,6 +280,7 @@ export async function loadBoardPanel(
       statusText: v.status === 'issued' && stale ? STALE_ISSUED : LIST_STATUS[v.status],
       drawnText: formatCivilDate(v.drawnOn),
       issued: v.status === 'issued',
+      draft: v.status === 'draft',
     })),
     notice: await noticeCostSummary(db, applicationId, signal),
     professionals: people.map((p) => ({

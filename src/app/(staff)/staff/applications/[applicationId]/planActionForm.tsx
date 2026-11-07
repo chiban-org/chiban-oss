@@ -1,3 +1,5 @@
+import Link from 'next/link'
+import { Button } from '@/components/ui/button'
 import { meetingDeadline } from '@/features/applications/meetingDeadline'
 import { isTerminalState } from '@/features/applications/states'
 import { moveTask } from '@/features/applications/workPlan'
@@ -9,6 +11,7 @@ import { MoveForm } from './nextStepCard'
 import type { RecordPanelsInput } from './panelSet'
 import { MarkCompleteForm } from './panels'
 import { PaymentForm } from './paymentControls'
+import { draftAbutterList } from './planAbilities'
 import { AssignReviewerForm, offeredReviewers } from './reviewersPanel'
 
 export type PlanFormInput = Pick<RecordPanelsInput, 'view' | 'records' | 'payments' | 'board'>
@@ -31,6 +34,8 @@ export function actionSummary(action: PlanAction, input: PlanFormInput): string 
       return input.board?.board === 'zba' ? 'Open the hearing' : 'Record the completeness vote'
     case 'record_board_regional_impact':
       return 'Record the regional impact determination'
+    case 'open_abutter_list':
+      return 'Open the draft abutter list'
     case 'move':
       return moveTask(action.to)
   }
@@ -56,6 +61,18 @@ function BoardActionForm({
   }
   if (kind === 'record_board_vote') return <VoteFormBody data={board} variant={variant} />
   return <BoardRegionalForm data={board} variant={variant} />
+}
+
+function OpenDraftList({ board, variant }: { board: BoardPanelData; variant: Variant }) {
+  const draft = draftAbutterList(board)
+  if (draft === null) return null
+  return (
+    <Button asChild variant={variant} className="self-start">
+      <Link
+        href={`/staff/abutters/${draft.id}`}
+      >{`Open version ${draft.version} to issue it`}</Link>
+    </Button>
+  )
 }
 
 export function PlanActionForm({
@@ -92,6 +109,8 @@ export function PlanActionForm({
       return board === null ? null : (
         <BoardActionForm kind={action.kind} board={board} clocks={view.clocks} variant={variant} />
       )
+    case 'open_abutter_list':
+      return board === null ? null : <OpenDraftList board={board} variant={variant} />
     case 'move':
       return (
         <MoveForm
