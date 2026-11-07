@@ -7,7 +7,7 @@ import { scheduleMeeting } from '@/features/boards/meetings'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
-import { scheduleHearing } from '@/features/hearings/hearings'
+import { markProperlyNoticed, scheduleHearing } from '@/features/hearings/hearings'
 import { townToday } from '@/features/town/today'
 import {
   type BoardWorld,
@@ -17,6 +17,7 @@ import {
 } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { issueFixtureList } from '@/test/listFixtures'
+import { proveEverything } from '@/test/noticeFixtures'
 import { addDays, type CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -104,7 +105,7 @@ describe('meetings the application was filed too late for', () => {
 })
 
 describe('meetings too soon to mail notice for', () => {
-  it('marks a near meeting too soon unless its hearing is already properly noticed', async () => {
+  it('marks a near meeting too soon unless its hearing notice is proved on time', async () => {
     const today = await townToday(handle.db, new Date(), signal)
     const meetingOn = async (days: number) => {
       const made = await scheduleMeeting(
@@ -138,14 +139,32 @@ describe('meetings too soon to mail notice for', () => {
       signal,
     )
     expect(scheduled.ok ? 'ok' : JSON.stringify(scheduled.error)).toBe('ok')
+    const nearDates = async () => {
+      const panel = await loadBoardPanel(handle.db, world.staff, id, signal)
+      const byDate = new Map(panel?.meetings.map((m) => [m.date, m.noticeable]))
+      return [byDate.get(addDays(today, 3)), byDate.get(addDays(today, 5))]
+    }
     await handle.db
       .update(hearings)
       .set({ properlyNoticedAt: new Date() })
       .where(eq(hearings.applicationId, id))
-    const panel = await loadBoardPanel(handle.db, world.staff, id, signal)
-    const byDate = new Map(panel?.meetings.map((m) => [m.date, m.noticeable]))
-    expect(byDate.get(addDays(today, 3))).toBe(true)
-    expect(byDate.get(addDays(today, 5))).toBe(false)
+    expect(await nearDates()).toEqual([false, false])
+    const [hearing] = await handle.db.select().from(hearings).where(eq(hearings.applicationId, id))
+    await handle.db
+      .update(hearings)
+      .set({ properlyNoticedAt: null })
+      .where(eq(hearings.applicationId, id))
+    await proveEverything(
+      handle.db,
+      world,
+      id,
+      hearing?.noticeSetId ?? '',
+      addDays(today, -8),
+      new Date(),
+    )
+    const marked = await markProperlyNoticed(handle.db, world.staff, hearing?.id ?? '', signal)
+    expect(marked.ok ? 'ok' : JSON.stringify(marked.error)).toBe('ok')
+    expect(await nearDates()).toEqual([true, false])
   })
 })
 

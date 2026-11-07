@@ -7,6 +7,7 @@ import { voteClockKey } from '@/features/applications/meetingDeadline'
 import { filedInTime, filingLeadFor } from '@/features/boards/filingLead'
 import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import { effectiveNoticeLeadDays } from '@/features/clocks/noticeLead'
+import { noticeStatus } from '@/features/notices/noticeStatus'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { addDays, type CivilDate, compareCivil } from '@/types/civilDate'
 
@@ -30,9 +31,13 @@ async function noticeLeadFor(
   return await effectiveNoticeLeadDays(db, rule, facts, pack, signal)
 }
 
-async function noticedMeetings(db: DbOrTx, applicationId: string): Promise<Set<string>> {
+async function noticedMeetings(
+  db: DbOrTx,
+  applicationId: string,
+  signal: AbortSignal,
+): Promise<Set<string>> {
   const rows = await db
-    .select({ meetingId: hearings.meetingId })
+    .select({ meetingId: hearings.meetingId, setId: hearings.noticeSetId })
     .from(hearings)
     .where(
       and(
@@ -41,7 +46,12 @@ async function noticedMeetings(db: DbOrTx, applicationId: string): Promise<Set<s
         isNotNull(hearings.properlyNoticedAt),
       ),
     )
-  return new Set(rows.map((r) => r.meetingId))
+  const proved = await Promise.all(
+    rows.map(async (r) =>
+      (await noticeStatus(db, r.setId, signal)).properlyNoticed ? r.meetingId : null,
+    ),
+  )
+  return new Set(proved.filter((id) => id !== null))
 }
 
 export async function meetingEligibility(
@@ -55,7 +65,7 @@ export async function meetingEligibility(
   const [lead, noticeLead, noticed] = await Promise.all([
     filingLeadFor(db, app, board, signal),
     noticeLeadFor(db, app, board, signal),
-    noticedMeetings(db, app.id),
+    noticedMeetings(db, app.id, signal),
   ])
   const earliest = noticeLead === undefined ? null : addDays(today, noticeLead)
   return ({ id, meetingDate }) => ({
