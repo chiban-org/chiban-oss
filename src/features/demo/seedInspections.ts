@@ -6,6 +6,7 @@ import type { Actor } from '@/features/auth/actor'
 import { issueCertificateOfOccupancy } from '@/features/certificates/issueCertificate'
 import { publishConfig } from '@/features/config/publish'
 import { getPublished, saveDraft } from '@/features/config/store'
+import { type InspectionDays, pickInspectionDays } from '@/features/demo/inspectionDays'
 import {
   actorFor,
   BUILDING_VALUES,
@@ -39,18 +40,11 @@ const TINY_JPEG = Buffer.from(
 )
 const FIRST_SLOT = 570
 const SECOND_SLOT = 630
-const LOOKBACK_DAYS = 21
 const BOOKING_LEAD_DAYS = 3
 
 export interface SeedInspectionsDeps {
   now?: Date
   store?: ObjectStore
-}
-
-interface Days {
-  seeded: CivilDate
-  recent: CivilDate
-  earlier: CivilDate
 }
 
 function inspectionDayTest(settings: InspectionSettingsBody): (date: CivilDate) => boolean {
@@ -59,29 +53,20 @@ function inspectionDayTest(settings: InspectionSettingsBody): (date: CivilDate) 
     (settings.schedulingDays as number[]).includes(dayOfWeek(date)) && !holidays.isHoliday(date)
 }
 
-function firstDayFrom(isDay: (date: CivilDate) => boolean, today: CivilDate): CivilDate {
-  let day = today
-  while (!isDay(day)) day = addDays(day, 1)
-  return day
-}
-
-export async function nextInspectionDay(
+export async function seededInspectionDay(
   db: Db,
   today: CivilDate,
   signal: AbortSignal,
 ): Promise<CivilDate> {
-  return firstDayFrom(inspectionDayTest(await getInspectionSettings(db, signal)), today)
+  return (await inspectionDays(db, today, signal)).seeded
 }
 
-async function inspectionDays(db: Db, today: CivilDate, signal: AbortSignal): Promise<Days> {
-  const isDay = inspectionDayTest(await getInspectionSettings(db, signal))
-  const seeded = firstDayFrom(isDay, today)
-  const past: CivilDate[] = []
-  for (let back = 1; back <= LOOKBACK_DAYS && past.length < 2; back += 1) {
-    const candidate = addDays(today, -back)
-    if (isDay(candidate)) past.push(candidate)
-  }
-  return { seeded, recent: past[0] ?? today, earlier: past[1] ?? today }
+async function inspectionDays(
+  db: Db,
+  today: CivilDate,
+  signal: AbortSignal,
+): Promise<InspectionDays> {
+  return pickInspectionDays(inspectionDayTest(await getInspectionSettings(db, signal)), today)
 }
 
 async function publishSettings(db: Db, cast: Cast, signal: AbortSignal): Promise<void> {

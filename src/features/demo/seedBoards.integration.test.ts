@@ -13,7 +13,7 @@ import {
 } from '@/db/schema'
 import { CORE_STATES } from '@/features/applications/states'
 import { seedDemo } from '@/features/demo/seedDemo'
-import { nextInspectionDay } from '@/features/demo/seedInspections'
+import { seededInspectionDay } from '@/features/demo/seedInspections'
 import { seedMeetingMinutes } from '@/features/demo/seedMinutes'
 import { seedNoticeContacts } from '@/features/demo/seedNoticeContacts'
 import { actorFor } from '@/features/demo/seedPermitSupport'
@@ -125,10 +125,10 @@ describe('states the screens tell apart', () => {
     expect(batches.map((b) => b.status).sort()).toEqual(['executed', 'proposed'])
   })
 
-  it('gives the inspector at least two stops on the next inspection day', async () => {
+  it('gives the inspector at least two stops on the seeded inspection day', async () => {
     const inspector = await actorFor(handle.db, 'inspector', signal)
     const today = await townToday(handle.db, new Date(), signal)
-    const day = await nextInspectionDay(handle.db, today, signal)
+    const day = await seededInspectionDay(handle.db, today, signal)
     const list = await getDayList(
       handle.db,
       inspector,

@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { inspections } from '@/db/schema'
 import type { CoverageContext } from '@/features/demo/seedCoverage'
-import { nextInspectionDay } from '@/features/demo/seedInspections'
+import { seededInspectionDay } from '@/features/demo/seedInspections'
 import { payByCard, payByCheck } from '@/features/demo/seedPayments'
 import { actorFor, findApplication, must, noon, open } from '@/features/demo/seedPermitSupport'
 import { checklistItems } from '@/features/inspections/checklistItems'
@@ -147,7 +147,7 @@ async function bookRoughIn(
 
 async function inspectionsToday(ctx: CoverageContext): Promise<boolean> {
   const inspector = await actorFor(ctx.db, 'inspector', ctx.signal)
-  const day = await nextInspectionDay(ctx.db, ctx.today, ctx.signal)
+  const day = await seededInspectionDay(ctx.db, ctx.today, ctx.signal)
   const booked = await ctx.db
     .select({ startMinute: inspections.startMinute })
     .from(inspections)
