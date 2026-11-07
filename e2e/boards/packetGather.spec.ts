@@ -78,7 +78,7 @@ test.describe
       await page.getByRole('button', { name: 'Reopen the agenda' }).click()
       await confirmWith(
         page,
-        'Hide the agenda from the public site and reopen it?',
+        'Take the agenda off the board and meetings pages and reopen it?',
         'Reopen the agenda',
       )
       await page.getByText('Add an item', { exact: true }).click()

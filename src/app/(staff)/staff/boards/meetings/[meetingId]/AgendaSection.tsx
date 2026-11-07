@@ -112,8 +112,8 @@ function AgendaControls({ view, draft }: { view: MeetingView; draft: boolean }) 
       action={reopenAgendaAction}
       submitLabel="Reopen the agenda"
       confirm={{
-        title: 'Hide the agenda from the public site and reopen it?',
-        body: 'It comes off the public site and goes back to a draft so you can change it. Show it on the public site again when you are done.',
+        title: 'Take the agenda off the board and meetings pages and reopen it?',
+        body: 'It comes off the board page and the meetings page and goes back to a draft so you can change it. Show it on the public site again when you are done.',
         confirmLabel: 'Reopen the agenda',
       }}
     >

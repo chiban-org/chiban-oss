@@ -155,7 +155,7 @@ export async function reopenAgendaAction(formData: FormData): Promise<ActionResu
   return await runStaffForm(formData, MEETING_ONLY_FORM, async ({ db, actor, signal }, input) =>
     errorOrField(
       await reopenAgenda(db, actor, input.meetingId, signal),
-      'Agenda hidden from the public site and reopened. Showing it again creates a new revision.',
+      'Agenda taken off the board and meetings pages and reopened. Showing it again creates a new revision.',
     ),
   )
 }

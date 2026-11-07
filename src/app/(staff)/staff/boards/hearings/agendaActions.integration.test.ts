@@ -236,7 +236,7 @@ describeActionCases(h, 'reopenAgendaAction', {
     expect(result).toEqual({
       ok: true,
       message:
-        'Agenda hidden from the public site and reopened. Showing it again creates a new revision.',
+        'Agenda taken off the board and meetings pages and reopened. Showing it again creates a new revision.',
     })
     const [agenda] = await db
       .select({ status: agendas.status })

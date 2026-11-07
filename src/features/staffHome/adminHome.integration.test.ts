@@ -31,7 +31,7 @@ describe('the System section of Today', () => {
       now: new Date('2026-11-05T15:00:00Z'),
       signal,
     })
-    const row = section?.rows.find((r) => r.label.endsWith('drafts not yet published'))
+    const row = section?.rows.find((r) => r.label.endsWith('drafts not yet in use'))
     expect(row?.count).toBe(1)
     expect(row?.href).toBe('/staff/settings/form?draft=draft')
   })
