@@ -298,11 +298,11 @@ export async function seedInspections(
     title: 'Workshop framing inspected by the building official',
     typeKey: 'BP',
     values: BUILDING_VALUES,
-    submittedOn: '2026-03-20',
+    submittedOn: '2025-12-01',
   })
-  await completeAndReview(framing, '2026-03-21', '2026-03-22')
-  await readyToIssue(framing, '2026-04-03')
-  await framing.step('issued', '2026-04-06')
+  await completeAndReview(framing, '2025-12-02', '2025-12-03')
+  await readyToIssue(framing, '2025-12-10')
+  await framing.step('issued', '2025-12-15')
   await run(framing.applicationId, 'framing', {
     day: days.seeded,
     slot: SECOND_SLOT,
