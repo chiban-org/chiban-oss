@@ -42,6 +42,7 @@ export function MeetingForm({
     >
       <input type="hidden" name="applicationId" value={data.applicationId} />
       <MeetingSelect
+        key={chosenMeeting(data, target)}
         label={data.board === 'zba' ? 'Hearing meeting' : 'Meeting'}
         options={data.meetings.map((m) => ({
           value: m.id,
