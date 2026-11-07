@@ -13,24 +13,24 @@ export const dynamic = 'force-dynamic'
 function BoardRow({ row }: { row: BoardAdminRow }) {
   return (
     <tr className="align-top">
-      <td className="font-semibold">
+      <td className="min-w-[10rem] font-semibold">
         {row.name}
         {row.shortName === row.name ? null : (
           <span className="block text-sm font-normal text-muted-foreground">{row.shortName}</span>
         )}
       </td>
-      <td>{row.kindText}</td>
+      <td className="min-w-[6rem]">{row.kindText}</td>
       <td>{row.seated}</td>
-      <td>{row.nextMeetingText ?? 'None scheduled'}</td>
-      <td>
+      <td className="whitespace-nowrap">{row.nextMeetingText ?? 'None scheduled'}</td>
+      <td className="whitespace-nowrap">
         <StatusChip
           status={row.active ? 'passed' : 'neutral'}
           label={row.active ? 'Active' : 'Archived'}
         />
       </td>
-      <td>
+      <td className="min-w-[9rem]">
         {row.active ? (
-          <div className="row-actions">
+          <div className="flex max-w-[9rem] flex-wrap [overflow-wrap:anywhere] items-start gap-2">
             <RenameBoard boardId={row.id} name={row.name} shortName={row.shortName} />
             <ArchiveBoard boardId={row.id} name={row.name} />
           </div>
@@ -53,13 +53,13 @@ export default async function BoardsSettingsPage() {
         action={<AddBoard kinds={view.kinds} />}
       />
       <div className="table-panel">
-        <table className="w-full min-w-[44rem] text-sm">
+        <table className="w-full min-w-[40rem] table-auto text-sm">
           <caption className="sr-only">Boards</caption>
           <thead>
             <tr>
               <th scope="col">Board</th>
               <th scope="col">Kind</th>
-              <th scope="col">Seated members</th>
+              <th scope="col">Seated</th>
               <th scope="col">Next meeting</th>
               <th scope="col">Status</th>
               <th scope="col">
