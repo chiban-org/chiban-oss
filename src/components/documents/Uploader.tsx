@@ -14,7 +14,7 @@ import { attempt } from '@/lib/attempt'
 export type IntentResult =
   | { ok: true; intentId: string; url: string; headers: Record<string, string> }
   | { ok: false; error: string }
-export type FinalizeResult = { ok: true } | { ok: false; error: string }
+export type FinalizeResult = { ok: true; documentId?: string } | { ok: false; error: string }
 
 export interface UploaderActions {
   createIntent: (formData: FormData) => Promise<IntentResult>
@@ -32,7 +32,7 @@ interface UploaderProps {
   target: RecordRef
   maxBytes: number
   actions: UploaderActions
-  onUploaded: () => void
+  onUploaded: (documentId?: string) => void
   put?: PutFile
   extraFields?: Record<string, string>
   accept?: string
@@ -113,7 +113,7 @@ export function Uploader({
     setFile(null)
     setPickerKey((key) => key + 1)
     setTitle('')
-    onUploaded()
+    onUploaded(finalized.documentId)
   }
 
   const submit = async () => {

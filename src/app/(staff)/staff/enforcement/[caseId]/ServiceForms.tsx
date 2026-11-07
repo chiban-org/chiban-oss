@@ -11,9 +11,9 @@ import {
   serviceEventAction,
 } from '../serviceActions'
 import { CaseFileUpload } from './CaseFileUpload'
-import { NewestChoiceSelect } from './NewestChoiceSelect'
 import { Hidden } from './Section'
 import { ServiceMethodFields } from './ServiceMethodFields'
+import { UploadedChoiceSelect } from './UploadedChoiceSelect'
 import { UploadPair } from './UploadPair'
 
 const ROLES = Object.entries(ROLE_LABELS) as [string, string][]
@@ -116,7 +116,7 @@ export function RecordServiceForm({
           <ServiceMethodFields
             defaultMethod={recipientId === null ? 'posting_on_property' : 'in_hand'}
           />
-          <NewestChoiceSelect
+          <UploadedChoiceSelect
             label="Proof of service"
             name="proofDocumentId"
             options={proofOptions}
@@ -155,7 +155,11 @@ function AnswerForm({ order, detail }: Omit<OrderFormProps, 'variant'>) {
             defaultValue={detail.today}
             required
           />
-          <NewestChoiceSelect label="The answer document" name="documentId" options={answerDocs} />
+          <UploadedChoiceSelect
+            label="The answer document"
+            name="documentId"
+            options={answerDocs}
+          />
         </ActionForm>
       </UploadPair>
     </details>

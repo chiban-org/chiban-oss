@@ -3,15 +3,15 @@
 import { createContext, type ReactNode, useContext, useMemo, useState } from 'react'
 
 interface Pair {
-  armed: number
-  arm: () => void
+  uploadedId: string | null
+  uploaded: (documentId: string) => void
 }
 
 const PairContext = createContext<Pair | null>(null)
 
 export function UploadPair({ children }: { children: ReactNode }) {
-  const [armed, setArmed] = useState(0)
-  const pair = useMemo(() => ({ armed, arm: () => setArmed((n) => n + 1) }), [armed])
+  const [uploadedId, setUploadedId] = useState<string | null>(null)
+  const pair = useMemo(() => ({ uploadedId, uploaded: setUploadedId }), [uploadedId])
   return <PairContext.Provider value={pair}>{children}</PairContext.Provider>
 }
 

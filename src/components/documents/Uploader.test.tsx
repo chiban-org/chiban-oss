@@ -62,10 +62,12 @@ describe('Uploader', () => {
         headers: { 'content-type': 'application/pdf' },
       }),
     )
-    const finalize = vi.fn((_form: FormData) => Promise.resolve({ ok: true as const }))
+    const finalize = vi.fn((_form: FormData) =>
+      Promise.resolve({ ok: true as const, documentId: 'doc-9' }),
+    )
     const { put, onUploaded } = setup({ createIntent, finalize })
     choose(file('plans.pdf', 100))
-    await waitFor(() => expect(onUploaded).toHaveBeenCalled())
+    await waitFor(() => expect(onUploaded).toHaveBeenCalledWith('doc-9'))
     expect(createIntent.mock.calls[0]?.[0].get('filename')).toBe('plans.pdf')
     expect(createIntent.mock.calls[0]?.[0].get('sizeBytes')).toBe('100')
     expect(put).toHaveBeenCalled()

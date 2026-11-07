@@ -46,15 +46,19 @@ export async function createCaseUploadIntentAction(formData: FormData): Promise<
   })
 }
 
-export async function finalizeCaseUploadAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffForm(
+export async function finalizeCaseUploadAction(
+  formData: FormData,
+): Promise<ActionResult & { documentId?: string }> {
+  let documentId: string | undefined
+  const result = await runStaffForm(
     formData,
     CASE_UPLOAD_FINALIZE_FORM,
     async ({ db, actor, signal }, input) => {
       const done = await finalizeUpload(db, getObjectStore(), actor, input, signal)
-      return done.ok
-        ? { ok: true, message: 'Uploaded.' }
-        : { ok: false, error: FINALIZE_COPY[done.error] }
+      if (!done.ok) return { ok: false, error: FINALIZE_COPY[done.error] }
+      documentId = done.value.documentId
+      return { ok: true, message: 'Uploaded.' }
     },
   )
+  return result.ok && documentId !== undefined ? { ...result, documentId } : result
 }

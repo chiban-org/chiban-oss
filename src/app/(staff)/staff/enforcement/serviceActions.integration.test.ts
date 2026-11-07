@@ -262,6 +262,22 @@ describeActionCases(h, 'serviceEventAction', {
   },
 })
 
+describe('serviceEventAction keeps only the fields the method uses', () => {
+  it('drops a newspaper sent with hand service', async () => {
+    h.signIn(world.staff)
+    const fields = { ...(await serviceFields()), recipientId: await newRecipient('Lee Ledger') }
+    const result = await actions.serviceEventAction(
+      h.form({ ...fields, newspaper: 'Alder Ledger' }),
+    )
+    expect(result).toEqual({ ok: true, message: 'Service recorded.' })
+    const rows = await h.db
+      .select({ newspaper: orderServiceEvents.newspaper, server: orderServiceEvents.serverName })
+      .from(orderServiceEvents)
+      .where(eq(orderServiceEvents.recipientId, fields.recipientId))
+    expect(rows).toEqual([{ newspaper: null, server: 'Sheriff Dale' }])
+  })
+})
+
 describe('serviceEventAction refusals the feature owns', () => {
   async function refusedWith(overrides: Record<string, string>) {
     h.signIn(world.staff)

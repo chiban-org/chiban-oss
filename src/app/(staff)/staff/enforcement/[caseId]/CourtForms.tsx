@@ -7,8 +7,8 @@ import type { CourtStepKind } from '@/features/enforcement/workPlanTypes'
 import { formatCivilDate } from '@/lib/formatDate'
 import { courtStepAction } from '../serviceActions'
 import { CaseFileUpload } from './CaseFileUpload'
-import { NewestChoiceSelect } from './NewestChoiceSelect'
 import { Hidden } from './Section'
+import { UploadedChoiceSelect } from './UploadedChoiceSelect'
 import { UploadPair } from './UploadPair'
 
 const STEPS = Object.entries(COURT_STEP_LABELS) as [string, string][]
@@ -59,7 +59,7 @@ export function CourtStepForm({
           />
           <TextField label="Court" name="court" required />
           <TextField label="Docket number" name="docket" />
-          <NewestChoiceSelect label="Court document" name="documentId" options={docs} />
+          <UploadedChoiceSelect label="Court document" name="documentId" options={docs} />
           <SelectField label="Judgment result" name="judgmentOutcome" options={OUTCOMES} />
         </ActionForm>
       </div>

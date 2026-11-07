@@ -4,6 +4,7 @@ import { recordAnswer } from '@/features/enforcement/answers'
 import { recordCourtStep } from '@/features/enforcement/courtSteps'
 import { listRecipient, recordRoleCheck } from '@/features/enforcement/service'
 import { recordServiceEvent } from '@/features/enforcement/serviceEvents'
+import { fieldsForMethod } from '@/features/enforcement/serviceStatus'
 import type { ActionResult } from '@/server/actionRunner'
 import { runStaffForm } from '@/server/formInput'
 import { runStaffFormToday } from '@/server/formInputToday'
@@ -32,7 +33,7 @@ export async function roleCheckAction(formData: FormData): Promise<ActionResult>
 
 export async function serviceEventAction(formData: FormData): Promise<ActionResult> {
   return await runStaffForm(formData, SERVICE_EVENT_FORM, async ({ db, actor, signal }, input) => {
-    const { serverName, serverRole, newspaper, ...rest } = input
+    const { serverName, serverRole, newspaper, ...rest } = fieldsForMethod(input.method, input)
     return settled(
       await recordServiceEvent(
         db,

@@ -180,3 +180,25 @@ export function coveredByOwner(rule: RoleRule, role: RecipientRole): boolean {
 export function rolesToServe(rule: RoleRule): RecipientRole[] {
   return rule.recipientRoles.filter((role) => !coveredByOwner(rule, role))
 }
+
+export const SERVER_ROLE_METHODS: readonly ServiceMethod[] = [
+  'in_hand',
+  'abode',
+  'other_civil_summons_method',
+]
+
+export const NAMED_SERVER_METHODS: readonly ServiceMethod[] = [
+  ...SERVER_ROLE_METHODS,
+  'posting_on_property',
+]
+
+export function fieldsForMethod<
+  T extends { serverName: unknown; serverRole: unknown; newspaper: unknown },
+>(method: ServiceMethod, fields: T): T {
+  return {
+    ...fields,
+    serverName: NAMED_SERVER_METHODS.includes(method) ? fields.serverName : null,
+    serverRole: SERVER_ROLE_METHODS.includes(method) ? fields.serverRole : null,
+    newspaper: method === 'newspaper_publication' ? fields.newspaper : null,
+  }
+}

@@ -179,6 +179,21 @@
     padding-top: calc(var(--space-base) * 3);
   }
 
+  [data-service-method] [data-shown-for] {
+    display: none;
+  }
+
+  [data-service-method]:has(option[value="in_hand"]:checked) [data-shown-for~="in_hand"],
+  [data-service-method]:has(option[value="abode"]:checked) [data-shown-for~="abode"],
+  [data-service-method]:has(option[value="other_civil_summons_method"]:checked)
+    [data-shown-for~="other_civil_summons_method"],
+  [data-service-method]:has(option[value="posting_on_property"]:checked)
+    [data-shown-for~="posting_on_property"],
+  [data-service-method]:has(option[value="newspaper_publication"]:checked)
+    [data-shown-for~="newspaper_publication"] {
+    display: block;
+  }
+
   :where(h2, h3) + .record-item,
   li.record-item:first-child {
     border-top: 0;

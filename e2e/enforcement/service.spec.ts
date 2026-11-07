@@ -162,10 +162,11 @@ test.describe
       await page.goto(`/staff/enforcement/${caseId}`)
       const form = await formFor(page, ORDERS, 'Record service', 'Record service')
       await expect(form.getByLabel('Server is a')).toBeVisible()
-      await expect(form.getByLabel('Newspaper')).toHaveCount(0)
+      await expect(form.getByLabel('Newspaper')).toBeHidden()
       await form.getByLabel('Method').selectOption({ label: 'Published in a newspaper' })
       await expect(form.getByLabel('Newspaper')).toBeVisible()
-      await expect(form.getByLabel('Server is a')).toHaveCount(0)
+      await expect(form.getByLabel('Server is a')).toBeHidden()
+      await expect(form.getByLabel('Served by (name)')).toBeHidden()
     })
 
     test('records an answer from the served recipient with an uploaded document', async ({

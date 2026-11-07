@@ -176,7 +176,7 @@ describeActionCases(h, 'finalizeCaseUploadAction', {
     checkOnly: CHECK_PASSED,
   },
   accepted: async (result, { db }) => {
-    expect(result).toEqual({ ok: true, message: 'Uploaded.' })
+    expect(result).toEqual({ ok: true, message: 'Uploaded.', documentId: expect.any(String) })
     const rows = await db
       .select({ title: documents.title })
       .from(documents)

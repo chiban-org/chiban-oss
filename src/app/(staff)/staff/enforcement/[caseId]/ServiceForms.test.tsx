@@ -85,43 +85,31 @@ describe('recording service', () => {
 })
 
 describe('the service form fields', () => {
-  it('asks for the server only for hand, abode or summons service and the newspaper only for publication', () => {
+  it('marks the server fields for hand, abode or summons service and the newspaper for publication', () => {
     renderForm(<ServiceForms order={order} detail={detail} />)
     openSection('Record service')
-    expect(screen.queryByLabelText(labelled('Server is a'))).not.toBeNull()
-    expect(screen.queryByLabelText(labelled('Newspaper'))).toBeNull()
-    fireEvent.change(screen.getByLabelText(labelled('Method')), {
-      target: { value: 'newspaper_publication' },
-    })
-    expect(screen.queryByLabelText(labelled('Server is a'))).toBeNull()
-    expect(screen.queryByLabelText(labelled('Served by (name)'))).toBeNull()
-    expect(screen.queryByLabelText(labelled('Newspaper'))).not.toBeNull()
-    fireEvent.change(screen.getByLabelText(labelled('Method')), {
-      target: { value: 'posting_on_property' },
-    })
-    expect(screen.queryByLabelText(labelled('Server is a'))).toBeNull()
-    expect(screen.queryByLabelText(labelled('Served by (name)'))).not.toBeNull()
+    const shownFor = (label: string) =>
+      screen
+        .getByLabelText(labelled(label))
+        .closest('[data-shown-for]')
+        ?.getAttribute('data-shown-for')
+    expect(shownFor('Server is a')).toBe('in_hand abode other_civil_summons_method')
+    expect(shownFor('Served by (name)')).toBe(
+      'in_hand abode other_civil_summons_method posting_on_property',
+    )
+    expect(shownFor('Newspaper')).toBe('newspaper_publication')
+    expect(
+      screen.getByLabelText(labelled('Method')).closest('[data-service-method]'),
+    ).not.toBeNull()
   })
 
-  it('goes back to the default method and its fields when the form resets', () => {
+  it('goes back to the default method when the form resets', () => {
     renderForm(<ServiceForms order={order} detail={detail} />)
     openSection('Record service')
     const method = screen.getByLabelText<HTMLSelectElement>(labelled('Method'))
     fireEvent.change(method, { target: { value: 'newspaper_publication' } })
-    expect(screen.queryByLabelText(labelled('Server is a'))).toBeNull()
-    fireEvent.reset(method.form as HTMLFormElement)
+    method.form?.reset()
     expect(method.value).toBe('in_hand')
-    expect(screen.queryByLabelText(labelled('Server is a'))).not.toBeNull()
-  })
-
-  it('starts the newspaper empty after a server name was typed', () => {
-    renderForm(<ServiceForms order={order} detail={detail} />)
-    openSection('Record service')
-    fillField(labelled('Served by (name)'), 'Deputy Marsh')
-    fireEvent.change(screen.getByLabelText(labelled('Method')), {
-      target: { value: 'newspaper_publication' },
-    })
-    expect(screen.getByLabelText<HTMLInputElement>(labelled('Newspaper')).value).toBe('')
   })
 
   it('offers the answer document upload inside the answer form', () => {

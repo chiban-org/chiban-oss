@@ -62,8 +62,8 @@ export function CaseUploader({
         maxBytes={maxBytes}
         actions={actions}
         extraFields={{ docKind }}
-        onUploaded={() => {
-          pair?.arm()
+        onUploaded={(documentId) => {
+          if (documentId !== undefined) pair?.uploaded(documentId)
           router.refresh()
         }}
         {...(capture === undefined ? {} : { capture })}

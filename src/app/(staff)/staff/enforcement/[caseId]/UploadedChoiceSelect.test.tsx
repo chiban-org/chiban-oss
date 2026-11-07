@@ -2,7 +2,7 @@
 import { cleanup, fireEvent, render, screen } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it } from 'vitest'
-import { NewestChoiceSelect } from './NewestChoiceSelect'
+import { UploadedChoiceSelect } from './UploadedChoiceSelect'
 import { UploadPair, useUploadPair } from './UploadPair'
 
 afterEach(cleanup)
@@ -11,12 +11,16 @@ const first: [string, string][] = [
   ['', 'Choose an uploaded proof'],
   ['d1', 'Return of service'],
 ]
-const second: [string, string][] = [...first, ['d2', 'Affidavit of posting']]
+const both: [string, string][] = [
+  ...first,
+  ['d3', 'Someone else upload'],
+  ['d2', 'Affidavit of posting'],
+]
 
-function FinishUpload() {
+function FinishUpload({ id }: { id: string }) {
   const pair = useUploadPair()
   return (
-    <button type="button" onClick={() => pair?.arm()}>
+    <button type="button" onClick={() => pair?.uploaded(id)}>
       Finish upload
     </button>
   )
@@ -24,28 +28,38 @@ function FinishUpload() {
 
 function ui(options: [string, string][]): ReactNode {
   return (
-    <UploadPair>
-      <FinishUpload />
-      <NewestChoiceSelect label="Proof of service" name="proof" options={options} />
-    </UploadPair>
+    <form>
+      <UploadPair>
+        <FinishUpload id="d2" />
+        <UploadedChoiceSelect label="Proof of service" name="proof" options={options} />
+      </UploadPair>
+    </form>
   )
 }
 
 const select = () => screen.getByLabelText<HTMLSelectElement>('Proof of service')
 
 describe('a document choice next to its uploader', () => {
-  it('chooses the document its own uploader just added', () => {
+  it('chooses the document its own uploader added, even when another upload arrived too', () => {
     const { rerender } = render(ui(first))
-    expect(select().value).toBe('')
     fireEvent.click(screen.getByRole('button', { name: 'Finish upload' }))
-    rerender(ui(second))
+    rerender(ui(both))
     expect(select().value).toBe('d2')
   })
 
   it('keeps the choice when a document arrives from another uploader on the page', () => {
     const { rerender } = render(ui(first))
     fireEvent.change(select(), { target: { value: 'd1' } })
-    rerender(ui(second))
+    rerender(ui(both))
     expect(select().value).toBe('d1')
+  })
+
+  it('clears with its form and does not bring the old choice back', () => {
+    const { rerender } = render(ui(first))
+    fireEvent.click(screen.getByRole('button', { name: 'Finish upload' }))
+    rerender(ui(both))
+    select().form?.reset()
+    rerender(ui([...both]))
+    expect(select().value).toBe('')
   })
 })
