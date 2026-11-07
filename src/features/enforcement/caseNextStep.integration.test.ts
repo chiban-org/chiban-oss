@@ -1,4 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { enforcementFines } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
@@ -128,5 +129,27 @@ describe('next step and due on the enforcement list', () => {
         .map((r) => r.caseId)
         .sort(),
     )
+  })
+
+  it('names the same fine as the case page when several are unpaid', async () => {
+    const [fine] = await handle.db.select().from(enforcementFines).limit(1)
+    if (fine === undefined) throw new Error('no demo fine')
+    const { id: _id, createdAt: _createdAt, ...copy } = fine
+    await handle.db
+      .insert(enforcementFines)
+      .values({ ...copy, amountCents: 12345, imposedOn: '2000-01-01' })
+    const queue = await listCaseQueue(
+      handle.db,
+      actor,
+      { filters: {}, limit: 50, offset: 0 },
+      today,
+      signal,
+    )
+    const row = queue.rows.find((r) => r.caseId === fine.caseId)
+    const detail = await loadCaseDetail(handle.db, actor, fine.caseId, today, signal)
+    if (!detail.ok) throw new Error('no detail')
+    const plan = planCaseWork(detail.value, { abilities: EVERY_CASE_ABILITY, responsible: null })
+    expect(row?.nextStep).toEqual(nextStepOf(plan))
+    expect(row?.nextStep?.ask).toContain('$123.45')
   })
 })

@@ -57,7 +57,11 @@ export async function loadCasePlanInputs(
       .from(enforcementOrders)
       .where(inArray(enforcementOrders.caseId, caseIds))
       .orderBy(asc(enforcementOrders.number)),
-    db.select().from(enforcementFines).where(inArray(enforcementFines.caseId, caseIds)),
+    db
+      .select()
+      .from(enforcementFines)
+      .where(inArray(enforcementFines.caseId, caseIds))
+      .orderBy(asc(enforcementFines.imposedOn)),
     db
       .select()
       .from(counselReferrals)
