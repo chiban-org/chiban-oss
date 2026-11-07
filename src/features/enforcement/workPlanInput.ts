@@ -40,7 +40,7 @@ export interface CasePlanInput {
   notices: readonly Pick<typeof violationNotices.$inferSelect, 'id' | 'receivedOn'>[]
   orders: readonly CasePlanOrder[]
   fines: readonly { row: Pick<typeof enforcementFines.$inferSelect, 'id'>; dueCents: number }[]
-  referrals: readonly unknown[]
+  referrals: readonly { outcomes: readonly { kind: string }[] }[]
 }
 
 export interface CasePlanExtras {
@@ -51,7 +51,15 @@ export interface CasePlanExtras {
 const NOT_LIVE: readonly OrderRow['status'][] = ['draft', 'annulled', 'withdrawn', 'complied']
 
 export function liveOrder(input: CasePlanInput): CasePlanOrder | null {
-  return input.orders.find((o) => !NOT_LIVE.includes(o.row.status)) ?? null
+  const live = input.orders.filter((o) => !NOT_LIVE.includes(o.row.status))
+  return live.find((o) => stepOf(o, 'judgment') === null) ?? live[0] ?? null
+}
+
+export function unservedFor(order: CasePlanOrder, role: RecipientRole) {
+  const roles = role === order.rule.ownerRoles[0] ? order.rule.ownerRoles : [role]
+  return order.service.recipients.filter(
+    (r) => roles.includes(r.role) && order.status.servedOn[r.id] === undefined,
+  )
 }
 
 export function draftOrderOf(input: CasePlanInput): CasePlanOrder | null {

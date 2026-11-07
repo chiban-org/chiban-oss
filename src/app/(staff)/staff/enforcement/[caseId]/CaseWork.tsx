@@ -32,7 +32,9 @@ export function CaseDoThisNow({ detail, plan }: { detail: CaseDetail; plan: Case
   if (now === null) return null
   return (
     <DoThisNowCard task={now.task} note={now.note} warnings={now.warnings}>
-      {now.action === null ? null : <CasePlanForm action={now.action} detail={detail} />}
+      {now.action === null ? null : (
+        <CasePlanForm key={JSON.stringify(now.action)} action={now.action} detail={detail} />
+      )}
     </DoThisNowCard>
   )
 }

@@ -138,7 +138,9 @@ describe('the case work plan in court', () => {
       'Waiting on: Town (Sam Clerk). Refer the case to town counsel. Corrective action due December 13, 2026, 36 days left.',
     )
     expect(p.now?.action).toBeNull()
-    const referred = planFor(planInput('in_court', { orders: [answered], referrals: [{}] }))
+    const referred = planFor(
+      planInput('in_court', { orders: [answered], referrals: [{ outcomes: [] }] }),
+    )
     expect(referred.sentence).toBe(
       'Waiting on: Town counsel. Take the answered order to court. Corrective action due December 13, 2026, 36 days left.',
     )

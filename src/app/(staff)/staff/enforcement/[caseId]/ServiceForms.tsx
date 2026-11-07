@@ -102,7 +102,7 @@ export function RecordServiceForm({
           label="Recipient"
           name="recipientId"
           options={recipients}
-          defaultValue={recipientId ?? undefined}
+          defaultValue={recipientId === null ? '' : recipientId}
         />
         <SelectField label="Method" name="method" options={METHODS} />
         <TextField

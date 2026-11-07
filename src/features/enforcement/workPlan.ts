@@ -29,20 +29,30 @@ function dueAt(key: CaseDue['key'], label: string, date: string, today: CivilDat
   return { key, label, date: date as CivilDate, daysLeft: daysBetween(today, date as CivilDate) }
 }
 
-function orderDue(order: CasePlanOrder, today: CivilDate): CaseDue | null {
-  const answer = runningAnswers(order, today)[0]
-  if (answer !== undefined) return dueAt('answer', 'Answer due', answer.due.due, today)
-  if (order.appealDue !== null && order.appealDue.due >= today) {
-    return dueAt('judgment_appeal', 'Appeal of the judgment due', order.appealDue.due, today)
-  }
-  if (stepOf(order, 'judgment') !== null || order.row.correctiveDeadline === null) return null
-  return dueAt('corrective_action', 'Corrective action due', order.row.correctiveDeadline, today)
+function appealDue(input: CasePlanInput): CaseDue | null {
+  const dates = input.orders
+    .map((o) => o.appealDue?.due ?? null)
+    .filter((d): d is CivilDate => d !== null && d >= input.today)
+    .sort()
+  const soonest = dates[0]
+  if (soonest === undefined) return null
+  return dueAt('judgment_appeal', 'Appeal of the judgment due', soonest, input.today)
+}
+
+function correctiveDue(order: CasePlanOrder | null, today: CivilDate): CaseDue | null {
+  if (order === null || stepOf(order, 'judgment') !== null) return null
+  const deadline = order.row.correctiveDeadline
+  return deadline === null
+    ? null
+    : dueAt('corrective_action', 'Corrective action due', deadline, today)
 }
 
 export function caseDue(input: CasePlanInput): CaseDue | null {
   if (input.stay.stayed || !DUE_STATUSES.includes(input.staff.row.status)) return null
   const order = liveOrder(input)
-  return order === null ? null : orderDue(order, input.today)
+  const answer = order === null ? undefined : runningAnswers(order, input.today)[0]
+  if (answer !== undefined) return dueAt('answer', 'Answer due', answer.due.due, input.today)
+  return appealDue(input) ?? correctiveDue(order, input.today)
 }
 
 export function duePhrase(due: CaseDue): string {

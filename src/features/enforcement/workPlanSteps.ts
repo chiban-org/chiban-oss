@@ -12,6 +12,7 @@ import {
   liveOrder,
   runningAnswers,
   stepOf,
+  unservedFor,
 } from './workPlanInput'
 import type { CaseAction, CaseActor, CaseNowStep } from './workPlanTypes'
 
@@ -92,9 +93,7 @@ function serviceStep(order: CasePlanOrder): Step | null {
       recipientId: null,
     })
   }
-  const unserved = order.service.recipients.find(
-    (r) => r.role === gap.role && order.status.servedOn[r.id] === undefined,
-  )
+  const unserved = unservedFor(order, gap.role)[0]
   if (unserved === undefined) {
     return town(key, `List the ${roleName(gap)}`, {
       kind: 'list_recipient',
@@ -134,7 +133,17 @@ function answerStep(input: CasePlanInput, order: CasePlanOrder): Step {
   }
 }
 
+const COUNSEL_ENDINGS: readonly string[] = [
+  'judgment_for_respondent',
+  'settled',
+  'dismissed',
+  'withdrawn',
+]
+
 function counselStep(input: CasePlanInput): Step {
+  const outcomes = input.referrals.flatMap((r) => r.outcomes.map((o) => o.kind))
+  if (outcomes.includes('judgment_for_town')) return judgmentStep(input)
+  if (outcomes.some((kind) => COUNSEL_ENDINGS.includes(kind))) return resolveStep()
   if (input.referrals.length > 0) {
     const task = 'Take the answered order to court'
     return waiting({ key: 'court.answered', actor: 'counsel', ask: task, task })

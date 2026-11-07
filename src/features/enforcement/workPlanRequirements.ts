@@ -10,6 +10,7 @@ import {
   liveOrder,
   runningAnswers,
   stepOf,
+  unservedFor,
 } from './workPlanInput'
 import { roleName } from './workPlanSteps'
 import type { CaseRequirement, CaseRequirementGroup } from './workPlanTypes'
@@ -63,9 +64,7 @@ function serviceDetail(order: CasePlanOrder, role: RecipientRole): string {
   if (gap === undefined) return ''
   if (gap.reason === 'no_check') return 'Not yet checked.'
   if (gap.reason === 'publication_incomplete') return 'Posting and publication not complete.'
-  const unserved = order.service.recipients
-    .filter((r) => r.role === role && order.status.servedOn[r.id] === undefined)
-    .map((r) => r.name)
+  const unserved = unservedFor(order, role).map((r) => r.name)
   return unserved.length === 0 ? 'No one is listed.' : `Not served: ${unserved.join(', ')}.`
 }
 
