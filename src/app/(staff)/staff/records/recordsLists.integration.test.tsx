@@ -175,12 +175,16 @@ describe('holds, preservation and the other lists', () => {
     expect(markup).toContain('sort=approver')
   })
 
-  it('a case page states the opened date once, in the rail', async () => {
+  it('a case page states the opened date once per layout, in the rail and in the phone strip', async () => {
     await actAs('staff')
     const [found] = await handle.db.select().from(enforcementCases).limit(1)
-    const text = visibleText(
-      await html(CasePage({ params: Promise.resolve({ caseId: found?.id ?? '' }) })),
-    )
-    expect(text.match(/Opened/g)?.length).toBe(1)
+    const markup = await html(CasePage({ params: Promise.resolve({ caseId: found?.id ?? '' }) }))
+    const rail = markup.slice(markup.indexOf('<aside'), markup.indexOf('</aside>'))
+    const strip = markup.slice(markup.indexOf('record-strip'), markup.indexOf('<aside'))
+    const outside =
+      markup.slice(0, markup.indexOf('record-strip')) + markup.slice(markup.indexOf('</aside>'))
+    expect(visibleText(rail).match(/Opened/g)?.length).toBe(1)
+    expect(visibleText(strip).match(/Opened/g)?.length ?? 0).toBeLessThanOrEqual(1)
+    expect(visibleText(outside).match(/Opened/g)).toBeNull()
   })
 })
