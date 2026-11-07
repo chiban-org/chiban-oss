@@ -3,6 +3,7 @@ import { type E2eDb, expect, fillDate, test } from '../fixtures/test'
 import { demoTitle, expectRefusedBeside, openApplication, openMoreActions } from './support'
 
 const DECK = demoTitle('Deck renewed once')
+const ADDITION = demoTitle('Addition under review')
 
 test.describe('adjusting a clock', () => {
   test.describe('as the clerk', () => {
@@ -56,7 +57,7 @@ test.describe('adjusting a clock', () => {
     test.use({ role: 'inspector' })
 
     test('is not offered the adjustment form', async ({ page, db }) => {
-      await openApplication(page, db, DECK)
+      await openApplication(page, db, ADDITION)
       const clocks = page.getByRole('region', { name: 'Clocks' })
       await expect(clocks.getByRole('heading', { name: 'Clocks' })).toBeVisible()
       await expect(clocks.getByText('Adjust this clock', { exact: true })).toHaveCount(0)

@@ -69,7 +69,7 @@ export function InspectorRecord({
         summary={<StageSummary view={view} sentence={sentence} board={input.board !== null} />}
       />
       <RecordLayout>
-        <NextInspection work={work} data={inspections} />
+        <NextInspection {...sections} />
         <LastResult {...sections} />
         <OpenRequests {...sections} />
         <ConditionsPanel view={view} />

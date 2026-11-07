@@ -86,7 +86,7 @@ function resultText(row: InspectionHistoryRow): string {
   return [row.resultNotes ?? '', photos].filter((part) => part !== '').join(' ')
 }
 
-function RowActions({
+export function RowActions({
   row,
   data,
   number,

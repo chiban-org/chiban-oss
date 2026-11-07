@@ -5,7 +5,7 @@ import type { InspectionView } from '@/features/inspections/inspectionView'
 import { inspectionName, slotText } from '@/features/inspections/inspectorFocus'
 import { formatCivilDate } from '@/lib/formatDate'
 import { recordResultAction } from '../../inspections/[inspectionId]/actions'
-import { InspectionRow, type InspectionsPanelData } from './inspectionsPanel'
+import { InspectionRow, type InspectionsPanelData, RowActions } from './inspectionsPanel'
 import type { InspectorWork } from './inspectorData'
 
 interface SectionProps {
@@ -21,8 +21,9 @@ function PreviousResult({ next, data }: { next: InspectionView; data: Inspection
   return <p>{`Last time: ${previous.status} on ${formatCivilDate(previous.scheduledDate)}.`}</p>
 }
 
-function NextBody({ next, work, data }: { next: InspectionView } & Omit<SectionProps, 'number'>) {
+function NextBody({ next, work, data, number }: { next: InspectionView } & SectionProps) {
   const { inspection } = next
+  const row = data.history.find((r) => r.id === inspection.id)
   const others = inspection.inspectorUserId !== null && !next.canRecord && !next.waitingForDate
   return (
     <>
@@ -35,6 +36,7 @@ function NextBody({ next, work, data }: { next: InspectionView } & Omit<SectionP
       ) : null}
       {next.canRecord ? (
         <ChecklistForm
+          key={inspection.id}
           inspectionId={inspection.id}
           rowVersion={inspection.rowVersion}
           items={next.items}
@@ -42,6 +44,7 @@ function NextBody({ next, work, data }: { next: InspectionView } & Omit<SectionP
           initialNotes=""
         />
       ) : null}
+      {row === undefined ? null : <RowActions row={row} data={data} number={number} />}
       <p>
         <Link href={`/staff/inspections/${inspection.id}`}>
           Open the inspection for photos and the site contact
@@ -51,7 +54,7 @@ function NextBody({ next, work, data }: { next: InspectionView } & Omit<SectionP
   )
 }
 
-export function NextInspection({ work, data }: Omit<SectionProps, 'number'>) {
+export function NextInspection({ work, data, number }: SectionProps) {
   return (
     <section
       aria-label="Next inspection"
@@ -62,7 +65,7 @@ export function NextInspection({ work, data }: Omit<SectionProps, 'number'>) {
       {work.next === null ? (
         <p>No inspection is scheduled.</p>
       ) : (
-        <NextBody next={work.next} work={work} data={data} />
+        <NextBody next={work.next} work={work} data={data} number={number} />
       )}
     </section>
   )
