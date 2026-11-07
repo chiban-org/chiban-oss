@@ -17,9 +17,11 @@ test.describe('own account of a staff user the admin invited', () => {
     await guest.goto('/staff/account')
 
     const nameField = guest.locator('input[name="displayName"]')
+    const saveName = guest.getByRole('button', { name: 'Save name' })
     await nameField.fill(`${name} Jr`)
-    await guest.getByRole('button', { name: 'Save name' }).click()
+    await saveName.click()
     await expectConfirmation(guest, 'Name saved.')
+    await expect(saveName).toBeEnabled()
     expect(
       (
         await db.one<{ display_name: string }>('select display_name from users where id = $1', [
@@ -29,7 +31,7 @@ test.describe('own account of a staff user the admin invited', () => {
     ).toBe(`${name} Jr`)
 
     await nameField.fill('   ')
-    await guest.getByRole('button', { name: 'Save name' }).click()
+    await saveName.click()
     await expect(nameField).toHaveAttribute('aria-invalid', 'true')
 
     const current = guest.locator('input[name="current"]')
