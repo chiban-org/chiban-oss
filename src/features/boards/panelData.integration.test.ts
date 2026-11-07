@@ -72,6 +72,29 @@ describe('meeting choices', () => {
   })
 })
 
+describe('meetings the application was filed too late for', () => {
+  it('marks the same meetings that setting the acceptance meeting refuses', async () => {
+    const special = await scheduleMeeting(
+      handle.db,
+      world.staff,
+      { board: 'planning_board', meetingDate: '2027-04-07' as CivilDate, kind: 'special' },
+      signal,
+    )
+    const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')
+    const panel = await loadBoardPanel(handle.db, world.staff, id, signal)
+    const byDate = new Map(panel?.meetings.map((m) => [m.date, m.filedInTime]))
+    expect(byDate.get('2027-04-07')).toBe(false)
+    expect(byDate.get('2027-04-14')).toBe(true)
+    const refused = await setAcceptanceMeeting(
+      handle.db,
+      world.staff,
+      { applicationId: id, meetingId: special.ok ? special.value.meetingId : '' },
+      signal,
+    )
+    expect(refused.ok ? null : refused.error).toMatchObject({ filedTooLate: {} })
+  })
+})
+
 describe('issued list currency', () => {
   it('an issued list reads as out of date after a determination changes', async () => {
     const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, '2027-03-24')

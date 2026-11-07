@@ -1,5 +1,4 @@
 import { and, eq, inArray } from 'drizzle-orm'
-import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db, Tx } from '@/db/client'
 import { acceptanceSchedules, applications, clocks, completenessVotes } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -13,25 +12,16 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication, declaresSubstep } from '@/features/boards/boardOf'
-import { getBoardSettings } from '@/features/boards/boardSettings'
 import { nextRegularMeeting } from '@/features/boards/calendar'
+import { FILING_LEAD_KEY, filingLeadFor, filingLeadRule } from '@/features/boards/filingLead'
 import { getMeeting } from '@/features/boards/meetings'
 import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
-import { computeRuleDue } from '@/features/clocks/ruleEngine'
-import {
-  createClock,
-  markClockMet,
-  resolveClockLength,
-  startClocksFor,
-} from '@/features/clocks/startClocks'
-import { effectiveBindings } from '@/features/config/bindings'
+import { createClock, markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import type { GateResult } from '@/features/gates/evaluateGates'
-import { packHolidayCalendar } from '@/features/packs/holidays'
-import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { loadPack } from '@/features/packs/loadPack'
 import { addDays, type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
-export const FILING_LEAD_KEY = 'nh.pb.filing_lead'
 export const ACCEPTANCE_CHANGED = 'acceptance_meeting_changed'
 
 export type AcceptanceError =
@@ -41,14 +31,6 @@ export type AcceptanceError =
   | 'wrong_board'
   | 'meeting_cancelled'
   | { filedTooLate: { lastFilingDay: CivilDate; earliestMeeting: CivilDate | null } }
-
-function filingLeadRule() {
-  const rule = ruleByKey(loadPack(), FILING_LEAD_KEY)
-  if (rule.kind !== 'clock' || !('value' in rule.length)) {
-    throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, 'nh.pb.filing_lead must be a plain clock')
-  }
-  return { rule, packDays: rule.length.value }
-}
 
 async function replaceFilingClock(
   tx: Tx,
@@ -117,25 +99,10 @@ export async function setAcceptanceMeetingTx(
   if (meeting.status === 'cancelled') return err('meeting_cancelled')
   const meetingDate = meeting.meetingDate as CivilDate
   let lastFilingDay: CivilDate | null = null
-  const bound = effectiveBindings(app.typeBody, loadPack()).includes(FILING_LEAD_KEY)
-  if (bound) {
-    const { rule } = filingLeadRule()
-    const settings = await getBoardSettings(tx, signal)
-    const resolved = await resolveClockLength(
-      tx,
-      rule,
-      await factsWithDeterminations(tx, app.id, app.facts),
-      loadPack(),
-      signal,
-    )
-    const leadDays =
-      settings.boards.find((b) => b.board === board)?.filingLeadDays ?? resolved.value
-    lastFilingDay = computeRuleDue(
-      rule,
-      { unit: 'days', value: leadDays },
-      meetingDate,
-      packHolidayCalendar(),
-    ).due
+  const lead = await filingLeadFor(tx, app, board, signal)
+  if (lead !== null) {
+    const { leadDays } = lead
+    lastFilingDay = lead.lastFilingDay(meetingDate)
     if (compareCivil(app.receivedDate, lastFilingDay) > 0) {
       const earliestMeeting = await nextRegularMeeting(
         tx,

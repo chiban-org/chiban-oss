@@ -29,6 +29,7 @@ function hearingsEmpty(hearings: RecordPanelsInput['hearings']): boolean {
 export function workPanels(input: RecordPanelsInput): Panel[] {
   const { view, records, board, hearings, notes } = input
   const hosted = input.hosted ?? new Set()
+  const deadline = board === null ? null : meetingDeadline(view.clocks, board.board)
   return [
     {
       key: 'reviewers',
@@ -55,7 +56,7 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
             data={board}
             hearings={hearings?.hearings.map((h) => h.text) ?? []}
             hosted={hosted}
-            deadline={meetingDeadline(view.clocks, board.board)}
+            deadline={deadline}
             voteBlocked={hearingRequirementsUnmet(view)}
           />
         ),
@@ -68,6 +69,7 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
           key="hearings"
           data={hearings}
           meetingOnBoard={board?.board === 'zba' && board.acceptanceMeetingId !== null}
+          deadline={deadline}
         />
       ),
     },

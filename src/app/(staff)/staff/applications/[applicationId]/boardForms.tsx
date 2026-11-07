@@ -66,12 +66,21 @@ export function MeetingForm({
   )
 }
 
+function outcomeOptions(planning: boolean): [string, string][] {
+  return [
+    ['accepted', planning ? 'Accepted as complete' : 'Accepted for hearing'],
+    ['not_accepted', planning ? 'Not accepted as complete' : 'Not accepted'],
+  ]
+}
+
 export function VoteFormBody({
   data,
   variant = 'outline',
+  rejectOnly = false,
 }: {
   data: BoardPanelData
   variant?: Variant
+  rejectOnly?: boolean
 }) {
   const planning = data.board === 'planning_board'
   if (meetingIsAhead(data)) {
@@ -102,15 +111,16 @@ export function VoteFormBody({
         max={data.today}
         required
       />
-      <SelectField
-        label="Outcome"
-        name="outcome"
-        options={[
-          ['accepted', planning ? 'Accepted as complete' : 'Accepted for hearing'],
-          ['not_accepted', planning ? 'Not accepted as complete' : 'Not accepted'],
-        ]}
+      {rejectOnly ? (
+        <input type="hidden" name="outcome" value="not_accepted" />
+      ) : (
+        <SelectField label="Outcome" name="outcome" options={outcomeOptions(planning)} />
+      )}
+      <TextField
+        label={rejectOnly ? 'Reason' : 'Reason, if not accepted'}
+        name="reason"
+        required={rejectOnly}
       />
-      <TextField label="Reason, if not accepted" name="reason" />
     </ActionForm>
   )
 }

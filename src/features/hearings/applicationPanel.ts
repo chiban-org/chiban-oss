@@ -20,7 +20,7 @@ export interface ApplicationHearingsPanel {
   canRecord: boolean
   canRoute: boolean
   canSchedule: boolean
-  scheduleMeetings: { id: string; text: string }[]
+  scheduleMeetings: { id: string; date: string; text: string }[]
   scheduleKinds: [string, string][]
   hearings: { id: string; text: string }[]
   decisions: { id: string; text: string }[]
@@ -75,7 +75,7 @@ export async function loadApplicationHearingsPanel(
     canSchedule: !finished,
     scheduleMeetings: meetings
       .filter((m) => m.status === 'scheduled' && m.meetingDate >= today)
-      .map((m) => ({ id: m.id, text: formatCivilDate(m.meetingDate) })),
+      .map((m) => ({ id: m.id, date: m.meetingDate, text: formatCivilDate(m.meetingDate) })),
     scheduleKinds: kinds,
     hearings: held.map(({ hearing, meeting }) => ({
       id: hearing.id,

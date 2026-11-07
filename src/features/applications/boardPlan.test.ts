@@ -48,8 +48,18 @@ const PLANNING: PlanBoard = {
   acceptanceDate: '2026-11-25',
   acceptanceText: 'November 25, 2026',
   meetings: [
-    { id: 'm12', date: '2026-11-12', text: 'November 12, 2026, regular meeting' },
-    { id: 'm25', date: '2026-11-25', text: 'November 25, 2026, regular meeting' },
+    {
+      id: 'm12',
+      date: '2026-11-12',
+      text: 'November 12, 2026, regular meeting',
+      filedInTime: true,
+    },
+    {
+      id: 'm25',
+      date: '2026-11-25',
+      text: 'November 25, 2026, regular meeting',
+      filedInTime: true,
+    },
   ],
   today: '2026-11-06',
 }

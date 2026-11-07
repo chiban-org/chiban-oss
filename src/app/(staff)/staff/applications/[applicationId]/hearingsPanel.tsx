@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
 import { SelectField } from '@/components/staff/fields'
+import { type MeetingDeadline, meetingOptionText } from '@/features/applications/meetingDeadline'
 import type { ApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import { reviewChipStatus, reviewStatusLabel } from '@/features/reviews/statusLabels'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -16,9 +17,11 @@ function noHearingText(meetingOnBoard: boolean): string {
 export function HearingsPanel({
   data,
   meetingOnBoard = false,
+  deadline = null,
 }: {
   data: ApplicationHearingsPanel | null
   meetingOnBoard?: boolean
+  deadline?: MeetingDeadline | null
 }) {
   if (data === null) return null
   return (
@@ -49,7 +52,10 @@ export function HearingsPanel({
             <SelectField
               label="Meeting"
               name="meetingId"
-              options={data.scheduleMeetings.map((m): [string, string] => [m.id, m.text])}
+              options={data.scheduleMeetings.map((m): [string, string] => [
+                m.id,
+                meetingOptionText(m, deadline),
+              ])}
             />
             <SelectField label="Kind" name="kind" options={data.scheduleKinds} />
           </ActionForm>

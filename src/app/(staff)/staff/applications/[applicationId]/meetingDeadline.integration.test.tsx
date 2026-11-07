@@ -42,10 +42,10 @@ let handle: TestDb
 let clerk: Actor
 const ids = new Map<string, string>()
 
-async function page(number: string): Promise<string> {
+async function page(number: string, on: string = TODAY): Promise<string> {
   state.actor = clerk
   vi.useFakeTimers({ toFake: ['Date'] })
-  vi.setSystemTime(new Date(`${TODAY}T16:00:00Z`))
+  vi.setSystemTime(new Date(`${on}T16:00:00Z`))
   return renderToStaticMarkup(
     (await ApplicationPage({
       params: Promise.resolve({ applicationId: ids.get(number) ?? '' }),
@@ -144,6 +144,19 @@ describe('a site plan whose acceptance meeting falls after the completeness dead
     expect(options.filter((o) => o.selected).map((o) => o.value)).toEqual([target?.id])
   })
 
+  it('marks the same meetings in the hearing scheduler, which also sets the acceptance meeting', async () => {
+    const due = await clockDue('SPR-2026-0001', 'nh.pb.completeness')
+    const meetings = await upcoming('planning_board')
+    const panel = sectionOf(await page('SPR-2026-0001'), 'Hearings and decisions') ?? ''
+    const options = optionsOf(panel).filter((o) => /^[0-9a-f-]{36}$/.test(o.value))
+    expect(options.map((o) => o.text)).toEqual(
+      meetings.map(
+        (m) =>
+          `${formatCivilDate(m.date)} · ${m.date <= due ? 'meets the deadline' : 'after the deadline'}`,
+      ),
+    )
+  })
+
   it('names the town as the actor in the status sentence', async () => {
     const html = await page('SPR-2026-0001')
     expect(html).toMatch(
@@ -182,6 +195,21 @@ describe('a variance whose hearing meeting meets its deadline but whose abutter 
     expect(requirements).toMatch(/Not done: <\/span><a href="#board"[^>]*>Abutter list issued/)
     expect(html).not.toMatch(/>Open the hearing<\/summary>/)
     expect(html).not.toContain('name="outcome"')
+  })
+})
+
+describe('the variance after its hearing meeting, with the abutter list still a draft', () => {
+  it('still lets the clerk record that the board did not accept it, but not open the hearing', async () => {
+    const day = await meetingSet('VAR-2026-0001')
+    const html = await page(
+      'VAR-2026-0001',
+      `${day.slice(0, 8)}${String(Number(day.slice(8)) + 1).padStart(2, '0')}`,
+    )
+    const board = sectionOf(html, 'Hearing') ?? ''
+    expect(board).toContain('Record that the board did not accept it')
+    expect(board).toContain('name="outcome" value="not_accepted"')
+    expect(html).not.toContain('value="accepted"')
+    expect(html).not.toMatch(/>Open the hearing<\/summary>/)
   })
 })
 

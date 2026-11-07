@@ -14,9 +14,9 @@ function clock(ruleKey: string, due: string, o: Record<string, unknown> = {}) {
 }
 
 const MEETINGS = [
-  { id: 'm12', date: '2026-11-12', text: 'November 12, 2026, regular meeting' },
-  { id: 'm25', date: '2026-11-25', text: 'November 25, 2026, regular meeting' },
-  { id: 'd09', date: '2026-12-09', text: 'December 9, 2026, regular meeting' },
+  { id: 'm12', date: '2026-11-12', text: 'November 12, 2026, regular meeting', filedInTime: true },
+  { id: 'm25', date: '2026-11-25', text: 'November 25, 2026, regular meeting', filedInTime: true },
+  { id: 'd09', date: '2026-12-09', text: 'December 9, 2026, regular meeting', filedInTime: true },
 ]
 
 const PLANNING: PlanBoard = {
@@ -74,7 +74,10 @@ describe('meeting choices against the deadline', () => {
   })
 
   it('finds a conflict when the meeting set is after the due date and offers the latest meeting that meets it', () => {
-    const meetings = [{ id: 'm10', date: '2026-11-10', text: 'November 10' }, ...MEETINGS]
+    const meetings = [
+      { id: 'm10', date: '2026-11-10', text: 'November 10', filedInTime: true },
+      ...MEETINGS,
+    ]
     expect(meetingConflict({ ...PLANNING, meetings }, deadline)).toEqual({
       warning:
         'The meeting set, November 25, 2026, is after this deadline: Completeness, November 12, 2026.',
@@ -99,5 +102,17 @@ describe('meeting choices against the deadline', () => {
     const unset = { ...PLANNING, acceptanceMeetingId: null, acceptanceDate: null }
     expect(meetingConflict(unset, deadline)).toBeNull()
     expect(meetingConflict(PLANNING, null)).toBeNull()
+  })
+
+  it('never offers a meeting the application was filed too late for', () => {
+    const meetings = MEETINGS.map((m) => (m.id === 'm12' ? { ...m, filedInTime: false } : m))
+    expect(meetingConflict({ ...PLANNING, meetings }, deadline)).toEqual({
+      warning:
+        'The meeting set, November 25, 2026, is after this deadline: Completeness, November 12, 2026. The application was filed too late for every meeting on or before it.',
+      target: null,
+    })
+    expect(meetingOptionText(meetings[0] as never, deadline)).toBe(
+      'November 12, 2026, regular meeting · filed too late for this meeting',
+    )
   })
 })

@@ -6,13 +6,22 @@ import { DecisionSection } from './boardDecisionSection'
 import { MeetingForm, VoteFormBody } from './boardForms'
 import { CostSection, DeterminationSection, ListSection } from './boardPanelSections'
 
-export function VoteForm({ data }: { data: BoardPanelData }) {
+function voteSummary(data: BoardPanelData, rejectOnly: boolean): string {
+  if (rejectOnly) return 'Record that the board did not accept it'
+  return data.board === 'planning_board' ? 'Record the completeness vote' : 'Open the hearing'
+}
+
+export function VoteForm({
+  data,
+  rejectOnly = false,
+}: {
+  data: BoardPanelData
+  rejectOnly?: boolean
+}) {
   return (
     <details>
-      <summary>
-        {data.board === 'planning_board' ? 'Record the completeness vote' : 'Open the hearing'}
-      </summary>
-      <VoteFormBody data={data} />
+      <summary>{voteSummary(data, rejectOnly)}</summary>
+      <VoteFormBody data={data} rejectOnly={rejectOnly} />
     </details>
   )
 }
@@ -47,7 +56,7 @@ function AcceptanceSection({
 }: { data: BoardPanelData; hearings: string[] } & Hosted & Reconciled) {
   const planning = data.board === 'planning_board'
   const open = data.canRecord && data.state === 'submitted'
-  const voteReady = data.acceptanceMeetingId !== null && !meetingIsAhead(data) && !voteBlocked
+  const voteReady = data.acceptanceMeetingId !== null && !meetingIsAhead(data)
   return (
     <section aria-label={planning ? 'Acceptance' : 'Hearing'}>
       <h3>{planning ? 'Filing and acceptance' : 'Hearing'}</h3>
@@ -60,7 +69,9 @@ function AcceptanceSection({
       {open && !hosted.has('set_board_meeting') ? (
         <MeetingForm data={data} deadline={deadline} />
       ) : null}
-      {open && voteReady && !hosted.has('record_board_vote') ? <VoteForm data={data} /> : null}
+      {open && voteReady && !hosted.has('record_board_vote') ? (
+        <VoteForm data={data} rejectOnly={voteBlocked} />
+      ) : null}
     </section>
   )
 }
