@@ -45,7 +45,7 @@ export const PLANNING_BOARD_RULES: PackRule[] = [
     length: {
       unit: 'days',
       value: 30,
-      earlierOfNextRegularMeeting: { board: 'planning_board', noticeRuleKey: 'nh.pb.notice.mail' },
+      earlierOfNextRegularMeeting: { boardKind: 'planning_board', noticeRuleKey: 'nh.pb.notice.mail' },
     },
     direction: 'after',
     consequence: {

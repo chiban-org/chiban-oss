@@ -9,13 +9,36 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
+import { BOARD_KINDS } from '../../../packs/nh/boardKinds'
 import { applications } from './projects'
+
+export const boards = pgTable(
+  'boards',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    kind: text('kind', { enum: BOARD_KINDS }).notNull(),
+    name: text('name').notNull(),
+    shortName: text('short_name').notNull(),
+    archivedAt: timestamp('archived_at', { withTimezone: true }),
+    createdBy: uuid('created_by'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex('boards_one_active_unique_kind_idx')
+      .on(t.kind)
+      .where(sql`${t.archivedAt} is null and ${t.kind} in ('planning_board', 'zba')`),
+  ],
+)
+
+export type BoardRow = typeof boards.$inferSelect
 
 export const boardMeetings = pgTable(
   'board_meetings',
   {
     id: uuid('id').primaryKey().defaultRandom(),
-    board: text('board', { enum: ['planning_board', 'zba'] }).notNull(),
+    boardId: uuid('board_id')
+      .notNull()
+      .references(() => boards.id),
     meetingDate: date('meeting_date', { mode: 'string' }).notNull(),
     kind: text('kind', { enum: ['regular', 'special'] }).notNull(),
     status: text('status', { enum: ['scheduled', 'cancelled'] })
@@ -29,7 +52,7 @@ export const boardMeetings = pgTable(
   },
   (t) => [
     uniqueIndex('board_meetings_scheduled_idx')
-      .on(t.board, t.meetingDate, t.kind)
+      .on(t.boardId, t.meetingDate, t.kind)
       .where(sql`${t.status} = 'scheduled'`),
   ],
 )

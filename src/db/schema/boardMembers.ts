@@ -1,11 +1,14 @@
 import { date, index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
+import { boards } from './boards'
 
 export const boardMemberships = pgTable(
   'board_memberships',
   {
     id: uuid('id').primaryKey().defaultRandom(),
     userId: uuid('user_id').notNull(),
-    board: text('board', { enum: ['planning_board', 'zba'] }).notNull(),
+    boardId: uuid('board_id')
+      .notNull()
+      .references(() => boards.id),
     title: text('title', {
       enum: ['chair', 'vice_chair', 'member', 'alternate', 'clerk'],
     }).notNull(),

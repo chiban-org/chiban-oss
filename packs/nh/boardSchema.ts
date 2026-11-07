@@ -1,9 +1,92 @@
 import { z } from 'zod'
+import { BOARD_KINDS } from './boardKinds'
 import { RecipientRoleSchema } from '@/features/abutters/roles'
 import { CORE_STATES } from '@/features/applications/states'
 
-export const BoardSchema = z.enum(['planning_board', 'zba'])
-export type Board = z.infer<typeof BoardSchema>
+export const BoardKindSchema = z.enum(BOARD_KINDS)
+export type BoardKind = z.infer<typeof BoardKindSchema>
+
+export interface BoardKindTraits {
+  label: string
+  defaultShortName: string
+  decidesApplications: boolean
+  holdsHearings: boolean
+  hasFilingLead: boolean
+  uniquePerTown: boolean
+  description: string
+}
+
+const ADVISORY = { decidesApplications: false, holdsHearings: false, hasFilingLead: false }
+
+export const BOARD_KIND_TRAITS: Record<BoardKind, BoardKindTraits> = {
+  planning_board: {
+    label: 'Planning Board',
+    defaultShortName: 'Planning Board',
+    decidesApplications: true,
+    holdsHearings: true,
+    hasFilingLead: true,
+    uniquePerTown: true,
+    description: 'Decides site plans, subdivisions and conditional uses under RSA 676:4.',
+  },
+  zba: {
+    label: 'Zoning Board of Adjustment',
+    defaultShortName: 'Zoning Board of Adjustment',
+    decidesApplications: true,
+    holdsHearings: true,
+    hasFilingLead: false,
+    uniquePerTown: true,
+    description: 'Decides variances, special exceptions and appeals of administrative decisions.',
+  },
+  historic_district_commission: {
+    label: 'Historic District Commission',
+    defaultShortName: 'Historic District Commission',
+    ...ADVISORY,
+    uniquePerTown: false,
+    description: 'Reviews changes inside a historic district. A town may have more than one.',
+  },
+  building_code_board_of_appeals: {
+    label: 'Building Code Board of Appeals',
+    defaultShortName: 'Building Code Board of Appeals',
+    ...ADVISORY,
+    uniquePerTown: false,
+    description: 'Hears appeals of building code decisions, separate from the ZBA.',
+  },
+  conservation_commission: {
+    label: 'Conservation Commission',
+    defaultShortName: 'Conservation Commission',
+    ...ADVISORY,
+    uniquePerTown: false,
+    description: 'Advises on wetlands, open space and conservation land.',
+  },
+  heritage_commission: {
+    label: 'Heritage Commission',
+    defaultShortName: 'Heritage Commission',
+    ...ADVISORY,
+    uniquePerTown: false,
+    description: 'Advises on historic buildings, landmarks and town heritage.',
+  },
+  agricultural_commission: {
+    label: 'Agricultural Commission',
+    defaultShortName: 'Agricultural Commission',
+    ...ADVISORY,
+    uniquePerTown: false,
+    description: 'Advises on farmland and agricultural use.',
+  },
+  housing_commission: {
+    label: 'Housing Commission',
+    defaultShortName: 'Housing Commission',
+    ...ADVISORY,
+    uniquePerTown: false,
+    description: 'Advises on housing needs and affordable housing.',
+  },
+  other: {
+    label: 'Other board or committee',
+    defaultShortName: 'Board',
+    ...ADVISORY,
+    uniquePerTown: false,
+    description: 'Any other town body that meets and keeps minutes.',
+  },
+}
 
 export const CLASSIFICATION_KEYS = [
   'nh.building_permit',
@@ -39,7 +122,7 @@ export const ProceedingClassificationSchema = z.object({
   key: z.enum(CLASSIFICATION_KEYS),
   label: z.string().min(1),
   mandatoryRuleKeys: z.array(z.string().min(1)),
-  board: BoardSchema.nullable(),
+  boardKind: BoardKindSchema.nullable(),
   abutters: AbuttersSpecSchema.nullable(),
   noticeRequirementKeys: z.array(z.string().min(1)),
   requiredSubsteps: z.array(z.object({ state: z.enum(CORE_STATES), key: z.string().min(1) })),

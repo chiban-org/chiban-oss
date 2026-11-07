@@ -9,7 +9,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { boardMeetings } from './boards'
+import { boardMeetings, boards } from './boards'
 import { documents, documentVersions } from './documents'
 import { citext, users } from './identity'
 import { renditionApprovals } from './renditionApprovals'
@@ -19,7 +19,9 @@ export const boardPackets = pgTable(
   {
     id: uuid('id').primaryKey().defaultRandom(),
     title: text('title').notNull(),
-    board: text('board', { enum: ['planning_board', 'zba'] }).notNull(),
+    boardId: uuid('board_id')
+      .notNull()
+      .references(() => boards.id),
     meetingDate: date('meeting_date', { mode: 'string' }).notNull(),
     meetingId: uuid('meeting_id').references(() => boardMeetings.id),
     createdBy: uuid('created_by').notNull(),
