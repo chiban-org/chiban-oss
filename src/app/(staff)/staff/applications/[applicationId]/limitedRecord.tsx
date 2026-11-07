@@ -7,27 +7,8 @@ import { StatusChip } from '@/components/StatusChip'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
 import type { LimitedApplicationView } from '@/features/applications/limitedApplicationView'
 import { applicationStatusText } from '@/features/applications/statusText'
-import { reviewStatusLabel } from '@/features/reviews/statusLabels'
 import { formatCivilDate } from '@/lib/formatDate'
-
-function ReviewCard({ view }: { view: LimitedApplicationView }) {
-  if (view.assignments.length === 0) return null
-  return (
-    <section aria-label="Your review" id="your-review" data-plain className="rail-card">
-      <h2 className="font-sans text-sm font-semibold text-muted-foreground">Your review</h2>
-      <ul className="m-0 flex list-none flex-col gap-2 p-0">
-        {view.assignments.map((a) => (
-          <li key={a.assignmentId} className="flex flex-col gap-1">
-            <Link href={`/staff/reviews/${a.assignmentId}`} className="font-semibold">
-              Open your review
-            </Link>
-            <span className="text-sm text-muted-foreground">{reviewStatusLabel(a.status)}</span>
-          </li>
-        ))}
-      </ul>
-    </section>
-  )
-}
+import { ProjectSummary, ReviewCard, reviewSentence } from './limitedReview'
 
 function LimitedRail({ view }: { view: LimitedApplicationView }) {
   return (
@@ -71,9 +52,9 @@ function HearingSection({ view }: { view: LimitedApplicationView }) {
 
 function DocumentSection({ view }: { view: LimitedApplicationView }) {
   return (
-    <section aria-label="Documents" id="documents">
-      <h2>Documents</h2>
-      {view.documents.length === 0 ? <p>No documents are shared with you.</p> : null}
+    <section aria-label="Plan documents" id="plan-documents">
+      <h2>Plan documents</h2>
+      {view.documents.length === 0 ? <p>No plan documents are shared with you.</p> : null}
       <ul className="list-none p-0">
         {view.documents.map((d) => (
           <li key={d.documentId} className="record-item flex flex-wrap items-baseline gap-3">
@@ -92,7 +73,9 @@ function DocumentSection({ view }: { view: LimitedApplicationView }) {
 
 export function LimitedRecord({ view }: { view: LimitedApplicationView }) {
   const why = view.assignments.length > 0 ? 'your review' : 'your board work'
+  const sentence = reviewSentence(view)
   const sections = splitPanels([
+    { empty: view.summary.length === 0, node: <ProjectSummary key="summary" view={view} /> },
     { empty: false, node: <HearingSection key="hearings" view={view} /> },
     { empty: view.documents.length === 0, node: <DocumentSection key="documents" view={view} /> },
   ])
@@ -108,6 +91,13 @@ export function LimitedRecord({ view }: { view: LimitedApplicationView }) {
           />
         }
         lead={view.projectTitle}
+        summary={
+          sentence === null ? undefined : (
+            <p data-slot="status-sentence" className="max-w-[75ch]">
+              {sentence}
+            </p>
+          )
+        }
       />
       <RecordLayout rail={<LimitedRail view={view} />} empty={sections.empty}>
         <p className="text-muted-foreground">{`This page shows the parts of the record ${why} needs.`}</p>

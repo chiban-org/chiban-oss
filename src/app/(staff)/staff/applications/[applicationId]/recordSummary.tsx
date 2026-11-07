@@ -30,6 +30,25 @@ function stageInput(view: StaffApplicationView, board: boolean): StageInput {
   }
 }
 
+export function StageSummary({
+  view,
+  sentence,
+  board,
+}: {
+  view: StaffApplicationView
+  sentence: string
+  board: boolean
+}) {
+  return (
+    <div className="flex flex-col gap-3">
+      <p data-slot="status-sentence" className="max-w-[75ch]">
+        {sentence}
+      </p>
+      <StageStrip stages={stagesFor(stageInput(view, board))} />
+    </div>
+  )
+}
+
 export function RecordSummary({
   view,
   plan,
@@ -39,12 +58,5 @@ export function RecordSummary({
   plan: WorkPlan
   board: boolean
 }) {
-  return (
-    <div className="flex flex-col gap-3">
-      <p data-slot="status-sentence" className="max-w-[75ch]">
-        {plan.sentence}
-      </p>
-      <StageStrip stages={stagesFor(stageInput(view, board))} />
-    </div>
-  )
+  return <StageSummary view={view} sentence={plan.sentence} board={board} />
 }

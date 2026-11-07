@@ -13,7 +13,7 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { checkCorrectionAction, correctPermitAction } from './correctionActions'
 import { MoreActions } from './nextStepCard'
 
-function PrintLinks({ applicationId }: { applicationId: string }) {
+export function PrintLinks({ applicationId }: { applicationId: string }) {
   return (
     <p className="flex flex-col gap-1">
       <Link {...NEW_TAB} href={`/staff/applications/${applicationId}/permit.pdf`}>
@@ -81,7 +81,7 @@ function deadlineFacts(view: StaffApplicationView): Fact[] {
   return [{ label: 'Due next', value }]
 }
 
-function Deadlines({ view }: { view: StaffApplicationView }) {
+export function Deadlines({ view }: { view: StaffApplicationView }) {
   const facts = deadlineFacts(view)
   if (facts.length === 0) return null
   return (

@@ -25,6 +25,8 @@ import { requireStaffContext, type StaffContext } from '@/server/requireStaff'
 import { ApplicationFacts, ApplicationRail, StatusStrip } from './applicationRail'
 import { DoThisNow } from './doThisNow'
 import { loadInspectionsPanelData } from './inspectionsPanel'
+import { loadInspectorWork, seesInspectorView } from './inspectorData'
+import { InspectorRecord } from './inspectorRecord'
 import { LimitedRecord } from './limitedRecord'
 import { loadNotesData } from './notesData'
 import { applicationPanels } from './panelSet'
@@ -112,6 +114,10 @@ export default async function StaffApplicationPage({ params }: Props) {
   if (!hasFullRecordAccess(ctx.actor)) return await limitedPage(ctx, applicationId)
   const loaded = await loadAll(ctx, applicationId)
   if (loaded === null) notFound()
+  if (await seesInspectorView(ctx, loaded)) {
+    const work = await loadInspectorWork(ctx, loaded.inspections)
+    return <InspectorRecord input={loaded} work={work} viewerId={ctx.actor.userId} />
+  }
   const { view, balanceNotices, legacyNumber, correction } = loaded
   const plan = planWork(view, loaded.board, {
     reviewers: loaded.records.reviewers.length,

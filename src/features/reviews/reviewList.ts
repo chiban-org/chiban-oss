@@ -75,7 +75,7 @@ function tabClause(tab: ReviewTab): SQL {
   }
 }
 
-const COMMENT_DUE = sql<string | null>`(select min(t.comment_due) from trc_routings t
+export const COMMENT_DUE = sql<string | null>`(select min(t.comment_due) from trc_routings t
   where t.assignment_id = ${reviewAssignments.id})`
 
 const STATUS_ORDER = sql`array_position(array['pending', 'commented', 'signed_off']::text[], ${reviewAssignments.status})`

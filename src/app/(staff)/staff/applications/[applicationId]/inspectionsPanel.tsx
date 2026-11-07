@@ -131,7 +131,7 @@ function RowActions({
   )
 }
 
-function InspectionRow({
+export function InspectionRow({
   row,
   data,
   number,
