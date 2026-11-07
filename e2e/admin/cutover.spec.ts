@@ -115,8 +115,10 @@ test.describe('cutover import and comparison', () => {
       await db.rows('select 1 from cutover_rows where legacy_number = $1', [legacy]),
     ).toHaveLength(0)
 
+    const importFile = page.getByRole('button', { name: 'Import the file' })
+    await expect(importFile).toBeEnabled()
     await page.locator('#cutover-file').setInputFiles(file)
-    await page.getByRole('button', { name: 'Import the file' }).click()
+    await importFile.click()
     await expectConfirmation(page, 'Imported: 1 imported, 0 already imported, 0 with errors.')
     expect(
       await db.rows('select 1 from cutover_rows where legacy_number = $1', [legacy]),
