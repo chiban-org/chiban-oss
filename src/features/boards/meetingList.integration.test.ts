@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { listMeetingTable } from '@/features/boards/meetingList'
 import { readMeetingListView } from '@/features/boards/meetingListParams'
 import { activeBoards } from '@/features/boards/townBoards'
-import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
+import { type BoardWorld, scheduleMeetings, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba } from '@/test/hearingFixtures'
 import { makeTestStore } from '@/test/objectStore'
@@ -33,5 +33,30 @@ describe('the meeting table', () => {
     )
     const row = page?.rows.find((r) => r.id === made.meetingId)
     expect(row?.hearings).toBe(1)
+  })
+
+  it('sorts the Board column by board name, not by id', async () => {
+    await scheduleMeetings(handle.db, world.staff, 'zba', ['2027-02-02'])
+    const boardIds = (await activeBoards(handle.db)).map((b) => b.id)
+    const names = new Map((await activeBoards(handle.db)).map((b) => [b.id, b.name]))
+    const sort = { key: 'board', dir: 'asc' } as const
+    const page = await listMeetingTable(
+      handle.db,
+      world.staff,
+      {
+        ...readMeetingListView({}, boardIds),
+        boardIds,
+        sort,
+        today: '2027-01-04',
+        limit: 50,
+        offset: 0,
+      },
+      signal,
+    )
+    const ordered = (page?.rows ?? []).map((r) => names.get(r.boardId) ?? '')
+    expect(ordered).toEqual(
+      [...ordered].sort((a, b) => a.toLowerCase().localeCompare(b.toLowerCase())),
+    )
+    expect(new Set(ordered).size).toBe(2)
   })
 })

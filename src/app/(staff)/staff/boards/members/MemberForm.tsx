@@ -18,6 +18,12 @@ interface MemberFieldsProps {
   boards: readonly BoardOption[]
 }
 
+function withCurrentBoard(boards: readonly BoardOption[], row: MemberRow): readonly BoardOption[] {
+  return boards.some(([id]) => id === row.boardId)
+    ? boards
+    : [[row.boardId, row.boardName], ...boards]
+}
+
 function MemberFields({ current, today, boards }: MemberFieldsProps) {
   return (
     <>
@@ -86,7 +92,7 @@ export function EditMember({
     >
       <ActionForm action={updateMemberAction} submitLabel="Save changes" className="max-w-md">
         <input type="hidden" name="membershipId" value={row.membershipId} />
-        <MemberFields current={row} today={today} boards={boards} />
+        <MemberFields current={row} today={today} boards={withCurrentBoard(boards, row)} />
       </ActionForm>
     </RowEditDialog>
   )

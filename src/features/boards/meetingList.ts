@@ -47,7 +47,7 @@ const AGENDA = sql<AgendaState>`coalesce((select a.status from agendas a where a
 
 const SORT_COLUMNS = {
   date: m.meetingDate,
-  board: m.boardId,
+  board: sql`lower((select b.name from boards b where b.id = ${m.boardId}))`,
   kind: m.kind,
   location: sql`lower(${m.location})`,
   hearings: HEARINGS,
