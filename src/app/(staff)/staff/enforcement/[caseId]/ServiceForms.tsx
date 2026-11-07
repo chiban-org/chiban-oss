@@ -125,12 +125,23 @@ export function RecordServiceForm({
 }
 
 function AnswerForm({ order, detail }: Omit<OrderFormProps, 'variant'>) {
-  const answerDocs: [string, string][] = detail.documents.map((d) => [d.documentId, d.title])
+  const answerDocs: [string, string][] = [
+    ['', 'Choose an uploaded document'],
+    ...detail.documents.map((d) => [d.documentId, d.title] as [string, string]),
+  ]
   const answerRecipients: [string, string][] = order.service.recipients.map((r) => [r.id, r.name])
   if (answerRecipients.length === 0) return null
   return (
     <details>
       <summary className="cursor-pointer font-medium">Record an answer</summary>
+      <details>
+        <summary>Upload the answer</summary>
+        <CaseFileUpload
+          caseId={detail.staff.row.id}
+          kind="enforcement_letter"
+          label="Letter or other case document"
+        />
+      </details>
       <ActionForm action={answerAction} submitLabel="Record answer">
         <SelectField label="Who answered" name="recipientId" options={answerRecipients} />
         <TextField
@@ -140,7 +151,7 @@ function AnswerForm({ order, detail }: Omit<OrderFormProps, 'variant'>) {
           defaultValue={detail.today}
           required
         />
-        <SelectField label="The answer document" name="documentId" options={answerDocs} />
+        <NewestChoiceSelect label="The answer document" name="documentId" options={answerDocs} />
       </ActionForm>
     </details>
   )

@@ -49,18 +49,16 @@ function RoleState({ rule, role, status, state }: RoleProps) {
   const check = state.checks.find((c) => c.role === role)
   const listed = state.recipients.some((r) => r.role === role)
   const gap = status.missing.find((m) => m.role === role)
-  if (gap?.reason === 'no_check') {
-    return (
-      <p>
-        <Missing>Not yet checked</Missing>
-      </p>
-    )
-  }
   if (check === undefined && !listed && coveredByOwner(rule, role)) {
     return <p>Covered by service on the owner of record.</p>
   }
   return (
     <>
+      {gap?.reason === 'no_check' ? (
+        <p>
+          <Missing>Not yet checked</Missing>
+        </p>
+      ) : null}
       {check === undefined ? null : <p>{ROLE_CHECK_LABELS[check.outcome]}</p>}
       <Listed role={role} status={status} state={state} />
       {role === 'record_owner' && status.fallbackCompletedOn !== null && !listed ? (

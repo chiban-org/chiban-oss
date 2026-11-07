@@ -261,3 +261,33 @@ describe('the case page panels, strip and views', () => {
     expect(text).not.toContain('Record a court-imposed fine')
   })
 })
+
+describe('the field view on a draft order', () => {
+  it('lets the inspector complete the draft the step asks to complete before issuing it', async () => {
+    await actAs('staff')
+    const caseId = byNumber('EC-2026-0006')
+    const [finding] = await handle.db
+      .select()
+      .from(violationFindings)
+      .where(eq(violationFindings.caseId, caseId))
+      .limit(1)
+    if (finding === undefined) throw new Error('no finding')
+    const drafted = await draftOrder(
+      handle.db,
+      state.actor as Actor,
+      {
+        caseId,
+        findingIds: [finding.id],
+        correctiveAction: '',
+        correctiveDeadline: null,
+        ceaseImmediately: false,
+      },
+      signal,
+    )
+    if (!drafted.ok) throw new Error(drafted.error)
+    await actAs('inspector')
+    const page = await pageFor(caseId)
+    expect(visibleText(cardOf(page))).toContain('Write the corrective action in the draft')
+    expect(visibleText(page)).toContain('Save the draft')
+  })
+})

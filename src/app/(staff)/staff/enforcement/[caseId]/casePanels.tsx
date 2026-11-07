@@ -80,6 +80,12 @@ export function casePanels({ detail, can, hosted }: PanelInput): CasePanel[] {
   ]
 }
 
+const NO_NEW_DRAFT: ReadonlySet<string> = new Set(['draft_order'])
+
+function hasDraft(detail: CaseDetail): boolean {
+  return detail.orders.some((o) => o.row.status === 'draft')
+}
+
 export function readOnlyPanels(
   detail: CaseDetail,
   can: Can,
@@ -96,7 +102,13 @@ export function readOnlyPanels(
       return {
         ...panel,
         node: (
-          <OrdersSection key="orders" detail={detail} can={READ_ONLY} withService={withService} />
+          <OrdersSection
+            key="orders"
+            detail={detail}
+            can={{ ...READ_ONLY, manage: can.manage && hasDraft(detail) }}
+            hosted={NO_NEW_DRAFT}
+            withService={withService}
+          />
         ),
       }
     }

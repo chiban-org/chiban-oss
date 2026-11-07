@@ -31,9 +31,9 @@ export function ServiceMethodFields({ defaultMethod }: { defaultMethod: ServiceM
         }}
       />
       {method === PUBLICATION ? (
-        <TextField label="Newspaper" name="newspaper" />
+        <TextField key="newspaper" label="Newspaper" name="newspaper" />
       ) : (
-        <TextField label="Served by (name)" name="serverName" />
+        <TextField key="serverName" label="Served by (name)" name="serverName" />
       )}
       {BY_A_SERVER.includes(method) ? (
         <SelectField label="Server is a" name="serverRole" options={SERVERS} />

@@ -1,7 +1,7 @@
 import type { SubjectDue } from '@/features/clocks/subjectDue'
-import { formatCivilDate, humanizeIsoDates } from '@/lib/formatDate'
+import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
-import { consequenceText, DueRule, dueDateText, dueStatusText, startLabelOf } from './DueLine'
+import { consequenceText, DueRule, dueDateText, dueStatusText } from './DueLine'
 
 export interface AnswerDue {
   recipientId: string
@@ -33,7 +33,9 @@ export function AnswerPeriods({ dues, today }: { dues: readonly AnswerDue[]; tod
   return (
     <div className="space-y-1">
       <DueRule due={first.due} />
-      <p>{`Starts: ${startLabelOf(first.due)}, for each recipient. ${humanizeIsoDates(first.due.countingMethod)}`}</p>
+      <p>
+        {first.due.countingMethod.replace(first.due.startDate, 'the day the recipient is served')}
+      </p>
       {open === undefined ? null : <p>{consequenceText(open.due, today)}</p>}
       <ul className="list-none p-0">
         {dues.map((a) => (

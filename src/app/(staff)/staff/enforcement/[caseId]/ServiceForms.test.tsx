@@ -103,6 +103,23 @@ describe('the service form fields', () => {
     expect(screen.queryByLabelText(labelled('Served by (name)'))).not.toBeNull()
   })
 
+  it('starts the newspaper empty after a server name was typed', () => {
+    renderForm(<ServiceForms order={order} detail={detail} />)
+    openSection('Record service')
+    fillField(labelled('Served by (name)'), 'Deputy Marsh')
+    fireEvent.change(screen.getByLabelText(labelled('Method')), {
+      target: { value: 'newspaper_publication' },
+    })
+    expect(screen.getByLabelText<HTMLInputElement>(labelled('Newspaper')).value).toBe('')
+  })
+
+  it('offers the answer document upload inside the answer form', () => {
+    renderForm(<ServiceForms order={order} detail={detail} />)
+    const answer = screen.getByText('Record an answer', { selector: 'summary' }).closest('details')
+    expect(answer?.textContent).toContain('Upload the answer')
+    expect(answer?.textContent).toContain('Uploader for Letter or other case document')
+  })
+
   it('offers the proof upload inside the service form instead of sending the officer to Documents', () => {
     renderForm(<ServiceForms order={order} detail={detail} />)
     const service = screen.getByText('Record service', { selector: 'summary' }).closest('details')
@@ -114,7 +131,7 @@ describe('the service form fields', () => {
 
 describe('recording an answer', () => {
   it('shows a refused document beside the answer document field', async () => {
-    const message = 'Choose the answer document. Upload it in the Documents section first.'
+    const message = 'Choose the answer document. Upload it above the form if it is not listed.'
     vi.mocked(answerAction).mockResolvedValue(refusal('documentId', message))
     renderForm(<ServiceForms order={order} detail={detail} />)
     openSection('Record an answer')

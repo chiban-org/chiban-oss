@@ -332,7 +332,7 @@ function answerRefusal(variant: InvalidVariant) {
     default:
       return refuseField(
         'documentId',
-        'Choose the answer document. Upload it in the Documents section first.',
+        'Choose the answer document. Upload it above the form if it is not listed.',
       )
   }
 }

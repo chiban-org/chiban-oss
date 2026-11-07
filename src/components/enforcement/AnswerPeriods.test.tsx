@@ -40,6 +40,17 @@ describe('the answer periods of an order', () => {
     ])
   })
 
+  it("words the shared counting rule without any one recipient's service date", () => {
+    const { container } = render(<AnswerPeriods dues={dues} today={d('2027-03-10')} />)
+    const shared = container.querySelector('ul')?.previousElementSibling?.previousElementSibling
+    expect(shared?.textContent).toMatch(/^20 calendar days after the day the recipient is served\./)
+    const header = Array.from(container.children[0]?.children ?? [])
+      .filter((el) => el.tagName !== 'UL')
+      .map((el) => el.textContent)
+      .join(' ')
+    expect(header).not.toMatch(/March \d/)
+  })
+
   it('says no answer period is running before anyone is served', () => {
     const { container } = render(<AnswerPeriods dues={[]} today={d('2027-03-10')} />)
     expect(container.textContent).toBe(

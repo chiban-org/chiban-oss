@@ -52,7 +52,7 @@ export const answerForm = (today: CivilDate) =>
     recipientId: requiredRecordId('Choose who answered.'),
     answeredOn: civilDate('the date the answer was received', { latest: today }),
     documentId: requiredRecordId(
-      'Choose the answer document. Upload it in the Documents section first.',
+      'Choose the answer document. Upload it above the form if it is not listed.',
     ),
   })
 

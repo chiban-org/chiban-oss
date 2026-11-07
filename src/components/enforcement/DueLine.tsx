@@ -18,7 +18,7 @@ export function consequenceText(due: SubjectDue, today: CivilDate): string {
     : `If the date passes: ${due.consequence}`
 }
 
-export function startLabelOf(due: SubjectDue): string {
+function startLabelOf(due: SubjectDue): string {
   return START_EVENT_LABELS[due.startEvent] ?? due.startEvent
 }
 

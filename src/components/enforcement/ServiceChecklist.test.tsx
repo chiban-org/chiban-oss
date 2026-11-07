@@ -154,4 +154,20 @@ describe('ServiceChecklist', () => {
     )
     expect(container.textContent).toContain('Service is complete.')
   })
+
+  it('keeps a listed recipient in view while the check for that role is still missing', () => {
+    const unchecked: ServiceState = {
+      ...state,
+      checks: state.checks.filter((c) => c.role !== 'occupying_tenant'),
+    }
+    const { container } = render(
+      <ServiceChecklist rule={rule} status={serviceStatus(rule, unchecked)} state={unchecked} />,
+    )
+    const tenant = Array.from(container.querySelectorAll(':scope > div > ul > li')).find((li) =>
+      li.textContent.startsWith('Occupying tenant'),
+    )
+    expect(tenant?.textContent).toContain('Not yet checked')
+    expect(tenant?.textContent).toContain('Robin Renter, 14 Birch Lane. Source: CAMA owner.')
+    expect(tenant?.textContent).toContain('Not served')
+  })
 })
