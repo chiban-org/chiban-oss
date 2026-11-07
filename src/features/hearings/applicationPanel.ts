@@ -82,7 +82,7 @@ export async function loadApplicationHearingsPanel(
         id: m.id,
         date: m.meetingDate,
         text: formatCivilDate(m.meetingDate),
-        ...eligible(m.meetingDate),
+        ...eligible(m),
       })),
     scheduleKinds: kinds,
     hearings: held.map(({ hearing, meeting }) => ({

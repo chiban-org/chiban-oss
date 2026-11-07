@@ -244,7 +244,7 @@ export async function loadBoardPanel(
     meetings: meetings.map((m) => ({
       id: m.id,
       date: m.meetingDate,
-      ...eligible(m.meetingDate),
+      ...eligible(m),
       text: `${formatCivilDate(m.meetingDate)}, ${m.kind === 'special' ? 'special' : 'regular'} meeting`,
     })),
     today,

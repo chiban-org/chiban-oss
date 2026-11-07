@@ -1,10 +1,14 @@
+import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { hearings } from '@/db/schema'
 import { setAcceptanceMeeting } from '@/features/boards/acceptance'
 import { recordDesDetermination } from '@/features/boards/des500'
 import { scheduleMeeting } from '@/features/boards/meetings'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
+import { scheduleHearing } from '@/features/hearings/hearings'
+import { townToday } from '@/features/town/today'
 import {
   type BoardWorld,
   publishRegionalContacts,
@@ -13,7 +17,7 @@ import {
 } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { issueFixtureList } from '@/test/listFixtures'
-import type { CivilDate } from '@/types/civilDate'
+import { addDays, type CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -96,6 +100,52 @@ describe('meetings the application was filed too late for', () => {
       signal,
     )
     expect(refused.ok ? null : refused.error).toMatchObject({ filedTooLate: {} })
+  })
+})
+
+describe('meetings too soon to mail notice for', () => {
+  it('marks a near meeting too soon unless its hearing is already properly noticed', async () => {
+    const today = await townToday(handle.db, new Date(), signal)
+    const meetingOn = async (days: number) => {
+      const made = await scheduleMeeting(
+        handle.db,
+        world.staff,
+        { board: 'planning_board', meetingDate: addDays(today, days), kind: 'special' },
+        signal,
+      )
+      return made.ok ? made.value.meetingId : ''
+    }
+    const noticed = await meetingOn(3)
+    await meetingOn(5)
+    const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, addDays(today, -40))
+    await recordBoardRegionalImpact(
+      handle.db,
+      world.staff,
+      { applicationId: id, determination: 'no', municipalityKeys: [] },
+      signal,
+    )
+    await recordDesDetermination(
+      handle.db,
+      world.staff,
+      { applicationId: id, determination: 'not_applicable', reason: 'No water body anywhere near' },
+      signal,
+    )
+    await issueFixtureList(handle.db, world, id, addDays(today, -40))
+    const scheduled = await scheduleHearing(
+      handle.db,
+      world.staff,
+      { applicationId: id, meetingId: noticed, kind: 'submission_and_hearing' },
+      signal,
+    )
+    expect(scheduled.ok ? 'ok' : JSON.stringify(scheduled.error)).toBe('ok')
+    await handle.db
+      .update(hearings)
+      .set({ properlyNoticedAt: new Date() })
+      .where(eq(hearings.applicationId, id))
+    const panel = await loadBoardPanel(handle.db, world.staff, id, signal)
+    const byDate = new Map(panel?.meetings.map((m) => [m.date, m.noticeable]))
+    expect(byDate.get(addDays(today, 3))).toBe(true)
+    expect(byDate.get(addDays(today, 5))).toBe(false)
   })
 })
 
