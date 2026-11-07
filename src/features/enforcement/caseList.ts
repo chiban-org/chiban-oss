@@ -29,6 +29,7 @@ export interface CaseListRow {
   locationText: string
   openedOn: CivilDate
   nextDueOn: CivilDate | null
+  nextDueKind: 'answer' | 'corrective' | null
   assignedToName: string | null
 }
 
@@ -50,18 +51,37 @@ type ListGroup = 'statuses' | 'due' | 'assigned'
 
 const ANSWER_DATE = sql`(r.answer_due->>'due')::date`
 
-function nextAnswerDue(): SQL {
+const LIVE_ORDER_STATUSES = ['issued', 'served', 'answered']
+
+function liveOrder(today: CivilDate): SQL {
+  return sql`${enforcementCases.status} = 'order_issued'
+    and o.status in ${LIVE_ORDER_STATUSES}
+    and not ${stayedOn(today)}`
+}
+
+function nextAnswerDue(today: CivilDate): SQL {
   return sql`(select min(${ANSWER_DATE}) from order_service_recipients r
     join enforcement_orders o on o.id = r.order_id
     where o.case_id = ${enforcementCases.id} and r.answer_due is not null
-      and r.answered_on is null)`
+      and r.answered_on is null and ${liveOrder(today)})`
+}
+
+function nextCorrectiveDeadline(today: CivilDate): SQL {
+  return sql`(select min(o.corrective_deadline) from enforcement_orders o
+    where o.case_id = ${enforcementCases.id} and o.corrective_deadline >= ${today}::date
+      and ${liveOrder(today)})`
+}
+
+function nextDate(today: CivilDate): SQL {
+  return sql`least(${nextAnswerDue(today)}, ${nextCorrectiveDeadline(today)})`
 }
 
 function unansweredPastDue(today: CivilDate): SQL {
   return sql`exists (select 1 from order_service_recipients r
     join enforcement_orders o on o.id = r.order_id
     where o.case_id = ${enforcementCases.id} and r.answer_due is not null
-      and r.answered_on is null and ${ANSWER_DATE} < ${today}::date)`
+      and r.answered_on is null and ${ANSWER_DATE} < ${today}::date
+      and ${liveOrder(today)})`
 }
 
 function stayedOn(today: CivilDate): SQL {
@@ -74,6 +94,17 @@ function stayedOn(today: CivilDate): SQL {
         or exists (select 1 from restraining_orders ro
           where ro.appeal_id = a.id and ro.issued_on <= ${today}::date
             and (ro.dissolved_on is null or ro.dissolved_on > ${today}::date))))`
+}
+
+function nextDateOf(
+  answer: CivilDate | null,
+  corrective: CivilDate | null,
+): Pick<CaseListRow, 'nextDueOn' | 'nextDueKind'> {
+  if (answer !== null && (corrective === null || answer <= corrective)) {
+    return { nextDueOn: answer, nextDueKind: 'answer' }
+  }
+  if (corrective !== null) return { nextDueOn: corrective, nextDueKind: 'corrective' }
+  return { nextDueOn: null, nextDueKind: null }
 }
 
 const ASSIGNEE_NAME = sql<string | null>`(select u.display_name from users u
@@ -90,7 +121,7 @@ function sortColumns(today: CivilDate): Readonly<Record<CaseSortKey, SQLWrapper>
     where: enforcementCases.locationText,
     status: STATUS_ORDER,
     opened: enforcementCases.openedOn,
-    next: nextAnswerDue(),
+    next: nextDate(today),
     stay: stayedOn(today),
     assigned: ASSIGNEE_NAME,
   }
@@ -103,9 +134,9 @@ function dueClause(value: DueFilter, today: CivilDate): SQL {
     case 'overdue':
       return unansweredPastDue(today)
     case 'week':
-      return sql`(${nextAnswerDue()} between ${today}::date and ${addDays(today, DUE_WEEK_DAYS)}::date)`
+      return sql`(${nextDate(today)} between ${today}::date and ${addDays(today, DUE_WEEK_DAYS)}::date)`
     case 'none':
-      return sql`${nextAnswerDue()} is null`
+      return sql`${nextDate(today)} is null`
   }
 }
 
@@ -161,7 +192,8 @@ export async function listCasePage(
       status: enforcementCases.status,
       locationText: enforcementCases.locationText,
       openedOn: enforcementCases.openedOn,
-      nextDueOn: sql<string | null>`${nextAnswerDue()}::text`,
+      nextAnswerOn: sql<string | null>`${nextAnswerDue(today)}::text`,
+      nextCorrectiveOn: sql<string | null>`${nextCorrectiveDeadline(today)}::text`,
       assignedToName: ASSIGNEE_NAME,
     })
     .from(enforcementCases)
@@ -170,12 +202,12 @@ export async function listCasePage(
     .limit(input.limit + 1)
     .offset(input.offset)
   return {
-    rows: rows.slice(0, input.limit).map(({ status, ...row }) => ({
+    rows: rows.slice(0, input.limit).map(({ status, nextAnswerOn, nextCorrectiveOn, ...row }) => ({
       ...row,
       statusLabel: CASE_STATUS_LABELS[status],
       statusChip: caseChipStatus(status),
       openedOn: row.openedOn as CivilDate,
-      nextDueOn: row.nextDueOn as CivilDate | null,
+      ...nextDateOf(nextAnswerOn as CivilDate | null, nextCorrectiveOn as CivilDate | null),
     })),
     total: count?.n ?? 0,
     offset: input.offset,

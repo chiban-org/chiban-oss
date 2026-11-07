@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, screen } from '@testing-library/react'
-import { afterEach, describe, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { expectRefusalBeside, refusal } from '@/test/besideField'
 import { fillField, labelled, renderForm } from '@/test/enforcementRender'
 
@@ -66,5 +66,15 @@ describe('entering a complaint', () => {
       screen.getByLabelText(labelled('What was reported?')),
       'Enter what was reported of 5000 characters or fewer.',
     )
+  })
+})
+
+describe('the complaint dialog', () => {
+  it('asks for the complainant name, phone and email', () => {
+    renderForm(<NewCaseForms />)
+    fireEvent.click(screen.getByRole('button', { name: 'Enter a complaint' }))
+    for (const label of ['Complainant name', 'Complainant phone', 'Complainant email']) {
+      expect(screen.getByLabelText(labelled(label))).toBeTruthy()
+    }
   })
 })

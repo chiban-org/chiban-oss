@@ -88,14 +88,25 @@ test.describe('opening a case', () => {
       })
       await dialog.getByLabel('Where is the property?').fill(`3 Barn Lane ${suffix}`)
       await dialog.getByLabel('What was reported?').fill(description)
+      await dialog.getByLabel('Complainant name').fill('Pat Neighbor')
+      await dialog.getByLabel('Complainant phone').fill('603-555-0142')
       await dialog.getByRole('button', { name: 'Record complaint' }).click()
-      await expectConfirmation(page, 'Complaint recorded.')
-      const row = await db.one<{ channel: string; case_id: string | null }>(
-        'select channel, case_id from complaints where description_original = $1',
+      await page.waitForURL(/\/staff\/enforcement\/[0-9a-f-]{36}$/)
+      const row = await db.one<{
+        channel: string
+        case_id: string
+        complainant_name: string
+        complainant_phone: string
+      }>(
+        'select channel, case_id, complainant_name, complainant_phone from complaints where description_original = $1',
         [description],
       )
       expect(row.channel).toBe('staff_entry')
-      expect(row.case_id).not.toBeNull()
+      expect(row).toMatchObject({
+        complainant_name: 'Pat Neighbor',
+        complainant_phone: '603-555-0142',
+      })
+      expect(page.url()).toContain(row.case_id)
     })
 
     test('refuses a complaint with no description beside the field', async ({ page, suffix }) => {

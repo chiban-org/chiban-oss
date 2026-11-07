@@ -1,10 +1,11 @@
-import { ENFORCEMENT_STATUSES, type EnforcementStatus } from '@/db/schema'
+import type { EnforcementStatus } from '@/db/schema'
 import {
+  firstParam,
   type RawSearchParams,
   readTableParams,
   type TableParams,
 } from '@/features/dataTable/params'
-import { filterValues, singleValue, whenAny } from '@/features/dataTable/quickFilters'
+import { singleValue, whenAny } from '@/features/dataTable/quickFilters'
 import { parseSort, type SortConfig, type SortState } from '@/features/dataTable/sort'
 import {
   ASSIGNED_FILTERS,
@@ -30,7 +31,35 @@ export const CASE_SORT: SortConfig<CaseSortKey> = {
   },
 }
 
-export const CASE_FILTER_PARAMS = ['status', 'due', 'assigned'] as const
+export const CASE_STAGE_PARAM = 'stage'
+
+export const CASE_STAGES = ['open', 'order', 'court', 'closed', 'all'] as const
+export type CaseStage = (typeof CASE_STAGES)[number]
+
+export const DEFAULT_CASE_STAGE: CaseStage = 'open'
+
+export const CASE_STAGE_LABELS: ReadonlyMap<CaseStage, string> = new Map([
+  ['open', 'Open'],
+  ['order', 'Order issued'],
+  ['court', 'In court'],
+  ['closed', 'Closed'],
+  ['all', 'All'],
+])
+
+export const CASE_STAGE_STATUSES: Readonly<Record<CaseStage, readonly EnforcementStatus[]>> = {
+  open: ['intake', 'investigating', 'violation_found', 'order_issued', 'in_court'],
+  order: ['order_issued'],
+  court: ['in_court'],
+  closed: ['no_violation', 'resolved', 'closed'],
+  all: [],
+}
+
+export function readCaseStage(params: TableParams): CaseStage {
+  const given = firstParam(params, CASE_STAGE_PARAM)
+  return CASE_STAGES.find((stage) => stage === given) ?? DEFAULT_CASE_STAGE
+}
+
+export const CASE_FILTER_PARAMS = ['due', 'assigned'] as const
 
 export interface CaseListFilters {
   statuses?: EnforcementStatus[]
@@ -50,7 +79,7 @@ export function readCasesView(raw: RawSearchParams): CasesView {
     params,
     sort: parseSort(CASE_SORT, params),
     filters: {
-      ...whenAny('statuses', filterValues(params, 'status', ENFORCEMENT_STATUSES)),
+      ...whenAny('statuses', [...CASE_STAGE_STATUSES[readCaseStage(params)]]),
       ...whenAny('due', singleValue(params, 'due', DUE_FILTERS)),
       ...whenAny('assigned', singleValue(params, 'assigned', ASSIGNED_FILTERS)),
     },

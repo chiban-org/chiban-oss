@@ -69,7 +69,8 @@ export async function setCaseParcelAction(formData: FormData): Promise<ActionRes
 }
 
 export async function staffComplaintAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffForm(
+  const outcome: { caseId?: string } = {}
+  const result = await runStaffForm(
     formData,
     STAFF_COMPLAINT_FORM,
     async ({ db, actor, signal }, input) => {
@@ -83,12 +84,18 @@ export async function staffComplaintAction(formData: FormData): Promise<ActionRe
           locationText: input.locationText,
           description: input.description,
           ...(parcel.value === undefined ? {} : { parcelId: parcel.value }),
+          ...(input.name === null ? {} : { name: input.name }),
+          ...(input.phone === null ? {} : { phone: input.phone }),
+          ...(input.email === null ? {} : { email: input.email }),
         },
         signal,
       )
+      if (recorded.ok) outcome.caseId = recorded.value.caseId
       return settled(recorded, 'Complaint recorded.')
     },
   )
+  if (result.ok && outcome.caseId !== undefined) redirect(`/staff/enforcement/${outcome.caseId}`)
+  return result
 }
 
 export async function setCaseStatusAction(formData: FormData): Promise<ActionResult> {

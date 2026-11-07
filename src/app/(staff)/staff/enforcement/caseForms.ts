@@ -1,6 +1,7 @@
 import { z } from 'zod'
 import { ENFORCEMENT_STATUSES, NOTICE_METHODS, PROVISION_KINDS } from '@/db/schema'
 import { MAX_COMPLAINT_CHARS } from '@/features/enforcement/complaints'
+import { optionalEmail } from '@/features/input/optionalEmail'
 import {
   choice,
   civilDate,
@@ -32,6 +33,9 @@ export const STAFF_COMPLAINT_FORM = z.object({
   locationText: requiredText('where the property is', { max: 300 }),
   description: requiredText('what was reported', { max: MAX_COMPLAINT_CHARS }),
   parcelRef: optionalText(PARCEL, { max: 200 }),
+  name: optionalText('the complainant name', { max: 200 }),
+  phone: optionalText('the complainant phone number', { max: 40 }),
+  email: optionalEmail('the complainant email'),
 })
 
 export const SET_CASE_STATUS_FORM = z.object({

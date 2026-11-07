@@ -9,7 +9,7 @@ const PARCEL_HINT = 'Without one, Chiban links the parcel whose site address mat
 export function NewCaseForms() {
   return (
     <>
-      <FormDialog label="Open a case" title="Open a case" variant="default">
+      <FormDialog label="Open a case" title="Open a case">
         <ActionForm action={openCaseAction} submitLabel="Open case">
           <TextField label="Where is the property?" name="locationText" required />
           <ParcelPicker label="Parcel, if known" name="parcelRef" hint={PARCEL_HINT} />
@@ -18,12 +18,16 @@ export function NewCaseForms() {
       <FormDialog
         label="Enter a complaint"
         title="Enter a complaint taken by phone or at the counter"
-        description="Entering a complaint opens a case for it."
+        description="Entering a complaint opens a case for it. The complainant's name and contact stay with town staff."
+        variant="default"
       >
         <ActionForm action={staffComplaintAction} submitLabel="Record complaint">
           <TextField label="Where is the property?" name="locationText" required />
           <TextField label="What was reported?" name="description" required />
           <ParcelPicker label="Parcel, if known" name="parcelRef" hint={PARCEL_HINT} />
+          <TextField label="Complainant name" name="name" autoComplete="off" />
+          <TextField label="Complainant phone" name="phone" type="tel" autoComplete="off" />
+          <TextField label="Complainant email" name="email" type="email" autoComplete="off" />
         </ActionForm>
       </FormDialog>
     </>

@@ -22,7 +22,7 @@ test.describe
       await dialog.getByLabel('Where is the property?').fill(`71 Sedge Walk ${suffix}`)
       await dialog.getByLabel('What was reported?').fill(description)
       await dialog.getByRole('button', { name: 'Record complaint' }).click()
-      await expectConfirmation(page, 'Complaint recorded.')
+      await page.waitForURL(/\/staff\/enforcement\/[0-9a-f-]{36}$/)
       const row = await db.one<{ case_id: string }>(
         'select case_id from complaints where description_original = $1',
         [description],

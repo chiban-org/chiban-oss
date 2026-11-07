@@ -15,6 +15,11 @@ export interface QueuePage extends Omit<CaseListPage, 'rows'> {
   rows: QueueRow[]
 }
 
+function dueLabel(row: CaseListRow, today: CivilDate): string {
+  if (row.nextDueKind === 'corrective') return 'Corrective action due'
+  return row.nextDueOn !== null && row.nextDueOn < today ? 'Answer overdue' : 'Answer due'
+}
+
 export async function listCaseQueue(
   db: DbOrTx,
   actor: Actor,
@@ -37,7 +42,7 @@ export async function listCaseQueue(
           ? null
           : {
               date: row.nextDueOn,
-              label: row.nextDueOn < today ? 'Answer overdue' : 'Answer due',
+              label: dueLabel(row, today),
             },
       stay: await stayFor(db, row.caseId, today, signal),
     })

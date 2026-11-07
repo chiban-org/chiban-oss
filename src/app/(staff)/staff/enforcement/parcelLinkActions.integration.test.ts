@@ -79,10 +79,12 @@ describe('enforcement server actions', () => {
       siteAddress: '4 Linden Way',
     })
     await openedAt({ locationText: 'Behind the barn', parcelRef: '031-004-000-000' })
-    const byAddress = await main.staffComplaintAction(
-      form({ locationText: '4 linden way', description: 'Junk cars in the yard' }),
-    )
-    expect(byAddress.ok).toBe(true)
+    const byAddress = await main
+      .staffComplaintAction(
+        form({ locationText: '4 linden way', description: 'Junk cars in the yard' }),
+      )
+      .then(JSON.stringify, String)
+    expect(byAddress).toMatch(/^Error: NEXT_REDIRECT:\/staff\/enforcement\//)
     const linked = await handle.db
       .select({ parcelId: enforcementCases.parcelId })
       .from(enforcementCases)

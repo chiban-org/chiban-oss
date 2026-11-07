@@ -4,6 +4,7 @@ import {
   enforcementAppeals,
   enforcementCases,
   enforcementOrders,
+  type OrderStatus,
   orderServiceRecipients,
 } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
@@ -27,6 +28,7 @@ let birch = ''
 let cedar = ''
 let dune = ''
 let elm = ''
+let ivy = ''
 
 async function open(location: string): Promise<string> {
   const result = await openCase(handle.db, staff, { locationText: location }, signal, NOW)
@@ -34,7 +36,12 @@ async function open(location: string): Promise<string> {
   return result.value.caseId
 }
 
-async function answerDue(caseId: string, number: string, due: string, answeredOn?: string) {
+async function answerDue(
+  caseId: string,
+  number: string,
+  due: string,
+  options: { answeredOn?: string; correctiveDeadline?: string; orderStatus?: OrderStatus } = {},
+) {
   const [order] = await handle.db
     .insert(enforcementOrders)
     .values({
@@ -43,6 +50,10 @@ async function answerDue(caseId: string, number: string, due: string, answeredOn
       ruleKey: 'nh.enf.cd_zoning',
       ruleVersion: 1,
       correctiveAction: 'Remove it',
+      ...(options.correctiveDeadline === undefined
+        ? {}
+        : { correctiveDeadline: options.correctiveDeadline }),
+      status: options.orderStatus ?? 'issued',
       draftedBy: staff.userId,
     })
     .returning({ id: enforcementOrders.id })
@@ -53,7 +64,7 @@ async function answerDue(caseId: string, number: string, due: string, answeredOn
     address: '1 Main St',
     source: 'CAMA owner',
     answerDue: { due },
-    ...(answeredOn === undefined ? {} : { answeredOn }),
+    ...(options.answeredOn === undefined ? {} : { answeredOn: options.answeredOn }),
   })
   return order?.id ?? ''
 }
@@ -68,6 +79,7 @@ beforeAll(async () => {
   cedar = await open('3 Cedar Court')
   dune = await open('70 Dune Street')
   elm = await open('5 Elm Street')
+  ivy = await open('8 Ivy Way')
   await handle.db
     .update(enforcementCases)
     .set({ status: 'investigating', openedOn: '2027-02-10' })
@@ -82,12 +94,24 @@ beforeAll(async () => {
     .where(eq(enforcementCases.id, cedar))
   await handle.db
     .update(enforcementCases)
-    .set({ status: 'in_court', openedOn: '2027-02-10', assignedTo: null })
+    .set({ status: 'order_issued', openedOn: '2027-02-10', assignedTo: null })
     .where(eq(enforcementCases.id, dune))
+  await handle.db
+    .update(enforcementCases)
+    .set({ status: 'order_issued' })
+    .where(eq(enforcementCases.id, elm))
+  await handle.db
+    .update(enforcementCases)
+    .set({ status: 'in_court' })
+    .where(eq(enforcementCases.id, ivy))
   const birchOrder = await answerDue(birch, 'EO-1', '2027-03-05')
   await answerDue(dune, 'EO-2', '2027-02-20')
   await answerDue(dune, 'EO-3', '2027-03-20')
-  await answerDue(elm, 'EO-4', '2027-02-25', '2027-02-26')
+  await answerDue(elm, 'EO-4', '2027-02-25', {
+    answeredOn: '2027-02-26',
+    correctiveDeadline: '2027-03-08',
+  })
+  await answerDue(ivy, 'EO-5', '2027-02-15', { orderStatus: 'judgment' })
   await handle.db.insert(enforcementAppeals).values({
     caseId: birch,
     targetKind: 'order',
@@ -127,26 +151,26 @@ const by = (key: CaseSortKey, dir: 'asc' | 'desc') => ({ sort: { key, dir } })
 
 describe('enforcement case list sorting', () => {
   it('opens with the newest case number first', async () => {
-    expect(await ids()).toEqual([elm, dune, cedar, birch, alder])
+    expect(await ids()).toEqual([ivy, elm, dune, cedar, birch, alder])
   })
 
   it('sorts by case number ascending and by location', async () => {
-    expect(await ids(by('number', 'asc'))).toEqual([alder, birch, cedar, dune, elm])
-    expect(await ids(by('where', 'asc'))).toEqual([birch, cedar, elm, dune, alder])
+    expect(await ids(by('number', 'asc'))).toEqual([alder, birch, cedar, dune, elm, ivy])
+    expect(await ids(by('where', 'asc'))).toEqual([birch, cedar, elm, dune, ivy, alder])
   })
 
   it('sorts by status in case order with the newest number inside a tie', async () => {
-    expect(await ids(by('status', 'asc'))).toEqual([elm, alder, birch, dune, cedar])
+    expect(await ids(by('status', 'asc'))).toEqual([alder, elm, dune, birch, ivy, cedar])
   })
 
   it('sorts by opened date with the newest number inside a tie', async () => {
-    expect(await ids(by('opened', 'desc'))).toEqual([elm, dune, alder, birch, cedar])
-    expect(await ids(by('opened', 'asc'))).toEqual([cedar, birch, dune, alder, elm])
+    expect(await ids(by('opened', 'desc'))).toEqual([ivy, elm, dune, alder, birch, cedar])
+    expect(await ids(by('opened', 'asc'))).toEqual([cedar, birch, dune, alder, ivy, elm])
   })
 
-  it('sorts by the next answer date, overdue first, with cases that have none last both ways', async () => {
-    expect(await ids(by('next', 'asc'))).toEqual([dune, birch, elm, cedar, alder])
-    expect(await ids(by('next', 'desc'))).toEqual([birch, dune, elm, cedar, alder])
+  it('sorts by the next date, overdue first, with cases that have none last both ways', async () => {
+    expect(await ids(by('next', 'asc'))).toEqual([dune, elm, ivy, cedar, birch, alder])
+    expect(await ids(by('next', 'desc'))).toEqual([elm, dune, ivy, cedar, birch, alder])
   })
 
   it('sorts stayed cases first on the first click and last on the second', async () => {
@@ -155,45 +179,45 @@ describe('enforcement case list sorting', () => {
   })
 
   it('pages by offset', async () => {
-    expect(await ids({ limit: 2, offset: 2 })).toEqual([cedar, birch])
+    expect(await ids({ limit: 2, offset: 2 })).toEqual([dune, cedar])
   })
 })
 
 describe('enforcement case quick filters', () => {
   it('filters by status and ORs values inside the group', async () => {
     expect(await ids({ filters: { statuses: ['closed'] } })).toEqual([cedar])
-    expect(await ids({ filters: { statuses: ['closed', 'in_court'] } })).toEqual([dune, cedar])
+    expect(await ids({ filters: { statuses: ['closed', 'in_court'] } })).toEqual([ivy, cedar])
   })
 
-  it('overdue lists cases with an unanswered answer date in the past', async () => {
+  it('overdue lists cases with a live unanswered answer date in the past', async () => {
     expect(await ids({ filters: { due: ['overdue'] } })).toEqual([dune])
   })
 
-  it('due this week lists cases whose next answer date falls within seven days', async () => {
-    expect(await ids({ filters: { due: ['week'] } })).toEqual([birch])
+  it('due this week lists cases whose next date falls within seven days', async () => {
+    expect(await ids({ filters: { due: ['week'] } })).toEqual([elm])
   })
 
-  it('no deadline running lists cases with no upcoming answer date', async () => {
-    expect(await ids({ filters: { due: ['none'] } })).toEqual([elm, cedar, alder])
+  it('no deadline running lists cases with no live date', async () => {
+    expect(await ids({ filters: { due: ['none'] } })).toEqual([ivy, cedar, birch, alder])
   })
 
   it('mine lists the cases assigned to the viewer and unassigned lists the rest', async () => {
-    expect(await ids({ filters: { assigned: ['me'] } })).toEqual([elm, alder])
+    expect(await ids({ filters: { assigned: ['me'] } })).toEqual([ivy, elm, alder])
     expect(await ids({ filters: { assigned: ['none'] } })).toEqual([dune, cedar])
   })
 
   it('ANDs groups together', async () => {
     expect(await ids({ filters: { assigned: ['none'], due: ['week'] } })).toEqual([])
-    expect(await ids({ filters: { assigned: ['me'], due: ['none'] } })).toEqual([elm, alder])
+    expect(await ids({ filters: { assigned: ['me'], due: ['none'] } })).toEqual([ivy, alder])
   })
 
   it('counts every chip with the other groups applied', async () => {
     const all = await caseListFacets(handle.db, staff, { filters: {} }, TODAY, signal)
-    expect(all.statuses.get('intake')).toBe(1)
+    expect(all.statuses.get('investigating')).toBe(1)
     expect(all.statuses.get('resolved')).toBe(0)
     expect(all.due.get('overdue')).toBe(1)
-    expect(all.due.get('none')).toBe(3)
-    expect(all.assigned.get('me')).toBe(2)
+    expect(all.due.get('none')).toBe(4)
+    expect(all.assigned.get('me')).toBe(3)
     const narrowed = await caseListFacets(
       handle.db,
       staff,
@@ -202,13 +226,13 @@ describe('enforcement case quick filters', () => {
       signal,
     )
     expect(narrowed.due.get('none')).toBe(1)
-    expect(narrowed.assigned.get('me')).toBe(2)
+    expect(narrowed.assigned.get('me')).toBe(3)
     expect(narrowed.statuses.get('closed')).toBe(1)
   })
 })
 
 describe('enforcement case queue rows', () => {
-  it('shows the next answer date from the same expression the sort uses', async () => {
+  it('shows the next date from the same expression the sort uses', async () => {
     const queue = await listCaseQueue(
       handle.db,
       staff,
@@ -217,7 +241,10 @@ describe('enforcement case queue rows', () => {
       signal,
     )
     expect(queue.rows[0]?.nextDue?.label).toBe('Answer overdue')
-    expect(queue.rows[1]?.nextDue).toEqual({ date: '2027-03-05', label: 'Answer due' })
+    expect(queue.rows[1]?.nextDue).toEqual({
+      date: '2027-03-08',
+      label: 'Corrective action due',
+    })
     expect(queue.rows.at(-1)?.nextDue).toBeNull()
   })
 
@@ -235,8 +262,28 @@ describe('enforcement case queue rows', () => {
   })
 
   it('agrees with the stay lookup on which cases are stayed', async () => {
-    for (const id of [alder, birch, cedar, dune, elm]) {
+    for (const id of [alder, birch, cedar, dune, elm, ivy]) {
       expect((await stayFor(handle.db, id, TODAY, signal)).stayed).toBe(id === birch)
     }
+  })
+})
+
+describe('enforcement case next date', () => {
+  it('shows no date for a case in court or stayed by an appeal even with an unanswered answer date', async () => {
+    const queue = await listCaseQueue(
+      handle.db,
+      staff,
+      { filters: {}, limit: 25, offset: 0 },
+      TODAY,
+      signal,
+    )
+    expect(queue.rows.find((r) => r.caseId === ivy)?.nextDue).toBeNull()
+    expect(queue.rows.find((r) => r.caseId === birch)?.nextDue).toBeNull()
+  })
+
+  it('does not count a case in court or stayed as overdue', async () => {
+    const overdue = await ids({ filters: { due: ['overdue'] } })
+    expect(overdue).not.toContain(ivy)
+    expect(overdue).not.toContain(birch)
   })
 })

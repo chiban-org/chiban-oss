@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { TablePager } from '@/components/dataTable/TablePager'
 import { EnforcementQueueTable } from '@/components/enforcement/EnforcementQueueTable'
@@ -8,7 +9,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { clearHref, pageHref, type RawSearchParams, readOffset } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
 import { caseListFacets } from '@/features/enforcement/caseList'
-import { caseChipGroups } from '@/features/enforcement/caseListChips'
+import { caseChipGroups, caseStageTabs } from '@/features/enforcement/caseListChips'
 import {
   CASE_FILTER_PARAMS,
   CASE_SORT,
@@ -58,9 +59,10 @@ export default async function EnforcementQueuePage({
     <main data-wide="">
       <ListHeader
         title="Code enforcement"
-        lead="Newest case first."
+        lead="Newest case first. Next date is the earlier of a running answer deadline and the corrective action deadline still ahead. Cases in court or stayed by an appeal have none."
         actions={canManage ? <NewCaseForms /> : null}
       />
+      <FilterTabs label="Status" tabs={caseStageTabs(params, facets)} />
       <div className="toolbar">
         <QuickFilters
           label="Quick filters"
@@ -68,9 +70,7 @@ export default async function EnforcementQueuePage({
           clearHref={clear}
         />
       </div>
-      <div className="table-panel">
-        <EnforcementQueueTable rows={queue.rows} links={links} />
-      </div>
+      <EnforcementQueueTable rows={queue.rows} links={links} />
       <TablePager
         offset={queue.offset}
         shown={queue.rows.length}

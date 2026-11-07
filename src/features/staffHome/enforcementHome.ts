@@ -14,7 +14,7 @@ const OPEN_CASES: EnforcementStatus[] = [
 ]
 
 function openCasesHref(filter: { due: DueFilter } | { assigned: AssignedFilter }): string {
-  return tableHref(CASES_PATH, new Map([['status', OPEN_CASES]]), filter)
+  return tableHref(CASES_PATH, new Map(), filter)
 }
 
 export async function loadEnforcementSection(ctx: HomeContext): Promise<HomeSection | null> {

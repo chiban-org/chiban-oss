@@ -127,6 +127,10 @@ function complaintRefusal(variant: InvalidVariant) {
         'description',
         textMessage('what was reported', MAX_COMPLAINT_CHARS, variant),
       )
+    case 'name':
+      return refuseField('name', textMessage('the complainant name', 200, variant))
+    case 'phone':
+      return refuseField('phone', textMessage('the complainant phone number', 40, variant))
     default:
       return refuseField('parcelRef', textMessage(PARCEL_NOUN, 200, variant))
   }
@@ -139,23 +143,42 @@ describeActionCases(h, 'staffComplaintAction', {
     locationText: '5 Quarry Road',
     description: 'Trucks are parking on the shoulder overnight.',
     parcelRef: '',
+    name: 'Pat Neighbor',
+    phone: '603-555-0142',
+    email: 'pat@example.org',
   }),
   fields: {
     locationText: text({ required: true, max: 300 }),
     description: text({ required: true, max: MAX_COMPLAINT_CHARS }),
     parcelRef: text({ max: 200 }),
+    name: text({ max: 200 }),
+    phone: text({ max: 40 }),
   },
   capability: 'enforcement.manage',
   refusals: { ...STAFF_REFUSALS, invalid: complaintRefusal, checkOnly: CHECK_PASSED },
   accepted: async (result, { db }) => {
-    expect(result).toEqual({ ok: true, message: 'Complaint recorded.' })
     const rows = await db
-      .select({ channel: complaints.channel, description: complaints.descriptionOriginal })
+      .select({
+        channel: complaints.channel,
+        description: complaints.descriptionOriginal,
+        name: complaints.complainantName,
+        phone: complaints.complainantPhone,
+        email: complaints.complainantEmail,
+        caseId: complaints.caseId,
+      })
       .from(complaints)
       .where(eq(complaints.locationText, '5 Quarry Road'))
     expect(rows).toEqual([
-      { channel: 'staff_entry', description: 'Trucks are parking on the shoulder overnight.' },
+      {
+        channel: 'staff_entry',
+        description: 'Trucks are parking on the shoulder overnight.',
+        name: 'Pat Neighbor',
+        phone: '603-555-0142',
+        email: 'pat@example.org',
+        caseId: expect.any(String),
+      },
     ])
+    expect(result).toEqual(redirectsTo(`/staff/enforcement/${rows[0]?.caseId}`))
   },
 })
 

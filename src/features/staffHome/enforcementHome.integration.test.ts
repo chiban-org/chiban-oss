@@ -50,6 +50,7 @@ async function caseWith(status: EnforcementStatus, assignedTo: string | null, du
       ruleKey: 'nh.enf.cd_zoning',
       ruleVersion: 1,
       correctiveAction: 'Remove it',
+      status: 'issued',
       draftedBy: staff.userId,
     })
     .returning({ id: enforcementOrders.id })
@@ -94,7 +95,7 @@ async function pageTotal(href: string, actor: Actor, today: CivilDate): Promise<
 describe('the Enforcement card on Today', () => {
   it('counts open cases overdue, assigned to the viewer and unassigned, in the town time zone', async () => {
     const section = await loadEnforcementSection(await homeContextFor(handle.db, staff, NOW))
-    expect(rowCount(section, OVERDUE)).toBe(2)
+    expect(rowCount(section, OVERDUE)).toBe(1)
     expect(rowCount(section, MINE)).toBe(2)
     expect(rowCount(section, UNASSIGNED)).toBe(1)
   })
