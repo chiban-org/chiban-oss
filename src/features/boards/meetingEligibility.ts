@@ -6,7 +6,7 @@ import type { ApplicationContext } from '@/features/applications/context'
 import { isTerminalState } from '@/features/applications/states'
 import { filedInTime, filingLeadFor } from '@/features/boards/filingLead'
 import { earliestNoticeDue } from '@/features/notices/noticeDue'
-import { noticeStatus } from '@/features/notices/noticeStatus'
+import { type NoticeStatus, noticeStatus } from '@/features/notices/noticeStatus'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 
 export interface MeetingEligibility {
@@ -16,21 +16,31 @@ export interface MeetingEligibility {
 
 const ANY_MEETING: MeetingEligibility = { filedInTime: true, noticeable: true }
 
+function stillSendable(status: NoticeStatus, today: CivilDate): boolean {
+  return (
+    status.items.length > 0 &&
+    status.items.every((item) =>
+      item.proof === null ? compareCivil(today, item.dueOn) <= 0 : item.state === 'proved_on_time',
+    )
+  )
+}
+
 async function noticedMeetings(
   db: DbOrTx,
   applicationId: string,
+  today: CivilDate,
   signal: AbortSignal,
 ): Promise<Set<string>> {
   const rows = await db
     .select({ meetingId: hearings.meetingId, setId: hearings.noticeSetId })
     .from(hearings)
     .where(and(eq(hearings.applicationId, applicationId), eq(hearings.status, 'scheduled')))
-  const proved = await Promise.all(
+  const usable = await Promise.all(
     rows.map(async (r) =>
-      (await noticeStatus(db, r.setId, signal)).properlyNoticed ? r.meetingId : null,
+      stillSendable(await noticeStatus(db, r.setId, signal), today) ? r.meetingId : null,
     ),
   )
-  return new Set(proved.filter((id) => id !== null))
+  return new Set(usable.filter((id) => id !== null))
 }
 
 export async function meetingEligibility(
@@ -44,7 +54,7 @@ export async function meetingEligibility(
   const [lead, noticeDue, noticed] = await Promise.all([
     app.state === 'submitted' ? filingLeadFor(db, app, board, signal) : null,
     earliestNoticeDue(db, app, signal),
-    noticedMeetings(db, app.id, signal),
+    noticedMeetings(db, app.id, today, signal),
   ])
   return ({ id, meetingDate }) => {
     const due = noticeDue(meetingDate as CivilDate)

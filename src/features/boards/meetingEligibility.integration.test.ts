@@ -1,10 +1,13 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { applications } from '@/db/schema'
+import { applications, boardMeetings, hearings } from '@/db/schema'
 import { scheduleMeeting } from '@/features/boards/meetings'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
+import { scheduleHearing } from '@/features/hearings/hearings'
+import { noticeStatus } from '@/features/notices/noticeStatus'
+import { recordProof } from '@/features/notices/proofs'
 import { townToday } from '@/features/town/today'
 import {
   type BoardWorld,
@@ -13,6 +16,12 @@ import {
   submitBoardApplication,
 } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import {
+  issueListWithRecipients,
+  proofDocument,
+  recipient,
+  recordDesProximity,
+} from '@/test/noticeFixtures'
 import { addDays, type CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -116,5 +125,55 @@ describe('meetings too soon for every notice the application needs, assuming the
     const hearings = await loadApplicationHearingsPanel(handle.db, world.staff, id, signal)
     const byDate = new Map(hearings?.scheduleMeetings.map((m) => [m.date, m.noticeable]))
     expect([byDate.get(addDays(today, 3)), byDate.get(addDays(today, 8))]).toEqual([false, true])
+  })
+
+  it('counts a hearing whose proved notices are on time and whose others can still be sent', async () => {
+    await meetingIn('planning_board', 12)
+    await publishRegionalContacts(handle.db, world)
+    const id = await submitBoardApplication(handle.db, world, world.pbTypeKey, addDays(today, -40))
+    await recordBoardRegionalImpact(
+      handle.db,
+      world.staff,
+      { applicationId: id, determination: 'yes', municipalityKeys: ['pine_river'] },
+      signal,
+    )
+    await recordDesProximity(handle.db, world, id, 'not_within')
+    await issueListWithRecipients(
+      handle.db,
+      world,
+      id,
+      [recipient(1, ['regional_planning_commission']), recipient(2)],
+      addDays(today, -40),
+    )
+    const [meeting] = await handle.db
+      .select({ id: boardMeetings.id })
+      .from(boardMeetings)
+      .where(eq(boardMeetings.meetingDate, addDays(today, 12)))
+    const scheduled = await scheduleHearing(
+      handle.db,
+      world.staff,
+      { applicationId: id, meetingId: meeting?.id ?? '', kind: 'submission_and_hearing' },
+      signal,
+    )
+    expect(scheduled.ok ? 'ok' : JSON.stringify(scheduled.error)).toBe('ok')
+    expect(await noticeable(id, [12])).toEqual([false])
+    const [hearing] = await handle.db.select().from(hearings).where(eq(hearings.applicationId, id))
+    const status = await noticeStatus(handle.db, hearing?.noticeSetId ?? '', signal)
+    const certified = status.items.filter((i) => i.channel === 'certified_mail')
+    expect(certified.length).toBeGreaterThan(0)
+    const proved = await recordProof(
+      handle.db,
+      world.staff,
+      {
+        itemIds: certified.map((i) => i.itemId),
+        method: 'certified_mail',
+        reference: 'RR-0001',
+        effectiveOn: addDays(today, -3),
+        documentId: await proofDocument(handle.db, world, id),
+      },
+      signal,
+    )
+    expect(proved.ok ? 'ok' : JSON.stringify(proved.error)).toBe('ok')
+    expect(await noticeable(id, [12])).toEqual([true])
   })
 })
