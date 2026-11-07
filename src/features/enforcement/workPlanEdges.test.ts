@@ -157,4 +157,18 @@ describe('the case work plan across orders, owners and counsel', () => {
       ['Fines paid', false],
     ])
   })
+
+  it('sends an answered order to counsel even when it was never filed with the clerk', () => {
+    const unfiled = planOrder({
+      gate: { open: false, blocks: ['answered', 'not_filed_with_clerk'] },
+    })
+    const p = planFor(
+      planInput('order_issued', {
+        orders: [unfiled],
+        referrals: [{ outcomes: [{ kind: 'judgment_for_town' }] }],
+        fines: [{ row: { id: 'f1' }, dueCents: 7500 }],
+      }),
+    )
+    expect(p.now?.action).toEqual({ kind: 'record_fine_payment', fineId: 'f1' })
+  })
 })

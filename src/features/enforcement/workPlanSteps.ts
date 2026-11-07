@@ -152,6 +152,8 @@ function counselStep(input: CasePlanInput): Step {
 
 function beforeMotionStep(input: CasePlanInput, order: CasePlanOrder): Step {
   const orderId = order.row.id
+  const blocks = gateBlocks(order)
+  if (blocks.includes('answered')) return counselStep(input)
   if (stepOf(order, 'filed_with_clerk') === null) {
     return town('court.filed', `File order ${order.row.number} with the court clerk`, {
       kind: 'record_court_step',
@@ -159,8 +161,6 @@ function beforeMotionStep(input: CasePlanInput, order: CasePlanOrder): Step {
       step: 'filed_with_clerk',
     })
   }
-  const blocks = gateBlocks(order)
-  if (blocks.includes('answered')) return counselStep(input)
   if (blocks.includes('answer_period_running')) return answerStep(input, order)
   const lead = filingLead(order)
   if (lead !== null) {
