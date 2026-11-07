@@ -186,7 +186,7 @@ export async function getBoardAssignmentView(
     listDocuments(
       db,
       actor,
-      { record: { kind: 'application', id: row.applicationId }, limit: 100 },
+      { record: { kind: 'application', id: row.applicationId }, limit: 100, audience: 'reviewers' },
       signal,
     ),
     commentsFor(db, [assignmentId]),
@@ -199,6 +199,6 @@ export async function getBoardAssignmentView(
     parcelDisplayId: display.get(parcelId) ?? null,
     open: !isTerminalState(state),
     comments: comments.get(assignmentId) ?? [],
-    documents: documents.rows.filter((d) => d.audiences.includes('reviewers')),
+    documents: documents.rows,
   }
 }

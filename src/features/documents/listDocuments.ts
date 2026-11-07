@@ -14,7 +14,7 @@ function decodeCursor(cursor: string | undefined): number | null {
 export async function listDocuments(
   db: DbOrTx,
   actor: Actor | null,
-  input: { record: RecordRef; limit: number; cursor?: string },
+  input: { record: RecordRef; limit: number; cursor?: string; audience?: Audience },
   signal: AbortSignal,
 ): Promise<{ rows: DocumentListRow[]; nextCursor: string | null }> {
   signal.throwIfAborted()
@@ -39,6 +39,9 @@ export async function listDocuments(
         eq(documents.recordKind, input.record.kind),
         eq(documents.recordId, input.record.id),
         documentVisibleTo(actor),
+        input.audience === undefined
+          ? undefined
+          : sql`${input.audience} = any(${documents.audiences})`,
         after === null ? undefined : lt(documents.seq, after),
       ),
     )

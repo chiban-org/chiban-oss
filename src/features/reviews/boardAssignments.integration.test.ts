@@ -1,11 +1,21 @@
 import { and, eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { auditLog, boards, reviewAssignments, reviewComments } from '@/db/schema'
+import {
+  auditLog,
+  boardMemberships,
+  boards,
+  documents,
+  reviewAssignments,
+  reviewComments,
+  userRoles,
+} from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
-import type { Actor } from '@/features/auth/actor'
+import { type Actor, loadActor } from '@/features/auth/actor'
 import { boardIdOf } from '@/features/boards/townBoards'
 import { evaluateGates } from '@/features/gates/evaluateGates'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
+import type { MailTransport } from '@/features/mail/transport'
+import { sendQueuedNotifications } from '@/features/notifications/send'
 import { addReviewComment, signOffReview } from '@/features/reviews/assignments'
 import {
   assignableBoards,
@@ -22,6 +32,7 @@ import { type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { addBoard, seatMember } from '@/test/boardReviewFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import type { CivilDate } from '@/types/civilDate'
+import { err } from '@/types/result'
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -80,11 +91,9 @@ afterAll(async () => {
 function send(
   actor: Actor,
   input: { applicationId: string; boardId: string; commentBy?: string | null },
-  mail = createMemoryTransport(),
 ) {
   return assignBoardForComment(
     handle.db,
-    mail,
     actor,
     {
       applicationId: input.applicationId,
@@ -131,18 +140,22 @@ describe('which boards can be sent an application', () => {
 })
 
 describe('sending an application to a board', () => {
-  it('stores the board, the comment-by date and an audit row, and emails seated members only', async () => {
-    const app = (
-      await makeApplication(handle.db, world, { state: 'under_review' }, undefined, 'SPR')
-    ).applicationId
-    const mail = createMemoryTransport()
-    const sent = await send(
-      world.staff,
-      { applicationId: app, boardId: conservation, commentBy: '2027-04-01' },
-      mail,
+  it('stores the board, the comment-by date and an audit row, and emails seated members only, retrying a failed send', async () => {
+    const made = await makeApplication(
+      handle.db,
+      world,
+      { state: 'under_review' },
+      undefined,
+      'SPR',
     )
+    const app = made.applicationId
+    const sent = await send(world.staff, {
+      applicationId: app,
+      boardId: conservation,
+      commentBy: '2027-04-01',
+    })
     if (!sent.ok) throw new Error(sent.error)
-    expect(sent.value).toMatchObject({ alreadyAssigned: false, emailed: 1 })
+    expect(sent.value).toMatchObject({ alreadyAssigned: false, notified: 1 })
     const [row] = await handle.db
       .select()
       .from(reviewAssignments)
@@ -153,20 +166,25 @@ describe('sending an application to a board', () => {
       commentBy: '2027-04-01',
       status: 'pending',
     })
-    expect(mail.sent.map((m) => m.to)).toEqual(['lee.marsh@alderpond.example'])
-    expect(mail.sent[0]?.subject).toMatch(/^Comments requested: /)
-    expect(mail.sent[0]?.text).toContain('/board')
-    expect(mail.sent[0]?.text).toContain('Alder Pond Conservation Commission')
-    expect(mail.sent[0]?.text).toContain('Comments by April 1, 2027.')
     const audits = await handle.db
       .select()
       .from(auditLog)
       .where(and(eq(auditLog.action, 'review.board_assign'), eq(auditLog.entityId, app)))
     expect(audits).toHaveLength(1)
 
-    const again = await send(world.staff, { applicationId: app, boardId: conservation }, mail)
-    expect(again.ok && again.value.alreadyAssigned).toBe(true)
-    expect(mail.sent).toHaveLength(1)
+    const down: MailTransport = { send: () => Promise.resolve(err('send_failed')) }
+    await sendQueuedNotifications(handle.db, down, signal)
+    const mail = createMemoryTransport()
+    await sendQueuedNotifications(handle.db, mail, signal)
+    const mine = mail.sent.filter((m) => m.subject.includes(made.number))
+    expect(mine.map((m) => m.to)).toEqual(['lee.marsh@alderpond.example'])
+    expect(mine[0]?.subject).toMatch(/^Comments requested: /)
+    expect(mine[0]?.text).toContain('/board')
+    expect(mine[0]?.text).toContain('Alder Pond Conservation Commission')
+    expect(mine[0]?.text).toContain('Comments by April 1, 2027.')
+
+    const again = await send(world.staff, { applicationId: app, boardId: conservation })
+    expect(again.ok && again.value).toMatchObject({ alreadyAssigned: true, notified: 0 })
   })
 
   it('withdraws with an audit row, and a second withdraw is not found', async () => {
@@ -272,6 +290,48 @@ describe('a board member commenting', () => {
       ok: false,
       error: 'forbidden',
     })
+  })
+})
+
+describe('the documents on the comment page', () => {
+  it('keeps a reviewers document even when the member can see over a hundred newer ones', async () => {
+    const app = (
+      await makeApplication(handle.db, world, { state: 'under_review' }, undefined, 'SPR')
+    ).applicationId
+    const doc = (title: string, audiences: string[]) => ({
+      recordKind: 'application',
+      recordId: app,
+      title,
+      docKind: 'attachment' as const,
+      audiences,
+      createdByKind: 'user' as const,
+      createdBy: world.staff.userId,
+    })
+    await handle.db.insert(documents).values(doc('Wetland plan', ['reviewers']))
+    await handle.db
+      .insert(documents)
+      .values(Array.from({ length: 101 }, (_, i) => doc(`Party letter ${i}`, ['project_parties'])))
+    await handle.db
+      .insert(userRoles)
+      .values({ userId: world.applicant.userId, role: 'board_member' })
+    await handle.db.insert(boardMemberships).values({
+      userId: world.applicant.userId,
+      boardId: conservation,
+      title: 'member',
+      termStart: '2020-01-01',
+      createdBy: world.admin.userId,
+    })
+    const partyMember = await loadActor(handle.db, world.applicant.userId, signal)
+    if (partyMember === null) throw new Error('no actor')
+    const sent = await send(world.staff, { applicationId: app, boardId: conservation })
+    if (!sent.ok) throw new Error(sent.error)
+    const view = await getBoardAssignmentView(
+      handle.db,
+      partyMember,
+      sent.value.assignmentId,
+      signal,
+    )
+    expect(view?.documents.map((d) => d.title)).toEqual(['Wetland plan'])
   })
 })
 
