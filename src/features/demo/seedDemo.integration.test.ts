@@ -164,11 +164,12 @@ describe('seedDemo', () => {
     expect(emails.every((e) => e.endsWith('@alderpond.example'))).toBe(true)
   })
 
-  it('names the thirteen seeded users by short role', () => {
+  it('names the fourteen seeded users by short role', () => {
     expect(DEMO_USERS.map((u) => u.email).sort()).toEqual(
       [
         'admin',
         'staff',
+        'official',
         'inspector',
         'finance',
         'records',
@@ -251,7 +252,7 @@ describe('seedDemo', () => {
     await seedDemo(handle.db, signal, SEED_DEPS)
     await seedDemo(handle.db, signal, SEED_DEPS)
     expect(await counts()).toEqual(before)
-    expect(before.applications).toBe(24)
+    expect(before.applications).toBe(25)
     expect(before.inspections).toBeGreaterThan(5)
     expect(before.certificates).toBe(1)
     expect(before.config_versions).toBeGreaterThan(30)
@@ -283,6 +284,7 @@ describe('seedDemo', () => {
       'decided',
       'denied',
       'expired',
+      'issued',
       'issued',
       'issued',
       'issued',
@@ -355,6 +357,30 @@ async function actorOf(local: string): Promise<Actor> {
 
 describe('seeded inspections', () => {
   const SEEDED_DAY = '2026-06-01'
+
+  it('seeds a building official who holds the staff and inspector roles and has one inspection due', async () => {
+    const official = await actorOf('official')
+    expect([...official.roles].sort()).toEqual(['inspector', 'staff'])
+    const rows = await handle.db
+      .select({
+        number: applications.number,
+        state: applications.state,
+        status: inspections.status,
+        date: inspections.scheduledDate,
+        minute: inspections.startMinute,
+      })
+      .from(inspections)
+      .innerJoin(applications, eq(applications.id, inspections.applicationId))
+      .where(eq(inspections.inspectorUserId, official.userId))
+    expect(rows).toHaveLength(1)
+    expect(rows[0]).toMatchObject({
+      state: 'issued',
+      status: 'scheduled',
+      date: SEEDED_DAY,
+      minute: 630,
+    })
+    expect(rows[0]?.number).not.toBe('BP-2025-0001')
+  })
 
   it('seeded inspector day list for the seeded date has two stops', async () => {
     const inspector = await actorOf('inspector')

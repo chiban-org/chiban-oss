@@ -6,6 +6,7 @@ import { SubmitButton } from '@/components/SubmitButton'
 import { db } from '@/db/client'
 import { userRoles, users } from '@/db/schema'
 import { isDevSignInEnabled } from '@/features/auth/devSignIn'
+import { devSignInEntries } from '@/features/auth/devSignInEntries'
 import { DEMO_DOMAIN } from '@/features/demo/seedDemo'
 import { devSignInAction } from './actions'
 
@@ -15,12 +16,13 @@ export const dynamic = 'force-dynamic'
 
 export default async function DevSignInPage() {
   if (!isDevSignInEnabled()) notFound()
-  const rows = await db
+  const found = await db
     .select({ email: users.email, name: users.displayName, kind: users.kind, role: userRoles.role })
     .from(users)
     .innerJoin(userRoles, eq(userRoles.userId, users.id))
     .where(and(like(users.email, `%@${DEMO_DOMAIN}`), eq(users.isActive, true)))
     .orderBy(users.email)
+  const rows = devSignInEntries(found)
 
   return (
     <main className="mx-auto max-w-md p-6">
@@ -37,7 +39,7 @@ export default async function DevSignInPage() {
               <input type="hidden" name="email" value={row.email} />
               <input type="hidden" name="kind" value={row.kind} />
               <SubmitButton variant="outline">
-                {row.name} ({row.role})
+                {row.name} ({row.roles})
               </SubmitButton>
             </form>
           </li>

@@ -1,6 +1,7 @@
 import { NH_INSPECTION_SETTINGS_DEFAULT } from '@packs/nh/starters'
 import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
+import type { Actor } from '@/features/auth/actor'
 import { applications, inspections, inspectorCalendars, projects } from '@/db/schema'
 import { issueCertificateOfOccupancy } from '@/features/certificates/issueCertificate'
 import { publishConfig } from '@/features/config/publish'
@@ -138,9 +139,11 @@ export async function seedInspections(
       outcome?: { result: 'passed' | 'failed'; notes?: string; failItem?: string }
       reinspectionOf?: string
       channel?: 'phone' | 'portal'
+      inspector?: Actor
     },
   ) => {
     const info = await typeId(applicationId, type)
+    const assigned = plan.inspector ?? inspector
     const bookedAt = noon(addDays(plan.day, -BOOKING_LEAD_DAYS))
     const made = must(
       await requestInspection(
@@ -168,7 +171,7 @@ export async function seedInspections(
         cast.staff,
         {
           inspectionId: made.inspectionId,
-          inspectorUserId: inspector.userId,
+          inspectorUserId: assigned.userId,
           date: plan.day,
           startMinute: plan.slot,
           expectedRowVersion: row?.rowVersion ?? 1,
@@ -190,7 +193,7 @@ export async function seedInspections(
     must(
       await recordInspectionResult(
         db,
-        inspector,
+        assigned,
         {
           inspectionId: made.inspectionId,
           result: plan.outcome.result,
@@ -288,6 +291,23 @@ export async function seedInspections(
     ),
     'certificate',
   )
+
+  const official = await actorFor(db, 'official', signal)
+  const framing = await open(db, cast, signal, {
+    parcel: '007010000000',
+    title: 'Workshop framing inspected by the building official',
+    typeKey: 'BP',
+    values: BUILDING_VALUES,
+    submittedOn: '2026-03-20',
+  })
+  await completeAndReview(framing, '2026-03-21', '2026-03-22')
+  await readyToIssue(framing, '2026-04-03')
+  await framing.step('issued', '2026-04-06')
+  await run(framing.applicationId, 'framing', {
+    day: days.seeded,
+    slot: SECOND_SLOT,
+    inspector: official,
+  })
 
   const appealed = await applicationByTitle(db, 'Barn conversion under appeal')
   const footing = await typeId(appealed, 'footing')
