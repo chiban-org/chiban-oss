@@ -41,6 +41,7 @@ export async function summarizeDocuments(
     .where(and(inArray(documents.id, ids), documentVisibleTo(actor)))
   const town = await getTownSettings(db, signal)
   const zone = town.ok ? town.value.timeZone : FALLBACK_ZONE
+  const asPublic = viewer.kind === 'public' ? '?as=public' : ''
   return rows.map((row) => {
     const added = todayInTimeZone(zone, row.createdAt)
     return {
@@ -53,8 +54,8 @@ export async function summarizeDocuments(
       dates: { filed: added, issued: null, expires: null, closed: null },
       type: { key: 'document', label: 'File' },
       owner: { kind: row.recordKind, id: row.recordId },
-      href: `/api/documents/${row.id}`,
-      thumbnailHref: `/api/documents/${row.id}/thumbnail`,
+      href: `/api/documents/${row.id}${asPublic}`,
+      thumbnailHref: `/api/documents/${row.id}/thumbnail${asPublic}`,
       parcelFile: row.docKind === 'parcel_file',
     }
   })

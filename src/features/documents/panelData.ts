@@ -3,6 +3,8 @@ import type { DbOrTx } from '@/db/client'
 import {
   documents,
   documentVersions,
+  enforcementCases,
+  parcelRecordLinks,
   preservationRecords,
   renditionApprovals,
   users,
@@ -10,7 +12,7 @@ import {
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { listDocuments } from '@/features/documents/listDocuments'
-import type { DocumentListRow, RecordRef } from '@/features/documents/types'
+import type { DocumentListRow, RecordKind, RecordRef } from '@/features/documents/types'
 import { retentionFor } from '@/features/records/disposition'
 import { retentionText } from '@/features/records/retentionText'
 
@@ -32,6 +34,9 @@ export interface PanelDocument extends DocumentListRow {
   retention: string
   holdCount: number
   uploadedBy: string
+  recordKind: RecordKind
+  caseIsPublic: boolean | null
+  parcelId: string | null
 }
 
 const PRESERVATION: Record<string, PreservationState> = {
@@ -133,6 +138,35 @@ async function uploaders(db: DbOrTx, ids: string[]): Promise<Map<string, string>
   return new Map(rows.map((r) => [r.id, r.name ?? SOURCE_NAMES.get(r.kind) ?? 'Unknown']))
 }
 
+async function caseIsPublic(db: DbOrTx, record: RecordRef): Promise<boolean | null> {
+  if (record.kind !== 'enforcement_case') return null
+  const [row] = await db
+    .select({ isPublic: enforcementCases.isPublic })
+    .from(enforcementCases)
+    .where(eq(enforcementCases.id, record.id))
+  return row?.isPublic ?? false
+}
+
+async function linkedParcels(db: DbOrTx, ids: string[]): Promise<Map<string, string>> {
+  if (ids.length === 0) return new Map()
+  const rows = await db
+    .select({ documentId: parcelRecordLinks.recordId, parcelId: parcelRecordLinks.parcelId })
+    .from(parcelRecordLinks)
+    .where(
+      and(
+        eq(parcelRecordLinks.recordKind, 'document'),
+        inArray(parcelRecordLinks.recordId, ids),
+        eq(parcelRecordLinks.status, 'linked'),
+      ),
+    )
+    .orderBy(parcelRecordLinks.createdAt)
+  const out = new Map<string, string>()
+  for (const row of rows) {
+    if (row.parcelId !== null && !out.has(row.documentId)) out.set(row.documentId, row.parcelId)
+  }
+  return out
+}
+
 export async function loadPanelDocuments(
   db: DbOrTx,
   actor: Actor,
@@ -158,7 +192,12 @@ export async function loadPanelDocuments(
           .where(inArray(documentVersions.documentId, ids))
   const out: PanelDocument[] = []
   const canRedact = await hasCapability(db, actor.userId, 'redaction.create', signal)
-  const [details, uploadedBy] = await Promise.all([renditionDetails(db, ids), uploaders(db, ids)])
+  const [details, uploadedBy, casePublic, parcels] = await Promise.all([
+    renditionDetails(db, ids),
+    uploaders(db, ids),
+    caseIsPublic(db, record),
+    linkedParcels(db, ids),
+  ])
   for (const row of listed.rows) {
     const rendition = details(row)
     const rec = records.find((r) => r.documentId === row.documentId)
@@ -180,6 +219,9 @@ export async function loadPanelDocuments(
       retention: retentionText(retention?.status ?? null),
       holdCount: retention?.holds.length ?? 0,
       uploadedBy: uploadedBy.get(row.documentId) ?? 'Unknown',
+      recordKind: record.kind,
+      caseIsPublic: casePublic,
+      parcelId: parcels.get(row.documentId) ?? null,
     })
   }
   return out

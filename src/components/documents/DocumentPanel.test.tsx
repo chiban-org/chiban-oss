@@ -55,6 +55,9 @@ function doc(overrides: Partial<PanelDocument> = {}): PanelDocument {
       { id: 'v2', role: 'public_redacted', createdAt: '2027-03-03T16:30:00.000Z' },
     ],
     canRedact: false,
+    recordKind: 'application',
+    caseIsPublic: null,
+    parcelId: 'p1',
     ...overrides,
   }
 }
@@ -74,14 +77,66 @@ function view(documents: PanelDocument[], canPublish = true, canManage = true) {
 }
 
 describe('DocumentPanel', () => {
-  it('document panel shows "Public copy: redacted" when a redacted version exists', () => {
+  it('says the redacted copy is what the public site shows when that version is approved', () => {
     view([doc({ hasRedactedCopy: true, approvedRole: 'public_redacted' })])
-    expect(screen.getByText('Public copy: redacted')).toBeTruthy()
+    expect(screen.getByText('Shown on the public site')).toBeTruthy()
+    expect(
+      screen.getByText(
+        'Everyone. Shown on the public site on the parcel page, as the redacted copy.',
+      ),
+    ).toBeTruthy()
   })
 
-  it('shows "Public copy: original" when public with no redacted copy, and nothing when private', () => {
+  it('chips one document as shown and the private one as not on the public site', () => {
     view([doc({ isPublic: true }), doc({ documentId: 'd2', title: 'Private', isPublic: false })])
-    expect(screen.getAllByText('Public copy: original')).toHaveLength(1)
+    expect(screen.getAllByText('Shown on the public site')).toHaveLength(1)
+    expect(screen.getAllByText('Not on the public site')).toHaveLength(1)
+  })
+
+  it('keeps a document on a private case off the public site in the chip and the sentence', () => {
+    view([doc({ recordKind: 'enforcement_case', audiences: [], caseIsPublic: false })])
+    expect(screen.getByText('Not on the public site')).toBeTruthy()
+    expect(screen.queryByText('Shown on the public site')).toBeNull()
+    expect(
+      screen.getByText('Town staff only. Not on the public site: the case is not public.'),
+    ).toBeTruthy()
+    expect(screen.queryByRole('link', { name: 'See what the public sees' })).toBeNull()
+  })
+
+  it('states who can see the document even to someone who can change nothing', () => {
+    view([doc({ isPublic: false, rendition: 'none', approvalId: null })], false, false)
+    const block = screen.getByRole('group', { name: 'Who can see this' })
+    expect(
+      within(block).getByText(
+        'Town staff, project parties and assigned reviewers. Not on the public site: no copy is approved for the public yet.',
+      ),
+    ).toBeTruthy()
+    expect(within(block).queryByText('Change who can see this')).toBeNull()
+  })
+
+  it('links a shown document to the public parcel page in a new tab', () => {
+    view([doc(), doc({ documentId: 'd2', title: 'Private', isPublic: false })])
+    const links = screen.getAllByRole('link', { name: 'See what the public sees' })
+    expect(links).toHaveLength(1)
+    expect(links[0]?.getAttribute('href')).toBe('/parcels/p1')
+    expect(links[0]?.getAttribute('target')).toBe('_blank')
+  })
+
+  it('labels the public switch Show on the public site and says where it shows', () => {
+    view([doc()])
+    const form = screen
+      .getByRole('button', { name: 'Save public site setting' })
+      .closest('form') as HTMLElement
+    expect(within(form).getByLabelText('Show on the public site')).toBeTruthy()
+    expect(
+      within(form).getByText('Shows the approved copy to signed-out visitors on the parcel page.'),
+    ).toBeTruthy()
+  })
+
+  it('offers no signed-in access choices on a record where none of them grant anything', () => {
+    view([doc({ recordKind: 'parcel' })])
+    expect(screen.queryByRole('button', { name: 'Save signed-in access' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Save public site setting' })).toBeTruthy()
   })
 
   it('preservation chip has a text label and an icon', () => {
@@ -104,9 +159,9 @@ describe('DocumentPanel', () => {
 
   it('hides publishing controls without document.publish and retry without document.manage', () => {
     view([doc({ preservation: 'incomplete' })], false, false)
-    expect(screen.queryByRole('button', { name: 'Save public setting' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Save public site setting' })).toBeNull()
     expect(screen.queryByRole('button', { name: 'Retry preservation' })).toBeNull()
-    expect(screen.queryByRole('button', { name: 'Save audiences' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Save signed-in access' })).toBeNull()
   })
 
   it('labels the disclosure Details, not Manage, for someone who can take no action on it', () => {
@@ -115,7 +170,7 @@ describe('DocumentPanel', () => {
     expect(screen.getByText('Details')).toBeTruthy()
   })
 
-  it('keeps Manage when the viewer may redact, manage or publish', () => {
+  it('keeps Manage when the viewer may redact or manage', () => {
     view([doc({ canRedact: true })], false, false)
     expect(screen.getByText('Manage')).toBeTruthy()
     cleanup()
@@ -123,18 +178,31 @@ describe('DocumentPanel', () => {
     expect(screen.getByText('Manage')).toBeTruthy()
   })
 
-  it('offers audience checkboxes, the public toggle, and retry for staff', () => {
+  it('gives a viewer who may only change the public setting Change who can see this and Details', () => {
+    view([doc()], true, false)
+    expect(screen.getByText('Change who can see this')).toBeTruthy()
+    expect(screen.getByText('Details')).toBeTruthy()
+    expect(screen.queryByText('Manage')).toBeNull()
+  })
+
+  it('offers signed-in access checkboxes, the public switch, and retry for staff', () => {
     view([doc({ preservation: 'incomplete' })])
     const form = screen
-      .getByRole('button', { name: 'Save audiences' })
+      .getByRole('button', { name: 'Save signed-in access' })
       .closest('form') as HTMLElement
+    expect(
+      within(form).getByText(
+        'Signed-in access. Town staff can always open this document. Tick who else may open it after signing in. This never puts it on the public site.',
+      ),
+    ).toBeTruthy()
     expect(within(form).getByLabelText('Project parties')).toBeTruthy()
-    expect(within(form).getByLabelText('Reviewers')).toBeTruthy()
-    expect(within(form).getByLabelText('Board')).toBeTruthy()
+    expect(within(form).getByLabelText('Assigned reviewers')).toBeTruthy()
+    expect(within(form).getByLabelText('Board members')).toBeTruthy()
+    expect(screen.getByLabelText('Show on the public site')).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Retry preservation' })).toBeTruthy()
   })
 
-  it('shows one chip for each approval state', () => {
+  it('chips and explains each approval state', () => {
     view([
       doc({ documentId: 'a', title: 'A', rendition: 'approved' }),
       doc({ documentId: 'b', title: 'B', rendition: 'public_no_copy', approvalId: null }),
@@ -147,10 +215,11 @@ describe('DocumentPanel', () => {
       }),
       doc({ documentId: 'd', title: 'D', rendition: 'revoked', isPublic: false, approvalId: null }),
     ])
-    expect(screen.getByText('Public copy: original')).toBeTruthy()
-    expect(screen.getByText('Public, no approved copy')).toBeTruthy()
-    expect(screen.getByText('Redacted, awaiting approval')).toBeTruthy()
-    expect(screen.getByText('Revoked')).toBeTruthy()
+    expect(screen.getAllByText('Shown on the public site')).toHaveLength(1)
+    expect(screen.getAllByText('Not on the public site')).toHaveLength(3)
+    expect(screen.getByText(/no copy is approved for the public yet\.$/)).toBeTruthy()
+    expect(screen.getByText(/the redacted copy is waiting for approval\.$/)).toBeTruthy()
+    expect(screen.getByText(/the public approval was revoked\.$/)).toBeTruthy()
   })
 
   it('offers approval until every version is approved, then offers only revocation', () => {
@@ -200,7 +269,7 @@ describe('DocumentPanel', () => {
   it('shows the title, when and by whom it was added, and one public chip', () => {
     view([doc({ isPublic: false, rendition: 'none', approvalId: null })])
     expect(screen.getByText('Added March 2, 2027 by Sam Clerk')).toBeTruthy()
-    expect(screen.getByText('Not public')).toBeTruthy()
+    expect(screen.getByText('Not on the public site')).toBeTruthy()
     expect(screen.getByText('Preserved').closest('details')).not.toBeNull()
   })
 

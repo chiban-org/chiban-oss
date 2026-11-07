@@ -16,10 +16,11 @@ export async function derivativeResponse(
   documentId: string,
   kind: RenditionKind,
   page: number,
+  options: { asPublic?: boolean } = {},
 ): Promise<Response> {
   if (!UUID.test(documentId) || !Number.isInteger(page) || page < 1) return notFound()
   const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
-  const actor = await getActor(signal)
+  const actor = options.asPublic === true ? null : await getActor(signal)
   const result = await serveDerivative(
     db,
     getObjectStore(),

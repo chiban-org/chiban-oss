@@ -116,7 +116,7 @@ describe('documents in parcel history', () => {
   it('each summary links to the authorized download and shows no uploader', async () => {
     const history = await getParcelHistory(handle.db, world.parcelId, { kind: 'public' }, signal)
     const doc = history.own.find((r) => r.kind === 'document')
-    expect(doc?.href).toMatch(/^\/api\/documents\/[0-9a-f-]{36}$/)
+    expect(doc?.href).toMatch(/^\/api\/documents\/[0-9a-f-]{36}\?as=public$/)
     expect(JSON.stringify(doc)).not.toContain(world.staff.userId)
   })
 })

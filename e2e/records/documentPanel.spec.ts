@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { confirmDialog } from '../boards/confirm'
 import { type E2eDb, expect, test } from '../fixtures/test'
 import { expectRefusedBeside } from './refusal'
@@ -7,16 +7,25 @@ import { expectToast } from './requestSupport'
 test.use({ role: 'staff' })
 
 const TITLE = 'Owner letter for the Birch Lane renovation'
+const APPLICATION_DOC = 'Site sketch'
 
-async function openDocument(page: Page, db: E2eDb) {
+async function parcelOfDocument(db: E2eDb): Promise<string> {
   const row = await db.one<{ record_id: string }>(
     "select record_id from documents where title = $1 and record_kind = 'parcel'",
     [TITLE],
   )
-  await page.goto(`/staff/parcels/${row.record_id}`)
+  return row.record_id
+}
+
+async function openDocument(page: Page, db: E2eDb) {
+  await page.goto(`/staff/parcels/${await parcelOfDocument(db)}`)
   const doc = page.locator('li[data-slot="document"]').filter({ hasText: TITLE })
-  await doc.locator('summary').filter({ hasText: 'Manage' }).click()
+  await doc.locator('summary').filter({ hasText: 'Change who can see this' }).click()
   return doc
+}
+
+function whoCanSee(doc: Locator): Locator {
+  return doc.getByRole('group', { name: 'Who can see this' }).locator('p').first()
 }
 
 async function redactedVersions(db: E2eDb): Promise<number> {
@@ -35,32 +44,60 @@ async function documentRow(db: E2eDb) {
   )
 }
 
-test.describe('managing a parcel document', () => {
-  test('saves who may see the document beyond the public', async ({ page, db }) => {
-    const doc = await openDocument(page, db)
+test.describe('signed-in access on an application document', () => {
+  test('saves who may open the document after signing in and says so in the sentence', async ({
+    page,
+    db,
+  }) => {
+    const row = await db.one<{ record_id: string }>(
+      "select record_id from documents where title = $1 and record_kind = 'application'",
+      [APPLICATION_DOC],
+    )
+    await page.goto(`/staff/applications/${row.record_id}`)
+    const doc = page.locator('li[data-slot="document"]').filter({ hasText: APPLICATION_DOC })
+    await expect(whoCanSee(doc)).toHaveText(
+      'Who can see this: Town staff, project parties and assigned reviewers. Not on the public site: no copy is approved for the public yet.',
+    )
+    await doc.locator('summary').filter({ hasText: 'Change who can see this' }).click()
     const form = doc
       .locator('form')
-      .filter({ has: page.getByRole('button', { name: 'Save audiences' }) })
-    await form.getByRole('checkbox').first().check()
-    await form.getByRole('button', { name: 'Save audiences' }).click()
+      .filter({ has: page.getByRole('button', { name: 'Save signed-in access' }) })
+    await form.getByRole('checkbox', { name: 'Assigned reviewers' }).uncheck()
+    await form.getByRole('button', { name: 'Save signed-in access' }).click()
     await expectToast(page, 'Audiences saved.')
-    expect((await documentRow(db)).audiences).toHaveLength(1)
+    const saved = await db.one<{ audiences: string[] }>(
+      "select audiences from documents where title = $1 and record_kind = 'application'",
+      [APPLICATION_DOC],
+    )
+    expect(saved.audiences).toEqual(['project_parties'])
+    await page.reload()
+    await expect(whoCanSee(doc)).toHaveText(
+      'Who can see this: Town staff and project parties. Not on the public site: no copy is approved for the public yet.',
+    )
   })
+})
 
-  test('refuses to publish before a version is approved, then approves, publishes, unpublishes after confirming, and revokes after confirming', async ({
+test.describe('managing a parcel document', () => {
+  test('refuses to show before a version is approved, then approves, shows, hides after confirming, and revokes after confirming', async ({
     page,
     db,
     suffix,
+    pageAs,
   }) => {
     const doc = await openDocument(page, db)
-    const publish = doc.locator('form').filter({
-      has: page.getByRole('button', { name: 'Save public setting' }),
-    })
-    await publish.getByRole('checkbox', { name: 'Public' }).check()
-    await publish.getByRole('button', { name: 'Save public setting' }).click()
-    await expect(publish.getByRole('status').filter({ hasText: /\S/ })).toHaveText(
-      'Approve a version for the public before showing this document on the public site.',
+    await expect(doc.getByText('Not on the public site', { exact: true })).toBeVisible()
+    await expect(whoCanSee(doc)).toHaveText(
+      'Who can see this: Town staff only. Not on the public site: no copy is approved for the public yet.',
     )
+    const publish = doc.locator('form').filter({
+      has: page.getByRole('button', { name: 'Save public site setting' }),
+    })
+    await expect(
+      publish.getByText('Shows the approved copy to signed-out visitors on the parcel page.'),
+    ).toBeVisible()
+    await publish.getByRole('checkbox', { name: 'Show on the public site' }).check()
+    await publish.getByRole('button', { name: 'Save public site setting' }).click()
+    await expect(publish.getByRole('status').filter({ hasText: /\S/ })).toBeVisible()
     expect((await documentRow(db)).is_public).toBe(false)
 
     const approve = doc.locator('form').filter({
@@ -75,25 +112,39 @@ test.describe('managing a parcel document', () => {
     await expectToast(page, 'Version approved.')
 
     const reopened = await openDocument(page, db)
+    await expect(whoCanSee(reopened)).toHaveText(
+      /^Who can see this: Town staff only\. Not on the public site\. The .+ is approved for the public, so it can be shown\.$/,
+    )
     const savePublic = reopened.locator('form').filter({
-      has: page.getByRole('button', { name: 'Save public setting' }),
+      has: page.getByRole('button', { name: 'Save public site setting' }),
     })
-    await savePublic.getByRole('checkbox', { name: 'Public' }).check()
-    await savePublic.getByRole('button', { name: 'Save public setting' }).click()
-    await expectToast(page, 'The document is public.')
-    expect((await documentRow(db)).is_public).toBe(true)
+    await savePublic.getByRole('checkbox', { name: 'Show on the public site' }).check()
+    await savePublic.getByRole('button', { name: 'Save public site setting' }).click()
+    await expect.poll(async () => (await documentRow(db)).is_public).toBe(true)
 
     const again = await openDocument(page, db)
+    await expect(again.getByText('Shown on the public site', { exact: true })).toBeVisible()
+    await expect(whoCanSee(again)).toHaveText(
+      'Who can see this: Everyone. Shown on the public site on the parcel page, as the original.',
+    )
+    const parcelId = await parcelOfDocument(db)
+    const seePublic = again.getByRole('link', { name: 'See what the public sees' })
+    await expect(seePublic).toHaveAttribute('href', `/parcels/${parcelId}`)
+    await expect(seePublic).toHaveAttribute('target', '_blank')
+    const visitor = await pageAs('anonymous')
+    await visitor.goto(`/parcels/${parcelId}`)
+    await expect(visitor.getByText(TITLE).first()).toBeVisible()
+    await visitor.context().close()
+
     const unpublish = again.locator('form').filter({
-      has: page.getByRole('button', { name: 'Save public setting' }),
+      has: page.getByRole('button', { name: 'Save public site setting' }),
     })
-    await unpublish.getByRole('checkbox', { name: 'Public' }).uncheck()
-    await unpublish.getByRole('button', { name: 'Save public setting' }).click()
-    const dialog = confirmDialog(page, `Take ${TITLE} off the public site?`)
+    await unpublish.getByRole('checkbox', { name: 'Show on the public site' }).uncheck()
+    await unpublish.getByRole('button', { name: 'Save public site setting' }).click()
+    const dialog = confirmDialog(page, `Hide ${TITLE} from the public site?`)
     await expect(dialog).toBeVisible()
-    await dialog.getByRole('button', { name: 'Make it private' }).click()
-    await expectToast(page, 'The document is not public.')
-    expect((await documentRow(db)).is_public).toBe(false)
+    await dialog.getByRole('button', { name: 'Hide from the public site' }).click()
+    await expect.poll(async () => (await documentRow(db)).is_public).toBe(false)
 
     const last = await openDocument(page, db)
     const revoke = last.locator('form').filter({
@@ -140,8 +191,10 @@ test.describe('managing a parcel document as an inspector', () => {
     )
     await page.goto(`/staff/parcels/${row.record_id}`)
     const doc = page.locator('li[data-slot="document"]').filter({ hasText: TITLE })
+    await expect(whoCanSee(doc)).toContainText('Who can see this: Town staff only.')
+    await expect(doc.getByText('Change who can see this')).toHaveCount(0)
     await doc.locator('summary').filter({ hasText: 'Details' }).click()
-    await expect(doc.getByRole('button', { name: 'Save audiences' })).toHaveCount(0)
-    await expect(doc.getByRole('button', { name: 'Save public setting' })).toHaveCount(0)
+    await expect(doc.getByRole('button', { name: 'Save signed-in access' })).toHaveCount(0)
+    await expect(doc.getByRole('button', { name: 'Save public site setting' })).toHaveCount(0)
   })
 })

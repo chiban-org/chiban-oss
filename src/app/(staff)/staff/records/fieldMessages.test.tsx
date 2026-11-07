@@ -214,6 +214,9 @@ const document_: PanelDocument = {
     { id: 'v2', role: 'public_redacted', createdAt: '2027-03-03T16:30:00.000Z' },
   ],
   canRedact: false,
+  recordKind: 'application',
+  caseIsPublic: null,
+  parcelId: 'p1',
 }
 
 function panel() {
@@ -234,8 +237,8 @@ describe('document forms show a refusal beside their field', () => {
     const message = 'Choose from the audiences listed.'
     refuseWith('audience', message)
     panel()
-    fireEvent.click(screen.getByRole('button', { name: 'Save audiences' }))
-    const box = await screen.findByRole('checkbox', { name: 'Board' })
+    fireEvent.click(screen.getByRole('button', { name: 'Save signed-in access' }))
+    const box = await screen.findByRole('checkbox', { name: 'Board members' })
     await expectGroupRefusal(box, message)
   })
 

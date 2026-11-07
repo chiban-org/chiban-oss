@@ -3,7 +3,7 @@ export const CAPABILITIES = {
   'gate.override_admin': 'Override an administrative gate with a recorded reason',
   'gate.record_statutory_exception': 'Record a statutory exception with cited legal authority',
   'payment.refund_void_correct': 'Refund, void, or correct a payment entry',
-  'document.publish': 'Publish or unpublish a document',
+  'document.publish': 'Show a document on the public site or hide it',
   'hold.place_release': 'Place or release a legal hold',
   'disposition.approve': 'Approve disposition',
   'config.edit': 'Edit configuration',

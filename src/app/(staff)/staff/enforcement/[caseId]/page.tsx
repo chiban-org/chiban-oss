@@ -3,12 +3,14 @@ import { notFound } from 'next/navigation'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { RecordLayout } from '@/components/layout/RecordLayout'
 import { splitPanels } from '@/components/layout/splitPanels'
+import { SeePublicLink } from '@/components/SeePublicLink'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { assigneeChoices, caseAssignee } from '@/features/enforcement/caseAssignment'
 import { loadCaseDetail } from '@/features/enforcement/caseDetail'
 import { caseChipStatus } from '@/features/enforcement/chipStatus'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
+import { casePublicHref } from '@/features/publicSite/publicHref'
 import { mayOpen } from '@/features/staffNav/navItems'
 import { loadNavViewer } from '@/features/staffNav/viewer'
 import { townToday } from '@/features/town/today'
@@ -100,6 +102,7 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
           <StatusChip status={caseChipStatus(row.status)} label={CASE_STATUS_LABELS[row.status]} />
         }
         lead={row.locationText}
+        actions={<SeePublicLink href={casePublicHref(row)} />}
       />
       {detail.banner === null ? null : (
         <p role="status" className="mb-6 rounded-md bg-highlight p-3 font-semibold">
