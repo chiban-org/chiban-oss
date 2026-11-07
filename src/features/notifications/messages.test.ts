@@ -36,4 +36,23 @@ describe('notification messages', () => {
     expect(party.subject).toBe('Permit EL-2027-0001 corrected')
     expect(party.text).toContain('/portal/applications/a1')
   })
+
+  it('ask a board for comments with a link to the board pages and the date in words', () => {
+    const rendered = MESSAGES.board_comment_requested({
+      applicationId: 'a1',
+      payload: {
+        number: 'SPR-2026-0004',
+        boardName: 'Alder Pond Conservation Commission',
+        projectTitle: 'Loon Cove <site> plan',
+        commentBy: '2026-11-20',
+      },
+    })
+    expect(rendered.subject).toBe('Comments requested: SPR-2026-0004, Loon Cove <site> plan')
+    expect(rendered.text).toContain('asks the Alder Pond Conservation Commission for comments')
+    expect(rendered.text).toContain('Comments by November 20, 2026.')
+    expect(rendered.text).toMatch(/\/board to read the application/)
+    expect(rendered.text).not.toContain('/staff/')
+    expect(rendered.html).toContain('Loon Cove &lt;site&gt; plan')
+    expect(findIsoDates(`${rendered.subject} ${rendered.text} ${rendered.html}`)).toEqual([])
+  })
 })

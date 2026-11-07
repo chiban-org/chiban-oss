@@ -2099,7 +2099,9 @@ File: `data/review_assignments.ndjson`. Ordered by id.
 
 - `id`: uuid
 - `application_id`: uuid
-- `reviewer_user_id`: uuid
+- `reviewer_user_id`: uuid, nullable
+- `board_id`: uuid, nullable
+- `comment_by`: date, nullable
 - `assigned_by`: uuid
 - `assigned_at`: timestamp with time zone
 - `removed_at`: timestamp with time zone, nullable
@@ -2108,6 +2110,7 @@ File: `data/review_assignments.ndjson`. Ordered by id.
 
 References:
 - `application_id` refers to `applications`
+- `board_id` refers to `boards`
 
 ### review_comments
 
@@ -2115,6 +2118,7 @@ File: `data/review_comments.ndjson`. Ordered by id.
 
 - `id`: uuid
 - `assignment_id`: uuid
+- `author_user_id`: uuid, nullable
 - `body`: text
 - `created_at`: timestamp with time zone
 

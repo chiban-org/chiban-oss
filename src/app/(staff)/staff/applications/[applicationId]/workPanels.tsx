@@ -33,7 +33,7 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
   return [
     {
       key: 'reviewers',
-      empty: records.reviewers.length === 0,
+      empty: records.reviewers.length === 0 && records.boardAssignments.length === 0,
       node: (
         <ReviewersPanel
           key="reviewers"
@@ -43,6 +43,12 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
           canAssign={records.canAssign && mayAssignReviewers(view.state)}
           required={reviewRequired(view)}
           assignElsewhere={hosted.has('assign_reviewer')}
+          boards={{
+            assignments: records.boardAssignments,
+            choices: records.boardChoices,
+            canManage: records.canAssign && mayAddToRecord(view.state),
+            zone: records.zone,
+          }}
         />
       ),
     },

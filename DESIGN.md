@@ -59,7 +59,7 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 - A search field, "Find a permit, case or parcel", sits under the town name at the top of the sidebar and in the phone top bar (`RecordSearch` in `src/components/staff/search`). Typing an exact record number (an application or permit, an enforcement case, a cease and desist order or complaint, a Right-to-Know request, a receipt) and pressing Enter opens that record. Otherwise, after a short pause, it lists up to five matches per group: Applications (number, type, address, status chip), Enforcement cases, Parcels (ID, address, owner) and Requests, moved with the arrow keys and Enter and closed with Escape. A number search adds "See all application matches", which opens the Applications list with the search applied. The server (`search.find`, staff only) applies each target page's own access rule, so a viewer only ever sees records they can open and no counts. In the icon rail it is a search icon that expands the sidebar. It has no keyboard shortcut.
 - The sidebar collapses to an icon rail with tooltips. The choice is kept in the `chiban_staff_nav` cookie so the server renders the right width. Below 768px it becomes a top bar and a drawer.
 - The staff home (`/staff`) is a start page per role under a parcel search (`src/features/staffHome`): a clerk or planner sees what is waiting on them, the next deadlines and the counter; an inspector, results still owed, today's route, requests to schedule, their open cases and the next inspection days; finance, payment problems, fees, today's receipts with the cash report, and overpayments to refund; a records custodian, Right-to-Know requests by statutory day, preservation retries, disposition batches, holds and exports; admin, system health, users, settings drafts not yet in use, and imports and exports. Someone with several roles sees a panel for each, most urgent first. Each row is a count linked to the full list; a panel with nothing to count says "Nothing waiting." Reviewers land on their reviews and board members on `/board`.
-- `/board` puts the next meeting and its packet first, then later meetings, then earlier ones.
+- `/board` lists "Sent to your board for comment" first when anything is waiting, then the next meeting and its packet, later meetings and earlier ones.
 - The theme is light only. Tailwind's `dark:` variant is bound to a `.dark` class that nothing sets, so an operating system dark setting cannot restyle controls.
 
 - A rail taller than the window scrolls with the page instead of sticking, so its bottom is never cut off.
@@ -163,6 +163,14 @@ A meeting's packet is prepared, sent and tracked in one "Packet" panel on the me
 - Track is a table per recipient: sent, first opened, last opened, documents opened.
 - Cancelling a meeting turns off its packet's private links, and the cancel form asks whether to email the packet's recipients.
 - Members see a packet on `/board` only once it is sent: "New" until they open it, "Updated <date>" after an update they have not opened, and the meeting marked Cancelled instead of disappearing. The packet page starts with the cover page, marks items Added or Replaced, and keeps withdrawn or removed items in the list with the reason.
+
+## Boards asked for comment
+
+Staff can send an application to any active board that is not deciding it (`src/features/reviews/boardAssignments.ts`). The board comments; it never signs off and never blocks the decision.
+
+- The application's Reviewers panel lists each board under "Boards asked for comment" with its status in words ("Waiting for comments" or "Comments received"), the comment-by date when one was set, and each comment attributed as "<member>, <board short name>". "Send to a board for comment" (Board, optional Comment by) sits under the reviewer controls as a disclosure; Withdraw is a destructive disclosure that asks first. Both need `review.assign` and stay offered until the application is finished. A withdrawn request that already has comments stays listed, read-only, as "Withdrawn" with its comments, and the board can be asked again.
+- Sending emails the board's seated members a link to `/board`. Who can read it is worked out when the page is read, so a member seated later sees it and a member whose term ended does not.
+- On `/board`, each request shows the application, the board's short name, the comment-by date and the status. Its page (`/board/comments/<id>`) shows the documents shared with reviewers, the board's comments so far and a Comment box; staff-only and board-only documents stay hidden.
 
 ## Links
 

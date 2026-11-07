@@ -1,4 +1,4 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNotNull, isNull } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import {
   applicationConditions,
@@ -24,7 +24,13 @@ registerGate({
     const active = await tx
       .select({ status: reviewAssignments.status })
       .from(reviewAssignments)
-      .where(and(eq(reviewAssignments.applicationId, app.id), isNull(reviewAssignments.removedAt)))
+      .where(
+        and(
+          eq(reviewAssignments.applicationId, app.id),
+          isNull(reviewAssignments.removedAt),
+          isNotNull(reviewAssignments.reviewerUserId),
+        ),
+      )
     if (active.length === 0 && app.state === 'under_review') {
       return { status: 'blocked', reason: 'No reviewer is assigned.' }
     }

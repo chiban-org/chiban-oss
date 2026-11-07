@@ -51,6 +51,9 @@ export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
     'review.unassign': 'Removed a reviewer',
     'review.comment': 'Added a review comment',
     'review.sign_off': 'Signed off a review',
+    'review.board_assign': 'Sent the application to a board for comment',
+    'review.board_withdraw': 'Withdrew a request for board comment',
+    'review.board_comment': 'Added a board comment',
     'roster.professional.add': 'Added a professional to the application',
   }),
 )

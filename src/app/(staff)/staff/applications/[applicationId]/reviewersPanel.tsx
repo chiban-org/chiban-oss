@@ -1,9 +1,11 @@
 import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
 import { SelectField } from '@/components/staff/fields'
+import type { ApplicationBoardAssignment } from '@/features/reviews/boardAssignmentView'
 import type { ApplicationReviewer } from '@/features/reviews/reviewerView'
 import { reviewStatusLabel } from '@/features/reviews/statusLabels'
 import { assignReviewerAction, removeReviewerAction } from '../../reviews/actions'
+import { BoardComments } from './boardComments'
 
 interface Props {
   applicationId: string
@@ -12,6 +14,12 @@ interface Props {
   canAssign: boolean
   required?: boolean
   assignElsewhere?: boolean
+  boards?: {
+    assignments: ApplicationBoardAssignment[]
+    choices: { id: string; name: string }[]
+    canManage: boolean
+    zone: string
+  }
 }
 
 type Variant = 'default' | 'outline'
@@ -88,6 +96,7 @@ export function ReviewersPanel({
   canAssign,
   required = false,
   assignElsewhere = false,
+  boards,
 }: Props) {
   const offered = offeredReviewers(reviewers, choices)
   return (
@@ -111,6 +120,15 @@ export function ReviewersPanel({
           <AssignReviewerForm applicationId={applicationId} offered={offered} />
         </details>
       ) : null}
+      {boards === undefined ? null : (
+        <BoardComments
+          applicationId={applicationId}
+          assignments={boards.assignments}
+          choices={boards.choices}
+          canManage={boards.canManage}
+          zone={boards.zone}
+        />
+      )}
     </section>
   )
 }

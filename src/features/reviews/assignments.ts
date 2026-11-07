@@ -1,7 +1,8 @@
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNotNull, isNull, type SQL, sql } from 'drizzle-orm'
 import type { DbOrTx, Tx } from '@/db/client'
 import { applications, reviewAssignments, reviewComments, userRoles, users } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { activeMembershipOn, isBoardMember } from '@/features/access/predicates'
 import { isReviewer } from '@/features/access/roles'
 import { isTerminalState } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -106,7 +107,13 @@ export async function removeReviewer(
     const removed = await tx
       .update(reviewAssignments)
       .set({ removedAt: new Date() })
-      .where(and(eq(reviewAssignments.id, input.assignmentId), isNull(reviewAssignments.removedAt)))
+      .where(
+        and(
+          eq(reviewAssignments.id, input.assignmentId),
+          isNull(reviewAssignments.removedAt),
+          isNotNull(reviewAssignments.reviewerUserId),
+        ),
+      )
       .returning({
         applicationId: reviewAssignments.applicationId,
         reviewerUserId: reviewAssignments.reviewerUserId,
@@ -133,12 +140,25 @@ export type ReviewLockError = 'forbidden' | 'already_signed_off' | 'application_
 interface OwnAssignment {
   id: string
   applicationId: string
+  boardId: string | null
+}
+
+function assignedTo(actor: Actor): SQL | undefined {
+  const ways: SQL[] = []
+  if (isReviewer(actor)) ways.push(eq(reviewAssignments.reviewerUserId, actor.userId))
+  if (isBoardMember(actor)) {
+    ways.push(
+      sql`(${reviewAssignments.boardId} is not null and ${activeMembershipOn(actor.userId, sql`${reviewAssignments.boardId}`)})`,
+    )
+  }
+  if (ways.length === 0) return undefined
+  return ways.length === 1 ? ways[0] : sql`(${sql.join(ways, sql` or `)})`
 }
 
 function ownActive(actor: Actor, assignmentId: string) {
   return and(
     eq(reviewAssignments.id, assignmentId),
-    eq(reviewAssignments.reviewerUserId, actor.userId),
+    assignedTo(actor),
     isNull(reviewAssignments.removedAt),
   )
 }
@@ -148,9 +168,9 @@ async function lockOpenAssignment(
   actor: Actor,
   assignmentId: string,
 ): Promise<Result<OwnAssignment, ReviewLockError>> {
-  if (!isReviewer(actor)) return err('forbidden')
+  if (assignedTo(actor) === undefined) return err('forbidden')
   const [owned] = await tx
-    .select({ applicationId: reviewAssignments.applicationId })
+    .select({ applicationId: reviewAssignments.applicationId, boardId: reviewAssignments.boardId })
     .from(reviewAssignments)
     .where(ownActive(actor, assignmentId))
   if (owned === undefined) return err('forbidden')
@@ -167,7 +187,7 @@ async function lockOpenAssignment(
   if (app === undefined || row === undefined) return err('forbidden')
   if (isTerminalState(app.state)) return err('application_closed')
   if (row.status === 'signed_off') return err('already_signed_off')
-  return ok({ id: assignmentId, applicationId: owned.applicationId })
+  return ok({ id: assignmentId, applicationId: owned.applicationId, boardId: owned.boardId })
 }
 
 export async function addReviewComment(
@@ -181,7 +201,9 @@ export async function addReviewComment(
     const open = await lockOpenAssignment(tx, actor, input.assignmentId)
     if (!open.ok) return open
     const mine = open.value
-    await tx.insert(reviewComments).values({ assignmentId: mine.id, body: input.body })
+    await tx
+      .insert(reviewComments)
+      .values({ assignmentId: mine.id, authorUserId: actor.userId, body: input.body })
     await tx
       .update(reviewAssignments)
       .set({ status: 'commented' })
@@ -190,10 +212,13 @@ export async function addReviewComment(
       tx,
       {
         actor: { kind: 'user', userId: actor.userId },
-        action: 'review.comment',
+        action: mine.boardId === null ? 'review.comment' : 'review.board_comment',
         entityType: 'application',
         entityId: mine.applicationId,
-        after: { assignmentId: mine.id },
+        after: {
+          assignmentId: mine.id,
+          ...(mine.boardId === null ? {} : { boardId: mine.boardId }),
+        },
       },
       signal,
     )
@@ -212,6 +237,7 @@ export async function signOffReview(
     const open = await lockOpenAssignment(tx, actor, input.assignmentId)
     if (!open.ok) return open
     const mine = open.value
+    if (mine.boardId !== null) return err('forbidden')
     await tx
       .update(reviewAssignments)
       .set({ status: 'signed_off', signedOffAt: new Date() })

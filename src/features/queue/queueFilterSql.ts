@@ -27,7 +27,8 @@ const NEEDS_ACTION = sql`(${inArray(applications.state, [...NEEDS_ACTION_STATES]
   or (${applications.state} <> 'draft' and ${DEADLINE_OPEN}))`
 
 const ACTIVE_ASSIGNMENT = sql`select 1 from review_assignments ra
-  where ra.application_id = ${applications.id} and ra.removed_at is null`
+  where ra.application_id = ${applications.id} and ra.removed_at is null
+    and ra.reviewer_user_id is not null`
 
 const REVIEWS_BACK = sql`(${applications.state} = 'under_review'
   and exists (${ACTIVE_ASSIGNMENT})

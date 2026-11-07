@@ -18,6 +18,7 @@ export const NOTIFICATION_EVENTS = [
   'application_issued',
   'application_denied',
   'review_assigned',
+  'board_comment_requested',
   'inspection_scheduled',
   'inspection_cancelled',
   'inspection_result',

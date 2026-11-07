@@ -1,5 +1,5 @@
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
-import { reviewAssignments } from '@/db/schema'
+import { boards, reviewAssignments } from '@/db/schema'
 import { readQueueView } from '@/features/queue/queueParams'
 import { countWorkQueue, listWorkQueue } from '@/features/queue/workQueue'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
@@ -39,6 +39,17 @@ beforeAll(async () => {
   await underReview('oneWaiting', ['signed_off', 'pending'])
   await underReview('noReviewers', [])
   await underReview('removedPending', ['signed_off'], ['pending'])
+  await underReview('boardWaiting', ['signed_off'])
+  const [board] = await handle.db
+    .insert(boards)
+    .values({ kind: 'conservation_commission', name: 'Conservation', shortName: 'Conservation' })
+    .returning({ id: boards.id })
+  await handle.db.insert(reviewAssignments).values({
+    applicationId: ids.get('boardWaiting') ?? '',
+    boardId: board?.id ?? '',
+    assignedBy: world.staff.userId,
+    status: 'pending',
+  })
   const submitted = await makeApplication(handle.db, world, { state: 'submitted' })
   await handle.db.insert(reviewAssignments).values({
     applicationId: submitted.applicationId,
@@ -52,7 +63,7 @@ afterAll(async () => {
 })
 
 describe('the reviews back flag', () => {
-  it('finds applications under review whose every active reviewer has answered', async () => {
+  it('finds applications under review whose every active reviewer has answered, whatever a board is doing', async () => {
     const page = await listWorkQueue(
       handle.db,
       world.staff,
@@ -60,11 +71,11 @@ describe('the reviews back flag', () => {
       signal,
     )
     expect(new Set(page.rows.map((row) => row.applicationId))).toEqual(
-      new Set([ids.get('allBack'), ids.get('removedPending')]),
+      new Set([ids.get('allBack'), ids.get('removedPending'), ids.get('boardWaiting')]),
     )
     expect(
       await countWorkQueue(handle.db, world.staff, [{ flags: ['reviewed'] }], TODAY, signal),
-    ).toEqual([2])
+    ).toEqual([3])
   })
 
   it('reads the flag from the list address', () => {

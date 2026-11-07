@@ -1,6 +1,7 @@
 import { env } from '@/config/env'
 import type { NotificationEvent } from '@/db/schema'
 import type { NotificationPayload } from '@/features/notifications/queue'
+import { boardCommentMessage } from '@/features/reviews/boardCommentMail'
 import { humanizeIsoDates } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 
@@ -119,4 +120,11 @@ export const MESSAGES: Record<NotificationEvent, Builder> = {
       [`You were asked to review application ${c.payload.number}.`],
       reviewLink(c),
     ),
+  board_comment_requested: (c) =>
+    boardCommentMessage({
+      boardName: c.payload.boardName ?? 'board',
+      number: c.payload.number,
+      projectTitle: c.payload.projectTitle ?? '',
+      commentBy: c.payload.commentBy ?? null,
+    }),
 }

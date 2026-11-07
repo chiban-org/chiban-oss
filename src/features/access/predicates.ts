@@ -52,41 +52,44 @@ export function memberCanSeeMeeting(userId: string, meetingIdColumn: SQL): SQL {
       and ${activeMembershipOn(userId, sql`m.board_id`)})`
 }
 
+export function memberOfAssignedBoard(userId: string, applicationIdColumn: SQL): SQL {
+  return sql`exists (select 1 from review_assignments ra
+    where ra.application_id = ${applicationIdColumn} and ra.removed_at is null
+      and ra.board_id is not null and ${activeMembershipOn(userId, sql`ra.board_id`)})`
+}
+
+export function memberOfAssignedBoardInProject(userId: string, projectIdColumn: SQL): SQL {
+  return sql`exists (select 1 from applications pa
+    where pa.project_id = ${projectIdColumn}
+      and ${memberOfAssignedBoard(userId, sql`pa.id`)})`
+}
+
 export function applicationPartyOf(actor: Actor | null): SQL {
   return actor === null ? NOTHING : activePartyOf(actor.userId, applications.projectId)
 }
 
-export function applicationVisibleTo(actor: Actor | null): SQL {
-  if (actor === null) return NOTHING
-  if (hasFullRecordAccess(actor)) return EVERYTHING
-  const asParty = activePartyOf(actor.userId, applications.projectId)
-  const asMember = isBoardMember(actor)
-    ? memberCanSeeApplication(actor.userId, sql`${applications.id}`)
-    : null
-  if (!isReviewer(actor)) return asMember === null ? asParty : sql`(${asParty} or ${asMember})`
-  const assigned = exists(
+function anyOf(ways: (SQL | null)[]): SQL {
+  const present = ways.filter((way): way is SQL => way !== null)
+  return present.length === 1 ? (present[0] ?? NOTHING) : sql`(${sql.join(present, sql` or `)})`
+}
+
+function reviewerAssigned(userId: string): SQL {
+  return exists(
     sqlBuilder
       .select({ one: reviewAssignments.id })
       .from(reviewAssignments)
       .where(
         and(
           eq(reviewAssignments.applicationId, applications.id),
-          eq(reviewAssignments.reviewerUserId, actor.userId),
+          eq(reviewAssignments.reviewerUserId, userId),
           isNull(reviewAssignments.removedAt),
         ),
       ),
   )
-  return asMember === null
-    ? sql`(${asParty} or ${assigned})`
-    : sql`(${asParty} or ${assigned} or ${asMember})`
 }
 
-export function projectVisibleTo(actor: Actor | null): SQL {
-  if (actor === null) return NOTHING
-  if (hasFullRecordAccess(actor)) return EVERYTHING
-  const asParty = activePartyOf(actor.userId, projects.id)
-  if (!isReviewer(actor)) return asParty
-  const assignedInside = exists(
+function reviewerAssignedInside(userId: string): SQL {
+  return exists(
     sqlBuilder
       .select({ one: reviewAssignments.id })
       .from(reviewAssignments)
@@ -94,10 +97,32 @@ export function projectVisibleTo(actor: Actor | null): SQL {
       .where(
         and(
           eq(applications.projectId, projects.id),
-          eq(reviewAssignments.reviewerUserId, actor.userId),
+          eq(reviewAssignments.reviewerUserId, userId),
           isNull(reviewAssignments.removedAt),
         ),
       ),
   )
-  return sql`(${asParty} or ${assignedInside})`
+}
+
+export function applicationVisibleTo(actor: Actor | null): SQL {
+  if (actor === null) return NOTHING
+  if (hasFullRecordAccess(actor)) return EVERYTHING
+  const member = isBoardMember(actor)
+  const appId = sql`${applications.id}`
+  return anyOf([
+    activePartyOf(actor.userId, applications.projectId),
+    isReviewer(actor) ? reviewerAssigned(actor.userId) : null,
+    member ? memberCanSeeApplication(actor.userId, appId) : null,
+    member ? memberOfAssignedBoard(actor.userId, appId) : null,
+  ])
+}
+
+export function projectVisibleTo(actor: Actor | null): SQL {
+  if (actor === null) return NOTHING
+  if (hasFullRecordAccess(actor)) return EVERYTHING
+  return anyOf([
+    activePartyOf(actor.userId, projects.id),
+    isReviewer(actor) ? reviewerAssignedInside(actor.userId) : null,
+    isBoardMember(actor) ? memberOfAssignedBoardInProject(actor.userId, sql`${projects.id}`) : null,
+  ])
 }

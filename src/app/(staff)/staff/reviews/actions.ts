@@ -4,13 +4,14 @@ import { revalidatePath } from 'next/cache'
 import { z } from 'zod'
 import { NOTE_MAX_LENGTH } from '@/features/applications/noteLimits'
 import { boardErrorCopy } from '@/features/boards/errorCopy'
-import { recordId, requiredText } from '@/features/input/schemas'
+import { optionalCivilDate, recordId, requiredText } from '@/features/input/schemas'
 import {
   addReviewComment,
   assignReviewer,
   removeReviewer,
   signOffReview,
 } from '@/features/reviews/assignments'
+import { assignBoardForComment, withdrawBoardAssignment } from '@/features/reviews/boardAssignments'
 import { type ActionResult, errorCopy } from '@/server/actionRunner'
 import { refuseField, runStaffForm } from '@/server/formInput'
 
@@ -20,6 +21,7 @@ const COPY = {
   not_found: errorCopy('not_found'),
   already_signed_off: errorCopy('already_signed_off'),
   application_closed: boardErrorCopy('application_closed'),
+  board_not_assignable: 'Choose an active board that is not deciding this application.',
 } as const
 
 const ASSIGN_FORM = z.object({
@@ -28,6 +30,12 @@ const ASSIGN_FORM = z.object({
 })
 
 const REMOVE_FORM = z.object({ assignmentId: recordId('an assignment') })
+
+const SEND_TO_BOARD_FORM = z.object({
+  applicationId: recordId('an application'),
+  boardId: recordId('a board'),
+  commentBy: optionalCivilDate('the comment-by date'),
+})
 
 const COMMENT_FORM = z.object({
   assignmentId: recordId('an assignment'),
@@ -58,6 +66,38 @@ export async function removeReviewerAction(formData: FormData): Promise<ActionRe
     return result.ok
       ? { ok: true, message: 'Reviewer removed.' }
       : { ok: false, error: COPY[result.error] }
+  })
+}
+
+function notifiedText(notified: number): string {
+  if (notified === 0) return 'Nobody is seated on that board yet, so no one was emailed.'
+  return notified === 1 ? '1 member will be emailed.' : `${notified} members will be emailed.`
+}
+
+export async function sendToBoardAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(formData, SEND_TO_BOARD_FORM, async ({ db, actor, signal }, input) => {
+    const result = await assignBoardForComment(db, actor, input, signal)
+    if (!result.ok) {
+      return result.error === 'board_not_assignable'
+        ? refuseField('boardId', COPY.board_not_assignable)
+        : { ok: false, error: COPY[result.error] }
+    }
+    revalidatePath('/board')
+    return {
+      ok: true,
+      message: result.value.alreadyAssigned
+        ? 'That board already has this application for comment.'
+        : `Sent to the board for comment. ${notifiedText(result.value.notified)}`,
+    }
+  })
+}
+
+export async function withdrawBoardAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(formData, REMOVE_FORM, async ({ db, actor, signal }, input) => {
+    const result = await withdrawBoardAssignment(db, actor, input, signal)
+    if (!result.ok) return { ok: false, error: COPY[result.error] }
+    revalidatePath('/board')
+    return { ok: true, message: 'Request for comment withdrawn.' }
   })
 }
 
