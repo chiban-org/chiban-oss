@@ -55,6 +55,7 @@ export function RecordLayout({
   const { body, entries, active } = useSectionIndex()
   const { aside, tall } = useTallRail()
   const collapsed = strip !== undefined
+  const railless = rail === undefined && railFooter === undefined
   return (
     <div className="record-layout lg:grid lg:grid-cols-[minmax(0,1fr)_17rem] lg:items-start lg:gap-8">
       <div data-index-gutter="" className="record-gutter hidden min-[1840px]:block">
@@ -66,7 +67,7 @@ export function RecordLayout({
       <aside
         ref={aside}
         data-tall={tall ? '' : undefined}
-        className={`record-rail mb-6 flex-col gap-6 lg:order-2 lg:mb-0 lg:sticky lg:top-6 lg:flex lg:data-tall:static ${collapsed ? 'hidden' : 'flex'}`}
+        className={`record-rail mb-6 flex-col gap-6 lg:order-2 lg:mb-0 lg:sticky lg:top-6 lg:flex lg:data-tall:static ${collapsed || railless ? 'hidden' : 'flex'}`}
       >
         {rail}
         <SectionIndex entries={entries} active={active} className="hidden lg:max-[1839px]:block" />
