@@ -26,7 +26,7 @@ interface Props {
 const MAX_BYTES = 100 * 1024 * 1024
 const VISIBILITY_CHOICES: [ParcelFileVisibility, string][] = [
   ['private', 'Town staff only, until someone approves a copy for the public'],
-  ['public', 'The public, as uploaded'],
+  ['public', 'The public site, as uploaded'],
 ]
 
 export function ParcelFileUploader({ parcelId, series, actions }: Props) {
@@ -77,6 +77,10 @@ export function ParcelFileUploader({ parcelId, series, actions }: Props) {
                 </div>
               ))}
             </RadioGroup>
+            <p className="text-muted-foreground">
+              A file shown on the public site appears on this parcel's public page, where anyone can
+              download it.
+            </p>
           </fieldset>
           <Uploader
             target={{ kind: 'parcel', id: parcelId }}

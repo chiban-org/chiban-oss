@@ -261,7 +261,7 @@ describe('records screens with the demo seed', () => {
       }),
     )
     expect(publicPage).toContain(`href="/staff/parcels/${forPublic?.recordId}"`)
-    expect(visibleText(publicPage)).toContain('permission to publish documents')
+    expect(visibleText(publicPage)).toContain('permission to show documents on the public site')
     const requestPage = await html(
       RedactPage({
         params: Promise.resolve({ versionId: forRequest?.sourceVersionId ?? '' }),

@@ -170,7 +170,7 @@ describe('settings actions', () => {
     expect((await listVersions(handle.db, 'form', 'f1', signal))[0]?.status).toBe('draft')
     expect(await actions.publishAction(form(formBodyFields('f1')))).toMatchObject({
       ok: true,
-      message: 'Published version 1.',
+      message: 'Put version 1 into use.',
     })
     expect((await getPublished(handle.db, 'form', 'f1', signal))?.version).toBe(1)
   })

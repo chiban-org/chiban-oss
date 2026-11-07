@@ -102,7 +102,7 @@ async function issueStep(
       <>
         <ChosenSteps steps={steps} />
         <p role="alert">
-          This permit type has no published form or a fee that cannot be worked out yet.
+          This permit type has no form in use or a fee that cannot be worked out yet.
         </p>
       </>
     )

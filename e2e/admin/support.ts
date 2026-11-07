@@ -22,19 +22,19 @@ export async function startDraft(
   await dialog.locator('input[name="label"]').fill(name)
   await dialog.getByRole('button', { name: 'Start a draft' }).click()
   await expect(page).toHaveURL(new RegExp(`/staff/settings/${kind}/[^/]+$`))
-  await expect(page.getByRole('button', { name: 'Publish', exact: true })).toBeEnabled()
+  await expect(page.getByRole('button', { name: 'Put into use', exact: true })).toBeEnabled()
   return decodeURIComponent(new URL(page.url()).pathname.split('/').at(-1) ?? '')
 }
 
 export async function publishWithConfirm(page: Page): Promise<void> {
-  await page.getByRole('button', { name: 'Publish', exact: true }).click()
-  await page.getByRole('dialog').getByRole('button', { name: 'Publish now' }).click()
+  await page.getByRole('button', { name: 'Put into use', exact: true }).click()
+  await page.getByRole('dialog').getByRole('button', { name: 'Put into use now' }).click()
 }
 
 export function editorStatus(page: Page): Locator {
   return page
     .locator('form')
-    .filter({ has: page.getByRole('button', { name: 'Publish', exact: true }) })
+    .filter({ has: page.getByRole('button', { name: 'Put into use', exact: true }) })
     .getByRole('status')
     .filter({ hasText: /\S/ })
 }

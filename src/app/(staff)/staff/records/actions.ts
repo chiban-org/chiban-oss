@@ -33,7 +33,8 @@ const DOC_COPY = {
   invalid_audience: errorCopy('invalid_input'),
   unknown_series: 'Choose a record series from the list.',
   doc_kind_not_allowed: 'Choose a record series from the list.',
-  approval_required: 'Approve a version for the public before publishing this document.',
+  approval_required:
+    'Approve a version for the public before showing this document on the public site.',
 } as const
 
 function failure(copy: string, field?: string): ActionResult {

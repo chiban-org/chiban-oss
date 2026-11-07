@@ -24,7 +24,7 @@ export function KindPicker({
       value={value}
       options={KIND_OPTIONS}
       disabled={locked}
-      hint={locked ? 'The kind cannot change after the first publish.' : undefined}
+      hint={locked ? 'The kind cannot change once a version has been put into use.' : undefined}
       onChange={(e) => {
         const next = TEMPLATE_KINDS.find((k) => k === e.target.value)
         if (next !== undefined) onChange(next)

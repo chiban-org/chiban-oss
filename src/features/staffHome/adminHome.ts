@@ -37,7 +37,7 @@ async function userRows(ctx: HomeContext): Promise<HomeRow[]> {
 async function draftRows(ctx: HomeContext): Promise<HomeRow[]> {
   const drafts = await draftsByKind(ctx.db, ctx.signal)
   return drafts.map((d) => ({
-    label: `${KIND_LABELS[d.kind]}: drafts not yet published`,
+    label: `${KIND_LABELS[d.kind]}: drafts not yet in use`,
     count: d.count,
     href: `/staff/settings/${d.kind}?draft=draft`,
   }))

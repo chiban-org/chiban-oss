@@ -25,12 +25,14 @@ test.describe('scanned property file batch', () => {
     await page.goto('/staff/admin/migration')
     await page.getByRole('link', { name: BATCH_NAME }).click()
     await expect(page).toHaveURL(new RegExp(`/staff/admin/migration/${batch.id}$`))
-    await expect(page.getByRole('note')).toContainText('ask a staff member who may publish')
-    await expect(page.getByRole('button', { name: 'Publish this batch' })).toHaveCount(0)
+    await expect(page.getByRole('note')).toContainText('ask a staff member who may show documents')
+    await expect(
+      page.getByRole('button', { name: 'Show this batch on the public site' }),
+    ).toHaveCount(0)
 
     const publisher = await pageAs('staff')
     await publisher.goto(`/staff/admin/migration/${batch.id}`)
-    await publisher.getByRole('button', { name: 'Publish this batch' }).click()
+    await publisher.getByRole('button', { name: 'Show this batch on the public site' }).click()
     await expectConfirmation(publisher, 'Files whose parcel was not found stay private.')
 
     const publicAfter = await db.rows(

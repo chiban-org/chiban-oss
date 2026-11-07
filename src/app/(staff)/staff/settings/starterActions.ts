@@ -23,7 +23,7 @@ export async function adoptStarterAction(formData: FormData): Promise<ActionResu
       if (typeof result.error === 'string') return { ok: false, error: errorCopy(result.error) }
       return {
         ok: false,
-        error: 'The starter did not pass the publish checks.',
+        error: 'The starter did not pass the checks for putting it into use.',
         fieldErrors: fieldErrorsFor(result.error),
       }
     },
@@ -61,7 +61,7 @@ export async function applyStarterPathsAction(formData: FormData): Promise<Actio
       if (typeof result.error === 'string') return { ok: false, error: errorCopy(result.error) }
       return {
         ok: false,
-        error: `The change to ${selection.key} did not pass the publish checks.`,
+        error: `The change to ${selection.key} did not pass the checks for putting it into use.`,
         fieldErrors: fieldErrorsFor(result.error),
       }
     }

@@ -21,7 +21,7 @@ const REASON_COPY: Record<string, string> = {
 }
 
 const ASK_PUBLISHER_COPY =
-  'Review the files above, then ask a staff member who may publish documents to publish this batch. Until then every file in it stays private.'
+  'Review the files above, then ask a staff member who may show documents on the public site to show this batch there. Until then every file in it stays private.'
 
 const OCR_COPY: Record<string, string> = {
   encrypted: 'The PDF is password protected',
@@ -128,13 +128,13 @@ export default async function MigrationBatchPage({
       {mayPublish ? (
         <ActionForm
           action={publishMigrationBatchAction}
-          submitLabel="Publish this batch"
+          submitLabel="Show this batch on the public site"
           variant="default"
         >
           <input type="hidden" name="batchId" value={batch.id} />
           <p className="m-0">
-            Files whose parcel was found become public. Files whose parcel was not found stay
-            private.
+            Each file whose parcel was found shows on that parcel's public page, where anyone can
+            download it. Files whose parcel was not found stay private.
           </p>
         </ActionForm>
       ) : null}

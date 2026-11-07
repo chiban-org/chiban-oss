@@ -60,7 +60,7 @@ export function LetterheadPreview({ townName, body }: Props) {
         </a>
         <span className="text-muted-foreground">
           {' '}
-          The sample uses the published letterhead, so publish your changes first.
+          The sample uses the letterhead in use, so put your changes into use first.
         </span>
       </p>
     </section>

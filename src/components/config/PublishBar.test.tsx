@@ -21,7 +21,7 @@ function renderForm(
   initialBody: unknown = skeletonBody(kind, 'default'),
 ) {
   const publish = vi.fn((_: FormData) =>
-    Promise.resolve({ ok: true as const, message: 'Published version 2.' }),
+    Promise.resolve({ ok: true as const, message: 'Put version 2 into use.' }),
   )
   const save = vi.fn((_: FormData) =>
     Promise.resolve({ ok: true as const, message: 'Draft saved.' }),
@@ -43,20 +43,22 @@ function renderForm(
 describe('publishing asks first', () => {
   it('opens a confirmation that says open applications keep their version', async () => {
     const { publish } = renderForm('condition_library')
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Put into use' }))
     expect(screen.getByRole('dialog').textContent).toContain(
       'Open applications keep the version they started under.',
     )
     expect(publish).not.toHaveBeenCalled()
-    fireEvent.click(screen.getByRole('button', { name: 'Publish now' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Put into use now' }))
     await waitFor(() => expect(publish).toHaveBeenCalledTimes(1))
     expect(publish.mock.calls[0]?.[0].get('intent')).toBe('publish')
-    await waitFor(() => expect(screen.getByRole('status').textContent).toBe('Published version 2.'))
+    await waitFor(() =>
+      expect(screen.getByRole('status').textContent).toBe('Put version 2 into use.'),
+    )
   })
 
   it('sends nothing when the person keeps editing', () => {
     const { publish, save } = renderForm('condition_library')
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Put into use' }))
     fireEvent.click(screen.getByRole('button', { name: 'Keep editing' }))
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(publish).not.toHaveBeenCalled()
@@ -65,8 +67,8 @@ describe('publishing asks first', () => {
 
   it('says a setting without versions on applications takes effect straight away', () => {
     renderForm('board_settings')
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
-    expect(screen.getByRole('dialog').textContent).toContain('as soon as you publish')
+    fireEvent.click(screen.getByRole('button', { name: 'Put into use' }))
+    expect(screen.getByRole('dialog').textContent).toContain('as soon as you put it into use')
   })
 
   it('explains draft and publish once in plain words', () => {
@@ -79,10 +81,10 @@ describe('publishing asks first', () => {
   it('names a field the browser refuses instead of closing the confirmation silently', () => {
     const body = { ...(skeletonBody('inspection_settings', 'default') as object), horizonDays: 0 }
     const { publish } = renderForm('inspection_settings', body)
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Put into use' }))
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.getByRole('alert').textContent).toBe(
-      'Fix this before publishing: Days ahead that can be booked must be 1 or more.',
+      'Fix this before putting it into use: Days ahead that can be booked must be 1 or more.',
     )
     expect(publish).not.toHaveBeenCalled()
   })
@@ -97,10 +99,10 @@ describe('publishing asks first', () => {
     const { publish } = renderForm('payment_settings', body)
     fireEvent.change(screen.getByLabelText(/^Percent of the payment/), { target: { value: '' } })
     fireEvent.change(screen.getByLabelText(/^Plus a set amount/), { target: { value: '' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Put into use' }))
     expect(screen.queryByRole('dialog')).toBeNull()
     expect(screen.getByRole('alert').textContent).toBe(
-      'Fix these before publishing: Percent of the payment is required; Plus a set amount is required.',
+      'Fix these before putting it into use: Percent of the payment is required; Plus a set amount is required.',
     )
     expect(publish).not.toHaveBeenCalled()
   })

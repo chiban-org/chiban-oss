@@ -38,5 +38,5 @@ export function invalidFieldsText(form: HTMLFormElement): string | null {
     .map((control) => `${fieldName(control)} ${reason(control)}`)
   if (problems.length === 0) return null
   const lead = problems.length === 1 ? 'Fix this' : 'Fix these'
-  return `${lead} before publishing: ${problems.join('; ')}.`
+  return `${lead} before putting it into use: ${problems.join('; ')}.`
 }

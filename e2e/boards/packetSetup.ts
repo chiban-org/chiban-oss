@@ -37,8 +37,8 @@ export async function buildAndPublishAgenda(page: Page, meetingId: string): Prom
   await page.goto(`/staff/boards/meetings/${meetingId}`)
   await page.getByRole('button', { name: 'Add the scheduled hearings' }).click()
   await expect(page.getByRole('region', { name: 'Agenda' }).getByRole('listitem')).toHaveCount(1)
-  await page.getByRole('button', { name: 'Publish the agenda' }).click()
-  await expect(page.getByText(/^Published on the public site on /)).toBeVisible()
+  await page.getByRole('button', { name: 'Show the agenda on the public site' }).click()
+  await expect(page.getByText(/^Shown on the public site on /)).toBeVisible()
 }
 
 export async function sharePacketDocument(page: Page, meetingId: string): Promise<void> {

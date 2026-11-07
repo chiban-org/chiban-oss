@@ -64,10 +64,12 @@ describe('LetterBuilder', () => {
     expect((picker as HTMLSelectElement).disabled).toBe(false)
   })
 
-  it('locks the kind after the first publish', () => {
+  it('locks the kind once a version is in use', () => {
     render(<Harness initial={LETTER} builder={data({ kindLocked: true })} />)
     expect(screen.getByLabelText<HTMLSelectElement>('Kind of document').disabled).toBe(true)
-    expect(screen.getByText('The kind cannot change after the first publish.')).toBeTruthy()
+    expect(
+      screen.getByText('The kind cannot change once a version has been put into use.'),
+    ).toBeTruthy()
   })
 
   it('swaps in the standard wording when an untouched letter changes kind', async () => {

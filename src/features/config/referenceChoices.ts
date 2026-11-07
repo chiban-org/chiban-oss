@@ -79,9 +79,9 @@ export function usedByLabels(
 
 function noteFor(row: ReferenceRow): string | undefined {
   if (row.kind === 'inspection_checklist' && isFinalChecklist(row.body as ChecklistBody)) {
-    return row.status === 'draft' ? 'closes the permit, not published yet' : 'closes the permit'
+    return row.status === 'draft' ? 'closes the permit, not in use yet' : 'closes the permit'
   }
-  return row.status === 'draft' ? 'not published yet' : undefined
+  return row.status === 'draft' ? 'not in use yet' : undefined
 }
 
 export function choicesFromRows(rows: ReferenceRow[]): ReferenceChoices {

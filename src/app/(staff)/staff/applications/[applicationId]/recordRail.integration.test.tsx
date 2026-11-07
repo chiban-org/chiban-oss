@@ -193,3 +193,18 @@ describe('deadlines above the fold', () => {
     expect(late.split('<article')[1]).toMatch(/Overdue by|Past due by/)
   })
 })
+
+describe('the public parcel page line', () => {
+  it('appears on every application that is not a draft and on no draft', async () => {
+    const rows = await handle.db
+      .select({ number: applications.number, state: applications.state })
+      .from(applications)
+    const line =
+      'The public parcel page lists this application with its number, type, status and dates.'
+    for (const row of rows) {
+      const html = await page(row.number)
+      expect(html.includes(line), row.number).toBe(row.state !== 'draft')
+    }
+    expect(rows.some((r) => r.state !== 'draft')).toBe(true)
+  })
+})

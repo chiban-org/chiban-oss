@@ -59,7 +59,7 @@ test.describe('managing a parcel document', () => {
     await publish.getByRole('checkbox', { name: 'Public' }).check()
     await publish.getByRole('button', { name: 'Save public setting' }).click()
     await expect(publish.getByRole('status').filter({ hasText: /\S/ })).toHaveText(
-      'Approve a version for the public before publishing this document.',
+      'Approve a version for the public before showing this document on the public site.',
     )
     expect((await documentRow(db)).is_public).toBe(false)
 

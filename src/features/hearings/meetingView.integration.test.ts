@@ -34,7 +34,7 @@ describe('the meeting agenda', () => {
     expect(view?.agenda?.items[0]?.line).toMatch(/^Public hearing: VAR VAR-\d{4}-\d{4}$/)
     expect(
       view?.agenda === null || view?.agenda === undefined ? '' : agendaStatusText(view.agenda),
-    ).toMatch(/^Published on the public site on [A-Z][a-z]+ \d{1,2}, \d{4}\. Revision 1\.$/)
+    ).toMatch(/^Shown on the public site on [A-Z][a-z]+ \d{1,2}, \d{4}\. Revision 1\.$/)
   })
 
   it('offers the packet once and then links to the one made', async () => {

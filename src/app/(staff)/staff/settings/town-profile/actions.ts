@@ -31,11 +31,11 @@ export async function publishTownSectionAction(formData: FormData): Promise<Acti
       { section: input.section, slice: input.body },
       signal,
     )
-    if (result.ok) return { ok: true, message: `Published version ${result.value.version}.` }
+    if (result.ok) return { ok: true, message: `Put version ${result.value.version} into use.` }
     if (result.error === 'forbidden') return { ok: false, error: errorCopy('forbidden') }
     return {
       ok: false,
-      error: 'These settings cannot be published yet.',
+      error: 'These settings cannot be put into use yet.',
       fieldErrors: fieldErrorsFor(result.error),
     }
   })

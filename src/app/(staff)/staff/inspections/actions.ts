@@ -160,10 +160,11 @@ export async function publishInspectionSettingsAction(formData: FormData): Promi
     )
     if (!saved.ok) return refusedDraft(saved.error)
     const published = await publishConfig(db, actor, saved.value.versionId, signal)
-    if (published.ok) return { ok: true, message: `Published version ${published.value.version}.` }
+    if (published.ok)
+      return { ok: true, message: `Put version ${published.value.version} into use.` }
     return {
       ok: false,
-      error: 'This version cannot be published yet.',
+      error: 'This version cannot be put into use yet.',
       fieldErrors: fieldErrorsFor(published.error),
     }
   })

@@ -67,9 +67,11 @@ test.describe('the notice roster by role', () => {
         await openRoster(page)
         const dialog = await openDialog(page, change, 'How often contacts are checked')
         await dialog.getByLabel(DAYS).fill('0')
-        await dialog.getByRole('button', { name: 'Publish' }).click()
+        await dialog.getByRole('button', { name: 'Put into use' }).click()
         await expectRefusedBeside(dialog.getByLabel(DAYS), 'Check: Days between checks.')
-        await expect(page.getByRole('dialog', { name: 'Publish these changes?' })).toHaveCount(0)
+        await expect(page.getByRole('dialog', { name: 'Put these changes into use?' })).toHaveCount(
+          0,
+        )
       })
 
       test('publishes a new interval after the dialog and shows it on the roster', async ({
@@ -79,8 +81,8 @@ test.describe('the notice roster by role', () => {
         await openRoster(page)
         const dialog = await openDialog(page, change, 'How often contacts are checked')
         await dialog.getByLabel(DAYS).fill('400')
-        await dialog.getByRole('button', { name: 'Publish' }).click()
-        await confirmWith(page, 'Publish these changes?', 'Publish now')
+        await dialog.getByRole('button', { name: 'Put into use' }).click()
+        await confirmWith(page, 'Put these changes into use?', 'Put into use now')
         await expectConfirmation(page, 'Contacts are now due every 400 days.')
         await expect(page.getByText('Contacts are due for a check every 400 days.')).toBeVisible()
         const row = await db.one<{ body: unknown }>(

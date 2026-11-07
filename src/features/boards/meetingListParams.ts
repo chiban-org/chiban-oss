@@ -28,7 +28,7 @@ export type AgendaState = (typeof AGENDA_STATES)[number]
 export const AGENDA_STATE_LABELS: ReadonlyMap<AgendaState, string> = new Map([
   ['none', 'Not started'],
   ['draft', 'Draft'],
-  ['published', 'Published'],
+  ['published', 'On the public site'],
 ])
 
 export type MeetingSortKey = 'date' | 'board' | 'kind' | 'location' | 'hearings' | 'agenda'

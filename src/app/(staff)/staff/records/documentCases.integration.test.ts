@@ -121,7 +121,7 @@ describe('setPublicAction publishing', () => {
     )
     expect(value).toEqual({
       ok: false,
-      error: 'Approve a version for the public before publishing this document.',
+      error: 'Approve a version for the public before showing this document on the public site.',
     })
     expect(written).toEqual([])
   })

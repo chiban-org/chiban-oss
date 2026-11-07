@@ -125,7 +125,8 @@ describe('publishCaseAction with a complaint still unreviewed', () => {
     expect({ value, written }).toEqual({
       value: {
         ok: false,
-        error: 'Write the public text for every complaint before publishing the case.',
+        error:
+          'Write the public text for every complaint before showing the case on the public site.',
       },
       written: [],
     })

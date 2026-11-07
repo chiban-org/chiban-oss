@@ -37,11 +37,13 @@ test.describe
     }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
       const complaints = region(page, 'Complaints')
-      const form = await openSummary(complaints, 'Make the case public')
+      const form = await openSummary(complaints, 'Show the case on the public site')
       await form.getByLabel('Public summary').fill(summary(suffix))
-      await form.getByRole('button', { name: 'Make case public' }).click()
+      await form.getByRole('button', { name: 'Show the case on the public site' }).click()
       await expect(
-        form.getByText('Write the public text for every complaint before publishing the case.'),
+        form.getByText(
+          'Write the public text for every complaint before showing the case on the public site.',
+        ),
       ).toBeVisible()
       const row = await db.one<{ is_public: boolean }>(
         'select is_public from enforcement_cases where id = $1',
@@ -80,16 +82,16 @@ test.describe
     }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
       const complaints = region(page, 'Complaints')
-      const form = await openSummary(complaints, 'Make the case public')
+      const form = await openSummary(complaints, 'Show the case on the public site')
       await form.getByLabel('Public summary').fill('   ')
-      await form.getByRole('button', { name: 'Make case public' }).click()
+      await form.getByRole('button', { name: 'Show the case on the public site' }).click()
       await expectRefusedBeside(form.getByLabel('Public summary'), 'Enter a public summary.')
 
       await form.getByLabel('Public summary').fill(summary(suffix))
-      await form.getByRole('button', { name: 'Make case public' }).click()
+      await form.getByRole('button', { name: 'Show the case on the public site' }).click()
       await expectConfirmation(page, 'The case is now public.')
       await expect(
-        complaints.getByText(`This case is public. Summary: ${summary(suffix)}`),
+        complaints.getByText(`This case is shown on the public site. Summary: ${summary(suffix)}`),
       ).toBeVisible()
       const row = await db.one<{ is_public: boolean; public_summary: string }>(
         'select is_public, public_summary from enforcement_cases where id = $1',
@@ -101,8 +103,8 @@ test.describe
     test('makes the case private only after a confirmed dialog', async ({ page, db }) => {
       await page.goto(`/staff/enforcement/${caseId}`)
       const complaints = region(page, 'Complaints')
-      await complaints.getByRole('button', { name: 'Make case private' }).click()
-      const dialog = page.getByRole('dialog', { name: 'Make this case private?' })
+      await complaints.getByRole('button', { name: 'Hide the case from the public site' }).click()
+      const dialog = page.getByRole('dialog', { name: 'Hide this case from the public site?' })
       await dialog.getByRole('button', { name: 'Cancel' }).click()
       await expect(dialog).toHaveCount(0)
       const still = await db.one<{ is_public: boolean }>(
@@ -111,7 +113,7 @@ test.describe
       )
       expect(still.is_public).toBe(true)
 
-      await complaints.getByRole('button', { name: 'Make case private' }).click()
+      await complaints.getByRole('button', { name: 'Hide the case from the public site' }).click()
       await dialog.getByRole('button', { name: 'Make it private' }).click()
       await expectConfirmation(page, 'The case is no longer public.')
       const row = await db.one<{ is_public: boolean }>(

@@ -11,7 +11,7 @@ test.describe('inspection checklist editor', () => {
     const check = `Smoke alarm within 10 feet of each bedroom, ${suffix}`
     await page.getByLabel('Check 1').fill(check)
     await publishWithConfirm(page)
-    await expect(editorStatus(page)).toHaveText('Published version 1.')
+    await expect(editorStatus(page)).toHaveText('Put version 1 into use.')
     const rows = await versionsOf(db, KIND, key)
     expect(rows.map((v) => v.status)).toEqual(['published'])
     const items = rows[0]?.body.items as { label: string }[]

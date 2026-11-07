@@ -24,7 +24,7 @@ interface Props {
 }
 
 function statusText(pending: boolean, result: ActionResult | null): string | null {
-  if (pending) return 'Publishing'
+  if (pending) return 'Putting into use'
   if (result === null) return null
   return result.ok ? result.message : result.error
 }
@@ -89,7 +89,7 @@ export function TownSectionForm({ section, initial, resetKey, townName }: Props)
       />
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <Button type="submit" disabled={pending || !hydrated}>
-          Publish
+          Put into use
         </Button>
         <p role="status" className="m-0 text-sm">
           {statusText(pending, result)}

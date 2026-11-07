@@ -34,7 +34,9 @@ describe('board packets index', () => {
     })
     expect(before.value.meetings.every((r) => r.meetingDate >= '2027-04-01')).toBe(true)
     const others = before.value.meetings.filter((r) => r.meetingId !== flow.meetingId)
-    expect(others.every((r) => r.state === 'Publish the agenda to start the packet')).toBe(true)
+    expect(
+      others.every((r) => r.state === 'Show the agenda on the public site to start the packet'),
+    ).toBe(true)
     const saved = await savePacket(
       handle.db,
       store,

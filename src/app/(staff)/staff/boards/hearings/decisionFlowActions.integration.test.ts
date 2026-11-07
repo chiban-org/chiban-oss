@@ -251,7 +251,10 @@ describeActionCases(h, 'fileDecisionAction', {
   ),
   refusals: { ...STAFF_REFUSALS, invalid: filingRefusal, checkOnly: CHECK_PASSED },
   accepted: async (result, { db, input }) => {
-    expect(result).toEqual({ ok: true, message: 'Decision and minutes filed and published.' })
+    expect(result).toEqual({
+      ok: true,
+      message: 'Decision and minutes filed and shown on the public site.',
+    })
     const [row] = await db
       .select({ filedOn: boardDecisions.filedOn })
       .from(boardDecisions)

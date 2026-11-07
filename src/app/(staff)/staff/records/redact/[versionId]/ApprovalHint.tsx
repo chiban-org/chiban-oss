@@ -17,7 +17,7 @@ export function ApprovalHint({ requestId, recordHref, canPublish }: ApprovalHint
         <Place href={recordHref}>the record&apos;s page</Place>.
         {canPublish
           ? null
-          : ' That takes permission to publish documents, so a staff member who has it approves it.'}
+          : ' That takes permission to show documents on the public site, so a staff member who has it approves it.'}
       </p>
       {requestId === undefined ? (
         <p>

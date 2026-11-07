@@ -38,7 +38,7 @@ describeActionCases(h, 'changeRecheckIntervalAction', {
   accepted: async (result, { db, written }) => {
     expect(result).toEqual({
       ok: true,
-      message: 'Published as version 1. Contacts are now due every 45 days.',
+      message: 'Put version 1 into use. Contacts are now due every 45 days.',
     })
     expect(written).toEqual(['audit_log', 'config_versions'])
     const versions = await db

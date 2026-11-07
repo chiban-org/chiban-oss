@@ -54,7 +54,7 @@ describe('VersionHistory', () => {
     expect(within(row1).getByText(/Alex Admin/)).toBeTruthy()
     const row4 = screen.getByText('Version 4').closest('tr') as HTMLElement
     expect(within(row4).getByText('Draft')).toBeTruthy()
-    expect(within(row4).getByText('Not published')).toBeTruthy()
+    expect(within(row4).getByText('Not in use yet')).toBeTruthy()
   })
 
   it('says when a version was restored from an older one', () => {

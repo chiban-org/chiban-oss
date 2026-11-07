@@ -51,7 +51,7 @@ test.describe('fee schedule editor', () => {
 
     await page.getByRole('spinbutton', { name: 'Amount' }).fill('1000000')
     await publishWithConfirm(page)
-    await expect(editorStatus(page)).toHaveText('Published version 1.')
+    await expect(editorStatus(page)).toHaveText('Put version 1 into use.')
     const rows = await versionsOf(db, KIND, key)
     expect(rows.map((v) => v.status)).toEqual(['published'])
     const line = (rows[0]?.body.lines as Line[])[0]

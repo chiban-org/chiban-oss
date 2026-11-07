@@ -212,7 +212,7 @@ describeActionCases(h, 'publishAgendaAction', {
     checkOnly: CHECK_PASSED,
   },
   accepted: async (result, { db }) => {
-    expect(result).toEqual({ ok: true, message: 'Agenda published on the public site.' })
+    expect(result).toEqual({ ok: true, message: 'Agenda shown on the public site.' })
     const [agenda] = await db
       .select({ status: agendas.status })
       .from(agendas)
@@ -235,7 +235,8 @@ describeActionCases(h, 'reopenAgendaAction', {
   accepted: async (result, { db }) => {
     expect(result).toEqual({
       ok: true,
-      message: 'Agenda reopened. Publishing again creates a new revision.',
+      message:
+        'Agenda hidden from the public site and reopened. Showing it again creates a new revision.',
     })
     const [agenda] = await db
       .select({ status: agendas.status })

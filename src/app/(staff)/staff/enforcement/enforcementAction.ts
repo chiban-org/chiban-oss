@@ -59,7 +59,7 @@ const COPY: Record<string, string> = {
   already_certified: 'Imminent peril is already certified for this appeal.',
   judgment_required: 'A fine needs a recorded court judgment for this case.',
   complaint_text_unreviewed:
-    'Write the public text for every complaint before publishing the case.',
+    'Write the public text for every complaint before showing the case on the public site.',
   verification_required:
     'Anonymous intake needs a passing retention check for the version that is running.',
 }

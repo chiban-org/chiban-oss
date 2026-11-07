@@ -95,7 +95,7 @@ export async function fileDecision(
     await approveLatestForPublic(
       tx,
       [input.minutesDocumentId, decision.writtenDecisionDocumentId],
-      'Published when the board decision was filed.',
+      'Shown on the public site when the board decision was filed.',
     )
     await tx
       .update(boardDecisions)

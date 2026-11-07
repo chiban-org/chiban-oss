@@ -79,14 +79,14 @@ export function ComplaintsSection({ detail, can }: { detail: CaseDetail; can: Ca
       {can.manage ? (
         row.isPublic ? (
           <div className="space-y-2">
-            <p>{`This case is public. Summary: ${row.publicSummary ?? ''}`}</p>
+            <p>{`This case is shown on the public site. Summary: ${row.publicSummary ?? ''}`}</p>
             <ActionForm
               action={unpublishCaseAction}
-              submitLabel="Make case private"
+              submitLabel="Hide the case from the public site"
               confirm={{
-                title: 'Make this case private?',
+                title: 'Hide this case from the public site?',
                 body: 'The public site stops showing the case, its summary and its public complaint text.',
-                confirmLabel: 'Make it private',
+                confirmLabel: 'Hide it',
               }}
             >
               <Hidden name="caseId" value={row.id} />
@@ -94,14 +94,14 @@ export function ComplaintsSection({ detail, can }: { detail: CaseDetail; can: Ca
           </div>
         ) : (
           <details>
-            <summary>Make the case public</summary>
-            <ActionForm action={publishCaseAction} submitLabel="Make case public">
+            <summary>Show the case on the public site</summary>
+            <ActionForm action={publishCaseAction} submitLabel="Show the case on the public site">
               <Hidden name="caseId" value={row.id} />
               <TextField label="Public summary" name="summary" required />
               <p className="m-0">
-                The public sees the case number, status, dates, summary, public complaint text, the
-                provisions cited, and issued order numbers. Photos stay private until you publish
-                them one by one.
+                The public page for the parcel shows the case number, status, dates, summary, public
+                complaint text, the provisions cited, and issued order numbers. Photos stay private
+                until you show them one by one.
               </p>
             </ActionForm>
           </details>

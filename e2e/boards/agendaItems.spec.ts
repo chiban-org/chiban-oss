@@ -77,11 +77,17 @@ test.describe
 
     test('publishes the agenda and reopens it after the confirmation', async ({ page, db }) => {
       await page.goto(`/staff/boards/meetings/${meetingId}`)
-      await page.getByRole('button', { name: 'Publish the agenda' }).click()
-      await expect(page.getByText(/^Published on the public site on /)).toBeVisible()
+      await page.getByRole('button', { name: 'Show the agenda on the public site' }).click()
+      await expect(page.getByText(/^Shown on the public site on /)).toBeVisible()
       await page.getByRole('button', { name: 'Reopen the agenda' }).click()
-      await confirmWith(page, 'Reopen the published agenda?', 'Reopen the agenda')
-      await expect(page.getByRole('button', { name: 'Publish the agenda' })).toBeVisible()
+      await confirmWith(
+        page,
+        'Hide the agenda from the public site and reopen it?',
+        'Reopen the agenda',
+      )
+      await expect(
+        page.getByRole('button', { name: 'Show the agenda on the public site' }),
+      ).toBeVisible()
       const agenda = await db.one<{ status: string; revision: number }>(
         'select status, revision from agendas where meeting_id = $1',
         [meetingId],

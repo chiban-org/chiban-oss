@@ -25,7 +25,7 @@ function ItemControls({ item }: { item: MeetingAgendaView['items'][number] }) {
         submitLabel="Remove"
         confirm={{
           title: 'Remove this item from the agenda?',
-          body: `“${item.text}” comes off this draft agenda. You can add it again before publishing.`,
+          body: `“${item.text}” comes off this draft agenda. You can add it again before the agenda goes on the public site.`,
           confirmLabel: 'Remove the item',
         }}
       >
@@ -112,8 +112,8 @@ function AgendaControls({ view, draft }: { view: MeetingView; draft: boolean }) 
       action={reopenAgendaAction}
       submitLabel="Reopen the agenda"
       confirm={{
-        title: 'Reopen the published agenda?',
-        body: 'It goes back to a draft so you can change it. Publish it again when you are done.',
+        title: 'Hide the agenda from the public site and reopen it?',
+        body: 'It comes off the public site and goes back to a draft so you can change it. Show it on the public site again when you are done.',
         confirmLabel: 'Reopen the agenda',
       }}
     >

@@ -43,7 +43,11 @@ export async function previewWorkflowAction(formData: FormData): Promise<Preview
         signal,
       )
       if (!shown.ok) return { ok: false, error: errorCopy(shown.error) }
-      return { ok: true, message: 'Preview updated. Nothing was published.', preview: shown.value }
+      return {
+        ok: true,
+        message: 'Preview updated. Nothing was put into use.',
+        preview: shown.value,
+      }
     },
   )
 }

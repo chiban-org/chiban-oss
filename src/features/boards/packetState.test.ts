@@ -16,7 +16,7 @@ const SENT_ON = '2027-04-02' as CivilDate
 describe('packet state label', () => {
   it('names each state in plain words', () => {
     expect(packetStateOf({ ...BASE, agendaPublished: false, hasPacket: false }).label).toBe(
-      'Publish the agenda to start the packet',
+      'Show the agenda on the public site to start the packet',
     )
     expect(packetStateOf({ ...BASE, hasPacket: false }).label).toBe('Not sent yet')
     expect(packetStateOf(BASE).label).toBe('Not sent yet')

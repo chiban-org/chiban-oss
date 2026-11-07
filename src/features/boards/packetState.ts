@@ -40,7 +40,7 @@ function kindOf(input: PacketStateInput): PacketStateKind {
 
 const FIXED_LABELS = {
   cancelled: 'Meeting cancelled. Packet closed.',
-  no_agenda: 'Publish the agenda to start the packet',
+  no_agenda: 'Show the agenda on the public site to start the packet',
   draft: 'Not sent yet',
 } as const
 

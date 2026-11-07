@@ -126,7 +126,7 @@ export default async function BoardMembersPage({
     <main data-wide="">
       <ListHeader
         title="Board members"
-        lead="Members sign in with a link sent to their email. They see only their own board's meetings, and only after the agenda is published. Listed by board, then name."
+        lead="Members sign in with a link sent to their email. They see only their own board's meetings, and only after the agenda is on the public site. Listed by board, then name."
         actions={<AddMember today={today} boards={view.boardOptions} />}
       />
       <FilterTabs label="Members" tabs={tabs} />

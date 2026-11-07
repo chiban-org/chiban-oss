@@ -14,7 +14,7 @@ afterEach(cleanup)
 
 const FORMS = [
   { key: 'bp-form', label: 'Building permit application' },
-  { key: 'el-form', label: 'Electrical permit application', note: 'not published yet' },
+  { key: 'el-form', label: 'Electrical permit application', note: 'not in use yet' },
 ]
 
 describe('money and percent inputs', () => {
@@ -72,7 +72,7 @@ describe('reference pickers', () => {
     render(<NamePicker label="Form" value="bp-form" choices={FORMS} onChange={onChange} />)
     const select = screen.getByLabelText<HTMLSelectElement>('Form')
     expect(select.selectedOptions[0]?.textContent).toBe('Building permit application')
-    expect(screen.getByText('Electrical permit application (not published yet)')).toBeTruthy()
+    expect(screen.getByText('Electrical permit application (not in use yet)')).toBeTruthy()
     fireEvent.change(select, { target: { value: 'el-form' } })
     expect(onChange).toHaveBeenCalledWith('el-form')
   })
@@ -95,7 +95,7 @@ describe('reference pickers', () => {
         onChange={onChange}
       />,
     )
-    fireEvent.click(screen.getByLabelText('Electrical permit application (not published yet)'))
+    fireEvent.click(screen.getByLabelText('Electrical permit application (not in use yet)'))
     expect(onChange).toHaveBeenLastCalledWith(['bp-form', 'el-form'])
     fireEvent.click(screen.getByLabelText('Building permit application'))
     expect(onChange).toHaveBeenLastCalledWith([])

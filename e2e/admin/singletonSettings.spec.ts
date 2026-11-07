@@ -72,7 +72,7 @@ for (const item of CASES) {
     const original = await field.inputValue()
     await field.fill(item.value(suffix))
     await publishWithConfirm(page)
-    await expect(editorStatus(page)).toHaveText(`Published version ${before.version + 1}.`)
+    await expect(editorStatus(page)).toHaveText(`Put version ${before.version + 1} into use.`)
     const published = await publishedVersion(db, item.kind)
     expect(published.version).toBe(before.version + 1)
     expect(published.body).not.toEqual(before.body)
@@ -87,7 +87,7 @@ for (const item of CASES) {
     } else {
       await field.fill(original)
       await publishWithConfirm(page)
-      await expect(editorStatus(page)).toHaveText(`Published version ${before.version + 2}.`)
+      await expect(editorStatus(page)).toHaveText(`Put version ${before.version + 2} into use.`)
     }
     const restored = await publishedVersion(db, item.kind)
     expect(restored.version).toBe(before.version + 2)

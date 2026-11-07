@@ -116,7 +116,7 @@ describeActionCases(h, 'publishAction', {
     checkOnly: CHECK_PASSED,
   },
   accepted: (result, { written }) => {
-    expect(result).toEqual({ ok: true, message: 'Published version 1.' })
+    expect(result).toEqual({ ok: true, message: 'Put version 1 into use.' })
     expect(written).toEqual(['audit_log', 'config_versions'])
   },
 })

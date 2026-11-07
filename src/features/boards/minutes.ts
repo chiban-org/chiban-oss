@@ -72,7 +72,11 @@ async function publish(tx: Tx, actor: Actor, documentId: string, now: Date): Pro
     .update(documents)
     .set({ isPublic: true, publicChangedBy: actor.userId, publicChangedAt: now })
     .where(eq(documents.id, documentId))
-  await approveLatestForPublic(tx, [documentId], 'Published when the board approved the minutes.')
+  await approveLatestForPublic(
+    tx,
+    [documentId],
+    'Shown on the public site when the board approved the minutes.',
+  )
 }
 
 export async function recordMinutes(

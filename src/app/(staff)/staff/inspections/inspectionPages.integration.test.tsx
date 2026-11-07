@@ -182,4 +182,22 @@ describe('an inspection', () => {
     )
     expect(body).not.toContain('Open the permit')
   })
+
+  it('says the public parcel page lists a scheduled, passed or failed inspection and no other', async () => {
+    await actAs('staff')
+    const rows = await handle.db
+      .select({ id: inspections.id, status: inspections.status })
+      .from(inspections)
+    const line =
+      'The public parcel page lists this inspection with its number, type, status and dates.'
+    const seen = new Set<string>()
+    for (const row of rows) {
+      if (seen.has(row.status)) continue
+      seen.add(row.status)
+      const body = await html(InspectionPage({ params: Promise.resolve({ inspectionId: row.id }) }))
+      const listed = ['scheduled', 'passed', 'failed'].includes(row.status)
+      expect(body.includes(line)).toBe(listed)
+    }
+    expect(seen.has('scheduled')).toBe(true)
+  })
 })

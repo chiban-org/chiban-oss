@@ -54,7 +54,7 @@ function RecordForm({
           type="date"
           min={meetingDate}
           max={today}
-          hint="Needed when the board has approved them. Approved minutes become public."
+          hint="Needed when the board has approved them. Approved minutes show on the meetings page of the public site."
         />
       ) : null}
     </ActionForm>

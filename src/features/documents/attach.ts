@@ -133,7 +133,7 @@ export async function attachDocument(
       documentId,
       versionId: version?.id ?? '',
       statement:
-        'Published when the file was attached, at the choice of the staff member who added it.',
+        'Shown on the public site when the file was attached, at the choice of the staff member who added it.',
     })
   }
   const parcelId = await parcelOf(tx, input.target)

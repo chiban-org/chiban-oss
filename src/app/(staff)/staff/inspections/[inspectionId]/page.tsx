@@ -27,6 +27,7 @@ const STATUS = {
   cancelled: { chip: 'neutral', label: 'Cancelled' },
 } as const
 
+const LISTED_STATUSES: readonly string[] = ['scheduled', 'passed', 'failed']
 const OUTCOME = { pass: 'Pass', fail: 'Fail', na: 'N/A' } as const
 const LINK = 'inline-flex min-h-11 items-center'
 
@@ -62,6 +63,11 @@ export default async function InspectionPage({
         lead={address}
         facts={inspectionFacts(view, LINK)}
       />
+      {LISTED_STATUSES.includes(inspection.status) ? (
+        <p className="text-muted-foreground">
+          The public parcel page lists this inspection with its number, type, status and dates.
+        </p>
+      ) : null}
       {view.previousFailureNotes === null ? null : (
         <p className="rounded-md bg-highlight px-3 py-2">{`Last time: ${view.previousFailureNotes}`}</p>
       )}

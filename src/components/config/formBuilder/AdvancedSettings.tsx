@@ -6,7 +6,7 @@ import type { FieldReference } from '@/features/forms/formReferences'
 import type { FormField } from '@/features/forms/formSchema'
 import { FACT_CHOICES } from '@/features/forms/questionTypes'
 
-const FROZEN_HINT = 'A published version uses this key, so it stays fixed.'
+const FROZEN_HINT = 'A version that was put into use uses this key, so it stays fixed.'
 const FREE_HINT = 'Made from the question text. Answers are stored under it.'
 
 export function AdvancedSettings({

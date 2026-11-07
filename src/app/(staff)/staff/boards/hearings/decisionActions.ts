@@ -59,7 +59,7 @@ export async function fileDecisionAction(formData: FormData): Promise<ActionResu
       ok: true,
       message: filed.value.late
         ? 'Decision filed late. A 30 day amendment window now runs from today.'
-        : 'Decision and minutes filed and published.',
+        : 'Decision and minutes filed and shown on the public site.',
     }
   })
 }

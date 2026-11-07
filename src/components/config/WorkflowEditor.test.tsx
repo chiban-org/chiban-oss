@@ -101,7 +101,7 @@ describe('WorkflowEditor', () => {
 
   it('offers publish, save draft, and preview with publish as the one filled action', () => {
     renderEditor(variance())
-    const publish = screen.getByRole('button', { name: 'Publish' })
+    const publish = screen.getByRole('button', { name: 'Put into use' })
     expect(publish.getAttribute('data-variant')).not.toBe('outline')
     expect(screen.getByRole('button', { name: 'Save draft' }).getAttribute('data-variant')).toBe(
       'outline',

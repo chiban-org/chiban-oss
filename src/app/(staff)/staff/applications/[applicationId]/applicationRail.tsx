@@ -111,6 +111,15 @@ function applicationFacts(view: StaffApplicationView, legacyNumber: string | nul
   ]
 }
 
+function PublicParcelLine({ view }: { view: StaffApplicationView }) {
+  if (view.state === 'draft') return null
+  return (
+    <p className="m-0 text-sm text-muted-foreground">
+      The public parcel page lists this application with its number, type, status and dates.
+    </p>
+  )
+}
+
 export function ApplicationRail({
   view,
   plan,
@@ -146,6 +155,7 @@ export function ApplicationFacts({
     <section aria-label="Key facts" data-plain className="rail-card space-y-3">
       {responsible}
       <FactList facts={applicationFacts(view, legacyNumber)} stacked />
+      <PublicParcelLine view={view} />
     </section>
   )
 }
@@ -178,6 +188,7 @@ export function StatusStrip({
         <div className="flex flex-col gap-4">
           {responsible}
           <FactList facts={applicationFacts(view, legacyNumber)} stacked />
+          <PublicParcelLine view={view} />
           <MoreActions view={view} moves={plan.terminal} />
           <CorrectPermit data={correction} />
         </div>

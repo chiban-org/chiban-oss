@@ -58,7 +58,7 @@ describe('reference choices', () => {
     const choices = choicesFromRows(ROWS)
     expect(choices.fee_schedule).toEqual([
       { key: 'bp-fees', label: 'Building permit fees' },
-      { key: 'spare_fees', label: 'Spare fees', note: 'not published yet' },
+      { key: 'spare_fees', label: 'Spare fees', note: 'not in use yet' },
     ])
     expect(choices.condition_library).toEqual([
       { key: 'bp-conditions', label: 'Building permit conditions' },
@@ -71,7 +71,7 @@ describe('reference choices', () => {
       { key: 'bp-final', label: 'Final inspection', note: 'closes the permit' },
     ])
     expect(choices.form).toEqual([
-      { key: 'bp-form', label: 'Building permit application (new)', note: 'not published yet' },
+      { key: 'bp-form', label: 'Building permit application (new)', note: 'not in use yet' },
     ])
   })
 

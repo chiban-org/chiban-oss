@@ -146,7 +146,7 @@ export async function publishAgendaAction(formData: FormData): Promise<ActionRes
   return await runStaffForm(formData, MEETING_ONLY_FORM, async ({ db, actor, signal }, input) =>
     errorOrField(
       await publishAgenda(db, getObjectStore(), actor, input.meetingId, signal),
-      'Agenda published on the public site.',
+      'Agenda shown on the public site.',
     ),
   )
 }
@@ -155,7 +155,7 @@ export async function reopenAgendaAction(formData: FormData): Promise<ActionResu
   return await runStaffForm(formData, MEETING_ONLY_FORM, async ({ db, actor, signal }, input) =>
     errorOrField(
       await reopenAgenda(db, actor, input.meetingId, signal),
-      'Agenda reopened. Publishing again creates a new revision.',
+      'Agenda hidden from the public site and reopened. Showing it again creates a new revision.',
     ),
   )
 }

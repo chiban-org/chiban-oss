@@ -215,7 +215,7 @@ describe('refusals beside the field in the notice contact forms', () => {
     fireEvent.click(screen.getByRole('button', { name: /change/i }))
     const dialog = screen.getByRole('dialog')
     await expectRefusalAfterSubmit(
-      within(dialog).getByRole('button', { name: 'Publish' }),
+      within(dialog).getByRole('button', { name: 'Put into use' }),
       () => within(dialog).getByLabelText(/^Days between checks/),
       'Enter the number of days as a whole number from 1 to 3650.',
     )

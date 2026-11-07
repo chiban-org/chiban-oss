@@ -31,7 +31,7 @@ test.describe('town rule setting for the building permit validity period', () =>
     await page.getByLabel('Adopted by').fill('Town Meeting')
     await fillDate(page.getByLabel('Adopted on'), '2025-03-11')
     await publishWithConfirm(page)
-    await expect(editorStatus(page)).toHaveText('Published version 1.')
+    await expect(editorStatus(page)).toHaveText('Put version 1 into use.')
     const rows = await versionsOf(db, KIND, KEY)
     expect(rows.map((v) => v.status)).toEqual(['published'])
     expect(rows[0]?.body).toMatchObject({

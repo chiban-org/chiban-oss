@@ -6,12 +6,12 @@ import { invalidFieldsText } from '@/components/config/formValidity'
 import { Button } from '@/components/ui/button'
 
 export const DRAFT_LINE =
-  'Save draft keeps your changes without using them yet. Publish makes them the version Chiban uses.'
+  'Save draft keeps your changes without using them yet. Put into use makes them the version Chiban uses.'
 
 export function publishImpact(pinned: boolean): string {
   return pinned
-    ? 'New applications use the published version from now on. Open applications keep the version they started under.'
-    : 'Chiban starts using it as soon as you publish.'
+    ? 'New applications use this version from now on. Open applications keep the version they started under.'
+    : 'Chiban starts using it as soon as you put it into use.'
 }
 
 export interface DiscardOffer {
@@ -22,8 +22,8 @@ function discardCopy(offer: DiscardOffer): ConfirmCopy {
   return {
     title: 'Discard this draft?',
     body: offer.neverPublished
-      ? 'This has never been published, so discarding the draft removes it entirely.'
-      : 'Your unpublished changes are removed. The published version stays in use.',
+      ? 'This has never been in use, so discarding the draft removes it entirely.'
+      : 'Your changes to this draft are removed. The version in use stays in use.',
     confirmLabel: 'Discard now',
     cancelLabel: 'Keep the draft',
     tone: 'destructive',
@@ -67,7 +67,7 @@ export function PublishBar({
       <p className="m-0 max-w-[75ch] text-sm text-muted-foreground">{DRAFT_LINE}</p>
       <div className="flex flex-wrap items-center gap-3">
         <Button ref={trigger} type="button" disabled={disabled} onClick={ask}>
-          Publish
+          Put into use
         </Button>
         <button ref={submitter} type="submit" name="intent" value="publish" hidden tabIndex={-1} />
         <Button type="submit" name="intent" value="save" variant="outline" disabled={disabled}>
@@ -108,9 +108,9 @@ export function PublishBar({
       <ConfirmDialog
         open={open}
         copy={{
-          title: 'Publish these changes?',
+          title: 'Put these changes into use?',
           body: `${publishImpact(pinned)} You can restore an earlier version from the version history later.`,
-          confirmLabel: 'Publish now',
+          confirmLabel: 'Put into use now',
           cancelLabel: 'Keep editing',
           tone: 'default',
         }}

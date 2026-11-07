@@ -41,8 +41,15 @@ function Step({ view, kind }: { view: MeetingView; kind: StepKind }) {
       )
     case 'publish':
       return (
-        <ActionForm action={publishAgendaAction} submitLabel="Publish the agenda" variant="default">
+        <ActionForm
+          action={publishAgendaAction}
+          submitLabel="Show the agenda on the public site"
+          variant="default"
+        >
           <input type="hidden" name="meetingId" value={view.meetingId} />
+          <p className="m-0">
+            The agenda then shows on the board page and the meetings page of the public site.
+          </p>
         </ActionForm>
       )
     case 'prepare':

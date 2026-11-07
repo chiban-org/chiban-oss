@@ -142,21 +142,21 @@ describe('migration batch page', () => {
     expect(html).toContain('Misc/notes.pdf')
     expect(html).toContain('Map 7/Lot 15/locked.pdf')
     expect(html).toContain('Map 9/Lot 99/deed.pdf')
-    expect(html).not.toContain('Publish this batch')
+    expect(html).not.toContain('Show this batch on the public site')
   })
 
   it('tells someone who may not publish that a staff member who may publish documents finishes the review', async () => {
     state.actor = importer
     const html = renderToStaticMarkup(await BatchPage(params(batchId)))
     expect(html).toContain(
-      'Review the files above, then ask a staff member who may publish documents to publish this batch. Until then every file in it stays private.',
+      'Review the files above, then ask a staff member who may show documents on the public site to show this batch there. Until then every file in it stays private.',
     )
   })
 
   it('offers the publish action only to someone who may publish', async () => {
     state.actor = publisher
     const html = renderToStaticMarkup(await BatchPage(params(batchId)))
-    expect(html).toContain('Publish this batch')
+    expect(html).toContain('Show this batch on the public site')
   })
 
   it('refuses a reviewer, redirects a signed-out visitor, and 404s an unknown batch', async () => {

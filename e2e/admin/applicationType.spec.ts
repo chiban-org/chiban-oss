@@ -30,7 +30,7 @@ test.describe('application type and workflow editors', () => {
 
     await page.goto(`/staff/settings/workflow/${encodeURIComponent(key)}`)
     await page.getByRole('button', { name: 'Preview', exact: true }).click()
-    await expect(editorStatus(page)).toHaveText('Preview updated. Nothing was published.')
+    await expect(editorStatus(page)).toHaveText('Preview updated. Nothing was put into use.')
     await expect(page.getByRole('region', { name: 'Preview' })).toBeVisible()
     expect((await versionsOf(db, KIND, key)).map((v) => v.status)).toEqual(['draft'])
 

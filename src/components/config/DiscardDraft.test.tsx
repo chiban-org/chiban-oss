@@ -43,10 +43,10 @@ describe('discarding a draft', () => {
     expect(screen.queryByRole('button', { name: 'Discard draft' })).toBeNull()
   })
 
-  it('asks first and says the published version stays in use', async () => {
+  it('asks first and says the version in use stays in use', async () => {
     const { discardAction } = renderForm({ neverPublished: false })
     fireEvent.click(screen.getByRole('button', { name: 'Discard draft' }))
-    expect(screen.getByRole('dialog').textContent).toContain('published version stays in use')
+    expect(screen.getByRole('dialog').textContent).toContain('version in use stays in use')
     expect(discardAction).not.toHaveBeenCalled()
     fireEvent.click(screen.getByRole('button', { name: 'Discard now' }))
     await waitFor(() => expect(discardAction).toHaveBeenCalledTimes(1))
@@ -57,7 +57,7 @@ describe('discarding a draft', () => {
   it('says a never-published draft is removed entirely', () => {
     renderForm({ neverPublished: true })
     fireEvent.click(screen.getByRole('button', { name: 'Discard draft' }))
-    expect(screen.getByRole('dialog').textContent).toContain('never been published')
+    expect(screen.getByRole('dialog').textContent).toContain('never been in use')
   })
 
   it('sends nothing when the person keeps the draft', () => {

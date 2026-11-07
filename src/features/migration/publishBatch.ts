@@ -49,7 +49,7 @@ export async function publishMigrationBatch(
         await insertSystemApproval(tx, {
           documentId: doc.id,
           versionId: original.id,
-          statement: `Published with migration batch ${batchId} after staff review.`,
+          statement: `Shown on the public site with migration batch ${batchId} after staff review.`,
         })
       }
       await writeAudit(

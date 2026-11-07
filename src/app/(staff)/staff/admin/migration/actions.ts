@@ -11,7 +11,7 @@ const PUBLISH_FORM = z.object({ batchId: recordId('a batch') })
 const PUBLISH_COPY = {
   forbidden: errorCopy('forbidden'),
   not_found: errorCopy('not_found'),
-  not_staged: 'This batch has not been run, or it has already been published.',
+  not_staged: 'This batch has not been run, or it has already been shown on the public site.',
 } as const
 
 export async function publishMigrationBatchAction(formData: FormData): Promise<ActionResult> {
@@ -20,7 +20,7 @@ export async function publishMigrationBatchAction(formData: FormData): Promise<A
     if (!published.ok) return { ok: false, error: PUBLISH_COPY[published.error] }
     return {
       ok: true,
-      message: `Published ${published.value.published} files. Files whose parcel was not found stay private.`,
+      message: `Showed ${published.value.published} files on the public site. Files whose parcel was not found stay private.`,
     }
   })
 }

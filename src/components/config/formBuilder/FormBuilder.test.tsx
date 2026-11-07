@@ -227,7 +227,9 @@ describe('FormBuilder', () => {
     fireEvent.click(within(canvas()).getByRole('button', { name: 'Edit Use' }))
     const key = within(settings()).getByLabelText<HTMLInputElement>('Key')
     expect(key.disabled).toBe(true)
-    expect(within(settings()).getByText(/A published version uses this key/)).toBeTruthy()
+    expect(
+      within(settings()).getByText(/A version that was put into use uses this key/),
+    ).toBeTruthy()
     fireEvent.change(within(settings()).getByLabelText('Question text'), {
       target: { value: 'Main use' },
     })

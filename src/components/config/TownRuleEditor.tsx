@@ -28,7 +28,7 @@ export function TownRuleEditor({ body, onChange, errors, rule }: Props) {
       {settable ? null : (
         <p role="note" className="mt-3 text-sm">
           State law does not let the town change this rule, so Chiban always uses the state value.
-          This draft cannot be published.
+          This draft cannot be put into use.
         </p>
       )}
       <FieldGroup name="value" label="The town's value" errors={errors}>

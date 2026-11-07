@@ -8,9 +8,9 @@ test.use({ role: 'admin' })
 const KIND = 'town_profile'
 
 async function publishSection(page: Page, expectedVersion: number): Promise<void> {
-  await page.getByRole('button', { name: 'Publish', exact: true }).click()
+  await page.getByRole('button', { name: 'Put into use', exact: true }).click()
   await expect(page.getByRole('status').filter({ hasText: /\S/ })).toHaveText(
-    `Published version ${expectedVersion}.`,
+    `Put version ${expectedVersion} into use.`,
   )
 }
 
@@ -65,7 +65,7 @@ test.describe('town profile, letterhead and signers', () => {
     await page.goto('/staff/settings/town-profile')
     const office = page.getByLabel('Office name')
     await office.fill('   ')
-    await page.getByRole('button', { name: 'Publish', exact: true }).click()
+    await page.getByRole('button', { name: 'Put into use', exact: true }).click()
     await expect(
       page
         .getByRole('alert')

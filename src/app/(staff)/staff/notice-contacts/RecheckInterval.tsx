@@ -36,12 +36,12 @@ export function RecheckInterval({ days, canEdit }: { days: number; canEdit: bool
         >
           <ActionForm
             action={changeRecheckIntervalAction}
-            submitLabel="Publish"
+            submitLabel="Put into use"
             variant="default"
             confirm={{
-              title: 'Publish these changes?',
+              title: 'Put these changes into use?',
               body: `${publishImpact(isPinnedKind('board_settings'))} You can restore an earlier version from the version history later.`,
-              confirmLabel: 'Publish now',
+              confirmLabel: 'Put into use now',
               cancelLabel: 'Keep editing',
               tone: 'default',
             }}

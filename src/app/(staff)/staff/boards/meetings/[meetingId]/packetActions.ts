@@ -23,7 +23,7 @@ const PACKET_COPY: Record<string, string> = {
   forbidden: errorCopy('forbidden'),
   not_found: errorCopy('not_found'),
   meeting_cancelled: 'The meeting is cancelled, so its packet is closed.',
-  agenda_not_published: 'Publish the agenda before preparing the packet.',
+  agenda_not_published: 'Show the agenda on the public site before preparing the packet.',
   empty: 'Check at least one document to save the packet.',
   no_members: 'The board has no seated members to send to.',
   already_sent: 'Every seated member already has the packet.',

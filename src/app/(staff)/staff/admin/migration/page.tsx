@@ -23,7 +23,7 @@ export default async function MigrationPage() {
     <main>
       <SettingsHeader
         title="Scanned property files"
-        lead="Batches of old scanned property files brought into Chiban. Nothing in a batch is public until someone with permission publishes it."
+        lead="Batches of old scanned property files brought into Chiban. Nothing in a batch is public until someone with permission shows it on the public site."
       />
       <p>
         Each batch is one folder of scanned files that an operator scanned and ran with the legacy

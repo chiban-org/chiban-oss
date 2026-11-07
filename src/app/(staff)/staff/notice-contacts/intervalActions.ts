@@ -8,7 +8,7 @@ import { RECHECK_INTERVAL_FORM } from './noticeForms'
 const COPY: Record<string, string> = {
   invalid_days: 'Enter a whole number of days from 1 to 3650.',
   draft_pending:
-    'Board settings has an unpublished draft. Publish or discard it in Settings, then change the interval here.',
+    'Board settings has a draft that is not in use yet. Put it into use or discard it in Settings, then change the interval here.',
 }
 
 export async function changeRecheckIntervalAction(formData: FormData): Promise<ActionResult> {
@@ -20,7 +20,7 @@ export async function changeRecheckIntervalAction(formData: FormData): Promise<A
       if (result.ok) {
         return {
           ok: true,
-          message: `Published as version ${result.value.version}. Contacts are now due every ${days} days.`,
+          message: `Put version ${result.value.version} into use. Contacts are now due every ${days} days.`,
         }
       }
       return { ok: false, error: COPY[result.error] ?? errorCopy(result.error) }

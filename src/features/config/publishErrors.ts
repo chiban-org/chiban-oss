@@ -85,7 +85,7 @@ function fromObjectError(error: ObjectError): FieldErrors {
   }
   if ('missingReferences' in error) {
     return {
-      references: `Pick a published item, or publish these first: ${error.missingReferences.map(referenceText).join(', ')}.`,
+      references: `Pick an item that is in use, or put these into use first: ${error.missingReferences.map(referenceText).join(', ')}.`,
     }
   }
   if ('unknownMergeFields' in error) {
@@ -127,7 +127,7 @@ export function fieldErrorsFor(error: PublishError): FieldErrors {
     return { [FORM_FIELD]: 'You do not have permission to change configuration.' }
   }
   if (error === 'not_draft') {
-    return { [FORM_FIELD]: 'Only a draft can be published. Save a draft first.' }
+    return { [FORM_FIELD]: 'Only a draft can be put into use. Save a draft first.' }
   }
   return fromObjectError(error)
 }

@@ -93,7 +93,11 @@ test.describe
       const since = new Date()
       await page.goto(`/staff/boards/meetings/${meeting.meetingId}`)
       await page.getByRole('button', { name: 'Reopen the agenda' }).click()
-      await confirmWith(page, 'Reopen the published agenda?', 'Reopen the agenda')
+      await confirmWith(
+        page,
+        'Hide the agenda from the public site and reopen it?',
+        'Reopen the agenda',
+      )
       await page.getByText('Add an item', { exact: true }).click()
       await page
         .getByLabel(/^Title/)
@@ -101,7 +105,7 @@ test.describe
         .fill('Other business')
       await page.getByRole('button', { name: 'Add item' }).click()
       await expect(page.getByText('Other business')).toBeVisible()
-      await page.getByRole('button', { name: 'Publish the agenda' }).click()
+      await page.getByRole('button', { name: 'Show the agenda on the public site' }).click()
       await expect(page.getByText(/Revision 2\./)).toBeVisible()
       await page.getByRole('button', { name: 'Replace the agenda' }).click()
       await page.getByRole('button', { name: 'Send update' }).click()

@@ -55,7 +55,7 @@ describeActionCases(h, 'publishTownSectionAction', {
     checkOnly: CHECK_PASSED,
   },
   accepted: (result, { written }) => {
-    expect(result).toEqual({ ok: true, message: 'Published version 1.' })
+    expect(result).toEqual({ ok: true, message: 'Put version 1 into use.' })
     expect(written).toEqual(['audit_log', 'config_versions'])
   },
 })
@@ -84,7 +84,7 @@ describe('publishTownSectionAction refusals beside their fields', () => {
     )
     expect(result).toEqual({
       ok: false,
-      error: 'These settings cannot be published yet.',
+      error: 'These settings cannot be put into use yet.',
       fieldErrors: { email: 'Enter an email address like clerk@town.gov.' },
     })
   })

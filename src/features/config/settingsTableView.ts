@@ -46,11 +46,11 @@ const PUBLISHED_VALUES = ['published', 'unpublished'] as const
 const DRAFT_VALUES = ['draft', 'none'] as const
 
 const PUBLISHED_LABELS: ReadonlyMap<string, string> = new Map([
-  ['published', 'Published'],
-  ['unpublished', 'Not published'],
+  ['published', 'In use'],
+  ['unpublished', 'Not in use yet'],
 ])
 const DRAFT_LABELS: ReadonlyMap<string, string> = new Map([
-  ['draft', 'Has an unpublished draft'],
+  ['draft', 'Has a draft not in use yet'],
   ['none', 'No draft'],
 ])
 
@@ -97,7 +97,7 @@ export function arrangeKeyRows(
   const chips = chipGroups(path, view.params, [
     {
       param: 'published',
-      label: 'Published',
+      label: 'In use',
       options: labeledOptions(PUBLISHED_LABELS, counts.get('published')),
       single: true,
     },

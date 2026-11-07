@@ -51,4 +51,19 @@ describe('ParcelFileUploader', () => {
     pickSeries('Septic plans')
     expect(visibility()).toBe('public')
   })
+
+  it('says where a file shown on the public site appears', () => {
+    render(
+      <CsrfProvider token="t1">
+        <ParcelFileUploader parcelId="p1" series={SERIES} actions={actions} />
+      </CsrfProvider>,
+    )
+    pickSeries('Septic plans')
+    expect(screen.getByRole('radio', { name: 'The public site, as uploaded' })).toBeTruthy()
+    expect(
+      screen.getByText(
+        "A file shown on the public site appears on this parcel's public page, where anyone can download it.",
+      ),
+    ).toBeTruthy()
+  })
 })

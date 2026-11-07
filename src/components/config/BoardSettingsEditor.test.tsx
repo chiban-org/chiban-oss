@@ -34,14 +34,14 @@ function renderBoardSettings(publish: (formData: FormData) => Promise<ActionResu
 }
 
 function publishNow() {
-  fireEvent.click(screen.getByRole('button', { name: 'Publish' }))
-  fireEvent.click(screen.getByRole('button', { name: 'Publish now' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Put into use' }))
+  fireEvent.click(screen.getByRole('button', { name: 'Put into use now' }))
 }
 
 describe('board settings filing deadline', () => {
   it('collects who adopted a changed filing deadline and when, and sends it on publish', async () => {
     const publish = vi.fn((_: FormData) =>
-      Promise.resolve({ ok: true as const, message: 'Published version 2.' }),
+      Promise.resolve({ ok: true as const, message: 'Put version 2 into use.' }),
     )
     const planning = renderBoardSettings(publish)
     fireEvent.change(within(planning).getByLabelText('Filing deadline, days before the meeting'), {
@@ -67,7 +67,7 @@ describe('board settings filing deadline', () => {
     const refuse = () =>
       Promise.resolve({
         ok: false as const,
-        error: 'This version cannot be published yet.',
+        error: 'This version cannot be put into use yet.',
         fieldErrors: {
           filingLeadDays: 'Too long.',
           filingLeadAdoption: 'Enter who adopted it.',

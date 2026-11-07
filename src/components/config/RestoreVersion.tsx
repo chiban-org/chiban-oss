@@ -29,7 +29,7 @@ export function RestoreVersion({
       compact
       confirm={{
         title: `${label}?`,
-        body: `Version ${String(version)} goes live at once as a new version, replacing what is published now. ${restoreImpact(pinned)}`,
+        body: `Version ${String(version)} goes live at once as a new version, replacing the version in use now. ${restoreImpact(pinned)}`,
         confirmLabel: label,
       }}
     >

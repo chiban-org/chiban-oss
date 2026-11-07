@@ -115,7 +115,7 @@ describe('town profile actions', () => {
     const published = await actions.publishTownSectionAction(
       form({ section: 'profile', body: JSON.stringify({ ...PROFILE, logo: uploaded.image }) }),
     )
-    expect(published).toEqual({ ok: true, message: 'Published version 1.' })
+    expect(published).toEqual({ ok: true, message: 'Put version 1 into use.' })
   })
 
   it('names the field when a publish is refused', async () => {

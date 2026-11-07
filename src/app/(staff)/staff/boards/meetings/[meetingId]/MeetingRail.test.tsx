@@ -111,4 +111,17 @@ describe('meeting rail next step', () => {
     renderRail(published(), null)
     expect(screen.queryByText('Next step')).toBeNull()
   })
+
+  it('names the public pages the agenda will show on', () => {
+    renderRail({
+      ...emptyMeeting([HEARING]),
+      agenda: { status: 'draft', items: [{ id: 'i1' }] },
+    } as unknown as MeetingView)
+    expect(screen.getByRole('button', { name: 'Show the agenda on the public site' })).toBeTruthy()
+    expect(
+      screen.getByText(
+        'The agenda then shows on the board page and the meetings page of the public site.',
+      ),
+    ).toBeTruthy()
+  })
 })
