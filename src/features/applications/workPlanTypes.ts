@@ -4,7 +4,13 @@ import type { CoreState } from './states'
 
 export type PlanBoard = Pick<
   BoardPanelData,
-  'board' | 'boardName' | 'acceptanceMeetingId' | 'acceptanceDate' | 'acceptanceText' | 'today'
+  | 'board'
+  | 'boardName'
+  | 'acceptanceMeetingId'
+  | 'acceptanceDate'
+  | 'acceptanceText'
+  | 'meetings'
+  | 'today'
 >
 
 export type PlanActor = 'town' | 'applicant' | 'reviewers' | 'board' | 'inspector'

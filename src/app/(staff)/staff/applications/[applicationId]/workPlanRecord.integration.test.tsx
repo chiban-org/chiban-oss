@@ -140,15 +140,16 @@ describe('the stage strip', () => {
 })
 
 describe('the filed site plan, as the clerk', () => {
-  it('waits on the Planning Board for the vote at the meeting on file', async () => {
+  it('waits on the town to move an acceptance meeting set after the completeness deadline', async () => {
     const [meeting] = await handle.db
       .select({ date: boardMeetings.meetingDate })
       .from(acceptanceSchedules)
       .innerJoin(boardMeetings, eq(boardMeetings.id, acceptanceSchedules.meetingId))
       .where(eq(acceptanceSchedules.applicationId, ids.get('SPR-2026-0001') ?? ''))
     const html = await page('SPR-2026-0001')
-    expect(sentence(html)).toContain(
-      `Waiting on: Alder Pond Planning Board. Vote on completeness at the meeting on ${formatCivilDate(meeting?.date ?? '')}.`,
+    expect(sentence(html)).toContain('Waiting on: Town. Move the acceptance meeting.')
+    expect(sectionOf(html, 'Do this now') ?? '').toContain(
+      `The meeting set, ${formatCivilDate(meeting?.date ?? '')}, is after this deadline`,
     )
     expect(sentence(html)).toContain(await nextDue('SPR-2026-0001'))
     expect(sectionOf(html, 'Requirements') ?? '').toContain('Before the hearing')

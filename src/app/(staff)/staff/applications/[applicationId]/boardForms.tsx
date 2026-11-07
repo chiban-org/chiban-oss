@@ -2,6 +2,11 @@ import { ActionForm } from '@/components/ActionForm'
 import { GroupFieldError } from '@/components/fieldErrors'
 import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import { meetingIsAhead } from '@/features/applications/boardRequirements'
+import {
+  type MeetingDeadline,
+  meetingConflict,
+  meetingOptionText,
+} from '@/features/applications/meetingDeadline'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import {
   boardRegionalImpactAction,
@@ -11,17 +16,24 @@ import {
 
 type Variant = 'default' | 'outline'
 
-function MeetingSelect({ data }: { data: BoardPanelData }) {
-  const chosen = data.meetings.some((m) => m.id === data.acceptanceMeetingId)
+function MeetingSelect({
+  data,
+  deadline,
+  chosen,
+}: {
+  data: BoardPanelData
+  deadline: MeetingDeadline | null
+  chosen: string
+}) {
   return (
     <SelectField
       label={data.board === 'zba' ? 'Hearing meeting' : 'Meeting'}
       name="meetingId"
-      defaultValue={chosen ? (data.acceptanceMeetingId ?? '') : ''}
+      defaultValue={data.meetings.some((m) => m.id === chosen) ? chosen : ''}
       required
       options={[
         ['', 'Choose an upcoming meeting'],
-        ...data.meetings.map((m): [string, string] => [m.id, m.text]),
+        ...data.meetings.map((m): [string, string] => [m.id, meetingOptionText(m, deadline)]),
       ]}
     />
   )
@@ -29,20 +41,27 @@ function MeetingSelect({ data }: { data: BoardPanelData }) {
 
 export function MeetingForm({
   data,
+  deadline,
   variant = 'outline',
 }: {
   data: BoardPanelData
+  deadline: MeetingDeadline | null
   variant?: Variant
 }) {
+  const target = meetingConflict(data, deadline)?.target ?? null
   return (
     <ActionForm
       action={setAcceptanceMeetingAction}
-      submitLabel="Set the meeting"
+      submitLabel={target === null ? 'Set the meeting' : 'Move the meeting'}
       variant={variant}
       className="max-w-md"
     >
       <input type="hidden" name="applicationId" value={data.applicationId} />
-      <MeetingSelect data={data} />
+      <MeetingSelect
+        data={data}
+        deadline={deadline}
+        chosen={target ?? data.acceptanceMeetingId ?? ''}
+      />
     </ActionForm>
   )
 }

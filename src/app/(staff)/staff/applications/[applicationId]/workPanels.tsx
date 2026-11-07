@@ -1,4 +1,6 @@
 import type { Panel } from '@/components/layout/splitPanels'
+import { hearingRequirementsUnmet } from '@/features/applications/boardRequirements'
+import { meetingDeadline } from '@/features/applications/meetingDeadline'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { REVIEWS_GATE_KEY } from '@/features/gates/coreGates'
 import { ActivityPanel } from './activityPanel'
@@ -53,13 +55,21 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
             data={board}
             hearings={hearings?.hearings.map((h) => h.text) ?? []}
             hosted={hosted}
+            deadline={meetingDeadline(view.clocks, board.board)}
+            voteBlocked={hearingRequirementsUnmet(view)}
           />
         ),
     },
     {
       key: 'hearings',
       empty: hearingsEmpty(hearings),
-      node: <HearingsPanel key="hearings" data={hearings} />,
+      node: (
+        <HearingsPanel
+          key="hearings"
+          data={hearings}
+          meetingOnBoard={board?.board === 'zba' && board.acceptanceMeetingId !== null}
+        />
+      ),
     },
     {
       key: 'completeness',

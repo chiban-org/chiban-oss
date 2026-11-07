@@ -26,9 +26,10 @@ test.describe
       }
       await addMeetingThroughForm(page, soon)
       await page.goto(`/staff/applications/${applicationId}`)
-      const filing = page.getByRole('region', { name: 'Acceptance' })
+      const filing = page.getByRole('region', { name: 'Do this now' })
+      await expect(filing).toContainText('is after this deadline')
       await filing.getByLabel(/^Meeting/).selectOption(await meetingIdFor(db, soon))
-      await filing.getByRole('button', { name: 'Set the meeting' }).click()
+      await filing.getByRole('button', { name: 'Move the meeting' }).click()
       await expect(filing.getByRole('status')).toContainText(
         'This application was filed too late for that meeting.',
       )
@@ -49,9 +50,9 @@ test.describe
       await addMeetingThroughForm(page, meeting)
       const meetingId = await meetingIdFor(db, meeting)
       await page.goto(`/staff/applications/${applicationId}`)
-      const filing = page.getByRole('region', { name: 'Acceptance' })
+      const filing = page.getByRole('region', { name: 'Do this now' })
       await filing.getByLabel(/^Meeting/).selectOption(meetingId)
-      await filing.getByRole('button', { name: 'Set the meeting' }).click()
+      await filing.getByRole('button', { name: 'Move the meeting' }).click()
       await expect(
         filing.getByText('Meeting set. The filing deadline for it is shown on the clocks.'),
       ).toBeVisible()

@@ -1,17 +1,19 @@
-import { boardMeetingRow, boardVoteRow } from './boardRequirements'
+import { boardMeetingRow, boardVoteRow, meetingStep } from './boardRequirements'
+import { meetingConflict, meetingDeadline } from './meetingDeadline'
 import { type NextStepPlan, planNextStep } from './nextStep'
 import { gateRow, type RowFacts } from './requirementRows'
 import type { StaffApplicationView } from './staffApplicationView'
 import { type CoreState, isTerminalState } from './states'
 import { requirementTargets } from './workPath'
-import type {
-  NowStep,
-  PlanAction,
-  PlanActionKind,
-  PlanBoard,
-  Requirement,
-  RequirementGroup,
-  WorkPlan,
+import {
+  addWarning,
+  type NowStep,
+  type PlanAction,
+  type PlanActionKind,
+  type PlanBoard,
+  type Requirement,
+  type RequirementGroup,
+  type WorkPlan,
 } from './workPlanTypes'
 
 import { workSentence } from './workSentence'
@@ -94,7 +96,12 @@ function groupRows(view: PlanView, board: PlanBoard | null, to: CoreState, extra
   const results = [...view.gates, ...view.gatesAhead].find((g) => g.to === to)?.results ?? []
   const rows = results.map((gate) => gateRow(gate, facts))
   if (board === null || view.state !== 'submitted' || to !== 'under_review') return rows
-  return [boardMeetingRow(board, extras.abilities), ...rows, boardVoteRow(board, extras.abilities)]
+  const unmet = rows.some((r) => !r.done)
+  return [
+    boardMeetingRow(board, extras.abilities),
+    ...rows,
+    boardVoteRow(board, extras.abilities, unmet),
+  ]
 }
 
 function buildGroups(
@@ -177,9 +184,13 @@ export function planWork(
 ): WorkPlan {
   const moves = planNextStep(view.nextTransitions, view.gates, view.allowedMoves)
   const groups = buildGroups(view, board, moves, extras)
-  const now = nowStep(view, board, groups, moves)
+  const conflict =
+    board === null || view.state !== 'submitted'
+      ? null
+      : meetingConflict(board, meetingDeadline(view.clocks, board.board))
+  const now = meetingStep(nowStep(view, board, groups, moves), board, conflict, extras.abilities)
   const inCard = now?.action?.kind === 'move' ? now.action.to : null
-  return {
+  const plan: WorkPlan = {
     state: view.state,
     sentence: workSentence(view, now, {
       board: board?.boardName ?? null,
@@ -189,4 +200,7 @@ export function planWork(
     groups,
     terminal: moves.terminal.filter((to) => to !== inCard),
   }
+  return conflict === null
+    ? plan
+    : addWarning(plan, { key: 'board.meeting.deadline', text: conflict.warning })
 }

@@ -43,7 +43,7 @@ export interface BoardPanelData {
   acceptanceText: string | null
   acceptanceMeetingId: string | null
   acceptanceDate: string | null
-  meetings: { id: string; text: string }[]
+  meetings: { id: string; date: string; text: string }[]
   today: string
   regional: {
     text: string | null
@@ -240,6 +240,7 @@ export async function loadBoardPanel(
     acceptanceDate: schedule?.date ?? null,
     meetings: meetings.map((m) => ({
       id: m.id,
+      date: m.meetingDate,
       text: `${formatCivilDate(m.meetingDate)}, ${m.kind === 'special' ? 'special' : 'regular'} meeting`,
     })),
     today,

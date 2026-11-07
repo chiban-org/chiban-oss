@@ -1,3 +1,4 @@
+import { meetingDeadline } from '@/features/applications/meetingDeadline'
 import { isTerminalState } from '@/features/applications/states'
 import { moveTask } from '@/features/applications/workPlan'
 import type { PlanAction } from '@/features/applications/workPlanTypes'
@@ -40,13 +41,19 @@ type Variant = 'default' | 'outline'
 function BoardActionForm({
   kind,
   board,
+  clocks,
   variant,
 }: {
   kind: 'set_board_meeting' | 'record_board_vote' | 'record_board_regional_impact'
   board: BoardPanelData
+  clocks: PlanFormInput['view']['clocks']
   variant: Variant
 }) {
-  if (kind === 'set_board_meeting') return <MeetingForm data={board} variant={variant} />
+  if (kind === 'set_board_meeting') {
+    return (
+      <MeetingForm data={board} deadline={meetingDeadline(clocks, board.board)} variant={variant} />
+    )
+  }
   if (kind === 'record_board_vote') return <VoteFormBody data={board} variant={variant} />
   return <BoardRegionalForm data={board} variant={variant} />
 }
@@ -83,7 +90,7 @@ export function PlanActionForm({
     case 'record_board_vote':
     case 'record_board_regional_impact':
       return board === null ? null : (
-        <BoardActionForm kind={action.kind} board={board} variant={variant} />
+        <BoardActionForm kind={action.kind} board={board} clocks={view.clocks} variant={variant} />
       )
     case 'move':
       return (

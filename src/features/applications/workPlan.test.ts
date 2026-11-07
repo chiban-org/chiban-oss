@@ -177,6 +177,7 @@ const PLANNING: PlanBoard = {
   acceptanceMeetingId: 'm1',
   acceptanceDate: '2026-11-25',
   acceptanceText: 'November 25, 2026',
+  meetings: [],
   today: '2026-11-06',
 }
 
