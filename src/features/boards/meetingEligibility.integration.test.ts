@@ -1,7 +1,10 @@
+import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { applications } from '@/db/schema'
 import { scheduleMeeting } from '@/features/boards/meetings'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
+import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import { townToday } from '@/features/town/today'
 import {
   type BoardWorld,
@@ -94,5 +97,24 @@ describe('meetings too soon for every notice the application needs, assuming the
       signal,
     )
     expect(await noticeable(id, [3, 8])).toEqual([false, true])
+  })
+
+  it('keeps marking scheduler meetings too soon once the application is under review', async () => {
+    await meetingIn('zba', 3)
+    await meetingIn('zba', 8)
+    const id = await submitBoardApplication(handle.db, world, world.zbaTypeKey, addDays(today, -20))
+    await recordBoardRegionalImpact(
+      handle.db,
+      world.staff,
+      { applicationId: id, determination: 'no', municipalityKeys: [] },
+      signal,
+    )
+    await handle.db
+      .update(applications)
+      .set({ state: 'under_review' })
+      .where(eq(applications.id, id))
+    const hearings = await loadApplicationHearingsPanel(handle.db, world.staff, id, signal)
+    const byDate = new Map(hearings?.scheduleMeetings.map((m) => [m.date, m.noticeable]))
+    expect([byDate.get(addDays(today, 3)), byDate.get(addDays(today, 8))]).toEqual([false, true])
   })
 })

@@ -7,7 +7,7 @@ import { scheduleMeeting } from '@/features/boards/meetings'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
-import { markProperlyNoticed, scheduleHearing } from '@/features/hearings/hearings'
+import { scheduleHearing } from '@/features/hearings/hearings'
 import { townToday } from '@/features/town/today'
 import {
   type BoardWorld,
@@ -105,7 +105,7 @@ describe('meetings the application was filed too late for', () => {
 })
 
 describe('meetings too soon to mail notice for', () => {
-  it('marks a near meeting too soon unless its hearing notice is proved on time', async () => {
+  it('marks a near meeting too soon unless its hearing notice is proved on time, confirmed or not', async () => {
     const today = await townToday(handle.db, new Date(), signal)
     const meetingOn = async (days: number) => {
       const made = await scheduleMeeting(
@@ -162,8 +162,6 @@ describe('meetings too soon to mail notice for', () => {
       addDays(today, -8),
       new Date(),
     )
-    const marked = await markProperlyNoticed(handle.db, world.staff, hearing?.id ?? '', signal)
-    expect(marked.ok ? 'ok' : JSON.stringify(marked.error)).toBe('ok')
     expect(await nearDates()).toEqual([true, false])
   })
 })

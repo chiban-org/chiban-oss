@@ -1,8 +1,9 @@
 import type { Board } from '@packs/nh/schema'
-import { and, eq, isNotNull } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { hearings } from '@/db/schema'
 import type { ApplicationContext } from '@/features/applications/context'
+import { isTerminalState } from '@/features/applications/states'
 import { filedInTime, filingLeadFor } from '@/features/boards/filingLead'
 import { earliestNoticeDue } from '@/features/notices/noticeDue'
 import { noticeStatus } from '@/features/notices/noticeStatus'
@@ -23,13 +24,7 @@ async function noticedMeetings(
   const rows = await db
     .select({ meetingId: hearings.meetingId, setId: hearings.noticeSetId })
     .from(hearings)
-    .where(
-      and(
-        eq(hearings.applicationId, applicationId),
-        eq(hearings.status, 'scheduled'),
-        isNotNull(hearings.properlyNoticedAt),
-      ),
-    )
+    .where(and(eq(hearings.applicationId, applicationId), eq(hearings.status, 'scheduled')))
   const proved = await Promise.all(
     rows.map(async (r) =>
       (await noticeStatus(db, r.setId, signal)).properlyNoticed ? r.meetingId : null,
@@ -45,9 +40,9 @@ export async function meetingEligibility(
   today: CivilDate,
   signal: AbortSignal,
 ): Promise<(meeting: { id: string; meetingDate: string }) => MeetingEligibility> {
-  if (app.state !== 'submitted') return () => ANY_MEETING
+  if (isTerminalState(app.state)) return () => ANY_MEETING
   const [lead, noticeDue, noticed] = await Promise.all([
-    filingLeadFor(db, app, board, signal),
+    app.state === 'submitted' ? filingLeadFor(db, app, board, signal) : null,
     earliestNoticeDue(db, app, signal),
     noticedMeetings(db, app.id, signal),
   ])
