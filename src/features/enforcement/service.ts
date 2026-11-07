@@ -55,17 +55,11 @@ export interface ServiceState {
   events: (ServiceEvent & { row: typeof orderServiceEvents.$inferSelect })[]
 }
 
-export async function loadServiceState(
-  db: DbOrTx,
-  orderId: string,
-  signal: AbortSignal,
-): Promise<ServiceState> {
-  signal.throwIfAborted()
-  const [checks, recipients, events] = await Promise.all([
-    db.select().from(orderServiceRoleChecks).where(eq(orderServiceRoleChecks.orderId, orderId)),
-    db.select().from(orderServiceRecipients).where(eq(orderServiceRecipients.orderId, orderId)),
-    db.select().from(orderServiceEvents).where(eq(orderServiceEvents.orderId, orderId)),
-  ])
+export function serviceStateOf(
+  checks: (typeof orderServiceRoleChecks.$inferSelect)[],
+  recipients: (typeof orderServiceRecipients.$inferSelect)[],
+  events: (typeof orderServiceEvents.$inferSelect)[],
+): ServiceState {
   return {
     checks: checks.map((c) => ({ role: c.role, outcome: c.outcome })),
     recipients: recipients.map((r) => ({
@@ -84,6 +78,20 @@ export async function loadServiceState(
       row: e,
     })),
   }
+}
+
+export async function loadServiceState(
+  db: DbOrTx,
+  orderId: string,
+  signal: AbortSignal,
+): Promise<ServiceState> {
+  signal.throwIfAborted()
+  const [checks, recipients, events] = await Promise.all([
+    db.select().from(orderServiceRoleChecks).where(eq(orderServiceRoleChecks.orderId, orderId)),
+    db.select().from(orderServiceRecipients).where(eq(orderServiceRecipients.orderId, orderId)),
+    db.select().from(orderServiceEvents).where(eq(orderServiceEvents.orderId, orderId)),
+  ])
+  return serviceStateOf(checks, recipients, events)
 }
 
 export function statusOf(rule: CeaseAndDesistRule, state: ServiceState): ServiceStatus {

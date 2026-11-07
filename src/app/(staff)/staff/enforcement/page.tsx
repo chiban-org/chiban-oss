@@ -8,6 +8,7 @@ import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { clearHref, pageHref, type RawSearchParams, readOffset } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
+import { loadCaseDueIndex } from '@/features/enforcement/caseDueIndex'
 import { caseListFacets } from '@/features/enforcement/caseList'
 import { caseChipGroups, caseStageTabs } from '@/features/enforcement/caseListChips'
 import {
@@ -40,6 +41,7 @@ export default async function EnforcementQueuePage({
     return <NoPermission title="Code enforcement" action="see code enforcement cases" />
   }
   const today = await townToday(ctx.db, new Date(), ctx.signal)
+  const dueIndex = await loadCaseDueIndex(ctx.db, ctx.actor, today, ctx.signal)
   const [queue, facets, canManage] = await Promise.all([
     listCaseQueue(
       ctx.db,
@@ -47,8 +49,9 @@ export default async function EnforcementQueuePage({
       { filters, sort, limit: PAGE_SIZE, offset: readOffset(params) },
       today,
       ctx.signal,
+      dueIndex,
     ),
-    caseListFacets(ctx.db, ctx.actor, { filters }, today, ctx.signal),
+    caseListFacets(ctx.db, ctx.actor, { filters }, today, ctx.signal, dueIndex),
     hasCapability(ctx.db, ctx.actor.userId, 'enforcement.manage', ctx.signal),
   ])
   const links = sortLinks(CASES_PATH, params, CASE_SORT, sort)
@@ -59,7 +62,7 @@ export default async function EnforcementQueuePage({
     <main data-wide="">
       <ListHeader
         title="Code enforcement"
-        lead="Newest case first. Next date is the earlier of a running answer deadline and the corrective action deadline still ahead. Cases in court or stayed by an appeal have none."
+        lead="Newest case first. Each row shows who acts next and the deadline running."
         actions={canManage ? <NewCaseForms /> : null}
       />
       <FilterTabs label="Status" tabs={caseStageTabs(params, facets)} />

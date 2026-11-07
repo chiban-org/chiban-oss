@@ -70,17 +70,15 @@ export interface CaseDetail {
   names: Record<string, string>
 }
 
-async function orderDetail(
-  db: DbOrTx,
+export function buildOrderDetail(
   row: typeof enforcementOrders.$inferSelect,
+  service: ServiceState,
+  steps: (typeof orderCourtSteps.$inferSelect)[],
   stay: StayState,
   today: CivilDate,
-  signal: AbortSignal,
-): Promise<OrderDetail> {
+): OrderDetail {
   const rule = orderRule(row)
-  const service = await loadServiceState(db, row.id, signal)
   const status = statusOf(rule, service)
-  const steps = await db.select().from(orderCourtSteps).where(eq(orderCourtSteps.orderId, row.id))
   const filed = steps
     .filter((s) => s.kind === 'filed_with_clerk')
     .map((s) => s.occurredOn)
@@ -116,6 +114,18 @@ async function orderDetail(
         ? null
         : (judgment.appealDue as SubjectDue),
   }
+}
+
+async function orderDetail(
+  db: DbOrTx,
+  row: typeof enforcementOrders.$inferSelect,
+  stay: StayState,
+  today: CivilDate,
+  signal: AbortSignal,
+): Promise<OrderDetail> {
+  const service = await loadServiceState(db, row.id, signal)
+  const steps = await db.select().from(orderCourtSteps).where(eq(orderCourtSteps.orderId, row.id))
+  return buildOrderDetail(row, service, steps, stay, today)
 }
 
 async function userNames(db: DbOrTx, ids: string[]): Promise<Record<string, string>> {

@@ -15,6 +15,29 @@ export async function fineDueCents(db: DbOrTx, fineId: string): Promise<number> 
   return (fine?.amountCents ?? 0) - (paid?.cents ?? 0)
 }
 
+export async function fineDueByIds(
+  db: DbOrTx,
+  fineIds: readonly string[],
+): Promise<Map<string, number>> {
+  if (fineIds.length === 0) return new Map()
+  const [fines, paid] = await Promise.all([
+    db
+      .select({ id: enforcementFines.id, amountCents: enforcementFines.amountCents })
+      .from(enforcementFines)
+      .where(inArray(enforcementFines.id, [...fineIds])),
+    db
+      .select({
+        fineId: ledgerAllocations.fineId,
+        cents: sql<number>`coalesce(sum(${ledgerAllocations.amountCents}), 0)::int`,
+      })
+      .from(ledgerAllocations)
+      .where(inArray(ledgerAllocations.fineId, [...fineIds]))
+      .groupBy(ledgerAllocations.fineId),
+  ])
+  const paidBy = new Map(paid.map((p) => [p.fineId, p.cents]))
+  return new Map(fines.map((f) => [f.id, f.amountCents - (paidBy.get(f.id) ?? 0)]))
+}
+
 function fineDeltas(allocations: AllocationInput[]): Map<string, number> {
   const deltas = new Map<string, number>()
   for (const a of allocations) {
