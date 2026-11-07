@@ -3,6 +3,8 @@ import { applicationSnapshots } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
 import { loadPanelDocuments } from '@/features/documents/panelData'
 import { applicationHolds } from '@/features/records/holds'
+import { assignableBoards } from '@/features/reviews/boardAssignments'
+import { listApplicationBoardAssignments } from '@/features/reviews/boardAssignmentView'
 import { listApplicationReviewers, listReviewerChoices } from '@/features/reviews/reviewerView'
 import { getTownSettings } from '@/features/town/settings'
 import type { StaffContext } from '@/server/requireStaff'
@@ -36,6 +38,8 @@ export async function loadRecordsData(ctx: StaffContext, applicationId: string, 
     canHold,
     snapshots,
     appHolds,
+    boardAssignments,
+    boards,
   ] = await Promise.all([
     can('review.assign'),
     getTownSettings(ctx.db, ctx.signal),
@@ -47,11 +51,15 @@ export async function loadRecordsData(ctx: StaffContext, applicationId: string, 
     can('hold.place_release'),
     snapshotsOf(ctx, applicationId),
     applicationHolds(ctx.db, applicationId, projectId),
+    listApplicationBoardAssignments(ctx.db, applicationId),
+    assignableBoards(ctx.db, applicationId, ctx.signal),
   ])
   return {
     reviewers,
     canAssign,
     choices: canAssign ? choices : [],
+    boardAssignments,
+    boardChoices: canAssign ? boards.map((b) => ({ id: b.id, name: b.name })) : [],
     documents,
     canPublish,
     canManageDocuments,
