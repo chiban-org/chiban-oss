@@ -21,7 +21,7 @@ test.describe
     let meetingId: string
 
     test('adds the board from the list of kinds', async ({ pageAs, suffix }) => {
-      name = `Alder Pond Conservation Commission ${suffix}`
+      name = `Shoreland Conservation Commission ${suffix}`
       const page = await pageAs('admin')
       await page.goto('/staff/settings/boards')
       await expect(page.getByRole('heading', { name: 'Boards', level: 1 })).toBeVisible()

@@ -18,6 +18,7 @@ export const PUBLIC_ROLE_KEYS = [
   'contractor',
   'planningBoardMember',
   'zbaMember',
+  'concomMember',
 ] as const
 
 export type StaffRoleKey = (typeof STAFF_ROLE_KEYS)[number]
@@ -50,6 +51,11 @@ const ACCOUNTS: Readonly<Record<SignedInRoleKey, Account>> = {
     signIn: 'magic_link',
   },
   zbaMember: { email: demo('zba.member'), displayName: 'Drew Hale', signIn: 'magic_link' },
+  concomMember: {
+    email: demo('concom.member'),
+    displayName: 'Cleo Marsh',
+    signIn: 'magic_link',
+  },
 }
 
 const ACCOUNT_BY_ROLE: ReadonlyMap<SignedInRoleKey, Account> = new Map(
