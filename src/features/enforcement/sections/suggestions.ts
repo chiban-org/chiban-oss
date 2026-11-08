@@ -46,6 +46,7 @@ export interface SuggestionInputs {
   stateCode: StateRef[]
 }
 
+export const REF_MAX = 300
 export const CHIP_COUNT = 6
 export const SEARCH_LIMIT = 8
 
@@ -136,25 +137,53 @@ function prefersListedValue(source: SuggestionSource): boolean {
   return source.kind === 'town' || source.kind === 'state_code'
 }
 
+interface Group {
+  keys: Set<string>
+  suggestion: SectionSuggestion
+}
+
+function withSource(sources: SuggestionSource[], source: SuggestionSource): SuggestionSource[] {
+  if (source.kind !== 'used') return [...sources, source]
+  const used = sources.find((s) => s.kind === 'used')
+  if (used === undefined) return [source, ...sources]
+  return sources.map((s) =>
+    s.kind === 'used' ? { kind: 'used', count: s.count + source.count } : s,
+  )
+}
+
+function absorb(into: Group, value: string, title: string, source: SuggestionSource): void {
+  into.suggestion.sources = withSource(into.suggestion.sources, source)
+  if (prefersListedValue(source)) {
+    into.suggestion.value = value
+    into.suggestion.title = title
+  }
+}
+
+function joinGroups(first: Group, other: Group): void {
+  for (const k of other.keys) first.keys.add(k)
+  for (const source of other.suggestion.sources) {
+    absorb(first, other.suggestion.value, other.suggestion.title, source)
+  }
+}
+
 function mergeCandidates(candidates: Candidate[]): SectionSuggestion[] {
-  const merged: { keys: Set<string>; suggestion: SectionSuggestion }[] = []
+  let groups: Group[] = []
   for (const c of candidates) {
-    const found = merged.find((m) => c.keys.some((k) => m.keys.has(k)))
-    if (found === undefined) {
-      merged.push({
+    const matching = groups.filter((g) => c.keys.some((k) => g.keys.has(k)))
+    const [first, ...rest] = matching
+    if (first === undefined) {
+      groups.push({
         keys: new Set(c.keys),
         suggestion: { value: c.value, title: c.title, sources: [c.source] },
       })
       continue
     }
-    for (const k of c.keys) found.keys.add(k)
-    found.suggestion.sources.push(c.source)
-    if (prefersListedValue(c.source)) {
-      found.suggestion.value = c.value
-      found.suggestion.title = c.title
-    }
+    for (const other of rest) joinGroups(first, other)
+    groups = groups.filter((g) => !rest.includes(g))
+    for (const k of c.keys) first.keys.add(k)
+    absorb(first, c.value, c.title, c.source)
   }
-  return merged.map((m) => m.suggestion)
+  return groups.map((g) => g.suggestion)
 }
 
 export function mergeSuggestions(inputs: SuggestionInputs): SuggestionsByKind {
@@ -212,13 +241,20 @@ function isTownKind(ref: UsedRef): ref is TypedRef {
   return (TOWN_SECTION_KINDS as readonly string[]).includes(ref.kind)
 }
 
+function kindKey(kind: ProvisionKind, ref: string): string {
+  return `${kind}:${refKey(ref)}`
+}
+
 export function notOnList(inputs: SuggestionInputs): TypedRef[] {
   const listed = new Set([
-    ...inputs.town.flatMap((t) => [refKey(townValue(t)), refKey(t.reference)]),
-    ...inputs.stateCode.flatMap((s) => [refKey(stateValue(s)), refKey(s.reference)]),
+    ...inputs.town.flatMap((t) => [kindKey(t.kind, townValue(t)), kindKey(t.kind, t.reference)]),
+    ...inputs.stateCode.flatMap((s) => [
+      kindKey('building_code', stateValue(s)),
+      kindKey('building_code', s.reference),
+    ]),
   ])
   return inputs.used
     .filter(isTownKind)
-    .filter((u) => !listed.has(refKey(u.ref)))
+    .filter((u) => !listed.has(kindKey(u.kind, u.ref)))
     .sort((a, b) => b.count - a.count || a.ref.localeCompare(b.ref))
 }

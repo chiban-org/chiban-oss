@@ -31,14 +31,14 @@ function SectionFields({ values }: { values?: SectionValues }) {
         label="Section"
         name="reference"
         required
-        maxLength={200}
+        maxLength={300}
         defaultValue={values?.reference ?? ''}
         hint="As it should read in a finding, for example Zoning Ordinance Section 4.2."
       />
       <TextField
         label="Short title"
         name="title"
-        maxLength={200}
+        maxLength={298}
         defaultValue={values?.title ?? ''}
         hint="A few words staff search by, for example accessory structure setbacks."
       />

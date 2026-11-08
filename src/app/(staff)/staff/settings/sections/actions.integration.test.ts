@@ -68,4 +68,22 @@ describe('section list actions', () => {
     expect(await editSectionAction(h.form({ ...SETBACKS, sectionId: id }))).toEqual(forbidden)
     expect(await retireSectionAction(h.form({ sectionId: id }))).toEqual(forbidden)
   })
+
+  it('accepts any reference a finding can hold and refuses a section and title too long to suggest', async () => {
+    h.signIn(await h.actorFor('admin'))
+    const long = `Section ${'9'.repeat(280)}`
+    expect(
+      (await addSectionAction(h.form({ provisionKind: 'zoning_ordinance', reference: long }))).ok,
+    ).toBe(true)
+    const message = 'Shorten the section and short title to 298 characters together.'
+    expect(
+      await addSectionAction(
+        h.form({
+          provisionKind: 'zoning_ordinance',
+          reference: 'Section 1',
+          title: 'x'.repeat(295),
+        }),
+      ),
+    ).toEqual({ ok: false, error: message, fieldErrors: { title: message } })
+  })
 })

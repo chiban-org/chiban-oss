@@ -29,7 +29,7 @@ export const PLAN_EXTRAS: CasePlanExtras = {
   responsible: 'Sam Clerk',
 }
 
-export const OPEN_FINDING = [{ status: 'open' as const }]
+export const OPEN_FINDING = [{ id: 'f1', status: 'open' as const }]
 
 export const ANSWER_DUE: CasePlanOrder['answerDues'] = [
   { name: 'Larkspur Family Trust', due: { due: '2026-11-20' as CivilDate }, answeredOn: null },
@@ -65,6 +65,7 @@ export function planOrder(
       issuedOn: '2026-10-29',
       correctiveAction: 'Stop renting the second dwelling.',
       correctiveDeadline: '2026-12-13',
+      findingIds: ['f1'],
       ...row,
     },
     rule: {

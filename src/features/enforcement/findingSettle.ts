@@ -1,6 +1,8 @@
-import { type AnyColumn, and, eq, inArray, ne, sql } from 'drizzle-orm'
+import { and, eq, inArray, ne, notInArray } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import {
+  counselOutcomes,
+  counselReferrals,
   type EnforcementStatus,
   enforcementCases,
   enforcementOrders,
@@ -12,49 +14,7 @@ import {
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 
-export type FindingRow = typeof violationFindings.$inferSelect
 type CaseRow = typeof enforcementCases.$inferSelect
-
-export async function findingInUse(tx: Tx, finding: FindingRow): Promise<boolean> {
-  const contains = (column: AnyColumn) => sql`${finding.id}::uuid = any(${column})`
-  const [notice] = await tx
-    .select({ id: violationNotices.id })
-    .from(violationNotices)
-    .where(and(eq(violationNotices.caseId, finding.caseId), contains(violationNotices.findingIds)))
-    .limit(1)
-  if (notice !== undefined) return true
-  const [order] = await tx
-    .select({ id: enforcementOrders.id })
-    .from(enforcementOrders)
-    .where(
-      and(eq(enforcementOrders.caseId, finding.caseId), contains(enforcementOrders.findingIds)),
-    )
-    .limit(1)
-  return order !== undefined
-}
-
-export async function lockFindingWithCase(
-  tx: Tx,
-  findingId: string,
-): Promise<{ finding: FindingRow; caseRow: CaseRow } | null> {
-  const [found] = await tx
-    .select({ caseId: violationFindings.caseId })
-    .from(violationFindings)
-    .where(eq(violationFindings.id, findingId))
-  if (found === undefined) return null
-  const [caseRow] = await tx
-    .select()
-    .from(enforcementCases)
-    .where(eq(enforcementCases.id, found.caseId))
-    .for('update')
-  const [finding] = await tx
-    .select()
-    .from(violationFindings)
-    .where(eq(violationFindings.id, findingId))
-    .for('update')
-  if (caseRow === undefined || finding === undefined) return null
-  return { finding, caseRow }
-}
 
 async function somethingWentOut(tx: Tx, caseId: string): Promise<boolean> {
   const [notice] = await tx
@@ -66,9 +26,39 @@ async function somethingWentOut(tx: Tx, caseId: string): Promise<boolean> {
   const [order] = await tx
     .select({ id: enforcementOrders.id })
     .from(enforcementOrders)
-    .where(and(eq(enforcementOrders.caseId, caseId), ne(enforcementOrders.status, 'withdrawn')))
+    .where(
+      and(
+        eq(enforcementOrders.caseId, caseId),
+        notInArray(enforcementOrders.status, ['withdrawn', 'draft']),
+      ),
+    )
     .limit(1)
   return order !== undefined
+}
+
+async function discardDrafts(tx: Tx, actor: Actor, caseId: string, signal: AbortSignal) {
+  const drafts = await tx
+    .select()
+    .from(enforcementOrders)
+    .where(and(eq(enforcementOrders.caseId, caseId), eq(enforcementOrders.status, 'draft')))
+  for (const draft of drafts) {
+    await tx
+      .update(enforcementOrders)
+      .set({ status: 'withdrawn', rowVersion: draft.rowVersion + 1 })
+      .where(eq(enforcementOrders.id, draft.id))
+    await writeAudit(
+      tx,
+      {
+        actor: { kind: 'user', userId: actor.userId },
+        action: 'enforcement.order_draft_discarded',
+        entityType: 'enforcement_order',
+        entityId: draft.id,
+        before: { status: 'draft' },
+        after: { status: 'withdrawn', reason: 'Every finding on the draft was withdrawn.' },
+      },
+      signal,
+    )
+  }
 }
 
 export async function returnCaseIfAllWithdrawn(
@@ -84,6 +74,7 @@ export async function returnCaseIfAllWithdrawn(
     .where(and(eq(violationFindings.caseId, caseRow.id), ne(violationFindings.status, 'withdrawn')))
     .limit(1)
   if (standing !== undefined || (await somethingWentOut(tx, caseRow.id))) return caseRow.status
+  await discardDrafts(tx, actor, caseRow.id, signal)
   await tx
     .update(enforcementCases)
     .set({ status: 'investigating', rowVersion: caseRow.rowVersion + 1, updatedAt: new Date() })
@@ -116,6 +107,23 @@ function allSettled(findingIds: readonly string[], statusOf: Map<string, string>
   return !statuses.includes('open') && statuses.includes('corrected')
 }
 
+const COUNSEL_JUDGMENTS = ['judgment_for_town', 'judgment_for_respondent'] as const
+
+async function counselJudged(tx: Tx, caseId: string): Promise<boolean> {
+  const [judged] = await tx
+    .select({ id: counselOutcomes.id })
+    .from(counselOutcomes)
+    .innerJoin(counselReferrals, eq(counselReferrals.id, counselOutcomes.referralId))
+    .where(
+      and(
+        eq(counselReferrals.caseId, caseId),
+        inArray(counselOutcomes.kind, [...COUNSEL_JUDGMENTS]),
+      ),
+    )
+    .limit(1)
+  return judged !== undefined
+}
+
 export async function settleCompliedOrders(
   tx: Tx,
   actor: Actor,
@@ -144,6 +152,7 @@ export async function settleCompliedOrders(
         eq(orderCourtSteps.kind, 'judgment'),
       ),
     )
+  if (await counselJudged(tx, caseId)) return
   const judgedIds = new Set(judged.map((j) => j.orderId))
   for (const order of orders) {
     if (judgedIds.has(order.id) || !allSettled(order.findingIds, statusOf)) continue

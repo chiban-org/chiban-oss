@@ -67,7 +67,12 @@ const COPY: Record<string, string> = {
     'Anonymous intake needs a passing retention check for the version that is running.',
 }
 
-type Failure = string | { missingContent: string[] } | { filingLeadUntil: CivilDate } | object
+type Failure =
+  | string
+  | { missingContent: string[] }
+  | { findingsNotOpen: string[] }
+  | { filingLeadUntil: CivilDate }
+  | object
 
 function contentLabel(key: string): string {
   return Object.entries(ORDER_CONTENT_LABELS).find(([k]) => k === key)?.[1] ?? key
@@ -75,6 +80,9 @@ function contentLabel(key: string): string {
 
 export function enforcementError(error: Failure): string {
   if (typeof error === 'string') return COPY[error] ?? errorCopy(error)
+  if ('findingsNotOpen' in error) {
+    return `This draft includes findings that were withdrawn or marked corrected: ${error.findingsNotOpen.join('; ')}. Discard the draft and draft a new order.`
+  }
   if ('missingContent' in error) {
     const names = error.missingContent.map(contentLabel)
     return `The order is missing: ${names.join(', ')}.`

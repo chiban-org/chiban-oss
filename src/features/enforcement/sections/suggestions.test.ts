@@ -168,3 +168,36 @@ describe('typed in findings, not on the list', () => {
     expect(report).toEqual([{ kind: 'zoning_ordinance', ref: 'Section 9.9 signs', count: 3 }])
   })
 })
+
+describe('merging past wording into one listed entry', () => {
+  it('folds every past spelling a town entry names into one suggestion and sums the uses', () => {
+    const merged = mergeSuggestions(
+      inputs({
+        used: [
+          { kind: 'zoning_ordinance', ref: 'Section 4.2, setbacks', count: 3 },
+          { kind: 'zoning_ordinance', ref: 'Section 4.2', count: 2 },
+        ],
+        town: [{ kind: 'zoning_ordinance', reference: 'Section 4.2', title: 'setbacks' }],
+      }),
+    ).zoning_ordinance
+    expect(merged).toEqual([
+      {
+        value: 'Section 4.2, setbacks',
+        title: 'setbacks',
+        sources: [{ kind: 'used', count: 5 }, { kind: 'town' }],
+      },
+    ])
+  })
+})
+
+describe('the unlisted report by kind', () => {
+  it('reports a reference typed under another kind than the one it is listed for', () => {
+    const report = notOnList(
+      inputs({
+        used: [{ kind: 'other_local_ordinance', ref: 'Section 4.2', count: 1 }],
+        town: [{ kind: 'zoning_ordinance', reference: 'Section 4.2', title: '' }],
+      }),
+    )
+    expect(report).toEqual([{ kind: 'other_local_ordinance', ref: 'Section 4.2', count: 1 }])
+  })
+})

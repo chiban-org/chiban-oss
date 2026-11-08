@@ -9,6 +9,7 @@ import { openFindingChoices } from '@/features/enforcement/findingChoices'
 import { findingUses } from '@/features/enforcement/findingUses'
 import { motionGateText } from '@/features/enforcement/gateText'
 import { MOTION_BLOCK_TEXT, ORDER_STATUS_LABELS } from '@/features/enforcement/labels'
+import { draftIsStale } from '@/features/enforcement/workPlanInput'
 import { NO_HOSTED } from '@/features/enforcement/workPlanTypes'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
@@ -183,12 +184,19 @@ function IssuedParts({ order, detail, can, hosted, withService }: BlockProps) {
 function OrderBlock({ order, detail, can, hosted, withService }: BlockProps) {
   const { row } = order
   const issued = row.issuedOn !== null
+  const stale = row.status === 'draft' && draftIsStale(detail.findings, row.findingIds)
   return (
     <article className="record-item space-y-4">
       <h3>{`${row.number}, ${ORDER_STATUS_LABELS[row.status]}`}</h3>
       <OrderSummary order={order} detail={detail} />
+      {stale ? (
+        <p className="font-medium">
+          This draft includes a finding that was withdrawn or marked corrected, so it cannot be
+          issued. Discard it and draft a new order.
+        </p>
+      ) : null}
       {row.status === 'draft' && can.manage ? <DraftForms order={order} /> : null}
-      {row.status === 'draft' && can.issue && !hosted.has(`issue_order:${row.id}`) ? (
+      {row.status === 'draft' && !stale && can.issue && !hosted.has(`issue_order:${row.id}`) ? (
         <IssueOrderForm order={order} detail={detail} variant="outline" />
       ) : null}
       {issued ? <IssuedParts {...{ order, detail, can, hosted, withService }} /> : null}

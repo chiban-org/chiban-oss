@@ -122,6 +122,11 @@ export async function recordCounselOutcome(
       .from(counselReferrals)
       .where(eq(counselReferrals.id, value.referralId))
     if (referral === undefined) return err('not_found')
+    await tx
+      .select({ id: enforcementCases.id })
+      .from(enforcementCases)
+      .where(eq(enforcementCases.id, referral.caseId))
+      .for('update')
     if (value.documentId !== undefined) {
       const [doc] = await tx
         .select({ id: documents.id })
