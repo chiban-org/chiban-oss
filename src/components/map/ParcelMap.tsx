@@ -19,6 +19,8 @@ export interface ParcelMapProps {
   basemapAttribution?: string | null
   overlay?: MapOverlay
   hint?: string
+  notLoaded?: string
+  compact?: boolean
 }
 
 const SEARCH_HINT =
@@ -131,14 +133,14 @@ export function ParcelMap(props: ParcelMapProps) {
           ref={container}
           role="region"
           aria-label="Parcel map"
-          className="h-[28rem] w-full rounded-lg border bg-canvas"
+          className={`${props.compact === true ? 'h-64' : 'h-[28rem]'} w-full rounded-lg border bg-canvas`}
         />
         {phase === 'ready' ? null : (
           <p
             role={phase === 'failed' ? 'alert' : 'status'}
             className="absolute inset-0 m-0 flex items-center justify-center rounded-lg bg-canvas/80 px-6 text-center text-base font-medium"
           >
-            {phase === 'failed' ? NOT_LOADED : 'Loading the map'}
+            {phase === 'failed' ? (props.notLoaded ?? NOT_LOADED) : 'Loading the map'}
           </p>
         )}
       </div>

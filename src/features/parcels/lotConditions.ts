@@ -13,6 +13,7 @@ export interface LotCondition {
 }
 
 export interface LotDecision {
+  kind: 'decision' | 'permit'
   applicationId: string
   number: string
   outcome: { label: string; chip: Status }
@@ -45,6 +46,7 @@ function decisionEntry(
   own: readonly LotCondition[],
 ): Omit<LotDecision, 'expires'> {
   return {
+    kind: 'decision',
     applicationId: app.id,
     number: app.number,
     outcome: decisionOutcome(decision.outcome, decision.boardKind),
@@ -63,6 +65,7 @@ function permitEntry(
   const outcome = PERMIT_WORDS.get(app.state)
   if (outcome === undefined || own.length === 0) return null
   return {
+    kind: 'permit',
     applicationId: app.id,
     number: app.number,
     outcome,

@@ -5,6 +5,7 @@ import { ParcelRecordsPanel } from '@/components/parcels/ParcelRecordsPanel'
 import { buildRecordTable } from '@/features/parcels/recordTable'
 import { arrangeRecordTable, readRecordTableView } from '@/features/parcels/recordTableView'
 import { caseRecord, dates, file, history, PARCEL, PATH, permit } from '@/test/recordTableFixtures'
+import type { CivilDate } from '@/types/civilDate'
 
 afterEach(cleanup)
 
@@ -84,6 +85,38 @@ describe('ParcelRecordsPanel', () => {
         .getAllByRole('link', { name: /^Closed/ })[0]
         ?.getAttribute('href'),
     ).toBe(`${PATH}?state=closed#records`)
+  })
+})
+
+describe('ParcelRecordsPanel inspection rows', () => {
+  it('names each inspection by its type, with the permit number beside it and its scheduled date', () => {
+    renderPanel(
+      history([
+        permit('i1', 'BP-2025-0001', {
+          kind: 'inspection',
+          title: 'Framing inspection',
+          href: '/staff/inspections/i1',
+          openAs: 'inspection_scheduled',
+          scheduled: '2026-11-12' as CivilDate,
+          dates: dates({ filed: '2026-11-02' }),
+        }),
+        permit('i2', 'BP-2025-0001', {
+          kind: 'inspection',
+          title: 'Footing inspection',
+          href: '/staff/inspections/i2',
+          closed: true,
+          dates: dates({ filed: '2026-10-02', closed: '2026-10-05' }),
+        }),
+      ]),
+    )
+    const framing = screen.getByRole('link', { name: 'Framing inspection' })
+    expect(framing.getAttribute('href')).toBe('/staff/inspections/i1')
+    const row = framing.closest('tr') as HTMLElement
+    expect(within(row).getByText('BP-2025-0001')).toBeTruthy()
+    expect(within(row).getByText('Scheduled Nov 12, 2026')).toBeTruthy()
+    const footing = screen.getByRole('link', { name: 'Footing inspection' }).closest('tr')
+    expect(within(footing as HTMLElement).getByText('Oct 5, 2026')).toBeTruthy()
+    expect(screen.queryByRole('link', { name: 'BP-2025-0001' })).toBeNull()
   })
 })
 
