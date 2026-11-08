@@ -16,6 +16,7 @@ import {
   currentContractor,
   type PartyRow,
   planContractor,
+  resolveAddedAccount,
 } from '@/features/permits/correction/contractor'
 import { storeCorrectedPermit } from '@/features/permits/correction/correctionDocuments'
 import { isCorrectablePermit, mayCorrectPermits } from '@/features/permits/correction/policy'
@@ -144,7 +145,8 @@ async function prepare(
   const plan = planContractor(parties, input.contractor)
   if (!plan.ok) return plan
   const revision = app.permitRevision + 1
-  return ok({ app, values: assessed.value.values, parties, plan: plan.value, revision })
+  const resolved = await resolveAddedAccount(tx, plan.value, tx)
+  return ok({ app, values: assessed.value.values, parties, plan: resolved, revision })
 }
 
 export async function correctPermit(

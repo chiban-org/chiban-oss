@@ -1,5 +1,5 @@
 import { and, eq, isNull, type SQL, sql } from 'drizzle-orm'
-import type { Tx } from '@/db/client'
+import type { DbOrTx, Tx } from '@/db/client'
 import { contractorProfiles, projectParties, userRoles, users } from '@/db/schema'
 import { writeAudit } from '@/features/audit/writeAudit'
 
@@ -10,13 +10,20 @@ export async function lockContractorEmail(tx: Tx, email: string): Promise<void> 
   await tx.execute(sql`select pg_advisory_xact_lock(hashtext(${key}))`)
 }
 
-async function contractorAccountFor(tx: Tx, where: SQL) {
+async function contractorAccountFor(tx: DbOrTx, where: SQL) {
   const [row] = await tx
     .select({ userId: users.id, email: users.email })
     .from(users)
     .innerJoin(contractorProfiles, eq(contractorProfiles.userId, users.id))
     .where(and(where, eq(users.kind, 'public'), eq(users.isActive, true)))
   return row ?? null
+}
+
+export async function contractorAccountIdForEmail(
+  db: DbOrTx,
+  email: string,
+): Promise<string | null> {
+  return (await contractorAccountFor(db, eq(users.email, email.trim())))?.userId ?? null
 }
 
 interface LinkContext {
