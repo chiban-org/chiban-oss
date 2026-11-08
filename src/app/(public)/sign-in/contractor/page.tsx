@@ -14,7 +14,7 @@ export default function ContractorSignUpPage() {
         See every project that names you as the contractor on one page. Enter your work email. We
         send a link to confirm it, then you fill in your company details.
       </p>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-muted-foreground">
         The town does not register or license contractors and charges no fee. Projects show up when
         the town or the property owner names your email as the contractor.
       </p>

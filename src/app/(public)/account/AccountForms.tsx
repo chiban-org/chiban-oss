@@ -86,8 +86,8 @@ export function ContractorForm({ view }: { view: AccountView }) {
         defaultValue={view.mailingAddress ?? ''}
       />
       <fieldset className="space-y-2 border-0 p-0">
-        <legend className="text-sm font-medium">Trades</legend>
-        <p className="text-sm text-muted-foreground">
+        <legend className="font-medium">Trades</legend>
+        <p className="text-muted-foreground">
           Choose the licensed trades you work in. Leave them all clear if you do general building
           work.
         </p>
