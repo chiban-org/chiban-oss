@@ -23,6 +23,7 @@ export const RECORDS_COPY: Record<string, string> = {
     'Explain in a sentence or two how the exemption applies (at least 20 characters).',
   not_open: 'This request is closed.',
   approval_missing: 'Choose approved versions that belong to the documents you are releasing.',
+  duplicate_document: 'Choose one version of each document for a release.',
   approval_revoked:
     'One of the approvals was revoked. Approve the version again before releasing it.',
   redaction_not_cited:

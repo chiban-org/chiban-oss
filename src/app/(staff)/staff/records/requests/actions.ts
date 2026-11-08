@@ -145,6 +145,7 @@ export async function createReleaseAction(formData: FormData): Promise<ActionRes
         recipient_required: 'recipientEmail',
         approval_missing: 'items',
         approval_revoked: 'items',
+        duplicate_document: 'items',
       },
     ),
   )

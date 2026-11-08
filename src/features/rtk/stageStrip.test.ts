@@ -68,6 +68,15 @@ describe('request stage strip', () => {
     expect(summary({ status: 'withdrawn', statedDue: STATED, firstResponseOn: ON })).toEqual([
       'Received:done',
       'Time stated:done',
+      'Responded:done',
+      'Withdrawn:current',
+    ])
+  })
+
+  it('a request answered and then withdrawn keeps Responded before Withdrawn', () => {
+    expect(summary({ status: 'withdrawn', firstResponseOn: ON })).toEqual([
+      'Received:done',
+      'Responded:done',
       'Withdrawn:current',
     ])
   })

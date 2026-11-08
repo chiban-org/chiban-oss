@@ -131,6 +131,10 @@ describe('denying a request after a time statement', () => {
     const text = await letterText(denial?.id ?? '')
     expect(text).toContain('The town cannot provide some or all of the records you requested.')
     expect(text).toContain('Email from the town attorney about the culvert contract')
+    expect(text).not.toContain('The town needs more time to respond to your request.')
+    expect(text).not.toContain('Response by')
+    expect(text).toContain('On July 7, 2027 the town said it needed until July 30, 2027.')
+    expect(text.indexOf('cannot provide')).toBeLessThan(text.indexOf('On July 7, 2027'))
     const audits = await handle.db
       .select()
       .from(auditLog)

@@ -3,9 +3,12 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { ReleaseCandidate, ReleaseSummary, RequestApproval } from '@/features/rtk/requestPage'
+import type { CivilDate } from '@/types/civilDate'
 import { FindResults } from './FindResults'
+import { PendingRelease } from './PendingRelease'
 import { ReleaseSection } from './ReleaseSection'
 
+vi.mock('../actions', () => ({ createReleaseAction: vi.fn() }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 vi.mock('../../renditionActions', () => ({
   approveRenditionAction: vi.fn(),
@@ -129,5 +132,38 @@ describe('releases panel', () => {
     expect(approvals.getByText('Released in release 1')).toBeTruthy()
     expect(approvals.getByText('Waiting')).toBeTruthy()
     expect(approvals.getAllByText('Revoke approval', { selector: 'summary' })).toHaveLength(2)
+  })
+})
+
+describe('approved records waiting for release', () => {
+  it('asks which version to release when a document has two approvals, newest chosen', () => {
+    render(
+      <CsrfProvider token="t1">
+        <PendingRelease
+          requestId="r1"
+          pending={[
+            approval({ approvalId: 'a1', versionId: 'v1' }),
+            approval({
+              approvalId: 'a2',
+              versionId: 'v2',
+              role: 'release_redacted',
+              approvedAt: new Date('2027-03-05T15:00:00Z'),
+            }),
+            approval({ approvalId: 'a3', documentId: 'd2', versionId: 'v9', title: 'Deed' }),
+          ]}
+          today={'2027-03-06' as CivilDate}
+          timeZone="America/New_York"
+        />
+      </CsrfProvider>,
+    )
+    const choice = screen.getByRole('group', { name: 'Which version of Site plan to release' })
+    const radios = within(choice).getAllByRole<HTMLInputElement>('radio')
+    expect(radios.map((r) => [r.value, r.checked])).toEqual([
+      ['d1:a1', false],
+      ['d1:a2', true],
+    ])
+    const hidden = document.querySelectorAll<HTMLInputElement>('input[type="hidden"][name="items"]')
+    expect([...hidden].map((i) => i.value)).toEqual(['d2:a3'])
+    expect(screen.getByRole('button', { name: 'Release 2 records' })).toBeTruthy()
   })
 })

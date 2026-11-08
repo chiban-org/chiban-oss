@@ -55,6 +55,7 @@ export type ReleaseError =
   | 'before_received'
   | 'approval_missing'
   | 'approval_revoked'
+  | 'duplicate_document'
   | 'redaction_not_cited'
   | 'recipient_required'
   | 'send_failed'
@@ -190,6 +191,9 @@ export async function createRelease(
   const value = parsed.data
   if (value.method === 'electronic_link' && value.recipientEmail === undefined) {
     return err('recipient_required')
+  }
+  if (new Set(value.items.map((i) => i.documentId)).size !== value.items.length) {
+    return err('duplicate_document')
   }
   return await transactionResult<{ releaseId: string; sequence: number }, ReleaseError>(
     db,

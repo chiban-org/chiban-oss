@@ -11,6 +11,53 @@ function releaseLabel(count: number): string {
   return count === 1 ? 'Release 1 record' : `Release ${count} records`
 }
 
+function byDocument(pending: readonly RequestApproval[]): RequestApproval[][] {
+  const groups = new Map<string, RequestApproval[]>()
+  for (const a of pending) groups.set(a.documentId, [...(groups.get(a.documentId) ?? []), a])
+  return [...groups.values()]
+}
+
+function itemValue(a: RequestApproval): string {
+  return `${a.documentId}:${a.approvalId}`
+}
+
+function newest(versions: readonly RequestApproval[]): RequestApproval | undefined {
+  return versions.reduce<RequestApproval | undefined>(
+    (best, a) => (best === undefined || a.approvedAt > best.approvedAt ? a : best),
+    undefined,
+  )
+}
+
+function DocumentItem({
+  versions,
+  timeZone,
+}: {
+  versions: readonly RequestApproval[]
+  timeZone: string
+}) {
+  const [only] = versions
+  if (only === undefined) return null
+  if (versions.length === 1) return <input type="hidden" name="items" value={itemValue(only)} />
+  const chosen = newest(versions)
+  return (
+    <fieldset className="m-0 flex flex-col gap-2 border-0 p-0">
+      <legend className="mb-2 font-medium">{`Which version of ${only.title} to release`}</legend>
+      {versions.map((a) => (
+        <label key={a.approvalId} className="flex items-start gap-2">
+          <input
+            type="radio"
+            name="items"
+            value={itemValue(a)}
+            defaultChecked={a === chosen}
+            className="mt-1 size-4 shrink-0 accent-action"
+          />
+          <span>{versionLabel(a.role, a.versionCreatedAt, timeZone)}</span>
+        </label>
+      ))}
+    </fieldset>
+  )
+}
+
 export function PendingRelease({
   requestId,
   pending,
@@ -38,7 +85,7 @@ export function PendingRelease({
       </ul>
       <ActionForm
         action={createReleaseAction}
-        submitLabel={releaseLabel(pending.length)}
+        submitLabel={releaseLabel(byDocument(pending).length)}
         variant="default"
         confirm={{
           title: 'Release these records?',
@@ -47,13 +94,8 @@ export function PendingRelease({
         }}
       >
         <input type="hidden" name="requestId" value={requestId} />
-        {pending.map((a) => (
-          <input
-            key={a.approvalId}
-            type="hidden"
-            name="items"
-            value={`${a.documentId}:${a.approvalId}`}
-          />
+        {byDocument(pending).map((versions) => (
+          <DocumentItem key={versions[0]?.documentId} versions={versions} timeZone={timeZone} />
         ))}
         <TextField
           label="Date released"

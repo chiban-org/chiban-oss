@@ -66,11 +66,14 @@ type Request = typeof rtkRequests.$inferSelect
 type TimeStatement = typeof rtkTimeStatements.$inferSelect
 
 function responseBlocks(request: Request): PdfBlock[] {
-  const kind = request.firstResponseKind
+  const kind = request.deniedOn === null ? request.firstResponseKind : 'denied'
   const blocks: PdfBlock[] = []
   if (kind !== null) blocks.push({ kind: 'paragraph', text: KIND_SENTENCES[kind] ?? '' })
-  if (request.deniedOn !== null && kind !== 'denied') {
-    blocks.push({ kind: 'paragraph', text: KIND_SENTENCES.denied ?? '' })
+  if (request.deniedOn !== null) {
+    blocks.push({
+      kind: 'fields',
+      rows: [{ label: 'Denied on', value: formatCivilDate(request.deniedOn) }],
+    })
   }
   if (kind === 'website_reference' && request.firstResponseUrl !== null) {
     blocks.push({
@@ -81,7 +84,15 @@ function responseBlocks(request: Request): PdfBlock[] {
   return blocks
 }
 
-function statementBlocks(statements: TimeStatement[]): PdfBlock[] {
+function statementHistory(statements: TimeStatement[]): PdfBlock[] {
+  return statements.map((s) => ({
+    kind: 'paragraph',
+    text: `On ${formatCivilDate(s.statedOn)} the town said it needed until ${formatCivilDate(s.statedDate)}.`,
+  }))
+}
+
+function statementBlocks(statements: TimeStatement[], denied: boolean): PdfBlock[] {
+  if (denied) return statementHistory(statements)
   const blocks: PdfBlock[] = []
   for (const s of statements) {
     blocks.push({ kind: 'heading', text: 'Time the town needs' })
@@ -168,7 +179,7 @@ export async function responseLetterInput(
       },
       sections: new Map([
         ['rtk.response', responseBlocks(request)],
-        ['rtk.timeStatements', statementBlocks(statements)],
+        ['rtk.timeStatements', statementBlocks(statements, request.deniedOn !== null)],
         ['rtk.released', await releasedBlocks(db, requestId)],
         ['rtk.withheld', withholdingBlocks(withholdings)],
       ]),

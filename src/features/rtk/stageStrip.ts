@@ -18,11 +18,12 @@ function reached(input: RequestStageInput): Stage[] {
 }
 
 function ended(input: RequestStageInput): Stage[] {
-  if (input.status === 'withdrawn') {
-    return [...reached(input), stage('withdrawn', 'Withdrawn', 'current')]
-  }
   const responded = input.firstResponseOn === null ? [] : [stage('responded', 'Responded', 'done')]
-  return [...reached(input), ...responded, stage('closed', 'Closed', 'done')]
+  const last =
+    input.status === 'withdrawn'
+      ? stage('withdrawn', 'Withdrawn', 'current')
+      : stage('closed', 'Closed', 'done')
+  return [...reached(input), ...responded, last]
 }
 
 export function requestStages(input: RequestStageInput): Stage[] {
