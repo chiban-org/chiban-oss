@@ -22,9 +22,10 @@ describe('StatusChip', () => {
     expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true')
   })
 
-  it('keeps a long label on one line, so a narrow table cell never breaks it mid-word', () => {
+  it('never breaks a label mid-word, and keeps it on one line from tablet width up', () => {
     const { container } = render(<StatusChip status="neutral" label="Submitted, meeting set" />)
-    expect(container.firstElementChild?.className).toContain('whitespace-nowrap')
+    expect(container.firstElementChild?.className).toContain('[overflow-wrap:normal]')
+    expect(container.firstElementChild?.className).toContain('md:whitespace-nowrap')
     expect(container.firstElementChild?.className).toContain('items-start')
     expect(container.querySelector('svg')?.getAttribute('class')).toContain('mt-0.5')
   })

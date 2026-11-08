@@ -56,6 +56,13 @@ describe('the open items', () => {
     ])
   })
 
+  it('dates a board approval in force by its decision when it has no issue or expiry date', () => {
+    const rows = rowsOf(
+      permit('a1', 'SPR-1', { openAs: 'board_in_force', dates: dates({ closed: '2026-10-14' }) }),
+    )
+    expect(openItems(rows)[0]?.next).toBe('Decided October 14, 2026')
+  })
+
   it('names an inspection by its type and dates it by its schedule', () => {
     const rows = rowsOf(
       permit('i1', 'BP-1', {

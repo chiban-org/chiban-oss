@@ -139,6 +139,13 @@ describe('the staff parcel page for office staff', () => {
     expect(await page(lots.busy)).toContain(`href="/staff/gis/exceptions?parcel=${lots.busy}"`)
   })
 
+  it('lists the nearby parcels as links for keyboard users', async () => {
+    await actAs('staff')
+    const html = await page(lots.busy)
+    expect(html).toContain('id="nearby-heading"')
+    expect(html).toMatch(/<a[^>]*href="\/staff\/parcels\/[0-9a-f-]{36}"[^>]*>32 Scenario Lane<\/a>/)
+  })
+
   it('folds IDs and lineage into Record and history', async () => {
     await actAs('staff')
     const html = await page(lots.busy)

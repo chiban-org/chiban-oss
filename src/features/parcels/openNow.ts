@@ -57,7 +57,11 @@ function nextOf(row: RecordRow, group: OpenGroup): string | null {
   if (group === 'inspection_requested') return dated('Requested', row.dates.filed)
   if (group === 'case') return dated('Opened', row.dates.filed)
   if (isInForce(group)) {
-    return dated('Expires', row.dates.expires) ?? dated('Issued', row.dates.issued)
+    return (
+      dated('Expires', row.dates.expires) ??
+      dated('Issued', row.dates.issued) ??
+      dated('Decided', row.dates.closed)
+    )
   }
   return dated('Filed', row.dates.filed)
 }

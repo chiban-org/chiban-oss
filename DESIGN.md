@@ -26,7 +26,7 @@ Chiban should read as a public record: paper-white surfaces, serif headlines, on
 
 - One filled primary action per screen. Everything else is a ghost button or text link.
 - Highlighter yellow marks what needs attention, behind a short phrase, never as a full surface.
-- Status is never color alone: use `StatusChip`, which always renders an icon and a text label. Its label stays on one line.
+- Status is never color alone: use `StatusChip`, which always renders an icon and a text label. Its label never breaks inside a word and stays on one line from 768px up; on a phone it may wrap between words.
 - Records look like documents: serif titles, hairline-bordered white cards on the canvas, almost no shadow.
 - A page that refuses the viewer renders `NoPermission`, never a hand-made heading and alert.
 - Upload buttons and the submit of any form that is not the page's next step are outline buttons.

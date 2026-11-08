@@ -28,7 +28,7 @@ export function StatusChip({ status, label }: StatusChipProps) {
     <span
       data-status={status}
       className={cn(
-        'inline-flex items-start gap-1.5 whitespace-nowrap rounded-lg px-2.5 py-1 text-sm font-semibold',
+        'inline-flex items-start gap-1.5 rounded-lg px-2.5 py-1 text-sm font-semibold [overflow-wrap:normal] md:whitespace-nowrap',
         CLASSES[status],
       )}
     >

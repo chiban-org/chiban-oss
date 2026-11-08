@@ -25,10 +25,7 @@ function NearbyParcels({ parcels }: { parcels: readonly NearbyParcel[] }) {
       <h3 id="nearby-heading" className="text-base font-semibold">
         Nearby parcels
       </h3>
-      <ul
-        aria-labelledby="nearby-heading"
-        className="flex list-none flex-wrap gap-x-5 gap-y-2 p-0"
-      >
+      <ul aria-labelledby="nearby-heading" className="flex list-none flex-wrap gap-x-5 gap-y-2 p-0">
         {parcels.map((p) => (
           <li key={p.parcelId}>
             <Link href={`/staff/parcels/${p.parcelId}`} className="tap-target">

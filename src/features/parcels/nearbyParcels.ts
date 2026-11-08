@@ -1,11 +1,9 @@
-import { inArray } from 'drizzle-orm'
+import { sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { parcels } from '@/db/schema'
-import { adjacentParcels } from '@/features/abutters/adjacency'
 import { displayIdsFor } from '@/features/parcels/displayId'
 
-const TOUCHING_FT = 5
-const MOST_LISTED = 12
+const NEARBY_METERS = 200
+const MOST_LISTED = 8
 
 export interface NearbyParcel {
   parcelId: string
@@ -18,17 +16,26 @@ export async function loadNearbyParcels(
   parcelId: string,
   signal: AbortSignal,
 ): Promise<NearbyParcel[]> {
-  const ids = await adjacentParcels(db, [parcelId], TOUCHING_FT, signal)
-  if (ids.length === 0) return []
-  const rows = await db
-    .select({ parcelId: parcels.id, siteAddress: parcels.siteAddress })
-    .from(parcels)
-    .where(inArray(parcels.id, ids))
-  const display = await displayIdsFor(db, ids)
-  return rows
-    .map((r) => ({ ...r, displayId: display.get(r.parcelId) ?? null }))
-    .sort((a, b) =>
-      (a.siteAddress ?? a.displayId ?? '').localeCompare(b.siteAddress ?? b.displayId ?? ''),
-    )
-    .slice(0, MOST_LISTED)
+  signal.throwIfAborted()
+  const result = await db.execute<{ id: string; site_address: string | null }>(sql`
+    select p.id, p.site_address
+    from parcels p, parcels here
+    where here.id = ${parcelId}::uuid
+      and p.id <> here.id
+      and p.status = 'active'
+      and p.geom is not null
+      and here.geom is not null
+      and ST_DWithin(p.geom::geography, here.geom::geography, ${NEARBY_METERS})
+    order by ST_Distance(p.geom::geography, here.geom::geography), p.id
+    limit ${MOST_LISTED}
+  `)
+  const display = await displayIdsFor(
+    db,
+    result.rows.map((r) => r.id),
+  )
+  return result.rows.map((r) => ({
+    parcelId: r.id,
+    displayId: display.get(r.id) ?? null,
+    siteAddress: r.site_address,
+  }))
 }
