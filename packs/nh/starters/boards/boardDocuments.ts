@@ -125,6 +125,7 @@ export const MORE_THAN_ONE_DWELLING_DOCUMENTS: DocumentItem[] = [
   doc('septic_design', 'State-approved, signed septic design', {
     stage: 'before_decision',
     stateOrFederalPermit: true,
+    requiredIf: when('septic_system'),
   }),
 ]
 

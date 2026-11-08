@@ -238,6 +238,15 @@ describe('NH starters', () => {
     })
   })
 
+  it('more than one dwelling asks for the septic design only when a septic system is used', () => {
+    const s = NH_STARTERS.find((x) => x.applicationType.prefix === 'MDL')
+    const septic = s?.applicationType.documents?.find((d) => d.key === 'septic_design')
+    expect(septic).toMatchObject({
+      stage: 'before_decision',
+      requiredIf: { field: 'septic_system', op: 'is_true' },
+    })
+  })
+
   it('the involuntary merger restoration walks records research and governing body review', () => {
     const s = NH_STARTERS.find((x) => x.applicationType.prefix === 'IML')
     expect(s?.applicationType.workflow.substeps.map((x) => `${x.state}:${x.key}`)).toEqual([
