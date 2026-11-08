@@ -140,6 +140,7 @@ export function QuickIssueForm(props: Props) {
           licenseGroups={props.licenseGroups}
           defaultLicenseType={props.defaultLicenseType ?? ''}
           lookup={props.lookup}
+          account={{ typeKey: props.typeKey, find: props.actions.lookupContractor }}
         />
         <WorkSection fields={props.fields} />
         <FeeSection

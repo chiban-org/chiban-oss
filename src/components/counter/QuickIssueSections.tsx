@@ -1,6 +1,7 @@
 'use client'
 
-import type { LicenseGroup } from '@/components/counter/counterTypes'
+import { ContractorAccountFields } from '@/components/counter/ContractorAccountFields'
+import type { CounterActions, LicenseGroup } from '@/components/counter/counterTypes'
 import { LicenseTypeField } from '@/components/counter/LicenseTypeField'
 import { NEW_TAB } from '@/components/newTab'
 import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
@@ -57,11 +58,13 @@ export function ContractorSection({
   licenseGroups,
   defaultLicenseType,
   lookup,
+  account,
 }: {
   licenseRequired: boolean
   licenseGroups: readonly LicenseGroup[]
   defaultLicenseType: string
   lookup: { label: string; url: string }
+  account: { typeKey: string; find: CounterActions['lookupContractor'] }
 }) {
   if (!licenseRequired) {
     return (
@@ -79,8 +82,7 @@ export function ContractorSection({
       <h2 id="contractor">Contractor and license check</h2>
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField label="Contractor name" name="contractorName" required />
-        <TextField label="Contractor email" type="email" name="contractorEmail" />
-        <TextField label="License number" name="licenseNumber" required />
+        <ContractorAccountFields typeKey={account.typeKey} findAccount={account.find} />
         <LicenseTypeField groups={licenseGroups} defaultValue={defaultLicenseType} />
         <SelectField
           label="Result of the state lookup"
