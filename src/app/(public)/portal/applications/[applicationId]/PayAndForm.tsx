@@ -17,6 +17,7 @@ export function PortalApplicationForm(props: {
   initialValues: Record<string, unknown>
   attestationText: string
   attestationSha256: string
+  missingDocuments: string[]
 }) {
   return <ApplicationForm {...props} actions={FORM_ACTIONS} />
 }

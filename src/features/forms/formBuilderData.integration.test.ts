@@ -49,17 +49,20 @@ describe('loadFormBuilderData', () => {
     expect(data.frozenKeys).not.toContain('draft_only')
   })
 
-  it('names the fee lines of the published application types that use the form', async () => {
+  it('names the fee lines and document conditions of the published types that use the form', async () => {
     const admin = await staffActor(handle.db, 'admin')
     await adoptStarter(handle.db, admin, BUILDING_DEMOLITION_STARTER.id, signal)
     const data = await loadFormBuilderData(handle.db, 'bp-form', signal)
-    const keys = new Set(data.externalUses.map((u) => u.fieldKey))
-    expect([...keys].sort()).toEqual([
+    const feeKeys = new Set(
+      data.externalUses.filter((u) => u.source.startsWith('Fee')).map((u) => u.fieldKey),
+    )
+    expect([...feeKeys].sort()).toEqual([
       'after_the_fact',
       'commercial_sq_ft',
       'finished_sq_ft',
       'unfinished_sq_ft',
     ])
+    expect(data.externalUses.map((u) => u.fieldKey)).toContain('town_sewer')
     expect(data.externalUses[0]?.source).toMatch(/^Fee schedule bp-fees \(/)
     expect(await loadFormBuilderData(handle.db, 'unused-form', signal)).toEqual({
       frozenKeys: [],

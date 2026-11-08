@@ -1,3 +1,10 @@
+import {
+  doc,
+  NEW_DWELLING,
+  SEPTIC_SYSTEM,
+  when,
+  yesBox,
+} from '@packs/nh/starters/documentQuestions'
 import { localPermitStarter } from '@packs/nh/starters/localPermit'
 
 export const OCCUPANCY_REQUEST_STARTER = localPermitStarter({
@@ -11,6 +18,22 @@ export const OCCUPANCY_REQUEST_STARTER = localPermitStarter({
   feeCents: 5000,
   conditionText: 'Occupancy walkthrough completed',
   closesOn: 'issuance',
+  version: 2,
+  documents: [
+    doc('septic_operation_approval', 'State septic approval to operate', {
+      stage: 'before_issue',
+      requiredIf: when('septic_system'),
+    }),
+    doc('water_test', 'Potable water test results', {
+      stage: 'before_issue',
+      requiredIf: when('private_well'),
+    }),
+    doc('e911_address', 'E-911 address assignment', { stage: 'before_issue' }),
+    doc('blower_door_test', 'Blower door test result', {
+      stage: 'before_issue',
+      requiredIf: when('new_dwelling'),
+    }),
+  ],
   fields: [
     {
       key: 'mode',
@@ -23,6 +46,9 @@ export const OCCUPANCY_REQUEST_STARTER = localPermitStarter({
       ],
     },
     { key: 'intended_use', label: 'Intended use', type: 'text', required: true },
+    SEPTIC_SYSTEM,
+    yesBox('private_well', 'The building uses a private well'),
+    NEW_DWELLING,
   ],
   checklist: {
     key: 'occupancy_walkthrough',

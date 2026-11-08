@@ -184,7 +184,8 @@ describe('taking an application at the counter', () => {
       signal,
     )
     expect(refused.ok).toBe(false)
-    if (refused.ok || typeof refused.error !== 'object') throw new Error('expected field errors')
+    if (refused.ok || typeof refused.error !== 'object' || !('fieldErrors' in refused.error))
+      throw new Error('expected field errors')
     expect(refused.error.fieldErrors.map((f) => f.field)).toContain('classification')
   })
 })

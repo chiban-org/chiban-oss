@@ -194,6 +194,7 @@ async function submitRecord(
   )
   if (submitted.ok) return null
   if (typeof submitted.error === 'string') return [`submit_${submitted.error}`]
+  if ('gateBlocked' in submitted.error) return ['submit_gate_blocked']
   return submitted.error.fieldErrors.map((e) => `${e.field}: ${e.code}`)
 }
 

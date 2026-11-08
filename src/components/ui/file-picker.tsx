@@ -1,6 +1,6 @@
 'use client'
 
-import { FileText, UploadCloud, X } from 'lucide-react'
+import { FileText, X } from 'lucide-react'
 import {
   type ChangeEvent,
   type ComponentProps,
@@ -11,6 +11,7 @@ import {
   useState,
 } from 'react'
 import { Button } from '@/components/ui/button'
+import { DropzoneText } from '@/components/ui/file-picker-text'
 import { cn } from '@/lib/utils'
 
 const BYTES_PER_KB = 1024
@@ -122,6 +123,7 @@ interface FilePickerProps extends InputProps {
   onFilesChange?: (files: File[]) => void
   prompt?: string
   chooseLabel?: string
+  compact?: boolean
 }
 
 export function FilePicker({
@@ -133,6 +135,7 @@ export function FilePicker({
   onFilesChange,
   prompt,
   chooseLabel,
+  compact = false,
   'aria-describedby': describedBy,
   ...props
 }: FilePickerProps) {
@@ -203,7 +206,8 @@ export function FilePicker({
         onDragLeave={() => setDragging(false)}
         onDrop={onDrop}
         className={cn(
-          'relative flex flex-col items-center gap-2 rounded-lg border border-dashed border-control-border bg-surface px-4 py-6 text-center transition-colors',
+          'relative flex items-center gap-2 rounded-lg border border-dashed border-control-border bg-surface text-center transition-colors',
+          compact ? 'flex-row flex-wrap px-2 py-1.5' : 'flex-col px-4 py-6',
           'hover:border-primary hover:bg-canvas',
           'has-[input:focus-visible]:border-ring has-[input:focus-visible]:ring-[3px] has-[input:focus-visible]:ring-ring/50',
           'has-[input[aria-invalid=true]]:border-destructive',
@@ -222,21 +226,14 @@ export function FilePicker({
           onChange={onInputChange}
           className="sr-only"
         />
-        <UploadCloud className="size-7 text-muted-foreground" aria-hidden="true" />
-        <p className="m-0 text-sm text-muted-foreground">
-          {prompt ?? (multiple ? 'Drag files here or' : 'Drag a file here or')}
-        </p>
-        <Button
-          type="button"
-          variant="outline"
-          className="min-h-11 md:min-h-9"
-          tabIndex={-1}
+        <DropzoneText
+          compact={compact}
+          prompt={prompt ?? (multiple ? 'Drag files here or' : 'Drag a file here or')}
+          chooseLabel={chooseLabel ?? (multiple ? 'Choose files' : 'Choose file')}
+          hint={hint}
           disabled={disabled}
-          onClick={() => inputRef.current?.click()}
-        >
-          {chooseLabel ?? (multiple ? 'Choose files' : 'Choose file')}
-        </Button>
-        {hint === '' ? null : <p className="m-0 text-xs text-muted-foreground">{hint}</p>}
+          onChoose={() => inputRef.current?.click()}
+        />
       </div>
       {errors.length === 0 ? null : (
         <div id={errorId} role="alert" className="grid gap-1 text-sm text-status-failed-fg">

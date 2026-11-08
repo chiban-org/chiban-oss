@@ -16,6 +16,7 @@ export interface GateDefinition {
   kind: 'administrative' | 'statutory'
   appliesTo: CoreState[]
   boundBy: string | null
+  relevantTo?: (app: ApplicationContext) => boolean
   evaluate(
     tx: Tx,
     app: ApplicationContext,

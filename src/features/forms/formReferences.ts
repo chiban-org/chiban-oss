@@ -1,3 +1,4 @@
+import type { DocumentItem } from '@/features/applications/documentItemSchema'
 import { AFTER_THE_FACT_FIELD } from '@/features/fees/feeEditorModel'
 import { exprFieldRefs, type FeeExpr, type FeeScheduleBody } from '@/features/fees/feeSchema'
 import { conditionFields } from '@/features/forms/condition'
@@ -26,6 +27,7 @@ export interface FormUsingType {
   label: string
   formKey: string
   feeScheduleKey: string
+  documents?: DocumentItem[]
 }
 
 const KEYS_READ_BY_CODE: Readonly<Record<string, FieldReference>> = {
@@ -59,6 +61,18 @@ export function feeFieldRefs(expr: FeeExpr): string[] {
   return [...new Set([...multiplierRefs(expr), ...exprFieldRefs(expr)])]
 }
 
+function documentUses(type: FormUsingType): ExternalUse[] {
+  return (type.documents ?? []).flatMap((item) =>
+    item.requiredIf === undefined
+      ? []
+      : conditionFields(item.requiredIf).map((fieldKey) => ({
+          fieldKey,
+          source: `Required documents (${type.label})`,
+          detail: `${item.label} is needed only when this answer matches`,
+        })),
+  )
+}
+
 export function externalUses(
   formKey: string,
   types: readonly FormUsingType[],
@@ -76,6 +90,7 @@ export function externalUses(
         })
       }
     }
+    uses.push(...documentUses(type))
   }
   return uses
 }

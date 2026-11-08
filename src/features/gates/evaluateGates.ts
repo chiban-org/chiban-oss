@@ -44,6 +44,7 @@ export async function evaluateGates(
   for (const gate of registeredGates()) {
     if (!gate.appliesTo.includes(to)) continue
     if (gate.boundBy !== null && !bindings.has(gate.boundBy)) continue
+    if (gate.relevantTo !== undefined && !gate.relevantTo(app)) continue
     const outcome = await gate.evaluate(tx, app, today, signal)
     const override =
       overrides.find((o) => o.gateKey === gate.key && o.kind === OVERRIDE_KIND[gate.kind]) ?? null

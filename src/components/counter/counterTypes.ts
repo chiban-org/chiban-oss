@@ -7,7 +7,7 @@ export interface CounterLinks {
 export type FieldErrors = Readonly<Record<string, string>>
 
 export type CounterOutcome =
-  | { ok: false; error: string; fieldErrors?: FieldErrors }
+  | { ok: false; error: string; fieldErrors?: FieldErrors; reviewHref?: string }
   | {
       ok: true
       state: 'issued' | 'submitted'

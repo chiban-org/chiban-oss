@@ -34,6 +34,16 @@ describe('externalUses', () => {
     expect(uses.filter((u) => u.fieldKey === 'after_the_fact')).toHaveLength(1)
   })
 
+  it('names the required documents whose condition reads a question', () => {
+    const typed = { ...TYPE, documents: BUILDING_DEMOLITION_STARTER.applicationType.documents }
+    const uses = externalUses('bp-form', [typed], [])
+    expect(uses).toContainEqual({
+      fieldKey: 'is_owner',
+      source: 'Required documents (Building permit)',
+      detail: 'Owner authorization is needed only when this answer matches',
+    })
+  })
+
   it('ignores application types that use another form', () => {
     const other = { ...TYPE, formKey: 'other-form' }
     expect(externalUses('bp-form', [other], [{ key: 'bp-fees', body: FEES }])).toEqual([])

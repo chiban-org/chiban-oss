@@ -1,5 +1,6 @@
 import { asc, eq } from 'drizzle-orm'
 import { applicationSnapshots } from '@/db/schema'
+import { loadDocumentChecklist } from '@/features/applications/documentChecklistView'
 import { hasCapability } from '@/features/authz/capabilities'
 import { loadPanelDocuments } from '@/features/documents/panelData'
 import { applicationHolds } from '@/features/records/holds'
@@ -40,6 +41,8 @@ export async function loadRecordsData(ctx: StaffContext, applicationId: string, 
     appHolds,
     boardAssignments,
     boards,
+    checklist,
+    canAcceptItems,
   ] = await Promise.all([
     can('review.assign'),
     getTownSettings(ctx.db, ctx.signal),
@@ -53,6 +56,8 @@ export async function loadRecordsData(ctx: StaffContext, applicationId: string, 
     applicationHolds(ctx.db, applicationId, projectId),
     listApplicationBoardAssignments(ctx.db, applicationId),
     assignableBoards(ctx.db, applicationId, ctx.signal),
+    loadDocumentChecklist(ctx.db, ctx.actor, applicationId, ctx.signal),
+    can('application.manage'),
   ])
   return {
     reviewers,
@@ -66,6 +71,8 @@ export async function loadRecordsData(ctx: StaffContext, applicationId: string, 
     canHold,
     snapshots,
     appHolds,
+    checklist,
+    canAcceptItems,
     zone: town.ok ? town.value.timeZone : FALLBACK_ZONE,
   }
 }

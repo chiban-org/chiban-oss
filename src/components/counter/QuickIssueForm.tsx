@@ -111,6 +111,7 @@ export function QuickIssueForm(props: Props) {
     const outcome: CounterOutcome = result.ok ? result.value : { ok: false, error: result.error }
     if (!outcome.ok && outcome.fieldErrors !== undefined) setFieldErrors(outcome.fieldErrors)
     show(outcome)
+    if (!outcome.ok && outcome.reviewHref !== undefined) window.location.assign(outcome.reviewHref)
   }
 
   const issued = accepted(outcome, 'issued')

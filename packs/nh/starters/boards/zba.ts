@@ -1,3 +1,10 @@
+import {
+  APPEAL_DOCUMENTS,
+  EQUITABLE_WAIVER_DOCUMENTS,
+  REHEARING_DOCUMENTS,
+  TEN_YEAR_FIELD,
+  ZBA_DOCUMENTS,
+} from '@packs/nh/starters/boards/boardDocuments'
 import { boardStarter, ZBA_BOARD_WORKFLOW } from '@packs/nh/starters/boards/shared'
 
 const ORDINANCE_SECTION = {
@@ -50,6 +57,7 @@ export const VARIANCE_STARTER = boardStarter({
   applicationFee: { op: 'flat', cents: 15000 },
   newspaper: true,
   workflow: ZBA_BOARD_WORKFLOW,
+  documents: ZBA_DOCUMENTS,
 })
 
 export const SPECIAL_EXCEPTION_STARTER = boardStarter({
@@ -70,6 +78,7 @@ export const SPECIAL_EXCEPTION_STARTER = boardStarter({
   applicationFee: { op: 'flat', cents: 15000 },
   newspaper: true,
   workflow: ZBA_BOARD_WORKFLOW,
+  documents: ZBA_DOCUMENTS,
 })
 
 export const EQUITABLE_WAIVER_STARTER = boardStarter({
@@ -91,10 +100,12 @@ export const EQUITABLE_WAIVER_STARTER = boardStarter({
       type: 'text',
       required: true,
     },
+    TEN_YEAR_FIELD,
   ],
   applicationFee: { op: 'flat', cents: 15000 },
   newspaper: true,
   workflow: ZBA_BOARD_WORKFLOW,
+  documents: EQUITABLE_WAIVER_DOCUMENTS,
 })
 
 export const ADMINISTRATIVE_APPEAL_STARTER = boardStarter({
@@ -111,6 +122,7 @@ export const ADMINISTRATIVE_APPEAL_STARTER = boardStarter({
   applicationFee: { op: 'flat', cents: 10000 },
   newspaper: true,
   workflow: ZBA_BOARD_WORKFLOW,
+  documents: APPEAL_DOCUMENTS,
 })
 
 export const REHEARING_MOTION_STARTER = boardStarter({
@@ -132,6 +144,7 @@ export const REHEARING_MOTION_STARTER = boardStarter({
   applicationFee: { op: 'flat', cents: 0 },
   newspaper: false,
   workflow: ZBA_BOARD_WORKFLOW,
+  documents: REHEARING_DOCUMENTS,
 })
 
 export const ZBA_STARTERS = [

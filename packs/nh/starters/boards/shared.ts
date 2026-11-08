@@ -1,7 +1,9 @@
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
+import { IS_OWNER } from '@packs/nh/starters/documentQuestions'
 import type { StarterBundle } from '@packs/nh/starters/types'
 import { ATTESTATION_TEXT } from '@packs/nh/starters/types'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
+import type { DocumentItem } from '@/features/applications/documentItemSchema'
 import type { FeeScheduleBody } from '@/features/fees/feeSchema'
 import type { FormField } from '@/features/forms/formSchema'
 
@@ -18,6 +20,7 @@ export interface BoardStarterInput {
   applicationFee: FeeScheduleBody['lines'][number]['expr']
   newspaper: boolean
   workflow: ApplicationTypeBody['workflow']
+  documents: DocumentItem[]
 }
 
 const SHARED_FIELDS: FormField[] = [
@@ -29,6 +32,7 @@ const SHARED_FIELDS: FormField[] = [
     type: 'textarea',
     required: true,
   },
+  IS_OWNER,
   {
     key: 'owner_authorization',
     label: 'The owner has authorized this application',
@@ -102,7 +106,7 @@ export function boardStarter(input: BoardStarterInput): StarterBundle {
   ]
   return {
     id: input.id,
-    version: 1,
+    version: 2,
     form: {
       key: `${slug}-form`,
       label: `${label} application`,
@@ -161,6 +165,7 @@ export function boardStarter(input: BoardStarterInput): StarterBundle {
       attestationText: ATTESTATION_TEXT,
       bindings: [...(classification?.mandatoryRuleKeys ?? [])],
       workflow: input.workflow,
+      documents: input.documents,
     },
   }
 }

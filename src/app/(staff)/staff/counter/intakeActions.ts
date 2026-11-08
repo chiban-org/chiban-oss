@@ -9,6 +9,7 @@ import { intakeHref } from '@/features/counter/intake/intakeHref'
 import { type StartIntakeError, startCounterIntake } from '@/features/counter/intake/startIntake'
 import { submitCounterIntake } from '@/features/counter/intake/submitIntake'
 import { discardCounterIntake } from '@/features/counter/intake/unfinished'
+import type { GateResult } from '@/features/gates/evaluateGates'
 import { optionalEmail } from '@/features/input/optionalEmail'
 import { checkbox, optionalText, recordId, requiredText } from '@/features/input/schemas'
 import { getMailTransport } from '@/features/mail/transport'
@@ -80,6 +81,14 @@ export async function saveIntakeAction(formData: FormData): Promise<IntakeSaveRe
   )
 }
 
+function blockedReasons(results: GateResult[]): string {
+  return results
+    .flatMap((g) =>
+      g.effective === 'blocked' && g.outcome.status !== 'pass' ? [g.outcome.reason] : [],
+    )
+    .join(' ')
+}
+
 function fieldList(fields: readonly { field: string }[]): string {
   return fields.map((f) => f.field.replaceAll('_', ' ')).join(', ')
 }
@@ -95,6 +104,9 @@ export async function submitIntakeAction(formData: FormData): Promise<ActionResu
     if (done.ok) redirect(intakeHref(input.applicationId))
     if (done.error === 'paper_attestation_required') {
       return refuseField('signedOnPaper', 'Confirm the applicant signed the attestation on paper.')
+    }
+    if (typeof done.error === 'object' && 'gateBlocked' in done.error) {
+      return { ok: false, error: `Not submitted. ${blockedReasons(done.error.gateBlocked)}` }
     }
     if (typeof done.error === 'object') {
       return {

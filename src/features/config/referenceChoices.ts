@@ -1,6 +1,6 @@
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { ConfigKind } from '@/features/config/kinds'
-import type { FormBody } from '@/features/forms/formSchema'
+import type { FormBody, FormField } from '@/features/forms/formSchema'
 import { isNumberType } from '@/features/forms/formSchema'
 import { type ChecklistBody, isFinalChecklist } from '@/features/inspections/checklistSchema'
 import { words } from '@/lib/words'
@@ -129,6 +129,14 @@ export function numberQuestionsFor(rows: ReferenceRow[], feeScheduleKey: string)
     }
   }
   return [...seen.values()]
+}
+
+export function formFieldsByKey(rows: ReferenceRow[]): Record<string, FormField[]> {
+  return Object.fromEntries(
+    latest(rows)
+      .filter((r) => r.kind === 'form')
+      .map((r) => [r.key, (r.body as FormBody).fields.filter((f) => f.type !== 'section')]),
+  )
 }
 
 export function namedKeyRows<T extends { key: string; label: string | null }>(

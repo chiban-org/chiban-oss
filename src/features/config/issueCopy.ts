@@ -8,6 +8,12 @@ type Issue = z.core.$ZodIssue
 type Table = Partial<Record<ConfigKind, Readonly<Record<string, string>>>>
 
 const NOUNS: Table = {
+  application_type: {
+    documents: 'a document',
+    'documents.*.key': 'a short name for the document',
+    'documents.*.label': 'the document name',
+    'documents.*.stage': 'when the document is needed',
+  },
   fee_schedule: {
     key: 'a short name',
     lines: 'a fee',
@@ -92,6 +98,7 @@ const NOUNS: Table = {
 }
 
 const ROWS: Table = {
+  application_type: { documents: 'Document' },
   fee_schedule: { lines: 'Fee' },
   condition_library: { conditions: 'Condition' },
   form: { fields: 'Question', 'fields.*.options': 'Choice' },
@@ -117,6 +124,7 @@ const CUSTOM: Readonly<Record<string, string>> = {
   'duplicate code': 'Two conditions use the same code. Give each condition its own code.',
   'duplicate key': 'Two questions use the same short name. Give each question its own.',
   'options required': 'Add at least one choice.',
+  'duplicate document key': 'Two documents use the same short name. Give each document its own.',
 }
 
 const DOLLARS = new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' })

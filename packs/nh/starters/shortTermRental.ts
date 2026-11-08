@@ -1,3 +1,4 @@
+import { doc, SEPTIC_SYSTEM, when } from '@packs/nh/starters/documentQuestions'
 import { localPermitStarter, REGISTRATION_BINDINGS } from '@packs/nh/starters/localPermit'
 
 export const SHORT_TERM_RENTAL_STARTER = localPermitStarter({
@@ -13,6 +14,12 @@ export const SHORT_TERM_RENTAL_STARTER = localPermitStarter({
   closesOn: 'expiration',
   extraBindings: REGISTRATION_BINDINGS,
   validityPhrase: 'Issued {{application.issuedOn}}, expires {{application.expiresOn}}.',
+  version: 2,
+  documents: [
+    doc('rental_septic_approval', 'Septic approval that matches the bedrooms offered', {
+      requiredIf: when('septic_system'),
+    }),
+  ],
   fields: [
     {
       key: 'bedrooms',
@@ -27,5 +34,12 @@ export const SHORT_TERM_RENTAL_STARTER = localPermitStarter({
       type: 'text',
       required: true,
     },
+    {
+      key: 'meals_rooms_license',
+      label: 'Meals and rooms license number',
+      type: 'text',
+      required: false,
+    },
+    SEPTIC_SYSTEM,
   ],
 })

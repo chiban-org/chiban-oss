@@ -1,10 +1,12 @@
+import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
 import { CLASSIFICATION_KEYS } from '@packs/nh/schema'
 import { z } from 'zod'
+import { DocumentItemSchema, documentItemIssues } from '@/features/applications/documentItemSchema'
 import { CORE_STATES } from '@/features/applications/states'
 
 const STEP_NAME_REQUIRED = 'Name every step.'
 
-export const ApplicationTypeBodySchema = z.object({
+const ApplicationTypeBodyShape = z.object({
   key: z.string().min(1),
   label: z.string().min(1),
   prefix: z.string().regex(/^[A-Z]{1,4}$/, 'Use one to four capital letters, such as BP.'),
@@ -37,5 +39,20 @@ export const ApplicationTypeBodySchema = z.object({
       'expiration',
     ]),
   }),
+  documents: z.array(DocumentItemSchema).optional(),
+})
+
+function boardKindOf(classification: string | undefined): string | null {
+  return NH_CLASSIFICATIONS.find((c) => c.key === classification)?.boardKind ?? null
+}
+
+export const ApplicationTypeBodySchema = ApplicationTypeBodyShape.superRefine((body, ctx) => {
+  for (const issue of documentItemIssues(body.documents ?? [], boardKindOf(body.classification))) {
+    ctx.addIssue({
+      code: 'custom',
+      message: issue.message,
+      path: ['documents', issue.index, issue.field],
+    })
+  }
 })
 export type ApplicationTypeBody = z.infer<typeof ApplicationTypeBodySchema>

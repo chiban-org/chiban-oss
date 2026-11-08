@@ -17,6 +17,7 @@ import { toAuditActor } from '@/features/audit/actorRef'
 import { writeAudit } from '@/features/audit/writeAudit'
 import { hasCapability } from '@/features/authz/capabilities'
 import { CLOSURE_GATE_KEY } from '@/features/gates/coreGates'
+import { DOCUMENT_GATE_KEYS } from '@/features/gates/documentGates'
 import { evaluateGates, type GateResult } from '@/features/gates/evaluateGates'
 import { queueForParties } from '@/features/notifications/queue'
 import { loadPack } from '@/features/packs/loadPack'
@@ -125,9 +126,12 @@ async function gateResultsFor(
 ): Promise<GateResult[]> {
   if (reinstating || input.cutover === true) return []
   const results = await evaluateGates(tx, app, input.to, today, signal)
-  return input.closureReason === undefined
-    ? results
-    : results.filter((g) => g.key !== CLOSURE_GATE_KEY)
+  const reason = input.closureReason
+  if (reason === undefined) return results
+  const certificate = reason === 'certificate_of_occupancy'
+  return results.filter(
+    (g) => g.key !== CLOSURE_GATE_KEY && (certificate || g.key !== DOCUMENT_GATE_KEYS.closed),
+  )
 }
 
 function notifiesParties(input: TransitionInput, from: CoreState): boolean {
