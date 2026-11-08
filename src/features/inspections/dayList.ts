@@ -11,6 +11,7 @@ import { err, ok, type Result } from '@/types/result'
 
 export interface DayListRow {
   inspectionId: string
+  applicationId: string
   startMinute: number
   durationMinutes: number
   inspectionType: string
@@ -74,6 +75,7 @@ export async function getDayList(
         : (await db.select().from(inspections).where(eq(inspections.id, row.reinspectionOf)))[0]
     out.push({
       inspectionId: row.id,
+      applicationId: row.applicationId,
       startMinute: row.startMinute,
       durationMinutes: row.durationMinutes,
       inspectionType: row.inspectionType,

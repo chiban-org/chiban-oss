@@ -50,7 +50,10 @@ function InspectorLinks({
 }) {
   if (inspectors.length < 2) return null
   return (
-    <nav aria-label="Inspectors">
+    <nav aria-labelledby="inspector-switch">
+      <p id="inspector-switch" className="m-0 font-semibold">
+        Inspector
+      </p>
       <ul className="m-0 flex list-none flex-wrap gap-x-4 p-0">
         {inspectors.map((i) => (
           <li key={i.userId}>
@@ -98,9 +101,14 @@ export default async function InspectorDayPage({
   return (
     <main className="public-shell mx-auto max-w-xl space-y-4">
       <InspectorLinks inspectors={inspectors} date={date} selected={inspectorUserId} />
-      {missing.ok ? <MissingResults rows={missing.value.rows} total={missing.value.total} /> : null}
       <DayList
         date={date}
+        today={today}
+        owed={
+          missing.ok ? (
+            <MissingResults rows={missing.value.rows} total={missing.value.total} />
+          ) : null
+        }
         stops={list.value}
         previousHref={inspectorDayHref(addDays(date, -1), inspectorUserId)}
         nextHref={inspectorDayHref(addDays(date, 1), inspectorUserId)}

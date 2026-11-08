@@ -1,5 +1,6 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { weekdayName } from '@/features/inspections/slotWeeks'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -8,6 +9,7 @@ import {
   insertInspection,
   setupInspectionWorld,
 } from '@/test/inspectionFixtures'
+import { staffActor } from '@/test/parcels'
 import { addDays, type CivilDate } from '@/types/civilDate'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
@@ -58,8 +60,8 @@ afterAll(async () => {
   await handle.drop()
 })
 
-async function dayHtml(): Promise<string> {
-  return renderToStaticMarkup((await DayPage({ searchParams: Promise.resolve({}) })) as never)
+async function dayHtml(params: { date?: string } = {}): Promise<string> {
+  return renderToStaticMarkup((await DayPage({ searchParams: Promise.resolve(params) })) as never)
 }
 
 describe('My day', () => {
@@ -76,5 +78,31 @@ describe('My day', () => {
   it('leaves the panel out when nothing is waiting for a result', async () => {
     state.actor = w.otherInspector
     expect(await dayHtml()).not.toContain('Still need a result')
+  })
+
+  it('puts the heading with the weekday before the owed results', async () => {
+    state.actor = w.inspector
+    const html = await dayHtml()
+    expect(html.indexOf('<h1')).toBeGreaterThan(-1)
+    expect(html.indexOf('<h1')).toBeLessThan(html.indexOf('Still need a result'))
+    const today = await townToday(handle.db, new Date(), signal)
+    expect(html).toContain(`${weekdayName(today)}, ${formatCivilDate(today)}`)
+  })
+
+  it('calls the owed stop Result owed, offers Record result and labels the permit link', async () => {
+    state.actor = w.inspector
+    const html = await dayHtml({ date: missingDate })
+    expect(html).toContain('Result owed')
+    expect(html).not.toContain('>Scheduled<')
+    expect(html).toMatch(new RegExp(`href="/staff/inspections/${missingId}"[^>]*>Record result`))
+    expect(html).toContain(`href="/staff/applications/${w.trade.applicationId}"`)
+    expect(html).toContain(`Permit ${w.trade.number}`)
+    expect(html).not.toContain(`>Open ${w.trade.number}`)
+  })
+
+  it('shows a clerk the inspector picker', async () => {
+    state.actor = await staffActor(handle.db, 'staff')
+    const html = await dayHtml()
+    expect(html).toContain('Inspector day lists')
   })
 })
