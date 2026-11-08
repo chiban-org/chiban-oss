@@ -7,6 +7,7 @@ import { readTableParams } from '@/features/dataTable/params'
 import { permitVolumeReport } from '@/features/reports/permitVolume'
 import { processingTimeReport } from '@/features/reports/processingTime'
 import { resolveRange } from '@/features/reports/rangeInput'
+import { loadReportFields } from '@/features/reports/reportFields'
 import {
   PROCESSING_SCOPE,
   PROCESSING_SORT,
@@ -59,10 +60,11 @@ export default async function ReportsPage({
   const revenueSort = scopedSort(REPORTS_PATH, params, REVENUE_SORT, REVENUE_SCOPE)
   const ctx = await requireStaffContext()
   const range = await resolveRange(ctx.db, raw, ctx.signal)
-  const [volume, processing, revenue] = await Promise.all([
+  const [volume, processing, revenue, fields] = await Promise.all([
     permitVolumeReport(ctx.db, ctx.actor, range, ctx.signal),
     processingTimeReport(ctx.db, ctx.actor, range, ctx.signal),
     revenueReport(ctx.db, ctx.actor, range, ctx.signal),
+    loadReportFields(ctx.db, ctx.signal),
   ])
   if (!volume.ok && volume.error === 'forbidden') {
     return <NoPermission title="Reports" action="view reports" />
@@ -75,7 +77,8 @@ export default async function ReportsPage({
     ],
     ctx.signal,
   )
-  const query = `from=${range.from}&to=${range.to}`
+  const exportHref = (report: string) => (format: 'csv' | 'xlsx') =>
+    `/staff/reports/${report}/${format}?from=${range.from}&to=${range.to}`
   const typeLabel = (type: string) => typeLabels.get(type) ?? type
   return (
     <main data-wide="">
@@ -102,25 +105,35 @@ export default async function ReportsPage({
       ) : (
         <ReportSection
           title="Permit volume"
-          csvHref={`/staff/reports/permit-volume/csv?${query}`}
+          exportHref={exportHref('permit-volume')}
           order="Oldest month first, then by permit type."
         >
-          <VolumeTable rows={volume.value} sort={volumeSort} typeLabel={typeLabel} />
+          <VolumeTable
+            rows={volume.value}
+            sort={volumeSort}
+            typeLabel={typeLabel}
+            columns={fields.columns}
+          />
         </ReportSection>
       )}
       {processing.ok ? (
         <ReportSection
           title="Processing time"
-          csvHref={`/staff/reports/processing-time/csv?${query}`}
+          exportHref={exportHref('processing-time')}
           order="By permit type."
         >
-          <ProcessingTable rows={processing.value} sort={processingSort} typeLabel={typeLabel} />
+          <ProcessingTable
+            rows={processing.value}
+            sort={processingSort}
+            typeLabel={typeLabel}
+            columns={fields.columns}
+          />
         </ReportSection>
       ) : null}
       {revenue.ok ? (
         <ReportSection
           title="Revenue"
-          csvHref={`/staff/reports/revenue/csv?${query}`}
+          exportHref={exportHref('revenue')}
           order="Oldest month first."
         >
           <RevenueTable rows={revenue.value} sort={revenueSort} />

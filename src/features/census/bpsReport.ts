@@ -5,7 +5,7 @@ import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { CENSUS_CLASSIFICATION } from '@/features/census/classify'
-import { toCsvRows } from '@/features/reports/csv'
+import { type SheetCell, sheetCsv } from '@/features/reports/sheet'
 import { getTownSettings } from '@/features/town/settings'
 import { err, ok, type Result } from '@/types/result'
 
@@ -50,7 +50,10 @@ const MONTH_FORMAT = new Intl.DateTimeFormat('en-US', {
   month: 'long',
 })
 
-function rangeOf(year: number, month: number | null): { from: string; to: string; label: string } {
+export function censusRangeOf(
+  year: number,
+  month: number | null,
+): { from: string; to: string; label: string } {
   if (month === null) return { from: `${year}-01-01`, to: `${year}-12-31`, label: String(year) }
   const mm = String(month).padStart(2, '0')
   const last = new Date(Date.UTC(year, month, 0)).getUTCDate()
@@ -70,7 +73,7 @@ export async function censusBpsReport(
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'report.view', signal)
   if (!allowed.ok) return err('forbidden')
-  const range = rangeOf(input.year, input.month)
+  const range = censusRangeOf(input.year, input.month)
   const town = await getTownSettings(db, signal)
   const issued = await db
     .select({
@@ -144,16 +147,10 @@ export function incompleteCopy(report: CensusReport): string {
   return `This report is not complete. ${n} issued building ${n === 1 ? 'permit needs' : 'permits need'} classification`
 }
 
-export function censusCsv(report: CensusReport): string {
-  return toCsvRows([
+export function censusSheet(report: CensusReport): SheetCell[][] {
+  return [
     ['Item', 'Type of structure', 'Buildings', 'Housing units', 'Valuation'],
-    ...report.items.map((i) => [
-      i.code,
-      i.label,
-      String(i.buildings),
-      String(i.housingUnits),
-      String(i.valuationDollars),
-    ]),
+    ...report.items.map((i) => [i.code, i.label, i.buildings, i.housingUnits, i.valuationDollars]),
     [''],
     [
       'Number',
@@ -169,9 +166,13 @@ export function censusCsv(report: CensusReport): string {
       p.description,
       p.siteAddress,
       p.ownerOrBuilder,
-      String(p.buildings),
-      String(p.housingUnits),
-      String(p.valuationDollars),
+      p.buildings,
+      p.housingUnits,
+      p.valuationDollars,
     ]),
-  ])
+  ]
+}
+
+export function censusCsv(report: CensusReport): string {
+  return sheetCsv(censusSheet(report))
 }

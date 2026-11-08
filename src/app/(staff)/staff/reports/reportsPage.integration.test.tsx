@@ -32,7 +32,15 @@ let world: PermitWorld
 beforeAll(async () => {
   handle = await makeTestDb()
   state.db = handle.db
-  world = await setupPermitWorld(handle.db, { starters: ['nh.starter.electrical'] })
+  world = await setupPermitWorld(handle.db, {
+    starters: ['nh.starter.electrical'],
+    buildingType: { reportFields: ['finished_sq_ft'] },
+  })
+  await makeApplication(handle.db, world, {
+    receivedDate: '2027-04-03',
+    issuedOn: '2027-04-09',
+    values: { finished_sq_ft: '1250' },
+  })
   await makeApplication(
     handle.db,
     world,
@@ -59,6 +67,15 @@ describe('reports page', () => {
     expect(html).toContain('/staff/reports/permit-volume/csv?from=2027-01-01&amp;to=2027-12-31')
     expect(html).toContain('/staff/reports/processing-time/csv')
     expect(html).toContain('/staff/reports/cash-receipts')
+  })
+
+  it('offers each table as Excel too and adds the chosen reporting field as a column', async () => {
+    state.actor = world.staff
+    const html = renderToStaticMarkup(await ReportsPage({ searchParams: Promise.resolve(search) }))
+    expect(html).toContain('/staff/reports/permit-volume/xlsx?from=2027-01-01&amp;to=2027-12-31')
+    expect(html).toContain('/staff/reports/revenue/xlsx?from=2027-01-01&amp;to=2027-12-31')
+    expect(html).toContain('>Finished sq ft</th>')
+    expect(html).toContain('<td class="text-right">1,250</td>')
   })
 
   it('states the default order of each table and lists the other reports once', async () => {

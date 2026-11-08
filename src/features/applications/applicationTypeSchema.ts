@@ -40,6 +40,7 @@ const ApplicationTypeBodyShape = z.object({
     ]),
   }),
   documents: z.array(DocumentItemSchema).optional(),
+  reportFields: z.array(z.string().regex(/^[a-z][a-z0-9_]*$/)).optional(),
 })
 
 function boardKindOf(classification: string | undefined): string | null {

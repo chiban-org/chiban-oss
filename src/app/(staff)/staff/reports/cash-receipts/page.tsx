@@ -181,9 +181,10 @@ export default async function CashReceiptsPage({
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <h2>{formatCivilDate(day)}</h2>
         {report.entryCount === 0 ? null : (
-          <Link href={`/staff/reports/cash-receipts/csv?date=${day}`} className="no-print">
-            Download CSV
-          </Link>
+          <span className="no-print flex gap-x-6">
+            <Link href={`/staff/reports/cash-receipts/csv?date=${day}`}>Download CSV</Link>
+            <Link href={`/staff/reports/cash-receipts/xlsx?date=${day}`}>Download Excel</Link>
+          </span>
         )}
       </div>
       {report.entryCount === 0 ? (
