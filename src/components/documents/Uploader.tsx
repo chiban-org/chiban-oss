@@ -38,6 +38,9 @@ interface UploaderProps {
   accept?: string
   capture?: 'environment' | 'user'
   fileLabel?: string
+  pickerPrompt?: string
+  chooseLabel?: string
+  titleLabel?: string
 }
 
 const BYTES_PER_MB = 1024 * 1024
@@ -71,6 +74,9 @@ export function Uploader({
   accept = '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png',
   capture,
   fileLabel = 'File',
+  pickerPrompt,
+  chooseLabel,
+  titleLabel = 'Name for this document',
 }: UploaderProps) {
   const csrf = useCsrfToken()
   const fieldId = useId()
@@ -138,6 +144,8 @@ export function Uploader({
           id={fileId}
           accept={accept}
           {...(capture === undefined ? {} : { capture })}
+          {...(pickerPrompt === undefined ? {} : { prompt: pickerPrompt })}
+          {...(chooseLabel === undefined ? {} : { chooseLabel })}
           onFilesChange={(files) => {
             setFile(files[0] ?? null)
             setMessage(null)
@@ -146,7 +154,7 @@ export function Uploader({
       </div>
       <div className="space-y-1.5">
         <Label htmlFor={titleId} className="text-base font-medium">
-          Name for this document
+          {titleLabel}
         </Label>
         <Input
           id={titleId}

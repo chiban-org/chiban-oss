@@ -120,6 +120,8 @@ type InputProps = Omit<
 interface FilePickerProps extends InputProps {
   maxSize?: number
   onFilesChange?: (files: File[]) => void
+  prompt?: string
+  chooseLabel?: string
 }
 
 export function FilePicker({
@@ -129,6 +131,8 @@ export function FilePicker({
   disabled = false,
   maxSize,
   onFilesChange,
+  prompt,
+  chooseLabel,
   'aria-describedby': describedBy,
   ...props
 }: FilePickerProps) {
@@ -220,7 +224,7 @@ export function FilePicker({
         />
         <UploadCloud className="size-7 text-muted-foreground" aria-hidden="true" />
         <p className="m-0 text-sm text-muted-foreground">
-          {multiple ? 'Drag files here or' : 'Drag a file here or'}
+          {prompt ?? (multiple ? 'Drag files here or' : 'Drag a file here or')}
         </p>
         <Button
           type="button"
@@ -230,7 +234,7 @@ export function FilePicker({
           disabled={disabled}
           onClick={() => inputRef.current?.click()}
         >
-          {multiple ? 'Choose files' : 'Choose file'}
+          {chooseLabel ?? (multiple ? 'Choose files' : 'Choose file')}
         </Button>
         {hint === '' ? null : <p className="m-0 text-xs text-muted-foreground">{hint}</p>}
       </div>
