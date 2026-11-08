@@ -87,7 +87,8 @@ describe('the inspector day list', () => {
     )
     expect(chosen).toContain('Ira Inspector')
     expect(chosen).not.toContain('Your day')
-    expect(chosen).toContain('aria-label="Inspectors"')
+    expect(chosen).toContain('aria-labelledby="inspector-switch"')
+    expect(chosen).toContain('>Inspector</p>')
     expect(chosen).toContain('Dana Booth')
   })
 
