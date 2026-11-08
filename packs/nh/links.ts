@@ -1,4 +1,4 @@
 export const NH_LICENSE_LOOKUP = {
-  label: 'NH Office of Professional Licensure and Certification license lookup',
-  url: 'https://oplc.nh.gov/license-lookup',
+  label: 'NH license verification search',
+  url: 'https://forms.nh.gov/licenseverification/Search.aspx',
 } as const

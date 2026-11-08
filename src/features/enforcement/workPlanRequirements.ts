@@ -34,7 +34,11 @@ function row(key: string, label: string, done: boolean, detail = ''): CaseRequir
 }
 
 const findingRow = (input: CasePlanInput) =>
-  row('finding', 'Finding recorded', input.findings.length > 0)
+  row(
+    'finding',
+    'Finding recorded',
+    input.findings.some((f) => f.status !== 'withdrawn'),
+  )
 
 function orderGroup(input: CasePlanInput): CaseRequirementGroup {
   const notice = input.notices.length > 0

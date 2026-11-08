@@ -76,11 +76,11 @@ describe('code edition record', () => {
       completedDate: '2027-03-02',
       classification: 'residential',
       dwellingUnits: 2,
-      editionKey: 'nh.edition.2024_07_01',
+      editionKey: 'nh.edition.2026_07_01',
       editionStatus: 'verified',
       applicantElection: null,
     })
-    expect(rec?.editionLabel).toContain('IBC 2021')
+    expect(rec?.editionLabel).toContain('IBC 2024')
   })
 
   it('a receipt before 2024-07-01 records the explicit unverified edition', async () => {

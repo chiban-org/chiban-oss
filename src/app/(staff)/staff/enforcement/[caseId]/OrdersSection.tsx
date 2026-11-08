@@ -5,12 +5,11 @@ import { ServiceChecklist } from '@/components/enforcement/ServiceChecklist'
 import { NEW_TAB } from '@/components/newTab'
 import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { CaseDetail, OrderDetail } from '@/features/enforcement/caseDetail'
+import { openFindingChoices } from '@/features/enforcement/findingChoices'
+import { findingUses } from '@/features/enforcement/findingUses'
 import { motionGateText } from '@/features/enforcement/gateText'
-import {
-  MOTION_BLOCK_TEXT,
-  ORDER_STATUS_LABELS,
-  PROVISION_KIND_LABELS,
-} from '@/features/enforcement/labels'
+import { MOTION_BLOCK_TEXT, ORDER_STATUS_LABELS } from '@/features/enforcement/labels'
+import { draftIsStale } from '@/features/enforcement/workPlanInput'
 import { NO_HOSTED } from '@/features/enforcement/workPlanTypes'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
@@ -120,16 +119,12 @@ export function IssueOrderForm({
 }
 
 export function DraftOrderForm({ detail, variant }: { detail: CaseDetail; variant: Variant }) {
-  const open = detail.findings.filter((f) => f.status === 'open')
   return (
     <ActionForm action={draftOrderAction} submitLabel="Draft order" variant={variant}>
       <Hidden name="caseId" value={detail.staff.row.id} />
       <FindingChoices
         legend="Findings the order is based on"
-        choices={open.map((f) => ({
-          id: f.id,
-          label: `${PROVISION_KIND_LABELS[f.provisionKind]}: ${f.provisionRef}`,
-        }))}
+        choices={openFindingChoices(detail.findings, findingUses(detail))}
       />
       <AreaField label="Corrective action required" name="correctiveAction" rows={3} />
       <TextField label="Corrective action due" name="correctiveDeadline" type="date" required />
@@ -189,12 +184,19 @@ function IssuedParts({ order, detail, can, hosted, withService }: BlockProps) {
 function OrderBlock({ order, detail, can, hosted, withService }: BlockProps) {
   const { row } = order
   const issued = row.issuedOn !== null
+  const stale = row.status === 'draft' && draftIsStale(detail.findings, row.findingIds)
   return (
     <article className="record-item space-y-4">
       <h3>{`${row.number}, ${ORDER_STATUS_LABELS[row.status]}`}</h3>
       <OrderSummary order={order} detail={detail} />
+      {stale ? (
+        <p className="font-medium">
+          This draft includes a finding that was withdrawn or marked corrected, so it cannot be
+          issued. Discard it and draft a new order.
+        </p>
+      ) : null}
       {row.status === 'draft' && can.manage ? <DraftForms order={order} /> : null}
-      {row.status === 'draft' && can.issue && !hosted.has(`issue_order:${row.id}`) ? (
+      {row.status === 'draft' && !stale && can.issue && !hosted.has(`issue_order:${row.id}`) ? (
         <IssueOrderForm order={order} detail={detail} variant="outline" />
       ) : null}
       {issued ? <IssuedParts {...{ order, detail, can, hosted, withService }} /> : null}

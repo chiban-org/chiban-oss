@@ -17,7 +17,8 @@ import { requireCapability } from '@/features/authz/capabilities'
 import { attachDocument } from '@/features/documents/attach'
 import { designationOn } from '@/features/enforcement/designations'
 import { nextEnforcementNumber } from '@/features/enforcement/numbering'
-import { missingOrderContent, renderOrderPdf } from '@/features/enforcement/orderPdf'
+import { contentProblem } from '@/features/enforcement/orderIssueChecks'
+import { renderOrderPdf } from '@/features/enforcement/orderPdf'
 import { stayFor } from '@/features/enforcement/stay'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
@@ -65,6 +66,7 @@ export async function draftOrder(
       .select({ id: enforcementCases.id })
       .from(enforcementCases)
       .where(eq(enforcementCases.id, value.caseId))
+      .for('update')
     if (caseRow === undefined) return err('not_found')
     const findings = await tx
       .select()
@@ -214,6 +216,7 @@ export type IssueOrderError =
   | 'not_designated'
   | 'deadline_before_issue'
   | { missingContent: OrderContentField[] }
+  | { findingsNotOpen: string[] }
 
 const IssueSchema = z.object({
   orderId: z.string().uuid(),
@@ -265,12 +268,8 @@ export async function issueOrder(
       .select()
       .from(violationFindings)
       .where(inArray(violationFindings.id, order.findingIds))
-    const missing = missingOrderContent(rule, {
-      findings,
-      correctiveAction: order.correctiveAction,
-      correctiveDeadline: order.correctiveDeadline,
-    })
-    if (missing.length > 0) return err({ missingContent: missing })
+    const problem = contentProblem(rule, order, findings)
+    if (problem !== null) return err(problem)
     if (order.correctiveDeadline !== null && order.correctiveDeadline < value.issuedOn) {
       return err('deadline_before_issue')
     }

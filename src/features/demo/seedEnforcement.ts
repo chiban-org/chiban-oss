@@ -12,6 +12,7 @@ import { seedPublicCase } from '@/features/demo/seedEnforcementPublic'
 import { seedRegistrations } from '@/features/demo/seedEnforcementRegistrations'
 import { dayFrom, type EnforcementSeedContext } from '@/features/demo/seedEnforcementSupport'
 import { actorFor, must } from '@/features/demo/seedPermitSupport'
+import { seedCaseParcelConditions, seedTownSections } from '@/features/demo/seedTownSections'
 import { designateEnforcementOfficer } from '@/features/enforcement/designations'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
@@ -51,6 +52,8 @@ export async function seedEnforcement(
     ),
     'designate the enforcement officer',
   )
+  await seedTownSections(ctx)
+  await seedCaseParcelConditions(ctx)
   await seedRegistrations(ctx)
   await seedNamedComplaintCase(ctx)
   await seedServedCase(ctx)

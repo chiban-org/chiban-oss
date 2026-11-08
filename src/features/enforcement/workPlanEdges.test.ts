@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { planFor, planInput, planOrder } from '@/test/casePlan'
+import { OPEN_FINDING, planFor, planInput, planOrder } from '@/test/casePlan'
 import type { CivilDate } from '@/types/civilDate'
 
 const FILED = { kind: 'filed_with_clerk' as const, occurredOn: '2026-09-20', judgmentOutcome: null }
@@ -102,7 +102,9 @@ describe('the case work plan across orders, owners and counsel', () => {
       {},
       { id: 'o2', number: 'CD-2026-0002', status: 'draft', issuedOn: null },
     )
-    const p = planFor(planInput('order_issued', { orders: [issued, draft] }))
+    const p = planFor(
+      planInput('order_issued', { findings: OPEN_FINDING, orders: [issued, draft] }),
+    )
     expect(p.now?.action).toEqual({ kind: 'issue_order', orderId: 'o2' })
   })
 

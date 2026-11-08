@@ -1,5 +1,5 @@
 import { NH_STARTERS } from '@packs/nh/starters'
-import { and, eq } from 'drizzle-orm'
+import { isNotNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { configVersions } from '@/db/schema'
 import { membersInOrder } from '@/features/config/adoptStarter'
@@ -22,30 +22,26 @@ function memberLabel(body: unknown, starterLabel: string): string {
 export async function loadStarterReviews(db: DbOrTx, signal: AbortSignal): Promise<ReviewBundle[]> {
   signal.throwIfAborted()
   const bundles: ReviewBundle[] = []
+  const rows = await db
+    .select({
+      kind: configVersions.kind,
+      key: configVersions.key,
+      starterId: configVersions.upstreamTemplateId,
+      version: configVersions.upstreamTemplateVersion,
+    })
+    .from(configVersions)
+    .where(isNotNull(configVersions.upstreamTemplateId))
+  const adopted = new Set(rows.filter((r) => r.kind === 'application_type').map((r) => r.starterId))
+  const recordedVersions = new Map<string, number>()
+  for (const r of rows) {
+    const id = `${r.starterId}/${r.kind}/${r.key}`
+    recordedVersions.set(id, Math.max(recordedVersions.get(id) ?? 0, r.version ?? 0))
+  }
   for (const starter of NH_STARTERS) {
-    const [adoption] = await db
-      .select({ id: configVersions.id })
-      .from(configVersions)
-      .where(
-        and(
-          eq(configVersions.kind, 'application_type'),
-          eq(configVersions.upstreamTemplateId, starter.id),
-        ),
-      )
-    if (adoption === undefined) continue
+    if (!adopted.has(starter.id)) continue
     const members: ReviewBundle['members'] = []
     for (const member of membersInOrder(starter)) {
-      const rows = await db
-        .select({ version: configVersions.upstreamTemplateVersion })
-        .from(configVersions)
-        .where(
-          and(
-            eq(configVersions.kind, member.kind),
-            eq(configVersions.key, member.key),
-            eq(configVersions.upstreamTemplateId, starter.id),
-          ),
-        )
-      const recorded = Math.max(0, ...rows.map((r) => r.version ?? 0))
+      const recorded = recordedVersions.get(`${starter.id}/${member.kind}/${member.key}`) ?? 0
       const published = await getPublished(db, member.kind, member.key, signal)
       if (published === null || recorded >= starter.version) continue
       const entries = starterDiff(published.body, member.body)

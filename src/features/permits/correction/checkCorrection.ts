@@ -7,6 +7,7 @@ import {
   activeParties,
   type ContractorChoice,
   planContractor,
+  resolveAddedAccount,
 } from '@/features/permits/correction/contractor'
 import { isCorrectablePermit, mayCorrectPermits } from '@/features/permits/correction/policy'
 import { correctionRecipients, recipientLabel } from '@/features/permits/correction/recipients'
@@ -42,7 +43,9 @@ export async function checkCorrection(
   const assessed = await assessCorrection(db, app, draft.values, signal)
   const parties = await activeParties(db, app.projectId)
   const plan = planContractor(parties, draft.contractor)
-  const recipients = plan.ok ? correctionRecipients(parties, plan.value) : []
+  const recipients = plan.ok
+    ? correctionRecipients(parties, await resolveAddedAccount(db, plan.value))
+    : []
   return ok({
     nextRevision: app.permitRevision + 1,
     feeChange: assessed.ok && assessed.value.feeChange,

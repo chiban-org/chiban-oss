@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto'
 import { PassThrough } from 'node:stream'
 import { and, eq, isNotNull } from 'drizzle-orm'
+import { env } from '@/config/env'
 import { JOB_NAMES } from '@/constants/jobNames'
 import type { Db } from '@/db/client'
 import { exportsTable, exportTargets } from '@/db/schema'
@@ -8,6 +9,7 @@ import { manifestBytes } from '@/features/export/manifest'
 import { pruneExpiredExports } from '@/features/export/pruneExports'
 import { writeArchive } from '@/features/export/writeArchive'
 import { createZipSink } from '@/features/export/zipSink'
+import { createGhostscriptConverter } from '@/features/preservation/ghostscript'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { ok } from '@/types/result'
@@ -16,6 +18,15 @@ import { exportsIncrementalJob } from './exportsIncremental'
 
 const DAY_MS = 24 * 60 * 60 * 1000
 const RETENTION_DAYS = 7
+const PDFA_TIMEOUT_MS = 120_000
+
+function exportConverter() {
+  return createGhostscriptConverter({
+    gsPath: env.GHOSTSCRIPT_PATH,
+    iccProfilePath: env.GHOSTSCRIPT_ICC_PROFILE ?? null,
+    timeoutMs: PDFA_TIMEOUT_MS,
+  })
+}
 
 export function exportObjectKey(exportId: string, today: string): string {
   return `exports/${exportId}/chiban-export-${today}.zip`
@@ -45,7 +56,7 @@ export async function buildBusinessExport(
     const manifest = await writeArchive(
       db,
       store,
-      { exportId, kind: 'business', base: null },
+      { exportId, kind: 'business', base: null, bundle: { converter: exportConverter() } },
       zip.sink,
       signal,
     )

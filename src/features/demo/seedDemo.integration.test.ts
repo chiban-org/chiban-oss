@@ -135,6 +135,7 @@ async function counts(): Promise<Record<string, number>> {
     union all select 'enforcement_fines', count(*)::int from enforcement_fines
     union all select 'counsel_referrals', count(*)::int from counsel_referrals
     union all select 'counsel_outcomes', count(*)::int from counsel_outcomes
+    union all select 'town_sections', count(*)::int from town_sections
   `)
   return Object.fromEntries(result.rows.map((r) => [r.t, r.n]))
 }
@@ -257,6 +258,7 @@ describe('seedDemo', () => {
     expect(before.inspections).toBeGreaterThan(5)
     expect(before.certificates).toBe(1)
     expect(before.config_versions).toBeGreaterThan(30)
+    expect(before.town_sections).toBe(9)
   })
 
   it('no seeded application is issued, decided, or completed before it was received', async () => {

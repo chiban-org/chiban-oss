@@ -10,6 +10,14 @@ import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import { getMigrationHead } from '@/db/migrationHead'
 import type { ArchiveSink } from '@/features/export/archiveTypes'
+import {
+  type BundleCapture,
+  type BundleOptions,
+  csvEntry,
+  emitBundle,
+  finishBundle,
+  startBundle,
+} from '@/features/export/bundle'
 import { dumpEntity } from '@/features/export/dumpEntity'
 import { EXPORT_ENTITIES, exportOrder } from '@/features/export/entities'
 import { renderFormatDoc } from '@/features/export/formatDoc'
@@ -28,6 +36,7 @@ export interface WriteArchiveOptions {
   exportId: string
   kind: 'business' | 'incremental'
   base: ExportManifest | null
+  bundle?: BundleOptions
 }
 
 interface FileRow extends Record<string, unknown> {
@@ -83,6 +92,7 @@ async function emit(
     const { size } = await stat(local)
     await sink.write({ path: entity.path, size, body: createReadStream(local) })
   }
+  await emitBundle(manifest, workDir, sink)
   const owned = new Map(
     manifest.files.filter((f) => f.inExport === exportId).map((f) => [f.sha256, f]),
   )
@@ -117,13 +127,20 @@ export async function writeArchive(
       async (tx) => {
         await tx.execute(sql`set local time zone 'UTC'`)
         const entities: ExportManifest['entities'] = []
+        const capture: BundleCapture | null =
+          options.bundle === undefined ? null : await startBundle(tx, options.bundle, workDir)
         for (const entity of exportOrder(EXPORT_ENTITIES)) {
+          const table = capture === null ? null : await capture.tables.begin(entity)
           const dumped = await dumpEntity(
             tx,
             entity,
             join(workDir, `${entity.name}.ndjson`),
             signal,
+            table,
           )
+          if (capture !== null && dumped.table !== null) {
+            capture.csv.push(csvEntry(entity.name, { ...dumped.table, count: dumped.count }))
+          }
           entities.push({
             name: entity.name,
             path: entity.file,
@@ -137,13 +154,29 @@ export async function writeArchive(
         )
         const town = await getTownSettings(tx, signal)
         const head = await getMigrationHead(tx, signal)
-        return { entities, fileRows: fileRows.rows, town, head }
+        return { entities, fileRows: fileRows.rows, town, head, capture }
       },
       { isolationLevel: 'repeatable read', accessMode: 'read only' },
     )
     if (!snapshot.town.ok || snapshot.head === null) {
       throw new AppError(ErrorIds.EXPORT_ARCHIVE_INVALID, 'town is not configured')
     }
+    const extras =
+      options.bundle === undefined || snapshot.capture === null
+        ? null
+        : await finishBundle({
+            capture: snapshot.capture,
+            bundle: options.bundle,
+            files: snapshot.fileRows.map((f) => ({
+              sha256: f.sha256,
+              size: f.size_bytes,
+              contentType: f.content_type,
+              storageKey: f.storage_key,
+            })),
+            workDir,
+            store,
+            signal,
+          })
     const base = options.base
     const baseEntities = new Map(base?.entities.map((e) => [e.name, e]) ?? [])
     const baseFiles = new Map(base?.files.map((f) => [f.sha256, f]) ?? [])
@@ -175,6 +208,7 @@ export async function writeArchive(
         path: filePath(f.sha256),
         inExport: baseFiles.get(f.sha256)?.inExport ?? options.exportId,
       })),
+      ...extras,
     }
     await emit(manifest, snapshot.fileRows, workDir, store, options.exportId, sink, signal)
     return manifest

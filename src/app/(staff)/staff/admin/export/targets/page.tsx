@@ -89,6 +89,10 @@ export default async function ExportTargetsPage() {
         action={<AddTarget />}
       />
       <p>The first copy holds everything. Files are copied once and shared between months.</p>
+      <p>
+        These copies hold the records as NDJSON and the original documents. The CSV files, Excel
+        workbook, and PDF/A copies are in the full export on the Data export page.
+      </p>
       <section aria-labelledby="your-targets">
         <h2 id="your-targets">Your targets</h2>
         {listed.value.length === 0 ? <p>No targets yet. Add one with Add a target.</p> : null}

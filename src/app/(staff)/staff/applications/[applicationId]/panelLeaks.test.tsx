@@ -124,6 +124,7 @@ describe('staff application panels', () => {
               role: 'applicant',
               ownerAuthorizationOnFile: false,
               linked: true,
+              account: null,
             },
           ],
         })}
@@ -132,6 +133,45 @@ describe('staff application panels', () => {
     expect(text).toContain('Applicant')
     expect(text).not.toMatch(/Applicant, applicant/)
     expect(text).not.toContain('applicant')
+  })
+
+  it('names the account a party is linked to and the company of a contractor account', () => {
+    const party = { ownerAuthorizationOnFile: false, linked: true }
+    const text = textOf(
+      <PartiesPanel
+        view={view({
+          parties: [
+            {
+              ...party,
+              id: 'c',
+              name: 'Pat Builder',
+              role: 'contractor',
+              account: { email: 'pat@builder.example', companyName: 'Builder and Sons' },
+            },
+            {
+              ...party,
+              id: 'a',
+              name: 'Morgan Reyes',
+              role: 'applicant',
+              account: { email: 'morgan@alderpond.example', companyName: null },
+            },
+            {
+              ...party,
+              id: 'u',
+              name: 'Sam Unclaimed',
+              role: 'contractor',
+              linked: false,
+              account: null,
+            },
+          ],
+        })}
+      />,
+    )
+    expect(text).toContain(
+      'linked to the contractor account of Builder and Sons (pat@builder.example)',
+    )
+    expect(text).toContain('linked to the account morgan@alderpond.example')
+    expect(text).toContain('has not claimed this project yet')
   })
 
   it('reviewers show the status label', () => {
