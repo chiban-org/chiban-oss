@@ -19,6 +19,7 @@ describe('report table sorting', () => {
     closed: 0,
     denied: 0,
     withdrawn: 0,
+    fields: {},
   })
   const VOLUME = [
     volume('2027-02', 'el', 3),
@@ -51,6 +52,7 @@ describe('report table sorting', () => {
       medianCompleteToDecision: null,
       decidedOnTime: null,
       decidedLate: null,
+      fields: {},
     })
     const rows = [row('bp', null), row('el', 4), row('x', 9)]
     expect(sortProcessing(rows, { key: 'median', dir: 'asc' }, label).map((r) => r.type)).toEqual([
@@ -74,6 +76,7 @@ describe('report table sorting', () => {
       medianCompleteToDecision: null,
       decidedOnTime: null,
       decidedLate: null,
+      fields: {},
     })
     const rows = [row('el'), row('bp')]
     expect(sortProcessing(rows, { key: 'order', dir: 'asc' }, label).map((r) => r.type)).toEqual([

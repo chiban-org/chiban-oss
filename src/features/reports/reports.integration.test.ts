@@ -4,9 +4,9 @@ import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { applications, clocks, roleCapabilities } from '@/db/schema'
 import { postEntry } from '@/features/ledger/postEntry'
 import type { PostEntryInput } from '@/features/ledger/types'
-import { permitVolumeCsv, processingTimeCsv, revenueCsv } from '@/features/reports/csv'
 import { permitVolumeReport } from '@/features/reports/permitVolume'
 import { processingTimeReport } from '@/features/reports/processingTime'
+import { permitVolumeCsv, processingTimeCsv, revenueCsv } from '@/features/reports/reportSheets'
 import { revenueReport } from '@/features/reports/revenue'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -95,6 +95,7 @@ describe('permit volume', () => {
         closed: 0,
         denied: 0,
         withdrawn: 0,
+        fields: {},
       },
     ])
     expect(csv.startsWith('Month,Type,Received,Issued,Closed,Denied,Withdrawn\r\n')).toBe(true)

@@ -66,7 +66,8 @@ export default async function CensusPage({
   const report = await censusBpsReport(ctx.db, ctx.actor, { year, month }, ctx.signal)
   if (!report.ok) return <NoPermission title="Census report" action="see the Census report" />
   const r = report.value
-  const csvHref = `/staff/reports/census/csv?year=${year}&month=${month ?? 'year'}`
+  const exportHref = (format: 'csv' | 'xlsx') =>
+    `/staff/reports/census/${format}?year=${year}&month=${month ?? 'year'}`
   const suggestions = await Promise.all(
     r.needsClassification.map(async (row) => {
       const context = await loadApplicationContext(ctx.db, row.applicationId, ctx.signal)
@@ -186,9 +187,10 @@ export default async function CensusPage({
         )}
       </section>
       {r.complete ? (
-        <Link href={csvHref} className="no-print inline-block">
-          Download CSV
-        </Link>
+        <span className="no-print flex gap-x-6">
+          <Link href={exportHref('csv')}>Download CSV</Link>
+          <Link href={exportHref('xlsx')}>Download Excel</Link>
+        </span>
       ) : null}
       {suggestions.length === 0 ? null : (
         <section aria-labelledby="needs">

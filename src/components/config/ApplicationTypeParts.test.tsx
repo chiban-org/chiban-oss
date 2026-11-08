@@ -86,4 +86,14 @@ describe('application type references', () => {
     )
     expect(document.body.textContent).not.toMatch(/under_review|plan_review/)
   })
+
+  it('says whether the reports add up form answers and links to the column chooser', () => {
+    renderEditor()
+    expect(
+      screen.getByText('The permit volume and processing time reports show counts only.'),
+    ).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Choose report columns' }).getAttribute('href')).toBe(
+      '/staff/settings/report-fields/BP',
+    )
+  })
 })

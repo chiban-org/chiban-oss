@@ -1,8 +1,9 @@
 import { sql } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { checkRange, type RangeError, type ReportRange } from '@/features/reports/range'
+import { type FieldSums, fieldSums, loadReportFields } from '@/features/reports/reportFields'
 import { getTownSettings } from '@/features/town/settings'
 import { err, ok, type Result } from '@/types/result'
 
@@ -14,6 +15,7 @@ export interface PermitVolumeRow {
   closed: number
   denied: number
   withdrawn: number
+  fields: FieldSums
 }
 
 interface CountRow extends Record<string, unknown> {
@@ -24,7 +26,7 @@ interface CountRow extends Record<string, unknown> {
 }
 
 export async function permitVolumeReport(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   range: ReportRange,
   signal: AbortSignal,
@@ -53,6 +55,12 @@ export async function permitVolumeReport(
         and l.after ->> 'state' in ('closed', 'denied', 'withdrawn')
         and (l.at at time zone ${zone})::date between ${range.from}::date and ${range.to}::date
       group by 1, 2, 3`)
+  const sums = await fieldSums(
+    db,
+    await loadReportFields(db, signal),
+    { range, dateColumn: 'received_date', byMonth: true },
+    signal,
+  )
   const rows = new Map<string, PermitVolumeRow>()
   for (const c of counts.rows) {
     const key = `${c.month}|${c.type}`
@@ -64,6 +72,7 @@ export async function permitVolumeReport(
       closed: 0,
       denied: 0,
       withdrawn: 0,
+      fields: sums.get(key) ?? {},
     }
     if (c.measure === 'received') row.received = c.n
     else if (c.measure === 'issued') row.issued = c.n

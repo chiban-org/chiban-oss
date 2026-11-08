@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { labelsFor } from '@/features/reports/cashReceipts'
@@ -25,7 +25,7 @@ interface Raw extends Record<string, unknown> {
 }
 
 export async function revenueReport(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   range: ReportRange,
   signal: AbortSignal,

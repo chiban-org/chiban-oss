@@ -72,7 +72,7 @@ export const SETTINGS_MENU_ITEMS: readonly SettingsMenuItem[] = [
     label: 'Application types',
     group: 'permits',
     access: config,
-    match: ['/staff/settings/workflow'],
+    match: ['/staff/settings/workflow', '/staff/settings/report-fields'],
   },
   {
     href: kind('form'),

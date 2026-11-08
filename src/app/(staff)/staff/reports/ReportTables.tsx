@@ -3,6 +3,8 @@ import type { ReactNode } from 'react'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import type { PermitVolumeRow } from '@/features/reports/permitVolume'
 import type { ProcessingTimeRow } from '@/features/reports/processingTime'
+import type { FieldSums, ReportFieldColumn } from '@/features/reports/reportFields'
+import { fieldCell } from '@/features/reports/reportSheets'
 import {
   type ProcessingSortKey,
   type RevenueSortKey,
@@ -27,14 +29,37 @@ function monthLabel(month: string): string {
 
 const days = (n: number | null): string => (n === null ? '' : n.toFixed(1))
 
+function fieldText(column: ReportFieldColumn, sums: FieldSums): string {
+  const cell = fieldCell(column, sums)
+  if (cell === null || typeof cell === 'string') return cell ?? ''
+  if (typeof cell === 'number') return cell.toLocaleString('en-US')
+  return 'cents' in cell ? formatCents(cell.cents) : cell.decimal.toFixed(cell.places)
+}
+
+function FieldHeaders({ columns }: { columns: readonly ReportFieldColumn[] }) {
+  return columns.map((c) => (
+    <th key={c.id} scope="col" className="text-right">
+      {c.label}
+    </th>
+  ))
+}
+
+function FieldCells({ columns, sums }: { columns: readonly ReportFieldColumn[]; sums: FieldSums }) {
+  return columns.map((c) => (
+    <td key={c.id} className="text-right whitespace-nowrap">
+      {fieldText(c, sums)}
+    </td>
+  ))
+}
+
 export function ReportSection({
   title,
-  csvHref,
+  exportHref,
   order,
   children,
 }: {
   title: string
-  csvHref: string
+  exportHref: (format: 'csv' | 'xlsx') => string
   order: string
   children: ReactNode
 }) {
@@ -42,9 +67,10 @@ export function ReportSection({
     <section aria-label={title} data-plain className="space-y-3">
       <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-2">
         <h2>{title}</h2>
-        <Link className="no-print" href={csvHref}>
-          Download CSV
-        </Link>
+        <span className="no-print flex gap-x-6">
+          <Link href={exportHref('csv')}>Download CSV</Link>
+          <Link href={exportHref('xlsx')}>Download Excel</Link>
+        </span>
       </div>
       <p className="text-muted-foreground">{`${order} Click a column heading to sort.`}</p>
       {children}
@@ -56,7 +82,9 @@ export function VolumeTable({
   rows,
   sort,
   typeLabel,
+  columns,
 }: {
+  columns: readonly ReportFieldColumn[]
   rows: readonly PermitVolumeRow[]
   sort: ScopedSort<VolumeSortKey>
   typeLabel: (type: string) => string
@@ -73,6 +101,7 @@ export function VolumeTable({
             <SortHeader label="Closed" link={sort.links.closed} className="text-right" />
             <SortHeader label="Denied" link={sort.links.denied} className="text-right" />
             <SortHeader label="Withdrawn" link={sort.links.withdrawn} className="text-right" />
+            <FieldHeaders columns={columns} />
           </tr>
         </thead>
         <tbody>
@@ -85,6 +114,7 @@ export function VolumeTable({
               <td className="text-right">{r.closed}</td>
               <td className="text-right">{r.denied}</td>
               <td className="text-right">{r.withdrawn}</td>
+              <FieldCells columns={columns} sums={r.fields} />
             </tr>
           ))}
         </tbody>
@@ -97,7 +127,9 @@ export function ProcessingTable({
   rows,
   sort,
   typeLabel,
+  columns,
 }: {
+  columns: readonly ReportFieldColumn[]
   rows: readonly ProcessingTimeRow[]
   sort: ScopedSort<ProcessingSortKey>
   typeLabel: (type: string) => string
@@ -122,6 +154,7 @@ export function ProcessingTable({
             />
             <SortHeader label="Decided on time" link={sort.links.onTime} className="text-right" />
             <SortHeader label="Decided late" link={sort.links.late} className="text-right" />
+            <FieldHeaders columns={columns} />
           </tr>
         </thead>
         <tbody>
@@ -134,6 +167,7 @@ export function ProcessingTable({
               <td className="text-right">{days(r.medianCompleteToDecision)}</td>
               <td className="text-right">{r.decidedOnTime ?? ''}</td>
               <td className="text-right">{r.decidedLate ?? ''}</td>
+              <FieldCells columns={columns} sums={r.fields} />
             </tr>
           ))}
         </tbody>

@@ -2,6 +2,7 @@
 
 import {
   ReferenceFields,
+  ReportFieldsSummary,
   RuleFields,
   WorkflowSummary,
 } from '@/components/config/ApplicationTypeParts'
@@ -95,6 +96,7 @@ export function ApplicationTypeEditor({
       </FieldGroup>
       <ReferenceFields body={body} set={set} errors={errors} />
       <WorkflowSummary body={body} errors={errors} />
+      <ReportFieldsSummary body={body} />
       <DocumentItemsEditor
         items={body.documents ?? []}
         fields={formFields.get(body.formKey) ?? []}

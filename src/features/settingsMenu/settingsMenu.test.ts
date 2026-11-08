@@ -94,6 +94,9 @@ describe('settings menu', () => {
     expect(activeHref('/staff/settings/workflow/BP', items)).toBe(
       '/staff/settings/application_type',
     )
+    expect(activeHref('/staff/settings/report-fields/BP', items)).toBe(
+      '/staff/settings/application_type',
+    )
     expect(activeHref('/staff/settings/form/residential', items)).toBe('/staff/settings/form')
     expect(activeHref('/staff/settings/payment_settings/default', items)).toBe(
       '/staff/settings/payments',

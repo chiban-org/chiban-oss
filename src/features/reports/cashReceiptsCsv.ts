@@ -1,8 +1,8 @@
 import type { ByMethod, CashReceiptsReport } from '@/features/reports/cashReceipts'
 import { REPORT_METHODS } from '@/features/reports/cashReceipts'
-import { dollars, toCsvRows } from '@/features/reports/csv'
+import { type SheetCell, sheetCsv } from '@/features/reports/sheet'
 
-const HEADER = [
+export const CASH_RECEIPTS_HEADER: SheetCell[] = [
   'Date',
   'Fee code',
   'Fee',
@@ -13,17 +13,21 @@ const HEADER = [
   'Simulated',
   'Total',
 ]
-function amountsOf(byMethod: ByMethod): string[] {
+
+export function amountsOf(byMethod: ByMethod): SheetCell[] {
   const total = REPORT_METHODS.reduce((sum, m) => sum + byMethod[m], 0)
-  return [...REPORT_METHODS.map((m) => dollars(byMethod[m])), dollars(total)]
+  return [...REPORT_METHODS.map((m) => ({ cents: byMethod[m] })), { cents: total }]
 }
 
-export function toCsv(report: CashReceiptsReport): string {
-  return toCsvRows([
-    HEADER,
+export function cashReceiptsRows(report: CashReceiptsReport): SheetCell[][] {
+  return [
     ...report.rows.map((r) => [report.date, r.feeCode, r.label, ...amountsOf(r.byMethod)]),
     [report.date, '', 'Convenience fee', ...amountsOf(report.convenienceFees)],
     [report.date, '', 'Overpayment', ...amountsOf(report.overpayments)],
     [report.date, '', 'Total', ...amountsOf(report.totalsByMethod)],
-  ])
+  ]
+}
+
+export function toCsv(report: CashReceiptsReport): string {
+  return sheetCsv([CASH_RECEIPTS_HEADER, ...cashReceiptsRows(report)])
 }

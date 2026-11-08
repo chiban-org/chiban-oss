@@ -99,6 +99,7 @@ describe('cash receipts report', () => {
     expect(html).toContain('1042')
     expect(html).toContain('Returned, recorded March 3, 2027')
     expect(html).toContain('/staff/reports/cash-receipts/csv?date=2027-03-01')
+    expect(html).toContain('/staff/reports/cash-receipts/xlsx?date=2027-03-01')
   })
 
   it('states the default order of both tables', async () => {

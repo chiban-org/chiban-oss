@@ -15,6 +15,7 @@ import { recordsDisposeJob } from './recordsDispose'
 import { recordsPreserveJob } from './recordsPreserve'
 import { redactionRunJob } from './redactionRun'
 import { renditionsDeriveJob } from './renditionsDerive'
+import { reportsScheduledJob } from './reportsScheduled'
 import { jobsSweepJob } from './sweep'
 
 export const ALL_JOBS: JobDefinition<object>[] = [
@@ -39,4 +40,5 @@ export const ALL_JOBS: JobDefinition<object>[] = [
   recordsDisposeJob,
   filesReleaseJob,
   filesDeleteJob,
+  reportsScheduledJob,
 ]

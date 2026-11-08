@@ -1,5 +1,5 @@
 import { and, asc, eq, inArray } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import { feeAssessments, ledgerAllocations, ledgerEntries } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
@@ -38,7 +38,7 @@ function methodOf(entry: { method: string; processor: string | null }): ReportMe
   return entry.processor === 'simulated' ? 'simulated' : (entry.method as ReportMethod)
 }
 
-export async function labelsFor(db: Db, assessmentIds: string[]): Promise<Map<string, string>> {
+export async function labelsFor(db: DbOrTx, assessmentIds: string[]): Promise<Map<string, string>> {
   if (assessmentIds.length === 0) return new Map()
   const rows = await db
     .select()
@@ -53,7 +53,7 @@ export async function labelsFor(db: Db, assessmentIds: string[]): Promise<Map<st
   return labels
 }
 
-async function returnedCheckDates(db: Db, entryIds: string[]): Promise<Map<string, CivilDate>> {
+async function returnedCheckDates(db: DbOrTx, entryIds: string[]): Promise<Map<string, CivilDate>> {
   if (entryIds.length === 0) return new Map()
   const rows = await db
     .select({ reverses: ledgerEntries.reversesEntryId, on: ledgerEntries.businessDate })
@@ -77,7 +77,7 @@ async function returnedCheckDates(db: Db, entryIds: string[]): Promise<Map<strin
 const FINE_CODE = '\u0000court-imposed-fine'
 
 export async function cashReceiptsReport(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   input: { date: CivilDate },
   signal: AbortSignal,

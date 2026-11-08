@@ -215,6 +215,9 @@ const SPECS: Spec[] = [
   { table: t.regionalImpactParties },
   { table: t.relianceLinks },
   { table: t.remediationTasks },
+  { table: t.reportScheduleDeliveries },
+  { table: t.reportScheduleRecipients },
+  { table: t.reportSchedules },
   {
     table: t.retentionAssignments,
     poly: [
