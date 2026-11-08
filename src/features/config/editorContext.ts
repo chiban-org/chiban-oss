@@ -1,6 +1,7 @@
 import type { BoardKind } from '@packs/nh/schema'
 import type { NamedChoice, ReferenceChoices } from '@/features/config/referenceChoices'
 import type { FormBuilderData } from '@/features/forms/formReferences'
+import type { FormField } from '@/features/forms/formSchema'
 import { loadPack } from '@/features/packs/loadPack'
 import { policyText, ruleSummary } from '@/features/packs/ruleSummary'
 import type { TemplateBuilderData } from '@/features/templates/builderData'
@@ -37,6 +38,7 @@ export interface EditorContext {
   >
   references?: ReferenceChoices
   feeQuestions?: NamedChoice[]
+  formFields?: Record<string, FormField[]>
   form?: FormBuilderData
   template?: TemplateBuilderData
 }

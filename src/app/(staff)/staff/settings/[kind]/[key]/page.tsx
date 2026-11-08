@@ -23,6 +23,7 @@ import {
 } from '@/features/config/kinds'
 import {
   choicesFromRows,
+  formFieldsByKey,
   keyWords,
   numberQuestionsFor,
   REFERENCE_KINDS,
@@ -130,6 +131,7 @@ export default async function SettingsKeyPage({ params }: Props) {
     ),
     references,
     feeQuestions: kind === 'fee_schedule' ? numberQuestionsFor(referenceRows, key) : [],
+    formFields: kind === 'application_type' ? formFieldsByKey(referenceRows) : {},
   }
   const isForm = kind === 'form'
   const builderContext = await builderContextFor(ctx, kind, key, {

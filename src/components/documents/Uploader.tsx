@@ -8,7 +8,7 @@ import { FilePicker } from '@/components/ui/file-picker'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import type { RecordRef } from '@/features/documents/types'
-import { TITLE_MAX } from '@/features/documents/uploadLimits'
+import { DEFAULT_UPLOAD_ACCEPT, TITLE_MAX } from '@/features/documents/uploadLimits'
 import { attempt } from '@/lib/attempt'
 
 export type IntentResult =
@@ -41,6 +41,8 @@ interface UploaderProps {
   pickerPrompt?: string
   chooseLabel?: string
   titleLabel?: string
+  fixedTitle?: string
+  uploadOnChoose?: boolean
 }
 
 const BYTES_PER_MB = 1024 * 1024
@@ -60,6 +62,10 @@ export const putWithProgress: PutFile = (url, headers, file, onProgress) =>
     request.send(file)
   })
 
+function titleFor(typed: string, chosen: File): string {
+  return typed.trim() === '' ? chosen.name : typed.trim()
+}
+
 function tooLargeCopy(maxBytes: number): string {
   return `That file is larger than ${Math.floor(maxBytes / BYTES_PER_MB)} MB.`
 }
@@ -71,12 +77,14 @@ export function Uploader({
   onUploaded,
   put = putWithProgress,
   extraFields = {},
-  accept = '.pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png',
+  accept = DEFAULT_UPLOAD_ACCEPT,
   capture,
   fileLabel = 'File',
   pickerPrompt,
   chooseLabel,
   titleLabel = 'Name for this document',
+  fixedTitle,
+  uploadOnChoose = false,
 }: UploaderProps) {
   const csrf = useCsrfToken()
   const fieldId = useId()
@@ -94,7 +102,7 @@ export function Uploader({
     data.set('csrf_token', csrf)
     data.set('targetKind', target.kind)
     data.set('targetId', target.id)
-    data.set('title', (title.trim() === '' ? chosen.name : title.trim()).slice(0, TITLE_MAX))
+    data.set('title', titleFor(fixedTitle ?? title, chosen).slice(0, TITLE_MAX))
     data.set('filename', chosen.name)
     data.set('contentType', chosen.type)
     data.set('sizeBytes', String(chosen.size))
@@ -122,7 +130,7 @@ export function Uploader({
     onUploaded(finalized.documentId)
   }
 
-  const submit = async () => {
+  const submit = async (file: File | null) => {
     setMessage(null)
     if (file === null) return setMessage('Choose a file first.')
     if (file.size === 0) return setMessage('That file is empty. Choose a file with content.')
@@ -136,44 +144,54 @@ export function Uploader({
   return (
     <div className="space-y-3">
       <div className="space-y-1.5">
-        <Label htmlFor={fileId} className="text-base font-medium">
+        <Label
+          htmlFor={fileId}
+          className={fixedTitle === undefined ? 'text-base font-medium' : 'sr-only'}
+        >
           {fileLabel}
         </Label>
         <FilePicker
           key={pickerKey}
           id={fileId}
           accept={accept}
+          compact={uploadOnChoose}
           {...(capture === undefined ? {} : { capture })}
           {...(pickerPrompt === undefined ? {} : { prompt: pickerPrompt })}
           {...(chooseLabel === undefined ? {} : { chooseLabel })}
           onFilesChange={(files) => {
-            setFile(files[0] ?? null)
+            const chosen = files[0] ?? null
+            setFile(chosen)
             setMessage(null)
+            if (uploadOnChoose && chosen !== null) void submit(chosen)
           }}
         />
       </div>
-      <div className="space-y-1.5">
-        <Label htmlFor={titleId} className="text-base font-medium">
-          {titleLabel}
-        </Label>
-        <Input
-          id={titleId}
-          value={title}
-          maxLength={TITLE_MAX}
-          className="min-h-11 text-base"
-          onChange={(event) => setTitle(event.target.value)}
-        />
-      </div>
+      {fixedTitle === undefined ? (
+        <div className="space-y-1.5">
+          <Label htmlFor={titleId} className="text-base font-medium">
+            {titleLabel}
+          </Label>
+          <Input
+            id={titleId}
+            value={title}
+            maxLength={TITLE_MAX}
+            className="min-h-11 text-base"
+            onChange={(event) => setTitle(event.target.value)}
+          />
+        </div>
+      ) : null}
       <div className="flex flex-wrap items-center gap-3">
-        <Button
-          type="button"
-          variant="outline"
-          className="min-h-11"
-          disabled={pending}
-          onClick={() => void submit()}
-        >
-          Upload
-        </Button>
+        {uploadOnChoose ? null : (
+          <Button
+            type="button"
+            variant="outline"
+            className="min-h-11"
+            disabled={pending}
+            onClick={() => void submit(file)}
+          >
+            Upload
+          </Button>
+        )}
         {progress === null ? null : <p className="m-0 text-base">{`Sending ${progress}%`}</p>}
         {message === null ? null : (
           <p role="status" className="m-0 text-base">

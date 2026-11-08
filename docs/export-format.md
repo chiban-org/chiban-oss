@@ -223,6 +223,38 @@ File: `data/application_conditions.ndjson`. Ordered by id.
 References:
 - `application_id` refers to `applications`
 
+### application_document_items
+
+File: `data/application_document_items.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `application_id`: uuid
+- `item_key`: text
+- `waiver_reason`: text, nullable
+- `waiver_requested_by`: uuid, nullable
+- `waiver_requested_at`: timestamp with time zone, nullable
+- `accepted_reason`: text, nullable
+- `accepted_by`: uuid, nullable
+- `accepted_at`: timestamp with time zone, nullable
+
+References:
+- `application_id` refers to `applications`
+
+### application_document_links
+
+File: `data/application_document_links.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `application_id`: uuid
+- `item_key`: text
+- `document_id`: uuid
+- `linked_by`: uuid
+- `linked_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+- `document_id` refers to `documents`
+
 ### application_notes
 
 File: `data/application_notes.ndjson`. Ordered by id.

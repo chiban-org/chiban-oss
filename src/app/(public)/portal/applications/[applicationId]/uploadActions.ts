@@ -2,6 +2,7 @@
 
 import { z } from 'zod'
 import { env } from '@/config/env'
+import { ITEM_KEY_MAX } from '@/features/applications/documentItemSchema'
 import { FILENAME_MAX, TITLE_MAX } from '@/features/documents/uploadLimits'
 import { createUploadIntent, finalizeUpload } from '@/features/documents/uploads'
 import { choice, optionalText, recordId, requiredText, wholeNumber } from '@/features/input/schemas'
@@ -46,6 +47,7 @@ const IntentForm = z.object({
   filename: requiredText('a file name', { max: FILENAME_MAX }),
   contentType: optionalText('a file type', { max: CONTENT_TYPE_MAX }),
   sizeBytes: wholeNumber('the file size', { min: 0, max: Number.MAX_SAFE_INTEGER }),
+  itemKey: optionalText('a document', { max: ITEM_KEY_MAX }),
 })
 
 const FinalizeForm = z.object({ intentId: recordId('an upload') })
@@ -57,7 +59,8 @@ export async function createUploadIntentAction(formData: FormData): Promise<Inte
     async ({ db, actor, signal }) => {
       const parsed = parseForm(IntentForm, formData)
       if (!parsed.ok) return { ok: false, error: parsed.error.error }
-      const { targetKind, targetId, title, filename, contentType, sizeBytes } = parsed.value
+      const { targetKind, targetId, title, filename, contentType, sizeBytes, itemKey } =
+        parsed.value
       const made = await createUploadIntent(
         db,
         getObjectStore(),
@@ -68,6 +71,7 @@ export async function createUploadIntentAction(formData: FormData): Promise<Inte
           filename,
           contentType: contentType ?? '',
           sizeBytes,
+          ...(itemKey === null ? {} : { itemKey }),
         },
         signal,
       )

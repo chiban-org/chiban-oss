@@ -58,6 +58,8 @@ function input(o: Options = {}): RecordPanelsInput {
       canAssign: o.canAssign === true,
       snapshots: [],
       appHolds: [],
+      checklist: null,
+      canAcceptItems: false,
     },
     payments: null,
     inspections: {

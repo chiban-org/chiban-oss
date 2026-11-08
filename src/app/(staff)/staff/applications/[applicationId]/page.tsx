@@ -9,6 +9,7 @@ import { BalanceDueNotice } from '@/components/staff/BalanceDueNotice'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { cutoverRows } from '@/db/schema'
 import { hasFullRecordAccess } from '@/features/access/roles'
+import { closureStage } from '@/features/applications/closureStage'
 import { getLimitedApplicationView } from '@/features/applications/limitedApplicationView'
 import {
   getStaffApplicationView,
@@ -134,6 +135,10 @@ export default async function StaffApplicationPage({ params }: Props) {
     abilities: abilitiesOf(ready),
     responsible: ready.responsible.current?.name ?? null,
     inspection: due?.step ?? null,
+    closure: {
+      ...closureStage(ready.inspections.history, new Set(ready.inspections.reinspectableIds)),
+      dueFinal: due?.row.isFinal === true,
+    },
   })
   const parts = applicationPanels({ ...ready, hosted: hostedActions(plan) })
   const status = (

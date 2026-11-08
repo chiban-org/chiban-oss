@@ -11,11 +11,18 @@ import type {
 } from '@/components/counter/counterTypes'
 import { db } from '@/db/client'
 import { applications, receipts } from '@/db/schema'
+import type { Actor } from '@/features/auth/actor'
 import { sendCounterClaim } from '@/features/contractors/counterClaim'
+import {
+  blockedOnFilingDocuments,
+  takeQuickIssueForReview,
+} from '@/features/counter/intake/fromQuickIssue'
+import { intakeHref } from '@/features/counter/intake/intakeHref'
 import { parseQuickIssue } from '@/features/counter/parseQuickIssue'
 import {
   completeQuickIssue,
   type QuickIssueError,
+  type QuickIssueInput,
   type QuickIssueResult,
   quickIssue,
 } from '@/features/counter/quickIssue'
@@ -82,14 +89,31 @@ function refusalFields(error: QuickIssueError): FieldErrors | undefined {
   return undefined
 }
 
+async function routeToReview(
+  ctx: { actor: Actor; signal: AbortSignal },
+  input: QuickIssueInput,
+  refusal: string,
+): Promise<CounterOutcome> {
+  const taken = await takeQuickIssueForReview(db, ctx.actor, input, ctx.signal)
+  if (!taken.ok) return failOutcome(refusal)
+  revalidatePath('/staff', 'layout')
+  return {
+    ok: false,
+    error: `${refusal} It was taken for review instead, with the answers entered.`,
+    reviewHref: `${intakeHref(taken.value.applicationId, 'documents')}&from=quick_issue`,
+  }
+}
+
 export async function quickIssueAction(formData: FormData): Promise<CounterOutcome> {
   return await guarded(formData, failOutcome, async ({ actor, signal }) => {
     const parsed = parseQuickIssue(formData)
     if (!parsed.ok) return failOutcome(parsed.error.error, parsed.error.fieldErrors)
     const result = await quickIssue(db, actor, parsed.value, signal)
-    return result.ok
-      ? await outcomeOf(result.value)
-      : failOutcome(copyFor(result.error), refusalFields(result.error))
+    if (result.ok) return await outcomeOf(result.value)
+    if (blockedOnFilingDocuments(result.error)) {
+      return await routeToReview({ actor, signal }, parsed.value, copyFor(result.error))
+    }
+    return failOutcome(copyFor(result.error), refusalFields(result.error))
   })
 }
 

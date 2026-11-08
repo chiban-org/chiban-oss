@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { ITEM_KEY_MAX } from '@/features/applications/documentItemSchema'
 import { AUDIENCES } from '@/features/documents/types'
 import { FILENAME_MAX, TITLE_MAX } from '@/features/documents/uploadLimits'
 import { inputField } from '@/features/input/field'
@@ -79,6 +80,7 @@ export const UPLOAD_INTENT_FORM = z.object({
   contentType: requiredText('a file type', { max: CONTENT_TYPE_MAX }),
   sizeBytes: wholeNumber('the file size', { min: 0, max: Number.MAX_SAFE_INTEGER }),
   seriesKey: optionalText('a record series', { max: SERIES_MAX }),
+  itemKey: optionalText('a required document', { max: ITEM_KEY_MAX }),
 })
 
 export const FINALIZE_FORM = z.object({

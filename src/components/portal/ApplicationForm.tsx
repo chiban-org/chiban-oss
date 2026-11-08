@@ -25,6 +25,19 @@ interface Props {
   attestationText: string
   attestationSha256: string
   actions: ApplicationFormActions
+  missingDocuments?: string[]
+}
+
+function MissingDocuments({ names }: { names: string[] }) {
+  if (names.length === 0) return null
+  return (
+    <p className="m-0 text-base">
+      {`Before you submit, add: ${names.join(', ')}. `}
+      <a href="#documents-heading" className="tap-target">
+        Go to documents
+      </a>
+    </p>
+  )
 }
 
 export function ApplicationForm(props: Props) {
@@ -47,7 +60,7 @@ export function ApplicationForm(props: Props) {
     const result: ActionResult = outcome.ok ? outcome.value : { ok: false, error: outcome.error }
     setErrors(result.ok ? {} : (result.fieldErrors ?? {}))
     setMessage(result.ok ? result.message : result.error)
-    if (result.ok && kind === 'submit') router.refresh()
+    if (result.ok) router.refresh()
   }
 
   return (
@@ -81,6 +94,7 @@ export function ApplicationForm(props: Props) {
           {props.attestationText}
         </Label>
       </div>
+      <MissingDocuments names={props.missingDocuments ?? []} />
       <div className="flex flex-wrap items-center gap-3">
         <Button type="submit" className="min-h-11 text-base" disabled={pending}>
           Submit application

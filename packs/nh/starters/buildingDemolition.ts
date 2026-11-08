@@ -1,4 +1,8 @@
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
+import {
+  BUILDING_DOCUMENT_QUESTIONS,
+  BUILDING_DOCUMENTS,
+} from '@packs/nh/starters/buildingDocuments'
 import type { StarterBundle } from '@packs/nh/starters/types'
 import { ATTESTATION_TEXT } from '@packs/nh/starters/types'
 
@@ -18,7 +22,7 @@ const INSPECTIONS = [
 
 export const BUILDING_DEMOLITION_STARTER: StarterBundle = {
   id: 'nh.starter.building',
-  version: 2,
+  version: 3,
   form: {
     key: 'bp-form',
     label: 'Building or demolition permit application',
@@ -78,6 +82,7 @@ export const BUILDING_DEMOLITION_STARTER: StarterBundle = {
         showIf: isNonresidential,
       },
       { key: 'estimated_cost', label: 'Estimated cost of work', type: 'money', required: false },
+      ...BUILDING_DOCUMENT_QUESTIONS,
       {
         key: 'after_the_fact',
         label: 'Work started before permit',
@@ -136,7 +141,6 @@ export const BUILDING_DEMOLITION_STARTER: StarterBundle = {
   conditionLibrary: {
     key: 'bp-conditions',
     conditions: [
-      { code: 'SEPTIC', text: 'Approved septic design on file', blocksIssuance: true },
       { code: 'ZONING', text: 'Zoning compliance confirmed in writing', blocksIssuance: true },
       {
         code: 'SILT',
@@ -183,5 +187,6 @@ export const BUILDING_DEMOLITION_STARTER: StarterBundle = {
       ],
       closesOn: 'certificate_of_occupancy',
     },
+    documents: BUILDING_DOCUMENTS,
   },
 }

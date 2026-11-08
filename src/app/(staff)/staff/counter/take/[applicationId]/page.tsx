@@ -7,6 +7,9 @@ import { IntakeStepNav } from '@/components/counter/intake/IntakeStepNav'
 import { IntakeSummary } from '@/components/counter/intake/IntakeSummary'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { env } from '@/config/env'
+import { loadDocumentChecklist } from '@/features/applications/documentChecklistView'
+import { hasCapability } from '@/features/authz/capabilities'
 import { mayUseCounter } from '@/features/counter/counterAccess'
 import {
   currentTakeStep,
@@ -34,8 +37,11 @@ const DOCUMENT_LIMIT = 100
 
 interface Props {
   params: Promise<{ applicationId: string }>
-  searchParams: Promise<{ step?: string }>
+  searchParams: Promise<{ step?: string; from?: string }>
 }
+
+const FROM_QUICK_ISSUE =
+  'This permit needs documents before it can be issued, so it was taken for review with the answers entered. Add or accept each document, submit it, then issue it from the record.'
 
 const LEADS: Record<TakeStep, string> = {
   form: 'Fill in the application with the applicant. Staff-only questions are shown too.',
@@ -44,6 +50,27 @@ const LEADS: Record<TakeStep, string> = {
   fee: 'Take the fee that is due now.',
   done: 'The application is in the review queue.',
   withdrawn: 'This unfinished application was discarded.',
+}
+
+async function documentsBody(ctx: StaffContext, view: CounterIntakeView): Promise<ReactNode> {
+  const record = { kind: 'application' as const, id: view.applicationId }
+  const can = (capability: Parameters<typeof hasCapability>[2]) =>
+    hasCapability(ctx.db, ctx.actor.userId, capability, ctx.signal)
+  const [docs, checklist, canFile, canAccept] = await Promise.all([
+    listDocuments(ctx.db, ctx.actor, { record, limit: DOCUMENT_LIMIT }, ctx.signal),
+    loadDocumentChecklist(ctx.db, ctx.actor, view.applicationId, ctx.signal),
+    can('document.manage'),
+    can('application.manage'),
+  ])
+  return (
+    <DocumentsStep
+      applicationId={view.applicationId}
+      documents={docs.rows}
+      checklist={checklist}
+      permissions={{ canFile, canAccept, canUploadOther: canFile }}
+      maxBytes={env.MAX_UPLOAD_BYTES}
+    />
+  )
 }
 
 async function stepBody(
@@ -62,17 +89,11 @@ async function stepBody(
       />
     )
   }
-  if (step === 'documents') {
-    const record = { kind: 'application' as const, id: view.applicationId }
-    const docs = await listDocuments(
-      ctx.db,
-      ctx.actor,
-      { record, limit: DOCUMENT_LIMIT },
-      ctx.signal,
-    )
-    return <DocumentsStep applicationId={view.applicationId} documents={docs.rows} />
+  if (step === 'documents') return await documentsBody(ctx, view)
+  if (step === 'submit') {
+    const checklist = await loadDocumentChecklist(ctx.db, ctx.actor, view.applicationId, ctx.signal)
+    return <SubmitStep view={view} missingDocuments={checklist?.missingToFile ?? []} />
   }
-  if (step === 'submit') return <SubmitStep view={view} />
   if (step === 'fee') {
     return payments === null ? (
       <DoneStep view={view} />
@@ -85,7 +106,7 @@ async function stepBody(
 }
 
 export default async function TakeApplicationPage({ params, searchParams }: Props) {
-  const [{ applicationId }, { step: requested }] = await Promise.all([params, searchParams])
+  const [{ applicationId }, { step: requested, from }] = await Promise.all([params, searchParams])
   if (!isUuid(applicationId)) notFound()
   const ctx = await requireStaffContext()
   if (!(await mayUseCounter(ctx.db, ctx.actor, ctx.signal))) {
@@ -122,6 +143,9 @@ export default async function TakeApplicationPage({ params, searchParams }: Prop
           draft={view.state === 'draft'}
         />
       )}
+      {from === 'quick_issue' && step === 'documents' ? (
+        <p role="status">{FROM_QUICK_ISSUE}</p>
+      ) : null}
       {await stepBody(ctx, view, { step, payments })}
     </main>
   )

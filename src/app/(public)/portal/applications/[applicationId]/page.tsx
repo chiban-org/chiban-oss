@@ -6,21 +6,19 @@ import { NEW_TAB } from '@/components/newTab'
 import { StatusTimeline } from '@/components/portal/StatusTimeline'
 import { StatusChip } from '@/components/StatusChip'
 import { DescriptionList } from '@/components/ui/description-list'
-import { env } from '@/config/env'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
-import { groupRevisions } from '@/features/documents/revisions'
-import type { DocumentListRow } from '@/features/documents/types'
+import { loadDocumentChecklist } from '@/features/applications/documentChecklistView'
 import { displayFieldValue } from '@/features/forms/displayValue'
 import { honestText } from '@/features/honest/honest'
 import { loadPortalBoardRecord, type PortalBoardRecord } from '@/features/portal/boardRecord'
 import { moneyEntrySentence } from '@/features/portal/moneyHistory'
 import { getPortalApplicationView, type PortalApplicationView } from '@/features/portal/portalView'
 import { getTownSettings } from '@/features/town/settings'
-import { formatCivilDate, formatInstant } from '@/lib/formatDate'
+import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { requirePortalContext } from '@/server/requirePortal'
 import { PortalApplicationForm, PortalPayButton } from './PayAndForm'
-import { UploadSection } from './UploadSection'
+import { PortalDocuments } from './PortalDocuments'
 
 export const metadata: Metadata = { title: 'Your application' }
 
@@ -43,49 +41,6 @@ function Details({ view }: { view: PortalApplicationView }) {
       labelWidth="wide"
       items={rows.map((r) => ({ label: r.label, value: r.text }))}
     />
-  )
-}
-
-function DocumentLink({ doc, zone }: { doc: DocumentListRow; zone: string }) {
-  return (
-    <>
-      <Link
-        {...NEW_TAB}
-        href={`/api/documents/${doc.documentId}`}
-        className="tap-target inline-flex items-center"
-      >
-        {doc.title}
-      </Link>
-      <span className="ml-2 text-muted-foreground">
-        {formatInstant(new Date(doc.createdAt), zone)}
-      </span>
-    </>
-  )
-}
-
-function DocumentGroups({ documents, zone }: { documents: DocumentListRow[]; zone: string }) {
-  return (
-    <ul className="space-y-1">
-      {groupRevisions(documents).map(({ current, earlier }) => (
-        <li key={current.documentId}>
-          <DocumentLink doc={current} zone={zone} />
-          {earlier.length === 0 ? null : (
-            <div className="ml-4">
-              <p className="m-0 text-muted-foreground">
-                Earlier versions, replaced by the copy above
-              </p>
-              <ul className="m-0 space-y-1">
-                {earlier.map((d) => (
-                  <li key={d.documentId}>
-                    <DocumentLink doc={d} zone={zone} />
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </li>
-      ))}
-    </ul>
   )
 }
 
@@ -181,9 +136,12 @@ export default async function PortalApplicationPage({
   const result = await getPortalApplicationView(ctx.db, ctx.actor, applicationId, ctx.signal)
   if (!result.ok) notFound()
   const view = result.value
-  const town = await getTownSettings(ctx.db, ctx.signal)
+  const [town, board, checklist] = await Promise.all([
+    getTownSettings(ctx.db, ctx.signal),
+    loadPortalBoardRecord(ctx.db, ctx.actor, applicationId, ctx.signal),
+    loadDocumentChecklist(ctx.db, ctx.actor, applicationId, ctx.signal),
+  ])
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
-  const board = await loadPortalBoardRecord(ctx.db, ctx.actor, applicationId, ctx.signal)
   return (
     <main>
       <PageHeader
@@ -213,6 +171,7 @@ export default async function PortalApplicationPage({
             initialValues={view.values}
             attestationText={view.attestationText}
             attestationSha256={view.attestationSha256}
+            missingDocuments={checklist?.missingToFile ?? []}
           />
         ) : (
           <Details view={view} />
@@ -234,14 +193,7 @@ export default async function PortalApplicationPage({
 
       <section aria-labelledby="documents-heading">
         <h2 id="documents-heading">Documents</h2>
-        {view.documents.length === 0 ? (
-          <p>No documents yet.</p>
-        ) : (
-          <DocumentGroups documents={view.documents} zone={zone} />
-        )}
-        {view.canUpload ? (
-          <UploadSection applicationId={view.applicationId} maxBytes={env.MAX_UPLOAD_BYTES} />
-        ) : null}
+        <PortalDocuments view={view} checklist={checklist} zone={zone} />
       </section>
 
       {view.state === 'issued' || view.state === 'suspended' || view.state === 'closed' ? (
