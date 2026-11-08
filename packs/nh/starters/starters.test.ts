@@ -31,6 +31,7 @@ describe('NH starters', () => {
       'LLA',
       'CUP',
       'DR',
+      'MDL',
       'VAR',
       'SE',
       'EW',
@@ -45,6 +46,8 @@ describe('NH starters', () => {
       'SC',
       'TS',
       'STR',
+      'VMG',
+      'IML',
     ])
   })
 
@@ -177,7 +180,7 @@ describe('NH starters', () => {
           ?.boardKind ?? '',
       ),
     )
-    expect(boardTypes).toHaveLength(13)
+    expect(boardTypes).toHaveLength(14)
     for (const s of boardTypes) {
       for (const item of s.applicationType.documents ?? []) {
         if (item.stateOrFederalPermit === true) expect(item.stage).toBe('before_decision')
@@ -213,5 +216,35 @@ describe('NH starters', () => {
       expect(s.checklists.filter((c) => c.final)).toHaveLength(needsFinal ? 1 : 0)
       if (needsFinal) expect(s.checklists.find((c) => c.final)?.inspectionType).toBe('final')
     }
+  })
+
+  it('the merger starters use the local permit classification, review by staff, and no hearing', () => {
+    for (const prefix of ['VMG', 'IML']) {
+      const s = NH_STARTERS.find((x) => x.applicationType.prefix === prefix)
+      expect(s?.applicationType).toMatchObject({
+        classification: 'nh.local_permit_other',
+        workflow: { allowsDirectIssue: false, closesOn: 'staff_closes' },
+      })
+      expect(s?.feeSchedule.lines.map((l) => l.code)).toEqual([prefix.toLowerCase()])
+    }
+  })
+
+  it('the voluntary merger asks for mortgage holder consent only when a mortgage exists', () => {
+    const s = NH_STARTERS.find((x) => x.applicationType.prefix === 'VMG')
+    const consent = s?.applicationType.documents?.find((d) => d.key === 'mortgage_holder_consents')
+    expect(consent).toMatchObject({
+      stage: 'before_decision',
+      requiredIf: { field: 'has_mortgage', op: 'is_true' },
+    })
+  })
+
+  it('the involuntary merger restoration walks records research and governing body review', () => {
+    const s = NH_STARTERS.find((x) => x.applicationType.prefix === 'IML')
+    expect(s?.applicationType.workflow.substeps.map((x) => `${x.state}:${x.key}`)).toEqual([
+      'submitted:filed',
+      'under_review:records_research',
+      'under_review:governing_body_review',
+      'decided:records_updated',
+    ])
   })
 })

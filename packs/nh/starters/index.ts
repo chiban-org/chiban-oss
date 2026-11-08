@@ -5,6 +5,7 @@ import { BUILDING_DEMOLITION_STARTER } from '@packs/nh/starters/buildingDemoliti
 import { DRIVEWAY_STARTER } from '@packs/nh/starters/driveway'
 import { ELECTRICAL_STARTER } from '@packs/nh/starters/electrical'
 import { HOME_OCCUPATION_STARTER } from '@packs/nh/starters/homeOccupation'
+import { INVOLUNTARY_MERGER_STARTER } from '@packs/nh/starters/involuntaryMerger'
 import { MECHANICAL_GAS_STARTER } from '@packs/nh/starters/mechanicalGas'
 import { OCCUPANCY_REQUEST_STARTER } from '@packs/nh/starters/occupancyRequest'
 import { PLUMBING_STARTER } from '@packs/nh/starters/plumbing'
@@ -14,6 +15,7 @@ import { SIGN_STARTER } from '@packs/nh/starters/sign'
 import { STREET_ADDRESS_STARTER } from '@packs/nh/starters/streetAddress'
 import { TEMPORARY_STRUCTURE_STARTER } from '@packs/nh/starters/temporaryStructure'
 import type { StarterBundle } from '@packs/nh/starters/types'
+import { VOLUNTARY_MERGER_STARTER } from '@packs/nh/starters/voluntaryMerger'
 
 export type { StarterBundle } from '@packs/nh/starters/types'
 
@@ -33,6 +35,8 @@ export const NH_STARTERS: StarterBundle[] = [
   SEPTIC_CAP_OFF_STARTER,
   TEMPORARY_STRUCTURE_STARTER,
   SHORT_TERM_RENTAL_STARTER,
+  VOLUNTARY_MERGER_STARTER,
+  INVOLUNTARY_MERGER_STARTER,
 ]
 
 export { NH_INSPECTION_SETTINGS_DEFAULT } from '@packs/nh/starters/inspectionSettings'
