@@ -1,6 +1,11 @@
-import { censusExport } from '../../exportHandlers'
+import { staffActorOrNull } from '@/server/requireStaff'
+import { censusExport, exportSignal } from '../../exportHandlers'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export const GET = censusExport('csv')
+export async function GET(request: Request): Promise<Response> {
+  const signal = exportSignal()
+  const actor = await staffActorOrNull(signal)
+  return await censusExport('csv')({ request, actor, signal })
+}

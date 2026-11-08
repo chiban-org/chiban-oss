@@ -8,7 +8,6 @@ import type { ReportRange } from '@/features/reports/range'
 import { REPORT_KEYS, resolveRange } from '@/features/reports/rangeInput'
 import { buildReportExport, type ExportReportKey } from '@/features/reports/reportExport'
 import { townToday } from '@/features/town/today'
-import { staffActorOrNull } from '@/server/requireStaff'
 import { parseCivilDate } from '@/types/civilDate'
 
 const REQUEST_TIMEOUT_MS = 60_000
@@ -32,11 +31,18 @@ interface Family {
   cacheControl?: string
 }
 
+export interface ExportRequestInput {
+  request: Request
+  context?: RouteContext
+  actor: Actor | null
+  signal: AbortSignal
+}
+
+export const exportSignal = (): AbortSignal => AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+
 function handler(family: Family, format: ExportFormat) {
-  return async (request: Request, context?: RouteContext): Promise<Response> => {
-    const signal = AbortSignal.timeout(REQUEST_TIMEOUT_MS)
+  return async ({ request, context, actor, signal }: ExportRequestInput): Promise<Response> => {
     const accept = request.headers.get('accept')
-    const actor: Actor | null = await staffActorOrNull(signal)
     if (actor === null) return family.denied(accept)
     const resolved = await family.resolve(request, context, signal)
     if (resolved === null) return toResponse(NOT_FOUND, accept)

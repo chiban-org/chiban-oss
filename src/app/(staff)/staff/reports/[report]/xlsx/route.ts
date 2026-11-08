@@ -1,6 +1,14 @@
-import { rangeReportExport } from '../../exportHandlers'
+import { staffActorOrNull } from '@/server/requireStaff'
+import { exportSignal, rangeReportExport } from '../../exportHandlers'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
 
-export const GET = rangeReportExport('xlsx')
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ report: string }> },
+): Promise<Response> {
+  const signal = exportSignal()
+  const actor = await staffActorOrNull(signal)
+  return await rangeReportExport('xlsx')({ request, context, actor, signal })
+}
