@@ -3,7 +3,8 @@ import { ZipFile } from 'yazl'
 import type { ArchiveSink } from '@/features/export/archiveTypes'
 
 const FILE_MODE = 0o644
-const STORED_PREFIX = 'files/'
+const STORED_PREFIXES = ['files/', 'pdfa/']
+const STORED_SUFFIX = '.xlsx'
 
 export function createZipSink(): { sink: ArchiveSink; stream: Readable; finish(): void } {
   const zip = new ZipFile()
@@ -22,7 +23,9 @@ export function createZipSink(): { sink: ArchiveSink; stream: Readable; finish()
           zip.addReadStream(entry.body, entry.path, {
             size: entry.size,
             mode: FILE_MODE,
-            compress: !entry.path.startsWith(STORED_PREFIX),
+            compress:
+              !STORED_PREFIXES.some((p) => entry.path.startsWith(p)) &&
+              !entry.path.endsWith(STORED_SUFFIX),
           })
         }),
     },

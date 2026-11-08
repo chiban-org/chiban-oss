@@ -5,6 +5,7 @@ import { sql } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import { canonicalJson } from '@/features/export/canonical'
 import type { ExportEntity } from '@/features/export/entities'
+import type { EntityTable } from '@/features/export/tabular/tableSet'
 
 const FETCH_ROWS = 500
 
@@ -25,6 +26,7 @@ export interface DumpedEntity {
   count: number
   sha256: string
   size: number
+  table: { sha256: string; size: number } | null
 }
 
 export async function dumpEntity(
@@ -32,6 +34,7 @@ export async function dumpEntity(
   entity: ExportEntity,
   filePath: string,
   signal: AbortSignal,
+  table: EntityTable | null = null,
 ): Promise<DumpedEntity> {
   const hash = createHash('sha256')
   const out = createWriteStream(filePath)
@@ -49,6 +52,7 @@ export async function dumpEntity(
     for (const r of batch.rows) {
       chunk += `${canonicalJson(r.row)}\n`
       count += 1
+      if (table !== null) await table.add(r.row as Record<string, unknown>)
     }
     const buf = Buffer.from(chunk, 'utf8')
     hash.update(buf)
@@ -58,5 +62,6 @@ export async function dumpEntity(
   await tx.execute(sql.raw(`close ${ident(cursor)}`))
   out.end()
   await once(out, 'close')
-  return { count, sha256: hash.digest('hex'), size }
+  const tableDone = table === null ? null : await table.end()
+  return { count, sha256: hash.digest('hex'), size, table: tableDone }
 }

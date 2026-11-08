@@ -79,12 +79,24 @@ async function receiveFile(
   return valid ? 'ok' : 'bad_file'
 }
 
+function isBundlePath(manifest: ExportManifest, path: string): boolean {
+  const { tables, pdfa } = manifest
+  if (tables?.workbook.path === path || tables?.csv.some((c) => c.path === path) === true) {
+    return true
+  }
+  return pdfa?.some((p) => p.status === 'converted' && p.path === path) === true
+}
+
 async function handleEntry(ctx: ReceiveContext, entry: ArchiveEntry): Promise<EntryVerdict> {
   if (entry.path === 'manifest.sha256') {
     const text = (await readAll(entry.body, 1024)).toString('utf8')
     return text === manifestChecksumLine(ctx.manifestBytes) ? 'checksum_ok' : 'manifest_mismatch'
   }
   if (entry.path === 'FORMAT.md') {
+    entry.body.resume()
+    return 'ok'
+  }
+  if (isBundlePath(ctx.manifest, entry.path)) {
     entry.body.resume()
     return 'ok'
   }

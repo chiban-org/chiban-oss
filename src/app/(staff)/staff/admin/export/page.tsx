@@ -61,7 +61,7 @@ export default async function ExportPage({ searchParams }: ExportPageProps = {})
     <main>
       <SettingsHeader
         title="Data export"
-        lead="One file with every record the town keeps in Chiban and every stored document, in open formats."
+        lead="One file with every record the town keeps in Chiban and every stored document, in open formats you can open without Chiban."
         action={
           service.mode === 'closed' ? undefined : (
             <ActionForm
@@ -74,6 +74,20 @@ export default async function ExportPage({ searchParams }: ExportPageProps = {})
           )
         }
       />
+      <section aria-labelledby="contents-heading">
+        <h2 id="contents-heading">What the file contains</h2>
+        <ul>
+          <li>Every record as NDJSON, one text file per kind of record.</li>
+          <li>The same records as CSV files, one per kind of record, that open in Excel.</li>
+          <li>One Excel workbook with a sheet for each kind of record.</li>
+          <li>
+            Every stored document exactly as it was uploaded, plus a PDF/A copy of each PDF for
+            long-term keeping. If a PDF cannot be converted, the original is still included and the
+            export notes which one.
+          </li>
+          <li>A description of the format and a checksum list to verify the files.</li>
+        </ul>
+      </section>
       <p>
         {`It is written from a single consistent snapshot, and each file stays available for 7 days after it is ready. ${service.mode === 'active' ? 'Preparing an export does not interrupt anyone using Chiban.' : 'Nobody is using Chiban now, so preparing an export changes nothing for anyone.'}`}
       </p>
