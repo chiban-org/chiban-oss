@@ -241,7 +241,7 @@ describe('results owed', () => {
     const header = body.slice(body.indexOf('<header'), body.indexOf('</header>'))
     expect(owed.length).toBeGreaterThan(0)
     expect(header).toContain(
-      `Results owed</dt><dd class="text-ink"><a href="/staff/inspections/owed">${owed.length}</a>`,
+      `Results owed</dt><dd class="text-ink"><a href="/staff/inspections/owed">${owed.length} ${owed.length === 1 ? 'result' : 'results'} owed</a>`,
     )
   })
 

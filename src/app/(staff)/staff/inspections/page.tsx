@@ -17,8 +17,10 @@ const INSPECTIONS_LEAD =
   'Book requested inspections into open inspector times: choose a request, pick a time, then confirm. Requests are listed oldest first, then the inspections booked for today or later.'
 
 function OwedLink({ count }: { count: number }) {
-  if (count === 0) return <span className="text-muted-foreground">None</span>
-  return <Link href="/staff/inspections/owed">{count}</Link>
+  if (count === 0) return <span className="text-muted-foreground">No results owed</span>
+  return (
+    <Link href="/staff/inspections/owed">{`${count} ${count === 1 ? 'result' : 'results'} owed`}</Link>
+  )
 }
 
 export default async function ScheduleBoardPage({
