@@ -182,6 +182,20 @@ describe('board pages show words, not keys or dates', () => {
     expect(boards).toContain('October 25, 2026 (overdue)')
   })
 
+  it('boards that only comment list what was sent to them instead of an empty table', async () => {
+    await actAs('staff')
+    const boards = await page(BoardsPage(noSearch))
+    expect(boards).toContain('Alder Pond Conservation Commission')
+    expect(boards).toContain('Sent for comment')
+    expect(boards).toContain('Demo permit: Lodge with regional impact')
+    expect(boards).toContain('Comments received. Comments by November 20, 2026.')
+    expect(boards).toContain('Waiting for comments. Comments by November 27, 2026.')
+    expect(boards).toContain(
+      'This board comments on applications and does not decide them. Nothing has been sent to it for comment.',
+    )
+    expect(boards.match(/No applications are waiting on this board/g)).toBeNull()
+  })
+
   it('boards share one sort and one set of quick filters across both tables', async () => {
     await actAs('staff')
     const sorted = renderToStaticMarkup(

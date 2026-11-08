@@ -1,3 +1,4 @@
+import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
@@ -17,6 +18,7 @@ import {
 import {
   type BoardApplicationLine,
   type BoardSection,
+  type CommentRequestLine,
   loadBoardsView,
 } from '@/features/boards/boardsView'
 import { clearHref, type RawSearchParams } from '@/features/dataTable/params'
@@ -78,6 +80,33 @@ function SectionApplications({
   )
 }
 
+function CommentRequests({ section }: { section: BoardSection }) {
+  const requests: CommentRequestLine[] = section.commentRequests
+  if (requests.length === 0) {
+    if (BOARD_KIND_TRAITS[section.boardKind].decidesApplications) return null
+    return (
+      <p>
+        This board comments on applications and does not decide them. Nothing has been sent to it
+        for comment.
+      </p>
+    )
+  }
+  return (
+    <>
+      <h3>Sent for comment</h3>
+      <ul className="flex flex-col gap-3">
+        {requests.map((r) => (
+          <li key={r.applicationId}>
+            <Link href={`/staff/applications/${r.applicationId}`}>{r.number}</Link>, {r.title}
+            <br />
+            {r.statusLabel}.{r.commentByText === null ? '' : ` Comments by ${r.commentByText}.`}
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}
+
 export default async function BoardsPage({
   searchParams,
 }: {
@@ -111,12 +140,15 @@ export default async function BoardsPage({
       {view.sections.map((section) => (
         <section key={section.boardId} aria-label={section.label}>
           <h2>{section.label}</h2>
-          <SectionApplications
-            section={section}
-            lines={arrangeBoardLines(section.applications, sort, filters, today)}
-            links={links}
-            filtered={clear !== null}
-          />
+          {BOARD_KIND_TRAITS[section.boardKind].decidesApplications ? (
+            <SectionApplications
+              section={section}
+              lines={arrangeBoardLines(section.applications, sort, filters, today)}
+              links={links}
+              filtered={clear !== null}
+            />
+          ) : null}
+          <CommentRequests section={section} />
         </section>
       ))}
     </main>
