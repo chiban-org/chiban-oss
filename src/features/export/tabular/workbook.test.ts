@@ -1,7 +1,7 @@
 import { mkdtemp } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
-import { Workbook } from 'exceljs'
+import ExcelJS from 'exceljs'
 import { beforeAll, describe, expect, it } from 'vitest'
 import { createWorkbookBuilder, sheetName } from '@/features/export/tabular/workbook'
 
@@ -49,7 +49,7 @@ describe('workbook builder', () => {
       { entity: 'parcels', name: 'parcels_3', rows: 1 },
       { entity: 'empty_things', name: 'empty_things', rows: 0 },
     ])
-    const book = new Workbook()
+    const book = new ExcelJS.Workbook()
     await book.xlsx.readFile(file)
     expect(book.worksheets.map((w) => w.name)).toEqual([
       'parcels',

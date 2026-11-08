@@ -2,7 +2,7 @@ import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { parse } from 'csv-parse/sync'
-import { Workbook } from 'exceljs'
+import ExcelJS from 'exceljs'
 import { PDFDocument } from 'pdf-lib'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { env } from '@/config/env'
@@ -143,7 +143,7 @@ describe('export bundle: tables', () => {
     const { manifest, entries } = await build(converter)
     const bytes = entries.get(manifest.tables?.workbook.path ?? '')
     expect(sha(bytes ?? Buffer.alloc(0))).toBe(manifest.tables?.workbook.sha256)
-    const book = new Workbook()
+    const book = new ExcelJS.Workbook()
     await book.xlsx.load(bytes as never)
     const names = book.worksheets.map((w) => w.name)
     expect(new Set(names.map((n) => n.toLowerCase())).size).toBe(names.length)

@@ -1,4 +1,4 @@
-import { stream } from 'exceljs'
+import ExcelJS from 'exceljs'
 import { clampForExcel } from '@/features/export/tabular/cells'
 
 export const EXCEL_MAX_ROWS = 1_048_576
@@ -18,7 +18,7 @@ export interface WorkbookBuilder {
   close(): Promise<SheetRecord[]>
 }
 
-type Writer = InstanceType<typeof stream.xlsx.WorkbookWriter>
+type Writer = InstanceType<typeof ExcelJS.stream.xlsx.WorkbookWriter>
 type Sheet = ReturnType<Writer['addWorksheet']>
 
 interface Current {
@@ -42,7 +42,7 @@ export function sheetName(base: string, part: number, taken: Set<string>): strin
 }
 
 export function createWorkbookBuilder(filename: string, maxRows = EXCEL_MAX_ROWS): WorkbookBuilder {
-  const writer: Writer = new stream.xlsx.WorkbookWriter({
+  const writer: Writer = new ExcelJS.stream.xlsx.WorkbookWriter({
     filename,
     useStyles: false,
     useSharedStrings: false,
