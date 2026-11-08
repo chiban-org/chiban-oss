@@ -14,9 +14,15 @@ import {
   STAFF_NAV_ITEMS,
 } from '@/features/staffNav/navItems'
 
+function viewerOf(roles: Role[]) {
+  return {
+    roles,
+    capabilities: new Set<Capability>(roles.flatMap((r) => DEFAULT_GRANTS[r] ?? [])),
+  }
+}
+
 function labelsFor(role: Role): string[] {
-  const capabilities = new Set<Capability>(DEFAULT_GRANTS[role] ?? [])
-  return navItemsFor({ roles: [role], capabilities }).map((i) => i.label)
+  return navItemsFor(viewerOf([role])).map((i) => i.label)
 }
 
 describe('staff navigation', () => {
@@ -34,12 +40,34 @@ describe('staff navigation', () => {
     expect(labels).not.toContain('Counter')
   })
 
-  it('hides payments and board packets from the inspector and keeps the day list', () => {
+  it('hides payments and board packets from the inspector', () => {
     const labels = labelsFor('inspector')
     expect(labels).not.toContain('Payments')
     expect(labels).not.toContain('Board packets')
-    expect(labels).toContain('My day')
-    expect(labels).toContain('Inspections')
+  })
+
+  it('opens the inspector on their day from Inspections and shows no second entry for it', () => {
+    const items = navItemsFor(viewerOf(['inspector']))
+    expect(items.filter((i) => i.label === 'Inspections').map((i) => i.href)).toEqual([
+      '/staff/inspections/day',
+    ])
+    expect(items.map((i) => i.label)).not.toContain('My day')
+    expect(activeNavHref('/staff/inspections/day', items)).toBe('/staff/inspections/day')
+    expect(activeNavHref('/staff/inspections/abc', items)).toBe('/staff/inspections/day')
+  })
+
+  it('keeps the board under Inspections for the clerk and the building official', () => {
+    for (const roles of [['staff'], ['staff', 'inspector']] as Role[][]) {
+      const items = navItemsFor(viewerOf(roles))
+      expect(items.find((i) => i.label === 'Inspections')?.href).toBe('/staff/inspections')
+    }
+  })
+
+  it('calls the day entry Inspector days unless the viewer is an inspector', () => {
+    const dayLabel = (roles: Role[]) =>
+      navItemsFor(viewerOf(roles)).find((i) => i.href === '/staff/inspections/day')?.label
+    expect(dayLabel(['staff'])).toBe('Inspector days')
+    expect(dayLabel(['staff', 'inspector'])).toBe('My day')
   })
 
   it('shows a board member only the pages that are not record workflows', () => {
@@ -103,6 +131,7 @@ describe('staff navigation', () => {
     expect(labels).toContain('Reviews')
     expect(labels).not.toContain('Applications')
     expect(labels).not.toContain('My day')
+    expect(labels).not.toContain('Inspector days')
     for (const hidden of ['Imports', 'Exceptions', 'Unresolved records', 'Overrides', 'Settings']) {
       expect(labels).not.toContain(hidden)
     }
@@ -178,7 +207,8 @@ describe('staff navigation', () => {
       'reviewer',
       'board_member',
     ]
-    const seen = new Set(everyRole.flatMap(labelsFor))
+    const official = navItemsFor(viewerOf(['staff', 'inspector'])).map((i) => i.label)
+    const seen = new Set([...everyRole.flatMap(labelsFor), ...official])
     expect(STAFF_NAV_ITEMS.map((i) => i.label).filter((l) => !seen.has(l))).toEqual([])
   })
 

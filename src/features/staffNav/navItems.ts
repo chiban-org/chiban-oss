@@ -270,8 +270,33 @@ export function boardMemberHome(viewer: NavViewer): string | null {
   return BOARD_STAFF_CAPABILITIES.some((c) => viewer.capabilities.has(c)) ? null : '/board'
 }
 
+const INSPECTIONS_HREF = '/staff/inspections'
+const INSPECTOR_DAY_HREF = '/staff/inspections/day'
+
+function isInspectorOnly(viewer: NavViewer): boolean {
+  return (
+    viewer.roles.includes('inspector') &&
+    !viewer.roles.includes('staff') &&
+    !viewer.roles.includes('admin')
+  )
+}
+
+function shapedFor(item: NavItem, viewer: NavViewer): NavItem | null {
+  if (item.href === INSPECTOR_DAY_HREF) {
+    if (isInspectorOnly(viewer)) return null
+    return viewer.roles.includes('inspector') ? item : { ...item, label: 'Inspector days' }
+  }
+  if (item.href === INSPECTIONS_HREF && isInspectorOnly(viewer)) {
+    return { ...item, href: INSPECTOR_DAY_HREF, match: [INSPECTIONS_HREF] }
+  }
+  return item
+}
+
 export function navItemsFor(viewer: NavViewer): NavItem[] {
-  return STAFF_NAV_ITEMS.filter((item) => mayUse(item, viewer))
+  return STAFF_NAV_ITEMS.filter((item) => mayUse(item, viewer)).flatMap((item) => {
+    const shaped = shapedFor(item, viewer)
+    return shaped === null ? [] : [shaped]
+  })
 }
 
 export function mayOpen(href: string, viewer: NavViewer): boolean {
