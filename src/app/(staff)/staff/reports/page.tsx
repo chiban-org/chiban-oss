@@ -31,6 +31,7 @@ export const dynamic = 'force-dynamic'
 const OTHER_REPORTS = [
   { href: '/staff/reports/cash-receipts', label: 'Daily cash receipts' },
   { href: '/staff/reports/census', label: 'Census building permits' },
+  { href: '/staff/reports/schedules', label: 'Scheduled reports' },
 ] as const
 
 function OtherReports() {

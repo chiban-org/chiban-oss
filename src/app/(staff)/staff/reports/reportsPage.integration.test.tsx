@@ -87,6 +87,7 @@ describe('reports page', () => {
     expect(html).toContain('By permit type. Click a column heading to sort.')
     expect(html).toContain('Other reports')
     expect(html).toContain('href="/staff/reports/census"')
+    expect(html).toContain('href="/staff/reports/schedules"')
     expect(html).not.toContain('Open the daily cash receipts report')
     expect(html).not.toContain('Open the Census building permits report')
   })

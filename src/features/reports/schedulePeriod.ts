@@ -5,11 +5,14 @@ import { addDays, addMonthsClamped, type CivilDate, dayOfWeek } from '@/types/ci
 export const SCHEDULE_FREQUENCIES = REPORT_FREQUENCIES
 export type ScheduleFrequency = (typeof REPORT_FREQUENCIES)[number]
 
-export const FREQUENCY_LABELS: Record<ScheduleFrequency, string> = {
-  weekly: 'Every Monday, for the week before',
-  monthly: 'On the first of each month, for the month before',
-  quarterly: 'On the first day of each quarter, for the quarter before',
-}
+const FREQUENCY_LABELS: ReadonlyMap<ScheduleFrequency, string> = new Map([
+  ['weekly', 'Every Monday, for the week before'],
+  ['monthly', 'On the first of each month, for the month before'],
+  ['quarterly', 'On the first day of each quarter, for the quarter before'],
+])
+
+export const frequencyLabel = (frequency: ScheduleFrequency): string =>
+  FREQUENCY_LABELS.get(frequency) ?? frequency
 
 const MONDAY = 1
 const DAYS_PER_WEEK = 7
