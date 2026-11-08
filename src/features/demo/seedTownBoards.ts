@@ -38,11 +38,11 @@ const PAST_CONSERVATION_MEETING = '2026-10-07'
 const UPCOMING_CONSERVATION_MEETING = '2026-11-18'
 const UPCOMING_HISTORIC_MEETING = '2026-11-19'
 
-const COMMENT_RECEIVED_APPLICATION = 'Lodge with regional impact'
-const COMMENT_WAITING_APPLICATION = 'Barn conversion under appeal'
+const COMMENT_RECEIVED_APPLICATION = 'Barn conversion under appeal'
+const COMMENT_WAITING_APPLICATION = 'Deck renewed once'
 
 const CONSERVATION_COMMENT =
-  'The lodge sits inside the 100 foot shoreland buffer. The commission asks that the site plan show the buffer line, keep the lawn edge at least 50 feet back, and carry the erosion control notes onto the plan.'
+  'The barn sits close to the shoreland buffer. The commission asks that the plan show the buffer line, keep new lawn at least 50 feet back, and carry the erosion control notes onto the plan.'
 
 async function addBoard(
   db: Db,
@@ -133,7 +133,7 @@ async function showAgenda(
   must(await buildAgenda(db, cast.staff, meetingId, signal), 'build conservation agenda')
   for (const item of [
     { kind: 'minutes_approval' as const, title: 'Approve the October 7 minutes' },
-    { kind: 'business' as const, title: 'Comment on the lodge shoreland buffer' },
+    { kind: 'business' as const, title: 'Comment on the barn conversion shoreland buffer' },
     { kind: 'other' as const, title: 'Trail easement update' },
   ]) {
     must(await addAgendaItem(db, cast.staff, { meetingId, ...item }, signal), item.title)

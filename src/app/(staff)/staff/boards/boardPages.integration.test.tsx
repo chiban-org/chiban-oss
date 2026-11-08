@@ -187,7 +187,7 @@ describe('board pages show words, not keys or dates', () => {
     const boards = await page(BoardsPage(noSearch))
     expect(boards).toContain('Alder Pond Conservation Commission')
     expect(boards).toContain('Sent for comment')
-    expect(boards).toContain('Demo permit: Lodge with regional impact')
+    expect(boards).toContain('Demo permit: Barn conversion under appeal')
     expect(boards).toContain('Comments received. Comments by November 20, 2026.')
     expect(boards).toContain('Waiting for comments. Comments by November 27, 2026.')
     expect(boards).toContain(
