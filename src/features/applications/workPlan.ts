@@ -1,7 +1,7 @@
 import { boardMeetingRow, boardVoteRow, meetingStep } from './boardRequirements'
 import { meetingConflict, meetingDeadline } from './meetingDeadline'
 import { type NextStepPlan, planNextStep } from './nextStep'
-import { gateRow, type RowFacts } from './requirementRows'
+import { type ClosureFacts, gateRow, type RowFacts } from './requirementRows'
 import type { StaffApplicationView } from './staffApplicationView'
 import { type CoreState, isTerminalState } from './states'
 import { requirementTargets } from './workPath'
@@ -38,6 +38,7 @@ export interface WorkPlanExtras {
   abilities: ReadonlySet<PlanActionKind>
   responsible: string | null
   inspection?: InspectionStep | null
+  closure?: ClosureFacts
 }
 
 const MOVE_TASKS: ReadonlyMap<CoreState, string> = new Map([
@@ -94,6 +95,7 @@ function groupRows(view: PlanView, board: PlanBoard | null, to: CoreState, extra
       (n) => n.recipientKind === 'regional_planning_commission' && n.method === 'certified_mail',
     ),
     abilities: extras.abilities,
+    closure: extras.closure,
   }
   const results = [...view.gates, ...view.gatesAhead].find((g) => g.to === to)?.results ?? []
   const rows = results.map((gate) => gateRow(gate, facts))

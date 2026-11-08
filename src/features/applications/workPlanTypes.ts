@@ -27,7 +27,11 @@ export type PlanAction =
   | { kind: 'record_board_regional_impact' }
   | { kind: 'open_abutter_list' }
   | { kind: 'record_inspection_result' }
+  | { kind: 'take_inspection_request'; reinspect?: string }
+  | { kind: 'issue_certificate' }
   | { kind: 'move'; to: CoreState }
+
+export type ClosureStage = 'none' | 'open' | 'failed' | 'passed'
 
 export type PlanActionKind = PlanAction['kind']
 

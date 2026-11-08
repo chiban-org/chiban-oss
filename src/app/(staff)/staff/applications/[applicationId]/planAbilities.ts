@@ -39,6 +39,8 @@ export function abilitiesOf(input: RecordPanelsInput): Set<PlanActionKind> {
     ['record_regional_impact', regionalImpactEditable(view)],
     ['record_payment', mayRecordPayment(payments)],
     ['record_inspection_result', input.due != null],
+    ['take_inspection_request', input.inspections.canSchedule && input.inspections.takesRequests],
+    ['issue_certificate', input.inspections.certificateReady],
   ]
   return new Set([
     ...granted.filter(([, allowed]) => allowed).map(([kind]) => kind),

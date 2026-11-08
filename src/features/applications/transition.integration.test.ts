@@ -257,7 +257,8 @@ describe('transitions', () => {
       !blocked.ok && typeof blocked.error === 'object' ? blocked.error.gateBlocked : []
     expect(results.find((g) => g.key === 'closure.requirement_met')?.outcome).toEqual({
       status: 'blocked',
-      reason: 'No certificate of occupancy has been issued.',
+      reason:
+        'No final inspection has passed, so the certificate of occupancy cannot be issued yet.',
     })
     expect(
       await overrideAdministrativeGate(

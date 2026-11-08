@@ -2,8 +2,10 @@ import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { applications, certificatesOfOccupancy, documents, inspections } from '@/db/schema'
 import { recordAppeal } from '@/features/appeals/appeals'
+import { loadApplicationContext } from '@/features/applications/context'
 import { summarizeApplications } from '@/features/applications/recordSource'
 import { issueCertificateOfOccupancy } from '@/features/certificates/issueCertificate'
+import { evaluateGates } from '@/features/gates/evaluateGates'
 import { registerGate } from '@/features/gates/registry'
 import { recordInspectionResult } from '@/features/inspections/recordResult'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -20,6 +22,7 @@ import {
 import { downloadObject } from '@/test/objectBytes'
 import { makeTestStore } from '@/test/objectStore'
 import { pdfText } from '@/test/pdfText'
+import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 const deps = { now: RESULT_NOW }
@@ -120,6 +123,24 @@ describe('certificate of occupancy', () => {
     })
     const [cert] = await handle.db.select().from(certificatesOfOccupancy)
     expect(cert).toMatchObject({ finalInspectionId: finalId, issuedBy: w.world.staff.userId })
+  })
+
+  it('the closing gate says the final must pass first, then that no certificate has been issued', async () => {
+    const permit = await newIssuedPermit(handle.db, w, 'BP')
+    const reason = async () => {
+      const app = await loadApplicationContext(handle.db, permit.applicationId, signal)
+      if (app === null) throw new Error('no app')
+      const results = await handle.db.transaction((tx) =>
+        evaluateGates(tx, app, 'closed', '2027-07-07' as CivilDate, signal),
+      )
+      const outcome = results.find((g) => g.key === 'closure.requirement_met')?.outcome
+      return outcome?.status === 'blocked' ? outcome.reason : null
+    }
+    expect(await reason()).toBe(
+      'No final inspection has passed, so the certificate of occupancy cannot be issued yet.',
+    )
+    await passedFinal(permit.applicationId)
+    expect(await reason()).toBe('No certificate of occupancy has been issued.')
   })
 
   it('certificate number is CO-2027-0001 then CO-2027-0002', async () => {
