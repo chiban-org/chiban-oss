@@ -88,7 +88,13 @@ export function Deadlines({ view }: { view: StaffApplicationView }) {
   )
 }
 
-function applicationFacts(view: StaffApplicationView, legacyNumber: string | null): Fact[] {
+export interface RecordOrigin {
+  legacyNumber: string | null
+  intake: string | null
+}
+
+function applicationFacts(view: StaffApplicationView, origin: RecordOrigin): Fact[] {
+  const { legacyNumber, intake } = origin
   return [
     {
       label: 'Parcel',
@@ -102,6 +108,7 @@ function applicationFacts(view: StaffApplicationView, legacyNumber: string | nul
       ? []
       : [{ label: 'Complete', value: formatCivilDate(view.completedDate) }]),
     ...(view.issuedOn === null ? [] : [{ label: 'Issued', value: formatCivilDate(view.issuedOn) }]),
+    ...(intake === null ? [] : [{ label: 'Intake', value: intake }]),
     ...(legacyNumber === null
       ? []
       : [{ label: 'Number in the prior system', value: legacyNumber }]),
@@ -141,17 +148,17 @@ export function ApplicationRail({
 
 export function ApplicationFacts({
   view,
-  legacyNumber,
+  origin,
   responsible,
 }: {
   view: StaffApplicationView
-  legacyNumber: string | null
+  origin: RecordOrigin
   responsible: ReactNode
 }) {
   return (
     <section aria-label="Key facts" data-plain className="rail-card space-y-3">
       {responsible}
-      <FactList facts={applicationFacts(view, legacyNumber)} stacked />
+      <FactList facts={applicationFacts(view, origin)} stacked />
       <PublicParcelLine view={view} />
     </section>
   )
@@ -161,14 +168,14 @@ export function StatusStrip({
   view,
   plan,
   notice,
-  legacyNumber,
+  origin,
   correction,
   responsible,
 }: {
   view: StaffApplicationView
   plan: WorkPlan
   notice: ReactNode
-  legacyNumber: string | null
+  origin: RecordOrigin
   correction: CorrectionFormData | null
   responsible: ReactNode
 }) {
@@ -184,7 +191,7 @@ export function StatusStrip({
         <summary className="text-sm">Facts and more actions</summary>
         <div className="flex flex-col gap-4">
           {responsible}
-          <FactList facts={applicationFacts(view, legacyNumber)} stacked />
+          <FactList facts={applicationFacts(view, origin)} stacked />
           <PublicParcelLine view={view} />
           <MoreActions view={view} moves={plan.terminal} />
           <CorrectPermit data={correction} />

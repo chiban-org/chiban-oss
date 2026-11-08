@@ -3,25 +3,31 @@
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useState } from 'react'
 import { useCsrfToken } from '@/components/CsrfProvider'
-import {
-  type BoardDay,
-  type BoardRequest,
-  ScheduleBoard,
-  type ScheduleChoice,
-} from '@/components/inspections/ScheduleBoard'
+import type {
+  BoardBooking,
+  BoardDay,
+  BoardInspector,
+  BoardRequest,
+  ScheduleChoice,
+} from '@/components/inspections/boardTypes'
+import { ScheduleBoard } from '@/components/inspections/ScheduleBoard'
 import { attempt } from '@/lib/attempt'
 import type { ActionResult } from '@/server/actionRunner'
 
 export function ScheduleBoardClient({
   requests,
+  bookings,
   days,
+  inspectors,
   today,
   takeRequest,
   scheduleAction,
   initialChosenId = null,
 }: {
   requests: BoardRequest[]
+  bookings: BoardBooking[]
   days: BoardDay[]
+  inspectors: BoardInspector[]
   today: string
   takeRequest: ReactNode
   scheduleAction: (formData: FormData) => Promise<ActionResult>
@@ -55,7 +61,9 @@ export function ScheduleBoardClient({
   return (
     <ScheduleBoard
       requests={requests}
+      bookings={bookings}
       days={days}
+      inspectors={inspectors}
       today={today}
       takeRequest={takeRequest}
       message={message}

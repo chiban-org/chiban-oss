@@ -93,14 +93,33 @@ describe('listOwedResults', () => {
   it('leaves owed bookings off the board unless one is asked for by id', async () => {
     const plain = await loadScheduleBoard(handle.db, clerk, signal, { now: INSPECTION_NOW })
     if (!plain.ok) throw new Error('forbidden')
-    expect(plain.value.scheduledAhead.map((r) => r.inspectionId)).not.toContain(oldest)
+    expect(plain.value.bookings.map((r) => r.inspectionId)).not.toContain(oldest)
+    expect(plain.value.bookings.every((r) => r.date >= today)).toBe(true)
     const pinned = await loadScheduleBoard(handle.db, clerk, signal, {
       now: INSPECTION_NOW,
       pinnedId: oldest,
     })
     if (!pinned.ok) throw new Error('forbidden')
-    const row = pinned.value.scheduledAhead.find((r) => r.inspectionId === oldest)
-    expect(row?.scheduledFor).toMatch(/, result owed$/)
-    expect(pinned.value.scheduledAhead.map((r) => r.inspectionId)).not.toContain(newest)
+    const row = pinned.value.bookings.find((r) => r.inspectionId === oldest)
+    expect(row).toMatchObject({
+      date: addDays(today, -9),
+      inspectorUserId: w.inspector.userId,
+      applicationNumber: w.trade.number,
+      typeLabel: 'Rough',
+    })
+    expect(pinned.value.requests.map((r) => r.inspectionId)).not.toContain(oldest)
+    expect(pinned.value.bookings.map((r) => r.inspectionId)).not.toContain(newest)
+  })
+
+  it('carries each booking from today on with its inspector, date and minute', async () => {
+    const board = await loadScheduleBoard(handle.db, clerk, signal, { now: INSPECTION_NOW })
+    if (!board.ok) throw new Error('forbidden')
+    expect(board.value.bookings.map((r) => r.date).sort()).toEqual([today, addDays(today, 2)])
+    expect(board.value.bookings[0]).toMatchObject({
+      inspectorUserId: w.inspector.userId,
+      inspectorName: expect.any(String),
+      startMinute: expect.any(Number),
+      durationMinutes: 30,
+    })
   })
 })

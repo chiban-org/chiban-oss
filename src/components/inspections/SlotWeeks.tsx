@@ -1,9 +1,11 @@
 'use client'
 
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 import type { ReactNode } from 'react'
-import type { BoardDay } from '@/components/inspections/ScheduleBoard'
+import { weekTabLabel } from '@/components/inspections/boardModel'
+import type { BoardDay } from '@/components/inspections/boardTypes'
 import { Button } from '@/components/ui/button'
-import { openCountText, type SlotWeek, weekdayName } from '@/features/inspections/slotWeeks'
+import { openCountText, type SlotWeek, type WeekDay } from '@/features/inspections/slotWeeks'
 import { minutesToClock } from '@/features/inspections/zonedTime'
 import { formatCivilDate } from '@/lib/formatDate'
 import { cn } from '@/lib/utils'
@@ -11,21 +13,55 @@ import type { CivilDate } from '@/types/civilDate'
 
 export type SlotPick = (day: BoardDay, start: number) => void
 
+function StepButton({
+  label,
+  icon,
+  target,
+  onShow,
+}: {
+  label: string
+  icon: ReactNode
+  target: CivilDate | undefined
+  onShow: (start: CivilDate) => void
+}) {
+  return (
+    <Button
+      type="button"
+      variant="outline"
+      size="icon-sm"
+      aria-label={label}
+      disabled={target === undefined}
+      onClick={() => {
+        if (target !== undefined) onShow(target)
+      }}
+    >
+      {icon}
+    </Button>
+  )
+}
+
 export function WeekSwitcher({
   weeks,
   shown,
   onShow,
 }: {
-  weeks: SlotWeek<BoardDay>[]
+  weeks: SlotWeek<WeekDay>[]
   shown: CivilDate | null
   onShow: (start: CivilDate) => void
 }) {
+  const index = weeks.findIndex((w) => w.start === shown)
   return (
     <div
       role="group"
       aria-label="Weeks"
-      className="flex flex-wrap gap-2 @4xl:flex-col @4xl:flex-nowrap"
+      className="flex max-w-full items-center gap-1.5 overflow-x-auto pb-1"
     >
+      <StepButton
+        label="Earlier week"
+        icon={<ChevronLeft aria-hidden="true" />}
+        target={weeks[index - 1]?.start}
+        onShow={onShow}
+      />
       {weeks.map((week) => {
         const active = week.start === shown
         return (
@@ -37,84 +73,58 @@ export function WeekSwitcher({
             aria-pressed={active}
             onClick={() => onShow(week.start)}
             className={cn(
-              'gap-2 @4xl:justify-between',
+              'gap-2',
               active && 'border-action bg-action/10 font-semibold hover:bg-action/10',
             )}
           >
-            {week.label}
+            {weekTabLabel(week)}
             <span className="font-normal text-muted-foreground tabular-nums">
               {openCountText(week.open)}
             </span>
           </Button>
         )
       })}
+      <StepButton
+        label="Later week"
+        icon={<ChevronRight aria-hidden="true" />}
+        target={index < 0 ? undefined : weeks[index + 1]?.start}
+        onShow={onShow}
+      />
     </div>
   )
 }
 
-function DayHeading({ day, preferred }: { day: BoardDay; preferred: boolean }) {
-  return (
-    <div className="min-w-0">
-      <p className="m-0 font-semibold">
-        {weekdayName(day.date)}
-        <span className="font-normal">{`, ${formatCivilDate(day.date)}`}</span>
-      </p>
-      <p className="m-0 flex flex-wrap gap-x-3 text-muted-foreground">
-        <span>{day.inspectorName}</span>
-        {day.freeStarts.length === 0 ? null : (
-          <span className="tabular-nums">{openCountText(day.freeStarts.length)}</span>
-        )}
-        {preferred ? <span className="font-semibold text-ink">Preferred day</span> : null}
-      </p>
-    </div>
-  )
-}
-
-export function SlotDayRow({
+export function TimeButtons({
   day,
   onPick,
   disabled,
-  preferred,
-  review,
+  pickedStart = null,
 }: {
   day: BoardDay
   onPick: SlotPick
   disabled: boolean
-  preferred: boolean
-  review: ReactNode
+  pickedStart?: number | null
 }) {
-  const full = day.freeStarts.length === 0
   return (
-    <li
-      aria-label={`${weekdayName(day.date)}, ${formatCivilDate(day.date)}, ${day.inspectorName}`}
-      data-full={full}
-      className={cn(
-        'grid gap-x-6 gap-y-2 py-4 first:pt-0 sm:grid-cols-[13rem_minmax(0,1fr)] sm:items-start',
-        full && 'text-muted-foreground',
-      )}
-    >
-      <DayHeading day={day} preferred={preferred} />
-      {full ? (
-        <p className="m-0 self-center">No open times</p>
-      ) : (
-        <div className="flex flex-wrap gap-2">
-          {day.freeStarts.map((start) => (
-            <Button
-              key={start}
-              type="button"
-              variant="outline"
-              size="sm"
-              aria-label={`${minutesToClock(start)}, ${formatCivilDate(day.date)}, ${day.inspectorName}`}
-              disabled={disabled}
-              onClick={() => onPick(day, start)}
-              className="min-w-[5.5rem] tabular-nums"
-            >
-              {minutesToClock(start)}
-            </Button>
-          ))}
-        </div>
-      )}
-      {review === null ? null : <div className="sm:col-span-2">{review}</div>}
-    </li>
+    <div className="flex flex-wrap gap-1.5">
+      {day.freeStarts.map((start) => (
+        <Button
+          key={start}
+          type="button"
+          variant="outline"
+          size="sm"
+          aria-label={`${minutesToClock(start)}, ${formatCivilDate(day.date)}, ${day.inspectorName}`}
+          disabled={disabled}
+          aria-pressed={start === pickedStart}
+          onClick={() => onPick(day, start)}
+          className={cn(
+            'min-h-11 min-w-[5.5rem] tabular-nums',
+            start === pickedStart && 'border-action bg-action/10 font-semibold hover:bg-action/10',
+          )}
+        >
+          {minutesToClock(start)}
+        </Button>
+      ))}
+    </div>
   )
 }

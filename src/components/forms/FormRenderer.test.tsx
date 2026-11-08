@@ -64,6 +64,11 @@ describe('FormRenderer', () => {
     expect(screen.queryByLabelText('Inspector note')).toBeNull()
   })
 
+  it('renders staff-only fields when staff fill the form', () => {
+    render(<FormRenderer form={FORM} values={{}} errors={{}} onChange={noop} includeStaffOnly />)
+    expect(screen.getByLabelText('Inspector note')).toBeTruthy()
+  })
+
   it('every input is labeled and an error is announced through aria-describedby', () => {
     render(
       <FormRenderer

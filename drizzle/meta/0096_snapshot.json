@@ -1,5 +1,5 @@
 {
-  "id": "5e6f4273-470d-416e-9509-6c06c375a50f",
+  "id": "e6bb6eb4-68ab-4072-ad17-a8c9707fbfb1",
   "prevId": "e4c5a6a9-397b-43ee-8faa-fddc831a87b3",
   "version": "7",
   "dialect": "postgresql",
@@ -963,219 +963,6 @@
           "tableFrom": "appeals",
           "tableTo": "applications",
           "columnsFrom": ["application_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.application_document_items": {
-      "name": "application_document_items",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "application_id": {
-          "name": "application_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "item_key": {
-          "name": "item_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "waiver_reason": {
-          "name": "waiver_reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "waiver_requested_by": {
-          "name": "waiver_requested_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "waiver_requested_at": {
-          "name": "waiver_requested_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "accepted_reason": {
-          "name": "accepted_reason",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "accepted_by": {
-          "name": "accepted_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "accepted_at": {
-          "name": "accepted_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": false
-        }
-      },
-      "indexes": {
-        "application_document_items_unique_idx": {
-          "name": "application_document_items_unique_idx",
-          "columns": [
-            {
-              "expression": "application_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "item_key",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "application_document_items_application_id_applications_id_fk": {
-          "name": "application_document_items_application_id_applications_id_fk",
-          "tableFrom": "application_document_items",
-          "tableTo": "applications",
-          "columnsFrom": ["application_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        }
-      },
-      "compositePrimaryKeys": {},
-      "uniqueConstraints": {},
-      "policies": {},
-      "checkConstraints": {},
-      "isRLSEnabled": false
-    },
-    "public.application_document_links": {
-      "name": "application_document_links",
-      "schema": "",
-      "columns": {
-        "id": {
-          "name": "id",
-          "type": "uuid",
-          "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
-        },
-        "application_id": {
-          "name": "application_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "item_key": {
-          "name": "item_key",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "document_id": {
-          "name": "document_id",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "linked_by": {
-          "name": "linked_by",
-          "type": "uuid",
-          "primaryKey": false,
-          "notNull": true
-        },
-        "linked_at": {
-          "name": "linked_at",
-          "type": "timestamp with time zone",
-          "primaryKey": false,
-          "notNull": true,
-          "default": "now()"
-        }
-      },
-      "indexes": {
-        "application_document_links_unique_idx": {
-          "name": "application_document_links_unique_idx",
-          "columns": [
-            {
-              "expression": "application_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "item_key",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            },
-            {
-              "expression": "document_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": true,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        },
-        "application_document_links_document_idx": {
-          "name": "application_document_links_document_idx",
-          "columns": [
-            {
-              "expression": "document_id",
-              "isExpression": false,
-              "asc": true,
-              "nulls": "last"
-            }
-          ],
-          "isUnique": false,
-          "concurrently": false,
-          "method": "btree",
-          "with": {}
-        }
-      },
-      "foreignKeys": {
-        "application_document_links_application_id_applications_id_fk": {
-          "name": "application_document_links_application_id_applications_id_fk",
-          "tableFrom": "application_document_links",
-          "tableTo": "applications",
-          "columnsFrom": ["application_id"],
-          "columnsTo": ["id"],
-          "onDelete": "no action",
-          "onUpdate": "no action"
-        },
-        "application_document_links_document_id_documents_id_fk": {
-          "name": "application_document_links_document_id_documents_id_fk",
-          "tableFrom": "application_document_links",
-          "tableTo": "documents",
-          "columnsFrom": ["document_id"],
           "columnsTo": ["id"],
           "onDelete": "no action",
           "onUpdate": "no action"
@@ -3614,6 +3401,91 @@
       "checkConstraints": {},
       "isRLSEnabled": false
     },
+    "public.counter_intakes": {
+      "name": "counter_intakes",
+      "schema": "",
+      "columns": {
+        "application_id": {
+          "name": "application_id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "applicant_party_id": {
+          "name": "applicant_party_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "taken_by": {
+          "name": "taken_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "taken_at": {
+          "name": "taken_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "paper_attestation_recorded_by": {
+          "name": "paper_attestation_recorded_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "paper_attestation_recorded_at": {
+          "name": "paper_attestation_recorded_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "counter_intakes_taken_at_idx": {
+          "name": "counter_intakes_taken_at_idx",
+          "columns": [
+            {
+              "expression": "taken_at",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "counter_intakes_application_id_applications_id_fk": {
+          "name": "counter_intakes_application_id_applications_id_fk",
+          "tableFrom": "counter_intakes",
+          "tableTo": "applications",
+          "columnsFrom": ["application_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "counter_intakes_applicant_party_id_project_parties_id_fk": {
+          "name": "counter_intakes_applicant_party_id_project_parties_id_fk",
+          "tableFrom": "counter_intakes",
+          "tableTo": "project_parties",
+          "columnsFrom": ["applicant_party_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
     "public.cutover_reconciliations": {
       "name": "cutover_reconciliations",
       "schema": "",
@@ -4648,12 +4520,6 @@
         },
         "doc_kind": {
           "name": "doc_kind",
-          "type": "text",
-          "primaryKey": false,
-          "notNull": false
-        },
-        "item_key": {
-          "name": "item_key",
           "type": "text",
           "primaryKey": false,
           "notNull": false

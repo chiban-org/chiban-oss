@@ -12,7 +12,7 @@ import { addParty } from '@/features/projects/parties'
 import { createProject } from '@/features/projects/projects'
 import { err, ok, type Result } from '@/types/result'
 
-async function counterTitle(tx: Tx, typeLabel: string, parcelId: string): Promise<string> {
+export async function counterTitle(tx: Tx, typeLabel: string, parcelId: string): Promise<string> {
   const [parcel] = await tx
     .select({ siteAddress: parcels.siteAddress })
     .from(parcels)

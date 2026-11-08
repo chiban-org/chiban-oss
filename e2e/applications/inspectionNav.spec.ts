@@ -22,7 +22,7 @@ test.describe('the Inspections entry in the staff navigation', () => {
       const nav = page.getByRole('navigation').first()
       await nav.getByRole('link', { name: 'Inspections', exact: true }).first().click()
       await expect(page).toHaveURL(/\/staff\/inspections$/)
-      await expect(page.getByRole('region', { name: 'Open slots' })).toBeVisible()
+      await expect(page.getByRole('region', { name: 'Schedule' })).toBeVisible()
       await expect(nav.getByRole('link', { name: 'Inspector days', exact: true })).toBeVisible()
     })
 

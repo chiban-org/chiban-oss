@@ -817,6 +817,21 @@ References:
 - `case_id` refers to `enforcement_cases`
 - `packet_document_id` refers to `documents`
 
+### counter_intakes
+
+File: `data/counter_intakes.ndjson`. Ordered by application_id.
+
+- `application_id`: uuid
+- `applicant_party_id`: uuid
+- `taken_by`: uuid
+- `taken_at`: timestamp with time zone
+- `paper_attestation_recorded_by`: uuid, nullable
+- `paper_attestation_recorded_at`: timestamp with time zone, nullable
+
+References:
+- `application_id` refers to `applications`
+- `applicant_party_id` refers to `project_parties`
+
 ### cutover_reconciliations
 
 File: `data/cutover_reconciliations.ndjson`. Ordered by id.

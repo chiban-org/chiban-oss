@@ -104,6 +104,7 @@ const SPECS: Spec[] = [
   { table: t.codeEditionRecords },
   { table: t.configVersions },
   { table: t.contractorClaims, omit: ['token_hash'], fill: { token_hash: RANDOM_HASH } },
+  { table: t.counterIntakes },
   { table: t.cutoverReconciliations },
   { table: t.cutoverRows },
   { table: t.desProximityDeterminations },

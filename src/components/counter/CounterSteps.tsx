@@ -33,17 +33,26 @@ export function ChosenSteps({ steps }: { steps: readonly ChosenStep[] }) {
 }
 
 export function TypeTiles({
+  id,
+  title,
+  lead,
+  emptyText,
   types,
   hrefFor,
 }: {
+  id: string
+  title: string
+  lead: string
+  emptyText: string
   types: readonly { key: string; label: string }[]
   hrefFor: (typeKey: string) => string
 }) {
   return (
-    <section aria-labelledby="permit-type">
-      <h2 id="permit-type">Permit type</h2>
+    <section aria-labelledby={id}>
+      <h2 id={id}>{title}</h2>
+      <p className="text-muted-foreground">{lead}</p>
       {types.length === 0 ? (
-        <p>No permit type is set up for counter issue.</p>
+        <p>{emptyText}</p>
       ) : (
         <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
           {types.map((t) => (
