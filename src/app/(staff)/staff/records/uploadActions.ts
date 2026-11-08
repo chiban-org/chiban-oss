@@ -34,7 +34,7 @@ export async function createStaffUploadIntentAction(
   return await runStaffValue(formData, fail, async ({ db, actor, signal }) => {
     const parsed = parseForm(UPLOAD_INTENT_FORM, formData)
     if (!parsed.ok) return fail(parsed.error.error)
-    const { targetKind, targetId, title, seriesKey, ...file } = parsed.value
+    const { targetKind, targetId, title, seriesKey, itemKey, ...file } = parsed.value
     const made = await createUploadIntent(
       db,
       getObjectStore(),
@@ -44,6 +44,7 @@ export async function createStaffUploadIntentAction(
         title: title ?? '',
         ...file,
         ...(seriesKey === null ? {} : { seriesKey }),
+        ...(itemKey === null ? {} : { itemKey }),
       },
       signal,
     )

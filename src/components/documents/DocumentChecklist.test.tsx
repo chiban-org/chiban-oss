@@ -111,12 +111,13 @@ describe('DocumentChecklist for the applicant', () => {
 })
 
 describe('DocumentChecklist for staff', () => {
-  it('offers acceptance without the document and no applicant upload', () => {
+  it('lets the clerk upload to an item, record a waiver request, and accept without the file', () => {
     renderAs('staff')
     const floor = item('Floor plans and framing')
     expect(within(floor).getAllByText('Accept without the document').length).toBeGreaterThan(0)
-    expect(within(floor).queryByLabelText('Choose a file for Floor plans and framing')).toBeNull()
+    expect(within(floor).getByLabelText('Choose a file for Floor plans and framing')).toBeTruthy()
     expect(within(floor).queryByText('Request a waiver')).toBeNull()
+    expect(within(item('Landscaping plan')).getByText('Record a waiver request')).toBeTruthy()
     expect(
       within(item('Owner authorization')).queryByText('Accept without the document'),
     ).toBeNull()

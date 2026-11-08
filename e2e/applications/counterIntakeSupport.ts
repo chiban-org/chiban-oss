@@ -24,6 +24,19 @@ export async function openVarianceApplicant(page: Page, email: string): Promise<
   await page.getByRole('button', { name: 'Find account' }).click()
 }
 
+async function scanFilingItem(page: Page, label: string, filename: string): Promise<void> {
+  const item = page
+    .getByRole('region', { name: 'To file' })
+    .getByRole('listitem')
+    .filter({ has: page.getByText(label, { exact: true }) })
+  await item.getByLabel(`Choose a file for ${label}`).setInputFiles({
+    name: filename,
+    mimeType: 'application/pdf',
+    buffer: Buffer.from('%PDF-1.4\n%%EOF\n'),
+  })
+  await expect(item).toContainText('Provided')
+}
+
 export async function fillVarianceAndSubmit(page: Page, applicantName: string): Promise<void> {
   await expect(page).toHaveURL(/\/staff\/counter\/take\/[0-9a-f-]{36}$/)
   await page.getByRole('textbox', { name: 'Applicant name', exact: true }).fill(applicantName)
@@ -33,6 +46,8 @@ export async function fillVarianceAndSubmit(page: Page, applicantName: string): 
   await page.getByRole('checkbox', { name: 'The owner has authorized this application' }).click()
   await page.getByRole('button', { name: 'Save and continue' }).click()
   await expect(page).toHaveURL(/step=documents$/)
+  await scanFilingItem(page, 'Plot plan', 'plot-plan.pdf')
+  await scanFilingItem(page, 'Zoning officer’s letter or decision', 'zoning-letter.pdf')
   await page.getByRole('link', { name: 'Continue to attestation and submit' }).click()
   await page
     .getByRole('checkbox', { name: 'The applicant signed the attestation on paper' })

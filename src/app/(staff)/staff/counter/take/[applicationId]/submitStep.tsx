@@ -18,13 +18,30 @@ function FeeNote({ view }: { view: CounterIntakeView }) {
   )
 }
 
-export function SubmitStep({ view }: { view: CounterIntakeView }) {
+function MissingDocuments({ view, names }: { view: CounterIntakeView; names: string[] }) {
+  if (names.length === 0) return null
+  return (
+    <p>
+      {`Before you submit, add or accept: ${names.join(', ')}. `}
+      <Link href={intakeHref(view.applicationId, 'documents')}>Go to documents</Link>
+    </p>
+  )
+}
+
+export function SubmitStep({
+  view,
+  missingDocuments,
+}: {
+  view: CounterIntakeView
+  missingDocuments: string[]
+}) {
   return (
     <section aria-labelledby="attest" className="flex flex-col gap-4">
       <h2 id="attest">Attestation and submit</h2>
       <p>The applicant signs this statement on the paper form:</p>
       <p className="max-w-[75ch] rounded-md border p-4">{view.attestationText}</p>
       <FeeNote view={view} />
+      <MissingDocuments view={view} names={missingDocuments} />
       <ActionForm
         action={submitIntakeAction}
         submitLabel="Submit the application"

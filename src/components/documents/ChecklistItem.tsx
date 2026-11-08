@@ -1,17 +1,12 @@
 import { CheckCircle2, Circle, Minus } from 'lucide-react'
 import Link from 'next/link'
-import {
-  PlainItemAction,
-  ReasonForm,
-  RemoveFile,
-  UseExistingFile,
-} from '@/components/documents/ChecklistControls'
+import { RemoveFile } from '@/components/documents/ChecklistControls'
+import { ApplicantControls, StaffControls } from '@/components/documents/ChecklistRowControls'
 import type {
   ChecklistActions,
   ChecklistActor,
   ChecklistPermissions,
 } from '@/components/documents/checklistTypes'
-import { ItemUploader } from '@/components/documents/ItemUploader'
 import { NEW_TAB } from '@/components/newTab'
 import type { ItemStatus } from '@/features/applications/documentChecklist'
 import type {
@@ -77,108 +72,6 @@ function FileLinks({ props }: { props: ItemProps }) {
         </li>
       ))}
     </ul>
-  )
-}
-
-function ApplicantControls({ props }: { props: ItemProps }) {
-  const { row, applicationId, actions } = props
-  if (!props.permissions.canFile || !row.open || row.status === 'not_needed') return null
-  const linked = new Set(row.files.map((f) => f.documentId))
-  return (
-    <div className="grid gap-2">
-      {actions.upload === undefined ? null : (
-        <ItemUploader
-          applicationId={applicationId}
-          itemKey={row.key}
-          label={row.label}
-          maxBytes={props.maxBytes}
-          actions={actions.upload}
-          {...(row.files.length === 0
-            ? {}
-            : {
-                replaces: {
-                  documentIds: row.files.map((f) => f.documentId),
-                  unlink: actions.unlink,
-                },
-              })}
-        />
-      )}
-      {row.files.length > 0 ? null : (
-        <UseExistingFile
-          applicationId={applicationId}
-          itemKey={row.key}
-          label={row.label}
-          choices={props.files.filter((f) => !linked.has(f.documentId))}
-          action={actions.link}
-        />
-      )}
-      <WaiverControls props={props} />
-    </div>
-  )
-}
-
-function WaiverControls({ props }: { props: ItemProps }) {
-  const { row, applicationId, actions } = props
-  if (!row.waivable || row.files.length > 0) return null
-  if (row.waiver !== null) {
-    return actions.withdrawWaiver === undefined ? null : (
-      <PlainItemAction
-        applicationId={applicationId}
-        itemKey={row.key}
-        submitLabel="Withdraw the waiver request"
-        action={actions.withdrawWaiver}
-      />
-    )
-  }
-  return actions.requestWaiver === undefined ? null : (
-    <ReasonForm
-      applicationId={applicationId}
-      itemKey={row.key}
-      summary="Request a waiver"
-      reasonLabel="Why should the board waive this?"
-      submitLabel="Request waiver"
-      action={actions.requestWaiver}
-    />
-  )
-}
-
-function StaffControls({ props }: { props: ItemProps }) {
-  const { row, applicationId, actions, permissions } = props
-  if (row.status === 'not_needed') return null
-  const linked = new Set(row.files.map((f) => f.documentId))
-  return (
-    <div className="grid gap-2">
-      {permissions.canFile ? (
-        <UseExistingFile
-          applicationId={applicationId}
-          itemKey={row.key}
-          label={row.label}
-          choices={props.files.filter((f) => !linked.has(f.documentId))}
-          action={actions.link}
-        />
-      ) : null}
-      {permissions.canAccept && row.accepted !== null && actions.undoAccept !== undefined ? (
-        <PlainItemAction
-          applicationId={applicationId}
-          itemKey={row.key}
-          submitLabel="Undo acceptance"
-          action={actions.undoAccept}
-        />
-      ) : null}
-      {permissions.canAccept &&
-      row.accepted === null &&
-      row.files.length === 0 &&
-      actions.accept !== undefined ? (
-        <ReasonForm
-          applicationId={applicationId}
-          itemKey={row.key}
-          summary="Accept without the document"
-          reasonLabel={`Why ${row.label} is not needed`}
-          submitLabel="Accept without the document"
-          action={actions.accept}
-        />
-      ) : null}
-    </div>
   )
 }
 

@@ -7,6 +7,9 @@ import { IntakeStepNav } from '@/components/counter/intake/IntakeStepNav'
 import { IntakeSummary } from '@/components/counter/intake/IntakeSummary'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { env } from '@/config/env'
+import { loadDocumentChecklist } from '@/features/applications/documentChecklistView'
+import { hasCapability } from '@/features/authz/capabilities'
 import { mayUseCounter } from '@/features/counter/counterAccess'
 import {
   currentTakeStep,
@@ -46,6 +49,27 @@ const LEADS: Record<TakeStep, string> = {
   withdrawn: 'This unfinished application was discarded.',
 }
 
+async function documentsBody(ctx: StaffContext, view: CounterIntakeView): Promise<ReactNode> {
+  const record = { kind: 'application' as const, id: view.applicationId }
+  const can = (capability: Parameters<typeof hasCapability>[2]) =>
+    hasCapability(ctx.db, ctx.actor.userId, capability, ctx.signal)
+  const [docs, checklist, canFile, canAccept] = await Promise.all([
+    listDocuments(ctx.db, ctx.actor, { record, limit: DOCUMENT_LIMIT }, ctx.signal),
+    loadDocumentChecklist(ctx.db, ctx.actor, view.applicationId, ctx.signal),
+    can('document.manage'),
+    can('application.manage'),
+  ])
+  return (
+    <DocumentsStep
+      applicationId={view.applicationId}
+      documents={docs.rows}
+      checklist={checklist}
+      permissions={{ canFile, canAccept, canUploadOther: canFile }}
+      maxBytes={env.MAX_UPLOAD_BYTES}
+    />
+  )
+}
+
 async function stepBody(
   ctx: StaffContext,
   view: CounterIntakeView,
@@ -62,17 +86,11 @@ async function stepBody(
       />
     )
   }
-  if (step === 'documents') {
-    const record = { kind: 'application' as const, id: view.applicationId }
-    const docs = await listDocuments(
-      ctx.db,
-      ctx.actor,
-      { record, limit: DOCUMENT_LIMIT },
-      ctx.signal,
-    )
-    return <DocumentsStep applicationId={view.applicationId} documents={docs.rows} />
+  if (step === 'documents') return await documentsBody(ctx, view)
+  if (step === 'submit') {
+    const checklist = await loadDocumentChecklist(ctx.db, ctx.actor, view.applicationId, ctx.signal)
+    return <SubmitStep view={view} missingDocuments={checklist?.missingToFile ?? []} />
   }
-  if (step === 'submit') return <SubmitStep view={view} />
   if (step === 'fee') {
     return payments === null ? (
       <DoneStep view={view} />

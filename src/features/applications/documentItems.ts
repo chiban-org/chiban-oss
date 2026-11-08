@@ -173,7 +173,7 @@ export async function requestWaiver(
     actor,
     {
       ...input,
-      role: 'applicant',
+      role: filingRole(actor),
       action: DOCUMENT_ITEM_ACTIONS.waiver,
       needsWaivable: true,
       patch: {
@@ -197,7 +197,7 @@ export async function withdrawWaiver(
     actor,
     {
       ...input,
-      role: 'applicant',
+      role: filingRole(actor),
       action: DOCUMENT_ITEM_ACTIONS.withdrawWaiver,
       patch: { waiverReason: null, waiverRequestedBy: null, waiverRequestedAt: null },
     },
