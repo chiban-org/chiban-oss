@@ -76,7 +76,7 @@ export default async function ExportPage({ searchParams }: ExportPageProps = {})
       />
       <section aria-labelledby="contents-heading">
         <h2 id="contents-heading">What the file contains</h2>
-        <ul>
+        <ul className="list-disc space-y-1 pl-5">
           <li>Every record as NDJSON, one text file per kind of record.</li>
           <li>The same records as CSV files, one per kind of record, that open in Excel.</li>
           <li>One Excel workbook with a sheet for each kind of record.</li>
