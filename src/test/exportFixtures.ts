@@ -25,6 +25,11 @@ const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
       select id, 'C-EXPORT', 'Condition kept for export coverage', false, gen_random_uuid() from applications limit 1`,
   },
   {
+    table: 'application_document_items',
+    statement: sql`insert into application_document_items (application_id, item_key, accepted_reason, accepted_by, accepted_at)
+      select id, 'export_coverage', 'Accepted for export coverage', gen_random_uuid(), now() from applications limit 1`,
+  },
+  {
     table: 'application_notes',
     statement: sql`insert into application_notes (application_id, body, author_id)
       select id, 'Note kept for export coverage', gen_random_uuid() from applications limit 1`,
