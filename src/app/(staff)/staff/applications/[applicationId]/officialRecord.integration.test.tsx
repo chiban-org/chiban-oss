@@ -149,7 +149,9 @@ describe('the building official on an issued permit with an inspection due', () 
     expect(html).not.toContain('data-permit-facts')
     const requirements = sectionOf(html, 'Requirements') ?? ''
     expect(requirements).toContain('Before it can be closed')
-    expect(requirements).toContain('No certificate of occupancy has been issued.')
+    expect(requirements).toContain(
+      'No final inspection has passed, so the certificate of occupancy cannot be issued yet.',
+    )
   })
 
   it('does not take over a permit where the inspection belongs to someone else', async () => {
