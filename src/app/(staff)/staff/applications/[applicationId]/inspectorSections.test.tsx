@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { InspectionHistoryRow } from '@/features/inspections/history'
@@ -8,7 +8,6 @@ import type { InspectionsPanelData } from './inspectionsPanel'
 import type { InspectorWork } from './inspectorData'
 
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn(), push: vi.fn() }) }))
-vi.mock('../../inspections/[inspectionId]/actions', () => ({ recordResultAction: vi.fn() }))
 vi.mock('../../inspections/actions', () => ({
   cancelInspectionAction: vi.fn(),
   issueCertificateAction: vi.fn(),
@@ -66,15 +65,13 @@ function focused(work: InspectorWork, data: InspectionsPanelData) {
 }
 
 describe('the inspection on top of the inspector view', () => {
-  it('starts the checklist empty when the next inspection changes', () => {
-    const first = scheduled('11111111-1111-4111-8111-111111111111', 600)
-    const second = scheduled('22222222-2222-4222-8222-222222222222', 660)
-    const data = dataFor([first, second])
-    const { rerender } = render(focused(workFor(first), data))
-    fireEvent.click(screen.getByRole('radio', { name: 'Pass' }))
-    expect(screen.getByRole('radio', { name: 'Pass' }).getAttribute('aria-checked')).toBe('true')
-    rerender(focused(workFor(second), dataFor([second])))
-    expect(screen.getByRole('radio', { name: 'Pass' }).getAttribute('aria-checked')).toBe('false')
+  it('links the next inspection to its page to record the result there', () => {
+    const row = scheduled('11111111-1111-4111-8111-111111111111', 600)
+    render(focused(workFor(row), dataFor([row])))
+    const section = screen.getByRole('region', { name: 'Next inspection' })
+    const link = within(section).getByRole('link', { name: 'Record the result' })
+    expect(link.getAttribute('href')).toBe(`/staff/inspections/${row.id}`)
+    expect(within(section).queryByRole('radiogroup')).toBeNull()
   })
 
   it('keeps the way to cancel it for someone who schedules inspections', () => {

@@ -164,12 +164,10 @@ export function InspectionsPanel({
   data,
   applicationId,
   number,
-  hostedId = null,
 }: {
   data: InspectionsPanelData
   applicationId: string
   number: string
-  hostedId?: string | null
 }) {
   const { history, canSchedule, certificateReady, rowVersion, today } = data
   return (
@@ -178,13 +176,7 @@ export function InspectionsPanel({
       {history.length === 0 ? <p>No inspections have been requested.</p> : null}
       <ul className="list-none p-0">
         {history.map((row) => (
-          <InspectionRow
-            key={row.id}
-            row={row}
-            data={data}
-            number={number}
-            withActions={row.id !== hostedId}
-          />
+          <InspectionRow key={row.id} row={row} data={data} number={number} />
         ))}
       </ul>
       {canSchedule && data.takesRequests ? (

@@ -29,6 +29,7 @@ async function inspectionPhoto(seriesKey?: string) {
   const app = await makeApplication(handle.db, world, { state: 'submitted' }, undefined, 'BP')
   const inspectionId = await insertInspection(handle.db, app.applicationId, 'final', {
     status: 'scheduled',
+    inspectorUserId: world.staff.userId,
   })
   const up = await uploadAs(
     handle.db,

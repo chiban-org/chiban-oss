@@ -1,12 +1,14 @@
 import { eq } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
+import type { Role } from '@/constants/roles'
 import type { Db } from '@/db/client'
 import { applications, inspections, projectParties } from '@/db/schema'
-import type { Actor } from '@/features/auth/actor'
+import { type Actor, loadActor } from '@/features/auth/actor'
 import type { ConfigPins } from '@/features/config/bindings'
 import { getVersion } from '@/features/config/store'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
+import { makeUser } from '@/test/factories'
 import { staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -18,6 +20,7 @@ export interface InspectionWorld {
   world: PermitWorld
   inspector: Actor
   otherInspector: Actor
+  official: Actor
   finance: Actor
   stranger: Actor
   trade: { applicationId: string; number: string }
@@ -35,11 +38,18 @@ export async function setupInspectionWorld(db: Db): Promise<InspectionWorld> {
     world,
     inspector: await staffActor(db, 'inspector'),
     otherInspector: await staffActor(db, 'inspector'),
+    official: await actorWithRoles(db, ['staff', 'inspector']),
     finance: await staffActor(db, 'finance'),
     stranger: await staffActor(db, 'applicant'),
     trade,
     building,
   }
+}
+
+async function actorWithRoles(db: Db, roles: Role[]): Promise<Actor> {
+  const actor = await loadActor(db, await makeUser(db, { roles }), signal)
+  if (actor === null) throw new AppError(ErrorIds.DB_INVARIANT, 'actor not loadable')
+  return actor
 }
 
 export async function newIssuedPermit(

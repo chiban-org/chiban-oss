@@ -8,7 +8,7 @@ import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { demoSeedDeps } from '@/test/demoSeedDeps'
-import { countSections, filledButtons, sectionOf } from '@/test/htmlSections'
+import { countSections, filledButtons, filledLinks, sectionOf } from '@/test/htmlSections'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
 
@@ -45,6 +45,7 @@ const pages = new Map<string, string>()
 let ids = new Map<string, string>()
 let officialNumber = ''
 let officialDate = ''
+let officialInspectionId = ''
 
 async function actorFor(local: string): Promise<Actor> {
   const user = await handle.db.query.users.findFirst({
@@ -87,12 +88,17 @@ beforeAll(async () => {
   const rows = await handle.db.select().from(applications)
   ids = new Map(rows.map((r) => [r.number, r.id]))
   const [mine] = await handle.db
-    .select({ number: applications.number, date: inspections.scheduledDate })
+    .select({
+      id: inspections.id,
+      number: applications.number,
+      date: inspections.scheduledDate,
+    })
     .from(inspections)
     .innerJoin(applications, eq(applications.id, inspections.applicationId))
     .where(eq(inspections.inspectorUserId, official.userId))
   officialNumber = mine?.number ?? ''
   officialDate = mine?.date ?? ''
+  officialInspectionId = mine?.id ?? ''
   actors.set('staff', await actorFor('staff'))
 })
 afterAll(async () => {
@@ -106,16 +112,16 @@ describe('the building official on an issued permit with an inspection due', () 
     expect(officialDate < today).toBe(true)
   })
 
-  it('leads Do this now with the inspection and Record result as the one filled button', async () => {
+  it('leads Do this now with the inspection and a link to record it on its page as the one filled action', async () => {
     const html = await pageAs('official', officialNumber)
     const card = sectionOf(html, 'Do this now') ?? ''
     expect(card).toContain('Framing inspection')
     expect(card).toContain(`${formatCivilDate(officialDate)} at 10:30 AM`)
-    expect(card).toContain('Notes for the permit holder')
-    expect(card).toContain('Record result')
-    expect(card).toContain('Cancel')
+    expect(card).toContain(`href="/staff/inspections/${officialInspectionId}"`)
+    expect(card).not.toContain('Notes for the permit holder')
     expect(card).not.toContain('Issue the certificate of occupancy')
-    expect(filledButtons(html)).toEqual(['Record result'])
+    expect(filledButtons(html)).toEqual([])
+    expect(filledLinks(html)).toEqual(['Record the result'])
   })
 
   it('says the inspector is waiting, in the inspector words', async () => {
@@ -125,14 +131,15 @@ describe('the building official on an issued permit with an inspection due', () 
     )
   })
 
-  it('shows the form once, with the Inspections panel listing the row without its form or Cancel', async () => {
+  it('records nothing on the permit: the Inspections panel lists the row, links it, and keeps its Cancel', async () => {
     const html = await pageAs('official', officialNumber)
-    expect(occurrences(html, 'Notes for the permit holder')).toBe(1)
+    expect(occurrences(html, 'Notes for the permit holder')).toBe(0)
     expect(occurrences(html, 'Cancel this inspection')).toBe(1)
     const panel = sectionOf(html, 'Inspections') ?? ''
     expect(panel).toContain('Framing inspection')
+    expect(panel).toContain(`href="/staff/inspections/${officialInspectionId}"`)
     expect(panel).not.toContain('Record result')
-    expect(panel).not.toContain('Cancel')
+    expect(panel).toContain('Cancel this inspection')
   })
 
   it('keeps the office page: fees, requirement groups and the certificate under closing', async () => {
@@ -172,7 +179,8 @@ describe('the clerk and the inspector keep the views they had', () => {
     expect(countSections(html, 'Do this now')).toBe(0)
     expect(countSections(html, 'Next inspection')).toBe(1)
     expect(countSections(html, 'Fees and payments')).toBe(0)
-    expect(filledButtons(html)).toEqual(['Record result'])
+    expect(filledButtons(html)).toEqual([])
+    expect(filledLinks(html)).toEqual(['Record the result'])
     expect(statusSentence(html)).toMatch(
       /^Waiting on: Inspector \(you\)\. Framing reinspection from /,
     )

@@ -15,10 +15,7 @@ interface DueInspection {
 test.describe('the building official on a permit with their own inspection due', () => {
   test.use({ role: 'official' })
 
-  test('records the inspection from Do this now and stays on the office page', async ({
-    page,
-    db,
-  }) => {
+  test('opens the inspection from Do this now and records it on its page', async ({ page, db }) => {
     const due = await db.one<DueInspection>(
       `select i.id, i.scheduled_date::text
          from inspections i join users u on u.id = i.inspector_user_id
@@ -34,17 +31,23 @@ test.describe('the building official on a permit with their own inspection due',
     const card = doThisNow(page)
     await expect(card).toContainText('Framing inspection')
     await expect(card).toContainText(`${day} at 10:30 AM`)
-    await expect(card.getByRole('button', { name: 'Record result' })).toBeDisabled()
-    await expect(card.getByText('Cancel', { exact: true })).toBeVisible()
+    await expect(card.getByRole('radiogroup')).toHaveCount(0)
     await expect(page.getByRole('region', { name: 'Fees and payments' })).toBeVisible()
     await expect(page.getByRole('region', { name: 'Requirements' })).toContainText(
       'Before it can be closed',
     )
     await expect(page.getByRole('region', { name: 'Next inspection' })).toHaveCount(0)
 
+    await card.getByRole('link', { name: 'Record the result' }).click()
+    await expect(page).toHaveURL(new RegExp(`/staff/inspections/${due.id}$`))
+    const record = doThisNow(page)
     await passEveryItem(page)
-    await card.getByLabel('Notes for the permit holder').fill('Framing is square and blocked.')
-    await card.getByRole('button', { name: 'Record result' }).click()
+    await record.getByLabel('Notes for the permit holder').fill('Framing is square and blocked.')
+    await record.getByRole('button', { name: 'Record result' }).click()
+    await page
+      .getByRole('dialog', { name: 'Record the Framing inspection as passed?' })
+      .getByRole('button', { name: 'Record as passed' })
+      .click()
 
     await expect(
       page.locator('[data-sonner-toast]').filter({ hasText: 'Result recorded.' }),
@@ -54,6 +57,6 @@ test.describe('the building official on a permit with their own inspection due',
       [due.id],
     )
     expect(row).toEqual({ status: 'passed', result_notes: 'Framing is square and blocked.' })
-    await expect(card.getByRole('button', { name: 'Record result' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: 'Record result' })).toHaveCount(0)
   })
 })

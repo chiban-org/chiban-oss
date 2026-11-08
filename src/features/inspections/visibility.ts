@@ -8,6 +8,11 @@ export function managesAllInspectors(actor: Actor): boolean {
   return actor.kind === 'staff' && (actor.roles.includes('staff') || actor.roles.includes('admin'))
 }
 
+export function recordsInspection(actor: Actor, inspectorUserId: string | null): boolean {
+  if (inspectorUserId === actor.userId) return true
+  return actor.roles.includes('inspector') && actor.roles.includes('staff')
+}
+
 export function inspectionVisibleTo(actor: Actor | null): SQL {
   if (actor === null) return sql`false`
   if (hasFullRecordAccess(actor)) return sql`true`

@@ -28,6 +28,12 @@ export function filledButtons(html: string): string[] {
   )
 }
 
+export function filledLinks(html: string): string[] {
+  return [...html.matchAll(/<a[^>]*data-variant="default"[^>]*>([^<]*)<\/a>/g)].map(
+    (m) => m[1] ?? '',
+  )
+}
+
 export function railOf(html: string): string {
   const start = html.indexOf('<aside')
   return start < 0 ? '' : html.slice(start, html.indexOf('</aside>', start))

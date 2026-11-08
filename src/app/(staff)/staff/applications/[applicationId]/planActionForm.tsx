@@ -7,7 +7,7 @@ import type { PlanAction } from '@/features/applications/workPlanTypes'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import { BoardRegionalForm, MeetingForm, VoteFormBody } from './boardForms'
 import { CodeEditionForm, RegionalDeterminationForm } from './buildingForms'
-import { InspectionResultForm } from './inspectionResultForm'
+import { RecordResultLink } from './inspectorSections'
 import { MoveForm } from './nextStepCard'
 import type { RecordPanelsInput } from './panelSet'
 import { MarkCompleteForm } from './panels'
@@ -122,7 +122,7 @@ export function PlanActionForm({
     case 'open_abutter_list':
       return board === null ? null : <OpenDraftList board={board} variant={variant} />
     case 'record_inspection_result':
-      return due == null ? null : <InspectionResultForm due={due} number={view.number} />
+      return due == null ? null : <RecordResultLink due={due} />
     case 'move':
       return (
         <MoveForm

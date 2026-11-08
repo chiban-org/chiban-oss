@@ -1,13 +1,15 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useCsrfToken } from '@/components/CsrfProvider'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { Textarea } from '@/components/ui/textarea'
+import type { ClosingCopy } from '@/features/inspections/closingCopy'
 import { attempt } from '@/lib/attempt'
 import type { ActionResult } from '@/server/actionRunner'
 
@@ -28,10 +30,25 @@ const OPTIONS: readonly (readonly [Outcome, string])[] = [
 ]
 
 const MIN_FAIL_NOTES = 10
+const REQUIRED_NA = 'A required item is N/A. Mark it Pass or Fail.'
+const FINAL_RESULT = 'A result cannot be changed once it is recorded.'
 
-function resultText(failed: boolean, requiredAnswered: boolean): string {
-  if (failed) return 'Failed'
-  return requiredAnswered ? 'Passed' : 'answer the required items first'
+function resultLine(failed: boolean, requiredNa: boolean, requiredAnswered: boolean): string {
+  if (failed) return 'Result: Failed'
+  if (requiredNa) return REQUIRED_NA
+  return requiredAnswered ? 'Result: Passed' : 'Result: answer the required items first'
+}
+
+function confirmCopy(name: string, failed: boolean, closing: ClosingCopy | null) {
+  const result = failed ? 'failed' : 'passed'
+  const effect = !failed && closing !== null ? `${closing.confirm} ` : ''
+  return {
+    title: `Record the ${name} as ${result}?`,
+    body: `${effect}${FINAL_RESULT}`,
+    confirmLabel: `Record as ${result}`,
+    cancelLabel: 'Keep editing',
+    tone: 'default' as const,
+  }
 }
 
 export function ChecklistForm({
@@ -40,12 +57,16 @@ export function ChecklistForm({
   items,
   action,
   initialNotes,
+  name,
+  closing,
 }: {
   inspectionId: string
   rowVersion: number
   items: ChecklistFormItem[]
   action: (formData: FormData) => Promise<ActionResult>
   initialNotes: string
+  name: string
+  closing: ClosingCopy | null
 }) {
   const csrf = useCsrfToken()
   const router = useRouter()
@@ -58,11 +79,14 @@ export function ChecklistForm({
   const [notes, setNotes] = useState(initialNotes)
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [confirming, setConfirming] = useState(false)
+  const recordButton = useRef<HTMLButtonElement>(null)
 
   const failed = items.some((i) => answers[i.key] === 'fail')
   const requiredAnswered = items.every((i) => !i.required || answers[i.key] != null)
+  const requiredNa = !failed && items.some((i) => i.required && answers[i.key] === 'na')
   const notesOk = !failed || notes.trim().length >= MIN_FAIL_NOTES
-  const ready = requiredAnswered && notesOk
+  const ready = requiredAnswered && !requiredNa && notesOk
 
   const submit = async () => {
     const data = new FormData()
@@ -115,12 +139,17 @@ export function ChecklistForm({
             })}
           </RadioGroup>
           {answers[item.key] === 'fail' ? (
-            <Textarea
-              aria-label={`Note on ${item.label}`}
-              value={itemNotes[item.key] ?? ''}
-              onChange={(e) => setItemNotes({ ...itemNotes, [item.key]: e.target.value })}
-              className="min-h-11 text-base"
-            />
+            <div className="flex flex-col gap-1.5">
+              <Label htmlFor={`${item.key}-note`} className="text-base font-medium">
+                {`Note on ${item.label}`}
+              </Label>
+              <Textarea
+                id={`${item.key}-note`}
+                value={itemNotes[item.key] ?? ''}
+                onChange={(e) => setItemNotes({ ...itemNotes, [item.key]: e.target.value })}
+                className="min-h-11 text-base"
+              />
+            </div>
           ) : null}
         </fieldset>
       ))}
@@ -136,15 +165,27 @@ export function ChecklistForm({
         />
         {failed && !notesOk ? <p>Write at least 10 characters about what failed.</p> : null}
       </div>
-      <p className="font-semibold">{`Result: ${resultText(failed, requiredAnswered)}`}</p>
+      <p className="font-semibold">{resultLine(failed, requiredNa, requiredAnswered)}</p>
+      {closing === null ? null : <p>{closing.note}</p>}
       <Button
+        ref={recordButton}
         type="button"
         className="min-h-11 w-full text-base"
         disabled={!ready || pending}
-        onClick={() => void submit()}
+        onClick={() => setConfirming(true)}
       >
         Record result
       </Button>
+      <ConfirmDialog
+        open={confirming}
+        copy={confirmCopy(name, failed, closing)}
+        onConfirm={() => {
+          setConfirming(false)
+          void submit()
+        }}
+        onCancel={() => setConfirming(false)}
+        returnFocusTo={() => recordButton.current}
+      />
       {message === null ? null : (
         <p role="status" className="text-base">
           {message}

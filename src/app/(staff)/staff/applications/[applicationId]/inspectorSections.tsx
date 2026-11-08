@@ -1,10 +1,10 @@
 import Link from 'next/link'
-import { ChecklistForm } from '@/components/inspections/ChecklistForm'
 import { NEW_TAB } from '@/components/newTab'
+import { Button } from '@/components/ui/button'
 import type { InspectionView } from '@/features/inspections/inspectionView'
 import { inspectionName, slotText } from '@/features/inspections/inspectorFocus'
 import { formatCivilDate } from '@/lib/formatDate'
-import { recordResultAction } from '../../inspections/[inspectionId]/actions'
+import type { DueInspection } from './dueInspection'
 import { InspectionRow, type InspectionsPanelData, RowActions } from './inspectionsPanel'
 import type { InspectorWork } from './inspectorData'
 
@@ -27,6 +27,23 @@ export function PreviousResult({
   return <p>{`Last time: ${previous.status} on ${formatCivilDate(previous.scheduledDate)}.`}</p>
 }
 
+function RecordButton({ inspectionId }: { inspectionId: string }) {
+  return (
+    <Button asChild className="self-start">
+      <Link href={`/staff/inspections/${inspectionId}`}>Record the result</Link>
+    </Button>
+  )
+}
+
+export function RecordResultLink({ due }: { due: DueInspection }) {
+  return (
+    <>
+      <PreviousResult next={due.view} data={due.data} />
+      <RecordButton inspectionId={due.row.id} />
+    </>
+  )
+}
+
 function NextBody({ next, work, data, number }: { next: InspectionView } & SectionProps) {
   const { inspection } = next
   const row = data.history.find((r) => r.id === inspection.id)
@@ -40,22 +57,13 @@ function NextBody({ next, work, data, number }: { next: InspectionView } & Secti
       {next.waitingForDate ? (
         <p role="status">This inspection can be recorded on or after its scheduled date.</p>
       ) : null}
-      {next.canRecord ? (
-        <ChecklistForm
-          key={inspection.id}
-          inspectionId={inspection.id}
-          rowVersion={inspection.rowVersion}
-          items={next.items}
-          action={recordResultAction}
-          initialNotes=""
-        />
-      ) : null}
+      {next.canRecord ? <RecordButton inspectionId={inspection.id} /> : null}
       {row === undefined ? null : <RowActions row={row} data={data} number={number} />}
-      <p>
-        <Link href={`/staff/inspections/${inspection.id}`}>
-          Open the inspection for photos and the site contact
-        </Link>
-      </p>
+      {next.canRecord ? null : (
+        <p>
+          <Link href={`/staff/inspections/${inspection.id}`}>Open the inspection</Link>
+        </p>
+      )}
     </>
   )
 }

@@ -1,4 +1,4 @@
-import { and, asc, eq, isNotNull, lt } from 'drizzle-orm'
+import { and, asc, eq, isNotNull, isNull, lt } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { applications, inspections, users } from '@/db/schema'
@@ -9,7 +9,8 @@ import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeUser } from '@/test/factories'
-import { addDays, type CivilDate } from '@/types/civilDate'
+import { filledButtons, filledLinks, railOf, sectionOf } from '@/test/htmlSections'
+import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
 
@@ -267,5 +268,165 @@ describe('results owed', () => {
   it('refuses someone who may not schedule inspections', async () => {
     await actAs('admin')
     expect(await html(OwedPage())).toContain('You do not have permission to see results owed.')
+  })
+})
+
+async function seeded(type: string, status: string, reinspection = false) {
+  const [row] = await handle.db
+    .select({
+      id: inspections.id,
+      applicationId: inspections.applicationId,
+      number: applications.number,
+      scheduledDate: inspections.scheduledDate,
+      inspectorUserId: inspections.inspectorUserId,
+    })
+    .from(inspections)
+    .innerJoin(applications, eq(applications.id, inspections.applicationId))
+    .where(
+      and(
+        eq(inspections.inspectionType, type),
+        eq(inspections.status, status as 'scheduled'),
+        reinspection ? isNotNull(inspections.reinspectionOf) : isNull(inspections.reinspectionOf),
+      ),
+    )
+  if (row === undefined) throw new Error(`no seeded ${status} ${type}`)
+  return row
+}
+
+async function page(id: string): Promise<string> {
+  return await html(InspectionPage({ params: Promise.resolve({ inspectionId: id }) }))
+}
+
+function sentence(body: string): string {
+  return /data-slot="status-sentence"[^>]*>([^<]*)</.exec(body)?.[1] ?? ''
+}
+
+describe('the inspection record page', () => {
+  it('asks the town to schedule a request, with the preferred day and channel in the rail', async () => {
+    await actAs('staff')
+    const insulation = await seeded('insulation', 'requested')
+    const body = await page(insulation.id)
+    expect(sentence(body)).toBe('Waiting on: Town. Schedule the Insulation inspection.')
+    const card = sectionOf(body, 'Do this now') ?? ''
+    expect(card).toContain('Schedule the Insulation inspection')
+    expect(card).toContain('The requester prefers ')
+    expect(card).toContain(`href="/staff/inspections?request=${insulation.id}"`)
+    expect(filledLinks(body)).toEqual(['Schedule it'])
+    expect(filledButtons(body)).toEqual([])
+    expect(body).not.toContain('aria-label="Result"')
+    expect(body).not.toContain('aria-label="Checklist"')
+    expect(body).not.toContain('Not answered')
+    const rail = railOf(body)
+    expect(rail).toContain('Preferred day')
+    expect(rail).toContain('Online')
+    expect(rail).toContain('Cancel this inspection')
+    expect(body).toContain('aria-current="step"')
+  })
+
+  it('shows a clerk who records the scheduled final, read-only, with reschedule and cancel', async () => {
+    await actAs('staff')
+    const final = await seeded('final', 'scheduled')
+    const body = await page(final.id)
+    const card = sectionOf(body, 'Do this now') ?? ''
+    expect(card).toContain('Waiting on Ira Inspector')
+    expect(body).not.toContain('role="radiogroup"')
+    expect(body).not.toContain('Record result')
+    expect(sectionOf(body, 'Checklist') ?? '').toContain('What the inspector checks on site.')
+    const rail = railOf(body)
+    expect(rail).toContain('Ira Inspector')
+    expect(rail).toContain(`href="/staff/inspections?request=${final.id}"`)
+    expect(rail).toContain('Reschedule')
+    expect(rail).toContain('Cancel this inspection')
+  })
+
+  it('gives the assigned inspector the checklist, the owed line and the closing sentence', async () => {
+    await actAs('inspector')
+    const final = await seeded('final', 'scheduled')
+    const today = await townToday(handle.db, new Date(), signal)
+    const date = final.scheduledDate as CivilDate
+    const late = daysBetween(date, today)
+    const body = await page(final.id)
+    const card = sectionOf(body, 'Do this now') ?? ''
+    expect(card).toContain('Record the result')
+    expect(card).toContain('Notes for the permit holder')
+    expect(card).toContain(`Passing this final closes permit ${final.number}.`)
+    expect(filledButtons(body)).toEqual(['Record result'])
+    const owed = `Result owed since ${formatCivilDate(date)} (${late} ${late === 1 ? 'day' : 'days'} late)`
+    expect(body.split(owed)).toHaveLength(2)
+    expect(body).toContain('Add a photo')
+  })
+
+  it('lets the building official record an inspection assigned to someone else', async () => {
+    await actAs('official')
+    const final = await seeded('final', 'scheduled')
+    const card = sectionOf(await page(final.id), 'Do this now') ?? ''
+    expect(card).toContain('Notes for the permit holder')
+  })
+
+  it('points a failed inspection to its reinspection and lists the result', async () => {
+    await actAs('staff')
+    const failed = await seeded('framing', 'failed')
+    const again = await seeded('framing', 'scheduled', true)
+    const body = await page(failed.id)
+    expect(sentence(body)).toMatch(/^Failed on .+\. The reinspection is scheduled\.$/)
+    const card = sectionOf(body, 'Do this now') ?? ''
+    expect(card).toContain('Reinspection scheduled')
+    expect(card).toContain(`href="/staff/inspections/${again.id}"`)
+    const result = sectionOf(body, 'Result') ?? ''
+    expect(result).toContain(': Fail')
+    expect(result).toContain('Fire blocking is missing at the stair opening.')
+  })
+
+  it('notes the reinspection in the strip and links the failure it follows', async () => {
+    await actAs('staff')
+    const failed = await seeded('framing', 'failed')
+    const again = await seeded('framing', 'scheduled', true)
+    const body = await page(again.id)
+    expect(body).toContain('Framing reinspection')
+    expect(body).toContain('Reinspection requested')
+    expect(railOf(body)).toContain(`href="/staff/inspections/${failed.id}"`)
+  })
+
+  it('reads only the outcome of a passed inspection', async () => {
+    await actAs('staff')
+    const rough = await seeded('rough', 'passed')
+    const body = await page(rough.id)
+    expect(sentence(body)).toMatch(/^Passed on [A-Z][a-z]+ \d{1,2}, \d{4}\.$/)
+    expect(sectionOf(body, 'Do this now') ?? '').toContain('Recorded by Ira Inspector on ')
+    expect(railOf(body)).not.toContain('Cancel this inspection')
+  })
+
+  it('says why, by whom and when a cancelled inspection was cancelled, with no checklist', async () => {
+    await actAs('staff')
+    const footing = await seeded('footing', 'cancelled')
+    const body = await page(footing.id)
+    expect(sentence(body)).toMatch(/^Cancelled on .+\.$/)
+    const card = sectionOf(body, 'Do this now') ?? ''
+    expect(card).toContain('The permit was suspended')
+    expect(card).toContain('Automatically')
+    expect(body).not.toContain('aria-label="Result"')
+    expect(body).not.toContain('aria-label="Checklist"')
+    expect(body).not.toContain('Not answered')
+    expect(railOf(body)).not.toContain('Cancel this inspection')
+  })
+
+  it('hides the checklist with the reason while the permit is suspended', async () => {
+    await actAs('inspector')
+    const final = await seeded('final', 'scheduled')
+    await handle.db
+      .update(applications)
+      .set({ state: 'suspended' })
+      .where(eq(applications.id, final.applicationId))
+    try {
+      const body = await page(final.id)
+      expect(sentence(body)).toBe('Inspections are paused while this permit is under appeal.')
+      expect(sectionOf(body, 'Do this now') ?? '').toContain('Wait for the appeal to be decided')
+      expect(body).not.toContain('role="radiogroup"')
+    } finally {
+      await handle.db
+        .update(applications)
+        .set({ state: 'issued' })
+        .where(eq(applications.id, final.applicationId))
+    }
   })
 })
