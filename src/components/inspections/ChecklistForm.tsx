@@ -1,7 +1,7 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { toast } from 'sonner'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { useCsrfToken } from '@/components/CsrfProvider'
@@ -80,6 +80,7 @@ export function ChecklistForm({
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [confirming, setConfirming] = useState(false)
+  const recordButton = useRef<HTMLButtonElement>(null)
 
   const failed = items.some((i) => answers[i.key] === 'fail')
   const requiredAnswered = items.every((i) => !i.required || answers[i.key] != null)
@@ -167,6 +168,7 @@ export function ChecklistForm({
       <p className="font-semibold">{resultLine(failed, requiredNa, requiredAnswered)}</p>
       {closing === null ? null : <p>{closing.note}</p>}
       <Button
+        ref={recordButton}
         type="button"
         className="min-h-11 w-full text-base"
         disabled={!ready || pending}
@@ -182,6 +184,7 @@ export function ChecklistForm({
           void submit()
         }}
         onCancel={() => setConfirming(false)}
+        returnFocusTo={() => recordButton.current}
       />
       {message === null ? null : (
         <p role="status" className="text-base">

@@ -144,6 +144,19 @@ describe('ChecklistForm', () => {
     expect(action).not.toHaveBeenCalled()
   })
 
+  it('returns focus to Record result when the dialog is dismissed', async () => {
+    setup()
+    choose('Panel secured', 'Pass')
+    choose('Labels present', 'Pass')
+    const button = screen.getByRole('button', { name: 'Record result' })
+    button.focus()
+    fireEvent.click(button)
+    const dialog = await screen.findByRole('dialog')
+    fireEvent.click(within(dialog).getByRole('button', { name: 'Keep editing' }))
+    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
+    await waitFor(() => expect(document.activeElement).toBe(button))
+  })
+
   it('on a final, says above the button and in the dialog that passing closes the permit', async () => {
     setup(undefined, CLOSING)
     expect(screen.getByText('Passing this final closes permit EL-2026-0001.')).toBeTruthy()
