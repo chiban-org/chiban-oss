@@ -1,10 +1,11 @@
-import { and, eq, isNull, like } from 'drizzle-orm'
+import { and, eq, like, sql } from 'drizzle-orm'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { CsrfField } from '@/components/CsrfField'
 import { SubmitButton } from '@/components/SubmitButton'
 import { db } from '@/db/client'
 import { boardMemberships, boards, userRoles, users } from '@/db/schema'
+import { activeMembershipOn } from '@/features/access/predicates'
 import { isDevSignInEnabled } from '@/features/auth/devSignIn'
 import { devSignInEntries } from '@/features/auth/devSignInEntries'
 import { DEMO_DOMAIN } from '@/features/demo/seedDemo'
@@ -27,7 +28,12 @@ export default async function DevSignInPage() {
     .from(boardMemberships)
     .innerJoin(users, eq(users.id, boardMemberships.userId))
     .innerJoin(boards, eq(boards.id, boardMemberships.boardId))
-    .where(and(like(users.email, `%@${DEMO_DOMAIN}`), isNull(boardMemberships.termEnd)))
+    .where(
+      and(
+        like(users.email, `%@${DEMO_DOMAIN}`),
+        activeMembershipOn(sql`${users.id}`, sql`${boardMemberships.boardId}`),
+      ),
+    )
     .orderBy(boards.shortName)
   const boardsByEmail = new Map<string, string[]>()
   for (const seat of seats) {
