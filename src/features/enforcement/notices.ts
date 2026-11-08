@@ -45,6 +45,7 @@ export async function sendViolationNotice(
       .select()
       .from(enforcementCases)
       .where(eq(enforcementCases.id, value.caseId))
+      .for('update')
     if (caseRow === undefined) return err('not_found')
     const findings = await tx
       .select()

@@ -20,7 +20,13 @@ type StepRow = typeof orderCourtSteps.$inferSelect
 export interface CasePlanOrder {
   row: Pick<
     OrderRow,
-    'id' | 'number' | 'status' | 'issuedOn' | 'correctiveAction' | 'correctiveDeadline'
+    | 'id'
+    | 'number'
+    | 'status'
+    | 'issuedOn'
+    | 'correctiveAction'
+    | 'correctiveDeadline'
+    | 'findingIds'
   >
   rule: Pick<CeaseAndDesistRule, 'recipientRoles' | 'ownerRoles'>
   status: Pick<ServiceStatus, 'missing' | 'servedOn'>
@@ -36,7 +42,7 @@ export interface CasePlanInput {
   today: CivilDate
   stay: Pick<StayState, 'stayed' | 'reason'>
   banner: string | null
-  findings: readonly Pick<typeof violationFindings.$inferSelect, 'status'>[]
+  findings: readonly Pick<typeof violationFindings.$inferSelect, 'id' | 'status'>[]
   notices: readonly Pick<typeof violationNotices.$inferSelect, 'id' | 'receivedOn'>[]
   orders: readonly CasePlanOrder[]
   fines: readonly { row: Pick<typeof enforcementFines.$inferSelect, 'id'>; dueCents: number }[]
@@ -81,6 +87,23 @@ export function unservedFor(order: CasePlanOrder, role: RecipientRole) {
   return order.service.recipients.filter(
     (r) => roles.includes(r.role) && order.status.servedOn[r.id] === undefined,
   )
+}
+
+export type FindingStanding = 'open' | 'corrected' | 'withdrawn' | 'none'
+
+export function findingStanding(input: Pick<CasePlanInput, 'findings'>): FindingStanding {
+  const statuses = input.findings.map((f) => f.status)
+  if (statuses.length === 0) return 'none'
+  if (statuses.includes('open')) return 'open'
+  return statuses.includes('corrected') ? 'corrected' : 'withdrawn'
+}
+
+export function draftIsStale(
+  findings: readonly { id: string; status: string }[],
+  findingIds: readonly string[],
+): boolean {
+  const open = new Set(findings.filter((f) => f.status === 'open').map((f) => f.id))
+  return findingIds.some((id) => !open.has(id))
 }
 
 export function draftOrderOf(input: CasePlanInput): CasePlanOrder | null {

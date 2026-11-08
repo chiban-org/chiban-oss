@@ -8,7 +8,8 @@ const RSA_155A_1 = {
 } as const
 
 export const NH_UNVERIFIED_EDITION_KEY = 'nh.edition.unverified_before_2024_07_01'
-export const NH_CURRENT_EDITION_KEY = 'nh.edition.2024_07_01'
+export const NH_2021_EDITION_KEY = 'nh.edition.2024_07_01'
+export const NH_2024_EDITION_KEY = 'nh.edition.2026_07_01'
 
 export const NH_CODE_EDITIONS: CodeEditionEntry[] = [
   {
@@ -23,7 +24,7 @@ export const NH_CODE_EDITIONS: CodeEditionEntry[] = [
     citation: RSA_155A_1,
   },
   {
-    key: NH_CURRENT_EDITION_KEY,
+    key: NH_2021_EDITION_KEY,
     label:
       'IBC 2021, IEBC 2021, IPC 2021, IMC 2021, IECC 2018, IRC 2021, ISPSC 2021, NEC 2023 (effective 2024-07-01)',
     status: 'verified',
@@ -44,6 +45,32 @@ export const NH_CODE_EDITIONS: CodeEditionEntry[] = [
       { effectiveFrom: d('2025-10-15'), label: 'State amendments effective 2025-10-15' },
     ],
     electionWindow: { until: d('2024-12-31'), mayElect: [NH_UNVERIFIED_EDITION_KEY] },
+    citation: RSA_155A_1,
+  },
+  {
+    key: NH_2024_EDITION_KEY,
+    label:
+      'IBC 2024, IEBC 2024, IPC 2024, IMC 2024, IECC 2018, ISPSC 2024, IRC 2024, NEC 2023 (effective 2026-07-01)',
+    status: 'verified',
+    effectiveFrom: d('2026-07-01'),
+    enforcementFrom: null,
+    components: [
+      { code: 'IBC', edition: '2024' },
+      { code: 'IEBC', edition: '2024' },
+      { code: 'IPC', edition: '2024' },
+      { code: 'IMC', edition: '2024' },
+      { code: 'IECC', edition: '2018' },
+      { code: 'ISPSC', edition: '2024' },
+      { code: 'IRC', edition: '2024' },
+      { code: 'NEC', edition: '2023' },
+    ],
+    amendmentPackages: [
+      {
+        effectiveFrom: d('2026-07-01'),
+        label: 'State amendments approved by the board as of 2025-10-10',
+      },
+    ],
+    electionWindow: null,
     citation: RSA_155A_1,
   },
 ]

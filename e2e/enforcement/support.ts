@@ -93,7 +93,9 @@ export async function recordZoningFinding(page: Page, ref: string, facts: string
   await form.getByLabel('Section or condition').fill(ref)
   await form.getByLabel('Facts').fill(facts)
   await form.getByRole('button', { name: 'Record finding' }).click()
-  await expect(region(page, panel).getByText(`Zoning ordinance: ${ref} (Open)`)).toBeVisible()
+  await expect(
+    region(page, panel).getByText(`Zoning ordinance: ${ref}`, { exact: true }),
+  ).toBeVisible()
 }
 
 export async function caseNumber(db: E2eDb, caseId: string): Promise<string> {

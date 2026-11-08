@@ -54,6 +54,7 @@ describe('settings menu', () => {
       'Local code amendments',
       'State law',
       'Building code editions',
+      'Sections for findings',
     ])
   })
 

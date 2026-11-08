@@ -13,6 +13,9 @@ export const PROVISION_KINDS = [
 ] as const
 export type ProvisionKind = (typeof PROVISION_KINDS)[number]
 
+export const FINDING_STATUSES = ['open', 'corrected', 'withdrawn'] as const
+export type FindingStatus = (typeof FINDING_STATUSES)[number]
+
 export const NOTICE_METHODS = [
   'in_hand',
   'first_class_mail',
@@ -48,9 +51,13 @@ export const violationFindings = pgTable(
     inspectionDate: date('inspection_date', { mode: 'string' }).notNull(),
     foundOn: date('found_on', { mode: 'string' }).notNull(),
     foundBy: uuid('found_by').notNull(),
-    status: text('status', { enum: ['open', 'corrected', 'withdrawn'] })
-      .notNull()
-      .default('open'),
+    status: text('status', { enum: FINDING_STATUSES }).notNull().default('open'),
+    withdrawnReason: text('withdrawn_reason'),
+    withdrawnBy: uuid('withdrawn_by'),
+    withdrawnAt: timestamp('withdrawn_at', { withTimezone: true }),
+    correctedOn: date('corrected_on', { mode: 'string' }),
+    correctedNote: text('corrected_note'),
+    correctedBy: uuid('corrected_by'),
   },
   (t) => [index('violation_findings_case_idx').on(t.caseId)],
 )

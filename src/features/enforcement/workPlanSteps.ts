@@ -7,8 +7,10 @@ import {
   type CasePlanInput,
   type CasePlanOrder,
   counselState,
+  draftIsStale,
   draftOrderOf,
   filingLead,
+  findingStanding,
   gateBlocks,
   liveOrder,
   runningAnswers,
@@ -56,9 +58,29 @@ function issueStep(draft: CasePlanOrder): Step {
   )
 }
 
+function noViolationStep(): Step {
+  return town('move:no_violation', 'Record no violation', { kind: 'move', to: 'no_violation' })
+}
+
+function redraftStep(draft: CasePlanOrder): Step {
+  return town(
+    'order.redraft',
+    `Discard draft order ${draft.row.number} and draft a new one`,
+    null,
+    'The draft includes a finding that was withdrawn or marked corrected, so it cannot be issued. Discard it in the orders panel.',
+  )
+}
+
+function draftStep(input: CasePlanInput, draft: CasePlanOrder): Step {
+  return draftIsStale(input.findings, draft.row.findingIds) ? redraftStep(draft) : issueStep(draft)
+}
+
 function violationStep(input: CasePlanInput): Step {
+  const standing = findingStanding(input)
+  if (standing === 'corrected') return resolveStep()
+  if (standing === 'withdrawn') return noViolationStep()
   const draft = draftOrderOf(input)
-  if (draft !== null) return issueStep(draft)
+  if (draft !== null) return draftStep(input, draft)
   if (input.notices.length === 0) {
     return town('notice.sent', 'Send a notice of violation', { kind: 'send_notice' })
   }
@@ -195,8 +217,9 @@ function orderStep(input: CasePlanInput, order: CasePlanOrder): Step {
 }
 
 function afterOrderStep(input: CasePlanInput): Step {
+  if (findingStanding(input) === 'withdrawn') return judgmentStep(input)
   const draft = draftOrderOf(input)
-  if (draft !== null && input.staff.row.status === 'order_issued') return issueStep(draft)
+  if (draft !== null && input.staff.row.status === 'order_issued') return draftStep(input, draft)
   const live = liveOrder(input)
   return live === null ? resolveStep() : orderStep(input, live)
 }
