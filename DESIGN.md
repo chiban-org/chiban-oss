@@ -172,6 +172,9 @@ Staff can send an application to any active board that is not deciding it (`src/
 - Sending emails the board's seated members a link to `/board`. Who can read it is worked out when the page is read, so a member seated later sees it and a member whose term ended does not.
 - On `/board`, each request shows the application, the board's short name, the comment-by date and the status. Its page (`/board/comments/<id>`) shows the documents shared with reviewers, the board's comments so far and a Comment box; staff-only and board-only documents stay hidden.
 
+- `/staff/boards` lists every active board. A deciding board shows its application table; a board that only comments shows "Sent for comment" instead (application, status in words, comment-by date), or "This board comments on applications and does not decide them. Nothing has been sent to it for comment." when nothing is waiting. The meetings page puts boards in a Board filter menu once the town has more than three.
+- The demo seed adds an Alder Pond Conservation Commission (three members, approved minutes for October 7, a shown agenda for November 18, one application with a comment and one waiting) and an Alder Pond Historic District Commission (members, one meeting). Cleo Marsh, `concom.member@`, sits on the Conservation Commission. `/dev/sign-in` names the boards after each board member's roles.
+
 ## Links
 
 - Links inside page content are underlined, from one rule in `components.css`. Links in table cells stay plain until hovered. Navigation, tabs, sort headers, chips and buttons are never underlined.

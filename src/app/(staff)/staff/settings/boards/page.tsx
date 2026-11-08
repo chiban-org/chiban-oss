@@ -19,7 +19,7 @@ function BoardRow({ row }: { row: BoardAdminRow }) {
           <span className="block text-sm font-normal text-muted-foreground">{row.shortName}</span>
         )}
       </td>
-      <td className="min-w-[6rem]">{row.kindText}</td>
+      <td className="min-w-[7rem]">{row.kindText}</td>
       <td>{row.seated}</td>
       <td className="whitespace-nowrap">{row.nextMeetingText ?? 'None scheduled'}</td>
       <td className="whitespace-nowrap">

@@ -48,7 +48,6 @@ function chips(
       param: 'board',
       label: 'Board',
       single: true,
-      display: 'inline',
       options: labeledOptions(boardNames, list.facets.get('boards')),
     },
     {
