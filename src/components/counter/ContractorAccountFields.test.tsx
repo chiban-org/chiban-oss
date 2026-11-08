@@ -70,4 +70,92 @@ describe('contractor account lookup on the quick issue form', () => {
     expect(screen.queryByRole('status')).toBeNull()
     expect(license.value).toBe('')
   })
+
+  it('replaces an untouched auto-filled number when the contractor changes, and clears it for no account', async () => {
+    const find = vi.fn((data: FormData) =>
+      Promise.resolve(
+        data.get('contractorEmail') === 'b@co.example' ? matchFor('B Co', 'EL-B') : NONE,
+      ),
+    )
+    const { email, license } = fields(find)
+    lookUp(email, 'a@co.example')
+    await waitFor(() => expect(find).toHaveBeenCalledTimes(1))
+    lookUp(email, 'b@co.example')
+    await waitFor(() => expect(license.value).toBe('EL-B'))
+    lookUp(email, 'walk.in@alderpond.example')
+    await waitFor(() => expect(screen.queryByRole('status')).toBeNull())
+    expect(license.value).toBe('')
+  })
+
+  it('never replaces a number the clerk typed over an auto-filled one', async () => {
+    const find = vi.fn((data: FormData) =>
+      Promise.resolve(
+        data.get('contractorEmail') === 'a@co.example'
+          ? matchFor('A Co', 'EL-A')
+          : matchFor('B Co', 'EL-B'),
+      ),
+    )
+    const { email, license } = fields(find)
+    lookUp(email, 'a@co.example')
+    await waitFor(() => expect(license.value).toBe('EL-A'))
+    fireEvent.change(license, { target: { value: 'EL-TYPED' } })
+    lookUp(email, 'b@co.example')
+    await screen.findByText(/B Co/)
+    expect(license.value).toBe('EL-TYPED')
+  })
+
+  it('drops a slow answer for an earlier email', async () => {
+    const slow = deferred()
+    const find = vi.fn((data: FormData) =>
+      data.get('contractorEmail') === 'a@co.example'
+        ? slow.promise
+        : Promise.resolve(matchFor('B Co', 'EL-B')),
+    )
+    const { email, license } = fields(find)
+    lookUp(email, 'a@co.example')
+    lookUp(email, 'b@co.example')
+    await waitFor(() => expect(license.value).toBe('EL-B'))
+    slow.resolve(matchFor('A Co', 'EL-A'))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(license.value).toBe('EL-B')
+    expect(screen.getByRole('status').textContent).toContain('B Co')
+  })
+
+  it('drops a pending answer once the email is cleared', async () => {
+    const slow = deferred()
+    const { email, license } = fields(() => slow.promise)
+    lookUp(email, 'a@co.example')
+    lookUp(email, '')
+    slow.resolve(matchFor('A Co', 'EL-A'))
+    await new Promise((resolve) => setTimeout(resolve, 20))
+    expect(screen.queryByRole('status')).toBeNull()
+    expect(license.value).toBe('')
+  })
 })
+
+const NONE: ContractorLookupResult = { ok: true, account: null }
+
+function matchFor(companyName: string, number: string): ContractorLookupResult {
+  return {
+    ok: true,
+    account: {
+      companyName,
+      contactName: 'Pat',
+      licenses: [{ trade: 'electrical', label: 'Electrical', number }],
+      prefillLicenseNumber: number,
+    },
+  }
+}
+
+function lookUp(email: HTMLInputElement, value: string) {
+  fireEvent.change(email, { target: { value } })
+  fireEvent.blur(email)
+}
+
+function deferred() {
+  let resolve: (value: ContractorLookupResult) => void = () => undefined
+  const promise = new Promise<ContractorLookupResult>((done) => {
+    resolve = done
+  })
+  return { promise, resolve }
+}

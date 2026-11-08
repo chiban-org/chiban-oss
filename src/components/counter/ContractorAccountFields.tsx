@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useCsrfToken } from '@/components/CsrfProvider'
 import type { ContractorAccountMatch, CounterActions } from '@/components/counter/counterTypes'
 import { TextField } from '@/components/staff/fields'
@@ -21,6 +21,11 @@ function AccountMatch({ account }: { account: ContractorAccountMatch }) {
   )
 }
 
+function nextLicense(current: string, autoFilled: string | null, prefill: string | null): string {
+  const typed = current.trim() !== '' && current !== autoFilled
+  return typed ? current : (prefill ?? '')
+}
+
 export function ContractorAccountFields({
   typeKey,
   findAccount,
@@ -32,10 +37,22 @@ export function ContractorAccountFields({
   const [license, setLicense] = useState('')
   const [account, setAccount] = useState<ContractorAccountMatch | null>(null)
   const [, setPending] = useState(false)
+  const generation = useRef(0)
+  const autoFilled = useRef<string | null>(null)
+
+  const settle = (found: ContractorAccountMatch | null) => {
+    const prefill = found?.prefillLicenseNumber ?? null
+    const previous = autoFilled.current
+    autoFilled.current = prefill
+    setAccount(found)
+    setLicense((current) => nextLicense(current, previous, prefill))
+  }
 
   const look = async (email: string) => {
+    generation.current += 1
+    const asked = generation.current
     if (findAccount === undefined || email.trim() === '') {
-      setAccount(null)
+      settle(null)
       return
     }
     const data = new FormData()
@@ -43,10 +60,8 @@ export function ContractorAccountFields({
     data.set('contractorEmail', email)
     data.set('typeKey', typeKey)
     const result = await attempt(() => findAccount(data), setPending)
-    const found = result.ok && result.value.ok ? result.value.account : null
-    setAccount(found)
-    const prefill = found?.prefillLicenseNumber ?? null
-    if (prefill !== null) setLicense((current) => (current.trim() === '' ? prefill : current))
+    if (asked !== generation.current) return
+    settle(result.ok && result.value.ok ? result.value.account : null)
   }
 
   return (
