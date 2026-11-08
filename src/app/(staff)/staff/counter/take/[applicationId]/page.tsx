@@ -37,8 +37,11 @@ const DOCUMENT_LIMIT = 100
 
 interface Props {
   params: Promise<{ applicationId: string }>
-  searchParams: Promise<{ step?: string }>
+  searchParams: Promise<{ step?: string; from?: string }>
 }
+
+const FROM_QUICK_ISSUE =
+  'This permit needs documents before it can be issued, so it was taken for review with the answers entered. Add or accept each document, submit it, then issue it from the record.'
 
 const LEADS: Record<TakeStep, string> = {
   form: 'Fill in the application with the applicant. Staff-only questions are shown too.',
@@ -103,7 +106,7 @@ async function stepBody(
 }
 
 export default async function TakeApplicationPage({ params, searchParams }: Props) {
-  const [{ applicationId }, { step: requested }] = await Promise.all([params, searchParams])
+  const [{ applicationId }, { step: requested, from }] = await Promise.all([params, searchParams])
   if (!isUuid(applicationId)) notFound()
   const ctx = await requireStaffContext()
   if (!(await mayUseCounter(ctx.db, ctx.actor, ctx.signal))) {
@@ -140,6 +143,9 @@ export default async function TakeApplicationPage({ params, searchParams }: Prop
           draft={view.state === 'draft'}
         />
       )}
+      {from === 'quick_issue' && step === 'documents' ? (
+        <p role="status">{FROM_QUICK_ISSUE}</p>
+      ) : null}
       {await stepBody(ctx, view, { step, payments })}
     </main>
   )
