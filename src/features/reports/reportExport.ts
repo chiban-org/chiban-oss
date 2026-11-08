@@ -1,4 +1,5 @@
 import type { Db } from '@/db/client'
+import { SCHEDULABLE_REPORTS } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import {
   censusBpsReport,
@@ -26,14 +27,8 @@ import type { SheetCell } from '@/features/reports/sheet'
 import { addDays, daysBetween } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
-export const EXPORT_REPORTS = [
-  'permit-volume',
-  'processing-time',
-  'revenue',
-  'cash-receipts',
-  'census',
-] as const
-export type ExportReportKey = (typeof EXPORT_REPORTS)[number]
+export const EXPORT_REPORTS = SCHEDULABLE_REPORTS
+export type ExportReportKey = (typeof SCHEDULABLE_REPORTS)[number]
 
 const TITLES: ReadonlyMap<ExportReportKey, string> = new Map([
   ['permit-volume', 'Permit volume'],

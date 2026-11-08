@@ -2,12 +2,19 @@ import nodemailer, { type Transporter } from 'nodemailer'
 import { env } from '@/config/env'
 import { err, ok, type Result } from '@/types/result'
 
+export interface MailAttachment {
+  filename: string
+  contentType: string
+  content: Buffer
+}
+
 export interface MailMessage {
   to: string
   subject: string
   text: string
   html: string
   icalEvent?: { method: 'REQUEST' | 'CANCEL'; filename: string; content: string }
+  attachments?: MailAttachment[]
 }
 
 export interface MailTransport {

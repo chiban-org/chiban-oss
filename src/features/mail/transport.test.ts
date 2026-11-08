@@ -48,3 +48,34 @@ describe('mail transports carry calendar events', () => {
     expect(mail.sent[0]).toEqual(plain)
   })
 })
+
+describe('mail transports carry file attachments', () => {
+  it('smtp transport passes a report attachment to nodemailer as a named file', async () => {
+    const json = nodemailer.createTransport({ jsonTransport: true })
+    const spy = vi.spyOn(json, 'sendMail')
+    const mail = createTransportFrom(json, 'Town <noreply@alderpond.example>')
+    const { icalEvent: _omit, ...plain } = message
+    const result = await mail.send(
+      {
+        ...plain,
+        attachments: [
+          {
+            filename: 'permit-volume-2026-10-01-to-2026-10-31.csv',
+            contentType: 'text/csv; charset=utf-8',
+            content: Buffer.from('Month,Type\r\n', 'utf8'),
+          },
+        ],
+      },
+      signal,
+    )
+    expect(result.ok).toBe(true)
+    const delivered = await spy.mock.results[0]?.value
+    const parsed = JSON.parse(String((delivered as { message: string }).message)) as {
+      attachments?: { filename: string; contentType: string }[]
+    }
+    expect(parsed.attachments?.[0]).toMatchObject({
+      filename: 'permit-volume-2026-10-01-to-2026-10-31.csv',
+      contentType: 'text/csv; charset=utf-8',
+    })
+  })
+})

@@ -17,6 +17,7 @@ const JOB_LABELS = new Map<string, string>([
   ['exports.prune', 'Export cleanup'],
   ['health.check', 'Health check'],
   ['jobs.sweep', 'Stuck job sweep'],
+  ['reports.scheduled', 'Scheduled reports'],
 ])
 
 export function jobLabel(name: string): string {

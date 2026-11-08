@@ -1,8 +1,9 @@
+import { REPORT_FREQUENCIES } from '@/db/schema'
 import type { ReportRange } from '@/features/reports/range'
 import { addDays, addMonthsClamped, type CivilDate, dayOfWeek } from '@/types/civilDate'
 
-export const SCHEDULE_FREQUENCIES = ['weekly', 'monthly', 'quarterly'] as const
-export type ScheduleFrequency = (typeof SCHEDULE_FREQUENCIES)[number]
+export const SCHEDULE_FREQUENCIES = REPORT_FREQUENCIES
+export type ScheduleFrequency = (typeof REPORT_FREQUENCIES)[number]
 
 export const FREQUENCY_LABELS: Record<ScheduleFrequency, string> = {
   weekly: 'Every Monday, for the week before',
