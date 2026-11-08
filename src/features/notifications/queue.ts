@@ -138,9 +138,7 @@ export async function queueForParties(
   signal: AbortSignal,
 ): Promise<void> {
   const { roles, ...rest } = input
-  const [recipientUserIds, recipientPartyIds] = await Promise.all([
-    partyRecipients(tx, input.applicationId, roles),
-    addressRecipients(tx, input.applicationId, roles),
-  ])
+  const recipientUserIds = await partyRecipients(tx, input.applicationId, roles)
+  const recipientPartyIds = await addressRecipients(tx, input.applicationId, roles)
   await queueNotification(tx, { ...rest, recipientUserIds, recipientPartyIds }, signal)
 }
