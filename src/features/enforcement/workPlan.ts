@@ -1,5 +1,5 @@
 import type { EnforcementStatus } from '@/db/schema'
-import { CASE_TRANSITIONS } from '@/features/enforcement/caseTransitions'
+import { CASE_TRANSITIONS, noViolationAllowed } from '@/features/enforcement/caseTransitions'
 import { daysLeftPhrase } from '@/lib/dayCount'
 import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, daysBetween } from '@/types/civilDate'
@@ -103,8 +103,13 @@ function nowOf(step: Step | null, input: CasePlanInput): CaseNowStep | null {
 function movesOf(input: CasePlanInput, now: CaseNowStep | null, extras: CasePlanExtras) {
   if (!extras.abilities.has('move')) return []
   const inCard = now?.action?.kind === 'move' ? now.action.to : null
-  return CASE_TRANSITIONS[input.staff.row.status].filter(
-    (to): to is CaseMove => (MOVES as readonly string[]).includes(to) && to !== inCard,
+  const status = input.staff.row.status
+  const statuses = input.findings.map((f) => f.status)
+  return CASE_TRANSITIONS[status].filter(
+    (to): to is CaseMove =>
+      (MOVES as readonly string[]).includes(to) &&
+      to !== inCard &&
+      (to !== 'no_violation' || noViolationAllowed(status, statuses)),
   )
 }
 

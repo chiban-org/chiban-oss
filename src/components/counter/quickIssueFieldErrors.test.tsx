@@ -37,7 +37,7 @@ describe('QuickIssueForm refusals', () => {
           licenseRequired={true}
           licenseGroups={[{ label: 'Electrical', licenses: ['Master electrician'] }]}
           defaultLicenseType="Master electrician"
-          lookup={{ label: 'Lookup', url: 'https://oplc.nh.gov/license-lookup' }}
+          lookup={{ label: 'Lookup', url: 'https://forms.nh.gov/licenseverification/Search.aspx' }}
           actions={actions}
         />
       </CsrfProvider>,

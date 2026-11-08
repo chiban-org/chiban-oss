@@ -23,6 +23,7 @@ import { fineBalance } from '@/features/enforcement/fines'
 import { type MotionBlock, motionBlocks } from '@/features/enforcement/motionGate'
 import { type PenaltyExposure, penaltyExposure } from '@/features/enforcement/penaltyExposure'
 import { enforcementRulesFor } from '@/features/enforcement/ruleLinks'
+import type { SuggestionsByKind } from '@/features/enforcement/sections/suggestions'
 import {
   loadServiceState,
   orderRule,
@@ -68,6 +69,7 @@ export interface CaseDetail {
   exposure: PenaltyExposure | null
   documents: PanelDocument[]
   names: Record<string, string>
+  suggestions?: SuggestionsByKind
 }
 
 export function buildOrderDetail(
@@ -277,6 +279,7 @@ export async function loadCaseDetail(
     names: await userNames(db, [
       ...view.value.notes.map((n) => n.authorId),
       ...findings.map((f) => f.foundBy),
+      ...findings.flatMap((f) => (f.withdrawnBy === null ? [] : [f.withdrawnBy])),
       ...orders.flatMap((o) => (o.row.issuedBy === null ? [] : [o.row.issuedBy])),
     ]),
   })

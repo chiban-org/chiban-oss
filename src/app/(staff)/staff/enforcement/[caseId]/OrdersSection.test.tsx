@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, screen } from '@testing-library/react'
-import { afterEach, describe, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { expectRefusalBeside, refusal } from '@/test/besideField'
 import {
   ALL_CAN,
@@ -36,6 +36,7 @@ const draft = {
   row: {
     id: 'o1',
     number: 'CD-2027-0001',
+    findingIds: [],
     status: 'draft',
     rowVersion: 1,
     correctiveAction: '',
@@ -91,5 +92,20 @@ describe('issuing an order', () => {
     renderForm(<OrdersSection detail={stubDetail({ orders: [draft] })} can={ALL_CAN} />)
     fireEvent.click(screen.getByRole('button', { name: 'Issue order' }))
     await expectRefusalBeside(screen.getByLabelText(labelled('Issue date')), message)
+  })
+})
+
+describe('a draft whose finding was withdrawn', () => {
+  it('says it needs a new draft and offers no issue form', () => {
+    const stale = { ...draft, row: { ...draft.row, findingIds: ['f1'] } }
+    renderForm(
+      <OrdersSection
+        detail={stubDetail({ findings: [{ ...finding, status: 'withdrawn' }], orders: [stale] })}
+        can={ALL_CAN}
+      />,
+    )
+    expect(screen.getByText(/This draft includes a finding that was withdrawn/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Issue order' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Discard the draft' })).toBeTruthy()
   })
 })

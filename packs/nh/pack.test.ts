@@ -3,7 +3,9 @@ import { NH_CODE_EDITIONS } from '@packs/nh/codeEditions'
 import { NH_PACK_MANIFEST } from '@packs/nh/manifest'
 import { PackManifestSchema, PackRuleSchema } from '@packs/nh/schema'
 import { describe, expect, it } from 'vitest'
+import { resolveCodeEdition } from '@/features/building/codeEdition'
 import { loadPack } from '@/features/packs/loadPack'
+import type { CivilDate } from '@/types/civilDate'
 import { todayInTimeZone } from '@/types/civilDate'
 
 describe('nh pack', () => {
@@ -86,5 +88,30 @@ describe('nh pack', () => {
       '2025-07-01',
       '2025-10-15',
     ])
+  })
+
+  it('adopts the 2024 ICC codes for applications received on or after 2026-07-01', () => {
+    const edition = NH_CODE_EDITIONS.find((e) => e.effectiveFrom === '2026-07-01')
+    expect(edition?.status).toBe('verified')
+    expect(edition?.components.map((c) => `${c.code} ${c.edition}`)).toEqual([
+      'IBC 2024',
+      'IEBC 2024',
+      'IPC 2024',
+      'IMC 2024',
+      'IECC 2018',
+      'ISPSC 2024',
+      'IRC 2024',
+      'NEC 2023',
+    ])
+    expect(edition?.citation.url).toBe('https://gc.nh.gov/rsa/html/XII/155-A/155-A-1.htm')
+  })
+
+  it('picks the edition by the date the application was received', () => {
+    const keyOn = (date: string) => {
+      const resolved = resolveCodeEdition(NH_CODE_EDITIONS, date as CivilDate)
+      return resolved.ok ? resolved.value.editionKey : resolved.error
+    }
+    expect(keyOn('2026-06-30')).toBe('nh.edition.2024_07_01')
+    expect(keyOn('2026-07-01')).toBe('nh.edition.2026_07_01')
   })
 })

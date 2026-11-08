@@ -15,6 +15,9 @@ const COPY: Record<string, string> = {
   stale_version: 'This record changed since you opened it. Reload the page and try again.',
   case_not_investigating: 'The case has to be under investigation before findings can be recorded.',
   findings_invalid: 'Choose open findings that belong to this case.',
+  finding_not_open: 'That finding was already withdrawn or marked corrected.',
+  finding_in_use:
+    'That finding is already in a notice or order, so it cannot be edited. Withdraw it and record a new one instead.',
   split_required:
     'These findings mix building code and other violations. Issue a separate order for each kind.',
   not_a_draft: 'That order has already been issued.',
@@ -64,7 +67,12 @@ const COPY: Record<string, string> = {
     'Anonymous intake needs a passing retention check for the version that is running.',
 }
 
-type Failure = string | { missingContent: string[] } | { filingLeadUntil: CivilDate } | object
+type Failure =
+  | string
+  | { missingContent: string[] }
+  | { findingsNotOpen: string[] }
+  | { filingLeadUntil: CivilDate }
+  | object
 
 function contentLabel(key: string): string {
   return Object.entries(ORDER_CONTENT_LABELS).find(([k]) => k === key)?.[1] ?? key
@@ -72,6 +80,9 @@ function contentLabel(key: string): string {
 
 export function enforcementError(error: Failure): string {
   if (typeof error === 'string') return COPY[error] ?? errorCopy(error)
+  if ('findingsNotOpen' in error) {
+    return `This draft includes findings that were withdrawn or marked corrected: ${error.findingsNotOpen.join('; ')}. Discard the draft and draft a new order.`
+  }
   if ('missingContent' in error) {
     const names = error.missingContent.map(contentLabel)
     return `The order is missing: ${names.join(', ')}.`

@@ -25,6 +25,12 @@ function finding(overrides: Partial<Finding>): Finding {
     foundOn: '2027-02-10',
     foundBy: '00000000-0000-4000-8000-000000000003',
     status: 'open',
+    withdrawnReason: null,
+    withdrawnBy: null,
+    withdrawnAt: null,
+    correctedOn: null,
+    correctedNote: null,
+    correctedBy: null,
     ...overrides,
   }
 }

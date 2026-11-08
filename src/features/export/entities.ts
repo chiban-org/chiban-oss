@@ -233,6 +233,7 @@ const SPECS: Spec[] = [
   { table: t.ruleTransitionsApplied },
   { table: t.selectmenCertifications },
   { table: t.townSettings, importMode: 'replace' },
+  { table: t.townSections },
   { table: t.trcRoutings },
   { table: t.userRoles },
   {

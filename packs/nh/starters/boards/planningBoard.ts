@@ -1,12 +1,14 @@
 import {
   LOT_LINE_DOCUMENTS,
   LOT_SIZE_FIELD,
+  MORE_THAN_ONE_DWELLING_DOCUMENTS,
   NARRATIVE_AND_SKETCH,
   PLAN_FIELDS,
   SITE_PLAN_DOCUMENTS,
   SUBDIVISION_DOCUMENTS,
 } from '@packs/nh/starters/boards/boardDocuments'
 import { boardStarter, PLANNING_BOARD_WORKFLOW, perLot } from '@packs/nh/starters/boards/shared'
+import { SEPTIC_SYSTEM } from '@packs/nh/starters/documentQuestions'
 
 const FLOOR_AREA = {
   key: 'gross_floor_area_sq_ft',
@@ -175,6 +177,42 @@ export const DESIGN_REVIEW_STARTER = boardStarter({
   documents: NARRATIVE_AND_SKETCH,
 })
 
+export const MORE_THAN_ONE_DWELLING_STARTER = boardStarter({
+  id: 'nh.starter.pb_more_than_one_dwelling',
+  prefix: 'MDL',
+  slug: 'mdl',
+  label: 'More than one dwelling on a lot',
+  classification: 'nh.pb_conditional_use',
+  fields: [
+    {
+      key: 'existing_dwelling_count',
+      label: 'Dwellings on the lot now',
+      type: 'integer',
+      required: true,
+      validation: { min: 0 },
+    },
+    {
+      key: 'proposed_dwelling_count',
+      label: 'Total dwellings on the lot if approved',
+      type: 'integer',
+      required: true,
+      validation: { min: 2 },
+    },
+    { key: 'ordinance_section', label: 'Ordinance section', type: 'text', required: false },
+    SEPTIC_SYSTEM,
+    {
+      key: 'sealed_professionals',
+      label: 'Names and addresses of every professional whose seal is on a submitted plan',
+      type: 'textarea',
+      required: false,
+    },
+  ],
+  applicationFee: { op: 'flat', cents: 10000 },
+  newspaper: false,
+  workflow: PLANNING_BOARD_WORKFLOW,
+  documents: MORE_THAN_ONE_DWELLING_DOCUMENTS,
+})
+
 export const PLANNING_BOARD_STARTERS = [
   SITE_PLAN_STARTER,
   MINOR_SITE_PLAN_STARTER,
@@ -184,4 +222,5 @@ export const PLANNING_BOARD_STARTERS = [
   LOT_LINE_ADJUSTMENT_STARTER,
   CONDITIONAL_USE_STARTER,
   DESIGN_REVIEW_STARTER,
+  MORE_THAN_ONE_DWELLING_STARTER,
 ]
