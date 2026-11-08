@@ -79,6 +79,8 @@ async function target() {
   return { id, rowVersion: row?.rowVersion ?? 1 }
 }
 
+const NOT_ASSIGNED = 'Only the assigned inspector or the building official can record this result.'
+
 const ALL = {
   recordResultAction: actions.recordResultAction,
   createPhotoUploadIntentAction: actions.createPhotoUploadIntentAction,
@@ -136,9 +138,14 @@ describe('inspection actions', () => {
     expect(r).toEqual({ ok: false, error: 'This inspection changed since you opened it' })
   })
 
-  it('an inspector who is not assigned and finance are forbidden', async () => {
+  it('an inspector who is not assigned and a clerk are told who records, and finance is forbidden', async () => {
     const t = await target()
-    for (const actor of [w.otherInspector, w.finance]) {
+    const refusals = [
+      [w.otherInspector, NOT_ASSIGNED],
+      [w.world.staff, NOT_ASSIGNED],
+      [w.finance, 'You do not have permission to do this.'],
+    ] as const
+    for (const [actor, error] of refusals) {
       state.actor = actor
       const r = await actions.recordResultAction(
         form({
@@ -148,7 +155,7 @@ describe('inspection actions', () => {
           'item:rough-1': 'pass',
         }),
       )
-      expect(r).toMatchObject({ ok: false, error: 'You do not have permission to do this.' })
+      expect(r).toEqual({ ok: false, error })
     }
   })
 
@@ -176,19 +183,25 @@ describe('inspection actions', () => {
     })
   })
 
-  it('the photo intent action is forbidden for an inspector who is not assigned', async () => {
+  it('the photo intent action is refused for an inspector who is not assigned and a clerk', async () => {
     const t = await target()
-    state.actor = w.otherInspector
-    const r = await actions.createPhotoUploadIntentAction(
-      form({
-        targetId: t.id,
-        title: 'Panel',
-        filename: 'p.jpg',
-        contentType: 'image/jpeg',
-        sizeBytes: '10',
-      }),
-    )
-    expect(r).toEqual({ ok: false, error: 'You cannot add photos here.' })
+    for (const actor of [w.otherInspector, w.world.staff]) {
+      state.actor = actor
+      const r = await actions.createPhotoUploadIntentAction(
+        form({
+          targetId: t.id,
+          title: 'Panel',
+          filename: 'p.jpg',
+          contentType: 'image/jpeg',
+          sizeBytes: '10',
+        }),
+      )
+      expect(r).toEqual({
+        ok: false,
+        error:
+          'Only the assigned inspector or the building official can add photos to this inspection, up to 7 days after its result.',
+      })
+    }
     void RESULT_NOW
   })
 })

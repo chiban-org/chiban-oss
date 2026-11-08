@@ -103,6 +103,15 @@ describe('inspection photos', () => {
     expect(await intentFor(id, w.finance, RESULT_NOW)).toEqual({ ok: false, error: 'forbidden' })
   })
 
+  it('refuses a clerk and an administrator, and lets the building official add a photo', async () => {
+    const permit = await newIssuedPermit(handle.db, w, 'EL')
+    const id = await scheduledInspection(handle.db, w.inspector, permit.applicationId, 'rough')
+    for (const actor of [w.world.staff, w.world.admin]) {
+      expect(await intentFor(id, actor, RESULT_NOW)).toEqual({ ok: false, error: 'forbidden' })
+    }
+    expect((await intentFor(id, w.official, RESULT_NOW)).ok).toBe(true)
+  })
+
   it('an inspector who is not assigned is forbidden, and a cancelled inspection takes no photos', async () => {
     const permit = await newIssuedPermit(handle.db, w, 'EL')
     const id = await scheduledInspection(handle.db, w.inspector, permit.applicationId, 'rough')

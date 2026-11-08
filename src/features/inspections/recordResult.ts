@@ -12,7 +12,7 @@ import type { GateResult } from '@/features/gates/evaluateGates'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
 import { applyPassedFinal } from '@/features/inspections/closeOnFinal'
 import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
-import { managesAllInspectors } from '@/features/inspections/visibility'
+import { recordsInspection } from '@/features/inspections/visibility'
 import { INSPECTION_PARTY_ROLES, queueForParties } from '@/features/notifications/queue'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
@@ -37,6 +37,7 @@ export interface RecordResultInput {
 export type RecordResultError =
   | 'not_found'
   | 'forbidden'
+  | 'not_assigned'
   | 'not_scheduled'
   | 'permit_suspended'
   | 'unknown_item'
@@ -111,9 +112,7 @@ async function prepare(
   if (locked === undefined) return err('not_found')
   if (locked.rowVersion !== input.expectedRowVersion) return err('stale_version')
   if (locked.status !== 'scheduled') return err('not_scheduled')
-  if (locked.inspectorUserId !== actor.userId && !managesAllInspectors(actor)) {
-    return err('forbidden')
-  }
+  if (!recordsInspection(actor, locked.inspectorUserId)) return err('not_assigned')
   const [app] = await tx
     .select({ state: applications.state })
     .from(applications)

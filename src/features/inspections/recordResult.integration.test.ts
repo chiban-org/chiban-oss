@@ -277,16 +277,22 @@ describe('recording results', () => {
     })
   })
 
-  it('an inspector who is not assigned is forbidden, and staff may record for them', async () => {
+  it('refuses an inspector who is not assigned, a clerk and an administrator, and lets the building official record', async () => {
     const permit = await newIssuedPermit(handle.db, w, 'EL')
     const id = await scheduledInspection(handle.db, w.inspector, permit.applicationId, 'rough')
     const items = await passingItems(handle.db, permit.applicationId, 'rough')
-    expect(await record(id, { result: 'passed', items }, w.otherInspector)).toEqual({
+    for (const actor of [w.otherInspector, w.world.staff]) {
+      expect(await record(id, { result: 'passed', items }, actor)).toEqual({
+        ok: false,
+        error: 'not_assigned',
+      })
+    }
+    expect(await record(id, { result: 'passed', items }, w.world.admin)).toEqual({
       ok: false,
       error: 'forbidden',
     })
     expect((await row(id)).status).toBe('scheduled')
-    expect((await record(id, { result: 'passed', items }, w.world.staff)).ok).toBe(true)
+    expect((await record(id, { result: 'passed', items }, w.official)).ok).toBe(true)
   })
 
   it('closing cancels another open request on the permit', async () => {

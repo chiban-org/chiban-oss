@@ -11,7 +11,7 @@ import { attachDocument } from '@/features/documents/attach'
 import type { DocKind, RecordRef } from '@/features/documents/types'
 import { ingestTempObject } from '@/features/files/ingest'
 import { type AllowedType, isAllowedType } from '@/features/files/sniff'
-import { managesAllInspectors } from '@/features/inspections/visibility'
+import { recordsInspection } from '@/features/inspections/visibility'
 import { findSeries } from '@/features/records/series'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
@@ -73,7 +73,7 @@ async function mayUploadToInspection(
   if (!(await hasCapability(db, actor.userId, 'inspection.record', signal))) return false
   const [row] = await db.select().from(inspections).where(eq(inspections.id, inspectionId))
   if (row === undefined) return false
-  if (row.inspectorUserId !== actor.userId && !managesAllInspectors(actor)) return false
+  if (!recordsInspection(actor, row.inspectorUserId)) return false
   if (row.status === 'scheduled') return true
   const decided = row.status === 'passed' || row.status === 'failed'
   return (

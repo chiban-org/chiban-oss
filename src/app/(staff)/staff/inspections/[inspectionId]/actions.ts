@@ -14,6 +14,7 @@ const RESULT_COPY: Record<string, string> = {
   stale_version: STALE_COPY,
   not_found: 'That inspection was not found.',
   forbidden: errorCopy('forbidden'),
+  not_assigned: 'Only the assigned inspector or the building official can record this result.',
   not_scheduled: 'This inspection is not scheduled for today or earlier.',
   permit_suspended: 'Inspections are paused while this permit is under appeal.',
   unknown_item: errorCopy('invalid_input'),
@@ -28,10 +29,12 @@ export type PhotoIntentResponse =
 export type PhotoFinalizeResponse = { ok: true } | { ok: false; error: string }
 
 const PHOTO_FORBIDDEN = 'You cannot add photos here.'
+const PHOTO_NOT_ASSIGNED =
+  'Only the assigned inspector or the building official can add photos to this inspection, up to 7 days after its result.'
 const MAX_PHOTO_MB = 25
 
 const INTENT_COPY = {
-  forbidden: PHOTO_FORBIDDEN,
+  forbidden: PHOTO_NOT_ASSIGNED,
   too_large: `That photo is larger than ${MAX_PHOTO_MB} MB.`,
   empty: 'That file is empty. Choose a file with content.',
   type_not_allowed: 'Use a JPEG or PNG photo.',
@@ -41,7 +44,7 @@ const INTENT_COPY = {
 } as const
 
 const FINALIZE_COPY = {
-  forbidden: PHOTO_FORBIDDEN,
+  forbidden: PHOTO_NOT_ASSIGNED,
   expired: 'The upload took too long. Take the photo again.',
   already_finalized: 'That photo was already added.',
   not_uploaded: 'The photo did not arrive. Try again.',
