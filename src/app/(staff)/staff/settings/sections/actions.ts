@@ -10,17 +10,17 @@ import type { ActionResult } from '@/server/actionRunner'
 import { refuseField, runStaffForm } from '@/server/formInput'
 import { ADD_SECTION_FORM, EDIT_SECTION_FORM, RETIRE_SECTION_FORM } from './forms'
 
-const COPY: Record<Exclude<SaveSectionError, 'reference_taken'>, string> = {
-  forbidden: 'You do not have permission to change the section list.',
-  not_found: 'That section was not found.',
-  retired: 'That section is retired. Add it again instead.',
-}
-
 function refused(error: SaveSectionError): ActionResult {
-  if (error === 'reference_taken') {
-    return refuseField('reference', 'This section is already on the list for that kind.')
+  switch (error) {
+    case 'reference_taken':
+      return refuseField('reference', 'This section is already on the list for that kind.')
+    case 'forbidden':
+      return { ok: false, error: 'You do not have permission to change the section list.' }
+    case 'not_found':
+      return { ok: false, error: 'That section was not found.' }
+    case 'retired':
+      return { ok: false, error: 'That section is retired. Add it again instead.' }
   }
-  return { ok: false, error: COPY[error] }
 }
 
 export async function addSectionAction(formData: FormData): Promise<ActionResult> {
