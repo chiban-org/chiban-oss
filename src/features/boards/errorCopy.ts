@@ -37,6 +37,7 @@ const COPY: Record<string, string> = {
     'This parcel already has an association on file. Use Edit on its row to change it.',
   park_exists: 'This parcel already has a park on file. Use Edit on its row to change it.',
   not_ended: 'This restriction has not been ended.',
+  entry_ended: 'This contact has ended, so it cannot be confirmed as still correct.',
   ending_used:
     'A list issued after this ending already left the holder off, so the ending cannot be undone. Add the holder again instead.',
   email_taken: 'Another person already uses that email address.',

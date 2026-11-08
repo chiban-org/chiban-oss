@@ -244,17 +244,20 @@ describe('board pages show words, not keys or dates', () => {
 
   it('the notice contacts page links each parcel and the park owner in their own columns', async () => {
     await actAs('staff')
-    const html = renderToStaticMarkup((await NoticeContactsPage(noSearch)) as never)
+    const html = renderToStaticMarkup(
+      (await NoticeContactsPage({ searchParams: Promise.resolve({ kind: 'parks' }) })) as never,
+    )
     expect(html).toMatch(/href="\/staff\/parcels\/[0-9a-f-]{36}"/)
     expect(html).toMatch(/href="\/staff\/parcels\?q=[^"]+"/)
     expect(text(html)).not.toMatch(/, parcel \d/)
     expect(text(html)).not.toMatch(/ on parcel \d/)
-    expect(html).toContain('<th scope="col">Parcel</th>')
+    expect(html).toMatch(/<th scope="col"><a [^>]*href="[^"]*sort=parcel[^"]*"[^>]*>Parcel/)
   })
 
   it('the notice contacts page shows the regional and state contacts read-only', async () => {
     await actAs('staff')
-    const staffView = await page(NoticeContactsPage(noSearch))
+    const regional = { searchParams: Promise.resolve({ kind: 'regional' }) }
+    const staffView = await page(NoticeContactsPage(regional))
     expect(staffView).toContain('Regional and state contacts')
     expect(staffView).toContain(
       'Used only when an application has regional impact or is within 500 feet under NH DES rules.',
@@ -266,7 +269,9 @@ describe('board pages show words, not keys or dates', () => {
     expect(staffView).toContain('NH Department of Environmental Services')
     expect(staffView).toContain('An administrator changes these in Settings.')
     await actAs('admin')
-    const adminView = renderToStaticMarkup((await NoticeContactsPage(noSearch)) as never)
+    const adminView = renderToStaticMarkup(
+      (await NoticeContactsPage({ searchParams: Promise.resolve({ kind: 'regional' }) })) as never,
+    )
     expect(adminView).toContain('href="/staff/settings/regional_contacts"')
   })
 

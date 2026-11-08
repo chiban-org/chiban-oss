@@ -4,7 +4,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { FormDialog } from '@/components/FormDialog'
 import { StatusChip } from '@/components/StatusChip'
 import type { EntryKind } from '@/features/rosters/confirm'
-import type { EntryMeta } from '@/features/rosters/contactRows'
+import type { EndState, EntryMeta } from '@/features/rosters/contactRows'
 import { confirmEntryAction } from './confirmActions'
 
 export function ParcelLink({ parcelId, label }: { parcelId: string; label: string }) {
@@ -29,14 +29,15 @@ export function ActionsHeader() {
 export function Checked({ row }: { row: EntryMeta }) {
   return (
     <div className="space-y-1">
-      <p className="whitespace-nowrap">{row.checkedText}</p>
+      <p>{row.checkedText}</p>
       {row.due ? <StatusChip status="overdue" label="Due for a check" /> : null}
     </div>
   )
 }
 
 export function UsedBy({ row }: { row: EntryMeta }) {
-  if (row.uses.length === 0) return <span className="text-muted-foreground">Not on a list</span>
+  if (row.uses.length === 0)
+    return <span className="whitespace-nowrap text-muted-foreground">Not on a list</span>
   const count = row.uses.length
   return (
     <details>
@@ -101,33 +102,58 @@ function EarlierVersions({ row, record }: { row: EntryMeta; record: string }) {
   )
 }
 
+function MoreActions({
+  row,
+  record,
+  ending,
+}: {
+  row: EntryMeta
+  record: string
+  ending: ReactNode
+}) {
+  if (ending === null && row.versions.length === 0) return null
+  return (
+    <details className="more-actions">
+      <summary className="text-sm" aria-label={`More actions for ${record}`}>
+        More
+      </summary>
+      <div className="row-actions">
+        {ending}
+        <EarlierVersions row={row} record={record} />
+      </div>
+    </details>
+  )
+}
+
 export function RowActions({
   row,
   kind,
   record,
   edit,
-  extra,
+  end,
 }: {
-  row: EntryMeta
+  row: EntryMeta & EndState
   kind: EntryKind
   record: string
   edit: ReactNode
-  extra?: ReactNode
+  end: ReactNode
 }) {
+  const ending = row.endedOn === null || row.undoable ? end : null
   return (
-    <div className="row-actions">
+    <div className="row-actions max-md:flex max-md:w-auto max-md:flex-wrap max-md:items-start max-md:[&_button]:w-auto">
       {edit}
-      <ActionForm
-        action={confirmEntryAction}
-        submitLabel="Confirm still correct"
-        submitAccessibleLabel={`Confirm ${record} still correct`}
-        compact
-      >
-        <input type="hidden" name="kind" value={kind} />
-        <input type="hidden" name="entryId" value={row.entryId} />
-      </ActionForm>
-      {extra}
-      <EarlierVersions row={row} record={record} />
+      {row.active ? (
+        <ActionForm
+          action={confirmEntryAction}
+          submitLabel="Confirm still correct"
+          submitAccessibleLabel={`Confirm ${record} still correct`}
+          compact
+        >
+          <input type="hidden" name="kind" value={kind} />
+          <input type="hidden" name="entryId" value={row.entryId} />
+        </ActionForm>
+      ) : null}
+      <MoreActions row={row} record={record} ending={ending} />
     </div>
   )
 }

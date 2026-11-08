@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, sql } from 'drizzle-orm'
 import type { Db, DbOrTx } from '@/db/client'
 import { abutterLists, restrictionHoldings } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -12,24 +12,27 @@ import { err, ok, type Result } from '@/types/result'
 
 export type UndoEndError = 'forbidden' | 'not_found' | 'not_ended' | 'ending_used'
 
-export async function endingUsed(
-  db: DbOrTx,
-  holding: { id: string; parcelId: string; endedAt: Date | null },
-): Promise<boolean> {
-  if (holding.endedAt === null) return false
-  const [used] = await db
-    .select({ id: abutterLists.id })
-    .from(abutterLists)
+export async function endingsUsed(db: DbOrTx, holdingIds: readonly string[]): Promise<Set<string>> {
+  if (holdingIds.length === 0) return new Set()
+  const rows = await db
+    .select({ id: restrictionHoldings.id })
+    .from(restrictionHoldings)
     .where(
       and(
-        inArray(abutterLists.status, ['issued', 'superseded']),
-        gt(abutterLists.issuedAt, holding.endedAt),
-        sql`${abutterLists.snapshot}->'applicantParcelIds' @> ${JSON.stringify([holding.parcelId])}::jsonb`,
-        sql`not jsonb_path_exists(${abutterLists.snapshot}, '$.recipients[*].provenance[*] ? (@.ref == $ref)', jsonb_build_object('ref', ${holding.id}::text))`,
+        inArray(restrictionHoldings.id, [...holdingIds]),
+        isNotNull(restrictionHoldings.endedAt),
+        sql`exists (select 1 from ${abutterLists} l
+          where l.status in ('issued', 'superseded')
+            and l.issued_at > ${restrictionHoldings.endedAt}
+            and l.snapshot->'applicantParcelIds' @> jsonb_build_array(${restrictionHoldings.parcelId}::text)
+            and not jsonb_path_exists(l.snapshot, '$.recipients[*].provenance[*] ? (@.ref == $ref)', jsonb_build_object('ref', ${restrictionHoldings.id}::text)))`,
       ),
     )
-    .limit(1)
-  return used !== undefined
+  return new Set(rows.map((r) => r.id))
+}
+
+export async function endingUsed(db: DbOrTx, holdingId: string): Promise<boolean> {
+  return (await endingsUsed(db, [holdingId])).has(holdingId)
 }
 
 export async function endRestriction(
@@ -87,7 +90,7 @@ export async function undoRestrictionEnd(
       .for('update')
     if (holding === undefined) return err('not_found')
     if (holding.endedOn === null) return err('not_ended')
-    if (await endingUsed(tx, holding)) return err('ending_used')
+    if (await endingUsed(tx, holding.id)) return err('ending_used')
     await tx
       .update(restrictionHoldings)
       .set({ endedOn: null, endedAt: null })

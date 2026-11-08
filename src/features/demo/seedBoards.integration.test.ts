@@ -26,6 +26,7 @@ import { loadPublicBoardRecords } from '@/features/hearings/publicRecords'
 import { getDayList } from '@/features/inspections/dayList'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
+import { readContactsQuery } from '@/features/rosters/contactListParams'
 import { loadRostersView } from '@/features/rosters/rosterView'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
@@ -241,14 +242,16 @@ describe('states the screens tell apart', () => {
 
   it('shows notice contacts with one due for a check, one gap and one used on a list', async () => {
     const staff = await actorFor(handle.db, 'staff', signal)
-    const view = await loadRostersView(handle.db, staff, signal)
-    expect(view?.parks.find((p) => p.name === 'Merganser Court')?.due).toBe(true)
-    expect(view?.gaps.length).toBeGreaterThan(0)
-    const entries = [
-      ...(view?.associations ?? []),
-      ...(view?.parks ?? []),
-      ...(view?.restrictions ?? []),
-    ]
+    const tab = async (kind: string) =>
+      await loadRostersView(handle.db, staff, signal, { query: readContactsQuery({ kind }).query })
+    const view = await tab('parks')
+    const parks = view?.list?.tab === 'parks' ? view.list.rows : []
+    expect(parks.find((p) => p.name === 'Merganser Court')?.due).toBe(true)
+    expect(view?.gapCount).toBeGreaterThan(0)
+    const entries = []
+    for (const kind of ['associations', 'parks', 'holders']) {
+      entries.push(...((await tab(kind))?.list?.rows ?? []))
+    }
     expect(entries.some((e) => e.uses.some((u) => u.status === 'issued'))).toBe(true)
     await seedNoticeContacts(handle.db, signal)
     const again = await loadRostersView(handle.db, staff, signal)

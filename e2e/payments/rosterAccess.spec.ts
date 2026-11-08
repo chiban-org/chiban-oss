@@ -45,14 +45,19 @@ test.describe('the notice roster by role', () => {
       ).toHaveCount(0)
     })
 
-    test('roster action buttons are fully visible at 1280 px', async ({ page }) => {
-      await openRoster(page)
-      const groups = page.locator('.row-actions')
-      expect(await groups.count()).toBeGreaterThan(0)
-      for (const group of await groups.all()) {
-        for (const button of await group.getByRole('button').all()) {
-          await expect(button).toBeVisible()
-          await expectNotClipped(button, group)
+    test('roster action buttons are fully visible at 1280 px, with More opened', async ({
+      page,
+    }) => {
+      for (const kind of ['associations', 'parks', 'holders']) {
+        await openRoster(page, { kind })
+        for (const more of await page.locator('.row-actions summary').all()) await more.click()
+        const groups = page.locator('.row-actions')
+        expect(await groups.count()).toBeGreaterThan(0)
+        for (const group of await groups.all()) {
+          for (const button of await group.getByRole('button').all()) {
+            await expect(button).toBeVisible()
+            await expectNotClipped(button, group)
+          }
         }
       }
     })

@@ -1,130 +1,157 @@
 import Link from 'next/link'
+import { SortHeader } from '@/components/dataTable/SortHeader'
 import type { AssociationRow, ParkRow } from '@/features/rosters/contactRows'
-import { entryAnchor } from '@/features/rosters/links'
 import { listDatedText } from '@/features/rosters/recheck'
 import { EditAssociation } from './AssociationForms'
 import { EndOrUndo } from './EndForms'
 import { EditPark } from './ParkForms'
+import {
+  ACTIONS_CELL,
+  ContactSortBar,
+  type ContactSortLinks,
+  EntryRow,
+  PANEL_CLASS,
+  STACKED_CELL,
+  StatusCell,
+  TABLE_CLASS,
+  TenantList,
+  TITLE_CELL,
+} from './RowCells'
 import { ActionsHeader, Checked, ParcelLink, PersonLines, RowActions, UsedBy } from './RowParts'
 
-export function AssociationTable({ rows, today }: { rows: AssociationRow[]; today: string }) {
+interface TableProps<R> {
+  rows: R[]
+  today: string
+  links: ContactSortLinks
+}
+
+function NameCell({ name, asOf }: { name: string; asOf: string }) {
   return (
-    <div className="table-panel">
-      <table className="w-full text-sm">
-        <caption className="sr-only">Condo associations</caption>
-        <thead>
-          <tr>
-            <th scope="col">Association</th>
-            <th scope="col">Parcel</th>
-            <th scope="col">Officers who get notice</th>
-            <th scope="col">Status</th>
-            <th scope="col">Checked</th>
-            <th scope="col">Used by</th>
-            <ActionsHeader />
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((a) => (
-            <tr key={a.entryId} id={entryAnchor(a.entryId)} className="align-top">
-              <td className="min-w-48">
-                <p className="m-0 font-semibold">{a.name}</p>
-                <p className="m-0 text-muted-foreground">{listDatedText(a.asOf)}</p>
-              </td>
-              <td>
-                <ParcelLink parcelId={a.parcelId} label={a.parcel} />
-              </td>
-              <td>
-                <PersonLines
-                  people={a.officers.map((o, i) => ({ key: `${i}`, ...o, middle: o.title }))}
-                />
-              </td>
-              <td className="whitespace-nowrap">{a.statusText}</td>
-              <td>
-                <Checked row={a} />
-              </td>
-              <td>
-                <UsedBy row={a} />
-              </td>
-              <td>
-                <RowActions
-                  row={a}
-                  kind="association"
-                  record={a.name}
-                  edit={a.endedOn === null ? <EditAssociation row={a} today={today} /> : null}
-                  extra={<EndOrUndo row={a} kind="association" today={today} />}
-                />
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+    <td className={TITLE_CELL}>
+      <p className="m-0 font-semibold">{name}</p>
+      <p className="m-0 text-muted-foreground">{listDatedText(asOf)}</p>
+    </td>
   )
 }
 
-export function ParkTable({ rows, today }: { rows: ParkRow[]; today: string }) {
+export function AssociationTable({ rows, today, links }: TableProps<AssociationRow>) {
   return (
-    <div className="table-panel">
-      <table className="w-full text-sm">
-        <caption className="sr-only">Manufactured housing parks</caption>
-        <thead>
-          <tr>
-            <th scope="col">Park</th>
-            <th scope="col">Parcel</th>
-            <th scope="col">Owner</th>
-            <th scope="col">Tenants</th>
-            <th scope="col">Status</th>
-            <th scope="col">Checked</th>
-            <th scope="col">Used by</th>
-            <ActionsHeader />
-          </tr>
-        </thead>
-        <tbody>
-          {rows.map((p) => (
-            <tr key={p.entryId} id={entryAnchor(p.entryId)} className="align-top">
-              <td className="min-w-40">
-                <p className="m-0 font-semibold">{p.name}</p>
-                <p className="m-0 text-muted-foreground">{listDatedText(p.asOf)}</p>
-              </td>
-              <td>
-                <ParcelLink parcelId={p.parcelId} label={p.parcel} />
-              </td>
-              <td>
-                <Link
-                  href={`/staff/parcels?q=${encodeURIComponent(p.owner)}`}
-                  aria-label={`Search parcels owned by ${p.owner}`}
-                  className="font-medium"
-                >
-                  {p.owner}
-                </Link>
-                <br />
-                {p.ownerMailingAddress}
-              </td>
-              <td>
-                <PersonLines
-                  people={p.tenants.map((t) => ({ key: t.tenantId, ...t, middle: t.siteLabel }))}
-                />
-              </td>
-              <td className="whitespace-nowrap">{p.statusText}</td>
-              <td>
-                <Checked row={p} />
-              </td>
-              <td>
-                <UsedBy row={p} />
-              </td>
-              <td>
-                <RowActions
-                  row={p}
-                  kind="park"
-                  record={p.name}
-                  edit={p.endedOn === null ? <EditPark row={p} today={today} /> : null}
-                  extra={<EndOrUndo row={p} kind="park" today={today} />}
-                />
-              </td>
+    <>
+      <ContactSortBar name="Association" links={links} />
+      <div className={PANEL_CLASS}>
+        <table className={TABLE_CLASS}>
+          <caption className="sr-only">Condo associations</caption>
+          <thead className="max-md:hidden">
+            <tr>
+              <SortHeader label="Association" link={links.name} />
+              <SortHeader label="Parcel" link={links.parcel} />
+              <th scope="col">Officers who get notice</th>
+              <th scope="col">Status</th>
+              <SortHeader label="Checked" link={links.checked} />
+              <th scope="col">Used by</th>
+              <ActionsHeader />
             </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
+          </thead>
+          <tbody className="max-md:block">
+            {rows.map((a) => (
+              <EntryRow key={a.entryId} row={a}>
+                <NameCell name={a.name} asOf={a.asOf} />
+                <td data-label="Parcel" className={STACKED_CELL}>
+                  <ParcelLink parcelId={a.parcelId} label={a.parcel} />
+                </td>
+                <td data-label="Officers" className={STACKED_CELL}>
+                  <PersonLines
+                    people={a.officers.map((o, i) => ({ key: `${i}`, ...o, middle: o.title }))}
+                  />
+                </td>
+                <StatusCell row={a} />
+                <td data-label="Checked" className={STACKED_CELL}>
+                  <Checked row={a} />
+                </td>
+                <td data-label="Used by" className={STACKED_CELL}>
+                  <UsedBy row={a} />
+                </td>
+                <td className={ACTIONS_CELL}>
+                  <RowActions
+                    row={a}
+                    kind="association"
+                    record={a.name}
+                    edit={a.endedOn === null ? <EditAssociation row={a} today={today} /> : null}
+                    end={<EndOrUndo row={a} kind="association" today={today} />}
+                  />
+                </td>
+              </EntryRow>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  )
+}
+
+export function ParkTable({ rows, today, links }: TableProps<ParkRow>) {
+  return (
+    <>
+      <ContactSortBar name="Park" links={links} />
+      <div className={PANEL_CLASS}>
+        <table className={TABLE_CLASS}>
+          <caption className="sr-only">Manufactured housing parks</caption>
+          <thead className="max-md:hidden">
+            <tr>
+              <SortHeader label="Park" link={links.name} />
+              <SortHeader label="Parcel" link={links.parcel} />
+              <th scope="col">Owner</th>
+              <th scope="col">Tenants</th>
+              <th scope="col">Status</th>
+              <SortHeader label="Checked" link={links.checked} />
+              <th scope="col">Used by</th>
+              <ActionsHeader />
+            </tr>
+          </thead>
+          <tbody className="max-md:block">
+            {rows.map((p) => (
+              <EntryRow key={p.entryId} row={p}>
+                <NameCell name={p.name} asOf={p.asOf} />
+                <td data-label="Parcel" className={STACKED_CELL}>
+                  <ParcelLink parcelId={p.parcelId} label={p.parcel} />
+                </td>
+                <td data-label="Owner" className={STACKED_CELL}>
+                  <span>
+                    <Link
+                      href={`/staff/parcels?q=${encodeURIComponent(p.owner)}`}
+                      aria-label={`Search parcels owned by ${p.owner}`}
+                      className="font-medium"
+                    >
+                      {p.owner}
+                    </Link>
+                    <br />
+                    {p.ownerMailingAddress}
+                  </span>
+                </td>
+                <td data-label="Tenants" className={STACKED_CELL}>
+                  <TenantList tenants={p.tenants} />
+                </td>
+                <StatusCell row={p} />
+                <td data-label="Checked" className={STACKED_CELL}>
+                  <Checked row={p} />
+                </td>
+                <td data-label="Used by" className={STACKED_CELL}>
+                  <UsedBy row={p} />
+                </td>
+                <td className={ACTIONS_CELL}>
+                  <RowActions
+                    row={p}
+                    kind="park"
+                    record={p.name}
+                    edit={p.endedOn === null ? <EditPark row={p} today={today} /> : null}
+                    end={<EndOrUndo row={p} kind="park" today={today} />}
+                  />
+                </td>
+              </EntryRow>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
   )
 }

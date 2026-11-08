@@ -1,6 +1,13 @@
 import type { Page } from '@playwright/test'
 import { type E2eDb, expect, fillDate, test } from '../fixtures/test'
-import { daysFromTownToday, openDialog, openRoster, pickParcel, rosterRow } from './rosterSupport'
+import {
+  daysFromTownToday,
+  openDialog,
+  openMore,
+  openRoster,
+  pickParcel,
+  rosterRow,
+} from './rosterSupport'
 import { confirmWith, expectConfirmation, expectRefusedBeside } from './support'
 
 const CONDO_PARCEL = '007014000000'
@@ -50,9 +57,9 @@ test.describe
       expect(row.officers).toEqual([expect.objectContaining({ name: 'Dana Officer' })])
     })
 
-    test('updates the association name and stores it', async ({ page, db, suffix }) => {
+    test('updates the association name and stores it', async ({ page, db }) => {
       renamed = `${name} Renamed`
-      await openRoster(page)
+      await openRoster(page, { q: name })
       await rosterRow(page, name)
         .getByRole('button', { name: `Edit ${name}` })
         .click()
@@ -64,7 +71,7 @@ test.describe
     })
 
     test('confirms the entry is still correct and records the check date', async ({ page, db }) => {
-      await openRoster(page)
+      await openRoster(page, { q: renamed })
       await page.getByRole('button', { name: `Confirm ${renamed} still correct` }).click()
       await expectConfirmation(page, 'Marked as still correct today.')
       const row = await db.one<{ checked_on: string | null }>(
@@ -78,7 +85,7 @@ test.describe
       page,
       db,
     }) => {
-      await openRoster(page)
+      await openRoster(page, { q: renamed })
       const dialog = await openEnd(page)
       await fillDate(dialog.getByLabel(/^End on/), await daysFromTownToday(db, 30))
       await dialog.getByRole('button', { name: 'End association' }).click()
@@ -91,7 +98,7 @@ test.describe
     })
 
     test('refuses an end date before the list date beside the date', async ({ page, db }) => {
-      await openRoster(page)
+      await openRoster(page, { q: renamed })
       const dialog = await openEnd(page)
       await fillDate(dialog.getByLabel(/^End on/), await daysFromTownToday(db, -5))
       await dialog.getByRole('button', { name: 'End association' }).click()
@@ -104,7 +111,7 @@ test.describe
     })
 
     test('ends the association after the dialog and stores the end date', async ({ page, db }) => {
-      await openRoster(page)
+      await openRoster(page, { q: renamed })
       const dialog = await openEnd(page)
       await dialog.getByRole('button', { name: 'End association' }).click()
       await confirmWith(page, `${endTitle()}?`, 'End association')
@@ -112,8 +119,13 @@ test.describe
       expect(await endedOn(db)).toBe(await daysFromTownToday(db, 0))
     })
 
-    test('undoes the ending and clears the end date', async ({ page, db }) => {
-      await openRoster(page)
+    test('offers no Confirm on the ended row, then undoes the ending', async ({ page, db }) => {
+      await openRoster(page, { q: renamed, status: 'ended' })
+      await expect(rosterRow(page, renamed)).toBeVisible()
+      await expect(
+        page.getByRole('button', { name: `Confirm ${renamed} still correct` }),
+      ).toHaveCount(0)
+      await openMore(page, renamed)
       await page.getByRole('button', { name: `Undo ending ${renamed} on ${CONDO_PARCEL}` }).click()
       await expectConfirmation(page, 'The ending was undone.')
       expect(await endedOn(db)).toBeNull()
@@ -124,6 +136,7 @@ test.describe
     }
 
     async function openEnd(page: Page) {
+      await openMore(page, renamed)
       await page.getByRole('button', { name: endTitle() }).click()
       return page.getByRole('dialog', { name: endTitle() })
     }

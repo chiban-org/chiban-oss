@@ -1,33 +1,81 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
+import { Fragment } from 'react'
+import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { KeyFacts } from '@/components/layout/KeyFacts'
 import { ListHeader } from '@/components/layout/ListHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
+import type { RawSearchParams, TableParams } from '@/features/dataTable/params'
 import { pickedParcelFor } from '@/features/parcels/parcelPick'
+import { contactTabs } from '@/features/rosters/contactChips'
+import {
+  DUE_PARAM,
+  DUE_VALUE,
+  type EntryTab,
+  readContactsQuery,
+  tabHref,
+} from '@/features/rosters/contactListParams'
 import { RECHECK_NOTE } from '@/features/rosters/recheck'
 import { loadRostersView, type RostersView } from '@/features/rosters/rosterView'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
-import {
-  AssociationsSection,
-  GapsSection,
-  NOTICE_CONTACTS_LEAD,
-  ParksSection,
-  RegionalSection,
-  RestrictionsSection,
-} from './ContactSections'
+import { EntrySection, NOTICE_CONTACTS_LEAD } from './ContactSections'
+import { GapsSection, RegionalSection } from './OtherSections'
 import { RecheckInterval } from './RecheckInterval'
 
 export const metadata: Metadata = { title: 'Notice contacts' }
 
 export const dynamic = 'force-dynamic'
 
-function DueLine({ view }: { view: RostersView }) {
-  const due = view.dueCount
+function counted(count: number, [one, many]: readonly [string, string]): string {
+  return `${count} ${count === 1 ? one : many}`
+}
+
+function separator(index: number, length: number): string {
+  if (index === 0) return ''
+  return index === length - 1 ? ' and ' : ', '
+}
+
+function dueParts(view: RostersView): { tab: EntryTab; text: string }[] {
+  const { associations, parks, holders } = view.totals
+  const parts: { tab: EntryTab; due: number; nouns: [string, string] }[] = [
+    { tab: 'associations', due: associations.due, nouns: ['association', 'associations'] },
+    { tab: 'parks', due: parks.due, nouns: ['park', 'parks'] },
+    { tab: 'holders', due: holders.due, nouns: ['restriction holder', 'restriction holders'] },
+  ]
+  return parts
+    .filter((part) => part.due > 0)
+    .map((part) => ({ tab: part.tab, text: counted(part.due, part.nouns) }))
+}
+
+function DueLinks({ view }: { view: RostersView }) {
+  const due = dueParts(view)
+  if (due.length === 0) return null
+  return (
+    <p className="m-0">
+      <span className="attention font-semibold">Due for a check:</span>{' '}
+      {due.map((part, index) => (
+        <Fragment key={part.tab}>
+          {separator(index, due.length)}
+          <Link href={tabHref(part.tab, { [DUE_PARAM]: DUE_VALUE })}>{part.text}</Link>
+        </Fragment>
+      ))}
+      .
+    </p>
+  )
+}
+
+function Facts({ view }: { view: RostersView }) {
   return (
     <KeyFacts note={RECHECK_NOTE}>
-      {due === 0 ? null : (
+      <DueLinks view={view} />
+      {view.gapCount === 0 ? null : (
         <p className="m-0">
-          <span className="attention font-semibold">{`${due} due for a check.`}</span>
+          {'No association on file for '}
+          <Link href={tabHref('missing')}>
+            {counted(view.gapCount, ['condo parcel', 'condo parcels'])}
+          </Link>
+          .
         </p>
       )}
       <RecheckInterval days={view.recheckDays} canEdit={view.canEditSettings} />
@@ -36,34 +84,39 @@ function DueLine({ view }: { view: RostersView }) {
 }
 
 async function prefilledParcel(
-  params: Record<string, string | string[] | undefined>,
+  params: TableParams,
   ctx: Awaited<ReturnType<typeof requireStaffContext>>,
 ) {
-  const parcel = typeof params.parcel === 'string' ? params.parcel : ''
-  if (params.add !== 'association' || !isUuid(parcel)) return null
+  const parcel = params.get('parcel')?.[0] ?? ''
+  if (params.get('add')?.[0] !== 'association' || !isUuid(parcel)) return null
   return await pickedParcelFor(ctx.db, parcel, ctx.signal)
 }
 
 export default async function NoticeContactsPage({
   searchParams,
 }: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>
+  searchParams: Promise<RawSearchParams>
 }) {
+  const { params, query } = readContactsQuery(await searchParams)
   const ctx = await requireStaffContext()
-  const view = await loadRostersView(ctx.db, ctx.actor, ctx.signal)
+  const view = await loadRostersView(ctx.db, ctx.actor, ctx.signal, { query })
   if (view === null) {
     return <NoPermission title="Notice contacts" action="keep the notice contacts" />
   }
-  const prefill = await prefilledParcel(await searchParams, ctx)
+  const prefill = await prefilledParcel(params, ctx)
   return (
     <main data-wide="">
       <ListHeader title="Notice contacts" lead={NOTICE_CONTACTS_LEAD} />
-      <DueLine view={view} />
-      <AssociationsSection view={view} prefill={prefill} />
-      <GapsSection view={view} />
-      <ParksSection view={view} />
-      <RestrictionsSection view={view} />
-      <RegionalSection view={view} />
+      <Facts view={view} />
+      <FilterTabs
+        label="Kinds of notice contact"
+        tabs={contactTabs(view.query.tab, view.totals, view.gapCount)}
+      />
+      {view.list === null ? null : (
+        <EntrySection view={view} list={view.list} params={params} prefill={prefill} />
+      )}
+      {view.query.tab === 'missing' ? <GapsSection view={view} params={params} /> : null}
+      {view.query.tab === 'regional' ? <RegionalSection view={view} /> : null}
     </main>
   )
 }

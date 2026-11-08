@@ -1,6 +1,13 @@
 import type { Locator } from '@playwright/test'
 import { expect, fillDate, test } from '../fixtures/test'
-import { daysFromTownToday, openDialog, openRoster, pickParcel, rosterRow } from './rosterSupport'
+import {
+  daysFromTownToday,
+  openDialog,
+  openMore,
+  openRoster,
+  pickParcel,
+  rosterRow,
+} from './rosterSupport'
 import { confirmWith, expectConfirmation, expectRefusedBeside } from './support'
 
 const HOLDER_PARCEL = '009016000000'
@@ -22,7 +29,7 @@ test.describe
       suffix,
     }) => {
       holder = `Brook Land Trust ${suffix}`
-      await openRoster(page)
+      await openRoster(page, { kind: 'holders' })
       const dialog = await openDialog(page, 'Add holder', 'Add a restriction holder')
       await pickParcel(dialog, '009016', new RegExp(`^${HOLDER_PARCEL}`))
       await fillHolder(dialog, '   ')
@@ -38,7 +45,7 @@ test.describe
     })
 
     test('adds a holder and stores the kind and recorded reference', async ({ page, db }) => {
-      await openRoster(page)
+      await openRoster(page, { kind: 'holders' })
       const dialog = await openDialog(page, 'Add holder', 'Add a restriction holder')
       await pickParcel(dialog, '009016', new RegExp(`^${HOLDER_PARCEL}`))
       await fillHolder(dialog, 'Book 500, Page 12')
@@ -52,7 +59,7 @@ test.describe
     })
 
     test('updates the recorded reference and stores it', async ({ page, db }) => {
-      await openRoster(page)
+      await openRoster(page, { kind: 'holders', q: holder })
       await rosterRow(page, holder)
         .getByRole('button', { name: `Edit ${holder} on ${HOLDER_PARCEL}` })
         .click()
@@ -71,8 +78,9 @@ test.describe
       page,
       db,
     }) => {
-      await openRoster(page)
+      await openRoster(page, { kind: 'holders', q: holder })
       const title = `End ${holder} on ${HOLDER_PARCEL}`
+      await openMore(page, `${holder} on ${HOLDER_PARCEL}`)
       await page.getByRole('button', { name: title }).click()
       const dialog = page.getByRole('dialog', { name: title })
       await fillDate(dialog.getByLabel(/^End on/), await daysFromTownToday(db, 30))
@@ -85,6 +93,8 @@ test.describe
       await dialog.getByRole('button', { name: 'End restriction' }).click()
       await confirmWith(page, `${title}?`, 'End restriction')
       await expectConfirmation(page, 'Restriction ended.')
+      await openRoster(page, { kind: 'holders', q: holder, status: 'ended' })
+      await openMore(page, `${holder} on ${HOLDER_PARCEL}`)
       await page.getByRole('button', { name: `Undo ending ${holder} on ${HOLDER_PARCEL}` }).click()
       await expectConfirmation(page, 'The ending was undone.')
       const row = await db.one<{ ended_on: string | null }>(
@@ -95,7 +105,7 @@ test.describe
     })
 
     test('records a land records check dated today', async ({ page, db }) => {
-      await openRoster(page)
+      await openRoster(page, { kind: 'holders' })
       await page.getByRole('button', { name: 'Record a check' }).click()
       await expectConfirmation(page, 'Land records check recorded.')
       await expect(page.getByText(/^Land records checked for new restrictions on/)).toBeVisible()

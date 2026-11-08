@@ -1,6 +1,13 @@
 import type { Locator } from '@playwright/test'
 import { expect, test } from '../fixtures/test'
-import { daysFromTownToday, openDialog, openRoster, pickParcel, rosterRow } from './rosterSupport'
+import {
+  daysFromTownToday,
+  openDialog,
+  openMore,
+  openRoster,
+  pickParcel,
+  rosterRow,
+} from './rosterSupport'
 import { confirmWith, expectConfirmation, expectRefusedBeside } from './support'
 
 const PARK_PARCEL = '009015000000'
@@ -25,7 +32,7 @@ test.describe
       page,
       db,
     }) => {
-      await openRoster(page)
+      await openRoster(page, { kind: 'parks' })
       const dialog = await openDialog(page, 'Add park', 'Add a manufactured housing park')
       await pickParcel(dialog, '009015', new RegExp(`^${PARK_PARCEL}`))
       await fillPark(dialog, '   ')
@@ -37,7 +44,7 @@ test.describe
 
     test('adds a park with a tenant and stores the roster row', async ({ page, db, suffix }) => {
       park = `Teal Marsh Park ${suffix}`
-      await openRoster(page)
+      await openRoster(page, { kind: 'parks' })
       const dialog = await openDialog(page, 'Add park', 'Add a manufactured housing park')
       await pickParcel(dialog, '009015', new RegExp(`^${PARK_PARCEL}`))
       await fillPark(dialog, park)
@@ -52,7 +59,8 @@ test.describe
     })
 
     test('updates the park owner and stores it', async ({ page, db }) => {
-      await openRoster(page)
+      await openRoster(page, { kind: 'parks', q: park })
+      await expect(rosterRow(page, park).getByText('1 tenant', { exact: true })).toBeVisible()
       await rosterRow(page, park)
         .getByRole('button', { name: `Edit ${park}` })
         .click()
@@ -68,8 +76,9 @@ test.describe
     })
 
     test('ends the park after the dialog and undoes the ending', async ({ page, db }) => {
-      await openRoster(page)
+      await openRoster(page, { kind: 'parks', q: park })
       const title = `End ${park} on ${PARK_PARCEL}`
+      await openMore(page, park)
       await page.getByRole('button', { name: title }).click()
       await page
         .getByRole('dialog', { name: title })
@@ -82,6 +91,8 @@ test.describe
         [park],
       )
       expect(ended.ended_on).toBe(await daysFromTownToday(db, 0))
+      await openRoster(page, { kind: 'parks', q: park, status: 'ended' })
+      await openMore(page, park)
       await page.getByRole('button', { name: `Undo ending ${park} on ${PARK_PARCEL}` }).click()
       await expectConfirmation(page, 'The ending was undone.')
       const undone = await db.one<{ ended_on: string | null }>(
