@@ -115,6 +115,24 @@ export function WorkflowSummary({
   )
 }
 
+export function ReportFieldsSummary({ body }: { body: ApplicationTypeBody }) {
+  const n = body.reportFields?.length ?? 0
+  return (
+    <FieldGroup name="reportFields" label="Report columns" errors={{}}>
+      <p className="m-0 text-sm">
+        {n === 0
+          ? 'The permit volume and processing time reports show counts only.'
+          : `The permit volume and processing time reports add up ${n === 1 ? 'one answer' : `${String(n)} answers`} from the application form.`}
+      </p>
+      <p className="m-0 mt-2 text-sm">
+        <Link href={`/staff/settings/report-fields/${encodeURIComponent(body.key)}`}>
+          Choose report columns
+        </Link>
+      </p>
+    </FieldGroup>
+  )
+}
+
 export function RuleFields({
   offered,
   mandatory,
