@@ -1,7 +1,8 @@
-import { and, eq, or, sql } from 'drizzle-orm'
+import { and, eq, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { importExceptions, parcelAliases, parcelIdFormats, parcels } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { exceptionOnParcel } from '@/features/gis/exceptionParcel'
 import { getLayerStatus, type LayerStatus } from '@/features/gis/layerStatus'
 import { type HonestValue, honestFromLayer } from '@/features/honest/honest'
 import { getLineage, type LineageRef } from '@/features/parcels/lineage'
@@ -72,24 +73,11 @@ export async function areaAcresOf(db: Db, parcelId: string): Promise<number | nu
   return res.rows[0]?.acres ?? null
 }
 
-async function countOpenExceptions(db: Db, parcelId: string, values: string[]): Promise<number> {
-  const rowKeys = values.map((v) => `id:${v}`)
-  const byKey =
-    rowKeys.length === 0
-      ? sql`false`
-      : sql`${importExceptions.rowKey} IN (${sql.join(
-          rowKeys.map((k) => sql`${k}`),
-          sql`, `,
-        )})`
+async function countOpenExceptions(db: Db, parcelId: string): Promise<number> {
   const rows = await db
     .select({ n: sql<number>`count(*)::int` })
     .from(importExceptions)
-    .where(
-      and(
-        eq(importExceptions.status, 'open'),
-        or(byKey, sql`${importExceptions.payload}->>'parcelId' = ${parcelId}`),
-      ),
-    )
+    .where(and(eq(importExceptions.status, 'open'), exceptionOnParcel(parcelId)))
   return rows[0]?.n ?? 0
 }
 
@@ -119,11 +107,7 @@ export async function getStaffParcelView(
     areaAcres: honestFromLayer(layer, acres),
     lineage: await getLineage(db, parcelId, signal),
     history: await getParcelHistory(db, parcelId, { kind: 'actor', actor }, signal),
-    openExceptions: await countOpenExceptions(
-      db,
-      parcelId,
-      aliases.map((a) => a.value),
-    ),
+    openExceptions: await countOpenExceptions(db, parcelId),
     layer,
   })
 }

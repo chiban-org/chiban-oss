@@ -6,11 +6,13 @@ import { defaultSort, type SortState } from '@/features/dataTable/sort'
 import { orderBySql } from '@/features/dataTable/sortSql'
 import { IMPORT_EXCEPTION_KINDS, type ImportExceptionKind } from '@/features/gis/exceptionKinds'
 import { EXCEPTION_STATUSES, type ExceptionStatus } from '@/features/gis/exceptionLabels'
+import { exceptionOnParcel } from '@/features/gis/exceptionParcel'
 import { EXCEPTION_SORT, type ExceptionSortKey } from '@/features/gis/exceptionSort'
 
 export interface ExceptionFilter {
   kind?: ImportExceptionKind
   status?: ExceptionStatus
+  parcelId?: string
   sort?: SortState<ExceptionSortKey>
   limit?: number
 }
@@ -33,6 +35,7 @@ export async function listExceptions(db: DbOrTx, filter: ExceptionFilter, signal
   const conditions = []
   if (filter.kind !== undefined) conditions.push(eq(importExceptions.kind, filter.kind))
   if (filter.status !== undefined) conditions.push(eq(importExceptions.status, filter.status))
+  if (filter.parcelId !== undefined) conditions.push(exceptionOnParcel(filter.parcelId))
   return await db
     .select()
     .from(importExceptions)
@@ -48,7 +51,11 @@ export interface ExceptionFacets {
 
 export async function exceptionFacets(
   db: DbOrTx,
-  chosen: { status: ExceptionStatus; kind: readonly ImportExceptionKind[] },
+  chosen: {
+    status: ExceptionStatus
+    kind: readonly ImportExceptionKind[]
+    parcel?: string | null
+  },
   signal: AbortSignal,
 ): Promise<ExceptionFacets> {
   signal.throwIfAborted()
@@ -56,7 +63,7 @@ export async function exceptionFacets(
   const kindClause = kind === undefined ? sql`true` : eq(importExceptions.kind, kind)
   const counts = await countFacets(db, {
     table: importExceptions,
-    scope: sql`true`,
+    scope: chosen.parcel == null ? sql`true` : exceptionOnParcel(chosen.parcel),
     others: (group) =>
       group === 'status' ? kindClause : eq(importExceptions.status, chosen.status),
     facets: [

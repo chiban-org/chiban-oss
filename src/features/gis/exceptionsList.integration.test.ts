@@ -4,6 +4,7 @@ import { importExceptions, importRuns } from '@/db/schema'
 import { type ExceptionSortKey, readExceptionView } from '@/features/gis/exceptionSort'
 import { exceptionFacets, listExceptions } from '@/features/gis/exceptionsList'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { makeParcel, seedParcelWorld } from '@/test/parcels'
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -103,5 +104,43 @@ describe('import exception filters', () => {
     expect(owners.status.get('dismissed')).toBe(1)
     expect(owners.kind.get('owner_changed')).toBe(1)
     expect(owners.kind.get('invalid_geometry')).toBe(0)
+  })
+})
+
+describe('import exceptions on one parcel', () => {
+  it('reads a parcel filter only when it is a record id', () => {
+    const id = '0f8fad5b-d9cb-469f-a165-70867728950e'
+    expect(readExceptionView({ parcel: id }).parcel).toBe(id)
+    expect(readExceptionView({ parcel: 'nonsense' }).parcel).toBeNull()
+    expect(readExceptionView({}).parcel).toBeNull()
+  })
+
+  it('lists and counts only the exceptions on that parcel, by ID or by payload', async () => {
+    await seedParcelWorld(handle.db)
+    const parcelId = await makeParcel(handle.db, [{ format: 'gis12', value: '3' }])
+    const [run] = await handle.db.select({ id: importRuns.id }).from(importRuns).limit(1)
+    const [byPayload] = await handle.db
+      .insert(importExceptions)
+      .values({
+        layerKey: 'parcels',
+        firstRunId: run?.id ?? '',
+        lastSeenRunId: run?.id ?? '',
+        rowKey: 'id:999',
+        kind: 'invalid_geometry',
+        contentHash: 'e',
+        payload: { parcelId },
+        detail: 'e',
+      })
+      .returning({ id: importExceptions.id })
+    const rows = await listExceptions(handle.db, { parcelId }, signal)
+    expect(rows.map((r) => r.id).sort()).toEqual([ids.a, ids.d, byPayload?.id].sort())
+    const facets = await exceptionFacets(
+      handle.db,
+      { status: 'open', kind: [], parcel: parcelId },
+      signal,
+    )
+    expect(facets.kind.get('owner_changed')).toBe(1)
+    expect(facets.kind.get('invalid_geometry')).toBe(1)
+    expect(facets.kind.get('alias_conflict')).toBe(0)
   })
 })
