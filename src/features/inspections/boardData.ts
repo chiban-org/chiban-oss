@@ -1,6 +1,6 @@
 import { and, asc, inArray } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
-import { inspections, inspectorCalendars } from '@/db/schema'
+import { inspections, inspectorCalendars, users } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { honestText } from '@/features/honest/honest'
@@ -15,11 +15,10 @@ import type { InspectionSettingsBody } from '@/features/inspections/settingsSche
 import { inspectionTypeLabel, loadSiteInfo } from '@/features/inspections/siteInfo'
 import { isPhoneRequestTime, schedulingDates } from '@/features/inspections/slots'
 import { inspectionVisibleTo } from '@/features/inspections/visibility'
-import { minutesToClock, utcToLocal } from '@/features/inspections/zonedTime'
+import { utcToLocal } from '@/features/inspections/zonedTime'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { getTownSettings } from '@/features/town/settings'
 import { townToday } from '@/features/town/today'
-import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -37,9 +36,17 @@ export interface BoardRequestRow {
   contactName: string
 }
 
+export interface BoardBookingRow extends BoardRequestRow {
+  inspectorUserId: string
+  inspectorName: string
+  date: string
+  startMinute: number
+  durationMinutes: number
+}
+
 export interface ScheduleBoardData {
   requests: BoardRequestRow[]
-  scheduledAhead: (BoardRequestRow & { scheduledFor: string })[]
+  bookings: BoardBookingRow[]
   days: (DayAvailability & { inspectorName: string })[]
   inspectors: { userId: string; name: string; calendarKind: 'ics_email' | 'graph' }[]
   settings: InspectionSettingsBody
@@ -48,21 +55,93 @@ export interface ScheduleBoardData {
   outsidePhoneHours: boolean
 }
 
-function bookingText(
-  row: {
-    id: string
-    scheduledDate: string | null
-    startMinute: number | null
-    inspectorUserId: string | null
+type InspectionRow = typeof inspections.$inferSelect
+
+interface BookingSlot {
+  inspectorUserId: string
+  date: string
+  startMinute: number
+  durationMinutes: number
+}
+
+function bookingSlot(
+  row: InspectionRow,
+  context: { today: CivilDate; pinnedId: string | null; slotMinutes: number },
+): BookingSlot | null {
+  const { inspectorUserId, scheduledDate, startMinute } = row
+  if (inspectorUserId === null || scheduledDate === null || startMinute === null) return null
+  if (scheduledDate < context.today && row.id !== context.pinnedId) return null
+  return {
+    inspectorUserId,
+    date: scheduledDate,
+    startMinute,
+    durationMinutes: row.durationMinutes ?? context.slotMinutes,
+  }
+}
+
+async function inspectorNames(
+  db: DbOrTx,
+  inspectorRows: { userId: string; name: string }[],
+  rows: InspectionRow[],
+): Promise<Map<string, string>> {
+  const names = new Map(inspectorRows.map((i) => [i.userId, i.name]))
+  const missing = [
+    ...new Set(rows.map((r) => r.inspectorUserId).filter((id): id is string => id !== null)),
+  ].filter((id) => !names.has(id))
+  if (missing.length === 0) return names
+  const found = await db
+    .select({ id: users.id, name: users.displayName })
+    .from(users)
+    .where(inArray(users.id, missing))
+  for (const user of found) names.set(user.id, user.name)
+  return names
+}
+
+async function loadEntries(
+  db: DbOrTx,
+  actor: Actor,
+  signal: AbortSignal,
+  context: {
+    now: Date
+    today: CivilDate
+    pinnedId: string | null
+    slotMinutes: number
+    inspectorRows: { userId: string; name: string }[]
   },
-  context: { today: CivilDate; pinnedId: string | null; names: ReadonlyMap<string, string> },
-): string | null {
-  if (row.scheduledDate === null || row.startMinute === null) return null
-  const owed = row.scheduledDate < context.today
-  if (owed && row.id !== context.pinnedId) return null
-  const who = context.names.get(row.inspectorUserId ?? '') ?? 'Inspector'
-  const booked = `${formatCivilDate(row.scheduledDate)} at ${minutesToClock(row.startMinute)}, ${who}`
-  return owed ? `${booked}, result owed` : booked
+): Promise<{ requests: BoardRequestRow[]; bookings: BoardBookingRow[] }> {
+  const rows = await db
+    .select()
+    .from(inspections)
+    .where(and(inArray(inspections.status, ['requested', 'scheduled']), inspectionVisibleTo(actor)))
+    .orderBy(asc(inspections.requestedAt))
+  const names = await inspectorNames(db, context.inspectorRows, rows)
+  const requests: BoardRequestRow[] = []
+  const bookings: BoardBookingRow[] = []
+  for (const row of rows) {
+    const slot = row.status === 'requested' ? null : bookingSlot(row, context)
+    if (row.status !== 'requested' && slot === null) continue
+    const site = await loadSiteInfo(db, row.applicationId, context.now, signal)
+    if (site === null) continue
+    const entry = {
+      inspectionId: row.id,
+      rowVersion: row.rowVersion,
+      applicationNumber: site.applicationNumber,
+      typeLabel: inspectionTypeLabel(row.inspectionType),
+      channel: row.channel,
+      preferredDate: row.preferredDate,
+      isReinspection: row.reinspectionOf !== null,
+      address: honestText(site.siteAddress, 'Address not on file'),
+      contactName: row.contactName,
+    }
+    if (slot === null) requests.push(entry)
+    else
+      bookings.push({
+        ...entry,
+        ...slot,
+        inspectorName: names.get(slot.inspectorUserId) ?? 'Inspector',
+      })
+  }
+  return { requests, bookings }
 }
 
 export async function loadScheduleBoard(
@@ -86,39 +165,18 @@ export async function loadScheduleBoard(
   const targets = await db.select().from(inspectorCalendars)
   const days =
     last === undefined ? [] : await availability(db, { from: today, to: last }, today, signal)
-  const waiting = await db
-    .select()
-    .from(inspections)
-    .where(and(inArray(inspections.status, ['requested', 'scheduled']), inspectionVisibleTo(actor)))
-    .orderBy(asc(inspections.requestedAt))
-  const requests: BoardRequestRow[] = []
-  const scheduledAhead: ScheduleBoardData['scheduledAhead'] = []
+  const { requests, bookings } = await loadEntries(db, actor, signal, {
+    now,
+    today,
+    pinnedId: options.pinnedId ?? null,
+    slotMinutes: settings.slotMinutes,
+    inspectorRows,
+  })
   const names = new Map(inspectorRows.map((i) => [i.userId, i.name]))
-  const pinnedId = options.pinnedId ?? null
-  for (const row of waiting) {
-    const scheduledFor =
-      row.status === 'requested' ? null : bookingText(row, { today, pinnedId, names })
-    if (row.status !== 'requested' && scheduledFor === null) continue
-    const site = await loadSiteInfo(db, row.applicationId, now, signal)
-    if (site === null) continue
-    const entry = {
-      inspectionId: row.id,
-      rowVersion: row.rowVersion,
-      applicationNumber: site.applicationNumber,
-      typeLabel: inspectionTypeLabel(row.inspectionType),
-      channel: row.channel,
-      preferredDate: row.preferredDate,
-      isReinspection: row.reinspectionOf !== null,
-      address: honestText(site.siteAddress, 'Address not on file'),
-      contactName: row.contactName,
-    }
-    if (scheduledFor === null) requests.push(entry)
-    else scheduledAhead.push({ ...entry, scheduledFor })
-  }
   const owed = await listOwedResults(db, actor, today, signal)
   return ok({
     requests,
-    scheduledAhead,
+    bookings,
     days: days.map((d) => ({ ...d, inspectorName: names.get(d.inspectorUserId) ?? 'Inspector' })),
     inspectors: inspectorRows.map((i) => ({
       userId: i.userId,

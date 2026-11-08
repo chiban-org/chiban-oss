@@ -39,6 +39,8 @@ describe('ScheduleBoardClient', () => {
               booked: 0,
             },
           ]}
+          bookings={[]}
+          inspectors={[{ userId: 'u1', name: 'Ines Inspector' }]}
           today="2027-07-06"
           takeRequest={null}
           scheduleAction={scheduleAction}
@@ -46,6 +48,7 @@ describe('ScheduleBoardClient', () => {
       </CsrfProvider>,
     )
     fireEvent.click(screen.getByRole('button', { name: /Choose EL-2027-0001/ }))
+    fireEvent.click(screen.getByRole('button', { name: /^1 open, Wednesday, July 14, 2027/ }))
     fireEvent.click(screen.getByRole('button', { name: /9:30 AM/ }))
     fireEvent.click(screen.getByRole('button', { name: 'Book' }))
     await waitFor(() => expect(scheduleAction).toHaveBeenCalledTimes(1))

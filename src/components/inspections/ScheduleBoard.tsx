@@ -1,183 +1,146 @@
 'use client'
 
-import { type ReactNode, useRef, useState } from 'react'
-import { RequestQueue } from '@/components/inspections/RequestQueue'
-import { SlotDayRow, type SlotPick, WeekSwitcher } from '@/components/inspections/SlotWeeks'
-import { Button } from '@/components/ui/button'
-import {
-  firstOpenWeek,
-  groupSlotWeeks,
-  weekdayName,
-  weekStart,
-} from '@/features/inspections/slotWeeks'
-import { minutesToClock } from '@/features/inspections/zonedTime'
-import { formatCivilDate } from '@/lib/formatDate'
-import type { CivilDate } from '@/types/civilDate'
+import Link from 'next/link'
+import type { ReactNode } from 'react'
+import { gridRows, promptText, upcoming, waitingItems } from '@/components/inspections/boardModel'
+import type {
+  BoardBooking,
+  BoardDay,
+  BoardInspector,
+  BoardItem,
+  BoardRequest,
+  ScheduleChoice,
+} from '@/components/inspections/boardTypes'
+import { cellKey } from '@/components/inspections/boardTypes'
+import type { BoardView } from '@/components/inspections/boardView'
+import { NarrowDay } from '@/components/inspections/NarrowDay'
+import { ReviewRow } from '@/components/inspections/ReviewRow'
+import { WeekSwitcher } from '@/components/inspections/SlotWeeks'
+import { useNarrow, useScheduleBoard } from '@/components/inspections/useScheduleBoard'
+import { WaitingRow } from '@/components/inspections/WaitingRow'
+import { WeekGrid } from '@/components/inspections/WeekGrid'
 
-export interface BoardRequest {
-  inspectionId: string
-  rowVersion: number
-  applicationNumber: string
-  typeLabel: string
-  channel: 'phone' | 'counter' | 'portal'
-  preferredDate: string | null
-  isReinspection: boolean
-  address: string
-  contactName: string
-  scheduledFor?: string
-}
+export type {
+  BoardBooking,
+  BoardDay,
+  BoardInspector,
+  BoardRequest,
+  ScheduleChoice,
+} from '@/components/inspections/boardTypes'
 
-export interface BoardDay {
-  date: string
-  inspectorUserId: string
-  inspectorName: string
-  freeStarts: number[]
-  booked: number
-}
-
-export interface ScheduleChoice {
-  inspectionId: string
-  rowVersion: number
-  date: string
-  startMinute: number
-  inspectorUserId: string
-}
-
-function pickPrompt(request: BoardRequest | undefined): string {
-  return request === undefined
-    ? 'Choose a request, then an open time.'
-    : `Pick a time for ${request.applicationNumber}, ${request.typeLabel}.`
-}
-
-interface PickedTime {
-  day: BoardDay
-  start: number
-}
-
-function ReviewRow({
-  picked,
-  booking,
-  onBook,
-  onCancel,
+function ChoicePrompt({
+  chosen,
+  today,
+  promptRef,
 }: {
-  picked: PickedTime
-  booking: boolean
-  onBook: () => void
-  onCancel: () => void
+  chosen: BoardItem | undefined
+  today: string
+  promptRef: React.RefObject<HTMLParagraphElement | null>
 }) {
-  const { day, start } = picked
   return (
-    <div
-      role="group"
-      aria-label="Review the booking"
-      className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md bg-canvas px-3 py-3"
-    >
-      <p className="m-0 font-semibold">
-        {`Book ${weekdayName(day.date)}, ${formatCivilDate(day.date)} at ${minutesToClock(start)} with ${day.inspectorName}.`}
+    <div className="flex min-w-0 flex-wrap items-baseline gap-x-3 gap-y-1">
+      <p
+        ref={promptRef}
+        tabIndex={-1}
+        data-testid="choice-prompt"
+        className={chosen === undefined ? 'm-0 text-muted-foreground' : 'm-0 font-semibold'}
+      >
+        {promptText(chosen, today)}
       </p>
-      <div className="flex gap-2">
-        <Button type="button" disabled={booking} onClick={onBook} className="min-h-11">
-          {booking ? 'Booking' : 'Book'}
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          disabled={booking}
-          onClick={onCancel}
-          className="min-h-11"
-        >
-          Cancel
-        </Button>
-      </div>
+      {chosen === undefined ? null : (
+        <Link href={`/staff/inspections/${chosen.inspectionId}`}>View the inspection</Link>
+      )}
     </div>
   )
 }
 
-function OpenSlots({
-  days,
-  today,
-  chosen,
-  shown,
-  onShow,
-  onPick,
-  picked,
-  booking,
-  onBook,
-  onCancel,
+type Board = ReturnType<typeof useScheduleBoard>
+
+function reviewOf(board: Board): BoardView['review'] {
+  const { picked } = board
+  if (picked === null) return null
+  return {
+    inspectorUserId: picked.day.inspectorUserId,
+    date: picked.day.date,
+    node: (
+      <ReviewRow
+        picked={picked}
+        booking={board.booking}
+        onBook={() => void board.book()}
+        onCancel={board.cancelPick}
+      />
+    ),
+  }
+}
+
+function boardView(
+  board: Board,
+  data: { days: BoardDay[]; bookings: BoardBooking[]; inspectors: BoardInspector[]; today: string },
+): BoardView {
+  const ahead = upcoming(data.bookings, data.today)
+  return {
+    dates: board.dates,
+    rows: gridRows(data.inspectors, ahead),
+    days: data.days,
+    bookings: ahead,
+    today: data.today,
+    preferred: board.chosen?.preferredDate ?? null,
+    review: reviewOf(board),
+    context: {
+      chosenId: board.chosenId,
+      canPick: board.chosen !== undefined && !board.booking,
+      busy: board.booking,
+      expanded: board.expanded,
+      picked:
+        board.picked === null
+          ? null
+          : {
+              key: cellKey(board.picked.day.date, board.picked.day.inspectorUserId),
+              start: board.picked.start,
+            },
+      onToggle: board.toggle,
+      onPick: board.pick,
+      onChoose: board.choose,
+    },
+  }
+}
+
+function Schedule({
+  board,
+  view,
   message,
-  promptRef,
 }: {
-  days: BoardDay[]
-  today: string
-  chosen: BoardRequest | undefined
-  shown: CivilDate | null
-  onShow: (start: CivilDate) => void
-  onPick: SlotPick
-  picked: PickedTime | null
-  booking: boolean
-  onBook: () => void
-  onCancel: () => void
+  board: Board
+  view: BoardView
   message: string | null
-  promptRef: React.RefObject<HTMLParagraphElement | null>
 }) {
-  const weeks = groupSlotWeeks(days, today as CivilDate)
-  const week = weeks.find((w) => w.start === shown) ?? weeks[0]
+  const narrow = useNarrow()
+  const { week, narrowDay } = board
+  let body: ReactNode = <p>No inspection days in this range.</p>
+  if (week !== undefined && narrowDay !== undefined) {
+    body = narrow ? (
+      <NarrowDay view={view} shown={narrowDay} onShowDay={board.showDay} />
+    ) : (
+      <WeekGrid view={view} label={`Bookings and open times, ${week.label}`} />
+    )
+  }
   return (
-    <section aria-label="Open slots" className="m-0 min-w-0">
-      <h2>Open slots</h2>
-      <p
-        ref={promptRef}
-        tabIndex={-1}
-        className={chosen === undefined ? 'm-0 text-muted-foreground' : 'm-0 font-semibold'}
-      >
-        {pickPrompt(chosen)}
-      </p>
-      {message === null ? null : <p role="status">{message}</p>}
-      {week === undefined ? (
-        <p>No inspection days in this range.</p>
-      ) : (
-        <div className="@container">
-          <div className="grid gap-x-8 gap-y-5 @4xl:grid-cols-[18rem_minmax(0,1fr)] @4xl:items-start">
-            <WeekSwitcher weeks={weeks} shown={week.start} onShow={onShow} />
-            <ul className="m-0 list-none divide-y divide-hairline p-0">
-              {week.days.map((day) => (
-                <SlotDayRow
-                  key={`${day.date}-${day.inspectorUserId}`}
-                  day={day}
-                  onPick={onPick}
-                  disabled={chosen === undefined || booking}
-                  preferred={chosen?.preferredDate === day.date}
-                  review={
-                    picked !== null &&
-                    picked.day.date === day.date &&
-                    picked.day.inspectorUserId === day.inspectorUserId ? (
-                      <ReviewRow
-                        picked={picked}
-                        booking={booking}
-                        onBook={onBook}
-                        onCancel={onCancel}
-                      />
-                    ) : null
-                  }
-                />
-              ))}
-            </ul>
-          </div>
-        </div>
+    <section aria-label="Schedule" className="m-0 min-w-0">
+      <ChoicePrompt chosen={board.chosen} today={view.today} promptRef={board.promptRef} />
+      {week === undefined ? null : (
+        <WeekSwitcher weeks={board.weeks} shown={week.start} onShow={board.showWeek} />
       )}
+      {message === null ? null : <p role="status">{message}</p>}
+      {body}
     </section>
   )
 }
 
-const NARROW = '(max-width: 1023px)'
-
-function isNarrow(): boolean {
-  return typeof window.matchMedia === 'function' && window.matchMedia(NARROW).matches
-}
-
 export function ScheduleBoard({
   requests,
+  bookings,
   days,
+  inspectors,
   today,
   takeRequest = null,
   onSchedule,
@@ -185,80 +148,29 @@ export function ScheduleBoard({
   initialChosenId = null,
 }: {
   requests: BoardRequest[]
+  bookings: BoardBooking[]
   days: BoardDay[]
+  inspectors: BoardInspector[]
   today: string
   takeRequest?: ReactNode
   onSchedule: (choice: ScheduleChoice) => Promise<boolean>
   message: string | null
   initialChosenId?: string | null
 }) {
-  const initial = requests.find((r) => r.inspectionId === initialChosenId)
-  const [chosenId, setChosenId] = useState<string | null>(initial?.inspectionId ?? null)
-  const [picked, setPicked] = useState<PickedTime | null>(null)
-  const [booking, setBooking] = useState(false)
-  const [shown, setShown] = useState<CivilDate | null>(() => {
-    const weeks = groupSlotWeeks(days, today as CivilDate)
-    return preferredWeek(initial, days) ?? firstOpenWeek(weeks)
-  })
-  const promptRef = useRef<HTMLParagraphElement | null>(null)
-  const chosen = requests.find((r) => r.inspectionId === chosenId)
-  const choose = (request: BoardRequest) => {
-    setChosenId(request.inspectionId)
-    setPicked(null)
-    const week = preferredWeek(request, days)
-    if (week !== null) setShown(week)
-    if (isNarrow()) promptRef.current?.focus()
-  }
-  const showWeek = (start: CivilDate) => {
-    setPicked(null)
-    setShown(start)
-  }
-  const pick: SlotPick = (day, start) => {
-    if (chosen !== undefined) setPicked({ day, start })
-  }
-  const book = async () => {
-    if (chosen === undefined || picked === null) return
-    setBooking(true)
-    const ok = await onSchedule({
-      inspectionId: chosen.inspectionId,
-      rowVersion: chosen.rowVersion,
-      date: picked.day.date,
-      startMinute: picked.start,
-      inspectorUserId: picked.day.inspectorUserId,
-    })
-    setBooking(false)
-    if (!ok) return
-    setPicked(null)
-    setChosenId((current) => (current === chosen.inspectionId ? null : current))
-  }
-
+  const board = useScheduleBoard({ requests, bookings, days, today, onSchedule, initialChosenId })
+  const view = boardView(board, { days, bookings, inspectors, today })
   return (
-    <div className="grid items-start gap-5 lg:grid-cols-[minmax(20rem,26rem)_minmax(0,1fr)]">
-      <div data-testid="request-column" className="flex min-w-0 flex-col gap-5 [&>section]:m-0">
+    <div className="flex flex-col gap-6">
+      <div className="grid items-start gap-5 lg:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)] [&>section]:m-0">
         {takeRequest}
-        <RequestQueue requests={requests} chosenId={chosenId} onChoose={choose} />
+        <WaitingRow
+          items={waitingItems(requests, bookings, today)}
+          today={today}
+          chosenId={board.chosenId}
+          onChoose={board.choose}
+        />
       </div>
-      <OpenSlots
-        days={days}
-        today={today}
-        chosen={chosen}
-        shown={shown}
-        onShow={showWeek}
-        onPick={pick}
-        picked={picked}
-        booking={booking}
-        onBook={() => void book()}
-        onCancel={() => setPicked(null)}
-        message={message}
-        promptRef={promptRef}
-      />
+      <Schedule board={board} view={view} message={message} />
     </div>
   )
-}
-
-function preferredWeek(request: BoardRequest | undefined, days: BoardDay[]): CivilDate | null {
-  const preferred = request?.preferredDate ?? null
-  if (preferred === null) return null
-  const start = weekStart(preferred as CivilDate)
-  return days.some((d) => weekStart(d.date as CivilDate) === start) ? start : null
 }
