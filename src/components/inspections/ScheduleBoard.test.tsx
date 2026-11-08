@@ -274,6 +274,27 @@ describe('ScheduleBoard scheduling', () => {
     expect(choose(/Choose EL-2027-0001/).getAttribute('aria-pressed')).toBe('false')
   })
 
+  it('keeps a request chosen while a booking was in flight when that booking succeeds', async () => {
+    let finish: (ok: boolean) => void = () => undefined
+    setup(
+      vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            finish = resolve
+          }),
+      ),
+    )
+    fireEvent.click(choose(/Choose EL-2027-0001/))
+    fireEvent.click(screen.getByRole('button', { name: /10:30 AM/ }))
+    book()
+    fireEvent.click(choose(/Choose BP-2027-0002/))
+    finish(true)
+    await waitFor(() =>
+      expect(screen.queryByRole('group', { name: 'Review the booking' })).toBeNull(),
+    )
+    expect(choose(/Choose BP-2027-0002/).getAttribute('aria-pressed')).toBe('true')
+  })
+
   it('keeps the review row open when the booking fails', async () => {
     setup(vi.fn(() => Promise.resolve(false)))
     fireEvent.click(choose(/Choose EL-2027-0001/))

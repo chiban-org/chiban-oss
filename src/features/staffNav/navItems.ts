@@ -287,15 +287,20 @@ function shapedFor(item: NavItem, viewer: NavViewer): NavItem | null {
     return viewer.roles.includes('inspector') ? item : { ...item, label: 'Inspector days' }
   }
   if (item.href === INSPECTIONS_HREF && isInspectorOnly(viewer)) {
-    return { ...item, href: INSPECTOR_DAY_HREF, match: [INSPECTIONS_HREF] }
+    return {
+      ...item,
+      href: INSPECTOR_DAY_HREF,
+      match: [INSPECTIONS_HREF],
+      access: any('inspection.record'),
+    }
   }
   return item
 }
 
 export function navItemsFor(viewer: NavViewer): NavItem[] {
-  return STAFF_NAV_ITEMS.filter((item) => mayUse(item, viewer)).flatMap((item) => {
+  return STAFF_NAV_ITEMS.flatMap((item) => {
     const shaped = shapedFor(item, viewer)
-    return shaped === null ? [] : [shaped]
+    return shaped !== null && mayUse(shaped, viewer) ? [shaped] : []
   })
 }
 

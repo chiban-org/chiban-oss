@@ -56,6 +56,19 @@ describe('staff navigation', () => {
     expect(activeNavHref('/staff/inspections/abc', items)).toBe('/staff/inspections/day')
   })
 
+  it('gates the inspector Inspections entry by the day list capability and not the board one', () => {
+    const only = (capability: Capability) => ({
+      roles: ['inspector'] as Role[],
+      capabilities: new Set<Capability>([capability]),
+    })
+    expect(navItemsFor(only('inspection.record')).map((i) => i.href)).toContain(
+      '/staff/inspections/day',
+    )
+    expect(navItemsFor(only('inspection.schedule')).map((i) => i.label)).not.toContain(
+      'Inspections',
+    )
+  })
+
   it('keeps the board under Inspections for the clerk and the building official', () => {
     for (const roles of [['staff'], ['staff', 'inspector']] as Role[][]) {
       const items = navItemsFor(viewerOf(roles))

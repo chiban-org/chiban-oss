@@ -229,7 +229,7 @@ export function ScheduleBoard({
     setBooking(false)
     if (!ok) return
     setPicked(null)
-    setChosenId(null)
+    setChosenId((current) => (current === chosen.inspectionId ? null : current))
   }
 
   return (
