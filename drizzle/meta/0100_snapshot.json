@@ -1,5 +1,5 @@
 {
-  "id": "0e37da0e-cb46-4049-9cfb-42c9e5ccfcc1",
+  "id": "5ef534cf-ae13-46a9-9535-ca9304d0269b",
   "prevId": "5e5eb4b0-edb7-4c34-a290-0d036a4b00b0",
   "version": "7",
   "dialect": "postgresql",
@@ -13202,6 +13202,12 @@
           "primaryKey": false,
           "notNull": true
         },
+        "report": {
+          "name": "report",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
         "period_from": {
           "name": "period_from",
           "type": "date",
@@ -13240,6 +13246,12 @@
             },
             {
               "expression": "user_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "report",
               "isExpression": false,
               "asc": true,
               "nulls": "last"

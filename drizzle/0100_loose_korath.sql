@@ -2,6 +2,7 @@ CREATE TABLE "report_schedule_deliveries" (
 	"id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
 	"schedule_id" uuid NOT NULL,
 	"user_id" uuid NOT NULL,
+	"report" text NOT NULL,
 	"period_from" date NOT NULL,
 	"period_to" date NOT NULL,
 	"outcome" text NOT NULL,
@@ -33,5 +34,5 @@ ALTER TABLE "report_schedule_deliveries" ADD CONSTRAINT "report_schedule_deliver
 ALTER TABLE "report_schedule_recipients" ADD CONSTRAINT "report_schedule_recipients_schedule_id_report_schedules_id_fk" FOREIGN KEY ("schedule_id") REFERENCES "public"."report_schedules"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "report_schedule_recipients" ADD CONSTRAINT "report_schedule_recipients_user_id_users_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "report_schedules" ADD CONSTRAINT "report_schedules_created_by_users_id_fk" FOREIGN KEY ("created_by") REFERENCES "public"."users"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-CREATE UNIQUE INDEX "report_schedule_deliveries_once_idx" ON "report_schedule_deliveries" USING btree ("schedule_id","user_id","period_from","period_to");--> statement-breakpoint
+CREATE UNIQUE INDEX "report_schedule_deliveries_once_idx" ON "report_schedule_deliveries" USING btree ("schedule_id","user_id","report","period_from","period_to");--> statement-breakpoint
 CREATE INDEX "report_schedules_due_idx" ON "report_schedules" USING btree ("next_run_on") WHERE "report_schedules"."paused" = false;
