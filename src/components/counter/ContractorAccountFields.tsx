@@ -11,7 +11,7 @@ type FindAccount = NonNullable<CounterActions['lookupContractor']>
 function AccountMatch({ account }: { account: ContractorAccountMatch }) {
   const licenses = account.licenses.map((l) => `${l.label} ${l.number}`).join(', ')
   return (
-    <p role="status" className="rounded-md border p-3 text-sm sm:col-span-2">
+    <p role="status" className="rounded-md border p-3 text-sm sm:order-last sm:col-span-2">
       {`Contractor account: ${account.companyName}, ${account.contactName}. `}
       {licenses === ''
         ? 'No license numbers on the profile.'

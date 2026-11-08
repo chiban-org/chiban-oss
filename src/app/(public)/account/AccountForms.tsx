@@ -1,5 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
-import { AreaField, CheckField, TextField } from '@/components/staff/fields'
+import { AreaField, TextField } from '@/components/staff/fields'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Label } from '@/components/ui/label'
 import type { AccountView } from '@/features/contractors/accountView'
 import { licenseFieldName } from '@/features/contractors/profileForm'
 import { CONTRACTOR_TRADES } from '@/features/contractors/trades'
@@ -92,14 +94,18 @@ export function ContractorForm({ view }: { view: AccountView }) {
           work.
         </p>
         {CONTRACTOR_TRADES.map((t) => (
-          <CheckField
-            key={t.trade}
-            label={t.label}
-            name="trades"
-            value={t.trade}
-            defaultChecked={trades.includes(t.trade)}
-            groupMember
-          />
+          <div key={t.trade} className="flex min-h-11 items-center gap-3">
+            <Checkbox
+              id={`trade-${t.trade}`}
+              name="trades"
+              value={t.trade}
+              defaultChecked={trades.includes(t.trade)}
+              className="size-5 min-h-0! min-w-0!"
+            />
+            <Label htmlFor={`trade-${t.trade}`} className="font-normal">
+              {t.label}
+            </Label>
+          </div>
         ))}
       </fieldset>
       <div className="grid gap-4 sm:grid-cols-2">

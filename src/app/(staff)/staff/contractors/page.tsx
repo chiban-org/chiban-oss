@@ -22,10 +22,6 @@ export const metadata: Metadata = { title: 'Contractors' }
 
 export const dynamic = 'force-dynamic'
 
-function licenseText(row: DirectoryRow): string {
-  return row.licenses.map((l) => `${tradeLabel(l.trade)} ${l.number}`).join(', ')
-}
-
 function Row({ row, zone }: { row: DirectoryRow; zone: string }) {
   return (
     <tr>
@@ -37,7 +33,14 @@ function Row({ row, zone }: { row: DirectoryRow; zone: string }) {
         </div>
       </td>
       <td>{row.trades.length === 0 ? 'None listed' : row.trades.map(tradeLabel).join(', ')}</td>
-      <td>{licenseText(row)}</td>
+      <td>
+        {row.licenses.map((l) => (
+          <div
+            key={l.trade}
+            className="whitespace-nowrap"
+          >{`${tradeLabel(l.trade)} ${l.number}`}</div>
+        ))}
+      </td>
       <td className="tabular-nums">{row.projects}</td>
       <td className="whitespace-nowrap">{formatInstantDate(row.lastActivity, zone)}</td>
     </tr>
