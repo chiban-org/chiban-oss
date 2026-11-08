@@ -6,9 +6,9 @@ export const SCHEDULE_FREQUENCIES = REPORT_FREQUENCIES
 export type ScheduleFrequency = (typeof REPORT_FREQUENCIES)[number]
 
 const FREQUENCY_LABELS: ReadonlyMap<ScheduleFrequency, string> = new Map([
-  ['weekly', 'Every Monday, for the week before'],
-  ['monthly', 'On the first of each month, for the month before'],
-  ['quarterly', 'On the first day of each quarter, for the quarter before'],
+  ['weekly', 'Weekly'],
+  ['monthly', 'Monthly'],
+  ['quarterly', 'Quarterly'],
 ])
 
 export const frequencyLabel = (frequency: ScheduleFrequency): string =>

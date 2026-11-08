@@ -51,24 +51,24 @@ function ScheduleRow({
   return (
     <tr>
       <td>{reportTitle(s.report)}</td>
-      <td>{FREQUENCY_WORDS.get(s.frequency) ?? s.frequency}</td>
+      <td className="whitespace-nowrap">{FREQUENCY_WORDS.get(s.frequency) ?? s.frequency}</td>
       <td>{s.recipients.map((r) => r.name).join(', ')}</td>
-      <td>
+      <td className="whitespace-nowrap">
         {s.paused ? (
-          <span className="text-muted-foreground">Paused</span>
+          <span className="text-muted-foreground">None</span>
         ) : (
           formatCivilDate(s.nextRunOn)
         )}
       </td>
       <td>{lastSent(s, timeZone)}</td>
-      <td>
+      <td className="whitespace-nowrap">
         <StatusChip
           status={s.paused ? 'neutral' : 'passed'}
           label={s.paused ? 'Paused' : 'Active'}
         />
       </td>
       <td>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-nowrap gap-2">
           <EditSchedule
             scheduleId={s.id}
             title={title}

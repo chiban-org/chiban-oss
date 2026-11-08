@@ -75,7 +75,7 @@ describe('reports page', () => {
     expect(html).toContain('/staff/reports/permit-volume/xlsx?from=2027-01-01&amp;to=2027-12-31')
     expect(html).toContain('/staff/reports/revenue/xlsx?from=2027-01-01&amp;to=2027-12-31')
     expect(html).toContain('>Finished sq ft</th>')
-    expect(html).toContain('<td class="text-right">1,250</td>')
+    expect(html).toContain('<td class="text-right whitespace-nowrap">1,250</td>')
   })
 
   it('states the default order of each table and lists the other reports once', async () => {

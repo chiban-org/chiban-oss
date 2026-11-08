@@ -55,7 +55,7 @@ function ScheduleFields({
         hint={
           MONTHLY_ONLY.has(report)
             ? 'The census report goes out monthly, for the month before.'
-            : 'Each run covers the whole calendar week, month or quarter before it.'
+            : 'Weekly goes out on Mondays, monthly on the 1st, quarterly on January, April, July and October 1. Each covers the whole calendar week, month or quarter before.'
         }
         options={frequencies.map((f) => [f.value, f.label] as const)}
       />

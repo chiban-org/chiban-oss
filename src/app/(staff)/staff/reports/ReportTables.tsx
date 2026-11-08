@@ -46,7 +46,7 @@ function FieldHeaders({ columns }: { columns: readonly ReportFieldColumn[] }) {
 
 function FieldCells({ columns, sums }: { columns: readonly ReportFieldColumn[]; sums: FieldSums }) {
   return columns.map((c) => (
-    <td key={c.id} className="text-right">
+    <td key={c.id} className="text-right whitespace-nowrap">
       {fieldText(c, sums)}
     </td>
   ))
