@@ -24,6 +24,7 @@ import { seedPayments } from '@/features/demo/seedPayments'
 import { actorFor } from '@/features/demo/seedPermitSupport'
 import { seedPermits } from '@/features/demo/seedPermits'
 import { type SeedRecordsDeps, seedRecords } from '@/features/demo/seedRecords'
+import { seedReportSchedules } from '@/features/demo/seedReportSchedules'
 import { seedRecordsM10 } from '@/features/demo/seedRtk'
 import { seedTownBoards } from '@/features/demo/seedTownBoards'
 import { seedTownProfile } from '@/features/demo/seedTownProfile'
@@ -255,6 +256,7 @@ async function seedOperations(
     await seedAcknowledgedEmailTest(db, deps.mail ?? createMemoryTransport(), now, signal),
     await seedExportTarget(db, admin, path.resolve(deps.exportDir ?? DEFAULT_EXPORT_DIR), signal),
     await seedBusinessExport(db, store, admin, signal),
+    await seedReportSchedules(db, now, signal),
   ]
   return steps.some(Boolean)
 }

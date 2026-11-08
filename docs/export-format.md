@@ -2092,6 +2092,53 @@ References:
 - `version_id` refers to `document_versions`
 - `rtk_request_id` refers to `rtk_requests`
 
+### report_schedule_deliveries
+
+File: `data/report_schedule_deliveries.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `schedule_id`: uuid
+- `user_id`: uuid
+- `report`: text
+- `period_from`: date
+- `period_to`: date
+- `outcome`: text
+- `at`: timestamp with time zone
+
+References:
+- `schedule_id` refers to `report_schedules`
+- `user_id` refers to `users`
+
+### report_schedule_recipients
+
+File: `data/report_schedule_recipients.ndjson`. Ordered by schedule_id, user_id.
+
+- `schedule_id`: uuid
+- `user_id`: uuid
+
+References:
+- `schedule_id` refers to `report_schedules`
+- `user_id` refers to `users`
+
+### report_schedules
+
+File: `data/report_schedules.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `report`: text
+- `frequency`: text
+- `paused`: boolean
+- `next_run_on`: date
+- `last_sent_at`: timestamp with time zone, nullable
+- `last_period_from`: date, nullable
+- `last_period_to`: date, nullable
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+- `updated_at`: timestamp with time zone
+
+References:
+- `created_by` refers to `users`
+
 ### restraining_orders
 
 File: `data/restraining_orders.ndjson`. Ordered by id.
