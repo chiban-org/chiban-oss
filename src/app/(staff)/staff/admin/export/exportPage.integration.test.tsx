@@ -64,6 +64,15 @@ describe('export page', () => {
     expect(html).toContain('/staff/admin/export/')
   })
 
+  it('says plainly what the zip contains', async () => {
+    state.actor = admin
+    const html = renderToStaticMarkup(await ExportPage())
+    expect(html).toContain('What the file contains')
+    for (const word of ['NDJSON', 'CSV', 'Excel workbook', 'PDF/A copy']) {
+      expect(html).toContain(word)
+    }
+  })
+
   it('tells staff without the capability they cannot use it', async () => {
     state.actor = staff
     const html = renderToStaticMarkup(await ExportPage())

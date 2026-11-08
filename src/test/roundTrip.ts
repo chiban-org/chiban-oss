@@ -1,11 +1,19 @@
 import { Readable } from 'node:stream'
+import { env } from '@/config/env'
 import type { Db } from '@/db/client'
 import { zipSourceFromBuffer } from '@/features/export/readZip'
 import { writeArchive } from '@/features/export/writeArchive'
 import { createZipSink } from '@/features/export/zipSink'
+import { createGhostscriptConverter } from '@/features/preservation/ghostscript'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb } from '@/test/db'
 import { makeTestStore } from '@/test/objectStore'
+
+const testConverter = createGhostscriptConverter({
+  gsPath: env.GHOSTSCRIPT_PATH,
+  iccProfilePath: env.GHOSTSCRIPT_ICC_PROFILE ?? null,
+  timeoutMs: 120_000,
+})
 
 export async function buildZip(db: Db, store: ObjectStore, signal: AbortSignal): Promise<Buffer> {
   const out = createZipSink()
@@ -15,7 +23,12 @@ export async function buildZip(db: Db, store: ObjectStore, signal: AbortSignal):
   await writeArchive(
     db,
     store,
-    { exportId: crypto.randomUUID(), kind: 'business', base: null },
+    {
+      exportId: crypto.randomUUID(),
+      kind: 'business',
+      base: null,
+      bundle: { converter: testConverter },
+    },
     out.sink,
     signal,
   )
