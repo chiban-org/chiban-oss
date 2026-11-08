@@ -11,6 +11,14 @@ import { markCompleteAction } from './actions'
 import { adjustClockAction } from './clockFeeActions'
 import { applyConditionAction, setConditionStatusAction } from './conditionActions'
 
+function accountNote(party: StaffApplicationView['parties'][number]): string {
+  if (party.account === null) return party.linked ? '' : ', has not claimed this project yet'
+  const { email, companyName } = party.account
+  return companyName === null
+    ? `, linked to the account ${email}`
+    : `, linked to the contractor account of ${companyName} (${email})`
+}
+
 export function PartiesPanel({ view }: { view: StaffApplicationView }) {
   return (
     <section aria-label="Parties" id="parties">
@@ -27,7 +35,7 @@ export function PartiesPanel({ view }: { view: StaffApplicationView }) {
                 ? ', owner authorization on file'
                 : ', no owner authorization'
               : ''}
-            {p.linked ? '' : ', has not claimed this project yet'}
+            {accountNote(p)}
           </li>
         ))}
       </ul>

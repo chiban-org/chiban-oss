@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { auditLog, projectParties, userRoles, users } from '@/db/schema'
 import { canViewApplication } from '@/features/access/queries'
+import { loadViewParties } from '@/features/applications/viewParties'
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { listContractorProjects } from '@/features/contractors/dashboard'
 import { saveContractorProfile } from '@/features/contractors/profile'
@@ -159,6 +160,17 @@ describe('parties added after sign-up', () => {
     const [audit] = await linkAudits()
     expect(audit).toMatchObject({ actorUserId: world.staff.userId, entityId: world.projectId })
     expect(audit?.after).toEqual({ partyId: party, userId: actor.userId, match: 'verified_email' })
+  })
+
+  it('shows staff which account and company the party is linked to', async () => {
+    const actor = await account()
+    await saveContractorProfile(handle.db, actor, PROFILE, signal)
+    const party = await contractorParty()
+    const parties = await loadViewParties(handle.db, world.projectId)
+    expect(parties.find((p) => p.id === party)).toMatchObject({
+      linked: true,
+      account: { email: EMAIL, companyName: 'Builder and Sons' },
+    })
   })
 
   it('leaves the party unlinked for an account without a contractor profile', async () => {
