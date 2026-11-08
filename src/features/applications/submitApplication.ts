@@ -17,6 +17,7 @@ import {
   type FieldValue,
   validateSubmission,
 } from '@/features/forms/validateSubmission'
+import type { GateResult } from '@/features/gates/evaluateGates'
 import { queueForParties } from '@/features/notifications/queue'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
 import { captureSnapshot } from '@/features/snapshots/captureSnapshot'
@@ -35,6 +36,7 @@ export type SubmitError =
   | 'invalid_transition'
   | 'not_found'
   | { fieldErrors: FieldError[] }
+  | { gateBlocked: GateResult[] }
 
 async function mayEdit(db: DbOrTx, actor: Actor, projectId: string): Promise<boolean> {
   return hasFullRecordAccess(actor) || (await isActiveParty(db, actor.userId, projectId))
@@ -100,11 +102,14 @@ export async function submitApplication(
         to: 'submitted',
         expectedRowVersion: app.rowVersion,
         onDate: today,
+        ...(cutover === undefined ? {} : { cutover: true }),
       },
       signal,
       now,
     )
-    if (!moved.ok) return err('invalid_transition')
+    if (!moved.ok) {
+      return err(typeof moved.error === 'object' ? moved.error : 'invalid_transition')
+    }
     await captureSnapshot(tx, input.applicationId, 'submission', actor, signal, store, now)
     if (cutover === undefined) {
       await queueForParties(

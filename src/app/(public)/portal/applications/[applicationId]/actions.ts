@@ -7,6 +7,7 @@ import { submitApplication } from '@/features/applications/submitApplication'
 import { getVersion } from '@/features/config/store'
 import type { FormBody } from '@/features/forms/formSchema'
 import type { FieldError } from '@/features/forms/validateSubmission'
+import type { GateResult } from '@/features/gates/evaluateGates'
 import { inputField } from '@/features/input/field'
 import { recordId } from '@/features/input/schemas'
 import { saveDraftValues } from '@/features/portal/drafts'
@@ -34,6 +35,13 @@ function withFieldErrors(errors: FieldError[]): ActionResult {
     error: 'Check the highlighted fields and try again.',
     fieldErrors: Object.fromEntries(errors.map((e) => [e.field, fieldErrorCopy(e.code)])),
   }
+}
+
+function blockedCopy(results: GateResult[]): string {
+  const reasons = results.flatMap((g) =>
+    g.effective === 'blocked' && g.outcome.status !== 'pass' ? [g.outcome.reason] : [],
+  )
+  return `Not submitted. ${reasons.join(' ')}`
 }
 
 const SaveForm = z.object({ applicationId: recordId('an application') })
@@ -82,7 +90,8 @@ export async function submitApplicationAction(formData: FormData): Promise<Actio
       signal,
     )
     if (done.ok) return { ok: true, message: 'Application submitted.' }
-    if (typeof done.error === 'object') return withFieldErrors(done.error.fieldErrors)
-    return fail(errorCopy(done.error))
+    if (typeof done.error === 'string') return fail(errorCopy(done.error))
+    if ('gateBlocked' in done.error) return fail(blockedCopy(done.error.gateBlocked))
+    return withFieldErrors(done.error.fieldErrors)
   })
 }
