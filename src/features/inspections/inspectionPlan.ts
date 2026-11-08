@@ -212,8 +212,12 @@ function outcomeOn(word: string, date: CivilDate | null): string {
   return date === null ? `${word}.` : `${word} on ${formatCivilDate(date)}.`
 }
 
+function visitDate(input: InspectionPlanInput): CivilDate | null {
+  return (input.row.scheduledDate as CivilDate | null) ?? input.resultDate
+}
+
 function failedSentence(input: InspectionPlanInput): string {
-  const outcome = outcomeOn('Failed', input.resultDate)
+  const outcome = outcomeOn('Failed', visitDate(input))
   if (input.followUp !== null) {
     return `${outcome} The reinspection is ${FOLLOW_UP_WORD[input.followUp.status]}.`
   }
@@ -239,7 +243,7 @@ function sentenceOf(input: InspectionPlanInput): string {
             inspectorName: input.inspectorName,
           })
     case 'passed': {
-      const outcome = outcomeOn('Passed', input.resultDate)
+      const outcome = outcomeOn('Passed', visitDate(input))
       return input.permitClosed ? `${outcome} The permit is closed.` : outcome
     }
     case 'failed':

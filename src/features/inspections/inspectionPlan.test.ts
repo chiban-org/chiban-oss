@@ -153,18 +153,18 @@ describe('a scheduled inspection', () => {
 describe('a recorded inspection', () => {
   const recorded = {
     recordedByName: 'Ira Inspector',
-    resultDate: '2026-11-02' as CivilDate,
+    resultDate: '2026-11-05' as CivilDate,
   }
 
   it('reads only its outcome once passed', () => {
     const plan = planInspection(
       input({ ...recorded, row: { status: 'passed', inspectionType: 'rough' } }),
     )
-    expect(plan.sentence).toBe('Passed on November 2, 2026.')
+    expect(plan.sentence).toBe('Passed on November 7, 2026.')
     expect(plan.now).toEqual({
       kind: 'outcome',
       task: 'Passed',
-      note: 'Recorded by Ira Inspector on November 2, 2026.',
+      note: 'Recorded by Ira Inspector on November 5, 2026.',
     })
     expect(labels(plan)).toEqual(['Requested:done', 'Scheduled:done', 'Passed:done'])
   })
@@ -173,11 +173,11 @@ describe('a recorded inspection', () => {
     const plan = planInspection(
       input({ ...recorded, permitClosed: true, row: { status: 'passed' } }),
     )
-    expect(plan.sentence).toBe('Passed on November 2, 2026. The permit is closed.')
+    expect(plan.sentence).toBe('Passed on November 7, 2026. The permit is closed.')
     expect(plan.now).toEqual({
       kind: 'outcome',
       task: 'The permit is closed.',
-      note: 'Passed. Recorded by Ira Inspector on November 2, 2026.',
+      note: 'Passed. Recorded by Ira Inspector on November 5, 2026.',
     })
   })
 
@@ -190,11 +190,11 @@ describe('a recorded inspection', () => {
         row: { status: 'failed', inspectionType: 'framing' },
       }),
     )
-    expect(plan.sentence).toBe('Failed on November 2, 2026. No reinspection is requested yet.')
+    expect(plan.sentence).toBe('Failed on November 7, 2026. No reinspection is requested yet.')
     expect(plan.now).toEqual({
       kind: 'request_reinspection',
       task: 'Request the reinspection',
-      note: 'Recorded by Ira Inspector on November 2, 2026.',
+      note: 'Recorded by Ira Inspector on November 5, 2026.',
     })
     expect(labels(plan)).toEqual(['Requested:done', 'Scheduled:done', 'Failed:done'])
   })
@@ -208,12 +208,23 @@ describe('a recorded inspection', () => {
         row: { status: 'failed', inspectionType: 'framing' },
       }),
     )
-    expect(plan.sentence).toBe('Failed on November 2, 2026. The reinspection is scheduled.')
+    expect(plan.sentence).toBe('Failed on November 7, 2026. The reinspection is scheduled.')
     expect(plan.now).toEqual({
       kind: 'reinspection_on_file',
       task: 'Reinspection scheduled',
-      note: 'Recorded by Ira Inspector on November 2, 2026.',
+      note: 'Recorded by Ira Inspector on November 5, 2026.',
     })
+  })
+
+  it('dates the outcome by the inspection visit, not by when it was recorded', () => {
+    const plan = planInspection(
+      input({
+        ...recorded,
+        row: { status: 'failed', scheduledDate: '2026-11-04' as CivilDate },
+      }),
+    )
+    expect(plan.sentence).toBe('Failed on November 4, 2026.')
+    expect(plan.now.note).toBe('Recorded by Ira Inspector on November 5, 2026.')
   })
 
   it('reads only the failure to someone who cannot request the reinspection', () => {
