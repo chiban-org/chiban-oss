@@ -3,6 +3,11 @@ import type { DbOrTx, Tx } from '@/db/client'
 import { projectParties } from '@/db/schema'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
+import {
+  contractorAccountIdForEmail,
+  linkNewContractorParty,
+  lockContractorEmail,
+} from '@/features/contractors/accountLink'
 import { err, ok, type Result } from '@/types/result'
 
 export type ContractorChoice =
@@ -20,7 +25,12 @@ export interface PartyRow {
 
 export interface ContractorPlan {
   removed: PartyRow[]
-  added: { name: string; email: string | null; userId: string | null } | null
+  added: {
+    name: string
+    email: string | null
+    userId: string | null
+    matchedByEmail?: true
+  } | null
 }
 
 export type ContractorError = 'unknown_party' | 'contractor_name_required'
@@ -102,9 +112,36 @@ export async function applyContractorPlan(
     await audit('project.party.remove', party.id)
   }
   if (plan.added === null) return
+  const { matchedByEmail, ...added } = plan.added
   const [row] = await tx
     .insert(projectParties)
-    .values({ projectId, role: 'contractor', addedBy: actor.userId, ...plan.added })
+    .values({
+      projectId,
+      role: 'contractor',
+      addedBy: actor.userId,
+      ...added,
+      userId: matchedByEmail === true ? null : added.userId,
+    })
     .returning({ id: projectParties.id })
   await audit('project.party.add', row?.id ?? '')
+  const linkable = matchedByEmail === true || added.userId === null
+  if (row !== undefined && added.email !== null && linkable) {
+    await linkNewContractorParty(
+      tx,
+      { partyId: row.id, email: added.email },
+      { actorUserId: actor.userId, signal },
+    )
+  }
+}
+
+export async function resolveAddedAccount(
+  db: DbOrTx,
+  plan: ContractorPlan,
+  lock?: Tx,
+): Promise<ContractorPlan> {
+  const added = plan.added
+  if (added === null || added.userId !== null || added.email === null) return plan
+  if (lock !== undefined) await lockContractorEmail(lock, added.email)
+  const userId = await contractorAccountIdForEmail(db, added.email)
+  return userId === null ? plan : { ...plan, added: { ...added, userId, matchedByEmail: true } }
 }

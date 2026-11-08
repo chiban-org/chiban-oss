@@ -7,7 +7,30 @@ import { type ClaimRole, sendContractorClaim } from '@/features/contractors/clai
 import type { MailTransport } from '@/features/mail/transport'
 import { err, type Result } from '@/types/result'
 
-export type CounterClaimError = 'forbidden' | 'rate_limited' | 'send_failed' | 'no_party_email'
+export type CounterClaimError =
+  | 'forbidden'
+  | 'rate_limited'
+  | 'send_failed'
+  | 'no_party_email'
+  | 'already_linked'
+
+async function hasLinkedParty(db: Db, applicationId: string, role: ClaimRole): Promise<boolean> {
+  const [linked] = await db
+    .select({ id: projectParties.id })
+    .from(applications)
+    .innerJoin(
+      projectParties,
+      and(
+        eq(projectParties.projectId, applications.projectId),
+        eq(projectParties.role, role),
+        isNull(projectParties.removedAt),
+        isNotNull(projectParties.userId),
+      ),
+    )
+    .where(eq(applications.id, applicationId))
+    .limit(1)
+  return linked !== undefined
+}
 
 export async function sendCounterClaim(
   db: Db,
@@ -41,7 +64,10 @@ export async function sendCounterClaim(
     .limit(1)
   if (row === undefined || row.email === null) {
     const manages = await hasCapability(db, actor.userId, 'project.manage_parties', signal)
-    return err(manages ? 'no_party_email' : 'forbidden')
+    if (!manages) return err('forbidden')
+    return err(
+      (await hasLinkedParty(db, input.applicationId, role)) ? 'already_linked' : 'no_party_email',
+    )
   }
   return await sendContractorClaim(
     db,

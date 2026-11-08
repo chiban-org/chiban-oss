@@ -1,4 +1,5 @@
 export * from './abutters'
+export * from './accountProfiles'
 export * from './agendas'
 export * from './aliasOverrides'
 export * from './anonymousIntake'

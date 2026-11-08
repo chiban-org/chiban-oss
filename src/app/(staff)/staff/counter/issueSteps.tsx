@@ -13,6 +13,7 @@ import { searchExample } from '@/features/parcels/searchExample'
 import { searchParcels } from '@/features/parcels/searchParcels'
 import type { StaffContext } from '@/server/requireStaff'
 import { completeAction, quickIssueAction, sendClaimAction } from './actions'
+import { lookupContractorAction } from './contractorLookupAction'
 import { COUNTER_START, counterHref } from './counterHref'
 import { checkAction, readerAction, reconnectAction } from './readerActions'
 
@@ -23,6 +24,7 @@ const actions = {
   check: checkAction,
   reconnect: reconnectAction,
   complete: completeAction,
+  lookupContractor: lookupContractorAction,
 }
 
 const LICENSE_GROUPS = NH_LICENSE_TYPES.map((group) => ({

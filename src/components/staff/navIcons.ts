@@ -30,6 +30,7 @@ import {
   Upload,
   UserRound,
   Users,
+  Wrench,
 } from 'lucide-react'
 import type { NavIcon } from '@/features/staffNav/navItems'
 
@@ -47,6 +48,7 @@ export const NAV_ICON_COMPONENTS: Record<NavIcon, LucideIcon> = {
   meetings: CalendarClock,
   members: Users,
   contacts: BookUser,
+  contractors: Wrench,
   packets: FolderOpen,
   boardHome: Presentation,
   preservation: Archive,

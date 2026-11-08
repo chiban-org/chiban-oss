@@ -32,7 +32,9 @@ export default async function ContractorDashboardPage({
       <h1>Your contractor projects</h1>
       {page.rows.length === 0 ? (
         <p>
-          You have not claimed a project yet. Use the link in the email you were sent to claim one.
+          No projects name you as the contractor yet. A project shows here when the town or the
+          property owner records your email as the contractor, or when you use a claim link from an
+          email. <Link href="/account">Your account</Link> holds your contractor profile.
         </p>
       ) : (
         <ul className="divide-y">

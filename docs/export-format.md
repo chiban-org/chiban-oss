@@ -145,6 +145,18 @@ References:
 - `application_id` refers to `applications`
 - `meeting_id` refers to `board_meetings`
 
+### account_profiles
+
+File: `data/account_profiles.ndjson`. Ordered by user_id.
+
+- `user_id`: uuid
+- `phone`: text, nullable
+- `mailing_address`: text, nullable
+- `updated_at`: timestamp with time zone
+
+References:
+- `user_id` refers to `users`
+
 ### agenda_items
 
 File: `data/agenda_items.ndjson`. Ordered by id.
@@ -820,6 +832,20 @@ References:
 - `application_id` refers to `applications`
 
 Omitted columns: `token_hash`
+
+### contractor_profiles
+
+File: `data/contractor_profiles.ndjson`. Ordered by user_id.
+
+- `user_id`: uuid
+- `company_name`: text
+- `trades`: text[]
+- `licenses`: jsonb
+- `created_at`: timestamp with time zone
+- `updated_at`: timestamp with time zone
+
+References:
+- `user_id` refers to `users`
 
 ### counsel_outcomes
 

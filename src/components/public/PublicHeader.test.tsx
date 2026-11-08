@@ -36,6 +36,7 @@ describe('PublicHeader', () => {
     expect(screen.getByRole('link', { name: 'Parcel lookup' }).getAttribute('href')).toBe(
       '/parcels',
     )
+    expect(screen.getByRole('link', { name: 'Your account' }).getAttribute('href')).toBe('/account')
     expect(screen.getByRole('button', { name: 'Sign out' })).toBeTruthy()
     expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull()
     expect(screen.queryByRole('link', { name: 'Board meetings' })).toBeNull()

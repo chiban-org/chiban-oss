@@ -42,6 +42,7 @@ const CLAIM_COPY = {
   rate_limited: 'Too many claim links were sent for this application. Try again later.',
   send_failed: 'The email could not be sent. Try again.',
   no_party_email: 'The applicant has no email address on this application.',
+  already_linked: 'The applicant already follows this application from their account.',
 } as const
 
 export async function startIntakeAction(formData: FormData): Promise<ActionResult> {

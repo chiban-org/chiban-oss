@@ -39,6 +39,7 @@ export const NAV_ICONS = [
   'meetings',
   'members',
   'contacts',
+  'contractors',
   'packets',
   'boardHome',
   'preservation',

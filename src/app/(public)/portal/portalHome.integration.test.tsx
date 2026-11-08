@@ -25,7 +25,6 @@ vi.mock('next/navigation', () => ({
 }))
 
 const { default: PortalHomePage } = await import('@/app/(public)/portal/page')
-const { default: AccountPage } = await import('@/app/(public)/account/page')
 
 let handle: TestDb
 let world: PermitWorld
@@ -39,12 +38,6 @@ beforeAll(async () => {
 })
 afterAll(async () => {
   await handle.drop()
-})
-
-describe('account page', () => {
-  it('sends visitors to the portal', () => {
-    expect(() => AccountPage()).toThrow('NEXT_REDIRECT:/portal')
-  })
 })
 
 describe('applicant portal home', () => {

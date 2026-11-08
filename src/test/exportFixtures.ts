@@ -5,6 +5,17 @@ import { demoSeedDeps } from '@/test/demoSeedDeps'
 
 const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
   {
+    table: 'account_profiles',
+    statement: sql`insert into account_profiles (user_id, phone, mailing_address)
+      select id, '603-555-0142', '12 Mill Road' from users where kind = 'public' order by email limit 1`,
+  },
+  {
+    table: 'contractor_profiles',
+    statement: sql`insert into contractor_profiles (user_id, company_name, trades, licenses)
+      select id, 'Coverage Electric', array['electrical'], '[{"trade":"electrical","number":"EL-1"}]'::jsonb
+      from users where kind = 'public' order by email limit 1`,
+  },
+  {
     table: 'peril_certifications',
     statement: sql`insert into peril_certifications (appeal_id, certified_on, certified_by, categories, statement)
       select id, filed_on, gen_random_uuid(), array['safety'], 'Coverage row' from enforcement_appeals limit 1`,

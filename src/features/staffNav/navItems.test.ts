@@ -40,6 +40,12 @@ describe('staff navigation', () => {
     expect(labels).not.toContain('Counter')
   })
 
+  it('shows the contractor list to staff who manage project parties and not to the inspector', () => {
+    expect(labelsFor('staff')).toContain('Contractors')
+    expect(labelsFor('admin')).toContain('Contractors')
+    expect(labelsFor('inspector')).not.toContain('Contractors')
+  })
+
   it('hides payments and board packets from the inspector', () => {
     const labels = labelsFor('inspector')
     expect(labels).not.toContain('Payments')

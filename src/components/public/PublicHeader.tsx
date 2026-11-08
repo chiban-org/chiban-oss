@@ -31,6 +31,9 @@ export function PublicHeader({ signedIn, boardMember = false, signOutAction }: P
             <a href="/parcels" className={LINK}>
               Parcel lookup
             </a>
+            <a href="/account" className={LINK}>
+              Your account
+            </a>
             <form action={signOutAction}>
               <CsrfField />
               <SubmitButton variant="link" className="px-0 text-base">
