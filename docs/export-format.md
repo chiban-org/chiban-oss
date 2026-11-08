@@ -2314,6 +2314,19 @@ File: `data/selectmen_certifications.ndjson`. Ordered by id.
 References:
 - `application_id` refers to `applications`
 
+### town_sections
+
+File: `data/town_sections.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `provision_kind`: text
+- `reference`: text
+- `title`: text
+- `active`: boolean
+- `created_by`: uuid, nullable
+- `created_at`: timestamp with time zone
+- `updated_at`: timestamp with time zone
+
 ### town_settings
 
 File: `data/town_settings.ndjson`. Ordered by id.
@@ -2379,6 +2392,12 @@ File: `data/violation_findings.ndjson`. Ordered by id.
 - `found_on`: date
 - `found_by`: uuid
 - `status`: text
+- `withdrawn_reason`: text, nullable
+- `withdrawn_by`: uuid, nullable
+- `withdrawn_at`: timestamp with time zone, nullable
+- `corrected_on`: date, nullable
+- `corrected_note`: text, nullable
+- `corrected_by`: uuid, nullable
 
 References:
 - `case_id` refers to `enforcement_cases`
