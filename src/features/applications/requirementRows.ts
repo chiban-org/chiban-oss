@@ -1,13 +1,20 @@
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { gateDetail } from '@/features/gates/gateDetail'
 import { gateAnchor } from './nextStep'
-import type { PlanActionKind, PlanActor, Requirement } from './workPlanTypes'
+import type {
+  ClosureStage,
+  PlanAction,
+  PlanActionKind,
+  PlanActor,
+  Requirement,
+} from './workPlanTypes'
 
 interface GateCopy {
   label: string
   task: string
   actor: PlanActor
   action?: Exclude<PlanActionKind, 'move'>
+  reinspect?: string
 }
 
 const GATE_COPY: ReadonlyMap<string, GateCopy> = new Map([
@@ -85,11 +92,18 @@ const GATE_COPY: ReadonlyMap<string, GateCopy> = new Map([
   ],
 ])
 
+export interface ClosureFacts {
+  stage: ClosureStage
+  reinspectId: string | null
+  dueFinal: boolean
+}
+
 export interface RowFacts {
   reviewers: number
   regionalDetermined: boolean
   commissionNotified: boolean
   abilities: ReadonlySet<PlanActionKind>
+  closure?: ClosureFacts
 }
 
 function adjusted(gate: GateResult, copy: GateCopy, facts: RowFacts): GateCopy {
@@ -102,10 +116,49 @@ function adjusted(gate: GateResult, copy: GateCopy, facts: RowFacts): GateCopy {
       : 'Record the certified notice to the regional planning commission'
     return { label: copy.label, task, actor: 'town' }
   }
-  if (gate.key === 'closure.requirement_met' && /certificate/i.test(reasonOf(gate))) {
-    return { ...copy, task: 'Issue the certificate of occupancy', actor: 'town' }
+  if (gate.key === 'closure.requirement_met' && facts.closure !== undefined) {
+    return closingCopy(copy, facts.closure)
   }
   return copy
+}
+
+function closingCopy(copy: GateCopy, closure: ClosureFacts): GateCopy {
+  switch (closure.stage) {
+    case 'none':
+      return {
+        ...copy,
+        task: 'Book the final inspection',
+        actor: 'town',
+        action: 'take_inspection_request',
+      }
+    case 'failed':
+      return {
+        ...copy,
+        task: 'Book the final reinspection',
+        actor: 'town',
+        action: 'take_inspection_request',
+        reinspect: closure.reinspectId ?? undefined,
+      }
+    case 'open':
+      return closure.dueFinal ? { ...copy, action: 'record_inspection_result' } : copy
+    case 'passed':
+      return {
+        ...copy,
+        task: 'Issue the certificate of occupancy',
+        actor: 'town',
+        action: 'issue_certificate',
+      }
+  }
+}
+
+function planActionOf(copy: GateCopy): PlanAction | null {
+  if (copy.action === undefined) return null
+  if (copy.action === 'take_inspection_request') {
+    return copy.reinspect === undefined
+      ? { kind: copy.action }
+      : { kind: copy.action, reinspect: copy.reinspect }
+  }
+  return { kind: copy.action }
 }
 
 function reasonOf(gate: GateResult): string {
@@ -119,7 +172,7 @@ export function gateRow(gate: GateResult, facts: RowFacts): Requirement {
   const action =
     done || copy.action === undefined || !facts.abilities.has(copy.action)
       ? null
-      : { kind: copy.action }
+      : planActionOf(copy)
   return {
     key: gate.key,
     label: copy.label,

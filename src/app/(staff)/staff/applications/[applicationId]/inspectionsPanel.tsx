@@ -160,14 +160,40 @@ export function InspectionRow({
   )
 }
 
+export function IssueCertificateForm({
+  applicationId,
+  rowVersion,
+  today,
+  variant = 'outline',
+}: {
+  applicationId: string
+  rowVersion: number
+  today: string
+  variant?: 'default' | 'outline'
+}) {
+  return (
+    <ActionForm
+      action={issueCertificateAction}
+      submitLabel="Issue the certificate of occupancy"
+      variant={variant}
+    >
+      <input type="hidden" name="applicationId" value={applicationId} />
+      <input type="hidden" name="expectedRowVersion" value={rowVersion} />
+      <TextField label="Issue date" name="issuedOn" type="date" defaultValue={today} required />
+    </ActionForm>
+  )
+}
+
 export function InspectionsPanel({
   data,
   applicationId,
   number,
+  certificateElsewhere = false,
 }: {
   data: InspectionsPanelData
   applicationId: string
   number: string
+  certificateElsewhere?: boolean
 }) {
   const { history, canSchedule, certificateReady, rowVersion, today } = data
   return (
@@ -186,15 +212,8 @@ export function InspectionsPanel({
           </Link>
         </p>
       ) : null}
-      {certificateReady ? (
-        <ActionForm
-          action={issueCertificateAction}
-          submitLabel="Issue the certificate of occupancy"
-        >
-          <input type="hidden" name="applicationId" value={applicationId} />
-          <input type="hidden" name="expectedRowVersion" value={rowVersion} />
-          <TextField label="Issue date" name="issuedOn" type="date" defaultValue={today} required />
-        </ActionForm>
+      {certificateReady && !certificateElsewhere ? (
+        <IssueCertificateForm applicationId={applicationId} rowVersion={rowVersion} today={today} />
       ) : null}
     </section>
   )

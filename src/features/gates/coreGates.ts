@@ -86,9 +86,14 @@ registerGate({
         : { status: 'blocked', reason: 'No final inspection has passed.' }
     }
     if (closesOn === 'certificate_of_occupancy') {
-      return (await hasCertificate(tx, app.id))
-        ? PASS
-        : { status: 'blocked', reason: 'No certificate of occupancy has been issued.' }
+      if (await hasCertificate(tx, app.id)) return PASS
+      return (await hasPassedFinal(tx, app.id))
+        ? { status: 'blocked', reason: 'No certificate of occupancy has been issued.' }
+        : {
+            status: 'blocked',
+            reason:
+              'No final inspection has passed, so the certificate of occupancy cannot be issued yet.',
+          }
     }
     return PASS
   },

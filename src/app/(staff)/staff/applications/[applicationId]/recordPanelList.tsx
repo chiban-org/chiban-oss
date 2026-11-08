@@ -55,6 +55,7 @@ function moneyPanels({ view, payments, inspections, hosted }: RecordPanelsInput)
             data={inspections}
             applicationId={view.id}
             number={view.number}
+            certificateElsewhere={hosted?.has('issue_certificate') === true}
           />
         ),
     },

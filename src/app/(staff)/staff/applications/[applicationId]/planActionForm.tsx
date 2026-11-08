@@ -7,6 +7,7 @@ import type { PlanAction } from '@/features/applications/workPlanTypes'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import { BoardRegionalForm, MeetingForm, VoteFormBody } from './boardForms'
 import { CodeEditionForm, RegionalDeterminationForm } from './buildingForms'
+import { IssueCertificateForm } from './inspectionsPanel'
 import { RecordResultLink } from './inspectorSections'
 import { MoveForm } from './nextStepCard'
 import type { RecordPanelsInput } from './panelSet'
@@ -17,7 +18,7 @@ import { AssignReviewerForm, offeredReviewers } from './reviewersPanel'
 
 export type PlanFormInput = Pick<
   RecordPanelsInput,
-  'view' | 'records' | 'payments' | 'board' | 'due'
+  'view' | 'records' | 'payments' | 'board' | 'due' | 'inspections'
 >
 
 export function actionSummary(action: PlanAction, input: PlanFormInput): string {
@@ -42,9 +43,38 @@ export function actionSummary(action: PlanAction, input: PlanFormInput): string 
       return 'Open the draft abutter list'
     case 'record_inspection_result':
       return 'Record the inspection result'
+    case 'take_inspection_request':
+      return requestLabel(action)
+    case 'issue_certificate':
+      return 'Issue the certificate of occupancy'
     case 'move':
       return moveTask(action.to)
   }
+}
+
+function requestLabel(action: Extract<PlanAction, { kind: 'take_inspection_request' }>): string {
+  return action.reinspect === undefined
+    ? 'Take the final inspection request'
+    : 'Take the final reinspection request'
+}
+
+function TakeRequestLink({
+  action,
+  number,
+  variant,
+}: {
+  action: Extract<PlanAction, { kind: 'take_inspection_request' }>
+  number: string
+  variant: Variant
+}) {
+  const reinspect = action.reinspect === undefined ? '' : `&reinspect=${action.reinspect}`
+  return (
+    <Button asChild variant={variant} className="self-start">
+      <Link href={`/staff/inspections?number=${encodeURIComponent(number)}${reinspect}`}>
+        {requestLabel(action)}
+      </Link>
+    </Button>
+  )
 }
 
 type Variant = 'default' | 'outline'
@@ -123,6 +153,17 @@ export function PlanActionForm({
       return board === null ? null : <OpenDraftList board={board} variant={variant} />
     case 'record_inspection_result':
       return due == null ? null : <RecordResultLink due={due} />
+    case 'take_inspection_request':
+      return <TakeRequestLink action={action} number={view.number} variant={variant} />
+    case 'issue_certificate':
+      return (
+        <IssueCertificateForm
+          applicationId={view.id}
+          rowVersion={input.inspections.rowVersion}
+          today={input.inspections.today}
+          variant={variant}
+        />
+      )
     case 'move':
       return (
         <MoveForm
