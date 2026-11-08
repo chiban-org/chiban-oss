@@ -10,6 +10,7 @@ import {
   listInspectors,
 } from '@/features/inspections/availability'
 import { getInspectionSettings } from '@/features/inspections/inspectionSettings'
+import { listOwedResults } from '@/features/inspections/owedResults'
 import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
 import { inspectionTypeLabel, loadSiteInfo } from '@/features/inspections/siteInfo'
 import { isPhoneRequestTime, schedulingDates } from '@/features/inspections/slots'
@@ -43,6 +44,7 @@ export interface ScheduleBoardData {
   inspectors: { userId: string; name: string; calendarKind: 'ics_email' | 'graph' }[]
   settings: InspectionSettingsBody
   today: CivilDate
+  owedCount: number
   outsidePhoneHours: boolean
 }
 
@@ -97,6 +99,7 @@ export async function loadScheduleBoard(
       })
     }
   }
+  const owed = await listOwedResults(db, actor, today, signal)
   return ok({
     requests,
     scheduledAhead,
@@ -108,6 +111,7 @@ export async function loadScheduleBoard(
     })),
     settings,
     today,
+    owedCount: owed.ok ? owed.value.length : 0,
     outsidePhoneHours: !isPhoneRequestTime(settings, holidays, utcToLocal(now, zone)),
   })
 }

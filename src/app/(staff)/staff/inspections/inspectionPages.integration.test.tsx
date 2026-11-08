@@ -1,10 +1,12 @@
-import { and, asc, eq, isNotNull } from 'drizzle-orm'
+import { and, asc, eq, isNotNull, lt } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { inspections, users } from '@/db/schema'
+import { applications, inspections, users } from '@/db/schema'
 import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
+import { townToday } from '@/features/town/today'
+import { formatCivilDate } from '@/lib/formatDate'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeUser } from '@/test/factories'
 import { addDays, type CivilDate } from '@/types/civilDate'
@@ -33,6 +35,7 @@ vi.mock('next/navigation', () => ({
 
 const { default: InspectionsPage } = await import('@/app/(staff)/staff/inspections/page')
 const { default: DayPage } = await import('@/app/(staff)/staff/inspections/day/page')
+const { default: OwedPage } = await import('@/app/(staff)/staff/inspections/owed/page')
 const { default: InspectionPage } = await import(
   '@/app/(staff)/staff/inspections/[inspectionId]/page'
 )
@@ -199,5 +202,69 @@ describe('an inspection', () => {
       expect(body.includes(line)).toBe(listed)
     }
     expect(seen.has('scheduled')).toBe(true)
+  })
+})
+
+describe('results owed', () => {
+  let owedId = ''
+  let owedNumber = ''
+  let owedDate = '' as CivilDate
+
+  beforeAll(async () => {
+    const today = await townToday(handle.db, new Date(), signal)
+    owedDate = addDays(today, -4)
+    const [row] = await handle.db
+      .select({ id: inspections.id, applicationId: inspections.applicationId })
+      .from(inspections)
+      .where(and(eq(inspections.status, 'scheduled'), eq(inspections.inspectorUserId, inspectorId)))
+    owedId = row?.id ?? ''
+    await handle.db
+      .update(inspections)
+      .set({ scheduledDate: owedDate })
+      .where(eq(inspections.id, owedId))
+    const [app] = await handle.db
+      .select({ number: applications.number })
+      .from(applications)
+      .where(eq(applications.id, row?.applicationId ?? ''))
+    owedNumber = app?.number ?? ''
+  })
+
+  it('puts the count in the board header with a link to the list', async () => {
+    await actAs('staff')
+    const today = await townToday(handle.db, new Date(), signal)
+    const owed = await handle.db
+      .select({ id: inspections.id })
+      .from(inspections)
+      .where(and(eq(inspections.status, 'scheduled'), lt(inspections.scheduledDate, today)))
+    const body = await html(InspectionsPage({ searchParams: Promise.resolve({}) }))
+    const header = body.slice(body.indexOf('<header'), body.indexOf('</header>'))
+    expect(owed.length).toBeGreaterThan(0)
+    expect(header).toContain(
+      `Results owed</dt><dd class="text-ink"><a href="/staff/inspections/owed">${owed.length}</a>`,
+    )
+  })
+
+  it('says what the board lists in its lead line', async () => {
+    await actAs('staff')
+    const body = await html(InspectionsPage({ searchParams: Promise.resolve({}) }))
+    expect(body).toContain('then the inspections booked for today or later.')
+    expect(body).not.toContain('already booked')
+  })
+
+  it('lists owed results across all inspectors with the days late and a link to record each', async () => {
+    await actAs('staff')
+    const body = await html(OwedPage())
+    expect(body).toContain('<h1>Results owed</h1>')
+    expect(body).toContain('Ira Inspector')
+    expect(body).toContain(formatCivilDate(owedDate))
+    expect(body).toContain('4 days late')
+    expect(body).toContain(owedNumber)
+    expect(body).toContain(`href="/staff/inspections/${owedId}"`)
+    expect(body).toContain('Record result')
+  })
+
+  it('refuses someone who may not schedule inspections', async () => {
+    await actAs('admin')
+    expect(await html(OwedPage())).toContain('You do not have permission to see results owed.')
   })
 })

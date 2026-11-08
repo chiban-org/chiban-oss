@@ -16,6 +16,11 @@ export const dynamic = 'force-dynamic'
 const INSPECTIONS_LEAD =
   'Book requested inspections into open inspector times: choose a request, pick a time, then confirm. Requests are listed oldest first, then the inspections booked for today or later.'
 
+function OwedLink({ count }: { count: number }) {
+  if (count === 0) return <span className="text-muted-foreground">None</span>
+  return <Link href="/staff/inspections/owed">{count}</Link>
+}
+
 export default async function ScheduleBoardPage({
   searchParams,
 }: {
@@ -31,6 +36,7 @@ export default async function ScheduleBoardPage({
       <PageHeader
         title="Inspections"
         lead={INSPECTIONS_LEAD}
+        facts={[{ label: 'Results owed', value: <OwedLink count={board.owedCount} /> }]}
         actions={
           <p className="m-0">
             <Link href="/staff/inspections/day">Open an inspector day list</Link>
