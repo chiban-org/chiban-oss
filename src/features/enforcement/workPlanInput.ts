@@ -83,6 +83,15 @@ export function unservedFor(order: CasePlanOrder, role: RecipientRole) {
   )
 }
 
+export type FindingStanding = 'open' | 'corrected' | 'withdrawn' | 'none'
+
+export function findingStanding(input: Pick<CasePlanInput, 'findings'>): FindingStanding {
+  const statuses = input.findings.map((f) => f.status)
+  if (statuses.length === 0) return 'none'
+  if (statuses.includes('open')) return 'open'
+  return statuses.includes('corrected') ? 'corrected' : 'withdrawn'
+}
+
 export function draftOrderOf(input: CasePlanInput): CasePlanOrder | null {
   return input.orders.find((o) => o.row.status === 'draft') ?? null
 }

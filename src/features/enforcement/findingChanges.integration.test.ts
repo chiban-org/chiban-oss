@@ -278,3 +278,50 @@ describe('marking a finding corrected', () => {
     expect(marked).toEqual({ ok: false, error: 'forbidden' })
   })
 })
+
+describe('recording no violation after findings were withdrawn', () => {
+  async function noticedCase() {
+    const { caseId, findingIds } = await caseWithFindings()
+    const findingId = findingIds[0] ?? ''
+    await sendViolationNotice(
+      handle.db,
+      store,
+      world.staff,
+      { caseId, findingIds: [findingId], sentOn: '2027-02-22', method: 'first_class_mail' },
+      signal,
+    )
+    return { caseId, findingId }
+  }
+
+  async function rowVersion(caseId: string) {
+    const [row] = await handle.db
+      .select({ v: enforcementCases.rowVersion })
+      .from(enforcementCases)
+      .where(eq(enforcementCases.id, caseId))
+    return row?.v ?? 0
+  }
+
+  it('is refused while a finding stands', async () => {
+    const { caseId } = await noticedCase()
+    const moved = await setCaseStatus(
+      handle.db,
+      world.staff,
+      { caseId, to: 'no_violation', expectedRowVersion: await rowVersion(caseId) },
+      signal,
+    )
+    expect(moved).toEqual({ ok: false, error: 'invalid_transition' })
+  })
+
+  it('is allowed once every finding is withdrawn', async () => {
+    const { caseId, findingId } = await noticedCase()
+    await withdrawFinding(handle.db, world.staff, { findingId, reason: 'Mistake.' }, signal)
+    const moved = await setCaseStatus(
+      handle.db,
+      world.staff,
+      { caseId, to: 'no_violation', expectedRowVersion: await rowVersion(caseId) },
+      signal,
+    )
+    expect(moved.ok).toBe(true)
+    expect(await caseStatus(caseId)).toBe('no_violation')
+  })
+})

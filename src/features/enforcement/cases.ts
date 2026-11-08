@@ -13,6 +13,7 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import {
   CASE_TRANSITIONS,
+  noViolationAllowed,
   STATUSES_SET_BY_THEIR_STEP,
 } from '@/features/enforcement/caseTransitions'
 import { nextEnforcementNumber } from '@/features/enforcement/numbering'
@@ -121,6 +122,20 @@ async function transitionBlock(
   return (found?.n ?? 0) === 0 ? 'finding_required' : null
 }
 
+async function noViolationOpen(
+  tx: Tx,
+  row: { id: string; status: EnforcementStatus },
+): Promise<boolean> {
+  const findings = await tx
+    .select({ status: violationFindings.status })
+    .from(violationFindings)
+    .where(eq(violationFindings.caseId, row.id))
+  return noViolationAllowed(
+    row.status,
+    findings.map((f) => f.status),
+  )
+}
+
 export async function setCaseStatus(
   db: Db,
   actor: Actor,
@@ -140,6 +155,9 @@ export async function setCaseStatus(
     if (row === undefined) return err('not_found')
     if (row.rowVersion !== input.expectedRowVersion) return err('stale_version')
     if (!CASE_TRANSITIONS[row.status].includes(input.to)) return err('invalid_transition')
+    if (input.to === 'no_violation' && !(await noViolationOpen(tx, row))) {
+      return err('invalid_transition')
+    }
     const reason = input.reason?.trim() ?? ''
     const blocked = await transitionBlock(tx, input.caseId, input.to, reason)
     if (blocked !== null) return err(blocked)
