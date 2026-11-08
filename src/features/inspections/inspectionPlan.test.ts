@@ -220,7 +220,7 @@ describe('a recorded inspection', () => {
     const plan = planInspection(
       input({
         ...recorded,
-        row: { status: 'failed', scheduledDate: '2026-11-04' as CivilDate },
+        row: { status: 'failed', scheduledDate: '2026-11-04' },
       }),
     )
     expect(plan.sentence).toBe('Failed on November 4, 2026.')
