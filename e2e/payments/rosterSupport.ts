@@ -3,9 +3,14 @@ import { type E2eDb, expect } from '../fixtures/test'
 
 export const ROSTER_URL = '/staff/notice-contacts'
 
-export async function openRoster(page: Page): Promise<void> {
-  await page.goto(ROSTER_URL)
+export async function openRoster(page: Page, query: Record<string, string> = {}): Promise<void> {
+  const search = new URLSearchParams(query).toString()
+  await page.goto(search === '' ? ROSTER_URL : `${ROSTER_URL}?${search}`)
   await expect(page.getByRole('heading', { name: 'Notice contacts', level: 1 })).toBeVisible()
+}
+
+export async function openMore(page: Page, record: string): Promise<void> {
+  await page.getByLabel(`More actions for ${record}`, { exact: true }).click()
 }
 
 export async function openDialog(page: Page, buttonName: string, title: string): Promise<Locator> {

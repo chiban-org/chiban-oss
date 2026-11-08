@@ -6,7 +6,15 @@ import {
   getRegionalContacts,
   type RegionalContactsBody,
 } from '@/features/boards/regionalContacts'
-import { type ContactRows, loadContactRows } from '@/features/rosters/contactRows'
+import type { PageWindow } from '@/features/dataTable/pageSlice'
+import { slicePage } from '@/features/dataTable/pageSlice'
+import {
+  CONTACTS_PAGE_SIZE,
+  type ContactsQuery,
+  readContactsQuery,
+} from '@/features/rosters/contactListParams'
+import { matchesSearch, searchTextOf } from '@/features/rosters/contactListQuery'
+import { type ContactsOverview, loadContactsOverview } from '@/features/rosters/contactPage'
 import { type CondoGap, condoGaps } from '@/features/rosters/gaps'
 import { mayManageAbutters } from '@/features/rosters/manage'
 import { isDue, recheckDays } from '@/features/rosters/recheck'
@@ -17,12 +25,14 @@ import { todayInTimeZone } from '@/types/civilDate'
 
 export { RESTRICTION_LABELS } from '@/features/rosters/contactRows'
 
-export interface RostersView extends ContactRows {
+export interface RostersView extends ContactsOverview {
+  query: ContactsQuery
   today: string
   recheckDays: number
   dueCount: number
   landRecords: { text: string; due: boolean }
-  gaps: CondoGap[]
+  gapCount: number
+  gaps: PageWindow & { rows: CondoGap[] }
   regionalContacts: { role: string; lines: string[] }[]
   canEditSettings: boolean
 }
@@ -46,35 +56,51 @@ export function landRecordsText(status: RosterStatus): string {
   return `Land records checked for new restrictions on ${formatCivilDate(status.reviewedOn ?? '')}`
 }
 
+function gapPage(gaps: readonly CondoGap[], query: ContactsQuery) {
+  const found = gaps.filter((g) =>
+    matchesSearch(searchTextOf([g.parcel, g.siteAddress]), query.search),
+  )
+  return slicePage(found, query.offset, CONTACTS_PAGE_SIZE)
+}
+
 export async function loadRostersView(
   db: Db,
   actor: Actor,
   signal: AbortSignal,
-  now: Date = new Date(),
+  options: { query?: ContactsQuery; now?: Date } = {},
 ): Promise<RostersView | null> {
+  const { now = new Date() } = options
+  const askedFor = options.query ?? readContactsQuery({}).query
   signal.throwIfAborted()
   if (!(await mayManageAbutters(db, actor.userId, signal))) return null
   const town = await getTownSettings(db, signal)
   const timeZone = town.ok ? town.value.timeZone : FALLBACK_TIME_ZONE
   const today = todayInTimeZone(timeZone, now)
   const days = await recheckDays(db, signal)
-  const rows = await loadContactRows(
+  const gaps = await condoGaps(db, signal, null, today)
+  const query =
+    askedFor.tab === 'missing' && gaps.length === 0
+      ? { ...askedFor, tab: 'associations' as const }
+      : askedFor
+  const overview = await loadContactsOverview(
     db,
-    { today, recheckDays: days, timeZone, parcelId: null },
+    { today, recheckDays: days, timeZone, query },
     signal,
   )
   const review = await rosterStatus(db, 'restrictions', today, signal)
-  const all = [...rows.associations, ...rows.parks, ...rows.restrictions]
+  const { totals } = overview
   return {
-    ...rows,
+    ...overview,
+    query,
     today,
     recheckDays: days,
-    dueCount: all.filter((r) => r.due).length,
+    dueCount: totals.associations.due + totals.parks.due + totals.holders.due,
     landRecords: {
       text: landRecordsText(review),
       due: isDue(review.reviewedOn, today, days),
     },
-    gaps: await condoGaps(db, signal, null, today),
+    gapCount: gaps.length,
+    gaps: gapPage(query.tab === 'missing' ? gaps : [], query),
     regionalContacts: contactLines(await getRegionalContacts(db, signal)),
     canEditSettings: await hasCapability(db, actor.userId, 'config.edit', signal),
   }

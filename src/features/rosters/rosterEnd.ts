@@ -1,4 +1,4 @@
-import { and, eq, gt, inArray, isNull, ne, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, isNull, ne, sql } from 'drizzle-orm'
 import type { Db, DbOrTx } from '@/db/client'
 import { abutterLists, associationRosters, parkRosters } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
@@ -24,24 +24,36 @@ export type EndRosterError = 'forbidden' | 'not_found' | 'already_ended' | 'befo
 
 const TABLES = { association: associationRosters, park: parkRosters } as const
 
-export async function rosterEndingUsed(
+export async function rosterEndingsUsed(
   db: DbOrTx,
-  entry: { id: string; parcelId: string; endedAt: Date | null },
-): Promise<boolean> {
-  if (entry.endedAt === null) return false
-  const [used] = await db
-    .select({ id: abutterLists.id })
-    .from(abutterLists)
+  input: { kind: EndableKind; entryIds: readonly string[] },
+): Promise<Set<string>> {
+  const { entryIds } = input
+  if (entryIds.length === 0) return new Set()
+  const table = TABLES[input.kind]
+  const rows = await db
+    .select({ id: table.id })
+    .from(table)
     .where(
       and(
-        inArray(abutterLists.status, ['issued', 'superseded']),
-        gt(abutterLists.issuedAt, entry.endedAt),
-        sql`jsonb_path_exists(${abutterLists.snapshot}, '$.candidates[*] ? (@.parcelId == $parcel)', jsonb_build_object('parcel', ${entry.parcelId}::text))`,
-        sql`not jsonb_path_exists(${abutterLists.snapshot}, '$.recipients[*].provenance[*] ? (@.ref == $ref)', jsonb_build_object('ref', ${entry.id}::text))`,
+        inArray(table.id, [...entryIds]),
+        isNotNull(table.endedAt),
+        sql`exists (select 1 from ${abutterLists} l
+          where l.status in ('issued', 'superseded')
+            and l.issued_at > ${table.endedAt}
+            and jsonb_path_exists(l.snapshot, '$.candidates[*] ? (@.parcelId == $parcel)', jsonb_build_object('parcel', ${table.parcelId}::text))
+            and not jsonb_path_exists(l.snapshot, '$.recipients[*].provenance[*] ? (@.ref == $ref)', jsonb_build_object('ref', ${table.id}::text)))`,
       ),
     )
-    .limit(1)
-  return used !== undefined
+  return new Set(rows.map((r) => r.id))
+}
+
+export async function rosterEndingUsed(
+  db: DbOrTx,
+  kind: EndableKind,
+  entryId: string,
+): Promise<boolean> {
+  return (await rosterEndingsUsed(db, { kind, entryIds: [entryId] })).has(entryId)
 }
 
 export async function endRosterEntry(
@@ -113,7 +125,7 @@ export async function undoRosterEnd(
       .where(and(eq(table.parcelId, entry.parcelId), isNull(table.endedOn), ne(table.id, entry.id)))
       .limit(1)
     if (replacement !== undefined) return err('replaced')
-    if (await rosterEndingUsed(tx, entry)) return err('ending_used')
+    if (await rosterEndingUsed(tx, input.kind, entry.id)) return err('ending_used')
     await tx.update(table).set({ endedOn: null, endedAt: null }).where(eq(table.id, input.entryId))
     await writeAudit(
       tx,

@@ -1,7 +1,7 @@
 import { provenanceText } from '@/features/abutters/reasonText'
 import type { Provenance } from '@/features/abutters/resolution'
 import type { IncompleteReason } from '@/features/abutters/types'
-import { addAssociationHref, noticeContactHref } from '@/features/rosters/links'
+import { addAssociationHref, type ContactSource, noticeContactHref } from '@/features/rosters/links'
 
 export interface SourceLine {
   text: string
@@ -18,10 +18,14 @@ const CONTACT_SOURCES: readonly Provenance['source'][] = [
   'restriction_roster',
 ]
 
+function isContactSource(source: Provenance['source']): source is ContactSource {
+  return CONTACT_SOURCES.includes(source)
+}
+
 export function sourceLines(provenance: readonly Provenance[]): SourceLine[] {
   return provenance.map((p) => ({
     text: provenanceText(p),
-    href: CONTACT_SOURCES.includes(p.source) ? noticeContactHref(p.ref) : null,
+    href: isContactSource(p.source) ? noticeContactHref(p.source, p.ref) : null,
   }))
 }
 

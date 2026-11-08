@@ -85,6 +85,37 @@ describe('confirm still correct', () => {
     expect(audit[0]?.after).toEqual({ entryId: id, checkedOn: '2026-12-01' })
   })
 
+  it('is refused on an ended contact and leaves its checked date alone', async () => {
+    const id = await holding()
+    const ended = await endRestriction(
+      handle.db,
+      world.staff,
+      { holdingId: id, endedOn: d('2026-11-01'), now: new Date('2026-11-02T16:00:00Z') },
+      signal,
+    )
+    expect(ended.ok).toBe(true)
+    const before = (await handle.db.query.restrictionHoldings.findFirst())?.checkedOn
+    const now = new Date('2026-12-01T16:00:00Z')
+    expect(
+      await confirmEntry(handle.db, world.staff, { kind: 'restriction', entryId: id, now }, signal),
+    ).toEqual({ ok: false, error: 'entry_ended' })
+    expect((await handle.db.query.restrictionHoldings.findFirst())?.checkedOn).toBe(before)
+  })
+
+  it('still confirms a contact whose ending is dated ahead', async () => {
+    const id = await holding()
+    await endRestriction(
+      handle.db,
+      world.staff,
+      { holdingId: id, endedOn: d('2027-01-15'), now: new Date('2026-11-02T16:00:00Z') },
+      signal,
+    )
+    const now = new Date('2026-12-01T16:00:00Z')
+    expect(
+      await confirmEntry(handle.db, world.staff, { kind: 'restriction', entryId: id, now }, signal),
+    ).toEqual({ ok: true, value: { checkedOn: '2026-12-01' } })
+  })
+
   it('is refused for someone who cannot keep notice contacts', async () => {
     const id = await association()
     expect(
@@ -299,16 +330,14 @@ describe('the notice contacts page', () => {
     await association()
     await holding()
     const now = new Date('2026-03-01T16:00:00Z')
-    const fresh = await loadRostersView(handle.db, world.staff, signal, now)
+    const fresh = await loadRostersView(handle.db, world.staff, signal, { now })
     expect(fresh?.dueCount).toBe(0)
-    const later = await loadRostersView(
-      handle.db,
-      world.staff,
-      signal,
-      new Date('2028-06-01T16:00:00Z'),
-    )
+    const later = await loadRostersView(handle.db, world.staff, signal, {
+      now: new Date('2028-06-01T16:00:00Z'),
+    })
     expect(later?.dueCount).toBe(2)
-    expect(later?.associations[0]?.due).toBe(true)
+    expect(later?.totals).toMatchObject({ associations: { due: 1 }, holders: { due: 1 } })
+    expect(later?.list?.rows[0]?.due).toBe(true)
     expect(later?.recheckDays).toBe(365)
     expect(await loadRostersView(handle.db, world.reviewer, signal)).toBeNull()
   })

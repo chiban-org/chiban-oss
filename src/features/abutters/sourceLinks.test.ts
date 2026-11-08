@@ -12,18 +12,24 @@ const roster = (patch: Partial<Provenance>): Provenance => ({
 })
 
 describe('sourceLines', () => {
-  it('links a roster source back to its notice contact entry', () => {
+  it('links a roster source to its row on the tab of its kind', () => {
     expect(sourceLines([roster({})])).toEqual([
       {
         text: 'Association officer roster as of February 1, 2027',
-        href: '/staff/notice-contacts#entry-a1',
+        href: '/staff/notice-contacts?kind=associations&entry=a1#entry-a1',
       },
     ])
   })
 
   it('links a park tenant to the park it belongs to', () => {
     expect(sourceLines([roster({ source: 'park_roster', ref: 'p1:site-4' })])[0]?.href).toBe(
-      '/staff/notice-contacts#entry-p1',
+      '/staff/notice-contacts?kind=parks&entry=p1#entry-p1',
+    )
+  })
+
+  it('links a restriction holder to the holders tab', () => {
+    expect(sourceLines([roster({ source: 'restriction_roster', ref: 'h1' })])[0]?.href).toBe(
+      '/staff/notice-contacts?kind=holders&entry=h1#entry-h1',
     )
   })
 

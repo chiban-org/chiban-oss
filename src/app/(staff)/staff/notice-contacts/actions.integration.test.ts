@@ -124,6 +124,10 @@ describe('row actions on a holder', () => {
     ).toEqual({ ok: true, message: 'Restriction ended.' })
     const ended = await handle.db.query.restrictionHoldings.findFirst()
     expect(ended?.endedOn).toBe('2026-01-15')
+    expect(await confirms.confirmEntryAction(form({ kind: 'restriction', entryId: id }))).toEqual({
+      ok: false,
+      error: 'This contact has ended, so it cannot be confirmed as still correct.',
+    })
     state.actor = world.reviewer
     expect(await actions.undoRestrictionEndAction(form({ holdingId: id }))).toEqual(FORBIDDEN)
     state.actor = world.staff
