@@ -1,3 +1,4 @@
+import { doc } from '@packs/nh/starters/documentQuestions'
 import { localPermitStarter } from '@packs/nh/starters/localPermit'
 
 export const SEPTIC_CAP_OFF_STARTER = localPermitStarter({
@@ -12,6 +13,13 @@ export const SEPTIC_CAP_OFF_STARTER = localPermitStarter({
   doublesAfterTheFact: true,
   conditionText: 'Licensed plumber of record confirmed',
   closesOn: 'final_inspection_passed',
+  version: 2,
+  documents: [
+    doc('utility_disconnect', 'Utility disconnect confirmation', {
+      help: 'A letter or email from the utility confirming the service is disconnected.',
+      optional: true,
+    }),
+  ],
   fields: [
     {
       key: 'contractor_license_number',

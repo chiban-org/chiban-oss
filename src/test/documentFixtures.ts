@@ -20,6 +20,7 @@ export interface UploadOptions {
   seriesKey?: string
   docKind?: DocKind
   isPublic?: boolean
+  itemKey?: string
 }
 
 export async function uploadAs(
@@ -43,6 +44,7 @@ export async function uploadAs(
       sizeBytes: bytes.length,
       ...(options.seriesKey === undefined ? {} : { seriesKey: options.seriesKey }),
       ...(options.docKind === undefined ? {} : { docKind: options.docKind }),
+      ...(options.itemKey === undefined ? {} : { itemKey: options.itemKey }),
     },
     signal,
   )

@@ -63,6 +63,7 @@ export interface PortalApplicationView {
   history: PortalMoneyEntry[]
   canEdit: boolean
   canUpload: boolean
+  isParty: boolean
 }
 
 const DECISION_LATE_TEXT =
@@ -226,6 +227,7 @@ export async function getPortalApplicationView(
     history: await historyFor(db, actor, applicationId),
     canEdit: app.state === 'draft' && isParty,
     canUpload: writable && isParty,
+    isParty,
   })
 }
 

@@ -5,7 +5,7 @@ import { draftOf, PORTAL_PARCEL_ADDRESS, startPortalApplication } from './suppor
 const TYPE_LABEL = 'Driveway permit'
 const ATTESTATION = /^I attest that the information in this application is true and complete/
 
-test('an applicant keeps one draft per parcel, saves it, uploads a file and submits it', async ({
+test('an applicant keeps one draft per parcel, saves it, uploads the driveway sketch and submits it', async ({
   page,
   db,
   suffix,
@@ -34,20 +34,20 @@ test('an applicant keeps one draft per parcel, saves it, uploads a file and subm
     values: { description: `Gravel driveway ${suffix}`, road_name: 'Tamarack Way' },
   })
 
-  await page.getByLabel('File').setInputFiles({
+  await page.getByLabel('Choose a file for Driveway sketch').setInputFiles({
     name: `site-plan-${suffix}.pdf`,
     mimeType: 'application/pdf',
     buffer: Buffer.from('%PDF-1.4\n%%EOF\n'),
   })
-  await page.getByLabel('Name for this document').fill(`Site plan ${suffix}`)
-  await page.getByRole('button', { name: 'Upload' }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Uploaded.' })).toBeVisible()
-  await expect(page.getByRole('link', { name: `Site plan ${suffix}` })).toBeVisible()
-  const stored = await db.one<{ title: string }>(
-    'select title from documents where record_id = $1 and title = $2',
-    [applicationId, `Site plan ${suffix}`],
+  await expect(page.getByRole('link', { name: 'Driveway sketch' })).toBeVisible()
+  const stored = await db.one<{ item_key: string }>(
+    `select l.item_key from documents d
+       join application_document_links l on l.document_id = d.id
+      where d.record_id = $1 and d.title = 'Driveway sketch'`,
+    [applicationId],
   )
-  expect(stored.title).toBe(`Site plan ${suffix}`)
+  expect(stored.item_key).toBe('driveway_sketch')
 
   await description.fill('   ')
   await page.getByLabel(ATTESTATION).check()

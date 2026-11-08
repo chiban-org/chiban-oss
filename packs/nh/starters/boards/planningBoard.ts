@@ -1,3 +1,11 @@
+import {
+  LOT_LINE_DOCUMENTS,
+  LOT_SIZE_FIELD,
+  NARRATIVE_AND_SKETCH,
+  PLAN_FIELDS,
+  SITE_PLAN_DOCUMENTS,
+  SUBDIVISION_DOCUMENTS,
+} from '@packs/nh/starters/boards/boardDocuments'
 import { boardStarter, PLANNING_BOARD_WORKFLOW, perLot } from '@packs/nh/starters/boards/shared'
 
 const FLOOR_AREA = {
@@ -23,10 +31,12 @@ export const SITE_PLAN_STARTER = boardStarter({
       required: true,
       validation: { min: 0 },
     },
+    ...PLAN_FIELDS,
   ],
   applicationFee: { op: 'flat', cents: 25000 },
   newspaper: false,
   workflow: PLANNING_BOARD_WORKFLOW,
+  documents: SITE_PLAN_DOCUMENTS,
 })
 
 export const MINOR_SITE_PLAN_STARTER = boardStarter({
@@ -35,10 +45,11 @@ export const MINOR_SITE_PLAN_STARTER = boardStarter({
   slug: 'msp',
   label: 'Minor site plan',
   classification: 'nh.pb_site_plan',
-  fields: [FLOOR_AREA],
+  fields: [FLOOR_AREA, ...PLAN_FIELDS],
   applicationFee: { op: 'flat', cents: 10000 },
   newspaper: false,
   workflow: PLANNING_BOARD_WORKFLOW,
+  documents: SITE_PLAN_DOCUMENTS,
 })
 
 export const SITE_PLAN_AMENDMENT_STARTER = boardStarter({
@@ -55,10 +66,12 @@ export const SITE_PLAN_AMENDMENT_STARTER = boardStarter({
       required: true,
     },
     { key: 'proposed_use', label: 'Proposed use', type: 'text', required: true },
+    ...PLAN_FIELDS,
   ],
   applicationFee: { op: 'flat', cents: 7500 },
   newspaper: false,
   workflow: PLANNING_BOARD_WORKFLOW,
+  documents: SITE_PLAN_DOCUMENTS,
 })
 
 export const SUBDIVISION_STARTER = boardStarter({
@@ -75,10 +88,13 @@ export const SUBDIVISION_STARTER = boardStarter({
       required: true,
       validation: { min: 4 },
     },
+    ...PLAN_FIELDS,
+    LOT_SIZE_FIELD,
   ],
   applicationFee: perLot(20000),
   newspaper: false,
   workflow: PLANNING_BOARD_WORKFLOW,
+  documents: SUBDIVISION_DOCUMENTS,
 })
 
 export const MINOR_SUBDIVISION_STARTER = boardStarter({
@@ -95,10 +111,13 @@ export const MINOR_SUBDIVISION_STARTER = boardStarter({
       required: true,
       validation: { min: 1, max: 3 },
     },
+    ...PLAN_FIELDS,
+    LOT_SIZE_FIELD,
   ],
   applicationFee: perLot(10000),
   newspaper: false,
   workflow: PLANNING_BOARD_WORKFLOW,
+  documents: SUBDIVISION_DOCUMENTS,
 })
 
 export const LOT_LINE_ADJUSTMENT_STARTER = boardStarter({
@@ -115,10 +134,12 @@ export const LOT_LINE_ADJUSTMENT_STARTER = boardStarter({
       required: true,
       validation: { min: 0 },
     },
+    ...PLAN_FIELDS,
   ],
   applicationFee: { op: 'flat', cents: 7500 },
   newspaper: false,
   workflow: PLANNING_BOARD_WORKFLOW,
+  documents: LOT_LINE_DOCUMENTS,
 })
 
 export const CONDITIONAL_USE_STARTER = boardStarter({
@@ -131,6 +152,7 @@ export const CONDITIONAL_USE_STARTER = boardStarter({
   applicationFee: { op: 'flat', cents: 10000 },
   newspaper: false,
   workflow: PLANNING_BOARD_WORKFLOW,
+  documents: NARRATIVE_AND_SKETCH,
 })
 
 export const DESIGN_REVIEW_STARTER = boardStarter({
@@ -150,6 +172,7 @@ export const DESIGN_REVIEW_STARTER = boardStarter({
   applicationFee: { op: 'flat', cents: 5000 },
   newspaper: false,
   workflow: PLANNING_BOARD_WORKFLOW,
+  documents: NARRATIVE_AND_SKETCH,
 })
 
 export const PLANNING_BOARD_STARTERS = [

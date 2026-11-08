@@ -33,7 +33,7 @@ describe('adoptStarter', () => {
       .from(configVersions)
       .where(eq(configVersions.upstreamTemplateId, 'nh.starter.building'))
     expect(rows).toHaveLength(10)
-    expect(rows.every((x) => x.status === 'published' && x.upstreamTemplateVersion === 2)).toBe(
+    expect(rows.every((x) => x.status === 'published' && x.upstreamTemplateVersion === 3)).toBe(
       true,
     )
     expect(new Set(rows.map((x) => x.kind))).toEqual(

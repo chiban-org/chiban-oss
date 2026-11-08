@@ -1,6 +1,6 @@
 import { JOB_NAMES } from '@/constants/jobNames'
 import { getMailTransport, type MailTransport } from '@/features/mail/transport'
-import { sendQueuedNotifications } from '@/features/notifications/send'
+import { sendQueuedNotificationsInJob } from '@/features/notifications/send'
 import { ok } from '@/types/result'
 import { defineJob } from './defineJob'
 
@@ -18,7 +18,7 @@ export function makeNotificationsSendJob(deps: { mail: MailTransport }) {
     dedupKey: (p) =>
       `${JOB_NAMES.NOTIFICATIONS_SEND}:${(p.at ?? new Date().toISOString()).slice(0, MINUTE_CHARS)}`,
     handler: async (_payload, ctx) => {
-      await sendQueuedNotifications(ctx.db, deps.mail, ctx.signal)
+      await sendQueuedNotificationsInJob({ ...ctx, mail: deps.mail })
       return ok(undefined)
     },
   })

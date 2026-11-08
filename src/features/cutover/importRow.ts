@@ -194,6 +194,7 @@ async function submitRecord(
   )
   if (submitted.ok) return null
   if (typeof submitted.error === 'string') return [`submit_${submitted.error}`]
+  if ('gateBlocked' in submitted.error) return ['submit_gate_blocked']
   return submitted.error.fieldErrors.map((e) => `${e.field}: ${e.code}`)
 }
 
@@ -211,6 +212,12 @@ export async function importRow(
   const created = await createRecord(tx, actor, row, signal)
   if (!created.ok) return created
   const { applicationId } = created.value
+  await tx.insert(cutoverRows).values({
+    legacyNumber: row.legacyNumber,
+    applicationId,
+    importedBy: actor.userId,
+    sourceSha256,
+  })
   if (row.feesPaid && !(await waiveAllLines(tx, actor, applicationId, row, signal))) {
     return err(['fee_waiver_refused'])
   }
@@ -227,11 +234,5 @@ export async function importRow(
     if (!complete.ok) return err([`complete_${complete.error}`])
   }
   if (!(await carryState(tx, actor, applicationId, row, signal))) return err(['state_not_carried'])
-  await tx.insert(cutoverRows).values({
-    legacyNumber: row.legacyNumber,
-    applicationId,
-    importedBy: actor.userId,
-    sourceSha256,
-  })
   return ok(created.value)
 }

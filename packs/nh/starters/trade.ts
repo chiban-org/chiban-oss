@@ -1,4 +1,5 @@
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
+import { doc } from '@packs/nh/starters/documentQuestions'
 import type { StarterBundle } from '@packs/nh/starters/types'
 import { ATTESTATION_TEXT } from '@packs/nh/starters/types'
 import type { FormField } from '@/features/forms/formSchema'
@@ -13,6 +14,20 @@ interface TradeInput {
   label: string
   extraField: FormField
   conditionText: string
+  affidavit: { label: string; help: string }
+}
+
+const BY_CONTRACTOR = { field: 'work_by', op: 'not_equals', value: 'owner' } as const
+
+const WORK_BY: FormField = {
+  key: 'work_by',
+  label: 'Who is doing the work?',
+  type: 'select',
+  required: false,
+  options: [
+    { value: 'contractor', label: 'A licensed contractor' },
+    { value: 'owner', label: 'The property owner' },
+  ],
 }
 
 export function tradeStarter(input: TradeInput): StarterBundle {
@@ -20,17 +35,20 @@ export function tradeStarter(input: TradeInput): StarterBundle {
   const checklistKeys = [`${slug}-rough`, `${slug}-final`]
   return {
     id: input.id,
-    version: 2,
+    version: 3,
     form: {
       key: `${slug}-form`,
       label: `${label} permit application`,
       fields: [
         { key: 'description', label: 'Description of work', type: 'textarea', required: true },
+        WORK_BY,
         {
           key: 'contractor_license_number',
           label: 'Contractor license number',
           type: 'text',
-          required: true,
+          required: false,
+          showIf: BY_CONTRACTOR,
+          requireIf: BY_CONTRACTOR,
         },
         input.extraField,
         {
@@ -101,6 +119,12 @@ export function tradeStarter(input: TradeInput): StarterBundle {
       attestationText: ATTESTATION_TEXT,
       bindings: [...TRADE_BINDINGS],
       workflow: { allowsDirectIssue: true, substeps: [], closesOn: 'final_inspection_passed' },
+      documents: [
+        doc('homeowner_affidavit', input.affidavit.label, {
+          help: input.affidavit.help,
+          requiredIf: { field: 'work_by', op: 'equals', value: 'owner' },
+        }),
+      ],
     },
   }
 }

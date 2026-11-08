@@ -73,6 +73,8 @@ const SPECS: Spec[] = [
   { table: t.appealNodes },
   { table: t.appeals },
   { table: t.applicationConditions },
+  { table: t.applicationDocumentItems },
+  { table: t.applicationDocumentLinks },
   { table: t.applicationProfessionals },
   { table: t.applicationNumberCounters },
   { table: t.applicationSnapshots },

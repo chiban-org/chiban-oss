@@ -1,3 +1,4 @@
+import { doc } from '@packs/nh/starters/documentQuestions'
 import { localPermitStarter } from '@packs/nh/starters/localPermit'
 
 export const HOME_OCCUPATION_STARTER = localPermitStarter({
@@ -11,6 +12,11 @@ export const HOME_OCCUPATION_STARTER = localPermitStarter({
   feeCents: 7500,
   conditionText: 'Home occupation conditions of the zoning ordinance accepted',
   closesOn: 'issuance',
+  version: 2,
+  documents: [
+    doc('occupation_floor_plan', 'Floor plan of the area used for the business'),
+    doc('parking_sketch', 'Parking sketch'),
+  ],
   fields: [
     { key: 'business_name', label: 'Business name', type: 'text', required: true },
     {

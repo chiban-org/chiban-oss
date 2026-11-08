@@ -133,6 +133,7 @@ describe('taking an application at the counter, step by step', () => {
     const html = await render(applicationId, 'done')
     expect(html).toContain('is submitted for review.')
     expect(html).toContain('Send claim link to the applicant')
+    expect(html).toContain('Email notices go to morgan.reyes@alderpond.example')
     expect(html).toContain(`href="/staff/applications/${applicationId}"`)
   })
 

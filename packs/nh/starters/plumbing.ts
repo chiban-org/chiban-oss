@@ -5,6 +5,10 @@ export const PLUMBING_STARTER = tradeStarter({
   prefix: 'PL',
   slug: 'pl',
   label: 'Plumbing',
+  affidavit: {
+    label: 'Homeowner affidavit for plumbing work',
+    help: 'Needed when the owner does the plumbing instead of a licensed plumber (RSA 153:36 VIII(c)).',
+  },
   conditionText: 'Licensed plumber of record confirmed',
   extraField: {
     key: 'fixture_count',

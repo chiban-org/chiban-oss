@@ -25,6 +25,18 @@ test.describe('marking a building permit application complete', () => {
       await page.getByLabel('Use classification').click()
       await page.getByRole('option', { name: 'Residential', exact: true }).click()
       await page.getByLabel('Number of dwelling units').fill('1')
+      await page.getByRole('button', { name: 'Save draft' }).click()
+      await expect(page.getByRole('status').filter({ hasText: 'Draft saved.' })).toBeVisible()
+      await page.getByLabel('Choose a file for Plot plan').setInputFiles({
+        name: `fence-plan-${suffix}.pdf`,
+        mimeType: 'application/pdf',
+        buffer: Buffer.from('%PDF-1.4\n%%EOF\n'),
+      })
+      await expect(page.getByRole('status').filter({ hasText: 'Uploaded.' })).toBeVisible()
+      const drawings = page.getByRole('listitem').filter({ hasText: 'Construction drawings' })
+      await drawings.getByRole('combobox').selectOption({ label: 'Plot plan' })
+      await drawings.getByRole('button', { name: 'Use this file' }).click()
+      await expect(drawings).toContainText('Provided')
       await page.getByLabel(/I attest that the information/).check()
       await page.getByRole('button', { name: 'Submit application' }).click()
       await expect
