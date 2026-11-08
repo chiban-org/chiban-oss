@@ -42,9 +42,11 @@ const STATUS_WORDS: ReadonlyMap<ItemStatus, string> = new Map([
 const DONE: ReadonlySet<ItemStatus> = new Set(['provided', 'accepted', 'waiver_requested'])
 
 function StatusMark({ status }: { status: ItemStatus }) {
-  if (DONE.has(status)) return <CheckCircle2 className="size-5 text-status-passed-fg" aria-hidden />
-  if (status === 'not_needed') return <Minus className="size-5 text-muted-foreground" aria-hidden />
-  return <Circle className="size-5 text-muted-foreground" aria-hidden />
+  if (DONE.has(status))
+    return <CheckCircle2 className="mt-0.5 size-5 shrink-0 text-status-passed-fg" aria-hidden />
+  if (status === 'not_needed')
+    return <Minus className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
+  return <Circle className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden />
 }
 
 function NoteLine({ prefix, note }: { prefix: string; note: ChecklistNote }) {
@@ -142,6 +144,7 @@ function WaiverControls({ props }: { props: ItemProps }) {
 
 function StaffControls({ props }: { props: ItemProps }) {
   const { row, applicationId, actions, permissions } = props
+  if (row.status === 'not_needed') return null
   const linked = new Set(row.files.map((f) => f.documentId))
   return (
     <div className="grid gap-2">

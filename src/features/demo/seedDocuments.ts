@@ -7,6 +7,7 @@ import { insertItemLink } from '@/features/applications/documentItems'
 import { loadItemRecords } from '@/features/applications/documentRecords'
 import type { CoreState } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
+import { boardOfApplication } from '@/features/boards/boardOf'
 import { attachDocument } from '@/features/documents/attach'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import { getObjectStore } from '@/features/storage/objectStore'
@@ -57,7 +58,11 @@ export async function fileDemoDocuments(
       actor,
       {
         target: { kind: 'application', id: input.applicationId },
-        title: unmet.length === 1 ? (unmet[0]?.label ?? 'Plans') : 'Plans and supporting documents',
+        title: 'Plans and supporting documents',
+        audiences:
+          boardOfApplication(app) === null
+            ? ['project_parties', 'reviewers']
+            : ['project_parties', 'reviewers', 'board'],
         docKind: 'attachment',
         file: { sha256: stored.sha256, filename: 'plans.pdf', contentType: 'application/pdf' },
       },

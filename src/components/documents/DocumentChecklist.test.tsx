@@ -117,5 +117,8 @@ describe('DocumentChecklist for staff', () => {
     expect(within(floor).getAllByText('Accept without the document').length).toBeGreaterThan(0)
     expect(within(floor).queryByLabelText('Choose a file for Floor plans and framing')).toBeNull()
     expect(within(floor).queryByText('Request a waiver')).toBeNull()
+    expect(
+      within(item('Owner authorization')).queryByText('Accept without the document'),
+    ).toBeNull()
   })
 })

@@ -142,7 +142,8 @@ export async function loadDocumentChecklist(
     loadItemRecords(db, applicationId),
   ])
   const form = formVersion?.body as FormBody | undefined
-  const visible = new Map(listed.rows.map((r) => [r.documentId, r.title]))
+  const filed = listed.rows.filter((r) => r.docKind === 'attachment')
+  const visible = new Map(filed.map((r) => [r.documentId, r.title]))
   const ctx: RowContext = {
     values: app.values,
     fields: form?.fields ?? [],
@@ -153,7 +154,7 @@ export async function loadDocumentChecklist(
   }
   const rows = items.map((item) => rowOf(item, ctx))
   const linked = new Set(rows.flatMap((r) => r.files.map((f) => f.documentId)))
-  const files = listed.rows.map((r) => ({ documentId: r.documentId, title: r.title }))
+  const files = filed.map((r) => ({ documentId: r.documentId, title: r.title }))
   return {
     applicationId,
     stages: DOCUMENT_STAGES.flatMap((stage) => {

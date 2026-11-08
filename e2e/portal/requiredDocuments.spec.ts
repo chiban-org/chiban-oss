@@ -12,10 +12,12 @@ const pdf = (name: string) => ({
 })
 
 async function fillBuildingForm(page: Page, suffix: string): Promise<void> {
-  await page.getByLabel(/^Type of work/).selectOption('building')
-  await page.getByLabel(/^Description of work/).fill(`Garage addition ${suffix}`)
-  await page.getByLabel(/^Use classification/).selectOption('residential')
-  await page.getByLabel(/^Number of dwelling units/).fill('1')
+  await page.getByLabel('Type of work').click()
+  await page.getByRole('option', { name: 'Building', exact: true }).click()
+  await page.getByLabel('Description of work').fill(`Garage addition ${suffix}`)
+  await page.getByLabel('Use classification').click()
+  await page.getByRole('option', { name: 'Residential', exact: true }).click()
+  await page.getByLabel('Number of dwelling units').fill('1')
 }
 
 async function fileOneFileForTwoItems(page: Page, suffix: string): Promise<void> {
@@ -24,7 +26,9 @@ async function fileOneFileForTwoItems(page: Page, suffix: string): Promise<void>
     .getByLabel('Choose a file for Plot plan')
     .setInputFiles(pdf(`plans-${suffix}.pdf`))
   await expect(page.getByRole('status').filter({ hasText: 'Uploaded.' })).toBeVisible()
-  const drawings = documents.getByRole('listitem').filter({ hasText: 'Construction drawings' })
+  const drawings = documents.getByRole('listitem').filter({
+    has: page.getByText('Construction drawings to scale', { exact: true }),
+  })
   await drawings
     .getByLabel('Use a file already added for Construction drawings to scale')
     .selectOption({ label: 'Plot plan' })
@@ -93,9 +97,9 @@ test('staff accept a document item without the file and the gate stops asking fo
   const staff = await pageAs('staff')
   await staff.goto(`/staff/applications/${applicationId}`)
   const required = staff.getByRole('region', { name: 'Required documents' })
-  const driveway = required
-    .getByRole('listitem')
-    .filter({ hasText: 'Driveway permit and E-911 address' })
+  const driveway = required.getByRole('listitem').filter({
+    has: staff.getByText('Driveway permit and E-911 address', { exact: true }),
+  })
   await expect(driveway).toContainText('Missing')
   await driveway.locator('summary', { hasText: 'Accept without the document' }).click()
   await driveway
