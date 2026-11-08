@@ -63,14 +63,23 @@ export function PortalDocuments({
   zone: string
 }) {
   if (checklist !== null) {
+    const fromTown = view.documents.filter((d) => d.docKind !== 'attachment')
     return (
-      <DocumentChecklist
-        view={checklist}
-        actor="applicant"
-        permissions={{ canFile: view.isParty, canAccept: false, canUploadOther: view.canUpload }}
-        actions={PORTAL_CHECKLIST_ACTIONS}
-        maxBytes={env.MAX_UPLOAD_BYTES}
-      />
+      <>
+        <DocumentChecklist
+          view={checklist}
+          actor="applicant"
+          permissions={{ canFile: view.isParty, canAccept: false, canUploadOther: view.canUpload }}
+          actions={PORTAL_CHECKLIST_ACTIONS}
+          maxBytes={env.MAX_UPLOAD_BYTES}
+        />
+        {fromTown.length === 0 ? null : (
+          <>
+            <h3>From the town</h3>
+            <DocumentGroups documents={fromTown} zone={zone} />
+          </>
+        )}
+      </>
     )
   }
   return (
