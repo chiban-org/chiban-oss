@@ -285,9 +285,8 @@ describe('the inspection record page', () => {
     expect(card).toContain('Notes for the permit holder')
     expect(card).toContain(`Passing this final closes permit ${final.number}.`)
     expect(filledButtons(body)).toEqual(['Record result'])
-    expect(body).toContain(
-      `Result owed since ${formatCivilDate(date)} (${late} ${late === 1 ? 'day' : 'days'} late)`,
-    )
+    const owed = `Result owed since ${formatCivilDate(date)} (${late} ${late === 1 ? 'day' : 'days'} late)`
+    expect(body.split(owed)).toHaveLength(2)
     expect(body).toContain('Add a photo')
   })
 

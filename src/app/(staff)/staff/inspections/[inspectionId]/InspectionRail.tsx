@@ -87,7 +87,6 @@ export function OwedLine({ owed }: { owed: string | null }) {
 export function InspectionStrip({ record }: { record: InspectionRecord }) {
   return (
     <section aria-label="Status" data-plain className="rail-card flex flex-col gap-3 [&>*]:m-0">
-      <OwedLine owed={record.plan.owed} />
       <details>
         <summary>Facts and more actions</summary>
         <div className="flex flex-col gap-4">
