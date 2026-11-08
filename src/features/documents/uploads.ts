@@ -5,6 +5,7 @@ import type { Db, DbOrTx, Tx } from '@/db/client'
 import { uploadIntents } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { insertItemLink } from '@/features/applications/documentItems'
+import { lockApplication } from '@/features/applications/lockApplication'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { attachDocument } from '@/features/documents/attach'
@@ -175,6 +176,7 @@ export async function finalizeUpload(
       const { intent, sha256 } = ingested.value
       const target = { kind: intent.targetKind, id: intent.targetId } as RecordRef
       const itemKey = target.kind === 'application' ? intent.itemKey : null
+      if (itemKey !== null) await lockApplication(tx, target.id)
       if (!(await mayUploadTo(tx, actor, { ...target, itemKey }, signal, now))) {
         return err('forbidden')
       }

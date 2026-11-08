@@ -9,6 +9,7 @@ import {
   type ItemRole,
   itemTarget,
 } from '@/features/applications/documentItemAccess'
+import { lockApplication } from '@/features/applications/lockApplication'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { err, ok, type Result } from '@/types/result'
@@ -85,6 +86,7 @@ export async function linkDocument(
 ): Promise<Result<void, ItemError>> {
   signal.throwIfAborted()
   return await transactionResult<void, ItemError>(db, async (tx) => {
+    await lockApplication(tx, input.applicationId)
     const target = await itemTarget(tx, actor, { ...input, role: filingRole(actor) }, signal)
     if (!target.ok) return err(target.error)
     if (!(await documentOnApplication(tx, actor, input.applicationId, input.documentId))) {
@@ -103,6 +105,7 @@ export async function unlinkDocument(
 ): Promise<Result<void, ItemError>> {
   signal.throwIfAborted()
   return await transactionResult<void, ItemError>(db, async (tx) => {
+    await lockApplication(tx, input.applicationId)
     const target = await itemTarget(tx, actor, { ...input, role: filingRole(actor) }, signal)
     if (!target.ok) return err(target.error)
     const removed = await tx
@@ -152,6 +155,7 @@ async function changeItem(
 ): Promise<Result<void, ItemError>> {
   signal.throwIfAborted()
   return await transactionResult<void, ItemError>(db, async (tx) => {
+    await lockApplication(tx, input.applicationId)
     const target = await itemTarget(tx, actor, input, signal)
     if (!target.ok) return err(target.error)
     if (input.needsWaivable === true && !target.value.item.waivable) return err('not_waivable')
