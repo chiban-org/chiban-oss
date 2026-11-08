@@ -1,14 +1,7 @@
-import { ActionForm } from '@/components/ActionForm'
-import { costTotal, RTK_RESPONSE_LABELS } from '@/features/rtk/labels'
+import { NEW_TAB } from '@/components/newTab'
+import { costTotal, responseLabel } from '@/features/rtk/labels'
 import type { RtkRequestView } from '@/features/rtk/requests'
 import { formatCivilDate } from '@/lib/formatDate'
-import type { CivilDate } from '@/types/civilDate'
-import { firstResponseAction } from '../actions'
-import { ResponseKindFields } from './ResponseKindFields'
-
-const FORM_RESPONSE_OPTIONS = Object.entries<string>(RTK_RESPONSE_LABELS).filter(
-  ([kind]) => kind !== 'made_available',
-)
 
 function timelinessText(request: RtkRequestView): string | null {
   const t = request.timeliness
@@ -18,59 +11,53 @@ function timelinessText(request: RtkRequestView): string | null {
   return t.kind === 'responded_on_time' ? 'Answered on time.' : null
 }
 
-function ResponseForm({ requestId, today }: { requestId: string; today: CivilDate }) {
-  return (
-    <details>
-      <summary>Record the first response</summary>
-      <ActionForm action={firstResponseAction} submitLabel="Record response">
-        <input type="hidden" name="requestId" value={requestId} />
-        <p className="m-0">
-          To make records available, approve and release them under Releases. The first release
-          records the response.
-        </p>
-        <ResponseKindFields options={FORM_RESPONSE_OPTIONS} today={today} />
-      </ActionForm>
-    </details>
-  )
-}
-
 function recordedLine(request: RtkRequestView): string {
-  const label = RTK_RESPONSE_LABELS[request.firstResponseKind as keyof typeof RTK_RESPONSE_LABELS]
+  const label = responseLabel(request.firstResponseKind) ?? 'Response recorded'
   return request.firstResponseOn === null
     ? `${label}.`
     : `${label}, ${formatCivilDate(request.firstResponseOn)}.`
 }
 
-function RecordedResponse({ request }: { request: RtkRequestView }) {
-  const late = timelinessText(request)
-  return (
-    <>
-      <p className="m-0">{recordedLine(request)}</p>
-      {late === null ? null : <p className="m-0">{late}</p>}
-      {request.timeStatements.map((s) => (
-        <p key={s.id} className="m-0">
-          {`More time needed until ${formatCivilDate(s.statedDate)}: ${s.delayReason}${s.costEstimate.length > 0 ? ` Estimated charge ${costTotal(s.costEstimate)}.` : ''}`}
-        </p>
-      ))}
-    </>
-  )
+function statementLine(statement: RtkRequestView['timeStatements'][number]): string {
+  const charge =
+    statement.costEstimate.length > 0
+      ? ` Estimated charge ${costTotal(statement.costEstimate)}.`
+      : ''
+  return `More time needed until ${formatCivilDate(statement.statedDate)}: ${statement.delayReason}${charge}`
 }
 
-export function ResponseSection({
-  request,
-  today,
-  working,
-}: {
-  request: RtkRequestView
-  today: CivilDate
-  working: boolean
-}) {
-  const recorded = request.firstResponseKind !== null
+export function ResponseSection({ request }: { request: RtkRequestView }) {
+  if (request.firstResponseKind === null) return null
+  const late = timelinessText(request)
   return (
     <section aria-labelledby="first-response">
       <h2 id="first-response">First response</h2>
-      {recorded ? <RecordedResponse request={request} /> : <p>No response recorded yet.</p>}
-      {working && !recorded ? <ResponseForm requestId={request.id} today={today} /> : null}
+      <p>{recordedLine(request)}</p>
+      {late === null ? null : <p>{late}</p>}
+      {request.timeStatements.map((s) => (
+        <p key={s.id}>{statementLine(s)}</p>
+      ))}
+      {request.deniedOn === null ? null : (
+        <p>{`Denied after the time statement, ${formatCivilDate(request.deniedOn)}.`}</p>
+      )}
+    </section>
+  )
+}
+
+export function LettersSection({ letters }: { letters: readonly { id: string; title: string }[] }) {
+  if (letters.length === 0) return null
+  return (
+    <section aria-labelledby="letters">
+      <h2 id="letters">Letters</h2>
+      <ul className="list-none space-y-1 p-0">
+        {letters.map((l) => (
+          <li key={l.id}>
+            <a {...NEW_TAB} href={`/api/documents/${l.id}`}>
+              {l.title}
+            </a>
+          </li>
+        ))}
+      </ul>
     </section>
   )
 }

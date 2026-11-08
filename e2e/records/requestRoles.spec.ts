@@ -25,8 +25,8 @@ for (const role of ['inspector', 'finance'] as const) {
       await expect(page.getByRole('main').getByRole('alert')).toHaveText(
         'You do not have permission to see Right-to-Know requests.',
       )
-      await expect(page.getByText('Record the first response')).toHaveCount(0)
-      await expect(page.getByText('Close the request')).toHaveCount(0)
+      await expect(page.getByText('Release the records now')).toHaveCount(0)
+      await expect(page.getByText('More actions')).toHaveCount(0)
     })
   })
 }

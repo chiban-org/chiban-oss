@@ -26,6 +26,7 @@ export interface ReleaseCandidate {
   documentId: string
   title: string
   context: string
+  originalVersionId: string | null
   versions: { id: string; role: string; filename: string; createdAt: string }[]
 }
 
@@ -36,6 +37,10 @@ export interface RequestApproval {
   title: string
   role: string
   revokedAt: Date | null
+  approvedAt: Date
+  versionCreatedAt: Date
+  releasedIn: number | null
+  cited: boolean
 }
 
 export interface ReleaseSummary {
@@ -44,7 +49,7 @@ export interface ReleaseSummary {
   releasedOn: string
   method: (typeof rtkReleases.$inferSelect)['method']
   letterDocumentId: string | null
-  items: { title: string; filename: string; withdrawn: boolean }[]
+  items: { title: string; filename: string; withdrawn: boolean; approvalId: string | null }[]
 }
 
 const RECORD_NUMBER = sql<string | null>`coalesce(
@@ -52,6 +57,13 @@ const RECORD_NUMBER = sql<string | null>`coalesce(
     where ${documents.recordKind} = 'application' and a.id = ${documents.recordId}),
   (select c.number from enforcement_cases c
     where ${documents.recordKind} = 'enforcement_case' and c.id = ${documents.recordId}))`
+
+const RELEASED_IN = sql<number | null>`(select min(r.sequence)::int from rtk_releases r
+  join rtk_release_items i on i.release_id = r.id
+  where r.request_id = ${renditionApprovals.rtkRequestId} and i.approval_id = ${renditionApprovals.id})`
+
+const CITED = sql<boolean>`(${documentVersions.role} = 'original' or exists (
+  select 1 from redaction_boxes b where b.job_id = ${documentVersions.redactionJobId}))`
 
 export async function loadReleaseCandidates(
   db: Db,
@@ -103,16 +115,18 @@ export async function loadReleaseCandidates(
       ),
     )
     .orderBy(asc(documentVersions.createdAt))
-  return rows.map((r) => ({
-    documentId: r.id,
-    title: r.title,
-    context: [RECORD_KIND_LABELS[r.recordKind] ?? 'Record', r.recordNumber]
-      .filter((x) => x !== null)
-      .join(' '),
-    versions: versions
-      .filter((v) => v.documentId === r.id)
-      .map(({ createdAt, ...v }) => ({ ...v, createdAt: createdAt.toISOString() })),
-  }))
+  return rows.map((r) => {
+    const own = versions.filter((v) => v.documentId === r.id)
+    return {
+      documentId: r.id,
+      title: r.title,
+      context: [RECORD_KIND_LABELS[r.recordKind] ?? 'Record', r.recordNumber]
+        .filter((x) => x !== null)
+        .join(' '),
+      originalVersionId: own.find((v) => v.role === 'original')?.id ?? null,
+      versions: own.map(({ createdAt, ...v }) => ({ ...v, createdAt: createdAt.toISOString() })),
+    }
+  })
 }
 
 export async function loadRequestApprovals(db: Db, requestId: string): Promise<RequestApproval[]> {
@@ -124,6 +138,10 @@ export async function loadRequestApprovals(db: Db, requestId: string): Promise<R
       title: documents.title,
       role: documentVersions.role,
       revokedAt: renditionApprovals.revokedAt,
+      approvedAt: renditionApprovals.approvedAt,
+      versionCreatedAt: documentVersions.createdAt,
+      releasedIn: RELEASED_IN,
+      cited: CITED,
     })
     .from(renditionApprovals)
     .innerJoin(documents, eq(documents.id, renditionApprovals.documentId))
@@ -150,6 +168,7 @@ export async function loadReleases(db: Db, requestId: string): Promise<ReleaseSu
         title: documents.title,
         filename: documentVersions.filename,
         withdrawnAt: rtkReleaseItems.withdrawnAt,
+        approvalId: rtkReleaseItems.approvalId,
       })
       .from(rtkReleaseItems)
       .innerJoin(documents, eq(documents.id, rtkReleaseItems.documentId))
@@ -166,6 +185,7 @@ export async function loadReleases(db: Db, requestId: string): Promise<ReleaseSu
         title: i.title,
         filename: i.filename ?? '',
         withdrawn: i.withdrawnAt !== null,
+        approvalId: i.approvalId,
       })),
     })
   }
@@ -178,20 +198,4 @@ export async function loadRequestLetters(db: Db, requestId: string) {
     .from(documents)
     .where(and(eq(documents.recordKind, 'rtk_request'), eq(documents.recordId, requestId)))
     .orderBy(asc(documents.seq))
-}
-
-export async function releaseSearchExample(db: Db, actor: Actor): Promise<string | null> {
-  const [row] = await db
-    .select({ number: RECORD_NUMBER })
-    .from(documents)
-    .where(
-      and(
-        isNull(documents.disposedAt),
-        rtkRequestVisibleTo(actor),
-        sql`${RECORD_NUMBER} is not null`,
-      ),
-    )
-    .orderBy(desc(documents.seq))
-    .limit(1)
-  return row?.number ?? null
 }

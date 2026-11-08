@@ -170,9 +170,7 @@ describe('records screens with the demo seed', () => {
     )
     expect(page).toContain('5 business days after')
     expect(page).toContain('RSA 91-A:4 IV(b)')
-    expect(page).toContain(
-      'A letter is created when you record the first response or release the first records.',
-    )
+    expect(page).toContain('How it is counted')
   })
 
   it('retention and disposition screens show the worklist rows and the tombstone batch', async () => {
@@ -269,7 +267,7 @@ describe('records screens with the demo seed', () => {
       }),
     )
     expect(requestPage).toContain(`href="/staff/records/requests/${forRequest?.rtkRequestId}"`)
-    expect(visibleText(requestPage)).toContain('is approved under Releases on the')
+    expect(visibleText(requestPage)).toContain('is approved in the release step on the')
   })
 
   it('a reviewer gets the permission page or not-found and a resident is sent to sign in', async () => {

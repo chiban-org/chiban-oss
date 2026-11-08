@@ -1,195 +1,111 @@
+import type { ReactNode } from 'react'
 import { ActionForm } from '@/components/ActionForm'
-import { GroupFieldError } from '@/components/fieldErrors'
 import { NEW_TAB } from '@/components/newTab'
-import { CheckField, SelectField, TextField } from '@/components/staff/fields'
+import { TextField } from '@/components/staff/fields'
 import { RTK_METHOD_LABELS } from '@/features/rtk/labels'
-import type { ReleaseCandidate, ReleaseSummary, RequestApproval } from '@/features/rtk/requestPage'
+import type { ReleaseSummary, RequestApproval } from '@/features/rtk/requestPage'
 import { formatCivilDate } from '@/lib/formatDate'
-import type { CivilDate } from '@/types/civilDate'
-import { approveRenditionAction, revokeApprovalAction } from '../../renditionActions'
-import { createReleaseAction } from '../actions'
-import { type FindContext, ReleaseFind } from './ReleaseFind'
+import { revokeApprovalAction } from '../../renditionActions'
+import { roleLabel } from './versionLabels'
 
-const ROLE_LABELS: Record<string, string> = {
-  original: 'Original',
-  public_redacted: 'Redacted copy for the public',
-  release_redacted: 'Redacted copy for this request',
-}
-
-function versionLabel(title: string, v: ReleaseCandidate['versions'][number]): string {
-  const day = formatCivilDate(v.createdAt.slice(0, 10))
-  const time = v.role === 'original' ? '' : ` ${v.createdAt.slice(11, 16)} UTC`
-  return `${title}: ${ROLE_LABELS[v.role] ?? v.role}, ${day}${time}`
-}
-
-function Hidden({ name, value }: { name: string; value: string | number }) {
-  return <input type="hidden" name={name} value={String(value)} />
-}
-
-interface Props {
-  find: FindContext
-  releases: ReleaseSummary[]
-  approvals: RequestApproval[]
-  candidates: ReleaseCandidate[]
-  today: CivilDate
-  canManage: boolean
-  working: boolean
-}
-
-function ReleaseList({ releases }: { releases: ReleaseSummary[] }) {
-  if (releases.length === 0) return <p>Nothing has been released yet.</p>
+function ReleaseRow({ release }: { release: ReleaseSummary }) {
   return (
-    <ul className="list-none space-y-3 p-0">
-      {releases.map((r) => (
-        <li key={r.id} className="record-item">
-          <p className="m-0 font-medium">
-            {`Release ${r.sequence}, ${formatCivilDate(r.releasedOn)}, ${RTK_METHOD_LABELS[r.method]}`}
-          </p>
-          <ul className="m-0 list-none p-0">
-            {r.items.map((i) => (
-              <li key={`${r.id}-${i.title}`}>{`${i.title}${i.withdrawn ? ' (withdrawn)' : ''}`}</li>
-            ))}
-          </ul>
-          {r.letterDocumentId === null ? null : (
-            <a {...NEW_TAB} href={`/api/documents/${r.letterDocumentId}`}>
-              Letter for this release
-            </a>
-          )}
-        </li>
-      ))}
-    </ul>
-  )
-}
-
-function ApprovalList({
-  approvals,
-  canManage,
-}: {
-  approvals: RequestApproval[]
-  canManage: boolean
-}) {
-  if (approvals.length === 0) return null
-  return (
-    <>
-      <h3>Approved for release</h3>
-      <ul className="m-0 list-none space-y-3 p-0">
-        {approvals.map((a) => (
-          <li key={a.approvalId} className="record-item">
-            <p className="m-0">
-              {`${a.title}: ${ROLE_LABELS[a.role] ?? a.role}${a.revokedAt === null ? '' : ' (revoked)'}`}
-            </p>
-            {canManage && a.revokedAt === null ? (
-              <details>
-                <summary>Revoke approval</summary>
-                <ActionForm
-                  action={revokeApprovalAction}
-                  submitLabel="Revoke approval"
-                  confirm={{
-                    title: 'Revoke this approval?',
-                    body: 'The approved version can no longer be released for this request until someone approves it again.',
-                    confirmLabel: 'Revoke the approval',
-                  }}
-                >
-                  <Hidden name="approvalId" value={a.approvalId} />
-                  <TextField label="Why it is being revoked" name="reason" required />
-                </ActionForm>
-              </details>
-            ) : null}
-          </li>
+    <li className="record-item flex flex-col gap-1">
+      <p className="m-0 font-medium">
+        {`Release ${release.sequence}, ${formatCivilDate(release.releasedOn)}, ${RTK_METHOD_LABELS[release.method]}`}
+      </p>
+      <ul className="m-0 list-none p-0">
+        {release.items.map((i) => (
+          <li
+            key={`${release.id}-${i.title}`}
+          >{`${i.title}${i.withdrawn ? ' (withdrawn)' : ''}`}</li>
         ))}
       </ul>
-    </>
-  )
-}
-
-function ApproveForm({ find, candidates }: { find: FindContext; candidates: ReleaseCandidate[] }) {
-  const options: [string, string][] = candidates.flatMap((c) =>
-    c.versions.map((v) => [v.id, versionLabel(`${c.title}, ${c.context}`, v)] as [string, string]),
-  )
-  const searched = find.find.trim() !== ''
-  return (
-    <details open={searched}>
-      <summary>Approve a version for release</summary>
-      <ReleaseFind {...find} />
-      {options.length === 0 ? (
-        <p className="mt-4">
-          {searched
-            ? 'No document matches. Try part of its title or the application or case number.'
-            : 'Search for the document to release, then pick the version.'}
-        </p>
-      ) : (
-        <ActionForm action={approveRenditionAction} submitLabel="Approve for release">
-          <Hidden name="purpose" value="rtk_release" />
-          <Hidden name="rtkRequestId" value={find.requestId} />
-          <SelectField label="Document and version" name="versionId" options={options} />
-          <TextField label="What you checked before approving" name="reviewStatement" required />
-        </ActionForm>
+      {release.letterDocumentId === null ? null : (
+        <a {...NEW_TAB} href={`/api/documents/${release.letterDocumentId}`} className="self-start">
+          {`Letter for release ${release.sequence}`}
+        </a>
       )}
-    </details>
+    </li>
   )
 }
 
-function ReleaseForm({
-  requestId,
-  active,
-  today,
-}: {
-  requestId: string
-  active: RequestApproval[]
-  today: CivilDate
-}) {
+function approvalState(a: RequestApproval): string {
+  if (a.revokedAt !== null) return 'Revoked'
+  return a.releasedIn === null ? 'Waiting' : `Released in release ${a.releasedIn}`
+}
+
+function RevokeForm({ approval }: { approval: RequestApproval }) {
   return (
     <details>
-      <summary>Release approved records</summary>
+      <summary className="text-sm">Revoke approval</summary>
       <ActionForm
-        action={createReleaseAction}
-        submitLabel="Release"
+        action={revokeApprovalAction}
+        submitLabel="Revoke approval"
         confirm={{
-          title: 'Release these records?',
-          body: 'The chosen records are sent to the requester. Once released they cannot be called back.',
-          confirmLabel: 'Release the records',
+          title: 'Revoke this approval?',
+          body: 'The approved version can no longer be released for this request until someone approves it again.',
+          confirmLabel: 'Revoke the approval',
         }}
       >
-        <Hidden name="requestId" value={requestId} />
-        <fieldset className="space-y-2 border-0 p-0">
-          <legend className="text-sm font-medium">Records in this release</legend>
-          <GroupFieldError name="items" />
-          {active.map((a) => (
-            <CheckField
-              key={a.approvalId}
-              label={`${a.title}: ${ROLE_LABELS[a.role] ?? a.role}`}
-              name="items"
-              groupMember
-              value={`${a.documentId}:${a.approvalId}`}
-            />
-          ))}
-        </fieldset>
-        <TextField
-          label="Date released"
-          name="releasedOn"
-          type="date"
-          defaultValue={today}
-          required
-        />
-        <SelectField label="How" name="method" options={Object.entries(RTK_METHOD_LABELS)} />
-        <TextField label="Email address, for a link" name="recipientEmail" type="email" />
+        <input type="hidden" name="approvalId" value={approval.approvalId} />
+        <TextField label="Why it is being revoked" name="reason" required />
       </ActionForm>
     </details>
   )
 }
 
-export function ReleaseSection(props: Props) {
-  const { find, releases, approvals, candidates, today, canManage, working } = props
-  const active = approvals.filter((a) => a.revokedAt === null)
+function ApprovalRow({ approval, canManage }: { approval: RequestApproval; canManage: boolean }) {
+  return (
+    <li className="record-item flex flex-col gap-1">
+      <p className="m-0">{`${approval.title}: ${roleLabel(approval.role)}`}</p>
+      <p className="m-0 text-sm text-ink-secondary">{approvalState(approval)}</p>
+      {canManage && approval.revokedAt === null ? <RevokeForm approval={approval} /> : null}
+    </li>
+  )
+}
+
+export function releasesEmpty(
+  releases: readonly ReleaseSummary[],
+  approvals: readonly RequestApproval[],
+): boolean {
+  return releases.length === 0 && approvals.length === 0
+}
+
+export function ReleaseSection({
+  releases,
+  approvals,
+  canManage,
+  findTool,
+}: {
+  releases: readonly ReleaseSummary[]
+  approvals: readonly RequestApproval[]
+  canManage: boolean
+  findTool: ReactNode
+}) {
   return (
     <section aria-labelledby="releases">
       <h2 id="releases">Releases</h2>
-      <ReleaseList releases={releases} />
-      <ApprovalList approvals={approvals} canManage={canManage} />
-      {working ? <ApproveForm find={find} candidates={candidates} /> : null}
-      {working && active.length > 0 ? (
-        <ReleaseForm requestId={find.requestId} active={active} today={today} />
-      ) : null}
+      {releases.length === 0 ? (
+        <p className="text-muted-foreground">Nothing has been released yet.</p>
+      ) : (
+        <ul aria-label="Releases made" className="list-none p-0">
+          {releases.map((r) => (
+            <ReleaseRow key={r.id} release={r} />
+          ))}
+        </ul>
+      )}
+      {approvals.length === 0 ? null : (
+        <>
+          <h3>Approved for this request</h3>
+          <ul aria-label="Approved for this request" className="list-none p-0">
+            {approvals.map((a) => (
+              <ApprovalRow key={a.approvalId} approval={a} canManage={canManage} />
+            ))}
+          </ul>
+        </>
+      )}
+      {findTool}
     </section>
   )
 }

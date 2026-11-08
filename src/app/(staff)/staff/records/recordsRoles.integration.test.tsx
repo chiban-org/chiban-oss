@@ -97,15 +97,15 @@ describe('Right-to-Know request page by role', () => {
     }
   })
 
-  it('records custodians get the working forms folded behind buttons', async () => {
+  it('records custodians get the first response in the card and the other forms folded behind buttons', async () => {
     const request = await openRequest()
     await actAs('records')
     const markup = await html(
       RequestPage({ params: Promise.resolve({ requestId: request.id }), ...search() }),
     )
     expect(markup).toContain('<summary>Record a withholding</summary>')
-    expect(markup).toContain('<summary>Record the first response</summary>')
-    expect(markup).toContain('<summary>Close the request</summary>')
+    expect(markup).toContain('Release the records now')
+    expect(markup).toContain('<summary class="text-sm">More actions</summary>')
   })
 
   it('the server refuses every request action to an administrator', async () => {
