@@ -50,7 +50,7 @@ async function startStep(ctx: StaffContext, types: CounterTypes, params: Params)
   const parcel = params.parcel !== undefined && isUuid(params.parcel) ? params.parcel : undefined
   const hrefFor = (key: string) => counterHref({ q: params.q, parcel, type: key })
   return (
-    <main className="flex flex-col gap-8">
+    <main>
       <Header step="type" />
       <UnfinishedIntakes rows={unfinished} zone={zone} discard={discardIntakeAction} />
       <TypeTiles

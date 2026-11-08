@@ -107,7 +107,7 @@ export default async function TakeApplicationPage({ params, searchParams }: Prop
     requested,
   })
   return (
-    <main className="flex flex-col gap-6">
+    <main>
       <PageHeader
         kicker="Counter"
         title={view.typeLabel}
