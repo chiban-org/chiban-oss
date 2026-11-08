@@ -56,7 +56,7 @@ export default async function OwedResultsPage() {
         {owed.value.length === 0 ? (
           <p>No results are owed.</p>
         ) : (
-          <ul className="m-0 list-none p-0">
+          <ul className="list-none p-0">
             {owed.value.map((row) => (
               <OwedRow key={row.inspectionId} row={row} />
             ))}

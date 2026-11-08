@@ -7,7 +7,6 @@ const SRC = path.resolve(import.meta.dirname)
 const KEY_HANDLER_FILES = [
   'components/config/formBuilder/FormBuilder.tsx',
   'components/config/letterBuilder/LetterBuilder.tsx',
-  'components/inspections/RequestQueue.tsx',
   'components/parcels/picker/ParcelCombobox.tsx',
   'components/staff/search/RecordSearch.tsx',
 ]

@@ -104,7 +104,7 @@ export function RequestQueue({
       {visible.length === 0 ? (
         <p>{emptyCopy(requests, query)}</p>
       ) : (
-        <ul className="m-0 flex list-none flex-col gap-1 p-0">
+        <ul className="flex list-none flex-col gap-1 p-0">
           {visible.map((request) => (
             <RequestRow
               key={request.inspectionId}
