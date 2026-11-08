@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { and, eq, gt, isNull, ne, sql } from 'drizzle-orm'
+import { and, eq, gt, isNull, ne, or, sql } from 'drizzle-orm'
 import { env } from '@/config/env'
 import type { Db } from '@/db/client'
 import { contractorClaims, projectParties, projects, userRoles, users } from '@/db/schema'
@@ -203,7 +203,7 @@ export async function claimProject(
       .where(
         and(
           eq(projectParties.id, claim.partyId),
-          isNull(projectParties.userId),
+          or(isNull(projectParties.userId), eq(projectParties.userId, actor.userId)),
           isNull(projectParties.removedAt),
         ),
       )

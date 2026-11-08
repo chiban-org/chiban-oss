@@ -3,6 +3,7 @@ import type { DbOrTx, Tx } from '@/db/client'
 import { projectParties } from '@/db/schema'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
+import { linkNewContractorParty } from '@/features/contractors/accountLink'
 import { err, ok, type Result } from '@/types/result'
 
 export type ContractorChoice =
@@ -107,4 +108,11 @@ export async function applyContractorPlan(
     .values({ projectId, role: 'contractor', addedBy: actor.userId, ...plan.added })
     .returning({ id: projectParties.id })
   await audit('project.party.add', row?.id ?? '')
+  if (row !== undefined && plan.added.email !== null && plan.added.userId === null) {
+    await linkNewContractorParty(
+      tx,
+      { partyId: row.id, email: plan.added.email },
+      { actorUserId: actor.userId, signal },
+    )
+  }
 }

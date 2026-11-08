@@ -5,6 +5,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { linkNewContractorParty } from '@/features/contractors/accountLink'
 import { isActiveParty } from '@/features/projects/access'
 import { err, ok, type Result } from '@/types/result'
 
@@ -62,6 +63,13 @@ export async function addParty(
       },
       signal,
     )
+    if (input.role === 'contractor' && input.userId === undefined && input.email !== undefined) {
+      await linkNewContractorParty(
+        tx,
+        { partyId, email: input.email },
+        { actorUserId: actor.userId, signal },
+      )
+    }
     return ok({ partyId })
   })
 }
