@@ -8,6 +8,7 @@ import {
   publicExtras,
 } from '@/features/enforcement/access'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
+import { caseChip, caseOpenGroup } from '@/features/parcels/openGroups'
 import {
   type ParcelRecordSummary,
   registerParcelRecordSource,
@@ -60,8 +61,9 @@ export async function summarizeCases(
     title: CASE_TITLE,
     type: { key: 'enforcement_case', label: CASE_TITLE },
     number: row.number,
-    status: { label: CASE_STATUS_LABELS[row.status], chip: 'neutral' },
-    closed: row.status === 'closed',
+    status: { label: CASE_STATUS_LABELS[row.status], chip: caseChip(row.status) },
+    closed: caseOpenGroup(row.status) === null,
+    openAs: caseOpenGroup(row.status),
     date: row.openedOn as CivilDate,
     dates: {
       filed: row.openedOn as CivilDate,

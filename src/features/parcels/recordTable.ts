@@ -1,3 +1,4 @@
+import type { OpenGroup } from '@/features/parcels/openGroups'
 import type { ParcelHistory } from '@/features/parcels/parcelHistory'
 import type { ParcelRecordSummary, RecordDates } from '@/features/parcels/recordSources'
 import type { CivilDate } from '@/types/civilDate'
@@ -19,10 +20,14 @@ export interface RecordRow {
   typeLabel: string
   title: string
   number: string | null
+  label: string
+  sublabel: string | null
   href: string | null
   status: ParcelRecordSummary['status']
   closed: boolean
+  openAs: OpenGroup | null
   dates: RecordDates
+  scheduled: CivilDate | null
   activity: CivilDate | null
   files: RecordFile[]
   note: string | null
@@ -67,21 +72,31 @@ function isOrphanFile(s: Summary): boolean {
   return s.kind === 'document'
 }
 
+function labelsOf(kind: string, title: string, number: string | null) {
+  if (kind === 'inspection') return { label: title, sublabel: number }
+  return { label: number ?? title, sublabel: number === null ? null : title }
+}
+
 function toRow(s: Summary): RecordRow {
   const dates = s.dates ?? NO_DATES
   const file = isOrphanFile(s)
+  const title = file ? (s.number ?? s.title) : s.title
+  const number = file ? s.title : s.number
   const row: RecordRow = {
     key: keyOf(s.kind, s.recordId),
     kind: s.kind,
     recordId: s.recordId,
     typeKey: s.type?.key ?? s.kind,
     typeLabel: s.type?.label ?? s.title,
-    title: file ? (s.number ?? s.title) : s.title,
-    number: file ? s.title : s.number,
+    title,
+    number,
+    ...labelsOf(s.kind, title, number),
     href: s.href,
     status: s.status,
     closed: file ? false : isClosed(s, dates),
+    openAs: s.openAs ?? null,
     dates,
+    scheduled: s.scheduled ?? null,
     activity: latest(dates),
     files: [],
     note: s.note ?? null,

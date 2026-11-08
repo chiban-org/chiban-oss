@@ -1,11 +1,20 @@
 import { and, inArray, ne } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { applications, certificatesOfOccupancy } from '@/db/schema'
-import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
+import {
+  type ApplicationTypeBody,
+  boardKindOf,
+} from '@/features/applications/applicationTypeSchema'
 import { expiryDates } from '@/features/applications/expiryDates'
 import { stateLabel } from '@/features/applications/stateLabel'
 import type { CoreState } from '@/features/applications/states'
 import { getVersion } from '@/features/config/store'
+import { type LatestDecision, latestDecisions } from '@/features/parcels/boardOutcomes'
+import {
+  APPROVING_OUTCOMES,
+  applicationOpenGroup,
+  decisionOutcome,
+} from '@/features/parcels/openGroups'
 import {
   type ParcelRecordSummary,
   registerParcelRecordSource,
@@ -30,8 +39,6 @@ const CHIPS: Record<CoreState, Chip> = {
   suspended: 'overdue',
 }
 
-const CLOSED_STATES: readonly CoreState[] = ['issued', 'expired', 'closed', 'denied', 'withdrawn']
-
 export const NOT_ACCEPTED_REASON = 'not_accepted_incomplete'
 
 function statusLabel(
@@ -43,6 +50,20 @@ function statusLabel(
   return state === 'closed' && certificateIssuedOn !== undefined
     ? `Certificate of occupancy issued ${formatCivilDate(certificateIssuedOn)}`
     : stateLabel(state)
+}
+
+function statusOf(
+  row: { state: CoreState; closureReason: string | null },
+  certificateIssuedOn: string | undefined,
+  decision: LatestDecision | undefined,
+): ParcelRecordSummary['status'] {
+  if (row.state === 'decided' && decision !== undefined) {
+    return decisionOutcome(decision.outcome, decision.boardKind)
+  }
+  return {
+    label: statusLabel(row.state, certificateIssuedOn, row.closureReason),
+    chip: CHIPS[row.state],
+  }
 }
 
 function seesFullRecord(viewer: Viewer): boolean {
@@ -71,27 +92,36 @@ export async function summarizeApplications(
     db,
     rows.map((r) => r.id),
   )
+  const decisions = await latestDecisions(
+    db,
+    rows.map((r) => r.id),
+  )
   const out: ParcelRecordSummary[] = []
   for (const row of rows) {
     const pins = row.configPins as { applicationType: string }
     const type = await getVersion(db, pins.applicationType, signal)
     const state = row.state as CoreState
-    const title = (type?.body as ApplicationTypeBody | undefined)?.label ?? row.applicationTypeKey
+    const body = type?.body as ApplicationTypeBody | undefined
+    const title = body?.label ?? row.applicationTypeKey
+    const decision = decisions.get(row.id)
+    const openAs = applicationOpenGroup({
+      state,
+      board: boardKindOf(body?.classification) !== null || decision !== undefined,
+      approved: decision !== undefined && APPROVING_OUTCOMES.includes(decision.outcome),
+    })
     out.push({
       kind: 'application',
       recordId: row.id,
       title,
       type: { key: row.applicationTypeKey, label: title },
       number: row.number,
-      status: {
-        label: statusLabel(
-          state,
-          certificates.find((c) => c.applicationId === row.id)?.issuedOn,
-          row.closureReason,
-        ),
-        chip: CHIPS[state],
-      },
-      closed: CLOSED_STATES.includes(state),
+      status: statusOf(
+        { state, closureReason: row.closureReason },
+        certificates.find((c) => c.applicationId === row.id)?.issuedOn,
+        decision,
+      ),
+      closed: openAs === null,
+      openAs,
       date: (row.issuedOn ?? row.receivedDate) as CivilDate | null,
       dates: {
         filed: row.receivedDate as CivilDate | null,

@@ -2,8 +2,10 @@ import { and, inArray } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { inspections } from '@/db/schema'
 import { hasFullRecordAccess } from '@/features/access/roles'
-import { inspectionTypeLabel, loadSiteInfo } from '@/features/inspections/siteInfo'
+import { inspectionName } from '@/features/inspections/inspectorFocus'
+import { loadSiteInfo } from '@/features/inspections/siteInfo'
 import { utcToLocal } from '@/features/inspections/zonedTime'
+import { inspectionOpenGroup } from '@/features/parcels/openGroups'
 import {
   type ParcelRecordSummary,
   registerParcelRecordSource,
@@ -57,11 +59,14 @@ export async function summarizeInspections(
     out.push({
       kind: 'inspection',
       recordId: row.id,
-      title: `${inspectionTypeLabel(row.inspectionType)} inspection`,
+      title: inspectionName(row),
       number: site?.applicationNumber ?? null,
       status: { label: LABEL[row.status], chip: CHIP[row.status] },
       date: (decidedOn ?? row.scheduledDate ?? requestedOn) as CivilDate,
       type: { key: 'inspection', label: 'Inspection' },
+      closed: inspectionOpenGroup(row.status) === null,
+      openAs: inspectionOpenGroup(row.status),
+      scheduled: row.scheduledDate as CivilDate | null,
       dates: {
         filed: requestedOn,
         issued: null,
