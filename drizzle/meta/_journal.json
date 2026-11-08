@@ -708,6 +708,13 @@
       "when": 1794167624152,
       "tag": "0100_friendly_ken_ellis",
       "breakpoints": true
+    },
+    {
+      "idx": 101,
+      "version": "7",
+      "when": 1794171983313,
+      "tag": "0101_chunky_black_knight",
+      "breakpoints": true
     }
   ]
 }

@@ -1,4 +1,4 @@
-import type { Db } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import { SCHEDULABLE_REPORTS } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import {
@@ -77,7 +77,12 @@ function addMethods(a: ByMethod, b: ByMethod): ByMethod {
   }
 }
 
-async function cashReceiptsExport(db: Db, actor: Actor, range: ReportRange, signal: AbortSignal) {
+async function cashReceiptsExport(
+  db: DbOrTx,
+  actor: Actor,
+  range: ReportRange,
+  signal: AbortSignal,
+) {
   const span = daysBetween(range.from, range.to)
   if (span < 0 || span + 1 > MAX_CASH_RECEIPTS_DAYS) return fail('range')
   const rows: SheetCell[][] = [CASH_RECEIPTS_HEADER]
@@ -107,7 +112,7 @@ export function censusPeriodOf(range: ReportRange): { year: number; month: numbe
   return null
 }
 
-async function censusExport(db: Db, actor: Actor, range: ReportRange, signal: AbortSignal) {
+async function censusExport(db: DbOrTx, actor: Actor, range: ReportRange, signal: AbortSignal) {
   const period = censusPeriodOf(range)
   if (period === null) return fail('range')
   const report = await censusBpsReport(db, actor, period, signal)
@@ -122,7 +127,7 @@ async function censusExport(db: Db, actor: Actor, range: ReportRange, signal: Ab
 }
 
 export async function buildReportExport(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   request: ExportRequest,
   signal: AbortSignal,

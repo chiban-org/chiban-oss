@@ -9,7 +9,7 @@ const CENTS_PER_DOLLAR = 100
 const oneDecimal = (n: number | null): SheetCell => (n === null ? null : { decimal: n, places: 1 })
 
 export function fieldCell(column: ReportFieldColumn, sums: FieldSums): SheetCell {
-  const value = new Map(Object.entries(sums)).get(column.key)
+  const value = new Map(Object.entries(sums)).get(column.id)
   if (value === undefined) return null
   return column.type === 'money' ? { cents: Math.round(value * CENTS_PER_DOLLAR) } : value
 }

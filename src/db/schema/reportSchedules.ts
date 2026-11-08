@@ -65,6 +65,7 @@ export const reportScheduleDeliveries = pgTable(
     userId: uuid('user_id')
       .notNull()
       .references(() => users.id),
+    report: text('report', { enum: SCHEDULABLE_REPORTS }).notNull(),
     periodFrom: date('period_from', { mode: 'string' }).notNull(),
     periodTo: date('period_to', { mode: 'string' }).notNull(),
     outcome: text('outcome', { enum: ['sent', 'skipped_no_access'] }).notNull(),
@@ -74,6 +75,7 @@ export const reportScheduleDeliveries = pgTable(
     uniqueIndex('report_schedule_deliveries_once_idx').on(
       t.scheduleId,
       t.userId,
+      t.report,
       t.periodFrom,
       t.periodTo,
     ),

@@ -1,5 +1,5 @@
 import { sql } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { checkRange, type RangeError, type ReportRange } from '@/features/reports/range'
@@ -31,7 +31,7 @@ interface Raw extends Record<string, unknown> {
 const num = (v: string | null): number | null => (v === null ? null : Number(v))
 
 export async function processingTimeReport(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   range: ReportRange,
   signal: AbortSignal,

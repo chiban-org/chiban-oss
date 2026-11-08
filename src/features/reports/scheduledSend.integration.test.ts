@@ -4,7 +4,7 @@ import { reportScheduleDeliveries, reportSchedules, users } from '@/db/schema'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import type { MailTransport } from '@/features/mail/transport'
 import { sendDueReports } from '@/features/reports/scheduledSend'
-import { createSchedule, setSchedulePaused } from '@/features/reports/schedules'
+import { createSchedule, setSchedulePaused, updateSchedule } from '@/features/reports/schedules'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { staffActor } from '@/test/parcels'
@@ -34,8 +34,7 @@ async function schedule(input: Parameters<typeof createSchedule>[2]) {
   return made.value.id
 }
 
-const run = (mail: MailTransport, now: Date) =>
-  sendDueReports({ db: handle.db, root: handle.db, mail, signal, now })
+const run = (mail: MailTransport, now: Date) => sendDueReports({ db: handle.db, mail, signal, now })
 
 async function emailOf(userId: string): Promise<string> {
   const [row] = await handle.db
@@ -128,6 +127,43 @@ describe('scheduled report delivery', () => {
       [adminEmail, 'Processing time: October to December 2026'],
     ])
     expect((await scheduleRow(id))?.nextRunOn).toBe('2027-04-01')
+    await setSchedulePaused(handle.db, world.staff, { id, paused: true }, signal)
+  })
+
+  it('a report changed after a partial run goes to every recipient, not only those still owed', async () => {
+    const id = await schedule({
+      report: 'permit-volume',
+      frequency: 'quarterly',
+      recipientIds: [world.staff.userId, world.admin.userId],
+      now: new Date('2027-02-15T15:00:00Z'),
+    })
+    const adminEmail = await emailOf(world.admin.userId)
+    const partial = createMemoryTransport()
+    const failing: MailTransport = {
+      send: (message, s) =>
+        message.to === adminEmail ? Promise.resolve(err('send_failed')) : partial.send(message, s),
+    }
+    const april = new Date('2027-04-01T15:00:00Z')
+    expect((await run(failing, april)).ok).toBe(false)
+    const edited = await updateSchedule(
+      handle.db,
+      world.staff,
+      {
+        id,
+        report: 'revenue',
+        frequency: 'quarterly',
+        recipientIds: [world.staff.userId, world.admin.userId],
+        now: april,
+      },
+      signal,
+    )
+    expect(edited.ok).toBe(true)
+    const healthy = createMemoryTransport()
+    await run(healthy, new Date('2027-04-01T16:00:00Z'))
+    expect(healthy.sent.map((m) => m.subject)).toEqual([
+      'Revenue: January to March 2027',
+      'Revenue: January to March 2027',
+    ])
     await setSchedulePaused(handle.db, world.staff, { id, paused: true }, signal)
   })
 

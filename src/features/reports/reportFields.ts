@@ -17,6 +17,7 @@ import type { ReportRange } from '@/features/reports/range'
 export type ReportFieldType = 'integer' | 'decimal' | 'money'
 
 export interface ReportFieldColumn {
+  id: string
   key: string
   label: string
   type: ReportFieldType
@@ -32,7 +33,7 @@ export type FieldSums = Record<string, number>
 export function reportableFields(fields: readonly FormField[]): ReportFieldColumn[] {
   return questionsOf(fields)
     .filter((f) => isNumberType(f.type))
-    .map((f) => ({ key: f.key, label: f.label, type: f.type as ReportFieldType }))
+    .map((f) => ({ id: f.key, key: f.key, label: f.label, type: f.type as ReportFieldType }))
 }
 
 async function publishedTypes(db: DbOrTx, signal: AbortSignal): Promise<ApplicationTypeBody[]> {
@@ -62,7 +63,7 @@ export async function loadReportFields(
   db: DbOrTx,
   signal: AbortSignal,
 ): Promise<ReportFieldConfig> {
-  const columns = new Map<string, ReportFieldColumn>()
+  const columns: ReportFieldColumn[] = []
   const byType = new Map<string, string[]>()
   for (const type of await publishedTypes(db, signal)) {
     const chosen = new Set(type.reportFields ?? [])
@@ -71,11 +72,21 @@ export async function loadReportFields(
     if (offered.length === 0) continue
     byType.set(
       type.key,
-      offered.map((f) => f.key),
+      offered.map((field) => columnFor(columns, field).id),
     )
-    for (const field of offered) if (!columns.has(field.key)) columns.set(field.key, field)
   }
-  return { columns: [...columns.values()], byType }
+  return { columns, byType }
+}
+
+function columnFor(columns: ReportFieldColumn[], field: ReportFieldColumn): ReportFieldColumn {
+  const same = columns.find(
+    (c) => c.key === field.key && c.label === field.label && c.type === field.type,
+  )
+  if (same !== undefined) return same
+  const sharing = columns.filter((c) => c.key === field.key).length
+  const column = { ...field, id: sharing === 0 ? field.key : `${field.key}~${String(sharing)}` }
+  columns.push(column)
+  return column
 }
 
 const NUMERIC_TEXT = '^-?[0-9]+(\\.[0-9]+)?$'
@@ -104,7 +115,7 @@ export async function fieldSums(
   signal.throwIfAborted()
   const sums = new Map<string, FieldSums>()
   const types = [...config.byType.keys()]
-  const keys = config.columns.map((c) => c.key)
+  const keys = [...new Set(config.columns.map((c) => c.key))]
   if (types.length === 0) return sums
   const column = sql.identifier(query.dateColumn)
   const grp = query.byMonth ? sql`to_char(${column}, 'YYYY-MM')` : sql`''`
@@ -123,9 +134,9 @@ export async function fieldSums(
     group by 1, 2`)
   for (const row of result.rows) {
     const chosen = new Set(config.byType.get(row.type) ?? [])
-    const entries = keys.flatMap((key, i): [string, number][] => {
-      const raw = row[`f${i}`]
-      return chosen.has(key) && typeof raw === 'string' ? [[key, Number(raw)]] : []
+    const entries = config.columns.flatMap((column): [string, number][] => {
+      const raw = row[`f${keys.indexOf(column.key)}`]
+      return chosen.has(column.id) && typeof raw === 'string' ? [[column.id, Number(raw)]] : []
     })
     sums.set(`${row.grp}|${row.type}`, Object.fromEntries(entries))
   }

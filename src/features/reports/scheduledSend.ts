@@ -1,5 +1,5 @@
 import { and, asc, eq, lte } from 'drizzle-orm'
-import type { Db, DbOrTx } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import {
   reportScheduleDeliveries,
   reportScheduleRecipients,
@@ -19,7 +19,6 @@ import { err, ok, type Result } from '@/types/result'
 
 export interface SendContext {
   db: DbOrTx
-  root: Db
   mail: MailTransport
   signal: AbortSignal
   now: Date
@@ -41,6 +40,7 @@ async function alreadyDone(ctx: SendContext, row: ScheduleRow, userId: string, r
       and(
         eq(reportScheduleDeliveries.scheduleId, row.id),
         eq(reportScheduleDeliveries.userId, userId),
+        eq(reportScheduleDeliveries.report, row.report),
         eq(reportScheduleDeliveries.periodFrom, range.from),
         eq(reportScheduleDeliveries.periodTo, range.to),
       ),
@@ -54,9 +54,9 @@ async function attachmentsFor(
   userId: string,
   range: ReportRange,
 ): Promise<Result<{ attachments: MailAttachment[]; incomplete?: string }, Outcome>> {
-  const actor = await loadActor(ctx.root, userId, ctx.signal)
+  const actor = await loadActor(ctx.db, userId, ctx.signal)
   if (actor === null) return err('skipped_no_access')
-  const built = await buildReportExport(ctx.root, actor, { report: row.report, range }, ctx.signal)
+  const built = await buildReportExport(ctx.db, actor, { report: row.report, range }, ctx.signal)
   if (!built.ok) {
     if (built.error === 'forbidden') return err('skipped_no_access')
     if (built.error === 'range') return err('failed')
@@ -88,7 +88,13 @@ async function deliverTo(
   if (outcome !== 'failed') {
     await ctx.db
       .insert(reportScheduleDeliveries)
-      .values({ scheduleId: row.id, userId: recipient.userId, ...periodColumns(range), outcome })
+      .values({
+        scheduleId: row.id,
+        userId: recipient.userId,
+        report: row.report,
+        ...periodColumns(range),
+        outcome,
+      })
       .onConflictDoNothing()
   }
   return outcome
@@ -105,15 +111,25 @@ async function recipientsOf(ctx: SendContext, scheduleId: string): Promise<Recip
     .orderBy(asc(users.id))
 }
 
+async function settled(
+  deliver: () => Promise<Outcome | null>,
+): Promise<Outcome | 'aborted' | null> {
+  try {
+    return await deliver()
+  } catch (e) {
+    return e instanceof Error && e.name === 'AbortError' ? 'aborted' : 'failed'
+  }
+}
+
 async function runSchedule(ctx: SendContext, row: ScheduleRow, today: CivilDate) {
   const range = periodBefore(row.frequency, row.nextRunOn as CivilDate)
   let sent = 0
   let failed = false
   for (const recipient of await recipientsOf(ctx, row.id)) {
-    ctx.signal.throwIfAborted()
-    const outcome = await deliverTo(ctx, row, recipient, range)
+    const outcome = await settled(() => deliverTo(ctx, row, recipient, range))
     if (outcome === 'sent') sent += 1
-    if (outcome === 'failed') failed = true
+    if (outcome === 'failed' || outcome === 'aborted') failed = true
+    if (outcome === 'aborted') break
   }
   if (!failed) {
     await ctx.db

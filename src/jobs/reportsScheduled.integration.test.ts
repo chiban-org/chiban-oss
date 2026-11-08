@@ -73,4 +73,49 @@ describe('scheduled reports job', () => {
       .where(eq(reportSchedules.id, made.value.id))
     expect(row?.nextRunOn).toBe('2026-11-16')
   })
+
+  it('keeps the record of a mail already sent when a later send throws, so the retry skips it', async () => {
+    await handle.db.update(reportSchedules).set({ paused: true })
+    const made = await createSchedule(
+      handle.db,
+      world.staff,
+      {
+        report: 'processing-time',
+        frequency: 'monthly',
+        recipientIds: [world.staff.userId, world.admin.userId],
+        now: new Date('2026-12-04T15:00:00Z'),
+      },
+      signal,
+    )
+    if (!made.ok) throw new Error('create failed')
+    const sent = createMemoryTransport()
+    let calls = 0
+    const throwsSecond: MailTransport = {
+      send: (message, s) => {
+        calls += 1
+        if (calls === 1) return sent.send(message, s)
+        throw new Error('smtp connection reset')
+      },
+    }
+    const january = new Date('2027-01-01T14:00:00Z')
+    const first = await runJob(
+      handle.db,
+      makeReportsScheduledJob({ mail: throwsSecond, now: () => january }),
+      {},
+      signal,
+    )
+    expect(first.ok).toBe(false)
+    expect(sent.sent).toHaveLength(1)
+    const healthy = createMemoryTransport()
+    const later = new Date('2027-01-01T15:00:00Z')
+    await runJob(
+      handle.db,
+      makeReportsScheduledJob({ mail: healthy, now: () => later }),
+      {},
+      signal,
+    )
+    const processing = healthy.sent.filter((m) => m.subject.startsWith('Processing time'))
+    expect(processing).toHaveLength(1)
+    expect(processing[0]?.to).not.toBe(sent.sent[0]?.to)
+  })
 })

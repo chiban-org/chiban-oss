@@ -14,7 +14,12 @@ export function makeReportsScheduledJob(deps: { mail: MailTransport; now?: () =>
     intervalSeconds: HOUR_SECONDS,
     dedupKey: () => `${JOB_NAMES.REPORTS_SCHEDULED}:${now().toISOString().slice(0, HOUR_CHARS)}`,
     handler: async (_payload, ctx) => {
-      const result = await sendDueReports({ ...ctx, mail: deps.mail, now: now() })
+      const result = await sendDueReports({
+        db: ctx.db,
+        signal: ctx.signal,
+        mail: deps.mail,
+        now: now(),
+      })
       return result.ok ? ok(undefined) : failKeepingWrites(result.error)
     },
   })

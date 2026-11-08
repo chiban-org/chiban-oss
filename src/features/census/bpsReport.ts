@@ -1,5 +1,5 @@
 import { and, asc, between, eq, isNotNull } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { DbOrTx } from '@/db/client'
 import { applications, censusClassifications, parcels, projects } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
@@ -65,7 +65,7 @@ export function censusRangeOf(
 }
 
 export async function censusBpsReport(
-  db: Db,
+  db: DbOrTx,
   actor: Actor,
   input: { year: number; month: number | null },
   signal: AbortSignal,
