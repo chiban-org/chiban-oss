@@ -110,7 +110,7 @@ export function ResultPanel({ record }: { record: InspectionRecord }) {
           <li key={item.key} className="record-item flex flex-col gap-1">
             <span>{`${item.label}: ${item.outcome === null ? 'Not recorded' : OUTCOME[item.outcome]}`}</span>
             {item.note === '' ? null : (
-              <span className="text-sm text-ink-secondary">{item.note}</span>
+              <span className="text-ink-secondary">{item.note}</span>
             )}
           </li>
         ))}

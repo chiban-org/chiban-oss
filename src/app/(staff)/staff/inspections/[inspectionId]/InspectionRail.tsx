@@ -19,7 +19,7 @@ export function InspectionMoreActions({ record }: { record: InspectionRecord }) 
   const { inspection } = view
   return (
     <details className="more-actions">
-      <summary className="text-sm">More actions</summary>
+      <summary>More actions</summary>
       <div className="flex flex-col gap-3">
         {inspection.status === 'scheduled' ? (
           <p>
@@ -49,7 +49,7 @@ export function InspectionMoreActions({ record }: { record: InspectionRecord }) 
 function PublicLine({ record }: { record: InspectionRecord }) {
   if (!LISTED_STATUSES.includes(record.view.inspection.status)) return null
   return (
-    <p className="text-sm text-muted-foreground">
+    <p className="text-muted-foreground">
       The public parcel page lists this inspection with its number, type, status and dates.
     </p>
   )
@@ -89,7 +89,7 @@ export function InspectionStrip({ record }: { record: InspectionRecord }) {
     <section aria-label="Status" data-plain className="rail-card flex flex-col gap-3 [&>*]:m-0">
       <OwedLine owed={record.plan.owed} />
       <details>
-        <summary className="text-sm">Facts and more actions</summary>
+        <summary>Facts and more actions</summary>
         <div className="flex flex-col gap-4">
           <FactList facts={inspectionFacts(record)} stacked />
           <PublicLine record={record} />

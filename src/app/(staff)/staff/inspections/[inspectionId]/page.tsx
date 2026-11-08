@@ -60,7 +60,7 @@ export default async function InspectionPage({
   const { view } = record
   const status = STATUS[view.inspection.status]
   return (
-    <main>
+    <main className="public-shell">
       <PageHeader
         kicker={
           <Link href={`/staff/applications/${view.inspection.applicationId}`}>
