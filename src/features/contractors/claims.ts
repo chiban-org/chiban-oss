@@ -75,11 +75,21 @@ async function recentClaims(db: Db, projectId: string, now: Date): Promise<numbe
   return row?.n ?? 0
 }
 
-async function claimPartyFor(db: Db, actor: Actor, input: ClaimInput, signal: AbortSignal) {
+interface ClaimParty {
+  id: string
+  linked: boolean
+}
+
+async function claimPartyFor(
+  db: Db,
+  actor: Actor,
+  input: ClaimInput,
+  signal: AbortSignal,
+): Promise<ClaimParty | null> {
   const role = input.role ?? 'contractor'
   if (input.partyId !== undefined) {
     const [party] = await db
-      .select({ id: projectParties.id })
+      .select({ id: projectParties.id, userId: projectParties.userId })
       .from(projectParties)
       .where(
         and(
@@ -89,7 +99,7 @@ async function claimPartyFor(db: Db, actor: Actor, input: ClaimInput, signal: Ab
           isNull(projectParties.removedAt),
         ),
       )
-    return party?.id ?? null
+    return party === undefined ? null : { id: party.id, linked: party.userId !== null }
   }
   const added = await addParty(
     db,
@@ -97,7 +107,7 @@ async function claimPartyFor(db: Db, actor: Actor, input: ClaimInput, signal: Ab
     { projectId: input.projectId, role, name: input.name, email: input.email },
     signal,
   )
-  return added.ok ? added.value.partyId : null
+  return added.ok ? { id: added.value.partyId, linked: added.value.linkedUserId !== null } : null
 }
 
 export async function sendContractorClaim(
@@ -107,13 +117,17 @@ export async function sendContractorClaim(
   input: ClaimInput,
   signal: AbortSignal,
   now: Date = new Date(),
-): Promise<Result<{ claimId: string }, 'forbidden' | 'rate_limited' | 'send_failed'>> {
+): Promise<
+  Result<{ claimId: string }, 'forbidden' | 'rate_limited' | 'send_failed' | 'already_linked'>
+> {
   signal.throwIfAborted()
   const kind: SenderKind | null = await senderKind(db, actor, input.projectId, signal)
   if (kind === null) return err('forbidden')
   if ((await recentClaims(db, input.projectId, now)) >= MAX_PER_HOUR) return err('rate_limited')
-  const partyId = await claimPartyFor(db, actor, input, signal)
-  if (partyId === null) return err('forbidden')
+  const party = await claimPartyFor(db, actor, input, signal)
+  if (party === null) return err('forbidden')
+  if (party.linked) return err('already_linked')
+  const partyId = party.id
   const [project] = await db
     .select({ title: projects.title })
     .from(projects)

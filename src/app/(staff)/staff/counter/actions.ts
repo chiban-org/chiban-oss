@@ -37,7 +37,7 @@ const CLAIM_COPY = {
   rate_limited: 'Too many claim links were sent for this project. Try again later.',
   send_failed: 'The email could not be sent. Try again.',
   no_party_email: 'The contractor has no email address on this permit.',
-  already_linked: 'The contractor already has an account. This permit is on their dashboard.',
+  already_linked: 'This contractor already has an account; the project is on their dashboard.',
 } as const
 
 async function linksFor(result: QuickIssueResult): Promise<CounterLinks | null> {

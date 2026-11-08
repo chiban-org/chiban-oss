@@ -33,7 +33,12 @@ export async function addParty(
   actor: Actor,
   input: AddPartyInput,
   signal: AbortSignal,
-): Promise<Result<{ partyId: string }, 'forbidden' | 'agent_needs_owner_authorization'>> {
+): Promise<
+  Result<
+    { partyId: string; linkedUserId: string | null },
+    'forbidden' | 'agent_needs_owner_authorization'
+  >
+> {
   signal.throwIfAborted()
   if (!(await mayManageParties(db, actor, input.projectId, signal))) return err('forbidden')
   const authorized = input.ownerAuthorizationOnFile === true
@@ -63,14 +68,15 @@ export async function addParty(
       },
       signal,
     )
-    if (input.role === 'contractor' && input.userId === undefined && input.email !== undefined) {
-      await linkNewContractorParty(
-        tx,
-        { partyId, email: input.email },
-        { actorUserId: actor.userId, signal },
-      )
-    }
-    return ok({ partyId })
+    const linkedUserId =
+      input.role === 'contractor' && input.userId === undefined && input.email !== undefined
+        ? await linkNewContractorParty(
+            tx,
+            { partyId, email: input.email },
+            { actorUserId: actor.userId, signal },
+          )
+        : null
+    return ok({ partyId, linkedUserId })
   })
 }
 

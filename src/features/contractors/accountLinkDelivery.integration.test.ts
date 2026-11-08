@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { env } from '@/config/env'
-import { notificationOutbox, projectParties } from '@/db/schema'
+import { contractorClaims, notificationOutbox, projectParties } from '@/db/schema'
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { claimProject, sendContractorClaim } from '@/features/contractors/claims'
 import { sendCounterClaim } from '@/features/contractors/counterClaim'
@@ -123,6 +123,25 @@ describe('claim links after an email link', () => {
       ok: true,
       value: { projectId: world.projectId, role: 'contractor', applicationId: null },
     })
+    const parties = await handle.db
+      .select({ userId: projectParties.userId })
+      .from(projectParties)
+      .where(eq(projectParties.email, CONTRACTOR.email))
+    expect(parties).toEqual([{ userId: actor.userId }])
+  })
+
+  it('sends no claim email to a contractor whose new party links to their account at once', async () => {
+    const actor = await contractorAccount()
+    const sent = await sendContractorClaim(
+      handle.db,
+      mail,
+      world.staff,
+      { projectId: world.projectId, email: CONTRACTOR.email, name: CONTRACTOR.name },
+      signal,
+    )
+    expect(sent).toEqual({ ok: false, error: 'already_linked' })
+    expect(mail.sent).toEqual([])
+    expect(await handle.db.select().from(contractorClaims)).toEqual([])
     const parties = await handle.db
       .select({ userId: projectParties.userId })
       .from(projectParties)
