@@ -28,7 +28,7 @@ const { RestrictionTable } = await import('./ContactTables')
 afterEach(cleanup)
 
 const active = {
-  checkedText: 'Checked October 1, 2026',
+  checkedText: 'October 1, 2026',
   due: false,
   uses: [],
   versions: [],

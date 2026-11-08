@@ -48,7 +48,7 @@ const { RecheckInterval } = await import('./RecheckInterval')
 afterEach(cleanup)
 
 const meta = {
-  checkedText: 'Checked October 1, 2026',
+  checkedText: 'October 1, 2026',
   due: false,
   uses: [],
   versions: [],

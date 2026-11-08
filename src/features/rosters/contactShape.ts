@@ -33,7 +33,7 @@ export interface Enrichment {
 }
 
 export function checkedText(checked: CivilDate | null): string {
-  return checked === null ? 'Never checked' : `Checked ${formatCivilDate(checked)}`
+  return checked === null ? 'Never checked' : formatCivilDate(checked)
 }
 
 export function entryStatus(endedOn: string | null, today: CivilDate): [string, boolean] {
