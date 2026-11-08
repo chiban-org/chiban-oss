@@ -13,6 +13,7 @@ import { markComplete } from '@/features/building/completeness'
 import { recordRegionalImpactDetermination } from '@/features/building/regionalImpact'
 import { recordCounterPayment } from '@/features/counter/counterPayment'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { fileDemoDocuments } from '@/features/demo/seedDocuments'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import { createProject } from '@/features/projects/projects'
@@ -77,6 +78,12 @@ export class Scenario {
 
   async step(to: CoreState, on: string, actor: Actor = this.cast.staff): Promise<void> {
     if (to === 'issued') await this.payFeesInCash(on)
+    await fileDemoDocuments(
+      this.db,
+      this.cast.applicant,
+      { applicationId: this.applicationId, to },
+      this.signal,
+    )
     const [row] = await this.db
       .select()
       .from(applications)
@@ -170,6 +177,12 @@ export async function open(
     'application',
   )
   const type = NH_STARTERS.find((s) => s.applicationType.key === input.typeKey)
+  await fileDemoDocuments(
+    db,
+    cast.applicant,
+    { applicationId: created.applicationId, to: 'submitted', values: input.values },
+    signal,
+  )
   must(
     await submitApplication(
       db,

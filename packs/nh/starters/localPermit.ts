@@ -2,6 +2,7 @@ import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
 import type { StarterBundle } from '@packs/nh/starters/types'
 import { ATTESTATION_TEXT } from '@packs/nh/starters/types'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
+import type { DocumentItem } from '@/features/applications/documentItemSchema'
 import type { FormField } from '@/features/forms/formSchema'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
 
@@ -23,6 +24,8 @@ export interface LocalPermitInput {
   closesOn: ApplicationTypeBody['workflow']['closesOn']
   extraBindings?: string[]
   validityPhrase?: string
+  documents?: DocumentItem[]
+  version?: number
 }
 
 const AFTER_THE_FACT: FormField = {
@@ -43,7 +46,7 @@ export function localPermitStarter(input: LocalPermitInput): StarterBundle {
   const closing = input.validityPhrase ?? 'Issued {{application.issuedOn}}.'
   return {
     id: input.id,
-    version: 1,
+    version: input.version ?? 1,
     form: {
       key: `${slug}-form`,
       label: `${label} application`,
@@ -103,6 +106,7 @@ export function localPermitStarter(input: LocalPermitInput): StarterBundle {
         substeps: [],
         closesOn: input.closesOn,
       },
+      ...(input.documents === undefined ? {} : { documents: input.documents }),
     },
   }
 }

@@ -5,6 +5,10 @@ export const ELECTRICAL_STARTER = tradeStarter({
   prefix: 'EL',
   slug: 'el',
   label: 'Electrical',
+  affidavit: {
+    label: 'Homeowner affidavit for electrical work',
+    help: 'Needed when the owner does the electrical work instead of a licensed electrician (RSA 319-C:15 II).',
+  },
   conditionText: 'Licensed electrician of record confirmed',
   extraField: {
     key: 'service_amps',

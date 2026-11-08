@@ -5,6 +5,8 @@ import {
   RuleFields,
   WorkflowSummary,
 } from '@/components/config/ApplicationTypeParts'
+import { DocumentItemsEditor } from '@/components/config/DocumentItemsEditor'
+import { useEditorContext } from '@/components/config/EditorContextProvider'
 import { Area, type FieldErrors, FieldGroup, Input, Pick } from '@/components/config/primitives'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import { ruleChoicesFor } from '@/features/config/ruleChoices'
@@ -45,6 +47,7 @@ export function ApplicationTypeEditor({
   const mandatory = new Set(classification?.mandatoryRuleKeys ?? [])
   const offered = ruleChoicesFor(packRules, classification)
   const set = (patch: Partial<ApplicationTypeBody>) => onChange({ ...body, ...patch })
+  const formFields = new Map(Object.entries(useEditorContext().formFields ?? {}))
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-3">
@@ -92,6 +95,12 @@ export function ApplicationTypeEditor({
       </FieldGroup>
       <ReferenceFields body={body} set={set} errors={errors} />
       <WorkflowSummary body={body} errors={errors} />
+      <DocumentItemsEditor
+        items={body.documents ?? []}
+        fields={formFields.get(body.formKey) ?? []}
+        errors={errors}
+        onChange={(documents) => set({ documents })}
+      />
       <RuleFields
         offered={offered}
         mandatory={mandatory}

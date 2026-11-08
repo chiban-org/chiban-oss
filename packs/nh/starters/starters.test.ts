@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { ApplicationTypeBodySchema } from '@/features/applications/applicationTypeSchema'
 import { ConditionLibraryBodySchema } from '@/features/conditions/conditionSchema'
 import { exprFieldRefs, FeeScheduleBodySchema } from '@/features/fees/feeSchema'
+import { conditionFields } from '@/features/forms/condition'
 import { FormBodySchema } from '@/features/forms/formSchema'
 import { ChecklistBodySchema } from '@/features/inspections/checklistSchema'
 import { loadPack } from '@/features/packs/loadPack'
@@ -143,10 +144,59 @@ describe('NH starters', () => {
         payTiming: 'at_intake',
         workflow: { allowsDirectIssue: true, closesOn: 'final_inspection_passed' },
       })
-      expect(s.form.fields.find((f) => f.key === 'contractor_license_number')?.required).toBe(true)
+      const license = s.form.fields.find((f) => f.key === 'contractor_license_number')
+      const byOwnerAllowed = s.form.fields.some((f) => f.key === 'work_by')
+      expect(byOwnerAllowed ? license?.requireIf : license?.required).toEqual(
+        byOwnerAllowed ? { field: 'work_by', op: 'not_equals', value: 'owner' } : true,
+      )
     }
     for (const s of NH_STARTERS.slice(1, 4)) {
       expect(s.checklists.map((c) => c.inspectionType)).toEqual(['rough', 'final'])
+    }
+  })
+
+  it('every document condition reads a question its own form asks', () => {
+    for (const s of NH_STARTERS) {
+      const keys = new Set(s.form.fields.map((f) => f.key))
+      for (const item of s.applicationType.documents ?? []) {
+        for (const field of item.requiredIf === undefined ? [] : conditionFields(item.requiredIf)) {
+          expect([s.applicationType.prefix, item.key, keys.has(field)]).toEqual([
+            s.applicationType.prefix,
+            item.key,
+            true,
+          ])
+        }
+      }
+    }
+  })
+
+  it('board starters ask for state and federal permits only before the decision', () => {
+    const boardTypes = NH_STARTERS.filter((s) =>
+      ['planning_board', 'zba'].includes(
+        loadPack().classifications.find((c) => c.key === s.applicationType.classification)
+          ?.boardKind ?? '',
+      ),
+    )
+    expect(boardTypes).toHaveLength(13)
+    for (const s of boardTypes) {
+      for (const item of s.applicationType.documents ?? []) {
+        if (item.stateOrFederalPermit === true) expect(item.stage).toBe('before_decision')
+      }
+    }
+  })
+
+  it('the building starter asks for the septic approval as a document, not a condition', () => {
+    const bp = NH_STARTERS[0]
+    expect(bp?.conditionLibrary.conditions.map((c) => c.code)).not.toContain('SEPTIC')
+    expect(bp?.applicationType.documents?.find((d) => d.key === 'septic_approval')).toMatchObject({
+      stage: 'before_issue',
+    })
+  })
+
+  it('alarm registration and street address need no documents', () => {
+    for (const prefix of ['AR', 'SA']) {
+      const s = NH_STARTERS.find((x) => x.applicationType.prefix === prefix)
+      expect(s?.applicationType.documents ?? []).toEqual([])
     }
   })
 

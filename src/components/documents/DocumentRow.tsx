@@ -31,6 +31,7 @@ export interface DocumentPanelProps {
   title?: string
   intro?: ReactNode
   emptyText?: string
+  lead?: ReactNode
   children?: ReactNode
 }
 

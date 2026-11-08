@@ -31,6 +31,7 @@ export function DocumentPanel(props: DocumentPanelProps) {
           }
         />
       )}
+      {props.lead}
       <ul className="list-none p-0">
         {props.documents.map((doc) => (
           <DocumentRow

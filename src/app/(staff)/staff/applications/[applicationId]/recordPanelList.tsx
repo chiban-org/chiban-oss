@@ -10,6 +10,7 @@ import type { RecordPanelsInput } from './panelSet'
 import { ConditionsPanel, PartiesPanel } from './panels'
 import { mayAddToRecord } from './recordStage'
 import { RecordsPanel } from './recordsPanels'
+import { RequiredDocuments } from './requiredDocuments'
 
 function conditionsEditable(view: StaffApplicationView): boolean {
   return view.permissions.canIssue && mayAddToRecord(view.state) && view.conditionLibrary.length > 0
@@ -68,7 +69,7 @@ export function recordPanels(input: RecordPanelsInput): Panel[] {
     ...moneyPanels(input),
     {
       key: 'documents',
-      empty: records.documents.length === 0,
+      empty: records.documents.length === 0 && records.checklist === null,
       node: (
         <DocumentPanel
           key="documents"
@@ -77,6 +78,15 @@ export function recordPanels(input: RecordPanelsInput): Panel[] {
           canManage={records.canManageDocuments}
           actions={PANEL_ACTIONS}
           target={{ kind: 'application', id: view.id }}
+          lead={
+            records.checklist === null ? undefined : (
+              <RequiredDocuments
+                checklist={records.checklist}
+                canFile={records.canManageDocuments}
+                canAccept={records.canAcceptItems}
+              />
+            )
+          }
         />
       ),
     },

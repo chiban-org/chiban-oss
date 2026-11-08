@@ -16,7 +16,7 @@ export async function loadItemRecords(
   db: DbOrTx,
   applicationId: string,
 ): Promise<Map<string, StoredItemRecord>> {
-  const links = await db
+  const linksQuery = db
     .select({ itemKey: applicationDocumentLinks.itemKey, documentId: documents.id })
     .from(applicationDocumentLinks)
     .innerJoin(documents, eq(documents.id, applicationDocumentLinks.documentId))
@@ -24,10 +24,11 @@ export async function loadItemRecords(
       and(eq(applicationDocumentLinks.applicationId, applicationId), isNull(documents.disposedAt)),
     )
     .orderBy(applicationDocumentLinks.linkedAt)
-  const rows = await db
+  const rowsQuery = db
     .select()
     .from(applicationDocumentItems)
     .where(eq(applicationDocumentItems.applicationId, applicationId))
+  const [links, rows] = await Promise.all([linksQuery, rowsQuery])
   const out = new Map<string, StoredItemRecord>()
   const recordFor = (key: string): StoredItemRecord => {
     const found = out.get(key)

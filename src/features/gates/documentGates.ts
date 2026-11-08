@@ -1,3 +1,4 @@
+import type { ApplicationContext } from '@/features/applications/context'
 import { gatedStages, missingNames, unmetItems } from '@/features/applications/documentChecklist'
 import { documentItemsOf } from '@/features/applications/documentItemSchema'
 import { loadItemRecords } from '@/features/applications/documentRecords'
@@ -10,6 +11,13 @@ export const DOCUMENT_GATE_KEYS = {
   issued: 'documents.before_issue',
   closed: 'documents.before_co',
 } as const
+
+function hasItemsFor(to: CoreState): (app: ApplicationContext) => boolean {
+  return (app) => {
+    const stages = gatedStages(to, app.typeBody.workflow.closesOn)
+    return documentItemsOf(app.typeBody).some((item) => stages.includes(item.stage))
+  }
+}
 
 function documentsProvidedFor(to: CoreState): GateEvaluator {
   return async (tx, app) => {
@@ -37,6 +45,7 @@ for (const [to, key, label] of GATES) {
     kind: 'administrative',
     appliesTo: [to],
     boundBy: null,
+    relevantTo: hasItemsFor(to),
     evaluate: documentsProvidedFor(to),
   })
 }
