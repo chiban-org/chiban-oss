@@ -8,7 +8,7 @@ import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { demoSeedDeps } from '@/test/demoSeedDeps'
-import { countSections, filledButtons, sectionOf } from '@/test/htmlSections'
+import { countSections, filledButtons, filledLinks, sectionOf } from '@/test/htmlSections'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
 
@@ -115,13 +115,15 @@ describe('the inspector view of an issued permit', () => {
     )
   })
 
-  it('puts the reinspection on top with Record result as the one filled button', async () => {
+  it('puts the reinspection on top with a link to record it on its page as the one filled action', async () => {
     const html = await pageAs('inspector', 'BP-2025-0001')
     const next = sectionOf(html, 'Next inspection') ?? ''
     expect(next).toContain('Framing reinspection')
     expect(next).toContain('Last time: failed on')
-    expect(next).toContain('Notes for the permit holder')
-    expect(filledButtons(html)).toEqual(['Record result'])
+    expect(next).toMatch(/href="\/staff\/inspections\/[0-9a-f-]{36}"/)
+    expect(next).not.toContain('Notes for the permit holder')
+    expect(filledButtons(html)).toEqual([])
+    expect(filledLinks(html)).toEqual(['Record the result'])
     expect(html.indexOf('aria-label="Next inspection"')).toBeLessThan(
       html.indexOf('aria-label="Last result"'),
     )

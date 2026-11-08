@@ -23,9 +23,7 @@ function regionalEmpty(view: StaffApplicationView): boolean {
   return view.regionalImpact.determination === null && view.regionalImpact.notices.length === 0
 }
 
-function moneyPanels({ view, payments, inspections, hosted, due }: RecordPanelsInput): Panel[] {
-  const hostedInspectionId =
-    hosted?.has('record_inspection_result') === true ? (due?.row.id ?? null) : null
+function moneyPanels({ view, payments, inspections, hosted }: RecordPanelsInput): Panel[] {
   const rows = feeRowsOf(view, payments)
   const money = rows.length > 0 || (payments?.entries.length ?? 0) > 0
   return [
@@ -57,7 +55,6 @@ function moneyPanels({ view, payments, inspections, hosted, due }: RecordPanelsI
             data={inspections}
             applicationId={view.id}
             number={view.number}
-            hostedId={hostedInspectionId}
           />
         ),
     },
