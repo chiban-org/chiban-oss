@@ -41,6 +41,13 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
     access: any('abutters.manage'),
   },
   {
+    href: '/staff/contractors',
+    label: 'Contractors',
+    group: 'work',
+    icon: 'contractors',
+    access: any('project.manage_parties'),
+  },
+  {
     href: '/staff/inspections',
     label: 'Inspections',
     group: 'work',
