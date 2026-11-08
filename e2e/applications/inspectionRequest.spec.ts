@@ -48,7 +48,7 @@ test.describe('taking an inspection request at the counter', () => {
 
       await expect(
         page
-          .getByRole('region', { name: 'Requests and bookings' })
+          .getByRole('region', { name: 'Waiting' })
           .getByRole('listitem')
           .filter({ hasText: `${DECK_NUMBER}, Footing` }),
       ).toHaveCount(1)

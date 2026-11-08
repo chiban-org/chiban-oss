@@ -26,30 +26,38 @@ export async function inspectionOf(
 
 export async function chooseRequest(page: Page, text: string): Promise<void> {
   await page
-    .getByRole('region', { name: 'Requests and bookings' })
-    .getByRole('listitem')
+    .getByRole('region', { name: 'Waiting' })
+    .getByRole('button', { name: /^Choose / })
     .filter({ hasText: text })
-    .getByRole('button')
     .click()
 }
 
-export function openSlotsOn(page: Page, longDate: string): Locator {
-  return page
-    .getByRole('region', { name: 'Open slots' })
-    .getByRole('listitem', { name: new RegExp(`, ${longDate}, Ira Inspector$`) })
+export function scheduleRegion(page: Page): Locator {
+  return page.getByRole('region', { name: 'Schedule' })
+}
+
+export async function openTimesOn(page: Page, longDate: string): Promise<void> {
+  await scheduleRegion(page)
+    .getByRole('button', { name: new RegExp(`open, \\w+, ${longDate}, Ira Inspector$`) })
+    .click()
+}
+
+export function timeOn(page: Page, longDate: string, clock: string): Locator {
+  return scheduleRegion(page).getByRole('button', {
+    name: `${clock}, ${longDate}, Ira Inspector`,
+    exact: true,
+  })
 }
 
 export async function bookSlot(page: Page, longDate: string, clock: string): Promise<void> {
-  await openSlotsOn(page, longDate)
-    .getByRole('button', { name: new RegExp(`^${clock},`) })
-    .click()
+  await openTimesOn(page, longDate)
+  await timeOn(page, longDate, clock).click()
   await page
     .getByRole('group', { name: 'Review the booking' })
     .getByRole('button', { name: 'Book', exact: true })
     .click()
   await expect(
-    page
-      .getByRole('region', { name: 'Open slots' })
+    scheduleRegion(page)
       .getByRole('status')
       .filter({ hasText: 'Scheduled. The inspector gets a calendar invite.' }),
   ).toBeVisible()

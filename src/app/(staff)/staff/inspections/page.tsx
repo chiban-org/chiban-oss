@@ -14,7 +14,7 @@ export const metadata: Metadata = { title: 'Inspections' }
 export const dynamic = 'force-dynamic'
 
 const INSPECTIONS_LEAD =
-  'Book requested inspections into open inspector times: choose a request, pick a time, then confirm. Requests are listed oldest first, then the inspections booked for today or later.'
+  'Book requested inspections into open inspector times: choose a waiting request, open a day in the week grid, pick a time, then confirm. Waiting requests are listed oldest first. Choose a booking in the grid to move it.'
 
 function OwedLink({ count }: { count: number }) {
   if (count === 0) return <span className="text-muted-foreground">No results owed</span>
@@ -47,8 +47,10 @@ export default async function ScheduleBoardPage({
       />
       {board.inspectors.some((i) => i.calendarKind === 'graph') ? <GraphStubNotice /> : null}
       <ScheduleBoardClient
-        requests={[...board.requests, ...board.scheduledAhead]}
+        requests={board.requests}
+        bookings={board.bookings}
         days={board.days}
+        inspectors={board.inspectors.map((i) => ({ userId: i.userId, name: i.name }))}
         today={board.today}
         takeRequest={
           <TakeRequestSection data={await loadTakeRequest(ctx, number, reinspect)} board={board} />
