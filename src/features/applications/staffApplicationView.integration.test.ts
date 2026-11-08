@@ -137,8 +137,8 @@ describe('getStaffApplicationView', () => {
       NOW,
       signal,
     )
-    expect(view?.codeEdition?.record.editionKey).toBe('nh.edition.2024_07_01')
-    expect(view?.codeEdition?.description.components).toContain('IBC 2021')
+    expect(view?.codeEdition?.record.editionKey).toBe('nh.edition.2026_07_01')
+    expect(view?.codeEdition?.description.components).toContain('IBC 2024')
     expect(view?.codeEdition?.rows.find((r) => r.field === 'Application received')?.value).toBe(
       'March 1, 2027',
     )

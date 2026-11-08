@@ -4,6 +4,7 @@ import {
   applicationConditions,
   applications,
   boardDecisions,
+  codeEditionRecords,
   enforcementCases,
   projects,
   violationFindings,
@@ -18,8 +19,14 @@ import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba } from '@/test/hearingFixtures'
 import { makeTestStore } from '@/test/objectStore'
 import { makeParcel, seedParcelWorld, staffActor } from '@/test/parcels'
+import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
+const BEFORE_2024_CODES = '2026-06-01' as CivilDate
+const scope = (parcelId: string | null, today: CivilDate = BEFORE_2024_CODES) => ({
+  parcelId,
+  today,
+})
 let handle: TestDb
 let admin: Actor
 let staff: Actor
@@ -59,7 +66,12 @@ async function finding(caseId: string, kind: 'zoning_ordinance' | 'building_code
   })
 }
 
-async function issuedPermit(parcelId: string, number: string, issuedOn: string, code: string) {
+async function issuedPermit(
+  parcelId: string,
+  number: string,
+  issuedOn: string,
+  code: string,
+): Promise<string> {
   const [project] = await handle.db
     .insert(projects)
     .values({ parcelId, title: 'Garage', createdBy: staff.userId })
@@ -83,6 +95,7 @@ async function issuedPermit(parcelId: string, number: string, issuedOn: string, 
     blocksIssuance: false,
     changedBy: staff.userId,
   })
+  return app?.id ?? ''
 }
 
 describe('finding suggestions', () => {
@@ -102,7 +115,7 @@ describe('finding suggestions', () => {
       },
       signal,
     )
-    const zoning = (await loadFindingSuggestions(handle.db, null, signal)).zoning_ordinance
+    const zoning = (await loadFindingSuggestions(handle.db, scope(null), signal)).zoning_ordinance
     expect(zoning.map((s) => [s.value, s.sources])).toEqual([
       ['Zoning Ordinance Section 6.1', [{ kind: 'used', count: 2 }]],
       ['Zoning Ordinance Section 7.3', [{ kind: 'used', count: 1 }]],
@@ -115,13 +128,13 @@ describe('finding suggestions', () => {
     const caseId = await caseOn(null)
     await finding(caseId, 'zoning_ordinance', 'Section 9.9')
     await handle.db.update(violationFindings).set({ status: 'withdrawn' })
-    const zoning = (await loadFindingSuggestions(handle.db, null, signal)).zoning_ordinance
+    const zoning = (await loadFindingSuggestions(handle.db, scope(null), signal)).zoning_ordinance
     expect(zoning).toEqual([])
   })
 
   it('offers the state building code list for building code', async () => {
     await basicWorld()
-    const building = (await loadFindingSuggestions(handle.db, null, signal)).building_code
+    const building = (await loadFindingSuggestions(handle.db, scope(null), signal)).building_code
     expect(building[0]).toMatchObject({
       value: 'IRC 2021 Section R105.1, work without a required permit',
       sources: [{ kind: 'state_code' }],
@@ -135,7 +148,7 @@ describe('finding suggestions', () => {
     await issuedPermit(parcelId, 'BP-2026-0001', '2026-03-01', '1')
     await issuedPermit(parcelId, 'BP-2026-0005', '2026-09-01', '2')
     await issuedPermit(elsewhere, 'BP-2026-0009', '2026-10-01', '3')
-    const suggestions = await loadFindingSuggestions(handle.db, parcelId, signal)
+    const suggestions = await loadFindingSuggestions(handle.db, scope(parcelId), signal)
     expect(suggestions.permit_condition.map((s) => s.sources)).toEqual([
       [{ kind: 'condition', on: 'BP-2026-0005' }],
       [{ kind: 'condition', on: 'BP-2026-0001' }],
@@ -163,7 +176,11 @@ describe('finding suggestions', () => {
       .from(applications)
       .innerJoin(projects, eq(projects.id, applications.projectId))
       .where(eq(applications.id, decided.applicationId))
-    const suggestions = await loadFindingSuggestions(handle.db, app?.parcelId ?? null, signal)
+    const suggestions = await loadFindingSuggestions(
+      handle.db,
+      scope(app?.parcelId ?? null),
+      signal,
+    )
     expect(suggestions.board_decision).toEqual([
       {
         value: `${app?.number ?? ''} decision condition C1: Keep the fence under 6 feet.`,
@@ -171,6 +188,38 @@ describe('finding suggestions', () => {
         sources: [{ kind: 'condition', on: `the ${app?.number ?? ''} decision` }],
       },
     ])
+  })
+})
+
+describe('the state building code list by edition', () => {
+  it('offers the 2024 codes for a finding recorded after they took effect', async () => {
+    await basicWorld()
+    const building = (
+      await loadFindingSuggestions(handle.db, scope(null, '2026-11-08' as CivilDate), signal)
+    ).building_code
+    expect(building.map((s) => s.value.slice(0, 8))).toEqual(
+      Array.from({ length: building.length }, () => 'IRC 2024'),
+    )
+  })
+
+  it('adds the edition recorded on an issued permit of the case parcel', async () => {
+    await basicWorld()
+    const parcelId = await makeParcel(handle.db, [])
+    const applicationId = await issuedPermit(parcelId, 'BP-2026-0002', '2026-05-01', '1')
+    await handle.db.insert(codeEditionRecords).values({
+      applicationId,
+      receiptDate: '2026-04-01',
+      editionKey: 'nh.edition.2024_07_01',
+      editionLabel: 'IBC 2021',
+      editionStatus: 'verified',
+      localAmendmentsInForce: [],
+      recordedBy: staff.userId,
+    })
+    const building = (
+      await loadFindingSuggestions(handle.db, scope(parcelId, '2026-11-08' as CivilDate), signal)
+    ).building_code
+    const editions = [...new Set(building.map((s) => s.value.slice(0, 8)))]
+    expect(editions).toEqual(['IRC 2024', 'IRC 2021', 'IBC 2021'])
   })
 })
 

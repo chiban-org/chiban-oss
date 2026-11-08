@@ -9,6 +9,7 @@ import {
   stateCodeRefs,
 } from '@/features/enforcement/sections/suggestionInputs'
 import { notOnList, type TypedRef } from '@/features/enforcement/sections/suggestions'
+import { loadPack } from '@/features/packs/loadPack'
 
 export interface SectionListView {
   rows: TownSectionRow[]
@@ -33,7 +34,7 @@ export async function loadSectionListView(
     used: await loadUsedRefs(db, signal),
     town: await loadTownRefs(db, signal),
     conditions: [],
-    stateCode: stateCodeRefs(),
+    stateCode: stateCodeRefs(loadPack().codeEditions.map((e) => e.key)),
   })
   return { rows, typedNotListed }
 }

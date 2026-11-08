@@ -1,11 +1,25 @@
-import { NH_STATE_CODE_SECTIONS, stateCodeReference } from '@packs/nh/buildingCodeSections'
-import { NH_CODE_EDITIONS } from '@packs/nh/codeEditions'
+import {
+  NH_STATE_CODE_SECTIONS,
+  stateCodeReference,
+  stateCodeSectionsFor,
+} from '@packs/nh/buildingCodeSections'
+import { NH_2021_EDITION_KEY, NH_2024_EDITION_KEY, NH_CODE_EDITIONS } from '@packs/nh/codeEditions'
 import { describe, expect, it } from 'vitest'
 
 describe('the NH state building code starter list', () => {
-  it('keeps between 8 and 15 entries', () => {
-    expect(NH_STATE_CODE_SECTIONS.length).toBeGreaterThanOrEqual(8)
-    expect(NH_STATE_CODE_SECTIONS.length).toBeLessThanOrEqual(15)
+  it('keeps at most 15 entries per edition', () => {
+    for (const key of [NH_2021_EDITION_KEY, NH_2024_EDITION_KEY]) {
+      const entries = stateCodeSectionsFor([key])
+      expect(entries.length).toBeGreaterThan(0)
+      expect(entries.length).toBeLessThanOrEqual(15)
+    }
+  })
+
+  it('lists the sections of the editions asked for, in that order', () => {
+    const both = stateCodeSectionsFor([NH_2024_EDITION_KEY, NH_2021_EDITION_KEY])
+    expect(both[0]?.edition).toBe('2024')
+    expect(both.at(-1)?.edition).toBe('2021')
+    expect(stateCodeSectionsFor(['nh.edition.unverified_before_2024_07_01'])).toEqual([])
   })
 
   it('cites an ICC code text page for every entry', () => {

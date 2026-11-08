@@ -1,14 +1,16 @@
-import { NH_STATE_CODE_SECTIONS, stateCodeReference } from '@packs/nh/buildingCodeSections'
+import { stateCodeReference, stateCodeSectionsFor } from '@packs/nh/buildingCodeSections'
 import { and, asc, desc, eq, isNotNull, ne, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
   applicationConditions,
   applications,
   boardDecisions,
+  codeEditionRecords,
   projects,
   townSections,
   violationFindings,
 } from '@/db/schema'
+import { resolveCodeEdition } from '@/features/building/codeEdition'
 import {
   type ConditionRef,
   mergeSuggestions,
@@ -18,6 +20,8 @@ import {
   type TownRef,
   type UsedRef,
 } from '@/features/enforcement/sections/suggestions'
+import { loadPack } from '@/features/packs/loadPack'
+import type { CivilDate } from '@/types/civilDate'
 
 const REF_MAX = 300
 
@@ -100,31 +104,63 @@ export async function loadConditionRefs(
   return [...(await permitConditions(db, parcelId)), ...(await decisionConditions(db, parcelId))]
 }
 
-export function stateCodeRefs(): StateRef[] {
-  return NH_STATE_CODE_SECTIONS.map((s) => ({
+export function stateCodeRefs(editionKeys: readonly string[]): StateRef[] {
+  return stateCodeSectionsFor(editionKeys).map((s) => ({
     reference: stateCodeReference(s),
     title: s.title,
     topic: s.topic,
   }))
 }
 
+export interface SuggestionScope {
+  parcelId: string | null
+  today: CivilDate
+}
+
+function editionOn(date: CivilDate): string[] {
+  const resolved = resolveCodeEdition(loadPack().codeEditions, date)
+  return resolved.ok ? [resolved.value.editionKey] : []
+}
+
+async function parcelPermitEditions(db: DbOrTx, parcelId: string | null): Promise<string[]> {
+  if (parcelId === null) return []
+  const rows = await db
+    .select({ editionKey: codeEditionRecords.editionKey })
+    .from(codeEditionRecords)
+    .innerJoin(applications, eq(applications.id, codeEditionRecords.applicationId))
+    .innerJoin(projects, eq(projects.id, applications.projectId))
+    .where(and(eq(projects.parcelId, parcelId), isNotNull(applications.issuedOn)))
+    .orderBy(desc(applications.issuedOn))
+  return rows.map((r) => r.editionKey)
+}
+
+export async function suggestedEditions(
+  db: DbOrTx,
+  scope: SuggestionScope,
+  signal: AbortSignal,
+): Promise<string[]> {
+  signal.throwIfAborted()
+  const keys = [...editionOn(scope.today), ...(await parcelPermitEditions(db, scope.parcelId))]
+  return [...new Set(keys)]
+}
+
 export async function loadSuggestionInputs(
   db: DbOrTx,
-  parcelId: string | null,
+  scope: SuggestionScope,
   signal: AbortSignal,
 ): Promise<SuggestionInputs> {
   return {
     used: await loadUsedRefs(db, signal),
     town: await loadTownRefs(db, signal),
-    conditions: await loadConditionRefs(db, parcelId, signal),
-    stateCode: stateCodeRefs(),
+    conditions: await loadConditionRefs(db, scope.parcelId, signal),
+    stateCode: stateCodeRefs(await suggestedEditions(db, scope, signal)),
   }
 }
 
 export async function loadFindingSuggestions(
   db: DbOrTx,
-  parcelId: string | null,
+  scope: SuggestionScope,
   signal: AbortSignal,
 ): Promise<SuggestionsByKind> {
-  return mergeSuggestions(await loadSuggestionInputs(db, parcelId, signal))
+  return mergeSuggestions(await loadSuggestionInputs(db, scope, signal))
 }

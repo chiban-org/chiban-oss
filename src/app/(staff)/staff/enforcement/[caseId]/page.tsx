@@ -93,7 +93,7 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
         ...loaded.value,
         suggestions: await loadFindingSuggestions(
           ctx.db,
-          loaded.value.staff.row.parcelId,
+          { parcelId: loaded.value.staff.row.parcelId, today },
           ctx.signal,
         ),
       }
