@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { and, eq, gt, isNull, sql } from 'drizzle-orm'
+import { and, eq, gt, isNull, ne, sql } from 'drizzle-orm'
 import { env } from '@/config/env'
 import type { Db } from '@/db/client'
 import { contractorClaims, projectParties, projects, userRoles, users } from '@/db/schema'
@@ -14,13 +14,26 @@ import { addParty } from '@/features/projects/parties'
 import { err, ok, type Result } from '@/types/result'
 
 const TOKEN_BYTES = 32
-const CLAIM_DAYS = 14
+export const CLAIM_DAYS = 14
 const DAY_MS = 24 * 60 * 60 * 1000
 const HOUR_MS = 60 * 60 * 1000
 const MAX_PER_HOUR = 5
 
 export function hashClaimToken(token: string): string {
   return createHash('sha256').update(token).digest('base64url')
+}
+
+export function claimLink(token: string): string {
+  return `${env.BASE_URL}/claim/${token}`
+}
+
+export function newClaimToken(now: Date): { token: string; tokenHash: string; expiresAt: Date } {
+  const token = randomBytes(TOKEN_BYTES).toString('base64url')
+  return {
+    token,
+    tokenHash: hashClaimToken(token),
+    expiresAt: new Date(now.getTime() + CLAIM_DAYS * DAY_MS),
+  }
 }
 
 export type ClaimRole = 'contractor' | 'applicant'
@@ -31,9 +44,16 @@ export interface ClaimInput {
   name: string
   partyId?: string
   role?: ClaimRole
+  applicationId?: string
 }
 
 type SenderKind = 'staff' | 'applicant'
+
+export interface ClaimedProject {
+  projectId: string
+  role: ClaimRole
+  applicationId: string | null
+}
 
 async function senderKind(db: Db, actor: Actor, projectId: string, signal: AbortSignal) {
   if (await hasCapability(db, actor.userId, 'project.manage_parties', signal)) return 'staff'
@@ -48,6 +68,7 @@ async function recentClaims(db: Db, projectId: string, now: Date): Promise<numbe
     .where(
       and(
         eq(contractorClaims.projectId, projectId),
+        ne(contractorClaims.sentByKind, 'system'),
         gt(contractorClaims.createdAt, new Date(now.getTime() - HOUR_MS)),
       ),
     )
@@ -97,7 +118,7 @@ export async function sendContractorClaim(
     .select({ title: projects.title })
     .from(projects)
     .where(eq(projects.id, input.projectId))
-  const token = randomBytes(TOKEN_BYTES).toString('base64url')
+  const { token, tokenHash, expiresAt } = newClaimToken(now)
   const email = input.email.trim().toLowerCase()
   const claimId = await transactionResult(db, async (tx) => {
     const [row] = await tx
@@ -105,11 +126,12 @@ export async function sendContractorClaim(
       .values({
         projectId: input.projectId,
         partyId,
+        applicationId: input.applicationId ?? null,
         email,
-        tokenHash: hashClaimToken(token),
+        tokenHash,
         sentBy: actor.userId,
         sentByKind: kind,
-        expiresAt: new Date(now.getTime() + CLAIM_DAYS * DAY_MS),
+        expiresAt,
         createdAt: now,
       })
       .returning({ id: contractorClaims.id })
@@ -133,7 +155,7 @@ export async function sendContractorClaim(
       name: input.name,
       role: input.role ?? 'contractor',
       title: project?.title ?? 'your project',
-      link: `${env.BASE_URL}/claim/${token}`,
+      link: claimLink(token),
       days: CLAIM_DAYS,
     }),
     signal,
@@ -148,9 +170,7 @@ export async function claimProject(
   token: string,
   signal: AbortSignal,
   now: Date = new Date(),
-): Promise<
-  Result<{ projectId: string; role: ClaimRole }, 'sign_in_required' | 'invalid' | 'email_mismatch'>
-> {
+): Promise<Result<ClaimedProject, 'sign_in_required' | 'invalid' | 'email_mismatch'>> {
   signal.throwIfAborted()
   if (actor === null) return err('sign_in_required')
   const [claim] = await db
@@ -170,41 +190,38 @@ export async function claimProject(
   if (actor.kind !== 'public' || user?.email.toLowerCase() !== claim.email.toLowerCase()) {
     return err('email_mismatch')
   }
-  return await transactionResult<{ projectId: string; role: ClaimRole }, 'invalid'>(
-    db,
-    async (tx) => {
-      const marked = await tx
-        .update(contractorClaims)
-        .set({ claimedAt: now, claimedBy: actor.userId })
-        .where(and(eq(contractorClaims.id, claim.id), isNull(contractorClaims.claimedAt)))
-        .returning({ id: contractorClaims.id })
-      if (marked.length === 0) return err('invalid')
-      const linked = await tx
-        .update(projectParties)
-        .set({ userId: actor.userId })
-        .where(
-          and(
-            eq(projectParties.id, claim.partyId),
-            isNull(projectParties.userId),
-            isNull(projectParties.removedAt),
-          ),
-        )
-        .returning({ id: projectParties.id, role: projectParties.role })
-      const role = linked[0]?.role
-      if (role !== 'contractor' && role !== 'applicant') return err('invalid')
-      await tx.insert(userRoles).values({ userId: actor.userId, role }).onConflictDoNothing()
-      await writeAudit(
-        tx,
-        {
-          actor: { kind: 'user', userId: actor.userId },
-          action: 'contractor.claim',
-          entityType: 'project',
-          entityId: claim.projectId,
-          after: { claimId: claim.id, partyId: claim.partyId },
-        },
-        signal,
+  return await transactionResult<ClaimedProject, 'invalid'>(db, async (tx) => {
+    const marked = await tx
+      .update(contractorClaims)
+      .set({ claimedAt: now, claimedBy: actor.userId })
+      .where(and(eq(contractorClaims.id, claim.id), isNull(contractorClaims.claimedAt)))
+      .returning({ id: contractorClaims.id })
+    if (marked.length === 0) return err('invalid')
+    const linked = await tx
+      .update(projectParties)
+      .set({ userId: actor.userId })
+      .where(
+        and(
+          eq(projectParties.id, claim.partyId),
+          isNull(projectParties.userId),
+          isNull(projectParties.removedAt),
+        ),
       )
-      return ok({ projectId: claim.projectId, role })
-    },
-  )
+      .returning({ id: projectParties.id, role: projectParties.role })
+    const role = linked[0]?.role
+    if (role !== 'contractor' && role !== 'applicant') return err('invalid')
+    await tx.insert(userRoles).values({ userId: actor.userId, role }).onConflictDoNothing()
+    await writeAudit(
+      tx,
+      {
+        actor: { kind: 'user', userId: actor.userId },
+        action: 'contractor.claim',
+        entityType: 'project',
+        entityId: claim.projectId,
+        after: { claimId: claim.id, partyId: claim.partyId },
+      },
+      signal,
+    )
+    return ok({ projectId: claim.projectId, role, applicationId: claim.applicationId })
+  })
 }

@@ -130,6 +130,7 @@ describe('claim link for an applicant taken at the counter', () => {
     if (applicant === null) throw new Error('actor')
     const claimed = await claimProject(handle.db, applicant, token, signal)
     expect(claimed.ok && claimed.value.role).toBe('applicant')
+    expect(claimed.ok && claimed.value.applicationId).toBe(applicationId)
     const [party] = await handle.db
       .select({ userId: projectParties.userId })
       .from(projectParties)

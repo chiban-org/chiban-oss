@@ -687,6 +687,13 @@
       "when": 1794146334186,
       "tag": "0097_perfect_lifeguard",
       "breakpoints": true
+    },
+    {
+      "idx": 98,
+      "version": "7",
+      "when": 1794152807651,
+      "tag": "0098_party_email",
+      "breakpoints": true
     }
   ]
 }

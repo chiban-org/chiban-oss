@@ -37,6 +37,26 @@ describe('notification messages', () => {
     expect(party.text).toContain('/portal/applications/a1')
   })
 
+  it('give an applicant without an account a claim link instead of a portal link', () => {
+    const claim = { link: 'https://town.example/claim/abc', days: 14 }
+    const issued = MESSAGES.application_issued({
+      applicationId: 'a1',
+      payload: { number: 'VAR-2027-0001' },
+      claim,
+    })
+    expect(issued.text).toContain('https://town.example/claim/abc')
+    expect(issued.text).not.toContain('/portal/applications/a1')
+    expect(issued.text).not.toContain('your account')
+    expect(issued.text).toContain('It works once and expires in 14 days.')
+    expect(issued.html).toContain('>Claim the application</a>')
+    const account = MESSAGES.application_issued({
+      applicationId: 'a1',
+      payload: { number: 'VAR-2027-0001' },
+    })
+    expect(account.text).toContain('You can download it from your account.')
+    expect(account.html).toContain('>Open the application</a>')
+  })
+
   it('ask a board for comments with a link to the board pages and the date in words', () => {
     const rendered = MESSAGES.board_comment_requested({
       applicationId: 'a1',

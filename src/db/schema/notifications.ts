@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm'
 import {
+  check,
   index,
   integer,
   jsonb,
@@ -9,7 +10,7 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
-import { applications } from './projects'
+import { applications, projectParties } from './projects'
 
 export const NOTIFICATION_EVENTS = [
   'application_submitted',
@@ -33,7 +34,8 @@ export const notificationOutbox = pgTable(
     applicationId: uuid('application_id')
       .notNull()
       .references(() => applications.id),
-    recipientUserId: uuid('recipient_user_id').notNull(),
+    recipientUserId: uuid('recipient_user_id'),
+    recipientPartyId: uuid('recipient_party_id').references(() => projectParties.id),
     payload: jsonb('payload').notNull().default({}),
     status: text('status', { enum: ['queued', 'sent', 'dropped', 'failed'] })
       .notNull()
@@ -50,7 +52,19 @@ export const notificationOutbox = pgTable(
       t.recipientUserId,
       sql`coalesce(${t.payload}->>'discriminator', '')`,
     ),
+    uniqueIndex('notification_outbox_party_dedup_idx')
+      .on(
+        t.event,
+        t.applicationId,
+        t.recipientPartyId,
+        sql`coalesce(${t.payload}->>'discriminator', '')`,
+      )
+      .where(sql`${t.recipientPartyId} is not null`),
     index('notification_outbox_status_idx').on(t.status, t.createdAt),
+    check(
+      'notification_outbox_one_recipient',
+      sql`(${t.recipientUserId} is null) <> (${t.recipientPartyId} is null)`,
+    ),
   ],
 )
 

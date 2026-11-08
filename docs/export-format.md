@@ -768,7 +768,8 @@ File: `data/contractor_claims.ndjson`. Ordered by id.
 - `project_id`: uuid
 - `party_id`: uuid
 - `email`: citext
-- `sent_by`: uuid
+- `application_id`: uuid, nullable
+- `sent_by`: uuid, nullable
 - `sent_by_kind`: text
 - `expires_at`: timestamp with time zone
 - `created_at`: timestamp with time zone
@@ -779,6 +780,7 @@ File: `data/contractor_claims.ndjson`. Ordered by id.
 References:
 - `project_id` refers to `projects`
 - `party_id` refers to `project_parties`
+- `application_id` refers to `applications`
 
 Omitted columns: `token_hash`
 
@@ -1557,7 +1559,8 @@ File: `data/notification_outbox.ndjson`. Ordered by id.
 - `id`: uuid
 - `event`: text
 - `application_id`: uuid
-- `recipient_user_id`: uuid
+- `recipient_user_id`: uuid, nullable
+- `recipient_party_id`: uuid, nullable
 - `payload`: jsonb
 - `status`: text
 - `drop_reason`: text, nullable
@@ -1567,6 +1570,7 @@ File: `data/notification_outbox.ndjson`. Ordered by id.
 
 References:
 - `application_id` refers to `applications`
+- `recipient_party_id` refers to `project_parties`
 
 ### order_court_steps
 

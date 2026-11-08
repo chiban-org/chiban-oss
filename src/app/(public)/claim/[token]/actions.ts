@@ -22,5 +22,6 @@ export async function claimProjectAction(formData: FormData): Promise<ActionResu
   if (!guard.ok) return { ok: false, error: errorCopy(guard.error) }
   const result = await claimProject(db, guard.value, text(formData, 'token'), signal)
   if (!result.ok) return { ok: false, error: CLAIM_COPY[result.error] }
-  redirect(LANDING[result.value.role])
+  const { applicationId, role } = result.value
+  redirect(applicationId === null ? LANDING[role] : `/portal/applications/${applicationId}`)
 }

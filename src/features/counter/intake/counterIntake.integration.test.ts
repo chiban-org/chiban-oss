@@ -203,7 +203,7 @@ describe('notices for an application taken at the counter', () => {
     await fillAndSubmit(applicationId)
     const rows = await outbox(applicationId)
     expect(rows.map((r) => r.to)).not.toContain(world.staff.userId)
-    expect(rows).toEqual([])
+    expect(rows).toEqual([{ to: null, event: 'application_submitted' }])
   })
 
   it('sends the submitted notice to an applicant who has an account', async () => {
