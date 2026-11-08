@@ -8,11 +8,11 @@ import {
   loadUsedRefs,
   stateCodeRefs,
 } from '@/features/enforcement/sections/suggestionInputs'
-import { notOnList, type UsedRef } from '@/features/enforcement/sections/suggestions'
+import { notOnList, type TypedRef } from '@/features/enforcement/sections/suggestions'
 
 export interface SectionListView {
   rows: TownSectionRow[]
-  typedNotListed: UsedRef[]
+  typedNotListed: TypedRef[]
 }
 
 export async function loadSectionListView(

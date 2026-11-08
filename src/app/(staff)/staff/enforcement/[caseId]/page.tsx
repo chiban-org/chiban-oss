@@ -10,6 +10,7 @@ import { loadCaseDetail } from '@/features/enforcement/caseDetail'
 import { type CaseView, caseViewFor } from '@/features/enforcement/caseView'
 import { caseChipStatus } from '@/features/enforcement/chipStatus'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
+import { loadFindingSuggestions } from '@/features/enforcement/sections/suggestionInputs'
 import { planCaseWork } from '@/features/enforcement/workPlan'
 import { hostedActions } from '@/features/enforcement/workPlanTypes'
 import { casePublicHref } from '@/features/publicSite/publicHref'
@@ -83,11 +84,20 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
   const today = await townToday(ctx.db, new Date(), ctx.signal)
   const loaded = await loadCaseDetail(ctx.db, ctx.actor, caseId, today, ctx.signal)
   if (!loaded.ok) notFound()
-  const detail = loaded.value
   const [can, current] = await Promise.all([
     loadCan(ctx.db, ctx.actor, ctx.signal),
     caseAssignee(ctx.db, caseId),
   ])
+  const detail = can.manage
+    ? {
+        ...loaded.value,
+        suggestions: await loadFindingSuggestions(
+          ctx.db,
+          loaded.value.staff.row.parcelId,
+          ctx.signal,
+        ),
+      }
+    : loaded.value
   const assignee = { current, choices: can.manage ? await assigneeChoices(ctx.db) : [] }
   const { row } = detail.staff
   const plan = planCaseWork(detail, {

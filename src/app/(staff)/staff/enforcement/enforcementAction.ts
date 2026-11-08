@@ -15,6 +15,9 @@ const COPY: Record<string, string> = {
   stale_version: 'This record changed since you opened it. Reload the page and try again.',
   case_not_investigating: 'The case has to be under investigation before findings can be recorded.',
   findings_invalid: 'Choose open findings that belong to this case.',
+  finding_not_open: 'That finding was already withdrawn or marked corrected.',
+  finding_in_use:
+    'That finding is already in a notice or order, so it cannot be edited. Withdraw it and record a new one instead.',
   split_required:
     'These findings mix building code and other violations. Issue a separate order for each kind.',
   not_a_draft: 'That order has already been issued.',

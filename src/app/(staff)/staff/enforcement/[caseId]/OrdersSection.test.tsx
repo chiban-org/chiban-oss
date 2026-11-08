@@ -36,6 +36,7 @@ const draft = {
   row: {
     id: 'o1',
     number: 'CD-2027-0001',
+    findingIds: [],
     status: 'draft',
     rowVersion: 1,
     correctiveAction: '',

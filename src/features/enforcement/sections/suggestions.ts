@@ -206,13 +206,19 @@ export function sourcesLabel(suggestion: SectionSuggestion): string {
   return suggestion.sources.map(sourceLabel).join(', ')
 }
 
-export function notOnList(inputs: SuggestionInputs): UsedRef[] {
+export type TypedRef = UsedRef & { kind: TownSectionKind }
+
+function isTownKind(ref: UsedRef): ref is TypedRef {
+  return (TOWN_SECTION_KINDS as readonly string[]).includes(ref.kind)
+}
+
+export function notOnList(inputs: SuggestionInputs): TypedRef[] {
   const listed = new Set([
     ...inputs.town.flatMap((t) => [refKey(townValue(t)), refKey(t.reference)]),
     ...inputs.stateCode.flatMap((s) => [refKey(stateValue(s)), refKey(s.reference)]),
   ])
   return inputs.used
-    .filter((u) => (TOWN_SECTION_KINDS as readonly string[]).includes(u.kind))
+    .filter(isTownKind)
     .filter((u) => !listed.has(refKey(u.ref)))
     .sort((a, b) => b.count - a.count || a.ref.localeCompare(b.ref))
 }

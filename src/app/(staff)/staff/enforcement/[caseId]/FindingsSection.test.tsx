@@ -39,6 +39,7 @@ const detail = stubDetail({
   notices: [
     {
       id: 'n1',
+      findingIds: [],
       method: 'first_class_mail',
       sentOn: '2027-07-03',
       receivedOn: null,
@@ -102,7 +103,7 @@ describe('sending a notice of violation', () => {
     renderForm(<FindingsSection detail={detail} can={ALL_CAN} />)
     openSection('Send a notice of violation')
     fireEvent.click(screen.getByRole('button', { name: 'Send notice of violation' }))
-    await expectRefusalBeside(screen.getByLabelText(/Section 4\.2/), message)
+    await expectRefusalBeside(screen.getByRole('checkbox', { name: /Section 4\.2/ }), message)
   })
 
   it('shows a refused date beside the date field', async () => {
@@ -147,6 +148,6 @@ describe('offering finding and receipt forms only when they apply', () => {
         hosted={new Set(['record_finding', 'record_notice_receipt:n1', 'send_notice'])}
       />,
     )
-    expect(summaries()).toEqual([])
+    expect(summaries()).toEqual(['More'])
   })
 })
