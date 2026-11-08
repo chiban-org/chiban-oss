@@ -16,6 +16,7 @@ import { type ResponsibleData, ResponsibleStaff } from './responsibleStaff'
 
 export interface InspectorRecordInput extends RecordPanelsInput {
   legacyNumber: string | null
+  intake: string | null
   responsible: ResponsibleData
 }
 
@@ -31,7 +32,11 @@ function PermitFacts({ input }: { input: InspectorRecordInput }) {
         {view.state === 'issued' ? <PrintLinks applicationId={view.id} /> : null}
         <Deadlines view={view} />
       </section>
-      <ApplicationFacts view={view} legacyNumber={input.legacyNumber} responsible={responsible} />
+      <ApplicationFacts
+        view={view}
+        origin={{ legacyNumber: input.legacyNumber, intake: input.intake }}
+        responsible={responsible}
+      />
       {view.parties.length === 0 ? null : <PartiesPanel view={view} />}
     </details>
   )

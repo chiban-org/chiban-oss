@@ -14,8 +14,8 @@ import {
 import { transactionResult } from '@/db/transactionResult'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { Actor } from '@/features/auth/actor'
-import { hasCapability } from '@/features/authz/capabilities'
 import { getPublished } from '@/features/config/store'
+import { mayUseCounter } from '@/features/counter/counterAccess'
 import {
   createCounterApplication,
   retryableApplication,
@@ -88,13 +88,6 @@ export type QuickIssueError =
 export interface QuickIssueDeps {
   now?: Date
   store?: ObjectStore
-}
-
-async function mayQuickIssue(db: Db, actor: Actor, signal: AbortSignal): Promise<boolean> {
-  return (
-    (await hasCapability(db, actor.userId, 'permit.issue', signal)) &&
-    (await hasCapability(db, actor.userId, 'payment.collect', signal))
-  )
 }
 
 async function receiptNumberFor(db: Db, applicationId: string): Promise<string | null> {
@@ -170,7 +163,7 @@ export async function quickIssue(
 ): Promise<Result<QuickIssueResult, QuickIssueError>> {
   signal.throwIfAborted()
   const now = deps.now ?? new Date()
-  if (!(await mayQuickIssue(db, actor, signal))) return err('forbidden')
+  if (!(await mayUseCounter(db, actor, signal))) return err('forbidden')
   const type = await getPublished(db, 'application_type', input.applicationTypeKey, signal)
   if (type === null) return err('not_published')
   const typeBody = type.body as ApplicationTypeBody
@@ -229,7 +222,7 @@ export async function completeQuickIssue(
   deps: QuickIssueDeps = {},
 ): Promise<Result<QuickIssueResult, QuickIssueError>> {
   signal.throwIfAborted()
-  if (!(await mayQuickIssue(db, actor, signal))) return err('forbidden')
+  if (!(await mayUseCounter(db, actor, signal))) return err('forbidden')
   const moved = await transactionResult(db, (tx) =>
     issueInTransaction(
       tx,

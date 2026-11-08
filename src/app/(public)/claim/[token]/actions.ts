@@ -7,7 +7,7 @@ import { guardAction } from '@/server/actionGuard'
 import { type ActionResult, errorCopy, text } from '@/server/actionRunner'
 
 const ACTION_TIMEOUT_MS = 15_000
-const DASHBOARD = '/portal/contractor'
+const LANDING = { contractor: '/portal/contractor', applicant: '/portal' } as const
 
 const CLAIM_COPY = {
   sign_in_required: 'Sign in to claim this project.',
@@ -22,5 +22,5 @@ export async function claimProjectAction(formData: FormData): Promise<ActionResu
   if (!guard.ok) return { ok: false, error: errorCopy(guard.error) }
   const result = await claimProject(db, guard.value, text(formData, 'token'), signal)
   if (!result.ok) return { ok: false, error: CLAIM_COPY[result.error] }
-  redirect(DASHBOARD)
+  redirect(LANDING[result.value.role])
 }

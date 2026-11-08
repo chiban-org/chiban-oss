@@ -3,6 +3,8 @@ import { STATE_LABELS } from '@/features/applications/states'
 export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
   Object.entries({
     'application.create': 'Started the application',
+    'application.counter_intake': 'Taken at the counter',
+    'application.paper_attestation': 'Recorded that the applicant signed the attestation on paper',
     'application.amend': 'Amended the application',
     'application.substep': 'Changed the workflow step',
     'application.note_added': 'Added a staff note',

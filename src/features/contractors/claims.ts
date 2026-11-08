@@ -8,6 +8,7 @@ import { isProjectParty } from '@/features/access/queries'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { claimMessage } from '@/features/contractors/claimMessage'
 import type { MailTransport } from '@/features/mail/transport'
 import { addParty } from '@/features/projects/parties'
 import { err, ok, type Result } from '@/types/result'
@@ -22,11 +23,14 @@ export function hashClaimToken(token: string): string {
   return createHash('sha256').update(token).digest('base64url')
 }
 
+export type ClaimRole = 'contractor' | 'applicant'
+
 export interface ClaimInput {
   projectId: string
   email: string
   name: string
   partyId?: string
+  role?: ClaimRole
 }
 
 type SenderKind = 'staff' | 'applicant'
@@ -50,7 +54,8 @@ async function recentClaims(db: Db, projectId: string, now: Date): Promise<numbe
   return row?.n ?? 0
 }
 
-async function contractorPartyFor(db: Db, actor: Actor, input: ClaimInput, signal: AbortSignal) {
+async function claimPartyFor(db: Db, actor: Actor, input: ClaimInput, signal: AbortSignal) {
+  const role = input.role ?? 'contractor'
   if (input.partyId !== undefined) {
     const [party] = await db
       .select({ id: projectParties.id })
@@ -59,7 +64,7 @@ async function contractorPartyFor(db: Db, actor: Actor, input: ClaimInput, signa
         and(
           eq(projectParties.id, input.partyId),
           eq(projectParties.projectId, input.projectId),
-          eq(projectParties.role, 'contractor'),
+          eq(projectParties.role, role),
           isNull(projectParties.removedAt),
         ),
       )
@@ -68,7 +73,7 @@ async function contractorPartyFor(db: Db, actor: Actor, input: ClaimInput, signa
   const added = await addParty(
     db,
     actor,
-    { projectId: input.projectId, role: 'contractor', name: input.name, email: input.email },
+    { projectId: input.projectId, role, name: input.name, email: input.email },
     signal,
   )
   return added.ok ? added.value.partyId : null
@@ -86,7 +91,7 @@ export async function sendContractorClaim(
   const kind: SenderKind | null = await senderKind(db, actor, input.projectId, signal)
   if (kind === null) return err('forbidden')
   if ((await recentClaims(db, input.projectId, now)) >= MAX_PER_HOUR) return err('rate_limited')
-  const partyId = await contractorPartyFor(db, actor, input, signal)
+  const partyId = await claimPartyFor(db, actor, input, signal)
   if (partyId === null) return err('forbidden')
   const [project] = await db
     .select({ title: projects.title })
@@ -122,23 +127,19 @@ export async function sendContractorClaim(
     return ok(row?.id ?? '')
   })
   if (!claimId.ok) return err('forbidden')
-  const link = `${env.BASE_URL}/claim/${token}`
-  const title = project?.title ?? 'your project'
   const sent = await mail.send(
-    {
+    claimMessage({
       to: email,
-      subject: `Claim your project in Chiban: ${title}`,
-      text: `${actorLine(input.name)}\n\nUse this link to claim the project and follow its permits. It works once and expires in ${CLAIM_DAYS} days.\n\n${link}\n`,
-      html: `<p>${actorLine(input.name)}</p><p>Use this link to claim the project and follow its permits. It works once and expires in ${CLAIM_DAYS} days.</p><p><a href="${link}">Claim the project</a></p>`,
-    },
+      name: input.name,
+      role: input.role ?? 'contractor',
+      title: project?.title ?? 'your project',
+      link: `${env.BASE_URL}/claim/${token}`,
+      days: CLAIM_DAYS,
+    }),
     signal,
   )
   if (!sent.ok) return err('send_failed')
   return ok({ claimId: claimId.value })
-}
-
-function actorLine(name: string): string {
-  return `${name}, you were named as a contractor on a project at the Town of Alder Pond.`
 }
 
 export async function claimProject(
@@ -147,7 +148,9 @@ export async function claimProject(
   token: string,
   signal: AbortSignal,
   now: Date = new Date(),
-): Promise<Result<{ projectId: string }, 'sign_in_required' | 'invalid' | 'email_mismatch'>> {
+): Promise<
+  Result<{ projectId: string; role: ClaimRole }, 'sign_in_required' | 'invalid' | 'email_mismatch'>
+> {
   signal.throwIfAborted()
   if (actor === null) return err('sign_in_required')
   const [claim] = await db
@@ -167,40 +170,41 @@ export async function claimProject(
   if (actor.kind !== 'public' || user?.email.toLowerCase() !== claim.email.toLowerCase()) {
     return err('email_mismatch')
   }
-  return await transactionResult<{ projectId: string }, 'invalid'>(db, async (tx) => {
-    const marked = await tx
-      .update(contractorClaims)
-      .set({ claimedAt: now, claimedBy: actor.userId })
-      .where(and(eq(contractorClaims.id, claim.id), isNull(contractorClaims.claimedAt)))
-      .returning({ id: contractorClaims.id })
-    if (marked.length === 0) return err('invalid')
-    const linked = await tx
-      .update(projectParties)
-      .set({ userId: actor.userId })
-      .where(
-        and(
-          eq(projectParties.id, claim.partyId),
-          isNull(projectParties.userId),
-          isNull(projectParties.removedAt),
-        ),
+  return await transactionResult<{ projectId: string; role: ClaimRole }, 'invalid'>(
+    db,
+    async (tx) => {
+      const marked = await tx
+        .update(contractorClaims)
+        .set({ claimedAt: now, claimedBy: actor.userId })
+        .where(and(eq(contractorClaims.id, claim.id), isNull(contractorClaims.claimedAt)))
+        .returning({ id: contractorClaims.id })
+      if (marked.length === 0) return err('invalid')
+      const linked = await tx
+        .update(projectParties)
+        .set({ userId: actor.userId })
+        .where(
+          and(
+            eq(projectParties.id, claim.partyId),
+            isNull(projectParties.userId),
+            isNull(projectParties.removedAt),
+          ),
+        )
+        .returning({ id: projectParties.id, role: projectParties.role })
+      const role = linked[0]?.role
+      if (role !== 'contractor' && role !== 'applicant') return err('invalid')
+      await tx.insert(userRoles).values({ userId: actor.userId, role }).onConflictDoNothing()
+      await writeAudit(
+        tx,
+        {
+          actor: { kind: 'user', userId: actor.userId },
+          action: 'contractor.claim',
+          entityType: 'project',
+          entityId: claim.projectId,
+          after: { claimId: claim.id, partyId: claim.partyId },
+        },
+        signal,
       )
-      .returning({ id: projectParties.id })
-    if (linked.length === 0) return err('invalid')
-    await tx
-      .insert(userRoles)
-      .values({ userId: actor.userId, role: 'contractor' })
-      .onConflictDoNothing()
-    await writeAudit(
-      tx,
-      {
-        actor: { kind: 'user', userId: actor.userId },
-        action: 'contractor.claim',
-        entityType: 'project',
-        entityId: claim.projectId,
-        after: { claimId: claim.id, partyId: claim.partyId },
-      },
-      signal,
-    )
-    return ok({ projectId: claim.projectId })
-  })
+      return ok({ projectId: claim.projectId, role })
+    },
+  )
 }

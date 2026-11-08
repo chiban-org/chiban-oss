@@ -1,8 +1,9 @@
 import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { parcels } from '@/db/schema'
+import { parcels, users } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { startCounterIntake } from '@/features/counter/intake/startIntake'
 import type { PermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { setupTradeWorld } from '@/test/ledgerFixtures'
@@ -34,6 +35,13 @@ vi.mock('./actions', () => ({
   reconnectAction: vi.fn(),
   sendClaimAction: vi.fn(),
 }))
+vi.mock('./intakeActions', () => ({
+  discardIntakeAction: vi.fn(),
+  saveIntakeAction: vi.fn(),
+  sendApplicantClaimAction: vi.fn(),
+  startIntakeAction: vi.fn(),
+  submitIntakeAction: vi.fn(),
+}))
 
 const { default: CounterPage } = await import('./page')
 
@@ -50,7 +58,7 @@ afterAll(async () => {
   await handle.drop()
 })
 
-async function page(params: { q?: string; parcel?: string; type?: string }) {
+async function page(params: { q?: string; parcel?: string; type?: string; applicant?: string }) {
   return renderToStaticMarkup(await CounterPage({ searchParams: Promise.resolve(params) }))
 }
 
@@ -63,18 +71,75 @@ describe('counter steps', () => {
     expect(html).not.toContain('Contractor name')
   })
 
-  it('says where permits not listed here are started', async () => {
+  it('lists every published type in two groups and no longer sends walk-ins to the portal', async () => {
     const html = await page({})
-    expect(html).toContain('Other permits and applications are started by the applicant in the')
-    expect(html).toContain('href="/portal/apply"')
-    expect(await page({ type: 'EL' })).not.toContain('started by the applicant')
+    expect(html).toContain('Issue today')
+    expect(html).toContain('Take for review')
+    const [issueToday, takeForReview] = html.split('Take for review')
+    expect(issueToday).toContain('href="/staff/counter?type=EL"')
+    expect(issueToday).not.toContain('href="/staff/counter?type=BP"')
+    expect(takeForReview).toContain('href="/staff/counter?type=BP"')
+    expect(html).not.toContain('started by the applicant')
+    expect(html).not.toContain('href="/portal/apply"')
+  })
+
+  it('asks for the parcel and then the applicant for a type taken for review', async () => {
+    const parcelStep = await page({ type: 'BP' })
+    expect(parcelStep).toContain('Find the parcel the application is for.')
+    expect(parcelStep).toContain('Application type')
+    expect(parcelStep).toContain('name="q"')
+    const applicantStep = await page({ type: 'BP', parcel: world.parcelId })
+    expect(applicantStep).toContain('Find the applicant, then take the application with them.')
+    expect(applicantStep).toContain('Applicant email')
+    expect(applicantStep).toContain('The applicant has no email address')
+    expect(applicantStep).not.toContain('Contractor name')
+  })
+
+  it('says the application will belong to an applicant who has an account', async () => {
+    const [row] = await handle.db
+      .select({ email: users.email, name: users.displayName })
+      .from(users)
+      .where(eq(users.id, world.applicant.userId))
+    const html = await page({ type: 'BP', parcel: world.parcelId, applicant: row?.email ?? '' })
+    expect(html).toContain(`${row?.name} has an account with this email.`)
+    expect(html).toContain(`Take the application for ${row?.name}`)
+  })
+
+  it('lists an unfinished counter application with who started it', async () => {
+    const started = await startCounterIntake(
+      handle.db,
+      world.staff,
+      {
+        parcelId: world.parcelId,
+        applicationTypeKey: 'BP',
+        applicant: { name: 'Morgan Reyes', email: 'morgan.reyes@alderpond.example' },
+      },
+      new AbortController().signal,
+    )
+    if (!started.ok) throw new Error('start failed')
+    const html = await page({})
+    expect(html).toContain('Unfinished at the counter')
+    expect(html).toContain('Building permit for Morgan Reyes')
+    expect(html).toContain(`href="/staff/counter/take/${started.value.applicationId}"`)
+    expect(html).toContain(`Discard ${started.value.number}`)
+  })
+
+  it('offers to record a walk-in by name when no account uses the email', async () => {
+    const html = await page({
+      type: 'BP',
+      parcel: world.parcelId,
+      applicant: 'walk.in@alderpond.example',
+    })
+    expect(html).toContain('No account uses walk.in@alderpond.example.')
+    expect(html).toContain('Applicant name')
+    expect(html).toContain('Take the application')
   })
 
   it('changes the lead line as the steps are chosen', async () => {
-    expect(await page({})).toContain('Choose the permit type, then find the parcel.')
+    expect(await page({})).toContain('Choose what the applicant came in for, then find the parcel.')
     const typed = await page({ type: 'EL' })
     expect(typed).toContain('Find the parcel the permit is for.')
-    expect(typed).not.toContain('Choose the permit type')
+    expect(typed).not.toContain('Choose what the applicant came in for')
     const full = await page({ type: 'EL', parcel: world.parcelId })
     expect(full).toContain('Fill in the details, take payment, then issue and print the permit.')
     expect(full).not.toContain('find the parcel.')

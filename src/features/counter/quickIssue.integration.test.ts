@@ -93,7 +93,7 @@ describe('quickIssue claim link', () => {
       { applicationId: r.value.applicationId },
       signal,
     )
-    expect(sent).toEqual({ ok: false, error: 'no_contractor_email' })
+    expect(sent).toEqual({ ok: false, error: 'no_party_email' })
     expect(mail.sent).toEqual([])
   })
 

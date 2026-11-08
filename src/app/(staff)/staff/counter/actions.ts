@@ -29,7 +29,7 @@ const CLAIM_COPY = {
   forbidden: errorCopy('forbidden'),
   rate_limited: 'Too many claim links were sent for this project. Try again later.',
   send_failed: 'The email could not be sent. Try again.',
-  no_contractor_email: 'The contractor has no email address on this permit.',
+  no_party_email: 'The contractor has no email address on this permit.',
 } as const
 
 async function linksFor(result: QuickIssueResult): Promise<CounterLinks | null> {

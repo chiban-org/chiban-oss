@@ -25,6 +25,7 @@ export interface FormRendererProps {
   errors: Record<string, string>
   onChange: (key: string, value: FormValue) => void
   addressChecks?: boolean
+  includeStaffOnly?: boolean
 }
 
 const INPUT_TYPES: Partial<Record<FormField['type'], string>> = {
@@ -235,11 +236,18 @@ export function FormEntry(props: EntryProps) {
   return <FieldRow {...props} />
 }
 
-export function FormRenderer({ form, values, errors, onChange, addressChecks }: FormRendererProps) {
+export function FormRenderer({
+  form,
+  values,
+  errors,
+  onChange,
+  addressChecks,
+  includeStaffOnly = false,
+}: FormRendererProps) {
   return (
     <div className="flex flex-col gap-5">
       {form.fields
-        .filter((f) => f.staffOnly !== true)
+        .filter((f) => includeStaffOnly || f.staffOnly !== true)
         .filter((f) => f.showIf === undefined || evaluateCondition(f.showIf, values))
         .map((field) => (
           <FormEntry

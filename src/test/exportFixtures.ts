@@ -138,6 +138,12 @@ const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
         'Coverage findings', '[]'::jsonb, gen_random_uuid() from hearings limit 1`,
   },
   {
+    table: 'counter_intakes',
+    statement: sql`insert into counter_intakes (application_id, applicant_party_id, taken_by)
+      select a.id, pp.id, a.created_by from applications a
+      join project_parties pp on pp.project_id = a.project_id limit 1`,
+  },
+  {
     table: 'processor_events',
     statement: sql`insert into processor_events (processor_account_id, event_id, type, raw)
       select id, 'evt_export', 'charge.succeeded', '{}'::jsonb from processor_accounts limit 1`,
