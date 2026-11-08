@@ -109,9 +109,7 @@ export function ResultPanel({ record }: { record: InspectionRecord }) {
         {items.map((item) => (
           <li key={item.key} className="record-item flex flex-col gap-1">
             <span>{`${item.label}: ${item.outcome === null ? 'Not recorded' : OUTCOME[item.outcome]}`}</span>
-            {item.note === '' ? null : (
-              <span className="text-ink-secondary">{item.note}</span>
-            )}
+            {item.note === '' ? null : <span className="text-ink-secondary">{item.note}</span>}
           </li>
         ))}
       </ul>
