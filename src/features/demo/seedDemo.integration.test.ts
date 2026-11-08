@@ -401,7 +401,7 @@ describe('seeded inspections', () => {
 
   it('seeded schedule board lists one unscheduled portal request', async () => {
     const staff = await actorOf('staff')
-    const board = await loadScheduleBoard(handle.db, staff, signal, DEMO_SEED_INSTANT)
+    const board = await loadScheduleBoard(handle.db, staff, signal, { now: DEMO_SEED_INSTANT })
     if (!board.ok) throw new Error('board')
     expect(board.value.requests).toHaveLength(1)
     expect(board.value.requests[0]?.channel).toBe('portal')

@@ -85,8 +85,22 @@ describe('listOwedResults', () => {
   })
 
   it('counts them on the schedule board', async () => {
-    const board = await loadScheduleBoard(handle.db, clerk, signal, INSPECTION_NOW)
+    const board = await loadScheduleBoard(handle.db, clerk, signal, { now: INSPECTION_NOW })
     if (!board.ok) throw new Error('forbidden')
     expect(board.value.owedCount).toBe(3)
+  })
+
+  it('leaves owed bookings off the board unless one is asked for by id', async () => {
+    const plain = await loadScheduleBoard(handle.db, clerk, signal, { now: INSPECTION_NOW })
+    if (!plain.ok) throw new Error('forbidden')
+    expect(plain.value.scheduledAhead.map((r) => r.inspectionId)).not.toContain(oldest)
+    const pinned = await loadScheduleBoard(handle.db, clerk, signal, {
+      now: INSPECTION_NOW,
+      pinnedId: oldest,
+    })
+    if (!pinned.ok) throw new Error('forbidden')
+    const row = pinned.value.scheduledAhead.find((r) => r.inspectionId === oldest)
+    expect(row?.scheduledFor).toMatch(/, result owed$/)
+    expect(pinned.value.scheduledAhead.map((r) => r.inspectionId)).not.toContain(newest)
   })
 })

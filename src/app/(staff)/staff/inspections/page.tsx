@@ -30,7 +30,7 @@ export default async function ScheduleBoardPage({
 }) {
   const { number, reinspect = '', request = null } = await searchParams
   const ctx = await requireStaffContext()
-  const loaded = await loadScheduleBoard(ctx.db, ctx.actor, ctx.signal)
+  const loaded = await loadScheduleBoard(ctx.db, ctx.actor, ctx.signal, { pinnedId: request })
   if (!loaded.ok) return <NoPermission title="Inspections" action="schedule inspections" />
   const board = loaded.value
   return (

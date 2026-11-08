@@ -48,13 +48,31 @@ export interface ScheduleBoardData {
   outsidePhoneHours: boolean
 }
 
+function bookingText(
+  row: {
+    id: string
+    scheduledDate: string | null
+    startMinute: number | null
+    inspectorUserId: string | null
+  },
+  context: { today: CivilDate; pinnedId: string | null; names: ReadonlyMap<string, string> },
+): string | null {
+  if (row.scheduledDate === null || row.startMinute === null) return null
+  const owed = row.scheduledDate < context.today
+  if (owed && row.id !== context.pinnedId) return null
+  const who = context.names.get(row.inspectorUserId ?? '') ?? 'Inspector'
+  const booked = `${formatCivilDate(row.scheduledDate)} at ${minutesToClock(row.startMinute)}, ${who}`
+  return owed ? `${booked}, result owed` : booked
+}
+
 export async function loadScheduleBoard(
   db: DbOrTx,
   actor: Actor,
   signal: AbortSignal,
-  now: Date = new Date(),
+  options: { now?: Date; pinnedId?: string | null } = {},
 ): Promise<Result<ScheduleBoardData, 'forbidden'>> {
   signal.throwIfAborted()
+  const now = options.now ?? new Date()
   const allowed = await requireCapability(db, actor.userId, 'inspection.schedule', signal)
   if (!allowed.ok) return err('forbidden')
   const settings = await getInspectionSettings(db, signal)
@@ -76,7 +94,11 @@ export async function loadScheduleBoard(
   const requests: BoardRequestRow[] = []
   const scheduledAhead: ScheduleBoardData['scheduledAhead'] = []
   const names = new Map(inspectorRows.map((i) => [i.userId, i.name]))
+  const pinnedId = options.pinnedId ?? null
   for (const row of waiting) {
+    const scheduledFor =
+      row.status === 'requested' ? null : bookingText(row, { today, pinnedId, names })
+    if (row.status !== 'requested' && scheduledFor === null) continue
     const site = await loadSiteInfo(db, row.applicationId, now, signal)
     if (site === null) continue
     const entry = {
@@ -90,14 +112,8 @@ export async function loadScheduleBoard(
       address: honestText(site.siteAddress, 'Address not on file'),
       contactName: row.contactName,
     }
-    if (row.status === 'requested') requests.push(entry)
-    else if (row.scheduledDate !== null && row.scheduledDate >= today && row.startMinute !== null) {
-      const who = names.get(row.inspectorUserId ?? '') ?? 'Inspector'
-      scheduledAhead.push({
-        ...entry,
-        scheduledFor: `${formatCivilDate(row.scheduledDate)} at ${minutesToClock(row.startMinute)}, ${who}`,
-      })
-    }
+    if (scheduledFor === null) requests.push(entry)
+    else scheduledAhead.push({ ...entry, scheduledFor })
   }
   const owed = await listOwedResults(db, actor, today, signal)
   return ok({
