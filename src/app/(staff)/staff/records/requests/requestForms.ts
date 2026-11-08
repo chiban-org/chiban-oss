@@ -96,6 +96,12 @@ export const firstResponseForm = (today: CivilDate) =>
     })
     .superRefine(refuseMisplacedResponseFields)
 
+export const denyRequestForm = (today: CivilDate) =>
+  z.object({
+    requestId: requestIdField(),
+    deniedOn: civilDate('the date of the denial', { latest: today }),
+  })
+
 export const withholdingForm = z
   .object({
     requestId: requestIdField(),

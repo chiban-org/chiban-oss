@@ -11,16 +11,19 @@ export const RECORDS_COPY: Record<string, string> = {
   already_responded: 'This request already has a first response.',
   withholding_required:
     'Record at least one withheld record with its exemption before denying a request.',
+  not_awaiting_decision: 'This request is not waiting on a decision after a time statement.',
+  before_statement: 'The denial date cannot be before the time statement.',
   stated_date_required: 'Enter a date on or after the response date for the time the town needs.',
   website_url_required: 'Enter the web address where the records are posted.',
   release_required:
-    'Nothing has been released yet. Approve and release the records under Releases; the first release records the response.',
+    'Nothing has been released yet. Choose Release the records now to approve and release them; the first release records the response.',
   unknown_exemption: 'Choose an exemption from the list for every withheld or redacted record.',
   citation_required: 'Enter the law that makes the record confidential.',
   explanation_required:
     'Explain in a sentence or two how the exemption applies (at least 20 characters).',
   not_open: 'This request is closed.',
   approval_missing: 'Choose approved versions that belong to the documents you are releasing.',
+  duplicate_document: 'Choose one version of each document for a release.',
   approval_revoked:
     'One of the approvals was revoked. Approve the version again before releasing it.',
   redaction_not_cited:

@@ -1,9 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import {
-  requestChipStatus,
-  requestNextStep,
-  requestRowChipStatus,
-} from '@/features/rtk/requestStatus'
+import { requestChipStatus, requestRowChipStatus } from '@/features/rtk/requestStatus'
 import type { RtkRequestView } from '@/features/rtk/requests'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -19,41 +15,6 @@ function view(patch: Partial<RtkRequestView>): RtkRequestView {
     ...patch,
   } as RtkRequestView
 }
-
-describe('requestNextStep', () => {
-  it('asks for the first response while the clock runs, leaving the date to the deadline card', () => {
-    expect(requestNextStep(view({}))).toBe('Send the first response before the deadline.')
-  })
-
-  it('says the first response is late once the date has passed', () => {
-    const late = view({
-      current: { kind: 'overdue', dueOn: '2026-10-27' as CivilDate, daysOverdue: 7 },
-    })
-    expect(requestNextStep(late)).toBe('The deadline has passed. Send the first response now.')
-  })
-
-  it('points at the date the town stated while waiting on it', () => {
-    const waiting = view({
-      status: 'awaiting_decision',
-      firstResponseKind: 'time_statement',
-      statedDue: due('2026-12-01'),
-    })
-    expect(requestNextStep(waiting)).toBe(
-      'Release the records or deny the request by the date the town stated.',
-    )
-  })
-
-  it('asks to release and close once the town has responded', () => {
-    expect(requestNextStep(view({ status: 'responded', firstResponseKind: 'denied' }))).toBe(
-      'Release any approved records, then close the request.',
-    )
-  })
-
-  it('has nothing to do for a closed or withdrawn request', () => {
-    expect(requestNextStep(view({ status: 'closed' }))).toBeNull()
-    expect(requestNextStep(view({ status: 'withdrawn' }))).toBeNull()
-  })
-})
 
 describe('requestChipStatus', () => {
   it('marks an open request past its date as overdue and a responded one as passed', () => {

@@ -24,6 +24,12 @@ export const RTK_RESPONSE_LABELS: Record<RtkResponseKind, string> = {
   time_statement: 'Written statement of the time needed',
 }
 
+const RESPONSE_LABELS = new Map<string, string>(Object.entries(RTK_RESPONSE_LABELS))
+
+export function responseLabel(kind: string | null): string | null {
+  return kind === null ? null : (RESPONSE_LABELS.get(kind) ?? null)
+}
+
 export const RTK_METHOD_LABELS = {
   inspection: 'Inspection at the town office',
   paper: 'Paper copy',

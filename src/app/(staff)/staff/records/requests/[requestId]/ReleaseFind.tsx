@@ -1,43 +1,48 @@
-import Link from 'next/link'
 import { RecentParcelSearches } from '@/components/parcels/RecentParcelSearches'
 import { TextField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
+import type { ReleaseCandidate } from '@/features/rtk/requestPage'
+import { FindCount } from './FindCount'
+import { FindResults } from './FindResults'
 
 export interface FindContext {
   requestId: string
   find: string
   userId: string
-  example: string | null
+  timeZone: string
+  canRedact: boolean
 }
 
-export function ReleaseFind({ requestId, find, userId, example }: FindContext) {
-  const path = `/staff/records/requests/${requestId}`
-  const query = find.trim()
+export function ReleaseFind({
+  context,
+  candidates,
+}: {
+  context: FindContext
+  candidates: readonly ReleaseCandidate[]
+}) {
+  const path = `/staff/records/requests/${context.requestId}`
+  const query = context.find.trim()
   return (
-    <div className="space-y-2">
-      <form role="search" method="get" action={path} className="space-y-4">
+    <div data-slot="release-find" id="release-find" className="flex flex-col gap-3">
+      <form role="search" method="get" action={path} className="flex flex-col gap-3">
         <TextField
           label="Find a document by title or application or case number"
           name="find"
-          defaultValue={find}
+          defaultValue={context.find}
         />
-        <Button type="submit" variant="outline">
+        <Button type="submit" variant="outline" className="self-start">
           Find
         </Button>
       </form>
-      {example === null ? null : (
-        <p className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="font-semibold text-muted-foreground">Try</span>
-          <Link href={`${path}?find=${encodeURIComponent(example)}`}>{example}</Link>
-        </p>
-      )}
       <RecentParcelSearches
-        userId={userId}
+        userId={context.userId}
         record={query === '' ? null : query}
         hrefBase={path}
         param="find"
-        list="recentReleaseSearches"
+        list={`recentReleaseSearches.${context.requestId}`}
       />
+      <FindCount query={query} count={candidates.length} />
+      <FindResults context={context} candidates={candidates} />
     </div>
   )
 }

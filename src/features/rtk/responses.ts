@@ -15,17 +15,15 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { computeSubjectDue, type SubjectDue } from '@/features/clocks/subjectDue'
-import { attachDocument } from '@/features/documents/attach'
-import { storeGeneratedBytes } from '@/features/files/ingest'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { rtkDueContext } from '@/features/rtk/dueContext'
-import { buildResponseLetter } from '@/features/rtk/responseLetter'
+import { fileRequestLetter } from '@/features/rtk/requestLetter'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, daysBetween } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
-export const RTK_LETTER_SERIES = 'nh.rs.correspondence_administrative'
+export { RTK_LETTER_SERIES } from '@/features/rtk/requestLetter'
 
 const ResponseSchema = z.object({
   requestId: z.string().uuid(),
@@ -155,23 +153,14 @@ export async function recordFirstResponse(
           rowVersion: request.rowVersion + 1,
         })
         .where(eq(rtkRequests.id, request.id))
-      const bytes = await buildResponseLetter(tx, request.id, signal)
-      const stored = await storeGeneratedBytes(tx, store, bytes, 'application/pdf', signal)
-      const attached = await attachDocument(
+      const letterDocumentId = await fileRequestLetter(
         tx,
-        actor,
+        { store, actor, signal },
         {
-          target: { kind: 'rtk_request', id: request.id },
+          requestId: request.id,
           title: `Response to request ${request.number}`,
-          docKind: 'rtk_letter',
-          file: {
-            sha256: stored.sha256,
-            filename: `${request.number}-response.pdf`,
-            contentType: 'application/pdf',
-          },
-          seriesKey: RTK_LETTER_SERIES,
+          filename: `${request.number}-response.pdf`,
         },
-        signal,
       )
       await writeAudit(
         tx,
@@ -184,7 +173,7 @@ export async function recordFirstResponse(
         },
         signal,
       )
-      return ok({ letterDocumentId: attached.documentId })
+      return ok({ letterDocumentId })
     },
   )
 }

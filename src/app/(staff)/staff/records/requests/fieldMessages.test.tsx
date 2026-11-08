@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { RtkRequestView } from '@/features/rtk/requests'
-import { expectGroupRefusal, expectRefusalBeside } from '@/test/besideField'
+import { expectRefusalBeside } from '@/test/besideField'
 import type { CivilDate } from '@/types/civilDate'
 
 const refusal = vi.hoisted(() => ({ field: '', message: '' }))
@@ -23,18 +23,21 @@ vi.mock('./actions', () => ({
   withholdingAction: answer,
   createReleaseAction: answer,
   closeRequestAction: answer,
+  denyRequestAction: answer,
 }))
-vi.mock('@/components/enforcement/DueLine', () => ({ DueLine: () => null }))
 vi.mock('../renditionActions', () => ({
   approveRenditionAction: answer,
   revokeApprovalAction: answer,
 }))
 
 const { LogRequest } = await import('./LogRequestForm')
-const { ResponseSection } = await import('./[requestId]/ResponseSection')
+const { FirstResponseForm } = await import('./[requestId]/FirstResponseForm')
 const { WithholdingsSection } = await import('./[requestId]/WithholdingsSection')
 const { ReleaseSection } = await import('./[requestId]/ReleaseSection')
-const { RequestRail } = await import('./[requestId]/RequestRail')
+const { FindResults } = await import('./[requestId]/FindResults')
+const { PendingRelease } = await import('./[requestId]/PendingRelease')
+const { CloseStepForm } = await import('./[requestId]/CloseForms')
+const { DenyStep } = await import('./[requestId]/DenyStep')
 
 afterEach(cleanup)
 
@@ -67,6 +70,19 @@ const request = {
   responseDue: null,
 } as unknown as RtkRequestView
 
+const approval = {
+  approvalId: 'a1',
+  documentId: 'd1',
+  versionId: 'v1',
+  title: 'Letter',
+  role: 'original',
+  revokedAt: null,
+  approvedAt: new Date('2026-11-02T15:00:00Z'),
+  versionCreatedAt: new Date('2026-11-01T15:00:00Z'),
+  releasedIn: null,
+  cited: true,
+}
+
 function open(summary: string) {
   fireEvent.click(screen.getByText(summary, { selector: 'summary' }))
 }
@@ -84,9 +100,16 @@ describe('request forms show a refusal beside its field', () => {
 
   it('the charge amount on a time statement', async () => {
     refuseWith('costDollars', 'Enter the charge.')
-    inProvider(<ResponseSection request={request} today={TODAY} working />)
-    open('Record the first response')
-    fireEvent.change(screen.getByLabelText(/^Response/), { target: { value: 'time_statement' } })
+    inProvider(
+      <FirstResponseForm
+        requestId={REQUEST_ID}
+        today={TODAY}
+        canDeny={false}
+        startOnRelease={false}
+        releaseStep={null}
+      />,
+    )
+    fireEvent.click(screen.getByRole('radio', { name: 'Written statement of the time needed' }))
     fireEvent.change(screen.getByLabelText(/^Date the town will respond by/), {
       target: { value: '2026-11-20' },
     })
@@ -118,50 +141,29 @@ describe('request forms show a refusal beside its field', () => {
         documentId: 'd1',
         title: 'Letter',
         context: 'Parcel',
+        originalVersionId: 'v1',
         versions: [
           { id: 'v1', role: 'original', filename: 'l.pdf', createdAt: '2026-11-01T10:00:00Z' },
         ],
       },
     ]
-    const find = { requestId: REQUEST_ID, find: 'Letter', userId: 'u1', example: null }
-    inProvider(
-      <ReleaseSection
-        find={find}
-        releases={[]}
-        approvals={[]}
-        candidates={candidates}
-        today={TODAY}
-        canManage
-        working
-      />,
-    )
+    const context = {
+      requestId: REQUEST_ID,
+      find: 'Letter',
+      userId: 'u1',
+      timeZone: 'America/New_York',
+      canRedact: true,
+    }
+    inProvider(<FindResults context={context} candidates={candidates} />)
     const statement = screen.getByRole('textbox', { name: /What you checked/ })
     fireEvent.change(statement, { target: { value: ' ' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Approve for release' }))
+    fireEvent.click(screen.getByRole('button', { name: /^Approve Letter/ }))
     await expectRefusalBeside(statement, 'Enter a review statement.')
   })
 
-  it('the revoke reason and the release list', async () => {
-    const approval = {
-      approvalId: 'a1',
-      documentId: 'd1',
-      versionId: 'v1',
-      title: 'Letter',
-      role: 'original',
-      revokedAt: null,
-    }
-    const find = { requestId: REQUEST_ID, find: '', userId: 'u1', example: null }
-    const props = {
-      find,
-      releases: [],
-      approvals: [approval],
-      candidates: [],
-      today: TODAY,
-      canManage: true,
-      working: true,
-    }
+  it('the revoke reason', async () => {
     refuseWith('reason', 'Enter a reason of at least 10 characters.')
-    inProvider(<ReleaseSection {...props} />)
+    inProvider(<ReleaseSection releases={[]} approvals={[approval]} canManage findTool={null} />)
     open('Revoke approval')
     const reason = screen.getByRole('textbox', { name: /Why it is being revoked/ })
     fireEvent.change(reason, { target: { value: 'short' } })
@@ -169,74 +171,40 @@ describe('request forms show a refusal beside its field', () => {
     await waitFor(() => expect(reason.getAttribute('aria-invalid')).toBe('true'))
   })
 
-  it('the release list, beside its records', async () => {
-    const message = 'Tick at least one approved record to release.'
-    refuseWith('items', message)
-    const approval = {
-      approvalId: 'a1',
-      documentId: 'd1',
-      versionId: 'v1',
-      title: 'Letter',
-      role: 'original',
-      revokedAt: null,
-    }
-    const find = { requestId: REQUEST_ID, find: '', userId: 'u1', example: null }
+  it('the release date', async () => {
+    const message = 'Enter the date released between January 1, 1900 and November 6, 2026.'
+    refuseWith('releasedOn', message)
     inProvider(
-      <ReleaseSection
-        find={find}
-        releases={[]}
-        approvals={[approval]}
-        candidates={[]}
+      <PendingRelease
+        requestId={REQUEST_ID}
+        pending={[approval]}
         today={TODAY}
-        canManage
-        working
+        timeZone="America/New_York"
       />,
     )
-    open('Release approved records')
-    fireEvent.click(screen.getByRole('button', { name: 'Release' }))
-    const box = await screen.findByRole('checkbox', { name: /Letter/ })
-    await expectGroupRefusal(box, message)
+    fireEvent.click(screen.getByRole('button', { name: 'Release 1 record' }))
+    await expectRefusalBeside(screen.getByLabelText(/^Date released/), message)
   })
 
-  it('the release date', async () => {
-    refuseWith(
-      'releasedOn',
-      'Enter the date released between January 1, 1900 and November 6, 2026.',
-    )
-    const approval = {
-      approvalId: 'a1',
-      documentId: 'd1',
-      versionId: 'v1',
-      title: 'Letter',
-      role: 'original',
-      revokedAt: null,
-    }
-    const find = { requestId: REQUEST_ID, find: '', userId: 'u1', example: null }
-    inProvider(
-      <ReleaseSection
-        find={find}
-        releases={[]}
-        approvals={[approval]}
-        candidates={[]}
-        today={TODAY}
-        canManage
-        working
-      />,
-    )
-    open('Release approved records')
-    fireEvent.click(screen.getByRole('checkbox', { name: /Letter/ }))
-    fireEvent.click(screen.getByRole('button', { name: 'Release' }))
-    await expectRefusalBeside(
-      screen.getByLabelText(/^Date released/),
-      'Enter the date released between January 1, 1900 and November 6, 2026.',
-    )
+  it('the denial date, before the confirm opens', async () => {
+    const message = 'The denial date cannot be before the time statement.'
+    refuseWith('deniedOn', message)
+    const waiting = {
+      ...request,
+      status: 'awaiting_decision',
+      withholdings: [{ id: 'w1' }],
+    } as unknown as RtkRequestView
+    inProvider(<DenyStep request={waiting} today={TODAY} />)
+    open('Deny the request')
+    fireEvent.click(screen.getByRole('button', { name: 'Deny the request' }))
+    await expectRefusalBeside(screen.getByLabelText(/^Date of the denial/), message)
+    expect(screen.queryByRole('alertdialog')).toBeNull()
   })
 
   it('how to close the request, before the confirm opens', async () => {
     refuseWith('to', 'Choose how to close it.')
-    inProvider(<RequestRail request={request} today={TODAY} canManage />)
-    open('Close the request')
-    fireEvent.click(screen.getByRole('button', { name: 'Close request' }))
+    inProvider(<CloseStepForm request={request} />)
+    fireEvent.click(screen.getByRole('button', { name: 'Close the request' }))
     await expectRefusalBeside(screen.getByLabelText(/^Close it as/), 'Choose how to close it.')
     expect(screen.queryByRole('alertdialog')).toBeNull()
   })

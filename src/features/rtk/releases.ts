@@ -19,11 +19,8 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
-import { attachDocument } from '@/features/documents/attach'
-import { storeGeneratedBytes } from '@/features/files/ingest'
 import type { MailTransport } from '@/features/mail/transport'
-import { buildResponseLetter } from '@/features/rtk/responseLetter'
-import { RTK_LETTER_SERIES } from '@/features/rtk/responses'
+import { fileRequestLetter } from '@/features/rtk/requestLetter'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -58,6 +55,7 @@ export type ReleaseError =
   | 'before_received'
   | 'approval_missing'
   | 'approval_revoked'
+  | 'duplicate_document'
   | 'redaction_not_cited'
   | 'recipient_required'
   | 'send_failed'
@@ -194,6 +192,9 @@ export async function createRelease(
   if (value.method === 'electronic_link' && value.recipientEmail === undefined) {
     return err('recipient_required')
   }
+  if (new Set(value.items.map((i) => i.documentId)).size !== value.items.length) {
+    return err('duplicate_document')
+  }
   return await transactionResult<{ releaseId: string; sequence: number }, ReleaseError>(
     db,
     async (tx) => {
@@ -259,28 +260,16 @@ export async function createRelease(
           })
           .where(eq(rtkRequests.id, request.id))
       }
-      const bytes = await buildResponseLetter(tx, request.id, signal)
-      const stored = await storeGeneratedBytes(tx, store, bytes, 'application/pdf', signal)
-      const attached = await attachDocument(
+      const letterDocumentId = await fileRequestLetter(
         tx,
-        actor,
+        { store, actor, signal },
         {
-          target: { kind: 'rtk_request', id: request.id },
+          requestId: request.id,
           title: `Response to request ${request.number}, release ${sequence}`,
-          docKind: 'rtk_letter',
-          file: {
-            sha256: stored.sha256,
-            filename: `${request.number}-release-${sequence}.pdf`,
-            contentType: 'application/pdf',
-          },
-          seriesKey: RTK_LETTER_SERIES,
+          filename: `${request.number}-release-${sequence}.pdf`,
         },
-        signal,
       )
-      await tx
-        .update(rtkReleases)
-        .set({ letterDocumentId: attached.documentId })
-        .where(eq(rtkReleases.id, releaseId))
+      await tx.update(rtkReleases).set({ letterDocumentId }).where(eq(rtkReleases.id, releaseId))
       if (token !== null && value.recipientEmail !== undefined) {
         const sent = await sendLink(
           mail,

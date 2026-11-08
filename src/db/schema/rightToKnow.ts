@@ -53,6 +53,7 @@ export const rtkRequests = pgTable(
     firstResponseOn: date('first_response_on', { mode: 'string' }),
     firstResponseKind: text('first_response_kind', { enum: RTK_RESPONSE_KINDS }),
     firstResponseUrl: text('first_response_url'),
+    deniedOn: date('denied_on', { mode: 'string' }),
     createdBy: uuid('created_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     rowVersion: integer('row_version').notNull().default(1),
