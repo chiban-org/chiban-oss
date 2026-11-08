@@ -75,12 +75,12 @@ function usedPhrase(count: number): string {
 
 function TypedNotListed({ refs }: { refs: TypedRef[] }) {
   return (
-    <section aria-labelledby="typed-not-listed" className="mt-8 space-y-3">
+    <section data-plain aria-labelledby="typed-not-listed" className="mt-8 space-y-3">
       <h2 id="typed-not-listed">Typed in findings, not on the list</h2>
       {refs.length === 0 ? (
         <p>Every section typed in a finding is on this list or the state building code list.</p>
       ) : (
-        <ul className="m-0 list-none space-y-2 p-0">
+        <ul className="list-none space-y-2 p-0">
           {refs.map((r) => (
             <li
               key={`${r.kind}:${r.ref}`}

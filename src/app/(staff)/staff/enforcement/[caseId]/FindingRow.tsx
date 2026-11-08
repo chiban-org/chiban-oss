@@ -135,19 +135,19 @@ export function FindingRow({
         </p>
         <StatusChip status={CHIP[f.status]} label={FINDING_STATUS_LABELS[f.status]} />
       </div>
-      <p className="m-0">{`${f.facts} Inspected ${formatCivilDate(f.inspectionDate)}, found by ${detail.names[f.foundBy] ?? 'staff'}.`}</p>
-      {line === null ? null : <p className="m-0 text-muted-foreground">{line}</p>}
+      <p>{`${f.facts} Inspected ${formatCivilDate(f.inspectionDate)}, found by ${detail.names[f.foundBy] ?? 'staff'}.`}</p>
+      {line === null ? null : <p className="text-muted-foreground">{line}</p>}
       {used.length === 0 ? null : (
-        <p className="m-0 text-sm text-muted-foreground">{`${used.join('. ')}.`}</p>
+        <p className="text-sm text-muted-foreground">{`${used.join('. ')}.`}</p>
       )}
       {manage && f.status === 'open' ? (
-        <div className="row-actions">
+        <div className="flex flex-wrap items-start gap-2 pt-1">
           {mayEditFinding(f, uses) ? <EditFinding finding={f} detail={detail} /> : null}
           <details className="more-actions">
             <summary className="text-sm" aria-label={`More actions for ${findingTitle(f)}`}>
               More
             </summary>
-            <div className="row-actions">
+            <div className="flex flex-wrap gap-2 pt-2">
               <MarkCorrected finding={f} detail={detail} />
               <Withdraw finding={f} />
             </div>

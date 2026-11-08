@@ -37,7 +37,7 @@ export function FindingChoices({ legend, choices }: { legend: string; choices: F
                 {...(errorId === undefined ? {} : { 'aria-invalid': true })}
               />
               {noteId === undefined ? null : (
-                <p id={noteId} className="m-0 ps-6 text-sm text-muted-foreground">
+                <p id={noteId} className="ps-6 text-sm text-muted-foreground">
                   {choice.note}
                 </p>
               )}
