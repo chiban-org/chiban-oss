@@ -1,6 +1,7 @@
 'use server'
 
 import { getMailTransport } from '@/features/mail/transport'
+import { denyRequest } from '@/features/rtk/denial'
 import { createRelease } from '@/features/rtk/releases'
 import { closeRequest, logRequest } from '@/features/rtk/requests'
 import { recordFirstResponse } from '@/features/rtk/responses'
@@ -12,6 +13,7 @@ import { runStaffFormToday } from '@/server/formInputToday'
 import { recordsOutcome } from '@/server/recordsAction'
 import {
   closeRequestForm,
+  denyRequestForm,
   firstResponseForm,
   logRequestForm,
   releaseForm,
@@ -77,6 +79,19 @@ export async function firstResponseAction(formData: FormData): Promise<ActionRes
           stated_date_required: 'statedDate',
         },
       ),
+  )
+}
+
+export async function denyRequestAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffFormToday(formData, denyRequestForm, async ({ db, actor, signal }, input) =>
+    recordsOutcome(
+      await denyRequest(
+        { db, store: getObjectStore(), actor, signal },
+        { requestId: input.requestId, deniedOn: input.deniedOn },
+      ),
+      'Denial recorded and the letter filed.',
+      { future_date: 'deniedOn', before_statement: 'deniedOn' },
+    ),
   )
 }
 

@@ -69,6 +69,9 @@ function responseBlocks(request: Request): PdfBlock[] {
   const kind = request.firstResponseKind
   const blocks: PdfBlock[] = []
   if (kind !== null) blocks.push({ kind: 'paragraph', text: KIND_SENTENCES[kind] ?? '' })
+  if (request.deniedOn !== null && kind !== 'denied') {
+    blocks.push({ kind: 'paragraph', text: KIND_SENTENCES.denied ?? '' })
+  }
   if (kind === 'website_reference' && request.firstResponseUrl !== null) {
     blocks.push({
       kind: 'fields',

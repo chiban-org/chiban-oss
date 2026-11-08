@@ -2215,6 +2215,7 @@ File: `data/rtk_requests.ndjson`. Ordered by id.
 - `first_response_on`: date, nullable
 - `first_response_kind`: text, nullable
 - `first_response_url`: text, nullable
+- `denied_on`: date, nullable
 - `created_by`: uuid
 - `created_at`: timestamp with time zone
 - `row_version`: integer
