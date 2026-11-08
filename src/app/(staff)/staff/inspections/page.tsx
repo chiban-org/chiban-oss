@@ -14,14 +14,14 @@ export const metadata: Metadata = { title: 'Inspections' }
 export const dynamic = 'force-dynamic'
 
 const INSPECTIONS_LEAD =
-  'Book requested inspections into open inspector times: choose a request, then a time. Requests are listed oldest first, then the inspections already booked.'
+  'Book requested inspections into open inspector times: choose a request, pick a time, then confirm. Requests are listed oldest first, then the inspections booked for today or later.'
 
 export default async function ScheduleBoardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ number?: string; reinspect?: string }>
+  searchParams: Promise<{ number?: string; reinspect?: string; request?: string }>
 }) {
-  const { number, reinspect = '' } = await searchParams
+  const { number, reinspect = '', request = null } = await searchParams
   const ctx = await requireStaffContext()
   const loaded = await loadScheduleBoard(ctx.db, ctx.actor, ctx.signal)
   if (!loaded.ok) return <NoPermission title="Inspections" action="schedule inspections" />
@@ -46,6 +46,7 @@ export default async function ScheduleBoardPage({
           <TakeRequestSection data={await loadTakeRequest(ctx, number, reinspect)} board={board} />
         }
         scheduleAction={scheduleInspectionAction}
+        initialChosenId={request}
       />
     </main>
   )

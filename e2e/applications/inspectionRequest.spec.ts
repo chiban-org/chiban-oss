@@ -48,8 +48,8 @@ test.describe('taking an inspection request at the counter', () => {
 
       await expect(
         page
-          .getByRole('listbox', { name: 'Requests' })
-          .getByRole('option')
+          .getByRole('region', { name: 'Requests and bookings' })
+          .getByRole('listitem')
           .filter({ hasText: `${DECK_NUMBER}, Footing` }),
       ).toHaveCount(1)
       const row = await db.one<{ status: string; channel: string; contact_phone: string }>(

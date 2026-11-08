@@ -1,9 +1,17 @@
 'use client'
 
-import { type ReactNode, useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import { RequestQueue } from '@/components/inspections/RequestQueue'
 import { SlotDayRow, type SlotPick, WeekSwitcher } from '@/components/inspections/SlotWeeks'
-import { firstOpenWeek, groupSlotWeeks, weekStart } from '@/features/inspections/slotWeeks'
+import { Button } from '@/components/ui/button'
+import {
+  firstOpenWeek,
+  groupSlotWeeks,
+  weekdayName,
+  weekStart,
+} from '@/features/inspections/slotWeeks'
+import { minutesToClock } from '@/features/inspections/zonedTime'
+import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 
 export interface BoardRequest {
@@ -41,6 +49,50 @@ function pickPrompt(request: BoardRequest | undefined): string {
     : `Pick a time for ${request.applicationNumber}, ${request.typeLabel}.`
 }
 
+interface PickedTime {
+  day: BoardDay
+  start: number
+}
+
+function ReviewRow({
+  picked,
+  booking,
+  onBook,
+  onCancel,
+}: {
+  picked: PickedTime
+  booking: boolean
+  onBook: () => void
+  onCancel: () => void
+}) {
+  const { day, start } = picked
+  return (
+    <div
+      role="group"
+      aria-label="Review the booking"
+      className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-md bg-canvas px-3 py-3"
+    >
+      <p className="m-0 font-semibold">
+        {`Book ${weekdayName(day.date)}, ${formatCivilDate(day.date)} at ${minutesToClock(start)} with ${day.inspectorName}.`}
+      </p>
+      <div className="flex gap-2">
+        <Button type="button" disabled={booking} onClick={onBook} className="min-h-11">
+          {booking ? 'Booking' : 'Book'}
+        </Button>
+        <Button
+          type="button"
+          variant="ghost"
+          disabled={booking}
+          onClick={onCancel}
+          className="min-h-11"
+        >
+          Cancel
+        </Button>
+      </div>
+    </div>
+  )
+}
+
 function OpenSlots({
   days,
   today,
@@ -48,7 +100,12 @@ function OpenSlots({
   shown,
   onShow,
   onPick,
+  picked,
+  booking,
+  onBook,
+  onCancel,
   message,
+  promptRef,
 }: {
   days: BoardDay[]
   today: string
@@ -56,14 +113,23 @@ function OpenSlots({
   shown: CivilDate | null
   onShow: (start: CivilDate) => void
   onPick: SlotPick
+  picked: PickedTime | null
+  booking: boolean
+  onBook: () => void
+  onCancel: () => void
   message: string | null
+  promptRef: React.RefObject<HTMLParagraphElement | null>
 }) {
   const weeks = groupSlotWeeks(days, today as CivilDate)
   const week = weeks.find((w) => w.start === shown) ?? weeks[0]
   return (
     <section aria-label="Open slots" className="m-0 min-w-0">
       <h2>Open slots</h2>
-      <p className={chosen === undefined ? 'm-0 text-muted-foreground' : 'm-0 font-semibold'}>
+      <p
+        ref={promptRef}
+        tabIndex={-1}
+        className={chosen === undefined ? 'm-0 text-muted-foreground' : 'm-0 font-semibold'}
+      >
         {pickPrompt(chosen)}
       </p>
       {message === null ? null : <p role="status">{message}</p>}
@@ -75,7 +141,25 @@ function OpenSlots({
             <WeekSwitcher weeks={weeks} shown={week.start} onShow={onShow} />
             <ul className="m-0 list-none divide-y divide-hairline p-0">
               {week.days.map((day) => (
-                <SlotDayRow key={`${day.date}-${day.inspectorUserId}`} day={day} onPick={onPick} />
+                <SlotDayRow
+                  key={`${day.date}-${day.inspectorUserId}`}
+                  day={day}
+                  onPick={onPick}
+                  disabled={chosen === undefined || booking}
+                  preferred={chosen?.preferredDate === day.date}
+                  review={
+                    picked !== null &&
+                    picked.day.date === day.date &&
+                    picked.day.inspectorUserId === day.inspectorUserId ? (
+                      <ReviewRow
+                        picked={picked}
+                        booking={booking}
+                        onBook={onBook}
+                        onCancel={onCancel}
+                      />
+                    ) : null
+                  }
+                />
               ))}
             </ul>
           </div>
@@ -85,6 +169,12 @@ function OpenSlots({
   )
 }
 
+const NARROW = '(max-width: 1023px)'
+
+function isNarrow(): boolean {
+  return typeof window.matchMedia === 'function' && window.matchMedia(NARROW).matches
+}
+
 export function ScheduleBoard({
   requests,
   days,
@@ -92,35 +182,54 @@ export function ScheduleBoard({
   takeRequest = null,
   onSchedule,
   message,
+  initialChosenId = null,
 }: {
   requests: BoardRequest[]
   days: BoardDay[]
   today: string
   takeRequest?: ReactNode
-  onSchedule: (choice: ScheduleChoice) => void
+  onSchedule: (choice: ScheduleChoice) => Promise<boolean>
   message: string | null
+  initialChosenId?: string | null
 }) {
-  const [chosenId, setChosenId] = useState<string | null>(null)
-  const [shown, setShown] = useState<CivilDate | null>(() =>
-    firstOpenWeek(groupSlotWeeks(days, today as CivilDate)),
-  )
+  const initial = requests.find((r) => r.inspectionId === initialChosenId)
+  const [chosenId, setChosenId] = useState<string | null>(initial?.inspectionId ?? null)
+  const [picked, setPicked] = useState<PickedTime | null>(null)
+  const [booking, setBooking] = useState(false)
+  const [shown, setShown] = useState<CivilDate | null>(() => {
+    const weeks = groupSlotWeeks(days, today as CivilDate)
+    return preferredWeek(initial, days) ?? firstOpenWeek(weeks)
+  })
+  const promptRef = useRef<HTMLParagraphElement | null>(null)
   const chosen = requests.find((r) => r.inspectionId === chosenId)
   const choose = (request: BoardRequest) => {
     setChosenId(request.inspectionId)
-    const preferred = request.preferredDate
-    if (preferred === null) return
-    const start = weekStart(preferred as CivilDate)
-    if (days.some((d) => weekStart(d.date as CivilDate) === start)) setShown(start)
+    setPicked(null)
+    const week = preferredWeek(request, days)
+    if (week !== null) setShown(week)
+    if (isNarrow()) promptRef.current?.focus()
+  }
+  const showWeek = (start: CivilDate) => {
+    setPicked(null)
+    setShown(start)
   }
   const pick: SlotPick = (day, start) => {
-    if (chosen === undefined) return
-    onSchedule({
+    if (chosen !== undefined) setPicked({ day, start })
+  }
+  const book = async () => {
+    if (chosen === undefined || picked === null) return
+    setBooking(true)
+    const ok = await onSchedule({
       inspectionId: chosen.inspectionId,
       rowVersion: chosen.rowVersion,
-      date: day.date,
-      startMinute: start,
-      inspectorUserId: day.inspectorUserId,
+      date: picked.day.date,
+      startMinute: picked.start,
+      inspectorUserId: picked.day.inspectorUserId,
     })
+    setBooking(false)
+    if (!ok) return
+    setPicked(null)
+    setChosenId(null)
   }
 
   return (
@@ -134,10 +243,22 @@ export function ScheduleBoard({
         today={today}
         chosen={chosen}
         shown={shown}
-        onShow={setShown}
+        onShow={showWeek}
         onPick={pick}
+        picked={picked}
+        booking={booking}
+        onBook={() => void book()}
+        onCancel={() => setPicked(null)}
         message={message}
+        promptRef={promptRef}
       />
     </div>
   )
+}
+
+function preferredWeek(request: BoardRequest | undefined, days: BoardDay[]): CivilDate | null {
+  const preferred = request?.preferredDate ?? null
+  if (preferred === null) return null
+  const start = weekStart(preferred as CivilDate)
+  return days.some((d) => weekStart(d.date as CivilDate) === start) ? start : null
 }

@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import type { BoardDay } from '@/components/inspections/ScheduleBoard'
 import { Button } from '@/components/ui/button'
 import { openCountText, type SlotWeek, weekdayName } from '@/features/inspections/slotWeeks'
@@ -51,7 +52,7 @@ export function WeekSwitcher({
   )
 }
 
-function DayHeading({ day }: { day: BoardDay }) {
+function DayHeading({ day, preferred }: { day: BoardDay; preferred: boolean }) {
   return (
     <div className="min-w-0">
       <p className="m-0 font-semibold">
@@ -63,12 +64,25 @@ function DayHeading({ day }: { day: BoardDay }) {
         {day.freeStarts.length === 0 ? null : (
           <span className="tabular-nums">{openCountText(day.freeStarts.length)}</span>
         )}
+        {preferred ? <span className="font-semibold text-ink">Preferred day</span> : null}
       </p>
     </div>
   )
 }
 
-export function SlotDayRow({ day, onPick }: { day: BoardDay; onPick: SlotPick }) {
+export function SlotDayRow({
+  day,
+  onPick,
+  disabled,
+  preferred,
+  review,
+}: {
+  day: BoardDay
+  onPick: SlotPick
+  disabled: boolean
+  preferred: boolean
+  review: ReactNode
+}) {
   const full = day.freeStarts.length === 0
   return (
     <li
@@ -79,7 +93,7 @@ export function SlotDayRow({ day, onPick }: { day: BoardDay; onPick: SlotPick })
         full && 'text-muted-foreground',
       )}
     >
-      <DayHeading day={day} />
+      <DayHeading day={day} preferred={preferred} />
       {full ? (
         <p className="m-0 self-center">No open times</p>
       ) : (
@@ -91,6 +105,7 @@ export function SlotDayRow({ day, onPick }: { day: BoardDay; onPick: SlotPick })
               variant="outline"
               size="sm"
               aria-label={`${minutesToClock(start)}, ${formatCivilDate(day.date)}, ${day.inspectorName}`}
+              disabled={disabled}
               onClick={() => onPick(day, start)}
               className="min-w-[5.5rem] tabular-nums"
             >
@@ -99,6 +114,7 @@ export function SlotDayRow({ day, onPick }: { day: BoardDay; onPick: SlotPick })
           ))}
         </div>
       )}
+      {review === null ? null : <div className="sm:col-span-2">{review}</div>}
     </li>
   )
 }

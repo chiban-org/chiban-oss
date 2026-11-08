@@ -1,11 +1,12 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
+import { cleanup, fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import {
   type BoardDay,
   type BoardRequest,
   ScheduleBoard,
+  type ScheduleChoice,
 } from '@/components/inspections/ScheduleBoard'
 
 afterEach(cleanup)
@@ -45,6 +46,8 @@ const days: BoardDay[] = [
   slotDay('2027-07-14', [810]),
 ]
 
+const choose = (pattern: RegExp) => screen.getByRole('button', { name: pattern })
+
 function board(overrides: { requests?: BoardRequest[]; days?: BoardDay[] } = {}) {
   return render(
     <ScheduleBoard
@@ -52,13 +55,17 @@ function board(overrides: { requests?: BoardRequest[]; days?: BoardDay[] } = {})
       days={overrides.days ?? days}
       today="2027-07-06"
       takeRequest={null}
-      onSchedule={vi.fn()}
+      onSchedule={vi.fn(() => Promise.resolve(true))}
       message={null}
     />,
   )
 }
 
-function setup(onSchedule = vi.fn(), takeRequest: ReactNode = null) {
+function setup(
+  onSchedule: (choice: ScheduleChoice) => Promise<boolean> = vi.fn(() => Promise.resolve(true)),
+  takeRequest: ReactNode = null,
+  extra: { initialChosenId?: string } = {},
+) {
   render(
     <ScheduleBoard
       requests={requests}
@@ -67,6 +74,7 @@ function setup(onSchedule = vi.fn(), takeRequest: ReactNode = null) {
       takeRequest={takeRequest}
       onSchedule={onSchedule}
       message={null}
+      {...extra}
     />,
   )
   return onSchedule
@@ -77,17 +85,16 @@ const weeks = () => screen.getByRole('group', { name: 'Weeks' })
 describe('ScheduleBoard requests', () => {
   it('board lists a reinspection badge with a text label', () => {
     setup()
-    const item = screen.getByRole('option', { name: /BP-2027-0002/ })
+    const item = choose(/Choose BP-2027-0002/)
     expect(within(item).getByText('Reinspection')).toBeTruthy()
     expect(within(item).getByText('Portal')).toBeTruthy()
   })
 
   it('links each request card to its inspection', () => {
     setup()
-    const item = screen.getByRole('option', { name: /EL-2027-0001/ })
-    expect(
-      within(item).getByRole('link', { name: 'EL-2027-0001, Rough' }).getAttribute('href'),
-    ).toBe('/staff/inspections/i1')
+    expect(screen.getByRole('link', { name: 'EL-2027-0001, Rough' }).getAttribute('href')).toBe(
+      '/staff/inspections/i1',
+    )
   })
 
   it('labels the search where it can be seen and says what it searches', () => {
@@ -103,8 +110,8 @@ describe('ScheduleBoard requests', () => {
     fireEvent.change(screen.getByRole('searchbox', { name: 'Search requests' }), {
       target: { value: 'birch' },
     })
-    expect(screen.queryByRole('option', { name: /EL-2027-0001/ })).toBeNull()
-    expect(screen.getByRole('option', { name: /BP-2027-0002/ })).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Choose EL-2027-0001/ })).toBeNull()
+    expect(choose(/Choose BP-2027-0002/)).toBeTruthy()
   })
 
   it('says so when nothing is waiting', () => {
@@ -115,10 +122,10 @@ describe('ScheduleBoard requests', () => {
   it('marks the chosen request in words and names it above the slots', () => {
     setup()
     expect(screen.getByText('Choose a request, then an open time.')).toBeTruthy()
-    const item = screen.getByRole('option', { name: /EL-2027-0001/ })
+    const item = choose(/Choose EL-2027-0001/)
     fireEvent.click(item)
-    expect(item.getAttribute('aria-selected')).toBe('true')
-    expect(within(item).getByText('Chosen')).toBeTruthy()
+    expect(item.getAttribute('aria-pressed')).toBe('true')
+    expect(within(item.closest('li') as HTMLElement).getByText('Chosen')).toBeTruthy()
     expect(screen.getByText('Pick a time for EL-2027-0001, Rough.')).toBeTruthy()
   })
 
@@ -158,13 +165,13 @@ describe('ScheduleBoard open slots', () => {
     const nextWeek = within(weeks()).getByRole('button', { name: /Next week/ })
     expect(thisWeek.getAttribute('aria-pressed')).toBe('true')
     expect(within(thisWeek).getByText('2 open')).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /July 14, 2027/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /July 14, 2027, Ines Inspector/ })).toBeNull()
     fireEvent.click(nextWeek)
     expect(nextWeek.getAttribute('aria-pressed')).toBe('true')
     expect(
       screen.getByRole('button', { name: '1:30 PM, July 14, 2027, Ines Inspector' }),
     ).toBeTruthy()
-    expect(screen.queryByRole('button', { name: /July 7, 2027/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /July 7, 2027, Ines Inspector/ })).toBeNull()
   })
 
   it('names weeks after next by their Monday', () => {
@@ -174,7 +181,7 @@ describe('ScheduleBoard open slots', () => {
 
   it('opens on the week of the chosen request’s preferred day', () => {
     setup()
-    fireEvent.click(screen.getByRole('option', { name: /BP-2027-0002/ }))
+    fireEvent.click(choose(/Choose BP-2027-0002/))
     expect(
       within(weeks())
         .getByRole('button', { name: /Next week/ })
@@ -189,11 +196,34 @@ describe('ScheduleBoard open slots', () => {
   })
 })
 
+const book = () => fireEvent.click(screen.getByRole('button', { name: 'Book' }))
+
 describe('ScheduleBoard scheduling', () => {
-  it('clicking a request then a slot schedules it there', () => {
+  it('keeps every time disabled until a request is chosen', () => {
+    setup()
+    const time = screen.getByRole('button', { name: /10:30 AM/ })
+    expect(time.hasAttribute('disabled')).toBe(true)
+    fireEvent.click(choose(/Choose EL-2027-0001/))
+    expect(time.hasAttribute('disabled')).toBe(false)
+  })
+
+  it('opens a review row when a time is tapped and books nothing yet', () => {
     const onSchedule = setup()
-    fireEvent.click(screen.getByRole('option', { name: /EL-2027-0001/ }))
+    fireEvent.click(choose(/Choose EL-2027-0001/))
     fireEvent.click(screen.getByRole('button', { name: /10:30 AM/ }))
+    expect(onSchedule).not.toHaveBeenCalled()
+    const review = screen.getByRole('group', { name: 'Review the booking' })
+    expect(
+      within(review).getByText('Book Wednesday, July 7, 2027 at 10:30 AM with Ines Inspector.'),
+    ).toBeTruthy()
+    expect(within(review).getByRole('button', { name: 'Cancel' })).toBeTruthy()
+  })
+
+  it('books the reviewed time with Book', () => {
+    const onSchedule = setup()
+    fireEvent.click(choose(/Choose EL-2027-0001/))
+    fireEvent.click(screen.getByRole('button', { name: /10:30 AM/ }))
+    book()
     expect(onSchedule).toHaveBeenCalledWith({
       inspectionId: 'i1',
       rowVersion: 1,
@@ -203,11 +233,64 @@ describe('ScheduleBoard scheduling', () => {
     })
   })
 
+  it('closes the review row with Cancel and books nothing', () => {
+    const onSchedule = setup()
+    fireEvent.click(choose(/Choose EL-2027-0001/))
+    fireEvent.click(screen.getByRole('button', { name: /10:30 AM/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Cancel' }))
+    expect(screen.queryByRole('group', { name: 'Review the booking' })).toBeNull()
+    expect(onSchedule).not.toHaveBeenCalled()
+  })
+
+  it('makes Book the only filled button on the board', () => {
+    setup()
+    fireEvent.click(choose(/Choose EL-2027-0001/))
+    fireEvent.click(screen.getByRole('button', { name: /10:30 AM/ }))
+    const filled = screen
+      .getAllByRole('button')
+      .filter((b) => b.getAttribute('data-variant') === 'default')
+    expect(filled.map((b) => b.textContent)).toEqual(['Book'])
+  })
+
+  it('shows Booking and disables the buttons while the booking is in flight', () => {
+    setup(vi.fn(() => new Promise<boolean>(() => undefined)))
+    fireEvent.click(choose(/Choose EL-2027-0001/))
+    fireEvent.click(screen.getByRole('button', { name: /10:30 AM/ }))
+    book()
+    const booking = screen.getByRole('button', { name: 'Booking' })
+    expect(booking.hasAttribute('disabled')).toBe(true)
+    expect(screen.getByRole('button', { name: 'Cancel' }).hasAttribute('disabled')).toBe(true)
+    expect(screen.getByRole('button', { name: /9:30 AM/ }).hasAttribute('disabled')).toBe(true)
+  })
+
+  it('clears the choice and the review once the booking succeeds', async () => {
+    setup()
+    fireEvent.click(choose(/Choose EL-2027-0001/))
+    fireEvent.click(screen.getByRole('button', { name: /10:30 AM/ }))
+    book()
+    await waitFor(() =>
+      expect(screen.queryByRole('group', { name: 'Review the booking' })).toBeNull(),
+    )
+    expect(choose(/Choose EL-2027-0001/).getAttribute('aria-pressed')).toBe('false')
+  })
+
+  it('keeps the review row open when the booking fails', async () => {
+    setup(vi.fn(() => Promise.resolve(false)))
+    fireEvent.click(choose(/Choose EL-2027-0001/))
+    fireEvent.click(screen.getByRole('button', { name: /10:30 AM/ }))
+    book()
+    await waitFor(() =>
+      expect(screen.getByRole('button', { name: 'Book' }).hasAttribute('disabled')).toBe(false),
+    )
+    expect(screen.getByRole('group', { name: 'Review the booking' })).toBeTruthy()
+  })
+
   it('schedules into a later week after switching to it', () => {
     const onSchedule = setup()
-    fireEvent.click(screen.getByRole('option', { name: /EL-2027-0001/ }))
+    fireEvent.click(choose(/Choose EL-2027-0001/))
     fireEvent.click(within(weeks()).getByRole('button', { name: /Next week/ }))
     fireEvent.click(screen.getByRole('button', { name: /1:30 PM/ }))
+    book()
     expect(onSchedule).toHaveBeenCalledWith({
       inspectionId: 'i1',
       rowVersion: 1,
@@ -219,18 +302,13 @@ describe('ScheduleBoard scheduling', () => {
 
   it('keeps the chosen request when a search hides others', () => {
     const onSchedule = setup()
-    fireEvent.click(screen.getByRole('option', { name: /BP-2027-0002/ }))
+    fireEvent.click(choose(/Choose BP-2027-0002/))
     fireEvent.change(screen.getByRole('searchbox', { name: 'Search requests' }), {
       target: { value: 'birch' },
     })
     fireEvent.click(screen.getByRole('button', { name: /1:30 PM/ }))
+    book()
     expect(onSchedule).toHaveBeenCalledWith(expect.objectContaining({ inspectionId: 'i2' }))
-  })
-
-  it('clicking a slot without a chosen request schedules nothing', () => {
-    const onSchedule = setup()
-    fireEvent.click(screen.getByRole('button', { name: /10:30 AM/ }))
-    expect(onSchedule).not.toHaveBeenCalled()
   })
 
   it('ignores j, s and / pressed on the page', () => {
@@ -238,5 +316,75 @@ describe('ScheduleBoard scheduling', () => {
     for (const k of ['j', 's', '/']) fireEvent.keyDown(document, { key: k })
     expect(onSchedule).not.toHaveBeenCalled()
     expect(document.activeElement).toBe(document.body)
+  })
+})
+
+describe('ScheduleBoard request rows', () => {
+  it('makes each request a native button so Enter and Space select it', () => {
+    setup()
+    for (const row of [/Choose EL-2027-0001/, /Choose BP-2027-0002/]) {
+      const button = choose(row)
+      expect(button.tagName).toBe('BUTTON')
+      expect(button.getAttribute('type')).toBe('button')
+      expect(button.getAttribute('role')).toBeNull()
+    }
+    expect(screen.queryByRole('option')).toBeNull()
+    expect(screen.queryByRole('listbox')).toBeNull()
+  })
+
+  it('selects from a click anywhere on the row but not from the number link', () => {
+    setup()
+    const row = choose(/Choose EL-2027-0001/).closest('li') as HTMLElement
+    const link = within(row).getByRole('link', { name: 'EL-2027-0001, Rough' })
+    link.addEventListener('click', (e) => e.preventDefault())
+    fireEvent.click(link)
+    expect(choose(/Choose EL-2027-0001/).getAttribute('aria-pressed')).toBe('false')
+    fireEvent.click(row)
+    expect(choose(/Choose EL-2027-0001/).getAttribute('aria-pressed')).toBe('true')
+  })
+
+  it('says which search matched nothing and keeps the waiting copy for an empty queue', () => {
+    setup()
+    fireEvent.change(screen.getByRole('searchbox', { name: 'Search requests' }), {
+      target: { value: 'zzz' },
+    })
+    expect(screen.getByText('No request matches zzz.')).toBeTruthy()
+    expect(screen.queryByText('No requests are waiting.')).toBeNull()
+  })
+
+  it('marks the chosen request’s preferred day among the times', () => {
+    setup()
+    expect(screen.queryByText('Preferred day')).toBeNull()
+    fireEvent.click(choose(/Choose EL-2027-0001/))
+    const row = screen.getByRole('listitem', { name: 'Wednesday, July 7, 2027, Ines Inspector' })
+    expect(within(row).getByText('Preferred day')).toBeTruthy()
+    const other = screen.getByRole('listitem', { name: 'Friday, July 9, 2027, Ines Inspector' })
+    expect(within(other).queryByText('Preferred day')).toBeNull()
+  })
+
+  it('opens with the request named in the link already chosen', () => {
+    setup(undefined, null, { initialChosenId: 'i2' })
+    expect(choose(/Choose BP-2027-0002/).getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByText('Pick a time for BP-2027-0002, Framing.')).toBeTruthy()
+    expect(
+      within(weeks())
+        .getByRole('button', { name: /Next week/ })
+        .getAttribute('aria-pressed'),
+    ).toBe('true')
+  })
+
+  it('moves focus to the times after choosing on a narrow screen only', () => {
+    const matchMedia = vi.fn((query: string) => ({ matches: query.includes('1023') }))
+    vi.stubGlobal('matchMedia', matchMedia)
+    setup()
+    fireEvent.click(choose(/Choose EL-2027-0001/))
+    expect(document.activeElement).toBe(screen.getByText('Pick a time for EL-2027-0001, Rough.'))
+    vi.stubGlobal('matchMedia', () => ({ matches: false }))
+    ;(document.activeElement as HTMLElement).blur()
+    fireEvent.click(choose(/Choose BP-2027-0002/))
+    expect(document.activeElement).not.toBe(
+      screen.getByText('Pick a time for BP-2027-0002, Framing.'),
+    )
+    vi.unstubAllGlobals()
   })
 })

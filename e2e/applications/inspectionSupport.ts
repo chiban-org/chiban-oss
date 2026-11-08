@@ -26,9 +26,10 @@ export async function inspectionOf(
 
 export async function chooseRequest(page: Page, text: string): Promise<void> {
   await page
-    .getByRole('listbox', { name: 'Requests' })
-    .getByRole('option')
+    .getByRole('region', { name: 'Requests and bookings' })
+    .getByRole('listitem')
     .filter({ hasText: text })
+    .getByRole('button')
     .click()
 }
 
@@ -41,6 +42,10 @@ export function openSlotsOn(page: Page, longDate: string): Locator {
 export async function bookSlot(page: Page, longDate: string, clock: string): Promise<void> {
   await openSlotsOn(page, longDate)
     .getByRole('button', { name: new RegExp(`^${clock},`) })
+    .click()
+  await page
+    .getByRole('group', { name: 'Review the booking' })
+    .getByRole('button', { name: 'Book', exact: true })
     .click()
   await expect(
     page

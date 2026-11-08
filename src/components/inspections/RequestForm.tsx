@@ -33,6 +33,7 @@ export function RequestForm({
   outsidePhoneHours,
   reinspectionOf,
   submitLabel = 'Request inspection',
+  submitVariant = 'default',
 }: {
   applicationId: string
   types: RequestFormType[]
@@ -43,10 +44,11 @@ export function RequestForm({
   outsidePhoneHours: boolean
   reinspectionOf?: string
   submitLabel?: string
+  submitVariant?: 'default' | 'outline'
 }) {
   const first = channels[0]
   return (
-    <ActionForm action={action} submitLabel={submitLabel} variant="default">
+    <ActionForm action={action} submitLabel={submitLabel} variant={submitVariant}>
       <input type="hidden" name="applicationId" value={applicationId} />
       {reinspectionOf === undefined ? null : (
         <input type="hidden" name="reinspectionOf" value={reinspectionOf} />

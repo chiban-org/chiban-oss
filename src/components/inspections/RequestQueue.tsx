@@ -17,30 +17,64 @@ function matches(request: BoardRequest, query: string): boolean {
   return haystack.includes(query.toLowerCase())
 }
 
-function RequestDetails({ request, chosen }: { request: BoardRequest; chosen: boolean }) {
+function RequestRow({
+  request,
+  chosen,
+  onChoose,
+}: {
+  request: BoardRequest
+  chosen: boolean
+  onChoose: (request: BoardRequest) => void
+}) {
   return (
-    <>
+    <li
+      onClick={() => onChoose(request)}
+      className={cn(
+        'relative cursor-pointer space-y-0.5 rounded-md border px-3 py-3 hover:bg-canvas',
+        chosen ? 'border-action bg-canvas' : 'border-transparent',
+      )}
+    >
       <p className="m-0 flex flex-wrap items-baseline justify-between gap-x-3 font-semibold">
-        <Link href={`/staff/inspections/${request.inspectionId}`}>
+        <Link
+          href={`/staff/inspections/${request.inspectionId}`}
+          onClick={(e) => e.stopPropagation()}
+        >
           {`${request.applicationNumber}, ${request.typeLabel}`}
         </Link>
         {chosen ? <span className="text-action">Chosen</span> : null}
       </p>
-      <p className="m-0">{request.address}</p>
-      <p className="m-0 flex flex-wrap gap-x-3 text-muted-foreground">
-        <span>{CHANNEL_LABEL[request.channel]}</span>
-        {request.isReinspection ? (
-          <span className="font-semibold text-ink">Reinspection</span>
-        ) : null}
-        {request.preferredDate === null ? null : (
-          <span>{`Prefers ${formatCivilDate(request.preferredDate)}`}</span>
+      <button
+        type="button"
+        aria-pressed={chosen}
+        onClick={(e) => {
+          e.stopPropagation()
+          onChoose(request)
+        }}
+        className="m-0 block w-full cursor-pointer space-y-0.5 border-0 bg-transparent p-0 text-left font-[inherit] text-[length:inherit] text-ink"
+      >
+        <span className="sr-only">{`Choose ${request.applicationNumber}, ${request.typeLabel}: `}</span>
+        <span className="block">{request.address}</span>
+        <span className="flex flex-wrap gap-x-3 text-muted-foreground">
+          <span>{CHANNEL_LABEL[request.channel]}</span>
+          {request.isReinspection ? (
+            <span className="font-semibold text-ink">Reinspection</span>
+          ) : null}
+          {request.preferredDate === null ? null : (
+            <span>{`Prefers ${formatCivilDate(request.preferredDate)}`}</span>
+          )}
+        </span>
+        {request.scheduledFor === undefined ? null : (
+          <span className="block font-semibold">{`Booked ${request.scheduledFor}`}</span>
         )}
-      </p>
-      {request.scheduledFor === undefined ? null : (
-        <p className="m-0 font-semibold">{`Booked ${request.scheduledFor}`}</p>
-      )}
-    </>
+      </button>
+    </li>
   )
+}
+
+function emptyCopy(requests: BoardRequest[], query: string): string {
+  return requests.length > 0 && query !== ''
+    ? `No request matches ${query}.`
+    : 'No requests are waiting.'
 }
 
 export function RequestQueue({
@@ -68,34 +102,17 @@ export function RequestQueue({
         />
       </div>
       {visible.length === 0 ? (
-        <p>No requests are waiting.</p>
+        <p>{emptyCopy(requests, query)}</p>
       ) : (
-        <ul
-          role="listbox"
-          aria-label="Requests"
-          className="flex list-none flex-col divide-y divide-hairline p-0"
-        >
-          {visible.map((request) => {
-            const chosen = request.inspectionId === chosenId
-            return (
-              <li
-                key={request.inspectionId}
-                role="option"
-                aria-selected={chosen}
-                tabIndex={0}
-                onClick={() => onChoose(request)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') onChoose(request)
-                }}
-                className={cn(
-                  '-mx-3 cursor-pointer space-y-0.5 rounded-md border-l-4 px-3 py-3 hover:bg-canvas',
-                  chosen ? 'border-l-action bg-canvas' : 'border-l-transparent',
-                )}
-              >
-                <RequestDetails request={request} chosen={chosen} />
-              </li>
-            )
-          })}
+        <ul className="m-0 flex list-none flex-col gap-1 p-0">
+          {visible.map((request) => (
+            <RequestRow
+              key={request.inspectionId}
+              request={request}
+              chosen={request.inspectionId === chosenId}
+              onChoose={onChoose}
+            />
+          ))}
         </ul>
       )}
     </section>

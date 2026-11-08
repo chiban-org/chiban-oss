@@ -18,19 +18,20 @@ export function ScheduleBoardClient({
   today,
   takeRequest,
   scheduleAction,
+  initialChosenId = null,
 }: {
   requests: BoardRequest[]
   days: BoardDay[]
   today: string
   takeRequest: ReactNode
   scheduleAction: (formData: FormData) => Promise<ActionResult>
+  initialChosenId?: string | null
 }) {
   const csrf = useCsrfToken()
   const router = useRouter()
   const [message, setMessage] = useState<string | null>(null)
-  const [, setPending] = useState(false)
 
-  const schedule = async (choice: ScheduleChoice) => {
+  const schedule = async (choice: ScheduleChoice): Promise<boolean> => {
     const data = new FormData()
     data.set('csrf_token', csrf)
     data.set('inspectionId', choice.inspectionId)
@@ -38,10 +39,17 @@ export function ScheduleBoardClient({
     data.set('date', choice.date)
     data.set('startMinute', String(choice.startMinute))
     data.set('expectedRowVersion', String(choice.rowVersion))
-    const result = await attempt(() => scheduleAction(data), setPending)
-    if (!result.ok) return setMessage(result.error)
+    const result = await attempt(
+      () => scheduleAction(data),
+      () => undefined,
+    )
+    if (!result.ok) {
+      setMessage(result.error)
+      return false
+    }
     setMessage(result.value.ok ? result.value.message : result.value.error)
     router.refresh()
+    return result.value.ok
   }
 
   return (
@@ -51,7 +59,8 @@ export function ScheduleBoardClient({
       today={today}
       takeRequest={takeRequest}
       message={message}
-      onSchedule={(choice) => void schedule(choice)}
+      onSchedule={schedule}
+      initialChosenId={initialChosenId}
     />
   )
 }

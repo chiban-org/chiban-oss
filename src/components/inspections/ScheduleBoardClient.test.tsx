@@ -45,8 +45,9 @@ describe('ScheduleBoardClient', () => {
         />
       </CsrfProvider>,
     )
-    fireEvent.click(screen.getByRole('option', { name: /EL-2027-0001/ }))
+    fireEvent.click(screen.getByRole('button', { name: /Choose EL-2027-0001/ }))
     fireEvent.click(screen.getByRole('button', { name: /9:30 AM/ }))
+    fireEvent.click(screen.getByRole('button', { name: 'Book' }))
     await waitFor(() => expect(scheduleAction).toHaveBeenCalledTimes(1))
     const sent = Object.fromEntries(scheduleAction.mock.calls[0]?.[0].entries() ?? [])
     expect(sent).toEqual({

@@ -80,6 +80,7 @@ function Outcome({ data, board }: { data: TakeRequestData; board: ScheduleBoardD
   return (
     <RequestForm
       submitLabel="Record request"
+      submitVariant="outline"
       applicationId={target.id}
       types={data.offered}
       {...(data.reinspectionOf === null ? {} : { reinspectionOf: data.reinspectionOf })}
