@@ -1,6 +1,6 @@
 import { index, pgTable, text, timestamp, uuid } from 'drizzle-orm/pg-core'
 import { citext } from './identity'
-import { projectParties, projects } from './projects'
+import { applications, projectParties, projects } from './projects'
 
 export const contractorClaims = pgTable(
   'contractor_claims',
@@ -14,8 +14,9 @@ export const contractorClaims = pgTable(
       .references(() => projectParties.id),
     email: citext('email').notNull(),
     tokenHash: text('token_hash').notNull().unique(),
-    sentBy: uuid('sent_by').notNull(),
-    sentByKind: text('sent_by_kind', { enum: ['staff', 'applicant'] }).notNull(),
+    applicationId: uuid('application_id').references(() => applications.id),
+    sentBy: uuid('sent_by'),
+    sentByKind: text('sent_by_kind', { enum: ['staff', 'applicant', 'system'] }).notNull(),
     expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     claimedAt: timestamp('claimed_at', { withTimezone: true }),

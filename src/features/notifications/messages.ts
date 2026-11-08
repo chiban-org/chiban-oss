@@ -1,5 +1,6 @@
 import { env } from '@/config/env'
 import type { NotificationEvent } from '@/db/schema'
+import type { SystemClaimLink } from '@/features/contractors/systemClaim'
 import type { NotificationPayload } from '@/features/notifications/queue'
 import { boardCommentMessage } from '@/features/reviews/boardCommentMail'
 import { humanizeIsoDates } from '@/lib/formatDate'
@@ -11,31 +12,56 @@ export interface Rendered {
   html: string
 }
 
-interface Context {
+export interface Context {
   applicationId: string
   payload: NotificationPayload
+  claim?: Pick<SystemClaimLink, 'link' | 'days'>
+}
+
+interface Link {
+  href: string
+  label: string
+  note?: string
 }
 
 function longDate(onDate: string | undefined): string {
   return humanizeIsoDates(onDate ?? '')
 }
 
-function portalLink(applicationId: string): string {
-  return `${env.BASE_URL}/portal/applications/${applicationId}`
+const OPEN = 'Open the application'
+
+function applicationLink(ctx: Context): Link {
+  if (ctx.claim === undefined) {
+    return { href: `${env.BASE_URL}/portal/applications/${ctx.applicationId}`, label: OPEN }
+  }
+  return {
+    href: ctx.claim.link,
+    label: 'Claim the application',
+    note: `You do not have an account with the town yet. This link lets you claim the application and follow it online. It works once and expires in ${ctx.claim.days} days.`,
+  }
 }
 
-function reviewLink(ctx: Context): string {
+function inAccount(ctx: Context, preposition: 'in' | 'from'): string {
+  return ctx.claim === undefined
+    ? `${preposition} your account`
+    : 'online once you claim the application'
+}
+
+function reviewLink(ctx: Context): Link {
   const { assignmentId } = ctx.payload
-  return assignmentId === undefined
-    ? `${env.BASE_URL}/staff/reviews`
-    : `${env.BASE_URL}/staff/reviews/${assignmentId}`
+  const href =
+    assignmentId === undefined
+      ? `${env.BASE_URL}/staff/reviews`
+      : `${env.BASE_URL}/staff/reviews/${assignmentId}`
+  return { href, label: OPEN }
 }
 
-function compose(subject: string, lines: string[], link: string): Rendered {
+function compose(subject: string, body: string[], link: Link): Rendered {
+  const lines = link.note === undefined ? body : [...body, link.note]
   return {
     subject,
-    text: `${lines.join('\n\n')}\n\n${link}\n`,
-    html: `${lines.map((l) => `<p>${l}</p>`).join('')}<p><a href="${link}">Open the application</a></p>`,
+    text: `${lines.join('\n\n')}\n\n${link.href}\n`,
+    html: `${lines.map((l) => `<p>${l}</p>`).join('')}<p><a href="${link.href}">${link.label}</a></p>`,
   }
 }
 
@@ -46,33 +72,33 @@ export const MESSAGES: Record<NotificationEvent, Builder> = {
     compose(
       `Application ${c.payload.number} received`,
       [`The Town of Alder Pond received application ${c.payload.number}.`],
-      portalLink(c.applicationId),
+      applicationLink(c),
     ),
   fees_due: (c) => {
     const amount = formatCents(c.payload.amountCents ?? 0)
     return compose(
       `Fees due for ${c.payload.number}: ${amount}`,
       [`Application ${c.payload.number} has fees due: ${amount}. You can pay online.`],
-      portalLink(c.applicationId),
+      applicationLink(c),
     )
   },
   payment_received: (c) =>
     compose(
       `Payment received, receipt ${c.payload.receiptNumber ?? ''}`.trim(),
       [`The town received a payment for application ${c.payload.number}.`],
-      portalLink(c.applicationId),
+      applicationLink(c),
     ),
   application_issued: (c) =>
     compose(
       `Permit ${c.payload.number} issued`,
-      [`Permit ${c.payload.number} was issued. You can download it from your account.`],
-      portalLink(c.applicationId),
+      [`Permit ${c.payload.number} was issued. You can download it ${inAccount(c, 'from')}.`],
+      applicationLink(c),
     ),
   application_denied: (c) =>
     compose(
       `Application ${c.payload.number} denied`,
       [`Application ${c.payload.number} was denied. Open the application for the details.`],
-      portalLink(c.applicationId),
+      applicationLink(c),
     ),
   inspection_scheduled: (c) =>
     compose(
@@ -80,7 +106,7 @@ export const MESSAGES: Record<NotificationEvent, Builder> = {
       [
         `An inspection for ${c.payload.number} is scheduled for ${longDate(c.payload.onDate)} at ${c.payload.atTime ?? ''}. Someone should be at the site.`,
       ],
-      portalLink(c.applicationId),
+      applicationLink(c),
     ),
   inspection_cancelled: (c) =>
     compose(
@@ -88,7 +114,7 @@ export const MESSAGES: Record<NotificationEvent, Builder> = {
       [
         `The ${c.payload.inspectionLabel ?? ''} inspection for ${c.payload.number} was cancelled. Open the application for the details.`,
       ],
-      portalLink(c.applicationId),
+      applicationLink(c),
     ),
   inspection_result: (c) =>
     compose(
@@ -96,7 +122,7 @@ export const MESSAGES: Record<NotificationEvent, Builder> = {
       [
         `The ${c.payload.inspectionLabel ?? ''} inspection for ${c.payload.number} ${c.payload.result ?? 'was recorded'}. Open the application for the details.`,
       ],
-      portalLink(c.applicationId),
+      applicationLink(c),
     ),
   permit_corrected: (c) =>
     c.payload.contractorRemoved === true
@@ -105,14 +131,14 @@ export const MESSAGES: Record<NotificationEvent, Builder> = {
           [
             `Permit ${c.payload.number} was corrected and reissued as revision ${c.payload.revision ?? ''}. You are no longer listed as its contractor.`,
           ],
-          `${env.BASE_URL}/portal`,
+          { href: `${env.BASE_URL}/portal`, label: OPEN },
         )
       : compose(
           `Permit ${c.payload.number} corrected`,
           [
-            `Permit ${c.payload.number} was corrected and reissued as revision ${c.payload.revision ?? ''}. The corrected permit is in your account; the earlier copy stays listed under it.`,
+            `Permit ${c.payload.number} was corrected and reissued as revision ${c.payload.revision ?? ''}. The corrected permit is ${inAccount(c, 'in')}; the earlier copy stays listed under it.`,
           ],
-          portalLink(c.applicationId),
+          applicationLink(c),
         ),
   review_assigned: (c) =>
     compose(

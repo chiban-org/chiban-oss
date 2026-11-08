@@ -47,7 +47,14 @@ export async function sendCounterClaim(
     db,
     mail,
     actor,
-    { projectId: row.projectId, email: row.email, name: row.name, partyId: row.partyId, role },
+    {
+      projectId: row.projectId,
+      email: row.email,
+      name: row.name,
+      partyId: row.partyId,
+      role,
+      ...(role === 'applicant' ? { applicationId: input.applicationId } : {}),
+    },
     signal,
   )
 }

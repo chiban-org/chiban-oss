@@ -1,7 +1,8 @@
-import { and, eq, inArray, isNotNull, isNull } from 'drizzle-orm'
+import { and, eq, inArray, isNotNull, isNull, notExists } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import {
   applications,
+  cutoverRows,
   type NotificationEvent,
   notificationOutbox,
   projectParties,
@@ -28,6 +29,7 @@ export interface QueueInput {
   event: NotificationEvent
   applicationId: string
   recipientUserIds: string[]
+  recipientPartyIds?: string[]
   discriminator?: string
   extra?: Partial<Omit<NotificationPayload, 'number' | 'discriminator'>>
 }
@@ -36,6 +38,8 @@ const PARTY_ROLES = ['applicant', 'owner', 'agent'] as const
 export const INSPECTION_PARTY_ROLES = ['applicant', 'owner', 'agent', 'contractor'] as const
 
 type RecipientRole = 'applicant' | 'owner' | 'agent' | 'contractor'
+
+const CLAIMABLE_ROLES: readonly RecipientRole[] = ['applicant', 'contractor']
 
 export async function partyRecipients(
   tx: Tx,
@@ -57,13 +61,54 @@ export async function partyRecipients(
   return [...new Set(rows.flatMap((r) => (r.userId === null ? [] : [r.userId])))]
 }
 
+export async function addressRecipients(
+  tx: Tx,
+  applicationId: string,
+  roles: readonly RecipientRole[] = PARTY_ROLES,
+): Promise<string[]> {
+  const claimable = roles.filter((r) => CLAIMABLE_ROLES.includes(r))
+  if (claimable.length === 0) return []
+  const rows = await tx
+    .select({ partyId: projectParties.id })
+    .from(applications)
+    .innerJoin(projectParties, eq(projectParties.projectId, applications.projectId))
+    .where(
+      and(
+        eq(applications.id, applicationId),
+        isNull(projectParties.removedAt),
+        isNull(projectParties.userId),
+        isNotNull(projectParties.email),
+        inArray(projectParties.role, claimable),
+        notExists(
+          tx
+            .select({ id: cutoverRows.applicationId })
+            .from(cutoverRows)
+            .where(eq(cutoverRows.applicationId, applications.id)),
+        ),
+      ),
+    )
+  return rows.map((r) => r.partyId)
+}
+
+function recipientRows(
+  input: QueueInput,
+): { recipientUserId?: string; recipientPartyId?: string }[] {
+  return [
+    ...[...new Set(input.recipientUserIds)].map((recipientUserId) => ({ recipientUserId })),
+    ...[...new Set(input.recipientPartyIds ?? [])].map((recipientPartyId) => ({
+      recipientPartyId,
+    })),
+  ]
+}
+
 export async function queueNotification(
   tx: Tx,
   input: QueueInput,
   signal: AbortSignal,
 ): Promise<void> {
   signal.throwIfAborted()
-  if (input.recipientUserIds.length === 0) return
+  const recipients = recipientRows(input)
+  if (recipients.length === 0) return
   const [app] = await tx
     .select({ number: applications.number })
     .from(applications)
@@ -77,11 +122,11 @@ export async function queueNotification(
   await tx
     .insert(notificationOutbox)
     .values(
-      [...new Set(input.recipientUserIds)].map((recipientUserId) => ({
+      recipients.map((recipient) => ({
         event: input.event,
         applicationId: input.applicationId,
-        recipientUserId,
         payload,
+        ...recipient,
       })),
     )
     .onConflictDoNothing()
@@ -93,9 +138,9 @@ export async function queueForParties(
   signal: AbortSignal,
 ): Promise<void> {
   const { roles, ...rest } = input
-  await queueNotification(
-    tx,
-    { ...rest, recipientUserIds: await partyRecipients(tx, input.applicationId, roles) },
-    signal,
-  )
+  const [recipientUserIds, recipientPartyIds] = await Promise.all([
+    partyRecipients(tx, input.applicationId, roles),
+    addressRecipients(tx, input.applicationId, roles),
+  ])
+  await queueNotification(tx, { ...rest, recipientUserIds, recipientPartyIds }, signal)
 }

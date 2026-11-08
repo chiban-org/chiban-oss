@@ -35,12 +35,14 @@ function NoticeLine({ view }: { view: CounterIntakeView }) {
       <p>{`The application is in ${view.applicant.name}'s portal, and the email notices go to them.`}</p>
     )
   }
+  if (view.applicant.email === null) {
+    return (
+      <p>{`${view.applicant.name} has no email address on file, so no email notices go out. Mailed notices use the mailing address on the form.`}</p>
+    )
+  }
   return (
     <p>
-      {`${view.applicant.name} has no account, so no email notices go out yet. Mailed notices use the mailing address on the form.`}
-      {view.applicant.email === null
-        ? null
-        : ' Send a claim link so they can follow the application online and get email notices from then on.'}
+      {`${view.applicant.name} has no account. Email notices go to ${view.applicant.email}, each with a link to claim the application online. You can also send a claim link now.`}
     </p>
   )
 }
