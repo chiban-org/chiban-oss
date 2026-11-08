@@ -28,7 +28,7 @@ async function scanFilingItem(page: Page, label: string, filename: string): Prom
   const item = page
     .getByRole('region', { name: 'To file' })
     .getByRole('listitem')
-    .filter({ has: page.getByText(label, { exact: true }) })
+    .filter({ has: page.locator('p.font-medium').getByText(label, { exact: true }) })
   await item.getByLabel(`Choose a file for ${label}`).setInputFiles({
     name: filename,
     mimeType: 'application/pdf',
