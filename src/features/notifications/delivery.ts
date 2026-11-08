@@ -53,7 +53,7 @@ async function accountAlreadyQueued(db: DbOrTx, row: OutboxRow, userId: string):
 export async function partyDelivery(
   db: DbOrTx,
   row: OutboxRow,
-  context: { partyId: string; now: Date },
+  context: { partyId: string; now: Date; claimsDb: DbOrTx },
   signal: AbortSignal,
 ): Promise<Delivery> {
   const [party] = await db
@@ -67,7 +67,7 @@ export async function partyDelivery(
   }
   if (party.email === null) return drop('no_access')
   const claim = await mintSystemClaim(
-    db,
+    context.claimsDb,
     { id: party.id, email: party.email },
     { applicationId: row.applicationId, now: context.now },
   )

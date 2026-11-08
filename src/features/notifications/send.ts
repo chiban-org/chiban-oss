@@ -37,17 +37,21 @@ async function deliver(
   }
 }
 
-async function deliveryFor(
-  db: DbOrTx,
-  row: OutboxRow,
-  signal: AbortSignal,
-  now: Date,
-): Promise<Delivery> {
+interface Batch {
+  db: DbOrTx
+  claimsDb: DbOrTx
+  mail: MailTransport
+  signal: AbortSignal
+  now: Date
+}
+
+async function deliveryFor(batch: Batch, row: OutboxRow): Promise<Delivery> {
+  const { db, signal, now, claimsDb } = batch
   if (row.recipientUserId !== null) {
     return await accountDelivery(db, row, row.recipientUserId, signal)
   }
   if (row.recipientPartyId !== null) {
-    return await partyDelivery(db, row, { partyId: row.recipientPartyId, now }, signal)
+    return await partyDelivery(db, row, { partyId: row.recipientPartyId, now, claimsDb }, signal)
   }
   return { kind: 'drop', reason: 'no_access' }
 }
@@ -67,13 +71,26 @@ async function recordOutcome(db: DbOrTx, row: OutboxRow, sent: boolean, now: Dat
     .where(eq(notificationOutbox.id, row.id))
 }
 
-export async function sendQueuedNotifications(
-  db: DbOrTx,
-  mail: MailTransport,
-  signal: AbortSignal,
-  now: Date = new Date(),
-): Promise<number> {
-  const queued = await db
+async function sendOne(batch: Batch, row: OutboxRow, delivery: Delivery & { kind: 'send' }) {
+  const message = MESSAGES[row.event]({
+    applicationId: row.applicationId,
+    payload: row.payload as NotificationPayload,
+    ...(delivery.claim === undefined ? {} : { claim: delivery.claim }),
+  })
+  let sent = false
+  try {
+    sent = (await deliver(batch.mail, { to: delivery.to, ...message }, batch.signal)).ok
+  } finally {
+    if (!sent && delivery.claim !== undefined) {
+      await revokeSystemClaim(batch.claimsDb, delivery.claim.claimId, batch.now)
+    }
+  }
+  await recordOutcome(batch.db, row, sent, batch.now)
+  return sent
+}
+
+async function sendBatch(batch: Batch): Promise<number> {
+  const queued = await batch.db
     .select()
     .from(notificationOutbox)
     .where(eq(notificationOutbox.status, 'queued'))
@@ -81,23 +98,31 @@ export async function sendQueuedNotifications(
     .limit(BATCH)
   let sent = 0
   for (const row of queued) {
-    signal.throwIfAborted()
-    const delivery = await deliveryFor(db, row, signal, now)
+    batch.signal.throwIfAborted()
+    const delivery = await deliveryFor(batch, row)
     if (delivery.kind === 'drop') {
-      await drop(db, row.id, delivery.reason)
+      await drop(batch.db, row.id, delivery.reason)
       continue
     }
-    const message = MESSAGES[row.event]({
-      applicationId: row.applicationId,
-      payload: row.payload as NotificationPayload,
-      ...(delivery.claim === undefined ? {} : { claim: delivery.claim }),
-    })
-    const result = await deliver(mail, { to: delivery.to, ...message }, signal)
-    if (!result.ok && delivery.claim !== undefined) {
-      await revokeSystemClaim(db, delivery.claim.claimId, now)
-    }
-    await recordOutcome(db, row, result.ok, now)
-    if (result.ok) sent += 1
+    if (await sendOne(batch, row, delivery)) sent += 1
   }
   return sent
+}
+
+export async function sendQueuedNotifications(
+  db: DbOrTx,
+  mail: MailTransport,
+  signal: AbortSignal,
+  now: Date = new Date(),
+): Promise<number> {
+  return await sendBatch({ db, claimsDb: db, mail, signal, now })
+}
+
+export async function sendQueuedNotificationsInJob(ctx: {
+  db: DbOrTx
+  root: DbOrTx
+  mail: MailTransport
+  signal: AbortSignal
+}): Promise<number> {
+  return await sendBatch({ ...ctx, claimsDb: ctx.root, now: new Date() })
 }

@@ -1,12 +1,7 @@
-import { and, eq, inArray, isNotNull, isNull, notExists } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
-import {
-  applications,
-  cutoverRows,
-  type NotificationEvent,
-  notificationOutbox,
-  projectParties,
-} from '@/db/schema'
+import { applications, type NotificationEvent, notificationOutbox } from '@/db/schema'
+import { type RecipientRole, resolveRecipients } from '@/features/notifications/recipients'
 
 export interface NotificationPayload {
   number: string
@@ -36,59 +31,6 @@ export interface QueueInput {
 
 const PARTY_ROLES = ['applicant', 'owner', 'agent'] as const
 export const INSPECTION_PARTY_ROLES = ['applicant', 'owner', 'agent', 'contractor'] as const
-
-type RecipientRole = 'applicant' | 'owner' | 'agent' | 'contractor'
-
-const CLAIMABLE_ROLES: readonly RecipientRole[] = ['applicant', 'contractor']
-
-export async function partyRecipients(
-  tx: Tx,
-  applicationId: string,
-  roles: readonly RecipientRole[] = PARTY_ROLES,
-): Promise<string[]> {
-  const rows = await tx
-    .select({ userId: projectParties.userId })
-    .from(applications)
-    .innerJoin(projectParties, eq(projectParties.projectId, applications.projectId))
-    .where(
-      and(
-        eq(applications.id, applicationId),
-        isNull(projectParties.removedAt),
-        isNotNull(projectParties.userId),
-        inArray(projectParties.role, [...roles]),
-      ),
-    )
-  return [...new Set(rows.flatMap((r) => (r.userId === null ? [] : [r.userId])))]
-}
-
-export async function addressRecipients(
-  tx: Tx,
-  applicationId: string,
-  roles: readonly RecipientRole[] = PARTY_ROLES,
-): Promise<string[]> {
-  const claimable = roles.filter((r) => CLAIMABLE_ROLES.includes(r))
-  if (claimable.length === 0) return []
-  const rows = await tx
-    .select({ partyId: projectParties.id })
-    .from(applications)
-    .innerJoin(projectParties, eq(projectParties.projectId, applications.projectId))
-    .where(
-      and(
-        eq(applications.id, applicationId),
-        isNull(projectParties.removedAt),
-        isNull(projectParties.userId),
-        isNotNull(projectParties.email),
-        inArray(projectParties.role, claimable),
-        notExists(
-          tx
-            .select({ id: cutoverRows.applicationId })
-            .from(cutoverRows)
-            .where(eq(cutoverRows.applicationId, applications.id)),
-        ),
-      ),
-    )
-  return rows.map((r) => r.partyId)
-}
 
 function recipientRows(
   input: QueueInput,
@@ -138,7 +80,14 @@ export async function queueForParties(
   signal: AbortSignal,
 ): Promise<void> {
   const { roles, ...rest } = input
-  const recipientUserIds = await partyRecipients(tx, input.applicationId, roles)
-  const recipientPartyIds = await addressRecipients(tx, input.applicationId, roles)
-  await queueNotification(tx, { ...rest, recipientUserIds, recipientPartyIds }, signal)
+  const { userIds, partyIds } = await resolveRecipients(
+    tx,
+    input.applicationId,
+    roles ?? PARTY_ROLES,
+  )
+  await queueNotification(
+    tx,
+    { ...rest, recipientUserIds: userIds, recipientPartyIds: partyIds },
+    signal,
+  )
 }
