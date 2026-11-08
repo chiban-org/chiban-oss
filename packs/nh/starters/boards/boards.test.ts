@@ -73,10 +73,10 @@ describe('board starters, hearing templates', () => {
 })
 
 describe('board starters', () => {
-  it('there are eight planning board and five zba starters', () => {
+  it('there are nine planning board and five zba starters', () => {
     expect(
       BOARD.filter((s) => (s.applicationType.classification ?? '').startsWith('nh.pb')),
-    ).toHaveLength(8)
+    ).toHaveLength(9)
     expect(
       BOARD.filter((s) => (s.applicationType.classification ?? '').startsWith('nh.zba')),
     ).toHaveLength(5)

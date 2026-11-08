@@ -145,7 +145,7 @@ describe('quickIssue cash and check', () => {
       {
         licenseNumber: 'EL-20418',
         result: 'active',
-        lookupUrl: 'https://oplc.nh.gov/license-lookup',
+        lookupUrl: 'https://forms.nh.gov/licenseverification/Search.aspx',
       },
     ])
     const parties = await handle.db

@@ -113,6 +113,22 @@ export const APPEAL_DOCUMENTS: DocumentItem[] = [
   doc('decision_appealed', 'Copy of the decision appealed'),
 ]
 
+export const MORE_THAN_ONE_DWELLING_DOCUMENTS: DocumentItem[] = [
+  OWNER_AUTHORIZATION_LETTER,
+  PLOT_PLAN,
+  doc('unit_density_calculation', 'Unit density calculation sheet', {
+    help: 'List each lot with its soil type, slope, minimum lot size and the areas excluded, and the total allowable units.',
+  }),
+  doc('inspection_authority', 'Authority for inspection or examination of land', {
+    help: 'Signed by each owner so board members and staff can visit the property.',
+  }),
+  doc('septic_design', 'State-approved, signed septic design', {
+    stage: 'before_decision',
+    stateOrFederalPermit: true,
+    requiredIf: when('septic_system'),
+  }),
+]
+
 export const TEN_YEAR_FIELD = yesBox(
   'ten_year_route',
   'The violation has existed for 10 years or more',
