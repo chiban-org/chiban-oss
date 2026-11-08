@@ -10,9 +10,14 @@ export type ClaimResult = { ok: true; message: string } | { ok: false; error: st
 interface Props {
   applicationId: string
   send: (formData: FormData) => Promise<ClaimResult>
+  label?: string
 }
 
-export function ClaimLinkButton({ applicationId, send }: Props) {
+export function ClaimLinkButton({
+  applicationId,
+  send,
+  label = 'Send claim link to contractor',
+}: Props) {
   const csrf = useCsrfToken()
   const [pending, setPending] = useState(false)
   const [result, setResult] = useState<ClaimResult | null>(null)
@@ -28,7 +33,7 @@ export function ClaimLinkButton({ applicationId, send }: Props) {
   return (
     <div className="flex flex-wrap items-center gap-3">
       <Button type="button" variant="outline" disabled={pending} onClick={() => void onClick()}>
-        Send claim link to contractor
+        {label}
       </Button>
       {result === null ? null : <p role="status">{result.ok ? result.message : result.error}</p>}
     </div>

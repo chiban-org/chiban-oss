@@ -1,10 +1,15 @@
 import type { FormBody } from '@/features/forms/formSchema'
 import type { FieldErrorCode } from '@/features/forms/validateSubmission'
 
-export function rawValuesFromForm(formData: FormData, form: FormBody): Record<string, unknown> {
+export function rawValuesFromForm(
+  formData: FormData,
+  form: FormBody,
+  options: { includeStaffOnly?: boolean } = {},
+): Record<string, unknown> {
   const out: Record<string, unknown> = {}
   for (const field of form.fields) {
-    if (field.staffOnly === true || !formData.has(field.key)) continue
+    const skipped = field.staffOnly === true && options.includeStaffOnly !== true
+    if (skipped || !formData.has(field.key)) continue
     if (field.type === 'multiselect') out[field.key] = formData.getAll(field.key)
     else if (field.type === 'checkbox') out[field.key] = formData.get(field.key) === 'true'
     else out[field.key] = formData.get(field.key)

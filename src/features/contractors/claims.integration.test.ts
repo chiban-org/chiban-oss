@@ -71,7 +71,7 @@ describe('contractor claims', () => {
     const app = await makeApplication(handle.db, world)
     expect(await canViewApplication(handle.db, contractor, app.applicationId, signal)).toBe(false)
     const claimed = await claimProject(handle.db, contractor, tokenFromMail(), signal)
-    expect(claimed).toEqual({ ok: true, value: { projectId: world.projectId } })
+    expect(claimed).toEqual({ ok: true, value: { projectId: world.projectId, role: 'contractor' } })
     expect(await canViewApplication(handle.db, contractor, app.applicationId, signal)).toBe(true)
   })
 

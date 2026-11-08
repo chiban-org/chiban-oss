@@ -29,6 +29,40 @@ export function attestationHash(statement: string): string {
   return createHash('sha256').update(statement).digest('hex')
 }
 
+export function paperAttestationStatement(attestationText: string, recordedBy: string): string {
+  return `${attestationText}\n\nThe applicant signed this statement on paper. ${recordedBy} recorded the signed copy at the counter.`
+}
+
+function statementFor(
+  attestationText: string,
+  input: {
+    attestation: { statementSha256: string }
+    cutover?: { enteredBy: string }
+    paperAttestation?: { recordedBy: string }
+  },
+): { statement: string; statementSha256: string } {
+  if (input.cutover !== undefined) {
+    const statement = `Entered from the prior system by ${input.cutover.enteredBy}`
+    return { statement, statementSha256: attestationHash(statement) }
+  }
+  if (input.paperAttestation !== undefined) {
+    const statement = paperAttestationStatement(attestationText, input.paperAttestation.recordedBy)
+    return { statement, statementSha256: attestationHash(statement) }
+  }
+  return { statement: attestationText, statementSha256: input.attestation.statementSha256 }
+}
+
+async function mayUseAttestationRoute(
+  db: DbOrTx,
+  actor: Actor,
+  input: { cutover?: unknown; paperAttestation?: unknown },
+  signal: AbortSignal,
+): Promise<boolean> {
+  if (input.paperAttestation !== undefined && !hasFullRecordAccess(actor)) return false
+  if (input.cutover === undefined) return true
+  return await hasCapability(db, actor.userId, 'cutover.import', signal)
+}
+
 export type SubmitError =
   | 'forbidden'
   | 'attestation_mismatch'
@@ -48,6 +82,7 @@ export async function submitApplication(
     values: Record<string, unknown>
     attestation: { statementSha256: string }
     cutover?: { receivedDate: CivilDate; enteredBy: string }
+    paperAttestation?: { recordedBy: string }
   },
   signal: AbortSignal,
   now: Date = new Date(),
@@ -59,15 +94,8 @@ export async function submitApplication(
   if (!(await mayEdit(db, actor, app.projectId))) return err('forbidden')
   if (app.state !== 'draft') return err('invalid_transition')
   const cutover = input.cutover
-  if (cutover !== undefined && !(await hasCapability(db, actor.userId, 'cutover.import', signal))) {
-    return err('forbidden')
-  }
-  const statement =
-    cutover === undefined
-      ? app.typeBody.attestationText
-      : `Entered from the prior system by ${cutover.enteredBy}`
-  const statementSha256 =
-    cutover === undefined ? input.attestation.statementSha256 : attestationHash(statement)
+  if (!(await mayUseAttestationRoute(db, actor, input, signal))) return err('forbidden')
+  const { statement, statementSha256 } = statementFor(app.typeBody.attestationText, input)
   if (statementSha256 !== attestationHash(statement)) return err('attestation_mismatch')
   const form = await getVersion(db, app.pins.form, signal)
   const checked = validateSubmission(form?.body as FormBody, input.values, {

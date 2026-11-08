@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { useCsrfToken } from '@/components/CsrfProvider'
 import { FormRenderer, type FormValue } from '@/components/forms/FormRenderer'
+import { toFormData } from '@/components/portal/formValues'
 import { Button } from '@/components/ui/button'
 import { Checkbox, CheckLine } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
@@ -24,23 +25,6 @@ interface Props {
   attestationText: string
   attestationSha256: string
   actions: ApplicationFormActions
-}
-
-function appendValue(data: FormData, key: string, value: unknown): void {
-  if (Array.isArray(value)) {
-    for (const item of value) if (typeof item === 'string') data.append(key, item)
-  } else if (typeof value === 'boolean') {
-    data.set(key, value ? 'true' : 'false')
-  } else if (typeof value === 'string' || typeof value === 'number') {
-    data.set(key, String(value))
-  }
-}
-
-function toFormData(values: Record<string, unknown>, extra: Record<string, string>): FormData {
-  const data = new FormData()
-  for (const [key, value] of Object.entries(extra)) data.set(key, value)
-  for (const [key, value] of Object.entries(values)) appendValue(data, key, value)
-  return data
 }
 
 export function ApplicationForm(props: Props) {

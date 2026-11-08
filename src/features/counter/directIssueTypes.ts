@@ -10,14 +10,25 @@ export interface DirectIssueType {
   requiresLicense: boolean
 }
 
+export interface ReviewIntakeType {
+  key: string
+  label: string
+  payTiming: ApplicationTypeBody['payTiming']
+}
+
+export interface CounterTypes {
+  issueToday: DirectIssueType[]
+  takeForReview: ReviewIntakeType[]
+}
+
 export function requiresTradeLicense(body: Pick<ApplicationTypeBody, 'classification'>): boolean {
   return body.classification === 'nh.trade_permit'
 }
 
-export async function listDirectIssueTypes(
+async function publishedTypes(
   db: DbOrTx,
   signal: AbortSignal,
-): Promise<DirectIssueType[]> {
+): Promise<{ key: string; body: ApplicationTypeBody }[]> {
   signal.throwIfAborted()
   const rows = await db
     .select()
@@ -25,12 +36,24 @@ export async function listDirectIssueTypes(
     .where(and(eq(configVersions.kind, 'application_type'), eq(configVersions.status, 'published')))
   return rows
     .map((r) => ({ key: r.key, body: r.body as ApplicationTypeBody }))
-    .filter((r) => r.body.workflow.allowsDirectIssue)
-    .map((r) => ({
-      key: r.key,
-      label: r.body.label,
-      formKey: r.body.formKey,
-      requiresLicense: requiresTradeLicense(r.body),
-    }))
-    .sort((a, b) => a.label.localeCompare(b.label))
+    .sort((a, b) => a.body.label.localeCompare(b.body.label))
+}
+
+function directIssueType(r: { key: string; body: ApplicationTypeBody }): DirectIssueType {
+  return {
+    key: r.key,
+    label: r.body.label,
+    formKey: r.body.formKey,
+    requiresLicense: requiresTradeLicense(r.body),
+  }
+}
+
+export async function listCounterTypes(db: DbOrTx, signal: AbortSignal): Promise<CounterTypes> {
+  const types = await publishedTypes(db, signal)
+  return {
+    issueToday: types.filter((r) => r.body.workflow.allowsDirectIssue).map(directIssueType),
+    takeForReview: types
+      .filter((r) => !r.body.workflow.allowsDirectIssue)
+      .map((r) => ({ key: r.key, label: r.body.label, payTiming: r.body.payTiming })),
+  }
 }

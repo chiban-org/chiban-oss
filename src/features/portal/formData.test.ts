@@ -37,6 +37,16 @@ describe('rawValuesFromForm', () => {
     })
   })
 
+  it('reads staff-only fields when the clerk fills the form at the counter', () => {
+    const data = new FormData()
+    data.set('scope', 'Garage')
+    data.set('note', 'staff wrote this')
+    expect(rawValuesFromForm(data, FORM, { includeStaffOnly: true })).toEqual({
+      scope: 'Garage',
+      note: 'staff wrote this',
+    })
+  })
+
   it('leaves absent fields out', () => {
     expect(rawValuesFromForm(new FormData(), FORM)).toEqual({})
   })

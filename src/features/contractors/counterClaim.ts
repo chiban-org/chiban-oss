@@ -3,20 +3,21 @@ import type { Db } from '@/db/client'
 import { applications, projectParties } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { sendContractorClaim } from '@/features/contractors/claims'
+import { type ClaimRole, sendContractorClaim } from '@/features/contractors/claims'
 import type { MailTransport } from '@/features/mail/transport'
 import { err, type Result } from '@/types/result'
+
+export type CounterClaimError = 'forbidden' | 'rate_limited' | 'send_failed' | 'no_party_email'
 
 export async function sendCounterClaim(
   db: Db,
   mail: MailTransport,
   actor: Actor,
-  input: { applicationId: string },
+  input: { applicationId: string; role?: ClaimRole },
   signal: AbortSignal,
-): Promise<
-  Result<{ claimId: string }, 'forbidden' | 'rate_limited' | 'send_failed' | 'no_contractor_email'>
-> {
+): Promise<Result<{ claimId: string }, CounterClaimError>> {
   signal.throwIfAborted()
+  const role = input.role ?? 'contractor'
   const [row] = await db
     .select({
       projectId: applications.projectId,
@@ -29,7 +30,7 @@ export async function sendCounterClaim(
       projectParties,
       and(
         eq(projectParties.projectId, applications.projectId),
-        eq(projectParties.role, 'contractor'),
+        eq(projectParties.role, role),
         isNull(projectParties.removedAt),
         isNull(projectParties.userId),
         isNotNull(projectParties.email),
@@ -40,13 +41,13 @@ export async function sendCounterClaim(
     .limit(1)
   if (row === undefined || row.email === null) {
     const manages = await hasCapability(db, actor.userId, 'project.manage_parties', signal)
-    return err(manages ? 'no_contractor_email' : 'forbidden')
+    return err(manages ? 'no_party_email' : 'forbidden')
   }
   return await sendContractorClaim(
     db,
     mail,
     actor,
-    { projectId: row.projectId, email: row.email, name: row.name, partyId: row.partyId },
+    { projectId: row.projectId, email: row.email, name: row.name, partyId: row.partyId, role },
     signal,
   )
 }

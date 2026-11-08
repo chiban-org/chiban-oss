@@ -18,6 +18,7 @@ import { applicationStatusText } from '@/features/applications/statusText'
 import { planWork } from '@/features/applications/workPlan'
 import { hostedActions } from '@/features/applications/workPlanTypes'
 import { loadBoardPanel } from '@/features/boards/panelData'
+import { counterIntakeLine } from '@/features/counter/intake/intakeProvenance'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import { returnedCheckNotices } from '@/features/ledger/balanceNotice'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
@@ -67,6 +68,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     correction,
     responsible,
     notes,
+    intake,
   ] = await Promise.all([
     loading,
     loading.then((v) => (v === null ? null : loadRecordsData(ctx, applicationId, v.projectId))),
@@ -82,6 +84,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     loadCorrectionForm(ctx.db, ctx.actor, applicationId, ctx.signal),
     loadResponsibleData(ctx, applicationId),
     loadNotesData(ctx, applicationId),
+    counterIntakeLine(ctx.db, applicationId),
   ])
   if (view === null || records === null) return null
   return {
@@ -93,6 +96,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     board,
     hearings,
     legacyNumber: imported[0]?.legacyNumber ?? null,
+    intake,
     correction,
     responsible,
     notes,
@@ -123,7 +127,8 @@ export default async function StaffApplicationPage({ params }: Props) {
   }
   const due = await loadDueInspection(ctx, loaded.inspections)
   const ready = { ...loaded, due }
-  const { view, balanceNotices, legacyNumber, correction } = ready
+  const { view, balanceNotices, correction } = ready
+  const origin = { legacyNumber: ready.legacyNumber, intake: ready.intake }
   const plan = planWork(view, ready.board, {
     reviewers: ready.records.reviewers.length,
     abilities: abilitiesOf(ready),
@@ -155,15 +160,13 @@ export default async function StaffApplicationPage({ params }: Props) {
       />
       <RecordLayout
         rail={<ApplicationRail view={view} plan={plan} notice={notice} correction={correction} />}
-        railFooter={
-          <ApplicationFacts view={view} legacyNumber={legacyNumber} responsible={responsible} />
-        }
+        railFooter={<ApplicationFacts view={view} origin={origin} responsible={responsible} />}
         strip={
           <StatusStrip
             view={view}
             plan={plan}
             notice={notice}
-            legacyNumber={legacyNumber}
+            origin={origin}
             correction={correction}
             responsible={responsible}
           />
