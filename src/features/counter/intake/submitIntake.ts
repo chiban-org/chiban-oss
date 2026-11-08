@@ -1,7 +1,8 @@
 import { eq } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { Db, Tx } from '@/db/client'
 import { applications, counterIntakes } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { lockApplication } from '@/features/applications/lockApplication'
 import { type SubmitError, submitApplication } from '@/features/applications/submitApplication'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -19,8 +20,8 @@ export interface SubmitIntakeInput {
   store?: ObjectStore
 }
 
-async function draftValues(db: Db, applicationId: string): Promise<Record<string, unknown> | null> {
-  const [row] = await db
+async function draftValues(tx: Tx, applicationId: string): Promise<Record<string, unknown> | null> {
+  const [row] = await tx
     .select({ values: applications.values })
     .from(counterIntakes)
     .innerJoin(applications, eq(applications.id, counterIntakes.applicationId))
@@ -38,10 +39,11 @@ export async function submitCounterIntake(
   const { now = new Date(), store = getObjectStore() } = input
   if (!(await mayUseCounter(db, actor, signal))) return err('forbidden')
   if (!input.signedOnPaper) return err('paper_attestation_required')
-  const values = await draftValues(db, input.applicationId)
-  if (values === null) return err('not_found')
   const recordedBy = (await userName(db, actor.userId)) ?? 'Town staff'
   return await transactionResult<{ state: 'submitted' }, SubmitIntakeError>(db, async (tx) => {
+    await lockApplication(tx, input.applicationId)
+    const values = await draftValues(tx, input.applicationId)
+    if (values === null) return err('not_found')
     const submitted = await submitApplication(
       tx,
       actor,
