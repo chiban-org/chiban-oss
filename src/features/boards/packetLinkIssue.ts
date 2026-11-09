@@ -5,6 +5,7 @@ import { boardPacketLinks, type boardPackets } from '@/db/schema'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { linkPacketMail } from '@/features/boards/packetMail'
+import { packetPlace } from '@/features/boards/packetView'
 import type { MailTransport } from '@/features/mail/transport'
 import { err, ok, type Result } from '@/types/result'
 
@@ -55,11 +56,16 @@ export async function issuePacketLink(
     },
     signal,
   )
+  const place = await packetPlace(db, packet.meetingId)
   const sent = await mail.send(
-    linkPacketMail({ name: recipient.recipientName, email }, packet, {
-      url: `${env.BASE_URL}/board/packets/${token}`,
-      days: recipient.days,
-    }),
+    linkPacketMail(
+      { name: recipient.recipientName, email },
+      { ...packet, place },
+      {
+        url: `${env.BASE_URL}/board/packets/${token}`,
+        days: recipient.days,
+      },
+    ),
     signal,
   )
   return sent.ok ? ok(linkId) : err('send_failed')

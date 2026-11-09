@@ -3,6 +3,7 @@ import type { DbOrTx } from '@/db/client'
 import {
   applications,
   boards,
+  parcels,
   projects,
   reviewAssignments,
   reviewComments,
@@ -21,6 +22,7 @@ export interface BoardComment {
   id: string
   body: string
   createdAt: Date
+  author: string | null
   attribution: string
 }
 
@@ -44,6 +46,7 @@ export interface MemberBoardAssignmentRow {
   commentBy: string | null
   status: string
   statusLabel: string
+  commenters: string[]
 }
 
 export interface BoardAssignmentView extends MemberBoardAssignmentRow {
@@ -51,6 +54,8 @@ export interface BoardAssignmentView extends MemberBoardAssignmentRow {
   boardName: string
   typeLabel: string
   parcelDisplayId: string | null
+  siteAddress: string | null
+  workDescription: string | null
   open: boolean
   comments: BoardComment[]
   documents: DocumentListRow[]
@@ -90,6 +95,7 @@ async function commentsFor(
       id: row.id,
       body: row.body,
       createdAt: row.createdAt,
+      author: row.author,
       attribution:
         row.author === null ? row.boardShortName : `${row.author}, ${row.boardShortName}`,
     }
@@ -161,7 +167,28 @@ export async function listMemberBoardAssignments(
       asc(reviewAssignments.assignedAt),
       asc(reviewAssignments.id),
     )
-  return rows.map((row) => ({ ...row, statusLabel: boardReviewStatusLabel(row.status) }))
+  const comments = await commentsFor(
+    db,
+    rows.map((r) => r.assignmentId),
+  )
+  return rows.map((row) => ({
+    ...row,
+    statusLabel: boardReviewStatusLabel(row.status),
+    commenters: commentersOf(comments.get(row.assignmentId) ?? []),
+  }))
+}
+
+function commentersOf(comments: BoardComment[]): string[] {
+  return [...new Set(comments.flatMap((c) => (c.author === null ? [] : [c.author])))]
+}
+
+function workDescriptionOf(values: unknown): string | null {
+  const record = (values ?? {}) as Record<string, unknown>
+  for (const key of ['description', 'project_description']) {
+    const value = record[key]
+    if (typeof value === 'string' && value.trim() !== '') return value.trim()
+  }
+  return null
 }
 
 export async function getBoardAssignmentView(
@@ -178,12 +205,15 @@ export async function getBoardAssignmentView(
       applicationId: applications.id,
       boardName: boards.name,
       parcelId: projects.parcelId,
+      siteAddress: parcels.siteAddress,
+      values: applications.values,
       state: applications.state,
     })
     .from(reviewAssignments)
     .innerJoin(boards, eq(boards.id, reviewAssignments.boardId))
     .innerJoin(applications, eq(applications.id, reviewAssignments.applicationId))
     .innerJoin(projects, eq(projects.id, applications.projectId))
+    .leftJoin(parcels, eq(parcels.id, projects.parcelId))
     .where(and(eq(reviewAssignments.id, assignmentId), seatedOnAssignedBoard(actor)))
   if (row === undefined) return null
   const [context, display, documents, comments] = await Promise.all([
@@ -197,14 +227,18 @@ export async function getBoardAssignmentView(
     ),
     commentsFor(db, [assignmentId]),
   ])
-  const { parcelId, state, ...fields } = row
+  const { parcelId, state, values, siteAddress, ...fields } = row
+  const thread = comments.get(assignmentId) ?? []
   return {
     ...fields,
     statusLabel: boardReviewStatusLabel(row.status),
+    commenters: commentersOf(thread),
     typeLabel: context?.typeBody.label ?? '',
     parcelDisplayId: display.get(parcelId) ?? null,
+    siteAddress: siteAddress === null || siteAddress.trim() === '' ? null : siteAddress,
+    workDescription: workDescriptionOf(values),
     open: !isTerminalState(state),
-    comments: comments.get(assignmentId) ?? [],
+    comments: thread,
     documents: documents.rows,
   }
 }
