@@ -15,7 +15,12 @@ import { entityColumns } from '@/features/export/tabular/columns'
 import { writeArchive } from '@/features/export/writeArchive'
 import { createGhostscriptConverter, type PdfaConverter } from '@/features/preservation/ghostscript'
 import { processPreservation } from '@/features/preservation/preserve'
-import type { PdfaValidation } from '@/features/preservation/verapdf'
+import { validatePendingPreservation } from '@/features/preservation/validatePending'
+import {
+  createVeraPdfValidator,
+  type PdfaValidation,
+  type PdfaValidator,
+} from '@/features/preservation/verapdf'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -38,9 +43,9 @@ const PASSED: PdfaValidation = {
   detail: null,
 }
 const FAILED: PdfaValidation = { ...PASSED, status: 'failed', detail: '6.2.11.4.1: font' }
-const validatedAs = (validation: PdfaValidation): PdfaConverter => ({
-  ...converter,
-  validatePdfA: () => Promise.resolve(validation),
+const validatedAs = (validation: PdfaValidation): PdfaValidator => ({
+  validate: () => Promise.resolve(validation),
+  validateMany: (inputs) => Promise.resolve(inputs.map(() => validation)),
 })
 const verapdfInstalled = (() => {
   try {
@@ -86,7 +91,8 @@ beforeAll(async () => {
   const preserved = fixture('text-layer.pdf')
   preservedSha = sha(preserved)
   await uploadAs(handle.db, store, world.applicant, ref, preserved, { title: 'Preserved plan' })
-  await processPreservation(handle.db, store, validatedAs(PASSED), signal)
+  await processPreservation(handle.db, store, converter, signal)
+  await validatePendingPreservation(handle.db, store, validatedAs(PASSED), signal)
   const plain = await secondPdf()
   plainSha = sha(plain)
   await uploadAs(handle.db, store, world.applicant, ref, plain, { title: 'Second plan' })
@@ -95,7 +101,7 @@ afterAll(async () => {
   await handle.drop()
 })
 
-async function build(conv: PdfaConverter, maxSheetRows?: number) {
+async function build(conv: PdfaConverter, maxSheetRows?: number, validator?: PdfaValidator) {
   const out = memoryArchive()
   const manifest = await writeArchive(
     handle.db,
@@ -104,7 +110,11 @@ async function build(conv: PdfaConverter, maxSheetRows?: number) {
       exportId: crypto.randomUUID(),
       kind: 'business',
       base: null,
-      bundle: { converter: conv, ...(maxSheetRows === undefined ? {} : { maxSheetRows }) },
+      bundle: {
+        converter: conv,
+        ...(validator === undefined ? {} : { validator }),
+        ...(maxSheetRows === undefined ? {} : { maxSheetRows }),
+      },
     },
     out.sink,
     signal,
@@ -215,23 +225,19 @@ describe('export bundle: PDF/A copies', () => {
   }, 240_000)
 
   it('lists the validation recorded when the stored copy was made', async () => {
-    const { manifest } = await build(validatedAs(FAILED))
+    const { manifest } = await build(converter, undefined, validatedAs(FAILED))
     expect(manifest.pdfa?.find((p) => p.sourceSha256 === preservedSha)?.validation).toEqual(PASSED)
   }, 240_000)
 
   it('validates a copy the export converts and records a fail without dropping the copy', async () => {
-    const { manifest, entries } = await build(validatedAs(FAILED))
+    const { manifest, entries } = await build(converter, undefined, validatedAs(FAILED))
     const plain = manifest.pdfa?.find((p) => p.sourceSha256 === plainSha)
     expect(plain).toMatchObject({ status: 'converted', validation: FAILED })
     expect(entries.has(plain?.path ?? '')).toBe(true)
   }, 240_000)
 
-  it('says not validated, never passed, when the converter has no validator', async () => {
-    const bare: PdfaConverter = {
-      toPdfA: (input, abort) => converter.toPdfA(input, abort),
-      extractText: (input, abort) => converter.extractText(input, abort),
-    }
-    const { manifest } = await build(bare)
+  it('says not validated, never passed, when the export has no validator', async () => {
+    const { manifest } = await build(converter)
     expect(manifest.pdfa?.find((p) => p.sourceSha256 === plainSha)?.validation).toEqual({
       status: 'not_validated',
       profile: 'PDF/A-2b',
@@ -244,7 +250,7 @@ describe('export bundle: PDF/A copies', () => {
   it('says not validated for a stored copy that was made before anything was recorded', async () => {
     await handle.db.execute(sql`update preservation_records set validation = null`)
     try {
-      const { manifest } = await build(validatedAs(PASSED))
+      const { manifest } = await build(converter, undefined, validatedAs(PASSED))
       expect(manifest.pdfa?.find((p) => p.sourceSha256 === preservedSha)?.validation).toMatchObject(
         {
           status: 'not_validated',
@@ -261,7 +267,8 @@ describe('export bundle: PDF/A copies', () => {
   it.skipIf(!verapdfInstalled)(
     'validates the copy it converts with the real veraPDF as PDF/A-2b',
     async () => {
-      const { manifest } = await build(converter)
+      const real = createVeraPdfValidator({ path: env.VERAPDF_PATH, timeoutMs: 120_000 })
+      const { manifest } = await build(converter, undefined, real)
       expect(manifest.pdfa?.find((p) => p.sourceSha256 === plainSha)?.validation).toMatchObject({
         status: 'passed',
         profile: 'PDF/A-2b',

@@ -60,12 +60,7 @@ async function obtainOcr(
     PDF_TYPE,
     ctx.signal,
   )
-  return {
-    ok: true,
-    pdfSha256: stored.sha256,
-    text: converted.value.text,
-    validation: converted.value.validation,
-  }
+  return { ok: true, pdfSha256: stored.sha256, text: converted.value.text }
 }
 
 export async function importItem(ctx: RunContext, item: MigrationItemRow): Promise<void> {

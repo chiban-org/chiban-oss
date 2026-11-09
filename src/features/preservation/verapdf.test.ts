@@ -1,4 +1,4 @@
-import { chmodSync, mkdtempSync, writeFileSync } from 'node:fs'
+import { chmodSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, expect, it } from 'vitest'
@@ -54,6 +54,50 @@ const nonCompliant = report({
 })
 
 const unreadable = report({ taskException: { message: 'not a PDF' } })
+
+describe('veraPDF validator batches', () => {
+  it('checks many files in one run and matches each result to its file by name', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'chiban-fake-verapdf-'))
+    const log = path.join(dir, 'runs.log')
+    const job = (name: string, ok: boolean) => ({
+      itemDetails: { name },
+      validationResult: [
+        {
+          compliant: ok,
+          details: {
+            ruleSummaries: ok ? [] : [{ clause: '6.1', description: 'bad', failedChecks: 1 }],
+          },
+        },
+      ],
+    })
+    const body = JSON.stringify({
+      report: {
+        buildInformation: { releaseDetails: [{ id: 'apps', version: '1.30.0' }] },
+        jobs: [job('/x/0.pdf', true), job('/x/1.pdf', false), job('/x/2.pdf', true)],
+      },
+    })
+    const bin = fakeBinary(`echo run >> ${log}\ncat <<'JSON'\n${body}\nJSON\nexit 1`)
+    const validator = createVeraPdfValidator({ path: bin, timeoutMs: 30_000 })
+    const results = await validator.validateMany([PDF, PDF, PDF], signal())
+    expect(results.map((r) => r.status)).toEqual(
+      ['passed', 'passed', 'passed'].map((_, i) => (i === 1 ? 'failed' : 'passed')),
+    )
+    expect(readFileSync(log, 'utf8').trim().split('\n')).toHaveLength(1)
+  })
+
+  it('starts one run per hundred files, not one per file', async () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'chiban-fake-verapdf-'))
+    const log = path.join(dir, 'runs.log')
+    const bin = fakeBinary(`echo run >> ${log}\necho '{}'`)
+    const validator = createVeraPdfValidator({ path: bin, timeoutMs: 30_000 })
+    const results = await validator.validateMany(
+      Array.from({ length: 250 }, () => PDF),
+      signal(),
+    )
+    expect(results).toHaveLength(250)
+    expect(readFileSync(log, 'utf8').trim().split('\n')).toHaveLength(3)
+  })
+})
 
 describe('veraPDF validator', () => {
   it('records a pass with the profile and the veraPDF version', async () => {

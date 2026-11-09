@@ -14,11 +14,10 @@ import { AUDIENCES } from '@/features/documents/types'
 import type { MigrationItemRow } from '@/features/migration/lookups'
 import { linkRecordByRawRef } from '@/features/parcels/recordLinks'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
-import type { PdfaValidation } from '@/features/preservation/verapdf'
 import { assignSeries } from '@/features/records/assignments'
 
 export type OcrResult =
-  | { ok: true; pdfSha256: string; text: string; validation?: PdfaValidation }
+  | { ok: true; pdfSha256: string; text: string }
   | { ok: false; reason: string; detail: string }
 
 export interface AttachBatch {
@@ -47,7 +46,6 @@ async function insertPreservation(
       status: 'complete',
       attempts: 1,
       pdfaVersionId,
-      validation: ocr.validation ?? null,
     })
     return
   }

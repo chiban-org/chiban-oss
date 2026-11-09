@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import { sql } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
@@ -9,7 +9,9 @@ import type { PdfaConverter } from '@/features/preservation/ghostscript'
 import {
   notValidated,
   type PdfaValidation,
+  type PdfaValidator,
   pdfaValidationSchema,
+  VERAPDF_BATCH_SIZE,
 } from '@/features/preservation/verapdf'
 import type { ObjectStore } from '@/features/storage/objectStore'
 
@@ -93,6 +95,7 @@ export interface RenditionContext {
   workDir: string
   store: ObjectStore
   converter: PdfaConverter
+  validator?: PdfaValidator
   signal: AbortSignal
 }
 
@@ -102,8 +105,6 @@ async function convert(ctx: RenditionContext, file: PdfFile): Promise<PdfaRendit
   const converted = await ctx.converter.toPdfA(bytes, ctx.signal)
   if (!converted.ok) return failed(file.sha256, converted.error.reason, converted.error.detail)
   await writeFile(join(ctx.workDir, pdfaWorkName(file.sha256)), converted.value)
-  const validation =
-    (await ctx.converter.validatePdfA?.(converted.value, ctx.signal)) ?? notValidated(NO_VALIDATOR)
   return {
     sourceSha256: file.sha256,
     status: 'converted',
@@ -112,7 +113,7 @@ async function convert(ctx: RenditionContext, file: PdfFile): Promise<PdfaRendit
     size: converted.value.length,
     reason: null,
     detail: null,
-    validation,
+    validation: notValidated(NO_VALIDATOR),
   }
 }
 
@@ -141,5 +142,27 @@ export async function buildPdfaRenditions(ctx: RenditionContext): Promise<PdfaRe
     }
     entries.push(await convert(ctx, file))
   }
+  await validateConverted(ctx, entries)
   return entries
+}
+
+async function validateConverted(
+  ctx: RenditionContext,
+  entries: PdfaRenditionEntry[],
+): Promise<void> {
+  if (ctx.validator === undefined) return
+  const converted = entries.filter((e) => e.status === 'converted')
+  for (let i = 0; i < converted.length; i += VERAPDF_BATCH_SIZE) {
+    const chunk = converted.slice(i, i + VERAPDF_BATCH_SIZE)
+    const bytes = await Promise.all(
+      chunk.map(
+        async (e) =>
+          new Uint8Array(await readFile(join(ctx.workDir, pdfaWorkName(e.sourceSha256)))),
+      ),
+    )
+    const results = await ctx.validator.validateMany(bytes, ctx.signal)
+    chunk.forEach((entry, j) => {
+      entry.validation = results[j] ?? notValidated(NO_VALIDATOR)
+    })
+  }
 }

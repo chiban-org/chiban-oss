@@ -9,7 +9,6 @@ import { requireCapability } from '@/features/authz/capabilities'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import type { OcrConverter } from '@/features/migration/ocrmypdf'
 import type { PdfaConverter } from '@/features/preservation/ghostscript'
-import type { PdfaValidation } from '@/features/preservation/verapdf'
 import { wrapImageAsPdf } from '@/features/preservation/wrapImage'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
@@ -98,7 +97,6 @@ interface CompletedPdf {
   recordId: string
   pdf: Uint8Array
   text: string | null
-  validation: PdfaValidation | null
 }
 
 async function completeWithPdf(
@@ -107,7 +105,7 @@ async function completeWithPdf(
   input: CompletedPdf,
   signal: AbortSignal,
 ): Promise<Result<'complete', 'incomplete'>> {
-  const { version, recordId, pdf, text, validation } = input
+  const { version, recordId, pdf, text } = input
   const stored = await storeGeneratedBytes(db, store, pdf, PDF_TYPE, signal)
   const [created] = await db
     .insert(documentVersions)
@@ -132,7 +130,6 @@ async function completeWithPdf(
       reason: null,
       detail: null,
       pdfaVersionId: created?.id ?? null,
-      validation,
       updatedAt: new Date(),
     })
     .where(eq(preservationRecords.id, recordId))
@@ -169,7 +166,6 @@ async function ocrTiff(
         recordId,
         pdf: converted.value.pdf,
         text: converted.value.text,
-        validation: converted.value.validation ?? null,
       },
       signal,
     )
@@ -219,11 +215,10 @@ async function convertOriginal(
     await markIncomplete(db, recordId, converted.error.reason, converted.error.detail)
     return err('incomplete')
   }
-  const validation = (await converter.validatePdfA?.(converted.value, signal)) ?? null
   return await completeWithPdf(
     db,
     store,
-    { version, recordId, pdf: converted.value, text: null, validation },
+    { version, recordId, pdf: converted.value, text: null },
     signal,
   )
 }

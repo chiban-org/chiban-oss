@@ -16,7 +16,6 @@ const converter = createGhostscriptConverter({
   gsPath: env.GHOSTSCRIPT_PATH,
   iccProfilePath: env.GHOSTSCRIPT_ICC_PROFILE ?? null,
   timeoutMs: CONVERSION_TIMEOUT_MS,
-  veraPdfPath: env.VERAPDF_PATH,
 })
 
 export const redactionRunJob = defineJob<RedactionRunPayload>({

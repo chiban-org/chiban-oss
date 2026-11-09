@@ -10,6 +10,7 @@ import { pruneExpiredExports } from '@/features/export/pruneExports'
 import { writeArchive } from '@/features/export/writeArchive'
 import { createZipSink } from '@/features/export/zipSink'
 import { createGhostscriptConverter } from '@/features/preservation/ghostscript'
+import { createVeraPdfValidator } from '@/features/preservation/verapdf'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { ok } from '@/types/result'
@@ -25,8 +26,11 @@ function exportConverter() {
     gsPath: env.GHOSTSCRIPT_PATH,
     iccProfilePath: env.GHOSTSCRIPT_ICC_PROFILE ?? null,
     timeoutMs: PDFA_TIMEOUT_MS,
-    veraPdfPath: env.VERAPDF_PATH,
   })
+}
+
+function exportValidator() {
+  return createVeraPdfValidator({ path: env.VERAPDF_PATH, timeoutMs: PDFA_TIMEOUT_MS })
 }
 
 export function exportObjectKey(exportId: string, today: string): string {
@@ -57,7 +61,12 @@ export async function buildBusinessExport(
     const manifest = await writeArchive(
       db,
       store,
-      { exportId, kind: 'business', base: null, bundle: { converter: exportConverter() } },
+      {
+        exportId,
+        kind: 'business',
+        base: null,
+        bundle: { converter: exportConverter(), validator: exportValidator() },
+      },
       zip.sink,
       signal,
     )

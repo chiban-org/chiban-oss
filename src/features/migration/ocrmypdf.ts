@@ -2,7 +2,6 @@ import { execFile } from 'node:child_process'
 import { mkdtemp, readFile, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { createVeraPdfValidator, type PdfaValidation } from '@/features/preservation/verapdf'
 import { err, ok, type Result } from '@/types/result'
 
 export type OcrFailureReason =
@@ -25,14 +24,13 @@ export interface OcrConverter {
     inputPath: string,
     kind: 'pdf' | 'image',
     signal: AbortSignal,
-  ): Promise<Result<{ pdf: Uint8Array; text: string; validation?: PdfaValidation }, OcrFailure>>
+  ): Promise<Result<{ pdf: Uint8Array; text: string }, OcrFailure>>
 }
 
 export interface OcrmypdfConfig {
   path: string
   language: 'eng'
   timeoutMs: number
-  veraPdfPath?: string
 }
 
 const MAX_BUFFER = 16 * 1024 * 1024
@@ -85,10 +83,6 @@ function failureOf(result: Run): OcrFailure {
 }
 
 export function createOcrmypdfConverter(config: OcrmypdfConfig): OcrConverter {
-  const validator = createVeraPdfValidator({
-    path: config.veraPdfPath ?? 'verapdf',
-    timeoutMs: config.timeoutMs,
-  })
   return {
     async ocrToPdfA(inputPath, kind, signal) {
       signal.throwIfAborted()
@@ -117,11 +111,7 @@ export function createOcrmypdfConverter(config: OcrmypdfConfig): OcrConverter {
         if (Buffer.from(pdf.subarray(0, 5)).toString('latin1') !== '%PDF-') {
           return err({ reason: 'invalid_output', exitCode: 0, detail: 'Output is not a PDF' })
         }
-        return ok({
-          pdf,
-          text: await readFile(sidecar, 'utf8'),
-          validation: await validator.validate(pdf, signal),
-        })
+        return ok({ pdf, text: await readFile(sidecar, 'utf8') })
       } catch (e) {
         if (e instanceof Error && e.name === 'AbortError') throw e
         return err({
