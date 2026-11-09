@@ -63,12 +63,12 @@ export const DEFAULT_WORDING: Record<WordingKey, Wording> = {
     ].join('\n\n'),
   },
   clock_due_soon: {
-    subject: `Deadline coming up: ${NUMBER}, {{clock.name}} by {{clock.due}}`,
-    body: `The {{clock.name}} deadline for application ${NUMBER} is {{clock.due}}. Open the application to act before it passes.`,
+    subject: `Deadline coming up: ${NUMBER}, {{clock.name}}, due {{clock.due}}`,
+    body: `{{clock.name}} for application ${NUMBER}: due {{clock.due}}. Open the application to act before it passes.`,
   },
   clock_overdue: {
     subject: `Deadline passed: ${NUMBER}, {{clock.name}}`,
-    body: `The {{clock.name}} deadline for application ${NUMBER} passed on {{clock.due}}. Open the application to act on it or record an extension.`,
+    body: `{{clock.name}} for application ${NUMBER}: it was due {{clock.due}} and has passed. Open the application to act on it or record an extension.`,
   },
   decision_filed: {
     subject: `Decision filed: ${NUMBER}, {{decision.outcome}}`,

@@ -138,7 +138,7 @@ describe('notification messages', () => {
       payload: { number: 'SPR-2026-0004', clockLabel: 'Board action', dueOn: '2026-11-20' },
     })
     expect(rendered.subject).toBe(
-      'Deadline coming up: SPR-2026-0004, Board action by November 20, 2026',
+      'Deadline coming up: SPR-2026-0004, Board action, due November 20, 2026',
     )
     expect(rendered.text).toContain('/staff/applications/a1')
     expect(findIsoDates(`${rendered.subject} ${rendered.text} ${rendered.html}`)).toEqual([])
@@ -147,7 +147,9 @@ describe('notification messages', () => {
       townName: TOWN,
       payload: { number: 'SPR-2026-0004', clockLabel: 'Board action', dueOn: '2026-11-20' },
     })
-    expect(overdue.text).toContain('passed on November 20, 2026')
+    expect(overdue.text).toContain(
+      'Board action for application SPR-2026-0004: it was due November 20, 2026 and has passed.',
+    )
   })
 
   it('tell parties a decision was filed, with a claim link for those without an account', () => {

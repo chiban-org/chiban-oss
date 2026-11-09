@@ -1,8 +1,13 @@
-import { and, eq, isNull, lt } from 'drizzle-orm'
+import { and, eq, inArray, isNull, lt } from 'drizzle-orm'
 import { JOB_NAMES } from '@/constants/jobNames'
 import type { Tx } from '@/db/client'
 import { applications, clocks, relianceLinks } from '@/db/schema'
 import { transitionApplication } from '@/features/applications/transition'
+import {
+  isActionDue,
+  noticeOverdueClocks,
+  warnClocksDueSoon,
+} from '@/features/notifications/clockNotices'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, todayInTimeZone } from '@/types/civilDate'
@@ -17,18 +22,16 @@ interface DailyPayload {
   today?: CivilDate
 }
 
-async function markOverdue(tx: Tx, today: CivilDate): Promise<void> {
-  const pack = loadPack()
+async function markOverdue(tx: Tx, today: CivilDate): Promise<string[]> {
   const past = await tx
     .select()
     .from(clocks)
     .where(and(eq(clocks.status, 'running'), lt(clocks.currentDue, today)))
-  for (const clock of past) {
-    const rule = ruleByKey(pack, clock.ruleKey, clock.ruleVersion)
-    if (rule.kind === 'clock' && rule.clockType === 'action_due') {
-      await tx.update(clocks).set({ status: 'overdue' }).where(eq(clocks.id, clock.id))
-    }
+  const flipped = past.filter(isActionDue).map((clock) => clock.id)
+  if (flipped.length > 0) {
+    await tx.update(clocks).set({ status: 'overdue' }).where(inArray(clocks.id, flipped))
   }
+  return flipped
 }
 
 async function stillLapsed(
@@ -111,7 +114,8 @@ export const clocksDailyJob = defineJob<DailyPayload>({
       : `clocks.daily:${p.today}`,
   handler: async (payload, ctx) => {
     const today = payload.today ?? (await townToday(ctx.db, new Date(), ctx.signal))
-    await markOverdue(ctx.db, today)
+    await noticeOverdueClocks(ctx.db, await markOverdue(ctx.db, today), ctx.signal)
+    await warnClocksDueSoon(ctx.db, today, ctx.signal)
     const failures = await expireLapsedPermits(ctx.db, today, ctx.signal)
     if (failures.length > 0) return failKeepingWrites(`expiry failed: ${failures.join('; ')}`)
     return ok(undefined)

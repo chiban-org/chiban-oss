@@ -36,7 +36,7 @@ import {
 import { townToday } from '@/features/town/today'
 import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
 
-const WARNING_DAYS = 5
+export const WARNING_DAYS = 5
 
 export interface WorkQueueFilters {
   states?: CoreState[]
