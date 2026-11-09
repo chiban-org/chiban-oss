@@ -43,7 +43,7 @@ const ApplicationTypeBodyShape = z.object({
   reportFields: z.array(z.string().regex(/^[a-z][a-z0-9_]*$/)).optional(),
 })
 
-function boardKindOf(classification: string | undefined): string | null {
+export function boardKindOf(classification: string | undefined): string | null {
   return NH_CLASSIFICATIONS.find((c) => c.key === classification)?.boardKind ?? null
 }
 

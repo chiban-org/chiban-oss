@@ -1,5 +1,6 @@
 import { inArray } from 'drizzle-orm'
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { FilterTabs } from '@/components/dataTable/FilterTabs'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortBar } from '@/components/dataTable/SortHeader'
@@ -19,6 +20,7 @@ import {
   readExceptionView,
 } from '@/features/gis/exceptionSort'
 import { exceptionFacets, listExceptions } from '@/features/gis/exceptionsList'
+import { displayIdsFor } from '@/features/parcels/displayId'
 import { townTimeZone } from '@/features/town/timeZone'
 import { recordStaffContext } from '@/server/requireStaff'
 import { ExceptionRow } from './ExceptionRow'
@@ -56,15 +58,32 @@ function filterViews(view: ExceptionView, facets: Facets) {
   return { tabs, chips, sortOptions, clear: clearHref(EXCEPTIONS_PATH, view.params, ['kind']) }
 }
 
+function ParcelScope({ parcelId, displayId }: { parcelId: string; displayId: string | undefined }) {
+  return (
+    <p>
+      {'Showing exceptions on parcel '}
+      <Link href={`/staff/parcels/${parcelId}`}>{displayId ?? 'with no map-lot ID'}</Link>
+      {'. '}
+      <Link href={EXCEPTIONS_PATH}>Show exceptions on every parcel</Link>
+    </p>
+  )
+}
+
 export default async function StaffExceptionsPage({ searchParams }: ExceptionsPageProps) {
   const view = readExceptionView(await searchParams)
   const ctx = await recordStaffContext()
   if (ctx === null) return <NoPermission title="Import exceptions" action="see import exceptions" />
   const [kind] = view.kind
+  const parcel = view.parcel
   const [rows, facets, canManage, timeZone] = await Promise.all([
     listExceptions(
       ctx.db,
-      { status: view.status, sort: view.sort, ...(kind === undefined ? {} : { kind }) },
+      {
+        status: view.status,
+        sort: view.sort,
+        ...(kind === undefined ? {} : { kind }),
+        ...(parcel === null ? {} : { parcelId: parcel }),
+      },
       ctx.signal,
     ),
     exceptionFacets(ctx.db, view, ctx.signal),
@@ -78,10 +97,14 @@ export default async function StaffExceptionsPage({ searchParams }: ExceptionsPa
       ? []
       : await ctx.db.select().from(importRuns).where(inArray(importRuns.id, heldRunIds))
   const { tabs, chips, sortOptions, clear } = filterViews(view, facets)
+  const parcelIds = parcel === null ? null : await displayIdsFor(ctx.db, [parcel])
   return (
     <main data-wide="">
       <h1>Import exceptions</h1>
       <p>Rows an import could not apply on its own. Newest first.</p>
+      {parcel === null ? null : (
+        <ParcelScope parcelId={parcel} displayId={parcelIds?.get(parcel)} />
+      )}
       <FilterTabs label="Status" tabs={tabs} />
       <div className="toolbar flex flex-wrap items-center justify-between gap-3">
         <QuickFilters label="Quick filters" groups={chips} clearHref={clear} />

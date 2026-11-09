@@ -16,36 +16,46 @@ type Links = Record<RecordSortKey, SortLink>
 
 interface DateColumn {
   label: string
-  date: (row: RecordRow) => CivilDate | null
+  text: (row: RecordRow) => string | null
   link: (links: Links) => SortLink
 }
 
+function shortDate(date: CivilDate | null): string | null {
+  return date === null ? null : formatCivilDateShort(date)
+}
+
+function closedOrScheduled(row: RecordRow): string | null {
+  if (row.dates.closed === null && row.scheduled !== null) {
+    return `Scheduled ${formatCivilDateShort(row.scheduled)}`
+  }
+  return shortDate(row.dates.closed)
+}
+
 const DATE_COLUMNS: readonly DateColumn[] = [
-  { label: 'Filed or opened', date: (r) => r.dates.filed, link: (l) => l.filed },
-  { label: 'Issued', date: (r) => r.dates.issued, link: (l) => l.issued },
-  { label: 'Expires', date: (r) => r.dates.expires, link: (l) => l.expires },
-  { label: 'Decided or closed', date: (r) => r.dates.closed, link: (l) => l.closed },
+  { label: 'Filed or opened', text: (r) => shortDate(r.dates.filed), link: (l) => l.filed },
+  { label: 'Issued', text: (r) => shortDate(r.dates.issued), link: (l) => l.issued },
+  { label: 'Expires', text: (r) => shortDate(r.dates.expires), link: (l) => l.expires },
+  { label: 'Decided or closed', text: closedOrScheduled, link: (l) => l.closed },
 ]
 
 const NONE = <span className="text-muted-foreground">None</span>
 
-function DateCell({ label, date }: { label: string; date: CivilDate | null }) {
+function DateCell({ label, text }: { label: string; text: string | null }) {
   return (
     <td
       data-label={label}
-      className={cn(STACKED, 'whitespace-nowrap tabular-nums', date === null && 'max-md:hidden')}
+      className={cn(STACKED, 'whitespace-nowrap tabular-nums', text === null && 'max-md:hidden')}
     >
-      {date === null ? NONE : formatCivilDateShort(date)}
+      {text ?? NONE}
     </td>
   )
 }
 
 function Identifier({ row }: { row: RecordRow }) {
-  const label = row.number ?? row.title
-  if (row.href === null) return <span className="whitespace-nowrap font-semibold">{label}</span>
+  if (row.href === null) return <span className="whitespace-nowrap font-semibold">{row.label}</span>
   return (
     <Link href={row.href} className="whitespace-nowrap font-semibold">
-      {label}
+      {row.label}
     </Link>
   )
 }
@@ -54,7 +64,7 @@ function RecordCell({ row, parcelHrefBase }: { row: RecordRow; parcelHrefBase: s
   return (
     <td data-label="Record" className="max-md:block max-md:p-0">
       <Identifier row={row} />
-      {row.number === null ? null : <span className="block">{row.title}</span>}
+      {row.sublabel === null ? null : <span className="block">{row.sublabel}</span>}
       {row.carriedFrom === undefined ? null : (
         <span className="block text-xs text-muted-foreground">
           {'Carried forward from parcel '}
@@ -82,7 +92,7 @@ function Cells({ row, parcelHrefBase }: { row: RecordRow; parcelHrefBase: string
         </span>
       </td>
       {DATE_COLUMNS.map((column) => (
-        <DateCell key={column.label} label={column.label} date={column.date(row)} />
+        <DateCell key={column.label} label={column.label} text={column.text(row)} />
       ))}
     </>
   )

@@ -1,5 +1,6 @@
 import type { DbOrTx } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
+import type { OpenGroup } from '@/features/parcels/openGroups'
 import type { CivilDate } from '@/types/civilDate'
 
 export type Viewer = { kind: 'public' } | { kind: 'actor'; actor: Actor }
@@ -22,6 +23,8 @@ export interface ParcelRecordSummary {
   note?: string | null
   thumbnailHref?: string | null
   closed?: boolean
+  openAs?: OpenGroup | null
+  scheduled?: CivilDate | null
   parcelFile?: boolean
   dates?: RecordDates
   type?: { key: string; label: string }

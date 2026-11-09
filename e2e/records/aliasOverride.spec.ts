@@ -13,6 +13,7 @@ test.describe('overriding a parcel ID', () => {
   }) => {
     const parcelId = await parcelIdOfGis(db, '007022000000')
     await page.goto(`/staff/parcels/${parcelId}`)
+    await openDetails(page.locator('body'), 'Record and history')
     await openDetails(page.locator('body'), 'Override an ID')
     await page.getByLabel('Format key').fill('gis12')
     const value = page.getByLabel('ID value')

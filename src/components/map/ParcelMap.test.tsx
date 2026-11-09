@@ -96,6 +96,19 @@ describe('ParcelMap load failure', () => {
   })
 })
 
+describe('ParcelMap on a record page', () => {
+  it('says what to do when the map fails on the page of the parcel itself', async () => {
+    failing.construct = true
+    render(<ParcelMap layers={[]} onSelect={noop} notLoaded="The map did not load." compact />)
+    await waitFor(() => expect(screen.getByRole('alert').textContent).toBe('The map did not load.'))
+  })
+
+  it('draws a compact map shorter than the full one', () => {
+    render(<ParcelMap layers={[]} onSelect={noop} compact />)
+    expect(screen.getByRole('region', { name: 'Parcel map' }).className).toContain('h-64')
+  })
+})
+
 describe('ParcelMap zoom', () => {
   it('never zooms out past the zoom where parcel tiles start, so a wide town is not a blank map', async () => {
     render(<ParcelMap layers={[]} onSelect={noop} bbox={[-71.61, 43.87, -71.54, 44.15]} />)

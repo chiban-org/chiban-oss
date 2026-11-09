@@ -26,13 +26,23 @@ export default async function StaffLayout({ children }: { children: ReactNode })
   const rail = jar.get(STAFF_NAV_COOKIE)?.value === 'rail'
   return (
     <div className="staff-shell flex min-h-screen flex-col md:flex-row">
+      <a
+        href="#content"
+        className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50 focus:rounded-md focus:bg-surface focus:px-4 focus:py-2 focus:font-semibold focus:text-ink focus:shadow"
+      >
+        Skip to content
+      </a>
       <StaffNav
         items={navItems}
         town={town.ok ? town.value.name : null}
         user={{ name: account?.displayName ?? 'Signed in', role: primaryRoleLabel(actor.roles) }}
         initialRail={rail}
       />
-      <div className="staff-content w-full min-w-0 max-w-[var(--content-max-width)] flex-1 px-4 py-6 md:px-10 md:py-10">
+      <div
+        id="content"
+        tabIndex={-1}
+        className="staff-content w-full min-w-0 max-w-[var(--content-max-width)] flex-1 px-4 py-6 md:px-10 md:py-10 focus:outline-none"
+      >
         <ServiceNotice mode={service.mode} exportUntil={service.exportUntil} />
         {children}
       </div>

@@ -31,6 +31,14 @@ export interface ExceptionView {
   sort: SortState<ExceptionSortKey>
   status: ExceptionStatus
   kind: ImportExceptionKind[]
+  parcel: string | null
+}
+
+const RECORD_ID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+
+function readParcel(params: TableParams): string | null {
+  const given = firstParam(params, 'parcel')
+  return given !== undefined && RECORD_ID.test(given) ? given : null
 }
 
 function readStatus(params: TableParams): ExceptionStatus {
@@ -45,5 +53,6 @@ export function readExceptionView(raw: RawSearchParams): ExceptionView {
     sort: parseSort(EXCEPTION_SORT, params),
     status: readStatus(params),
     kind: singleValue(params, 'kind', IMPORT_EXCEPTION_KINDS),
+    parcel: readParcel(params),
   }
 }

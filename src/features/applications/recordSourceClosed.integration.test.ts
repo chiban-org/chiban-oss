@@ -30,14 +30,14 @@ async function closedFlagFor(state: string): Promise<boolean | undefined> {
 }
 
 describe('application parcel record closed flag', () => {
-  it('is set for issued, expired, closed, denied and withdrawn permits', async () => {
-    for (const state of ['issued', 'expired', 'closed', 'denied', 'withdrawn']) {
+  it('is set for expired, closed, denied and withdrawn permits', async () => {
+    for (const state of ['expired', 'closed', 'denied', 'withdrawn']) {
       expect(await closedFlagFor(state)).toBe(true)
     }
   })
 
-  it('is not set for permits still in progress', async () => {
-    for (const state of ['submitted', 'under_review', 'decided', 'suspended']) {
+  it('is not set for permits in progress or in force', async () => {
+    for (const state of ['submitted', 'under_review', 'decided', 'issued', 'suspended']) {
       expect(await closedFlagFor(state)).toBe(false)
     }
   })
