@@ -111,6 +111,15 @@ describe('ocr environment', () => {
   })
 })
 
+describe('veraPDF environment', () => {
+  it('VERAPDF_PATH defaults to verapdf on the PATH and can be overridden', () => {
+    expect(envSchema.parse(base).VERAPDF_PATH).toBe('verapdf')
+    expect(envSchema.parse({ ...base, VERAPDF_PATH: '/opt/verapdf/verapdf' }).VERAPDF_PATH).toBe(
+      '/opt/verapdf/verapdf',
+    )
+  })
+})
+
 describe('strict env prefixes', () => {
   it('lists the prefixes the product owns', () => {
     expect(ENV_PREFIXES_STRICT).toEqual([

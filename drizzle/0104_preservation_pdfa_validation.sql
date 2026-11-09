@@ -1,0 +1,1 @@
+ALTER TABLE "preservation_records" ADD COLUMN "validation" jsonb;

@@ -3,6 +3,7 @@ import { CHECK_UNSUPPORTED_COPY } from '@/constants/formCheck'
 import { type Db, db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { MAX_ADJUSTMENT_DAYS } from '@/features/clocks/adjustmentKinds'
+import { UNKNOWN_FORMAT_COPY } from '@/features/parcels/idFormatCopy'
 import { type GuardOptions, guardAction } from '@/server/actionGuard'
 
 export type ActionResult =
@@ -38,7 +39,7 @@ export const ERROR_COPY: Record<string, string> = {
   id_format_mismatch: 'The ID does not match the selected format.',
   invalid_parcel_id: 'Choose a parcel from the list.',
   invalid_date: 'Enter a valid date.',
-  unknown_format: 'Unknown ID format.',
+  unknown_format: UNKNOWN_FORMAT_COPY,
   already_adopted: 'This starter has already been adopted.',
   unknown_starter: 'Unknown starter.',
   not_adopted: 'That starter has not been adopted.',

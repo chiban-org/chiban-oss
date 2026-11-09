@@ -67,6 +67,10 @@ export type ProcessingSortKey =
   | 'decision'
   | 'onTime'
   | 'late'
+  | 'decided'
+  | 'notIssued'
+  | 'decisionTurnaround'
+  | 'decisionP90'
 
 export const PROCESSING_SORT: SortConfig<ProcessingSortKey> = {
   defaultKey: 'order',
@@ -79,6 +83,10 @@ export const PROCESSING_SORT: SortConfig<ProcessingSortKey> = {
     decision: 'desc',
     onTime: 'desc',
     late: 'desc',
+    decided: 'desc',
+    notIssued: 'desc',
+    decisionTurnaround: 'desc',
+    decisionP90: 'desc',
   },
 }
 
@@ -96,6 +104,10 @@ export function sortProcessing(
     decision: (r) => r.medianCompleteToDecision,
     onTime: (r) => r.decidedOnTime,
     late: (r) => r.decidedLate,
+    decided: (r) => r.decided,
+    notIssued: (r) => r.decidedNotIssued,
+    decisionTurnaround: (r) => r.medianReceivedToDecision,
+    decisionP90: (r) => r.p90ReceivedToDecision,
   })
 }
 

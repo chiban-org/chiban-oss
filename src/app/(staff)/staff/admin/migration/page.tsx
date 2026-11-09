@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
+import { NoIdFormatsNotice } from '@/components/parcels/NoIdFormatsNotice'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { listBatches } from '@/features/migration/batchQueries'
+import { hasIdFormats } from '@/features/parcels/idFormatCopy'
 import { getTownSettings } from '@/features/town/settings'
 import { formatInstantDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
@@ -25,6 +27,7 @@ export default async function MigrationPage() {
         title="Scanned property files"
         lead="Batches of old scanned property files brought into Chiban. Nothing in a batch is public until someone with permission shows it on the public site."
       />
+      {(await hasIdFormats(ctx.db)) ? null : <NoIdFormatsNotice canEdit />}
       <p>
         Each batch is one folder of scanned files that an operator scanned and ran with the legacy
         documents command. Originals are kept as they are, and a searchable PDF/A copy is stored

@@ -1,3 +1,4 @@
+import { NH_PARCEL_ID_FORMATS } from '@packs/nh/parcelIdFormats'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Role } from '@/constants/roles'
 import type { Db, DbOrTx } from '@/db/client'
@@ -10,10 +11,7 @@ import { makeUser } from '@/test/factories'
 export async function seedFormats(db: DbOrTx): Promise<void> {
   await db
     .insert(parcelIdFormats)
-    .values([
-      { key: 'cama15', label: 'CAMA number', kind: 'digits', width: 15 },
-      { key: 'gis12', label: 'Map-lot ID', kind: 'digits', width: 12, isDisplay: true },
-    ])
+    .values(NH_PARCEL_ID_FORMATS.map(({ example: _example, ...format }) => format))
     .onConflictDoNothing()
 }
 

@@ -2,7 +2,7 @@ import { parseArgs } from 'node:util'
 import { z } from 'zod'
 import { ROLES } from '@/constants/roles'
 import { db, pool } from '@/db/client'
-import { createStaffUser } from '@/features/auth/createStaffUser'
+import { createStaffUserWithDefaults } from '@/features/auth/createStaffUserWithDefaults'
 
 const argsSchema = z.object({
   email: z.string().min(3),
@@ -26,7 +26,7 @@ if (!parsed.success) {
   process.exit(1)
 }
 
-const result = await createStaffUser(
+const result = await createStaffUserWithDefaults(
   db,
   {
     email: parsed.data.email,
@@ -34,6 +34,7 @@ const result = await createStaffUser(
     role: parsed.data.role,
     password: parsed.data.password,
   },
+  new Date(),
   AbortSignal.timeout(60_000),
 )
 await pool.end()

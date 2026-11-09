@@ -56,6 +56,12 @@ export const SETTINGS_MENU_ITEMS: readonly SettingsMenuItem[] = [
     match: [kind('town_profile')],
   },
   {
+    href: '/staff/settings/parcel-id-formats',
+    label: 'Parcel ID formats',
+    group: 'town',
+    access: config,
+  },
+  {
     href: '/staff/settings/letterhead',
     label: 'Letterhead',
     group: 'town',

@@ -32,6 +32,7 @@ describe('settings menu', () => {
     expect(labels).toHaveLength(SETTINGS_MENU_ITEMS.length)
     expect(labels.slice(0, 5)).toEqual([
       'Town profile',
+      'Parcel ID formats',
       'Letterhead',
       'Signers',
       'Notification wording',
