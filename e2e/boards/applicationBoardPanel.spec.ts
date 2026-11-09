@@ -1,4 +1,6 @@
 import type { Locator, Page } from '@playwright/test'
+import { Pool } from 'pg'
+import { E2E_DATABASE_URL } from '../fixtures/settings'
 import { expect, test } from '../fixtures/test'
 import { confirmWith } from './confirm'
 import { addMeetingThroughForm, type MeetingSpec, meetingIdFor } from './meetings'
@@ -7,6 +9,20 @@ import { expectRefused } from './refusal'
 
 const APPLICATION = 'Osprey Point site plan'
 const MEETING_BUTTON = /^(Set|Move) the meeting$/
+
+async function markReceivedToday(applicationId: string): Promise<void> {
+  const pool = new Pool({ connectionString: E2E_DATABASE_URL, max: 1 })
+  try {
+    await pool.query(
+      `update applications
+         set received_date = (select (now() at time zone time_zone)::date from town_settings)
+       where id = $1`,
+      [applicationId],
+    )
+  } finally {
+    await pool.end()
+  }
+}
 
 function meetingForm(page: Page): Locator {
   return page
@@ -27,6 +43,7 @@ test.describe
       suffix,
     }) => {
       applicationId = await applicationIdFor(db, APPLICATION)
+      await markReceivedToday(applicationId)
       const soon: MeetingSpec = {
         board: 'planning_board',
         date: await daysFromToday(db, 1),

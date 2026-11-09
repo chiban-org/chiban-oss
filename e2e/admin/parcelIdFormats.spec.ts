@@ -40,6 +40,8 @@ test.describe('parcel ID formats in settings', () => {
     await expect(row).toContainText('Not used yet')
     await row.getByRole('button', { name: 'Delete Town parcel ID' }).click()
     await page.getByRole('dialog').getByRole('button', { name: 'Delete format' }).click()
+    await expect(page.getByText('Format deleted.')).toBeVisible()
+    await expect(page.getByRole('dialog')).toHaveCount(0)
     await expect(page.getByRole('row', { name: /Town parcel ID/ })).toHaveCount(0)
     const left = await db.rows("select key from parcel_id_formats where key = 'town_pid'")
     expect(left).toHaveLength(0)
