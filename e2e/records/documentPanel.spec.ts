@@ -190,6 +190,7 @@ test.describe('managing a parcel document as an inspector', () => {
       [TITLE],
     )
     await page.goto(`/staff/parcels/${row.record_id}`)
+    await page.locator('summary').filter({ hasText: 'Record and history' }).click()
     const doc = page.locator('li[data-slot="document"]').filter({ hasText: TITLE })
     await expect(whoCanSee(doc)).toContainText('Who can see this: Town staff only.')
     await expect(doc.getByText('Change who can see this')).toHaveCount(0)
