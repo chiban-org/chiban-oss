@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ACCESS_NOTES_MAX, CONTACT_NAME_MAX } from '@/features/inspections/portalRequestForm'
-import { formatCivilDate } from '@/lib/formatDate'
+import { formatCivilDate, formatCivilDateWithWeekday } from '@/lib/formatDate'
 import type { ActionResult } from '@/server/actionRunner'
 
 export interface RequestFormType {
@@ -30,12 +30,15 @@ function HoursNote({
   choice,
   outside,
   single,
+  shown,
 }: {
   text: string
   choice: string | undefined
   outside: boolean
   single: boolean
+  shown: boolean
 }) {
+  if (!shown) return null
   if (single) return <p className="m-0">{`Phone request hours: ${text}.`}</p>
   if (choice !== 'phone' || !outside) return null
   return (
@@ -57,6 +60,10 @@ export function RequestForm({
   reinspectionOf,
   submitLabel = 'Request inspection',
   submitVariant = 'default',
+  contact,
+  showPhoneHours = true,
+  weekdays = false,
+  onRequested,
 }: {
   applicationId: string
   types: RequestFormType[]
@@ -68,12 +75,24 @@ export function RequestForm({
   reinspectionOf?: string
   submitLabel?: string
   submitVariant?: 'default' | 'outline'
+  contact?: { name: string; phone: string }
+  showPhoneHours?: boolean
+  weekdays?: boolean
+  onRequested?: () => void
 }) {
   const first = channels[0]
   const [channel, setChannel] = useState(first?.value)
   const taken = useTaken()
   return (
-    <ActionForm action={action} submitLabel={submitLabel} variant={submitVariant} onSuccess={taken}>
+    <ActionForm
+      action={action}
+      submitLabel={submitLabel}
+      variant={submitVariant}
+      onSuccess={(result) => {
+        taken(result)
+        onRequested?.()
+      }}
+    >
       <input type="hidden" name="applicationId" value={applicationId} />
       {reinspectionOf === undefined ? null : (
         <input type="hidden" name="reinspectionOf" value={reinspectionOf} />
@@ -105,6 +124,7 @@ export function RequestForm({
         choice={channel}
         outside={outsidePhoneHours}
         single={channels.length < 2}
+        shown={showPhoneHours}
       />
       <fieldset className="space-y-2 border-0 p-0">
         <Legend>Inspection</Legend>
@@ -135,7 +155,7 @@ export function RequestForm({
             <SelectItem value={NO_PREFERENCE}>No preference</SelectItem>
             {dates.map((d) => (
               <SelectItem key={d} value={d}>
-                {formatCivilDate(d)}
+                {weekdays ? formatCivilDateWithWeekday(d) : formatCivilDate(d)}
               </SelectItem>
             ))}
           </SelectContent>
@@ -145,6 +165,7 @@ export function RequestForm({
         label="Contact name"
         name="contactName"
         required
+        defaultValue={contact?.name}
         maxLength={CONTACT_NAME_MAX}
         className="min-h-11 text-base md:text-base"
       />
@@ -152,6 +173,7 @@ export function RequestForm({
         label="Contact phone"
         name="contactPhone"
         type="tel"
+        defaultValue={contact?.phone}
         className="min-h-11 text-base md:text-base"
       />
       <AreaField
