@@ -29,6 +29,7 @@ export type PlanAction =
   | { kind: 'record_inspection_result' }
   | { kind: 'take_inspection_request'; reinspect?: string }
   | { kind: 'issue_certificate' }
+  | { kind: 'record_license_check' }
   | { kind: 'move'; to: CoreState }
 
 export type ClosureStage = 'none' | 'open' | 'failed' | 'passed'

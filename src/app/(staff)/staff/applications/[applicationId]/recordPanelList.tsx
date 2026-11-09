@@ -6,6 +6,7 @@ import { AppealsPanel, hasAppeals } from './appealsPanel'
 import { CodeEditionPanel, RegionalImpactPanel } from './buildingPanels'
 import { FeesPaymentsPanel, feeRowsOf } from './feesPaymentsPanel'
 import { InspectionsPanel } from './inspectionsPanel'
+import { LicenseCheckPanel } from './licensePanel'
 import type { RecordPanelsInput } from './panelSet'
 import { ConditionsPanel, PartiesPanel } from './panels'
 import { mayAddToRecord } from './recordStage'
@@ -24,10 +25,22 @@ function regionalEmpty(view: StaffApplicationView): boolean {
   return view.regionalImpact.determination === null && view.regionalImpact.notices.length === 0
 }
 
-function moneyPanels({ view, payments, inspections, hosted }: RecordPanelsInput): Panel[] {
+function moneyPanels({ view, payments, inspections, hosted, license }: RecordPanelsInput): Panel[] {
   const rows = feeRowsOf(view, payments)
   const money = rows.length > 0 || (payments?.entries.length ?? 0) > 0
   return [
+    {
+      key: 'license',
+      empty: false,
+      node:
+        license == null ? null : (
+          <LicenseCheckPanel
+            key="license"
+            data={license}
+            formElsewhere={hosted?.has('record_license_check') === true}
+          />
+        ),
+    },
     {
       key: 'conditions',
       empty: view.conditions.length === 0,

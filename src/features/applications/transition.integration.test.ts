@@ -16,6 +16,7 @@ import {
 import { appTypeBody, saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { insertInspection } from '@/test/inspectionFixtures'
+import { recordActiveLicense } from '@/test/licenseFixtures'
 import { staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -66,13 +67,15 @@ async function stateOf(applicationId: string) {
 }
 
 async function trade(patch: ApplicationPatch = {}) {
-  return await makeApplication(
+  const made = await makeApplication(
     handle.db,
     world,
     { values: { description: 'Panel upgrade', contractor_license_number: 'EL-1' }, ...patch },
     undefined,
     'EL',
   )
+  await recordActiveLicense(handle.db, made.applicationId, world.staff.userId)
+  return made
 }
 
 describe('transitions', () => {

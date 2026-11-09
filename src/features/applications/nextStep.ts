@@ -1,5 +1,6 @@
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { gateDetail } from '@/features/gates/gateDetail'
+import { LICENSE_GATE_KEY } from '@/features/licenseChecks/licenseRules'
 import { type CoreState, TERMINAL_STATES } from './states'
 
 const GATE_PANELS: ReadonlyMap<string, string> = new Map([
@@ -13,6 +14,7 @@ const GATE_PANELS: ReadonlyMap<string, string> = new Map([
   ['nh.ri.determination', 'board'],
   ['nh.pb.abutter_list_fresh', 'board'],
   ['abutters.list_issued', 'board'],
+  [LICENSE_GATE_KEY, 'license-check'],
 ])
 
 export function gateAnchor(key: string): string {

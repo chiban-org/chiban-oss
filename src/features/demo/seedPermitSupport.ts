@@ -14,6 +14,7 @@ import { recordRegionalImpactDetermination } from '@/features/building/regionalI
 import { recordCounterPayment } from '@/features/counter/counterPayment'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { fileDemoDocuments } from '@/features/demo/seedDocuments'
+import { checkDemoLicense } from '@/features/demo/seedLicense'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import { createProject } from '@/features/projects/projects'
@@ -77,7 +78,15 @@ export class Scenario {
   ) {}
 
   async step(to: CoreState, on: string, actor: Actor = this.cast.staff): Promise<void> {
-    if (to === 'issued') await this.payFeesInCash(on)
+    if (to === 'issued') {
+      await this.payFeesInCash(on)
+      await checkDemoLicense(
+        this.db,
+        this.cast.staff,
+        { applicationId: this.applicationId, checkedAt: noon(on) },
+        this.signal,
+      )
+    }
     await fileDemoDocuments(
       this.db,
       this.cast.applicant,

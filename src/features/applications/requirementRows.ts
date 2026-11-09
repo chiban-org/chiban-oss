@@ -1,5 +1,6 @@
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { gateDetail } from '@/features/gates/gateDetail'
+import { LICENSE_GATE_KEY } from '@/features/licenseChecks/licenseRules'
 import { gateAnchor } from './nextStep'
 import type {
   ClosureStage,
@@ -84,6 +85,15 @@ const GATE_COPY: ReadonlyMap<string, GateCopy> = new Map([
       label: 'Abutter list drawn within 5 days of filing',
       task: 'Draw a new abutter list',
       actor: 'town',
+    },
+  ],
+  [
+    LICENSE_GATE_KEY,
+    {
+      label: 'State license checked',
+      task: "Check the contractor's state license",
+      actor: 'town',
+      action: 'record_license_check',
     },
   ],
   [

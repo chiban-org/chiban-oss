@@ -48,7 +48,7 @@ export async function openRecordPayment(page: Page): Promise<Locator> {
   }
   const details = page
     .locator('details', {
-      has: page.locator('summary', { hasText: 'Record a cash or check payment' }),
+      has: page.locator('summary', { hasText: 'Take a payment' }),
     })
     .first()
   if ((await details.getAttribute('open')) === null) {

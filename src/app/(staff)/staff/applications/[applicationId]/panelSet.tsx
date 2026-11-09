@@ -4,6 +4,7 @@ import type { StaffApplicationView } from '@/features/applications/staffApplicat
 import type { PlanActionKind } from '@/features/applications/workPlanTypes'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import type { ApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
+import type { LicenseCheckPanelData } from '@/features/licenseChecks/licenseCheckPanel'
 import type { ApplicationPayments } from '@/features/payments/applicationPayments'
 import type { DueInspection } from './dueInspection'
 import type { InspectionsPanelData } from './inspectionsPanel'
@@ -22,6 +23,7 @@ export interface RecordPanelsInput {
   notes: NotesData
   hosted?: ReadonlySet<PlanActionKind>
   due?: DueInspection | null
+  license?: LicenseCheckPanelData | null
 }
 
 export function applicationPanels(input: RecordPanelsInput) {
