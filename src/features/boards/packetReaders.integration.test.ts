@@ -156,7 +156,7 @@ describe('cancelling a meeting with a sent packet', () => {
     expect(links.every((l) => l.revokedAt !== null)).toBe(true)
     expect(await openPacket(handle.db, token, NOW, signal)).toEqual({
       ok: false,
-      error: 'invalid',
+      error: { cancelled: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) },
     })
     mail.sent.length = 0
     const told = await tellPacketRecipientsCancelled(

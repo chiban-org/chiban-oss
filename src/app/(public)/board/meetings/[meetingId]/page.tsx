@@ -1,18 +1,19 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { PacketItems } from '@/components/board/PacketItems'
+import { BoardRefusal } from '@/components/board/BoardRefusal'
+import { LINK } from '@/components/board/NewTabLink'
+import { PacketContents } from '@/components/board/PacketItems'
 import { isBoardMember } from '@/features/access/predicates'
+import { packetWhen } from '@/features/boards/meetingWhen'
+import { BOARD_HOME_TITLE } from '@/features/boards/memberCopy'
 import { getMemberPacket } from '@/features/boards/memberPackets'
-import { formatCivilDate } from '@/lib/formatDate'
 import { requirePortalContext } from '@/server/requirePortal'
+import { isUuid } from '@/utils/uuid'
 
-export const metadata: Metadata = { title: 'Board meeting' }
+export const metadata: Metadata = { title: 'Board meeting packet' }
 
 export const dynamic = 'force-dynamic'
-
-const LINK = 'tap-target inline-flex items-center'
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 export default async function BoardMeetingPage({
   params,
@@ -21,21 +22,22 @@ export default async function BoardMeetingPage({
 }) {
   const { meetingId } = await params
   const ctx = await requirePortalContext(`/board/meetings/${meetingId}`)
-  if (!UUID.test(meetingId) || !isBoardMember(ctx.actor)) notFound()
+  if (!isBoardMember(ctx.actor)) return <BoardRefusal />
+  if (!isUuid(meetingId)) notFound()
   const packet = await getMemberPacket(ctx.db, ctx.actor, meetingId, ctx.signal)
   if (!packet.ok) notFound()
-  const base = `/board/meetings/${meetingId}/documents`
+  const view = packet.value
   return (
     <main className="space-y-4">
       <meta name="robots" content="noindex" />
       <p>
         <Link href="/board" className={LINK}>
-          All meetings
+          {BOARD_HOME_TITLE}
         </Link>
       </p>
-      <h1>{packet.value.title}</h1>
-      <p>{`${packet.value.boardShortName}, meeting ${formatCivilDate(packet.value.meetingDate)}`}</p>
-      <PacketItems items={packet.value.items} base={base} />
+      <h1>{`${view.boardShortName} packet`}</h1>
+      <p>{packetWhen(view)}</p>
+      <PacketContents view={view} base={`/board/meetings/${meetingId}/documents`} />
     </main>
   )
 }

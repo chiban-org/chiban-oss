@@ -7,23 +7,13 @@ import {
   memberCanSeeMeeting,
 } from '@/features/access/predicates'
 import type { Actor } from '@/features/auth/actor'
-import { packetItemRows, readerItems } from '@/features/boards/packetContents'
 import { type PacketDocumentError, packetDocument } from '@/features/boards/packetDocument'
-import { type PacketViewItem, townDateOf, viewItems } from '@/features/boards/packetView'
-import { getBoard } from '@/features/boards/townBoards'
+import { type PacketBody, packetBody, townDateOf } from '@/features/boards/packetView'
 import type { StoredObject } from '@/features/storage/delivery'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
-export interface MemberPacketView {
-  packetId: string
-  title: string
-  boardId: string
-  boardName: string
-  boardShortName: string
-  meetingDate: CivilDate
-  items: PacketViewItem[]
-}
+export type MemberPacketView = PacketBody
 
 export type MemberMarker = { kind: 'new' } | { kind: 'updated'; on: CivilDate } | null
 
@@ -32,6 +22,8 @@ export interface MemberMeetingRow {
   boardId: string
   boardShortName: string
   meetingDate: CivilDate
+  startsAtMinute: number
+  location: string
   agendaDocumentId: string | null
   cancelled: boolean
   hasPacket: boolean
@@ -90,6 +82,8 @@ export async function listMemberMeetings(
       boardId: boardMeetings.boardId,
       boardShortName: boards.shortName,
       meetingDate: boardMeetings.meetingDate,
+      startsAtMinute: boardMeetings.startsAtMinute,
+      location: boardMeetings.location,
       status: boardMeetings.status,
       agendaDocumentId: agendas.documentId,
       sentAt: packetColumn('sent_at'),
@@ -119,6 +113,8 @@ export async function listMemberMeetings(
       boardId: r.boardId,
       boardShortName: r.boardShortName,
       meetingDate: r.meetingDate as CivilDate,
+      startsAtMinute: r.startsAtMinute,
+      location: r.location,
       agendaDocumentId: r.agendaDocumentId,
       cancelled,
       hasPacket: !cancelled && r.sentAt !== null,
@@ -158,17 +154,7 @@ export async function memberPacketView(
   signal.throwIfAborted()
   const packet = await sentPacketFor(db, actor, meetingId)
   if (packet === null) return err('not_found')
-  const rows = await packetItemRows(db, packet.id)
-  const board = await getBoard(db, packet.boardId)
-  return ok({
-    packetId: packet.id,
-    title: packet.title,
-    boardId: packet.boardId,
-    boardName: board?.name ?? '',
-    boardShortName: board?.shortName ?? '',
-    meetingDate: packet.meetingDate as CivilDate,
-    items: await viewItems(db, readerItems(rows, packet), signal),
-  })
+  return ok(await packetBody(db, packet, signal))
 }
 
 export async function getMemberPacket(

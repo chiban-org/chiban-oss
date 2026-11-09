@@ -1,6 +1,7 @@
 import { db } from '@/db/client'
 import { packetCoverPdf } from '@/features/boards/cover'
-import { openPacket, openPacketVersion } from '@/features/boards/packetLinks'
+import { refusalCopy } from '@/features/boards/packetLinkCopy'
+import { type LinkRefusal, openPacket, openPacketVersion } from '@/features/boards/packetLinks'
 import { documentFrame } from '@/features/pdf/documentFrame'
 import { pdfOk, toResponse } from '@/features/pdf/pdfResponse'
 import { streamStoredObject } from '@/features/storage/delivery'
@@ -13,10 +14,13 @@ export const dynamic = 'force-dynamic'
 
 const TIMEOUT_MS = 30_000
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
-const EXPIRED_COPY = 'This link has expired. Ask the land use office for a new one.'
 
 function plain(status: number, body: string): Response {
   return new Response(body, { status, headers: { 'content-type': 'text/plain; charset=utf-8' } })
+}
+
+function refused(refusal: LinkRefusal): Response {
+  return refusal === 'invalid' ? plain(404, 'Not found') : plain(410, refusalCopy(refusal).body)
 }
 
 export async function GET(
@@ -28,8 +32,7 @@ export async function GET(
   const now = new Date()
   if (versionId === 'cover') {
     const opened = await openPacket(db, token, now, signal)
-    if (!opened.ok)
-      return opened.error === 'expired' ? plain(410, EXPIRED_COPY) : plain(404, 'Not found')
+    if (!opened.ok) return refused(opened.error)
     const frame = await documentFrame(db, { boardId: opened.value.boardId }, signal)
     const template = await publishedTemplate(db, 'board_packet_cover', signal)
     const bytes = await packetCoverPdf(opened.value, frame, template)
@@ -40,11 +43,12 @@ export async function GET(
   if (result.ok) {
     return (await streamStoredObject(getObjectStore(), result.value)) ?? plain(404, 'Not found')
   }
-  if (typeof result.error === 'object') {
+  const error = result.error
+  if (typeof error === 'object' && 'withdrawnOn' in error) {
     return plain(
       410,
-      `This document was withdrawn by the town on ${formatCivilDate(result.error.withdrawnOn)}.`,
+      `This document was withdrawn by the town on ${formatCivilDate(error.withdrawnOn)}.`,
     )
   }
-  return result.error === 'expired' ? plain(410, EXPIRED_COPY) : plain(404, 'Not found')
+  return error === 'not_found' ? plain(404, 'Not found') : refused(error)
 }

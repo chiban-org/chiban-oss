@@ -30,11 +30,11 @@ test.describe
       await buildAndPublishAgenda(page, meeting.meetingId)
       await sharePacketDocument(page, meeting.meetingId)
       await savePacket(page, meeting.meetingId, 'Application MSP-2026-0002, snapshot 1')
-      const row = await db.one<{ title: string }>(
-        'select title from board_packets where meeting_id = $1',
+      const row = await db.one<{ short_name: string }>(
+        'select b.short_name from board_packets p join boards b on b.id = p.board_id where p.meeting_id = $1',
         [meeting.meetingId],
       )
-      packetTitle = row.title
+      packetTitle = `${row.short_name} packet`
     })
 
     test('sends the packet to the seated board members by email', async ({ page, db }) => {
@@ -132,6 +132,7 @@ test.describe
       const reader = await context.newPage()
       await reader.goto(outsideLink)
       await expect(reader.getByRole('heading', { level: 1, name: packetTitle })).toHaveCount(0)
+      await expect(reader.getByText('The land use office turned this link off.')).toBeVisible()
       await context.close()
       const links = await db.rows(
         'select 1 from board_packet_links l join board_packets p on p.id = l.packet_id where p.meeting_id = $1 and l.revoked_at is not null',

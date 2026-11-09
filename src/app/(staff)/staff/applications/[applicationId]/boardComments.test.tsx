@@ -29,6 +29,7 @@ const CONSERVATION: ApplicationBoardAssignment = {
       id: 'c1',
       body: 'Keep the 50 foot wetland buffer.',
       createdAt: new Date('2026-11-05T15:00:00Z'),
+      author: 'Lee Marsh',
       attribution: 'Lee Marsh, Conservation Commission',
     },
   ],
