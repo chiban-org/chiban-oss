@@ -1,6 +1,6 @@
 # Chiban export format
 
-Format version 2.1.0.
+Format version 2.2.0.
 
 This archive holds one town's records exported from Chiban. It is a standard zip file, so it
 opens on any computer without extra software. The records are written three ways, as plain
@@ -42,7 +42,12 @@ stored documents are kept as they are.
   PDF/A copy (`path` points into `files/`; a PDF that is itself a PDF/A copy points to
   itself), `converted` when the export made the copy (`path` points into `pdfa/`), or
   `failed` when the PDF could not be converted (`path` is null and `reason` and `detail` say
-  why). A failed conversion never stops the export, and the original is always kept.
+  why). A failed conversion never stops the export, and the original is always kept. Entries that
+  are not `failed` also carry `validation` with `status`, `profile`, `validator`, `version`
+  and `detail`: `passed` or `failed` when veraPDF checked the copy against the PDF/A-2b
+  profile, or `not_validated` (with `detail` saying why) when veraPDF was not installed, ran out
+  of time, or no result was recorded when a stored copy was made. A copy that fails validation is
+  still included. `not_validated` is never a pass.
 
 ## Spreadsheet files
 
@@ -64,7 +69,8 @@ An entity with more rows than one sheet can hold continues on a sheet whose name
 
 Every stored PDF has a PDF/A-2 copy in the archive, so the records can be kept in the archival
 format. Copies the town already holds are reused; the rest are converted with Ghostscript while
-the export is prepared. Original files are never changed or removed.
+the export is prepared. Original files are never changed or removed. Each copy is checked with
+veraPDF against PDF/A-2b when veraPDF is installed, and the manifest records the result per copy.
 
 Credentials never appear in an archive: password hashes, authenticator secrets, payment
 processor keys, calendar secrets, and sign-in or link tokens are omitted. Records that need them
@@ -1905,6 +1911,7 @@ File: `data/preservation_records.ndjson`. Ordered by id.
 - `detail`: text, nullable
 - `attempts`: integer
 - `pdfa_version_id`: uuid, nullable
+- `validation`: jsonb, nullable
 - `updated_at`: timestamp with time zone
 
 References:

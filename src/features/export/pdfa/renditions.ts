@@ -6,6 +6,11 @@ import type { Tx } from '@/db/client'
 import type { PdfaRenditionEntry } from '@/features/export/manifest'
 import { filePath, pdfaPath } from '@/features/export/manifest'
 import type { PdfaConverter } from '@/features/preservation/ghostscript'
+import {
+  notValidated,
+  type PdfaValidation,
+  pdfaValidationSchema,
+} from '@/features/preservation/verapdf'
 import type { ObjectStore } from '@/features/storage/objectStore'
 
 const PDF_TYPE = 'application/pdf'
@@ -21,7 +26,11 @@ export interface PdfFile {
 export interface PdfaSnapshot {
   pdfaBlobs: Set<string>
   stored: Map<string, string>
+  validations: Map<string, PdfaValidation>
 }
+
+const NOT_RECORDED = 'No validation was recorded when this copy was made'
+const NO_VALIDATOR = 'No validator was configured for this export'
 
 export function pdfaWorkName(sourceSha: string): string {
   return `pdfa-${sourceSha}.pdf`
@@ -38,9 +47,21 @@ export async function readPdfaSnapshot(tx: Tx): Promise<PdfaSnapshot> {
     join document_versions a on a.id = r.pdfa_version_id
     where r.status = 'complete'
     order by o.file_sha256, a.file_sha256`)
+  const validated = await tx.execute<{ pdfa: string; validation: unknown }>(sql`
+    select a.file_sha256 as pdfa, r.validation
+    from preservation_records r
+    join document_versions a on a.id = r.pdfa_version_id
+    where r.status = 'complete' and r.validation is not null
+    order by a.file_sha256, r.id`)
+  const validations = new Map<string, PdfaValidation>()
+  for (const row of validated.rows) {
+    const parsed = pdfaValidationSchema.safeParse(row.validation)
+    if (parsed.success && !validations.has(row.pdfa)) validations.set(row.pdfa, parsed.data)
+  }
   return {
     pdfaBlobs: new Set(blobs.rows.map((r) => r.sha)),
     stored: new Map(stored.rows.map((r) => [r.source, r.pdfa])),
+    validations,
   }
 }
 
@@ -81,6 +102,8 @@ async function convert(ctx: RenditionContext, file: PdfFile): Promise<PdfaRendit
   const converted = await ctx.converter.toPdfA(bytes, ctx.signal)
   if (!converted.ok) return failed(file.sha256, converted.error.reason, converted.error.detail)
   await writeFile(join(ctx.workDir, pdfaWorkName(file.sha256)), converted.value)
+  const validation =
+    (await ctx.converter.validatePdfA?.(converted.value, ctx.signal)) ?? notValidated(NO_VALIDATOR)
   return {
     sourceSha256: file.sha256,
     status: 'converted',
@@ -89,6 +112,7 @@ async function convert(ctx: RenditionContext, file: PdfFile): Promise<PdfaRendit
     size: converted.value.length,
     reason: null,
     detail: null,
+    validation,
   }
 }
 
@@ -111,6 +135,7 @@ export async function buildPdfaRenditions(ctx: RenditionContext): Promise<PdfaRe
         size: reuse.size,
         reason: null,
         detail: null,
+        validation: ctx.snapshot.validations.get(reuse.sha256) ?? notValidated(NOT_RECORDED),
       })
       continue
     }

@@ -69,6 +69,7 @@ export const envSchema = z
     GHOSTSCRIPT_PATH: z.string().min(1).default('gs'),
     GHOSTSCRIPT_ICC_PROFILE: z.string().min(1).optional(),
     OCRMYPDF_PATH: z.string().min(1).default('ocrmypdf'),
+    VERAPDF_PATH: z.string().min(1).default('verapdf'),
     ALERT_EMAIL_TO: commaList(z.email()).default([]),
     HEALTH_DISK_PATHS: commaList(z.string().min(1)).default(['/']),
     HEALTH_HEARTBEAT_URL: z.url().optional(),

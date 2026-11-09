@@ -25,6 +25,7 @@ function exportConverter() {
     gsPath: env.GHOSTSCRIPT_PATH,
     iccProfilePath: env.GHOSTSCRIPT_ICC_PROFILE ?? null,
     timeoutMs: PDFA_TIMEOUT_MS,
+    veraPdfPath: env.VERAPDF_PATH,
   })
 }
 

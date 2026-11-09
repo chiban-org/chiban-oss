@@ -10,6 +10,7 @@ import {
   processPreservation,
   retryPreservation,
 } from '@/features/preservation/preserve'
+import type { PdfaValidation } from '@/features/preservation/verapdf'
 import { wrapImageAsPdf } from '@/features/preservation/wrapImage'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { runJob } from '@/jobs/defineJob'
@@ -58,6 +59,77 @@ async function recordOf(documentId: string) {
 }
 
 const preserve = () => processPreservation(handle.db, store, converter, signal)
+
+const PASSED: PdfaValidation = {
+  status: 'passed',
+  profile: 'PDF/A-2b',
+  validator: 'veraPDF',
+  version: '1.30.0',
+  detail: null,
+}
+
+describe('preservation validation record', () => {
+  it('stores what the validator said about the PDF/A copy beside the record', async () => {
+    const withValidator = { ...converter, validatePdfA: async () => PASSED }
+    const up = await uploadAs(
+      handle.db,
+      store,
+      world.applicant,
+      appRef,
+      fixture('text-layer.pdf'),
+      {
+        title: 'Validated plan',
+      },
+    )
+    await processPreservation(handle.db, store, withValidator, signal)
+    expect((await recordOf(up.documentId)).record?.validation).toEqual(PASSED)
+  })
+
+  it('leaves the validation empty when the converter has no validator, and still completes', async () => {
+    const withoutValidator = { toPdfA: converter.toPdfA, extractText: converter.extractText }
+    const up = await uploadAs(
+      handle.db,
+      store,
+      world.applicant,
+      appRef,
+      fixture('text-layer.pdf'),
+      {
+        title: 'Unvalidated plan',
+        filename: 'unvalidated.pdf',
+      },
+    )
+    await processPreservation(handle.db, store, withoutValidator, signal)
+    const { record } = await recordOf(up.documentId)
+    expect(record?.status).toBe('complete')
+    expect(record?.validation).toBeNull()
+  })
+
+  it('keeps a copy that veraPDF rejects, recording the failure instead of blocking it', async () => {
+    const failing = {
+      ...converter,
+      validatePdfA: async (): Promise<PdfaValidation> => ({
+        ...PASSED,
+        status: 'failed',
+        detail: '6.2.11.4.1: The font programs shall be embedded',
+      }),
+    }
+    const up = await uploadAs(
+      handle.db,
+      store,
+      world.applicant,
+      appRef,
+      fixture('text-layer.pdf'),
+      {
+        title: 'Rejected plan',
+        filename: 'rejected.pdf',
+      },
+    )
+    await processPreservation(handle.db, store, failing, signal)
+    const { record } = await recordOf(up.documentId)
+    expect(record?.status).toBe('complete')
+    expect(record?.validation).toMatchObject({ status: 'failed' })
+  })
+})
 
 describe('preservation', () => {
   it('a pdf attachment becomes complete with a pdfa version beside an unchanged original', async () => {

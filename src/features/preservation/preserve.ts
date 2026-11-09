@@ -9,6 +9,7 @@ import { requireCapability } from '@/features/authz/capabilities'
 import { storeGeneratedBytes } from '@/features/files/ingest'
 import type { OcrConverter } from '@/features/migration/ocrmypdf'
 import type { PdfaConverter } from '@/features/preservation/ghostscript'
+import type { PdfaValidation } from '@/features/preservation/verapdf'
 import { wrapImageAsPdf } from '@/features/preservation/wrapImage'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
@@ -92,15 +93,21 @@ async function markIncomplete(
 
 const TIFF_TYPE = 'image/tiff'
 
+interface CompletedPdf {
+  version: LoadedVersion
+  recordId: string
+  pdf: Uint8Array
+  text: string | null
+  validation: PdfaValidation | null
+}
+
 async function completeWithPdf(
   db: DbOrTx,
   store: ObjectStore,
-  version: LoadedVersion,
-  recordId: string,
-  pdf: Uint8Array,
-  text: string | null,
+  input: CompletedPdf,
   signal: AbortSignal,
 ): Promise<Result<'complete', 'incomplete'>> {
+  const { version, recordId, pdf, text, validation } = input
   const stored = await storeGeneratedBytes(db, store, pdf, PDF_TYPE, signal)
   const [created] = await db
     .insert(documentVersions)
@@ -125,6 +132,7 @@ async function completeWithPdf(
       reason: null,
       detail: null,
       pdfaVersionId: created?.id ?? null,
+      validation,
       updatedAt: new Date(),
     })
     .where(eq(preservationRecords.id, recordId))
@@ -156,10 +164,13 @@ async function ocrTiff(
     return await completeWithPdf(
       db,
       store,
-      version,
-      recordId,
-      converted.value.pdf,
-      converted.value.text,
+      {
+        version,
+        recordId,
+        pdf: converted.value.pdf,
+        text: converted.value.text,
+        validation: converted.value.validation ?? null,
+      },
       signal,
     )
   } finally {
@@ -208,7 +219,13 @@ async function convertOriginal(
     await markIncomplete(db, recordId, converted.error.reason, converted.error.detail)
     return err('incomplete')
   }
-  return await completeWithPdf(db, store, version, recordId, converted.value, null, signal)
+  const validation = (await converter.validatePdfA?.(converted.value, signal)) ?? null
+  return await completeWithPdf(
+    db,
+    store,
+    { version, recordId, pdf: converted.value, text: null, validation },
+    signal,
+  )
 }
 
 export async function preserveVersion(

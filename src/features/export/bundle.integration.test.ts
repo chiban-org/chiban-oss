@@ -1,7 +1,9 @@
+import { execFileSync } from 'node:child_process'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { parse } from 'csv-parse/sync'
+import { sql } from 'drizzle-orm'
 import ExcelJS from 'exceljs'
 import { PDFDocument } from 'pdf-lib'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
@@ -13,6 +15,7 @@ import { entityColumns } from '@/features/export/tabular/columns'
 import { writeArchive } from '@/features/export/writeArchive'
 import { createGhostscriptConverter, type PdfaConverter } from '@/features/preservation/ghostscript'
 import { processPreservation } from '@/features/preservation/preserve'
+import type { PdfaValidation } from '@/features/preservation/verapdf'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -27,6 +30,26 @@ const converter = createGhostscriptConverter({
   iccProfilePath: env.GHOSTSCRIPT_ICC_PROFILE ?? null,
   timeoutMs: 120_000,
 })
+const PASSED: PdfaValidation = {
+  status: 'passed',
+  profile: 'PDF/A-2b',
+  validator: 'veraPDF',
+  version: '1.30.0',
+  detail: null,
+}
+const FAILED: PdfaValidation = { ...PASSED, status: 'failed', detail: '6.2.11.4.1: font' }
+const validatedAs = (validation: PdfaValidation): PdfaConverter => ({
+  ...converter,
+  validatePdfA: () => Promise.resolve(validation),
+})
+const verapdfInstalled = (() => {
+  try {
+    execFileSync(env.VERAPDF_PATH, ['--version'], { stdio: 'ignore' })
+    return true
+  } catch {
+    return false
+  }
+})()
 const failingConverter: PdfaConverter = {
   toPdfA: () =>
     Promise.resolve({
@@ -63,7 +86,7 @@ beforeAll(async () => {
   const preserved = fixture('text-layer.pdf')
   preservedSha = sha(preserved)
   await uploadAs(handle.db, store, world.applicant, ref, preserved, { title: 'Preserved plan' })
-  await processPreservation(handle.db, store, converter, signal)
+  await processPreservation(handle.db, store, validatedAs(PASSED), signal)
   const plain = await secondPdf()
   plainSha = sha(plain)
   await uploadAs(handle.db, store, world.applicant, ref, plain, { title: 'Second plan' })
@@ -190,6 +213,60 @@ describe('export bundle: PDF/A copies', () => {
     expect(converted?.toString('latin1')).toMatch(/pdfaid:part(?:>|=["'])2/)
     expect(manifest.files.some((f) => f.sha256 === plainSha)).toBe(true)
   }, 240_000)
+
+  it('lists the validation recorded when the stored copy was made', async () => {
+    const { manifest } = await build(validatedAs(FAILED))
+    expect(manifest.pdfa?.find((p) => p.sourceSha256 === preservedSha)?.validation).toEqual(PASSED)
+  }, 240_000)
+
+  it('validates a copy the export converts and records a fail without dropping the copy', async () => {
+    const { manifest, entries } = await build(validatedAs(FAILED))
+    const plain = manifest.pdfa?.find((p) => p.sourceSha256 === plainSha)
+    expect(plain).toMatchObject({ status: 'converted', validation: FAILED })
+    expect(entries.has(plain?.path ?? '')).toBe(true)
+  }, 240_000)
+
+  it('says not validated, never passed, when the converter has no validator', async () => {
+    const bare: PdfaConverter = { toPdfA: converter.toPdfA, extractText: converter.extractText }
+    const { manifest } = await build(bare)
+    expect(manifest.pdfa?.find((p) => p.sourceSha256 === plainSha)?.validation).toEqual({
+      status: 'not_validated',
+      profile: 'PDF/A-2b',
+      validator: null,
+      version: null,
+      detail: 'No validator was configured for this export',
+    })
+  }, 240_000)
+
+  it('says not validated for a stored copy that was made before anything was recorded', async () => {
+    await handle.db.execute(sql`update preservation_records set validation = null`)
+    try {
+      const { manifest } = await build(validatedAs(PASSED))
+      expect(manifest.pdfa?.find((p) => p.sourceSha256 === preservedSha)?.validation).toMatchObject(
+        {
+          status: 'not_validated',
+          detail: 'No validation was recorded when this copy was made',
+        },
+      )
+    } finally {
+      await handle.db.execute(
+        sql`update preservation_records set validation = ${JSON.stringify(PASSED)}::jsonb where status = 'complete'`,
+      )
+    }
+  }, 240_000)
+
+  it.skipIf(!verapdfInstalled)(
+    'validates the copy it converts with the real veraPDF as PDF/A-2b',
+    async () => {
+      const { manifest } = await build(converter)
+      expect(manifest.pdfa?.find((p) => p.sourceSha256 === plainSha)?.validation).toMatchObject({
+        status: 'passed',
+        profile: 'PDF/A-2b',
+        validator: 'veraPDF',
+      })
+    },
+    240_000,
+  )
 
   it('records a failed conversion and still completes the export', async () => {
     const { manifest, entries } = await build(failingConverter)

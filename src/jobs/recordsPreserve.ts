@@ -43,10 +43,12 @@ export const recordsPreserveJob = makeRecordsPreserveJob({
     gsPath: env.GHOSTSCRIPT_PATH,
     iccProfilePath: env.GHOSTSCRIPT_ICC_PROFILE ?? null,
     timeoutMs: CONVERSION_TIMEOUT_MS,
+    veraPdfPath: env.VERAPDF_PATH,
   }),
   ocr: createOcrmypdfConverter({
     path: env.OCRMYPDF_PATH,
     language: 'eng',
     timeoutMs: OCR_TIMEOUT_MS,
+    veraPdfPath: env.VERAPDF_PATH,
   }),
 })

@@ -45,6 +45,7 @@ if (args.command === 'scan') {
     path: env.OCRMYPDF_PATH,
     language: 'eng',
     timeoutMs: OCR_TIMEOUT_MS,
+    veraPdfPath: env.VERAPDF_PATH,
   })
   const ran = await runBatch(db, getObjectStore(), converter, actor, args.batchId, signal)
   if (ran.ok) print(ran.value)
