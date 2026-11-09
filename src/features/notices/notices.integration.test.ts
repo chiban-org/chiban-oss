@@ -4,6 +4,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { noticeItems, noticeProofSupersessions, noticeProofs, noticeSets } from '@/db/schema'
 import { boardSettingsDefault } from '@/features/boards/boardSettingsSchema'
 import { activeBoards } from '@/features/boards/townBoards'
+import { demoBoardSettings } from '@/features/demo/demoBoardNotices'
 import { deriveNoticeItems } from '@/features/notices/deriveItems'
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { recordProof } from '@/features/notices/proofs'
@@ -134,7 +135,7 @@ describe('deriveNoticeItems', () => {
     const boards = items.filter((i) => i.channel === 'bulletin_board')
     expect(boards.map((i) => i.recipientName).sort()).toEqual(
       [
-        ...(boardSettingsDefault(await activeBoards(handle.db)).boards[0]?.publicNotice
+        ...(demoBoardSettings(await activeBoards(handle.db)).boards[0]?.publicNotice
           .bulletinBoards ?? []),
       ].sort(),
     )

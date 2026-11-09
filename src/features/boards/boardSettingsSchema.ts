@@ -52,27 +52,9 @@ export const BOARD_SETTINGS_DEFAULT: BoardSettingsBody = {
 }
 
 function defaultNotice(kind: BoardKind): BoardSettingsEntry['publicNotice'] {
-  if (kind === 'zba') {
-    return {
-      posting: true,
-      publication: true,
-      newspaper: 'Alder Pond Ledger',
-      bulletinBoards: ['Alder Pond Town Hall bulletin board'],
-      websiteUrl: null,
-    }
-  }
-  if (kind === 'planning_board') {
-    return {
-      posting: true,
-      publication: false,
-      newspaper: null,
-      bulletinBoards: ['Alder Pond Town Hall bulletin board', 'Alder Pond Public Library'],
-      websiteUrl: null,
-    }
-  }
   return {
     posting: true,
-    publication: false,
+    publication: kind === 'zba',
     newspaper: null,
     bulletinBoards: [],
     websiteUrl: null,

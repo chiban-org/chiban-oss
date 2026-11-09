@@ -3,9 +3,9 @@ import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
 import { abutterLists, applications } from '@/db/schema'
 import { setApplicantParcels } from '@/features/abutters/applicantParcels'
-import { boardSettingsDefault } from '@/features/boards/boardSettingsSchema'
 import { recordDesDetermination } from '@/features/boards/des500'
 import { activeBoards } from '@/features/boards/townBoards'
+import { demoBoardSettings } from '@/features/demo/demoBoardNotices'
 import { recordRosterReview } from '@/features/rosters/reviews'
 import { importScenario } from '@/test/abutterWorld'
 import {
@@ -26,7 +26,7 @@ export interface ListWorld {
 }
 
 export async function publishProjectionSettings(db: Db, world: BoardWorld): Promise<void> {
-  const defaults = boardSettingsDefault(await activeBoards(db))
+  const defaults = demoBoardSettings(await activeBoards(db))
   await saveAndPublish(db, world.admin, 'board_settings', 'default', {
     ...defaults,
     abutters: {
