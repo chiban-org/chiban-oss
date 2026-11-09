@@ -14,6 +14,9 @@ interface TradeFieldsProps {
 
 export function TradeFields({ trades, licenses }: TradeFieldsProps) {
   const [checked, setChecked] = useState<string[]>(trades)
+  const [numbers, setNumbers] = useState<Record<string, string>>(() =>
+    Object.fromEntries(licenses.map((l) => [l.trade, l.number])),
+  )
   const toggle = (trade: string, on: boolean) =>
     setChecked((held) => (on ? [...held, trade] : held.filter((t) => t !== trade)))
   return (
@@ -46,7 +49,10 @@ export function TradeFields({ trades, licenses }: TradeFieldsProps) {
                   label={`NH license number, ${t.label.toLowerCase()}`}
                   name={licenseFieldName(t.trade)}
                   autoComplete="off"
-                  defaultValue={licenses.find((l) => l.trade === t.trade)?.number ?? ''}
+                  value={numbers[t.trade] ?? ''}
+                  onChange={(event) =>
+                    setNumbers((held) => ({ ...held, [t.trade]: event.target.value }))
+                  }
                 />
               </div>
             ) : null}

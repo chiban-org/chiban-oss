@@ -7,23 +7,29 @@ import {
   documents,
 } from '@/db/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
-import { type ItemRecord, itemStatus } from '@/features/applications/documentChecklist'
+import { gatedStages, type ItemRecord, itemStatus } from '@/features/applications/documentChecklist'
 import {
   type DocumentItem,
   type DocumentStage,
   documentItemsOf,
 } from '@/features/applications/documentItemSchema'
-import type { CoreState } from '@/features/applications/states'
+import {
+  CORE_TRANSITIONS,
+  type CoreState,
+  isTransitionAllowed,
+} from '@/features/applications/states'
 import type { ConfigPins } from '@/features/config/bindings'
 import { getVersion } from '@/features/config/store'
 import type { FieldValue } from '@/features/forms/validateSubmission'
 
-const REQUESTED_STAGE: Partial<Record<CoreState, DocumentStage>> = {
-  draft: 'to_file',
-  submitted: 'to_file',
-  under_review: 'before_decision',
-  decided: 'before_issue',
-  issued: 'before_co',
+function stagesToCheck(
+  state: CoreState,
+  workflow: ApplicationTypeBody['workflow'],
+): DocumentStage[] {
+  const stages = CORE_TRANSITIONS[state]
+    .filter((to) => isTransitionAllowed(state, to, workflow))
+    .flatMap((to) => gatedStages(to, workflow.closesOn))
+  return [...new Set(stages)]
 }
 
 type ApplicationRow = typeof applications.$inferSelect
@@ -39,20 +45,18 @@ async function candidatesOf(
   apps: readonly ApplicationRow[],
   signal: AbortSignal,
 ): Promise<Candidate[]> {
-  const bodies = new Map<string, DocumentItem[]>()
+  const bodies = new Map<string, ApplicationTypeBody | null>()
   const out: Candidate[] = []
   for (const app of apps) {
-    const stage = REQUESTED_STAGE[app.state as CoreState]
-    if (stage === undefined) continue
     const versionId = (app.configPins as ConfigPins).applicationType
     if (!bodies.has(versionId)) {
       const version = await getVersion(db, versionId, signal)
-      bodies.set(
-        versionId,
-        version === null ? [] : documentItemsOf(version.body as ApplicationTypeBody),
-      )
+      bodies.set(versionId, version === null ? null : (version.body as ApplicationTypeBody))
     }
-    const items = (bodies.get(versionId) ?? []).filter((item) => item.stage === stage)
+    const body = bodies.get(versionId)
+    if (body === null || body === undefined) continue
+    const stages = stagesToCheck(app.state as CoreState, body.workflow)
+    const items = documentItemsOf(body).filter((item) => stages.includes(item.stage))
     if (items.length > 0)
       out.push({ applicationId: app.id, values: app.values as Record<string, FieldValue>, items })
   }

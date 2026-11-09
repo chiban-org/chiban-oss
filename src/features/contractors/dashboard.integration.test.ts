@@ -15,7 +15,7 @@ const NOW = new Date('2027-03-10T15:00:00Z')
 const SITE_PLAN = {
   key: 'site_plan',
   label: 'Site plan.',
-  stage: 'to_file' as const,
+  stage: 'before_decision' as const,
   waivable: false,
 }
 
@@ -43,7 +43,7 @@ beforeAll(async () => {
     buildingType: { documents: [SITE_PLAN] },
   })
   trade = await submittedTrade(handle.db, world, NOW)
-  const review = await makeApplication(handle.db, world, { state: 'submitted' }, NOW, 'BP')
+  const review = await makeApplication(handle.db, world, { state: 'under_review' }, NOW, 'BP')
   reviewApplicationId = review.applicationId
   await insertInspection(handle.db, trade.applicationId, 'rough', {
     status: 'scheduled',
@@ -154,5 +154,15 @@ describe('contractor dashboard filtering', () => {
     expect(next.nextCursor).toBeNull()
     expect(next.prevCursor).toBe('0')
     expect(next.rows[0]?.projectId).not.toBe(first.rows[0]?.projectId)
+  })
+})
+
+describe('contractor dashboard row detail', () => {
+  it('carries the results owed on the application row', async () => {
+    const { rows } = await list()
+    const app = rows
+      .flatMap((r) => r.applications)
+      .find((a) => a.applicationId === trade.applicationId)
+    expect(app?.resultsOwed.map((r) => r.date)).toEqual(['2027-03-08'])
   })
 })

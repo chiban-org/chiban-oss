@@ -45,4 +45,26 @@ describe('TradeFields', () => {
       'true',
     )
   })
+
+  it('keeps a typed license number when the trade is unchecked and checked again', () => {
+    renderFields([])
+    const trade = () => screen.getByRole('checkbox', { name: 'Electrical' })
+    fireEvent.click(trade())
+    fireEvent.change(screen.getByLabelText('NH license number, electrical'), {
+      target: { value: 'EL-777' },
+    })
+    fireEvent.click(trade())
+    fireEvent.click(trade())
+    expect(screen.getByLabelText<HTMLInputElement>('NH license number, electrical').value).toBe(
+      'EL-777',
+    )
+  })
+
+  it('does not submit the license of an unchecked trade', () => {
+    const { container } = renderFields(['plumbing'], [{ trade: 'plumbing', number: 'PL-1' }])
+    fireEvent.click(screen.getByRole('checkbox', { name: 'Plumbing' }))
+    const data = new FormData(container.querySelector('form') as HTMLFormElement)
+    expect(data.get('license_plumbing')).toBeNull()
+    expect(data.getAll('trades')).toEqual([])
+  })
 })

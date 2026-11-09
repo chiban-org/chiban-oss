@@ -39,6 +39,13 @@ function ApplicationLine({ app }: { app: ContractorApplicationRow }) {
         </Link>
       ) : null}
       {date === null ? null : <span>{date}</span>}
+      {app.resultsOwed.map((owed) => (
+        <Link
+          key={`${owed.date}-${owed.typeLabel}`}
+          href={`${href}/inspections`}
+          className={LINK}
+        >{`No result recorded for the ${owed.typeLabel.toLowerCase()} inspection of ${formatCivilDate(owed.date)}`}</Link>
+      ))}
     </RecordRowLine>
   )
 }
