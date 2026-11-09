@@ -9,6 +9,7 @@ import { BoardRegionalForm, MeetingForm, VoteFormBody } from './boardForms'
 import { CodeEditionForm, RegionalDeterminationForm } from './buildingForms'
 import { IssueCertificateForm } from './inspectionsPanel'
 import { RecordResultLink } from './inspectorSections'
+import { LicenseCheckForm } from './licensePanel'
 import { MoveForm } from './nextStepCard'
 import type { RecordPanelsInput } from './panelSet'
 import { MarkCompleteForm } from './panels'
@@ -18,7 +19,7 @@ import { AssignReviewerForm, offeredReviewers } from './reviewersPanel'
 
 export type PlanFormInput = Pick<
   RecordPanelsInput,
-  'view' | 'records' | 'payments' | 'board' | 'due' | 'inspections'
+  'view' | 'records' | 'payments' | 'board' | 'due' | 'inspections' | 'license'
 >
 
 export function actionSummary(action: PlanAction, input: PlanFormInput): string {
@@ -32,7 +33,7 @@ export function actionSummary(action: PlanAction, input: PlanFormInput): string 
     case 'record_regional_impact':
       return 'Record a determination'
     case 'record_payment':
-      return 'Record a cash or check payment'
+      return 'Take a payment'
     case 'set_board_meeting':
       return 'Set the meeting'
     case 'record_board_vote':
@@ -47,6 +48,8 @@ export function actionSummary(action: PlanAction, input: PlanFormInput): string 
       return requestLabel(action)
     case 'issue_certificate':
       return 'Issue the certificate of occupancy'
+    case 'record_license_check':
+      return 'Record the license check'
     case 'move':
       return moveTask(action.to)
   }
@@ -163,6 +166,10 @@ export function PlanActionForm({
           today={input.inspections.today}
           variant={variant}
         />
+      )
+    case 'record_license_check':
+      return input.license == null ? null : (
+        <LicenseCheckForm data={input.license} variant={variant} />
       )
     case 'move':
       return (

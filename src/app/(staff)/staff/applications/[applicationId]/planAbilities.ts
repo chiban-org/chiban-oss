@@ -41,6 +41,7 @@ export function abilitiesOf(input: RecordPanelsInput): Set<PlanActionKind> {
     ['record_inspection_result', input.due != null],
     ['take_inspection_request', input.inspections.canSchedule && input.inspections.takesRequests],
     ['issue_certificate', input.inspections.certificateReady],
+    ['record_license_check', input.license?.canRecord === true],
   ]
   return new Set([
     ...granted.filter(([, allowed]) => allowed).map(([kind]) => kind),

@@ -22,6 +22,7 @@ import { loadBoardPanel } from '@/features/boards/panelData'
 import { counterIntakeLine } from '@/features/counter/intake/intakeProvenance'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import { returnedCheckNotices } from '@/features/ledger/balanceNotice'
+import { loadLicenseCheckPanel } from '@/features/licenseChecks/licenseCheckPanel'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
 import { loadCorrectionForm } from '@/features/permits/correction/correctionForm'
 import { applicationPublicHref } from '@/features/publicSite/publicHref'
@@ -70,6 +71,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     responsible,
     notes,
     intake,
+    license,
   ] = await Promise.all([
     loading,
     loading.then((v) => (v === null ? null : loadRecordsData(ctx, applicationId, v.projectId))),
@@ -86,6 +88,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     loadResponsibleData(ctx, applicationId),
     loadNotesData(ctx, applicationId),
     counterIntakeLine(ctx.db, applicationId),
+    loadLicenseCheckPanel(ctx.db, ctx.actor, applicationId, ctx.signal),
   ])
   if (view === null || records === null) return null
   return {
@@ -101,6 +104,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     correction,
     responsible,
     notes,
+    license,
   }
 }
 
