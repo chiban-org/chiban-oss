@@ -1,6 +1,6 @@
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { auditLog, reportScheduleRecipients, reportSchedules } from '@/db/schema'
+import { auditLog, reportScheduleRecipients, reportSchedules, roleCapabilities } from '@/db/schema'
 import { loadActor } from '@/features/auth/actor'
 import { createStaffUserWithDefaults } from '@/features/auth/createStaffUserWithDefaults'
 import { createSchedule, deleteSchedule } from '@/features/reports/schedules'
@@ -28,6 +28,39 @@ async function schedules() {
   const rows = await handle.db.select().from(reportSchedules)
   return rows.sort((a, b) => a.report.localeCompare(b.report))
 }
+
+describe('default grants when staff are created', () => {
+  it('seeds a role with no grants and never re-adds a grant an admin removed', async () => {
+    await createStaffUserWithDefaults(
+      handle.db,
+      person('admin', 'first@alderpond.example'),
+      NOV_9,
+      signal,
+    )
+    const before = await handle.db
+      .select()
+      .from(roleCapabilities)
+      .where(eq(roleCapabilities.role, 'admin'))
+    expect(before.length).toBeGreaterThan(1)
+    await handle.db
+      .delete(roleCapabilities)
+      .where(
+        and(eq(roleCapabilities.role, 'admin'), eq(roleCapabilities.capability, 'fee.override')),
+      )
+    await createStaffUserWithDefaults(
+      handle.db,
+      person('staff', 'clerk@alderpond.example'),
+      NOV_9,
+      signal,
+    )
+    const after = await handle.db
+      .select()
+      .from(roleCapabilities)
+      .where(eq(roleCapabilities.role, 'admin'))
+    expect(after.map((r) => r.capability)).not.toContain('fee.override')
+    expect(after).toHaveLength(before.length - 1)
+  })
+})
 
 describe('default report schedules on install', () => {
   it('creates monthly permit volume, processing time and revenue for the first admin only', async () => {
