@@ -12,10 +12,12 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { hasFullRecordAccess } from '@/features/projects/access'
 import { err, ok, type Result } from '@/types/result'
 import {
+  applicationLicenseNumber,
   failedCheckReason,
   LICENSE_CONDITION_CODE,
   type LicenseCheckFacts,
   licenseCheckApplies,
+  namesSameLicense,
 } from './licenseRules'
 
 export interface RecordLicenseCheckInput {
@@ -32,6 +34,7 @@ export type RecordLicenseCheckError =
   | 'not_found'
   | 'not_applicable'
   | 'application_closed'
+  | 'license_mismatch'
 
 async function mayRecord(db: Db, actor: Actor, signal: AbortSignal): Promise<boolean> {
   return (
@@ -78,6 +81,9 @@ export async function recordLicenseCheck(
   if (app === null) return err('not_found')
   if (!licenseCheckApplies({ classification: app.typeBody.classification, values: app.values })) {
     return err('not_applicable')
+  }
+  if (!namesSameLicense(input.licenseNumber, applicationLicenseNumber(app.values))) {
+    return err('license_mismatch')
   }
   return await transactionResult(db, async (tx) => {
     const [locked] = await tx

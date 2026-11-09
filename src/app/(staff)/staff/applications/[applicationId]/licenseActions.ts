@@ -8,7 +8,7 @@ import {
   recordLicenseCheck,
 } from '@/features/licenseChecks/recordLicenseCheck'
 import { type ActionResult, errorCopy } from '@/server/actionRunner'
-import { runStaffForm } from '@/server/formInput'
+import { refuseField, runStaffForm } from '@/server/formInput'
 import { applicationIdField } from './actionInput'
 
 const LICENSE_CHECK_FORM = z.object({
@@ -23,13 +23,18 @@ const REFUSAL_COPY: Readonly<Partial<Record<RecordLicenseCheckError, string>>> =
   not_applicable:
     'This application does not need a state license check: it is not trade work done by a contractor.',
   application_closed: 'This application is closed, so no license check can be recorded on it.',
+  license_mismatch:
+    'Check the license the application names. To check a different license, amend the application first.',
 }
 
 export async function recordLicenseCheckAction(formData: FormData): Promise<ActionResult> {
   return await runStaffForm(formData, LICENSE_CHECK_FORM, async ({ db, actor, signal }, input) => {
     const recorded = await recordLicenseCheck(db, actor, input, signal)
     if (!recorded.ok) {
-      return { ok: false, error: REFUSAL_COPY[recorded.error] ?? errorCopy(recorded.error) }
+      const copy = REFUSAL_COPY[recorded.error] ?? errorCopy(recorded.error)
+      return recorded.error === 'license_mismatch'
+        ? refuseField('licenseNumber', copy)
+        : { ok: false, error: copy }
     }
     return {
       ok: true,

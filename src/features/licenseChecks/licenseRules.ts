@@ -1,4 +1,5 @@
 import type { LicenseResult } from '@/db/schema/licenseChecks'
+import { LICENSE_FIELD } from '@/features/forms/formReferences'
 import type { GateOutcome } from '@/features/gates/registry'
 
 export const LICENSE_GATE_KEY = 'trade.state_license_active'
@@ -31,8 +32,28 @@ export function failedCheckReason(check: LicenseCheckFacts): string {
   return note === '' ? found : `${found} ${note.replace(/\.+$/, '')}.`
 }
 
-export function licenseGateOutcome(latest: LicenseCheckFacts | null): GateOutcome {
+export function applicationLicenseNumber(values: Readonly<Record<string, unknown>>): string | null {
+  const value = new Map(Object.entries(values)).get(LICENSE_FIELD)
+  return typeof value === 'string' && value.trim() !== '' ? value.trim() : null
+}
+
+function normalized(licenseNumber: string): string {
+  return licenseNumber.replace(/\s+/g, '').toUpperCase()
+}
+
+export function namesSameLicense(checked: string, named: string | null): boolean {
+  return named === null || normalized(checked) === normalized(named)
+}
+
+export function licenseGateOutcome(
+  latest: LicenseCheckFacts | null,
+  named: string | null,
+): GateOutcome {
   if (latest === null) return { status: 'blocked', reason: 'No state license check is recorded.' }
-  if (latest.result === 'active') return { status: 'pass' }
-  return { status: 'blocked', reason: failedCheckReason(latest) }
+  if (latest.result !== 'active') return { status: 'blocked', reason: failedCheckReason(latest) }
+  if (namesSameLicense(latest.licenseNumber, named)) return { status: 'pass' }
+  return {
+    status: 'blocked',
+    reason: `The latest state license check was for license ${latest.licenseNumber}, but the application now names ${named ?? ''}.`,
+  }
 }

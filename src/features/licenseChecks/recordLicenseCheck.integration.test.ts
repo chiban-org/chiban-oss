@@ -181,3 +181,40 @@ describe('who may record a license check', () => {
     expect(recorded).toEqual({ ok: false, error: 'not_found' })
   })
 })
+
+describe('a license check is for the license on the application', () => {
+  it('refuses a check of a different license number than the application names', async () => {
+    const recorded = await recordLicenseCheck(
+      handle.db,
+      trade.world.staff,
+      input({ licenseNumber: 'EL-999' }),
+      signal,
+    )
+    expect(recorded).toEqual({ ok: false, error: 'license_mismatch' })
+    expect(await handle.db.select().from(licenseChecks)).toHaveLength(0)
+  })
+
+  it('matches the number regardless of case and spaces', async () => {
+    const recorded = await recordLicenseCheck(
+      handle.db,
+      trade.world.staff,
+      input({ licenseNumber: ' el-1 ' }),
+      signal,
+    )
+    expect(recorded.ok).toBe(true)
+    expect((await licenseGate())?.effective).toBe('pass')
+  })
+
+  it('blocks again when the application is amended to another license after the check', async () => {
+    await recordLicenseCheck(handle.db, trade.world.staff, input(), signal)
+    await handle.db
+      .update(applications)
+      .set({ values: { description: 'Panel upgrade', contractor_license_number: 'EL-2' } })
+      .where(eq(applications.id, trade.applicationId))
+    expect((await licenseGate())?.outcome).toEqual({
+      status: 'blocked',
+      reason:
+        'The latest state license check was for license EL-1, but the application now names EL-2.',
+    })
+  })
+})

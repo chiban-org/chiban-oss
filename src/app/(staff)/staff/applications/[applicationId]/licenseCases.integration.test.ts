@@ -40,7 +40,7 @@ describeActionCases(h, 'recordLicenseCheckAction', {
   actor: () => h.actorFor('staff'),
   input: async () => ({
     applicationId: await uncheckedTrade(),
-    licenseNumber: 'EL-20418',
+    licenseNumber: 'EL-1',
     licenseType: 'Master electrician',
     result: 'active',
     note: '',
@@ -86,7 +86,7 @@ describe('a failing license check', () => {
     h.signIn(await h.actorFor('staff'))
     const form = h.form({
       applicationId: await uncheckedTrade(),
-      licenseNumber: 'EL-20418',
+      licenseNumber: 'EL-1',
       licenseType: 'Master electrician',
       result: 'expired',
       note: 'Lapsed in June',

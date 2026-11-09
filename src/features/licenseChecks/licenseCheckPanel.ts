@@ -7,12 +7,15 @@ import { loadApplicationContext } from '@/features/applications/context'
 import { isTerminalState } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { LICENSE_FIELD } from '@/features/forms/formReferences'
 import { hasFullRecordAccess } from '@/features/projects/access'
 import { townTimeZone } from '@/features/town/timeZone'
 import { formatInstant } from '@/lib/formatDate'
 import { latestLicenseCheck } from './latestLicenseCheck'
-import { LICENSE_RESULT_LABELS, licenseCheckApplies } from './licenseRules'
+import {
+  applicationLicenseNumber,
+  LICENSE_RESULT_LABELS,
+  licenseCheckApplies,
+} from './licenseRules'
 
 export interface LatestLicenseCheck {
   result: LicenseResult
@@ -30,11 +33,6 @@ export interface LicenseCheckPanelData {
   defaultType: string
   latest: LatestLicenseCheck | null
   canRecord: boolean
-}
-
-function enteredNumber(values: Readonly<Record<string, unknown>>): string | null {
-  const value = new Map(Object.entries(values)).get(LICENSE_FIELD)
-  return typeof value === 'string' && value.trim() !== '' ? value.trim() : null
 }
 
 async function describeLatest(
@@ -78,7 +76,7 @@ export async function loadLicenseCheckPanel(
   ])
   return {
     applicationId,
-    enteredNumber: enteredNumber(app.values),
+    enteredNumber: applicationLicenseNumber(app.values),
     defaultType: nhDefaultLicenseType(app.typeBody.key) ?? '',
     latest,
     canRecord: issues && !isTerminalState(app.state),

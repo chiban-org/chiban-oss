@@ -51,6 +51,7 @@ export function LicenseCheckForm({
         label="License number"
         name="licenseNumber"
         defaultValue={data.enteredNumber ?? ''}
+        readOnly={data.enteredNumber !== null}
         required
       />
       <LicenseTypeField groups={LICENSE_GROUPS} defaultValue={data.defaultType} />
