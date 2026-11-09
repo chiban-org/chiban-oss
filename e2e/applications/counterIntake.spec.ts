@@ -66,6 +66,6 @@ test.describe('taking an application for review at the counter', () => {
     expect(number).toMatch(/^VAR-/)
     const portal = await pageAs('applicant')
     await portal.goto('/portal')
-    await expect(portal.getByText(new RegExp(`^${number}, started `))).toBeVisible()
+    await expect(portal.getByText(new RegExp(`, ${number}$`))).toBeVisible()
   })
 })

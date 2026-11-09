@@ -4,6 +4,7 @@ import { type E2eDb, expect } from '../fixtures/test'
 export const PORTAL_PARCEL_ADDRESS = '12 Tamarack Way'
 
 export async function chooseApplicationType(page: Page, typeKey: string): Promise<void> {
+  await expect(page.getByRole('heading', { name: 'Choose the kind of application' })).toBeVisible()
   const radio = page.locator(`[role="radio"][value="${typeKey}"]`)
   if (!(await radio.isVisible())) {
     await radio.locator('xpath=ancestor::details[1]/summary').click()
