@@ -15,6 +15,12 @@ export function RequestPanel(props: {
 }) {
   const [open, setOpen] = useState(props.startOpen)
   const [round, setRound] = useState(0)
+  const [target, setTarget] = useState(props.reinspectionOf)
+  if (target !== props.reinspectionOf) {
+    setTarget(props.reinspectionOf)
+    setOpen(props.reinspectionOf !== null || props.startOpen)
+    setRound((n) => n + 1)
+  }
   return (
     <details open={open} onToggle={(event) => setOpen(event.currentTarget.open)}>
       <summary className="tap-target inline-flex cursor-pointer items-center">
