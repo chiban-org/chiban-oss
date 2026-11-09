@@ -52,3 +52,10 @@ export function currentNavHref(pathname: string, links: readonly NavLink[]): str
   }
   return best?.href ?? null
 }
+
+const PRIVATE_LINK_SECTIONS = ['/board/packets']
+
+export function accountLinksAt(links: readonly NavLink[], pathname: string): NavLink[] {
+  if (!PRIVATE_LINK_SECTIONS.some((section) => within(pathname, section))) return [...links]
+  return links.filter((entry) => entry.href !== SIGN_IN.href)
+}

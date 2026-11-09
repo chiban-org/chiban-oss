@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { AccountNav } from '@/components/public/AccountNav'
 import { MenuDisclosure } from '@/components/public/MenuDisclosure'
 import { NavLinks } from '@/components/public/NavLinks'
 import { type NavLink, PRIMARY_NAV } from '@/features/publicSite/publicNav'
@@ -43,13 +44,7 @@ export function TownHeader({ town, account }: TownHeaderProps) {
             <NavLinks links={PRIMARY_NAV} scope={scope} />
           </nav>
           {account === undefined ? null : (
-            <nav
-              aria-label="Account"
-              className="flex flex-col border-t border-hairline pt-2 md:order-1 md:flex-row md:flex-wrap md:items-center md:gap-1 md:border-t-0 md:pt-0"
-            >
-              <NavLinks links={account.links} scope={scope} />
-              {account.signOut}
-            </nav>
+            <AccountNav links={account.links} scope={scope} signOut={account.signOut} />
           )}
         </MenuDisclosure>
       </div>

@@ -111,4 +111,11 @@ describe('PublicHeader', () => {
     expect(button.getAttribute('aria-expanded')).toBe('false')
     expect(document.activeElement).toBe(button)
   })
+
+  it('offers no sign in on a private packet link, since outside recipients have no account', () => {
+    nav.pathname = '/board/packets/some-token'
+    renderHeader(null)
+    expect(screen.queryByRole('navigation', { name: 'Account' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Sign in' })).toBeNull()
+  })
 })

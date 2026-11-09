@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { accountLinksFor, currentNavHref, PRIMARY_NAV } from '@/features/publicSite/publicNav'
+import {
+  accountLinksAt,
+  accountLinksFor,
+  currentNavHref,
+  PRIMARY_NAV,
+} from '@/features/publicSite/publicNav'
 
 const labels = (links: readonly { label: string }[]) => links.map((l) => l.label)
 
@@ -65,5 +70,12 @@ describe('public navigation', () => {
     expect(currentNavHref('/report-anonymously', links)).toBe('/complaints/new')
     expect(currentNavHref('/meetingsx', links)).toBeNull()
     expect(currentNavHref('/', links)).toBeNull()
+  })
+
+  it('offers no sign in on a private packet link, whose readers may have no account', () => {
+    expect(labels(accountLinksAt(accountLinksFor(null), '/board/packets/abc'))).toEqual([])
+    expect(labels(accountLinksAt(accountLinksFor(null), '/board'))).toEqual(['Sign in'])
+    const member = accountLinksFor({ kind: 'public', roles: ['board_member'] })
+    expect(accountLinksAt(member, '/board/packets/abc')).toEqual(member)
   })
 })
