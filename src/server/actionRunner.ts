@@ -6,7 +6,7 @@ import { MAX_ADJUSTMENT_DAYS } from '@/features/clocks/adjustmentKinds'
 import { type GuardOptions, guardAction } from '@/server/actionGuard'
 
 export type ActionResult =
-  | { ok: true; message: string }
+  | { ok: true; message: string; createdId?: string }
   | { ok: false; error: string; fieldErrors?: Record<string, string> }
 
 export interface ActionContext {

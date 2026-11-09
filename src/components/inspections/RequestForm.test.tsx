@@ -117,4 +117,49 @@ describe('RequestForm', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Request inspection' }))
     await expectRefusalBeside(screen.getByRole('textbox', { name: 'Contact phone' }), message)
   })
+
+  it('shows the phone hours note only when Phone is chosen outside phone hours', () => {
+    render(
+      <CsrfProvider token="t1">
+        <RequestForm
+          applicationId="a1"
+          types={[{ checklistVersionId: 'c1', label: 'Final' }]}
+          dates={[]}
+          action={vi.fn()}
+          channels={[
+            { value: 'phone', label: 'Phone' },
+            { value: 'counter', label: 'Counter' },
+          ]}
+          phoneHoursText="weekdays"
+          outsidePhoneHours
+        />
+      </CsrfProvider>,
+    )
+    expect(screen.getByRole('note').textContent).toContain('Phone request hours')
+    fireEvent.click(screen.getByRole('radio', { name: 'Counter' }))
+    expect(screen.queryByRole('note')).toBeNull()
+    fireEvent.click(screen.getByRole('radio', { name: 'Phone' }))
+    expect(screen.getByRole('note')).toBeTruthy()
+  })
+
+  it('shows no phone hours note inside phone hours', () => {
+    render(
+      <CsrfProvider token="t1">
+        <RequestForm
+          applicationId="a1"
+          types={[{ checklistVersionId: 'c1', label: 'Final' }]}
+          dates={[]}
+          action={vi.fn()}
+          channels={[
+            { value: 'phone', label: 'Phone' },
+            { value: 'counter', label: 'Counter' },
+          ]}
+          phoneHoursText="weekdays"
+          outsidePhoneHours={false}
+        />
+      </CsrfProvider>,
+    )
+    expect(screen.queryByRole('note')).toBeNull()
+    expect(screen.queryByText(/Phone request hours/)).toBeNull()
+  })
 })

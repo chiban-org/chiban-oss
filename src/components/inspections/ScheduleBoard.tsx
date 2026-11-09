@@ -16,6 +16,7 @@ import type { BoardView } from '@/components/inspections/boardView'
 import { NarrowDay } from '@/components/inspections/NarrowDay'
 import { ReviewRow } from '@/components/inspections/ReviewRow'
 import { WeekSwitcher } from '@/components/inspections/SlotWeeks'
+import { TakeBoardProvider } from '@/components/inspections/takeRequestContext'
 import { useNarrow, useScheduleBoard } from '@/components/inspections/useScheduleBoard'
 import { WaitingRow } from '@/components/inspections/WaitingRow'
 import { WeekGrid } from '@/components/inspections/WeekGrid'
@@ -160,8 +161,8 @@ export function ScheduleBoard({
   const board = useScheduleBoard({ requests, bookings, days, today, onSchedule, initialChosenId })
   const view = boardView(board, { days, bookings, inspectors, today })
   return (
-    <div className="flex flex-col gap-6">
-      <div className="grid items-start gap-5 lg:grid-cols-[minmax(18rem,24rem)_minmax(0,1fr)] [&>section]:m-0">
+    <TakeBoardProvider value={{ onTaken: board.onTaken, status: board.takeStatus }}>
+      <div className="flex flex-col gap-6 [&>section]:m-0">
         {takeRequest}
         <WaitingRow
           items={waitingItems(requests, bookings, today)}
@@ -169,8 +170,8 @@ export function ScheduleBoard({
           chosenId={board.chosenId}
           onChoose={board.choose}
         />
+        <Schedule board={board} view={view} message={message} />
       </div>
-      <Schedule board={board} view={view} message={message} />
-    </div>
+    </TakeBoardProvider>
   )
 }

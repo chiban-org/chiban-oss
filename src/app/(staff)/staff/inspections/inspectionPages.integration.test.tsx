@@ -128,6 +128,25 @@ describe('the inspection board', () => {
     )
   })
 
+  it('opens the take-a-request form already filled when a permit number is given', async () => {
+    await actAs('staff')
+    const body = await html(
+      InspectionsPage({ searchParams: Promise.resolve({ number: 'BP-2025-0001' }) }),
+    )
+    expect(body).toMatch(/aria-expanded="true"[^>]*>Take a phone or counter request/)
+    expect(body).toContain('value="BP-2025-0001"')
+    expect(body).toContain('Record request')
+    expect(body).toContain('Find permit')
+  })
+
+  it('keeps the take-a-request form closed behind one entry button until asked', async () => {
+    await actAs('staff')
+    const body = await html(InspectionsPage({ searchParams: Promise.resolve({}) }))
+    expect(body).toMatch(/aria-expanded="false"[^>]*>Take a phone or counter request/)
+    expect(body).not.toContain('Record request')
+    expect(body).not.toContain('Find permit')
+  })
+
   it('says to enter a permit number when Find permit is pressed with the box empty or blank', async () => {
     await actAs('staff')
     for (const number of ['', '   ']) {
