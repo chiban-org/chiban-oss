@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, render, screen } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { LetterToMail } from '@/features/decisions/letterDelivery'
 import { LettersToMail } from './lettersToMail'
 
 vi.mock('./letterActions', () => ({ recordLetterMailedAction: vi.fn() }))
@@ -8,7 +9,7 @@ vi.mock('@/features/auth/csrfRefresh', () => ({ ensureCsrfAction: () => Promise.
 
 afterEach(cleanup)
 
-const base = {
+const base: LetterToMail = {
   id: 'm1',
   partyName: 'Pat Paper',
   partyRole: 'agent',

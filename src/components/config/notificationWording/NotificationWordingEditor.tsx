@@ -23,6 +23,8 @@ interface Props {
   townName: string
 }
 
+const KEY_INFO = new Map(Object.entries(WORDING_KEY_INFO))
+
 const BODY_HINT =
   'Leave a blank line between paragraphs. Chiban adds the link at the end unless you place {{link}}, and leaves out a paragraph when none of its fields has a value.'
 
@@ -30,7 +32,7 @@ export function NotificationWordingEditor({ body, onChange, errors, townName }: 
   const [selected, setSelected] = useState<WordingKey>('application_submitted')
   const area = useRef<HTMLTextAreaElement>(null)
   const wording = currentWording(body, selected)
-  const info = new Map(Object.entries(WORDING_KEY_INFO)).get(selected)
+  const info = KEY_INFO.get(selected)
   const changed = isChanged(body, selected)
   const insert = (field: string) => {
     const at = area.current?.selectionStart ?? wording.body.length
@@ -71,16 +73,15 @@ export function NotificationWordingEditor({ body, onChange, errors, townName }: 
           <FieldError errors={errors} name={`events.${selected}.body`} />
         </div>
         <WordingFieldList fieldKey={selected} onInsert={insert} />
-        <div>
-          <Button
-            type="button"
-            variant="outline"
-            disabled={!changed}
-            onClick={() => onChange(withDefault(body, selected))}
-          >
-            Reset to the standard wording
-          </Button>
-        </div>
+        <Button
+          type="button"
+          variant="outline"
+          className="self-start"
+          disabled={!changed}
+          onClick={() => onChange(withDefault(body, selected))}
+        >
+          Reset to the standard wording
+        </Button>
         <WordingPreview wording={wording} townName={townName} />
       </div>
     </div>

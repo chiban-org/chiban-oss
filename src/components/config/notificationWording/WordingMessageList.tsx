@@ -18,6 +18,14 @@ const AUDIENCES: readonly [WordingAudience, string][] = [
   ['boards', 'To boards'],
 ]
 
+const INFO = new Map(Object.entries(WORDING_KEY_INFO))
+
+const GROUPS = AUDIENCES.map(([audience, heading]) => ({
+  audience,
+  heading,
+  keys: WORDING_KEYS.filter((k) => INFO.get(k)?.audience === audience),
+}))
+
 interface Props {
   body: NotificationWordingBody
   selected: WordingKey
@@ -30,16 +38,15 @@ function hasError(errors: FieldErrors, key: WordingKey): boolean {
 }
 
 export function WordingMessageList({ body, selected, onSelect, errors }: Props) {
-  const info = new Map(Object.entries(WORDING_KEY_INFO))
   return (
     <nav aria-label="Messages" className="flex flex-col gap-4">
-      {AUDIENCES.map(([audience, heading]) => (
+      {GROUPS.map(({ audience, heading, keys }) => (
         <div key={audience}>
           <h3 className="m-0 mb-1 font-sans text-sm font-semibold text-muted-foreground">
             {heading}
           </h3>
           <ul className="m-0 list-none p-0">
-            {WORDING_KEYS.filter((k) => info.get(k)?.audience === audience).map((key) => (
+            {keys.map((key) => (
               <li key={key}>
                 <button
                   type="button"
@@ -50,7 +57,7 @@ export function WordingMessageList({ body, selected, onSelect, errors }: Props) 
                     key === selected && 'bg-canvas font-semibold',
                   )}
                 >
-                  <span>{info.get(key)?.label}</span>
+                  <span>{INFO.get(key)?.label}</span>
                   <span className="text-xs text-muted-foreground">
                     {hasError(errors, key) ? 'Check' : isChanged(body, key) ? 'Changed' : ''}
                   </span>

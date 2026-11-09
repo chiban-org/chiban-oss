@@ -98,7 +98,7 @@ export async function deliverDecisionLetter(
 export interface LetterToMail {
   id: string
   partyName: string
-  partyRole: string
+  partyRole: RecipientRole
   documentId: string
   documentTitle: string
   mailedOn: string | null

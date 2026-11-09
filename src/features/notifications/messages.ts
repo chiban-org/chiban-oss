@@ -8,9 +8,9 @@ import {
   renderWording,
   type WordingLink,
 } from '@/features/notifications/wording/renderWording'
-import { DEFAULT_WORDING, type Wording } from '@/features/notifications/wording/wordingDefaults'
+import { wordingFor } from '@/features/notifications/wording/wordingEdits'
 import type { WordingKey } from '@/features/notifications/wording/wordingKeys'
-import type { NotificationWordingBody } from '@/features/notifications/wording/wordingSchema'
+import type { WordingOverrides } from '@/features/notifications/wording/wordingSchema'
 
 export type Rendered = RenderedMessage
 
@@ -18,7 +18,7 @@ export interface Context {
   applicationId: string
   payload: NotificationPayload
   townName: string
-  wording?: NotificationWordingBody['events']
+  wording?: WordingOverrides
   claim?: Pick<SystemClaimLink, 'link' | 'days'>
 }
 
@@ -53,16 +53,6 @@ const boardLink = (): WordingLink => ({
   href: `${env.BASE_URL}/board`,
   label: 'Open the board pages',
 })
-
-const DEFAULTS = new Map<string, Wording>(Object.entries(DEFAULT_WORDING))
-
-export function wordingFor(
-  key: WordingKey,
-  overrides: NotificationWordingBody['events'] | undefined,
-): Wording {
-  const found = overrides === undefined ? undefined : new Map(Object.entries(overrides)).get(key)
-  return found ?? DEFAULTS.get(key) ?? { subject: '', body: '' }
-}
 
 function render(key: WordingKey, link: (ctx: Context) => WordingLink) {
   return (ctx: Context): Rendered =>

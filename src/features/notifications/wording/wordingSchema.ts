@@ -32,6 +32,8 @@ export const NotificationWordingBodySchema = z
 
 export type NotificationWordingBody = z.infer<typeof NotificationWordingBodySchema>
 
+export type WordingOverrides = NotificationWordingBody['events']
+
 export const EMPTY_NOTIFICATION_WORDING: NotificationWordingBody = { key: 'default', events: {} }
 
 export function allowedFields(key: WordingKey): ReadonlySet<string> {

@@ -6,42 +6,44 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { recordLetterMailedAction } from './letterActions'
 import type { LettersData } from './lettersData'
 
-const ROLE_WORDS: Readonly<Record<string, string>> = { applicant: 'applicant', agent: 'agent' }
+function MailedStatus({ letter, data }: { letter: LetterToMail; data: LettersData }) {
+  if (letter.mailedOn !== null) {
+    return <p className="text-ink-secondary">{`Mailed ${formatCivilDate(letter.mailedOn)}.`}</p>
+  }
+  if (!data.canRecord) return <p className="text-ink-secondary">Not mailed yet.</p>
+  return (
+    <ActionForm
+      action={recordLetterMailedAction}
+      submitLabel="Record mailed"
+      variant="outline"
+      className="max-w-md"
+    >
+      <input type="hidden" name="mailingId" value={letter.id} />
+      <TextField
+        label="Date mailed"
+        name="mailedOn"
+        type="date"
+        defaultValue={data.today}
+        max={data.today}
+        required
+      />
+    </ActionForm>
+  )
+}
 
 function LetterRow({ letter, data }: { letter: LetterToMail; data: LettersData }) {
   return (
     <li className="record-item flex flex-col gap-2 [&>*]:m-0">
       <p>
         <span className="font-semibold">{letter.partyName}</span>
-        {`, ${ROLE_WORDS[letter.partyRole] ?? letter.partyRole}`}
+        {`, ${letter.partyRole}`}
       </p>
       <p>
         <a {...NEW_TAB} href={`/api/documents/${letter.documentId}`}>
           {`Print ${letter.documentTitle}`}
         </a>
       </p>
-      {letter.mailedOn !== null ? (
-        <p className="text-ink-secondary">{`Mailed ${formatCivilDate(letter.mailedOn)}.`}</p>
-      ) : data.canRecord ? (
-        <ActionForm
-          action={recordLetterMailedAction}
-          submitLabel="Record mailed"
-          variant="outline"
-          className="max-w-md"
-        >
-          <input type="hidden" name="mailingId" value={letter.id} />
-          <TextField
-            label="Date mailed"
-            name="mailedOn"
-            type="date"
-            defaultValue={data.today}
-            max={data.today}
-            required
-          />
-        </ActionForm>
-      ) : (
-        <p className="text-ink-secondary">Not mailed yet.</p>
-      )}
+      <MailedStatus letter={letter} data={data} />
     </li>
   )
 }

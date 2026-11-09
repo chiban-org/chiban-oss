@@ -4,6 +4,8 @@ import { FIELD_LABELS, type WordingField } from '@/features/notifications/wordin
 import type { WordingKey } from '@/features/notifications/wording/wordingKeys'
 import { allowedFields } from '@/features/notifications/wording/wordingSchema'
 
+const LABELS = new Map(Object.entries(FIELD_LABELS))
+
 export function WordingFieldList({
   fieldKey,
   onInsert,
@@ -11,7 +13,6 @@ export function WordingFieldList({
   fieldKey: WordingKey
   onInsert: (field: string) => void
 }) {
-  const labels = new Map(Object.entries(FIELD_LABELS))
   const fields = [...allowedFields(fieldKey)] as WordingField[]
   return (
     <div>
@@ -28,7 +29,7 @@ export function WordingFieldList({
               className="tap-target rounded-sm border border-control-border bg-surface px-2 py-1 text-left text-sm text-ink hover:bg-canvas"
             >
               <span className="font-mono">{`{{${field}}}`}</span>
-              <span className="ml-2 text-muted-foreground">{labels.get(field)}</span>
+              <span className="ml-2 text-muted-foreground">{LABELS.get(field)}</span>
             </button>
           </li>
         ))}
