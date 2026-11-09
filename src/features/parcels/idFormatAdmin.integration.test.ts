@@ -1,4 +1,4 @@
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { auditLog, parcelIdFormats } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
@@ -40,6 +40,19 @@ async function rowOf(key: string) {
 }
 
 describe('parcel ID formats on a real install', () => {
+  it('does not delete a format a saved import layout still names', async () => {
+    await handle.db.execute(
+      sql`update gis_layers set mapping = '{"id":{"format":"cama15","parts":[]}}'::jsonb where key = 'cama'`,
+    )
+    const listed = await listIdFormats(handle.db, admin, signal)
+    if (!listed.ok) throw new Error(listed.error)
+    expect(listed.value.find((r) => r.key === 'cama15')?.inUse).toBe(true)
+    expect(await deleteIdFormat(handle.db, admin, { key: 'cama15' }, signal)).toEqual({
+      ok: false,
+      error: 'in_use',
+    })
+  })
+
   it('lists the pack defaults with their alias counts', async () => {
     await makeParcel(handle.db, [{ format: 'gis12', value: '007001000000' }])
     const listed = await listIdFormats(handle.db, admin, signal)

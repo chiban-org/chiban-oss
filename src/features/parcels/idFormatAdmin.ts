@@ -1,6 +1,6 @@
 import { asc, eq, sql } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
-import { aliasOverrides, parcelAliases, parcelIdFormats } from '@/db/schema'
+import { aliasOverrides, gisLayers, parcelAliases, parcelIdFormats } from '@/db/schema'
 import { migrationBatches } from '@/db/schema/migration'
 import { parcelRecordLinks } from '@/db/schema/parcelRecordLinks'
 import { transactionResult } from '@/db/transactionResult'
@@ -57,7 +57,10 @@ async function usage(tx: Db | Tx, key: string): Promise<{ aliases: number; other
       (select count(*) from ${parcelAliases} where ${parcelAliases.format} = ${key})::int as aliases,
       ((select count(*) from ${aliasOverrides} where ${aliasOverrides.format} = ${key})
         + (select count(*) from ${migrationBatches} where ${migrationBatches.idFormat} = ${key})
-        + (select count(*) from ${parcelRecordLinks} where ${parcelRecordLinks.rawRefFormat} = ${key}))::int as other`)
+        + (select count(*) from ${parcelRecordLinks} where ${parcelRecordLinks.rawRefFormat} = ${key})
+        + (select count(*) from ${gisLayers}
+          where ${gisLayers.mapping} is not null
+            and jsonb_path_exists(${gisLayers.mapping}, '$.** ? (@.format == $key)', jsonb_build_object('key', ${key}::text))))::int as other`)
   return result.rows[0] ?? { aliases: 0, other: 0 }
 }
 

@@ -5,7 +5,6 @@ import { loadActor } from '@/features/auth/actor'
 import { createStaffUserWithDefaults } from '@/features/auth/createStaffUserWithDefaults'
 import { createSchedule, deleteSchedule } from '@/features/reports/schedules'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { seedParcelWorld } from '@/test/parcels'
 
 const signal = new AbortController().signal
 const NOV_9 = new Date('2026-11-09T15:00:00Z')
@@ -13,7 +12,6 @@ let handle: TestDb
 
 beforeEach(async () => {
   handle = await makeTestDb()
-  await seedParcelWorld(handle.db)
 })
 afterEach(async () => {
   await handle.drop()
