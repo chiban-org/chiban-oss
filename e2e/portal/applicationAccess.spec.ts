@@ -8,7 +8,8 @@ test.describe('who may open an application in the portal', () => {
     const id = await applicationIdFor(db, SERVICE)
     const owner = await pageAs('applicant')
     await owner.goto(`/portal/applications/${id}`)
-    await expect(owner.getByRole('heading', { level: 1 })).toHaveText('EL-2026-0001')
+    await expect(owner.getByRole('heading', { level: 1 })).toHaveText(SERVICE)
+    await expect(owner.getByText('EL-2026-0001').first()).toBeVisible()
   })
 
   test('another applicant who types the same address is refused', async ({ page, db, suffix }) => {
