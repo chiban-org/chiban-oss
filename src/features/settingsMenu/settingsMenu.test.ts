@@ -30,10 +30,11 @@ describe('settings menu', () => {
   it('shows an admin every settings page, the town group first', () => {
     const labels = labelsFor('admin')
     expect(labels).toHaveLength(SETTINGS_MENU_ITEMS.length)
-    expect(labels.slice(0, 4)).toEqual([
+    expect(labels.slice(0, 5)).toEqual([
       'Town profile',
       'Letterhead',
       'Signers',
+      'Notification wording',
       'Application types',
     ])
   })

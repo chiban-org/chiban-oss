@@ -37,6 +37,7 @@ function starterOrDefaultBody(kind: ConfigKind): unknown {
     case 'board_settings':
     case 'regional_contacts':
     case 'town_profile':
+    case 'notification_wording':
       return skeletonBody(kind, 'default')
     case 'review_routes':
       return {

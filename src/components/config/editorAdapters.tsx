@@ -10,6 +10,7 @@ import { FeeLinesEditor } from '@/components/config/FeeLinesEditor'
 import { FormBuilder } from '@/components/config/formBuilder/FormBuilder'
 import { InspectionSettingsEditor } from '@/components/config/InspectionSettingsEditor'
 import { LetterBuilder } from '@/components/config/letterBuilder/LetterBuilder'
+import { NotificationWordingEditor } from '@/components/config/notificationWording/NotificationWordingEditor'
 import { PaymentSettingsEditor } from '@/components/config/PaymentSettingsEditor'
 import type { FieldErrors } from '@/components/config/primitives'
 import { RegionalContactsEditor } from '@/components/config/RegionalContactsEditor'
@@ -30,6 +31,7 @@ import { NO_FORM_BUILDER_DATA } from '@/features/forms/formReferences'
 import type { FormBody } from '@/features/forms/formSchema'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
 import type { InspectionSettingsBody } from '@/features/inspections/settingsSchema'
+import type { NotificationWordingBody } from '@/features/notifications/wording/wordingSchema'
 import type { PaymentSettingsBody } from '@/features/payments/settingsSchema'
 import type { ReviewRoutesBody } from '@/features/reviews/routesSchema'
 import { asDocTemplate } from '@/features/templates/asDocTemplate'
@@ -72,6 +74,18 @@ export function TemplateAdapter({ body, onChange, issues }: EditorProps) {
   if (template === undefined) return <p role="alert">The letter builder could not load.</p>
   return (
     <LetterBuilder body={docBody} onChange={onChange} errors={errorsOf(issues)} data={template} />
+  )
+}
+
+export function NotificationWordingAdapter({ body, onChange, issues }: EditorProps) {
+  const { townName } = useEditorContext()
+  return (
+    <NotificationWordingEditor
+      body={body as NotificationWordingBody}
+      onChange={onChange}
+      errors={errorsOf(issues)}
+      townName={townName ?? ''}
+    />
   )
 }
 

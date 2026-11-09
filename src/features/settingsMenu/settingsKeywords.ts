@@ -5,6 +5,10 @@ export const SETTINGS_KEYWORDS: ReadonlyMap<string, string> = new Map([
   ],
   ['/staff/settings/letterhead', 'logo footer page numbers header contact lines printed documents'],
   ['/staff/settings/signers', 'signature signer building official chair clerk sign letters'],
+  [
+    '/staff/settings/notification_wording',
+    'email notification message subject template wording merge fields',
+  ],
   ['/staff/settings/application_type', 'permit application workflow steps prefix pay timing'],
   ['/staff/settings/form', 'application questions fields intake'],
   ['/staff/settings/fee_schedule', 'charges cost price per unit flat renewal'],

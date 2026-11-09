@@ -7,6 +7,7 @@ export interface CalendarBooking {
   description: string
   location: string
   organizerEmail: string
+  organizerName?: string
   attendeeEmail: string
   attendeeName: string
   targetUserRef?: string | null
@@ -16,7 +17,6 @@ export type IcsMethod = 'REQUEST' | 'CANCEL'
 
 const MAX_OCTETS = 75
 const CRLF = '\r\n'
-const ORGANIZER_NAME = 'Town of Alder Pond'
 
 function utcStamp(instant: Date): string {
   return instant
@@ -37,11 +37,17 @@ function escapeParam(value: string): string {
   return value.replace(/[";:,]/g, ' ')
 }
 
-function parseMailbox(value: string): { name: string; address: string } {
+function parseMailbox(value: string, fallbackName: string): { name: string; address: string } {
   const match = /^\s*(.*?)\s*<([^<>]+)>\s*$/.exec(value)
-  if (match === null) return { name: ORGANIZER_NAME, address: value.trim() }
+  if (match === null) return { name: fallbackName, address: value.trim() }
   const name = (match[1] ?? '').replace(/^"|"$/g, '').trim()
-  return { name: name === '' ? ORGANIZER_NAME : name, address: (match[2] ?? '').trim() }
+  return { name: name === '' ? fallbackName : name, address: (match[2] ?? '').trim() }
+}
+
+function organizerLine(booking: CalendarBooking): string {
+  const organizer = parseMailbox(booking.organizerEmail, booking.organizerName?.trim() ?? '')
+  const name = organizer.name === '' ? '' : `;CN=${escapeParam(organizer.name)}`
+  return `ORGANIZER${name}:mailto:${organizer.address}`
 }
 
 export function foldLine(line: string): string[] {
@@ -66,7 +72,6 @@ export function foldLine(line: string): string[] {
 
 export function buildIcs(booking: CalendarBooking, method: IcsMethod, now: Date): string {
   const status = method === 'CANCEL' ? 'CANCELLED' : 'CONFIRMED'
-  const organizer = parseMailbox(booking.organizerEmail)
   const attendee = `ATTENDEE;CN=${escapeParam(booking.attendeeName)};ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=FALSE:mailto:${booking.attendeeEmail}`
   const lines = [
     'BEGIN:VCALENDAR',
@@ -83,7 +88,7 @@ export function buildIcs(booking: CalendarBooking, method: IcsMethod, now: Date)
     `SUMMARY:${escapeText(booking.summary)}`,
     `DESCRIPTION:${escapeText(booking.description)}`,
     `LOCATION:${escapeText(booking.location)}`,
-    `ORGANIZER;CN=${escapeParam(organizer.name)}:mailto:${organizer.address}`,
+    organizerLine(booking),
     attendee,
     `STATUS:${status}`,
     'END:VEVENT',

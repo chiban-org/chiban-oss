@@ -42,6 +42,8 @@ import { templatePreviewAction, templateSamplesAction } from '../../templateActi
 
 export const metadata: Metadata = { title: 'Settings item' }
 
+const WIDE_KINDS: ReadonlySet<ConfigKind> = new Set(['template', 'notification_wording'])
+
 interface Props {
   params: Promise<{ kind: string; key: string }>
 }
@@ -85,6 +87,7 @@ async function builderContextFor(
   if (kind === 'form') {
     return { ...options.base, form: await loadFormBuilderData(ctx.db, key, ctx.signal) }
   }
+  if (kind === 'notification_wording') return { ...options.base, townName: options.townName }
   if (kind !== 'template') return options.base
   return {
     ...options.base,
@@ -140,7 +143,7 @@ export default async function SettingsKeyPage({ params }: Props) {
     townName: town.ok ? town.value.name : '',
   })
   return (
-    <main data-wide={isForm || kind === 'template' ? true : undefined}>
+    <main data-wide={isForm || WIDE_KINDS.has(kind) ? true : undefined}>
       <SettingsHeader
         {...headerFor(kind, itemTitle(kind, key, state.body, references))}
         versioned={isPinnedKind(kind)}

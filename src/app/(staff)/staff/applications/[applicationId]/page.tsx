@@ -20,6 +20,7 @@ import { planWork } from '@/features/applications/workPlan'
 import { hostedActions } from '@/features/applications/workPlanTypes'
 import { loadBoardPanel } from '@/features/boards/panelData'
 import { counterIntakeLine } from '@/features/counter/intake/intakeProvenance'
+import { withLettersToMail } from '@/features/decisions/letterPlan'
 import { loadApplicationHearingsPanel } from '@/features/hearings/applicationPanel'
 import { returnedCheckNotices } from '@/features/ledger/balanceNotice'
 import { loadApplicationPayments } from '@/features/payments/applicationPayments'
@@ -32,6 +33,8 @@ import { loadDueInspection } from './dueInspection'
 import { loadInspectionsPanelData } from './inspectionsPanel'
 import { loadInspectorWork, seesInspectorView } from './inspectorData'
 import { InspectorRecord } from './inspectorRecord'
+import { loadLettersData } from './lettersData'
+import { LettersToMail } from './lettersToMail'
 import { LimitedRecord } from './limitedRecord'
 import { loadNotesData } from './notesData'
 import { applicationPanels } from './panelSet'
@@ -70,6 +73,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     responsible,
     notes,
     intake,
+    letters,
   ] = await Promise.all([
     loading,
     loading.then((v) => (v === null ? null : loadRecordsData(ctx, applicationId, v.projectId))),
@@ -86,6 +90,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     loadResponsibleData(ctx, applicationId),
     loadNotesData(ctx, applicationId),
     counterIntakeLine(ctx.db, applicationId),
+    loadLettersData(ctx, applicationId),
   ])
   if (view === null || records === null) return null
   return {
@@ -101,6 +106,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     correction,
     responsible,
     notes,
+    letters,
   }
 }
 
@@ -130,7 +136,7 @@ export default async function StaffApplicationPage({ params }: Props) {
   const ready = { ...loaded, due }
   const { view, balanceNotices, correction } = ready
   const origin = { legacyNumber: ready.legacyNumber, intake: ready.intake }
-  const plan = planWork(view, ready.board, {
+  const planned = planWork(view, ready.board, {
     reviewers: ready.records.reviewers.length,
     abilities: abilitiesOf(ready),
     responsible: ready.responsible.current?.name ?? null,
@@ -140,6 +146,7 @@ export default async function StaffApplicationPage({ params }: Props) {
       dueFinal: due?.row.isFinal === true,
     },
   })
+  const plan = withLettersToMail(planned, ready.letters.letters)
   const parts = applicationPanels({ ...ready, hosted: hostedActions(plan) })
   const status = (
     <StatusChip
@@ -181,6 +188,7 @@ export default async function StaffApplicationPage({ params }: Props) {
       >
         <DoThisNow plan={plan} input={ready} />
         <RequirementsList plan={plan} input={ready} />
+        <LettersToMail data={ready.letters} />
         {parts.filled}
       </RecordLayout>
     </main>
