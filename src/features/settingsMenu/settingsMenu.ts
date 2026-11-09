@@ -74,6 +74,12 @@ export const SETTINGS_MENU_ITEMS: readonly SettingsMenuItem[] = [
     access: config,
   },
   {
+    href: kind('notification_wording'),
+    label: 'Notification wording',
+    group: 'town',
+    access: config,
+  },
+  {
     href: kind('application_type'),
     label: 'Application types',
     group: 'permits',

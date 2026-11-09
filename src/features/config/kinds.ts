@@ -9,6 +9,7 @@ import { FeeScheduleBodySchema } from '@/features/fees/feeSchema'
 import { FormBodySchema } from '@/features/forms/formSchema'
 import { ChecklistBodySchema } from '@/features/inspections/checklistSchema'
 import { InspectionSettingsBodySchema } from '@/features/inspections/settingsSchema'
+import { NotificationWordingBodySchema } from '@/features/notifications/wording/wordingSchema'
 import { PaymentSettingsBodySchema } from '@/features/payments/settingsSchema'
 import { ReviewRoutesBodySchema } from '@/features/reviews/routesSchema'
 import { TemplateBodySchema } from '@/features/templates/templateSchema'
@@ -29,6 +30,7 @@ export const CONFIG_KINDS = [
   'regional_contacts',
   'review_routes',
   'town_profile',
+  'notification_wording',
 ] as const
 export type ConfigKind = (typeof CONFIG_KINDS)[number]
 
@@ -41,6 +43,7 @@ export const SINGLETON_KINDS: readonly ConfigKind[] = [
   'regional_contacts',
   'review_routes',
   'town_profile',
+  'notification_wording',
 ]
 
 export function isSingletonKind(kind: ConfigKind): boolean {
@@ -94,6 +97,7 @@ export const CONFIG_SCHEMAS: Record<ConfigKind, ZodType> = {
   regional_contacts: RegionalContactsBodySchema,
   review_routes: ReviewRoutesBodySchema,
   town_profile: TownProfileBodySchema,
+  notification_wording: NotificationWordingBodySchema,
 }
 
 const CONFIG_KEY_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/

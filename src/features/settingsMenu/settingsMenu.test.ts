@@ -35,6 +35,7 @@ describe('settings menu', () => {
       'Parcel ID formats',
       'Letterhead',
       'Signers',
+      'Notification wording',
       'Application types',
     ])
   })

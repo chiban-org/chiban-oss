@@ -130,6 +130,7 @@ async function buildBooking(
     description,
     location: address ?? `Parcel ${parcel}`,
     organizerEmail: env.MAIL_FROM,
+    organizerName: town.ok ? town.value.name : '',
     attendeeEmail,
     attendeeName,
     targetUserRef,

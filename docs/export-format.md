@@ -1490,6 +1490,26 @@ File: `data/legal_holds.ndjson`. Ordered by id.
 Typed references:
 - `target_id` by `target_kind`: project to `projects`, application to `applications`, document to `documents`
 
+### letter_mailings
+
+File: `data/letter_mailings.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `application_id`: uuid
+- `decision_id`: uuid
+- `party_id`: uuid
+- `document_id`: uuid
+- `created_at`: timestamp with time zone
+- `mailed_on`: date, nullable
+- `mailed_by`: uuid, nullable
+- `mailed_at`: timestamp with time zone, nullable
+
+References:
+- `application_id` refers to `applications`
+- `decision_id` refers to `board_decisions`
+- `party_id` refers to `project_parties`
+- `document_id` refers to `documents`
+
 ### license_checks
 
 File: `data/license_checks.ndjson`. Ordered by id.

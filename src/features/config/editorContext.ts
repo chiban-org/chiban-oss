@@ -41,6 +41,7 @@ export interface EditorContext {
   formFields?: Record<string, FormField[]>
   form?: FormBuilderData
   template?: TemplateBuilderData
+  townName?: string
 }
 
 interface PackRuleLabelSource {

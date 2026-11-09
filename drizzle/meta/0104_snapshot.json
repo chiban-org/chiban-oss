@@ -1,6 +1,6 @@
 {
-  "id": "bd25f948-b9f0-4980-a03c-c2398c9e815e",
-  "prevId": "fead2907-a6bc-4430-8157-d1d1af47cfd3",
+  "id": "78dc8df9-948f-4db3-9e43-0f429dd0a5a4",
+  "prevId": "0575846e-c414-447b-b8b1-87d8abbfcfbe",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -10253,6 +10253,149 @@
         }
       },
       "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.letter_mailings": {
+      "name": "letter_mailings",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "application_id": {
+          "name": "application_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "decision_id": {
+          "name": "decision_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "party_id": {
+          "name": "party_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "document_id": {
+          "name": "document_id",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "created_at": {
+          "name": "created_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "mailed_on": {
+          "name": "mailed_on",
+          "type": "date",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mailed_by": {
+          "name": "mailed_by",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "mailed_at": {
+          "name": "mailed_at",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "letter_mailings_decision_party_uq": {
+          "name": "letter_mailings_decision_party_uq",
+          "columns": [
+            {
+              "expression": "decision_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "party_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "letter_mailings_application_idx": {
+          "name": "letter_mailings_application_idx",
+          "columns": [
+            {
+              "expression": "application_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "letter_mailings_application_id_applications_id_fk": {
+          "name": "letter_mailings_application_id_applications_id_fk",
+          "tableFrom": "letter_mailings",
+          "tableTo": "applications",
+          "columnsFrom": ["application_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "letter_mailings_decision_id_board_decisions_id_fk": {
+          "name": "letter_mailings_decision_id_board_decisions_id_fk",
+          "tableFrom": "letter_mailings",
+          "tableTo": "board_decisions",
+          "columnsFrom": ["decision_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "letter_mailings_party_id_project_parties_id_fk": {
+          "name": "letter_mailings_party_id_project_parties_id_fk",
+          "tableFrom": "letter_mailings",
+          "tableTo": "project_parties",
+          "columnsFrom": ["party_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        },
+        "letter_mailings_document_id_documents_id_fk": {
+          "name": "letter_mailings_document_id_documents_id_fk",
+          "tableFrom": "letter_mailings",
+          "tableTo": "documents",
+          "columnsFrom": ["document_id"],
+          "columnsTo": ["id"],
+          "onDelete": "no action",
+          "onUpdate": "no action"
+        }
+      },
       "compositePrimaryKeys": {},
       "uniqueConstraints": {},
       "policies": {},

@@ -9,6 +9,7 @@ import {
   FeeAdapter,
   FormAdapter,
   InspectionAdapter,
+  NotificationWordingAdapter,
   PaymentAdapter,
   RegionalContactsAdapter,
   ReviewRoutesAdapter,
@@ -33,4 +34,5 @@ export const CONFIG_EDITORS: Record<ConfigKind, ComponentType<EditorProps>> = {
   regional_contacts: RegionalContactsAdapter,
   review_routes: ReviewRoutesAdapter,
   town_profile: TownProfileAdapter,
+  notification_wording: NotificationWordingAdapter,
 }

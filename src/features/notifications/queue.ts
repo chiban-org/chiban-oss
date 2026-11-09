@@ -1,6 +1,11 @@
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
-import { applications, type NotificationEvent, notificationOutbox } from '@/db/schema'
+import {
+  applications,
+  type NotificationEvent,
+  notificationOutbox,
+  projectParties,
+} from '@/db/schema'
 import { type RecipientRole, resolveRecipients } from '@/features/notifications/recipients'
 
 export interface NotificationPayload {
@@ -18,6 +23,11 @@ export interface NotificationPayload {
   boardName?: string
   projectTitle?: string
   commentBy?: string
+  applicantName?: string
+  clockLabel?: string
+  dueOn?: string
+  outcomeLabel?: string
+  filedOn?: string
 }
 
 export interface QueueInput {
@@ -30,6 +40,11 @@ export interface QueueInput {
 }
 
 const PARTY_ROLES = ['applicant', 'owner', 'agent'] as const
+
+const APPLICANT_NAME = sql<string | null>`(select ${projectParties.name} from ${projectParties}
+  where ${projectParties.projectId} = ${applications.projectId}
+    and ${projectParties.role} = 'applicant' and ${projectParties.removedAt} is null
+  order by ${projectParties.addedAt} limit 1)`
 export const INSPECTION_PARTY_ROLES = ['applicant', 'owner', 'agent', 'contractor'] as const
 
 function recipientRows(
@@ -52,12 +67,13 @@ export async function queueNotification(
   const recipients = recipientRows(input)
   if (recipients.length === 0) return
   const [app] = await tx
-    .select({ number: applications.number })
+    .select({ number: applications.number, applicantName: APPLICANT_NAME })
     .from(applications)
     .where(eq(applications.id, input.applicationId))
   if (app === undefined) return
   const payload: NotificationPayload = {
     number: app.number,
+    ...(app.applicantName === null ? {} : { applicantName: app.applicantName }),
     ...(input.discriminator === undefined ? {} : { discriminator: input.discriminator }),
     ...input.extra,
   }

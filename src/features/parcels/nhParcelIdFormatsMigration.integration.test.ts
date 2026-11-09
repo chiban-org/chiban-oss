@@ -4,7 +4,7 @@ import { sql } from 'drizzle-orm'
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import { makeTestDb, type TestDb } from '@/test/db'
 
-const MIGRATION = new URL('../../../drizzle/0103_nh_parcel_id_formats.sql', import.meta.url)
+const MIGRATION = new URL('../../../drizzle/0105_nh_parcel_id_formats.sql', import.meta.url)
 
 let handle: TestDb
 

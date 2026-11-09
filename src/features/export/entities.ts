@@ -163,6 +163,7 @@ const SPECS: Spec[] = [
       },
     ],
   },
+  { table: t.letterMailings },
   { table: t.licenseChecks },
   { table: t.meetingMinutes },
   { table: t.migrationBatches },
