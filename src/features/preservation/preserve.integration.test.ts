@@ -70,7 +70,7 @@ const PASSED: PdfaValidation = {
 
 describe('preservation validation record', () => {
   it('stores what the validator said about the PDF/A copy beside the record', async () => {
-    const withValidator = { ...converter, validatePdfA: async () => PASSED }
+    const withValidator = { ...converter, validatePdfA: () => Promise.resolve(PASSED) }
     const up = await uploadAs(
       handle.db,
       store,
@@ -86,7 +86,10 @@ describe('preservation validation record', () => {
   })
 
   it('leaves the validation empty when the converter has no validator, and still completes', async () => {
-    const withoutValidator = { toPdfA: converter.toPdfA, extractText: converter.extractText }
+    const withoutValidator = {
+      toPdfA: (input: Uint8Array, abort: AbortSignal) => converter.toPdfA(input, abort),
+      extractText: (input: Uint8Array, abort: AbortSignal) => converter.extractText(input, abort),
+    }
     const up = await uploadAs(
       handle.db,
       store,
@@ -107,11 +110,12 @@ describe('preservation validation record', () => {
   it('keeps a copy that veraPDF rejects, recording the failure instead of blocking it', async () => {
     const failing = {
       ...converter,
-      validatePdfA: async (): Promise<PdfaValidation> => ({
-        ...PASSED,
-        status: 'failed',
-        detail: '6.2.11.4.1: The font programs shall be embedded',
-      }),
+      validatePdfA: (): Promise<PdfaValidation> =>
+        Promise.resolve({
+          ...PASSED,
+          status: 'failed',
+          detail: '6.2.11.4.1: The font programs shall be embedded',
+        }),
     }
     const up = await uploadAs(
       handle.db,

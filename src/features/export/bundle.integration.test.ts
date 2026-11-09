@@ -227,7 +227,10 @@ describe('export bundle: PDF/A copies', () => {
   }, 240_000)
 
   it('says not validated, never passed, when the converter has no validator', async () => {
-    const bare: PdfaConverter = { toPdfA: converter.toPdfA, extractText: converter.extractText }
+    const bare: PdfaConverter = {
+      toPdfA: (input, abort) => converter.toPdfA(input, abort),
+      extractText: (input, abort) => converter.extractText(input, abort),
+    }
     const { manifest } = await build(bare)
     expect(manifest.pdfa?.find((p) => p.sourceSha256 === plainSha)?.validation).toEqual({
       status: 'not_validated',
