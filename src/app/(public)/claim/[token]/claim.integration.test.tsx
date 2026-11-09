@@ -82,10 +82,27 @@ describe('claim page', () => {
     expect(html).toContain(`/sign-in?next=${encodeURIComponent(`/claim/${token}`)}`)
   })
 
+  it('names the project, its address and the email the link was sent to before anyone signs in', async () => {
+    state.actor = null
+    const html = renderToStaticMarkup(await ClaimPage({ params: Promise.resolve({ token }) }))
+    expect(html).toContain('Garage addition')
+    expect(html).toContain(EMAIL)
+  })
+
+  it('says a well-formed link that is unknown or used has expired or was already used', async () => {
+    state.actor = null
+    const unknown = 'A'.repeat(43)
+    const html = renderToStaticMarkup(
+      await ClaimPage({ params: Promise.resolve({ token: unknown }) }),
+    )
+    expect(html).toContain('This link has expired or was already used.')
+    expect(html).not.toContain('Sign in to claim')
+  })
+
   it('an invalid link offers a way on: sign in when signed out, contractor projects when signed in', async () => {
     state.actor = null
     const out = renderToStaticMarkup(await ClaimPage({ params: Promise.resolve({ token: 'bad' }) }))
-    expect(out).toContain('This link is no longer valid.')
+    expect(out).toContain('This link has expired or was already used.')
     expect(out).toContain('href="/sign-in"')
     expect(out).toContain('href="/"')
     const id = await makeUser(handle.db, { role: 'contractor', email: 'someone@alderpond.example' })
