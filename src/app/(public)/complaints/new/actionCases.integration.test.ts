@@ -69,7 +69,11 @@ describeAnonymousCases(h, 'submitComplaintAction', {
       ),
   },
   accepted: async (result, { db, written }) => {
-    expect(result).toMatchObject({ ok: true })
+    expect(result).toEqual({
+      redirectsTo: expect.stringMatching(
+        /^\/complaints\/received\?ref=CP-\d{4}-\d{4,}&reply=contact$/,
+      ),
+    })
     const rows = await db
       .select({
         channel: complaints.channel,

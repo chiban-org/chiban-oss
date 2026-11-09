@@ -5,15 +5,24 @@ import type { Db } from '@/db/client'
 import { clientKey } from '@/features/anonymousIntake/clientKey'
 import { intakeOpen } from '@/features/anonymousIntake/enablement'
 import { isLiveProbeToken } from '@/features/anonymousIntake/probeToken'
+import { refusalPage } from '@/features/anonymousIntake/refusalPage'
 import { type SanitizedType, sanitizeImage } from '@/features/anonymousIntake/sanitizeImage'
 import { writeAudit } from '@/features/audit/writeAudit'
 import { attachComplaintPhotos } from '@/features/enforcement/complaintPhotos'
 import { insertComplaintWithCase, MAX_COMPLAINT_CHARS } from '@/features/enforcement/complaints'
 import type { ObjectStore } from '@/features/storage/objectStore'
+import { loadPublicTown } from '@/features/town/publicTown'
+import { complaintPhotosProblem } from '@/lib/uploadLimits'
 import type { RateLimiter } from '@/server/rateLimiter'
 
 export const MAX_PHOTOS = 5
 const SAFE_HEADERS = { 'referrer-policy': 'no-referrer', 'cache-control': 'no-store' } as const
+
+const NOT_ALLOWED = { heading: 'Not allowed', text: 'This form must be sent from this site.' }
+const TOO_MANY = {
+  heading: 'Too many reports',
+  text: 'Too many reports came from this connection. Try again later.',
+}
 
 export interface IntakeDeps {
   db: Db
@@ -34,6 +43,26 @@ function page(status: number, heading: string, text: string, extra: Record<strin
   return new Response(body, {
     status,
     headers: { 'content-type': 'text/html; charset=utf-8', ...SAFE_HEADERS, ...extra },
+  })
+}
+
+async function refused(
+  deps: IntakeDeps,
+  status: number,
+  copy: { heading: string; text: string },
+  signal: AbortSignal,
+): Promise<Response> {
+  const town = await loadPublicTown(deps.db, signal)
+  return new Response(refusalPage(town, copy.heading, copy.text), {
+    status,
+    headers: { 'content-type': 'text/html; charset=utf-8', ...SAFE_HEADERS },
+  })
+}
+
+function backToForm(error: 'invalid'): Response {
+  return new Response(null, {
+    status: 303,
+    headers: { location: `/report-anonymously?error=${error}`, ...SAFE_HEADERS },
   })
 }
 
@@ -66,6 +95,7 @@ async function parse(request: Request, probe: boolean): Promise<Parsed | null> {
   if (!fields.success) return null
   const files = form.getAll('photos').filter((v): v is File => v instanceof File && v.size > 0)
   if (files.length > MAX_PHOTOS || files.some((f) => f.size > env.MAX_UPLOAD_BYTES)) return null
+  if (complaintPhotosProblem(files.map((f) => f.size)) !== null) return null
   const photos: Parsed['photos'] = []
   for (const file of files) {
     const type = file.type === 'image/png' ? 'image/png' : 'image/jpeg'
@@ -128,26 +158,15 @@ async function processIntake(
   if (!probe && !(await intakeOpen(deps.db, deps.imageRef, deps.appVersion, signal))) {
     return new Response('Not found', { status: 404, headers: SAFE_HEADERS })
   }
-  if (!sameOrigin(request))
-    return page(403, 'Not allowed', 'This form must be sent from this site.')
+  if (!sameOrigin(request)) {
+    return await refused(deps, 403, NOT_ALLOWED, signal)
+  }
   deps.limiter.prune()
   const key = clientKey(request.headers.get('x-forwarded-for'))
-  if (deps.limiter.isLimited(key)) {
-    return page(
-      429,
-      'Too many reports',
-      'Too many reports came from this connection. Try again later.',
-    )
-  }
+  if (deps.limiter.isLimited(key)) return await refused(deps, 429, TOO_MANY, signal)
   deps.limiter.recordFailure(key)
   const parsed = await parse(request, probe)
-  if (parsed === null) {
-    return page(
-      400,
-      'Report not sent',
-      'Fill in the location and the description (up to 5,000 characters), and attach no more than 5 JPEG or PNG photos.',
-    )
-  }
+  if (parsed === null) return backToForm('invalid')
   const number = await storeReport(deps, parsed, signal)
   return new Response(null, {
     status: 303,

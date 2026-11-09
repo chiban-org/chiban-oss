@@ -10,7 +10,7 @@ test.describe('reporting a possible violation with contact details', () => {
     await page.goto('/complaints/new')
     await page.getByLabel(/^Where is the property/).fill(`Blank report lot ${suffix}`)
     await page.getByLabel(/^What did you see/).fill('     ')
-    await page.getByRole('button', { name: 'Send complaint' }).click()
+    await page.getByRole('button', { name: 'Send report' }).click()
     await expectRefusedBeside(page.getByLabel(/^What did you see/), 'Enter what you saw.')
     const rows = await db.rows<{ id: string }>(
       'select id from complaints where location_text = $1',
@@ -19,26 +19,29 @@ test.describe('reporting a possible violation with contact details', () => {
     expect(rows).toHaveLength(0)
   })
 
-  test('records the complaint and shows its reference', async ({ page, db, suffix }) => {
+  test('records the report and shows its reference on the report received page', async ({
+    page,
+    db,
+    suffix,
+  }) => {
     const location = `Roadside lot ${suffix}`
     await page.goto('/complaints/new')
     await page.getByLabel(/^Where is the property/).fill(location)
     await page.getByLabel(/^What did you see/).fill(`Unpermitted shed ${suffix}`)
     await page.getByLabel('Your name (optional)').fill(`Reporter ${suffix}`)
-    await page.getByRole('button', { name: 'Send complaint' }).click()
+    await page.getByRole('button', { name: 'Send report' }).click()
 
-    const status = page.getByRole('status')
-    await expect(status).toHaveText(
-      /^Complaint received\. Reference .+\. Town staff will review it\.$/,
-    )
+    await expect(page).toHaveURL(/\/complaints\/received\?ref=CP-\d{4}-\d{4,}&reply=none$/)
+    await expect(page.getByRole('heading', { level: 1, name: 'Report received' })).toBeVisible()
     const row = await db.one<{ number: string; channel: string; description: string }>(
       'select number, channel, description_original as description from complaints where location_text = $1',
       [location],
     )
     expect(row.channel).toBe('public_named')
     expect(row.description).toBe(`Unpermitted shed ${suffix}`)
-    await expect(status).toHaveText(
-      `Complaint received. Reference ${row.number}. Town staff will review it.`,
-    )
+    await expect(page.getByText(row.number, { exact: true })).toBeVisible()
+    await expect(
+      page.getByText('You left no email or phone, so town staff cannot reply to you.'),
+    ).toBeVisible()
   })
 })
