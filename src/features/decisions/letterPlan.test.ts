@@ -37,7 +37,7 @@ describe('withLettersToMail', () => {
     expect(plan.now?.warnings).toEqual([
       {
         key: 'decision.letters_to_mail',
-        text: 'Mail the decision letter to Pat Paper. They have no email the town can send it to.',
+        text: 'Mail the decision letter to Pat Paper.',
       },
     ])
   })

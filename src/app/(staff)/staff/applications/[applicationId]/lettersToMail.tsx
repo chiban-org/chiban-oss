@@ -54,8 +54,8 @@ export function LettersToMail({ data }: { data: LettersData }) {
     <section aria-label="Decision letters to mail" id="letters-to-mail">
       <h2>Decision letters to mail</h2>
       <p className="text-muted-foreground">
-        These parties have no email address or account the town can send the decision to. Print the
-        letter, mail it, and record the date it went out.
+        Every applicant and agent gets the decision letter by mail, including those who were also
+        emailed. Print the letter, mail it, and record the date it went out.
       </p>
       <ul className="list-none p-0">
         {data.letters.map((letter) => (

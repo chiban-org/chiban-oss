@@ -6,10 +6,10 @@ import { boardMemberships, users } from '@/db/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
 import type { Actor } from '@/features/auth/actor'
-import { boardSettingsDefault } from '@/features/boards/boardSettings'
 import { scheduleMeeting } from '@/features/boards/meetings'
 import { activeBoards, boardIdOf } from '@/features/boards/townBoards'
 import { recordRegionalImpactDetermination } from '@/features/building/regionalImpact'
+import { demoBoardSettings } from '@/features/demo/demoBoardNotices'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { appTypeBody, saveAndPublish } from '@/test/configFixtures'
 import type { CivilDate } from '@/types/civilDate'
@@ -173,7 +173,7 @@ export async function setupBoardWorld(
     world.admin,
     'board_settings',
     'default',
-    boardSettingsDefault(await activeBoards(db)),
+    demoBoardSettings(await activeBoards(db)),
   )
   const pbTypeKey = 'SPR'
   const zbaTypeKey = 'VAR'
