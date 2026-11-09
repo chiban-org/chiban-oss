@@ -8,6 +8,7 @@ import {
   documents,
   letterMailings,
   projectParties,
+  users,
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
@@ -40,9 +41,10 @@ async function boardNameOf(tx: Tx, meetingId: string): Promise<string | null> {
 
 async function lettersParties(tx: Tx, applicationId: string) {
   return await tx
-    .select({ id: projectParties.id, userId: projectParties.userId })
+    .select({ id: projectParties.id, active: users.isActive })
     .from(applications)
     .innerJoin(projectParties, eq(projectParties.projectId, applications.projectId))
+    .leftJoin(users, eq(users.id, projectParties.userId))
     .where(
       and(
         eq(applications.id, applicationId),
@@ -79,7 +81,7 @@ export async function deliverDecisionLetter(
   if (letterId === null) return
   const emailed = new Set(recipients.partyIds)
   const paper = (await lettersParties(tx, decision.applicationId)).filter(
-    (p) => p.userId === null && !emailed.has(p.id),
+    (p) => p.active !== true && !emailed.has(p.id),
   )
   if (paper.length === 0) return
   await tx

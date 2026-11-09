@@ -7,6 +7,7 @@ import {
   letterMailings,
   notificationOutbox,
   projectParties,
+  users,
 } from '@/db/schema'
 import { fileDecision } from '@/features/decisions/fileDecision'
 import { lettersToMail, recordLetterMailed } from '@/features/decisions/letterDelivery'
@@ -141,6 +142,19 @@ describe('decision letter delivery', () => {
       signal,
     )
     expect(letter.ok).toBe(true)
+  })
+
+  it('puts the letter on the to mail list for a party whose linked account is disabled', async () => {
+    const made = await decidedWithParties()
+    await handle.db
+      .update(users)
+      .set({ isActive: false })
+      .where(eq(users.id, world.applicant.userId))
+    await file(made)
+    const names = (await lettersToMail(handle.db, made.applicationId, signal)).map(
+      (l) => l.partyName,
+    )
+    expect(names).toHaveLength(3)
   })
 
   it('records the mailing once, for staff who record board work, and audits it', async () => {
