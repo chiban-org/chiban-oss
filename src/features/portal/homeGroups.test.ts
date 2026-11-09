@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { homeGroup, homeNextStep } from '@/features/portal/homeGroups'
 
-const base = { dueCents: 0, failedInspection: false }
+const base = { dueCents: 0, failedInspection: false, missingDocuments: [] as string[] }
 
 describe('homeGroup', () => {
   it('puts drafts, fees due and failed inspections under Needs you', () => {
@@ -15,6 +15,18 @@ describe('homeGroup', () => {
     expect(homeGroup({ ...base, state: 'suspended' })).toBe('in_progress')
     expect(homeGroup({ ...base, state: 'withdrawn' })).toBe('finished')
     expect(homeGroup({ ...base, state: 'denied', dueCents: 500 })).toBe('needs_you')
+  })
+})
+
+describe('a missing document the applicant owes', () => {
+  it('puts a paid, approved application under Needs you and names the document', () => {
+    const facts = {
+      ...base,
+      state: 'decided' as const,
+      missingDocuments: ['State septic approval'],
+    }
+    expect(homeGroup(facts)).toBe('needs_you')
+    expect(homeNextStep(facts)).toBe('Add State septic approval.')
   })
 })
 
