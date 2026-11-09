@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { ParcelSearch } from '@/components/public/ParcelSearch'
+import type { SearchExample } from '@/features/parcels/searchExample'
 
 export type HomeAudience = 'visitor' | 'resident' | 'staff'
 
@@ -30,7 +29,7 @@ function AccountTask({ audience }: { audience: HomeAudience }) {
   }
   if (audience === 'staff') {
     return (
-      <Task href="/staff" title="Open the staff site">
+      <Task href="/staff" title="Staff site">
         The counter, applications, boards, inspections, and records.
       </Task>
     )
@@ -42,49 +41,44 @@ function AccountTask({ audience }: { audience: HomeAudience }) {
   )
 }
 
+interface HomeContentProps {
+  audience: HomeAudience
+  townName: string
+  example: SearchExample | null
+  boardMember?: boolean
+}
+
 export function HomeContent({
   audience,
+  townName,
+  example,
   boardMember = false,
-}: {
-  audience: HomeAudience
-  boardMember?: boolean
-}) {
+}: HomeContentProps) {
   return (
     <main className="mx-auto max-w-3xl">
-      <div className="border-b pb-10">
-        <p className="text-sm font-semibold text-muted-foreground">Land use records</p>
-        <h1 className="mt-2 text-6xl">Town of Alder Pond</h1>
-        <p className="mt-3 max-w-[60ch] text-lg text-ink-secondary">
-          Find a parcel, see its permits and applications, and track what the town has on file.
-        </p>
-        <form action="/parcels" method="get" role="search" className="mt-6 flex flex-wrap gap-3">
-          <Label htmlFor="home-parcel-search" className="sr-only">
-            Address, owner, or parcel ID
-          </Label>
-          <Input
-            id="home-parcel-search"
-            name="q"
-            placeholder="Address, owner, or parcel ID"
-            className="h-11 flex-1 px-4 text-base md:text-base"
-          />
-          <Button type="submit" size="lg" className="h-11 text-base font-semibold">
-            Search parcels
-          </Button>
-        </form>
+      <div className="flex flex-col gap-6 border-b pb-10">
+        <div>
+          <p className="text-sm font-semibold text-muted-foreground">Land use records</p>
+          <h1 className="mt-2 text-5xl md:text-6xl">{townName}</h1>
+          <p className="mt-3 max-w-[60ch] text-lg text-ink-secondary">
+            Find a parcel, see its permits and applications, and track what the town has on file.
+          </p>
+        </div>
+        <ParcelSearch example={example} />
       </div>
       <ul className="mt-10 divide-y">
         {boardMember ? (
-          <Task href="/board" title="Board meetings">
+          <Task href="/board" title="Your board">
             Read the agenda and packet for each meeting of your board.
           </Task>
         ) : null}
-        <Task href="/parcels" title="Look up a parcel">
-          See the permits, applications, and board decisions on file for any parcel in town.
+        <Task href="/portal/apply" title="Apply for a permit">
+          Start a building, trade, or land use application online and pay its fees.
         </Task>
-        <Task href="/meetings" title="Board agendas and decisions">
-          Upcoming Planning Board and Zoning Board meetings, their agendas, and filed decisions.
+        <Task href="/meetings" title="Meetings">
+          Upcoming Planning Board and Zoning Board meetings, their agendas, minutes, and decisions.
         </Task>
-        <Task href="/complaints/new" title="Report a possible violation">
+        <Task href="/complaints/new" title="Report a problem">
           Tell the town about building or land use work that may not follow the rules.
         </Task>
         <AccountTask audience={audience} />

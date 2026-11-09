@@ -13,10 +13,11 @@ vi.mock('@/db/client', () => ({
   },
 }))
 vi.mock('@/config/appVersion', () => ({ APP_VERSION: '0.0.0' }))
+vi.mock('next/navigation', () => ({ usePathname: () => '/report-anonymously' }))
 
 const { default: ReportPage } = await import('@/app/(anonymous)/report-anonymously/page')
 const { default: ReceivedPage } = await import('@/app/(anonymous)/report-anonymously/received/page')
-const { metadata: anonymousMetadata } = await import('@/app/(anonymous)/layout')
+const { generateMetadata: anonymousMetadata } = await import('@/app/(anonymous)/layout')
 
 let handle: TestDb
 
@@ -32,15 +33,29 @@ afterAll(async () => {
 const render = async (element: Promise<unknown>) => renderToStaticMarkup((await element) as never)
 
 describe('anonymous pages', () => {
-  it('declare an inline icon so the browser never asks for /favicon.ico', () => {
-    expect(anonymousMetadata.icons).toEqual({ icon: 'data:,' })
+  it('declare an inline icon so the browser never asks for /favicon.ico', async () => {
+    const metadata = await anonymousMetadata()
+    expect(metadata.icons).toEqual({ icon: 'data:,' })
+    expect(metadata.referrer).toBe('no-referrer')
   })
 
-  it('carries the town header, with a way home, without reading any session', async () => {
+  it('name the town in the tab title', async () => {
+    const metadata = await anonymousMetadata()
+    expect(metadata.title).toEqual({
+      default: 'Town of Alder Pond',
+      template: '%s · Town of Alder Pond',
+    })
+  })
+
+  it('carries the town header, footer and skip link, with a way home, without reading any session', async () => {
     const { default: AnonymousLayout } = await import('@/app/(anonymous)/layout')
-    const markup = renderToStaticMarkup(AnonymousLayout({ children: null }))
-    expect(markup).toMatch(/<header[\s\S]*<a href="\/"[^>]*>Town of Alder Pond<\/a>/)
+    const markup = renderToStaticMarkup(await AnonymousLayout({ children: null }))
+    expect(markup).toMatch(/<header[\s\S]*<a href="\/"[^>]*>[\s\S]*Town of Alder Pond[\s\S]*<\/a>/)
+    expect(markup).toMatch(/<a href="#content"[^>]*>Skip to content<\/a>/)
+    expect(markup).toMatch(/<main id="content"/)
+    expect(markup).toMatch(/<footer[\s\S]*Town of Alder Pond[\s\S]*<\/footer>/)
     expect(markup).not.toContain('Sign in')
+    expect(markup).not.toContain('aria-label="Account"')
   })
 
   it('say the form is not available while intake is closed', async () => {

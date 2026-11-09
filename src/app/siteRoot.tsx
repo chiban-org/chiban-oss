@@ -20,6 +20,18 @@ export const SITE_METADATA: Metadata = {
   },
 }
 
+export function townSiteTitle(townName: string): Metadata['title'] {
+  return { default: townName, template: `%s · ${townName}` }
+}
+
+export function townSiteMetadata(townName: string): Metadata {
+  return {
+    ...SITE_METADATA,
+    title: townSiteTitle(townName),
+    description: `${townName} land use records.`,
+  }
+}
+
 export async function SiteRoot({ children }: { children: ReactNode }) {
   const token = (await cookies()).get(CSRF_COOKIE)?.value ?? ''
   return (

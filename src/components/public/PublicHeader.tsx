@@ -1,52 +1,34 @@
-import type { ReactNode } from 'react'
 import { CsrfField } from '@/components/CsrfField'
 import { TownHeader } from '@/components/public/TownHeader'
 import { SubmitButton } from '@/components/SubmitButton'
+import { accountLinksFor, type NavViewer } from '@/features/publicSite/publicNav'
+import type { PublicTown } from '@/features/town/publicTown'
 
 interface PublicHeaderProps {
-  signedIn: boolean
-  boardMember?: boolean
+  town: PublicTown
+  viewer: NavViewer | null
   signOutAction: (formData: FormData) => Promise<void>
 }
 
-const LINK = 'tap-target inline-flex items-center'
-
-export function PublicHeader({ signedIn, boardMember = false, signOutAction }: PublicHeaderProps) {
+export function PublicHeader({ town, viewer, signOutAction }: PublicHeaderProps) {
   return (
-    <TownHeader>
-      <nav aria-label="Account" className="flex flex-wrap items-center gap-x-4">
-        {signedIn ? (
-          <>
-            {boardMember ? (
-              <a href="/board" className={LINK}>
-                Board meetings
-              </a>
-            ) : null}
-            <a href="/portal" className={LINK}>
-              Your applications
-            </a>
-            <a href="/portal/contractor" className={LINK}>
-              Contractor projects
-            </a>
-            <a href="/parcels" className={LINK}>
-              Parcel lookup
-            </a>
-            <a href="/account" className={LINK}>
-              Your account
-            </a>
+    <TownHeader
+      town={town}
+      account={{
+        links: accountLinksFor(viewer),
+        signOut:
+          viewer === null ? undefined : (
             <form action={signOutAction}>
               <CsrfField />
-              <SubmitButton variant="link" className="px-0 text-base">
+              <SubmitButton
+                variant="link"
+                className="min-h-11 justify-start px-2 text-base font-semibold text-ink-secondary"
+              >
                 Sign out
               </SubmitButton>
             </form>
-          </>
-        ) : (
-          <a href="/sign-in" className={LINK}>
-            Sign in
-          </a>
-        )}
-      </nav>
-    </TownHeader>
+          ),
+      }}
+    />
   )
 }
