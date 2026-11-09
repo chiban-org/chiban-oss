@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import {
   check,
+  date,
   index,
   integer,
   jsonb,
@@ -10,6 +11,8 @@ import {
   uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core'
+import { boardDecisions } from './decisions'
+import { documents } from './documents'
 import { applications, projectParties } from './projects'
 
 export const NOTIFICATION_EVENTS = [
@@ -72,3 +75,30 @@ export const notificationOutbox = pgTable(
 )
 
 export type NotificationEvent = (typeof NOTIFICATION_EVENTS)[number]
+
+export const letterMailings = pgTable(
+  'letter_mailings',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    applicationId: uuid('application_id')
+      .notNull()
+      .references(() => applications.id),
+    decisionId: uuid('decision_id')
+      .notNull()
+      .references(() => boardDecisions.id),
+    partyId: uuid('party_id')
+      .notNull()
+      .references(() => projectParties.id),
+    documentId: uuid('document_id')
+      .notNull()
+      .references(() => documents.id),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    mailedOn: date('mailed_on', { mode: 'string' }),
+    mailedBy: uuid('mailed_by'),
+    mailedAt: timestamp('mailed_at', { withTimezone: true }),
+  },
+  (t) => [
+    uniqueIndex('letter_mailings_decision_party_uq').on(t.decisionId, t.partyId),
+    index('letter_mailings_application_idx').on(t.applicationId),
+  ],
+)
