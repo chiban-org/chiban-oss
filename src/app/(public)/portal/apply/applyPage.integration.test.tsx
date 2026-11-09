@@ -53,11 +53,19 @@ describe('portal apply page', () => {
     expect(html).toContain('12 Heron Cove Road, parcel 007001000000')
   })
 
+  it('starts the type step with nothing chosen, on step 2 of 3, leading with common jobs', async () => {
+    const html = await render({ parcel: world.parcelId })
+    expect(html).toContain('Step 2 of 3')
+    expect(html).toContain('Build, add on or tear down')
+    expect(html).not.toContain('aria-checked="true"')
+    expect(html).not.toContain('data-state="checked"')
+  })
+
   it('refuses a retired parcel at the type step', async () => {
     await handle.db.update(parcels).set({ status: 'retired' }).where(eq(parcels.id, world.parcelId))
     const html = await render({ parcel: world.parcelId })
     expect(html).toContain('takes no new applications')
-    expect(html).not.toContain('Application type')
+    expect(html).not.toContain('Build, add on or tear down')
     await handle.db.update(parcels).set({ status: 'active' }).where(eq(parcels.id, world.parcelId))
   })
 

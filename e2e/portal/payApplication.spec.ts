@@ -1,7 +1,7 @@
 import { expect, signInWithMagicLink, test, uniqueEmail } from '../fixtures/test'
 import { draftOf, PORTAL_PARCEL_ADDRESS, startPortalApplication } from './support'
 
-const TYPE_LABEL = 'Alarm system registration'
+const TYPE_KEY = 'AR'
 const ATTESTATION = /^I attest that the information in this application is true and complete/
 
 test('an applicant submits a registration and pays its fee through the simulated checkout', async ({
@@ -11,7 +11,7 @@ test('an applicant submits a registration and pays its fee through the simulated
 }) => {
   const email = uniqueEmail('pay', suffix)
   await signInWithMagicLink(page, email)
-  const applicationId = await startPortalApplication(page, PORTAL_PARCEL_ADDRESS, TYPE_LABEL)
+  const applicationId = await startPortalApplication(page, PORTAL_PARCEL_ADDRESS, TYPE_KEY)
 
   await page.getByLabel(/^Description/).fill(`Monitored alarm ${suffix}`)
   await page.getByLabel(/^Emergency contact name and phone/).fill('Lee Keyholder 603-555-0142')

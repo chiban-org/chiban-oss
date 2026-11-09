@@ -2,7 +2,7 @@ import type { Page } from '@playwright/test'
 import { expect, signInWithMagicLink, test, uniqueEmail } from '../fixtures/test'
 import { draftOf, PORTAL_PARCEL_ADDRESS, startPortalApplication } from './support'
 
-const TYPE_LABEL = 'Building or demolition permit'
+const TYPE_KEY = 'BP'
 const ATTESTATION = /^I attest that the information in this application is true and complete/
 
 const pdf = (name: string) => ({
@@ -29,8 +29,9 @@ async function fileOneFileForTwoItems(page: Page, suffix: string): Promise<void>
   const drawings = documents.getByRole('listitem').filter({
     has: page.getByText('Construction drawings to scale', { exact: true }),
   })
+  await drawings.getByText('Use a file you already added').click()
   await drawings
-    .getByLabel('Use a file already added for Construction drawings to scale')
+    .getByLabel(/^Use a file already added for Construction drawings to scale/)
     .selectOption({ label: 'Plot plan' })
   await drawings.getByRole('button', { name: 'Use this file' }).click()
   await expect(drawings).toContainText('Provided')
@@ -47,13 +48,16 @@ test('an applicant files each required document, uses one file for two items, an
   suffix,
 }) => {
   await signInWithMagicLink(page, uniqueEmail('docs', suffix))
-  const applicationId = await startPortalApplication(page, PORTAL_PARCEL_ADDRESS, TYPE_LABEL)
+  const applicationId = await startPortalApplication(page, PORTAL_PARCEL_ADDRESS, TYPE_KEY)
   await fillBuildingForm(page, suffix)
   await page.getByRole('button', { name: 'Save draft' }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Draft saved.' })).toBeVisible()
 
-  const owner = page.getByRole('listitem').filter({ hasText: 'Owner authorization' })
-  await expect(owner).toContainText('Not needed')
+  const notNeeded = page.locator('details').filter({ hasText: 'Not needed for this project' })
+  await notNeeded.locator('summary').click()
+  await expect(
+    notNeeded.getByRole('listitem').filter({ hasText: 'Owner authorization' }),
+  ).toContainText('Needed only if you answer “No” to “Are you the property owner?”.')
   await expect(
     page.getByText('Before you submit, add: Plot plan, Construction drawings to scale.'),
   ).toBeVisible()
@@ -85,9 +89,12 @@ test('staff accept a document item without the file and the gate stops asking fo
   suffix,
 }) => {
   await signInWithMagicLink(page, uniqueEmail('docs-staff', suffix))
-  const applicationId = await startPortalApplication(page, PORTAL_PARCEL_ADDRESS, TYPE_LABEL)
+  const applicationId = await startPortalApplication(page, PORTAL_PARCEL_ADDRESS, TYPE_KEY)
   await fillBuildingForm(page, suffix)
-  await page.getByLabel('This is a new driveway or curb cut').check()
+  await page
+    .getByRole('radiogroup', { name: 'This is a new driveway or curb cut' })
+    .getByRole('radio', { name: 'Yes' })
+    .click()
   await page.getByRole('button', { name: 'Save draft' }).click()
   await expect(page.getByRole('status').filter({ hasText: 'Draft saved.' })).toBeVisible()
   await fileOneFileForTwoItems(page, suffix)

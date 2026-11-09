@@ -3,16 +3,24 @@ import { type E2eDb, expect } from '../fixtures/test'
 
 export const PORTAL_PARCEL_ADDRESS = '12 Tamarack Way'
 
+export async function chooseApplicationType(page: Page, typeKey: string): Promise<void> {
+  const radio = page.locator(`[role="radio"][value="${typeKey}"]`)
+  if (!(await radio.isVisible())) {
+    await radio.locator('xpath=ancestor::details[1]/summary').click()
+  }
+  await radio.click()
+}
+
 export async function startPortalApplication(
   page: Page,
   address: string,
-  typeLabel: string,
+  typeKey: string,
 ): Promise<string> {
   await page.goto('/portal/apply')
   await page.getByLabel('Find your parcel by address, owner, or parcel ID').fill(address)
   await page.getByRole('button', { name: 'Search' }).click()
   await page.getByRole('link', { name: new RegExp(`^${address}, parcel `) }).click()
-  await page.getByRole('radio', { name: typeLabel }).click()
+  await chooseApplicationType(page, typeKey)
   await page.getByRole('button', { name: 'Continue' }).click()
   await expect(page).toHaveURL(/\/portal\/applications\/[0-9a-f-]{36}$/)
   return new URL(page.url()).pathname.split('/').pop() ?? ''

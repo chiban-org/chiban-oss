@@ -1,25 +1,62 @@
 import { eq } from 'drizzle-orm'
 import type { Metadata } from 'next'
 import Link from 'next/link'
-import { ActionForm } from '@/components/ActionForm'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
 import { parcels } from '@/db/schema'
 import { displayIdsFor } from '@/features/parcels/displayId'
-import { searchParcels } from '@/features/parcels/searchParcels'
+import { loadTownProfile } from '@/features/pdf/documentFrame'
 import { listPortalTypes, RETIRED_PARCEL_COPY } from '@/features/portal/drafts'
+import { groupPortalTypes } from '@/features/portal/typeGroups'
 import { requirePortalContext } from '@/server/requirePortal'
 import { isUuid } from '@/utils/uuid'
-import { startApplicationAction } from './actions'
+import { ApplySteps } from './ApplySteps'
+import { parcelSearch } from './ParcelSearch'
+import { TypePicker } from './TypePicker'
 
 export const metadata: Metadata = { title: 'Start an application' }
 
 export const dynamic = 'force-dynamic'
 
 const LINK = 'tap-target inline-flex items-center'
-const MIN_QUERY = 2
+
+function OfficeLine({ officeName, phone }: { officeName: string; phone: string }) {
+  if (phone === '') return null
+  return <p className="m-0">{`Not sure which one fits? Call the ${officeName} at ${phone}.`}</p>
+}
+
+async function TypeStep({ parcelId }: { parcelId: string }) {
+  const ctx = await requirePortalContext(`/portal/apply?parcel=${parcelId}`)
+  const [types, display, [chosen], profile] = await Promise.all([
+    listPortalTypes(ctx.db, ctx.signal),
+    displayIdsFor(ctx.db, [parcelId]),
+    ctx.db
+      .select({ status: parcels.status, siteAddress: parcels.siteAddress })
+      .from(parcels)
+      .where(eq(parcels.id, parcelId)),
+    loadTownProfile(ctx.db, ctx.signal),
+  ])
+  const where = `${chosen?.siteAddress ?? 'Address not on file'}, parcel ${display.get(parcelId) ?? ''}`
+  return (
+    <main className="flex flex-col gap-6">
+      <ApplySteps current={2} />
+      <h1>Choose the kind of application</h1>
+      {chosen?.status === 'retired' ? (
+        <p role="alert">{RETIRED_PARCEL_COPY}</p>
+      ) : (
+        <>
+          <p className="m-0 text-lg">{where}</p>
+          <TypePicker parcelId={parcelId} grouped={groupPortalTypes(types)} />
+          <OfficeLine
+            officeName={profile?.officeName ?? 'land use office'}
+            phone={profile?.phone ?? ''}
+          />
+        </>
+      )}
+      <Link href="/portal/apply" className={LINK}>
+        Choose a different parcel
+      </Link>
+    </main>
+  )
+}
 
 export default async function ApplyPage({
   searchParams,
@@ -27,92 +64,13 @@ export default async function ApplyPage({
   searchParams: Promise<{ q?: string; parcel?: string }>
 }) {
   const { q = '', parcel } = await searchParams
+  if (parcel !== undefined && isUuid(parcel)) return await TypeStep({ parcelId: parcel })
   const ctx = await requirePortalContext('/portal/apply')
-  const parcelId = parcel !== undefined && isUuid(parcel) ? parcel : null
-  if (parcelId !== null) {
-    const [types, display, [chosen]] = await Promise.all([
-      listPortalTypes(ctx.db, ctx.signal),
-      displayIdsFor(ctx.db, [parcelId]),
-      ctx.db
-        .select({ status: parcels.status, siteAddress: parcels.siteAddress })
-        .from(parcels)
-        .where(eq(parcels.id, parcelId)),
-    ])
-    if (chosen?.status === 'retired') {
-      return (
-        <main className="space-y-4">
-          <h1>Choose the kind of application</h1>
-          <p role="alert">{RETIRED_PARCEL_COPY}</p>
-          <Link href="/portal/apply" className={LINK}>
-            Choose a different parcel
-          </Link>
-        </main>
-      )
-    }
-    return (
-      <main className="space-y-4">
-        <h1>Choose the kind of application</h1>
-        <p>{`${chosen?.siteAddress ?? 'Address not on file'}, parcel ${display.get(parcelId) ?? ''}`}</p>
-        <ActionForm action={startApplicationAction} submitLabel="Continue" variant="default">
-          <input type="hidden" name="parcelId" value={parcelId} />
-          <fieldset className="space-y-2 border-0 p-0">
-            <legend className="font-medium">Application type</legend>
-            <RadioGroup name="typeKey" defaultValue={types[0]?.key} className="gap-1">
-              {types.map((t) => (
-                <div key={t.key} className="flex min-h-11 items-center gap-3">
-                  <RadioGroupItem id={`type-${t.key}`} value={t.key} />
-                  <Label htmlFor={`type-${t.key}`} className="text-base">
-                    {t.label}
-                  </Label>
-                </div>
-              ))}
-            </RadioGroup>
-          </fieldset>
-        </ActionForm>
-        <Link href="/portal/apply" className={LINK}>
-          Choose a different parcel
-        </Link>
-      </main>
-    )
-  }
-  const query = q.trim()
-  const hits =
-    query.length >= MIN_QUERY ? await searchParcels(ctx.db, { q: query }, ctx.signal) : []
-  const display = await displayIdsFor(
-    ctx.db,
-    hits.map((h) => h.parcelId),
-  )
   return (
-    <main className="space-y-4">
+    <main className="flex flex-col gap-6">
+      <ApplySteps current={1} />
       <h1>Start an application</h1>
-      <form method="get" className="flex flex-wrap items-end gap-3">
-        <div className="space-y-1.5">
-          <Label htmlFor="parcel-search" className="text-base">
-            Find your parcel by address, owner, or parcel ID
-          </Label>
-          <Input id="parcel-search" name="q" defaultValue={query} className="min-h-11 text-base" />
-        </div>
-        <Button type="submit" className="min-h-11 text-base">
-          Search
-        </Button>
-      </form>
-      {q !== '' && query.length < MIN_QUERY ? <p>Enter at least two characters.</p> : null}
-      {query.length >= MIN_QUERY && hits.length === 0 ? <p>No parcels match that search.</p> : null}
-      <ul className="list-none divide-y p-0">
-        {hits.map((h) => (
-          <li key={h.parcelId} className="py-2">
-            {h.status === 'retired' ? (
-              <p className="m-0">
-                {`${h.siteAddress ?? 'Address not on file'}, parcel ${display.get(h.parcelId) ?? ''}. Retired: takes no new applications.`}
-              </p>
-            ) : (
-              <Link href={`/portal/apply?parcel=${h.parcelId}`} className={LINK}>
-                {`${h.siteAddress ?? 'Address not on file'}, parcel ${display.get(h.parcelId) ?? ''}`}
-              </Link>
-            )}
-          </li>
-        ))}
-      </ul>
+      {await parcelSearch(ctx, q)}
     </main>
   )
 }
