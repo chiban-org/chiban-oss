@@ -54,6 +54,15 @@ describe('applicant portal home', () => {
     expect(html).toContain('Draft')
   })
 
+  it('puts a draft under Needs you with its next step, and leaves a deleted draft out', async () => {
+    state.actor = world.applicant
+    const deleted = await makeApplication(handle.db, world, { state: 'withdrawn' })
+    const html = renderToStaticMarkup(await PortalHomePage())
+    expect(html).toContain('Needs you')
+    expect(html).toContain('Finish the form and submit it.')
+    expect(html).not.toContain(deleted.number)
+  })
+
   it('shows an empty state with a lookup link to someone with no applications', async () => {
     state.actor = await staffActor(handle.db, 'applicant')
     const html = renderToStaticMarkup(await PortalHomePage())
