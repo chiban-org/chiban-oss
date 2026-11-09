@@ -5,11 +5,11 @@ import { scheduleMeeting } from '@/features/boards/meetings'
 import { recordMinutes } from '@/features/boards/minutes'
 import { loadMeetingMinutes } from '@/features/boards/minutesView'
 import { agendaStatusText, loadMeetingView } from '@/features/hearings/meetingView'
-import { loadPublicBoardRecords } from '@/features/hearings/publicRecords'
 import { BOARD_FIXTURE_NOW, type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/objectStore'
+import { publicAgendaText, publicMinutesText } from '@/test/publicMeetings'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -76,8 +76,7 @@ describe('a board that does not decide applications', () => {
     expect(
       view?.agenda === null || view?.agenda === undefined ? '' : agendaStatusText(view.agenda),
     ).toMatch(/^Shown on the public site/)
-    const records = await loadPublicBoardRecords(handle.db, signal)
-    expect(records.agendas.map((a) => a.text)).toEqual([
+    expect(await publicAgendaText(handle.db)).toEqual([
       'Conservation Commission, February 10, 2028',
     ])
   })
@@ -108,8 +107,7 @@ describe('a board that does not decide applications', () => {
     expect(recorded.ok).toBe(true)
     const view = await loadMeetingMinutes(handle.db, past, signal, BOARD_FIXTURE_NOW)
     expect(view.current).toMatchObject({ status: 'approved' })
-    const records = await loadPublicBoardRecords(handle.db, signal)
-    expect(records.minutes.map((m) => m.text)).toEqual([
+    expect(await publicMinutesText(handle.db)).toEqual([
       'Conservation Commission, December 9, 2027, approved December 20, 2027',
     ])
   })

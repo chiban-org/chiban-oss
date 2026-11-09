@@ -6,7 +6,6 @@ import { recordMinutes } from '@/features/boards/minutes'
 import { loadMeetingMinutes } from '@/features/boards/minutesView'
 import { createUploadIntent } from '@/features/documents/uploads'
 import { resolveRendition } from '@/features/documents/visibility'
-import { loadPublicBoardRecords } from '@/features/hearings/publicRecords'
 import { revokeApproval } from '@/features/renditions/approvals'
 import { loadReleaseCandidates } from '@/features/rtk/requestPage'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -15,6 +14,7 @@ import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/objectStore'
 import { staffActor } from '@/test/parcels'
+import { publicMinutes, publicMinutesText } from '@/test/publicMeetings'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -86,7 +86,7 @@ describe('meeting minutes', () => {
     const view = await loadMeetingMinutes(handle.db, meetingId, signal, BOARD_FIXTURE_NOW)
     expect(view.current).toMatchObject({ documentId, status: 'draft', approvedText: null })
     expect((await resolveRendition(handle.db, null, documentId, signal)).ok).toBe(false)
-    expect((await loadPublicBoardRecords(handle.db, signal)).minutes).toEqual([])
+    expect(await publicMinutes(handle.db)).toEqual([])
   })
 
   it('approved minutes carry their approval date and are public on the meetings page', async () => {
@@ -106,8 +106,11 @@ describe('meeting minutes', () => {
     const view = await loadMeetingMinutes(handle.db, meetingId, signal, BOARD_FIXTURE_NOW)
     expect(view.current).toMatchObject({ status: 'approved', approvedText: 'April 28, 2027' })
     expect((await resolveRendition(handle.db, null, documentId, signal)).ok).toBe(true)
-    expect((await loadPublicBoardRecords(handle.db, signal)).minutes).toEqual([
-      { meetingId, documentId, text: 'Planning Board, April 14, 2027, approved April 28, 2027' },
+    expect((await publicMinutes(handle.db)).map((m) => [m.meetingId, m.documentId])).toEqual([
+      [meetingId, documentId],
+    ])
+    expect(await publicMinutesText(handle.db)).toEqual([
+      'Planning Board, April 14, 2027, approved April 28, 2027',
     ])
   })
 
@@ -132,7 +135,7 @@ describe('meeting minutes', () => {
     )
     expect(revoked.ok).toBe(true)
     expect((await resolveRendition(handle.db, null, documentId, signal)).ok).toBe(false)
-    expect((await loadPublicBoardRecords(handle.db, signal)).minutes).toEqual([])
+    expect(await publicMinutes(handle.db)).toEqual([])
   })
 
   it('staff without board.record cannot attach or record minutes, even with document.manage', async () => {

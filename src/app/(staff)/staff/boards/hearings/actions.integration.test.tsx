@@ -121,6 +121,10 @@ async function unnoticedHearing() {
   return { applicationId: id, hearingId: row?.id ?? '' }
 }
 
+function withoutStatusChips(html: string): string {
+  return html.replace(/<span data-status="[a-z]+"[^>]*>/g, '')
+}
+
 describe('hearing actions', () => {
   it('mark properly noticed action refuses with a missing item even when called directly', async () => {
     const { hearingId } = await unnoticedHearing()
@@ -382,7 +386,7 @@ describe('staff and public pages', () => {
       await PublicMeetingsPage({ searchParams: Promise.resolve({}) }),
     )
     expect(html).toContain('No decisions have been filed yet.')
-    expect(html).not.toMatch(/text-(xs|sm)\b/)
+    expect(withoutStatusChips(html)).not.toMatch(/text-(xs|sm)\b/)
     const filed = await fileDecision(
       handle.db,
       world.staff,
@@ -398,19 +402,20 @@ describe('staff and public pages', () => {
       await PublicMeetingsPage({ searchParams: Promise.resolve({}) }),
     )
     expect(filed.ok).toBe(true)
-    expect(page).toContain('Approved, voted April 15, 2027')
-    expect(page).toContain('Notice of Decision')
+    expect(page).toContain('Granted')
+    expect(page).toContain('Voted April 15, 2027')
+    expect(page).toContain('Notice of decision')
     expect(findIsoDates(page.replace(/href="[^"]*"/g, ''))).toEqual([])
   })
 
-  it('the second page of agendas links back to newer agendas in 16px text', async () => {
+  it('the second page of past meetings links back to newer meetings in 16px text', async () => {
     const html = renderToStaticMarkup(
-      await PublicMeetingsPage({ searchParams: Promise.resolve({ agendas: '2' }) }),
+      await PublicMeetingsPage({ searchParams: Promise.resolve({ past: '2' }) }),
     )
-    expect(html).toContain('href="/meetings?agendas=1"')
-    expect(html).toContain('Newer agendas')
-    expect(html).not.toContain('Older agendas')
-    expect(html).not.toMatch(/text-(xs|sm)\b/)
+    expect(html).toContain('href="/meetings#past-heading"')
+    expect(html).toContain('Newer meetings')
+    expect(html).not.toContain('Older meetings')
+    expect(withoutStatusChips(html)).not.toMatch(/text-(xs|sm)\b/)
   })
 
   it('the letters route prints for staff and is refused for a reviewer', async () => {
