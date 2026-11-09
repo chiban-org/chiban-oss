@@ -7,7 +7,7 @@ import { CONTENT_ID, SkipLink } from '@/components/public/SkipLink'
 import { TownFooter } from '@/components/public/TownFooter'
 import { TownHeader } from '@/components/public/TownHeader'
 import { db } from '@/db/client'
-import { loadPublicTown } from '@/features/town/publicTown'
+import { loadPublicTown, townWithoutAssetRequests } from '@/features/town/publicTown'
 
 const TIMEOUT_MS = 10_000
 
@@ -28,7 +28,7 @@ export default async function AnonymousLayout({ children }: { children: ReactNod
       <body>
         <div className="public-shell flex min-h-screen flex-col">
           <SkipLink />
-          <TownHeader town={town} />
+          <TownHeader town={townWithoutAssetRequests(town)} />
           <main
             id={CONTENT_ID}
             tabIndex={-1}

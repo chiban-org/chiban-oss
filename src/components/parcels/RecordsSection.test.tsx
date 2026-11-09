@@ -3,8 +3,8 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { RecordsSection } from '@/components/parcels/RecordsSection'
 import type { ParcelHistory } from '@/features/parcels/parcelHistory'
+import { buildPublicRecords } from '@/features/parcels/publicRecords'
 import type { ParcelRecordSummary } from '@/features/parcels/recordSources'
-import { buildRecordTable, parcelFilesOf } from '@/features/parcels/recordTable'
 import type { TownOffice } from '@/features/town/publicTown'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -49,13 +49,7 @@ function file(id: string, owner: { kind: string; id: string }, extra = {}): Parc
 
 function renderHistory(history: Omit<ParcelHistory, 'sourcesRegistered'>) {
   const full = { ...history, sourcesRegistered: 3 }
-  return render(
-    <RecordsSection
-      table={buildRecordTable(full, 'p1')}
-      parcelFiles={parcelFilesOf(full, 'p1')}
-      office={OFFICE}
-    />,
-  )
+  return render(<RecordsSection records={buildPublicRecords(full, 'p1')} office={OFFICE} />)
 }
 
 describe('RecordsSection', () => {
@@ -134,5 +128,38 @@ describe('RecordsSection', () => {
     })
     expect(screen.getByRole('heading', { name: 'Files on this parcel' })).toBeTruthy()
     expect(screen.getByRole('link', { name: 'Old card' })).toBeTruthy()
+  })
+
+  it('lists a file kept on a parent lot under that lot', () => {
+    renderHistory({
+      own: [],
+      ancestral: [
+        {
+          parcelId: 'par',
+          displayId: '007020000000',
+          label: 'from parent lot 007020000000, before the 2027 subdivision',
+          records: [
+            file('old', { kind: 'parcel', id: 'par' }, { title: 'Parent card', parcelFile: true }),
+          ],
+        },
+      ],
+    })
+    const heading = screen.getByRole('heading', { level: 3, name: /from parent lot/ })
+    const group = heading.parentElement
+    if (group === null) throw new Error('no group')
+    expect(within(group).getByRole('link', { name: 'Parent card' }).getAttribute('href')).toBe(
+      '/api/documents/old?as=public',
+    )
+  })
+
+  it('opens a document that belongs to no record, with no visibility chip', () => {
+    renderHistory({
+      own: [file('lone', { kind: 'meeting', id: 'm1' }, { title: 'Survey' })],
+      ancestral: [],
+    })
+    const link = screen.getByRole('link', { name: 'Survey' })
+    expect(link.getAttribute('href')).toBe('/api/documents/lone?as=public')
+    expect(link.getAttribute('target')).toBe('_blank')
+    expect(screen.queryByText('Public')).toBeNull()
   })
 })

@@ -9,9 +9,19 @@ function filesText(count: number): string {
   return count === 1 ? '1 file' : `${count} files`
 }
 
-export function PublicFileList({ files }: { files: readonly RecordFile[] }) {
+export function PublicFileList({
+  files,
+  nested = true,
+}: {
+  files: readonly RecordFile[]
+  nested?: boolean
+}) {
   return (
-    <ul className="m-0 mt-2 list-none border-l-2 border-hairline p-0 pl-4">
+    <ul
+      className={
+        nested ? 'm-0 mt-2 list-none border-l-2 border-hairline p-0 pl-4' : 'm-0 list-none p-0'
+      }
+    >
       {files.map((file) => (
         <li key={file.id} className="py-1">
           {file.href === null ? (
@@ -56,7 +66,28 @@ function RecordFiles({ row }: { row: RecordRow }) {
   )
 }
 
+function StandaloneDocumentRow({ row }: { row: RecordRow }) {
+  return (
+    <li id={`record-${row.recordId}`} className="record-item pb-3">
+      <PublicFileList
+        nested={false}
+        files={[
+          {
+            id: row.recordId,
+            title: row.number ?? row.title,
+            kindLabel: row.number === null ? null : row.title,
+            href: row.href,
+            visibility: row.status,
+            added: row.dates.filed,
+          },
+        ]}
+      />
+    </li>
+  )
+}
+
 export function PublicRecordRow({ row }: { row: RecordRow }) {
+  if (row.kind === 'document') return <StandaloneDocumentRow row={row} />
   const dates = dateLines(row)
   return (
     <li id={`record-${row.recordId}`} className="record-item flex flex-col gap-1 pb-3">

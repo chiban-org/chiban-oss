@@ -11,7 +11,8 @@ vi.mock('next/headers', () => ({
 }))
 vi.mock('next/navigation', () => ({ usePathname: () => '/nowhere' }))
 vi.mock('@/db/client', () => ({ db: {} }))
-vi.mock('@/features/town/publicTown', () => ({
+vi.mock('@/features/town/publicTown', async (importOriginal) => ({
+  ...(await importOriginal<typeof import('@/features/town/publicTown')>()),
   loadPublicTown: () =>
     Promise.resolve({
       name: 'Town of Birch Hollow',

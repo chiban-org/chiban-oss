@@ -125,8 +125,11 @@ function belongsToParcel(s: Summary, parcelId: string): boolean {
   return s.parcelFile === true || (s.owner?.kind === 'parcel' && s.owner.id === parcelId)
 }
 
-export function parcelFilesOf(history: ParcelHistory, parcelId: string): RecordFile[] {
-  return history.own
+export function parcelFilesOf(
+  records: readonly ParcelRecordSummary[],
+  parcelId: string,
+): RecordFile[] {
+  return records
     .filter((s) => s.kind === 'document' && belongsToParcel(s, parcelId))
     .map(toFile)
     .sort(newestFirst)

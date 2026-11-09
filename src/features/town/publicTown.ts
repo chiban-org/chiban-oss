@@ -84,3 +84,7 @@ export async function publicLogoFor(
   if (logo === null || shaOf(logo) !== sha) return null
   return { sha, extension: EXTENSIONS[logo.contentType] }
 }
+
+export function townWithoutAssetRequests(town: PublicTown): PublicTown {
+  return { ...town, logo: null }
+}

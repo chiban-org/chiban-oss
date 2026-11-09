@@ -8,7 +8,7 @@ import { StatusChip } from '@/components/StatusChip'
 import type { Bbox } from '@/features/gis/extent'
 import { honestText } from '@/features/honest/honest'
 import type { PublicParcelView } from '@/features/parcels/publicParcelView'
-import { buildRecordTable, parcelFilesOf } from '@/features/parcels/recordTable'
+import { buildPublicRecords } from '@/features/parcels/publicRecords'
 import type { TownOffice } from '@/features/town/publicTown'
 import { formatCivilDate, formatInstantDate } from '@/lib/formatDate'
 
@@ -95,11 +95,7 @@ export function PublicParcelDetail(props: PublicParcelDetailProps) {
         facts={facts(view, timeZone, mapLot)}
       />
       <Banner view={view} timeZone={timeZone} />
-      <RecordsSection
-        table={buildRecordTable(view.history, view.parcelId)}
-        parcelFiles={parcelFilesOf(view.history, view.parcelId)}
-        office={office}
-      />
+      <RecordsSection records={buildPublicRecords(view.history, view.parcelId)} office={office} />
       <ParcelLineage lineage={view.lineage} />
       {view.hasGeometry ? (
         <section aria-labelledby="map-heading">

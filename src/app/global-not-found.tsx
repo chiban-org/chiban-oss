@@ -5,7 +5,7 @@ import { NotFoundPage } from '@/components/NotFoundPage'
 import { TownFooter } from '@/components/public/TownFooter'
 import { TownHeader } from '@/components/public/TownHeader'
 import { db } from '@/db/client'
-import { loadPublicTown } from '@/features/town/publicTown'
+import { loadPublicTown, townWithoutAssetRequests } from '@/features/town/publicTown'
 import './globals.css'
 
 export const metadata: Metadata = { title: 'Page not found' }
@@ -18,7 +18,7 @@ export default async function GlobalNotFound() {
     <html lang="en">
       <body>
         <div className="public-shell">
-          <TownHeader town={town} />
+          <TownHeader town={townWithoutAssetRequests(town)} />
         </div>
         <NotFoundPage />
         <div className="public-shell">

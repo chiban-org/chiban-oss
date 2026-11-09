@@ -1,12 +1,12 @@
 import { SectionHeader } from '@/components/layout/ListHeader'
 import { GroupLabel } from '@/components/parcels/GroupLabel'
 import { PublicFileList, PublicRecordRow } from '@/components/parcels/PublicRecordRow'
-import type { RecordFile, RecordRow, RecordTable } from '@/features/parcels/recordTable'
+import type { PublicRecords } from '@/features/parcels/publicRecords'
+import type { RecordRow } from '@/features/parcels/recordTable'
 import type { TownOffice } from '@/features/town/publicTown'
 
 interface RecordsSectionProps {
-  table: RecordTable
-  parcelFiles: readonly RecordFile[]
+  records: PublicRecords
   office: TownOffice
 }
 
@@ -30,8 +30,9 @@ function emptyText(office: TownOffice): string {
   return `No records on file for this parcel. ${where}${office.phone === '' ? '' : `, ${office.phone}`}.`
 }
 
-export function RecordsSection({ table, parcelFiles, office }: RecordsSectionProps) {
-  const empty = table.own.length === 0 && table.ancestral.length === 0 && parcelFiles.length === 0
+export function RecordsSection({ records, office }: RecordsSectionProps) {
+  const empty =
+    records.own.length === 0 && records.ancestral.length === 0 && records.files.length === 0
   return (
     <section aria-labelledby="records-heading">
       <SectionHeader
@@ -42,19 +43,20 @@ export function RecordsSection({ table, parcelFiles, office }: RecordsSectionPro
         }
       />
       {empty ? <p>{emptyText(office)}</p> : null}
-      {table.own.length === 0 ? null : <RecordList rows={table.own} />}
-      {table.ancestral.map((group) => (
+      {records.own.length === 0 ? null : <RecordList rows={records.own} />}
+      {records.ancestral.map((group) => (
         <div key={group.parcelId} className="mt-6">
           <h3 className="text-base font-semibold">
             <GroupLabel group={group} hrefBase="/parcels/" />
           </h3>
-          <RecordList rows={group.rows} />
+          {group.rows.length === 0 ? null : <RecordList rows={group.rows} />}
+          {group.files.length === 0 ? null : <PublicFileList files={group.files} />}
         </div>
       ))}
-      {parcelFiles.length === 0 ? null : (
+      {records.files.length === 0 ? null : (
         <div className="mt-6">
           <h3 className="text-base font-semibold">Files on this parcel</h3>
-          <PublicFileList files={parcelFiles} />
+          <PublicFileList files={records.files} />
         </div>
       )}
     </section>
