@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { beforeAll, expect, vi } from 'vitest'
+import { beforeAll, expect, it, vi } from 'vitest'
 import { applications } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { attestationHash } from '@/features/applications/submitApplication'
@@ -105,7 +105,11 @@ function requiredRefused(field: string) {
 
 const SUBMIT_FIELD_COPY: Record<string, ReturnType<typeof refuseField>> = {
   applicationId: APPLICATION_REFUSED,
-  attest: refuseField('attest', 'Check the box to confirm the information is true.'),
+  attest: {
+    ok: false as const,
+    error: 'Check the highlighted fields and try again.',
+    fieldErrors: { attest: 'Check the box to confirm the information is true.' },
+  },
   emergency_contact: requiredRefused('emergency_contact'),
   description: requiredRefused('description'),
 }
@@ -157,4 +161,26 @@ describeForeignRecordCase(h, 'submitApplicationAction on another applicant recor
   actor: strangerOnOwnRecord,
   input: submitInput,
   refusal: { ok: false, error: 'You do not have permission to do this.' },
+})
+
+it('reports every missing answer and the unchecked confirmation in one round', async () => {
+  const applicationId = await draft()
+  h.signIn(world.applicant)
+  const result = await submitApplicationAction(
+    h.form({ applicationId, attestationSha256: await attestationFor(applicationId) }),
+  )
+  expect(result).toEqual({
+    ok: false,
+    error: 'Check the highlighted fields and try again.',
+    fieldErrors: {
+      emergency_contact: 'This is required.',
+      description: 'This is required.',
+      attest: 'Check the box to confirm the information is true.',
+    },
+  })
+  const [row] = await h.db
+    .select({ state: applications.state })
+    .from(applications)
+    .where(eq(applications.id, applicationId))
+  expect(row?.state).toBe('draft')
 })

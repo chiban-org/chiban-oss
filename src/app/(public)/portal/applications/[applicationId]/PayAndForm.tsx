@@ -1,7 +1,9 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { ApplicationForm, type ApplicationFormActions } from '@/components/portal/ApplicationForm'
 import { PayButton } from '@/components/portal/PayButton'
+import type { DocumentRequirement } from '@/features/applications/liveChecklist'
 import type { FormBody } from '@/features/forms/formSchema'
 import { saveDraftAction, submitApplicationAction } from './actions'
 import { startPaymentAction } from './paymentActions'
@@ -17,7 +19,8 @@ export function PortalApplicationForm(props: {
   initialValues: Record<string, unknown>
   attestationText: string
   attestationSha256: string
-  missingDocuments: string[]
+  requirements: readonly DocumentRequirement[]
+  documents: ReactNode
 }) {
   return <ApplicationForm {...props} actions={FORM_ACTIONS} />
 }

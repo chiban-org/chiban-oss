@@ -264,12 +264,9 @@ describe('portal view', () => {
       return view.value.decisionDue
     }
     const ahead = await dueText('2099-01-01')
-    expect(ahead).toEqual({ date: '2099-01-31', consequence: '' })
+    expect(ahead).toEqual({ date: '2099-01-31', late: false })
     const late = await dueText('2020-01-01')
-    expect(late?.consequence).toBe(
-      'That date has passed. Call the land use office to ask when to expect the decision.',
-    )
-    expect(late?.consequence).not.toMatch(/RSA/)
+    expect(late?.late).toBe(true)
   })
 
   it('shows a draft with its form, can edit, and nothing to pay', async () => {
@@ -290,6 +287,8 @@ describe('portal view', () => {
     expect(view.value.form?.fields.length).toBeGreaterThan(0)
     expect(view.value.attestationText).toBe(appTypeBody().attestationText)
     expect(view.value.fees.dueCents).toBe(0)
+    expect(view.value.record).toMatchObject({ mayEnd: true, board: false, receivedDate: null })
+    expect(view.value.record.projectTitle).not.toBe('')
   })
 
   it('never lists staff-only form fields', async () => {
@@ -350,6 +349,7 @@ describe('portal view', () => {
     expect(view.value.state).toBe('submitted')
     expect(view.value.stateLabel).toBe('Submitted')
     expect(view.value.canPay).toBe(true)
+    expect(view.value.record.mayEnd).toBe(false)
   })
 })
 

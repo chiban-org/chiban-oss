@@ -185,7 +185,7 @@ describe('portal application actions', () => {
       await Page({ params: Promise.resolve({ applicationId: tradeApplicationId }) }),
     )
     expect(html).toContain('Pay $46.35')
-    expect(html).toContain('includes a $1.35 card convenience fee')
+    expect(html).toContain('adds a $1.35 card convenience fee')
     const started = await actions.startPaymentAction(form({ applicationId: tradeApplicationId }))
     expect(started).toMatchObject({ ok: true })
     expect(started.ok && started.redirectUrl).toMatch(/^\/dev\/checkout\//)

@@ -19,17 +19,30 @@ export function UseExistingFile(props: {
   label: string
   choices: ChecklistFile[]
   action: ChecklistAction
+  folded?: boolean
 }) {
   if (props.choices.length === 0) return null
-  return (
+  const options = props.choices.map((f): [string, string] => [f.documentId, f.title])
+  const form = (
     <ActionForm action={props.action} submitLabel="Use this file" compact className="grid gap-2">
       <ItemFields applicationId={props.applicationId} itemKey={props.itemKey} />
       <SelectField
         label={`Use a file already added for ${props.label}`}
         name="documentId"
-        options={props.choices.map((f): [string, string] => [f.documentId, f.title])}
+        {...(props.folded === true
+          ? { options: [['', 'Choose a file'], ...options], defaultValue: '', required: true }
+          : { options })}
       />
     </ActionForm>
+  )
+  if (props.folded !== true) return form
+  return (
+    <details>
+      <summary className="tap-target inline-flex cursor-pointer items-center">
+        Use a file you already added
+      </summary>
+      {form}
+    </details>
   )
 }
 

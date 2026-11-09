@@ -23,6 +23,7 @@ export interface ItemProps {
   permissions: ChecklistPermissions
   actions: ChecklistActions
   maxBytes: number
+  submitted?: boolean
 }
 
 const STATUS_WORDS: ReadonlyMap<ItemStatus, string> = new Map([
@@ -53,7 +54,8 @@ function NoteLine({ prefix, note }: { prefix: string; note: ChecklistNote }) {
 function FileLinks({ props }: { props: ItemProps }) {
   const { row, applicationId, actions } = props
   if (row.files.length === 0) return null
-  const removable = props.permissions.canFile && (props.actor === 'staff' || row.open)
+  const applicantMay = row.open && props.submitted !== true
+  const removable = props.permissions.canFile && (props.actor === 'staff' || applicantMay)
   return (
     <ul className="m-0 grid list-none gap-1 p-0">
       {row.files.map((file) => (
@@ -92,7 +94,7 @@ export function ChecklistItem(props: ItemProps) {
         </div>
       </div>
       <div className="grid min-w-0 gap-2">
-        {row.notNeeded === null ? null : (
+        {row.notNeeded === null || actor === 'applicant' ? null : (
           <p className="m-0 text-sm">{`Not needed: only when ${row.notNeeded}.`}</p>
         )}
         {row.waiver === null ? null : <NoteLine prefix="Waiver requested" note={row.waiver} />}

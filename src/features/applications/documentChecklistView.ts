@@ -18,8 +18,10 @@ import { loadItemRecords, type StoredItemRecord } from '@/features/applications/
 import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
 import { listDocuments } from '@/features/documents/listDocuments'
+import type { Condition } from '@/features/forms/condition'
 import { describeCondition } from '@/features/forms/conditionRules'
 import type { FormBody, FormField } from '@/features/forms/formSchema'
+import { plainNeededWhen } from '@/features/forms/plainCondition'
 
 const DOCUMENT_LIMIT = 200
 
@@ -41,6 +43,9 @@ export interface ChecklistRow {
   stage: DocumentStage
   status: ItemStatus
   notNeeded: string | null
+  neededWhen: string | null
+  requiredIf: Condition | null
+  optional: boolean
   files: ChecklistFile[]
   waivable: boolean
   open: boolean
@@ -56,6 +61,7 @@ export interface ChecklistStage {
 
 export interface DocumentChecklistView {
   applicationId: string
+  submitted: boolean
   stages: ChecklistStage[]
   files: ChecklistFile[]
   other: ChecklistFile[]
@@ -113,6 +119,9 @@ function rowOf(item: DocumentItem, ctx: RowContext): ChecklistRow {
       status === 'not_needed' && item.requiredIf !== undefined
         ? describeCondition(item.requiredIf, ctx.fields)
         : null,
+    neededWhen: item.requiredIf === undefined ? null : plainNeededWhen(item.requiredIf, ctx.fields),
+    requiredIf: item.requiredIf ?? null,
+    optional: item.optional === true,
     files,
     waivable: item.waivable,
     open: stageOpenFor(item.stage, ctx.state),
@@ -157,6 +166,7 @@ export async function loadDocumentChecklist(
   const files = filed.map((r) => ({ documentId: r.documentId, title: r.title }))
   return {
     applicationId,
+    submitted: app.state !== 'draft',
     stages: DOCUMENT_STAGES.flatMap((stage) => {
       const inStage = rows.filter((r) => r.stage === stage)
       return inStage.length === 0

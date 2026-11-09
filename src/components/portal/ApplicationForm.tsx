@@ -1,14 +1,19 @@
 'use client'
 
 import { useRouter } from 'next/navigation'
-import { useState } from 'react'
+import { type ReactNode, useRef, useState } from 'react'
 import { useCsrfToken } from '@/components/CsrfProvider'
 import { FormRenderer, type FormValue } from '@/components/forms/FormRenderer'
-import { toFormData } from '@/components/portal/formValues'
+import { AttestBox } from '@/components/portal/AttestBox'
+import { ErrorSummary, type SummaryEntry } from '@/components/portal/ErrorSummary'
+import { ATTEST_ID, toFormData } from '@/components/portal/formValues'
+import { LiveAnswersContext } from '@/components/portal/liveAnswers'
 import { Button } from '@/components/ui/button'
-import { Checkbox, CheckLine } from '@/components/ui/checkbox'
-import { Label } from '@/components/ui/label'
 import { RequiredNote } from '@/components/ui/required-mark'
+import {
+  type DocumentRequirement,
+  missingRequirements,
+} from '@/features/applications/liveChecklist'
 import type { FormBody } from '@/features/forms/formSchema'
 import { attempt } from '@/lib/attempt'
 import type { ActionResult } from '@/server/actionRunner'
@@ -25,8 +30,12 @@ interface Props {
   attestationText: string
   attestationSha256: string
   actions: ApplicationFormActions
-  missingDocuments?: string[]
+  requirements?: readonly DocumentRequirement[]
+  documents?: ReactNode
 }
+
+export const APPLICATION_FORM_ID = 'application-form'
+const ATTEST_LABEL = 'Confirmation'
 
 function MissingDocuments({ names }: { names: string[] }) {
   if (names.length === 0) return null
@@ -40,6 +49,25 @@ function MissingDocuments({ names }: { names: string[] }) {
   )
 }
 
+function summaryOf(form: FormBody, errors: Record<string, string>): SummaryEntry[] {
+  const fields = form.fields.flatMap((field) => {
+    const message = errors[field.key]
+    return message === undefined
+      ? []
+      : [{ target: `field-${field.key}`, label: field.label, message }]
+  })
+  const attest = errors[ATTEST_ID]
+  return attest === undefined
+    ? fields
+    : [...fields, { target: ATTEST_ID, label: ATTEST_LABEL, message: attest }]
+}
+
+function withoutKey(errors: Record<string, string>, key: string): Record<string, string> {
+  if (!(key in errors)) return errors
+  const { [key]: _gone, ...rest } = errors
+  return rest
+}
+
 export function ApplicationForm(props: Props) {
   const router = useRouter()
   const csrf = useCsrfToken()
@@ -48,6 +76,8 @@ export function ApplicationForm(props: Props) {
   const [attested, setAttested] = useState(false)
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+  const [tries, setTries] = useState(0)
+  const summaryHeading = useRef<HTMLHeadingElement>(null)
 
   const run = async (kind: 'save' | 'submit') => {
     const data = toFormData(values, {
@@ -58,62 +88,80 @@ export function ApplicationForm(props: Props) {
     })
     const outcome = await attempt(() => props.actions[kind](data), setPending)
     const result: ActionResult = outcome.ok ? outcome.value : { ok: false, error: outcome.error }
-    setErrors(result.ok ? {} : (result.fieldErrors ?? {}))
+    const refused = result.ok ? {} : (result.fieldErrors ?? {})
+    setErrors(refused)
     setMessage(result.ok ? result.message : result.error)
+    if (Object.keys(refused).length > 0) setTries((n) => n + 1)
     if (result.ok) router.refresh()
   }
 
   return (
-    <form
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault()
-        void run('submit')
-      }}
-      className="flex flex-col gap-6"
-    >
-      <RequiredNote />
-      <FormRenderer
-        addressChecks
-        form={props.form}
-        values={values}
-        errors={errors}
-        onChange={(key: string, value: FormValue) =>
-          setValues((prev) => ({ ...prev, [key]: value }))
-        }
-      />
-      <div className="flex items-start gap-3 rounded-md border p-4 text-base leading-snug">
-        <CheckLine>
-          <Checkbox
-            id="attest"
-            checked={attested}
-            onCheckedChange={(next) => setAttested(next === true)}
-          />
-        </CheckLine>
-        <Label htmlFor="attest" className="text-base leading-snug">
-          {props.attestationText}
-        </Label>
-      </div>
-      <MissingDocuments names={props.missingDocuments ?? []} />
-      <div className="flex flex-wrap items-center gap-3">
-        <Button type="submit" className="min-h-11 text-base" disabled={pending}>
-          Submit application
-        </Button>
-        <Button
-          type="button"
-          variant="outline"
-          className="min-h-11 text-base"
-          disabled={pending}
-          onClick={() => void run('save')}
+    <LiveAnswersContext.Provider value={values}>
+      <div className="flex flex-col gap-8">
+        <form
+          id={APPLICATION_FORM_ID}
+          noValidate
+          onSubmit={(event) => {
+            event.preventDefault()
+            void run('submit')
+          }}
+          className="flex flex-col gap-6"
         >
-          Save draft
-        </Button>
-        {message === null ? null : (
-          <p role="status" className="m-0 text-base">
-            {message}
-          </p>
-        )}
+          <ErrorSummary
+            entries={summaryOf(props.form, errors)}
+            attempt={tries}
+            headingRef={summaryHeading}
+          />
+          <RequiredNote />
+          <FormRenderer
+            addressChecks
+            form={props.form}
+            values={values}
+            errors={errors}
+            onChange={(key: string, value: FormValue) => {
+              setValues((prev) => ({ ...prev, [key]: value }))
+              setErrors((prev) => withoutKey(prev, key))
+            }}
+          />
+        </form>
+        {props.documents}
+        <div className="flex flex-col gap-4">
+          <AttestBox
+            text={props.attestationText}
+            checked={attested}
+            error={errors[ATTEST_ID]}
+            onChange={(next) => {
+              setAttested(next)
+              setErrors((prev) => withoutKey(prev, ATTEST_ID))
+            }}
+          />
+          <MissingDocuments names={missingRequirements(props.requirements ?? [], values)} />
+          <div className="flex flex-wrap items-center gap-3">
+            <Button
+              type="submit"
+              form={APPLICATION_FORM_ID}
+              className="min-h-11 text-base"
+              disabled={pending}
+            >
+              Submit application
+            </Button>
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11 text-base"
+              disabled={pending}
+              onClick={() => void run('save')}
+            >
+              Save draft
+            </Button>
+            {message === null ? null : (
+              <p role="status" className="m-0 text-base">
+                {message}
+              </p>
+            )}
+          </div>
+        </div>
       </div>
-    </form>
+    </LiveAnswersContext.Provider>
   )
 }

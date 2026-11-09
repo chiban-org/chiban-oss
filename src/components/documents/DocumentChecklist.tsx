@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ApplicantRow, NotNeededRows, ruleOf } from '@/components/documents/applicantRows'
 import { AssignFile } from '@/components/documents/ChecklistControls'
 import { ChecklistItem } from '@/components/documents/ChecklistItem'
 import type {
@@ -6,6 +7,7 @@ import type {
   ChecklistActor,
   ChecklistPermissions,
 } from '@/components/documents/checklistTypes'
+import { LiveStageGate } from '@/components/documents/LiveChecklist'
 import { MultiFileUploader } from '@/components/documents/MultiFileUploader'
 import { NEW_TAB } from '@/components/newTab'
 import type { DocumentChecklistView } from '@/features/applications/documentChecklistView'
@@ -71,27 +73,43 @@ function OtherDocuments({ props }: { props: Props }) {
 export function DocumentChecklist(props: Props) {
   const { view } = props
   const Heading = props.headingLevel ?? 'h3'
+  const rowProps = {
+    applicationId: view.applicationId,
+    files: view.files,
+    actor: props.actor,
+    permissions: props.permissions,
+    actions: props.actions,
+    maxBytes: props.maxBytes,
+    submitted: view.submitted,
+  }
   return (
     <div className="grid gap-4">
-      {view.stages.map((stage) => (
-        <section data-plain key={stage.stage} aria-label={stage.label}>
-          <Heading className="m-0">{stage.label}</Heading>
-          <ul className="m-0 list-none p-0">
-            {stage.rows.map((row) => (
-              <ChecklistItem
-                key={row.key}
-                applicationId={view.applicationId}
-                row={row}
-                files={view.files}
-                actor={props.actor}
-                permissions={props.permissions}
-                actions={props.actions}
-                maxBytes={props.maxBytes}
-              />
-            ))}
-          </ul>
-        </section>
-      ))}
+      {view.stages.map((stage) => {
+        const section = (
+          <section data-plain key={stage.stage} aria-label={stage.label}>
+            <Heading className="m-0">{stage.label}</Heading>
+            <ul className="m-0 list-none p-0">
+              {stage.rows.map((row) =>
+                props.actor === 'applicant' ? (
+                  <ApplicantRow key={row.key} row={row} props={rowProps} />
+                ) : (
+                  <ChecklistItem key={row.key} {...rowProps} row={row} />
+                ),
+              )}
+            </ul>
+          </section>
+        )
+        return props.actor === 'applicant' ? (
+          <LiveStageGate key={stage.stage} rules={stage.rows.map(ruleOf)}>
+            {section}
+          </LiveStageGate>
+        ) : (
+          section
+        )
+      })}
+      {props.actor === 'applicant' ? (
+        <NotNeededRows rows={view.stages.flatMap((s) => s.rows)} />
+      ) : null}
       <OtherDocuments props={props} />
     </div>
   )
