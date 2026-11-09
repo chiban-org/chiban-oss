@@ -23,7 +23,7 @@ test.describe('payment controls by role', () => {
       await expect(
         ledgerSection(page).getByRole('heading', { name: 'Fees and payments' }),
       ).toBeVisible()
-      await expect(page.getByText('Record a cash or check payment')).toHaveCount(0)
+      await expect(page.getByText('Take a payment')).toHaveCount(0)
     })
 
     test('the card attempt page refuses', async ({ page, db }) => {

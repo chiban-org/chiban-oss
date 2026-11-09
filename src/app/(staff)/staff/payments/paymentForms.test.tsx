@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { cleanup, fireEvent, render, screen, within } from '@testing-library/react'
 import type { ReactNode } from 'react'
-import { afterEach, describe, it, vi } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import type { ApplicationPayments } from '@/features/payments/applicationPayments'
 import { expectRefusalBeside } from '@/test/besideField'
@@ -23,6 +23,13 @@ vi.mock('@/app/(staff)/staff/payments/actions', () => ({
   correctAction: answer,
   recordPaymentAction: answer,
 }))
+vi.mock('@/app/(staff)/staff/payments/cardActions', () => ({ startCardAction: answer }))
+vi.mock('@/app/(staff)/staff/counter/readerActions', () => ({
+  readerAction: answer,
+  checkAction: answer,
+  reconnectAction: answer,
+}))
+vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 
 const { EntryControls, RecordPaymentForm } = await import(
   '../applications/[applicationId]/paymentControls'
@@ -46,6 +53,7 @@ const payments = (overrides: Partial<ApplicationPayments> = {}): ApplicationPaym
   canRefund: true,
   canCollect: true,
   targets: [{ id: '9a1c2f3d-6b7e-4a58-8c19-0d2e3f4a5b6c', number: 'BP-2026-0002' }],
+  card: { reader: { available: true, simulated: false }, feeCents: 135 },
   ...overrides,
 })
 
@@ -120,5 +128,26 @@ describe('payment forms on an application', () => {
   it('shows a refused payer name beside the payer field', async () => {
     renderIn(<RecordPaymentForm payments={payments()} />)
     await refused('Record payment', 'Payer name', 'payerName', 'Enter the payer name.')
+  })
+
+  it('offers card at the counter with the charge, card fee included, when a reader is set up', () => {
+    renderIn(<RecordPaymentForm payments={payments()} />)
+    const card = screen.getByRole('group', { name: 'Card at the counter' })
+    expect(
+      within(card).getByText('The reader charges $46.35: $45.00 due plus a $1.35 card fee.'),
+    ).toBeTruthy()
+    expect(within(card).getByRole('button', { name: 'Start card payment' })).toBeTruthy()
+  })
+
+  it('hides card at the counter and says why in one line when no reader is set up', () => {
+    const reason =
+      'Card at the counter is off because no card reader device is set up in Payment settings.'
+    renderIn(
+      <RecordPaymentForm
+        payments={payments({ card: { reader: { available: false, reason }, feeCents: 0 } })}
+      />,
+    )
+    expect(screen.queryByRole('group', { name: 'Card at the counter' })).toBeNull()
+    expect(screen.getByText(reason)).toBeTruthy()
   })
 })

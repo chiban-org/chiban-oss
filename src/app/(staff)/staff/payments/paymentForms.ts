@@ -86,3 +86,8 @@ export const RECORD_PAYMENT_FORM = z
     }
   })
   .transform(renamed)
+
+export const START_CARD_FORM = z.object({
+  applicationId: recordId('an application'),
+  payerName: requiredText('the payer name', { max: 200 }),
+})
