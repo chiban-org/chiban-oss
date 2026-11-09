@@ -35,6 +35,7 @@ function ExistingFile({ props }: { props: ItemProps }) {
       label={row.label}
       choices={props.files.filter((f) => !linked.has(f.documentId))}
       action={props.actions.link}
+      folded={props.actor === 'applicant'}
     />
   )
 }

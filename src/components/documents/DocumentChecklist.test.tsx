@@ -3,6 +3,7 @@ import { cleanup, render, screen, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { CsrfProvider } from '@/components/CsrfProvider'
 import { type ChecklistActions, DocumentChecklist } from '@/components/documents/DocumentChecklist'
+import { LiveAnswersContext } from '@/components/portal/liveAnswers'
 import type {
   ChecklistRow,
   DocumentChecklistView,
@@ -34,6 +35,9 @@ function row(overrides: Partial<ChecklistRow>): ChecklistRow {
     stage: 'to_file',
     status: 'missing',
     notNeeded: null,
+    neededWhen: null,
+    requiredIf: null,
+    optional: false,
     files: [],
     waivable: false,
     open: true,
@@ -45,6 +49,7 @@ function row(overrides: Partial<ChecklistRow>): ChecklistRow {
 
 const VIEW: DocumentChecklistView = {
   applicationId: 'a1',
+  submitted: false,
   stages: [
     {
       stage: 'to_file',
@@ -57,6 +62,8 @@ const VIEW: DocumentChecklistView = {
           label: 'Owner authorization',
           status: 'not_needed',
           notNeeded: 'Are you the property owner? is No',
+          neededWhen: 'Needed only if you answer “No” to “Are you the property owner?”.',
+          requiredIf: { field: 'is_owner', op: 'equals', value: 'no' },
         }),
         row({ key: 'landscaping', label: 'Landscaping plan', waivable: true }),
       ],
@@ -72,18 +79,34 @@ const VIEW: DocumentChecklistView = {
   missingToFile: ['Floor plans and framing', 'Landscaping plan'],
 }
 
-function renderAs(actor: 'applicant' | 'staff') {
+function renderAs(
+  actor: 'applicant' | 'staff',
+  options: { view?: DocumentChecklistView; answers?: Record<string, unknown> } = {},
+) {
+  const checklist = (
+    <DocumentChecklist
+      view={options.view ?? VIEW}
+      actor={actor}
+      permissions={{ canFile: true, canAccept: actor === 'staff', canUploadOther: false }}
+      actions={ACTIONS}
+      maxBytes={1024}
+    />
+  )
   render(
     <CsrfProvider token="t1">
-      <DocumentChecklist
-        view={VIEW}
-        actor={actor}
-        permissions={{ canFile: true, canAccept: actor === 'staff', canUploadOther: false }}
-        actions={ACTIONS}
-        maxBytes={1024}
-      />
+      {options.answers === undefined ? (
+        checklist
+      ) : (
+        <LiveAnswersContext.Provider value={options.answers}>
+          {checklist}
+        </LiveAnswersContext.Provider>
+      )}
     </CsrfProvider>,
   )
+}
+
+function notNeededGroup(): HTMLElement | null {
+  return screen.queryByText(/^Not needed for this project/)?.closest('details') ?? null
 }
 
 function item(label: string): HTMLElement {
@@ -93,20 +116,51 @@ function item(label: string): HTMLElement {
 }
 
 describe('DocumentChecklist for the applicant', () => {
-  it('shows a picker per missing item, the reuse menu, and the reason an item is not needed', () => {
+  it('shows a picker per missing item, the reuse menu behind a disclosure, and waivers', () => {
     renderAs('applicant')
     expect(within(item('Plot plan')).getByRole('link', { name: 'plot-plan.pdf' })).toBeTruthy()
     const floor = item('Floor plans and framing')
     expect(within(floor).getByLabelText('Choose a file for Floor plans and framing')).toBeTruthy()
-    expect(
-      within(floor).getByLabelText('Use a file already added for Floor plans and framing'),
-    ).toBeTruthy()
-    expect(item('Owner authorization').textContent).toContain(
-      'Not needed: only when Are you the property owner? is No.',
+    expect(within(floor).getByText('Use a file you already added').closest('details')).toBeTruthy()
+    const reuse = within(floor).getByLabelText<HTMLSelectElement>(
+      /^Use a file already added for Floor plans and framing/,
     )
+    expect(reuse.value).toBe('')
     expect(within(item('Landscaping plan')).getByText('Request a waiver')).toBeTruthy()
     expect(item('State septic approval').textContent).toContain('Missing. Can come later')
     expect(screen.queryByText('Accept without the document')).toBeNull()
+  })
+
+  it('folds documents this project does not need into one counted group, with a plain reason', () => {
+    renderAs('applicant')
+    const group = notNeededGroup()
+    expect(group?.querySelector('summary')?.textContent).toBe('Not needed for this project (1)')
+    const owner = within(group as HTMLElement)
+      .getByText('Owner authorization')
+      .closest('li')
+    expect(owner?.textContent).toContain(
+      'Needed only if you answer “No” to “Are you the property owner?”.',
+    )
+    expect(owner?.textContent).not.toContain('Not needed')
+    const main = screen.getAllByRole('listitem').filter((li) => group?.contains(li) !== true)
+    expect(main.some((li) => li.textContent.includes('Owner authorization'))).toBe(false)
+  })
+
+  it('moves a document into the needed list as soon as the live answers call for it', () => {
+    renderAs('applicant', { answers: { is_owner: 'no' } })
+    expect(notNeededGroup()).toBeNull()
+    expect(item('Owner authorization').textContent).toContain('Missing')
+    expect(
+      within(item('Owner authorization')).getByLabelText('Choose a file for Owner authorization'),
+    ).toBeTruthy()
+  })
+
+  it('stops offering Unassign once the application is submitted', () => {
+    renderAs('applicant')
+    expect(within(item('Plot plan')).getByRole('button', { name: /Unassign/ })).toBeTruthy()
+    cleanup()
+    renderAs('applicant', { view: { ...VIEW, submitted: true } })
+    expect(within(item('Plot plan')).queryByRole('button', { name: /Unassign/ })).toBeNull()
   })
 })
 

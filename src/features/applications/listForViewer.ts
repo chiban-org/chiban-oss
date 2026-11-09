@@ -1,4 +1,4 @@
-import { and, desc, eq, lt } from 'drizzle-orm'
+import { and, desc, eq, isNotNull, lt, ne, or } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { applications, projects } from '@/db/schema'
 import { applicationPartyOf, applicationVisibleTo } from '@/features/access/predicates'
@@ -30,7 +30,12 @@ function decodeCursor(cursor: string): number | null {
 export async function listApplicationsForViewer(
   db: DbOrTx,
   actor: Actor,
-  input: { limit: number; cursor?: string; scope?: 'visible' | 'party' },
+  input: {
+    limit: number
+    cursor?: string
+    scope?: 'visible' | 'party'
+    withoutDeletedDrafts?: boolean
+  },
   signal: AbortSignal,
 ): Promise<ApplicationPage> {
   signal.throwIfAborted()
@@ -55,6 +60,9 @@ export async function listApplicationsForViewer(
       and(
         input.scope === 'party' ? applicationPartyOf(actor) : applicationVisibleTo(actor),
         afterClause,
+        input.withoutDeletedDrafts === true
+          ? or(ne(applications.state, 'withdrawn'), isNotNull(applications.receivedDate))
+          : undefined,
       ),
     )
     .orderBy(desc(applications.seq))

@@ -27,7 +27,8 @@ test('a new applicant signs in by emailed link and starts a driveway permit on t
   await page.getByRole('button', { name: 'Search' }).click()
   await page.getByRole('link', { name: new RegExp(`^${PARCEL_ADDRESS}, parcel `) }).click()
   await expect(page.getByRole('heading', { level: 1 })).toHaveText('Choose the kind of application')
-  await page.getByRole('radio', { name: TYPE_LABEL }).click()
+  await expect(page.getByRole('button', { name: 'Continue' })).toBeDisabled()
+  await page.getByRole('radio', { name: /^Driveway/ }).click()
   await page.getByRole('button', { name: 'Continue' }).click()
   await expect(page).toHaveURL(/\/portal\/applications\/[0-9a-f-]{36}$/)
 
@@ -44,5 +45,6 @@ test('a new applicant signs in by emailed link and starts a driveway permit on t
     title: `${TYPE_LABEL}, ${PARCEL_ADDRESS}`,
   })
   expect(started.number).toMatch(/^DW-\d{4}-\d{4}$/)
-  await expect(page.getByRole('heading', { level: 1 })).toHaveText(started.number)
+  await expect(page.getByRole('heading', { level: 1 })).toHaveText(started.title)
+  await expect(page.getByText(started.number).first()).toBeVisible()
 })

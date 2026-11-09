@@ -5,6 +5,7 @@ import { env } from '@/config/env'
 import type { DocumentChecklistView } from '@/features/applications/documentChecklistView'
 import { groupRevisions } from '@/features/documents/revisions'
 import type { DocumentListRow } from '@/features/documents/types'
+import { portalDocumentTitle } from '@/features/portal/documentTitle'
 import type { PortalApplicationView } from '@/features/portal/portalView'
 import { formatInstant } from '@/lib/formatDate'
 import { PORTAL_CHECKLIST_ACTIONS } from './checklistActions'
@@ -18,7 +19,7 @@ function DocumentLink({ doc, zone }: { doc: DocumentListRow; zone: string }) {
         href={`/api/documents/${doc.documentId}`}
         className="tap-target inline-flex items-center"
       >
-        {doc.title}
+        {portalDocumentTitle(doc)}
       </Link>
       <span className="ml-2 text-muted-foreground">
         {formatInstant(new Date(doc.createdAt), zone)}

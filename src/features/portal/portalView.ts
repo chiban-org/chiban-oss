@@ -10,6 +10,7 @@ import {
   receipts,
 } from '@/db/schema'
 import { canViewApplication, isProjectParty } from '@/features/access/queries'
+import { boardKindOf } from '@/features/applications/applicationTypeSchema'
 import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import { stateLabel } from '@/features/applications/stateLabel'
 import type { CoreState } from '@/features/applications/states'
@@ -34,7 +35,8 @@ import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
 
-const DECISION_CLOCK_KEY = 'nh.bp.decision'
+const DECISION_CLOCK_KEYS = ['nh.bp.decision', 'nh.pb.decision', 'nh.zba.decision']
+const ENDING_ROLES = ['applicant', 'owner', 'agent'] as const
 const PAYER_ROLES = ['applicant', 'owner', 'agent', 'contractor'] as const
 const WRITABLE_STATES: readonly CoreState[] = ['draft', 'submitted']
 const ESTIMATE_STATES: readonly CoreState[] = ['draft', 'submitted', 'under_review']
@@ -52,7 +54,8 @@ export interface PortalApplicationView {
   values: Record<string, FieldValue>
   attestationText: string
   attestationSha256: string
-  decisionDue: { date: CivilDate; consequence: string } | null
+  decisionDue: { date: CivilDate; late: boolean } | null
+  record: PortalRecordFacts
   conditions: { text: string; status: 'unmet' | 'met' | 'waived' }[]
   documents: DocumentListRow[]
   fees: FeeBalance
@@ -66,8 +69,35 @@ export interface PortalApplicationView {
   isParty: boolean
 }
 
-const DECISION_LATE_TEXT =
-  'That date has passed. Call the land use office to ask when to expect the decision.'
+export interface PortalRecordFacts {
+  projectTitle: string
+  rowVersion: number
+  substep: string | null
+  board: boolean
+  allowsDirectIssue: boolean
+  completeness: boolean
+  receivedDate: CivilDate | null
+  completedDate: CivilDate | null
+  issuedOn: CivilDate | null
+  hasInspections: boolean
+  mayEnd: boolean
+}
+
+function recordFacts(app: ApplicationContext, projectTitle: string, mayEnd: boolean) {
+  return {
+    projectTitle,
+    rowVersion: app.rowVersion,
+    substep: app.substep,
+    board: boardKindOf(app.typeBody.classification) !== null,
+    allowsDirectIssue: app.typeBody.workflow.allowsDirectIssue,
+    completeness: app.typeBody.classification === 'nh.building_permit',
+    receivedDate: app.receivedDate,
+    completedDate: app.completedDate,
+    issuedOn: app.issuedOn,
+    hasInspections: app.typeBody.checklistKeys.length > 0,
+    mayEnd,
+  }
+}
 
 async function decisionDue(db: Db, applicationId: string, signal: AbortSignal) {
   const [clock] = await db
@@ -76,7 +106,7 @@ async function decisionDue(db: Db, applicationId: string, signal: AbortSignal) {
     .where(
       and(
         eq(clocks.applicationId, applicationId),
-        eq(clocks.ruleKey, DECISION_CLOCK_KEY),
+        inArray(clocks.ruleKey, DECISION_CLOCK_KEYS),
         inArray(clocks.status, ['running', 'overdue']),
       ),
     )
@@ -85,10 +115,7 @@ async function decisionDue(db: Db, applicationId: string, signal: AbortSignal) {
   if (clock === undefined) return null
   const date = clock.currentDue as CivilDate
   const today = await townToday(db, new Date(), signal)
-  return {
-    date,
-    consequence: compareCivil(today, date) > 0 ? DECISION_LATE_TEXT : '',
-  }
+  return { date, late: compareCivil(today, date) > 0 }
 }
 
 export interface PortalMoneyEntry {
@@ -161,7 +188,7 @@ export async function getPortalApplicationView(
   const app = await loadApplicationContext(db, applicationId, signal)
   if (app === null) return err('not_found')
   const [project] = await db
-    .select({ parcelId: projects.parcelId })
+    .select({ parcelId: projects.parcelId, title: projects.title })
     .from(projects)
     .where(eq(projects.id, app.projectId))
   const [parcel] = await db
@@ -181,6 +208,7 @@ export async function getPortalApplicationView(
     ? false
     : await isActiveParty(db, actor.userId, app.projectId)
   const payer = await isProjectParty(db, actor, app.projectId, [...PAYER_ROLES], signal)
+  const mayEnd = await isProjectParty(db, actor, app.projectId, [...ENDING_ROLES], signal)
   const settings = await getPaymentSettings(db, signal)
   const convenienceCents = computeConvenienceFee(
     fees.dueCents,
@@ -210,6 +238,7 @@ export async function getPortalApplicationView(
     attestationText: app.typeBody.attestationText,
     attestationSha256: attestationHash(app.typeBody.attestationText),
     decisionDue: await decisionDue(db, applicationId, signal),
+    record: recordFacts(app, project?.title ?? app.number, mayEnd),
     conditions: conditions.map((c) => ({ text: c.textSnapshot, status: c.status })),
     documents: (
       await listDocuments(

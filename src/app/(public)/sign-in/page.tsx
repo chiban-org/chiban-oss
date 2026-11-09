@@ -14,6 +14,9 @@ export default async function PublicSignInPage({ searchParams }: SignInPageProps
   return (
     <main className="mx-auto max-w-md p-6">
       <h1>Sign in</h1>
+      <p className="text-lg">
+        New or returning, enter your email. We will send a link. No password.
+      </p>
       {error === undefined ? null : (
         <p role="alert">That link is no longer valid. Request a new one.</p>
       )}

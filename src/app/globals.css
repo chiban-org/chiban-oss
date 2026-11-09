@@ -204,11 +204,19 @@
 }
 
 .public-shell
-  :is(button:not([role="radio"]), [role="button"], input, select, textarea, a.tap-target) {
+  :is(
+    button:not([role="radio"]):not([role="checkbox"]),
+    [role="button"],
+    input,
+    select,
+    textarea,
+    a.tap-target
+  ) {
   min-height: var(--public-min-tap-target);
 }
 
-.public-shell :is(button:not([role="radio"]), [role="button"], a.tap-target) {
+.public-shell
+  :is(button:not([role="radio"]):not([role="checkbox"]), [role="button"], a.tap-target) {
   min-width: var(--public-min-tap-target);
 }
 

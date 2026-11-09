@@ -156,7 +156,7 @@ function validateField(
   }
   if (blank && !opts.partial && isRequired(field, values))
     return { error: { field: field.key, code: 'required' } }
-  if (blank && field.type !== 'checkbox') return null
+  if (blank && (field.type !== 'checkbox' || isBlank(input))) return null
   const parsed = parseValue(field, input)
   return parsed.ok ? { value: parsed.value } : { error: { field: field.key, code: parsed.code } }
 }

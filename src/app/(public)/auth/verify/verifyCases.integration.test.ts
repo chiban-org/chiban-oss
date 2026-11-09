@@ -31,7 +31,7 @@ describeAnonymousCases(h, 'confirmMagicLinkAction', {
   fields: { token: text({ required: true }) },
   refusals: { csrf: INVALID, checkOnly: INVALID, invalid: INVALID },
   accepted: async (result, { db, written }) => {
-    expect(result).toEqual(redirectsTo('/'))
+    expect(result).toEqual(redirectsTo('/portal'))
     expect(written).toEqual(expect.arrayContaining(['magic_links', 'sessions', 'users']))
     const links = await db.select({ consumed: magicLinks.consumedAt }).from(magicLinks)
     expect(links.map((l) => l.consumed !== null)).toEqual([true])

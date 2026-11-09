@@ -26,6 +26,7 @@ export interface PortalInspectionsView {
   phoneHoursText: string
   history: InspectionHistoryRow[]
   reinspectableIds: string[]
+  today: string
 }
 
 export async function loadPortalInspections(
@@ -56,5 +57,6 @@ export async function loadPortalInspections(
     phoneHoursText: describePhoneHours(settings),
     history: await listInspectionHistory(db, actor, applicationId, signal),
     reinspectableIds: [...(await reinspectableFailureIds(db, applicationId))],
+    today,
   })
 }

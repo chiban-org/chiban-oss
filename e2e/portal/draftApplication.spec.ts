@@ -2,7 +2,7 @@ import { expectRefusedBeside } from '../applications/support'
 import { expect, signInWithMagicLink, test, uniqueEmail } from '../fixtures/test'
 import { draftOf, PORTAL_PARCEL_ADDRESS, startPortalApplication } from './support'
 
-const TYPE_LABEL = 'Driveway permit'
+const TYPE_KEY = 'DW'
 const ATTESTATION = /^I attest that the information in this application is true and complete/
 
 test('an applicant keeps one draft per parcel, saves it, uploads the driveway sketch and submits it', async ({
@@ -13,8 +13,8 @@ test('an applicant keeps one draft per parcel, saves it, uploads the driveway sk
   const email = uniqueEmail('draft', suffix)
   await signInWithMagicLink(page, email)
 
-  const applicationId = await startPortalApplication(page, PORTAL_PARCEL_ADDRESS, TYPE_LABEL)
-  const again = await startPortalApplication(page, PORTAL_PARCEL_ADDRESS, TYPE_LABEL)
+  const applicationId = await startPortalApplication(page, PORTAL_PARCEL_ADDRESS, TYPE_KEY)
+  const again = await startPortalApplication(page, PORTAL_PARCEL_ADDRESS, TYPE_KEY)
   expect(again).toBe(applicationId)
   const drafts = await db.rows<{ id: string }>(
     `select id from applications

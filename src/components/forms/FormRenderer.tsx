@@ -1,23 +1,26 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import { AddressQuestion } from '@/components/forms/AddressQuestion'
-import { Checkbox } from '@/components/ui/checkbox'
+import {
+  asText,
+  type ControlProps,
+  type FormValue,
+  MultiSelect,
+  SingleSelect,
+  TARGET,
+  YesNo,
+} from '@/components/forms/choiceControls'
+import { Checkbox, CheckLine } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { RequiredMark } from '@/components/ui/required-mark'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
 import { Textarea } from '@/components/ui/textarea'
 import { isAddressQuestion } from '@/features/address/addressQuestion'
 import { evaluateCondition } from '@/features/forms/condition'
 import type { FormBody, FormField } from '@/features/forms/formSchema'
 
-export type FormValue = string | number | boolean | string[]
+export type { FormValue } from '@/components/forms/choiceControls'
 
 export interface FormRendererProps {
   form: FormBody
@@ -42,7 +45,6 @@ const INPUT_MODES: Partial<Record<FormField['type'], 'numeric' | 'decimal'>> = {
   decimal: 'decimal',
   money: 'decimal',
 }
-const TARGET = 'min-h-11'
 
 function isRequired(field: FormField, values: Record<string, unknown>): boolean {
   return (
@@ -50,71 +52,15 @@ function isRequired(field: FormField, values: Record<string, unknown>): boolean 
   )
 }
 
-function asText(value: unknown): string {
-  return typeof value === 'string' || typeof value === 'number' ? String(value) : ''
-}
-
-interface ControlProps {
-  field: FormField
-  id: string
-  value: unknown
-  invalid: boolean
-  describedBy: string | undefined
-  required: boolean
-  onChange: FormRendererProps['onChange']
-}
-
-function MultiSelect({ field, id, value, onChange }: ControlProps) {
-  const chosen: string[] = Array.isArray(value)
-    ? value.filter((v): v is string => typeof v === 'string')
-    : []
+function Confirm({ field, id, value, invalid, describedBy, onChange }: ControlProps) {
   return (
-    <fieldset id={id} className="space-y-2">
-      {(field.options ?? []).map((option) => {
-        const optionId = `${id}-${option.value}`
-        return (
-          <div key={option.value} className={`flex items-center gap-3 ${TARGET}`}>
-            <Checkbox
-              id={optionId}
-              checked={chosen.includes(option.value)}
-              onCheckedChange={(next) =>
-                onChange(
-                  field.key,
-                  next === true
-                    ? [...chosen, option.value]
-                    : chosen.filter((v) => v !== option.value),
-                )
-              }
-            />
-            <Label htmlFor={optionId} className="text-base">
-              {option.label}
-            </Label>
-          </div>
-        )
-      })}
-    </fieldset>
-  )
-}
-
-function SingleSelect({ field, id, value, invalid, describedBy, onChange }: ControlProps) {
-  return (
-    <Select value={asText(value)} onValueChange={(next) => onChange(field.key, next)}>
-      <SelectTrigger
-        id={id}
-        aria-invalid={invalid}
-        aria-describedby={describedBy}
-        className={`${TARGET} w-full text-base`}
-      >
-        <SelectValue placeholder="Choose one" />
-      </SelectTrigger>
-      <SelectContent>
-        {(field.options ?? []).map((option) => (
-          <SelectItem key={option.value} value={option.value} className="text-base">
-            {option.label}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+    <Checkbox
+      id={id}
+      checked={value === true}
+      aria-invalid={invalid}
+      aria-describedby={describedBy}
+      onCheckedChange={(next) => onChange(field.key, next === true)}
+    />
   )
 }
 
@@ -122,19 +68,7 @@ function Control(props: ControlProps) {
   const { field, id, value, invalid, describedBy, required, onChange } = props
   if (field.type === 'select') return <SingleSelect {...props} />
   if (field.type === 'multiselect') return <MultiSelect {...props} />
-  if (field.type === 'checkbox') {
-    return (
-      <div className={`flex items-center gap-3 ${TARGET}`}>
-        <Checkbox
-          id={id}
-          checked={value === true}
-          aria-invalid={invalid}
-          aria-describedby={describedBy}
-          onCheckedChange={(next) => onChange(field.key, next === true)}
-        />
-      </div>
-    )
-  }
+  if (field.type === 'checkbox') return required ? <Confirm {...props} /> : <YesNo {...props} />
   if (field.type === 'textarea') {
     return (
       <Textarea
@@ -171,6 +105,21 @@ interface EntryProps {
   addressChecks?: boolean | undefined
 }
 
+function FieldControl({
+  field,
+  values,
+  onChange,
+  addressChecks,
+  children,
+}: Omit<EntryProps, 'error'> & { children: ReactNode }) {
+  if (addressChecks !== true || !isAddressQuestion(field)) return children
+  return (
+    <AddressQuestion field={field} text={asText(values[field.key])} onChange={onChange}>
+      {children}
+    </AddressQuestion>
+  )
+}
+
 function FieldRow({ field, values, error, onChange, addressChecks }: EntryProps) {
   const id = `field-${field.key}`
   const errorId = `${id}-error`
@@ -191,25 +140,39 @@ function FieldRow({ field, values, error, onChange, addressChecks }: EntryProps)
       onChange={onChange}
     />
   )
+  const label = (
+    <Label id={`${id}-label`} htmlFor={id} className="text-base font-medium">
+      <span>
+        {field.label}
+        {required ? <RequiredMark /> : null}
+      </span>
+    </Label>
+  )
+  const confirming = field.type === 'checkbox' && required
   return (
     <div className="space-y-1.5">
-      <Label htmlFor={id} className="text-base font-medium">
-        <span>
-          {field.label}
-          {required ? <RequiredMark /> : null}
-        </span>
-      </Label>
+      {confirming ? (
+        <div className={`flex items-start gap-3 ${TARGET}`}>
+          <CheckLine>{control}</CheckLine>
+          {label}
+        </div>
+      ) : (
+        label
+      )}
       {field.help === undefined ? null : (
         <p id={helpId} className="text-base text-muted-foreground">
           {field.help}
         </p>
       )}
-      {addressChecks === true && isAddressQuestion(field) ? (
-        <AddressQuestion field={field} text={asText(values[field.key])} onChange={onChange}>
+      {confirming ? null : (
+        <FieldControl
+          field={field}
+          values={values}
+          onChange={onChange}
+          addressChecks={addressChecks}
+        >
           {control}
-        </AddressQuestion>
-      ) : (
-        control
+        </FieldControl>
       )}
       {error === undefined ? null : (
         <p id={errorId} className="text-base font-medium text-destructive">

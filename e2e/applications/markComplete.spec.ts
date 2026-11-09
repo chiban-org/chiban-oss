@@ -34,6 +34,7 @@ test.describe('marking a building permit application complete', () => {
       })
       await expect(page.getByRole('status').filter({ hasText: 'Uploaded.' })).toBeVisible()
       const drawings = page.getByRole('listitem').filter({ hasText: 'Construction drawings' })
+      await drawings.getByText('Use a file you already added').click()
       await drawings.getByRole('combobox').selectOption({ label: 'Plot plan' })
       await drawings.getByRole('button', { name: 'Use this file' }).click()
       await expect(drawings).toContainText('Provided')

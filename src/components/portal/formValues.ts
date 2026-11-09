@@ -17,3 +17,5 @@ export function toFormData(
   for (const [key, value] of Object.entries(values)) appendValue(data, key, value)
   return data
 }
+
+export const ATTEST_ID = 'attest'

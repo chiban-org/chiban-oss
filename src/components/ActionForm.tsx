@@ -40,6 +40,7 @@ interface ActionFormProps {
   confirm?: ConfirmStep
   closeOnSuccess?: boolean
   onSuccess?: (result: Extract<ActionResult, { ok: true }>) => void
+  submitDisabled?: boolean
   children: ReactNode
 }
 
@@ -60,6 +61,7 @@ export function ActionForm({
   confirm,
   closeOnSuccess = false,
   onSuccess,
+  submitDisabled = false,
   children,
 }: ActionFormProps) {
   const {
@@ -154,7 +156,7 @@ export function ActionForm({
             accessibleLabel={submitAccessibleLabel}
             variant={variant}
             alternate={alternate}
-            disabled={busy || !hydrated}
+            disabled={busy || !hydrated || submitDisabled}
             pending={busy}
           />
           {submitNote === undefined ? null : (

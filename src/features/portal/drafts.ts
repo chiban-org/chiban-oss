@@ -23,6 +23,7 @@ import { err, ok, type Result } from '@/types/result'
 export interface PortalType {
   key: string
   label: string
+  classification?: string | undefined
 }
 
 export async function listPortalTypes(db: Db, signal: AbortSignal): Promise<PortalType[]> {
@@ -32,7 +33,10 @@ export async function listPortalTypes(db: Db, signal: AbortSignal): Promise<Port
     .from(configVersions)
     .where(and(eq(configVersions.kind, 'application_type'), eq(configVersions.status, 'published')))
   return rows
-    .map((r) => ({ key: r.key, label: (r.body as ApplicationTypeBody).label }))
+    .map((r) => {
+      const body = r.body as ApplicationTypeBody
+      return { key: r.key, label: body.label, classification: body.classification }
+    })
     .sort((a, b) => a.label.localeCompare(b.label))
 }
 

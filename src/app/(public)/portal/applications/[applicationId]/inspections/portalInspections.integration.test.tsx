@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { inspections } from '@/db/schema'
+import { inspections, users } from '@/db/schema'
 import { recordAppeal } from '@/features/appeals/appeals'
 import type { Actor } from '@/features/auth/actor'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -156,14 +156,32 @@ describe('portal inspection requests', () => {
     expect(r).toEqual({ ok: false, error: 'That record was not found.' })
   })
 
-  it('the page lists the types, the open days, and the town phone hours', async () => {
+  it('the page lists your inspections first, then the types, with the contact filled in', async () => {
     state.actor = w.world.applicant
     const permit = await newIssuedPermit(handle.db, w, 'EL')
     const html = await render(permit.applicationId)
     expect(html).toContain('Request an inspection')
-    expect(html).toContain('Weekdays, 8:00 AM to 12:00 PM')
+    expect(html.indexOf('Your inspections')).toBeLessThan(html.indexOf('Request an inspection'))
+    expect(html).not.toContain('Phone request hours')
     expect(html).toContain('Electrical rough inspection')
     expect(html).toContain('Electrical final inspection')
+    const [me] = await handle.db
+      .select({ name: users.displayName })
+      .from(users)
+      .where(eq(users.id, w.world.applicant.userId))
+    expect(html).toContain(`value="${me?.name ?? 'missing'}"`)
+  })
+
+  it('reads a scheduled inspection whose day has passed as result pending', async () => {
+    state.actor = w.world.applicant
+    const permit = await newIssuedPermit(handle.db, w, 'EL')
+    await insertInspection(handle.db, permit.applicationId, 'rough', {
+      status: 'scheduled',
+      scheduledDate: '2020-01-06',
+      startMinute: 540,
+    })
+    const html = await render(permit.applicationId)
+    expect(html).toContain('Result pending')
   })
 
   it('a type already requested or passed is not offered again', async () => {
