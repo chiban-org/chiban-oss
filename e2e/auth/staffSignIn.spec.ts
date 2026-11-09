@@ -34,7 +34,7 @@ const LANDINGS: [StaffRoleKey, Landing][] = [
     },
   ],
   ['reviewer', { path: '/staff/reviews', heading: 'Your reviews', sections: [] }],
-  ['board', { path: '/board', heading: 'Board meetings', sections: [] }],
+  ['board', { path: '/board', heading: 'Your board', sections: [] }],
 ]
 
 test.describe('staff sign-in through the real form', () => {

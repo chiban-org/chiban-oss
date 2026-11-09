@@ -11,7 +11,8 @@ import type { MailTransport } from '@/features/mail/transport'
 import { createRateLimiter } from '@/server/rateLimiter'
 import { err, ok, type Result } from '@/types/result'
 
-const LINK_TTL_MS = 15 * 60 * 1000
+export const MAGIC_LINK_TTL_MINUTES = 15
+const LINK_TTL_MS = MAGIC_LINK_TTL_MINUTES * 60 * 1000
 const MAX_REQUESTS = 5
 const WINDOW_MS = 10 * 60 * 1000
 

@@ -1,5 +1,7 @@
+import { eq } from 'drizzle-orm'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { parcels } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { setAudiences } from '@/features/documents/publish'
 import { addReviewComment } from '@/features/reviews/assignments'
@@ -48,6 +50,13 @@ let assignmentId = ''
 let reviewersDoc = ''
 let staffDoc = ''
 
+function withoutSharedPieces(html: string): string {
+  return html
+    .replace(/<form[\s\S]*<\/form>/, '')
+    .replace(/<span data-status[\s\S]*?<\/span>/g, '')
+    .replace(/<dl[\s\S]*?<\/dl>/g, '')
+}
+
 function open(id: string) {
   return CommentPage({ params: Promise.resolve({ assignmentId: id }) })
 }
@@ -77,7 +86,17 @@ beforeAll(async () => {
     displayName: 'Hal Historic',
     boardId: historic,
   })
-  const app = await makeApplication(handle.db, world, { state: 'under_review' }, undefined, 'SPR')
+  const app = await makeApplication(
+    handle.db,
+    world,
+    { state: 'under_review', values: { description: 'Two-car garage beside the house' } },
+    undefined,
+    'SPR',
+  )
+  await handle.db
+    .update(parcels)
+    .set({ siteAddress: '12 Loon Cove Road' })
+    .where(eq(parcels.id, world.parcelId))
   for (const [title, audiences] of [
     ['Wetland delineation', ['reviewers']],
     ['Staff memo', []],
@@ -118,13 +137,16 @@ afterAll(async () => {
 })
 
 describe('Sent to your board for comment', () => {
-  it('lists the application for a seated member, with its comment-by date, even with no meetings', async () => {
+  it('lists the application for a seated member as a record row with a chip, even with no meetings', async () => {
     state.actor = lee
     const html = renderToStaticMarkup(await BoardHomePage())
+    expect(html).toContain('<h1>Your board</h1>')
     const section = html.slice(html.indexOf('>Sent to your board for comment</h2>'))
     expect(section).toContain('Garage addition')
+    expect(section).toContain('record-item')
     expect(section).toContain('Conservation Commission. Comments by April 1, 2027.')
-    expect(section).toContain('Waiting for comments')
+    expect(section).toMatch(/data-status="neutral"[^>]*>[\s\S]*?No comments yet/)
+    expect(section).not.toContain('Waiting for comments')
     expect(section).toContain(`/board/comments/${assignmentId}`)
     expect(html).toContain('No meeting packets are ready for you yet.')
     expect(findIsoDates(html.replace(/href="[^"]*"/g, ''))).toEqual([])
@@ -142,15 +164,29 @@ describe('the comment page', () => {
   it('shows the reviewers documents, not staff-only ones, and a comment box', async () => {
     state.actor = lee
     const html = renderToStaticMarkup(await open(assignmentId))
-    expect(html).toContain('Sent to the Alder Pond Conservation Commission for comment.')
-    expect(html).toContain('Comments by April 1, 2027.')
+    const facts = html.slice(html.indexOf('data-slot="description-list"'))
+    for (const [label, value] of [
+      ['Board', 'Conservation Commission'],
+      ['Comments by', 'April 1, 2027'],
+      ['Application', 'Garage addition'],
+      ['Site address', '12 Loon Cove Road'],
+      ['Parcel', '007001000000'],
+      ['Description of work', 'Two-car garage beside the house'],
+    ]) {
+      expect(facts).toMatch(new RegExp(`<dt[^>]*>${label}</dt><dd[^>]*>[^<]*${value}`))
+    }
+    expect(html).not.toContain('Alder Pond Conservation Commission')
+    expect(html).toMatch(/data-status="neutral"[^>]*>[\s\S]*?No comments yet/)
+    expect(html).toContain('>Your board</a>')
+    expect(html).toMatch(/data-variant="default"[^>]*>Post comment</)
+    expect(html).toContain('You can&#x27;t change a comment once posted.')
     expect(html).toContain(`/api/documents/${reviewersDoc}`)
     expect(html).toContain('Wetland delineation')
     expect(html).not.toContain(staffDoc)
     expect(html).not.toContain('Staff memo')
     expect(html).toContain('Post comment')
     expect(html).toContain('noindex')
-    expect(html.replace(/<form[\s\S]*<\/form>/, '')).not.toMatch(/text-(xs|sm)\b/)
+    expect(withoutSharedPieces(html)).not.toMatch(/text-(xs|sm)\b/)
   })
 
   it('shows the comment with the member and board once posted, and the status moves', async () => {
@@ -165,15 +201,23 @@ describe('the comment page', () => {
     const html = renderToStaticMarkup(await open(assignmentId))
     expect(html).toContain('Keep the 50 foot buffer.')
     expect(html).toContain('Lee Marsh, Conservation Commission')
-    expect(html).toContain('Comments received')
+    expect(html).toMatch(/<blockquote[^>]*>[\s\S]*Keep the 50 foot buffer\.[\s\S]*<\/blockquote>/)
+    expect(html).toMatch(/data-status="passed"[^>]*>[\s\S]*?Your board commented \(Lee Marsh\)/)
     const home = renderToStaticMarkup(await BoardHomePage())
-    expect(home).toContain('Comments received')
+    expect(home).toMatch(/data-status="passed"[^>]*>[\s\S]*?Your board commented \(Lee Marsh\)/)
   })
 
-  it('is not found for a member of another board, a non-member and a bad id', async () => {
-    state.actor = hal
-    await expect(open(assignmentId)).rejects.toThrow('NEXT_NOT_FOUND')
+  it('refuses someone with no board seat, whatever the id', async () => {
     state.actor = world.applicant
+    for (const id of [assignmentId, 'not-a-uuid']) {
+      const html = renderToStaticMarkup(await open(id))
+      expect(html).toContain('You do not have permission to read board packets.')
+      expect(html).not.toContain('Garage addition')
+    }
+  })
+
+  it('is not found for a member of another board and a bad id', async () => {
+    state.actor = hal
     await expect(open(assignmentId)).rejects.toThrow('NEXT_NOT_FOUND')
     state.actor = lee
     await expect(open('not-a-uuid')).rejects.toThrow('NEXT_NOT_FOUND')

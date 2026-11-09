@@ -71,7 +71,7 @@ afterEach(async () => {
 
 async function realText(): Promise<string> {
   const opened = await openPacket(handle.db, token, new Date(), signal)
-  if (!opened.ok) throw new Error(opened.error)
+  if (!opened.ok) throw new Error(JSON.stringify(opened.error))
   const frame = await documentFrame(handle.db, { boardId: opened.value.boardId }, signal)
   const template = await publishedTemplate(handle.db, 'board_packet_cover', signal)
   return await pdfText(await packetCoverPdf(opened.value, frame, template))

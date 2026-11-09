@@ -13,6 +13,8 @@ function meeting(
     boardId: '11111111-1111-4111-8111-111111111111',
     boardShortName: 'Planning Board',
     meetingDate: date as CivilDate,
+    startsAtMinute: 1140,
+    location: '',
     agendaDocumentId: null,
     cancelled: false,
     hasPacket: true,

@@ -145,7 +145,7 @@ describe('board packets', () => {
     const { token } = await link(packetId)
     await addRedactedCopy(handle.db, store, world.staff, appRef, doc.documentId, 'redacted later')
     const opened = await openPacket(handle.db, token, new Date(), signal)
-    if (!opened.ok) throw new Error(opened.error)
+    if (!opened.ok) throw new Error(JSON.stringify(opened.error))
     expect(opened.value.items).toHaveLength(1)
     expect(opened.value.items[0]?.versionId).toBe(doc.versionId)
     const roles = await handle.db
@@ -174,7 +174,7 @@ describe('board packets', () => {
     expect(version?.role).toBe('public_redacted')
   })
 
-  it('link opens before expiry, expired link returns expired, revoked link returns invalid', async () => {
+  it('link opens before expiry, expired link returns expired, revoked link says it was turned off', async () => {
     const doc = await boardDocument()
     const packetId = await packetWith([doc.documentId])
     const { token, linkId } = await link(packetId)
@@ -190,7 +190,7 @@ describe('board packets', () => {
       error: 'invalid',
     })
     expect((await revokePacketLink(handle.db, world.staff, { linkId }, signal)).ok).toBe(true)
-    expect(await openPacket(handle.db, token, now, signal)).toEqual({ ok: false, error: 'invalid' })
+    expect(await openPacket(handle.db, token, now, signal)).toEqual({ ok: false, error: 'revoked' })
   })
 
   it('a version not in the packet is not found through the packet token, and each download is logged', async () => {

@@ -1,10 +1,12 @@
 import { env } from '@/config/env'
+import { meetingWhenAndWhere } from '@/features/boards/meetingWhen'
 import type { MailMessage } from '@/features/mail/transport'
 import { formatCivilDate } from '@/lib/formatDate'
 
 export interface MailPacket {
   title: string
   meetingDate: string
+  place?: { startsAtMinute: number; location: string } | null
 }
 
 function escapeHtml(text: string): string {
@@ -25,13 +27,23 @@ function message(to: string, subject: string, lines: string[]): MailMessage {
 }
 
 function subjectOf(packet: MailPacket, prefix: string): string {
-  return `${prefix}: ${packet.title}, meeting ${formatCivilDate(packet.meetingDate)}`
+  const date = formatCivilDate(packet.meetingDate)
+  return packet.title.includes(date)
+    ? `${prefix}: ${packet.title}`
+    : `${prefix}: ${packet.title}, meeting ${date}`
+}
+
+function whenOf(packet: MailPacket): string {
+  const place = packet.place ?? null
+  return place === null
+    ? formatCivilDate(packet.meetingDate)
+    : meetingWhenAndWhere({ meetingDate: packet.meetingDate, ...place })
 }
 
 export function memberPacketMail(to: string, packet: MailPacket): MailMessage {
-  const date = formatCivilDate(packet.meetingDate)
   return message(to, subjectOf(packet, 'Board packet'), [
-    `Packet ready: sign in at ${env.BASE_URL}/board to read the packet for the ${date} meeting.`,
+    `The packet for the meeting on ${whenOf(packet)} is ready.`,
+    `Sign in at ${env.BASE_URL}/board to read it.`,
   ])
 }
 
@@ -40,9 +52,8 @@ export function linkPacketMail(
   packet: MailPacket,
   link: { url: string; days: number },
 ): MailMessage {
-  const date = formatCivilDate(packet.meetingDate)
   return message(to.email, subjectOf(packet, 'Board packet'), [
-    `${to.name}, the packet for the ${date} meeting is ready. The link expires in ${link.days} days.`,
+    `${to.name}, the packet for the meeting on ${whenOf(packet)} is ready. The link expires in ${link.days} days.`,
     link.url,
   ])
 }
