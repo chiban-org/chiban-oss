@@ -50,12 +50,9 @@ function addUp(lines: AssessedLine[]): AssessedLine[] {
   return [...byKey.values()]
 }
 
-export async function assessedLines(db: DbOrTx, applicationId: string): Promise<AssessedLine[]> {
-  const rows = await db
-    .select()
-    .from(feeAssessments)
-    .where(eq(feeAssessments.applicationId, applicationId))
-    .orderBy(feeAssessments.assessedAt, feeAssessments.sequence)
+export function assessedLinesFromRows(
+  rows: (typeof feeAssessments.$inferSelect)[],
+): AssessedLine[] {
   const latest = new Map<string, (typeof rows)[number]>()
   const cumulative: AssessedLine[] = []
   for (const row of rows) {
@@ -64,6 +61,15 @@ export async function assessedLines(db: DbOrTx, applicationId: string): Promise<
     else if (held === undefined || row.sequence > held.sequence) latest.set(row.stage, row)
   }
   return [...[...latest.values()].flatMap(linesOf), ...addUp(cumulative)]
+}
+
+export async function assessedLines(db: DbOrTx, applicationId: string): Promise<AssessedLine[]> {
+  const rows = await db
+    .select()
+    .from(feeAssessments)
+    .where(eq(feeAssessments.applicationId, applicationId))
+    .orderBy(feeAssessments.assessedAt, feeAssessments.sequence)
+  return assessedLinesFromRows(rows)
 }
 
 export async function paidByLine(db: DbOrTx, applicationId: string): Promise<Map<string, number>> {

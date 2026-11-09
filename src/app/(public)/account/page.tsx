@@ -21,7 +21,8 @@ export default async function AccountPage({
   if (ctx.actor.kind === 'staff') redirect('/staff/account')
   const view = await loadAccountView(ctx.db, ctx.actor.userId, ctx.signal)
   if (view === null) redirect('/sign-in?next=%2Faccount')
-  const contractor = view.contractor !== null || setup === 'contractor'
+  if (setup === 'contractor' && view.contractor !== null) redirect('/portal/contractor')
+  const contractor = view.contractor !== null || view.namedAsContractor || setup === 'contractor'
   return (
     <main className="max-w-2xl space-y-6">
       <h1>Your account</h1>

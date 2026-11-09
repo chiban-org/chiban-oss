@@ -1,7 +1,9 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { projectParties } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { saveContractorProfile } from '@/features/contractors/profile'
+import { setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { staffActor } from '@/test/parcels'
 
@@ -93,5 +95,71 @@ describe('account page', () => {
     expect(html).toContain('value="Builder and Sons"')
     expect(html).toContain('value="PL-3301"')
     expect(html).toContain('Save the contractor profile')
+  })
+  it('leaves the contact name empty for a profile that has not been saved', async () => {
+    state.actor = await staffActor(handle.db, 'applicant')
+    expect(await render('contractor')).not.toMatch(/name="name"[^>]*value="User /)
+  })
+
+  it('says the email cannot be changed here', async () => {
+    state.actor = await staffActor(handle.db, 'applicant')
+    expect(await render()).toContain('It cannot be changed here.')
+  })
+
+  it('shows a license field only for a trade the saved profile holds', async () => {
+    const actor = await staffActor(handle.db, 'applicant')
+    await saveContractorProfile(
+      handle.db,
+      actor,
+      {
+        name: 'Pat Builder',
+        phone: '603-555-0142',
+        mailingAddress: null,
+        companyName: 'Builder and Sons',
+        trades: ['plumbing'],
+        licenses: [{ trade: 'plumbing', number: 'PL-3301' }],
+      },
+      signal,
+    )
+    state.actor = actor
+    const html = await render()
+    expect(html).toContain('NH license number, plumbing')
+    expect(html).not.toContain('NH license number, electrical')
+  })
+
+  it('sends a returning contractor who follows the setup link to their projects', async () => {
+    const actor = await staffActor(handle.db, 'applicant')
+    await saveContractorProfile(
+      handle.db,
+      actor,
+      {
+        name: 'Pat Builder',
+        phone: '603-555-0142',
+        mailingAddress: null,
+        companyName: 'Builder and Sons',
+        trades: [],
+        licenses: [],
+      },
+      signal,
+    )
+    state.actor = actor
+    await expect(render('contractor')).rejects.toThrow('NEXT_REDIRECT:/portal/contractor')
+  })
+
+  it('shows the contractor profile to someone named as a contractor on a project', async () => {
+    const actor = await staffActor(handle.db, 'applicant')
+    const world = await setupPermitWorld(handle.db)
+    await handle.db.insert(projectParties).values({
+      projectId: world.projectId,
+      userId: actor.userId,
+      email: 'named@builder.example',
+      name: 'Named Builder',
+      role: 'contractor',
+      addedBy: actor.userId,
+    })
+    state.actor = actor
+    const html = await render()
+    expect(html).toContain('Contractor profile')
+    expect(html).toContain('Company name')
   })
 })
