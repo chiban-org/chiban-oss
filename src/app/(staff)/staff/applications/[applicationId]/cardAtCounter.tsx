@@ -116,7 +116,11 @@ export function CardAtCounter({
   }
 
   return (
-    <div role="group" aria-label="Card at the counter" className="flex flex-col gap-3 [&>p]:m-0">
+    <div
+      role="group"
+      aria-label="Card at the counter"
+      className="mt-4 flex flex-col gap-3 border-t pt-4 [&>p]:m-0"
+    >
       <p className="font-semibold">Card at the counter</p>
       {simulated ? (
         <p className="text-sm font-semibold">
