@@ -13,7 +13,7 @@ export function InspectionPhotoUploader({ inspectionId }: { inspectionId: string
   const router = useRouter()
   return (
     <details>
-      <summary>Add a photo</summary>
+      <summary className="flex min-h-11 items-center">Add a photo</summary>
       <Uploader
         target={{ kind: 'inspection', id: inspectionId }}
         maxBytes={PHOTO_LIMIT_BYTES}

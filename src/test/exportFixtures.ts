@@ -154,6 +154,13 @@ const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
         'Coverage findings', '[]'::jsonb, gen_random_uuid() from hearings limit 1`,
   },
   {
+    table: 'letter_mailings',
+    statement: sql`insert into letter_mailings (application_id, decision_id, party_id, document_id)
+      select d.application_id, d.id, pp.id, (select id from documents limit 1)
+      from board_decisions d join applications a on a.id = d.application_id
+      join project_parties pp on pp.project_id = a.project_id limit 1`,
+  },
+  {
     table: 'counter_intakes',
     statement: sql`insert into counter_intakes (application_id, applicant_party_id, taken_by)
       select a.id, pp.id, a.created_by from applications a

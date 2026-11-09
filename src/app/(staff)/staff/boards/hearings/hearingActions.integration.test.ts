@@ -31,9 +31,15 @@ vi.mock('next/navigation', () => import('@/test/testHarness/actions/mocks/nextNa
 vi.mock('@/server/getActor', () => import('@/test/testHarness/actions/mocks/getActor'))
 vi.mock('@/features/mail/transport', () => import('@/test/testHarness/actions/mocks/mailTransport'))
 
+vi.mock(
+  '@/features/storage/objectStore',
+  () => import('@/test/testHarness/actions/mocks/objectStore'),
+)
+
 const actions = await import('./actions')
 
 const h = actionHarness()
+h.useObjectStore()
 const signal = new AbortController().signal
 const TODAY = new Date('2027-04-16T16:00:00Z')
 const FULL_RANGE = { earliest: '1900-01-01', latest: '2099-12-31' }

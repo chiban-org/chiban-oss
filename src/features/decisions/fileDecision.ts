@@ -7,6 +7,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
+import { deliverDecisionLetter } from '@/features/decisions/letterDelivery'
 import { noticeProofDocumentIds } from '@/features/documents/evidence'
 import { isEvidenceKind } from '@/features/documents/types'
 import { packHolidayCalendar } from '@/features/packs/holidays'
@@ -102,6 +103,7 @@ export async function fileDecision(
       .set({ filedOn: input.filedOn, minutesDocumentId: input.minutesDocumentId })
       .where(eq(boardDecisions.id, decision.id))
     await markClockMet(tx, decision.applicationId, FILING_CLOCK_KEY, input.filedOn, signal)
+    await deliverDecisionLetter(tx, { ...decision, filedOn: input.filedOn }, signal)
     await startClocksFor(
       tx,
       decision.applicationId,

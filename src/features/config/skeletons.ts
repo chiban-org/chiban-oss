@@ -12,6 +12,7 @@ import {
   PLACEHOLDER_CODE_SECTION,
 } from '@/features/config/placeholderChecks'
 import { slugKey } from '@/features/forms/fieldKeys'
+import { EMPTY_NOTIFICATION_WORDING } from '@/features/notifications/wording/wordingSchema'
 import { loadPack } from '@/features/packs/loadPack'
 import { EMPTY_REVIEW_ROUTES } from '@/features/reviews/routesSchema'
 import { defaultDoc } from '@/features/templates/kinds/documentKinds'
@@ -93,6 +94,8 @@ export function skeletonBody(kind: ConfigKind, key: string, label: string = key)
       return EMPTY_REVIEW_ROUTES
     case 'town_profile':
       return TOWN_PROFILE_SKELETON
+    case 'notification_wording':
+      return EMPTY_NOTIFICATION_WORDING
     case 'application_type':
       return {
         key,

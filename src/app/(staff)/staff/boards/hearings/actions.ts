@@ -10,6 +10,7 @@ import {
 } from '@/features/agendas/agendas'
 import { continueHearing } from '@/features/hearings/continuations'
 import { markHearingHeld, markProperlyNoticed, scheduleHearing } from '@/features/hearings/hearings'
+import { postNoticeOnWebsite } from '@/features/hearings/websitePosting'
 import { recordProof } from '@/features/notices/proofs'
 import { routeToTrc } from '@/features/reviews/trcRouting'
 import { getObjectStore } from '@/features/storage/objectStore'
@@ -29,12 +30,29 @@ import {
   SCHEDULE_HEARING_FORM,
 } from './forms'
 
+const SCHEDULED_MESSAGE = 'Hearing scheduled. The notice checklist is ready.'
+const POSTED_NOTE =
+  ' The notice is on the public meetings page and the website posting is recorded.'
+
+function postedNote(posted: Awaited<ReturnType<typeof postNoticeOnWebsite>>): string {
+  return posted.ok && posted.value.itemsProved > 0 ? POSTED_NOTE : ''
+}
+
 export async function scheduleHearingAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffForm(formData, SCHEDULE_HEARING_FORM, async ({ db, actor, signal }, input) =>
-    errorOrField(
-      await scheduleHearing(db, actor, input, signal),
-      'Hearing scheduled. The notice checklist is ready.',
-    ),
+  return await runStaffForm(
+    formData,
+    SCHEDULE_HEARING_FORM,
+    async ({ db, actor, signal }, input) => {
+      const scheduled = await scheduleHearing(db, actor, input, signal)
+      if (!scheduled.ok) return errorOrField(scheduled, '')
+      const posted = await postNoticeOnWebsite(
+        db,
+        actor,
+        { hearingId: scheduled.value.hearingId, store: getObjectStore() },
+        signal,
+      )
+      return errorOrField(scheduled, SCHEDULED_MESSAGE + postedNote(posted))
+    },
   )
 }
 
@@ -76,13 +94,17 @@ export async function continueHearingAction(formData: FormData): Promise<ActionR
         },
         signal,
       )
-      return errorOrField(
-        continued,
-        announced
-          ? 'Hearing continued. The notice already given carries forward.'
-          : 'Hearing continued. New notice is required for the new date.',
-        { details_required: 'details' },
+      if (!continued.ok) return errorOrField(continued, '', { details_required: 'details' })
+      const posted = await postNoticeOnWebsite(
+        db,
+        actor,
+        { hearingId: continued.value.hearingId, store: getObjectStore() },
+        signal,
       )
+      const message = announced
+        ? 'Hearing continued. The notice already given carries forward.'
+        : 'Hearing continued. New notice is required for the new date.'
+      return errorOrField(continued, message + postedNote(posted))
     },
   )
 }

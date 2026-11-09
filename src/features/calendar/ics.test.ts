@@ -12,6 +12,7 @@ const booking: CalendarBooking = {
   description: 'Site: 12 Elm Road\nContact: Pat, 603-555-0100',
   location: '12 Elm Road',
   organizerEmail: 'noreply@alderpond.example',
+  organizerName: 'Town of Birch Hollow',
   attendeeEmail: 'inspector@alderpond.example',
   attendeeName: 'Ines Inspector',
 }
@@ -33,7 +34,7 @@ describe('buildIcs', () => {
     expect(ics).toContain('DTEND:20271108T153000Z')
     expect(ics).toContain('DTSTAMP:20271101T120000Z')
     expect(ics).toContain('STATUS:CONFIRMED')
-    expect(ics).toContain('ORGANIZER;CN=Town of Alder Pond:mailto:noreply@alderpond.example')
+    expect(ics).toContain('ORGANIZER;CN=Town of Birch Hollow:mailto:noreply@alderpond.example')
     expect(ics).toContain(
       'ATTENDEE;CN=Ines Inspector;ROLE=REQ-PARTICIPANT;PARTSTAT=NEEDS-ACTION;RSVP=FALSE:mailto:inspector@alderpond.example',
     )
@@ -47,6 +48,13 @@ describe('buildIcs', () => {
     )
     expect(ics).toContain('ORGANIZER;CN=Town of Alder Pond:mailto:noreply@alderpond.example\r\n')
     expect(ics).not.toContain('<')
+  })
+
+  it('names the organizer only from the mailbox or the town, never a built-in town', () => {
+    const { organizerName: _name, ...unnamed } = booking
+    const ics = buildIcs(unnamed, 'REQUEST', NOW)
+    expect(ics).toContain('ORGANIZER:mailto:noreply@alderpond.example\r\n')
+    expect(ics).not.toContain('Alder Pond <')
   })
 
   it('cancel ics has METHOD:CANCEL and STATUS:CANCELLED with the same UID', () => {
