@@ -108,6 +108,20 @@ describe('validateSubmission', () => {
     })
   })
 
+  it('keeps an unanswered yes or no question unanswered and stores an explicit No as false', () => {
+    const form: FormBody = FormBodySchema.parse({
+      key: 'yn',
+      label: 'Yes or no',
+      fields: [{ key: 'culvert', label: 'Culvert needed', type: 'checkbox', required: false }],
+    })
+    const unanswered = validateSubmission(form, {}, { asStaff: false })
+    expect(unanswered.ok && 'culvert' in unanswered.value.values).toBe(false)
+    const no = validateSubmission(form, { culvert: false }, { asStaff: false })
+    expect(no.ok && no.value.values.culvert).toBe(false)
+    const yes = validateSubmission(form, { culvert: 'true' }, { asStaff: false })
+    expect(yes.ok && yes.value.values.culvert).toBe(true)
+  })
+
   it('decimal values are kept as decimal strings', () => {
     const r = validateSubmission(
       FORM,

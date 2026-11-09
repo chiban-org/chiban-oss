@@ -142,6 +142,40 @@ describe('FormRenderer', () => {
     expect(screen.getByRole<HTMLInputElement>('textbox', { name: 'Detail' }).required).toBe(true)
   })
 
+  it('asks an optional yes or no question as a Yes and No pair with neither chosen until answered', () => {
+    const onChange = vi.fn()
+    const { rerender } = render(
+      <FormRenderer form={FORM} values={{}} errors={{}} onChange={onChange} />,
+    )
+    const group = screen.getByRole('radiogroup', { name: 'Sprinklered' })
+    const yes = screen.getByRole('radio', { name: 'Yes' })
+    const no = screen.getByRole('radio', { name: 'No' })
+    expect(group).toBeTruthy()
+    expect(yes.getAttribute('aria-checked')).toBe('false')
+    expect(no.getAttribute('aria-checked')).toBe('false')
+    expect(screen.queryByRole('checkbox', { name: 'Sprinklered' })).toBeNull()
+    fireEvent.click(no)
+    expect(onChange).toHaveBeenCalledWith('sprinklered', false)
+    rerender(
+      <FormRenderer form={FORM} values={{ sprinklered: false }} errors={{}} onChange={onChange} />,
+    )
+    expect(screen.getByRole('radio', { name: 'No' }).getAttribute('aria-checked')).toBe('true')
+    expect(screen.getByRole('radio', { name: 'Yes' }).getAttribute('aria-checked')).toBe('false')
+  })
+
+  it('keeps a required confirmation as one checkbox labelled beside it', () => {
+    const confirming: FormBody = {
+      key: 'c',
+      label: 'C',
+      fields: [{ key: 'owner_ok', label: 'The owner agrees', type: 'checkbox', required: true }],
+    }
+    const onChange = vi.fn()
+    render(<FormRenderer form={confirming} values={{}} errors={{}} onChange={onChange} />)
+    fireEvent.click(screen.getByRole('checkbox', { name: /The owner agrees/ }))
+    expect(onChange).toHaveBeenCalledWith('owner_ok', true)
+    expect(screen.queryByRole('radiogroup')).toBeNull()
+  })
+
   it('marks always-required fields', () => {
     render(<FormRenderer form={FORM} values={{}} errors={{}} onChange={noop} />)
     expect(document.querySelector('label[for="field-scope"] [aria-hidden="true"]')).not.toBeNull()
