@@ -1,149 +1,64 @@
-import Link from 'next/link'
-import type { ReactNode } from 'react'
+import { SectionHeader } from '@/components/layout/ListHeader'
 import { GroupLabel } from '@/components/parcels/GroupLabel'
-import { StatusChip } from '@/components/StatusChip'
-import type { AncestralRecord, OwnRecord, ParcelHistory } from '@/features/parcels/parcelHistory'
+import { PublicFileList, PublicRecordRow } from '@/components/parcels/PublicRecordRow'
+import type { PublicRecords } from '@/features/parcels/publicRecords'
+import type { RecordRow } from '@/features/parcels/recordTable'
+import type { TownOffice } from '@/features/town/publicTown'
 
 interface RecordsSectionProps {
-  history: ParcelHistory
-  parcelHrefBase?: string
-  renderAction?: (record: AncestralRecord) => ReactNode
+  records: PublicRecords
+  office: TownOffice
 }
 
-function ParcelLink({ base, parcelId, label }: { base: string; parcelId: string; label: string }) {
+function openFirstNewestFirst(a: RecordRow, b: RecordRow): number {
+  if (a.closed !== b.closed) return a.closed ? 1 : -1
+  return (b.activity ?? '').localeCompare(a.activity ?? '') || a.key.localeCompare(b.key)
+}
+
+function RecordList({ rows }: { rows: readonly RecordRow[] }) {
   return (
-    <Link href={`${base}${parcelId}`} className="tap-target">
-      {label}
-    </Link>
+    <ul className="m-0 list-none p-0">
+      {[...rows].sort(openFirstNewestFirst).map((row) => (
+        <PublicRecordRow key={row.key} row={row} />
+      ))}
+    </ul>
   )
 }
 
-function RecordDetails({
-  record,
-  hrefBase,
-  children,
-}: {
-  record: OwnRecord | AncestralRecord
-  hrefBase: string
-  children?: ReactNode
-}) {
-  const carried = 'carriedFrom' in record ? record.carriedFrom : undefined
-  return (
-    <div className="flex items-start gap-4">
-      {record.thumbnailHref === undefined || record.thumbnailHref === null ? null : (
-        <img
-          src={record.thumbnailHref}
-          alt={`First page of ${record.title}`}
-          width={48}
-          loading="lazy"
-          className="h-16 w-12 shrink-0 overflow-hidden border object-cover object-top text-[0px]"
-        />
-      )}
-      <div className="min-w-0 flex-1">
-        <RecordTitle record={record} />
-        {record.note === undefined || record.note === null ? null : (
-          <p className="text-sm text-muted-foreground">{record.note}</p>
-        )}
-        {carried === undefined ? null : (
-          <p className="text-sm text-muted-foreground">
-            {'Carried forward from parcel '}
-            <ParcelLink base={hrefBase} parcelId={carried.parcelId} label={carried.displayId} />
-          </p>
-        )}
-      </div>
-      <div className="flex shrink-0 flex-wrap items-center justify-end gap-3">
-        <StatusChip status={record.status.chip} label={record.status.label} />
-        {children}
-      </div>
-    </div>
-  )
+function emptyText(office: TownOffice): string {
+  const where = `Older paper files may be at the ${office.officeName}`
+  return `No records on file for this parcel. ${where}${office.phone === '' ? '' : `, ${office.phone}`}.`
 }
 
-function RecordTitle({ record }: { record: OwnRecord | AncestralRecord }) {
-  return (
-    <>
-      {record.href === null ? (
-        <span className="font-semibold">{record.title}</span>
-      ) : (
-        <Link href={record.href} className="font-semibold">
-          {record.title}
-        </Link>
-      )}
-      {record.number === null ? null : (
-        <span className="ml-2 text-muted-foreground">{record.number}</span>
-      )}
-    </>
-  )
-}
-
-function RecordRow({
-  record,
-  hrefBase,
-  children,
-}: {
-  record: OwnRecord | AncestralRecord
-  hrefBase: string
-  children?: ReactNode
-}) {
-  if (record.closed !== true) {
-    return (
-      <li className="border-b py-3 last:border-b-0">
-        <RecordDetails record={record} hrefBase={hrefBase}>
-          {children}
-        </RecordDetails>
-      </li>
-    )
-  }
-  return (
-    <li className="border-b py-2 last:border-b-0">
-      <details>
-        <summary className="flex cursor-pointer items-center gap-3">
-          <span className="min-w-0 flex-1">
-            <RecordTitle record={record} />
-          </span>
-          <StatusChip status={record.status.chip} label={record.status.label} />
-        </summary>
-        <div className="pt-2">
-          <RecordDetails record={record} hrefBase={hrefBase}>
-            {children}
-          </RecordDetails>
-        </div>
-      </details>
-    </li>
-  )
-}
-
-export function RecordsSection({
-  history,
-  renderAction,
-  parcelHrefBase = '/parcels/',
-}: RecordsSectionProps) {
-  const empty = history.own.length === 0 && history.ancestral.length === 0
+export function RecordsSection({ records, office }: RecordsSectionProps) {
+  const empty =
+    records.own.length === 0 && records.ancestral.length === 0 && records.files.length === 0
   return (
     <section aria-labelledby="records-heading">
-      <h2 id="records-heading">Records</h2>
-      {empty ? <p>No records for this parcel are in Chiban yet.</p> : null}
-      {history.own.length === 0 ? null : (
-        <ul>
-          {history.own.map((r) => (
-            <RecordRow key={`${r.kind}:${r.recordId}`} record={r} hrefBase={parcelHrefBase} />
-          ))}
-        </ul>
-      )}
-      {history.ancestral.map((group) => (
-        <div key={group.parcelId} className="mt-4">
+      <SectionHeader
+        id="records-heading"
+        title="Records"
+        lead={
+          empty ? undefined : <p className="m-0 text-muted-foreground">Files open in a new tab.</p>
+        }
+      />
+      {empty ? <p>{emptyText(office)}</p> : null}
+      {records.own.length === 0 ? null : <RecordList rows={records.own} />}
+      {records.ancestral.map((group) => (
+        <div key={group.parcelId} className="mt-6">
           <h3 className="text-base font-semibold">
-            <GroupLabel group={group} hrefBase={parcelHrefBase} />
+            <GroupLabel group={group} hrefBase="/parcels/" />
           </h3>
-          <ul>
-            {group.records.map((r) => (
-              <RecordRow key={`${r.kind}:${r.recordId}`} record={r} hrefBase={parcelHrefBase}>
-                {renderAction?.(r)}
-              </RecordRow>
-            ))}
-          </ul>
+          {group.rows.length === 0 ? null : <RecordList rows={group.rows} />}
+          {group.files.length === 0 ? null : <PublicFileList files={group.files} />}
         </div>
       ))}
+      {records.files.length === 0 ? null : (
+        <div className="mt-6">
+          <h3 className="text-base font-semibold">Files on this parcel</h3>
+          <PublicFileList files={records.files} />
+        </div>
+      )}
     </section>
   )
 }

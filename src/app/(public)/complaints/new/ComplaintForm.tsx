@@ -15,7 +15,7 @@ export function ComplaintForm() {
   return (
     <ActionForm
       action={submitComplaintAction}
-      submitLabel="Send complaint"
+      submitLabel="Send report"
       variant="default"
       checkBeforeSubmit={photosProblem}
       className="flex max-w-xl flex-col gap-5"

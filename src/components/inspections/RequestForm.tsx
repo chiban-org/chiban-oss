@@ -15,7 +15,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { ACCESS_NOTES_MAX, CONTACT_NAME_MAX } from '@/features/inspections/portalRequestForm'
-import { formatCivilDate, formatCivilDateWithWeekday } from '@/lib/formatDate'
+import { formatCivilDate, formatWeekdayMonthDay } from '@/lib/formatDate'
 import type { ActionResult } from '@/server/actionRunner'
 
 export interface RequestFormType {
@@ -155,7 +155,7 @@ export function RequestForm({
             <SelectItem value={NO_PREFERENCE}>No preference</SelectItem>
             {dates.map((d) => (
               <SelectItem key={d} value={d}>
-                {weekdays ? formatCivilDateWithWeekday(d) : formatCivilDate(d)}
+                {weekdays ? formatWeekdayMonthDay(d) : formatCivilDate(d)}
               </SelectItem>
             ))}
           </SelectContent>

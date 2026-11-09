@@ -6,6 +6,7 @@ import { auditLog, complaints, documents, enforcementCases } from '@/db/schema'
 import { databaseContains } from '@/test/databaseSearch'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeParcel, seedParcelWorld } from '@/test/parcels'
+import { settle } from '@/test/testHarness/actions/outcome'
 
 interface MockState {
   db: unknown
@@ -37,8 +38,12 @@ vi.mock('next/headers', () => ({
     ),
 }))
 vi.mock('@/server/getActor', () => ({ getActor: () => Promise.resolve(null) }))
+vi.mock('next/navigation', () => import('@/test/testHarness/actions/mocks/nextNavigation'))
 
-const { submitComplaintAction } = await import('@/app/(public)/complaints/new/actions')
+const { submitComplaintAction: submitAction } = await import(
+  '@/app/(public)/complaints/new/actions'
+)
+const submitComplaintAction = (formData: FormData) => settle(submitAction(formData))
 
 let handle: TestDb
 const photo = readFileSync(
@@ -84,7 +89,11 @@ describe('submitComplaintAction', () => {
         photos: jpeg(),
       }),
     )
-    expect(result).toMatchObject({ ok: true })
+    expect(result).toEqual({
+      redirectsTo: expect.stringMatching(
+        /^\/complaints\/received\?ref=CP-\d{4}-\d{4,}&reply=contact$/,
+      ),
+    })
     const [row] = await handle.db.select().from(complaints)
     expect(row).toMatchObject({
       channel: 'public_named',
@@ -108,7 +117,7 @@ describe('submitComplaintAction', () => {
     const parcelId = await makeParcel(handle.db, [], { siteAddress: '27 Osprey Point Road' })
     expect(
       await submitComplaintAction(form({ locationText: '27 osprey point road ' })),
-    ).toMatchObject({ ok: true })
+    ).toMatchObject({ redirectsTo: expect.stringContaining('/complaints/received?ref=') })
     const [complaint] = await handle.db
       .select()
       .from(complaints)
@@ -123,7 +132,9 @@ describe('submitComplaintAction', () => {
 
   it('accepts a complaint with no contact details at all', async () => {
     const before = (await handle.db.select().from(complaints)).length
-    expect(await submitComplaintAction(form({}))).toMatchObject({ ok: true })
+    expect(await submitComplaintAction(form({}))).toEqual({
+      redirectsTo: expect.stringMatching(/&reply=none$/),
+    })
     expect(await handle.db.select().from(complaints)).toHaveLength(before + 1)
   })
 

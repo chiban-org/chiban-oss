@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   formatCivilDate,
   formatCivilDateShort,
+  formatCivilDateWithWeekday,
   formatInstant,
   formatInstantDate,
   formatInstantOrNever,
@@ -32,6 +33,12 @@ describe('humanizeIsoDates', () => {
 describe('formatCivilDate', () => {
   it('writes the month in words without shifting the day', () => {
     expect(formatCivilDate('2027-05-20')).toBe('May 20, 2027')
+  })
+})
+
+describe('formatCivilDateWithWeekday', () => {
+  it('leads with the weekday without shifting the day', () => {
+    expect(formatCivilDateWithWeekday('2026-11-18')).toBe('Wednesday, November 18, 2026')
   })
 })
 

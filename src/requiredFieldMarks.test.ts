@@ -44,7 +44,7 @@ describe('required marks on raw label forms (scan covers Input, Textarea, Native
   it('finds the raw label forms the scan is meant to protect', () => {
     const names = files.map((f) => path.relative(SRC, f).split(path.sep).join('/'))
     expect(names).toContain('components/inspections/RequestForm.tsx')
-    expect(names).toContain('app/(anonymous)/report-anonymously/page.tsx')
+    expect(names).toContain('app/(anonymous)/report-anonymously/AnonymousReportForm.tsx')
   })
 
   it.each(

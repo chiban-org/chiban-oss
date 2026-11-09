@@ -9,6 +9,7 @@ const KEY_HANDLER_FILES = [
   'components/config/letterBuilder/LetterBuilder.tsx',
   'components/enforcement/SectionCombobox.tsx',
   'components/parcels/picker/ParcelCombobox.tsx',
+  'components/public/MenuDisclosure.tsx',
   'components/staff/search/RecordSearch.tsx',
 ]
 

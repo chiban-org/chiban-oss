@@ -34,7 +34,7 @@ export interface ParcelHistory {
   sourcesRegistered: number
 }
 
-const KIND_WORDS: Record<string, string> = {
+export const LINEAGE_KIND_WORDS: Record<string, string> = {
   subdivision: 'subdivision',
   merge: 'merge',
   lot_line_adjustment: 'lot-line adjustment',
@@ -131,7 +131,7 @@ export async function getParcelHistory(
       })
     if (records.length === 0) continue
     const displayId = display.get(a.parcelId) ?? ''
-    const kind = KIND_WORDS[a.eventKind] ?? a.eventKind
+    const kind = LINEAGE_KIND_WORDS[a.eventKind] ?? a.eventKind
     ancestral.push({
       parcelId: a.parcelId,
       displayId,

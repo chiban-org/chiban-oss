@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
+import { PracticeNotice } from '@/components/PracticeNotice'
 import { env } from '@/config/env'
 import { db } from '@/db/client'
 import { loadDevCheckout } from '@/features/payments/simulatedCheckout'
@@ -29,11 +30,11 @@ export default async function DevCheckoutPage({
   )
   if (view === null) notFound()
   return (
-    <main className="mx-auto max-w-md space-y-4 p-6">
+    <main>
       <h1>Simulated checkout</h1>
-      <p role="note" className="rounded-md border p-3 font-semibold">
+      <PracticeNotice>
         SIMULATED: this page is not connected to a live processor. No card is charged.
-      </p>
+      </PracticeNotice>
       <p>Amount: {formatCents(view.amountCents)}</p>
       {view.status === 'pending' ? (
         <div className="flex flex-wrap gap-3">

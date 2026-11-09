@@ -9,6 +9,7 @@ export interface LatestDecision {
   outcome: DecisionOutcome
   boardKind: string
   votedOn: CivilDate
+  filedOn: CivilDate | null
   conditions: DecisionCondition[]
 }
 
@@ -23,6 +24,7 @@ export async function latestDecisions(
       outcome: boardDecisions.outcome,
       boardKind: boards.kind,
       votedOn: boardDecisions.votedOn,
+      filedOn: boardDecisions.filedOn,
       conditions: boardDecisions.conditions,
     })
     .from(boardDecisions)
@@ -33,7 +35,11 @@ export async function latestDecisions(
   const latest = new Map<string, LatestDecision>()
   for (const row of rows) {
     if (latest.has(row.applicationId)) continue
-    latest.set(row.applicationId, { ...row, votedOn: row.votedOn as CivilDate })
+    latest.set(row.applicationId, {
+      ...row,
+      votedOn: row.votedOn as CivilDate,
+      filedOn: row.filedOn as CivilDate | null,
+    })
   }
   return latest
 }

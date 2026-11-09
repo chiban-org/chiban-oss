@@ -123,3 +123,46 @@ describe('public parcel search', () => {
     expect(await search('')).not.toContain('Enter at least two characters.')
   })
 })
+
+describe('public parcel search results', () => {
+  const search = async (q: string) =>
+    renderToStaticMarkup(await PublicParcelsPage({ searchParams: Promise.resolve({ q }) }))
+
+  it('leads each result with the address, then the map-lot ID and owner', async () => {
+    const html = await search('12 Heron Cove')
+    const address = html.indexOf('12 Heron Cove Road')
+    expect(address).toBeGreaterThan(-1)
+    expect(html.indexOf('Map-lot 007001000000')).toBeGreaterThan(address)
+    expect(html.indexOf('Larkspur Family Trust')).toBeGreaterThan(address)
+  })
+
+  it('lists matches on one street in house-number order', async () => {
+    for (const n of [88, 12, 57, 31, 64]) {
+      await makeParcel(handle.db, [], { siteAddress: `${n} Wren Hollow Road` })
+    }
+    const html = await search('Wren Hollow')
+    const positions = [12, 31, 57, 64, 88].map((n) => html.indexOf(`>${n} Wren Hollow Road<`))
+    expect(positions.every((p) => p > -1)).toBe(true)
+    expect([...positions].sort((a, b) => a - b)).toEqual(positions)
+  })
+
+  it('suggests a shorter search when nothing matches', async () => {
+    const html = await search('Zzyzx Nowhere')
+    expect(html).toContain('No parcels match that search.')
+    expect(html).toContain('only the street name')
+  })
+
+  it('shows a retired parcel with a status chip', async () => {
+    await makeParcel(handle.db, [], { siteAddress: '3 Old Mill Spur', status: 'retired' })
+    const html = await search('Old Mill Spur')
+    expect(html).toMatch(/data-status="neutral"[^>]*>[\s\S]*Retired<\/span>/)
+  })
+})
+
+describe('public parcel page title', () => {
+  it('names the tab after the street address', async () => {
+    const { generateMetadata } = await import('@/app/(public)/parcels/[parcelId]/page')
+    const metadata = await generateMetadata({ params: Promise.resolve({ parcelId }) })
+    expect(metadata.title).toBe('12 Heron Cove Road')
+  })
+})

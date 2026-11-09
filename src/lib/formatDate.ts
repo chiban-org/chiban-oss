@@ -15,6 +15,16 @@ export function formatCivilDateWithWeekday(date: CivilDate | string): string {
   return new Intl.DateTimeFormat('en-US', {
     timeZone: 'UTC',
     weekday: 'long',
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+  }).format(new Date(`${date}T00:00:00Z`))
+}
+
+export function formatWeekdayMonthDay(date: CivilDate | string): string {
+  return new Intl.DateTimeFormat('en-US', {
+    timeZone: 'UTC',
+    weekday: 'long',
     month: 'long',
     day: 'numeric',
   }).format(new Date(`${date}T00:00:00Z`))

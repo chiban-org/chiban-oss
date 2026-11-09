@@ -31,7 +31,7 @@ describe('ComplaintForm', () => {
     const description = screen.getByRole('textbox', { name: /What did you see/ })
     fireEvent.change(location, { target: { value: '   ' } })
     fireEvent.change(description, { target: { value: '   ' } })
-    fireEvent.click(screen.getByRole('button', { name: 'Send complaint' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Send report' }))
     await waitFor(() => expect(location.getAttribute('aria-invalid')).toBe('true'))
     expect(location.closest('[data-slot="field"]')?.textContent).toContain(
       'Enter where the property is.',

@@ -22,7 +22,6 @@ import { seededInspectionDay } from '@/features/demo/seedInspections'
 import { seedMeetingMinutes } from '@/features/demo/seedMinutes'
 import { seedNoticeContacts } from '@/features/demo/seedNoticeContacts'
 import { actorFor } from '@/features/demo/seedPermitSupport'
-import { loadPublicBoardRecords } from '@/features/hearings/publicRecords'
 import { getDayList } from '@/features/inspections/dayList'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
@@ -31,6 +30,7 @@ import { loadRostersView } from '@/features/rosters/rosterView'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { publicMinutesText } from '@/test/publicMeetings'
 import { addDays } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -266,8 +266,7 @@ describe('states the screens tell apart', () => {
       ['approved', '2026-10-28'],
       ['draft', null],
     ])
-    const published = await loadPublicBoardRecords(handle.db, signal)
-    expect(published.minutes.map((m) => m.text)).toEqual([
+    expect(await publicMinutesText(handle.db)).toEqual([
       'Planning Board, October 14, 2026, approved October 28, 2026',
       'Conservation Commission, October 7, 2026, approved October 21, 2026',
       'Planning Board, September 23, 2026, approved October 14, 2026',

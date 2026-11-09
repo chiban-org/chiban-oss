@@ -18,14 +18,14 @@ export default async function AckPage({ params }: { params: Promise<{ token: str
     : null
   if (found === null) {
     return (
-      <main className="mx-auto max-w-md space-y-3 p-6">
+      <main>
         <h1>Alert test</h1>
         <p role="alert">This link is no longer valid.</p>
       </main>
     )
   }
   return (
-    <main className="mx-auto max-w-md space-y-3 p-6">
+    <main>
       <h1>Alert test</h1>
       {found.acknowledgedAt === null ? (
         <>

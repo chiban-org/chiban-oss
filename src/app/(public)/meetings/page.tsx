@@ -1,105 +1,93 @@
 import type { Metadata } from 'next'
-import { NEW_TAB } from '@/components/newTab'
+import { PublicPager } from '@/components/public/PublicPager'
 import { db } from '@/db/client'
-import { loadPublicBoardRecords, type PublicPage } from '@/features/hearings/publicRecords'
+import { loadPastMeetings, loadUpcomingMeetings } from '@/features/hearings/publicMeetings'
+import { loadPublicDecisions } from '@/features/hearings/publicRecords'
+import { townToday } from '@/features/town/today'
+import { DecisionRow, PastRow, UpcomingRow } from './sections'
 
-export const metadata: Metadata = { title: 'Board meetings and decisions' }
+export const metadata: Metadata = { title: 'Meetings' }
 
 export const dynamic = 'force-dynamic'
 
 const TIMEOUT_MS = 10_000
-const LINK = 'tap-target inline-flex items-center'
 const PAGE = /^[1-9]\d{0,5}$/
 
+type Param = string | string[] | undefined
+
 interface Props {
-  searchParams: Promise<{ agendas?: string | string[] }>
+  searchParams: Promise<{ past?: Param; decisions?: Param }>
 }
 
-function pageFrom(value: string | string[] | undefined): number {
+function pageFrom(value: Param): number {
   return typeof value === 'string' && PAGE.test(value) ? Number(value) : 1
 }
 
-function AgendaPager({ page, hasNext }: PublicPage) {
-  if (page === 1 && !hasNext) return null
-  return (
-    <nav aria-label="Agenda pages" className="flex flex-wrap gap-4">
-      {page > 1 ? (
-        <a href={`/meetings?agendas=${page - 1}`} className={LINK}>
-          Newer agendas
-        </a>
-      ) : null}
-      {hasNext ? (
-        <a href={`/meetings?agendas=${page + 1}`} className={LINK}>
-          Older agendas
-        </a>
-      ) : null}
-    </nav>
-  )
+function hrefWith(pages: { past: number; decisions: number }): string {
+  const params = new URLSearchParams()
+  if (pages.past > 1) params.set('past', String(pages.past))
+  if (pages.decisions > 1) params.set('decisions', String(pages.decisions))
+  const query = params.toString()
+  return query === '' ? '/meetings' : `/meetings?${query}`
 }
 
 export default async function PublicMeetingsPage({ searchParams }: Props) {
-  const records = await loadPublicBoardRecords(db, AbortSignal.timeout(TIMEOUT_MS), {
-    agendaPage: pageFrom((await searchParams).agendas),
-  })
+  const params = await searchParams
+  const pages = { past: pageFrom(params.past), decisions: pageFrom(params.decisions) }
+  const signal = AbortSignal.timeout(TIMEOUT_MS)
+  const today = await townToday(db, new Date(), signal)
+  const [upcoming, past, decisions] = await Promise.all([
+    loadUpcomingMeetings(db, today, signal),
+    loadPastMeetings(db, { today, page: pages.past }, signal),
+    loadPublicDecisions(db, { page: pages.decisions }, signal),
+  ])
   return (
-    <main className="space-y-8">
-      <h1>Board meetings and decisions</h1>
-      <section aria-label="Agendas">
-        <h2>Agendas</h2>
-        {records.agendas.length === 0 ? (
-          <p>
-            {records.agendaPage.page === 1
-              ? 'No agendas have been published yet.'
-              : 'No more agendas.'}
-          </p>
-        ) : null}
-        <ul className="list-none space-y-2 p-0">
-          {records.agendas.map((a) => (
-            <li key={a.meetingId}>
-              <a {...NEW_TAB} href={`/api/documents/${a.documentId}`} className={LINK}>
-                {`Agenda: ${a.text}`}
-              </a>
-            </li>
-          ))}
-        </ul>
-        <AgendaPager {...records.agendaPage} />
-      </section>
-      <section aria-label="Minutes">
-        <h2>Minutes</h2>
-        {records.minutes.length === 0 ? <p>No approved minutes have been posted yet.</p> : null}
-        <ul className="list-none space-y-2 p-0">
-          {records.minutes.map((m) => (
-            <li key={m.meetingId}>
-              <a {...NEW_TAB} href={`/api/documents/${m.documentId}`} className={LINK}>
-                {`Minutes: ${m.text}`}
-              </a>
-            </li>
+    <main>
+      <h1>Meetings</h1>
+      <p>
+        Town board meetings are open to the public. Agendas, minutes and notices of decision open in
+        a new tab.
+      </p>
+      <section aria-labelledby="upcoming-heading">
+        <h2 id="upcoming-heading">Upcoming meetings</h2>
+        {upcoming.length === 0 ? <p>No meetings are scheduled yet.</p> : null}
+        <ul className="list-none p-0">
+          {upcoming.map((m) => (
+            <UpcomingRow key={m.meetingId} meeting={m} />
           ))}
         </ul>
       </section>
-      <section aria-label="Decisions">
-        <h2>Decisions</h2>
-        {records.decisions.length === 0 ? <p>No decisions have been filed yet.</p> : null}
-        <ul className="list-none space-y-3 p-0">
-          {records.decisions.map((d) => (
-            <li key={d.decisionId} className="space-y-1">
-              <p className="font-semibold">{d.text}</p>
-              <p>{`Filed ${d.filedText}.`}</p>
-              <div className="flex flex-wrap gap-4">
-                {d.decisionDocumentId === null ? null : (
-                  <a {...NEW_TAB} href={`/api/documents/${d.decisionDocumentId}`} className={LINK}>
-                    Notice of Decision
-                  </a>
-                )}
-                {d.minutesDocumentId === null ? null : (
-                  <a {...NEW_TAB} href={`/api/documents/${d.minutesDocumentId}`} className={LINK}>
-                    Minutes
-                  </a>
-                )}
-              </div>
-            </li>
+      <section aria-labelledby="past-heading">
+        <h2 id="past-heading">Past meetings and minutes</h2>
+        {past.meetings.length === 0 ? <p>No past agendas or minutes are posted yet.</p> : null}
+        <ul className="list-none p-0">
+          {past.meetings.map((m) => (
+            <PastRow key={m.meetingId} meeting={m} />
           ))}
         </ul>
+        <PublicPager
+          label="Past meeting pages"
+          {...past.page}
+          hrefFor={(page) => `${hrefWith({ ...pages, past: page })}#past-heading`}
+          newer="Newer meetings"
+          older="Older meetings"
+        />
+      </section>
+      <section aria-labelledby="decisions-heading">
+        <h2 id="decisions-heading">Decisions</h2>
+        {decisions.decisions.length === 0 ? <p>No decisions have been filed yet.</p> : null}
+        <ul className="list-none p-0">
+          {decisions.decisions.map((d) => (
+            <DecisionRow key={d.decisionId} decision={d} />
+          ))}
+        </ul>
+        <PublicPager
+          label="Decision pages"
+          {...decisions.page}
+          hrefFor={(page) => `${hrefWith({ ...pages, decisions: page })}#decisions-heading`}
+          newer="Newer decisions"
+          older="Older decisions"
+        />
       </section>
     </main>
   )

@@ -172,7 +172,12 @@ describe('anonymous intake handler', () => {
 
   it('sixth post in 15 minutes from one address is 429 and no column anywhere holds the address', async () => {
     for (let i = 0; i < 5; i++) expect((await run(post())).status).toBe(303)
-    expect((await run(post())).status).toBe(429)
+    const limited = await run(post())
+    expect(limited.status).toBe(429)
+    const page = await limited.text()
+    expect(page).toMatch(/<header[\s\S]*<a href="\/"[^>]*>Town of Alder Pond<\/a>[\s\S]*<\/header>/)
+    expect(page).toContain('Too many reports')
+    expect(page).toMatch(/<a href="\/"[^>]*>Go to the home page<\/a>/)
     expect(await databaseContains(handle.db, ADDRESS)).toEqual([])
     expect(await handle.db.select().from(complaints)).toHaveLength(5)
   })
@@ -186,6 +191,9 @@ describe('anonymous intake handler', () => {
   it('cross-origin post is 403', async () => {
     const response = await run(post({}, { origin: 'https://evil.example' }))
     expect(response.status).toBe(403)
+    const page = await response.text()
+    expect(page).toMatch(/<header[\s\S]*<a href="\/"[^>]*>Town of Alder Pond<\/a>[\s\S]*<\/header>/)
+    expect(page).toMatch(/<a href="\/"[^>]*>Go to the home page<\/a>/)
     expect(await handle.db.select().from(complaints)).toHaveLength(0)
   })
 
@@ -267,8 +275,10 @@ describe('anonymous intake handler', () => {
     ['missing location', { location: '' }],
     ['six photos', { photos: [photo(), photo(), photo(), photo(), photo(), photo()] }],
     ['a pdf sent as a photo', { photos: [Buffer.from('%PDF-1.4\nprobe')] }],
-  ])('%s is 400 and stores nothing', async (_name, fields) => {
-    expect((await run(post(fields))).status).toBe(400)
+  ])('%s sends the reporter back to the form with the problem and stores nothing', async (_name, fields) => {
+    const response = await run(post(fields))
+    expect(response.status).toBe(303)
+    expect(response.headers.get('location')).toBe('/report-anonymously?error=invalid')
     expect(await handle.db.select().from(complaints)).toHaveLength(0)
     expect(await handle.db.select().from(enforcementCases)).toHaveLength(0)
   })

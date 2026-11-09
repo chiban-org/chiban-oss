@@ -86,6 +86,11 @@ describe('alert acknowledgement page', () => {
     expect(html).not.toContain('Confirm I received this alert')
   })
 
+  it('lays the page out like the other public pages, not as a centred narrow column', async () => {
+    expect(await render('y'.repeat(43))).toMatch(/^<main>/)
+    expect(await render(token)).toMatch(/^<main>/)
+  })
+
   it('refuses the action without a csrf token and acknowledges nothing', async () => {
     const result = await acknowledgeAlertAction(form({ token, csrf_token: 'wrong' }))
     expect(result.ok).toBe(false)

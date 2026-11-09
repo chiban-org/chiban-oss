@@ -15,7 +15,7 @@ import { inspectionTypeLabel } from '@/features/inspections/siteInfo'
 import { minutesToClock } from '@/features/inspections/zonedTime'
 import { contactDefaults } from '@/features/portal/contactDefaults'
 import { portalInspectionLabel } from '@/features/portal/inspectionLabel'
-import { formatCivilDateWithWeekday } from '@/lib/formatDate'
+import { formatWeekdayMonthDay } from '@/lib/formatDate'
 import { requirePortalContext } from '@/server/requirePortal'
 import { isUuid } from '@/utils/uuid'
 import { portalCancelInspectionAction } from './actions'
@@ -48,7 +48,7 @@ function HistoryItem(props: {
         <StatusChip status={chip} label={label} />
       </div>
       {row.scheduledDate !== null && row.startMinute !== null ? (
-        <p>{`${formatCivilDateWithWeekday(row.scheduledDate)} at ${minutesToClock(row.startMinute)}`}</p>
+        <p>{`${formatWeekdayMonthDay(row.scheduledDate)} at ${minutesToClock(row.startMinute)}`}</p>
       ) : null}
       {row.resultNotes === null ? null : <p>{`Notes: ${row.resultNotes}`}</p>}
       {reinspect ? (

@@ -1,5 +1,6 @@
 'use server'
 
+import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { env } from '@/config/env'
 import { db } from '@/db/client'
@@ -71,9 +72,7 @@ export async function submitComplaintAction(formData: FormData): Promise<ActionR
     new Date(),
     { store: getObjectStore(), photos },
   )
-  if (!result.ok) return { ok: false, error: 'The complaint could not be saved. Try again.' }
-  return {
-    ok: true,
-    message: `Complaint received. Reference ${result.value.number}. Town staff will review it.`,
-  }
+  if (!result.ok) return { ok: false, error: 'The report could not be saved. Try again.' }
+  const reply = v.email === null && v.phone === null ? 'none' : 'contact'
+  redirect(`/complaints/received?ref=${encodeURIComponent(result.value.number)}&reply=${reply}`)
 }

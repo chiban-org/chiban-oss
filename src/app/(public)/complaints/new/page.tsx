@@ -20,7 +20,7 @@ export default async function NewComplaintPage() {
     AbortSignal.timeout(TIMEOUT_MS),
   )
   return (
-    <main className="space-y-4">
+    <main>
       <h1>Report a possible violation</h1>
       <p className="max-w-prose">
         Tell the town about a possible zoning or building code violation. Town staff review every

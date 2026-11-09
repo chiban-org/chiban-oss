@@ -1,8 +1,14 @@
 import { and, eq, inArray, or, type SQL, sql } from 'drizzle-orm'
 import type { Db, DbOrTx } from '@/db/client'
-import { applications, ledgerEntries, paymentAttempts, processorAccounts } from '@/db/schema'
+import {
+  applications,
+  ledgerEntries,
+  paymentAttempts,
+  processorAccounts,
+  receipts,
+} from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
-import { buildReceiptPdf } from '@/features/ledger/receiptPdf'
+import { buildReceiptPdf, type ReceiptLine, receiptLines } from '@/features/ledger/receiptPdf'
 import { seesWholeLedger } from '@/features/ledger/visibility'
 import { NOT_FOUND, type PdfResponseData, pdfOk } from '@/features/pdf/pdfResponse'
 import { hasFullRecordAccess } from '@/features/projects/access'
@@ -45,6 +51,8 @@ export interface PaymentReturnDetails {
   applicationNumbers: string[]
   applications: { id: string; number: string }[]
   receiptId: string | null
+  receiptNumber: string | null
+  lines: ReceiptLine[]
 }
 
 const EMPTY: PaymentReturnDetails = {
@@ -54,16 +62,29 @@ const EMPTY: PaymentReturnDetails = {
   applicationNumbers: [],
   applications: [],
   receiptId: null,
+  receiptNumber: null,
+  lines: [],
 }
 
-async function receiptOf(db: DbOrTx, attemptId: string): Promise<string | null> {
+const NO_RECEIPT = { receiptId: null, receiptNumber: null, lines: [] }
+
+async function receiptOf(
+  db: DbOrTx,
+  attemptId: string,
+): Promise<Pick<PaymentReturnDetails, 'receiptId' | 'receiptNumber' | 'lines'>> {
   const [entry] = await db
-    .select({ receiptId: ledgerEntries.receiptId })
+    .select({ entryId: ledgerEntries.id, receiptId: receipts.id, number: receipts.number })
     .from(ledgerEntries)
+    .innerJoin(receipts, eq(receipts.id, ledgerEntries.receiptId))
     .where(
       and(eq(ledgerEntries.paymentAttemptId, attemptId), eq(ledgerEntries.entryType, 'payment')),
     )
-  return entry?.receiptId ?? null
+  if (entry === undefined) return NO_RECEIPT
+  return {
+    receiptId: entry.receiptId,
+    receiptNumber: entry.number,
+    lines: await receiptLines(db, entry.entryId),
+  }
 }
 
 export async function paymentReturnDetails(
@@ -106,7 +127,7 @@ export async function paymentReturnDetails(
     amountCents: attempt.amountCents,
     applicationNumbers: numbers.map((n) => n.number),
     applications: numbers,
-    receiptId: status === 'received' ? await receiptOf(db, attemptId) : null,
+    ...(status === 'received' ? await receiptOf(db, attemptId) : NO_RECEIPT),
   }
 }
 
