@@ -144,8 +144,7 @@ describe('minutes actions', () => {
       await PublicMeetingsPage({ searchParams: Promise.resolve({}) }),
     )
     expect(publicHtml).toContain(`href="/api/documents/${documentId}"`)
-    expect(visibleText(publicHtml)).toContain(
-      'Minutes: Planning Board, April 8, 2026, approved April 22, 2026',
-    )
+    expect(publicHtml).toContain('aria-label="Minutes: Planning Board, April 8, 2026"')
+    expect(visibleText(publicHtml)).toContain('Minutes, approved April 22, 2026')
   })
 })
