@@ -51,7 +51,7 @@ export default async function PublicMeetingsPage({ searchParams }: Props) {
       <section aria-labelledby="upcoming-heading">
         <h2 id="upcoming-heading">Upcoming meetings</h2>
         {upcoming.length === 0 ? <p>No meetings are scheduled yet.</p> : null}
-        <ul className="m-0 mt-4 list-none p-0">
+        <ul className="list-none p-0">
           {upcoming.map((m) => (
             <UpcomingRow key={m.meetingId} meeting={m} />
           ))}
@@ -60,7 +60,7 @@ export default async function PublicMeetingsPage({ searchParams }: Props) {
       <section aria-labelledby="past-heading">
         <h2 id="past-heading">Past meetings and minutes</h2>
         {past.meetings.length === 0 ? <p>No past agendas or minutes are posted yet.</p> : null}
-        <ul className="m-0 mt-4 list-none p-0">
+        <ul className="list-none p-0">
           {past.meetings.map((m) => (
             <PastRow key={m.meetingId} meeting={m} />
           ))}
@@ -76,7 +76,7 @@ export default async function PublicMeetingsPage({ searchParams }: Props) {
       <section aria-labelledby="decisions-heading">
         <h2 id="decisions-heading">Decisions</h2>
         {decisions.decisions.length === 0 ? <p>No decisions have been filed yet.</p> : null}
-        <ul className="m-0 mt-4 list-none p-0">
+        <ul className="list-none p-0">
           {decisions.decisions.map((d) => (
             <DecisionRow key={d.decisionId} decision={d} />
           ))}

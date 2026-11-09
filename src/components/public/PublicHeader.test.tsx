@@ -103,10 +103,11 @@ describe('PublicHeader', () => {
     expect(panel?.contains(accountNav())).toBe(true)
     fireEvent.click(button)
     expect(button.getAttribute('aria-expanded')).toBe('true')
+    const parcels = screen.getByRole('link', { name: 'Parcels' })
     act(() => {
-      screen.getByRole('link', { name: 'Parcels' }).focus()
+      parcels.focus()
     })
-    fireEvent.keyDown(document, { key: 'Escape' })
+    fireEvent.keyDown(parcels, { key: 'Escape' })
     expect(button.getAttribute('aria-expanded')).toBe('false')
     expect(document.activeElement).toBe(button)
   })

@@ -56,7 +56,7 @@ export function ParcelSearchResults({
         {hits.length === 1 ? '1 parcel' : `${hits.length} parcels`}
       </h2>
       <MoreMatchesNotice more={more} />
-      <ul className="m-0 mt-4 list-none p-0">
+      <ul className="list-none p-0">
         {hits.map((hit) => (
           <HitRow key={hit.parcelId} hit={hit} />
         ))}

@@ -2,7 +2,7 @@
 
 import { Menu, X } from 'lucide-react'
 import { usePathname } from 'next/navigation'
-import { type ReactNode, useEffect, useId, useRef, useState } from 'react'
+import { type KeyboardEvent, type ReactNode, useId, useRef, useState } from 'react'
 import { cn } from '@/lib/utils'
 
 export function MenuDisclosure({ children }: { children: ReactNode }) {
@@ -15,18 +15,13 @@ export function MenuDisclosure({ children }: { children: ReactNode }) {
     setOpenedAt(pathname)
     setOpen(false)
   }
-  useEffect(() => {
-    if (!open) return
-    const onKey = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return
-      setOpen(false)
-      button.current?.focus()
-    }
-    document.addEventListener('keydown', onKey)
-    return () => document.removeEventListener('keydown', onKey)
-  }, [open])
+  const onKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
+    if (!open || event.key !== 'Escape') return
+    setOpen(false)
+    button.current?.focus()
+  }
   return (
-    <>
+    <div className="contents" onKeyDown={onKeyDown}>
       <button
         ref={button}
         type="button"
@@ -51,6 +46,6 @@ export function MenuDisclosure({ children }: { children: ReactNode }) {
       >
         {children}
       </div>
-    </>
+    </div>
   )
 }

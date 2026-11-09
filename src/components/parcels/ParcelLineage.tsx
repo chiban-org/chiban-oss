@@ -13,7 +13,7 @@ function LineageList({ id, title, refs }: { id: string; title: string; refs: Lin
   return (
     <section aria-labelledby={id}>
       <h2 id={id}>{title}</h2>
-      <ul className="m-0 list-none p-0">
+      <ul className="list-none p-0">
         {refs.map((ref) => (
           <li key={`${ref.eventId}${ref.parcelId}`} className="record-item pb-2">
             {`${kindLabel(ref.eventKind)} effective ${formatCivilDate(ref.effectiveDate)}: `}
