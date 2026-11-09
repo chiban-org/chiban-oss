@@ -10,6 +10,7 @@ import { parseForm } from '@/server/formInput'
 
 export interface MagicLinkState {
   message: string | null
+  sentTo?: string
 }
 
 const emailSchema = z.object({ email: emailAddress('an email address') })
@@ -33,5 +34,8 @@ export async function requestMagicLinkAction(
     next.success ? next.data : undefined,
   )
   if (!result.ok) return { message: 'Too many requests. Try again in a few minutes.' }
-  return { message: 'If that address can sign in, a link is on its way. It expires in 15 minutes.' }
+  return {
+    message: 'If that address can sign in, a link is on its way. It expires in 15 minutes.',
+    sentTo: parsed.value.email,
+  }
 }

@@ -1,10 +1,11 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { magicLinks } from '@/db/schema'
+import { magicLinks, projectParties, projects } from '@/db/schema'
 import { requestMagicLink, resetMagicLinkLimiter } from '@/features/auth/magicLink'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeUser } from '@/test/factories'
+import { makeParcel } from '@/test/parcels'
 
 interface MockState {
   db: unknown
@@ -130,7 +131,7 @@ describe('magic link verify page', () => {
   it('POST with a valid CSRF token signs in', async () => {
     const token = await tokenFor('signer@alderpond.example')
     const target = await redirectOf(confirmMagicLinkAction(form(token, 'tok')))
-    expect(target).toBe('/')
+    expect(target).toBe('/portal')
     expect(state.setCookies.map((c) => c.name)).toEqual(['chiban_sid'])
     expect(await consumed()).toEqual([true])
   })
@@ -148,6 +149,27 @@ describe('magic link verify page', () => {
     expect(await redirectOf(confirmMagicLinkAction(form(asked, 'tok')))).toBe('/parcels')
   })
 
+  it('POST sends a contractor with only contractor projects to the contractor page', async () => {
+    const contractorId = await makeUser(handle.db, {
+      email: 'builder@alderpond.example',
+      role: 'contractor',
+    })
+    const parcelId = await makeParcel(handle.db, [])
+    const [project] = await handle.db
+      .insert(projects)
+      .values({ parcelId, title: 'Barn', createdBy: contractorId })
+      .returning({ id: projects.id })
+    await handle.db.insert(projectParties).values({
+      projectId: project?.id ?? '',
+      userId: contractorId,
+      name: 'Builder',
+      role: 'contractor',
+      addedBy: contractorId,
+    })
+    const token = await tokenFor('builder@alderpond.example')
+    expect(await redirectOf(confirmMagicLinkAction(form(token, 'tok')))).toBe('/portal/contractor')
+  })
+
   it('POST without the CSRF token does not consume the link', async () => {
     const token = await tokenFor('noscrf@alderpond.example')
     const target = await redirectOf(confirmMagicLinkAction(form(token, null)))
@@ -162,13 +184,13 @@ describe('magic link verify page', () => {
   })
   it('a repeat submit of an already consumed link by the signed-in user still lands home', async () => {
     const token = await tokenFor('twice@alderpond.example')
-    expect(await redirectOf(confirmMagicLinkAction(form(token, 'tok')))).toBe('/')
+    expect(await redirectOf(confirmMagicLinkAction(form(token, 'tok')))).toBe('/portal')
     const userId = await makeUser(handle.db, {
       email: 'twice-actor@alderpond.example',
       role: 'applicant',
     })
     state.actor = { userId, kind: 'public', roles: ['applicant'] }
-    expect(await redirectOf(confirmMagicLinkAction(form(token, 'tok')))).toBe('/')
+    expect(await redirectOf(confirmMagicLinkAction(form(token, 'tok')))).toBe('/portal')
   })
 
   it('a link that cannot start a session is not consumed', async () => {
