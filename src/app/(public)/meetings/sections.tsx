@@ -9,12 +9,38 @@ import { formatCivilDate, formatCivilDateWithWeekday } from '@/lib/formatDate'
 
 const LINK = 'tap-target inline-flex items-center'
 
-function DocLink({ documentId, children }: { documentId: string; children: ReactNode }) {
+function DocLink({
+  documentId,
+  name,
+  children,
+}: {
+  documentId: string
+  name?: string
+  children: ReactNode
+}) {
   return (
-    <a {...NEW_TAB} href={`/api/documents/${documentId}`} className={LINK}>
+    <a {...NEW_TAB} href={`/api/documents/${documentId}`} aria-label={name} className={LINK}>
       {children}
     </a>
   )
+}
+
+function meetingName(kind: string, meeting: { boardShortName: string; meetingDate: string }) {
+  return `${kind}: ${meeting.boardShortName}, ${formatCivilDate(meeting.meetingDate)}`
+}
+
+function UpcomingAgenda({ meeting }: { meeting: PublicUpcomingMeeting }) {
+  if (meeting.agendaDocumentId !== null) {
+    return (
+      <span>
+        <DocLink documentId={meeting.agendaDocumentId} name={meetingName('Agenda', meeting)}>
+          Agenda
+        </DocLink>
+      </span>
+    )
+  }
+  if (meeting.cancelled) return null
+  return <span className="text-muted-foreground">Agenda not posted yet</span>
 }
 
 function Row({ children }: { children: ReactNode }) {
@@ -30,13 +56,7 @@ export function UpcomingRow({ meeting }: { meeting: PublicUpcomingMeeting }) {
         {meeting.cancelled ? <StatusChip status="neutral" label="Cancelled" /> : null}
       </div>
       <span>{`${formatCivilDateWithWeekday(meeting.meetingDate)} at ${formatMinuteOfDay(meeting.startsAtMinute)}${where}`}</span>
-      {meeting.cancelled ? null : meeting.agendaDocumentId === null ? (
-        <span className="text-muted-foreground">Agenda not posted yet</span>
-      ) : (
-        <span>
-          <DocLink documentId={meeting.agendaDocumentId}>Agenda</DocLink>
-        </span>
-      )}
+      <UpcomingAgenda meeting={meeting} />
     </Row>
   )
 }
@@ -49,12 +69,14 @@ export function PastRow({ meeting }: { meeting: PublicPastMeeting }) {
       </span>
       <div className="flex flex-wrap items-center gap-x-6">
         {meeting.agendaDocumentId === null ? null : (
-          <DocLink documentId={meeting.agendaDocumentId}>Agenda</DocLink>
+          <DocLink documentId={meeting.agendaDocumentId} name={meetingName('Agenda', meeting)}>
+            Agenda
+          </DocLink>
         )}
         {meeting.minutes === null ? (
           <span className="text-muted-foreground">Minutes not approved yet</span>
         ) : (
-          <DocLink documentId={meeting.minutes.documentId}>
+          <DocLink documentId={meeting.minutes.documentId} name={meetingName('Minutes', meeting)}>
             {meeting.minutes.approvedOn === null
               ? 'Minutes'
               : `Minutes, approved ${formatCivilDate(meeting.minutes.approvedOn)}`}
