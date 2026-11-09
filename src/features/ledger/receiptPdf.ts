@@ -1,5 +1,5 @@
 import { eq } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import type { Db, DbOrTx } from '@/db/client'
 import {
   applications,
   enforcementCases,
@@ -36,7 +36,7 @@ function kindLabel(a: Allocation): string | null {
   return a.targetKind === 'overpayment' ? 'Overpayment held' : null
 }
 
-async function feeLabel(db: Db, a: Allocation, labels: LabelCache): Promise<string> {
+async function feeLabel(db: DbOrTx, a: Allocation, labels: LabelCache): Promise<string> {
   const applicationId = a.applicationId ?? ''
   if (!labels.has(applicationId)) {
     const lines = await assessedLines(db, applicationId)
@@ -50,7 +50,7 @@ async function feeLabel(db: Db, a: Allocation, labels: LabelCache): Promise<stri
   )
 }
 
-async function fineCaseNumber(db: Db, a: Allocation): Promise<string> {
+async function fineCaseNumber(db: DbOrTx, a: Allocation): Promise<string> {
   if (a.fineId === null) return ''
   const [row] = await db
     .select({ number: enforcementCases.number })
@@ -60,34 +60,58 @@ async function fineCaseNumber(db: Db, a: Allocation): Promise<string> {
   return row?.number ?? ''
 }
 
-async function lineRows(
-  db: Db,
+export interface ReceiptLine {
+  reference: string
+  label: string
+  amountCents: number
+}
+
+export async function receiptLines(
+  db: DbOrTx,
   entryId: string,
   scope?: { applicationId: string },
-): Promise<{ rows: string[][]; totalCents: number }> {
+): Promise<ReceiptLine[]> {
   const allocations = await db
     .select()
     .from(ledgerAllocations)
     .where(eq(ledgerAllocations.entryId, entryId))
-  const rows: string[][] = []
+  const lines: ReceiptLine[] = []
   const labels: LabelCache = new Map()
-  let totalCents = 0
   for (const a of allocations) {
     const outOfScope =
       scope !== undefined && a.applicationId !== null && a.applicationId !== scope.applicationId
     if (outOfScope) continue
-    totalCents += a.amountCents
     if (a.applicationId === null) {
-      rows.push([await fineCaseNumber(db, a), kindLabel(a) ?? '', formatCents(a.amountCents)])
+      lines.push({
+        reference: await fineCaseNumber(db, a),
+        label: kindLabel(a) ?? '',
+        amountCents: a.amountCents,
+      })
       continue
     }
     const [app] = await db
       .select({ number: applications.number })
       .from(applications)
       .where(eq(applications.id, a.applicationId))
-    rows.push([app?.number ?? '', await feeLabel(db, a, labels), formatCents(a.amountCents)])
+    lines.push({
+      reference: app?.number ?? '',
+      label: await feeLabel(db, a, labels),
+      amountCents: a.amountCents,
+    })
   }
-  return { rows, totalCents }
+  return lines
+}
+
+async function lineRows(
+  db: Db,
+  entryId: string,
+  scope?: { applicationId: string },
+): Promise<{ rows: string[][]; totalCents: number }> {
+  const lines = await receiptLines(db, entryId, scope)
+  return {
+    rows: lines.map((l) => [l.reference, l.label, formatCents(l.amountCents)]),
+    totalCents: lines.reduce((sum, l) => sum + l.amountCents, 0),
+  }
 }
 
 export async function receiptDocumentInput(

@@ -4,6 +4,7 @@ import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { paymentAttempts } from '@/db/schema'
 import { resolveDevCheckout } from '@/features/payments/simulatedCheckout'
 import { startOnlinePayment } from '@/features/payments/startPayment'
+import { publishTownProfileSection } from '@/features/town/profileSettings'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { setupTradeWorld, submittedTrade } from '@/test/ledgerFixtures'
 import { staffActor } from '@/test/parcels'
@@ -43,6 +44,23 @@ beforeAll(async () => {
   payer = world.applicant
   stranger = await staffActor(handle.db, 'applicant')
   await setupPayments(handle.db, world.admin, 'simulated', 'sim_town')
+  await publishTownProfileSection(
+    handle.db,
+    world.admin,
+    {
+      section: 'profile',
+      slice: {
+        officeName: 'Land Use Office',
+        addressLines: ['1 Main Street'],
+        phone: '603-555-0100',
+        email: '',
+        website: '',
+        officeHours: '',
+        logo: null,
+      },
+    },
+    signal,
+  )
   const started = await startOnlinePayment(
     handle.db,
     world.applicant,
@@ -73,6 +91,11 @@ describe('payment return page', () => {
     expect(html).not.toContain('/payments/receipt/')
   })
 
+  it('links back to the application while the processor has not confirmed', async () => {
+    const html = await render()
+    expect(html).toContain(`href="/portal/applications/${applicationId}"`)
+  })
+
   it('after a simulated capture shows the notice, amount, application, and receipt link', async () => {
     await resolveDevCheckout(handle.db, processorObjectId, 'approve', signal, deps)
     const html = await render()
@@ -82,6 +105,15 @@ describe('payment return page', () => {
     expect(html).toMatch(/EL-\d{4}-\d{4}/)
     expect(html).toContain(`/payments/receipt/${attemptId}`)
     expect(html).toContain(`href="/portal/applications/${applicationId}"`)
+  })
+
+  it('once received shows the receipt number and each fee line, the convenience fee included', async () => {
+    const html = await render()
+    expect(html).toMatch(/R-\d{4}-\d{4,}/)
+    expect(html).toContain('Convenience fee')
+    expect(html).toContain('data-slot="practice-notice"')
+    expect(html).not.toContain('bg-highlight')
+    expect(html).not.toContain('max-w-md')
   })
 
   it('a declined payment links back to the application to try again', async () => {
@@ -117,5 +149,14 @@ describe('payment return page access', () => {
     expect(html).toContain('Payment not found')
     expect(html).not.toContain('/payments/receipt/')
     expect(html).not.toContain('$46.35')
+  })
+
+  it('explains a missing payment to a signed-out visitor and offers sign in back to this page', async () => {
+    state.actor = null
+    const html = await render()
+    state.actor = payer
+    expect(html).toContain(`href="/sign-in?next=%2Fpayments%2Freturn%2F${attemptId}"`)
+    expect(html).toContain('Your application page shows every payment.')
+    expect(html).toContain('603-555-0100')
   })
 })
