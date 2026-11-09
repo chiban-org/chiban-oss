@@ -55,6 +55,10 @@ export function processingTimeSheet(
       'Median days complete to decision',
       'Decided on time',
       'Decided late',
+      'Decided',
+      'Decided not issued',
+      'Median days received to decision',
+      'P90 days received to decision',
       ...columns.map((c) => c.label),
     ],
     ...rows.map((r) => [
@@ -65,6 +69,10 @@ export function processingTimeSheet(
       oneDecimal(r.medianCompleteToDecision),
       r.decidedOnTime,
       r.decidedLate,
+      r.decided,
+      r.decidedNotIssued,
+      oneDecimal(r.medianReceivedToDecision),
+      oneDecimal(r.p90ReceivedToDecision),
       ...columns.map((c) => fieldCell(c, r.fields)),
     ]),
   ]
