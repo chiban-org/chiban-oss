@@ -55,3 +55,25 @@ describe('a clock the daily job has marked overdue', () => {
     ).toEqual([1])
   })
 })
+
+describe('the upcoming deadlines list', () => {
+  it('leaves out applications whose next deadline has already passed', async () => {
+    await lateDecision()
+    const onTime = await makeApplication(handle.db, world, {
+      state: 'under_review',
+      facts: { classification: 'residential', dwellingUnits: 1, afterTheFact: false },
+    })
+    await handle.db.transaction((tx) =>
+      startClocksFor(tx, onTime.applicationId, 'application_completed', d('2027-03-25'), signal),
+    )
+    const queue = await listWorkQueue(
+      handle.db,
+      world.staff,
+      { filters: {}, limit: 25, upcomingOnly: true },
+      signal,
+      NOW,
+    )
+    expect(queue.rows.map((r) => r.applicationId)).toEqual([onTime.applicationId])
+    expect(queue.rows[0]?.dueStatus).not.toBe('overdue')
+  })
+})

@@ -34,7 +34,12 @@ export async function loadClerkSection(ctx: HomeContext): Promise<HomeSection | 
       ctx.today,
       ctx.signal,
     ),
-    listWorkQueue(ctx.db, ctx.actor, { filters: {}, limit: DUE_SOON }, ctx.signal),
+    listWorkQueue(
+      ctx.db,
+      ctx.actor,
+      { filters: {}, limit: DUE_SOON, upcomingOnly: true },
+      ctx.signal,
+    ),
   ])
   const links: HomeLink[] = [{ label: 'Open applications', href: APPLICATIONS }]
   if (mayOpen('/staff/counter', ctx.viewer)) {

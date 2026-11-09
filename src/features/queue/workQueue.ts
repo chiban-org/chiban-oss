@@ -25,6 +25,7 @@ import {
   type QueueSortKey,
 } from '@/features/queue/queueParams'
 import {
+  EARLIEST_DUE,
   FEES_DUE,
   FILING_DUE,
   NEXT_DUE,
@@ -168,13 +169,16 @@ export async function listWorkQueue(
     sort?: SortState<QueueSortKey>
     limit: number
     cursor?: string
+    upcomingOnly?: boolean
   },
   signal: AbortSignal,
   now: Date = new Date(),
 ): Promise<WorkQueuePage> {
   signal.throwIfAborted()
   const today = await townToday(db, now, signal)
-  const where = queueWhere(actor, input.filters, today)
+  const filtered = queueWhere(actor, input.filters, today)
+  const where =
+    input.upcomingOnly === true ? and(filtered, sql`${EARLIEST_DUE} >= ${today}::date`) : filtered
   const sort = input.sort ?? defaultSort(QUEUE_SORT)
   const offset = Math.max(0, Number(input.cursor ?? '0') || 0)
   const [count] = await db.select({ n: sql<number>`count(*)::int` }).from(applications).where(where)

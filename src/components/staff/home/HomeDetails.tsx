@@ -15,14 +15,14 @@ function Deadlines({ rows }: { rows: WorkQueueRow[] }) {
   return (
     <section aria-label="Next deadlines">
       <h3>Next deadlines</h3>
-      {rows.length === 0 ? <p>No application has a clock running.</p> : null}
+      {rows.length === 0 ? <p>No deadline is coming up.</p> : null}
       <ul className="divide-y">
         {rows.map((row) => (
           <li
             key={row.applicationId}
-            className="grid grid-cols-1 items-center justify-items-start gap-x-4 gap-y-1 py-3 sm:grid-cols-[minmax(10rem,1fr)_auto_12rem] sm:justify-items-stretch"
+            className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2 py-3"
           >
-            <span className="flex flex-col">
+            <span className="flex min-w-0 flex-col items-start gap-1">
               <Link
                 href={`/staff/applications/${row.applicationId}`}
                 className="whitespace-nowrap font-semibold"
@@ -30,20 +30,20 @@ function Deadlines({ rows }: { rows: WorkQueueRow[] }) {
                 {row.number}
               </Link>
               <span className="text-sm text-muted-foreground">{row.typeLabel}</span>
+              <ApplicationStatusChip
+                state={row.state}
+                substep={row.substep}
+                substepLabel={row.substepLabel}
+              />
             </span>
-            <ApplicationStatusChip
-              state={row.state}
-              substep={row.substep}
-              substepLabel={row.substepLabel}
-            />
-            <span className="whitespace-nowrap text-sm sm:text-right">
-              <span
-                className={
-                  row.dueStatus === 'overdue' ? 'attention font-semibold' : 'text-muted-foreground'
-                }
-              >
-                {dueText(row)}
-              </span>
+            <span
+              className={
+                row.dueStatus === 'overdue'
+                  ? 'attention whitespace-nowrap text-sm font-semibold'
+                  : 'whitespace-nowrap text-sm text-muted-foreground'
+              }
+            >
+              {dueText(row)}
             </span>
           </li>
         ))}
