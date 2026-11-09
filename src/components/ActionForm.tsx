@@ -33,6 +33,7 @@ interface ActionFormProps {
   submitAccessibleLabel?: string
   alternate?: AlternateSubmit
   variant?: 'default' | 'outline' | 'destructive'
+  submitNote?: string
   className?: string
   compact?: boolean
   checkBeforeSubmit?: (form: HTMLFormElement) => string | null
@@ -53,6 +54,7 @@ export function ActionForm({
   submitAccessibleLabel,
   alternate,
   variant = 'outline',
+  submitNote,
   className,
   compact = false,
   checkBeforeSubmit,
@@ -157,6 +159,9 @@ export function ActionForm({
             disabled={busy || !hydrated || submitDisabled}
             pending={busy}
           />
+          {submitNote === undefined ? null : (
+            <p className="m-0 text-muted-foreground">{submitNote}</p>
+          )}
           <p
             id={messageId}
             role="status"

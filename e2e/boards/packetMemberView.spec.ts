@@ -39,11 +39,11 @@ test.describe
             return row.sent_at !== null
           })
           .toBe(true)
-        const packet = await db.one<{ title: string }>(
-          'select title from board_packets where meeting_id = $1',
+        const packet = await db.one<{ short_name: string }>(
+          'select b.short_name from board_packets p join boards b on b.id = p.board_id where p.meeting_id = $1',
           [meeting.meetingId],
         )
-        packetTitle = packet.title
+        packetTitle = `${packet.short_name} packet`
       })
     })
 
@@ -52,7 +52,8 @@ test.describe
 
       test('opens the packet from the meeting list and sees no staff forms', async ({ page }) => {
         await page.goto('/board')
-        await expect(page.getByRole('heading', { level: 1, name: 'Board meetings' })).toBeVisible()
+        await expect(page.getByRole('heading', { level: 1, name: 'Your board' })).toBeVisible()
+        await expect(page.getByText(meeting.spec.location).first()).toBeVisible()
         await page.goto(`/board/meetings/${meeting.meetingId}`)
         await expect(page.getByRole('heading', { level: 1 })).toHaveText(packetTitle)
         await expect(page.locator('main form')).toHaveCount(0)

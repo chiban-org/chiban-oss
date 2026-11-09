@@ -117,7 +117,7 @@ describe('findings from the packet review', () => {
       .where(eq(boardMeetings.id, flow.meetingId))
     expect(await openPacket(handle.db, token, new Date(), signal)).toEqual({
       ok: false,
-      error: 'invalid',
+      error: { cancelled: expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/) },
     })
   })
 

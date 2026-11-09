@@ -14,7 +14,12 @@ import { requireCapability } from '@/features/authz/capabilities'
 import { packetDocument } from '@/features/boards/packetDocument'
 import { hashPacketToken, issuePacketLink } from '@/features/boards/packetLinkIssue'
 import { sendablePacket, stampSent } from '@/features/boards/packetSend'
-import { loadPacketView, type PacketView, townDateOf } from '@/features/boards/packetView'
+import {
+  loadPacketView,
+  type PacketReaderView,
+  type PacketView,
+  townDateOf,
+} from '@/features/boards/packetView'
 import type { MailTransport } from '@/features/mail/transport'
 import type { StoredObject } from '@/features/storage/delivery'
 import type { CivilDate } from '@/types/civilDate'
@@ -102,23 +107,28 @@ export async function revokePacketLink(
   return row === undefined ? err('not_found') : ok({ packetId: row.packetId })
 }
 
+export type LinkRefusal = 'invalid' | 'expired' | 'revoked' | { cancelled: CivilDate }
+
 async function resolveLink(
   db: Db,
   token: string,
   now: Date,
-): Promise<Result<typeof boardPacketLinks.$inferSelect, 'invalid' | 'expired'>> {
+): Promise<Result<typeof boardPacketLinks.$inferSelect, LinkRefusal>> {
   const [row] = await db
-    .select({ link: boardPacketLinks, status: boardMeetings.status })
+    .select({
+      link: boardPacketLinks,
+      status: boardMeetings.status,
+      meetingDate: boardPackets.meetingDate,
+    })
     .from(boardPacketLinks)
     .innerJoin(boardPackets, eq(boardPackets.id, boardPacketLinks.packetId))
     .leftJoin(boardMeetings, eq(boardMeetings.id, boardPackets.meetingId))
     .where(eq(boardPacketLinks.tokenHash, hashPacketToken(token)))
-  const link = row?.link
-  if (link === undefined || link.revokedAt !== null || row?.status === 'cancelled') {
-    return err('invalid')
-  }
-  if (link.expiresAt.getTime() <= now.getTime()) return err('expired')
-  return ok(link)
+  if (row === undefined) return err('invalid')
+  if (row.status === 'cancelled') return err({ cancelled: row.meetingDate as CivilDate })
+  if (row.link.revokedAt !== null) return err('revoked')
+  if (row.link.expiresAt.getTime() <= now.getTime()) return err('expired')
+  return ok(row.link)
 }
 
 export async function openPacket(
@@ -126,7 +136,7 @@ export async function openPacket(
   token: string,
   now: Date,
   signal: AbortSignal,
-): Promise<Result<PacketView, 'invalid' | 'expired'>> {
+): Promise<Result<PacketReaderView, LinkRefusal>> {
   signal.throwIfAborted()
   const resolved = await resolveLink(db, token, now)
   if (!resolved.ok) return err(resolved.error)
@@ -139,7 +149,7 @@ export async function openPacket(
   return ok(view)
 }
 
-export type PacketVersionError = 'invalid' | 'expired' | 'not_found' | { withdrawnOn: CivilDate }
+export type PacketVersionError = LinkRefusal | 'not_found' | { withdrawnOn: CivilDate }
 
 export async function openPacketVersion(
   db: Db,

@@ -67,7 +67,9 @@ test.describe
         await requests.getByRole('link', { name: new RegExp(APPLICATION) }).click()
         await expect(page).toHaveURL(`/board/comments/${assignmentId}`)
         await expect(page.getByRole('heading', { level: 1 })).toContainText(APPLICATION)
-        await expect(page.getByText(`Sent to the ${ZBA} for comment.`)).toBeVisible()
+        await expect(page.getByRole('region', { name: 'About this request' })).toContainText(
+          'Zoning Board of Adjustment',
+        )
         const comments = page.getByRole('region', { name: 'Comments' })
         const submit = comments.getByRole('button', { name: 'Post comment' })
         await expect(submit).toBeEnabled()
@@ -78,7 +80,7 @@ test.describe
         )
         await page.reload()
         await expect(page.getByRole('region', { name: 'Comments' })).toContainText(comment)
-        await expect(page.getByText('Comments received')).toBeVisible()
+        await expect(page.getByText(/^Your board commented \(/)).toBeVisible()
       })
     })
 

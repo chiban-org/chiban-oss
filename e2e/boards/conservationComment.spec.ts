@@ -57,7 +57,10 @@ test.describe
         const requests = page.getByRole('region', { name: 'Sent to your board for comment' })
         await requests.getByRole('link', { name: new RegExp(APPLICATION) }).click()
         await expect(page).toHaveURL(`/board/comments/${assignmentId}`)
-        await expect(page.getByText(`Sent to the ${CONSERVATION} for comment.`)).toBeVisible()
+        await expect(page.getByRole('region', { name: 'About this request' })).toContainText(
+          'Conservation Commission',
+        )
+        await expect(page.getByText('No comments yet')).toBeVisible()
         const comments = page.getByRole('region', { name: 'Comments' })
         const submit = comments.getByRole('button', { name: 'Post comment' })
         await expect(submit).toBeEnabled()
