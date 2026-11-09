@@ -49,7 +49,7 @@ function StartForm({
     <>
       <p>{sentence}</p>
       <TextField
-        label="Payer name"
+        label="Name of the person paying by card"
         name="cardPayerName"
         value={payerName}
         onChange={(event) => setPayerName(event.target.value)}

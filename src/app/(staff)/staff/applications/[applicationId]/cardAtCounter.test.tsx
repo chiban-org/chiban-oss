@@ -44,7 +44,7 @@ function show(overrides: Partial<CardActions> = {}, simulated = true) {
 }
 
 async function startCard() {
-  fireEvent.change(screen.getByLabelText(/^Payer name( \*)?$/), {
+  fireEvent.change(screen.getByLabelText(/^Name of the person paying by card( \*)?$/), {
     target: { value: 'Pat Contractor' },
   })
   fireEvent.click(screen.getByRole('button', { name: 'Start card payment' }))
@@ -123,7 +123,7 @@ describe('card at the counter on an application balance', () => {
 
   it('shows why the card could not start', async () => {
     show({ start: () => Promise.resolve({ ok: false, error: 'No reader.' }) })
-    fireEvent.change(screen.getByLabelText(/^Payer name( \*)?$/), { target: { value: 'Pat' } })
+    fireEvent.change(screen.getByLabelText(/^Name of the person paying by card( \*)?$/), { target: { value: 'Pat' } })
     fireEvent.click(screen.getByRole('button', { name: 'Start card payment' }))
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('No reader.'))
   })

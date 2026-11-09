@@ -17,7 +17,7 @@ test.describe('card at the counter for a balance on an application', () => {
     const card = (await openRecordPayment(page)).getByRole('group', { name: 'Card at the counter' })
     await expect(card).toContainText(/^Card at the counter/)
     await expect(card).toContainText(/The reader charges \$[\d.]+/)
-    await card.getByLabel('Payer name').fill(payer)
+    await card.getByLabel('Name of the person paying by card').fill(payer)
     await card.getByRole('button', { name: 'Start card payment' }).click()
     await expect(card).toContainText('Nothing is posted until the processor approves.')
     expect(await ledgerFor(db, payer)).toEqual([])
@@ -29,7 +29,7 @@ test.describe('card at the counter for a balance on an application', () => {
     expect(await ledgerFor(db, payer)).toEqual([])
 
     await card.getByRole('button', { name: 'Try the card again' }).click()
-    await card.getByLabel('Payer name').fill(payer)
+    await card.getByLabel('Name of the person paying by card').fill(payer)
     await card.getByRole('button', { name: 'Start card payment' }).click()
     await card.getByRole('button', { name: 'Approve' }).click()
     await expectConfirmation(page, 'Card approved. The payment is in the ledger.')
