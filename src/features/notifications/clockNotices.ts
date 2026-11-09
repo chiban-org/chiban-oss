@@ -8,7 +8,8 @@ import {
   userRoles,
   users,
 } from '@/db/schema'
-import { TERMINAL_STATES } from '@/features/applications/states'
+import { FULL_RECORD_ROLES } from '@/features/access/roles'
+import type { CoreState } from '@/features/applications/states'
 import { queueNotification } from '@/features/notifications/queue'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { WARNING_DAYS } from '@/features/queue/workQueue'
@@ -65,12 +66,20 @@ async function applicationManagers(tx: Tx): Promise<string[]> {
 function staffResolver(tx: Tx): (applicationId: string) => Promise<string[]> {
   let managers: Promise<string[]> | null = null
   return async (applicationId) => {
-    const [app] = await tx
-      .select({ responsibleUserId: applications.responsibleUserId })
+    const [staff] = await tx
+      .select({ id: users.id })
       .from(applications)
-      .where(eq(applications.id, applicationId))
-    const responsible = app?.responsibleUserId ?? null
-    if (responsible !== null) return [responsible]
+      .innerJoin(users, eq(users.id, applications.responsibleUserId))
+      .innerJoin(userRoles, eq(userRoles.userId, users.id))
+      .where(
+        and(
+          eq(applications.id, applicationId),
+          eq(users.isActive, true),
+          inArray(userRoles.role, [...FULL_RECORD_ROLES]),
+        ),
+      )
+      .limit(1)
+    if (staff !== undefined) return [staff.id]
     managers ??= applicationManagers(tx)
     return await managers
   }
@@ -98,7 +107,9 @@ async function queueClockNotices(
   }
 }
 
-const OPEN_APPLICATION = notInArray(applications.state, [...TERMINAL_STATES])
+const FINISHED_STATES: readonly CoreState[] = ['closed', 'withdrawn', 'expired']
+
+const OPEN_APPLICATION = notInArray(applications.state, [...FINISHED_STATES])
 
 async function noticeClocks(tx: Tx, where: SQL | undefined): Promise<NoticeClock[]> {
   return await tx
