@@ -1,3 +1,4 @@
+import { SectionHeader } from '@/components/layout/ListHeader'
 import { GroupLabel } from '@/components/parcels/GroupLabel'
 import { PublicFileList, PublicRecordRow } from '@/components/parcels/PublicRecordRow'
 import type { RecordFile, RecordRow, RecordTable } from '@/features/parcels/recordTable'
@@ -33,12 +34,14 @@ export function RecordsSection({ table, parcelFiles, office }: RecordsSectionPro
   const empty = table.own.length === 0 && table.ancestral.length === 0 && parcelFiles.length === 0
   return (
     <section aria-labelledby="records-heading">
-      <h2 id="records-heading">Records</h2>
-      {empty ? (
-        <p>{emptyText(office)}</p>
-      ) : (
-        <p className="text-muted-foreground">Files open in a new tab.</p>
-      )}
+      <SectionHeader
+        id="records-heading"
+        title="Records"
+        lead={
+          empty ? undefined : <p className="m-0 text-muted-foreground">Files open in a new tab.</p>
+        }
+      />
+      {empty ? <p>{emptyText(office)}</p> : null}
       {table.own.length === 0 ? null : <RecordList rows={table.own} />}
       {table.ancestral.map((group) => (
         <div key={group.parcelId} className="mt-6">

@@ -39,8 +39,8 @@ function dateLines(row: RecordRow): string[] {
   const scheduled = row.dates.closed === null ? line('Scheduled', row.scheduled) : []
   return [
     ...line(row.kind === 'enforcement_case' ? 'Opened' : 'Filed', row.dates.filed),
-    ...line('Issued', row.dates.issued),
     ...line(row.kind === 'application' ? 'Decided' : 'Closed', row.dates.closed),
+    ...line('Issued', row.dates.issued),
     ...scheduled,
   ]
 }
