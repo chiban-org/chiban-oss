@@ -16,6 +16,7 @@ const STATUS: Record<DayListRow['status'], { chip: Status; label: string }> = {
 }
 
 const LINK = 'inline-flex min-h-11 items-center gap-2'
+const ARROW = `${LINK} min-w-11 justify-center`
 const SCHEDULE_BOARD = '/staff/inspections'
 
 function addressText(stop: DayListRow): string | null {
@@ -156,14 +157,14 @@ export function DayList({
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between gap-2">
-        <Link href={previousHref} aria-label="Previous day" className={LINK}>
+        <Link href={previousHref} aria-label="Previous day" className={ARROW}>
           <ChevronLeft className="size-6" aria-hidden={true} />
         </Link>
         <div className="text-center">
           {whose === null ? null : <p className="m-0 font-medium text-muted-foreground">{whose}</p>}
           <h1 className="m-0 text-2xl">{`${weekdayName(date)}, ${formatCivilDate(date)}`}</h1>
         </div>
-        <Link href={nextHref} aria-label="Next day" className={LINK}>
+        <Link href={nextHref} aria-label="Next day" className={ARROW}>
           <ChevronRight className="size-6" aria-hidden={true} />
         </Link>
       </div>

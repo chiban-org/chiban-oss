@@ -46,7 +46,7 @@ function CardAction({ record }: { record: InspectionRecord }) {
       )
     case 'request_reinspection':
       return (
-        <Button asChild className="self-start">
+        <Button asChild className="min-h-11 self-start">
           <Link
             href={`/staff/inspections?number=${encodeURIComponent(view.applicationNumber)}&reinspect=${inspection.id}`}
           >
@@ -56,7 +56,7 @@ function CardAction({ record }: { record: InspectionRecord }) {
       )
     case 'reinspection_on_file':
       return record.followUpId === null ? null : (
-        <Button asChild variant="outline" className="self-start">
+        <Button asChild variant="outline" className="min-h-11 self-start">
           <Link href={`/staff/inspections/${record.followUpId}`}>Open the reinspection</Link>
         </Button>
       )
@@ -130,7 +130,11 @@ export function PhotosPanel({ record }: { record: InspectionRecord }) {
         <ul className="list-none p-0">
           {view.photos.map((photo) => (
             <li key={photo.documentId} className="record-item">
-              <a {...NEW_TAB} href={`/api/documents/${photo.documentId}`}>
+              <a
+                {...NEW_TAB}
+                href={`/api/documents/${photo.documentId}`}
+                className="inline-flex min-h-11 items-center"
+              >
                 {photo.title}
               </a>
             </li>
