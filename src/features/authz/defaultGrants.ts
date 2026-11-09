@@ -97,3 +97,14 @@ export async function seedDefaultGrants(db: DbOrTx, signal: AbortSignal): Promis
   )
   await db.insert(roleCapabilities).values(rows).onConflictDoNothing()
 }
+
+export async function seedGrantsForRolesWithNone(db: DbOrTx, signal: AbortSignal): Promise<void> {
+  signal.throwIfAborted()
+  const existing = await db.selectDistinct({ role: roleCapabilities.role }).from(roleCapabilities)
+  const seeded = new Set(existing.map((r) => r.role))
+  const rows = Object.entries(DEFAULT_GRANTS)
+    .filter(([role]) => !seeded.has(role))
+    .flatMap(([role, caps]) => caps.map((capability) => ({ role, capability })))
+  if (rows.length === 0) return
+  await db.insert(roleCapabilities).values(rows).onConflictDoNothing()
+}

@@ -3,6 +3,7 @@ import type { Metadata } from 'next'
 import Link from 'next/link'
 import { PageHeader } from '@/components/layout/PageHeader'
 import { PracticeNotice } from '@/components/PracticeNotice'
+import { NoIdFormatsNotice } from '@/components/parcels/NoIdFormatsNotice'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { gisLayers, importRuns, parcelIdFormats } from '@/db/schema'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -54,6 +55,7 @@ export default async function CamaImportPage() {
   const formats = await ctx.db
     .select({ key: parcelIdFormats.key, label: parcelIdFormats.label })
     .from(parcelIdFormats)
+  const canEditSettings = await hasCapability(ctx.db, ctx.actor.userId, 'config.edit', ctx.signal)
   const saved = camaMappingSchema.safeParse(layer?.mapping)
   return (
     <main>
@@ -69,6 +71,7 @@ export default async function CamaImportPage() {
           </>
         }
       />
+      {formats.length === 0 ? <NoIdFormatsNotice canEdit={canEditSettings} /> : null}
       {adapterStatus === 'stubbed' ? <PracticeNotice>{CAMA_STUB_NOTICE}</PracticeNotice> : null}
       <p>
         {STATE_WORDS[status.state]}

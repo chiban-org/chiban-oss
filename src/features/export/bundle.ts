@@ -25,10 +25,12 @@ import {
   WORKBOOK_FILE,
 } from '@/features/export/tabular/tableSet'
 import type { PdfaConverter } from '@/features/preservation/ghostscript'
+import type { PdfaValidator } from '@/features/preservation/verapdf'
 import type { ObjectStore } from '@/features/storage/objectStore'
 
 export interface BundleOptions {
   converter: PdfaConverter
+  validator?: PdfaValidator
   maxSheetRows?: number
 }
 
@@ -77,6 +79,7 @@ export async function finishBundle(
     workDir,
     store: input.store,
     converter: input.bundle.converter,
+    ...(input.bundle.validator === undefined ? {} : { validator: input.bundle.validator }),
     signal: input.signal,
   })
   return {

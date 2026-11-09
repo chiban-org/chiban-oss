@@ -92,15 +92,20 @@ async function markIncomplete(
 
 const TIFF_TYPE = 'image/tiff'
 
+interface CompletedPdf {
+  version: LoadedVersion
+  recordId: string
+  pdf: Uint8Array
+  text: string | null
+}
+
 async function completeWithPdf(
   db: DbOrTx,
   store: ObjectStore,
-  version: LoadedVersion,
-  recordId: string,
-  pdf: Uint8Array,
-  text: string | null,
+  input: CompletedPdf,
   signal: AbortSignal,
 ): Promise<Result<'complete', 'incomplete'>> {
+  const { version, recordId, pdf, text } = input
   const stored = await storeGeneratedBytes(db, store, pdf, PDF_TYPE, signal)
   const [created] = await db
     .insert(documentVersions)
@@ -156,10 +161,12 @@ async function ocrTiff(
     return await completeWithPdf(
       db,
       store,
-      version,
-      recordId,
-      converted.value.pdf,
-      converted.value.text,
+      {
+        version,
+        recordId,
+        pdf: converted.value.pdf,
+        text: converted.value.text,
+      },
       signal,
     )
   } finally {
@@ -208,7 +215,12 @@ async function convertOriginal(
     await markIncomplete(db, recordId, converted.error.reason, converted.error.detail)
     return err('incomplete')
   }
-  return await completeWithPdf(db, store, version, recordId, converted.value, null, signal)
+  return await completeWithPdf(
+    db,
+    store,
+    { version, recordId, pdf: converted.value, text: null },
+    signal,
+  )
 }
 
 export async function preserveVersion(

@@ -176,6 +176,54 @@ describe('processing time', () => {
   })
 })
 
+describe('decision turnaround', () => {
+  const FEB = { from: '2028-02-01' as CivilDate, to: '2028-02-29' as CivilDate }
+  const building = (patch: Parameters<typeof makeApplication>[2]) =>
+    makeApplication(handle.db, world, patch, new Date('2028-02-02T15:00:00Z'), 'BP')
+
+  it('counts a denied application that was never issued instead of dropping it', async () => {
+    await building({ receivedDate: '2028-02-01', decidedOn: '2028-02-11' })
+    const result = await processingTimeReport(handle.db, world.staff, FEB, signal)
+    if (!result.ok) throw new Error(result.error)
+    const row = result.value.find((r) => r.type === 'BP')
+    expect(row).toMatchObject({
+      issued: 0,
+      medianReceivedToIssued: null,
+      decided: 1,
+      decidedNotIssued: 1,
+      medianReceivedToDecision: 10,
+      p90ReceivedToDecision: 10,
+    })
+  })
+
+  it('keeps the issued turnaround as it was and counts issued applications in the decision turnaround too', async () => {
+    await building({ receivedDate: '2028-02-01', decidedOn: '2028-02-21', issuedOn: '2028-02-23' })
+    const result = await processingTimeReport(handle.db, world.staff, FEB, signal)
+    if (!result.ok) throw new Error(result.error)
+    const row = result.value.find((r) => r.type === 'BP')
+    expect(row).toMatchObject({
+      issued: 1,
+      medianReceivedToIssued: 22,
+      decided: 2,
+      decidedNotIssued: 1,
+      medianReceivedToDecision: 15,
+    })
+  })
+
+  it('leaves out applications decided outside the range and carries the new columns in the csv', async () => {
+    const march = { from: '2028-03-01' as CivilDate, to: '2028-03-31' as CivilDate }
+    const result = await processingTimeReport(handle.db, world.staff, march, signal)
+    if (!result.ok) throw new Error(result.error)
+    expect(result.value.find((r) => r.type === 'BP')).toBeUndefined()
+    const feb = await processingTimeReport(handle.db, world.staff, FEB, signal)
+    if (!feb.ok) throw new Error(feb.error)
+    const csv = processingTimeCsv(feb.value)
+    expect(csv.split('\r\n')[0]).toBe(
+      'Type,Issued,Median days received to issued,P90 days received to issued,Median days complete to decision,Decided on time,Decided late,Decided,Decided not issued,Median days received to decision,P90 days received to decision',
+    )
+  })
+})
+
 describe('revenue', () => {
   const post = async (input: PostEntryInput) => {
     const posted = await handle.db.transaction((tx) => postEntry(tx, input, signal))

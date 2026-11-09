@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto'
 import { z } from 'zod'
 import { canonicalJson } from '@/features/export/canonical'
+import { pdfaValidationSchema } from '@/features/preservation/verapdf'
 
-export const EXPORT_FORMAT_VERSION = '2.1.0'
+export const EXPORT_FORMAT_VERSION = '2.2.0'
 
 const sha256 = z.string().regex(/^[0-9a-f]{64}$/)
 
@@ -14,6 +15,7 @@ const pdfaRenditionSchema = z.object({
   size: z.number().int().nonnegative().nullable(),
   reason: z.string().nullable(),
   detail: z.string().nullable(),
+  validation: pdfaValidationSchema.optional(),
 })
 
 const tablesSchema = z.object({

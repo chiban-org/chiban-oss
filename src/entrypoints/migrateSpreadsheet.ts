@@ -4,6 +4,7 @@ import { eq } from 'drizzle-orm'
 import { db, pool } from '@/db/client'
 import { users } from '@/db/schema'
 import { loadActor } from '@/features/auth/actor'
+import { unknownFormatSentence } from '@/features/parcels/idFormatCopy'
 import { importSheet } from '../../scripts/migrations/spreadsheet/importSheet'
 import { spreadsheetMappingSchema } from '../../scripts/migrations/spreadsheet/mapping'
 
@@ -51,6 +52,10 @@ const result = await importSheet(
   signal,
 )
 await pool.end()
+if (!result.ok && result.error === 'unknown_format') {
+  process.stderr.write(`${unknownFormatSentence(mapping.data.parcel.format)}\n`)
+  process.exit(1)
+}
 if (!result.ok) {
   const reason =
     typeof result.error === 'string' ? result.error : `${result.error.kind}: ${result.error.detail}`

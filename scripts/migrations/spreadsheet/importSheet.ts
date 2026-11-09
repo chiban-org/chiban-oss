@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db } from '@/db/client'
-import { historicalRecords } from '@/db/schema'
+import { historicalRecords, parcelIdFormats } from '@/db/schema'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
@@ -29,7 +29,7 @@ export interface ImportSheetReport {
   errors: { row: number; detail: string }[]
 }
 
-export type ImportSheetError = 'forbidden' | 'invalid_mapping' | ReadError
+export type ImportSheetError = 'forbidden' | 'invalid_mapping' | 'unknown_format' | ReadError
 
 const preparedRowSchema = z.object({
   recordType: z.string().min(1),
@@ -180,6 +180,11 @@ export async function importSheet(
   const parsedMapping = spreadsheetMappingSchema.safeParse(input.mapping)
   if (!parsedMapping.success) return err('invalid_mapping')
   const mapping = parsedMapping.data
+  const [knownFormat] = await db
+    .select({ key: parcelIdFormats.key })
+    .from(parcelIdFormats)
+    .where(eq(parcelIdFormats.key, mapping.parcel.format))
+  if (knownFormat === undefined) return err('unknown_format')
   const sheet = await readSheet(input.path, mapping, signal)
   if (!sheet.ok) return sheet
   const file = input.path.split(/[\\/]/).pop() ?? input.path

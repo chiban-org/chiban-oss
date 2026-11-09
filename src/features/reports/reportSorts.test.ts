@@ -52,6 +52,10 @@ describe('report table sorting', () => {
       medianCompleteToDecision: null,
       decidedOnTime: null,
       decidedLate: null,
+      decided: 0,
+      decidedNotIssued: 0,
+      medianReceivedToDecision: null,
+      p90ReceivedToDecision: null,
       fields: {},
     })
     const rows = [row('bp', null), row('el', 4), row('x', 9)]
@@ -76,6 +80,10 @@ describe('report table sorting', () => {
       medianCompleteToDecision: null,
       decidedOnTime: null,
       decidedLate: null,
+      decided: 0,
+      decidedNotIssued: 0,
+      medianReceivedToDecision: null,
+      p90ReceivedToDecision: null,
       fields: {},
     })
     const rows = [row('el'), row('bp')]

@@ -154,6 +154,22 @@ export function ProcessingTable({
             />
             <SortHeader label="Decided on time" link={sort.links.onTime} className="text-right" />
             <SortHeader label="Decided late" link={sort.links.late} className="text-right" />
+            <SortHeader label="Decided" link={sort.links.decided} className="text-right" />
+            <SortHeader
+              label="Decided, not issued"
+              link={sort.links.notIssued}
+              className="text-right"
+            />
+            <SortHeader
+              label="Median days to decide"
+              link={sort.links.decisionTurnaround}
+              className="text-right"
+            />
+            <SortHeader
+              label="90th percentile days to decide"
+              link={sort.links.decisionP90}
+              className="text-right"
+            />
             <FieldHeaders columns={columns} />
           </tr>
         </thead>
@@ -167,6 +183,10 @@ export function ProcessingTable({
               <td className="text-right">{days(r.medianCompleteToDecision)}</td>
               <td className="text-right">{r.decidedOnTime ?? ''}</td>
               <td className="text-right">{r.decidedLate ?? ''}</td>
+              <td className="text-right">{r.decided}</td>
+              <td className="text-right">{r.decidedNotIssued}</td>
+              <td className="text-right">{days(r.medianReceivedToDecision)}</td>
+              <td className="text-right">{days(r.p90ReceivedToDecision)}</td>
               <FieldCells columns={columns} sums={r.fields} />
             </tr>
           ))}
