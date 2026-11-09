@@ -10,6 +10,7 @@ import {
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { recordActiveLicense } from '@/test/licenseFixtures'
 import { staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -96,13 +97,15 @@ const ALL = {
 }
 
 async function trade(patch: Parameters<typeof makeApplication>[2] = {}) {
-  return await makeApplication(
+  const made = await makeApplication(
     handle.db,
     world,
     { values: { description: 'Panel', contractor_license_number: 'EL-1' }, ...patch },
     undefined,
     'EL',
   )
+  await recordActiveLicense(handle.db, made.applicationId, world.staff.userId)
+  return made
 }
 
 describe('application actions', () => {

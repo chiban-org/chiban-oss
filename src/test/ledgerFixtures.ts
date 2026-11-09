@@ -7,6 +7,7 @@ import { attestationHash, submitApplication } from '@/features/applications/subm
 import { transitionApplication } from '@/features/applications/transition'
 import type { AllocationInput } from '@/features/ledger/types'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
+import { recordActiveLicense } from '@/test/licenseFixtures'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -53,6 +54,7 @@ export async function submittedTrade(
       error: JSON.stringify(submitted.error),
     })
   }
+  await recordActiveLicense(db, made.applicationId, world.staff.userId)
   const [assessment] = await db
     .select()
     .from(feeAssessments)
