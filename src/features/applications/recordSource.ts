@@ -52,13 +52,20 @@ function statusLabel(
     : stateLabel(state)
 }
 
+const NOTICE_NOT_FILED: ParcelRecordSummary['status'] = {
+  label: 'Decided, notice not yet filed',
+  chip: 'neutral',
+}
+
 function statusOf(
   row: { state: CoreState; closureReason: string | null },
   certificateIssuedOn: string | undefined,
-  decision: LatestDecision | undefined,
+  decision: { latest: LatestDecision | undefined; publicView: boolean },
 ): ParcelRecordSummary['status'] {
-  if (row.state === 'decided' && decision !== undefined) {
-    return decisionOutcome(decision.outcome, decision.boardKind)
+  const { latest, publicView } = decision
+  if (row.state === 'decided' && latest !== undefined) {
+    if (publicView && latest.filedOn === null) return NOTICE_NOT_FILED
+    return decisionOutcome(latest.outcome, latest.boardKind)
   }
   return {
     label: statusLabel(row.state, certificateIssuedOn, row.closureReason),
@@ -118,7 +125,7 @@ export async function summarizeApplications(
       status: statusOf(
         { state, closureReason: row.closureReason },
         certificates.find((c) => c.applicationId === row.id)?.issuedOn,
-        decision,
+        { latest: decision, publicView: viewer.kind === 'public' },
       ),
       closed: openAs === null,
       openAs,

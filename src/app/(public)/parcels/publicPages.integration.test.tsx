@@ -158,3 +158,11 @@ describe('public parcel search results', () => {
     expect(html).toMatch(/data-status="neutral"[^>]*>[\s\S]*Retired<\/span>/)
   })
 })
+
+describe('public parcel page title', () => {
+  it('names the tab after the street address', async () => {
+    const { generateMetadata } = await import('@/app/(public)/parcels/[parcelId]/page')
+    const metadata = await generateMetadata({ params: Promise.resolve({ parcelId }) })
+    expect(metadata.title).toBe('12 Heron Cove Road')
+  })
+})

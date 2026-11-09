@@ -1,13 +1,15 @@
-import Link from 'next/link'
+import { type Fact, PageHeader } from '@/components/layout/PageHeader'
 import { LinkedParcelMap } from '@/components/map/LinkedParcelMap'
+import { FoldedMap } from '@/components/parcels/FoldedMap'
 import { HonestText } from '@/components/parcels/HonestText'
+import { ParcelLineage } from '@/components/parcels/ParcelLineage'
 import { RecordsSection } from '@/components/parcels/RecordsSection'
-import { Button } from '@/components/ui/button'
-import { DescriptionList } from '@/components/ui/description-list'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
+import { StatusChip } from '@/components/StatusChip'
 import type { Bbox } from '@/features/gis/extent'
+import { honestText } from '@/features/honest/honest'
 import type { PublicParcelView } from '@/features/parcels/publicParcelView'
+import { buildRecordTable, parcelFilesOf } from '@/features/parcels/recordTable'
+import type { TownOffice } from '@/features/town/publicTown'
 import { formatCivilDate, formatInstantDate } from '@/lib/formatDate'
 
 interface PublicParcelDetailProps {
@@ -15,142 +17,105 @@ interface PublicParcelDetailProps {
   timeZone: string
   overlays: ('roads' | 'water')[]
   basemap: { rasterUrl: string | null; attribution: string | null } | null
+  office: TownOffice
   bbox?: Bbox | null
 }
 
-export function ParcelSearchBox({ defaultValue = '' }: { defaultValue?: string }) {
-  return (
-    <form
-      method="get"
-      action="/parcels"
-      role="search"
-      className="mb-6 flex flex-col gap-3 sm:flex-row"
-    >
-      <div className="grid flex-1 gap-2">
-        <Label htmlFor="parcel-search" className="text-base">
-          Find a parcel by ID, address, or owner
-        </Label>
-        <Input
-          id="parcel-search"
-          name="q"
-          defaultValue={defaultValue}
-          className="h-11 text-base md:text-base"
-        />
-      </div>
-      <Button type="submit" size="lg" className="h-11 text-base sm:self-end">
-        Search
-      </Button>
-    </form>
-  )
-}
-
-function Banner({ view, timeZone }: { view: PublicParcelView; timeZone: string }) {
+function bannerText(view: PublicParcelView, timeZone: string): string | null {
   const { layer } = view
   const last =
     layer.lastSuccessAt === null ? null : formatInstantDate(new Date(layer.lastSuccessAt), timeZone)
-  let text: string | null = null
   if (layer.state === 'stale' && last !== null)
-    text = `Parcel data last imported ${last}. It may be out of date.`
+    return `Parcel data last imported ${last}. It may be out of date.`
   if (layer.state === 'import_failed') {
-    text = `The latest update of parcel data failed. ${last === null ? 'No earlier import is on file.' : `Information shown was last imported ${last} and may be out of date.`}`
+    return `The latest update of parcel data failed. ${last === null ? 'No earlier import is on file.' : `Information shown was last imported ${last} and may be out of date.`}`
   }
-  if (layer.state === 'never_imported') text = 'Parcel data has not been loaded yet.'
+  if (layer.state === 'never_imported') return 'Parcel data has not been loaded yet.'
+  return null
+}
+
+function Banner({ view, timeZone }: { view: PublicParcelView; timeZone: string }) {
+  const text = bannerText(view, timeZone)
   if (text === null) return null
   return (
-    <p role="status" className="my-4 rounded-md bg-highlight px-4 py-3 text-base">
-      {text}
+    <p role="status" className="max-w-[75ch]">
+      <span className="bg-highlight px-1">{text}</span>
     </p>
   )
 }
 
-export function PublicParcelDetail({
-  view,
-  timeZone,
-  overlays,
-  basemap,
-  bbox,
-}: PublicParcelDetailProps) {
-  const display = view.ids.find((i) => !i.retired) ?? view.ids[0]
+export function parcelTitle(view: PublicParcelView): { title: string; mapLot: string | null } {
+  const mapLot = (view.ids.find((i) => !i.retired) ?? view.ids[0])?.value ?? null
+  const address = honestText(view.siteAddress, '')
+  return { title: address === '' ? (mapLot ?? 'Parcel') : address, mapLot }
+}
+
+function facts(view: PublicParcelView, timeZone: string, mapLot: string | null): Fact[] {
+  const others = view.ids.filter((id) => id.value !== mapLot)
+  return [
+    ...(mapLot === null ? [] : [{ label: 'Map-lot ID', value: mapLot }]),
+    { label: 'Owner of record', value: <HonestText value={view.owner} timeZone={timeZone} /> },
+    {
+      label: 'Area',
+      value: <HonestText value={view.areaAcres} format={(n) => `${n} acres`} timeZone={timeZone} />,
+    },
+    ...(others.length === 0
+      ? []
+      : [
+          {
+            label: 'Other parcel IDs',
+            value: others
+              .map((id) => (id.retired ? `${id.value} (retired ID)` : `${id.value} (${id.label})`))
+              .join(', '),
+          },
+        ]),
+  ]
+}
+
+export function PublicParcelDetail(props: PublicParcelDetailProps) {
+  const { view, timeZone, overlays, basemap, bbox, office } = props
+  const { title, mapLot } = parcelTitle(view)
+  const hasAddress = honestText(view.siteAddress, '') !== ''
   return (
     <main className="text-base">
-      <ParcelSearchBox />
-      <h1>{display?.value ?? 'Parcel'}</h1>
-      {view.status === 'retired' ? (
-        <p className="font-semibold">
-          {`Retired ${view.retiredOn === null ? '' : formatCivilDate(view.retiredOn)}`.trim()}
-        </p>
-      ) : null}
-      <Banner view={view} timeZone={timeZone} />
-      <DescriptionList
-        className="my-4"
-        items={[
-          {
-            label: 'Site address',
-            value: <HonestText value={view.siteAddress} timeZone={timeZone} />,
-          },
-          {
-            label: 'Owner of record',
-            value: <HonestText value={view.owner} timeZone={timeZone} />,
-          },
-          {
-            label: 'Area',
-            value: (
-              <HonestText value={view.areaAcres} format={(n) => `${n} acres`} timeZone={timeZone} />
-            ),
-          },
-          {
-            label: 'Parcel IDs',
-            value: (
-              <ul>
-                {view.ids.map((id) => (
-                  <li key={`${id.label}:${id.value}`}>
-                    {id.retired ? `${id.value} (retired ID)` : id.value}
-                    <span className="ml-2 text-muted-foreground">{id.label}</span>
-                  </li>
-                ))}
-              </ul>
-            ),
-          },
-        ]}
+      <PageHeader
+        kicker="Parcel"
+        title={title}
+        status={
+          view.status === 'retired' ? (
+            <StatusChip
+              status="neutral"
+              label={
+                view.retiredOn === null ? 'Retired' : `Retired ${formatCivilDate(view.retiredOn)}`
+              }
+            />
+          ) : undefined
+        }
+        lead={hasAddress ? undefined : 'No site address on file'}
+        facts={facts(view, timeZone, mapLot)}
       />
-      {view.lineage.parents.length + view.lineage.children.length === 0 ? null : (
-        <section aria-labelledby="lineage-heading" className="my-6">
-          <h2 id="lineage-heading">Where this parcel came from</h2>
-          <ul>
-            {view.lineage.parents.map((p) => (
-              <li key={`p${p.eventId}${p.parcelId}`}>
-                {'Parent lot '}
-                <Link href={`/parcels/${p.parcelId}`} className="tap-target">
-                  {p.displayId ?? 'Parcel'}
-                </Link>
-                {`, ${p.eventKind.replaceAll('_', ' ')} effective ${formatCivilDate(p.effectiveDate)}`}
-              </li>
-            ))}
-            {view.lineage.children.map((c) => (
-              <li key={`c${c.eventId}${c.parcelId}`}>
-                {'Child lot '}
-                <Link href={`/parcels/${c.parcelId}`} className="tap-target">
-                  {c.displayId ?? 'Parcel'}
-                </Link>
-                {`, ${c.eventKind.replaceAll('_', ' ')} effective ${formatCivilDate(c.effectiveDate)}`}
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
+      <Banner view={view} timeZone={timeZone} />
+      <RecordsSection
+        table={buildRecordTable(view.history, view.parcelId)}
+        parcelFiles={parcelFilesOf(view.history, view.parcelId)}
+        office={office}
+      />
+      <ParcelLineage lineage={view.lineage} />
       {view.hasGeometry ? (
-        <LinkedParcelMap
-          hrefBase="/parcels/"
-          selectedParcelId={view.parcelId}
-          {...(bbox == null ? {} : { bbox })}
-          layers={overlays}
-          basemapRasterUrl={basemap?.rasterUrl ?? null}
-          basemapAttribution={basemap?.attribution ?? null}
-        />
+        <section aria-labelledby="map-heading">
+          <h2 id="map-heading">Map</h2>
+          <FoldedMap summary="Show this parcel on the map">
+            <LinkedParcelMap
+              hrefBase="/parcels/"
+              selectedParcelId={view.parcelId}
+              {...(bbox == null ? {} : { bbox })}
+              layers={overlays}
+              basemapRasterUrl={basemap?.rasterUrl ?? null}
+              basemapAttribution={basemap?.attribution ?? null}
+            />
+          </FoldedMap>
+        </section>
       ) : null}
-      <div className="mt-6">
-        <RecordsSection history={view.history} />
-      </div>
     </main>
   )
 }

@@ -37,7 +37,18 @@ function view(over: Partial<PublicParcelView> = {}): PublicParcelView {
   }
 }
 
-const props = { timeZone: 'America/New_York', overlays: [] as ('roads' | 'water')[], basemap: null }
+const props = {
+  timeZone: 'America/New_York',
+  overlays: [] as ('roads' | 'water')[],
+  basemap: null,
+  office: {
+    officeName: 'Land Use Office',
+    addressLines: [],
+    phone: '',
+    email: '',
+    officeHours: '',
+  },
+}
 
 describe('PublicParcelDetail', () => {
   it('public page shows stale banner', () => {
@@ -57,7 +68,22 @@ describe('PublicParcelDetail', () => {
     expect(screen.getByText(/latest update of parcel data failed/i)).toBeTruthy()
   })
 
-  it('retired parcel shows "Retired April 12, 2027" and links to its children', () => {
+  it('titles the page with the street address and lists the map-lot ID, owner and area as facts', () => {
+    render(<PublicParcelDetail view={view()} {...props} />)
+    expect(screen.getByRole('heading', { level: 1, name: '12 Heron Cove Road' })).toBeTruthy()
+    const facts = document.querySelector('[data-slot="fact-list"]')
+    expect(facts?.textContent).toContain('Map-lot ID007001000000')
+    expect(facts?.textContent).toContain('Owner of recordLarkspur Family Trust')
+    expect(facts?.textContent).toContain('Area1.38 acres')
+  })
+
+  it('titles a parcel with no address by its map-lot ID and says the address is missing', () => {
+    render(<PublicParcelDetail view={view({ siteAddress: { state: 'unknown' } })} {...props} />)
+    expect(screen.getByRole('heading', { level: 1, name: '007001000000' })).toBeTruthy()
+    expect(screen.getByText('No site address on file')).toBeTruthy()
+  })
+
+  it('retired parcel shows a Retired chip and lists what it became', () => {
     const { container } = render(
       <PublicParcelDetail
         view={view({
@@ -70,7 +96,7 @@ describe('PublicParcelDetail', () => {
                 parcelId: 'c1',
                 displayId: '007020001000',
                 eventId: 'e',
-                eventKind: 'subdivision',
+                eventKind: 'lot_line_adjustment',
                 effectiveDate: '2027-04-12' as CivilDate,
               },
             ],
@@ -79,27 +105,38 @@ describe('PublicParcelDetail', () => {
         {...props}
       />,
     )
-    expect(screen.getByText('Retired April 12, 2027')).toBeTruthy()
-    expect(container.textContent).toContain('subdivision effective April 12, 2027')
+    expect(screen.getByText('Retired April 12, 2027').closest('[data-status]')).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'What this parcel became' })).toBeTruthy()
+    expect(screen.queryByRole('heading', { name: 'Where this parcel came from' })).toBeNull()
+    expect(container.textContent).toContain('Lot-line adjustment effective April 12, 2027')
+    expect(container.textContent).not.toContain('lot line adjustment')
     expect(findIsoDates(container.textContent)).toEqual([])
-    const link = screen.getByRole('link', { name: '007020001000' })
-    expect(link.getAttribute('href')).toBe('/parcels/c1')
+    expect(screen.getByRole('link', { name: '007020001000' }).getAttribute('href')).toBe(
+      '/parcels/c1',
+    )
   })
 
   it('labels retired ids and omits the mailing address', () => {
     const { container } = render(
       <PublicParcelDetail
-        view={view({ ids: [{ label: 'Map-lot ID', value: '007020000000', retired: true }] })}
+        view={view({
+          ids: [
+            { label: 'Map-lot ID', value: '007001000000', retired: false },
+            { label: 'Map-lot ID', value: '007020000000', retired: true },
+          ],
+        })}
         {...props}
       />,
     )
-    expect(screen.getByText('007020000000 (retired ID)')).toBeTruthy()
+    expect(container.textContent).toContain('007020000000 (retired ID)')
     expect(container.textContent).not.toContain('Mailing')
   })
 
-  it('puts the search box before the facts', () => {
+  it('folds the map below the records', () => {
     const { container } = render(<PublicParcelDetail view={view()} {...props} />)
     const html = container.innerHTML
-    expect(html.indexOf('role="search"')).toBeLessThan(html.indexOf('12 Heron Cove Road'))
+    const fold = container.querySelector('details')
+    expect(fold?.hasAttribute('open')).toBe(false)
+    expect(html.indexOf('id="records-heading"')).toBeLessThan(html.indexOf('<details'))
   })
 })
