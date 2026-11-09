@@ -2,8 +2,10 @@ import type { Metadata } from 'next'
 import { PublicPager } from '@/components/public/PublicPager'
 import { db } from '@/db/client'
 import { loadPastMeetings, loadUpcomingMeetings } from '@/features/hearings/publicMeetings'
+import { loadPublicHearingNotices } from '@/features/hearings/publicNotices'
 import { loadPublicDecisions } from '@/features/hearings/publicRecords'
 import { townToday } from '@/features/town/today'
+import { HearingNoticeRow } from './noticeSections'
 import { DecisionRow, PastRow, UpcomingRow } from './sections'
 
 export const metadata: Metadata = { title: 'Meetings' }
@@ -36,8 +38,9 @@ export default async function PublicMeetingsPage({ searchParams }: Props) {
   const pages = { past: pageFrom(params.past), decisions: pageFrom(params.decisions) }
   const signal = AbortSignal.timeout(TIMEOUT_MS)
   const today = await townToday(db, new Date(), signal)
-  const [upcoming, past, decisions] = await Promise.all([
+  const [upcoming, notices, past, decisions] = await Promise.all([
     loadUpcomingMeetings(db, today, signal),
+    loadPublicHearingNotices(db, today, signal),
     loadPastMeetings(db, { today, page: pages.past }, signal),
     loadPublicDecisions(db, { page: pages.decisions }, signal),
   ])
@@ -54,6 +57,15 @@ export default async function PublicMeetingsPage({ searchParams }: Props) {
         <ul className="list-none p-0">
           {upcoming.map((m) => (
             <UpcomingRow key={m.meetingId} meeting={m} />
+          ))}
+        </ul>
+      </section>
+      <section aria-labelledby="notices-heading">
+        <h2 id="notices-heading">Hearing notices</h2>
+        {notices.length === 0 ? <p>No hearings are posted right now.</p> : null}
+        <ul className="list-none p-0">
+          {notices.map((n) => (
+            <HearingNoticeRow key={n.hearingId} notice={n} />
           ))}
         </ul>
       </section>
