@@ -57,7 +57,7 @@ export function LettersToMail({ data }: { data: LettersData }) {
         These parties have no email address or account the town can send the decision to. Print the
         letter, mail it, and record the date it went out.
       </p>
-      <ul className="m-0 list-none p-0">
+      <ul className="list-none p-0">
         {data.letters.map((letter) => (
           <LetterRow key={letter.id} letter={letter} data={data} />
         ))}
