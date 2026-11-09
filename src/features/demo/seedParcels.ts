@@ -1,5 +1,6 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { NH_PARCEL_ID_FORMATS } from '@packs/nh/parcelIdFormats'
 import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { aliasOverrides, gisLayers, parcelIdFormats, parcelRecordLinks, parcels } from '@/db/schema'
@@ -167,10 +168,7 @@ export async function seedParcels(db: Db, signal: AbortSignal): Promise<{ import
   signal.throwIfAborted()
   await db
     .insert(parcelIdFormats)
-    .values([
-      { key: 'cama15', label: 'CAMA number', kind: 'digits', width: 15 },
-      { key: 'gis12', label: 'Map-lot ID', kind: 'digits', width: 12, isDisplay: true },
-    ])
+    .values(NH_PARCEL_ID_FORMATS.map(({ example: _example, ...format }) => format))
     .onConflictDoNothing()
   const staff = await db.query.users.findFirst({
     where: (u, { eq: same }) => same(u.email, `staff@${DEMO_DOMAIN}`),

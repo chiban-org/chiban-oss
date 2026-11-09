@@ -8,6 +8,7 @@ import { LEGACY_DOCS_USAGE, parseLegacyDocsArgs } from '@/features/migration/cli
 import { createOcrmypdfConverter } from '@/features/migration/ocrmypdf'
 import { runBatch } from '@/features/migration/runBatch'
 import { scanSource } from '@/features/migration/scanSource'
+import { unknownFormatSentence } from '@/features/parcels/idFormatCopy'
 import { getObjectStore } from '@/features/storage/objectStore'
 
 const SIX_HOURS_MS = 6 * 60 * 60 * 1000
@@ -36,7 +37,9 @@ if (args.command === 'scan') {
   const scanned = await scanSource(db, actor, args.scan, signal)
   if (scanned.ok) print(scanned.value)
   else exitCode = 1
-  if (!scanned.ok) process.stderr.write(`scan refused: ${scanned.error}\n`)
+  if (!scanned.ok && scanned.error === 'unknown_format') {
+    process.stderr.write(`${unknownFormatSentence(args.scan.idFormat)}\n`)
+  } else if (!scanned.ok) process.stderr.write(`scan refused: ${scanned.error}\n`)
 } else if (args.command === 'run') {
   const converter = createOcrmypdfConverter({
     path: env.OCRMYPDF_PATH,

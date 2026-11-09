@@ -5,6 +5,7 @@ import { and, eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { historicalRecords, parcelRecordLinks, roleCapabilities } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { unknownFormatSentence } from '@/features/parcels/idFormatCopy'
 import { getPublicParcelView } from '@/features/parcels/publicParcelView'
 import { getStaffParcelView } from '@/features/parcels/staffParcelView'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -159,6 +160,18 @@ describe('importSheet', () => {
       .from(historicalRecords)
       .where(eq(historicalRecords.number, 'R-2007-001'))
     expect(row).toMatchObject({ recordedOn: '2007-05-06', sourceSheet: 'csv', sourceRow: 3 })
+  })
+
+  it('names the parcel ID formats screen when the mapping uses a format that does not exist', async () => {
+    const unknown = { ...mapping, parcel: { ...mapping.parcel, format: 'no_such_format' } }
+    const r = await importSheet(
+      handle.db,
+      importer,
+      { path: XLSX, mapping: unknown, dryRun: true },
+      signal,
+    )
+    expect(r).toEqual({ ok: false, error: 'unknown_format' })
+    expect(unknownFormatSentence('no_such_format')).toContain('/staff/settings/parcel-id-formats')
   })
 
   it('an invalid mapping is refused before any row is read', async () => {

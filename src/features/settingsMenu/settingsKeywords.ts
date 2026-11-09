@@ -3,6 +3,10 @@ export const SETTINGS_KEYWORDS: ReadonlyMap<string, string> = new Map([
     '/staff/settings/town-profile',
     'office name address phone email website office hours logo contact details',
   ],
+  [
+    '/staff/settings/parcel-id-formats',
+    'parcel id map lot cama gis assessor number digits width import display identifier',
+  ],
   ['/staff/settings/letterhead', 'logo footer page numbers header contact lines printed documents'],
   ['/staff/settings/signers', 'signature signer building official chair clerk sign letters'],
   ['/staff/settings/application_type', 'permit application workflow steps prefix pay timing'],

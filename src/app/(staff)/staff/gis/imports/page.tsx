@@ -1,6 +1,7 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { SortHeader } from '@/components/dataTable/SortHeader'
+import { NoIdFormatsNotice } from '@/components/parcels/NoIdFormatsNotice'
 import { StatusChip } from '@/components/StatusChip'
 import { ImportUploadForm } from '@/components/staff/ImportUploadForm'
 import { NoPermission } from '@/components/staff/NoPermission'
@@ -20,6 +21,7 @@ import {
 } from '@/features/gis/import/runSort'
 import { adapterLabel, layerLabel } from '@/features/gis/import/runText'
 import { getLayerStatus } from '@/features/gis/layerStatus'
+import { hasIdFormats } from '@/features/parcels/idFormatCopy'
 import { getTownSettings } from '@/features/town/settings'
 import { formatInstantLong } from '@/lib/formatDate'
 import { words } from '@/lib/words'
@@ -72,6 +74,9 @@ export default async function StaffImportsPage({
   return (
     <main data-wide="">
       <h1>Imports</h1>
+      {canImport && !(await hasIdFormats(ctx.db)) ? (
+        <NoIdFormatsNotice canEdit={canConfigure} />
+      ) : null}
       {LAYER_KEYS.map((key, i) => {
         const layer = layers.find((l) => l.key === key)
         const status = statuses[i]
