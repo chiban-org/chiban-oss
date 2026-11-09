@@ -1,5 +1,6 @@
 import { PermitLookupForm } from '@/components/inspections/PermitLookupForm'
 import { RequestForm } from '@/components/inspections/RequestForm'
+import { TakeRequestPanel } from '@/components/inspections/TakeRequestPanel'
 import type { ScheduleBoardData } from '@/features/inspections/boardData'
 import { requestableTypes } from '@/features/inspections/eligibility'
 import {
@@ -80,7 +81,6 @@ function Outcome({ data, board }: { data: TakeRequestData; board: ScheduleBoardD
   return (
     <RequestForm
       submitLabel="Record request"
-      submitVariant="outline"
       applicationId={target.id}
       types={data.offered}
       {...(data.reinspectionOf === null ? {} : { reinspectionOf: data.reinspectionOf })}
@@ -104,10 +104,9 @@ export function TakeRequestSection({
   board: ScheduleBoardData
 }) {
   return (
-    <section aria-label="Take a request" id="take-request" className="m-0">
-      <h2>Take a request</h2>
+    <TakeRequestPanel defaultOpen={data.searched}>
       <PermitLookupForm number={data.number} />
       <Outcome data={data} board={board} />
-    </section>
+    </TakeRequestPanel>
   )
 }

@@ -1,4 +1,6 @@
+import { eq } from 'drizzle-orm'
 import { beforeAll, describe, expect, it, vi } from 'vitest'
+import { inspections } from '@/db/schema'
 import { CHECK_PASSED, refuseField } from '@/server/formInput'
 import {
   checklistIdFor,
@@ -93,7 +95,11 @@ describeActionCases(h, 'requestInspectionAction', {
     checkOnly: CHECK_PASSED,
   },
   accepted: (result, { written }) => {
-    expect(result).toEqual({ ok: true, message: 'Request taken.' })
+    expect(result).toEqual({
+      ok: true,
+      message: 'Request taken.',
+      createdId: expect.any(String),
+    })
     expect(written).toEqual(['audit_log', 'inspections', 'parcel_record_links'])
   },
 })
@@ -116,7 +122,22 @@ describe('inspection request sweep findings', () => {
 
   it('names the phone field for "abc" and takes a request with no phone', async () => {
     expect(await request({ contactPhone: 'abc' })).toEqual(refuseField('contactPhone', PHONE_COPY))
-    expect(await request({ contactPhone: '' })).toEqual({ ok: true, message: 'Request taken.' })
+    expect(await request({ contactPhone: '' })).toEqual({
+      ok: true,
+      message: 'Request taken.',
+      createdId: expect.any(String),
+    })
+  })
+
+  it('returns the id of the request it recorded', async () => {
+    const result = await request({ contactName: 'Pat Contact' })
+    const createdId = result.ok ? result.createdId : undefined
+    expect(createdId).toBeDefined()
+    const [row] = await h.db
+      .select({ status: inspections.status, contactName: inspections.contactName })
+      .from(inspections)
+      .where(eq(inspections.id, createdId ?? ''))
+    expect(row).toEqual({ status: 'requested', contactName: 'Pat Contact' })
   })
 
   it('names the contact name field for a name of spaces', async () => {

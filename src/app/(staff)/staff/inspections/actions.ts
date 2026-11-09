@@ -51,7 +51,9 @@ export async function requestInspectionAction(formData: FormData): Promise<Actio
       },
       signal,
     )
-    if (made.ok) return { ok: true, message: 'Request taken.' }
+    if (made.ok) {
+      return { ok: true, message: 'Request taken.', createdId: made.value.inspectionId }
+    }
     return made.error === 'preferred_date_unavailable'
       ? refused(made.error, 'preferredDate')
       : failure(made.error)

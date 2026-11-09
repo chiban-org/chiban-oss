@@ -6,6 +6,7 @@ const DECK_NUMBER = 'BP-2025-0001'
 async function openRequestForm(page: import('@playwright/test').Page) {
   await page.goto('/staff/inspections')
   const section = page.getByRole('region', { name: 'Take a request' })
+  await section.getByRole('button', { name: 'Take a phone or counter request' }).click()
   await section.getByLabel('Permit number').fill(DECK_NUMBER)
   await section.getByRole('button', { name: 'Find permit' }).click()
   await expect(section.getByRole('button', { name: 'Record request' })).toBeVisible()
@@ -34,6 +35,13 @@ test.describe('taking an inspection request at the counter', () => {
       expect(rows).toHaveLength(0)
     })
 
+    test('opens the form already filled from a permit link', async ({ page }) => {
+      await page.goto(`/staff/inspections?number=${DECK_NUMBER}`)
+      const section = page.getByRole('region', { name: 'Take a request' })
+      await expect(section.getByLabel('Permit number')).toHaveValue(DECK_NUMBER)
+      await expect(section.getByRole('button', { name: 'Record request' })).toBeVisible()
+    })
+
     test('records a footing inspection request by phone and queues it', async ({
       page,
       db,
@@ -46,12 +54,20 @@ test.describe('taking an inspection request at the counter', () => {
       await section.getByLabel('Contact phone').fill('603-555-0188')
       await section.getByRole('button', { name: 'Record request' }).click()
 
-      await expect(
-        page
-          .getByRole('region', { name: 'Waiting' })
-          .getByRole('listitem')
-          .filter({ hasText: `${DECK_NUMBER}, Footing` }),
-      ).toHaveCount(1)
+      const waiting = page
+        .getByRole('region', { name: 'Waiting' })
+        .getByRole('listitem')
+        .filter({ hasText: `${DECK_NUMBER}, Footing` })
+      await expect(waiting).toHaveCount(1)
+      await expect(section.getByRole('button', { name: 'Record request' })).toHaveCount(0)
+      await expect(section.getByRole('status')).toHaveText(
+        `Request taken for ${DECK_NUMBER}, Footing.`,
+      )
+      await expect(waiting.getByRole('button')).toHaveAttribute('aria-pressed', 'true')
+      await expect(page.getByTestId('choice-prompt')).toBeFocused()
+      await expect(page.getByTestId('choice-prompt')).toHaveText(
+        `Pick a time for ${DECK_NUMBER}, Footing.`,
+      )
       const row = await db.one<{ status: string; channel: string; contact_phone: string }>(
         `select i.status, i.channel, i.contact_phone from inspections i
            join applications a on a.id = i.application_id

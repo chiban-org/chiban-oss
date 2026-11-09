@@ -38,6 +38,7 @@ interface ActionFormProps {
   checkBeforeSubmit?: (form: HTMLFormElement) => string | null
   confirm?: ConfirmStep
   closeOnSuccess?: boolean
+  onSuccess?: (result: Extract<ActionResult, { ok: true }>) => void
   children: ReactNode
 }
 
@@ -56,6 +57,7 @@ export function ActionForm({
   checkBeforeSubmit,
   confirm,
   closeOnSuccess = false,
+  onSuccess,
   children,
 }: ActionFormProps) {
   const {
@@ -65,7 +67,10 @@ export function ActionForm({
   } = useFormAction<ActionResult | null>(
     async (_previous, formData) => {
       const reply = await sendOrExplain(action, formData)
-      if (reply.ok) toast.success(reply.message)
+      if (reply.ok) {
+        toast.success(reply.message)
+        onSuccess?.(reply)
+      }
       return reply
     },
     null,

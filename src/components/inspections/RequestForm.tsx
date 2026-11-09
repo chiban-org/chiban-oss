@@ -1,6 +1,8 @@
 'use client'
 
+import { useState } from 'react'
 import { ActionForm } from '@/components/ActionForm'
+import { useTaken } from '@/components/inspections/takeRequestContext'
 import { AreaField, TextField } from '@/components/staff/fields'
 import { Label } from '@/components/ui/label'
 import { Legend } from '@/components/ui/legend'
@@ -22,6 +24,27 @@ export interface RequestFormType {
 }
 
 const NO_PREFERENCE = 'any'
+
+function HoursNote({
+  text,
+  choice,
+  outside,
+  single,
+}: {
+  text: string
+  choice: string | undefined
+  outside: boolean
+  single: boolean
+}) {
+  if (single) return <p className="m-0">{`Phone request hours: ${text}.`}</p>
+  if (choice !== 'phone' || !outside) return null
+  return (
+    <p role="note" className="m-0 rounded-md bg-highlight px-3 py-2">
+      <strong>Phone request hours</strong>
+      {`: ${text}. You can still take this request now.`}
+    </p>
+  )
+}
 
 export function RequestForm({
   applicationId,
@@ -47,8 +70,10 @@ export function RequestForm({
   submitVariant?: 'default' | 'outline'
 }) {
   const first = channels[0]
+  const [channel, setChannel] = useState(first?.value)
+  const taken = useTaken()
   return (
-    <ActionForm action={action} submitLabel={submitLabel} variant={submitVariant}>
+    <ActionForm action={action} submitLabel={submitLabel} variant={submitVariant} onSuccess={taken}>
       <input type="hidden" name="applicationId" value={applicationId} />
       {reinspectionOf === undefined ? null : (
         <input type="hidden" name="reinspectionOf" value={reinspectionOf} />
@@ -56,7 +81,12 @@ export function RequestForm({
       {channels.length > 1 ? (
         <fieldset className="space-y-2 border-0 p-0">
           <legend className="font-medium">How the request came in</legend>
-          <RadioGroup name="channel" defaultValue={first?.value} className="gap-1">
+          <RadioGroup
+            name="channel"
+            value={channel}
+            onValueChange={(next) => setChannel(next as 'phone' | 'counter' | 'portal')}
+            className="gap-1"
+          >
             {channels.map((c) => (
               <div key={c.value} className="flex min-h-11 items-center gap-3">
                 <RadioGroupItem id={`channel-${c.value}`} value={c.value} />
@@ -70,14 +100,12 @@ export function RequestForm({
       ) : (
         <input type="hidden" name="channel" value={first?.value ?? 'portal'} />
       )}
-      {outsidePhoneHours ? (
-        <p role="note" className="m-0 rounded-md bg-highlight px-3 py-2">
-          <strong>Phone request hours</strong>
-          {`: ${phoneHoursText}. You can still take this request now.`}
-        </p>
-      ) : (
-        <p className="m-0">{`Phone request hours: ${phoneHoursText}.`}</p>
-      )}
+      <HoursNote
+        text={phoneHoursText}
+        choice={channel}
+        outside={outsidePhoneHours}
+        single={channels.length < 2}
+      />
       <fieldset className="space-y-2 border-0 p-0">
         <Legend>Inspection</Legend>
         <RadioGroup

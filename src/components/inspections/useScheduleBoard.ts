@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useState, useSyncExternalStore } from 'react'
+import { useEffect, useRef, useState, useSyncExternalStore } from 'react'
 import { boardWeeks, focusDate, focusWeek, weekDates } from '@/components/inspections/boardModel'
 import type {
   BoardBooking,
@@ -53,6 +53,9 @@ export function useScheduleBoard(input: BoardInput) {
     () => focusWeek(initial, weeks) ?? firstOpenWeek(weeks),
   )
   const [dayShown, setDayShown] = useState<string | null>(() => focusDate(initial))
+  const [awaiting, setAwaiting] = useState<string | null>(null)
+  const [status, setStatus] = useState<{ id: string; text: string } | null>(null)
+  const [focusPrompt, setFocusPrompt] = useState(false)
   const promptRef = useRef<HTMLParagraphElement | null>(null)
   const chosen = all.find((r) => r.inspectionId === chosenId)
   const week = weeks.find((w) => w.start === shown) ?? weeks[0]
@@ -63,14 +66,32 @@ export function useScheduleBoard(input: BoardInput) {
     setPicked(null)
     setExpanded(null)
   }
-  const choose = (item: BoardItem) => {
+  const select = (item: BoardItem) => {
     setChosenId(item.inspectionId)
     reset()
     const target = focusWeek(item, weeks)
     if (target !== null) setShown(target)
     setDayShown(focusDate(item))
+  }
+  const choose = (item: BoardItem) => {
+    select(item)
     if (isNarrow()) promptRef.current?.focus()
   }
+  const arrived = awaiting === null ? undefined : requests.find((r) => r.inspectionId === awaiting)
+  if (arrived !== undefined) {
+    setAwaiting(null)
+    setStatus({
+      id: arrived.inspectionId,
+      text: `Request taken for ${arrived.applicationNumber}, ${arrived.typeLabel}.`,
+    })
+    setFocusPrompt(true)
+    select(arrived)
+  }
+  useEffect(() => {
+    if (!focusPrompt) return
+    promptRef.current?.focus()
+    setFocusPrompt(false)
+  }, [focusPrompt])
   const showWeek = (start: CivilDate) => {
     reset()
     setShown(start)
@@ -113,6 +134,8 @@ export function useScheduleBoard(input: BoardInput) {
     expanded,
     booking,
     promptRef,
+    takeStatus: status !== null && status.id === chosenId ? status.text : null,
+    onTaken: setAwaiting,
     choose,
     showWeek,
     showDay,
