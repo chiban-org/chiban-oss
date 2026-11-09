@@ -8,9 +8,9 @@ test.describe('parcel ID formats in settings', () => {
     await page.goto('/staff/settings/parcel-id-formats')
     await expect(page.getByRole('heading', { name: 'Parcel ID formats' })).toBeVisible()
     const mapLot = page.getByRole('row', { name: /Map-lot ID/ })
-    await expect(mapLot).toContainText('exactly 12 digits')
+    await expect(mapLot).toContainText('Exactly 12 digits')
     await expect(mapLot).toContainText('Shown on parcels')
-    await expect(page.getByRole('row', { name: /CAMA number/ })).toContainText('exactly 15 digits')
+    await expect(page.getByRole('row', { name: /CAMA number/ })).toContainText('Exactly 15 digits')
   })
 
   test('refuses to narrow a format that parcels already use and says how many', async ({

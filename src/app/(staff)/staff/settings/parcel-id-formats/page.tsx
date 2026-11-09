@@ -3,7 +3,6 @@ import { StatusChip } from '@/components/StatusChip'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { type IdFormatRow, listIdFormats } from '@/features/parcels/idFormatAdmin'
-import { idFormatHint } from '@/features/parcels/idFormats'
 import { requireStaffContext } from '@/server/requireStaff'
 import { AddFormat, DeleteFormat, EditFormat, ShowFormat } from './FormatForms'
 
@@ -20,16 +19,22 @@ function usedPhrase(row: IdFormatRow): string {
   return row.inUse ? 'Used by imports or links' : 'Not used yet'
 }
 
+function shapePhrase(row: IdFormatRow): string {
+  if (row.kind === 'free_text') return 'Any text.'
+  if (row.width === null) return 'Digits only.'
+  return `Exactly ${String(row.width)} digits, counting leading zeros.`
+}
+
 function FormatRowView({ row }: { row: IdFormatRow }) {
   return (
     <tr className="align-top">
       <td className="min-w-[10rem] font-semibold">{row.label}</td>
-      <td className="min-w-[10rem]">{idFormatHint({ ...row })}</td>
+      <td className="min-w-[10rem]">{shapePhrase(row)}</td>
       <td className="whitespace-nowrap">{usedPhrase(row)}</td>
       <td className="whitespace-nowrap">
         {row.isDisplay ? <StatusChip status="passed" label="Shown on parcels" /> : null}
       </td>
-      <td className="min-w-[14rem]">
+      <td className="min-w-[8rem]">
         <div className="row-actions">
           <EditFormat
             formatKey={row.key}
@@ -58,7 +63,7 @@ export default async function ParcelIdFormatsPage() {
         </p>
       ) : (
         <div className="table-panel">
-          <table className="w-full min-w-[40rem] table-auto text-sm">
+          <table className="w-full min-w-[32rem] table-auto text-sm">
             <caption className="sr-only">Parcel ID formats</caption>
             <thead>
               <tr>
