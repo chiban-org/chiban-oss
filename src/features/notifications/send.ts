@@ -10,6 +10,7 @@ import {
   type OutboxRow,
   partyDelivery,
 } from '@/features/notifications/delivery'
+import { loadMessageSettings, type MessageSettings } from '@/features/notifications/messageSettings'
 import { MESSAGES } from '@/features/notifications/messages'
 import type { NotificationPayload } from '@/features/notifications/queue'
 import { err, type Result } from '@/types/result'
@@ -43,6 +44,7 @@ interface Batch {
   mail: MailTransport
   signal: AbortSignal
   now: Date
+  settings: MessageSettings
 }
 
 async function deliveryFor(batch: Batch, row: OutboxRow): Promise<Delivery> {
@@ -75,6 +77,8 @@ async function sendOne(batch: Batch, row: OutboxRow, delivery: Delivery & { kind
   const message = MESSAGES[row.event]({
     applicationId: row.applicationId,
     payload: row.payload as NotificationPayload,
+    townName: batch.settings.townName,
+    wording: batch.settings.wording,
     ...(delivery.claim === undefined ? {} : { claim: delivery.claim }),
   })
   let sent = false
@@ -89,13 +93,15 @@ async function sendOne(batch: Batch, row: OutboxRow, delivery: Delivery & { kind
   return sent
 }
 
-async function sendBatch(batch: Batch): Promise<number> {
-  const queued = await batch.db
+async function sendBatch(input: Omit<Batch, 'settings'>): Promise<number> {
+  const queued = await input.db
     .select()
     .from(notificationOutbox)
     .where(eq(notificationOutbox.status, 'queued'))
     .orderBy(asc(notificationOutbox.createdAt))
     .limit(BATCH)
+  if (queued.length === 0) return 0
+  const batch: Batch = { ...input, settings: await loadMessageSettings(input.db, input.signal) }
   let sent = 0
   for (const row of queued) {
     batch.signal.throwIfAborted()

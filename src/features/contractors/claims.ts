@@ -10,6 +10,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { claimMessage } from '@/features/contractors/claimMessage'
 import type { MailTransport } from '@/features/mail/transport'
+import { townName } from '@/features/notifications/messageSettings'
 import { addParty } from '@/features/projects/parties'
 import { err, ok, type Result } from '@/types/result'
 
@@ -171,6 +172,7 @@ export async function sendContractorClaim(
       title: project?.title ?? 'your project',
       link: claimLink(token),
       days: CLAIM_DAYS,
+      townName: await townName(db, signal),
     }),
     signal,
   )
