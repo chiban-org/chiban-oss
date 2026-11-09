@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import {
   chargebackAction,
   correctAction,
@@ -21,7 +22,15 @@ const CARD_ACTIONS = {
 }
 
 function CardOption({ payments }: { payments: ApplicationPayments }) {
-  const { reader, feeCents } = payments.card
+  const { reader, feeCents, openAttempt } = payments.card
+  if (openAttempt?.channel === 'card_online') {
+    return (
+      <p className="text-sm">
+        {'A card payment started online is still open on this application. '}
+        <Link href={`/staff/payments/${openAttempt.id}`}>Open the card payment</Link>
+      </p>
+    )
+  }
   if (!reader.available) return <p className="text-sm">{reader.reason}</p>
   return (
     <CardAtCounter
@@ -30,6 +39,11 @@ function CardOption({ payments }: { payments: ApplicationPayments }) {
       feeCents={feeCents}
       simulated={reader.simulated}
       actions={CARD_ACTIONS}
+      resume={
+        openAttempt === null
+          ? null
+          : { attemptId: openAttempt.id, outcomeUnknown: openAttempt.outcomeUnknown }
+      }
     />
   )
 }

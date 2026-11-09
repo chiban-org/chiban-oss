@@ -14,7 +14,7 @@ import { START_CARD_FORM } from './paymentForms'
 const failCard = (error: string): CardStartResult => ({ ok: false, error })
 
 const OPEN_ATTEMPT =
-  'A card payment on this application is still waiting on the processor. Check it or void it under Payments first.'
+  'A card payment on this application is still waiting on the processor. Reload the record to check it or void it.'
 
 async function noReaderReason(signal: AbortSignal): Promise<string> {
   const reader = await loadCardReader(db, signal)

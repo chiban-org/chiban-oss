@@ -53,7 +53,7 @@ const payments = (overrides: Partial<ApplicationPayments> = {}): ApplicationPaym
   canRefund: true,
   canCollect: true,
   targets: [{ id: '9a1c2f3d-6b7e-4a58-8c19-0d2e3f4a5b6c', number: 'BP-2026-0002' }],
-  card: { reader: { available: true, simulated: false }, feeCents: 135 },
+  card: { reader: { available: true, simulated: false }, feeCents: 135, openAttempt: null },
   ...overrides,
 })
 
@@ -144,7 +144,9 @@ describe('payment forms on an application', () => {
       'Card at the counter is off because no card reader device is set up in Payment settings.'
     renderIn(
       <RecordPaymentForm
-        payments={payments({ card: { reader: { available: false, reason }, feeCents: 0 } })}
+        payments={payments({
+          card: { reader: { available: false, reason }, feeCents: 0, openAttempt: null },
+        })}
       />,
     )
     expect(screen.queryByRole('group', { name: 'Card at the counter' })).toBeNull()

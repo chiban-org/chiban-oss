@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
@@ -24,6 +25,7 @@ interface Props {
   feeCents: number
   simulated: boolean
   actions: CardActions
+  resume?: { attemptId: string; outcomeUnknown: boolean } | null
 }
 
 const NOT_REPORTED = 'The processor has not reported an outcome yet. Check again in a moment.'
@@ -55,6 +57,7 @@ function StartForm({
       />
       <Button
         type="button"
+        variant="outline"
         className="self-start"
         disabled={pending || payerName.trim() === ''}
         onClick={() => onStart(payerName)}
@@ -65,11 +68,20 @@ function StartForm({
   )
 }
 
-export function CardAtCounter({ applicationId, dueCents, feeCents, simulated, actions }: Props) {
+export function CardAtCounter({
+  applicationId,
+  dueCents,
+  feeCents,
+  simulated,
+  actions,
+  resume = null,
+}: Props) {
   const csrf = useCsrfToken()
   const router = useRouter()
-  const [phase, setPhase] = useState<Phase>('idle')
-  const [attemptId, setAttemptId] = useState('')
+  const [phase, setPhase] = useState<Phase>(
+    resume === null ? 'idle' : resume.outcomeUnknown ? 'unknown' : 'waiting',
+  )
+  const [attemptId, setAttemptId] = useState(resume?.attemptId ?? '')
   const [pending, setPending] = useState(false)
   const [message, setMessage] = useState('')
 
@@ -123,6 +135,11 @@ export function CardAtCounter({ applicationId, dueCents, feeCents, simulated, ac
         </p>
       )}
       {message === '' ? null : <p role="status">{message}</p>}
+      {phase === 'waiting' || phase === 'unknown' ? (
+        <Link href={`/staff/payments/${attemptId}`} className="self-start">
+          Open the card payment
+        </Link>
+      ) : null}
       {phase === 'waiting' || phase === 'unknown' ? (
         <CardReaderControls
           phase={phase}

@@ -1,6 +1,12 @@
-import { desc, eq, ne, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, ne, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { applications, ledgerAllocations, ledgerEntries, receipts } from '@/db/schema'
+import {
+  applications,
+  ledgerAllocations,
+  ledgerEntries,
+  paymentAttempts,
+  receipts,
+} from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { type FeeBalance, feeBalance } from '@/features/ledger/feeBalance'
@@ -30,7 +36,32 @@ export interface ApplicationPayments {
   canRefund: boolean
   canCollect: boolean
   targets: { id: string; number: string }[]
-  card: { reader: CardReader; feeCents: number }
+  card: { reader: CardReader; feeCents: number; openAttempt: OpenCardAttempt | null }
+}
+
+export interface OpenCardAttempt {
+  id: string
+  channel: 'card_online' | 'card_present'
+  outcomeUnknown: boolean
+}
+
+async function openCardAttempt(db: Db, applicationId: string): Promise<OpenCardAttempt | null> {
+  const [row] = await db
+    .select({
+      id: paymentAttempts.id,
+      channel: paymentAttempts.channel,
+      outcomeUnknown: paymentAttempts.outcomeUnknown,
+    })
+    .from(paymentAttempts)
+    .where(
+      and(
+        inArray(paymentAttempts.state, ['pending', 'authorized']),
+        sql`${paymentAttempts.plannedAllocations} @> ${JSON.stringify([{ applicationId }])}::jsonb`,
+      ),
+    )
+    .orderBy(desc(paymentAttempts.createdAt))
+    .limit(1)
+  return row ?? null
 }
 
 export async function loadApplicationPayments(
@@ -80,10 +111,11 @@ export async function loadApplicationPayments(
           : [],
     })),
   )
-  const [balance, reader, settings] = await Promise.all([
+  const [balance, reader, settings, openAttempt] = await Promise.all([
     feeBalance(db, applicationId, signal),
     loadCardReader(db, signal),
     getPaymentSettings(db, signal),
+    openCardAttempt(db, applicationId),
   ])
   return {
     applicationId,
@@ -95,6 +127,7 @@ export async function loadApplicationPayments(
     card: {
       reader,
       feeCents: computeConvenienceFee(balance.dueCents, settings.convenienceFee, 'card_present'),
+      openAttempt,
     },
   }
 }

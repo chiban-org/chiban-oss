@@ -127,4 +127,28 @@ describe('card at the counter on an application balance', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Start card payment' }))
     await waitFor(() => expect(screen.getByRole('status').textContent).toBe('No reader.'))
   })
+
+  it('picks up a card payment that is still open after the record reloads', async () => {
+    const check = vi.fn((_form: FormData) => Promise.resolve(CAPTURED))
+    render(
+      <CsrfProvider token="t1">
+        <CardAtCounter
+          applicationId="app"
+          dueCents={4500}
+          feeCents={135}
+          simulated={false}
+          actions={actions({ check })}
+          resume={{ attemptId: 'att', outcomeUnknown: false }}
+        />
+      </CsrfProvider>,
+    )
+    expect(screen.queryByRole('button', { name: 'Start card payment' })).toBeNull()
+    expect(screen.getByText(/Waiting for the card on the reader/)).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Open the card payment' }).getAttribute('href')).toBe(
+      '/staff/payments/att',
+    )
+    fireEvent.click(screen.getByRole('button', { name: 'Check with processor' }))
+    await screen.findByText('Card approved. The payment is in the ledger.')
+    expect(check.mock.calls[0]?.[0]?.get('attemptId')).toBe('att')
+  })
 })

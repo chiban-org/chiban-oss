@@ -147,7 +147,18 @@ export async function startCardPresentPayment(
     createAttempt(tx, actor, { channel: 'card_present', ...input }, signal),
   )
   if (!created.ok) return err(created.error)
-  const attempt = await loadAttempt(db, created.value.attemptId)
+  return await sendToReader(db, created.value.attemptId, signal, deps)
+}
+
+export async function sendToReader(
+  db: Db,
+  attemptId: string,
+  signal: AbortSignal,
+  deps: StartDeps = {},
+): Promise<
+  Result<{ attemptId: string; state: AttemptState; outcomeUnknown: boolean }, ProcessorError>
+> {
+  const attempt = await loadAttempt(db, attemptId)
   const now = deps.now ?? new Date()
   const opened = await openProcessor(db, attempt.processorAccountId, deps, signal)
   if (!opened.ok) return err(opened.error)

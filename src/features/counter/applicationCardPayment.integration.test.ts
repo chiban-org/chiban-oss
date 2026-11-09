@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { ledgerEntries, paymentAttempts } from '@/db/schema'
 import { startApplicationCardPayment } from '@/features/counter/applicationCardPayment'
 import { feeBalance } from '@/features/ledger/feeBalance'
+import { loadApplicationPayments } from '@/features/payments/applicationPayments'
 import { resolveSimulatedReader } from '@/features/payments/startPayment'
 import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -99,6 +100,33 @@ describe('card at the counter for an application balance', () => {
     expect((await start()).ok).toBe(true)
     expect(await start()).toEqual({ ok: false, error: 'card_attempt_open' })
     expect(await handle.db.select().from(paymentAttempts)).toHaveLength(1)
+  })
+
+  it('starts only one attempt when several starts race', async () => {
+    const results = await Promise.all([start(), start(), start(), start()])
+    expect(results.filter((r) => r.ok)).toHaveLength(1)
+    expect(results.flatMap((r) => (r.ok ? [] : [r.error]))).toEqual([
+      'card_attempt_open',
+      'card_attempt_open',
+      'card_attempt_open',
+    ])
+    expect(await handle.db.select().from(paymentAttempts)).toHaveLength(1)
+  })
+
+  it('reports the open attempt on the record so staff can pick it up after a reload', async () => {
+    const started = await start()
+    if (!started.ok) throw new Error('start failed')
+    const payments = await loadApplicationPayments(
+      handle.db,
+      trade.world.staff,
+      trade.applicationId,
+      signal,
+    )
+    expect(payments?.card.openAttempt).toEqual({
+      id: started.value.attemptId,
+      channel: 'card_present',
+      outcomeUnknown: false,
+    })
   })
 
   it('allows another try after a decline', async () => {

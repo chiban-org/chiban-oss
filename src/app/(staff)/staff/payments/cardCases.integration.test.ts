@@ -83,7 +83,7 @@ describe('startCardAction refusals in plain words', () => {
     expect(await startCardAction(h.form({ applicationId, payerName: 'Pat' }))).toEqual({
       ok: false,
       error:
-        'A card payment on this application is still waiting on the processor. Check it or void it under Payments first.',
+        'A card payment on this application is still waiting on the processor. Reload the record to check it or void it.',
     })
   })
 
