@@ -7,6 +7,7 @@ import { issueCertificateOfOccupancy } from '@/features/certificates/issueCertif
 import { publishConfig } from '@/features/config/publish'
 import { getPublished, saveDraft } from '@/features/config/store'
 import { type InspectionDays, pickInspectionDays } from '@/features/demo/inspectionDays'
+import { storyDay } from '@/features/demo/seedCalendar'
 import {
   actorFor,
   BUILDING_VALUES,
@@ -59,6 +60,14 @@ export async function seededInspectionDay(
   signal: AbortSignal,
 ): Promise<CivilDate> {
   return (await inspectionDays(db, today, signal)).seeded
+}
+
+export async function aheadInspectionDay(
+  db: Db,
+  today: CivilDate,
+  signal: AbortSignal,
+): Promise<CivilDate> {
+  return (await inspectionDays(db, today, signal)).ahead
 }
 
 async function inspectionDays(
@@ -247,11 +256,11 @@ export async function seedInspections(
     title: 'Garage finished and occupied',
     typeKey: 'BP',
     values: BUILDING_VALUES,
-    submittedOn: '2026-03-15',
+    submittedOn: storyDay('2026-03-15'),
   })
-  await completeAndReview(occupied, '2026-03-16', '2026-03-17')
-  await readyToIssue(occupied, '2026-03-30')
-  await occupied.step('issued', '2026-04-02')
+  await completeAndReview(occupied, storyDay('2026-03-16'), storyDay('2026-03-17'))
+  await readyToIssue(occupied, storyDay('2026-03-30'))
+  await occupied.step('issued', storyDay('2026-04-02'))
   await run(occupied.applicationId, 'final', {
     day: days.recent,
     slot: SECOND_SLOT,
@@ -283,11 +292,11 @@ export async function seedInspections(
     title: 'Workshop framing inspected by the building official',
     typeKey: 'BP',
     values: BUILDING_VALUES,
-    submittedOn: '2025-12-01',
+    submittedOn: storyDay('2025-12-01'),
   })
-  await completeAndReview(framing, '2025-12-02', '2025-12-03')
-  await readyToIssue(framing, '2025-12-10')
-  await framing.step('issued', '2025-12-15')
+  await completeAndReview(framing, storyDay('2025-12-02'), storyDay('2025-12-03'))
+  await readyToIssue(framing, storyDay('2025-12-10'))
+  await framing.step('issued', storyDay('2025-12-15'))
   await run(framing.applicationId, 'framing', {
     day: days.seeded,
     slot: SECOND_SLOT,

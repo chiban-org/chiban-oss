@@ -1,17 +1,18 @@
 import { type E2eDb, expect, test } from '../fixtures/test'
-import { expectConfirmation, expectRefusedBeside } from './support'
+import { demoTitle, expectConfirmation, expectRefusedBeside } from './support'
 
 interface AssignmentRow {
   id: string
 }
 
-async function assignmentFor(db: E2eDb, number: string): Promise<AssignmentRow> {
+async function assignmentFor(db: E2eDb, title: string): Promise<AssignmentRow> {
   return await db.one<AssignmentRow>(
     `select ra.id from review_assignments ra
        join applications a on a.id = ra.application_id
        join users u on u.id = ra.reviewer_user_id
-      where a.number = $1 and u.display_name = 'Remy Reviewer' and ra.removed_at is null`,
-    [number],
+       join projects p on p.id = a.project_id
+      where p.title = $1 and u.display_name = 'Remy Reviewer' and ra.removed_at is null`,
+    [demoTitle(title)],
   )
 }
 
@@ -20,7 +21,7 @@ test.describe('reviewing an assigned application', () => {
     test.use({ role: 'reviewer' })
 
     test('refuses an empty comment beside the field and stores nothing', async ({ page, db }) => {
-      const { id } = await assignmentFor(db, 'EL-2026-0003')
+      const { id } = await assignmentFor(db, 'Panel upgrade with documents')
       await page.goto(`/staff/reviews/${id}`)
       const comments = page.getByRole('region', { name: 'Comments' })
       await comments.getByLabel('Comment').fill('   ')
@@ -35,7 +36,7 @@ test.describe('reviewing an assigned application', () => {
     })
 
     test('adds a comment and stores it against the assignment', async ({ page, db, suffix }) => {
-      const { id } = await assignmentFor(db, 'EL-2026-0003')
+      const { id } = await assignmentFor(db, 'Panel upgrade with documents')
       const body = `Panel schedule needs the breaker sizes, ref ${suffix}`
       await page.goto(`/staff/reviews/${id}`)
       const comments = page.getByRole('region', { name: 'Comments' })
@@ -52,7 +53,7 @@ test.describe('reviewing an assigned application', () => {
     })
 
     test('signs off and stores the sign-off', async ({ page, db }) => {
-      const { id } = await assignmentFor(db, 'SPR-2026-0001')
+      const { id } = await assignmentFor(db, 'Osprey Point site plan')
       await page.goto(`/staff/reviews/${id}`)
       await page.getByRole('button', { name: 'Sign off' }).click()
 
@@ -71,7 +72,7 @@ test.describe('reviewing an assigned application', () => {
     test.use({ role: 'staff' })
 
     test('cannot open another person review and sees no comment form', async ({ page, db }) => {
-      const { id } = await assignmentFor(db, 'EL-2026-0003')
+      const { id } = await assignmentFor(db, 'Panel upgrade with documents')
       await page.goto(`/staff/reviews/${id}`)
       await expect(page.getByRole('button', { name: 'Add comment' })).toHaveCount(0)
       await expect(page.getByRole('button', { name: 'Sign off' })).toHaveCount(0)

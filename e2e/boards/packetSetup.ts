@@ -1,4 +1,5 @@
 import type { Page } from '@playwright/test'
+import { demoTitle, seededNumber } from '../applications/support'
 import { type E2eDb, expect } from '../fixtures/test'
 import { expectFormStatus } from './confirmation'
 import { addMeetingThroughForm, type MeetingSpec, meetingIdFor } from './meetings'
@@ -45,6 +46,10 @@ export async function sharePacketDocument(page: Page, meetingId: string): Promis
   await page.goto(`/staff/boards/meetings/${meetingId}`)
   await page.getByRole('button', { name: 'Share with the board' }).click()
   await expectFormStatus(page, 'Shared with the board. Check it to add it to the packet.')
+}
+
+export async function snapshotTitle(db: E2eDb, application: string): Promise<string> {
+  return `Application ${await seededNumber(db, demoTitle(application))}, snapshot 1`
 }
 
 export async function savePacket(page: Page, meetingId: string, document: string): Promise<void> {

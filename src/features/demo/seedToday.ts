@@ -1,7 +1,7 @@
 import { and, eq } from 'drizzle-orm'
 import { inspections } from '@/db/schema'
 import type { CoverageContext } from '@/features/demo/seedCoverage'
-import { seededInspectionDay } from '@/features/demo/seedInspections'
+import { aheadInspectionDay } from '@/features/demo/seedInspections'
 import { payByCard, payByCheck } from '@/features/demo/seedPayments'
 import { actorFor, findApplication, must, noon, open } from '@/features/demo/seedPermitSupport'
 import { checklistItems } from '@/features/inspections/checklistItems'
@@ -59,7 +59,6 @@ const COUNTER_PERMITS: readonly CounterPermit[] = [
 ]
 
 const STOPS_PER_DAY = 2
-const BOOKING_LEAD_DAYS = 3
 const ROUGH_IN_PERMITS = [
   'Payments: Gas line paid in cash',
   'Payments: Bathroom paid by simulated card',
@@ -108,7 +107,7 @@ async function bookRoughIn(
   startMinute: number,
 ): Promise<void> {
   const { applicationId, inspectorUserId } = booking
-  const bookedAt = noon(addDays(day, -BOOKING_LEAD_DAYS))
+  const bookedAt = noon(addDays(ctx.today, -1))
   const checklist = await checklistItems(ctx.db, applicationId, 'rough', ctx.signal)
   const made = must(
     await requestInspection(
@@ -145,9 +144,9 @@ async function bookRoughIn(
   )
 }
 
-async function inspectionsToday(ctx: CoverageContext): Promise<boolean> {
+async function inspectionsAhead(ctx: CoverageContext): Promise<boolean> {
   const inspector = await actorFor(ctx.db, 'inspector', ctx.signal)
-  const day = await seededInspectionDay(ctx.db, ctx.today, ctx.signal)
+  const day = await aheadInspectionDay(ctx.db, ctx.today, ctx.signal)
   const booked = await ctx.db
     .select({ startMinute: inspections.startMinute })
     .from(inspections)
@@ -175,6 +174,6 @@ async function inspectionsToday(ctx: CoverageContext): Promise<boolean> {
 }
 
 export async function seedTodayWork(ctx: CoverageContext): Promise<boolean> {
-  const steps = [await paymentsToday(ctx), await inspectionsToday(ctx)]
+  const steps = [await paymentsToday(ctx), await inspectionsAhead(ctx)]
   return steps.some(Boolean)
 }

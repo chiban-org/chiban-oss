@@ -6,7 +6,7 @@ import { type Actor, loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { queueFacets } from '@/features/queue/queueFacets'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { demoSeedDeps } from '@/test/demoSeedDeps'
+import { demoSeedDeps, useDemoStoryClock } from '@/test/demoSeedDeps'
 import { sectionOf } from '@/test/htmlSections'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
@@ -60,11 +60,13 @@ async function keyFactsAs(local: string, applicationId: string): Promise<string>
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { ...(await demoSeedDeps()), screenStates: true })
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

@@ -6,6 +6,7 @@ import {
   type PublishedMeeting,
   savePacket,
   sharePacketDocument,
+  snapshotTitle,
 } from './packetSetup'
 import { expectRefused } from './refusal'
 
@@ -29,7 +30,11 @@ test.describe
       })
       await buildAndPublishAgenda(page, meeting.meetingId)
       await sharePacketDocument(page, meeting.meetingId)
-      await savePacket(page, meeting.meetingId, 'Application MSP-2026-0002, snapshot 1')
+      await savePacket(
+        page,
+        meeting.meetingId,
+        await snapshotTitle(db, 'Merganser Court minor site plan'),
+      )
       const row = await db.one<{ short_name: string }>(
         'select b.short_name from board_packets p join boards b on b.id = p.board_id where p.meeting_id = $1',
         [meeting.meetingId],

@@ -18,6 +18,7 @@ import { getPublicParcelView } from '@/features/parcels/publicParcelView'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import { formatCivilDate } from '@/lib/formatDate'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import {
   ENFORCEMENT_ENUM_KEYS,
   findIsoDates,
@@ -73,6 +74,7 @@ async function pageFor(id: string): Promise<string> {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
@@ -84,6 +86,7 @@ beforeAll(async () => {
   }))
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

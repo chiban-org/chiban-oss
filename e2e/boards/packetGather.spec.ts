@@ -6,10 +6,11 @@ import {
   type PublishedMeeting,
   savePacket,
   sharePacketDocument,
+  snapshotTitle,
 } from './packetSetup'
 import { expectRefused } from './refusal'
 
-const DOCUMENT = 'Application SPR-2026-0003, snapshot 1'
+const APPLICATION = 'Kingfisher Point site plan'
 
 test.describe
   .serial('agenda from hearings and the packet gathered from it', () => {
@@ -22,7 +23,7 @@ test.describe
       suffix,
     }) => {
       meeting = await meetingWithHearing(page, db, {
-        application: 'Kingfisher Point site plan',
+        application: APPLICATION,
         daysAhead: 600,
         location: `Gather chain room ${suffix}`,
       })
@@ -40,7 +41,7 @@ test.describe
       db,
     }) => {
       await sharePacketDocument(page, meeting.meetingId)
-      await savePacket(page, meeting.meetingId, DOCUMENT)
+      await savePacket(page, meeting.meetingId, await snapshotTitle(db, APPLICATION))
       const items = await db.rows(
         `select 1 from board_packet_items i join board_packets p on p.id = i.packet_id
        where p.meeting_id = $1`,

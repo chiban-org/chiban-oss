@@ -5,6 +5,7 @@ import { type Actor, loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { workArea } from '@/test/htmlSections'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
@@ -58,6 +59,7 @@ async function railAs(role: string, number: string): Promise<string> {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
@@ -68,6 +70,7 @@ beforeAll(async () => {
   ids = new Map(rows.map((r) => [r.number, r.id]))
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 
@@ -106,7 +109,7 @@ describe('the rail offers only moves this viewer can make', () => {
     expect(finance).not.toContain('name="outcome"')
     expect(finance).not.toContain('Set the meeting')
     expect(finance).not.toContain('Move the meeting')
-    vi.useRealTimers()
+    useDemoStoryClock()
   })
 
   it('offers the step and the withdrawal only to roles that manage the workflow', async () => {

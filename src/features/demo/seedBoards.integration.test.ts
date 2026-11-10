@@ -1,5 +1,5 @@
 import { and, eq, gte, lte, sql } from 'drizzle-orm'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   abutterLists,
   agendas,
@@ -17,6 +17,7 @@ import {
   users,
 } from '@/db/schema'
 import { CORE_STATES } from '@/features/applications/states'
+import { withStoryCalendar } from '@/features/demo/seedCalendar'
 import { DEMO_USERS, seedDemo } from '@/features/demo/seedDemo'
 import { seededInspectionDay } from '@/features/demo/seedInspections'
 import { seedMeetingMinutes } from '@/features/demo/seedMinutes'
@@ -30,6 +31,7 @@ import { loadRostersView } from '@/features/rosters/rosterView'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { publicMinutesText } from '@/test/publicMeetings'
 import { addDays } from '@/types/civilDate'
 
@@ -37,6 +39,7 @@ const signal = new AbortController().signal
 let handle: TestDb
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   await seedDemo(handle.db, signal, {
     records: { mail: createMemoryTransport() },
@@ -44,6 +47,7 @@ beforeAll(async () => {
   })
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 
@@ -272,15 +276,18 @@ describe('states the screens tell apart', () => {
       'Planning Board, September 23, 2026, approved October 14, 2026',
     ])
     const staff = await actorFor(handle.db, 'staff', signal)
-    const again = await seedMeetingMinutes({
-      db: handle.db,
-      store: getObjectStore(),
-      mail: createMemoryTransport(),
-      signal,
-      now: new Date(),
-      today: await townToday(handle.db, new Date(), signal),
-      cast: { admin: staff, staff, applicant: staff },
-    })
+    const today = await townToday(handle.db, new Date(), signal)
+    const again = await withStoryCalendar(today, () =>
+      seedMeetingMinutes({
+        db: handle.db,
+        store: getObjectStore(),
+        mail: createMemoryTransport(),
+        signal,
+        now: new Date(),
+        today,
+        cast: { admin: staff, staff, applicant: staff },
+      }),
+    )
     expect(again).toBe(false)
   })
 })

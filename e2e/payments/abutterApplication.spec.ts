@@ -1,7 +1,7 @@
 import { expect, test } from '../fixtures/test'
-import { applicationByNumber, expectConfirmation, expectRefusedBeside } from './support'
+import { demoTitle, expectConfirmation, expectRefusedBeside, openApplication } from './support'
 
-const PERMIT = 'VAR-2026-0002'
+const PERMIT = demoTitle('Bittern Meadow frontage variance')
 
 test.describe
   .serial('abutter lists from the application page', () => {
@@ -11,7 +11,7 @@ test.describe
       test.use({ role: 'staff' })
 
       test('draws a new list and stores a draft for the application', async ({ page, db }) => {
-        const applicationId = await applicationByNumber(page, db, PERMIT)
+        const applicationId = await openApplication(page, db, PERMIT)
         const drawn = await db.one<{ version: number }>(
           'select coalesce(max(version), 0)::int as version from abutter_lists where application_id = $1',
           [applicationId],
@@ -31,7 +31,7 @@ test.describe
         page,
         db,
       }) => {
-        const applicationId = await applicationByNumber(page, db, PERMIT)
+        const applicationId = await openApplication(page, db, PERMIT)
         const lists = page.getByRole('region', { name: 'Abutter lists' })
         await lists.getByText('Add a professional whose seal is on the plat').click()
         await lists.getByLabel('Business address').fill('9 Heron Row, Alder Pond NH 03999')
@@ -50,7 +50,7 @@ test.describe
         suffix,
       }) => {
         const name = `Pat Surveyor ${suffix}`
-        const applicationId = await applicationByNumber(page, db, PERMIT)
+        const applicationId = await openApplication(page, db, PERMIT)
         const lists = page.getByRole('region', { name: 'Abutter lists' })
         await lists.getByText('Add a professional whose seal is on the plat').click()
         await lists.getByLabel(/^Name/).fill(name)
@@ -107,7 +107,7 @@ test.describe
         await page.goto(`/staff/abutters/${listId}`)
         await expect(page.getByRole('main').getByRole('alert')).toBeVisible()
         await expect(page.getByRole('button', { name: 'Issue list' })).toHaveCount(0)
-        await applicationByNumber(page, db, PERMIT)
+        await openApplication(page, db, PERMIT)
         await expect(page.getByRole('button', { name: 'Draw a new list' })).toHaveCount(0)
       })
     })

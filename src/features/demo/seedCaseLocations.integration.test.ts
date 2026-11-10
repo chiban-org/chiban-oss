@@ -1,18 +1,20 @@
 import { eq } from 'drizzle-orm'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { enforcementCases, enforcementOrders, orderServiceRecipients, parcels } from '@/db/schema'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { demoSeedDeps } from '@/test/demoSeedDeps'
+import { demoSeedDeps, useDemoStoryClock } from '@/test/demoSeedDeps'
 
 const signal = new AbortController().signal
 let handle: TestDb
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   await seedDemo(handle.db, signal, await demoSeedDeps())
 }, 300_000)
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

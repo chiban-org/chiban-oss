@@ -2,13 +2,14 @@ import { expect, test } from '../fixtures/test'
 import {
   attemptState,
   confirmWith,
+  demoTitle,
   expectConfirmation,
   expectNoDialog,
   expectRefusedBeside,
   seededAttemptId,
 } from './support'
 
-const PERMIT = 'PL-2026-0002'
+const PERMIT = demoTitle('Payments: Reader lost connection')
 const NOTE = 'Note (at least 10 characters)'
 const OUTCOME = 'What the processor confirmed'
 const APPROVED = 'Processor confirms approved'

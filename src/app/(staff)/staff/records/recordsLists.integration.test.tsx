@@ -9,6 +9,7 @@ import { retentionFor } from '@/features/records/disposition'
 import { retentionWorklist, WORKLIST_STATES } from '@/features/records/worklist'
 import { townToday } from '@/features/town/today'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { visibleText } from '@/test/leaks'
 
 interface MockState {
@@ -62,11 +63,13 @@ const html = async (element: Promise<unknown>) => renderToStaticMarkup((await el
 const search = (params: Record<string, string> = {}) => ({ searchParams: Promise.resolve(params) })
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

@@ -8,6 +8,7 @@ import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { townToday } from '@/features/town/today'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { makeUser } from '@/test/factories'
 import { visibleText } from '@/test/leaks'
 import { addDays } from '@/types/civilDate'
@@ -57,6 +58,7 @@ function headings(html: string): string[] {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
@@ -86,6 +88,7 @@ async function owePastResult(): Promise<void> {
   })
 }
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

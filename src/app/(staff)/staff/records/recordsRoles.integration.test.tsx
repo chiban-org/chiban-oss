@@ -13,6 +13,7 @@ import { closeRequest } from '@/features/rtk/requests'
 import { recordFirstResponse } from '@/features/rtk/responses'
 import { recordWithholding } from '@/features/rtk/withholdings'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { visibleText } from '@/test/leaks'
 import { makeTestStore } from '@/test/objectStore'
 import type { CivilDate } from '@/types/civilDate'
@@ -74,11 +75,13 @@ async function openRequest() {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

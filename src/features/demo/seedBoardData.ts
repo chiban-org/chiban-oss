@@ -9,6 +9,7 @@ import { scheduleMeeting } from '@/features/boards/meetings'
 import { activeBoards, boardIdOf } from '@/features/boards/townBoards'
 import { publishNewVersion } from '@/features/config/publish'
 import { demoBoardSettings } from '@/features/demo/demoBoardNotices'
+import { storyDay } from '@/features/demo/seedCalendar'
 import { must } from '@/features/demo/seedPermitSupport'
 import type { LayerKey } from '@/features/gis/exceptionKinds'
 import { runImport } from '@/features/gis/import/runImport'
@@ -21,21 +22,22 @@ import type { CivilDate } from '@/types/civilDate'
 
 const d = (s: string) => s as CivilDate
 
-const PB_MEETINGS = [
-  '2026-07-08',
-  '2026-07-22',
-  '2026-08-12',
-  '2026-08-26',
-  '2026-09-09',
-  '2026-09-23',
-  '2026-10-14',
-  '2026-10-28',
-  '2026-11-12',
-  '2026-11-25',
-  '2026-12-09',
-  '2027-01-13',
+const pbMeetings = () => [
+  storyDay('2026-07-08'),
+  storyDay('2026-07-22'),
+  storyDay('2026-08-12'),
+  storyDay('2026-08-26'),
+  storyDay('2026-09-09'),
+  storyDay('2026-09-23'),
+  storyDay('2026-10-14'),
+  storyDay('2026-10-28'),
+  storyDay('2026-11-12'),
+  storyDay('2026-11-25'),
+  storyDay('2026-12-09'),
+  storyDay('2027-01-13'),
 ]
-const ZBA_MEETINGS = ['2026-04-15', '2026-10-20', '2026-11-17', '2026-12-15', '2027-01-19']
+const zbaMeetings = () =>
+  ['2026-09-15', '2026-10-20', '2026-11-17', '2026-12-15', '2027-01-19'].map(storyDay)
 
 const PARCEL_MAPPING = {
   primaryId: { field: 'MAPLOT', format: 'gis12', padNumeric: false },
@@ -91,7 +93,7 @@ export async function publishBoardConfig(db: Db, admin: Actor, signal: AbortSign
       ...BOARD_SETTINGS_DEFAULT.abutters,
       projectionEnabled: true,
       layersConfirmedBy: 'Land Use Technician',
-      layersConfirmedOn: '2026-10-01',
+      layersConfirmedOn: storyDay('2026-10-01'),
     },
   }
   for (const input of [
@@ -107,8 +109,8 @@ export async function publishBoardConfig(db: Db, admin: Actor, signal: AbortSign
 
 export async function scheduleBoardMeetings(db: Db, staff: Actor, signal: AbortSignal) {
   for (const [board, dates] of [
-    ['planning_board', PB_MEETINGS],
-    ['zba', ZBA_MEETINGS],
+    ['planning_board', pbMeetings()],
+    ['zba', zbaMeetings()],
   ] as const) {
     for (const meetingDate of dates) {
       must(

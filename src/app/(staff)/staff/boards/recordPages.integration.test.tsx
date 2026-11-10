@@ -14,6 +14,7 @@ import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { findIsoDates } from '@/test/leaks'
 import { makeTestStore } from '@/test/objectStore'
 
@@ -101,11 +102,13 @@ async function publishedMeeting(): Promise<string> {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

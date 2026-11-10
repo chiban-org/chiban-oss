@@ -1,7 +1,21 @@
+import type { Page } from '@playwright/test'
 import { type E2eDb, expect, test } from '../fixtures/test'
-import { applicationByNumber, expectConfirmation, expectRefusedBeside } from './support'
+import { expectConfirmation, expectRefusedBeside } from './support'
 
-const PLUMBING_NUMBER = 'PL-2026-0004'
+const LAUNDRY_SINK_PARCEL = '007023000000'
+
+async function openLaundrySink(page: Page, db: E2eDb): Promise<string> {
+  const row = await db.one<{ id: string }>(
+    `select a.id from applications a
+       join projects p on p.id = a.project_id
+       join parcel_aliases pa on pa.parcel_id = p.parcel_id
+      where pa.value = $1 and a.application_type_key = 'PL'`,
+    [LAUNDRY_SINK_PARCEL],
+  )
+  await page.goto(`/staff/applications/${row.id}`)
+  await expect(page.locator('main:not([aria-busy])')).toBeVisible()
+  return row.id
+}
 
 async function revisionOf(db: E2eDb, id: string): Promise<number> {
   const row = await db.one<{ permit_revision: number }>(
@@ -19,7 +33,7 @@ test.describe('correcting an issued permit', () => {
       page,
       db,
     }) => {
-      const id = await applicationByNumber(page, db, PLUMBING_NUMBER)
+      const id = await openLaundrySink(page, db)
       const before = await revisionOf(db, id)
       await page.getByRole('button', { name: 'Correct this permit' }).click()
       const dialog = page.getByRole('dialog', { name: /^Correct permit / })
@@ -40,7 +54,7 @@ test.describe('correcting an issued permit', () => {
       db,
       suffix,
     }) => {
-      const id = await applicationByNumber(page, db, PLUMBING_NUMBER)
+      const id = await openLaundrySink(page, db)
       const before = await revisionOf(db, id)
       const title = `Laundry sink, corrected ${suffix}`
       await page.getByRole('button', { name: 'Correct this permit' }).click()
@@ -71,7 +85,7 @@ test.describe('correcting an issued permit', () => {
     test.use({ role: 'inspector' })
 
     test('is not offered the correction', async ({ page, db }) => {
-      await applicationByNumber(page, db, PLUMBING_NUMBER)
+      await openLaundrySink(page, db)
       await expect(page.getByRole('button', { name: 'Correct this permit' })).toHaveCount(0)
     })
   })

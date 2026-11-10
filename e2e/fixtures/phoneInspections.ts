@@ -38,7 +38,8 @@ async function scheduleFromSeed(options: {
          i.channel, i.requested_by_user_id, i.contact_name, i.contact_phone, i.access_notes,
          (select id from users where email = $1), $2::date, $3, i.duration_minutes
        from inspections i join applications a on a.id = i.application_id
-       where a.number = 'BP-2025-0001' and i.inspection_type = 'framing'
+       join projects p on p.id = a.project_id
+       where p.title = 'Demo permit: Deck renewed once' and i.inspection_type = 'framing'
        order by i.requested_at limit 1
        returning id, (select number from applications where id = application_id) as number`,
       [options.inspectorEmail, options.scheduledDate, options.startMinute],

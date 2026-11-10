@@ -1,6 +1,7 @@
 import { createApplication } from '@/features/applications/createApplication'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
 import { VARIANCE_VALUES } from '@/features/demo/seedBoardApps'
+import { storyDay } from '@/features/demo/seedCalendar'
 import type { CoverageContext } from '@/features/demo/seedCoverage'
 import {
   actorFor,
@@ -56,9 +57,9 @@ async function withdrawn(ctx: CoverageContext, title: string): Promise<void> {
     title,
     typeKey: 'BP',
     values: BUILDING_VALUES,
-    submittedOn: '2026-09-14',
+    submittedOn: storyDay('2026-09-14'),
   })
-  await completeAndReview(s, '2026-09-15', '2026-09-16')
+  await completeAndReview(s, storyDay('2026-09-15'), storyDay('2026-09-16'))
   const reviewer = await actorFor(ctx.db, 'reviewer', ctx.signal)
   must(
     await assignReviewer(
@@ -69,7 +70,7 @@ async function withdrawn(ctx: CoverageContext, title: string): Promise<void> {
     ),
     'review of the withdrawn permit',
   )
-  await s.step('withdrawn', '2026-09-30')
+  await s.step('withdrawn', storyDay('2026-09-30'))
 }
 
 async function readyAtCounter(ctx: CoverageContext, title: string): Promise<void> {
@@ -78,10 +79,10 @@ async function readyAtCounter(ctx: CoverageContext, title: string): Promise<void
     title,
     typeKey: 'BP',
     values: { ...BUILDING_VALUES, description: 'Ten by twelve storage shed on skids' },
-    submittedOn: '2026-10-05',
+    submittedOn: storyDay('2026-10-05'),
   })
-  await completeAndReview(s, '2026-10-06', '2026-10-07')
-  await readyToIssue(s, '2026-10-28')
+  await completeAndReview(s, storyDay('2026-10-06'), storyDay('2026-10-07'))
+  await readyToIssue(s, storyDay('2026-10-28'))
 }
 
 async function issuedAwaitingCensus(ctx: CoverageContext, title: string): Promise<void> {

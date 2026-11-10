@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test'
 import { expect, test } from '../fixtures/test'
 import {
-  applicationByNumber,
   confirmWith,
+  demoTitle,
   entryItem,
   expectConfirmation,
   expectNoDialog,
@@ -10,11 +10,12 @@ import {
   formWith,
   ledgerFor,
   ledgerOfType,
+  openApplication,
   openEntryControls,
   recordDeskPayment,
 } from './support'
 
-const SOURCE = 'EL-2026-0003'
+const SOURCE = demoTitle('Panel upgrade with documents')
 const SHORT_REASON = 'too short'
 const GOOD_REASON = 'Customer paid twice at the counter'
 const REASON_REFUSAL = 'Enter a reason of at least 10 characters.'
@@ -34,7 +35,7 @@ test.describe
       suffix,
     }) => {
       payer = `Fern Payer ${suffix}`
-      await applicationByNumber(page, db, SOURCE)
+      await openApplication(page, db, SOURCE)
       await recordDeskPayment(page, { method: 'Cash', amount: '20.00', payer })
       expect(await ledgerFor(db, payer)).toEqual([
         expect.objectContaining({ entry_type: 'payment', method: 'cash', amount_cents: 2000 }),
@@ -45,7 +46,7 @@ test.describe
       page,
       db,
     }) => {
-      await applicationByNumber(page, db, SOURCE)
+      await openApplication(page, db, SOURCE)
       const controls = await openEntryControls(cashEntry(page))
       const form = formWith(controls, 'Refund')
       await form.getByLabel('Refund amount in dollars').fill('5.00')
@@ -57,7 +58,7 @@ test.describe
     })
 
     test('refunding more than was paid is refused beside the amount', async ({ page, db }) => {
-      await applicationByNumber(page, db, SOURCE)
+      await openApplication(page, db, SOURCE)
       const controls = await openEntryControls(cashEntry(page))
       const form = formWith(controls, 'Refund')
       await form.getByLabel('Refund amount in dollars').fill('20.01')
@@ -75,7 +76,7 @@ test.describe
       page,
       db,
     }) => {
-      await applicationByNumber(page, db, SOURCE)
+      await openApplication(page, db, SOURCE)
       const controls = await openEntryControls(cashEntry(page))
       const form = formWith(controls, 'Refund')
       await form.getByLabel('Refund amount in dollars').fill('5.00')

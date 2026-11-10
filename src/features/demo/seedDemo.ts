@@ -8,9 +8,11 @@ import { seedDefaultGrants } from '@/features/authz/defaultGrants'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { seedAmendments } from '@/features/demo/seedAmendments'
 import { seedBoards } from '@/features/demo/seedBoards'
+import { withStoryCalendar } from '@/features/demo/seedCalendar'
 import { seedCama } from '@/features/demo/seedCama'
 import { seedCoverage } from '@/features/demo/seedCoverage'
 import { seedCutover } from '@/features/demo/seedCutover'
+import { runDailyJobsAsOf } from '@/features/demo/seedDailyJobs'
 import { seedEnforcement } from '@/features/demo/seedEnforcement'
 import { seedBusinessExport, seedExportTarget } from '@/features/demo/seedExports'
 import { seedAcknowledgedEmailTest, seedStaleJobAlert } from '@/features/demo/seedHealth'
@@ -32,6 +34,7 @@ import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { getMailTransport } from '@/features/mail/transport'
 import type { OcrConverter } from '@/features/migration/ocrmypdf'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
+import { townToday } from '@/features/town/today'
 
 export { DEMO_DOMAIN }
 
@@ -130,6 +133,7 @@ export interface SeedDemoDeps {
   operations?: SeedOperationsDeps
   boards?: { now?: Date }
   screenStates?: boolean
+  now?: Date
 }
 
 const DEFAULT_EXPORT_DIR = './.data/exports'
@@ -196,6 +200,21 @@ export async function seedDemo(
       rolesAssigned: assigned.length,
     }
   })
+  const now = deps.now ?? new Date()
+  const today = await townToday(db, now, signal)
+  const seeded = await withStoryCalendar(today, () => seedStory(db, signal, deps, now))
+  await runDailyJobsAsOf(db, today, signal)
+  return { ...base, ...seeded }
+}
+
+type StoryReport = Omit<SeedReport, 'townConfigured' | 'usersCreated' | 'rolesAssigned'>
+
+async function seedStory(
+  db: Db,
+  signal: AbortSignal,
+  deps: SeedDemoDeps,
+  now: Date,
+): Promise<StoryReport> {
   const store = deps.operations?.store ?? getObjectStore()
   const townProfileSeeded = await seedTownProfile(db, store, signal)
   const seeded = await seedParcels(db, signal)
@@ -203,21 +222,22 @@ export async function seedDemo(
   await seedAmendments(db, signal)
   const paymentsSeeded = await seedPayments(db, signal)
   const recordsSeeded = await seedRecords(db, signal, deps.records)
-  const inspectionsSeeded = await seedInspections(db, signal, deps.inspections)
+  const inspectionsSeeded = await seedInspections(db, signal, { now, ...deps.inspections })
   const boardStore = deps.operations?.store ?? deps.records?.store
-  const boardsSeeded = await seedBoards(db, signal, deps.boards?.now, boardStore)
-  await seedTownBoards(db, boardStore ?? getObjectStore(), signal, deps.boards?.now)
+  const boardNow = deps.boards?.now ?? now
+  const boardsSeeded = await seedBoards(db, signal, boardNow, boardStore)
+  await seedTownBoards(db, boardStore ?? getObjectStore(), signal, boardNow)
   await seedBoardPacket(db, signal, deps.records?.mail)
-  await seedNoticeContacts(db, signal, deps.boards?.now)
-  const operationsSeeded = await seedOperations(db, signal, deps.operations ?? {})
-  const now = deps.operations?.now ?? new Date()
-  const enforcementSeeded = await seedEnforcement(db, store, signal, now)
-  await seedRecordsM10(db, store, signal, now)
+  await seedNoticeContacts(db, signal, boardNow)
+  const operations = { now, ...deps.operations }
+  const operationsSeeded = await seedOperations(db, signal, operations)
+  const enforcementSeeded = await seedEnforcement(db, store, signal, operations.now)
+  await seedRecordsM10(db, store, signal, operations.now)
+  const mail = deps.records?.mail ?? getMailTransport()
   const coverageSeeded =
     deps.screenStates === true &&
-    (await seedCoverage(db, { store, now, mail: deps.records?.mail ?? getMailTransport() }, signal))
+    (await seedCoverage(db, { store, now: operations.now, mail }, signal))
   return {
-    ...base,
     townProfileSeeded,
     parcelsSeeded: seeded.imported,
     permitsSeeded,

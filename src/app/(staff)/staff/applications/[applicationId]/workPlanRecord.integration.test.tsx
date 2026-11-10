@@ -6,7 +6,7 @@ import { type Actor, loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { formatCivilDate } from '@/lib/formatDate'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { demoSeedDeps } from '@/test/demoSeedDeps'
+import { demoSeedDeps, useDemoStoryClock } from '@/test/demoSeedDeps'
 import { countSections, filledButtons, sectionOf } from '@/test/htmlSections'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
@@ -68,6 +68,7 @@ async function nextDue(number: string): Promise<string> {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { ...(await demoSeedDeps()), screenStates: true })
@@ -80,6 +81,7 @@ beforeAll(async () => {
   for (const row of await handle.db.select().from(applications)) ids.set(row.number, row.id)
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 
@@ -148,7 +150,7 @@ describe('the filed site plan, as the clerk', () => {
       .where(eq(acceptanceSchedules.applicationId, ids.get('SPR-2026-0001') ?? ''))
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-11-06T16:00:00Z'))
-    const html = await page('SPR-2026-0001').finally(() => vi.useRealTimers())
+    const html = await page('SPR-2026-0001').finally(() => useDemoStoryClock())
     expect(sentence(html)).toContain(
       `Waiting on: Alder Pond Planning Board. Vote on completeness at the meeting on ${formatCivilDate(meeting?.date ?? '')}.`,
     )

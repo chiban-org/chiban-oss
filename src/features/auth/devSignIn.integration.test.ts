@@ -1,9 +1,10 @@
-import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import { env } from '@/config/env'
 import { devSignIn, isDemoSignInEnabled, isDevSignInEnabled } from '@/features/auth/devSignIn'
 import { loadSession } from '@/features/auth/session'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { makeUser } from '@/test/factories'
 
 let handle: TestDb
@@ -15,10 +16,12 @@ const original = {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   await seedDemo(handle.db, signal)
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 afterEach(() => {

@@ -1,15 +1,20 @@
 import { expect, test } from '../fixtures/test'
 import { inspectionOf, passEveryItem } from './inspectionSupport'
-import { doThisNow, expectConfirmation } from './support'
+import { demoTitle, doThisNow, expectConfirmation, seededNumber } from './support'
 
-const DECK_NUMBER = 'BP-2025-0001'
+const DECK = demoTitle('Deck renewed once')
+let deckNumber = ''
+
+test.beforeAll(async ({ db }) => {
+  deckNumber = await seededNumber(db, DECK)
+})
 
 test.describe('recording an inspection result', () => {
   test.describe('as the finance clerk', () => {
     test.use({ role: 'finance' })
 
     test('reads a scheduled inspection without the checklist form', async ({ page, db }) => {
-      const booked = await inspectionOf(db, DECK_NUMBER, 'framing', 'scheduled')
+      const booked = await inspectionOf(db, deckNumber, 'framing', 'scheduled')
       await page.goto(`/staff/inspections/${booked.id}`)
       await expect(page.getByRole('heading', { name: 'Framing reinspection' })).toBeVisible()
       await expect(doThisNow(page)).toContainText('Waiting on Ira Inspector')
@@ -25,7 +30,7 @@ test.describe('recording an inspection result', () => {
     test.use({ role: 'staff' })
 
     test('waits on the assigned inspector instead of recording', async ({ page, db }) => {
-      const booked = await inspectionOf(db, DECK_NUMBER, 'framing', 'scheduled')
+      const booked = await inspectionOf(db, deckNumber, 'framing', 'scheduled')
       await page.goto(`/staff/inspections/${booked.id}`)
       await expect(doThisNow(page)).toContainText('Waiting on Ira Inspector')
       await expect(page.getByRole('radiogroup')).toHaveCount(0)
@@ -40,20 +45,20 @@ test.describe('recording an inspection result', () => {
       page,
       db,
     }) => {
-      const booked = await inspectionOf(db, DECK_NUMBER, 'framing', 'scheduled')
+      const booked = await inspectionOf(db, deckNumber, 'framing', 'scheduled')
       await page.goto(`/staff/inspections/${booked.id}`)
       await page.getByRole('radiogroup').first().getByRole('radio', { name: 'Fail' }).click()
 
       await expect(page.getByText('Write at least 10 characters about what failed.')).toBeVisible()
       await expect(page.getByRole('button', { name: 'Record result' })).toBeDisabled()
-      expect((await inspectionOf(db, DECK_NUMBER, 'framing', 'scheduled')).id).toBe(booked.id)
+      expect((await inspectionOf(db, deckNumber, 'framing', 'scheduled')).id).toBe(booked.id)
     })
 
     test('asks first, then passes the framing reinspection and stores the result', async ({
       page,
       db,
     }) => {
-      const booked = await inspectionOf(db, DECK_NUMBER, 'framing', 'scheduled')
+      const booked = await inspectionOf(db, deckNumber, 'framing', 'scheduled')
       await page.goto(`/staff/inspections/${booked.id}`)
       await expect(page.getByRole('button', { name: 'Record result' })).toBeDisabled()
       await passEveryItem(page)
@@ -69,7 +74,7 @@ test.describe('recording an inspection result', () => {
       await expect(dialog).toContainText('A result cannot be changed once it is recorded.')
       await dialog.getByRole('button', { name: 'Keep editing' }).click()
       await expect(dialog).toHaveCount(0)
-      expect((await inspectionOf(db, DECK_NUMBER, 'framing', 'scheduled')).id).toBe(booked.id)
+      expect((await inspectionOf(db, deckNumber, 'framing', 'scheduled')).id).toBe(booked.id)
 
       await page.getByRole('button', { name: 'Record result' }).click()
       await dialog.getByRole('button', { name: 'Record as passed' }).click()

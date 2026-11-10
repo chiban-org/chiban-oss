@@ -1,7 +1,12 @@
 import type { Locator, Page } from '@playwright/test'
 import { type E2eDb, expect } from '../fixtures/test'
 
-export { applicationByNumber, expectRefusedBeside } from '../applications/support'
+export {
+  demoTitle,
+  expectRefusedBeside,
+  openApplication,
+  seededNumber,
+} from '../applications/support'
 export { confirmDialog, confirmWith } from '../boards/confirm'
 
 export interface LedgerRow {
@@ -97,11 +102,12 @@ export async function recordDeskPayment(page: Page, payment: DeskPayment): Promi
   ).toBeVisible()
 }
 
-export async function seededAttemptId(db: E2eDb, permit: string): Promise<string> {
+export async function seededAttemptId(db: E2eDb, permitTitle: string): Promise<string> {
   const row = await db.one<{ id: string }>(
-    `select p.id from payment_attempts p, applications a
-      where a.number = $1 and p.planned_allocations::text like '%' || a.id::text || '%'`,
-    [permit],
+    `select pa.id from payment_attempts pa, applications a, projects pr
+      where pr.id = a.project_id and pr.title = $1
+        and pa.planned_allocations::text like '%' || a.id::text || '%'`,
+    [permitTitle],
   )
   return row.id
 }

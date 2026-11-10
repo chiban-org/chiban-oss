@@ -54,7 +54,7 @@ test.describe
     test('refuses a filing date before the vote beside the date field', async ({ page, db }) => {
       const decision = await decisionOf(db)
       await page.goto(`/staff/boards/decisions/${decision.id}`)
-      await page.getByLabel(/^Date filed/).fill('2026-10-01')
+      await page.getByLabel(/^Date filed/).fill(await daysFromToday(db, -60))
       await page.getByRole('button', { name: 'File the decision' }).click()
       await expectRefused(page.getByLabel(/^Date filed/), 'Check: Date filed.')
       expect((await decisionOf(db)).filed_on).toBeNull()

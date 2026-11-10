@@ -1,17 +1,18 @@
 import type { Page } from '@playwright/test'
 import { type E2eDb, expect, test } from '../fixtures/test'
 import {
-  applicationByNumber,
   confirmWith,
+  demoTitle,
   entryItem,
   expectConfirmation,
   expectNoDialog,
   expectRefusedBeside,
   formWith,
+  openApplication,
   openEntryControls,
 } from './support'
 
-const SOURCE = 'PL-2026-0001'
+const SOURCE = demoTitle('Payments: Bathroom paid by simulated card')
 const CARD_ENTRY = /payment by card present: \$46\.35/
 const REASON = 'Reason (at least 10 characters)'
 const REASON_REFUSAL = 'Enter a reason of at least 10 characters.'
@@ -25,7 +26,7 @@ async function chargebacks(db: E2eDb) {
 }
 
 async function chargebackForm(page: Page, db: E2eDb) {
-  await applicationByNumber(page, db, SOURCE)
+  await openApplication(page, db, SOURCE)
   return formWith(await openEntryControls(entryItem(page, CARD_ENTRY)), SUBMIT)
 }
 

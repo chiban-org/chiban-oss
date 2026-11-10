@@ -6,6 +6,7 @@ import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { sectionOf } from '@/test/htmlSections'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
@@ -47,6 +48,7 @@ async function actAs(local: string): Promise<void> {
 const html = async (element: Promise<unknown>) => renderToStaticMarkup((await element) as never)
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
@@ -58,6 +60,7 @@ beforeAll(async () => {
   owned = row ?? owned
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

@@ -9,6 +9,7 @@ import { evaluateGates } from '@/features/gates/evaluateGates'
 import { overrideAdministrativeGate, recordStatutoryException } from '@/features/gates/overrides'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { filledButtons, sectionOf, workArea } from '@/test/htmlSections'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -65,6 +66,7 @@ function nextStep(html: string): string {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
@@ -75,6 +77,7 @@ beforeAll(async () => {
   ids = new Map(rows.map((r) => [r.number, r.id]))
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 
