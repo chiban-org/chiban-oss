@@ -76,6 +76,7 @@ describe('demo environment', () => {
     CHIBAN_DEMO_MODE: 'true',
     CHIBAN_DEMO_RESET_AT: '3:00 AM Eastern',
     SMTP_URL: 'smtp://mailpit:1025',
+    ENABLE_SIMULATED_PAYMENTS: 'true',
   }
 
   function failingPaths(input: Record<string, string>): string[] {
@@ -99,6 +100,21 @@ describe('demo environment', () => {
       failingPaths({ ...demo, SMTP_URL: 'smtps://user:pass@smtp.mailer.example:465' }),
     ).toEqual(['SMTP_URL'])
     expect(failingPaths({ ...demo, SMTP_URL: 'not a url' })).toEqual(['SMTP_URL'])
+  })
+
+  it('refuses SMTP options that would send mail somewhere other than the sink host', () => {
+    expect(
+      failingPaths({ ...demo, SMTP_URL: 'smtp://user:pass@mailpit:1025?service=gmail' }),
+    ).toEqual(['SMTP_URL'])
+    expect(
+      failingPaths({ ...demo, SMTP_URL: 'smtp://mailpit:1025?host=smtp.mailer.example' }),
+    ).toEqual(['SMTP_URL'])
+  })
+
+  it('needs simulated payments so applicants can finish a card payment', () => {
+    expect(failingPaths({ ...demo, ENABLE_SIMULATED_PAYMENTS: 'false' })).toEqual([
+      'ENABLE_SIMULATED_PAYMENTS',
+    ])
   })
 
   it('takes the allowed sink hosts from a comma list', () => {

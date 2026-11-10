@@ -41,7 +41,9 @@ const commaList = (item: z.ZodType<string, string>) =>
 
 function mailHostIn(smtpUrl: string, hosts: readonly string[]): boolean {
   try {
-    const host = new URL(smtpUrl).hostname.toLowerCase()
+    const url = new URL(smtpUrl)
+    if (url.search !== '') return false
+    const host = url.hostname.toLowerCase()
     return hosts.some((allowed) => allowed.toLowerCase() === host)
   } catch {
     return false
@@ -123,7 +125,12 @@ export const envSchema = z
   })
   .refine((v) => !v.CHIBAN_DEMO_MODE || mailHostIn(v.SMTP_URL, v.CHIBAN_DEMO_MAIL_SINK_HOSTS), {
     path: ['SMTP_URL'],
-    message: 'must point at a host in CHIBAN_DEMO_MAIL_SINK_HOSTS when CHIBAN_DEMO_MODE is on',
+    message:
+      'must point at a host in CHIBAN_DEMO_MAIL_SINK_HOSTS, with no query options, when CHIBAN_DEMO_MODE is on',
+  })
+  .refine((v) => !v.CHIBAN_DEMO_MODE || v.ENABLE_SIMULATED_PAYMENTS, {
+    path: ['ENABLE_SIMULATED_PAYMENTS'],
+    message: 'must be true when CHIBAN_DEMO_MODE is on, so the simulated checkout works',
   })
   .refine((v) => !v.CHIBAN_DEMO_MODE || v.CHIBAN_DEMO_RESET_AT !== undefined, {
     path: ['CHIBAN_DEMO_RESET_AT'],
