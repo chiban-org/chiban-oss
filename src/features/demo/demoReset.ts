@@ -25,6 +25,7 @@ export function demoSeedDirs(): Required<
 }
 
 async function freshSchema(db: Db, signal: AbortSignal): Promise<boolean> {
+  signal.throwIfAborted()
   await db.execute(sql`drop schema if exists drizzle cascade`)
   await db.execute(sql`drop schema if exists public cascade`)
   await db.execute(sql`create schema public`)
@@ -53,6 +54,7 @@ export async function resetDemoDatabase(
   try {
     return ok(await seedDemo(db, signal, seedDeps))
   } catch (e) {
+    if (signal.aborted) throw e
     const overlay = failureMessage(e)
     console.error(overlay)
     if (!(await freshSchema(db, signal))) return err('migration_failed')

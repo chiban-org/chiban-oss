@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { eq, like } from 'drizzle-orm'
+import { eq, like, sql } from 'drizzle-orm'
 import { afterAll, afterEach, beforeAll, describe, expect, it } from 'vitest'
 import { env } from '@/config/env'
 import { applications, projects, users } from '@/db/schema'
@@ -92,6 +92,33 @@ describe('demo reset', () => {
     expect(emails).not.toContain('visitor.made@alderpond.example')
     expect(emails).not.toContain('kept@alderpond.example')
   }, 180_000)
+
+  it('leaves the half-seeded tables alone when the reset is cancelled during an overlay seed', async () => {
+    env.NODE_ENV = 'production'
+    env.CHIBAN_DEMO_MODE = true
+    const controller = new AbortController()
+    const name = 'Town of Alder Pond Cancelled'
+    const reset = resetDemoDatabase(handle.db, controller.signal, {
+      ...(await demoSeedDeps()),
+      overlay: { ...exampleOverlay(), town: { name } },
+    })
+    const settled = reset.then(
+      () => 'resolved',
+      () => 'rejected',
+    )
+    for (;;) {
+      const named = await handle.db
+        .execute(sql`select to_regclass('public.town_settings') is not null as ready`)
+        .then((r) => r.rows[0]?.ready === true)
+      const town = named ? await getTownSettings(handle.db, signal) : null
+      if (town?.ok === true && town.value.name === name) break
+      await new Promise((resolve) => setTimeout(resolve, 200))
+    }
+    controller.abort()
+    expect(await settled).toBe('rejected')
+    const tables = await handle.db.execute(sql`select to_regclass('public.users') as t`)
+    expect(tables.rows[0]?.t).not.toBeNull()
+  }, 420_000)
 
   it('falls back to the plain demo and fails loudly when the seed cannot run with the overlay', async () => {
     env.NODE_ENV = 'production'
