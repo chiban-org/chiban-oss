@@ -1,5 +1,5 @@
 import { and, eq } from 'drizzle-orm'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import {
   agendaItems,
   agendas,
@@ -34,16 +34,18 @@ import { trcSummary } from '@/features/reviews/trcSummary'
 import { townToday } from '@/features/town/today'
 import { boardIdOf } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { demoSeedDeps } from '@/test/demoSeedDeps'
+import { demoSeedDeps, useDemoStoryClock } from '@/test/demoSeedDeps'
 
 const signal = new AbortController().signal
 let handle: TestDb
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   await seedDemo(handle.db, signal, { ...(await demoSeedDeps()), screenStates: true })
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 
@@ -88,13 +90,13 @@ describe('hearing demo data', () => {
       .from(boardDecisions)
       .where(eq(boardDecisions.applicationId, app?.id ?? ''))
     expect(rows).toHaveLength(1)
-    expect(rows[0]).toMatchObject({ outcome: 'approved', votedOn: '2026-04-15' })
+    expect(rows[0]).toMatchObject({ outcome: 'approved', votedOn: '2026-09-15' })
     expect(rows[0]?.filedOn).not.toBeNull()
     const [hearing] = await handle.db
       .select()
       .from(hearings)
       .where(eq(hearings.id, rows[0]?.hearingId ?? ''))
-    expect(hearing).toMatchObject({ status: 'held', heldOn: '2026-04-15' })
+    expect(hearing).toMatchObject({ status: 'held', heldOn: '2026-09-15' })
   })
 
   it('seats five members on each board, with public accounts', async () => {

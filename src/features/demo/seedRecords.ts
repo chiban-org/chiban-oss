@@ -5,6 +5,7 @@ import { applications, documents, documentVersions } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { claimProject, sendContractorClaim } from '@/features/contractors/claims'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { storyDay } from '@/features/demo/seedCalendar'
 import {
   actorFor,
   type Cast,
@@ -187,14 +188,14 @@ export async function seedRecords(
     title: 'Panel upgrade with documents',
     typeKey: 'EL',
     values: TRADE_VALUES,
-    submittedOn: '2026-10-22',
+    submittedOn: storyDay('2026-10-22'),
   })
   const second = await open(db, cast, signal, {
     parcel: '007002000000',
     title: 'Subpanel for the barn',
     typeKey: 'EL',
     values: TRADE_VALUES,
-    submittedOn: '2026-10-23',
+    submittedOn: storyDay('2026-10-23'),
   })
   const target: RecordRef = { kind: 'application', id: first.applicationId }
   const schedule = await attach(ctx, cast.applicant, {

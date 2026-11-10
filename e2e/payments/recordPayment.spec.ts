@@ -1,15 +1,16 @@
 import { expect, test } from '../fixtures/test'
 import {
-  applicationByNumber,
+  demoTitle,
   expectConfirmation,
   expectRefusedBeside,
   formWith,
   ledgerFor,
   ledgerSection,
+  openApplication,
   openRecordPayment,
 } from './support'
 
-const PERMIT = 'EL-2026-0004'
+const PERMIT = demoTitle('Subpanel for the barn')
 
 test.describe
   .serial('recording a cash or check payment at the desk', () => {
@@ -24,7 +25,7 @@ test.describe
         suffix,
       }) => {
         payer = `Pat Payer ${suffix}`
-        await applicationByNumber(page, db, PERMIT)
+        await openApplication(page, db, PERMIT)
         const form = formWith(await openRecordPayment(page), 'Record payment')
         await form.getByLabel('Amount in dollars').fill('25.00')
         await form.getByLabel('Payer name').fill(payer)
@@ -34,7 +35,7 @@ test.describe
       })
 
       test('refuses paying more than the balance beside the amount', async ({ page, db }) => {
-        await applicationByNumber(page, db, PERMIT)
+        await openApplication(page, db, PERMIT)
         const form = formWith(await openRecordPayment(page), 'Record payment')
         await form.getByLabel('Amount in dollars').fill('45.01')
         await form.getByLabel('Check number').fill('7001')
@@ -48,7 +49,7 @@ test.describe
       })
 
       test('records a check, then cash, and stores both ledger rows', async ({ page, db }) => {
-        await applicationByNumber(page, db, PERMIT)
+        await openApplication(page, db, PERMIT)
         const checkForm = formWith(await openRecordPayment(page), 'Record payment')
         await checkForm.getByLabel('Amount in dollars').fill('25.00')
         await checkForm.getByLabel('Check number').fill('7001')

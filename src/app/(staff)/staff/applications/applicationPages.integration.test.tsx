@@ -6,6 +6,7 @@ import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 
 interface MockState {
   db: unknown
@@ -58,6 +59,7 @@ async function html(element: Promise<unknown>): Promise<string> {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
@@ -69,6 +71,7 @@ beforeAll(async () => {
   ids = Object.fromEntries(rows.map((r) => [r.number.split('-')[0] + r.state, r.id]))
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

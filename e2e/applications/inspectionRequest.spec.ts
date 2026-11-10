@@ -1,13 +1,18 @@
 import { expect, test } from '../fixtures/test'
-import { expectRefusedBeside } from './support'
+import { demoTitle, expectRefusedBeside, seededNumber } from './support'
 
-const DECK_NUMBER = 'BP-2025-0001'
+const DECK = demoTitle('Deck renewed once')
+let deckNumber = ''
+
+test.beforeAll(async ({ db }) => {
+  deckNumber = await seededNumber(db, DECK)
+})
 
 async function openRequestForm(page: import('@playwright/test').Page) {
   await page.goto('/staff/inspections')
   const section = page.getByRole('region', { name: 'Take a request' })
   await section.getByRole('button', { name: 'Take a phone or counter request' }).click()
-  await section.getByLabel('Permit number').fill(DECK_NUMBER)
+  await section.getByLabel('Permit number').fill(deckNumber)
   await section.getByRole('button', { name: 'Find permit' }).click()
   await expect(section.getByRole('button', { name: 'Record request' })).toBeVisible()
   return section
@@ -30,15 +35,15 @@ test.describe('taking an inspection request at the counter', () => {
       const rows = await db.rows<{ id: string }>(
         `select i.id from inspections i join applications a on a.id = i.application_id
           where a.number = $1 and i.inspection_type = 'footing' and i.contact_name = ''`,
-        [DECK_NUMBER],
+        [deckNumber],
       )
       expect(rows).toHaveLength(0)
     })
 
     test('opens the form already filled from a permit link', async ({ page }) => {
-      await page.goto(`/staff/inspections?number=${DECK_NUMBER}`)
+      await page.goto(`/staff/inspections?number=${deckNumber}`)
       const section = page.getByRole('region', { name: 'Take a request' })
-      await expect(section.getByLabel('Permit number')).toHaveValue(DECK_NUMBER)
+      await expect(section.getByLabel('Permit number')).toHaveValue(deckNumber)
       await expect(section.getByRole('button', { name: 'Record request' })).toBeVisible()
     })
 
@@ -57,22 +62,22 @@ test.describe('taking an inspection request at the counter', () => {
       const waiting = page
         .getByRole('region', { name: 'Waiting' })
         .getByRole('listitem')
-        .filter({ hasText: `${DECK_NUMBER}, Footing` })
+        .filter({ hasText: `${deckNumber}, Footing` })
       await expect(waiting).toHaveCount(1)
       await expect(section.getByRole('button', { name: 'Record request' })).toHaveCount(0)
       await expect(section.getByRole('status')).toHaveText(
-        `Request taken for ${DECK_NUMBER}, Footing.`,
+        `Request taken for ${deckNumber}, Footing.`,
       )
       await expect(waiting.getByRole('button')).toHaveAttribute('aria-pressed', 'true')
       await expect(page.getByTestId('choice-prompt')).toBeFocused()
       await expect(page.getByTestId('choice-prompt')).toHaveText(
-        `Pick a time for ${DECK_NUMBER}, Footing.`,
+        `Pick a time for ${deckNumber}, Footing.`,
       )
       const row = await db.one<{ status: string; channel: string; contact_phone: string }>(
         `select i.status, i.channel, i.contact_phone from inspections i
            join applications a on a.id = i.application_id
           where a.number = $1 and i.contact_name = $2`,
-        [DECK_NUMBER, contact],
+        [deckNumber, contact],
       )
       expect(row).toEqual({ status: 'requested', channel: 'phone', contact_phone: '603-555-0188' })
     })

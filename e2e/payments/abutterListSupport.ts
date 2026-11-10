@@ -1,12 +1,14 @@
 import type { Locator, Page } from '@playwright/test'
 import { type E2eDb, expect } from '../fixtures/test'
 
-export const SOURCE_PERMIT = 'VAR-2026-0001'
+export const SOURCE_PERMIT = 'Demo permit: Brookside setback variance'
 
 export async function draftListId(db: E2eDb): Promise<string> {
   const row = await db.one<{ id: string }>(
-    `select l.id from abutter_lists l join applications a on a.id = l.application_id
-      where a.number = $1 and l.status = 'draft'`,
+    `select l.id from abutter_lists l
+       join applications a on a.id = l.application_id
+       join projects p on p.id = a.project_id
+      where p.title = $1 and l.status = 'draft'`,
     [SOURCE_PERMIT],
   )
   return row.id

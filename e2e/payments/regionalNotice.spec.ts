@@ -1,8 +1,8 @@
 import type { Page } from '@playwright/test'
 import { type E2eDb, expect, test } from '../fixtures/test'
-import { applicationByNumber, expectConfirmation, expectRefusedBeside } from './support'
+import { demoTitle, expectConfirmation, expectRefusedBeside, openApplication } from './support'
 
-const PERMIT = 'BP-2026-0002'
+const PERMIT = demoTitle('Lodge with regional impact')
 
 function panel(page: Page) {
   return page.getByRole('region', { name: 'Regional impact' })
@@ -25,7 +25,7 @@ test.describe
         page,
         db,
       }) => {
-        const applicationId = await applicationByNumber(page, db, PERMIT)
+        const applicationId = await openApplication(page, db, PERMIT)
         const before = await noticeCount(db, applicationId)
         await panel(page).getByText('Record a notice', { exact: true }).click()
         await panel(page).getByRole('button', { name: 'Record notice' }).click()
@@ -36,7 +36,7 @@ test.describe
 
       test('records a notice and stores the recipient and method', async ({ page, db, suffix }) => {
         const name = `Town of Pine River ${suffix}`
-        const applicationId = await applicationByNumber(page, db, PERMIT)
+        const applicationId = await openApplication(page, db, PERMIT)
         await panel(page).getByText('Record a notice', { exact: true }).click()
         await panel(page)
           .getByLabel('Recipient', { exact: true })
@@ -59,7 +59,7 @@ test.describe
       test.use({ role: 'finance' })
 
       test('the record notice form is absent', async ({ page, db }) => {
-        await applicationByNumber(page, db, PERMIT)
+        await openApplication(page, db, PERMIT)
         await expect(panel(page).getByRole('heading', { name: 'Regional impact' })).toBeVisible()
         await expect(page.getByText('Record a notice', { exact: true })).toHaveCount(0)
       })

@@ -6,6 +6,7 @@ import type { Db } from '@/db/client'
 import { aliasOverrides, gisLayers, parcelIdFormats, parcelRecordLinks, parcels } from '@/db/schema'
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { storyDay, storyInstant } from '@/features/demo/seedCalendar'
 import type { LayerKey } from '@/features/gis/exceptionKinds'
 import { runImport } from '@/features/gis/import/runImport'
 import type { SourceFeature } from '@/features/gis/import/types'
@@ -15,7 +16,7 @@ import { linkRecordByRawRef } from '@/features/parcels/recordLinks'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import type { CivilDate } from '@/types/civilDate'
 
-export const DEMO_SEED_NOW = new Date('2026-06-01T12:00:00Z')
+const PARCEL_IMPORT_AT = '2026-06-01T12:00:00Z'
 
 const PARCEL_MAPPING = {
   primaryId: { field: 'MAPLOT', format: 'gis12', padNumeric: false },
@@ -116,14 +117,14 @@ async function seedSubdivision(c: SeedContext): Promise<void> {
     c.actor,
     {
       kind: 'subdivision',
-      effectiveDate: '2026-04-12' as CivilDate,
+      effectiveDate: storyDay('2026-04-12'),
       effectiveBasis: 'recording',
       reference: 'Plan book 14, page 7',
       parents: [parent],
       children,
     },
     c.signal,
-    DEMO_SEED_NOW,
+    storyInstant(PARCEL_IMPORT_AT),
   )
 }
 

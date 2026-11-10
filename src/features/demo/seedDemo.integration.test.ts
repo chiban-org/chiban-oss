@@ -1,5 +1,5 @@
 import { eq, sql } from 'drizzle-orm'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { ROLES } from '@/constants/roles'
 import {
   alertTests,
@@ -38,7 +38,6 @@ import { listClockAdjustments } from '@/features/clocks/clockOverrides'
 import { listContractorProjects } from '@/features/contractors/dashboard'
 import type { ReconciliationReport } from '@/features/cutover/reconcile'
 import { DEMO_USERS, type SeedDemoDeps, seedDemo } from '@/features/demo/seedDemo'
-import { DEMO_SEED_NOW } from '@/features/demo/seedParcels'
 import { listFeeOverrides } from '@/features/fees/feeOverrides'
 import { loadScheduleBoard } from '@/features/inspections/boardData'
 import { getDayList } from '@/features/inspections/dayList'
@@ -50,7 +49,7 @@ import { listUnresolvedLinks } from '@/features/parcels/unresolvedList'
 import { listPreservationIncomplete } from '@/features/preservation/preserve'
 import { getTownSettings } from '@/features/town/settings'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { DEMO_SEED_INSTANT, demoSeedDeps } from '@/test/demoSeedDeps'
+import { DEMO_SEED_INSTANT, demoSeedDeps, useDemoStoryClock } from '@/test/demoSeedDeps'
 import type { CivilDate } from '@/types/civilDate'
 
 let handle: TestDb
@@ -58,10 +57,12 @@ const signal = new AbortController().signal
 let SEED_DEPS: SeedDemoDeps
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   SEED_DEPS = await demoSeedDeps()
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 
@@ -323,7 +324,7 @@ describe('seedDemo', () => {
       (c) => c.ruleKey === 'nh.bp.regional_impact_comment' && c.status === 'running',
     )
     expect(comment).toHaveLength(1)
-    expect((comment[0]?.currentDue ?? '') > '2026-06-01').toBe(true)
+    expect((comment[0]?.currentDue ?? '') > '2026-11-04').toBe(true)
   })
 
   it('seeded application page renders every clock with a non-empty consequence', async () => {
@@ -334,7 +335,13 @@ describe('seedDemo', () => {
     const apps = await handle.db.select().from(applications)
     let seen = 0
     for (const app of apps) {
-      const view = await getStaffApplicationView(handle.db, actor!, app.id, DEMO_SEED_NOW, signal)
+      const view = await getStaffApplicationView(
+        handle.db,
+        actor!,
+        app.id,
+        DEMO_SEED_INSTANT,
+        signal,
+      )
       for (const clock of view?.clocks ?? []) {
         seen += 1
         expect(clock.consequence.length).toBeGreaterThan(0)
@@ -359,7 +366,7 @@ async function actorOf(local: string): Promise<Actor> {
 }
 
 describe('seeded inspections', () => {
-  const SEEDED_DAY = '2026-06-01'
+  const SEEDED_DAY = '2026-11-04'
 
   it('seeds a building official who holds the staff and inspector roles and has one inspection due', async () => {
     const official = await actorOf('official')

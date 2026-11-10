@@ -6,6 +6,7 @@ import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { visibleText } from '@/test/leaks'
 
 interface MockState {
@@ -67,6 +68,7 @@ const inspectionPage = (id: string) =>
 const abutterList = (id: string) => AbutterListPage({ params: Promise.resolve({ listId: id }) })
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
@@ -85,6 +87,7 @@ beforeAll(async () => {
   inspection = withPhone
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

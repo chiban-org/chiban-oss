@@ -1,4 +1,4 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { enforcementFines } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { loadActor } from '@/features/auth/actor'
@@ -10,6 +10,7 @@ import { planCaseWork } from '@/features/enforcement/workPlan'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { townToday } from '@/features/town/today'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -18,6 +19,7 @@ let actor: Actor
 let today: CivilDate
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
   const user = await handle.db.query.users.findFirst({
@@ -29,6 +31,7 @@ beforeAll(async () => {
   today = await townToday(handle.db, new Date(), signal)
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

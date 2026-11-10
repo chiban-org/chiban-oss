@@ -1,6 +1,12 @@
 import { openRecordHistory } from '../fixtures/recordHistory'
 import { type E2eDb, expect, test } from '../fixtures/test'
-import { demoTitle, expectConfirmation, openApplication, openMoreActions } from './support'
+import {
+  demoTitle,
+  expectConfirmation,
+  openApplication,
+  openMoreActions,
+  seededNumber,
+} from './support'
 
 interface StateRow {
   state: string
@@ -35,7 +41,8 @@ test.describe('moving an application through its workflow', () => {
       const trigger = page.getByRole('button', { name: 'Withdraw the application' })
       await trigger.click()
 
-      const dialog = page.getByRole('dialog', { name: 'Withdraw VAR-2026-0001?' })
+      const number = await seededNumber(db, demoTitle('Brookside setback variance'))
+      const dialog = page.getByRole('dialog', { name: `Withdraw ${number}?` })
       await expect(dialog).toContainText('This ends the application. It cannot be undone.')
       await dialog.getByRole('button', { name: 'Cancel' }).click()
       await expect(dialog).toHaveCount(0)

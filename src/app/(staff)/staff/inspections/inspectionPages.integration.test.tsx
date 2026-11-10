@@ -8,6 +8,7 @@ import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { makeUser } from '@/test/factories'
 import { filledButtons, filledLinks, railOf, sectionOf } from '@/test/htmlSections'
 import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
@@ -58,6 +59,7 @@ async function html(element: Promise<unknown>): Promise<string> {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
@@ -74,6 +76,7 @@ beforeAll(async () => {
   firstBooked = (booked?.date ?? '') as CivilDate
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

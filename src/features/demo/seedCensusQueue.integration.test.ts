@@ -1,10 +1,11 @@
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { loadActor } from '@/features/auth/actor'
 import { censusBpsReport } from '@/features/census/bpsReport'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { townToday } from '@/features/town/today'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { civilYear } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -12,10 +13,12 @@ const DEPS = { records: { mail: createMemoryTransport() }, screenStates: true }
 let handle: TestDb
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   await seedDemo(handle.db, signal, DEPS)
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

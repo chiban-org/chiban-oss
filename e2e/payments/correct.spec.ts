@@ -1,17 +1,19 @@
 import type { Page } from '@playwright/test'
 import { type E2eDb, expect, test } from '../fixtures/test'
 import {
-  applicationByNumber,
+  demoTitle,
   entryItem,
   expectConfirmation,
   expectNoDialog,
   expectRefusedBeside,
   formWith,
+  openApplication,
   openEntryControls,
+  seededNumber,
 } from './support'
 
-const SOURCE = 'MG-2026-0001'
-const TARGET = 'VAR-2026-0005'
+const SOURCE = demoTitle('Payments: Gas line paid in cash')
+const TARGET = demoTitle('Pintail Way setback variance')
 const REASON = 'Reason (at least 10 characters)'
 const REASON_REFUSAL = 'Enter a reason of at least 10 characters.'
 const GOOD_REASON = 'Posted to the wrong permit'
@@ -37,9 +39,9 @@ async function corrections(db: E2eDb): Promise<Correction[]> {
 }
 
 async function moveForm(page: Page, db: E2eDb) {
-  await applicationByNumber(page, db, SOURCE)
+  await openApplication(page, db, SOURCE)
   const form = formWith(await openEntryControls(entryItem(page, SOURCE_ENTRY)), SUBMIT)
-  await form.getByLabel('Move to').selectOption({ label: TARGET })
+  await form.getByLabel('Move to').selectOption({ label: await seededNumber(db, TARGET) })
   return form
 }
 
@@ -76,8 +78,8 @@ test.describe
       await form.getByRole('button', { name: SUBMIT }).click()
       await expectConfirmation(page, 'Correction recorded.')
       expect(await corrections(db)).toEqual([
-        { number: SOURCE, entry_cents: 0, moved_cents: -500 },
-        { number: TARGET, entry_cents: 0, moved_cents: 500 },
+        { number: await seededNumber(db, SOURCE), entry_cents: 0, moved_cents: -500 },
+        { number: await seededNumber(db, TARGET), entry_cents: 0, moved_cents: 500 },
       ])
     })
   })

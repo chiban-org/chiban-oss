@@ -32,7 +32,9 @@ test.describe('cancelling an inspection from the permit', () => {
       await expect(dialog).toHaveCount(0)
       const kept = await db.one<{ status: string }>(
         `select i.status from inspections i join applications a on a.id = i.application_id
-          where a.number = 'EL-2026-0001' and i.inspection_type = 'final'`,
+          join projects p on p.id = a.project_id
+          where p.title = $1 and i.inspection_type = 'final'`,
+        [SERVICE],
       )
       expect(kept.status).toBe('scheduled')
 
@@ -41,7 +43,9 @@ test.describe('cancelling an inspection from the permit', () => {
       await expect(row).toContainText('Cancelled')
       const done = await db.one<{ status: string }>(
         `select i.status from inspections i join applications a on a.id = i.application_id
-          where a.number = 'EL-2026-0001' and i.inspection_type = 'final'`,
+          join projects p on p.id = a.project_id
+          where p.title = $1 and i.inspection_type = 'final'`,
+        [SERVICE],
       )
       expect(done.status).toBe('cancelled')
     })

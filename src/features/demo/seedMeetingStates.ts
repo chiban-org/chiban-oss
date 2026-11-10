@@ -11,6 +11,7 @@ import { sendPacketLink } from '@/features/boards/packetLinks'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { COMMON } from '@/features/demo/seedBoardApps'
+import { storyDay } from '@/features/demo/seedCalendar'
 import type { CoverageContext } from '@/features/demo/seedCoverage'
 import { meetingId as meetingOn } from '@/features/demo/seedHearings'
 import { removeStaleDemoPacket, seedCancelledMeeting } from '@/features/demo/seedMeetingCleanup'
@@ -29,38 +30,38 @@ interface HearingApp {
 const SITE_PLAN = { ...COMMON, gross_floor_area_sq_ft: 6400, parking_spaces: 22 }
 const MINOR_SITE_PLAN = { ...COMMON, gross_floor_area_sq_ft: 3100 }
 
-const AWAITING_AGENDA: readonly HearingApp[] = [
+const awaitingAgenda = (): readonly HearingApp[] => [
   {
     title: 'Kingfisher Point site plan',
     typeKey: 'SPR',
     parcel: '009001000000',
-    submittedOn: '2026-10-16',
+    submittedOn: storyDay('2026-10-16'),
     values: SITE_PLAN,
   },
   {
     title: 'Merganser Court minor site plan',
     typeKey: 'MSP',
     parcel: '009016000000',
-    submittedOn: '2026-10-19',
+    submittedOn: storyDay('2026-10-19'),
     values: MINOR_SITE_PLAN,
   },
 ]
 
-const DRAFT_AGENDA_APP: HearingApp = {
+const draftAgendaApp = (): HearingApp => ({
   title: 'Teal Marsh minor site plan',
   typeKey: 'MSP',
   parcel: '009017000000',
-  submittedOn: '2026-10-23',
+  submittedOn: storyDay('2026-10-23'),
   values: MINOR_SITE_PLAN,
-}
+})
 
-const PUBLISHED_AGENDA_APP: HearingApp = {
+const publishedAgendaApp = (): HearingApp => ({
   title: 'Loon Cove site plan',
   typeKey: 'SPR',
   parcel: '009017000000',
-  submittedOn: '2026-10-27',
+  submittedOn: storyDay('2026-10-27'),
   values: SITE_PLAN,
-}
+})
 
 async function agendaStatus(db: Db, meetingId: string): Promise<string | null> {
   const [row] = await db
@@ -131,16 +132,16 @@ async function scheduleOnce(ctx: CoverageContext, app: HearingApp, meetingId: st
 }
 
 async function hearingsAwaitingAgenda(ctx: CoverageContext): Promise<boolean> {
-  const meetingId = await meetingOn(ctx.db, 'planning_board', '2026-11-12')
+  const meetingId = await meetingOn(ctx.db, 'planning_board', storyDay('2026-11-12'))
   let added = false
-  for (const app of AWAITING_AGENDA) added = (await scheduleOnce(ctx, app, meetingId)) || added
+  for (const app of awaitingAgenda()) added = (await scheduleOnce(ctx, app, meetingId)) || added
   return added
 }
 
 async function draftAgenda(ctx: CoverageContext): Promise<boolean> {
-  const meetingId = await meetingOn(ctx.db, 'planning_board', '2026-11-25')
+  const meetingId = await meetingOn(ctx.db, 'planning_board', storyDay('2026-11-25'))
   if ((await agendaStatus(ctx.db, meetingId)) !== null) return false
-  await scheduleOnce(ctx, DRAFT_AGENDA_APP, meetingId)
+  await scheduleOnce(ctx, draftAgendaApp(), meetingId)
   must(await buildAgenda(ctx.db, ctx.cast.staff, meetingId, ctx.signal), 'build draft agenda')
   must(
     await addAgendaItem(
@@ -199,13 +200,13 @@ async function openPacketLink(ctx: CoverageContext, meetingId: string): Promise<
 }
 
 export async function seedMeetingStates(ctx: CoverageContext): Promise<boolean> {
-  const december9 = await meetingOn(ctx.db, 'planning_board', '2026-12-09')
-  const december15 = await meetingOn(ctx.db, 'zba', '2026-12-15')
+  const december9 = await meetingOn(ctx.db, 'planning_board', storyDay('2026-12-09'))
+  const december15 = await meetingOn(ctx.db, 'zba', storyDay('2026-12-15'))
   const steps = [
     await removeStaleDemoPacket(ctx),
     await hearingsAwaitingAgenda(ctx),
     await draftAgenda(ctx),
-    await publishedWithPacket(ctx, december9, PUBLISHED_AGENDA_APP),
+    await publishedWithPacket(ctx, december9, publishedAgendaApp()),
     await publishedWithPacket(ctx, december15, null),
     await sentPacketWithReads(ctx, december9),
     await openPacketLink(ctx, december9),

@@ -2,19 +2,20 @@ import type { Page } from '@playwright/test'
 import { townToday } from '../boards/records'
 import { type E2eDb, expect, fillDate, test } from '../fixtures/test'
 import {
-  applicationByNumber,
   confirmWith,
+  demoTitle,
   entryItem,
   expectConfirmation,
   expectNoDialog,
   expectRefusedBeside,
   formWith,
   ledgerOfType,
+  openApplication,
   openEntryControls,
   recordDeskPayment,
 } from './support'
 
-const SOURCE = 'EL-2026-0003'
+const SOURCE = demoTitle('Panel upgrade with documents')
 const SHORT_REASON = 'too short'
 const GOOD_REASON = 'Bank returned the check, no funds'
 const REASON_REFUSAL = 'Enter a reason of at least 10 characters.'
@@ -31,14 +32,14 @@ test.describe
     }
 
     async function returnedForm(page: Page, db: E2eDb) {
-      await applicationByNumber(page, db, SOURCE)
+      await openApplication(page, db, SOURCE)
       return formWith(await openEntryControls(checkEntry(page)), 'Record returned check')
     }
 
     test('finance records a check payment', async ({ page, db, suffix }) => {
       payer = `Rita Check ${suffix}`
       checkNumber = `C${suffix.slice(0, 6)}`
-      await applicationByNumber(page, db, SOURCE)
+      await openApplication(page, db, SOURCE)
       await recordDeskPayment(page, { method: 'Check', amount: '25.00', payer, checkNumber })
     })
 

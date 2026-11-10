@@ -9,7 +9,7 @@ import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { formatCivilDate } from '@/lib/formatDate'
 import { boardIdSql } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { demoSeedDeps } from '@/test/demoSeedDeps'
+import { demoSeedDeps, useDemoStoryClock } from '@/test/demoSeedDeps'
 import { filledButtons, sectionOf } from '@/test/htmlSections'
 import { addDays, type CivilDate } from '@/types/civilDate'
 
@@ -101,6 +101,7 @@ function optionText(m: { date: string; kind: string }, due: string): string {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { ...(await demoSeedDeps()), screenStates: true })
@@ -113,9 +114,10 @@ beforeAll(async () => {
   for (const row of await handle.db.select().from(applications)) ids.set(row.number, row.id)
 })
 afterEach(() => {
-  vi.useRealTimers()
+  useDemoStoryClock()
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

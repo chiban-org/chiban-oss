@@ -8,6 +8,7 @@ import { seedDemo } from '@/features/demo/seedDemo'
 import { actorFor } from '@/features/demo/seedPermitSupport'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { findUuids } from '@/test/leaks'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
@@ -73,6 +74,7 @@ function expectNoFullRecord(html: string) {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
@@ -91,6 +93,7 @@ beforeAll(async () => {
 })
 
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { boardMemberships } from '@/db/schema'
 import { boardIdOf } from '@/features/boards/townBoards'
+import { storyDay } from '@/features/demo/seedCalendar'
 import { actorFor, type Cast, d } from '@/features/demo/seedPermitSupport'
 
 export async function seatStaffBoardMember(db: Db, cast: Cast, signal: AbortSignal): Promise<void> {
@@ -16,7 +17,7 @@ export async function seatStaffBoardMember(db: Db, cast: Cast, signal: AbortSign
     userId: member.userId,
     boardId,
     title: 'member',
-    termStart: d('2026-01-01'),
+    termStart: storyDay('2026-01-01'),
     createdBy: cast.admin.userId,
   })
 }

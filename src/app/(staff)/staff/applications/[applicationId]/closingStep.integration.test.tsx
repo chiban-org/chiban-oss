@@ -5,7 +5,7 @@ import { applications, inspections } from '@/db/schema'
 import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { demoSeedDeps } from '@/test/demoSeedDeps'
+import { demoSeedDeps, useDemoStoryClock } from '@/test/demoSeedDeps'
 import { sectionOf } from '@/test/htmlSections'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
@@ -71,6 +71,7 @@ async function addFinal(status: 'requested' | 'passed' | 'failed'): Promise<stri
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, await demoSeedDeps())
@@ -89,6 +90,7 @@ beforeAll(async () => {
     .where(eq(applications.id, applicationId))
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

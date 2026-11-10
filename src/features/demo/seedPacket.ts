@@ -5,6 +5,7 @@ import { sendPacketLink } from '@/features/boards/packetLinks'
 import { createPacket } from '@/features/boards/packets'
 import { boardIdOf } from '@/features/boards/townBoards'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { storyDay } from '@/features/demo/seedCalendar'
 import { actorFor, must, noon } from '@/features/demo/seedPermitSupport'
 import { RECORDS_MARKER_TITLE } from '@/features/demo/seedRecords'
 import { getMailTransport, type MailTransport } from '@/features/mail/transport'
@@ -20,7 +21,7 @@ async function packetMeetingId(db: Db): Promise<string | null> {
     .where(
       and(
         eq(boardMeetings.boardId, boardId),
-        eq(boardMeetings.meetingDate, PACKET_MEETING),
+        eq(boardMeetings.meetingDate, storyDay(PACKET_MEETING)),
         eq(boardMeetings.status, 'scheduled'),
       ),
     )
@@ -67,7 +68,7 @@ export async function seedBoardPacket(
       recipientEmail: `board@${DEMO_DOMAIN}`,
     },
     signal,
-    noon('2026-07-01'),
+    noon(storyDay('2026-07-01')),
   )
   return true
 }

@@ -7,6 +7,7 @@ import { inviteBoardMember, type MemberTitle } from '@/features/boards/members'
 import { recordMinutes } from '@/features/boards/minutes'
 import { allBoards } from '@/features/boards/townBoards'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
+import { storyDay } from '@/features/demo/seedCalendar'
 import { attachMinutes } from '@/features/demo/seedMinutes'
 import { actorFor, type Cast, d, findApplication, must } from '@/features/demo/seedPermitSupport'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
@@ -71,7 +72,7 @@ async function seatMembers(
           displayName: seat.name,
           boardId,
           title: seat.title,
-          termStart: d('2026-01-01'),
+          termStart: storyDay('2026-01-01'),
         },
         signal,
       ),
@@ -101,8 +102,8 @@ async function approveMinutes(
   now: Date,
 ) {
   const entry = {
-    meetingDate: PAST_CONSERVATION_MEETING,
-    approvedOn: '2026-10-21',
+    meetingDate: storyDay(PAST_CONSERVATION_MEETING),
+    approvedOn: storyDay('2026-10-21'),
     body: 'Present: three members and the land use clerk. The commission walked the Heron Cove easement boundary, reviewed the spring trail maintenance schedule, and voted to renew the annual wetlands monitoring contract. Adjourned at 8:20 PM.',
   }
   const documentId = await attachMinutes(
@@ -188,9 +189,15 @@ export async function seedTownBoards(
   })
   await seatMembers(db, cast, conservationId, CONSERVATION_SEATS, signal)
   await seatMembers(db, cast, historicId, HISTORIC_SEATS, signal)
-  const past = await schedule(db, cast, conservationId, PAST_CONSERVATION_MEETING, signal)
-  const upcoming = await schedule(db, cast, conservationId, UPCOMING_CONSERVATION_MEETING, signal)
-  await schedule(db, cast, historicId, UPCOMING_HISTORIC_MEETING, signal)
+  const past = await schedule(db, cast, conservationId, storyDay(PAST_CONSERVATION_MEETING), signal)
+  const upcoming = await schedule(
+    db,
+    cast,
+    conservationId,
+    storyDay(UPCOMING_CONSERVATION_MEETING),
+    signal,
+  )
+  await schedule(db, cast, historicId, storyDay(UPCOMING_HISTORIC_MEETING), signal)
   await approveMinutes(db, store, cast, past, signal, now)
   await showAgenda(db, store, cast, upcoming, signal)
   const received = await sendForComment(
@@ -198,10 +205,17 @@ export async function seedTownBoards(
     cast,
     conservationId,
     COMMENT_RECEIVED_APPLICATION,
-    '2026-11-20',
+    storyDay('2026-11-20'),
     signal,
   )
-  await sendForComment(db, cast, conservationId, COMMENT_WAITING_APPLICATION, '2026-11-27', signal)
+  await sendForComment(
+    db,
+    cast,
+    conservationId,
+    COMMENT_WAITING_APPLICATION,
+    storyDay('2026-11-27'),
+    signal,
+  )
   if (received !== null) {
     const member = await actorFor(db, 'concom.member', signal)
     must(

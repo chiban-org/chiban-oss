@@ -5,12 +5,13 @@ import { type E2eDb, expect, fillDate, test } from '../fixtures/test'
 import { expectRefusedBeside } from './refusal'
 import { expectToast, openDetails } from './requestSupport'
 
-const APPLICATION = 'BP-2026-0003'
+const APPLICATION = 'Demo permit: Barn conversion under appeal'
 
 async function openRecordsPanel(page: Page, db: E2eDb) {
-  const row = await db.one<{ id: string }>('select id from applications where number = $1', [
-    APPLICATION,
-  ])
+  const row = await db.one<{ id: string }>(
+    'select a.id from applications a join projects p on p.id = a.project_id where p.title = $1',
+    [APPLICATION],
+  )
   await page.goto(`/staff/applications/${row.id}`)
   await expect(page.locator('main:not([aria-busy])')).toBeVisible()
   await openRecordHistory(page)

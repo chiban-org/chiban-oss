@@ -6,6 +6,7 @@ import { publishConfig } from '@/features/config/publish'
 import { saveDraft } from '@/features/config/store'
 import { recordCounterPayment } from '@/features/counter/counterPayment'
 import { PAYMENT_SETTINGS_SEED } from '@/features/demo/paymentSettingsSeed'
+import { storyDay } from '@/features/demo/seedCalendar'
 import {
   actorFor,
   type Cast,
@@ -21,9 +22,13 @@ import { saveProcessorAccount } from '@/features/payments/processorAccounts'
 import { resolveSimulatedReader, startCardPresentPayment } from '@/features/payments/startPayment'
 import type { CivilDate } from '@/types/civilDate'
 
-export const DEMO_PAYMENT_DATE = '2026-06-01' as CivilDate
-const REFUND_DATE = '2026-06-02'
-const RETURNED_DATE = '2026-06-03'
+export const DEMO_PAYMENT_DAY = '2026-10-28'
+const REFUND_DAY = '2026-10-29'
+const RETURNED_DAY = '2026-10-30'
+
+export function demoPaymentDate(): CivilDate {
+  return storyDay(DEMO_PAYMENT_DAY)
+}
 const PAYMENT_PREFIX = 'Payments:'
 const REFUND_CENTS = 1000
 const SIMULATED_WEBHOOK_SECRET = 'demo-simulated-webhook-secret'
@@ -134,9 +139,9 @@ async function cardPermit(
     cast.staff,
     { applicationId: scenario.applicationId, payerName: 'Demo plumber' },
     signal,
-    noon(DEMO_PAYMENT_DATE),
+    noon(demoPaymentDate()),
   )
-  await scenario.step('issued', DEMO_PAYMENT_DATE)
+  await scenario.step('issued', demoPaymentDate())
   const [payment] = await db
     .select()
     .from(ledgerEntries)
@@ -153,7 +158,7 @@ async function cardPermit(
         reason: 'Fixture count reduced after inspection',
       },
       signal,
-      { now: noon(REFUND_DATE) },
+      { now: noon(storyDay(REFUND_DAY)) },
     ),
     'card refund',
   )
@@ -171,9 +176,9 @@ async function checkPermit(
     cast.staff,
     { applicationId: scenario.applicationId, payerName: 'Demo electrician', checkNumber: '1048' },
     signal,
-    noon(DEMO_PAYMENT_DATE),
+    noon(demoPaymentDate()),
   )
-  await scenario.step('issued', DEMO_PAYMENT_DATE)
+  await scenario.step('issued', demoPaymentDate())
   must(
     await recordReturnedCheck(
       db,
@@ -181,10 +186,10 @@ async function checkPermit(
       {
         entryId,
         reason: 'Insufficient funds notice from the bank',
-        returnedOn: RETURNED_DATE as CivilDate,
+        returnedOn: storyDay(RETURNED_DAY),
       },
       signal,
-      { now: noon(RETURNED_DATE) },
+      { now: noon(storyDay(RETURNED_DAY)) },
     ),
     'returned check',
   )
@@ -211,11 +216,11 @@ export async function seedPayments(db: Db, signal: AbortSignal): Promise<boolean
       title: `${PAYMENT_PREFIX} ${title}`,
       typeKey,
       values: { ...TRADE_BASE, contractor_license_number: license, ...extra },
-      submittedOn: '2026-05-30',
+      submittedOn: storyDay('2026-10-26'),
     })
 
   const cash = await trade('007008000000', 'Gas line paid in cash', 'MG', 'MG-11802')
-  await cash.step('issued', DEMO_PAYMENT_DATE)
+  await cash.step('issued', demoPaymentDate())
   await cardPermit(
     db,
     cast,
@@ -240,7 +245,7 @@ export async function seedPayments(db: Db, signal: AbortSignal): Promise<boolean
       cast.staff,
       { applicationIds: [waiting.applicationId], payerName: 'Demo plumber' },
       signal,
-      { now: noon(DEMO_PAYMENT_DATE) },
+      { now: noon(demoPaymentDate()) },
     ),
     'unknown start',
   )

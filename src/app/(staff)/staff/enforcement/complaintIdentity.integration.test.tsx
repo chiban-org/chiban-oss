@@ -7,6 +7,7 @@ import { seedDemo } from '@/features/demo/seedDemo'
 import { CHANNEL_LABELS } from '@/features/enforcement/labels'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { visibleText } from '@/test/leaks'
 
 interface MockState {
@@ -52,6 +53,7 @@ async function caseTextAs(local: string): Promise<string> {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
@@ -64,6 +66,7 @@ beforeAll(async () => {
   complaint = named
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

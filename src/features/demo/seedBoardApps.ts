@@ -7,6 +7,7 @@ import { recordDesDetermination } from '@/features/boards/des500'
 import { linkReliance, recordFinalApproval } from '@/features/boards/exercise'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
 import { boardIdOf } from '@/features/boards/townBoards'
+import { storyDay } from '@/features/demo/seedCalendar'
 import { type Cast, d, must, open, type Scenario } from '@/features/demo/seedPermitSupport'
 import { addProfessional } from '@/features/rosters/professionals'
 import type { CivilDate } from '@/types/civilDate'
@@ -58,7 +59,7 @@ export async function seedSitePlan(db: Db, cast: Cast, signal: AbortSignal, now:
     title: 'Osprey Point site plan',
     typeKey: 'SPR',
     values: { ...COMMON, gross_floor_area_sq_ft: 12000, parking_spaces: 40 },
-    submittedOn: '2026-10-20',
+    submittedOn: storyDay('2026-10-20'),
   })
   must(
     await addProfessional(
@@ -96,7 +97,7 @@ export async function seedSitePlan(db: Db, cast: Cast, signal: AbortSignal, now:
     'des determination',
   )
   await issueFor(db, cast, s, now)
-  await setMeeting(db, cast, s, 'planning_board', '2026-11-25')
+  await setMeeting(db, cast, s, 'planning_board', storyDay('2026-11-25'))
   return s
 }
 
@@ -106,7 +107,7 @@ export async function seedMinorSitePlan(db: Db, cast: Cast, signal: AbortSignal,
     title: 'Brookview minor site plan',
     typeKey: 'MSP',
     values: { ...COMMON, gross_floor_area_sq_ft: 4200 },
-    submittedOn: '2026-07-01',
+    submittedOn: storyDay('2026-07-01'),
   })
   must(
     await recordBoardRegionalImpact(
@@ -133,15 +134,15 @@ export async function seedMinorSitePlan(db: Db, cast: Cast, signal: AbortSignal,
     'des determination',
   )
   await issueFor(db, cast, s, now)
-  await setMeeting(db, cast, s, 'planning_board', '2026-07-22')
+  await setMeeting(db, cast, s, 'planning_board', storyDay('2026-07-22'))
   must(
     await recordCompletenessVote(
       db,
       cast.staff,
       {
         applicationId: s.applicationId,
-        meetingId: await meetingId(db, 'planning_board', '2026-07-22'),
-        votedOn: d('2026-07-22'),
+        meetingId: await meetingId(db, 'planning_board', storyDay('2026-07-22')),
+        votedOn: storyDay('2026-07-22'),
         outcome: 'accepted',
       },
       signal,
@@ -152,7 +153,7 @@ export async function seedMinorSitePlan(db: Db, cast: Cast, signal: AbortSignal,
     await recordSelectmenCertification(
       db,
       cast.staff,
-      { applicationId: s.applicationId, requestedOn: d('2026-10-28'), outcome: 'pending' },
+      { applicationId: s.applicationId, requestedOn: storyDay('2026-10-28'), outcome: 'pending' },
       signal,
     ),
     'certification request',
@@ -177,7 +178,7 @@ export async function seedPendingVariance(db: Db, cast: Cast, signal: AbortSigna
     title: 'Brookside setback variance',
     typeKey: 'VAR',
     values: VARIANCE_VALUES,
-    submittedOn: '2026-10-22',
+    submittedOn: storyDay('2026-10-22'),
   })
   must(
     await recordBoardRegionalImpact(
@@ -189,7 +190,7 @@ export async function seedPendingVariance(db: Db, cast: Cast, signal: AbortSigna
     ),
     'regional impact',
   )
-  await setMeeting(db, cast, s, 'zba', '2026-11-17')
+  await setMeeting(db, cast, s, 'zba', storyDay('2026-11-17'))
   must(
     await generateList(db, cast.staff, { applicationId: s.applicationId }, signal, now),
     'draft list',
@@ -210,7 +211,7 @@ export async function seedGrantedVariance(
     title: 'Bittern Meadow frontage variance',
     typeKey: 'VAR',
     values: VARIANCE_VALUES,
-    submittedOn: '2026-03-02',
+    submittedOn: storyDay('2026-08-04'),
   })
   must(
     await recordBoardRegionalImpact(
@@ -223,15 +224,15 @@ export async function seedGrantedVariance(
     'regional impact',
   )
   await issueFor(db, cast, s, now)
-  await setMeeting(db, cast, s, 'zba', '2026-04-15')
+  await setMeeting(db, cast, s, 'zba', storyDay('2026-09-15'))
   must(
     await recordCompletenessVote(
       db,
       cast.staff,
       {
         applicationId: s.applicationId,
-        meetingId: await meetingId(db, 'zba', '2026-04-15'),
-        votedOn: d('2026-04-15'),
+        meetingId: await meetingId(db, 'zba', storyDay('2026-09-15')),
+        votedOn: storyDay('2026-09-15'),
         outcome: 'accepted',
       },
       signal,
@@ -244,7 +245,7 @@ export async function seedGrantedVariance(
       recordFinalApproval(
         tx,
         cast.staff,
-        { applicationId: s.applicationId, finalOn: d('2026-05-13') },
+        { applicationId: s.applicationId, finalOn: storyDay('2026-10-13') },
         signal,
       ),
     ),

@@ -7,6 +7,7 @@ import {
   type PublishedMeeting,
   savePacket,
   sharePacketDocument,
+  snapshotTitle,
 } from './packetSetup'
 
 const MEMBER = 'pb.member@alderpond.example'
@@ -27,7 +28,11 @@ test.describe
         })
         await buildAndPublishAgenda(page, meeting.meetingId)
         await sharePacketDocument(page, meeting.meetingId)
-        await savePacket(page, meeting.meetingId, 'Application MSP-2026-0003, snapshot 1')
+        await savePacket(
+          page,
+          meeting.meetingId,
+          await snapshotTitle(db, 'Teal Marsh minor site plan'),
+        )
         await page.goto(`/staff/boards/meetings/${meeting.meetingId}`)
         await page.getByRole('button', { name: /^Send to the .* \(5 members\)$/ }).click()
         await expect

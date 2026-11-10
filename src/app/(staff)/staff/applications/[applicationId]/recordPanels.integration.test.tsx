@@ -5,6 +5,7 @@ import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { countSections, sectionOf, workArea } from '@/test/htmlSections'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
@@ -50,6 +51,7 @@ async function page(number: string): Promise<string> {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
@@ -61,6 +63,7 @@ beforeAll(async () => {
   ids = new Map(rows.map((r) => [r.number, r.id]))
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

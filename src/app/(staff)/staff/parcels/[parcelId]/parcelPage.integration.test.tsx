@@ -6,6 +6,7 @@ import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { visibleText } from '@/test/leaks'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
@@ -63,6 +64,7 @@ async function first<T>(query: ReturnType<typeof sql>): Promise<T> {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
@@ -91,6 +93,7 @@ beforeAll(async () => {
   inspectionType = inspected.type
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

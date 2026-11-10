@@ -24,6 +24,7 @@ import { seedDemo } from '@/features/demo/seedDemo'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { loadReleaseCandidates } from '@/features/rtk/requestPage'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { findIsoDates, findRawKeys, findUuids, RECORDS_ENUM_KEYS, visibleText } from '@/test/leaks'
 
 interface MockState {
@@ -112,11 +113,13 @@ function expectHuman(page: string): void {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

@@ -11,6 +11,14 @@ export async function applicationIdFor(db: E2eDb, title: string): Promise<string
   return row.id
 }
 
+export async function seededNumber(db: E2eDb, title: string): Promise<string> {
+  const row = await db.one<{ number: string }>(
+    'select a.number from applications a join projects p on p.id = a.project_id where p.title like $1',
+    [title],
+  )
+  return row.number
+}
+
 export async function openApplication(page: Page, db: E2eDb, title: string): Promise<string> {
   const id = await applicationIdFor(db, title)
   await page.goto(`/staff/applications/${id}`)
@@ -30,15 +38,6 @@ export async function openMoreActions(page: Page): Promise<Locator> {
 
 export function visibleSummary(page: Page, text: string | RegExp): Locator {
   return page.locator('summary:visible').filter({ hasText: text })
-}
-
-export async function applicationByNumber(page: Page, db: E2eDb, number: string): Promise<string> {
-  const row = await db.one<{ id: string }>('select id from applications where number = $1', [
-    number,
-  ])
-  await page.goto(`/staff/applications/${row.id}`)
-  await expect(page.locator('main:not([aria-busy])')).toBeVisible()
-  return row.id
 }
 
 export async function describedText(field: Locator): Promise<string> {

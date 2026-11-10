@@ -17,6 +17,7 @@ import { recordDecision } from '@/features/decisions/recordDecision'
 import { recordRegionalTransmittal } from '@/features/decisions/regionalTransmittal'
 import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { COMMON } from '@/features/demo/seedBoardApps'
+import { storyDay } from '@/features/demo/seedCalendar'
 import {
   actorFor,
   type Cast,
@@ -229,7 +230,7 @@ export async function seedMembers(db: Db, cast: Cast, signal: AbortSignal) {
           displayName: name,
           boardId: await boardIdOf(db, board),
           title: 'member',
-          termStart: d('2026-01-01'),
+          termStart: storyDay('2026-01-01'),
         },
         signal,
       ),
@@ -249,7 +250,7 @@ async function openDecidedSitePlan(
     title: 'Bittern Meadow site plan',
     typeKey: 'SPR',
     values: { ...COMMON, gross_floor_area_sq_ft: 5200, parking_spaces: 18 },
-    submittedOn: '2026-07-01',
+    submittedOn: storyDay('2026-07-01'),
   })
   must(
     await recordBoardRegionalImpact(
@@ -276,7 +277,7 @@ async function openDecidedSitePlan(
     'des determination',
   )
   await issueDraftList(db, cast, s, now)
-  const acceptance = await meetingId(db, 'planning_board', '2026-07-22')
+  const acceptance = await meetingId(db, 'planning_board', storyDay('2026-07-22'))
   must(
     await setAcceptanceMeeting(
       db,
@@ -293,7 +294,7 @@ async function openDecidedSitePlan(
       {
         applicationId: s.applicationId,
         meetingId: acceptance,
-        votedOn: d('2026-07-22'),
+        votedOn: storyDay('2026-07-22'),
         outcome: 'accepted',
       },
       signal,
@@ -316,11 +317,21 @@ async function seedSitePlanDecision(
     cast,
     site.applicationId,
     'planning_board',
-    '2026-10-14',
+    storyDay('2026-10-14'),
     signal,
   )
-  await proveChannels(db, store, cast, site.applicationId, setId, [], d('2026-09-25'), signal, now)
-  await holdNoticed(db, cast, hearingId, '2026-10-14', signal, now)
+  await proveChannels(
+    db,
+    store,
+    cast,
+    site.applicationId,
+    setId,
+    [],
+    storyDay('2026-09-25'),
+    signal,
+    now,
+  )
+  await holdNoticed(db, cast, hearingId, storyDay('2026-10-14'), signal, now)
   const decision = must(
     await recordDecision(
       db,
@@ -328,7 +339,7 @@ async function seedSitePlanDecision(
       {
         applicationId: site.applicationId,
         hearingId,
-        votedOn: d('2026-10-14'),
+        votedOn: storyDay('2026-10-14'),
         outcome: 'approved_with_conditions',
         motion: 'Move to approve with the conditions as read.',
         votes: PB_VOTES,
@@ -352,7 +363,7 @@ async function seedSitePlanDecision(
       cast.staff,
       {
         decisionId: decision.decisionId,
-        filedOn: d('2026-10-21'),
+        filedOn: storyDay('2026-10-21'),
         minutesDocumentId: await demoDocument(
           db,
           store,
@@ -382,9 +393,26 @@ export async function decideGrantedVariance(
   signal: AbortSignal,
   now: Date,
 ): Promise<void> {
-  const { hearingId, setId } = await schedule(db, cast, applicationId, 'zba', '2026-04-15', signal)
-  await proveChannels(db, store, cast, applicationId, setId, [], d('2026-04-01'), signal, now)
-  await holdNoticed(db, cast, hearingId, '2026-04-15', signal, now)
+  const { hearingId, setId } = await schedule(
+    db,
+    cast,
+    applicationId,
+    'zba',
+    storyDay('2026-09-15'),
+    signal,
+  )
+  await proveChannels(
+    db,
+    store,
+    cast,
+    applicationId,
+    setId,
+    [],
+    storyDay('2026-09-01'),
+    signal,
+    now,
+  )
+  await holdNoticed(db, cast, hearingId, storyDay('2026-09-15'), signal, now)
   const decision = must(
     await recordDecision(
       db,
@@ -392,7 +420,7 @@ export async function decideGrantedVariance(
       {
         applicationId,
         hearingId,
-        votedOn: d('2026-04-15'),
+        votedOn: storyDay('2026-09-15'),
         outcome: 'approved',
         motion: 'Move to grant the frontage variance.',
         votes: ZBA_VOTES,
@@ -413,7 +441,7 @@ export async function decideGrantedVariance(
       cast.staff,
       {
         decisionId: decision.decisionId,
-        filedOn: d('2026-04-20'),
+        filedOn: storyDay('2026-09-18'),
         minutesDocumentId: await demoDocument(
           db,
           store,
@@ -468,7 +496,7 @@ async function seedContinuedVariance(
     cast,
     '009001000000',
     'Marsh Lane lot coverage variance',
-    '2026-10-26',
+    storyDay('2026-10-26'),
     values,
     signal,
     now,
@@ -478,7 +506,7 @@ async function seedContinuedVariance(
     cast,
     s.applicationId,
     'zba',
-    '2026-11-17',
+    storyDay('2026-11-17'),
     signal,
   )
   await proveChannels(
@@ -488,7 +516,7 @@ async function seedContinuedVariance(
     s.applicationId,
     setId,
     ['newspaper'],
-    d('2026-11-01'),
+    storyDay('2026-11-01'),
     signal,
     now,
   )
@@ -498,7 +526,7 @@ async function seedContinuedVariance(
       cast.staff,
       {
         hearingId,
-        toMeetingId: await meetingId(db, 'zba', '2026-12-15'),
+        toMeetingId: await meetingId(db, 'zba', storyDay('2026-12-15')),
         announcedAtMeeting: false,
       },
       signal,
@@ -520,7 +548,7 @@ async function seedDeniedVariance(
     cast,
     '009017000000',
     'Heron Cove setback variance',
-    '2026-09-02',
+    storyDay('2026-09-02'),
     values,
     signal,
     now,
@@ -530,11 +558,21 @@ async function seedDeniedVariance(
     cast,
     s.applicationId,
     'zba',
-    '2026-10-20',
+    storyDay('2026-10-20'),
     signal,
   )
-  await proveChannels(db, store, cast, s.applicationId, setId, [], d('2026-10-10'), signal, now)
-  await holdNoticed(db, cast, hearingId, '2026-10-20', signal, now)
+  await proveChannels(
+    db,
+    store,
+    cast,
+    s.applicationId,
+    setId,
+    [],
+    storyDay('2026-10-10'),
+    signal,
+    now,
+  )
+  await holdNoticed(db, cast, hearingId, storyDay('2026-10-20'), signal, now)
   const decision = must(
     await recordDecision(
       db,
@@ -542,7 +580,7 @@ async function seedDeniedVariance(
       {
         applicationId: s.applicationId,
         hearingId,
-        votedOn: d('2026-10-20'),
+        votedOn: storyDay('2026-10-20'),
         outcome: 'denied',
         motion: 'Move to deny the variance.',
         votes: ZBA_VOTES,
@@ -561,7 +599,7 @@ async function seedDeniedVariance(
     await addAppealNode(
       db,
       cast.staff,
-      { parentId: node?.id ?? '', kind: 'rehearing_motion', occurredOn: d('2026-11-02') },
+      { parentId: node?.id ?? '', kind: 'rehearing_motion', occurredOn: storyDay('2026-11-02') },
       signal,
       now,
     ),
@@ -634,7 +672,7 @@ export async function seedHearings(
   await seedContinuedVariance(db, store, cast, values, signal, now)
   await seedDeniedVariance(db, store, cast, signal, now, values)
   await seedTrc(db, cast, scenarios.sitePlan, signal)
-  const agendaMeeting = await meetingId(db, 'zba', '2026-12-15')
+  const agendaMeeting = await meetingId(db, 'zba', storyDay('2026-12-15'))
   must(await buildAgenda(db, cast.staff, agendaMeeting, signal), 'build agenda')
   must(await publishAgenda(db, store, cast.staff, agendaMeeting, signal), 'publish agenda')
 }

@@ -4,6 +4,7 @@ import type { Actor } from '@/features/auth/actor'
 import { CUTOVER_BASE_COLUMNS } from '@/features/cutover/columns'
 import { importCutoverCsv } from '@/features/cutover/importCutover'
 import { reconcileCutover } from '@/features/cutover/reconcile'
+import { storyDay, storyInstant } from '@/features/demo/seedCalendar'
 import { must } from '@/features/demo/seedPermitSupport'
 
 const EXTRA_COLUMNS = [
@@ -15,11 +16,11 @@ const EXTRA_COLUMNS = [
 ] as const
 const COLUMNS = [...CUTOVER_BASE_COLUMNS, ...EXTRA_COLUMNS]
 const MISSING_NUMBER = 'LEG-1996-0207'
-const IMPORT_AT = new Date('2026-05-20T15:00:00Z')
+const IMPORT_AT = '2026-10-26T14:00:00Z'
 
 type Row = Partial<Record<(typeof COLUMNS)[number], string>>
 
-const ROWS: Row[] = [
+const rows = (): Row[] => [
   {
     legacy_number: 'LEG-1996-0114',
     application_type_key: 'EL',
@@ -30,8 +31,8 @@ const ROWS: Row[] = [
     state: 'issued',
     fees_paid_in_prior_system: 'yes',
     prior_receipt_ref: 'Ledger 1996-0114',
-    received_date: '2026-02-01',
-    issued_on: '2026-02-10',
+    received_date: storyDay('2026-09-08'),
+    issued_on: storyDay('2026-09-15'),
     'field.description': 'Service upgrade to 200 amp',
     'field.contractor_license_number': 'EL-4401',
   },
@@ -43,8 +44,8 @@ const ROWS: Row[] = [
     project_title: 'Boathouse',
     applicant_name: 'Odessa Quillfeather',
     state: 'under_review',
-    received_date: '2026-03-01',
-    completed_date: '2026-03-05',
+    received_date: storyDay('2026-09-28'),
+    completed_date: storyDay('2026-10-01'),
     'field.work_type': 'building',
     'field.description': 'Lakeside boathouse',
     'field.classification': 'residential',
@@ -60,8 +61,8 @@ const ROWS: Row[] = [
     state: 'issued',
     fees_paid_in_prior_system: 'yes',
     prior_receipt_ref: 'Ledger 1996-0188',
-    received_date: '2026-03-12',
-    issued_on: '2026-03-20',
+    received_date: storyDay('2026-09-21'),
+    issued_on: storyDay('2026-09-28'),
     'field.description': 'New barn lighting circuit',
     'field.contractor_license_number': 'EL-4402',
   },
@@ -73,14 +74,19 @@ function csv(rows: Row[]): Uint8Array {
 }
 
 function legacyList(): Uint8Array {
-  const numbers = [...ROWS.map((r) => r.legacy_number ?? ''), MISSING_NUMBER]
+  const numbers = [...rows().map((r) => r.legacy_number ?? ''), MISSING_NUMBER]
   return new TextEncoder().encode(['legacy_number', ...numbers].join('\n'))
 }
 
 export async function seedCutover(db: Db, staff: Actor, signal: AbortSignal): Promise<boolean> {
   signal.throwIfAborted()
   const imported = must(
-    await importCutoverCsv(db, staff, { bytes: csv(ROWS), dryRun: false, now: IMPORT_AT }, signal),
+    await importCutoverCsv(
+      db,
+      staff,
+      { bytes: csv(rows()), dryRun: false, now: storyInstant(IMPORT_AT) },
+      signal,
+    ),
     'cutover import',
   )
   const failed = imported.rows.filter((r) => r.outcome === 'error')

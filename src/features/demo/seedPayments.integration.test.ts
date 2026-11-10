@@ -1,9 +1,9 @@
 import { eq } from 'drizzle-orm'
-import { afterAll, beforeAll, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import { applications, ledgerEntries, paymentAttempts } from '@/db/schema'
 import { loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
-import { DEMO_PAYMENT_DATE } from '@/features/demo/seedPayments'
+import { DEMO_PAYMENT_DAY } from '@/features/demo/seedPayments'
 import { feeBalance } from '@/features/ledger/feeBalance'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { listEntriesOn, rangeCountsOn } from '@/features/payments/entryList'
@@ -12,12 +12,14 @@ import { getActiveProcessor } from '@/features/payments/processorAccounts'
 import { cashReceiptsReport } from '@/features/reports/cashReceipts'
 import { townToday } from '@/features/town/today'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { dayOfWeek } from '@/types/civilDate'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
+import { type CivilDate, dayOfWeek } from '@/types/civilDate'
 
 const signal = new AbortController().signal
 let handle: TestDb
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   await seedDemo(handle.db, signal, {
     records: { mail: createMemoryTransport() },
@@ -25,6 +27,7 @@ beforeAll(async () => {
   })
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 
@@ -59,7 +62,7 @@ describe('seeded payments', () => {
 
   it('spreads demo money over at least two business dates', async () => {
     const dates = new Set((await handle.db.select().from(ledgerEntries)).map((e) => e.businessDate))
-    expect(dates.has(DEMO_PAYMENT_DATE)).toBe(true)
+    expect(dates.has(DEMO_PAYMENT_DAY)).toBe(true)
     expect(dates.size).toBeGreaterThanOrEqual(2)
   })
 
@@ -84,7 +87,12 @@ describe('seeded payments', () => {
       where: (u, { eq: same }) => same(u.email, 'finance@alderpond.example'),
     })
     const actor = await loadActor(handle.db, finance?.id ?? '', signal)
-    const report = await cashReceiptsReport(handle.db, actor!, { date: DEMO_PAYMENT_DATE }, signal)
+    const report = await cashReceiptsReport(
+      handle.db,
+      actor!,
+      { date: DEMO_PAYMENT_DAY as CivilDate },
+      signal,
+    )
     if (!report.ok) throw new Error(report.error)
     expect(report.value.totalsByMethod.cash).toBeGreaterThan(0)
     expect(report.value.totalsByMethod.check).toBeGreaterThan(0)

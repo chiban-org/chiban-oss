@@ -10,6 +10,7 @@ import { logRequest } from '@/features/rtk/requests'
 import { recordFirstResponse } from '@/features/rtk/responses'
 import { townToday } from '@/features/town/today'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { visibleText } from '@/test/leaks'
 import { makeTestStore } from '@/test/objectStore'
 
@@ -120,6 +121,7 @@ async function respondedWithApproval(): Promise<string> {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, { records: { mail: createMemoryTransport() } })
@@ -130,6 +132,7 @@ beforeAll(async () => {
   state.actor = custodian
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

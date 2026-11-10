@@ -7,7 +7,7 @@ import { seedDemo } from '@/features/demo/seedDemo'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { demoSeedDeps } from '@/test/demoSeedDeps'
+import { demoSeedDeps, useDemoStoryClock } from '@/test/demoSeedDeps'
 import { countSections, filledButtons, filledLinks, sectionOf } from '@/test/htmlSections'
 
 const state = vi.hoisted((): { db: unknown; actor: unknown } => ({ db: null, actor: null }))
@@ -80,6 +80,7 @@ function occurrences(html: string, text: string): number {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, await demoSeedDeps())
@@ -102,6 +103,7 @@ beforeAll(async () => {
   actors.set('staff', await actorFor('staff'))
 })
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 

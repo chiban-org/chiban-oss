@@ -7,7 +7,7 @@ import { compareTowns } from '@/features/export/compareTowns'
 import { importArchive } from '@/features/export/importArchive'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { demoSeedDeps } from '@/test/demoSeedDeps'
+import { demoSeedDeps, useDemoStoryClock } from '@/test/demoSeedDeps'
 import { buildZip, freshTarget, sourceOf } from '@/test/roundTrip'
 
 interface MockState {
@@ -47,11 +47,13 @@ async function actorOf(local: string): Promise<Actor> {
 }
 
 beforeAll(async () => {
+  useDemoStoryClock()
   handle = await makeTestDb()
   state.db = handle.db
   await seedDemo(handle.db, signal, await demoSeedDeps())
 }, 300_000)
 afterAll(async () => {
+  vi.useRealTimers()
   await handle.drop()
 })
 
