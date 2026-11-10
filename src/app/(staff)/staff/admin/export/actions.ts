@@ -24,6 +24,6 @@ export async function requestExportAction(formData: FormData): Promise<ActionRes
         message: 'Export requested. It is ready in a few minutes. Reload this page to see it.',
       }
     },
-    { exempt: 'export' },
+    { exempt: 'export', lockedInDemo: true },
   )
 }

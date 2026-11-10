@@ -3,11 +3,14 @@ import type { ReactNode } from 'react'
 import '@fontsource-variable/mulish'
 import '@fontsource-variable/source-serif-4'
 import '../globals.css'
+import { DemoBanner } from '@/components/DemoBanner'
 import { CONTENT_ID, SkipLink } from '@/components/public/SkipLink'
 import { TownFooter } from '@/components/public/TownFooter'
 import { TownHeader } from '@/components/public/TownHeader'
 import { db } from '@/db/client'
 import { loadPublicTown, townWithoutAssetRequests } from '@/features/town/publicTown'
+
+export const dynamic = 'force-dynamic'
 
 const TIMEOUT_MS = 10_000
 
@@ -26,6 +29,7 @@ export default async function AnonymousLayout({ children }: { children: ReactNod
   return (
     <html lang="en">
       <body>
+        <DemoBanner />
         <div className="public-shell flex min-h-screen flex-col">
           <SkipLink />
           <TownHeader town={townWithoutAssetRequests(town)} />

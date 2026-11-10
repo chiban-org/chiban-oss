@@ -1,7 +1,12 @@
 import type { z } from 'zod'
 import { CHECK_ONLY_FIELD, CHECK_PASSED_COPY } from '@/constants/formCheck'
-import { CSRF_FIELD, type GuardOptions, isCheckOnly } from '@/server/actionGuard'
-import { type ActionContext, type ActionResult, runStaffAction } from '@/server/actionRunner'
+import { CSRF_FIELD, isCheckOnly } from '@/server/actionGuard'
+import {
+  type ActionContext,
+  type ActionResult,
+  type RunOptions,
+  runStaffAction,
+} from '@/server/actionRunner'
 import { err, ok, type Result } from '@/types/result'
 
 export type ActionFailure = Extract<ActionResult, { ok: false }>
@@ -53,7 +58,7 @@ export async function runStaffForm<S extends z.ZodType>(
   formData: FormData,
   schema: S,
   fn: (ctx: ActionContext, input: z.output<S>) => Promise<ActionResult>,
-  options: Omit<GuardOptions, 'answersCheck'> = {},
+  options: Omit<RunOptions, 'answersCheck'> = {},
 ): Promise<ActionResult> {
   return await runStaffAction(
     formData,

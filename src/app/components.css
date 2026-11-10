@@ -288,4 +288,9 @@
   .row-actions :where(button) {
     width: 100%;
   }
+
+  .row-actions :where([role="status"]) {
+    width: 0;
+    min-width: 100%;
+  }
 }

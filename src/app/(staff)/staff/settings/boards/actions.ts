@@ -65,6 +65,6 @@ export async function archiveBoardAction(formData: FormData): Promise<ActionResu
       }
       return { ok: false, error: GONE }
     },
-    { answersCheck: true },
+    { answersCheck: true, lockedInDemo: true },
   )
 }

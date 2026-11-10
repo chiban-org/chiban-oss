@@ -101,6 +101,17 @@ describe('Dockerfile', () => {
     )
   })
 
+  it('runtime carries every local module next.config.ts imports, so next start can load it', () => {
+    const config = readFileSync(new URL('./next.config.ts', import.meta.url), 'utf8')
+    const local = [...config.matchAll(/from '\.\/(src\/[^']+)'/g)].map((m) => m[1] ?? '')
+    expect(local.length).toBeGreaterThan(0)
+    for (const file of local) {
+      expect(stageBody('runtime'), file).toContain(
+        `COPY --from=build --chown=node:node /app/${file}.ts ./${file}.ts`,
+      )
+    }
+  })
+
   it('the runtime stage does not install the OCR toolchain', () => {
     expect(stageBody('runtime')).not.toContain('ocrmypdf')
   })
@@ -116,6 +127,19 @@ describe('.dockerignore', () => {
     '.git',
   ])('excludes %s', (entry) => {
     expect(dockerignore.split('\n')).toContain(entry)
+  })
+
+  it('keeps tests out of the build context so next build type-checks only what ships', () => {
+    const lines = dockerignore.split('\n')
+    for (const entry of [
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      'e2e',
+      'playwright.config.ts',
+      'playwright.demo.config.ts',
+    ]) {
+      expect(lines, entry).toContain(entry)
+    }
   })
 
   it('excludes env variants but keeps the example', () => {

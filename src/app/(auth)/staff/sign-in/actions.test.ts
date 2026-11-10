@@ -13,6 +13,7 @@ vi.mock('@/features/auth/staffSignIn', () => ({
 }))
 vi.mock('@/features/auth/devSignIn', () => ({
   devSignIn: () => Promise.resolve({ ok: true, value: { sid: 's1' } }),
+  isDevSignInEnabled: () => true,
 }))
 
 const { signInAction } = await import('./actions')

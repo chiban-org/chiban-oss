@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { TryDemoLink } from '@/components/TryDemoLink'
 import { MagicLinkForm } from './MagicLinkForm'
 
 export const metadata: Metadata = { title: 'Sign in' }
@@ -25,6 +26,7 @@ export default async function PublicSignInPage({ searchParams }: SignInPageProps
         {'Contractor? '}
         <Link href="/sign-in/contractor">Create a contractor account</Link>
       </p>
+      <TryDemoLink />
     </main>
   )
 }

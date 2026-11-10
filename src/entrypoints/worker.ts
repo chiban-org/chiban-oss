@@ -1,6 +1,8 @@
-import { pool } from '@/db/client'
+import { db, pool } from '@/db/client'
+import { exitIfUnsafeDemo } from '@/features/demo/demoStartup'
 import { startWorker } from '@/jobs/worker'
 
+await exitIfUnsafeDemo(db)
 const boss = await startWorker()
 
 async function shutdown(): Promise<void> {
