@@ -4,8 +4,11 @@ import { env } from '@/config/env'
 import type { Db } from '@/db/client'
 import { applyMigrations } from '@/db/migrate'
 import { isDevSignInEnabled } from '@/features/auth/devSignIn'
+import { DemoOverlayError } from '@/features/demo/overlay/overlayIssue'
 import { type SeedDemoDeps, type SeedReport, seedDemo } from '@/features/demo/seedDemo'
 import { err, ok, type Result } from '@/types/result'
+
+export type DemoResetError = 'not_allowed' | 'migration_failed' | { overlay: string }
 
 export function demoResetAllowed(): boolean {
   return isDevSignInEnabled() || env.CHIBAN_DEMO_MODE
@@ -25,7 +28,7 @@ export async function resetDemoDatabase(
   db: Db,
   signal: AbortSignal,
   deps: SeedDemoDeps = {},
-): Promise<Result<SeedReport, 'not_allowed' | 'migration_failed'>> {
+): Promise<Result<SeedReport, DemoResetError>> {
   if (!demoResetAllowed()) return err('not_allowed')
   await db.execute(sql`drop schema if exists drizzle cascade`)
   await db.execute(sql`drop schema if exists public cascade`)
@@ -35,5 +38,10 @@ export async function resetDemoDatabase(
     console.error(`demo reset: migration failed: ${migrated.error}`)
     return err('migration_failed')
   }
-  return ok(await seedDemo(db, signal, { screenStates: true, ...deps }))
+  try {
+    return ok(await seedDemo(db, signal, { screenStates: true, ...deps }))
+  } catch (e) {
+    if (e instanceof DemoOverlayError) return err({ overlay: e.message })
+    throw e
+  }
 }

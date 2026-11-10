@@ -97,6 +97,7 @@ export const envSchema = z
     CHIBAN_DEMO_MODE: boolFromString.default(false),
     CHIBAN_DEMO_RESET_AT: z.preprocess(blankAsUnset, z.string().min(1).max(60).optional()),
     CHIBAN_DEMO_MAIL_SINK_HOSTS: commaList(z.string().min(1)).default(['mailpit']),
+    CHIBAN_DEMO_OVERLAY_FILE: z.preprocess(blankAsUnset, z.string().min(1).optional()),
     NEXT_RUNTIME: z.enum(['nodejs', 'edge']).optional(),
   })
   .refine((v) => v.CHIBAN_ACTIVE_KEY_ID in v.CHIBAN_SECRET_KEYS, {

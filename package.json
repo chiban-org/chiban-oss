@@ -33,6 +33,7 @@
     "db:seed:demo": "tsx --env-file .env scripts/seedDemo.ts",
     "db:reset:demo": "tsx --env-file .env scripts/resetDemoDatabase.ts && pnpm db:migrate && pnpm db:seed:demo",
     "demo:reset": "tsx --env-file .env src/entrypoints/demoReset.ts",
+    "demo:overlay:check": "tsx src/entrypoints/demoOverlayCheck.ts",
     "clover:fake": "tsx scripts/cloverFake.ts",
     "health:test-alert": "tsx --env-file-if-exists=.env src/entrypoints/healthTestAlert.ts",
     "export:format-doc": "tsx --env-file-if-exists=.env src/entrypoints/exportFormatDoc.ts",
