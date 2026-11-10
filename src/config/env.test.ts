@@ -95,6 +95,17 @@ describe('demo environment', () => {
     expect(failingPaths(demo)).toEqual([])
   })
 
+  it('reads an optional overlay file path and treats a blank one as unset', () => {
+    expect(envSchema.parse(demo).CHIBAN_DEMO_OVERLAY_FILE).toBeUndefined()
+    expect(
+      envSchema.parse({ ...demo, CHIBAN_DEMO_OVERLAY_FILE: '' }).CHIBAN_DEMO_OVERLAY_FILE,
+    ).toBe(undefined)
+    expect(
+      envSchema.parse({ ...demo, CHIBAN_DEMO_OVERLAY_FILE: '/etc/chiban/overlay.json' })
+        .CHIBAN_DEMO_OVERLAY_FILE,
+    ).toBe('/etc/chiban/overlay.json')
+  })
+
   it('refuses a demo whose mail goes anywhere but an allowed sink host', () => {
     expect(
       failingPaths({ ...demo, SMTP_URL: 'smtps://user:pass@smtp.mailer.example:465' }),

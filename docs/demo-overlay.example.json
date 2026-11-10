@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "town": { "name": "Town of Alder Pond" },
+  "townProfile": {
+    "officeName": "Alder Pond Land Use Department",
+    "addressLines": ["Alder Pond Town Hall", "1 Main Street", "Alder Pond, NH 03000"],
+    "phone": "603-555-0199",
+    "email": "",
+    "website": "https://alderpond.example",
+    "officeHours": "Monday to Friday, 8 to 4",
+    "letterheadFooter": "Town of Alder Pond Land Use Department.",
+    "boards": {
+      "planning_board": { "officeName": "Alder Pond Planning Board" },
+      "zba": { "officeName": "Alder Pond Zoning Board of Adjustment" }
+    }
+  },
+  "paymentSettings": {
+    "checksPayableTo": "Town of Alder Pond",
+    "receiptFooter": "Questions about this receipt: Alder Pond Land Use Department."
+  },
+  "starters": ["BP", "EL", "SG", "SUB", "SPR", "VAR", "AAD"],
+  "boards": {
+    "planning_board": {
+      "notice": {
+        "newspaper": "Alder Pond Courier",
+        "bulletinBoards": ["Alder Pond Town Hall lobby"]
+      },
+      "noticeFees": { "perAbutterCents": 900, "advertisingCents": 8000 }
+    },
+    "zba": {
+      "notice": {
+        "newspaper": "Alder Pond Courier",
+        "bulletinBoards": ["Alder Pond Town Hall lobby"]
+      },
+      "noticeFees": { "perAbutterCents": 900, "advertisingCents": 8000 }
+    }
+  },
+  "applicationTypes": {
+    "BP": {
+      "fees": {
+        "building": {
+          "expr": {
+            "op": "sum",
+            "of": [
+              {
+                "op": "per_unit",
+                "source": { "kind": "field", "field": "finished_sq_ft" },
+                "centsPerUnit": 32
+              },
+              {
+                "op": "per_unit",
+                "source": { "kind": "field", "field": "unfinished_sq_ft" },
+                "centsPerUnit": 22
+              },
+              {
+                "op": "per_unit",
+                "source": { "kind": "field", "field": "commercial_sq_ft" },
+                "centsPerUnit": 32
+              }
+            ]
+          }
+        },
+        "plan_review": {
+          "label": "Plan review, set by staff when the building official requires it",
+          "due": "at_approval",
+          "expr": { "op": "flat", "cents": 0 }
+        }
+      }
+    },
+    "EL": { "fees": { "el": { "expr": { "op": "flat", "cents": 6000 } } } },
+    "SG": {
+      "formFields": [
+        {
+          "key": "sign_duration",
+          "label": "Temporary or permanent sign",
+          "type": "select",
+          "required": true,
+          "options": [
+            { "value": "temporary", "label": "Temporary" },
+            { "value": "permanent", "label": "Permanent" }
+          ]
+        }
+      ],
+      "fees": {
+        "sg": {
+          "expr": {
+            "op": "conditional_multiplier",
+            "when": { "field": "sign_duration", "op": "equals", "value": "temporary" },
+            "factor": 0.5,
+            "of": { "op": "flat", "cents": 3000 }
+          }
+        }
+      }
+    },
+    "SUB": {
+      "fees": {
+        "application": {
+          "expr": {
+            "op": "sum",
+            "of": [
+              { "op": "flat", "cents": 35000 },
+              {
+                "op": "per_unit",
+                "source": { "kind": "field", "field": "lot_count" },
+                "centsPerUnit": 7500
+              }
+            ]
+          }
+        }
+      }
+    },
+    "VAR": { "fees": { "application": { "expr": { "op": "flat", "cents": 12500 } } } },
+    "AAD": {
+      "fees": {
+        "application": { "expr": { "op": "flat", "cents": 15000 } },
+        "hearing": {
+          "label": "Hearing fee",
+          "due": "at_intake",
+          "expr": { "op": "flat", "cents": 15000 }
+        }
+      }
+    }
+  }
+}

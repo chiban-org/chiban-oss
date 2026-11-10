@@ -6,6 +6,13 @@ import { townSettings, userRoles, users } from '@/db/schema'
 import { seedDefaultGrants } from '@/features/authz/defaultGrants'
 
 import { DEMO_DOMAIN } from '@/features/demo/domain'
+import {
+  applyOverlayAfterStory,
+  applyOverlayBeforeStory,
+  overlayTownName,
+  type StarterOverlayReport,
+} from '@/features/demo/overlay/applyOverlay'
+import type { DemoOverlay } from '@/features/demo/overlay/overlaySchema'
 import { seedAmendments } from '@/features/demo/seedAmendments'
 import { seedBoards } from '@/features/demo/seedBoards'
 import { withStoryCalendar } from '@/features/demo/seedCalendar'
@@ -133,6 +140,7 @@ export interface SeedDemoDeps {
   operations?: SeedOperationsDeps
   boards?: { now?: Date }
   screenStates?: boolean
+  overlay?: DemoOverlay
   now?: Date
 }
 
@@ -153,6 +161,7 @@ export interface SeedReport {
   boardsSeeded: boolean
   enforcementSeeded: boolean
   coverageSeeded: boolean
+  overlay: StarterOverlayReport | null
 }
 
 export async function seedDemo(
@@ -161,14 +170,15 @@ export async function seedDemo(
   deps: SeedDemoDeps = {},
 ): Promise<SeedReport> {
   signal.throwIfAborted()
+  const name = overlayTownName(deps.overlay)
   const base = await db.transaction(async (tx) => {
     const town = await tx
       .insert(townSettings)
-      .values({ id: 1, name: 'Town of Alder Pond', stateCode: 'NH', timeZone: 'America/New_York' })
+      .values({ id: 1, name, stateCode: 'NH', timeZone: 'America/New_York' })
       .onConflictDoUpdate({
         target: townSettings.id,
         set: {
-          name: 'Town of Alder Pond',
+          name,
           stateCode: 'NH',
           timeZone: 'America/New_York',
           updatedAt: sql`now()`,
@@ -200,14 +210,17 @@ export async function seedDemo(
       rolesAssigned: assigned.length,
     }
   })
+  const overlay =
+    deps.overlay === undefined ? null : await applyOverlayBeforeStory(db, deps.overlay, signal)
   const now = deps.now ?? new Date()
   const today = await townToday(db, now, signal)
   const seeded = await withStoryCalendar(today, () => seedStory(db, signal, deps, now))
   await runDailyJobsAsOf(db, today, signal)
-  return { ...base, ...seeded }
+  if (deps.overlay !== undefined) await applyOverlayAfterStory(db, deps.overlay, signal)
+  return { ...base, ...seeded, overlay }
 }
 
-type StoryReport = Omit<SeedReport, 'townConfigured' | 'usersCreated' | 'rolesAssigned'>
+type StoryReport = Omit<SeedReport, 'townConfigured' | 'usersCreated' | 'rolesAssigned' | 'overlay'>
 
 async function seedStory(
   db: Db,
