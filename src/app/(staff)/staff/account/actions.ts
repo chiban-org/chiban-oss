@@ -17,12 +17,17 @@ const SIGN_IN = '/staff/sign-in'
 
 export async function beginTotpAction(formData: FormData): Promise<ActionResult> {
   const outcome = { started: false }
-  const result = await runStaffForm(formData, NO_FIELDS, async ({ db, actor, signal }) => {
-    const started = await beginTotpEnrollment(db, actor.userId, signal)
-    if (!started.ok) return { ok: false, error: 'Authenticator setup is not available.' }
-    outcome.started = true
-    return { ok: true, message: 'Authenticator setup started.' }
-  })
+  const result = await runStaffForm(
+    formData,
+    NO_FIELDS,
+    async ({ db, actor, signal }) => {
+      const started = await beginTotpEnrollment(db, actor.userId, signal)
+      if (!started.ok) return { ok: false, error: 'Authenticator setup is not available.' }
+      outcome.started = true
+      return { ok: true, message: 'Authenticator setup started.' }
+    },
+    { lockedInDemo: true },
+  )
   if (outcome.started) redirect('/staff/account/totp')
   return result
 }
@@ -38,6 +43,7 @@ export async function confirmTotpAction(formData: FormData): Promise<ActionResul
       outcome.confirmed = true
       return { ok: true, message: 'Authenticator turned on.' }
     },
+    { lockedInDemo: true },
   )
   if (outcome.confirmed) redirect('/staff/account?totp=enabled')
   return result
@@ -62,6 +68,7 @@ export async function changeNameAction(formData: FormData): Promise<ActionResult
       if (!changed.ok) return refuseField('displayName', 'Enter your name.')
       return { ok: true, message: 'Name saved.' }
     },
+    { lockedInDemo: true },
   )
 }
 
@@ -94,5 +101,6 @@ export async function changePasswordAction(formData: FormData): Promise<ActionRe
       if (!result.ok) return PASSWORD_REFUSALS[result.error]
       return { ok: true, message: 'Password changed. Other devices were signed out.' }
     },
+    { lockedInDemo: true },
   )
 }

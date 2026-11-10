@@ -3,6 +3,7 @@ import { E2E_BASE_URL } from './e2e/fixtures/settings'
 
 const SERVER_START_TIMEOUT_MS = 5 * 60 * 1000
 const PHONE_SPECS = '**/*.phone.spec.ts'
+const DEMO_SPECS = '**/*.demo.spec.ts'
 
 export default defineConfig({
   testDir: './e2e',
@@ -21,7 +22,7 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium',
-      testIgnore: PHONE_SPECS,
+      testIgnore: [PHONE_SPECS, DEMO_SPECS],
       use: { ...devices['Desktop Chrome'] },
     },
     {

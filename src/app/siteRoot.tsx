@@ -4,6 +4,7 @@ import type { ReactNode } from 'react'
 import '@fontsource-variable/mulish'
 import '@fontsource-variable/source-serif-4'
 import { CsrfProvider } from '@/components/CsrfProvider'
+import { DemoBanner } from '@/components/DemoBanner'
 import { Providers } from '@/components/providers'
 import { CSRF_COOKIE } from '@/constants/cookies'
 import './globals.css'
@@ -37,6 +38,7 @@ export async function SiteRoot({ children }: { children: ReactNode }) {
   return (
     <html lang="en">
       <body>
+        <DemoBanner />
         <CsrfProvider token={token}>
           <Providers>{children}</Providers>
         </CsrfProvider>

@@ -22,7 +22,9 @@ describe('buildEntrypoints', () => {
 
   it('bundles every entrypoint into a kebab-case .mjs', () => {
     execFileSync('node', ['scripts/buildEntrypoints.mjs', outDir], { cwd: ROOT, stdio: 'pipe' })
-    const produced = readdirSync(outDir).sort()
+    const produced = readdirSync(outDir)
+      .filter((f) => f.endsWith('.mjs'))
+      .sort()
     expect(produced).toEqual(
       sourceNames()
         .map((n) => `${kebab(n)}.mjs`)
@@ -35,6 +37,7 @@ describe('buildEntrypoints', () => {
       'worker.mjs',
       'migrate.mjs',
       'export-format-doc.mjs',
+      'demo-reset.mjs',
     ]) {
       expect(produced).toContain(expected)
     }
@@ -44,5 +47,13 @@ describe('buildEntrypoints', () => {
     const worker = readFileSync(path.join(outDir, 'worker.mjs'), 'utf8')
     expect(worker).toMatch(/from ["']pg-boss["']/)
     expect(worker).not.toMatch(/from ["']@\//)
+  })
+
+  it('ships the demo seed fixtures beside the bundles that read them', () => {
+    const shipped = readdirSync(path.join(outDir, 'fixtures')).sort()
+    const source = readdirSync(path.join(ROOT, 'src', 'features', 'demo', 'fixtures')).sort()
+    expect(shipped).toEqual(source)
+    const reset = readFileSync(path.join(outDir, 'demo-reset.mjs'), 'utf8')
+    expect(reset).toContain('./fixtures/')
   })
 })

@@ -9,13 +9,15 @@ import { fieldErrorsFor } from '@/features/config/publishErrors'
 import { listKeysOfKind } from '@/features/config/settingsViews'
 import { skeletonBodyFor } from '@/features/config/skeletons'
 import { saveDraft } from '@/features/config/store'
-import { type ActionResult, errorCopy } from '@/server/actionRunner'
+import { isLockedConfigKind } from '@/features/demo/demoMode'
+import { type ActionResult, DEMO_REFUSED, errorCopy } from '@/server/actionRunner'
 import { refuseField, runStaffForm } from '@/server/formInput'
 import { refusedDraft } from './draftRefusal'
 import { DISCARD_FORM, DRAFT_FORM, ROLLBACK_FORM, START_DRAFT_FORM } from './forms'
 
 export async function saveDraftAction(formData: FormData): Promise<ActionResult> {
   return await runStaffForm(formData, DRAFT_FORM, async ({ db, actor, signal }, input) => {
+    if (isLockedConfigKind(input.kind)) return DEMO_REFUSED
     const saved = await saveDraft(db, actor, input, signal)
     return saved.ok ? { ok: true, message: 'Draft saved.' } : refusedDraft(saved.error)
   })
@@ -27,6 +29,7 @@ export async function discardDraftAction(formData: FormData): Promise<ActionResu
     formData,
     DISCARD_FORM,
     async ({ db, actor, signal }, input) => {
+      if (isLockedConfigKind(input.kind)) return DEMO_REFUSED
       const discarded = await discardDraft(db, actor, input, signal)
       if (!discarded.ok) {
         return {
@@ -49,6 +52,7 @@ export async function discardDraftAction(formData: FormData): Promise<ActionResu
 
 export async function publishAction(formData: FormData): Promise<ActionResult> {
   return await runStaffForm(formData, DRAFT_FORM, async ({ db, actor, signal }, input) => {
+    if (isLockedConfigKind(input.kind)) return DEMO_REFUSED
     const saved = await saveDraft(db, actor, input, signal)
     if (!saved.ok) return refusedDraft(saved.error)
     const published = await publishConfig(db, actor, saved.value.versionId, signal)
@@ -64,6 +68,7 @@ export async function publishAction(formData: FormData): Promise<ActionResult> {
 
 export async function rollbackAction(formData: FormData): Promise<ActionResult> {
   return await runStaffForm(formData, ROLLBACK_FORM, async ({ db, actor, signal }, input) => {
+    if (isLockedConfigKind(input.kind)) return DEMO_REFUSED
     const result = await rollbackConfig(db, actor, input, signal)
     if (result.ok) {
       return {
@@ -84,6 +89,7 @@ export async function startDraftAction(formData: FormData): Promise<ActionResult
   const outcome: { kind: string; key: string } = { kind: '', key: '' }
   const result = await runStaffForm(formData, START_DRAFT_FORM, async (ctx, input) => {
     const { db, actor, signal } = ctx
+    if (isLockedConfigKind(input.kind)) return DEMO_REFUSED
     const taken = new Set((await listKeysOfKind(db, input.kind, signal)).map((row) => row.key))
     let key: string
     if (input.kind === 'town_rule_setting') {

@@ -102,54 +102,62 @@ export async function issueCertificateAction(formData: FormData): Promise<Action
 }
 
 export async function saveInspectorCalendarAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const input = parseCalendarForm(formData)
-    if (input === null) return INVALID
-    const allowed = await requireCapability(db, actor.userId, 'config.edit', signal)
-    if (!allowed.ok) return failure('forbidden')
-    await db.transaction(async (tx) => {
-      await tx
-        .insert(inspectorCalendars)
-        .values({
-          userId: input.userId,
-          kind: input.kind,
-          email: input.email,
-          graphUserId: input.graphUserId ?? null,
-          updatedBy: actor.userId,
-        })
-        .onConflictDoUpdate({
-          target: inspectorCalendars.userId,
-          set: {
+  return await runStaffAction(
+    formData,
+    async ({ db, actor, signal }) => {
+      const input = parseCalendarForm(formData)
+      if (input === null) return INVALID
+      const allowed = await requireCapability(db, actor.userId, 'config.edit', signal)
+      if (!allowed.ok) return failure('forbidden')
+      await db.transaction(async (tx) => {
+        await tx
+          .insert(inspectorCalendars)
+          .values({
+            userId: input.userId,
             kind: input.kind,
             email: input.email,
             graphUserId: input.graphUserId ?? null,
             updatedBy: actor.userId,
-            updatedAt: new Date(),
+          })
+          .onConflictDoUpdate({
+            target: inspectorCalendars.userId,
+            set: {
+              kind: input.kind,
+              email: input.email,
+              graphUserId: input.graphUserId ?? null,
+              updatedBy: actor.userId,
+              updatedAt: new Date(),
+            },
+          })
+        await writeAudit(
+          tx,
+          {
+            actor: { kind: 'user', userId: actor.userId },
+            action: 'inspector_calendar.save',
+            entityType: 'user',
+            entityId: input.userId,
+            after: { kind: input.kind },
           },
-        })
-      await writeAudit(
-        tx,
-        {
-          actor: { kind: 'user', userId: actor.userId },
-          action: 'inspector_calendar.save',
-          entityType: 'user',
-          entityId: input.userId,
-          after: { kind: input.kind },
-        },
-        signal,
-      )
-    })
-    return { ok: true, message: 'Calendar target saved.' }
-  })
+          signal,
+        )
+      })
+      return { ok: true, message: 'Calendar target saved.' }
+    },
+    { lockedInDemo: true },
+  )
 }
 
 export async function saveCalendarAccountAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffAction(formData, async ({ db, actor, signal }) => {
-    const input = parseAccountForm(formData)
-    if (input === null) return INVALID
-    const saved = await saveCalendarAccount(db, actor, input, signal)
-    return saved.ok ? { ok: true, message: 'Tenant details saved.' } : failure(saved.error)
-  })
+  return await runStaffAction(
+    formData,
+    async ({ db, actor, signal }) => {
+      const input = parseAccountForm(formData)
+      if (input === null) return INVALID
+      const saved = await saveCalendarAccount(db, actor, input, signal)
+      return saved.ok ? { ok: true, message: 'Tenant details saved.' } : failure(saved.error)
+    },
+    { lockedInDemo: true },
+  )
 }
 
 export async function publishInspectionSettingsAction(formData: FormData): Promise<ActionResult> {

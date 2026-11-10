@@ -54,10 +54,13 @@ export async function saveProcessorAccount(
   input: SaveProcessorAccountInput,
   signal: AbortSignal,
   flags: { simulatedEnabled: boolean } = { simulatedEnabled: env.ENABLE_SIMULATED_PAYMENTS },
-): Promise<Result<{ accountId: string }, 'forbidden' | 'simulated_disabled'>> {
+): Promise<
+  Result<{ accountId: string }, 'forbidden' | 'simulated_disabled' | 'demo_simulated_only'>
+> {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'config.edit', signal)
   if (!allowed.ok) return err('forbidden')
+  if (env.CHIBAN_DEMO_MODE && input.processor !== 'simulated') return err('demo_simulated_only')
   if (input.processor === 'simulated' && !flags.simulatedEnabled) return err('simulated_disabled')
   return await transactionResult(db, async (tx) => {
     await tx

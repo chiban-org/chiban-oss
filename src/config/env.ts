@@ -39,6 +39,17 @@ const commaList = (item: z.ZodType<string, string>) =>
     )
     .pipe(z.array(item))
 
+function mailHostIn(smtpUrl: string, hosts: readonly string[]): boolean {
+  try {
+    const url = new URL(smtpUrl)
+    if (url.search !== '') return false
+    const host = url.hostname.toLowerCase()
+    return hosts.some((allowed) => allowed.toLowerCase() === host)
+  } catch {
+    return false
+  }
+}
+
 export const envSchema = z
   .object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -83,6 +94,10 @@ export const envSchema = z
     USPS_CLIENT_SECRET: optionalSecret,
     USPS_API_BASE: z.preprocess(blankAsUnset, z.url().default('https://apis.usps.com')),
     USPS_STUB: z.preprocess(blankAsUnset, boolFromString.default(false)),
+    CHIBAN_DEMO_MODE: boolFromString.default(false),
+    CHIBAN_DEMO_RESET_AT: z.preprocess(blankAsUnset, z.string().min(1).max(60).optional()),
+    CHIBAN_DEMO_MAIL_SINK_HOSTS: commaList(z.string().min(1)).default(['mailpit']),
+    NEXT_RUNTIME: z.enum(['nodejs', 'edge']).optional(),
   })
   .refine((v) => v.CHIBAN_ACTIVE_KEY_ID in v.CHIBAN_SECRET_KEYS, {
     path: ['CHIBAN_ACTIVE_KEY_ID'],
@@ -107,6 +122,19 @@ export const envSchema = z
   .refine((v) => v.NODE_ENV !== 'production' || !v.USPS_STUB, {
     path: ['USPS_STUB'],
     message: 'must not be set in production',
+  })
+  .refine((v) => !v.CHIBAN_DEMO_MODE || mailHostIn(v.SMTP_URL, v.CHIBAN_DEMO_MAIL_SINK_HOSTS), {
+    path: ['SMTP_URL'],
+    message:
+      'must point at a host in CHIBAN_DEMO_MAIL_SINK_HOSTS, with no query options, when CHIBAN_DEMO_MODE is on',
+  })
+  .refine((v) => !v.CHIBAN_DEMO_MODE || v.ENABLE_SIMULATED_PAYMENTS, {
+    path: ['ENABLE_SIMULATED_PAYMENTS'],
+    message: 'must be true when CHIBAN_DEMO_MODE is on, so the simulated checkout works',
+  })
+  .refine((v) => !v.CHIBAN_DEMO_MODE || v.CHIBAN_DEMO_RESET_AT !== undefined, {
+    path: ['CHIBAN_DEMO_RESET_AT'],
+    message: 'is required when CHIBAN_DEMO_MODE is on',
   }) satisfies z.ZodType
 
 export type Env = z.infer<typeof envSchema>

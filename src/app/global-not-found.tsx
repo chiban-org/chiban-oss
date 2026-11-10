@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { connection } from 'next/server'
 import '@fontsource-variable/mulish'
 import '@fontsource-variable/source-serif-4'
 import { NotFoundPage } from '@/components/NotFoundPage'
@@ -13,6 +14,7 @@ export const metadata: Metadata = { title: 'Page not found' }
 const TIMEOUT_MS = 10_000
 
 export default async function GlobalNotFound() {
+  await connection()
   const town = await loadPublicTown(db, AbortSignal.timeout(TIMEOUT_MS))
   return (
     <html lang="en">

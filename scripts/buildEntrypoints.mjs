@@ -1,4 +1,4 @@
-import { readdirSync } from 'node:fs'
+import { cpSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 import { build } from 'esbuild'
 
@@ -23,4 +23,8 @@ await build({
   target: 'node22',
   tsconfig: path.join(root, 'tsconfig.json'),
   logLevel: 'info',
+})
+
+cpSync(path.join(root, 'src', 'features', 'demo', 'fixtures'), path.join(outDir, 'fixtures'), {
+  recursive: true,
 })

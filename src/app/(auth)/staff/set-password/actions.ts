@@ -6,6 +6,7 @@ import { SESSION_COOKIE } from '@/constants/cookies'
 import { db } from '@/db/client'
 import { MIN_PASSWORD_LENGTH } from '@/features/auth/createStaffUser'
 import { sessionCookieOptions } from '@/features/auth/session'
+import { DEMO_REFUSAL, isDemoMode } from '@/features/demo/demoMode'
 import { deadLinkCopy } from '@/features/users/linkCopy'
 import { completeStaffLink } from '@/features/users/links'
 import { guardAction } from '@/server/actionGuard'
@@ -29,6 +30,7 @@ export async function setPasswordAction(
   const signal = AbortSignal.timeout(ACTION_TIMEOUT_MS)
   const guard = await guardAction(formData, signal, { exempt: 'session' })
   if (!guard.ok) return { error: 'Your session expired. Reload the page and try again.' }
+  if (isDemoMode()) return { error: DEMO_REFUSAL }
   const password = field(formData, 'password')
   if (password !== field(formData, 'confirm')) return { error: 'The two passwords do not match.' }
   const result = await completeStaffLink(db, { token: field(formData, 'token'), password }, signal)

@@ -5,13 +5,14 @@ import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { SESSION_COOKIE } from '@/constants/cookies'
 import { db } from '@/db/client'
-import { devSignIn } from '@/features/auth/devSignIn'
+import { devSignIn, isDevSignInEnabled } from '@/features/auth/devSignIn'
 import { sessionCookieOptions } from '@/features/auth/session'
 import { guardAction } from '@/server/actionGuard'
 
 const inputSchema = z.object({ email: z.email(), kind: z.enum(['staff', 'public']) })
 
 export async function devSignInAction(formData: FormData): Promise<void> {
+  if (!isDevSignInEnabled()) redirect('/dev/sign-in')
   const signal = AbortSignal.timeout(15_000)
   const guard = await guardAction(formData, signal, { exempt: 'session' })
   if (!guard.ok) redirect('/dev/sign-in')

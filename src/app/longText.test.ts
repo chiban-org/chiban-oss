@@ -18,4 +18,10 @@ describe('long unbroken text in the staff and public pages', () => {
   it('breaks an overlong word anywhere else in main instead of overflowing its box', () => {
     expect(ruleBody(':where(main)')).toContain('overflow-wrap: break-word;')
   })
+
+  it('wraps a row action message to the width of its buttons instead of widening the row', () => {
+    const body = ruleBody('.row-actions :where([role="status"])')
+    expect(body).toContain('width: 0;')
+    expect(body).toContain('min-width: 100%;')
+  })
 })

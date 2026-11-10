@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { TryDemoLink } from '@/components/TryDemoLink'
 import { SignInForm } from './SignInForm'
 
 export const metadata: Metadata = { title: 'Staff sign-in' }
@@ -18,6 +19,7 @@ export default async function StaffSignInPage({
         </p>
       ) : null}
       <SignInForm />
+      <TryDemoLink />
     </main>
   )
 }
