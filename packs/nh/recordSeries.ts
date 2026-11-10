@@ -122,5 +122,7 @@ export const RECORD_SERIES_DEFAULTS = {
     SA: UNSCHEDULED,
     CO: UNSCHEDULED,
     TS: UNSCHEDULED,
+    EC: UNSCHEDULED,
+    TUP: UNSCHEDULED,
   } as Record<string, string>,
 }

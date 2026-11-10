@@ -48,6 +48,8 @@ describe('NH starters', () => {
       'STR',
       'VMG',
       'IML',
+      'EC',
+      'TUP',
     ])
   })
 

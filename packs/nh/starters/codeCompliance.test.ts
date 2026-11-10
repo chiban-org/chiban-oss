@@ -5,14 +5,14 @@ import { computeFees } from '@/features/fees/computeFees'
 import { FeeScheduleBodySchema } from '@/features/fees/feeSchema'
 import { loadPack } from '@/features/packs/loadPack'
 
-const NEW_PREFIXES = ['DW', 'SG', 'HO', 'AR', 'SA', 'CO', 'SC', 'TS', 'STR']
+const NEW_PREFIXES = ['DW', 'SG', 'HO', 'AR', 'SA', 'CO', 'SC', 'TS', 'STR', 'EC', 'TUP']
 
 describe('code and compliance starters', () => {
-  it('thirteen code and compliance starters with unique prefixes', () => {
+  it('fifteen code and compliance starters with unique prefixes', () => {
     const prefixes = NH_STARTERS.filter(
       (s) => s.applicationType.workflow.closesOn !== 'staff_closes',
     ).map((s) => s.applicationType.prefix)
-    expect(prefixes).toHaveLength(13)
+    expect(prefixes).toHaveLength(15)
     expect(new Set(NH_STARTERS.map((s) => s.applicationType.prefix)).size).toBe(NH_STARTERS.length)
     for (const prefix of NEW_PREFIXES) expect(prefixes).toContain(prefix)
   })
@@ -58,6 +58,42 @@ describe('code and compliance starters', () => {
     const starter = NH_STARTERS.find((s) => s.applicationType.prefix === 'CO')
     const mode = starter?.form.fields.find((f) => f.key === 'mode')
     expect(mode?.options?.map((o) => o.value)).toEqual(['existing_structure', 'change_of_use'])
+  })
+
+  it('the energy code certificate costs nothing and asks for a report only on the trade-off and performance paths', () => {
+    const starter = NH_STARTERS.find((s) => s.applicationType.prefix === 'EC')
+    expect(starter?.feeSchedule.lines.map((l) => l.expr)).toEqual([{ op: 'flat', cents: 0 }])
+    const docs = starter?.applicationType.documents ?? []
+    expect(docs.find((d) => d.key === 'ec1_form')).toMatchObject({
+      stage: 'to_file',
+      waivable: false,
+    })
+    expect(docs.find((d) => d.key === 'ec1_form')?.requiredIf).toBeUndefined()
+    expect(docs.find((d) => d.key === 'energy_compliance_report')?.requiredIf).toEqual({
+      field: 'compliance_path',
+      op: 'in',
+      value: ['ua_tradeoff', 'performance'],
+    })
+    expect(starter?.form.fields.find((f) => f.key === 'compliance_path')?.options).toHaveLength(3)
+  })
+
+  it('the temporary use permit costs 2500 cents, takes dates, and needs a sketch of the setup', () => {
+    const starter = NH_STARTERS.find((s) => s.applicationType.prefix === 'TUP')
+    expect(starter?.feeSchedule.lines.map((l) => l.expr)).toEqual([{ op: 'flat', cents: 2500 }])
+    const dates = starter?.form.fields.filter((f) => f.type === 'date').map((f) => f.key)
+    expect(dates).toEqual(['start_date', 'end_date'])
+    const keys = (starter?.applicationType.documents ?? []).map((d) => d.key)
+    expect(keys).toEqual(['tup_setup_sketch', 'property_owner_consent'])
+    expect(starter?.applicationType.bindings).not.toContain('town.temporary.expiration')
+  })
+
+  it('temporary use and temporary structure share no key or prefix', () => {
+    const ts = NH_STARTERS.find((s) => s.applicationType.prefix === 'TS')
+    const tup = NH_STARTERS.find((s) => s.applicationType.prefix === 'TUP')
+    expect(tup?.id).not.toBe(ts?.id)
+    expect(tup?.form.key).not.toBe(ts?.form.key)
+    expect(tup?.feeSchedule.key).not.toBe(ts?.feeSchedule.key)
+    expect(tup?.applicationType.key).not.toBe(ts?.applicationType.key)
   })
 
   it('local classifications exist and the town rules cite no statute', () => {

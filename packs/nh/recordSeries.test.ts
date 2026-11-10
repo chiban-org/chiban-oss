@@ -73,7 +73,7 @@ describe('NH record series', () => {
     expect(byType.AR).toBe('nh.rs.licenses_other')
     expect(byType.STR).toBe('nh.rs.licenses_other')
     expect(byType.SC).toBe('nh.rs.septic_plans')
-    for (const key of ['SG', 'HO', 'SA', 'CO', 'TS']) {
+    for (const key of ['SG', 'HO', 'SA', 'CO', 'TS', 'EC', 'TUP']) {
       expect(byType[key]).toBe('nh.rs.unscheduled_permanent')
     }
   })
