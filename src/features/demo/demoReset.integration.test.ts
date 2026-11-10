@@ -93,6 +93,31 @@ describe('demo reset', () => {
     expect(emails).not.toContain('kept@alderpond.example')
   }, 180_000)
 
+  it('falls back to the plain demo and fails loudly when the seed cannot run with the overlay', async () => {
+    env.NODE_ENV = 'production'
+    env.CHIBAN_DEMO_MODE = true
+    const required = { key: 'lake_frontage', label: 'Lake frontage', type: 'text', required: true }
+    const parsed = parseDemoOverlay({
+      version: 1,
+      town: { name: 'Town of Alder Pond Village' },
+      starters: ['BP'],
+      applicationTypes: { BP: { formFields: [required] } },
+    })
+    if (!parsed.ok) throw new Error(JSON.stringify(parsed.error))
+    const result = await resetDemoDatabase(handle.db, signal, {
+      ...(await demoSeedDeps()),
+      overlay: parsed.value,
+    })
+    expect(result.ok).toBe(false)
+    expect(!result.ok && result.error).toEqual({
+      overlay: expect.stringContaining('the demo seed failed with the overlay applied'),
+    })
+    const town = await getTownSettings(handle.db, signal)
+    expect(town.ok && town.value.name).toBe('Town of Alder Pond')
+    const emails = (await handle.db.select({ email: users.email }).from(users)).map((u) => u.email)
+    expect(emails).toContain('admin@alderpond.example')
+  }, 420_000)
+
   it('applies the example overlay so seeded cases and new ones carry its fees and profile', async () => {
     env.NODE_ENV = 'production'
     env.CHIBAN_DEMO_MODE = true

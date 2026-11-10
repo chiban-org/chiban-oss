@@ -14,7 +14,7 @@ The rest goes through the same draft and publish functions the settings screens 
 2. Before any demo case is created, the listed starters are adopted and their forms and fee schedules are published with the overlay's changes. Seeded cases pin those versions, so their fees match what a new application is charged.
 3. After the seed, boards are renamed, and the town profile, payment settings and board notice settings are merged over what the seed published.
 
-A value a validator refuses at this stage fails the reset with the overlay path, for example `demo overlay: applicationTypes.BP.fees.building.expr: unknown_field is not a number field on bp-form`.
+A value a validator refuses at this stage fails the reset with the overlay path, for example `demo overlay: townProfile.boards.housing_commission: there is no active housing_commission board`. So does a seed that cannot run with the overlay, for example when an added required field is missing from the seeded building permits or a fee change leaves a seeded payment with nothing due. Either way the reset then seeds the plain demo, so the site stays usable, and exits non-zero.
 
 ## Checking a file
 

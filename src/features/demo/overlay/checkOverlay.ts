@@ -1,6 +1,7 @@
 import { readFile } from 'node:fs/promises'
 import { NH_STARTERS, type StarterBundle } from '@packs/nh/starters'
 import { boardKindOf } from '@/features/applications/applicationTypeSchema'
+import { droppedKeys } from '@/features/demo/overlay/droppedKeys'
 import { type OverlayIssue, zodIssues } from '@/features/demo/overlay/overlayIssue'
 import { type DemoOverlay, DemoOverlaySchema } from '@/features/demo/overlay/overlaySchema'
 import { planType } from '@/features/demo/overlay/planType'
@@ -13,7 +14,9 @@ export interface OverlayCheck {
 
 export function parseDemoOverlay(json: unknown): Result<DemoOverlay, OverlayIssue[]> {
   const parsed = DemoOverlaySchema.safeParse(json)
-  return parsed.success ? ok(parsed.data) : err(zodIssues('', parsed.error.issues))
+  if (!parsed.success) return err(zodIssues('', parsed.error.issues))
+  const dropped = droppedKeys(json, parsed.data)
+  return dropped.length > 0 ? err(dropped) : ok(parsed.data)
 }
 
 export async function loadDemoOverlayFile(

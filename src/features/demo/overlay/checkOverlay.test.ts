@@ -57,6 +57,31 @@ describe('demo overlay format', () => {
     ).toEqual(['applicationTypes.BP.fees.building'])
   })
 
+  it('refuses unknown keys inside fee expressions and form fields instead of dropping them', () => {
+    const field = {
+      key: 'sign_duration',
+      label: 'Temporary or permanent sign',
+      type: 'text',
+      required: false,
+      requireIF: { field: 'illuminated', op: 'is_true' },
+    }
+    expect(
+      issuePaths({
+        version: 1,
+        starters: ['SG'],
+        applicationTypes: { SG: { formFields: [field] } },
+      }),
+    ).toEqual(['applicationTypes.SG.formFields.0.requireIF'])
+    const expr = { op: 'sum', of: [{ op: 'flat', cents: 100, centz: 5 }] }
+    expect(
+      issuePaths({
+        version: 1,
+        starters: ['BP'],
+        applicationTypes: { BP: { fees: { building: { expr } } } },
+      }),
+    ).toEqual(['applicationTypes.BP.fees.building.expr.of.0.centz'])
+  })
+
   it('refuses values the config validators refuse, at their path', () => {
     expect(
       issuePaths({
