@@ -1,3 +1,4 @@
+import { isDeepStrictEqual } from 'node:util'
 import { joinPath, type OverlayIssue, zodIssues } from '@/features/demo/overlay/overlayIssue'
 import type { OverlayNoticeFees, OverlayType } from '@/features/demo/overlay/overlaySchema'
 import { exprFieldRefs, type FeeExpr, type FeeScheduleBody } from '@/features/fees/feeSchema'
@@ -66,10 +67,10 @@ function exprConditionFields(expr: FeeExpr): string[] {
 function planForm(input: PlanTypeInput, base: string): Result<FormBody | null, OverlayIssue[]> {
   const added = input.entry?.formFields
   if (added === undefined) return ok(null)
-  const known = new Map(input.form.fields.map((f) => [f.key, JSON.stringify(f)]))
+  const known = new Map(input.form.fields.map((f) => [f.key, f]))
   const clashes = added.flatMap((field, i) => {
     const existing = known.get(field.key)
-    return existing === undefined || existing === JSON.stringify(field)
+    return existing === undefined || isDeepStrictEqual(existing, field)
       ? []
       : [
           {
@@ -133,6 +134,6 @@ export function planType(input: PlanTypeInput): Result<TypePlan, OverlayIssue[]>
   const refIssues = fieldIssues(input, form.value ?? input.form, base)
   if (refIssues.length > 0) return err(refIssues)
   const fee = { ...input.fee, lines: lines.value }
-  const feeChanged = JSON.stringify(fee) !== JSON.stringify(input.fee)
+  const feeChanged = !isDeepStrictEqual(fee, input.fee)
   return ok({ form: form.value, fee: feeChanged ? fee : null })
 }

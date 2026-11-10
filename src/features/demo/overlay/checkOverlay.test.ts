@@ -192,6 +192,15 @@ describe('planType', () => {
     expect(sitePlan).toEqual(['application', 'notice_mail', 'notice_newspaper'])
   })
 
+  it('treats a field or line stored with its keys in another order as already applied', () => {
+    const first = plan('SG')
+    const reorder = <T extends object>(value: T): T =>
+      Object.fromEntries(Object.entries(value).reverse()) as T
+    const form = first.form && { ...first.form, fields: first.form.fields.map(reorder) }
+    const fee = first.fee && { ...first.fee, lines: first.fee.lines.map(reorder) }
+    expect(plan('SG', { form, fee })).toEqual({ form: null, fee: null })
+  })
+
   it('adds new lines and form fields once, so a second pass changes nothing', () => {
     const first = plan('SG')
     expect(first.form?.fields.map((f) => f.key)).toContain('sign_duration')

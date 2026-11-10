@@ -40,39 +40,42 @@ async function feeLines(key: string) {
 
 describe('applyOverlayStarters', () => {
   it('adopts the listed starters, publishes their fees and skips one this build lacks', async () => {
-    const report = await applyOverlayStarters(
-      await run({
-        starters: ['VAR', 'SG', 'QQ'],
-        boards: { zba: { noticeFees: { perAbutterCents: 900, advertisingCents: 8000 } } },
-        applicationTypes: {
-          SG: {
-            formFields: [
-              {
-                key: 'sign_duration',
-                label: 'Temporary or permanent sign',
-                type: 'select',
-                required: true,
-                options: [
-                  { value: 'temporary', label: 'Temporary' },
-                  { value: 'permanent', label: 'Permanent' },
-                ],
-              },
-            ],
-            fees: {
-              sg: {
-                expr: {
-                  op: 'conditional_multiplier',
-                  when: { field: 'sign_duration', op: 'equals', value: 'temporary' },
-                  factor: 0.5,
-                  of: { op: 'flat', cents: 3000 },
-                },
+    const overlayRun = await run({
+      starters: ['VAR', 'SG', 'QQ'],
+      boards: { zba: { noticeFees: { perAbutterCents: 900, advertisingCents: 8000 } } },
+      applicationTypes: {
+        SG: {
+          formFields: [
+            {
+              key: 'sign_duration',
+              label: 'Temporary or permanent sign',
+              type: 'select',
+              required: true,
+              options: [
+                { value: 'temporary', label: 'Temporary' },
+                { value: 'permanent', label: 'Permanent' },
+              ],
+            },
+          ],
+          fees: {
+            sg: {
+              expr: {
+                op: 'conditional_multiplier',
+                when: { field: 'sign_duration', op: 'equals', value: 'temporary' },
+                factor: 0.5,
+                of: { op: 'flat', cents: 3000 },
               },
             },
           },
         },
-      }),
-    )
+      },
+    })
+    const report = await applyOverlayStarters(overlayRun)
     expect(report).toEqual({ notInstalled: ['QQ'], changedTypes: ['VAR', 'SG'] })
+    expect(await applyOverlayStarters(overlayRun)).toEqual({
+      notInstalled: ['QQ'],
+      changedTypes: [],
+    })
     const variance = await feeLines('var-fees')
     expect(variance.find((l) => l.code === 'notice_mail')?.expr).toMatchObject({
       centsPerUnit: 900,
