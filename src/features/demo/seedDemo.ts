@@ -12,6 +12,7 @@ import { withStoryCalendar } from '@/features/demo/seedCalendar'
 import { seedCama } from '@/features/demo/seedCama'
 import { seedCoverage } from '@/features/demo/seedCoverage'
 import { seedCutover } from '@/features/demo/seedCutover'
+import { runDailyJobsAsOf } from '@/features/demo/seedDailyJobs'
 import { seedEnforcement } from '@/features/demo/seedEnforcement'
 import { seedBusinessExport, seedExportTarget } from '@/features/demo/seedExports'
 import { seedAcknowledgedEmailTest, seedStaleJobAlert } from '@/features/demo/seedHealth'
@@ -202,6 +203,7 @@ export async function seedDemo(
   const now = deps.now ?? new Date()
   const today = await townToday(db, now, signal)
   const seeded = await withStoryCalendar(today, () => seedStory(db, signal, deps, now))
+  await runDailyJobsAsOf(db, today, signal)
   return { ...base, ...seeded }
 }
 

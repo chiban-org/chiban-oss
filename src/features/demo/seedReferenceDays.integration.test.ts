@@ -1,6 +1,9 @@
+import { inArray } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
+import { clocks } from '@/db/schema'
 import { type Actor, loadActor } from '@/features/auth/actor'
 import { seedDemo } from '@/features/demo/seedDemo'
+import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { listWorkQueue } from '@/features/queue/workQueue'
 import { loadClerkSection } from '@/features/staffHome/clerkHome'
 import type { HomeSection } from '@/features/staffHome/homeTypes'
@@ -11,7 +14,7 @@ import { homeContextFor } from '@/test/homeFixtures'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
-const MOST_DAYS_OVERDUE = 28
+const MOST_DAYS_OVERDUE = 21
 const THIS_WEEK_DAYS = 7
 const QUEUE_LIMIT = 200
 
@@ -53,7 +56,7 @@ describe.each([
     )
   })
 
-  it('has a few applications past a deadline, none of them by more than four weeks', async () => {
+  it('has a few applications past a deadline, none of them by more than three weeks', async () => {
     const overdue = await listWorkQueue(
       handle.db,
       clerk,
@@ -66,5 +69,21 @@ describe.each([
       .filter((r) => (r.daysUntilDue ?? 0) < -MOST_DAYS_OVERDUE)
       .map((r) => `${r.number} ${r.projectTitle} ${r.nextDue}`)
     expect(late).toEqual([])
+  })
+
+  it('leaves no appeal window running after it ended, as the daily jobs would have lapsed it', async () => {
+    const pack = loadPack()
+    const open = await handle.db
+      .select()
+      .from(clocks)
+      .where(inArray(clocks.status, ['running', 'overdue']))
+    const ended = open
+      .filter((c) => {
+        const rule = ruleByKey(pack, c.ruleKey, c.ruleVersion)
+        return rule.kind === 'clock' && rule.clockType === 'filing_window'
+      })
+      .filter((c) => c.currentDue < today)
+      .map((c) => `${c.ruleKey} ${c.currentDue}`)
+    expect(ended).toEqual([])
   })
 })
