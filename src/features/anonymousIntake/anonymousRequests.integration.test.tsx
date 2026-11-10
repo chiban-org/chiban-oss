@@ -23,6 +23,7 @@ vi.mock('@/db/client', () => ({
 }))
 vi.mock('@/config/appVersion', () => ({ APP_VERSION: '0.0.0' }))
 vi.mock('next/navigation', () => ({ usePathname: () => '/report-anonymously' }))
+vi.mock('next/server', () => ({ connection: () => Promise.resolve() }))
 
 const { default: AnonymousLayout, generateMetadata } = await import('@/app/(anonymous)/layout')
 const { default: ReportPage } = await import('@/app/(anonymous)/report-anonymously/page')
