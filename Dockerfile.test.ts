@@ -101,6 +101,17 @@ describe('Dockerfile', () => {
     )
   })
 
+  it('runtime carries every local module next.config.ts imports, so next start can load it', () => {
+    const config = readFileSync(new URL('./next.config.ts', import.meta.url), 'utf8')
+    const local = [...config.matchAll(/from '\.\/(src\/[^']+)'/g)].map((m) => m[1] ?? '')
+    expect(local.length).toBeGreaterThan(0)
+    for (const file of local) {
+      expect(stageBody('runtime'), file).toContain(
+        `COPY --from=build --chown=node:node /app/${file}.ts ./${file}.ts`,
+      )
+    }
+  })
+
   it('the runtime stage does not install the OCR toolchain', () => {
     expect(stageBody('runtime')).not.toContain('ocrmypdf')
   })
