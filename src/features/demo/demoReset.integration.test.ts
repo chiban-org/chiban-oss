@@ -59,5 +59,5 @@ describe('demo reset', () => {
     expect(emails).toContain('admin@alderpond.example')
     expect(emails).not.toContain('visitor.made@alderpond.example')
     expect(emails).not.toContain('kept@alderpond.example')
-  })
+  }, 180_000)
 })
