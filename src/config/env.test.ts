@@ -69,6 +69,58 @@ describe('alert environment', () => {
   })
 })
 
+describe('demo environment', () => {
+  const demo = {
+    ...base,
+    NODE_ENV: 'production',
+    CHIBAN_DEMO_MODE: 'true',
+    CHIBAN_DEMO_RESET_AT: '3:00 AM Eastern',
+    SMTP_URL: 'smtp://mailpit:1025',
+  }
+
+  function failingPaths(input: Record<string, string>): string[] {
+    const parsed = envSchema.safeParse(input)
+    return parsed.success ? [] : parsed.error.issues.map((i) => i.path.join('.'))
+  }
+
+  it('is off by default and sinks mail at mailpit', () => {
+    const parsed = envSchema.parse(base)
+    expect(parsed.CHIBAN_DEMO_MODE).toBe(false)
+    expect(parsed.CHIBAN_DEMO_MAIL_SINK_HOSTS).toEqual(['mailpit'])
+    expect(parsed.CHIBAN_DEMO_RESET_AT).toBeUndefined()
+  })
+
+  it('accepts a production demo that sends mail to the sink', () => {
+    expect(failingPaths(demo)).toEqual([])
+  })
+
+  it('refuses a demo whose mail goes anywhere but an allowed sink host', () => {
+    expect(
+      failingPaths({ ...demo, SMTP_URL: 'smtps://user:pass@smtp.mailer.example:465' }),
+    ).toEqual(['SMTP_URL'])
+    expect(failingPaths({ ...demo, SMTP_URL: 'not a url' })).toEqual(['SMTP_URL'])
+  })
+
+  it('takes the allowed sink hosts from a comma list', () => {
+    const local = { ...demo, SMTP_URL: 'smtp://localhost:1026' }
+    expect(failingPaths(local)).toEqual(['SMTP_URL'])
+    expect(failingPaths({ ...local, CHIBAN_DEMO_MAIL_SINK_HOSTS: 'mailpit, localhost' })).toEqual(
+      [],
+    )
+  })
+
+  it('needs the reset time the banner shows', () => {
+    const { CHIBAN_DEMO_RESET_AT: _unused, ...withoutReset } = demo
+    expect(failingPaths(withoutReset)).toEqual(['CHIBAN_DEMO_RESET_AT'])
+  })
+
+  it('leaves mail alone when demo mode is off', () => {
+    expect(
+      failingPaths({ ...base, NODE_ENV: 'production', SMTP_URL: 'smtps://smtp.mailer.example' }),
+    ).toEqual([])
+  })
+})
+
 describe('usps environment', () => {
   it('leaves address checks off when nothing is set or the values are blank', () => {
     const parsed = envSchema.parse({ ...base, USPS_CLIENT_ID: '', USPS_CLIENT_SECRET: '' })

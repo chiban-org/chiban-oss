@@ -17,7 +17,7 @@ const FOLDER_NOT_WRITABLE =
 const TENANT_ID_MALFORMED =
   'The Microsoft 365 tenant ID must be a GUID such as 11111111-2222-3333-4444-555555555555 or a domain such as contoso.onmicrosoft.com.'
 
-const EXPORT = { exempt: 'export' } as const
+const EXPORT = { exempt: 'export', lockedInDemo: true } as const
 
 export async function saveTargetAction(formData: FormData): Promise<ActionResult> {
   return await runStaffForm(

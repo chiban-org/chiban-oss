@@ -64,8 +64,13 @@ export async function displayFormatAction(formData: FormData): Promise<ActionRes
 }
 
 export async function deleteFormatAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffForm(formData, FORMAT_KEY_FORM, async ({ db, actor, signal }, input) => {
-    const removed = await deleteIdFormat(db, actor, input, signal)
-    return removed.ok ? { ok: true, message: 'Format deleted.' } : refused(removed.error)
-  })
+  return await runStaffForm(
+    formData,
+    FORMAT_KEY_FORM,
+    async ({ db, actor, signal }, input) => {
+      const removed = await deleteIdFormat(db, actor, input, signal)
+      return removed.ok ? { ok: true, message: 'Format deleted.' } : refused(removed.error)
+    },
+    { lockedInDemo: true },
+  )
 }

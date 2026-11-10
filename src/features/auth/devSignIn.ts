@@ -10,12 +10,16 @@ export function isDevSignInEnabled(): boolean {
   return env.NODE_ENV !== 'production' && env.ENABLE_DEV_SIGN_IN
 }
 
+export function isDemoSignInEnabled(): boolean {
+  return isDevSignInEnabled() || env.CHIBAN_DEMO_MODE
+}
+
 export async function devSignIn(
   db: DbOrTx,
   email: string,
   signal: AbortSignal,
 ): Promise<Result<{ sid: string }, 'disabled' | 'not_found'>> {
-  if (!isDevSignInEnabled()) return err('disabled')
+  if (!isDemoSignInEnabled()) return err('disabled')
   const normalized = email.trim().toLowerCase()
   if (!normalized.endsWith(`@${DEMO_DOMAIN}`)) return err('not_found')
   const [user] = await db.select().from(users).where(eq(users.email, normalized)).limit(1)

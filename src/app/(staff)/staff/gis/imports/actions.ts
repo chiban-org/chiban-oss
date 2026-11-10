@@ -14,19 +14,24 @@ const COPY = {
 } as const
 
 export async function updateLayerSettingsAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffForm(formData, LAYER_SETTINGS_FORM, async ({ db, actor, signal }, input) => {
-    const result = await updateLayerSettings(
-      db,
-      actor,
-      { ...input, mapping: input.mapping ?? '' },
-      signal,
-    )
-    if (result.ok) return { ok: true, message: 'Layer settings saved.' }
-    if (result.error === 'forbidden') return { ok: false, error: errorCopy('forbidden') }
-    return result.error === 'invalid_settings'
-      ? { ok: false, error: COPY.invalid_settings }
-      : refuseField('mapping', COPY[result.error])
-  })
+  return await runStaffForm(
+    formData,
+    LAYER_SETTINGS_FORM,
+    async ({ db, actor, signal }, input) => {
+      const result = await updateLayerSettings(
+        db,
+        actor,
+        { ...input, mapping: input.mapping ?? '' },
+        signal,
+      )
+      if (result.ok) return { ok: true, message: 'Layer settings saved.' }
+      if (result.error === 'forbidden') return { ok: false, error: errorCopy('forbidden') }
+      return result.error === 'invalid_settings'
+        ? { ok: false, error: COPY.invalid_settings }
+        : refuseField('mapping', COPY[result.error])
+    },
+    { lockedInDemo: true },
+  )
 }
 
 const IMPORT_COPY = {

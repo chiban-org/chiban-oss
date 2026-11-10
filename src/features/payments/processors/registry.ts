@@ -32,6 +32,16 @@ export function createProcessor(
   credentials: unknown,
   deps: ProcessorDeps,
 ): PaymentProcessor {
+  if (env.CHIBAN_DEMO_MODE && account.processor !== 'simulated') {
+    throw new AppError(
+      ErrorIds.PAY_DEMO_REAL_PROCESSOR,
+      'The demo runs only the simulated processor',
+      {
+        accountId: account.id,
+        processor: account.processor,
+      },
+    )
+  }
   switch (account.processor) {
     case 'stripe': {
       const parsed = StripeCredentialsSchema.safeParse(credentials)

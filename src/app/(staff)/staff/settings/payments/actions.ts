@@ -31,29 +31,34 @@ function trimmedText(raw: unknown): string {
 }
 
 export async function saveProcessorAccountAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffForm(formData, PROCESSOR_FORM, async ({ db, actor, signal }, input) => {
-    const result = await saveProcessorAccount(
-      db,
-      actor,
-      {
-        processor: input.processor,
-        mode: input.mode,
-        accountRef: input.accountRef,
-        webhookSecret: input.webhookSecret,
-        ...material(input),
-      },
-      signal,
-      { simulatedEnabled: env.ENABLE_SIMULATED_PAYMENTS },
-    )
-    if (result.ok) {
-      return {
-        ok: true,
-        message: 'Processor account saved. The connection has not been verified yet.',
+  return await runStaffForm(
+    formData,
+    PROCESSOR_FORM,
+    async ({ db, actor, signal }, input) => {
+      const result = await saveProcessorAccount(
+        db,
+        actor,
+        {
+          processor: input.processor,
+          mode: input.mode,
+          accountRef: input.accountRef,
+          webhookSecret: input.webhookSecret,
+          ...material(input),
+        },
+        signal,
+        { simulatedEnabled: env.ENABLE_SIMULATED_PAYMENTS },
+      )
+      if (result.ok) {
+        return {
+          ok: true,
+          message: 'Processor account saved. The connection has not been verified yet.',
+        }
       }
-    }
-    if (result.error === 'simulated_disabled') {
-      return refuseField('processor', errorCopy(result.error))
-    }
-    return { ok: false, error: errorCopy(result.error) }
-  })
+      if (result.error === 'simulated_disabled') {
+        return refuseField('processor', errorCopy(result.error))
+      }
+      return { ok: false, error: errorCopy(result.error) }
+    },
+    { lockedInDemo: true },
+  )
 }

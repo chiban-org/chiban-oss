@@ -3,6 +3,7 @@ import { CHECK_UNSUPPORTED_COPY } from '@/constants/formCheck'
 import { type Db, db } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { MAX_ADJUSTMENT_DAYS } from '@/features/clocks/adjustmentKinds'
+import { DEMO_REFUSAL, isDemoMode } from '@/features/demo/demoMode'
 import { UNKNOWN_FORMAT_COPY } from '@/features/parcels/idFormatCopy'
 import { type GuardOptions, guardAction } from '@/server/actionGuard'
 
@@ -15,6 +16,12 @@ export interface ActionContext {
   actor: Actor
   signal: AbortSignal
 }
+
+export interface RunOptions extends GuardOptions {
+  lockedInDemo?: boolean
+}
+
+export const DEMO_REFUSED: Extract<ActionResult, { ok: false }> = { ok: false, error: DEMO_REFUSAL }
 
 const ACTION_TIMEOUT_MS = 30_000
 
@@ -102,6 +109,7 @@ export const ERROR_COPY: Record<string, string> = {
   already_returned: 'This check has already been recorded as returned.',
   not_a_card_payment: 'That payment was not made by card.',
   simulated_disabled: 'The simulated processor is turned off in this environment.',
+  demo_simulated_only: 'The demo runs only the simulated processor.',
   outcome_unknown: 'The outcome is still unknown. Check with the processor first.',
   not_voidable: 'Only an attempt that has not been paid can be voided.',
   note_required: 'Add a note: the processor reference or who confirmed the outcome.',
@@ -124,13 +132,15 @@ export function errorCopy(code: string): string {
 export async function runStaffAction(
   formData: FormData,
   fn: (ctx: ActionContext) => Promise<ActionResult>,
-  options: GuardOptions = {},
+  options: RunOptions = {},
 ): Promise<ActionResult> {
+  const { lockedInDemo = false, ...guardOptions } = options
   const signal = AbortSignal.timeout(ACTION_TIMEOUT_MS)
-  const guard = await guardAction(formData, signal, options)
+  const guard = await guardAction(formData, signal, guardOptions)
   if (!guard.ok) return { ok: false, error: errorCopy(guard.error) }
   const actor = guard.value
   if (actor?.kind !== 'staff') return { ok: false, error: errorCopy('signed_out') }
+  if (lockedInDemo && isDemoMode()) return DEMO_REFUSED
   const result = await fn({ db, actor, signal })
   if (result.ok) revalidatePath('/staff', 'layout')
   return result
@@ -140,11 +150,13 @@ export async function runStaffValue<T extends { ok: boolean }>(
   formData: FormData,
   fail: (error: string) => T,
   fn: (ctx: ActionContext) => Promise<T>,
+  options: { lockedInDemo?: boolean } = {},
 ): Promise<T> {
   const signal = AbortSignal.timeout(ACTION_TIMEOUT_MS)
   const guard = await guardAction(formData, signal)
   if (!guard.ok) return fail(errorCopy(guard.error))
   if (guard.value?.kind !== 'staff') return fail(errorCopy('signed_out'))
+  if (options.lockedInDemo === true && isDemoMode()) return fail(DEMO_REFUSAL)
   return await fn({ db, actor: guard.value, signal })
 }
 

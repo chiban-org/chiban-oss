@@ -23,22 +23,27 @@ const IMAGE_ERRORS: Record<TownImageError, string> = {
 }
 
 export async function publishTownSectionAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffForm(formData, TOWN_SECTION_FORM, async ({ db, actor, signal }, input) => {
-    if (!isTownProfileSection(input.section)) return refuseField('section', 'Choose a section.')
-    const result = await publishTownProfileSection(
-      db,
-      actor,
-      { section: input.section, slice: input.body },
-      signal,
-    )
-    if (result.ok) return { ok: true, message: `Put version ${result.value.version} into use.` }
-    if (result.error === 'forbidden') return { ok: false, error: errorCopy('forbidden') }
-    return {
-      ok: false,
-      error: 'These settings cannot be put into use yet.',
-      fieldErrors: fieldErrorsFor(result.error),
-    }
-  })
+  return await runStaffForm(
+    formData,
+    TOWN_SECTION_FORM,
+    async ({ db, actor, signal }, input) => {
+      if (!isTownProfileSection(input.section)) return refuseField('section', 'Choose a section.')
+      const result = await publishTownProfileSection(
+        db,
+        actor,
+        { section: input.section, slice: input.body },
+        signal,
+      )
+      if (result.ok) return { ok: true, message: `Put version ${result.value.version} into use.` }
+      if (result.error === 'forbidden') return { ok: false, error: errorCopy('forbidden') }
+      return {
+        ok: false,
+        error: 'These settings cannot be put into use yet.',
+        fieldErrors: fieldErrorsFor(result.error),
+      }
+    },
+    { lockedInDemo: true },
+  )
 }
 
 export async function uploadTownImageAction(formData: FormData): Promise<UploadImageResult> {
@@ -59,5 +64,6 @@ export async function uploadTownImageAction(formData: FormData): Promise<UploadI
         ? { ok: true, image: stored.value }
         : { ok: false, error: IMAGE_ERRORS[stored.error] }
     },
+    { lockedInDemo: true },
   )
 }
