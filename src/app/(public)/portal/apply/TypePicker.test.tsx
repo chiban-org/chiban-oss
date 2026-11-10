@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { TypePicker } from './TypePicker'
 
 vi.mock('./actions', () => ({ startApplicationAction: vi.fn() }))
+vi.mock('@/features/auth/csrfRefresh', () => ({ ensureCsrfAction: () => Promise.resolve('tok') }))
 
 afterEach(cleanup)
 
