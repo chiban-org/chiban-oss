@@ -17,3 +17,9 @@ deploy
 Dockerfile
 .dockerignore
 docker-compose.dev.yml
+**/*.test.ts
+**/*.test.tsx
+e2e
+playwright.config.ts
+playwright.demo.config.ts
+test-results

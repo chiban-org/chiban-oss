@@ -118,6 +118,19 @@ describe('.dockerignore', () => {
     expect(dockerignore.split('\n')).toContain(entry)
   })
 
+  it('keeps tests out of the build context so next build type-checks only what ships', () => {
+    const lines = dockerignore.split('\n')
+    for (const entry of [
+      '**/*.test.ts',
+      '**/*.test.tsx',
+      'e2e',
+      'playwright.config.ts',
+      'playwright.demo.config.ts',
+    ]) {
+      expect(lines, entry).toContain(entry)
+    }
+  })
+
   it('excludes env variants but keeps the example', () => {
     const lines = dockerignore.split('\n')
     expect(lines).toContain('.env.*')

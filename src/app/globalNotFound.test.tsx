@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
 
-const reads = vi.hoisted(() => ({ cookies: 0 }))
+const reads = vi.hoisted(() => ({ cookies: 0, town: 0, prerendering: false }))
 
 vi.mock('next/headers', () => ({
   cookies: () => {
@@ -10,11 +10,18 @@ vi.mock('next/headers', () => ({
   },
 }))
 vi.mock('next/navigation', () => ({ usePathname: () => '/nowhere' }))
+vi.mock('next/server', () => ({
+  connection: () => {
+    if (reads.prerendering) throw new Error('prerender bail-out')
+    return Promise.resolve()
+  },
+}))
 vi.mock('@/db/client', () => ({ db: {} }))
 vi.mock('@/features/town/publicTown', async (importOriginal) => ({
   ...(await importOriginal<typeof import('@/features/town/publicTown')>()),
-  loadPublicTown: () =>
-    Promise.resolve({
+  loadPublicTown: () => {
+    reads.town += 1
+    return Promise.resolve({
       name: 'Town of Birch Hollow',
       office: {
         officeName: 'Land Use Office',
@@ -24,7 +31,8 @@ vi.mock('@/features/town/publicTown', async (importOriginal) => ({
         officeHours: '',
       },
       logo: null,
-    }),
+    })
+  },
 }))
 
 const { default: GlobalNotFound } = await import('./global-not-found')
@@ -42,5 +50,16 @@ describe('global not found page', () => {
   it('reads no cookie, so an unknown address under the anonymous report path stays sessionless', async () => {
     renderToStaticMarkup(await GlobalNotFound())
     expect(reads.cookies).toBe(0)
+  })
+
+  it('waits for a real request before reading the town, so the build needs no database', async () => {
+    reads.prerendering = true
+    const before = reads.town
+    try {
+      await expect(GlobalNotFound()).rejects.toThrow('prerender bail-out')
+    } finally {
+      reads.prerendering = false
+    }
+    expect(reads.town).toBe(before)
   })
 })
