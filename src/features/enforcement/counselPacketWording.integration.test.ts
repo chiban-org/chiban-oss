@@ -27,7 +27,16 @@ function maskRealToday(text: string): string {
       }).format(now),
     ),
   )
-  return [...labels].reduce((acc, label) => acc.replaceAll(label, '<TODAY>'), text)
+  const forms = [...labels].flatMap(wrappedForms)
+  return forms.reduce((acc, form) => acc.replaceAll(form, '<TODAY>'), text)
+}
+
+function wrappedForms(label: string): string[] {
+  const [first = '', ...rest] = label.split(' ')
+  return rest.reduce<string[]>(
+    (forms, word) => forms.flatMap((form) => [`${form} ${word}`, `${form}\n${word}`]),
+    [first],
+  )
 }
 
 const signal = new AbortController().signal
