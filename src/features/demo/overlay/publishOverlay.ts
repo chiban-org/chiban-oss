@@ -20,7 +20,10 @@ export interface PublishTarget {
   path: string
 }
 
-export function publishIssue(path: string, error: PublishError | 'unknown_starter'): OverlayIssue {
+export function publishIssue(
+  path: string,
+  error: Exclude<PublishError, string> | string,
+): OverlayIssue {
   if (typeof error === 'object' && 'invalid' in error) {
     const [first] = error.invalid
     if (first !== undefined) return { path: joinPath(path, first.path), message: first.message }

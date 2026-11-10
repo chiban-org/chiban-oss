@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { activeBoards } from '@/features/boards/townBoards'
 import { pinCurrent } from '@/features/config/bindings'
 import { getPublished, getVersion } from '@/features/config/store'
 import { applyOverlaySettings } from '@/features/demo/overlay/applySettings'
@@ -119,5 +120,25 @@ describe('applyOverlaySettings', () => {
       'Alder Pond Courier',
       null,
     ])
+  })
+
+  it('renames a board through the board admin, keeping the short name unless given', async () => {
+    await applyOverlaySettings(
+      await run({ boards: { zba: { name: 'Alder Pond Village Zoning Board of Adjustment' } } }),
+    )
+    const rows = await activeBoards(handle.db)
+    const zba = rows.find((b) => b.kind === 'zba')
+    expect(zba).toMatchObject({
+      name: 'Alder Pond Village Zoning Board of Adjustment',
+      shortName: 'Zoning Board of Adjustment',
+    })
+  })
+
+  it('fails with the overlay path when the new name is already taken', async () => {
+    const rows = await activeBoards(handle.db)
+    const planning = rows.find((b) => b.kind === 'planning_board')
+    await expect(
+      applyOverlaySettings(await run({ boards: { zba: { name: planning?.name ?? '' } } })),
+    ).rejects.toThrow('demo overlay: boards.zba.name: the configuration refused it: "name_taken"')
   })
 })

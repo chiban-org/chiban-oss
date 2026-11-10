@@ -12,7 +12,7 @@ The rest goes through the same draft and publish functions the settings screens 
 
 1. The seed writes the town name from `town.name` where it would write Alder Pond.
 2. Before any demo case is created, the listed starters are adopted and their forms and fee schedules are published with the overlay's changes. Seeded cases pin those versions, so their fees match what a new application is charged.
-3. After the seed, the town profile, payment settings and board notice settings are merged over what the seed published.
+3. After the seed, boards are renamed, and the town profile, payment settings and board notice settings are merged over what the seed published.
 
 A value a validator refuses at this stage fails the reset with the overlay path, for example `demo overlay: applicationTypes.BP.fees.building.expr: unknown_field is not a number field on bp-form`.
 
@@ -36,6 +36,7 @@ Neither needs a database or any other setting. Both exit non-zero and print each
 | `townProfile` | `officeName`, `addressLines`, `phone`, `email`, `website`, `officeHours`, `letterheadFooter`, and `boards.<board kind>` with `officeName`, `addressLines` and `footerText` for that board's letterhead |
 | `paymentSettings` | `checksPayableTo`, `receiptFooter`, `convenienceFee` |
 | `starters` | Application type keys to adopt, such as `BP` or `VAR`. A key this build does not ship is reported and skipped, so an overlay can name a starter before it is released |
+| `boards.<board kind>.name`, `shortName` | Renames the one active board of that kind through the board admin, as the settings screen does |
 | `boards.<board kind>.notice` | `posting`, `publication`, `newspaper`, `bulletinBoards`, `websiteUrl` for every active board of that kind |
 | `boards.<board kind>.noticeFees` | `perAbutterCents` and `advertisingCents`. They set the `notice_mail` and `notice_newspaper` lines of every listed starter on that board, adding a line the starter lacks |
 | `applicationTypes.<key>.formFields` | Fields appended to that type's form, in the form field format |
@@ -45,4 +46,4 @@ Every key under `applicationTypes` must also be listed in `starters`, so a misty
 
 ## What it cannot set
 
-The overlay reaches only what has a configuration kind. The seeded people, parcels, cases, and board names such as the conservation commission keep their Alder Pond values. A fee that depends on another application, or one that staff decide case by case, has no expression; the nearest is a zero line that staff set per application with a fee override.
+The overlay reaches configuration and board names. The seeded people, parcels and cases keep their Alder Pond values, and so does any board the overlay does not rename. A fee that depends on another application, or one that staff decide case by case, has no expression; the nearest is a zero line that staff set per application with a fee override.

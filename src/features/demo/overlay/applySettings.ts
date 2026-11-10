@@ -6,6 +6,7 @@ import {
 } from '@/features/boards/boardSettingsSchema'
 import { activeBoards } from '@/features/boards/townBoards'
 import { getPublished } from '@/features/config/store'
+import { applyBoardNames } from '@/features/demo/overlay/applyBoardNames'
 import { failWith } from '@/features/demo/overlay/overlayIssue'
 import type { OverlayProfile } from '@/features/demo/overlay/overlaySchema'
 import {
@@ -101,6 +102,7 @@ async function applyBoardNotices(run: OverlayRun, ids: BoardIds): Promise<void> 
 
 export async function applyOverlaySettings(run: OverlayRun): Promise<void> {
   run.signal.throwIfAborted()
+  await applyBoardNames(run)
   const ids = await boardIdsByKind(run)
   await applyProfile(run, ids)
   await applyPayments(run)

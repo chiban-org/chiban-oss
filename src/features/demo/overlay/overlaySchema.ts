@@ -34,6 +34,8 @@ export const OverlayNoticeFeesSchema = z.strictObject({
 export type OverlayNoticeFees = z.infer<typeof OverlayNoticeFeesSchema>
 
 const OverlayBoardSchema = z.strictObject({
+  name: text.optional(),
+  shortName: text.optional(),
   notice: z
     .strictObject({
       posting: z.boolean().optional(),
