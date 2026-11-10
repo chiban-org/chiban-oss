@@ -17,7 +17,9 @@ vi.mock('next/navigation', () => ({ usePathname: () => '/report-anonymously' }))
 
 const { default: ReportPage } = await import('@/app/(anonymous)/report-anonymously/page')
 const { default: ReceivedPage } = await import('@/app/(anonymous)/report-anonymously/received/page')
-const { generateMetadata: anonymousMetadata } = await import('@/app/(anonymous)/layout')
+const { generateMetadata: anonymousMetadata, dynamic: anonymousRendering } = await import(
+  '@/app/(anonymous)/layout'
+)
 
 let handle: TestDb
 
@@ -33,6 +35,10 @@ afterAll(async () => {
 const render = async (element: Promise<unknown>) => renderToStaticMarkup((await element) as never)
 
 describe('anonymous pages', () => {
+  it('render per request, so building the image needs no database for the town name', () => {
+    expect(anonymousRendering).toBe('force-dynamic')
+  })
+
   it('declare an inline icon so the browser never asks for /favicon.ico', async () => {
     const metadata = await anonymousMetadata()
     expect(metadata.icons).toEqual({ icon: 'data:,' })

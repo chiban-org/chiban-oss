@@ -10,6 +10,8 @@ import { TownHeader } from '@/components/public/TownHeader'
 import { db } from '@/db/client'
 import { loadPublicTown, townWithoutAssetRequests } from '@/features/town/publicTown'
 
+export const dynamic = 'force-dynamic'
+
 const TIMEOUT_MS = 10_000
 
 export async function generateMetadata(): Promise<Metadata> {
