@@ -1,0 +1,9 @@
+[
+  { "file": "inspectors/my-day.png", "persona": "Ira Inspector", "path": "/staff/inspections/day?date=2026-11-13", "width": 1280, "height": 800 },
+  { "file": "inspectors/my-day-phone.png", "persona": "Ira Inspector", "path": "/staff/inspections/day?date=2026-11-13", "width": 390, "height": 844 },
+  { "file": "inspectors/board.png", "persona": "Ira Inspector", "path": "/staff/inspections", "width": 1280, "height": 800 },
+  { "file": "inspectors/take-request.png", "persona": "Ira Inspector", "path": "/staff/inspections?number=BP-2025-0001", "width": 1280, "height": 800 },
+  { "file": "inspectors/record-result.png", "persona": "Ira Inspector", "path": "/staff/inspections/2fb3028e-0fc1-413b-b6ad-47736198d257", "width": 1280, "height": 800 },
+  { "file": "inspectors/failed-inspection.png", "persona": "Ira Inspector", "path": "/staff/inspections/2fa80b73-54f7-4f88-afc5-5eeef1f010c8", "width": 1280, "height": 800 },
+  { "file": "inspectors/applicant-view.png", "persona": "Alex Applicant", "path": "/portal/applications/5a5cf01f-653c-439c-af59-49627c8fa58d/inspections", "width": 1280, "height": 800 }
+]
