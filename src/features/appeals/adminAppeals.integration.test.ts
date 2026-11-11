@@ -1,12 +1,13 @@
 import { and, eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { appealNodes, auditLog } from '@/db/schema'
+import { appealNodes, appeals, auditLog } from '@/db/schema'
 import {
   loadAdministrativeAppeals,
   loadApplicationAppeals,
   recordAdministrativeDecision,
 } from '@/features/appeals/adminAppeals'
 import { addAppealNode } from '@/features/appeals/graph'
+import { hasCapability } from '@/features/authz/capabilities'
 import { makeApplication } from '@/test/applicationFixtures'
 import { BOARD_FIXTURE_NOW, type BoardWorld, setupBoardWorld } from '@/test/boardFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
@@ -120,6 +121,30 @@ describe('the administrative appeals views', () => {
     expect(view?.nodeChoices).toEqual([
       { id: nodeId, label: 'Administrative decision, March 1, 2027' },
     ])
+  })
+
+  it('lets someone who records board actions appeal an issued permit without issuing permits', async () => {
+    const permit = await makeApplication(handle.db, world, { state: 'issued' })
+    const root = await decided(permit.number, '2027-03-05')
+    expect(await hasCapability(handle.db, world.admin.userId, 'permit.issue', signal)).toBe(false)
+    const appeal = await addAppealNode(
+      handle.db,
+      world.admin,
+      {
+        parentId: root.nodeId,
+        kind: 'zba_appeal',
+        occurredOn: d('2027-03-20'),
+        appellantName: 'Lee Abbott',
+      },
+      signal,
+      BOARD_FIXTURE_NOW,
+    )
+    expect(appeal.ok, JSON.stringify(appeal)).toBe(true)
+    const recorded = await handle.db
+      .select({ appellantName: appeals.appellantName, recordedBy: appeals.recordedBy })
+      .from(appeals)
+      .where(eq(appeals.applicationId, permit.applicationId))
+    expect(recorded).toEqual([{ appellantName: 'Lee Abbott', recordedBy: world.admin.userId }])
   })
 
   it('shows nothing to a reviewer', async () => {
