@@ -33,9 +33,9 @@ function requiredKeys(): string[] {
 }
 
 describe('Dockerfile', () => {
-  it('declares the five stages in order', () => {
+  it('declares the four stages in order', () => {
     const names = [...dockerfile.matchAll(/^FROM .* AS (\S+)$/gm)].map((m) => m[1])
-    expect(names).toEqual(['deps', 'prod-deps', 'build', 'runtime', 'migrate-tools'])
+    expect(names).toEqual(['deps', 'prod-deps', 'build', 'runtime'])
   })
 
   it('pins every FROM by sha256 or builds on an earlier stage', () => {
@@ -87,12 +87,25 @@ describe('Dockerfile', () => {
     expect(stageBody('runtime')).toMatch(/^CMD \["node_modules\/\.bin\/next", "start"\]$/m)
   })
 
-  it('migrate-tools adds the OCR toolchain and drops back to node', () => {
-    const tools = stageBody('migrate-tools')
+  it('runtime installs the OCR toolchain with English data', () => {
+    const runtime = stageBody('runtime')
     for (const pkg of ['ocrmypdf', 'tesseract-ocr', 'tesseract-ocr-eng']) {
-      expect(tools).toContain(pkg)
+      expect(runtime).toContain(pkg)
     }
-    expect(tools.trimEnd().split('\n').at(-1)).toBe('USER node')
+  })
+
+  it('runtime installs a headless JRE and a pinned, checksummed veraPDF on VERAPDF_PATH', () => {
+    const runtime = stageBody('runtime')
+    expect(runtime).toContain('default-jre-headless')
+    expect(runtime).toMatch(/verapdf-greenfield-\d+\.\d+\.\d+-installer\.zip/)
+    expect(runtime).toMatch(/[0-9a-f]{64} {2}\/tmp\/verapdf\.zip/)
+    expect(runtime).toContain('sha256sum -c')
+    expect(runtime).toContain('ENV VERAPDF_PATH=/opt/verapdf/verapdf')
+    expect(runtime).toContain('COPY docker/verapdf-auto-install.xml')
+  })
+
+  it('the veraPDF install answer file is not excluded from the build context', () => {
+    expect(dockerignore.split('\n')).not.toContain('docker')
   })
 
   it('runtime carries the PDF fonts at the path the renderer reads them from', () => {
@@ -110,10 +123,6 @@ describe('Dockerfile', () => {
         `COPY --from=build --chown=node:node /app/${file}.ts ./${file}.ts`,
       )
     }
-  })
-
-  it('the runtime stage does not install the OCR toolchain', () => {
-    expect(stageBody('runtime')).not.toContain('ocrmypdf')
   })
 })
 
