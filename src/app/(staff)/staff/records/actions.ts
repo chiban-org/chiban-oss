@@ -24,7 +24,7 @@ const HOLD_COPY = {
   forbidden: errorCopy('forbidden'),
   reason_required: 'Enter a reason of at least 10 characters.',
   not_found: 'No record was found with that reference.',
-  ambiguous: 'More than one record has that name. Use the application number.',
+  ambiguous: 'More than one record has that name. Use its number instead.',
   already_disposed: 'That document was already disposed of, so there is nothing left to hold.',
 } as const
 

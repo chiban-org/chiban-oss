@@ -104,7 +104,10 @@ describe('placeHoldAction reasons and references', () => {
   it('asks for a reference beside the reference when none is given', async () => {
     const { value, written } = await attempt({ targetRef: '' })
     expect(value).toEqual(
-      refuseField('targetRef', 'Enter the application number, project title, or document title.'),
+      refuseField(
+        'targetRef',
+        'Enter the application number, case number, request number, project title, or document title.',
+      ),
     )
     expect(written).toEqual([])
   })

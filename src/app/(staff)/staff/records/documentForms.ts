@@ -23,7 +23,8 @@ const MAX_REFERENCE = 300
 const SERIES_MAX = 100
 const CONTENT_TYPE_MAX = 200
 const AUDIENCE_PROBLEM = 'Choose from the audiences listed.'
-const NAME_A_RECORD = 'Enter the application number, project title, or document title.'
+const NAME_A_RECORD =
+  'Enter the application number, case number, request number, project title, or document title.'
 
 const audiences = () =>
   inputField((raw) => {
@@ -54,7 +55,13 @@ const reason = () => requiredText('a reason', { min: MIN_REASON, max: MAX_REASON
 
 export const PLACE_HOLD_FORM = z
   .object({
-    targetKind: choice('what to hold', ['project', 'application', 'document'] as const),
+    targetKind: choice('what to hold', [
+      'project',
+      'application',
+      'document',
+      'enforcement_case',
+      'rtk_request',
+    ] as const),
     targetRef: optionalText('a reference', { max: MAX_REFERENCE }),
     targetId: optionalRecordId('Choose a record to hold.'),
     reason: reason(),
