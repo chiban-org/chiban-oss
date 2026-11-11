@@ -9,6 +9,19 @@ const example = envExampleValues(readDeployFile('.env.example'))
 const THIRD_PARTY_IMAGE_VARS = ['POSTGIS_IMAGE', 'GARAGE_IMAGE', 'CADDY_IMAGE']
 const CHIBAN_IMAGE_SERVICES = ['app', 'worker', 'migrate', 'storageinit']
 const KEYS_OWNED_BY_HEALTH_WORK = ['HEALTH_DISK_PATHS']
+const HOST_TUNABLE_SETTINGS = [
+  'LOG_LEVEL',
+  'ALERT_EMAIL_TO',
+  'HEALTH_HEARTBEAT_URL',
+  'PAGER_EVENTS_URL',
+  'PAGER_ROUTING_KEY',
+] as const
+const VALID_REQUIRED = {
+  DATABASE_URL: 'postgres://u:p@localhost:5432/db',
+  BASE_URL: 'https://town.example.org',
+  CHIBAN_SECRET_KEYS: JSON.stringify({ k1: Buffer.alloc(32, 1).toString('base64') }),
+  CHIBAN_ACTIVE_KEY_ID: 'k1',
+}
 
 function variableNames(text: string): string[] {
   return [...text.matchAll(/\$\{([A-Z][A-Z0-9_]*)/g)].map((m) => m[1] ?? '')
@@ -128,6 +141,25 @@ describe('production compose', () => {
     expect(anchor).toContain('USPS_CLIENT_SECRET: ${USPS_CLIENT_SECRET:-}')
     expect(example.get('USPS_CLIENT_ID')).toBe('')
     expect(example.get('USPS_CLIENT_SECRET')).toBe('')
+  })
+
+  it('passes the health alert and log settings to every app container, blank when unset', () => {
+    const anchor = compose.slice(0, compose.indexOf('\nservices:'))
+    for (const key of HOST_TUNABLE_SETTINGS) {
+      expect(anchor, key).toContain(`${key}: \${${key}:-}`)
+      expect(example.get(key), key).toBe('')
+    }
+  })
+
+  it('the app accepts every setting the compose file can pass blank', () => {
+    const anchor = compose.slice(0, compose.indexOf('\nservices:'))
+    const blankable = [...anchor.matchAll(/^\s+([A-Z][A-Z0-9_]*): \$\{\1:-\}$/gm)].map(
+      (m) => m[1] ?? '',
+    )
+    expect(blankable).toEqual(expect.arrayContaining([...HOST_TUNABLE_SETTINGS]))
+    const blanks = Object.fromEntries(blankable.map((key) => [key, '']))
+    const parsed = envSchema.safeParse({ ...VALID_REQUIRED, ...blanks })
+    expect(parsed.error?.issues ?? []).toEqual([])
   })
 
   it('every variable has a value in the env example', () => {
