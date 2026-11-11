@@ -24,6 +24,7 @@ let root: string
 let targetId: string
 let calls: number
 let failWith: BackupError | null
+let throwWith: Error | null
 
 function deps(at: Date, passphrase: string | null = PASSPHRASE): ScheduledBackupDeps {
   return {
@@ -32,6 +33,7 @@ function deps(at: Date, passphrase: string | null = PASSPHRASE): ScheduledBackup
     build: (row) => buildTarget(row, { fetch, now: () => at }),
     backup: async (target, _passphrase, s) => {
       calls += 1
+      if (throwWith !== null) throw throwWith
       if (failWith !== null) return err(failWith)
       const path = `backups/chiban-backup-${at.toISOString().slice(0, 10)}.bin`
       const put = await target.put(path, Readable.from([Buffer.from('backup')]), 6, s)
@@ -63,6 +65,7 @@ afterAll(async () => {
 beforeEach(async () => {
   calls = 0
   failWith = null
+  throwWith = null
   await handle.db.delete(backupSchedule)
   const input = { at: SAVED_AT, targetId, frequency: 'daily' as const, startHour: 1, keepCount: 2 }
   await saveBackupSchedule(handle.db, admin, input, signal)
@@ -117,6 +120,26 @@ describe('runScheduledBackup', () => {
     })
     expect(await runScheduledBackup(handle.db, deps(later(60 * 60 * 1000)), signal)).toBe('not_due')
     expect(calls).toBe(1)
+  })
+
+  it('records a backup that stops with an unexpected error', async () => {
+    throwWith = new Error('file storage did not answer')
+    expect(await runScheduledBackup(handle.db, deps(later(0)), signal)).toBe('failed')
+    expect(await readBackupSchedule(handle.db, signal)).toMatchObject({
+      lastFailureAt: later(0),
+      lastFailureKind: 'failed',
+      lastError: 'The backup stopped with an unexpected error: file storage did not answer',
+      nextDueAt: FIRST_DUE,
+    })
+  })
+
+  it('records a backup cut off at its time limit and still stops the job', async () => {
+    throwWith = new DOMException('The operation was aborted.', 'AbortError')
+    await expect(runScheduledBackup(handle.db, deps(later(0)), signal)).rejects.toThrow('aborted')
+    expect(await readBackupSchedule(handle.db, signal)).toMatchObject({
+      lastFailureKind: 'failed',
+      lastError: 'The backup was stopped because it ran longer than the time allowed.',
+    })
   })
 
   it('names the missing files when stored files cannot be found', async () => {

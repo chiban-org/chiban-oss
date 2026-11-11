@@ -3,6 +3,12 @@ import type { BackupError } from '@/features/backup/createBackup'
 export const NO_PASSPHRASE =
   'BACKUP_PASSPHRASE is not set on the server, so no backup was made. Whoever runs the server needs to set it and restart the worker.'
 
+export const TIMED_OUT = 'The backup was stopped because it ran longer than the time allowed.'
+
+export function unexpectedFailure(e: unknown): string {
+  return `The backup stopped with an unexpected error: ${e instanceof Error ? e.message : String(e)}`
+}
+
 export const TARGET_GONE = 'The storage chosen for backups no longer exists. Choose another one.'
 
 export function unusableTarget(name: string, problem: 'bad_settings' | 'bad_credentials'): string {

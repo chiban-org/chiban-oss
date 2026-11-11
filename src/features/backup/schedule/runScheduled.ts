@@ -10,7 +10,14 @@ import type { BackupError, BackupReport } from '@/features/backup/createBackup'
 import type { StorageTarget } from '@/features/export/targets/types'
 import { err, type Result } from '@/types/result'
 import { advanceDue, isBackupDue } from './backupDue'
-import { describeBackupError, NO_PASSPHRASE, TARGET_GONE, unusableTarget } from './backupErrors'
+import {
+  describeBackupError,
+  NO_PASSPHRASE,
+  TARGET_GONE,
+  TIMED_OUT,
+  unexpectedFailure,
+  unusableTarget,
+} from './backupErrors'
 import { pruneBackups } from './prune'
 import { readBackupSchedule, SCHEDULE_ID, townZone } from './scheduleStore'
 
@@ -57,6 +64,32 @@ async function targetFor(run: Run, targetId: string): Promise<Result<StorageTarg
   return built.ok ? built : err(unusableTarget(row.name, built.error))
 }
 
+function isAbort(e: unknown): boolean {
+  return e instanceof Error && e.name === 'AbortError'
+}
+
+async function attempt(
+  run: Run,
+  targetId: string,
+  passphrase: string,
+): Promise<{ report: BackupReport; target: StorageTarget } | string> {
+  const target = await targetFor(run, targetId)
+  if (!target.ok) return target.error
+  const made = await run.deps.backup(target.value, passphrase, run.signal)
+  if (!made.ok) return describeBackupError(made.error)
+  return { report: made.value, target: target.value }
+}
+
+async function prune(run: Run, target: StorageTarget, keep: number, written: string) {
+  try {
+    const pruned = await pruneBackups(target, keep, written, run.signal)
+    return pruned.ok ? null : pruned.error.detail
+  } catch (e) {
+    if (isAbort(e)) throw e
+    return e instanceof Error ? e.message : String(e)
+  }
+}
+
 async function succeed(
   run: Run,
   row: BackupScheduleRow,
@@ -71,8 +104,7 @@ async function succeed(
     lastSuccessBytes: report.sizeBytes,
     nextDueAt: advanceDue(row.nextDueAt ?? finished, row, zone, finished),
   })
-  const pruned = await pruneBackups(target, row.keepCount, report.path, run.signal)
-  await update(run, { lastPruneError: pruned.ok ? null : pruned.error.detail })
+  await update(run, { lastPruneError: await prune(run, target, row.keepCount, report.path) })
   return 'succeeded'
 }
 
@@ -88,9 +120,16 @@ export async function runScheduledBackup(
   if (!isBackupDue(row, started)) return 'not_due'
   await update(run, { runRequestedAt: null, lastStartedAt: started })
   if (deps.passphrase === undefined) return await problem(run, 'skipped', NO_PASSPHRASE)
-  const target = await targetFor(run, row.targetId)
-  if (!target.ok) return await problem(run, 'failed', target.error)
-  const made = await deps.backup(target.value, deps.passphrase, signal)
-  if (!made.ok) return await problem(run, 'failed', describeBackupError(made.error))
-  return await succeed(run, row, made.value, target.value)
+  const passphrase = deps.passphrase
+  let made: { report: BackupReport; target: StorageTarget } | string
+  try {
+    made = await attempt(run, row.targetId, passphrase)
+  } catch (e) {
+    const aborted = isAbort(e)
+    await problem(run, 'failed', aborted ? TIMED_OUT : unexpectedFailure(e))
+    if (aborted) throw e
+    return 'failed'
+  }
+  if (typeof made === 'string') return await problem(run, 'failed', made)
+  return await succeed(run, row, made.report, made.target)
 }
