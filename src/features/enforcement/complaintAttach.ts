@@ -16,6 +16,7 @@ export type AttachComplaintError =
   | 'case_not_open'
   | 'already_on_case'
   | 'complaint_case_in_progress'
+  | 'public_text_required'
 
 export const ENDED_CASE_STATUSES: readonly EnforcementStatus[] = [
   'no_violation',
@@ -99,6 +100,9 @@ export async function attachComplaint(
       .for('update')
     if (complaint === undefined || complaint.isProbe) return err('complaint_not_found')
     if (complaint.caseId === target.id) return err('already_on_case')
+    if (target.isPublic && complaint.descriptionPublic === null) {
+      return err('public_text_required')
+    }
     const shell = complaint.caseId === null ? undefined : await lockedCase(tx, complaint.caseId)
     if (shell !== undefined && !(await untouchedShells(tx, [shell.id])).has(shell.id)) {
       return err('complaint_case_in_progress')

@@ -86,4 +86,14 @@ describe('attaching another complaint', () => {
     renderForm(<ComplaintsSection detail={stubDetail({ attachable })} can={ALL_CAN} readOnly />)
     expect(screen.queryByText('Attach another complaint')).toBeNull()
   })
+
+  it('is not offered once the case has ended', () => {
+    const base = stubDetail({ attachable })
+    const detail = {
+      ...base,
+      staff: { ...base.staff, row: { ...base.staff.row, status: 'closed' } },
+    }
+    renderForm(<ComplaintsSection detail={detail as typeof base} can={ALL_CAN} />)
+    expect(screen.queryByText('Attach another complaint')).toBeNull()
+  })
 })

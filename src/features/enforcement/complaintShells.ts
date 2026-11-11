@@ -17,7 +17,13 @@ export async function untouchedShells(
   const intake = await db
     .select({ id: enforcementCases.id })
     .from(enforcementCases)
-    .where(and(inArray(enforcementCases.id, ids), eq(enforcementCases.status, 'intake')))
+    .where(
+      and(
+        inArray(enforcementCases.id, ids),
+        eq(enforcementCases.status, 'intake'),
+        eq(enforcementCases.isPublic, false),
+      ),
+    )
   const [complaintCounts, noteCounts, otherDocuments] = await Promise.all([
     countsBy(
       db

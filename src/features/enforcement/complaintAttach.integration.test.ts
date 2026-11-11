@@ -2,11 +2,13 @@ import { and, eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { auditLog, complaints, documents, enforcementCases } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
+import { loadCaseDetail } from '@/features/enforcement/caseDetail'
 import { setCaseStatus } from '@/features/enforcement/cases'
 import { attachComplaint } from '@/features/enforcement/complaintAttach'
 import { attachableComplaints } from '@/features/enforcement/complaintCandidates'
 import { recordComplaint } from '@/features/enforcement/complaints'
 import { addNote } from '@/features/enforcement/notes'
+import { publishCase } from '@/features/enforcement/publicText'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { makeTestStore } from '@/test/objectStore'
@@ -14,6 +16,7 @@ import { makeParcel, seedParcelWorld, staffActor } from '@/test/parcels'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
+const TODAY = new Date().toISOString().slice(0, 10) as CivilDate
 let handle: TestDb
 let store: ObjectStore
 let staff: Actor
@@ -104,6 +107,13 @@ describe('attaching a complaint to an existing case', () => {
       .from(documents)
       .where(and(eq(documents.recordId, caseId), eq(documents.docKind, 'enforcement_photo')))
     expect(photos).toHaveLength(1)
+    const titles = async (id: string) => {
+      const detail = await loadCaseDetail(handle.db, staff, id, TODAY, signal)
+      if (!detail.ok) throw new Error(detail.error)
+      return detail.value.documents.map((d) => d.title)
+    }
+    expect(await titles(caseId)).toContain('Complaint photo 1')
+    expect(await titles(second.caseId)).not.toContain('Complaint photo 1')
     const audits = await handle.db
       .select()
       .from(auditLog)
@@ -166,5 +176,29 @@ describe('attaching a complaint to an existing case', () => {
     expect(
       await attachComplaint(handle.db, finance, { caseId, complaintId: other.complaintId }, signal),
     ).toEqual({ ok: false, error: 'forbidden' })
+  })
+
+  it('needs the public text first when the case is on the public site', async () => {
+    const caseId = await workedCase()
+    await handle.db
+      .update(complaints)
+      .set({ descriptionPublic: 'A trailer is parked on the lot.' })
+      .where(eq(complaints.caseId, caseId))
+    const published = await publishCase(handle.db, staff, { caseId, summary: 'Open.' }, signal)
+    if (!published.ok) throw new Error(published.error)
+    const other = await complaint('3 Mill Brook Lane')
+    expect(
+      await attachComplaint(handle.db, staff, { caseId, complaintId: other.complaintId }, signal),
+    ).toEqual({ ok: false, error: 'public_text_required' })
+  })
+
+  it('does not offer a complaint whose own case is on the public site', async () => {
+    const caseId = await workedCase()
+    const other = await complaint('3 Mill Brook Lane')
+    await handle.db
+      .update(enforcementCases)
+      .set({ isPublic: true, publicSummary: 'Open.' })
+      .where(eq(enforcementCases.id, other.caseId))
+    expect(await attachableComplaints(handle.db, { caseId, parcelId })).toEqual([])
   })
 })

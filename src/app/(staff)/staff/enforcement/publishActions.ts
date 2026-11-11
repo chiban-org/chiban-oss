@@ -49,7 +49,11 @@ export async function attachComplaintAction(formData: FormData): Promise<ActionR
     ATTACH_COMPLAINT_FORM,
     async ({ db, actor, signal }, input) => {
       const attached = await attachComplaint(db, actor, input, signal)
-      if (!attached.ok) return settled(attached, '', { complaint_case_in_progress: 'complaintId' })
+      if (!attached.ok)
+        return settled(attached, '', {
+          complaint_case_in_progress: 'complaintId',
+          public_text_required: 'complaintId',
+        })
       const { complaintNumber, closedCaseNumber } = attached.value
       return {
         ok: true,

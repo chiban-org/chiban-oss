@@ -68,6 +68,8 @@ const COPY: Record<string, string> = {
   already_on_case: 'That complaint is already on this case.',
   complaint_case_in_progress:
     'That complaint is on a case that already has work recorded, so it cannot be moved.',
+  public_text_required:
+    'This case is shown on the public site. Write the public text for that complaint on its own case first.',
   complaint_text_unreviewed:
     'Write the public text for every complaint before showing the case on the public site.',
   verification_required:
