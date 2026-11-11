@@ -8,6 +8,7 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { fineAction, finePaymentAction } from '../moneyActions'
 import type { Can } from './can'
+import { FinePayments } from './FinePayments'
 import { Hidden, Section } from './Section'
 
 const KINDS = Object.entries(FINE_KIND_LABELS) as [string, string][]
@@ -93,6 +94,12 @@ export function MoneySection({
         <article key={f.row.id} className="record-item space-y-2">
           <p className="font-medium">{`${FINE_KIND_LABELS[f.row.kind]}, ${formatCents(f.row.amountCents)}, imposed ${formatCivilDate(f.row.imposedOn)} by ${f.row.court}, docket ${f.row.docket}`}</p>
           <p>{`Paid ${formatCents(f.paidCents)}. Balance due ${formatCents(f.dueCents)}.`}</p>
+          <FinePayments
+            fineId={f.row.id}
+            fineLabel={FINE_KIND_LABELS[f.row.kind]}
+            entries={detail.payments?.byFine.get(f.row.id) ?? []}
+            canRefund={detail.payments?.canRefund === true}
+          />
           {can.collect && f.dueCents > 0 && !hosted.has(`record_fine_payment:${f.row.id}`) ? (
             <details>
               <summary className="cursor-pointer font-medium">Record a payment</summary>

@@ -7,6 +7,10 @@ import { entryTypeLabel, methodLabel } from '@/features/payments/labels'
 import type { PaymentsOverview } from '@/features/payments/overview'
 import { formatCents } from '@/lib/money'
 
+function entryLabel(e: { entryType: string; method: string }): string {
+  return `${entryTypeLabel(e.entryType)}, ${methodLabel(e.method).toLowerCase()}`
+}
+
 export function EntryTable({
   entries,
   links,
@@ -28,7 +32,13 @@ export function EntryTable({
       <tbody>
         {entries.map((e) => (
           <tr key={e.id}>
-            <td>{`${entryTypeLabel(e.entryType)}, ${methodLabel(e.method).toLowerCase()}`}</td>
+            <td>
+              {e.paymentAttemptId === null ? (
+                entryLabel(e)
+              ) : (
+                <Link href={`/staff/payments/${e.paymentAttemptId}`}>{entryLabel(e)}</Link>
+              )}
+            </td>
             <td className="text-right tabular-nums">{formatCents(e.amountCents)}</td>
             <td>{e.payerName}</td>
             <td>

@@ -68,7 +68,8 @@ describe('payments page', () => {
   })
 
   it('shows only the alert that has items, without a chip repeating its heading', async () => {
-    const { attemptId } = await makeCardAttempt(handle.db, trade, 'card_present')
+    const fresh = await submittedTrade(handle.db, trade.world)
+    const { attemptId } = await makeCardAttempt(handle.db, fresh, 'card_present')
     await handle.db
       .update(paymentAttempts)
       .set({ outcomeUnknown: true })
@@ -125,11 +126,37 @@ describe('payments page', () => {
     expect(await page()).toContain('Newest first. Click a column heading to sort.')
   })
 
-  it('links the application number in the Application column to the application', async () => {
+  it("links the application number to the application's fees and payments", async () => {
     const html = await page(trade.world.staff, { range: 'all' })
     expect(html).toMatch(
-      new RegExp(`<a[^>]*href="/staff/applications/${trade.applicationId}"[^>]*>EL-`),
+      new RegExp(
+        `<a[^>]*href="/staff/applications/${trade.applicationId}#fees-and-payments"[^>]*>EL-`,
+      ),
     )
+  })
+
+  it('links a card payment row to its card payment page', async () => {
+    const fresh = await submittedTrade(handle.db, trade.world)
+    const { attemptId } = await makeCardAttempt(handle.db, fresh, 'card_present')
+    const posted = await handle.db.transaction((tx) =>
+      postEntry(
+        tx,
+        {
+          entryType: 'payment',
+          method: 'card_present',
+          amountCents: 4500,
+          postedAt: new Date(),
+          payerName: 'Pat Contractor',
+          paymentAttemptId: attemptId,
+          actor: { kind: 'user', userId: trade.world.staff.userId },
+          allocations: [lineAllocation(fresh, 4500)],
+        },
+        signal,
+      ),
+    )
+    if (!posted.ok) throw new Error(posted.error)
+    const html = await page(trade.world.staff, { range: 'all' })
+    expect(html).toMatch(new RegExp(`<a[^>]*href="/staff/payments/${attemptId}"[^>]*>Payment,`))
   })
 
   it('sends someone without payment access to their start page', async () => {

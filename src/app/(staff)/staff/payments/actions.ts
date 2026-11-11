@@ -46,11 +46,15 @@ function settled(
 
 export async function refundAction(formData: FormData): Promise<ActionResult> {
   return await runStaffForm(formData, REFUND_FORM, async ({ db, actor, signal }, input) => {
-    const { applicationId, ...rest } = input
+    const { applicationId, fineId, ...rest } = input
     const result = await refundEntry(
       db,
       actor,
-      { ...rest, ...(applicationId === null ? {} : { applicationId }) },
+      {
+        ...rest,
+        ...(applicationId === null ? {} : { applicationId }),
+        ...(fineId === null ? {} : { fineId }),
+      },
       signal,
     )
     if (result.ok && result.value.pending) {
@@ -71,10 +75,12 @@ export async function returnedCheckAction(formData: FormData): Promise<ActionRes
   return await runStaffFormToday(
     formData,
     returnedCheckForm,
-    async ({ db, actor, signal }, input) =>
+    async ({ db, actor, signal }, { fineId, ...input }) =>
       settled(
         await recordReturnedCheck(db, actor, input, signal),
-        'Returned check recorded. The permit state did not change.',
+        fineId === null
+          ? 'Returned check recorded. The permit state did not change.'
+          : 'Returned check recorded. The amount is due on the fine again.',
       ),
   )
 }

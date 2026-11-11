@@ -7,12 +7,14 @@ import {
   type ProcessorAccountSummary,
 } from '@/features/payments/processorAccounts'
 import { CLOVER_ADAPTER_STATUS } from '@/features/payments/processors/clover'
+import { type WebhookView, webhookView } from '@/features/payments/webhookAddress'
 import { err, ok, type Result } from '@/types/result'
 
 export interface ProcessorSettingsView {
   accounts: ProcessorAccountSummary[]
   active: 'ready' | 'not_configured' | 'unreadable'
   cloverStatus: 'stubbed' | 'verified'
+  webhook: WebhookView
 }
 
 export async function loadProcessorSettings(
@@ -33,5 +35,10 @@ export async function loadProcessorSettings(
           ? 'not_configured'
           : 'unreadable',
     cloverStatus: CLOVER_ADAPTER_STATUS,
+    webhook: webhookView(
+      active.state === 'known'
+        ? { ...active.value.account, webhookSecret: active.value.webhookSecret }
+        : null,
+    ),
   })
 }

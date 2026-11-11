@@ -82,6 +82,7 @@ export async function listEntriesOn(db: Db, date: CivilDate, view: EntryView) {
       payerName: ledgerEntries.payerName,
       receiptId: ledgerEntries.receiptId,
       receiptNumber: receipts.number,
+      paymentAttemptId: ledgerEntries.paymentAttemptId,
     })
     .from(ledgerEntries)
     .leftJoin(receipts, sql`${receipts.id} = ${ledgerEntries.receiptId}`)

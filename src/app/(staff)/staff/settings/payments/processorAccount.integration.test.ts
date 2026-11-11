@@ -48,9 +48,7 @@ function refusalFor(variant: InvalidVariant) {
     default:
       return refuseField(
         'webhookSecret',
-        long
-          ? 'Enter the webhook signing secret of 500 characters or fewer.'
-          : 'Enter the webhook signing secret.',
+        'Enter the webhook signing secret of 500 characters or fewer.',
       )
   }
 }
@@ -63,7 +61,7 @@ describeActionCases(h, 'saveProcessorAccountAction', {
     processor: choice({ required: true }),
     mode: choice({ required: true }),
     accountRef: text({ required: true, max: 200 }),
-    webhookSecret: text({ required: true, max: 500 }),
+    webhookSecret: text({ max: 500 }),
   },
   capability: 'config.edit',
   refusals: { ...STAFF_REFUSALS, invalid: refusalFor, checkOnly: CHECK_PASSED },
@@ -89,6 +87,11 @@ describe('saveProcessorAccountAction refusals beside their fields', () => {
       value: refuseField('secretKey', 'Enter the secret key.'),
       written: [],
     })
+  })
+
+  it('saves a first account with no webhook signing secret', async () => {
+    const { value } = await save({ webhookSecret: '', accountRef: 'acct_no_secret' })
+    expect(value).toMatchObject({ ok: true })
   })
 
   it('names the Clover addresses when they are missing', async () => {

@@ -1,16 +1,11 @@
 import Link from 'next/link'
-import {
-  chargebackAction,
-  correctAction,
-  recordPaymentAction,
-  refundAction,
-  returnedCheckAction,
-} from '@/app/(staff)/staff/payments/actions'
+import { correctAction, recordPaymentAction } from '@/app/(staff)/staff/payments/actions'
 import { startCardAction } from '@/app/(staff)/staff/payments/cardActions'
+import { ReversalForms } from '@/app/(staff)/staff/payments/ReversalForms'
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import type { ApplicationPayments } from '@/features/payments/applicationPayments'
-import { centsToDollarInput, formatCents } from '@/lib/money'
+import { centsToDollarInput } from '@/lib/money'
 import { checkAction, readerAction, reconnectAction } from '../../counter/readerActions'
 import { CardAtCounter } from './cardAtCounter'
 
@@ -61,63 +56,14 @@ export function EntryControls({
   return (
     <details>
       <summary>Refund, correct, or reverse</summary>
-      <ActionForm
-        action={refundAction}
-        submitLabel="Refund"
-        confirm={{
-          title: 'Refund this payment?',
-          body: 'The amount you entered is refunded and taken off the lines above. A card payment is refunded through the processor. This cannot be undone.',
-          confirmLabel: 'Refund',
+      <ReversalForms
+        target={{
+          entryId: entry.id,
+          method: entry.method,
+          scope: { applicationId: payments.applicationId },
+          refundable: entry.refundable,
         }}
-      >
-        <input type="hidden" name="entryId" value={entry.id} />
-        <input type="hidden" name="applicationId" value={payments.applicationId} />
-        <p className="m-0 font-medium">
-          A refund here reduces only these lines on this application:
-        </p>
-        {entry.refundable.length === 0 ? (
-          <p className="m-0">Nothing from this payment is left on this application to refund.</p>
-        ) : (
-          <ul className="m-0">
-            {entry.refundable.map((line) => (
-              <li key={line.label}>{`${line.label}, up to ${formatCents(line.cents)}`}</li>
-            ))}
-          </ul>
-        )}
-        <TextField label="Refund amount in dollars" name="amount" inputMode="decimal" required />
-        <TextField label="Reason (at least 10 characters)" name="reason" required />
-      </ActionForm>
-      {entry.method === 'check' ? (
-        <ActionForm
-          action={returnedCheckAction}
-          submitLabel="Record returned check"
-          confirm={{
-            title: 'Record this check as returned?',
-            body: 'The payment is reversed on this application. This cannot be undone.',
-            confirmLabel: 'Record returned check',
-          }}
-        >
-          <input type="hidden" name="entryId" value={entry.id} />
-          <TextField label="Returned on" name="returnedOn" type="date" required />
-          <TextField label="Reason (at least 10 characters)" name="reason" required />
-        </ActionForm>
-      ) : null}
-      {entry.method === 'card_online' || entry.method === 'card_present' ? (
-        <ActionForm
-          action={chargebackAction}
-          submitLabel="Record chargeback"
-          confirm={{
-            title: 'Record this chargeback?',
-            body: 'The amount you entered is taken back from this payment on this application. This cannot be undone.',
-            confirmLabel: 'Record chargeback',
-          }}
-        >
-          <input type="hidden" name="entryId" value={entry.id} />
-          <TextField label="Dispute reference" name="disputeRef" required />
-          <TextField label="Amount in dollars" name="amount" inputMode="decimal" required />
-          <TextField label="Reason (at least 10 characters)" name="reason" required />
-        </ActionForm>
-      ) : null}
+      />
       {payments.targets.length === 0 ? null : (
         <ActionForm action={correctAction} submitLabel="Move to another permit">
           <input type="hidden" name="entryId" value={entry.id} />
