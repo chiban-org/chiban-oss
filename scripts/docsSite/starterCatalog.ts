@@ -76,8 +76,8 @@ function starterBlock(starter: StarterBundle): string {
   const labels = fieldLabels(starter.form)
   const decidedBy =
     classification.boardKind === null
-      ? 'Town staff decide it.'
-      : (DECIDED_BY.get(classification.boardKind) ?? 'A town board decides it.')
+      ? 'No board hears it.'
+      : (DECIDED_BY.get(classification.boardKind) ?? 'A town board hears it.')
   const documents = (type.documents ?? []).map(documentText)
   const inspections = starter.checklists.map((checklist) => checklist.label)
   const deadlines = deadlinesOf(starter, classification)

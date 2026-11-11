@@ -24,13 +24,13 @@ The **Imports** page shows when the CAMA file was last loaded, and marks it as o
 
 ## Loading a file
 
-1. On the **Imports** page, go to the CAMA section and choose the file under **Column mapping**.
+1. On the **Imports** page, go to the CAMA section and choose the file in **CAMA file**.
 2. Pick the encoding and the delimiter (comma, tab or pipe). If you are not sure of the encoding, leave it on **Detect**. Choose **Read the file and preview**.
 3. Match the columns. The pickers list the columns found in the file. For the parcel ID, add its parts in order: each part is a column with a width, or fixed digits. For owner name, mailing address and site address, pick one or more columns, and set what goes between two owner names.
 4. Check the preview. It shows the first 10 rows with the parcel ID each one builds and whether that ID matches a parcel, matches a retired parcel, matches no parcel, or could not be built. Change the pickers and preview again until the IDs match.
 5. Choose **Save mapping** to keep the layout for next time, then **Run import**.
 
-After the first time, the saved layout is used again, so a new file from the same system needs only steps 1, 2 and 5.
+Next time, the pickers open with the saved layout already filled in, so a new file from the same system needs only the file and **Run import**. Preview it first if the assessing office may have changed its export.
 
 ## The default layout
 

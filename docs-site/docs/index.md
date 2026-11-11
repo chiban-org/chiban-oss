@@ -6,7 +6,7 @@ description: Land use software for a small town office, organized around the par
 
 # What Chiban is
 
-Chiban is land use software for a small town office. It keeps building and trade permits, inspections, Planning Board and Zoning Board of Adjustment applications, and code enforcement in one place, and it files each of them under the parcel it concerns. Open a parcel and you see its owner, its open applications, its permits, its inspections, its enforcement cases and its older paper history on one page.
+Chiban is land use software for a small town office. It keeps building and trade permits, inspections, Planning Board and Zoning Board of Adjustment applications, and code enforcement in one place, and it files each of them under the parcel it concerns. Open a parcel and one page shows who notices go to, what is open on the lot, the permits and approvals in force, the next inspection, any open enforcement case, and the parcel's record and history.
 
 These pages are for the people who use it: clerks at the counter, building inspectors, planning and zoning staff, board secretaries, records custodians and finance staff. The [self-hosting and operations](./operations/self-hosting.md) pages are for whoever runs the server.
 

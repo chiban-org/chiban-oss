@@ -13,7 +13,7 @@ generated_from:
 
 ### Building or demolition permit
 
-- **Type:** Building permit. Town staff decide it. Numbers start with BP.
+- **Type:** Building permit. No board hears it. Numbers start with BP.
 - **Fees:**
   - Building permit fee: $0.35 per sq ft of finished area, plus $0.20 per sq ft of unfinished area, plus $0.40 per sq ft of commercial area, at least $40, doubled when “Work started before permit” is checked. Due at approval.
   - Permit renewal fee: $45. Due at renewal.
@@ -44,7 +44,7 @@ generated_from:
 
 ### Electrical permit
 
-- **Type:** Trade permit. Town staff decide it. Numbers start with EL.
+- **Type:** Trade permit. No board hears it. Numbers start with EL.
 - **Fees:**
   - Electrical permit fee: $45, doubled when “Work started before permit” is checked. Due at intake.
 - **Documents the applicant provides:**
@@ -55,7 +55,7 @@ generated_from:
 
 ### Plumbing permit
 
-- **Type:** Trade permit. Town staff decide it. Numbers start with PL.
+- **Type:** Trade permit. No board hears it. Numbers start with PL.
 - **Fees:**
   - Plumbing permit fee: $45, doubled when “Work started before permit” is checked. Due at intake.
 - **Documents the applicant provides:**
@@ -66,7 +66,7 @@ generated_from:
 
 ### Mechanical and gas permit
 
-- **Type:** Trade permit. Town staff decide it. Numbers start with MG.
+- **Type:** Trade permit. No board hears it. Numbers start with MG.
 - **Fees:**
   - Mechanical and gas permit fee: $45, doubled when “Work started before permit” is checked. Due at intake.
 - **Documents the applicant provides:**
@@ -77,7 +77,7 @@ generated_from:
 
 ### Septic or sewer cap-off permit
 
-- **Type:** Trade permit. Town staff decide it. Numbers start with SC.
+- **Type:** Trade permit. No board hears it. Numbers start with SC.
 - **Fees:**
   - Septic or sewer cap-off permit fee: $45, doubled when “Work started before permit” is checked. Due at intake.
 - **Documents the applicant provides:**
@@ -442,7 +442,7 @@ generated_from:
 
 ### Driveway permit
 
-- **Type:** Local permit or registration. Town staff decide it. Numbers start with DW.
+- **Type:** Local permit or registration. No board hears it. Numbers start with DW.
 - **Fees:**
   - Driveway permit fee: $50. Due at approval.
 - **Documents the applicant provides:**
@@ -453,7 +453,7 @@ generated_from:
 
 ### Sign permit
 
-- **Type:** Local zoning permit. Town staff decide it. Numbers start with SG.
+- **Type:** Local zoning permit. No board hears it. Numbers start with SG.
 - **Fees:**
   - Sign permit fee: $25. Due at approval.
 - **Documents the applicant provides:**
@@ -463,7 +463,7 @@ generated_from:
 
 ### Home occupation permit
 
-- **Type:** Local zoning permit. Town staff decide it. Numbers start with HO.
+- **Type:** Local zoning permit. No board hears it. Numbers start with HO.
 - **Fees:**
   - Home occupation permit fee: $75. Due at approval.
 - **Documents the applicant provides:**
@@ -472,7 +472,7 @@ generated_from:
 
 ### Alarm system registration
 
-- **Type:** Local permit or registration. Town staff decide it. Numbers start with AR.
+- **Type:** Local permit or registration. No board hears it. Numbers start with AR.
 - **Fees:**
   - Alarm system registration fee: $15. Due at intake.
 - **Deadlines Chiban tracks:**
@@ -480,13 +480,13 @@ generated_from:
 
 ### Street address assignment
 
-- **Type:** Local permit or registration. Town staff decide it. Numbers start with SA.
+- **Type:** Local permit or registration. No board hears it. Numbers start with SA.
 - **Fees:**
   - Street address assignment fee: no charge.
 
 ### Certificate of occupancy request
 
-- **Type:** Local zoning permit. Town staff decide it. Numbers start with CO.
+- **Type:** Local zoning permit. No board hears it. Numbers start with CO.
 - **Fees:**
   - Certificate of occupancy request fee: $50. Due at approval.
 - **Documents the applicant provides:**
@@ -499,7 +499,7 @@ generated_from:
 
 ### Temporary structure permit
 
-- **Type:** Local zoning permit. Town staff decide it. Numbers start with TS.
+- **Type:** Local zoning permit. No board hears it. Numbers start with TS.
 - **Fees:**
   - Temporary structure permit fee: $30. Due at approval.
 - **Documents the applicant provides:**
@@ -510,7 +510,7 @@ generated_from:
 
 ### Short-term rental registration
 
-- **Type:** Local permit or registration. Town staff decide it. Numbers start with STR.
+- **Type:** Local permit or registration. No board hears it. Numbers start with STR.
 - **Fees:**
   - Short-term rental registration fee: $100. Due at intake.
 - **Documents the applicant provides:**
@@ -520,7 +520,7 @@ generated_from:
 
 ### Voluntary merger of lots
 
-- **Type:** Local permit or registration. Town staff decide it. Numbers start with VMG.
+- **Type:** Local permit or registration. No board hears it. Numbers start with VMG.
 - **Fees:**
   - Voluntary merger of lots fee: $50. Due at intake.
 - **Documents the applicant provides:**
@@ -531,7 +531,7 @@ generated_from:
 
 ### Restoration of involuntarily merged lots
 
-- **Type:** Local permit or registration. Town staff decide it. Numbers start with IML.
+- **Type:** Local permit or registration. No board hears it. Numbers start with IML.
 - **Fees:**
   - Restoration of involuntarily merged lots fee: $50. Due at intake.
 - **Documents the applicant provides:**
@@ -540,7 +540,7 @@ generated_from:
 
 ### Residential energy code certificate
 
-- **Type:** Local permit or registration. Town staff decide it. Numbers start with EC.
+- **Type:** Local permit or registration. No board hears it. Numbers start with EC.
 - **Fees:**
   - Residential energy code certificate fee: no charge.
 - **Documents the applicant provides:**
@@ -550,7 +550,7 @@ generated_from:
 
 ### Temporary use permit
 
-- **Type:** Local zoning permit. Town staff decide it. Numbers start with TUP.
+- **Type:** Local zoning permit. No board hears it. Numbers start with TUP.
 - **Fees:**
   - Temporary use permit fee: $25. Due at approval.
 - **Documents the applicant provides:**

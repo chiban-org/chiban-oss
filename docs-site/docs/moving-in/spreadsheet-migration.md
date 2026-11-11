@@ -57,7 +57,7 @@ Running the same file again skips the rows already loaded, so you can fix the ma
 - `sheet`: the worksheet to read. Leave it out to use the first sheet. A `.csv` file ignores it.
 - `headerRow`: the row that holds the column names. Rows above it are skipped.
 - `recordType`: the column that holds the type of record, or `{ "literal": "Building permit" }` to give every row the same type.
-- `number`: the column that holds the permit number.
+- `number`: the column that holds the permit number, if the ledger has one.
 - `parcel`: the parcel ID format and the columns that build the ID. Number parts are padded with zeros to their width, the same way as the [assessing file import](./cama-import.md). A part may also be fixed digits, such as `{ "literal": "000" }`.
 - `date.formats`: the ways a date may be written in the date column. `excel_serial` is a date stored by Excel as a count of days from December 30, 1899. `M/D/YY` reads a two-digit year above `twoDigitYearPivot` as 19yy and any other as 20yy, so with a pivot of 30, `3/4/87` is March 4, 1987 and `1/2/05` is January 2, 2005. Cells that Excel stores as real dates are read in UTC.
 - `description`: the columns joined to make the public description.

@@ -6,7 +6,7 @@ description: Have Chiban copy the town's records every month to a folder, bucket
 
 # Monthly export to storage the town controls
 
-Chiban can copy the town's records every month to storage the town owns: a folder on the server, an S3 bucket, or a OneDrive or SharePoint drive. The town then holds its own copy of everything, outside Chiban, without anyone having to remember to download it.
+Chiban can copy the town's records every month to storage the town owns: a folder on the server, an S3 bucket, or a OneDrive or SharePoint drive. The town then holds its own copy of everything outside Chiban, and nobody has to download it by hand.
 
 The first copy holds everything. After that, each month's copy holds only what changed since the one before.
 
@@ -27,6 +27,8 @@ Saved keys and secrets are stored encrypted and are never part of an export.
 A target copies on its day of the month. If Chiban was down that day, the copy runs at the next daily check. **Run now** starts a copy within a minute or two. **Turn off** stops a target's monthly copies until you turn it on again.
 
 ## What lands in the target
+
+You do not need this section to set up a target. It is for whoever checks the copies or would rebuild the town from them, such as the town's IT support.
 
 ```
 chiban-export/
@@ -50,4 +52,4 @@ chiban-export/
 
 ## Rebuilding the town from the copies
 
-A month's manifest, together with the folders it points to, holds the whole town. The copies are made so that an empty Chiban on the same version can be rebuilt from them alone, with every file checked against its hash. This release has no command or page that runs that rebuild. To restore a town today, use the encrypted backups described in [self-hosting](../operations/self-hosting.md).
+A month's manifest, together with the folders it points to, holds the whole town. This release has no command or page that rebuilds a town from these copies, so to restore a town, use the encrypted backups described in [self-hosting](../operations/self-hosting.md).
