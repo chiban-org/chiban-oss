@@ -3,9 +3,11 @@ import { NextStep } from '@/components/layout/NextStep'
 import { FactList } from '@/components/layout/PageHeader'
 import { Button } from '@/components/ui/button'
 import { type MeetingMinutesView, minutesStatusText } from '@/features/boards/minutesView'
+import { formatMinuteOfDay } from '@/features/hearings/labels'
 import { agendaStatusText, type MeetingView } from '@/features/hearings/meetingView'
 import { publishAgendaAction } from '../../hearings/actions'
 import { AddHearingsForm, AddItemForm } from './AgendaSection'
+import { EditMeeting } from './EditMeeting'
 
 export type PacketStep = 'prepare' | 'update' | null
 
@@ -57,7 +59,7 @@ function Step({ view, kind }: { view: MeetingView; kind: StepKind }) {
     case 'update':
       return (
         <Button asChild className="no-underline">
-          <a href="#packet">{PACKET_LABELS[kind]}</a>
+          <a href="#packet">{kind === 'prepare' ? PACKET_LABELS.prepare : PACKET_LABELS.update}</a>
         </Button>
       )
     case 'minutes':
@@ -73,9 +75,13 @@ function meetingFacts(
   view: MeetingView,
   packetLabel: string | null,
   minutes: MeetingMinutesView | null,
+  startsAtMinute: number | null,
 ) {
   const minutesText = minutes === null ? null : minutesStatusText(minutes)
   return [
+    ...(startsAtMinute === null
+      ? []
+      : [{ label: 'Time', value: formatMinuteOfDay(startsAtMinute) }]),
     { label: 'Kind', value: view.kindText },
     ...(view.locationText === '' ? [] : [{ label: 'Location', value: view.locationText }]),
     {
@@ -95,12 +101,15 @@ export function MeetingRail({
   packetStep = null,
   packetLabel = null,
   minutes = null,
+  startsAtMinute = null,
 }: {
   view: MeetingView
   packetStep?: PacketStep
   packetLabel?: string | null
   minutes?: MeetingMinutesView | null
+  startsAtMinute?: number | null
 }) {
+  const editable = startsAtMinute !== null && !view.cancelled && !view.past
   const kind = stepOf(view, packetStep, minutes)
   return (
     <>
@@ -112,7 +121,14 @@ export function MeetingRail({
         </div>
       )}
       <div className="rail-card">
-        <FactList facts={meetingFacts(view, packetLabel, minutes)} stacked />
+        <FactList facts={meetingFacts(view, packetLabel, minutes, startsAtMinute)} stacked />
+        {editable ? (
+          <EditMeeting
+            meetingId={view.meetingId}
+            startsAtMinute={startsAtMinute}
+            location={view.locationText}
+          />
+        ) : null}
       </div>
     </>
   )

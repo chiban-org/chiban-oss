@@ -10,6 +10,7 @@ import {
   type MeetingSortKey,
 } from '@/features/boards/meetingListParams'
 import type { SortLink } from '@/features/dataTable/sort'
+import { formatMinuteOfDay } from '@/features/hearings/labels'
 import { formatCivilDate } from '@/lib/formatDate'
 import { cancelMeetingAction } from '../actions'
 
@@ -90,6 +91,7 @@ export function MeetingTable({
               <Link href={`/staff/boards/meetings/${r.id}`} className="font-semibold">
                 {formatCivilDate(r.meetingDate)}
               </Link>
+              <span className="block">{formatMinuteOfDay(r.startsAtMinute)}</span>
               {r.cancelled ? (
                 <span className="mt-1 block">
                   <StatusChip status="neutral" label="Cancelled" />

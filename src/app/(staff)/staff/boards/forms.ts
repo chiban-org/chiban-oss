@@ -23,6 +23,12 @@ export const SCHEDULE_MEETING_FORM = z.object({
   startsAt: meetingStartTime('the start time'),
 })
 
+export const EDIT_MEETING_FORM = z.object({
+  meetingId: recordId('a meeting'),
+  startsAt: meetingStartTime('the start time'),
+  location: optionalText('a location', { max: 200 }),
+})
+
 export const CANCEL_MEETING_FORM = z.object({
   meetingId: recordId('a meeting'),
   reason: requiredText('a reason', { max: 500 }),

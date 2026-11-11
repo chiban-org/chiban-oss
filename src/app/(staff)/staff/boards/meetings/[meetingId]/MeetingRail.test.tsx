@@ -14,6 +14,8 @@ vi.mock('../../hearings/actions', () => ({
   reopenAgendaAction: vi.fn(),
 }))
 
+vi.mock('./editActions', () => ({ updateMeetingAction: vi.fn() }))
+
 const { MeetingRail } = await import('./MeetingRail')
 
 afterEach(cleanup)
@@ -123,5 +125,30 @@ describe('meeting rail next step', () => {
         'Once shown, the agenda appears on the board page and the meetings page of the public site.',
       ),
     ).toBeTruthy()
+  })
+})
+
+describe('meeting rail time', () => {
+  function renderTimed(v: MeetingView) {
+    render(
+      <CsrfProvider token="t">
+        <MeetingRail view={v} startsAtMinute={1110} />
+      </CsrfProvider>,
+    )
+  }
+
+  it('shows the start time and offers to change the time or place of an upcoming meeting', () => {
+    renderTimed(emptyMeeting([]))
+    expect(screen.getByText('6:30 PM')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Change time or place' })).toBeTruthy()
+  })
+
+  it('keeps the time of a past or cancelled meeting fixed', () => {
+    renderTimed({ ...emptyMeeting([]), past: true })
+    expect(screen.getByText('6:30 PM')).toBeTruthy()
+    expect(screen.queryByRole('button', { name: 'Change time or place' })).toBeNull()
+    cleanup()
+    renderTimed({ ...emptyMeeting([]), cancelled: true })
+    expect(screen.queryByRole('button', { name: 'Change time or place' })).toBeNull()
   })
 })

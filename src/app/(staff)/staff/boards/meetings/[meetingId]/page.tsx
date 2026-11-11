@@ -7,6 +7,7 @@ import { splitPanels } from '@/components/layout/splitPanels'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
+import { getMeeting } from '@/features/boards/meetings'
 import { loadMeetingMinutes } from '@/features/boards/minutesView'
 import { loadPacketPanel, type PacketPanel } from '@/features/boards/packetPanel'
 import { loadMeetingView, type MeetingView } from '@/features/hearings/meetingView'
@@ -67,6 +68,7 @@ export default async function MeetingPage({ params }: { params: Promise<{ meetin
   if (view === null) notFound()
   const panel = await loadPacketPanel(ctx.db, ctx.actor, meetingId, ctx.signal)
   const minutes = await loadMeetingMinutes(ctx.db, meetingId, ctx.signal)
+  const stored = await getMeeting(ctx.db, meetingId, ctx.signal)
   const minutesOpen = !view.cancelled && minutes.held
   const canApprove = await hasCapability(ctx.db, ctx.actor.userId, 'document.publish', ctx.signal)
   const sections = splitPanels([
@@ -109,6 +111,7 @@ export default async function MeetingPage({ params }: { params: Promise<{ meetin
             packetStep={packetStepOf(panel)}
             packetLabel={panel?.state.label ?? null}
             minutes={minutes}
+            startsAtMinute={stored?.startsAtMinute ?? null}
           />
         }
         empty={sections.empty}

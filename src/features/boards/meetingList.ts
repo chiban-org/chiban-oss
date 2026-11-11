@@ -23,6 +23,7 @@ export interface MeetingListRow {
   meetingDate: string
   kind: MeetingKind
   location: string
+  startsAtMinute: number
   cancelled: boolean
   cancelReason: string | null
   hearings: number
@@ -138,6 +139,7 @@ export async function listMeetingTable(
         meetingDate: m.meetingDate,
         kind: m.kind,
         location: m.location,
+        startsAtMinute: m.startsAtMinute,
         status: m.status,
         cancelReason: m.cancelReason,
         hearings: HEARINGS,
