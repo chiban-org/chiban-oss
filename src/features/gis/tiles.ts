@@ -1,11 +1,13 @@
 import { eq, type SQL, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { gisLayers } from '@/db/schema'
+import { withStatementTimeout } from '@/db/statementTimeout'
 import { err, ok, type Result } from '@/types/result'
 
 export type TileLayer = 'parcels' | 'roads' | 'water'
 export type TileError = 'bad_tile' | 'layer_not_configured'
 
+export const TILE_STATEMENT_TIMEOUT_MS = 8_000
 const MIN_ZOOM = 10
 const MAX_ZOOM = 20
 const EXTENT = 4096
@@ -84,6 +86,8 @@ export async function tileFor(
     if (row?.adapter == null) return err('layer_not_configured')
   }
   const query = layer === 'parcels' ? parcelTile(z, x, y) : featureTile(layer, z, x, y)
-  const res = await db.execute<{ tile: Buffer | null }>(query)
+  const res = await withStatementTimeout(db, TILE_STATEMENT_TIMEOUT_MS, (tx) =>
+    tx.execute<{ tile: Buffer | null }>(query),
+  )
   return ok(new Uint8Array(res.rows[0]?.tile ?? Buffer.alloc(0)))
 }
