@@ -24,7 +24,7 @@ import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
 const UNIQUE_VIOLATION = '23505'
-const MIN_OFF_GRID_REASON = 10
+export const MIN_OFF_GRID_REASON = 10
 const MINUTES_PER_DAY = 1440
 
 export interface ScheduleInput {

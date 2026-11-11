@@ -107,20 +107,27 @@ export function useScheduleBoard(input: BoardInput) {
   const pick: SlotPick = (day, start) => {
     if (chosen !== undefined) setPicked({ day, start })
   }
-  const book = async () => {
-    if (chosen === undefined || picked === null) return
+  const send = async (slot: Omit<ScheduleChoice, 'inspectionId' | 'rowVersion'>) => {
+    if (chosen === undefined) return
     setBooking(true)
     const ok = await onSchedule({
       inspectionId: chosen.inspectionId,
       rowVersion: chosen.rowVersion,
-      date: picked.day.date,
-      startMinute: picked.start,
-      inspectorUserId: picked.day.inspectorUserId,
+      ...slot,
     })
     setBooking(false)
     if (!ok) return
     reset()
     setChosenId((current) => (current === chosen.inspectionId ? null : current))
+  }
+  const book = async (offGridReason?: string) => {
+    if (picked === null) return
+    await send({
+      date: picked.day.date,
+      startMinute: picked.start,
+      inspectorUserId: picked.day.inspectorUserId,
+      ...(offGridReason === undefined ? {} : { offGridReason }),
+    })
   }
 
   return {
@@ -142,6 +149,7 @@ export function useScheduleBoard(input: BoardInput) {
     toggle,
     pick,
     book,
+    bookOffGrid: send,
     cancelPick: () => setPicked(null),
   }
 }

@@ -1,6 +1,10 @@
 'use client'
 
+import { useState } from 'react'
+import { useFieldError } from '@/components/fieldErrors'
 import type { PickedTime } from '@/components/inspections/boardTypes'
+import { REASON_HINT, REASON_LABEL } from '@/components/inspections/OffGridBooking'
+import { AreaField } from '@/components/staff/fields'
 import { Button } from '@/components/ui/button'
 import { weekdayName } from '@/features/inspections/slotWeeks'
 import { minutesToClock } from '@/features/inspections/zonedTime'
@@ -14,10 +18,12 @@ export function ReviewRow({
 }: {
   picked: PickedTime
   booking: boolean
-  onBook: () => void
+  onBook: (offGridReason?: string) => void
   onCancel: () => void
 }) {
   const { day, start } = picked
+  const askReason = useFieldError('offGridReason') !== null
+  const [reason, setReason] = useState('')
   return (
     <div
       role="group"
@@ -27,8 +33,24 @@ export function ReviewRow({
       <p className="m-0 font-semibold">
         {`Book ${weekdayName(day.date)}, ${formatCivilDate(day.date)} at ${minutesToClock(start)} with ${day.inspectorName}.`}
       </p>
+      {askReason ? (
+        <AreaField
+          label={REASON_LABEL}
+          hint={REASON_HINT}
+          name="offGridReason"
+          rows={2}
+          className="w-full"
+          value={reason}
+          onChange={(e) => setReason(e.target.value)}
+        />
+      ) : null}
       <div className="flex gap-2">
-        <Button type="button" disabled={booking} onClick={onBook} className="min-h-11">
+        <Button
+          type="button"
+          disabled={booking}
+          onClick={() => onBook(askReason ? reason : undefined)}
+          className="min-h-11"
+        >
           {booking ? 'Booking' : 'Book'}
         </Button>
         <Button

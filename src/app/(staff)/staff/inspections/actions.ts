@@ -11,7 +11,12 @@ import { saveDraft } from '@/features/config/store'
 import { inspectionErrorCopy } from '@/features/inspections/errorCopy'
 import { parseAccountForm, parseCalendarForm } from '@/features/inspections/forms'
 import { requestInspection } from '@/features/inspections/requestInspection'
-import { cancelInspection, scheduleInspection } from '@/features/inspections/schedule'
+import {
+  cancelInspection,
+  MIN_OFF_GRID_REASON,
+  type ScheduleError,
+  scheduleInspection,
+} from '@/features/inspections/schedule'
 import {
   CANCEL_FORM,
   certificateForm,
@@ -60,16 +65,27 @@ export async function requestInspectionAction(formData: FormData): Promise<Actio
   })
 }
 
+function scheduleRefusal(error: ScheduleError, withReason: boolean): ActionResult {
+  if (error !== 'date_unavailable' && error !== 'slot_not_on_grid') return failure(error)
+  if (!withReason) return refused(error, 'offGridReason')
+  return error === 'date_unavailable'
+    ? refused('off_grid_date_past', 'date')
+    : refused('off_grid_time_invalid', 'startMinute')
+}
+
 export async function scheduleInspectionAction(formData: FormData): Promise<ActionResult> {
   return await runStaffForm(formData, SCHEDULE_FORM, async ({ db, actor, signal }, input) => {
     const { offGridReason, ...rest } = input
+    if (offGridReason !== null && offGridReason.trim().length < MIN_OFF_GRID_REASON) {
+      return refused('off_grid_reason_short', 'offGridReason')
+    }
     const booked = await scheduleInspection(
       db,
       actor,
       { ...rest, ...(offGridReason === null ? {} : { offGrid: { reason: offGridReason } }) },
       signal,
     )
-    if (!booked.ok) return failure(booked.error)
+    if (!booked.ok) return scheduleRefusal(booked.error, offGridReason !== null)
     await enqueueCalendarPushes(booked.value.pushIds, signal)
     return { ok: true, message: 'Scheduled. The inspector gets a calendar invite.' }
   })
