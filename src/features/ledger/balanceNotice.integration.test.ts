@@ -71,7 +71,12 @@ describe('returned check notices', () => {
     ]
     expect(await returnedCheckNotices(handle.db, [trade.applicationId], signal)).toEqual(expected)
     expect(
-      await returnedCheckNoticesForParcel(handle.db, trade.world.staff, trade.world.parcelId, signal),
+      await returnedCheckNoticesForParcel(
+        handle.db,
+        trade.world.staff,
+        trade.world.parcelId,
+        signal,
+      ),
     ).toEqual(expected)
     for (const role of ['reviewer', 'board_member'] as const) {
       const scoped = await staffActor(handle.db, role)
