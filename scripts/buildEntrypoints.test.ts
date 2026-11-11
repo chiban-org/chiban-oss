@@ -32,6 +32,7 @@ describe('buildEntrypoints', () => {
     )
     for (const expected of [
       'import-archive.mjs',
+      'import-from-target.mjs',
       'chiban-recover.mjs',
       'town-service-status.mjs',
       'worker.mjs',

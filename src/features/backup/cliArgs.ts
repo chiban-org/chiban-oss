@@ -1,4 +1,5 @@
 import { parseArgs } from 'node:util'
+import { exportFolderSchema } from '@/features/export/exportIndex'
 import { err, ok, type Result } from '@/types/result'
 
 export type BackupArgs = { kind: 'dir'; dir: string } | { kind: 'target'; name: string }
@@ -11,6 +12,8 @@ export interface VerifyArgs {
 export const BACKUP_USAGE = 'usage: backup (--dir <folder> | --target <export target name>)'
 export const VERIFY_USAGE = 'usage: restore-verify --file <backup.bin> [--keep]'
 export const RESTORE_OBJECTS_USAGE = 'usage: restore-objects --dir <folder>'
+export const IMPORT_FROM_TARGET_USAGE =
+  'usage: import-from-target --dir <folder holding chiban-export> --month <export folder, e.g. 2027-02>'
 
 function parse<T extends Record<string, { type: 'string' | 'boolean' }>>(
   argv: string[],
@@ -42,4 +45,15 @@ export function parseRestoreObjectsArgs(argv: string[]): Result<{ dir: string },
   const values = parse(argv, { dir: { type: 'string' } } as const)
   if (values === null || (values.dir ?? '') === '') return err(RESTORE_OBJECTS_USAGE)
   return ok({ dir: values.dir ?? '' })
+}
+
+export function parseImportFromTargetArgs(
+  argv: string[],
+): Result<{ dir: string; month: string }, string> {
+  const values = parse(argv, { dir: { type: 'string' }, month: { type: 'string' } } as const)
+  const dir = values?.dir ?? ''
+  const month = values?.month ?? ''
+  if (dir === '' || !exportFolderSchema.safeParse(month).success)
+    return err(IMPORT_FROM_TARGET_USAGE)
+  return ok({ dir, month })
 }
