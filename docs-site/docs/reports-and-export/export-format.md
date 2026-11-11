@@ -2339,6 +2339,22 @@ File: `data/roster_reviews.ndjson`. Ordered by id.
 - `reviewed_by`: uuid
 - `recorded_at`: timestamp with time zone
 
+### rtk_letter_deliveries
+
+File: `data/rtk_letter_deliveries.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `request_id`: uuid
+- `document_id`: uuid
+- `outcome`: text
+- `sent_to`: text, nullable
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `request_id` refers to `rtk_requests`
+- `document_id` refers to `documents`
+
 ### rtk_release_items
 
 File: `data/rtk_release_items.ndjson`. Ordered by release_id, document_id.
@@ -2357,6 +2373,22 @@ References:
 - `document_id` refers to `documents`
 - `version_id` refers to `document_versions`
 - `approval_id` refers to `rendition_approvals`
+
+### rtk_release_links
+
+File: `data/rtk_release_links.ndjson`. Ordered by id.
+
+- `id`: uuid
+- `release_id`: uuid
+- `expires_at`: timestamp with time zone
+- `sent_to`: text
+- `created_by`: uuid
+- `created_at`: timestamp with time zone
+
+References:
+- `release_id` refers to `rtk_releases`
+
+Omitted columns: `token_hash`
 
 ### rtk_releases
 
@@ -2398,7 +2430,7 @@ File: `data/rtk_requests.ndjson`. Ordered by id.
 - `first_response_kind`: text, nullable
 - `first_response_url`: text, nullable
 - `denied_on`: date, nullable
-- `created_by`: uuid
+- `created_by`: uuid, nullable
 - `created_at`: timestamp with time zone
 - `row_version`: integer
 

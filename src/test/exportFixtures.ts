@@ -161,6 +161,17 @@ const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
       join project_parties pp on pp.project_id = a.project_id limit 1`,
   },
   {
+    table: 'rtk_release_links',
+    statement: sql`insert into rtk_release_links (release_id, token_hash, expires_at, sent_to, created_by)
+      select id, repeat('d', 43), now(), 'requester@example.test', released_by from rtk_releases limit 1`,
+  },
+  {
+    table: 'rtk_letter_deliveries',
+    statement: sql`insert into rtk_letter_deliveries (request_id, document_id, outcome, created_by)
+      select record_id, id, 'print', gen_random_uuid() from documents
+      where record_kind = 'rtk_request' limit 1`,
+  },
+  {
     table: 'counter_intakes',
     statement: sql`insert into counter_intakes (application_id, applicant_party_id, taken_by)
       select a.id, pp.id, a.created_by from applications a
