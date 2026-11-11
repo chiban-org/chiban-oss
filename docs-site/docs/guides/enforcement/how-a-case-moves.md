@@ -58,7 +58,7 @@ The rest of the case is a set of sections you can jump to from **On this page**:
 | Record a fine a court imposed | Administrators and finance staff |
 | Record a payment toward a fine | Land use staff and finance staff |
 
-Designated officers are listed under **Settings**, **Enforcement officers**, which an [administrator keeps](../administrator/enforcement-officers.md). The role of each person is in [how the staff roles fit together](../../start-here/staff-roles.md).
+Designated officers are listed under **Settings**, **Administration**, **Enforcement officers**, which an [administrator keeps](../administrator/enforcement-officers.md). The role of each person is in [how the staff roles fit together](../../start-here/staff-roles.md).
 
 ## What an inspector sees
 

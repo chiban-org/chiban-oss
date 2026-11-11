@@ -21,7 +21,15 @@ Each complaint opens its own case, numbered like EC-2026-0001, with the complain
 
 To enter a complaint yourself, choose **Enter a complaint** on the enforcement list. Fill in **Where is the property?**, **What was reported?**, optionally the parcel, and the complainant's name, phone and email if they gave them. Choose **Record complaint**. Chiban opens the new case.
 
-Chiban cannot add a second complaint to a case that already exists, so each report starts a case of its own.
+Each report starts a case of its own. When a second report concerns a case you already have, move it there, as described below.
+
+### Attach another complaint
+
+When two reports are about the same problem, open the case you want to keep and choose **Attach another complaint** under **Complaints**. Pick the report under **Complaint to attach**. The list shows each one's number, the date received and the location, and marks one on the same parcel as **same parcel**. Choose **Attach complaint**.
+
+The complaint moves to this case with its photos. The case it came in on is closed with the reason **Complaint CP-x was moved to case EC-y.**, with the actual numbers.
+
+Only a complaint on a case that has not been worked yet can move: the case must still be at **Received**, hold nothing but that complaint and its photos, and not be shown on the public site. Otherwise the list says **No other complaint can be attached right now.** You cannot attach to a case that has ended. If the case you are attaching to is shown on the public site, write the public text for the complaint on its own case first.
 
 ### What staff see in a complaint
 

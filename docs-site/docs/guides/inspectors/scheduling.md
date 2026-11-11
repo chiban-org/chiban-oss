@@ -49,7 +49,18 @@ Use the week buttons above the grid to look further ahead. Each shows how many t
 
 The people on the permit, the applicant, owner, agent and contractor, receive an email that the inspection is scheduled, with the date and time. The inspection then shows on the inspector's **My day**.
 
-If someone else booked the same time a moment earlier, Chiban says **That time was just taken. Pick another.** It also says so when the inspector is full for the day. The town's inspection days, hours, slot length, notice rule and daily limit are set by an administrator under **Settings**, **Inspection schedule**. Chiban does not let you book outside them.
+If someone else booked the same time a moment earlier, Chiban says **That time was just taken. Pick another.** It also says so when the inspector is full for the day. The town's inspection days, hours, slot length, notice rule and daily limit are set by an administrator under **Settings**, **Inspection schedule**. Chiban does not let you book outside them from the grid. For a time the grid does not list, see the next section.
+
+## Book a time that is not listed
+
+Sometimes the inspection has to happen on a day the town does not inspect, or between the listed slots. Choose a waiting request first. Then open **Book a time that is not listed** above the grid and fill in:
+
+- **Inspector**, chosen from the list.
+- **Day**, today or later.
+- **Start time**.
+- **Reason for booking outside the town slots**, at least 10 characters.
+
+Choose **Book this time**. The inspector's daily limit and any booking already at that time still apply. The inspection then shows **Booked outside the town slots** with your reason, so anyone who opens it can see why.
 
 ## Move a booking
 

@@ -14,7 +14,7 @@ Chiban has seven staff roles, and one person can hold more than one of them.
 
 ### Administrator
 
-Sets the town up and keeps it running: the town profile, forms, fee schedules, templates, boards, town rule settings, staff accounts and data exports. The administrator can also place legal holds, correct and refund payments, and turn on anonymous complaints once the server has passed its check. An administrator does not issue permits, take counter payments, or schedule and record inspections unless they also hold the land use staff or inspector role.
+Sets the town up and keeps it running: the town profile, forms, fee schedules, templates, boards, town rule settings, staff accounts and data exports. The administrator can also place legal holds, correct and refund payments, and turn on anonymous complaints once the server has passed its check. Administrators also show or hide documents on the public site, which includes filing a board decision and approving minutes. An administrator does not issue permits, take counter payments, or schedule and record inspections unless they also hold the land use staff or inspector role.
 
 ### Land use staff
 
@@ -30,7 +30,7 @@ Takes payments at the counter, refunds, voids and corrects payment entries, runs
 
 ### Records custodian
 
-Looks after the town's records once they exist: legal holds, the retention schedule and approval of disposal, Right-to-Know requests, redactions, document preservation and the full records export.
+Looks after the town's records once they exist: legal holds, the retention schedule and approval of disposal, Right-to-Know requests, redactions, document preservation and the full records export. A custodian can also publish a redacted copy of a document.
 
 ### Reviewer
 
@@ -50,6 +50,6 @@ A person with two roles can do everything either role allows. In Alder Pond, the
 
 ## Giving someone a role
 
-An administrator invites staff and sets their roles under **Settings**, **Users**. The same page changes a person's roles later and disables the account when someone leaves. Designated enforcement officers are listed under **Settings**, **Enforcement officers**.
+An administrator invites staff and sets their roles under **Settings**, **Users**. The same page changes a person's roles later and disables the account when someone leaves. Designated enforcement officers are listed under **Settings**, **Administration**, **Enforcement officers**.
 
 Each role comes with a fixed set of permissions, and no settings page changes them. The [roles and permissions reference](../reference/roles-and-permissions.mdx) lists every permission, the roles that have it, and the pages each role sees.

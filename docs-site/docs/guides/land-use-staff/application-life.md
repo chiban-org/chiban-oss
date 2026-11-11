@@ -67,7 +67,9 @@ The **Before the decision** group holds the checks for this permit type. On a bu
 - **Code edition recorded**. Choose **Record the code edition**. Chiban records the edition of the state building code in force on the date the application was received. If the applicant may elect a different edition during an overlap period, choose it under **Applicant election**. Chiban refuses an election the dates do not allow.
 - **Regional impact determined**. Choose **Record a determination**, enter the **Determined on** date and, if a board already decided it, the **Board reference**. If the determination calls for notice to the regional planning commission, record the certified mail notice under **Regional impact**, and the permit waits out the comment period.
 
-Add the **Conditions** the permit should carry. Open **Apply a condition**, choose one from the town's list and save. A condition marked **blocks issuance** keeps the permit from issuing until you choose **Mark met**. The conditions print on the permit. Administrators keep the list under **Settings**.
+Add the **Conditions** the permit should carry. Open **Apply a condition**, choose one from the town's list and save. A condition marked **blocks issuance** keeps the permit from issuing until you choose **Mark met** or waive it. The conditions print on the permit.
+
+If a condition does not apply to this project, choose **Waive** next to it, write the **Reason for waiving** and choose **Waive condition**. The reason is kept with the condition on the record. For a condition that blocks issuance the reason is required, at least ten characters, and only staff who can override requirements see **Waive** on it. For any other condition the reason is optional. Administrators keep the list under **Settings**.
 
 Leave notes for the rest of the office under **Staff notes** with **Add a note**. Applicants, reviewers and board members cannot see them.
 
@@ -106,9 +108,15 @@ This works for requirements the town sets for itself. A requirement that comes f
 
 Under **More actions**, you can **Deny the application** or **Withdraw the application**. Each asks you to confirm and says this ends the application and cannot be undone. A denial emails the people on the project.
 
-## What you cannot change on a submitted application
+## Correcting an answer on an application
 
-Once an application is submitted, Chiban has no screen for staff to edit the applicant's answers while it is under review. Before it is submitted, a draft started at the counter can be edited. After it is issued, **Correct this permit** changes the contractor, the license number, the answers or the project title. If an answer on an application under review is wrong, say so in a staff note and settle it with the applicant before you issue.
+When an answer on a submitted application is wrong, choose **Edit the application** in the side panel. The form shows every answer, including the ones only staff see. Change what is wrong and choose **Save changes**.
+
+- On a **Submitted** application, anyone with full record access can do this.
+- On an application that is **Under review**, you also need the permission **Amend a submitted application after review starts**. Land use staff have it.
+- Each change is listed under **Recent activity** with the old and new answer, for example **Amended the application: Classification from Residential to Nonresidential**.
+
+**Edit the application** is not offered once the application is decided or closed. After a permit is issued, **Correct this permit** changes the contractor, the license number, the answers or the project title. A draft started at the counter can be edited before it is submitted.
 
 ## Where to go next
 
