@@ -33,9 +33,10 @@ function requiredKeys(): string[] {
 }
 
 describe('Dockerfile', () => {
-  it('declares the four stages in order', () => {
+  it('declares the stages in order, ending with migrate-tools for builds that target it', () => {
     const names = [...dockerfile.matchAll(/^FROM .* AS (\S+)$/gm)].map((m) => m[1])
-    expect(names).toEqual(['deps', 'prod-deps', 'build', 'runtime'])
+    expect(names).toEqual(['deps', 'prod-deps', 'build', 'runtime', 'migrate-tools'])
+    expect(stageBody('migrate-tools').trim()).toBe('runtime AS migrate-tools')
   })
 
   it('pins every FROM by sha256 or builds on an earlier stage', () => {

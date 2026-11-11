@@ -58,3 +58,5 @@ COPY --from=build --chown=node:node /app/package.json /app/next.config.ts ./
 USER node
 EXPOSE 3000
 CMD ["node_modules/.bin/next", "start"]
+
+FROM runtime AS migrate-tools
