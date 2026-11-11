@@ -6,6 +6,7 @@ export interface Shot {
   path: string
   width: number
   height: number
+  open?: string[]
 }
 
 export class ManifestError extends Error {}
@@ -28,6 +29,13 @@ function size(source: string, index: number, record: Record<string, unknown>, ke
   return value
 }
 
+function links(source: string, index: number, value: unknown): string[] {
+  const list = Array.isArray(value) ? value : [value]
+  const valid = list.every((item) => typeof item === 'string' && item.trim() !== '')
+  if (list.length === 0 || !valid) fail(source, index, 'open must be text or a list of text')
+  return list as string[]
+}
+
 export function parseManifest(source: string, json: unknown): Shot[] {
   if (!Array.isArray(json)) throw new ManifestError(`${source}: expected an array of shots`)
   const seen = new Set<string>()
@@ -46,13 +54,15 @@ export function parseManifest(source: string, json: unknown): Shot[] {
     if (!shotPath.startsWith('/') || shotPath.startsWith('//')) {
       fail(source, index, 'path must start with a single /')
     }
-    return {
+    const shot: Shot = {
       file,
       persona: text(source, index, record, 'persona'),
       path: shotPath,
       width: size(source, index, record, 'width'),
       height: size(source, index, record, 'height'),
     }
+    if (record.open !== undefined) shot.open = links(source, index, record.open)
+    return shot
   })
 }
 

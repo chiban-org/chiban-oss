@@ -39,13 +39,30 @@ async function signIn(page: Page, persona: string): Promise<void> {
   await page.waitForLoadState('networkidle')
 }
 
+const NOTHING_LOADING = `!document.querySelector('[aria-busy="true"]')`
+
+async function settle(page: Page): Promise<void> {
+  await page.waitForLoadState('networkidle')
+  await page.waitForFunction(NOTHING_LOADING)
+}
+
+async function openLink(page: Page, name: string): Promise<void> {
+  const link = page.getByRole('link', { name }).first()
+  if ((await link.count()) === 0) throw new Error(`no link named ${name}`)
+  const before = page.url()
+  await Promise.all([page.waitForURL((url) => url.href !== before), link.click()])
+  await settle(page)
+}
+
 async function capture(page: Page, shot: Shot): Promise<void> {
   await page.setViewportSize({ width: shot.width, height: shot.height })
   await page.goto(`${baseUrl}${shot.path}`, { waitUntil: 'networkidle' })
+  await settle(page)
   const landed = new URL(page.url()).pathname
   if (landed === '/demo' || landed === '/sign-in') {
     throw new Error(`${shot.path} sent ${shot.persona} to ${landed}`)
   }
+  for (const name of shot.open ?? []) await openLink(page, name)
   const target = outputPath(imagesRoot, shot)
   await mkdir(path.dirname(target), { recursive: true })
   await page.screenshot({ path: target, fullPage: false })

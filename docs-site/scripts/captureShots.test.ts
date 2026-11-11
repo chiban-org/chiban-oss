@@ -70,3 +70,27 @@ describe('outputPath', () => {
     assert.equal(outputPath('/img/shots', valid), '/img/shots/operations/health.png')
   })
 })
+
+describe('open', () => {
+  it('keeps the link text to open from the listed page', () => {
+    const [shot] = parseManifest('x.json', [{ ...valid, open: 'BP-2026-0001' }])
+    assert.deepEqual(shot.open, ['BP-2026-0001'])
+  })
+
+  it('keeps several links to open in order', () => {
+    const [shot] = parseManifest('x.json', [{ ...valid, open: ['EL-2026-0001', 'Final inspection'] }])
+    assert.deepEqual(shot.open, ['EL-2026-0001', 'Final inspection'])
+  })
+
+  it('leaves open out when the entry has none', () => {
+    const [shot] = parseManifest('x.json', [valid])
+    assert.equal('open' in shot, false)
+  })
+
+  it('rejects open that is not text', () => {
+    assert.throws(() => parseManifest('x.json', [{ ...valid, open: 7 }]), /open must be text/)
+    assert.throws(() => parseManifest('x.json', [{ ...valid, open: ' ' }]), /open must be text/)
+    assert.throws(() => parseManifest('x.json', [{ ...valid, open: [] }]), /open must be text/)
+    assert.throws(() => parseManifest('x.json', [{ ...valid, open: ['a', 3] }]), /open must be text/)
+  })
+})
