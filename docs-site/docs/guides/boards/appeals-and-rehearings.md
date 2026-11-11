@@ -77,6 +77,6 @@ Select **Record the step**. An appeal filed after the window ended is still reco
 
 ### An appealed permit is suspended
 
-When the permit has been issued and the application type is set up to suspend on appeal, recording the **Appeal to the Zoning Board** moves the permit to **Suspended** and names the person in **Who appealed**. Fill that field in, since the suspension shows the name. Suspending a permit needs the permission to issue permits, which land use staff have and administrators do not. Without it Chiban refuses the step and nothing is recorded.
+When the permit has been issued and the application type is set up to suspend on appeal, recording the **Appeal to the Zoning Board** moves the permit to **Suspended** and names the person in **Who appealed**. Fill that field in, since the suspension shows the name. Anyone who can record board steps can record this one, administrators included.
 
 For what a suspended permit means for the application, see [the life of an application](../land-use-staff/application-life.md).
