@@ -34,9 +34,7 @@ describe('backups.scheduled queue', () => {
       retry_limit: number
       expire_seconds: number
       heartbeat_seconds: number
-    }>(
-      sql`select retry_limit, expire_seconds, heartbeat_seconds from pgboss.job where id = ${id}`,
-    )
+    }>(sql`select retry_limit, expire_seconds, heartbeat_seconds from pgboss.job where id = ${id}`)
     expect(rows.rows[0]).toEqual({
       retry_limit: 0,
       expire_seconds: 6 * 60 * 60,
