@@ -39,6 +39,7 @@ describe('buildEntrypoints', () => {
       'migrate.mjs',
       'export-format-doc.mjs',
       'demo-reset.mjs',
+      'create-staff-user.mjs',
     ]) {
       expect(produced).toContain(expected)
     }
