@@ -14,6 +14,7 @@ This guide is for whoever runs the server. It covers running one town's Chiban o
 - Ports 80 and 443 open to the internet. No other port is published.
 - A domain name you control, for example `town.example.org`.
 - An SMTP account the application can send mail through.
+- The `deploy/` folder from the [Chiban source code on GitHub](https://github.com/chiban-org/chiban-oss). Clone the repository on the host, or copy just that folder there.
 
 ## DNS
 

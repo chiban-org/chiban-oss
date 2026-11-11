@@ -44,6 +44,6 @@ A notice on every page says that this is a demo, that mail is not delivered, and
 
 ## Other roles
 
-The demo page has no one who holds both the land use staff and inspector roles the way a building official does. A copy of Chiban set up for development has a second sign-in page, `/dev/sign-in`, that lists every Alder Pond user, among them Dana Booth, who holds both roles. The README at the top of the Chiban source code explains how to set up that copy.
+The demo page has no one who holds both the land use staff and inspector roles the way a building official does. A copy of Chiban set up for development has a second sign-in page, `/dev/sign-in`, that lists every Alder Pond user, among them Dana Booth, who holds both roles. The [README in the Chiban source code](https://github.com/chiban-org/chiban-oss#readme) explains how to set up that copy.
 
 To see what each role can open, read [how the staff roles fit together](./staff-roles.md).

@@ -79,6 +79,11 @@ const config: Config = {
           label: 'chiban.us',
           position: 'right',
         },
+        {
+          href: 'https://github.com/chiban-org/chiban-oss',
+          label: 'GitHub',
+          position: 'right',
+        },
       ],
     },
     footer: {
@@ -103,6 +108,7 @@ const config: Config = {
           title: 'Project',
           items: [
             { label: 'chiban.us', href: 'https://chiban.us' },
+            { label: 'Source code on GitHub', href: 'https://github.com/chiban-org/chiban-oss' },
             { label: 'License (AGPL-3.0)', href: 'https://www.gnu.org/licenses/agpl-3.0.html' },
           ],
         },
