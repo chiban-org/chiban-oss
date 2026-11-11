@@ -48,4 +48,16 @@ describe('rate limiter', () => {
     expect(limiter.size()).toBe(1)
     expect(limiter.isLimited('new')).toBe(false)
   })
+
+  it('forgives the most recent attempt for a key', () => {
+    const limiter = createRateLimiter({ max: 2, windowMs: 1000, now: () => 0 })
+    limiter.recordFailure('k')
+    limiter.recordFailure('k')
+    expect(limiter.isLimited('k')).toBe(true)
+    limiter.forgiveOne('k')
+    expect(limiter.isLimited('k')).toBe(false)
+    limiter.forgiveOne('k')
+    limiter.forgiveOne('k')
+    expect(limiter.size()).toBe(0)
+  })
 })

@@ -112,6 +112,7 @@ export async function staffSignIn(
     return err('invalid_credentials')
   }
   byClientAndEmail.clear(pairKey)
+  byClient.forgiveOne(input.clientKey)
   await writeAudit(
     db,
     {

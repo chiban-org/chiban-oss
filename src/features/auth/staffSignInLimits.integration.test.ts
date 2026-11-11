@@ -50,10 +50,14 @@ describe('staffSignIn limits', () => {
     expect(await attempt('bystander', 'ghost20@alderpond.example', 'nope')).toEqual(generic)
   })
 
-  it('does not clear the per-client count on a successful sign-in', async () => {
-    await staffUser('mine@alderpond.example')
-    for (let i = 0; i < 19; i += 1) await attempt('busy', `ghost${i}@alderpond.example`, 'nope')
-    expect((await attempt('busy', 'mine@alderpond.example', PASSWORD)).ok).toBe(true)
-    expect(await attempt('busy', 'ghost99@alderpond.example', 'nope')).toEqual(limited)
+  it('does not count successful sign-ins from a shared office address toward the client cap', async () => {
+    for (let i = 0; i < 25; i += 1) {
+      await staffUser(`clerk${i}@alderpond.example`)
+      expect((await attempt('town-hall', `clerk${i}@alderpond.example`, PASSWORD)).ok).toBe(true)
+    }
+    for (let i = 0; i < 20; i += 1) {
+      expect(await attempt('town-hall', `ghost${i}@alderpond.example`, 'nope')).toEqual(generic)
+    }
+    expect(await attempt('town-hall', 'ghost99@alderpond.example', 'nope')).toEqual(limited)
   })
 })
