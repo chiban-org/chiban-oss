@@ -70,9 +70,15 @@ describe('returned check notices', () => {
       { applicationId: trade.applicationId, number: expect.any(String), dueCents: 4500 },
     ]
     expect(await returnedCheckNotices(handle.db, [trade.applicationId], signal)).toEqual(expected)
-    expect(await returnedCheckNoticesForParcel(handle.db, trade.world.parcelId, signal)).toEqual(
-      expected,
-    )
+    expect(
+      await returnedCheckNoticesForParcel(handle.db, trade.world.staff, trade.world.parcelId, signal),
+    ).toEqual(expected)
+    for (const role of ['reviewer', 'board_member'] as const) {
+      const scoped = await staffActor(handle.db, role)
+      expect(
+        await returnedCheckNoticesForParcel(handle.db, scoped, trade.world.parcelId, signal),
+      ).toEqual([])
+    }
   })
 
   it('clears once the balance is paid again', async () => {

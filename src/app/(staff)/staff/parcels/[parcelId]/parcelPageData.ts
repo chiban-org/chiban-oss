@@ -73,7 +73,7 @@ export async function loadParcelPage(ctx: StaffContext, parcelId: string, raw: R
       loadNoticeRecipients(ctx.db, { parcelId, today }, ctx.signal),
       loadParcelContacts(ctx.db, ctx.actor, { parcelId }, ctx.signal),
       loadPanelDocuments(ctx.db, ctx.actor, { kind: 'parcel', id: parcelId }, ctx.signal),
-      returnedCheckNoticesForParcel(ctx.db, parcelId, ctx.signal),
+      returnedCheckNoticesForParcel(ctx.db, ctx.actor, parcelId, ctx.signal),
       configuredOverlayLayers(ctx.db, ctx.signal),
     ])
   return {

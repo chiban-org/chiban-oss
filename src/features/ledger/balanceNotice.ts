@@ -1,6 +1,8 @@
 import { and, eq, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { applications, ledgerAllocations, ledgerEntries, projects } from '@/db/schema'
+import { hasFullRecordAccess } from '@/features/access/roles'
+import type { Actor } from '@/features/auth/actor'
 import { feeBalance } from '@/features/ledger/feeBalance'
 
 export interface ReturnedCheckNotice {
@@ -39,9 +41,12 @@ export async function returnedCheckNotices(
 
 export async function returnedCheckNoticesForParcel(
   db: Db,
+  actor: Actor,
   parcelId: string,
   signal: AbortSignal,
 ): Promise<ReturnedCheckNotice[]> {
+  signal.throwIfAborted()
+  if (!hasFullRecordAccess(actor)) return []
   const rows = await db
     .select({ id: applications.id })
     .from(applications)
