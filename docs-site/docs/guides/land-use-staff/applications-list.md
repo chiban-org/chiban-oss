@@ -12,7 +12,7 @@ sidebar_position: 3
 
 ## The tabs
 
-The tabs across the top group applications by where they are in their life, with a count on each.
+The tabs across the top group applications by stage, with a count on each.
 
 | Tab | What it holds |
 | --- | --- |

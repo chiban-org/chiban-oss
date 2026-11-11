@@ -60,7 +60,7 @@ Sometimes the inspection has to happen on a day the town does not inspect, or be
 - **Start time**.
 - **Reason for booking outside the town slots**, at least 10 characters.
 
-Choose **Book this time**. The inspector's daily limit and any booking already at that time still apply. The inspection then shows **Booked outside the town slots** with your reason, so the next person to open it can see why it is off the grid.
+Choose **Book this time**. The inspector's daily limit and any booking already at that time still apply. The inspection then shows **Booked outside the town slots** with your reason, so anyone who opens it can see why.
 
 ## Move a booking
 

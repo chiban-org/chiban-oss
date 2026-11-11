@@ -48,7 +48,7 @@ Chiban refuses to issue the order when:
 - the corrective action deadline is before the issue date;
 - an appeal has stayed enforcement;
 - the case is already in court, resolved or closed, or has no finding yet;
-- the notice of violation has not been sent. The message reads **Send the notice of violation first. An order can be issued only after the notice of violation is sent.** You can draft the order beforehand, but it cannot be issued until the notice is on the case;
+- the notice of violation has not been sent. The message reads **Send the notice of violation first. An order can be issued only after the notice of violation is sent.** You can draft the order first, but it cannot be issued until the notice has been sent;
 - a finding on the draft was withdrawn or marked corrected after you drafted it. Discard the draft and draft a new one.
 
 When it works, the case moves to **Order issued**, and the order PDF appears under **Documents and photos** as **Cease and desist order** with its number. The order block shows what it requires, the date issued and who issued it, with **Open order**.
