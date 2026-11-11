@@ -72,7 +72,7 @@ describe('demo sign-in', () => {
   })
 
   it('refuses anyone who is not a listed persona, even at the demo domain', async () => {
-    for (const email of ['finance@alderpond.example', 'clerk@real-town.example']) {
+    for (const email of ['official@alderpond.example', 'clerk@real-town.example']) {
       expect(await settle(demoSignInAction(h.form({ email })))).toEqual(redirectsTo('/demo'))
     }
     expect(sid()).toBeUndefined()
