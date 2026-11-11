@@ -8,7 +8,7 @@ sidebar_position: 14
 
 A parcel can have more than one number: the assessor's CAMA number and the map-lot ID from the town's GIS. **Parcel ID formats**, in the **Town** group under **Settings**, lists the numbers the town uses. Imports use these formats to match rows in a file to the right parcel, and one of them is the ID shown on parcel pages.
 
-Chiban ships with two formats: **CAMA number**, exactly 15 digits, and **Map-lot ID**, exactly 12 digits. Leading zeros count. In Alder Pond the CAMA number is on 63 parcels and the Map-lot ID on 62, and the Map-lot ID is the one shown on parcels.
+A new New Hampshire installation starts with two formats, **CAMA number** (short name cama15), exactly 15 digits, and **Map-lot ID** (short name gis12), exactly 12 digits. Leading zeros count. After that the list belongs to your installation: you add, change and delete formats on this screen, and each town keeps its own. In Alder Pond the CAMA number is on 63 parcels and the Map-lot ID on 62, and the Map-lot ID is the one shown on parcels.
 
 ## Add or change a format
 

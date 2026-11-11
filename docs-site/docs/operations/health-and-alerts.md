@@ -27,7 +27,7 @@ In `/api/version`, `imageRef` is `CHIBAN_IMAGE_REF`, which the bundled Compose f
 
 ## What raises an alert
 
-The worker runs a health check every 5 minutes. It looks at disk space and at the background jobs, and records an alert while a problem lasts.
+The worker runs a health check every 5 minutes. It looks at disk space, the background jobs and the backup schedule, and records an alert while a problem lasts.
 
 | Alert | Severity | Raised when |
 | --- | --- | --- |
@@ -35,6 +35,8 @@ The worker runs a health check every 5 minutes. It looks at disk space and at th
 | `disk_critical`, key `disk:<path>` | critical | A watched disk is more than 90 percent full. |
 | `job_stale`, key `job_stale:<job name>` | critical | A scheduled job has not succeeded in more than twice its interval. If it has never succeeded, the time since the worker started is used. |
 | `schedule_missing`, key `schedule_missing:<job name>` | critical | A job that should run on a schedule has no schedule in the job queue. |
+| `backup_overdue`, key `backup:overdue` | critical | Scheduled backups are on and none has succeeded within the interval plus 12 hours. |
+| `backup_failed`, key `backup:failed` | critical | Scheduled backups are on and the last run failed or did not run, which includes a missing `BACKUP_PASSPHRASE`. |
 
 The disks come from `HEALTH_DISK_PATHS`, a comma-separated list that defaults to `/`. The bundled Compose file sets it for the worker to `/monitor/pg,/monitor/garage`, two read-only mounts of the database and object store volumes. A path that cannot be read is skipped without an alert, so a typo in the list watches nothing.
 

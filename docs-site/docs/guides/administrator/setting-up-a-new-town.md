@@ -12,11 +12,11 @@ Follow the steps in order. People have to exist before you can name them as revi
 
 ## 1. Get the first administrator account
 
-Whoever installed Chiban on the town's server creates the first administrator account from the server itself, with a name, an email address and a password. After that you invite every other person from **Settings**, **Users**. If you cannot sign in at all, ask the person who runs the server. The [self-hosting page](../../operations/self-hosting.md) is theirs.
+Whoever installed Chiban on the town's server creates the first administrator account from the server itself, with a name and an email address. The server command prints a one-time link, good for 7 days, and the new administrator opens it to choose a password. After that you invite every other person from **Settings**, **Users**. If you cannot sign in at all, ask the person who runs the server. The [self-hosting page](../../operations/self-hosting.md) is theirs.
 
 ## 2. Sign in and protect your own account
 
-Sign in with the email address and password you were given. Then open **Account** and set up an authenticator app, so that a stolen password alone cannot open the administrator account. [Passwords and authenticator codes](./passwords-and-authenticator.md) walks through it.
+Sign in with the email address and the password you chose from the one-time link. Then open **Account** and set up an authenticator app, so that a stolen password alone cannot open the administrator account. [Passwords and authenticator codes](./passwords-and-authenticator.md) walks through it.
 
 ## 3. Fill in the town's identity
 

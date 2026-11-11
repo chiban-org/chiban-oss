@@ -17,7 +17,7 @@ The processor form offers three choices.
 | --- | --- | --- |
 | Stripe | Online checkout and a counter card reader. | No practice notice is shown on screen. The README says no live processor key is configured anywhere in the repository and that Stripe is exercised against `stripe-mock`, a stand-in that answers with fixed responses. |
 | Clover | Online checkout and a counter card reader. | The settings page says "Clover connection is not yet verified against a live merchant account." Treat it as untested with real money. |
-| Simulated (practice only) | A fake processor for demonstrations. No card is ever charged. | Available only when `ENABLE_SIMULATED_PAYMENTS` is `true`. |
+| Simulated (practice only) | A fake processor for demonstrations. No card is ever charged. | Available only when `ENABLE_SIMULATED_PAYMENTS` is `true`. The bundled Compose file passes that setting through, blank by default. |
 
 Cash and check payments need no processor.
 
@@ -31,12 +31,12 @@ An administrator opens **Settings**, **Money and inspections**, **Card payments*
 | **Mode** | Test or Live. |
 | **Account number at the processor** | The Stripe account ID or the Clover merchant ID. |
 | **Secret key** | Stripe's secret key, or Clover's private token. |
-| **Webhook signing secret** | The secret the processor gives you for the webhook endpoint. Required. |
+| **Webhook signing secret** | The secret the processor gives you for the webhook endpoint. Optional on the first save: leave it blank to get the webhook address, then save again with the secret. A blank field on a later save keeps the stored one. |
 | **Advanced** | Clover API address, Clover checkout address, and the card reader device ID. |
 
-The secret key and the signing secret are encrypted with the active key in `CHIBAN_SECRET_KEYS` and are never shown again, so the form asks for them again every time. If the keys are lost, the saved credentials cannot be read and the page reports "Processor credentials cannot be read."
+The secret key and the signing secret are encrypted with the active key in `CHIBAN_SECRET_KEYS` and are never shown again. The form asks for the secret key every time you save, and a blank signing secret keeps the stored one. If the keys are lost, the saved credentials cannot be read and the page reports "Processor credentials cannot be read."
 
-Saving never edits an account. It adds a new account record with a new id, makes it the active one and deactivates the earlier one, and writes an audit entry. The earlier records stay in the database.
+Saving the same processor, mode and account number again updates that account record in place, so its id and its webhook address do not change. A new processor, mode or account number adds a new record with a new id, makes it the active one and deactivates the earlier one. Either way an audit entry is written, and earlier records stay in the database.
 
 ## The webhook endpoint
 
@@ -46,13 +46,11 @@ The processor tells Chiban about payments by calling:
 POST https://town.example.org/api/payments/webhooks/<account id>
 ```
 
-The id at the end is the id of the saved account record. The settings page does not show it. Read it from the database:
+The id at the end is the id of the saved account record. The **Card payments** page shows the full address under **Processor**, with a **Copy address** button, so nobody needs the database. The address is hidden for the simulator, which sends no webhooks. For a new account, save once with the signing secret blank to see the address, register it in the processor's dashboard, then save again with the secret the processor gives you.
 
-```
-docker compose exec postgres psql -U chiban -d chiban -c "select id, processor, mode, account_ref, is_active from processor_accounts order by created_at desc"
-```
+Addresses issued before the address became stable keep working, each with the secret of its own account.
 
-Because every save creates a new record, saving the form again gives you a new id and so a new endpoint address, and the signing secret you entered goes with that record. Register the new address with the processor each time. The address of an earlier record keeps working, with its own secret, for payments that began under it.
+While no signing secret is saved, every webhook for the account is refused with `bad_signature`, and the page says the account is not receiving payment updates. Checkout still works, and the hourly reconciliation below catches the payments.
 
 The path is skipped by the application's CSRF cookie handling, and the bundled Caddyfile sends it to the application like every other path. The processor must be able to reach it over HTTPS on the public name.
 
@@ -61,7 +59,7 @@ The path is skipped by the application's CSRF cookie handling, and the bundled C
 | Status | Body | Meaning |
 | --- | --- | --- |
 | 200 | `{"received":true}` | The event was accepted. A repeat of an event already processed adds `"duplicate":true`. |
-| 400 | `{"error":"bad_signature"}` or `{"error":"malformed"}` | The signature did not match the account's signing secret, was missing or too old, or the body could not be read. |
+| 400 | `{"error":"bad_signature"}` or `{"error":"malformed"}` | No signing secret is saved, the signature did not match it, was missing or too old, or the body could not be read. |
 | 404 | `{"error":"unknown_account"}` | The last part of the address is not an id Chiban knows. |
 | 500 | `{"error":"processing_failed"}` | Chiban could not look up or reconcile the payment. The processor should retry. |
 | 503 | `{"error":"credentials_unreadable"}` | The account's saved secrets cannot be decrypted. Check `CHIBAN_SECRET_KEYS`. |
@@ -84,9 +82,9 @@ When `CHIBAN_DEMO_MODE` is on, only the simulated processor may be saved. If any
 
 `STRIPE_API_BASE` points the Stripe adapter at another address, such as a local `stripe-mock`. The application refuses to start when it is set and `NODE_ENV` is `production`, which the application image sets. `stripe-mock` sends no webhooks.
 
-## Settings that do not reach the bundled Compose services
+## Settings in the bundled Compose file
 
-`deploy/docker-compose.yml` passes neither `ENABLE_SIMULATED_PAYMENTS` nor `STRIPE_API_BASE` to any service. On the bundled deployment the simulated processor therefore cannot be saved, and a Stripe or Clover account is the only choice. To allow the simulated processor, add `ENABLE_SIMULATED_PAYMENTS: "true"` to the shared environment block at the top of the Compose file. Do not do this on a town's real installation: the simulated processor records payments that took no money.
+`deploy/docker-compose.yml` passes `ENABLE_SIMULATED_PAYMENTS` and `STRIPE_API_BASE` to every service, and `deploy/.env.example` lists both with a blank value. A blank value counts as unset, so a town's real installation leaves them blank and saves a Stripe or Clover account. Set `ENABLE_SIMULATED_PAYMENTS=true` in `.env` only on a practice installation: the simulated processor records payments that took no money.
 
 The [configuration reference](../reference/configuration.md) lists these settings in full.
 

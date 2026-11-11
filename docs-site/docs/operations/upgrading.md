@@ -21,7 +21,7 @@ One image serves the web application, the worker, the migration step and the com
 
 ## Before you start
 
-1. Take a backup and check it: `./backup.sh --verify`. See [backups](./backups.md). The rollback described below does not reverse database changes, so the backup is what you return to if a migration goes wrong.
+1. Take a backup and check it: `./backup.sh --verify`. See [backups](./backups.md). A rollback never reverses database changes, so the backup is what you return to if a migration goes wrong.
 2. Note where you are. The version endpoint tells you:
 
    ```
@@ -51,9 +51,15 @@ Running the same image again is harmless: with nothing to apply, the step report
 
 ## What a rollback undoes
 
-When a rollout fails, `deploy.sh` writes the previous image back as `CHIBAN_IMAGE`, restarts the application and worker on it and records `rolled_back` in `releases.log`. That is all it does. Chiban has no down migrations, and the script does not touch the database. A migration that succeeded before the failure stays applied, and the previous image then runs against the newer schema.
+When a rollout fails, `deploy.sh` first compares the newest migration in the database with the migrations the previous image carries. Chiban has no down migrations, and the script never touches the database, so the comparison decides whether the old image is safe to start.
 
-If that is not acceptable, restore the pre-upgrade backup as described in [backups](./backups.md).
+| What it finds | What it does |
+| --- | --- |
+| The database is newer than the previous image | Refuses. It keeps the current image in `.env`, tells you to restore the backup taken before the deploy and run the deploy again, and records `rollback_refused` in `releases.log` with both migration heads. |
+| The two match | Writes the previous image back as `CHIBAN_IMAGE`, restarts the application and worker on it, records `rolled_back`, and says that only the app rolls back. |
+| The check itself fails | Warns that it could not tell whether the new image applied migrations the old one does not know, then rolls back the image and records `rolled_back`. |
+
+A failed upgrade that already changed the schema therefore never runs on the old image. If the script refuses, restore the pre-upgrade backup as described in [backups](./backups.md), then run `./deploy.sh --image` with the previous image or a fixed one.
 
 On a first deploy there is no previous image, and the script records `failed_no_previous`.
 
