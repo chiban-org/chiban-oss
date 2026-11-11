@@ -21,7 +21,7 @@ const EMAIL = 'pat@alderpond.example'
 async function liveToken(): Promise<string> {
   resetMagicLinkLimiter()
   const outbox = createMemoryTransport()
-  await requestMagicLink(h.db, outbox, EMAIL, signal)
+  await requestMagicLink(h.db, outbox, { email: EMAIL, clientKey: 'client-1' }, signal)
   return /token=([A-Za-z0-9_-]+)/.exec(outbox.sent.at(-1)?.text ?? '')?.[1] ?? ''
 }
 

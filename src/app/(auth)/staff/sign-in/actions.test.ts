@@ -1,6 +1,9 @@
 import { describe, expect, it, vi } from 'vitest'
 
-vi.mock('next/headers', () => ({ cookies: () => Promise.resolve({ set: () => undefined }) }))
+vi.mock('next/headers', () => ({
+  cookies: () => Promise.resolve({ set: () => undefined }),
+  headers: () => Promise.resolve(new Headers()),
+}))
 vi.mock('next/navigation', () => ({
   redirect: (url: string) => {
     throw new Error(`NEXT_REDIRECT:${url}`)

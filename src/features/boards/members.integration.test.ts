@@ -179,7 +179,12 @@ describe('board member application access', () => {
 
   it('magic link for an uninvited email grants no board access', async () => {
     await publishedZbaAgenda()
-    await requestMagicLink(handle.db, mail, 'stranger@example.test', signal)
+    await requestMagicLink(
+      handle.db,
+      mail,
+      { email: 'stranger@example.test', clientKey: 'client-1' },
+      signal,
+    )
     const link = mail.sent.at(-1)?.text.match(/token=([\w-]+)/)?.[1]
     if (link === undefined) throw new Error('no link')
     const consumed = await consumeMagicLink(handle.db, link, signal)
@@ -194,7 +199,12 @@ describe('board member application access', () => {
   it('an invited member signs in with a magic link and sees the meeting', async () => {
     await publishedZbaAgenda()
     await invite('zba.member@alderpond.example', 'zba')
-    await requestMagicLink(handle.db, mail, 'zba.member@alderpond.example', signal)
+    await requestMagicLink(
+      handle.db,
+      mail,
+      { email: 'zba.member@alderpond.example', clientKey: 'client-1' },
+      signal,
+    )
     const link = mail.sent.at(-1)?.text.match(/token=([\w-]+)/)?.[1]
     const consumed = await consumeMagicLink(handle.db, link ?? '', signal)
     if (!consumed.ok) throw new Error('consume failed')

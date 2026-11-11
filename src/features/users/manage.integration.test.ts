@@ -165,7 +165,7 @@ describe('managing staff accounts', () => {
     expect((await loadSession(handle.db, session.value.sid, signal)).ok).toBe(false)
     const signedIn = await staffSignIn(
       handle.db,
-      { email: 'reset.me@alderpond.example', password: PASSWORD },
+      { clientKey: 'c1', email: 'reset.me@alderpond.example', password: PASSWORD },
       signal,
     )
     expect(signedIn.ok).toBe(true)
