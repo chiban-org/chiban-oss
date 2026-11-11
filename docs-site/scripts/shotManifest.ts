@@ -11,6 +11,12 @@ export interface Shot {
 
 export class ManifestError extends Error {}
 
+const SIGNED_OUT = 'Signed out'
+
+export function needsSignIn(persona: string): boolean {
+  return persona !== SIGNED_OUT
+}
+
 function fail(source: string, index: number, problem: string): never {
   throw new ManifestError(`${source}[${index}]: ${problem}`)
 }

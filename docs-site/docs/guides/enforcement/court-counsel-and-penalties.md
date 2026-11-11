@@ -47,6 +47,6 @@ The daily amount comes from the town's rules in the state pack, not from anythin
 
 ## Record a fine and payments
 
-Only administrators and finance staff can record a fine a court imposed, because it goes on the ledger. Choose **Record a court-imposed fine** and enter **Based on** (the judgment), **Kind**, **Amount in dollars**, **Date imposed**, **Court** and **Docket number**. Chiban asks for a recorded judgment first. It will not record a fine while an appeal stay is in effect.
+Only administrators and [finance staff](../finance/payments-and-receipts.md) can record a fine a court imposed, because it goes on the ledger. Choose **Record a court-imposed fine** and enter **Based on** (the judgment), **Kind**, **Amount in dollars**, **Date imposed**, **Court** and **Docket number**. Chiban asks for a recorded judgment first. It will not record a fine while an appeal stay is in effect.
 
 The fine then shows what was paid and the balance, for example **Paid $200.00. Balance due $75.00.** **Do this now** reads **Collect the** amount **fine balance**. Land use staff and finance staff can **Record a payment**: **Amount in dollars**, **Paid by** (**Cash** or **Check**), **Check number** and **Payer name**. When the balance reaches zero the case is ready to resolve.

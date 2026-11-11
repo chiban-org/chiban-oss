@@ -30,7 +30,7 @@ For restriction holders there is also **Record a check** next to the line saying
 
 ## Abutter lists
 
-An abutter list belongs to a board application. You draw it from the application's record.
+An abutter list belongs to a board application. You draw it from the application's record, and the [hearings page](../boards/hearings.md) covers mailing the notice.
 
 1. Open the board application and find **Abutter lists** in the board panel. If the application needs a list, **Do this now** may say so, and once a draft exists it offers **Open version** and the draft's number **to issue it**.
 2. Choose **Draw a new list**. Chiban reads the parcel, road and water layers, picks out the parcels that touch the lot or sit across a street or stream, and adds the people who must receive notice. It starts at **Version 1** as a draft.

@@ -34,7 +34,7 @@ The **Daily work** group in the left menu is where most of the day happens:
 | **Applications** | Work the list of everything in the office. See [The Applications list](./applications-list.md). |
 | **Notice contacts** | Keep the people who get mailed notice besides the owner. See [Notice contacts and abutter lists](./notice-contacts-and-abutters.md). |
 | **Contractors** | Look up contractors who have set up a profile. See [Contractors and license checks](./contractors-and-license-checks.md). |
-| **Inspections**, **Inspector days** and **Enforcement** | Scheduling, inspection results and code cases. These have their own guides. |
+| **Inspections**, **Inspector days** and **Enforcement** | Scheduling, inspection results and code cases. See the [inspector guide](../inspectors/your-day.md) and the [enforcement guide](../enforcement/how-a-case-moves.md). |
 | **Payments** | The ledger, receipts and the daily cash report. |
 
 The **Boards** group holds board applications, meetings, board members and packets. **Records and reports** and **Parcel data** are collapsed groups that open when you choose them.

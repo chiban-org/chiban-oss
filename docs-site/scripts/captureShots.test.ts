@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, it } from 'node:test'
-import { groupByPersona, ManifestError, outputPath, parseManifest } from './shotManifest'
+import { groupByPersona, ManifestError, needsSignIn, outputPath, parseManifest } from './shotManifest'
 
 const valid = {
   file: 'operations/health.png',
@@ -92,5 +92,15 @@ describe('open', () => {
     assert.throws(() => parseManifest('x.json', [{ ...valid, open: ' ' }]), /open must be text/)
     assert.throws(() => parseManifest('x.json', [{ ...valid, open: [] }]), /open must be text/)
     assert.throws(() => parseManifest('x.json', [{ ...valid, open: ['a', 3] }]), /open must be text/)
+  })
+})
+
+describe('needsSignIn', () => {
+  it('signs in for a demo persona', () => {
+    assert.equal(needsSignIn('Sam Clerk'), true)
+  })
+
+  it('stays signed out for the Signed out persona', () => {
+    assert.equal(needsSignIn('Signed out'), false)
   })
 })

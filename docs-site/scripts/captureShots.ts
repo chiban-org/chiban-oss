@@ -2,7 +2,7 @@ import { mkdir, readdir, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { chromium, type Page } from '@playwright/test'
-import { groupByPersona, outputPath, parseManifest, type Shot } from './shotManifest'
+import { groupByPersona, needsSignIn, outputPath, parseManifest, type Shot } from './shotManifest'
 
 const docsRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..')
 const manifestDir = path.join(docsRoot, 'shots')
@@ -29,6 +29,7 @@ async function loadShots(files: readonly string[]): Promise<Shot[]> {
 }
 
 async function signIn(page: Page, persona: string): Promise<void> {
+  if (!needsSignIn(persona)) return
   await page.goto(`${baseUrl}/demo`, { waitUntil: 'networkidle' })
   const button = page.getByRole('button', { name: `Continue as ${persona}`, exact: true })
   if ((await button.count()) === 0) throw new Error(`no demo sign-in button for ${persona}`)
@@ -41,8 +42,11 @@ async function signIn(page: Page, persona: string): Promise<void> {
 
 const NOTHING_LOADING = `!document.querySelector('[aria-busy="true"]')`
 
+const QUIET_TIMEOUT_MS = 8_000
+
 async function settle(page: Page): Promise<void> {
-  await page.waitForLoadState('networkidle')
+  await page.waitForLoadState('load')
+  await page.waitForLoadState('networkidle', { timeout: QUIET_TIMEOUT_MS }).catch(() => undefined)
   await page.waitForFunction(NOTHING_LOADING)
 }
 
@@ -56,10 +60,10 @@ async function openLink(page: Page, name: string): Promise<void> {
 
 async function capture(page: Page, shot: Shot): Promise<void> {
   await page.setViewportSize({ width: shot.width, height: shot.height })
-  await page.goto(`${baseUrl}${shot.path}`, { waitUntil: 'networkidle' })
+  await page.goto(`${baseUrl}${shot.path}`, { waitUntil: 'load' })
   await settle(page)
   const landed = new URL(page.url()).pathname
-  if (landed === '/demo' || landed === '/sign-in') {
+  if (needsSignIn(shot.persona) && (landed === '/demo' || landed === '/sign-in')) {
     throw new Error(`${shot.path} sent ${shot.persona} to ${landed}`)
   }
   for (const name of shot.open ?? []) await openLink(page, name)

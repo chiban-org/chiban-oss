@@ -1,5 +1,5 @@
 [
-  { "file": "enforcement/case-list.png", "persona": "Sam Clerk", "path": "/staff/enforcement", "width": 1280, "height": 800 },
-  { "file": "enforcement/case-violation-found.png", "persona": "Sam Clerk", "path": "/staff/enforcement/864337d0-cd37-4d85-94a3-06750b63c9c0", "width": 1280, "height": 800 },
-  { "file": "enforcement/case-serve-order.png", "persona": "Sam Clerk", "path": "/staff/enforcement/16e75966-53cf-4d07-92fc-decb71fb0c24", "width": 1280, "height": 800 }
+  {"file": "enforcement/case-list.png", "persona": "Sam Clerk", "path": "/staff/enforcement", "width": 1280, "height": 800},
+  {"file": "enforcement/case-violation-found.png", "persona": "Sam Clerk", "path": "/staff/enforcement", "width": 1280, "height": 800, "open": "EC-2026-0001"},
+  {"file": "enforcement/case-serve-order.png", "persona": "Sam Clerk", "path": "/staff/enforcement", "width": 1280, "height": 800, "open": "EC-2026-0002"}
 ]

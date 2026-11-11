@@ -1,1 +1,5 @@
-{ "label": "Land use staff", "position": 1 }
+{
+  "label": "Land use staff",
+  "position": 1,
+  "collapsed": true
+}

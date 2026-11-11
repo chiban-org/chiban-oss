@@ -8,7 +8,7 @@ sidebar_position: 4
 
 Every application has a record page that tells you what to do with it. This page explains how to read it, then follows a building permit from the day it arrives to the day it is issued and closed. Other permit types skip some of these steps, and your administrator decides which steps each type has.
 
-Board applications, such as a site plan or a variance, follow the same record page but add meetings, votes and a written decision. Those steps are covered in the guide for board work.
+Board applications, such as a site plan or a variance, follow the same record page but add meetings, votes and a written decision. Those steps are covered in the [boards guide](../boards/board-applications.md).
 
 ## Reading the record
 

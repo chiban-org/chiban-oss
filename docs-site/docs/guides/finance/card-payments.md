@@ -14,7 +14,7 @@ Cash and checks are recorded by staff at the moment they are taken. Card payment
 2. After paying, they return to a Chiban page that says **Payment processing**, then **Payment received** with a link to their receipt, or **Payment declined** with a note that they were not charged and the fee is still due.
 3. When the processor confirms the payment, Chiban adds it to the ledger, applies it to the fees and issues the receipt. The processor reports this to Chiban, and Chiban also asks the processor about open payments once an hour.
 
-The processor account is the town's own. An administrator connects it under **Settings**, **Card payments**, with Stripe or Clover, and the same page sets the convenience fee. A convenience fee appears on its own line on the payment and on the cash receipts report, and it is not town fee revenue. The settings page also offers a **Simulated** processor for practice, which charges nothing and labels its payments as simulated.
+The processor account is the town's own. An administrator [connects it](../administrator/card-payments.md) under **Settings**, **Card payments**, with Stripe or Clover, and the same page sets the convenience fee. A convenience fee appears on its own line on the payment and on the cash receipts report, and it is not town fee revenue. The settings page also offers a **Simulated** processor for practice, which charges nothing and labels its payments as simulated.
 
 Chiban records that a payment was made and applied, but it does not show payouts or bank deposits. To match deposits to your bank, use the processor's own dashboard.
 

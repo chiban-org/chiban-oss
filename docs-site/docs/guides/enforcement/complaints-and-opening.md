@@ -13,7 +13,7 @@ Cases begin one of two ways: someone reports a problem, or a staff member sees o
 
 Complaints come in three ways, and Chiban records which:
 
-- **Public form with contact details.** A resident reports a problem on the town's website and leaves contact details.
+- **Public form with contact details.** A resident [reports a problem](../../residents/reporting-a-problem.md) on the town's website and leaves contact details.
 - **Anonymous web form.** The resident gives no contact details. An administrator has to turn anonymous intake on first, under **Settings**, **Anonymous intake**.
 - **Entered by staff.** You took the call or the visit at the counter.
 

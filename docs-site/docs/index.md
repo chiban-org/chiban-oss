@@ -40,6 +40,8 @@ Chiban is open-source software under the AGPL-3.0 license. Every example in thes
 
 ## Where to go next
 
+- The [guides by role](./guides/land-use-staff/index.md) walk through each job: [land use staff](./guides/land-use-staff/index.md), [reviewers](./guides/reviewers/index.md), [inspectors](./guides/inspectors/your-day.md), [boards](./guides/boards/board-applications.md), [enforcement](./guides/enforcement/how-a-case-moves.md), the [records custodian](./guides/records-custodian/overview.md), [finance](./guides/finance/payments-and-receipts.md) and the [administrator](./guides/administrator/setting-up-a-new-town.md).
+- [Residents, applicants and contractors](./residents/signing-in.md) covers the public side, for staff explaining it at the counter.
 - [Try the demo](./start-here/try-the-demo.md) to see Chiban from each seat in the office.
 - [How the staff roles fit together](./start-here/staff-roles.md) explains who does what.
 - [Loading owners from the assessing file](./moving-in/cama-import.md) and [loading an old permit ledger](./moving-in/spreadsheet-migration.md) cover moving your existing records in.

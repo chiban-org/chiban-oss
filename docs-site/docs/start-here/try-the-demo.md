@@ -9,7 +9,7 @@ A demo installation of Chiban runs the fictional Town of Alder Pond, with parcel
 
 ## Signing in
 
-Open the demo's address and go to **Try the demo**, the page at `/demo`. Each person on the page has a short note about what they do. Choose **Continue as** beside the one you want to be. To switch to someone else, go back to the page and choose again.
+Open the public demo at [demo.chiban.us/demo](https://demo.chiban.us/demo). On any other demo installation, the same page is at `/demo`. Each person on the page has a short note about what they do. Choose **Continue as** beside the one you want to be. To switch to someone else, go back to the page and choose again.
 
 Every visitor shares these accounts, so you may see what someone else did a few minutes ago. If many people sign in from the same place in a short time, the page asks you to wait a few minutes before trying again.
 
