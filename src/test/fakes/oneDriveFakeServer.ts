@@ -153,19 +153,28 @@ export async function startOneDriveFakeServer(): Promise<OneDriveFakeServer> {
     res.end()
   }
 
+  const refused = (req: IncomingMessage, res: ServerResponse, path: string): boolean => {
+    const bearer = (req.headers.authorization ?? '').replace('Bearer ', '')
+    if (!issued.has(bearer)) {
+      sendJson(res, 401, unauthorized)
+      return true
+    }
+    if (failingSuffix !== null && path.endsWith(failingSuffix) && req.method !== 'GET') {
+      sendJson(res, 503, { error: { code: 'serviceNotAvailable', message: 'injected' } })
+      return true
+    }
+    return false
+  }
+
   const driveRoute = (
     req: IncomingMessage,
     res: ServerResponse,
     match: RegExpExecArray,
     bytes: Buffer,
   ): void => {
-    const bearer = (req.headers.authorization ?? '').replace('Bearer ', '')
-    if (!issued.has(bearer)) return sendJson(res, 401, unauthorized)
     const path = decodeURIComponent(match[1] ?? '')
     const suffix = match[2] ?? ''
-    if (failingSuffix !== null && path.endsWith(failingSuffix) && req.method !== 'GET') {
-      return sendJson(res, 503, { error: { code: 'serviceNotAvailable', message: 'injected' } })
-    }
+    if (refused(req, res, path)) return
     if (req.method === 'PUT' && suffix === ':/content') {
       if (bytes.length > SIMPLE_UPLOAD_LIMIT_BYTES) {
         return sendJson(res, 413, { error: { code: 'tooLarge', message: 'use an upload session' } })
