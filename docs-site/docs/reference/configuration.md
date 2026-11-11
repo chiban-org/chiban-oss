@@ -35,7 +35,7 @@ The port the web application listens on. Next.js reads it when the server starts
 
 Optional. Default: `info`. Accepts `debug`, `info`, `warn` or `error`.
 
-Accepted and checked at startup. No part of Chiban reads it at present.
+How much the web application and the worker write to their logs: `debug`, `info`, `warn` or `error`. Each level includes the ones after it. Blank means `info`. Command-line tools always print their results.
 
 ### `DATABASE_URL`
 

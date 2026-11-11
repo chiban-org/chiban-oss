@@ -222,7 +222,7 @@ describe('next path', () => {
 
 describe('a failed sign-in email', () => {
   it('is logged with an error id and still reports success to the requester', async () => {
-    const spy = vi.spyOn(console, 'error').mockImplementation(() => undefined)
+    const spy = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
     const email = 'mailfail@example.com'
     await makeUser(handle.db, { email, role: 'applicant' })
     const failing: MemoryMailTransport = {

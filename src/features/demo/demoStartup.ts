@@ -2,6 +2,7 @@ import { ne } from 'drizzle-orm'
 import { env } from '@/config/env'
 import type { DbOrTx } from '@/db/client'
 import { processorAccounts } from '@/db/schema'
+import { log } from '@/server/log'
 
 const UNDEFINED_TABLE = '42P01'
 const STARTUP_CHECK_MS = 30_000
@@ -54,7 +55,7 @@ export async function exitIfUnsafeDemo(db: DbOrTx): Promise<void> {
     db,
     demoMode: env.CHIBAN_DEMO_MODE,
     signal: AbortSignal.timeout(STARTUP_CHECK_MS),
-    report: (line) => console.error(line),
+    report: (line) => log.error(line),
   })
   if (problem !== null) process.exit(1)
 }

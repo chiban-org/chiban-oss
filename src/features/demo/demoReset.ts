@@ -6,6 +6,7 @@ import { applyMigrations } from '@/db/migrate'
 import { isDevSignInEnabled } from '@/features/auth/devSignIn'
 import { DemoOverlayError } from '@/features/demo/overlay/overlayIssue'
 import { type SeedDemoDeps, type SeedReport, seedDemo } from '@/features/demo/seedDemo'
+import { log } from '@/server/log'
 import { err, ok, type Result } from '@/types/result'
 
 export type DemoResetError = 'not_allowed' | 'migration_failed' | { overlay: string }
@@ -30,7 +31,7 @@ async function freshSchema(db: Db, signal: AbortSignal): Promise<boolean> {
   await db.execute(sql`drop schema if exists public cascade`)
   await db.execute(sql`create schema public`)
   const migrated = await applyMigrations(db, signal)
-  if (!migrated.ok) console.error(`demo reset: migration failed: ${migrated.error}`)
+  if (!migrated.ok) log.error(`demo reset: migration failed: ${migrated.error}`)
   return migrated.ok
 }
 
@@ -56,7 +57,7 @@ export async function resetDemoDatabase(
   } catch (e) {
     if (signal.aborted) throw e
     const overlay = failureMessage(e)
-    console.error(overlay)
+    log.error(overlay)
     if (!(await freshSchema(db, signal))) return err('migration_failed')
     await seedDemo(db, signal, { ...seedDeps, overlay: undefined })
     return err({ overlay })

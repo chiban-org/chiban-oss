@@ -1,7 +1,10 @@
+import { env } from '@/config/env'
 import { db, pool } from '@/db/client'
 import { exitIfUnsafeDemo } from '@/features/demo/demoStartup'
 import { startWorker } from '@/jobs/worker'
+import { setLogLevel } from '@/server/log'
 
+setLogLevel(env.LOG_LEVEL)
 await exitIfUnsafeDemo(db)
 const boss = await startWorker()
 

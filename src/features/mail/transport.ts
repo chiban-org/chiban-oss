@@ -1,5 +1,6 @@
 import nodemailer, { type Transporter } from 'nodemailer'
 import { env } from '@/config/env'
+import { log } from '@/server/log'
 import { err, ok, type Result } from '@/types/result'
 
 export interface MailAttachment {
@@ -33,7 +34,7 @@ export function createTransportFrom(transporter: Transporter, from: string): Mai
         await transporter.sendMail({ from, ...message })
         return ok(undefined)
       } catch (e) {
-        console.error('[mail] send failed', e instanceof Error ? e.message : e)
+        log.error('[mail] send failed', e instanceof Error ? e.message : e)
         return err('send_failed')
       }
     },
