@@ -8,14 +8,25 @@ export interface TermHit {
 }
 
 const SKIPPED_DIRS = new Set(['node_modules', '.git', '.next'])
+const DOCS_SITE_BUILD_OUTPUT = new Set([
+  'docs-site/build',
+  'docs-site/.docusaurus',
+  'docs-site/.wrangler',
+])
 const BINARY_NUL = '\u0000'
 
-export function collectFiles(root: string): string[] {
+function isSkipped(root: string, dir: string, name: string): boolean {
+  if (SKIPPED_DIRS.has(name)) return true
+  const relative = path.relative(root, dir).split(path.sep).join('/')
+  return DOCS_SITE_BUILD_OUTPUT.has(relative)
+}
+
+export function collectFiles(root: string, dir: string = root): string[] {
   const files: string[] = []
-  for (const entry of readdirSync(root, { withFileTypes: true })) {
-    const full = path.join(root, entry.name)
+  for (const entry of readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name)
     if (entry.isDirectory()) {
-      if (!SKIPPED_DIRS.has(entry.name)) files.push(...collectFiles(full))
+      if (!isSkipped(root, full, entry.name)) files.push(...collectFiles(root, full))
     } else if (entry.isFile()) {
       files.push(full)
     }

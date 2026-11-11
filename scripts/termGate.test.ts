@@ -58,6 +58,32 @@ describe('collectFiles', () => {
     const rel = collectFiles(dir).map((f) => path.relative(dir, f))
     expect(rel).toEqual(['src/keep.ts'])
   })
+
+  it('scans the documentation source and skips the documentation build output', () => {
+    const dir = fixture({
+      'docs-site/docs/start-here/page.md': 'x',
+      'docs-site/docs/reference/_generated/table.md': 'x',
+      'docs-site/sidebars.ts': 'x',
+      'docs-site/build/index.html': 'x',
+      'docs-site/.docusaurus/registry.js': 'x',
+      'docs-site/.wrangler/state.json': 'x',
+      'docs-site/node_modules/pkg/index.js': 'x',
+    })
+    const rel = collectFiles(dir)
+      .map((f) => path.relative(dir, f))
+      .sort()
+    expect(rel).toEqual([
+      'docs-site/docs/reference/_generated/table.md',
+      'docs-site/docs/start-here/page.md',
+      'docs-site/sidebars.ts',
+    ])
+  })
+
+  it('reports a term in a documentation page', () => {
+    const dir = fixture({ 'docs-site/docs/start-here/page.md': `ok\n${TERM}` })
+    const hits = findTermHits(collectFiles(dir), [TERM])
+    expect(hits.map((hit) => formatHit(hit, dir))).toEqual(['docs-site/docs/start-here/page.md:2'])
+  })
 })
 
 describe('term gate CLI', () => {

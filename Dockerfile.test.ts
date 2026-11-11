@@ -125,6 +125,7 @@ describe('.dockerignore', () => {
     '.next',
     '.env',
     '.git',
+    'docs-site',
   ])('excludes %s', (entry) => {
     expect(dockerignore.split('\n')).toContain(entry)
   })
