@@ -1,7 +1,8 @@
+import type { ALERT_KINDS } from '@/db/schema'
 import type { DiskReading } from './disk'
 import type { JobHealthRow } from './jobHealth'
 
-export type AlertKind = 'disk_warning' | 'disk_critical' | 'job_stale' | 'schedule_missing'
+export type AlertKind = (typeof ALERT_KINDS)[number]
 
 export interface EvaluatedAlert {
   key: string

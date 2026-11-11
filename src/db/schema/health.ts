@@ -5,6 +5,8 @@ export const ALERT_KINDS = [
   'disk_critical',
   'job_stale',
   'schedule_missing',
+  'backup_overdue',
+  'backup_failed',
 ] as const
 export const ALERT_SEVERITIES = ['warning', 'critical'] as const
 export const ALERT_CHANNEL_KINDS = ['email', 'pager'] as const
