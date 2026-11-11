@@ -23,6 +23,7 @@ function renderForm(canDeny = false, startOnRelease = false) {
         canDeny={canDeny}
         startOnRelease={startOnRelease}
         releaseStep={<p>Release step here</p>}
+        letterNote="The letter will be emailed to jordan@example.test."
       />
     </CsrfProvider>,
   )
@@ -33,6 +34,11 @@ const radio = (name: string) =>
 const submit = () => fireEvent.click(screen.getByRole('button', { name: 'Record response' }))
 
 describe('first response form', () => {
+  it('says before sending where the letter will go', () => {
+    renderForm()
+    expect(screen.getByText('The letter will be emailed to jordan@example.test.')).toBeTruthy()
+  })
+
   it('starts with no response chosen and asks for one before sending', () => {
     renderForm()
     expect(screen.getAllByRole('radio').some((r) => (r as HTMLInputElement).checked)).toBe(false)

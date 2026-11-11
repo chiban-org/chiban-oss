@@ -54,7 +54,7 @@ export const rtkRequests = pgTable(
     firstResponseKind: text('first_response_kind', { enum: RTK_RESPONSE_KINDS }),
     firstResponseUrl: text('first_response_url'),
     deniedOn: date('denied_on', { mode: 'string' }),
-    createdBy: uuid('created_by').notNull(),
+    createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     rowVersion: integer('row_version').notNull().default(1),
   },
@@ -134,4 +134,41 @@ export const rtkReleaseItems = pgTable(
     withdrawnReason: text('withdrawn_reason', { enum: ['revoked', 'disposed'] }),
   },
   (t) => [primaryKey({ columns: [t.releaseId, t.documentId] })],
+)
+
+export const rtkReleaseLinks = pgTable(
+  'rtk_release_links',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    releaseId: uuid('release_id')
+      .notNull()
+      .references(() => rtkReleases.id),
+    tokenHash: text('token_hash').notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    sentTo: text('sent_to').notNull(),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('rtk_release_links_release_idx').on(t.releaseId)],
+)
+
+export const RTK_LETTER_OUTCOMES = ['emailed', 'email_failed', 'print'] as const
+export type RtkLetterOutcome = (typeof RTK_LETTER_OUTCOMES)[number]
+
+export const rtkLetterDeliveries = pgTable(
+  'rtk_letter_deliveries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    requestId: uuid('request_id')
+      .notNull()
+      .references(() => rtkRequests.id),
+    documentId: uuid('document_id')
+      .notNull()
+      .references(() => documents.id),
+    outcome: text('outcome', { enum: RTK_LETTER_OUTCOMES }).notNull(),
+    sentTo: text('sent_to'),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('rtk_letter_deliveries_request_idx').on(t.requestId)],
 )

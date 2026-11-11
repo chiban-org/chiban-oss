@@ -196,7 +196,10 @@ describeActionCases(h, 'createReleaseAction', {
     checkOnly: CHECK_PASSED,
   },
   accepted: async (result, { db, written }) => {
-    expect(result).toEqual({ ok: true, message: 'Records released.' })
+    expect(result).toEqual({
+      ok: true,
+      message: 'Records released and the letter emailed to jordan@example.test.',
+    })
     expect(written).toContain('rtk_releases')
     expect((await db.select().from(rtkReleases)).length).toBeGreaterThan(0)
   },
@@ -229,7 +232,9 @@ describe('createReleaseAction items and recipient', () => {
 
   it('asks for an email address when the release is a link', async () => {
     const { value, written } = await attempt({ method: 'electronic_link' })
-    expect(value).toEqual(refuseField('recipientEmail', 'Enter the email address for the link.'))
+    expect(value).toEqual(
+      refuseField('recipientEmail', 'Enter the email address to send the records to.'),
+    )
     expect(written).toEqual([])
   })
 

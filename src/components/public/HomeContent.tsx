@@ -81,6 +81,9 @@ export function HomeContent({
         <Task href="/complaints/new" title="Report a problem">
           Tell the town about building or land use work that may not follow the rules.
         </Task>
+        <Task href="/records/request" title="Ask for town records">
+          Make a Right-to-Know request for public records the town keeps.
+        </Task>
         <AccountTask audience={audience} />
       </ul>
     </main>

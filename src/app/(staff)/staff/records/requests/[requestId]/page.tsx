@@ -8,6 +8,8 @@ import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { RTK_STATUS_LABELS } from '@/features/rtk/labels'
+import { letterDeliveries } from '@/features/rtk/letterDelivery'
+import { requesterEmailOf } from '@/features/rtk/requesterEmail'
 import { REQUESTS_PATH } from '@/features/rtk/requestListParams'
 import {
   loadReleaseCandidates,
@@ -64,7 +66,7 @@ export default async function RequestPage({
   if (!view.ok) notFound()
   const request = view.value
   const working = isRequestOpen(request)
-  const [releases, approvals, candidates, letters, timeZone, canManage, canRedact] =
+  const [releases, approvals, candidates, letters, timeZone, canManage, canRedact, deliveries] =
     await Promise.all([
       loadReleases(ctx.db, requestId),
       loadRequestApprovals(ctx.db, requestId),
@@ -73,6 +75,7 @@ export default async function RequestPage({
       townTimeZone(ctx.db, ctx.signal),
       hasCapability(ctx.db, ctx.actor.userId, 'rtk.manage', ctx.signal),
       hasCapability(ctx.db, ctx.actor.userId, 'redaction.create', ctx.signal),
+      letterDeliveries(ctx.db, requestId),
     ])
   const plan = planRequestWork({
     request: { ...request, withholdings: request.withholdings.length },
@@ -105,6 +108,8 @@ export default async function RequestPage({
             approvals={approvals}
             canManage={canManage}
             findTool={<ReleaseFindPanelTool data={data} />}
+            timeZone={timeZone}
+            requesterEmail={requesterEmailOf(request.requesterContact)}
           />
         ),
       },
@@ -130,7 +135,15 @@ export default async function RequestPage({
       {
         key: 'letters',
         empty: false,
-        node: letters.length === 0 ? null : <LettersSection key="letters" letters={letters} />,
+        node:
+          letters.length === 0 ? null : (
+            <LettersSection
+              key="letters"
+              letters={letters}
+              deliveries={deliveries}
+              timeZone={timeZone}
+            />
+          ),
       },
     ],
     ARRANGEMENT,

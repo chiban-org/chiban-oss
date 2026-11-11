@@ -35,7 +35,7 @@ test.describe('deciding a request after a time statement', () => {
     await confirmDialog(page, 'Release these records?')
       .getByRole('button', { name: 'Release the records' })
       .click()
-    await expectToast(page, 'Records released.')
+    await expectToast(page, 'Records released and the letter filed.')
     await expect(page.getByText('Waiting on: Town. Close the request.')).toBeVisible()
     await expect(section(page, 'Releases').getByText(/^Release 1, /)).toBeVisible()
     const row = await db.one<{ status: string }>('select status from rtk_requests where id = $1', [

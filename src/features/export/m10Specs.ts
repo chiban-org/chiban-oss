@@ -12,6 +12,8 @@ export const M10_SPECS: Spec[] = [
   { table: t.renditionApprovals },
   { table: t.rtkReleases, omit: ['link_token_hash'], fill: { link_token_hash: RANDOM_HASH } },
   { table: t.rtkReleaseItems },
+  { table: t.rtkReleaseLinks, omit: ['token_hash'], fill: { token_hash: RANDOM_HASH } },
+  { table: t.rtkLetterDeliveries },
   { table: t.dispositionBatches },
   { table: t.dispositionItems },
   { table: t.dispositionTombstones },

@@ -107,6 +107,7 @@ describe('request forms show a refusal beside its field', () => {
         canDeny={false}
         startOnRelease={false}
         releaseStep={null}
+        letterNote="The letter will be emailed to jordan@example.test."
       />,
     )
     fireEvent.click(screen.getByRole('radio', { name: 'Written statement of the time needed' }))
@@ -163,7 +164,16 @@ describe('request forms show a refusal beside its field', () => {
 
   it('the revoke reason', async () => {
     refuseWith('reason', 'Enter a reason of at least 10 characters.')
-    inProvider(<ReleaseSection releases={[]} approvals={[approval]} canManage findTool={null} />)
+    inProvider(
+      <ReleaseSection
+        releases={[]}
+        approvals={[approval]}
+        canManage
+        findTool={null}
+        timeZone="America/New_York"
+        requesterEmail={null}
+      />,
+    )
     open('Revoke approval')
     const reason = screen.getByRole('textbox', { name: /Why it is being revoked/ })
     fireEvent.change(reason, { target: { value: 'short' } })
@@ -180,6 +190,7 @@ describe('request forms show a refusal beside its field', () => {
         pending={[approval]}
         today={TODAY}
         timeZone="America/New_York"
+        requesterContact={null}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Release 1 record' }))

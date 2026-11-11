@@ -2,6 +2,8 @@
 
 import { getMailTransport } from '@/features/mail/transport'
 import { denyRequest } from '@/features/rtk/denial'
+import type { ReleaseDelivery } from '@/features/rtk/releaseDelivery'
+import { type ReissueError, reissueReleaseLink } from '@/features/rtk/releaseReissue'
 import { createRelease } from '@/features/rtk/releases'
 import { closeRequest, logRequest } from '@/features/rtk/requests'
 import { recordFirstResponse } from '@/features/rtk/responses'
@@ -11,11 +13,13 @@ import type { ActionResult } from '@/server/actionRunner'
 import { runStaffForm } from '@/server/formInput'
 import { runStaffFormToday } from '@/server/formInputToday'
 import { recordsOutcome } from '@/server/recordsAction'
+import { sendLetterOutcome } from './letterSent'
 import {
   closeRequestForm,
   denyRequestForm,
   firstResponseForm,
   logRequestForm,
+  reissueLinkForm,
   releaseForm,
   withholdingForm,
 } from './requestForms'
@@ -46,52 +50,67 @@ export async function firstResponseAction(formData: FormData): Promise<ActionRes
     formData,
     firstResponseForm,
     async ({ db, actor, signal }, input) =>
-      recordsOutcome(
-        await recordFirstResponse(
-          db,
-          getObjectStore(),
-          actor,
-          {
-            requestId: input.requestId,
-            kind: input.kind,
-            respondedOn: input.respondedOn,
-            ...(input.websiteUrl === null ? {} : { websiteUrl: input.websiteUrl }),
-            ...(input.statedDate === null || input.delayReason === null
-              ? {}
-              : {
-                  timeStatement: {
-                    statedDate: input.statedDate,
-                    delayReason: input.delayReason,
-                    costEstimate:
-                      input.costLabel === null || input.costDollars === null
-                        ? []
-                        : [{ label: input.costLabel, cents: input.costDollars }],
-                  },
-                }),
-          },
-          signal,
-        ),
-        'Response recorded and the letter filed.',
+      await sendLetterOutcome(
+        { db, actor, signal },
         {
-          future_date: 'respondedOn',
-          before_received: 'respondedOn',
-          website_url_required: 'websiteUrl',
-          stated_date_required: 'statedDate',
+          requestId: input.requestId,
+          result: await recordFirstResponse(
+            db,
+            getObjectStore(),
+            actor,
+            {
+              requestId: input.requestId,
+              kind: input.kind,
+              respondedOn: input.respondedOn,
+              ...(input.websiteUrl === null ? {} : { websiteUrl: input.websiteUrl }),
+              ...(input.statedDate === null || input.delayReason === null
+                ? {}
+                : {
+                    timeStatement: {
+                      statedDate: input.statedDate,
+                      delayReason: input.delayReason,
+                      costEstimate:
+                        input.costLabel === null || input.costDollars === null
+                          ? []
+                          : [{ label: input.costLabel, cents: input.costDollars }],
+                    },
+                  }),
+            },
+            signal,
+          ),
+        },
+        {
+          lead: 'Response recorded',
+          fieldOf: {
+            future_date: 'respondedOn',
+            before_received: 'respondedOn',
+            website_url_required: 'websiteUrl',
+            stated_date_required: 'statedDate',
+          },
         },
       ),
   )
 }
 
 export async function denyRequestAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffFormToday(formData, denyRequestForm, async ({ db, actor, signal }, input) =>
-    recordsOutcome(
-      await denyRequest(
-        { db, store: getObjectStore(), actor, signal },
-        { requestId: input.requestId, deniedOn: input.deniedOn },
+  return await runStaffFormToday(
+    formData,
+    denyRequestForm,
+    async ({ db, actor, signal }, input) =>
+      await sendLetterOutcome(
+        { db, actor, signal },
+        {
+          requestId: input.requestId,
+          result: await denyRequest(
+            { db, store: getObjectStore(), actor, signal },
+            { requestId: input.requestId, deniedOn: input.deniedOn },
+          ),
+        },
+        {
+          lead: 'Denial recorded',
+          fieldOf: { future_date: 'deniedOn', before_statement: 'deniedOn' },
+        },
       ),
-      'Denial recorded and the letter filed.',
-      { future_date: 'deniedOn', before_statement: 'deniedOn' },
-    ),
   )
 }
 
@@ -121,34 +140,61 @@ export async function withholdingAction(formData: FormData): Promise<ActionResul
   )
 }
 
+const RELEASED_COPY: Record<Exclude<ReleaseDelivery, 'none'>, string> = {
+  attached: 'Records released and emailed to the requester.',
+  link: 'Records released and a link emailed to the requester.',
+  link_fallback:
+    'Records released. The files were too large to attach, so the requester was emailed a link instead.',
+}
+
 export async function createReleaseAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffFormToday(formData, releaseForm, async ({ db, actor, signal }, input) =>
-    recordsOutcome(
-      await createRelease(
-        db,
-        getObjectStore(),
-        getMailTransport(),
-        actor,
-        {
-          requestId: input.requestId,
-          releasedOn: input.releasedOn,
-          method: input.method,
-          items: input.items,
-          ...(input.recipientEmail === null ? {} : { recipientEmail: input.recipientEmail }),
-        },
-        signal,
-      ),
-      'Records released.',
+  return await runStaffFormToday(formData, releaseForm, async ({ db, actor, signal }, input) => {
+    const released = await createRelease(
+      db,
+      getObjectStore(),
+      getMailTransport(),
+      actor,
       {
-        future_date: 'releasedOn',
-        before_received: 'releasedOn',
-        recipient_required: 'recipientEmail',
-        approval_missing: 'items',
-        approval_revoked: 'items',
-        duplicate_document: 'items',
+        requestId: input.requestId,
+        releasedOn: input.releasedOn,
+        method: input.method,
+        items: input.items,
+        ...(input.recipientEmail === null ? {} : { recipientEmail: input.recipientEmail }),
       },
-    ),
-  )
+      signal,
+    )
+    const fieldOf = {
+      future_date: 'releasedOn',
+      before_received: 'releasedOn',
+      recipient_required: 'recipientEmail',
+      approval_missing: 'items',
+      approval_revoked: 'items',
+      duplicate_document: 'items',
+    }
+    if (released.ok && released.value.delivery !== 'none')
+      return { ok: true, message: RELEASED_COPY[released.value.delivery] }
+    return await sendLetterOutcome(
+      { db, actor, signal },
+      { requestId: input.requestId, result: released },
+      { lead: 'Records released', fieldOf },
+    )
+  })
+}
+
+const REISSUE_COPY: Partial<Record<ReissueError, string>> = {
+  no_link: 'This release was not sent as a link.',
+  link_revoked: 'This link was turned off, so it cannot be sent again.',
+  link_active: 'The current link still works. Send a new one after it expires.',
+  send_failed: 'The email could not be sent. No new link was made.',
+}
+
+export async function reissueLinkAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(formData, reissueLinkForm, async ({ db, actor, signal }, input) => {
+    const result = await reissueReleaseLink({ db, mail: getMailTransport(), signal }, actor, input)
+    if (result.ok) return { ok: true, message: 'A new link was emailed.' }
+    const copy = REISSUE_COPY[result.error]
+    return copy === undefined ? recordsOutcome(result, '') : { ok: false, error: copy }
+  })
 }
 
 export async function closeRequestAction(formData: FormData): Promise<ActionResult> {

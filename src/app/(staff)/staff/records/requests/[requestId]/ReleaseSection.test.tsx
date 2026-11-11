@@ -8,7 +8,7 @@ import { FindResults } from './FindResults'
 import { PendingRelease } from './PendingRelease'
 import { ReleaseSection } from './ReleaseSection'
 
-vi.mock('../actions', () => ({ createReleaseAction: vi.fn() }))
+vi.mock('../actions', () => ({ createReleaseAction: vi.fn(), reissueLinkAction: vi.fn() }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 vi.mock('../../renditionActions', () => ({
   approveRenditionAction: vi.fn(),
@@ -96,6 +96,8 @@ const release: ReleaseSummary = {
   method: 'paper',
   letterDocumentId: 'letter1',
   items: [{ title: 'Site plan', filename: 'site-plan.pdf', withdrawn: false, approvalId: 'a1' }],
+  link: null,
+  reissues: [],
 }
 
 function approval(patch: Partial<RequestApproval>): RequestApproval {
@@ -123,6 +125,8 @@ describe('releases panel', () => {
           approvals={[approval({ releasedIn: 1 }), approval({ approvalId: 'a2', title: 'Deed' })]}
           canManage
           findTool={null}
+          timeZone="America/New_York"
+          requesterEmail={null}
         />
       </CsrfProvider>,
     )
@@ -153,6 +157,7 @@ describe('approved records waiting for release', () => {
           ]}
           today={'2027-03-06' as CivilDate}
           timeZone="America/New_York"
+          requesterContact="Jordan@example.test, 603-555-0142"
         />
       </CsrfProvider>,
     )
@@ -165,5 +170,13 @@ describe('approved records waiting for release', () => {
     const hidden = document.querySelectorAll<HTMLInputElement>('input[type="hidden"][name="items"]')
     expect([...hidden].map((i) => i.value)).toEqual(['d2:a3'])
     expect(screen.getByRole('button', { name: 'Release 2 records' })).toBeTruthy()
+    expect(screen.getByLabelText<HTMLInputElement>(/^Requester's email address/).value).toBe(
+      'jordan@example.test',
+    )
+    expect(
+      screen.getByText(
+        'By email, the letter goes with the records. For inspection or a paper copy, the release letter is emailed to jordan@example.test.',
+      ),
+    ).toBeTruthy()
   })
 })

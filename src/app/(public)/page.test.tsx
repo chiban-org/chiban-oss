@@ -44,6 +44,13 @@ describe('HomeContent', () => {
     )
   })
 
+  it('offers a Right-to-Know request to anyone', () => {
+    renderHome()
+    expect(screen.getByRole('link', { name: 'Ask for town records' }).getAttribute('href')).toBe(
+      '/records/request',
+    )
+  })
+
   it('asks a visitor to sign in', () => {
     renderHome()
     expect(screen.getByRole('link', { name: 'Sign in to see your applications' })).toBeTruthy()

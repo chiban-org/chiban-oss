@@ -13,7 +13,11 @@ test.describe('legal holds', () => {
     await page.getByRole('button', { name: 'Place a hold' }).click()
     const dialog = page.getByRole('dialog', { name: 'Place a legal hold' })
     await dialog.getByLabel('Hold on').selectOption('document')
-    await dialog.getByLabel('Application number, project title, or document title').fill(DOCUMENT)
+    await dialog
+      .getByLabel(
+        'Application number, case number, request number, project title, or document title',
+      )
+      .fill(DOCUMENT)
     const reason = dialog.getByLabel('Reason (at least 10 characters)')
     await reason.fill('short')
     await dialog.getByRole('button', { name: 'Place hold' }).click()
@@ -31,7 +35,9 @@ test.describe('legal holds', () => {
     await page.getByRole('button', { name: 'Place a hold' }).click()
     const dialog = page.getByRole('dialog', { name: 'Place a legal hold' })
     await dialog.getByLabel('Hold on').selectOption('document')
-    const reference = dialog.getByLabel('Application number, project title, or document title')
+    const reference = dialog.getByLabel(
+      'Application number, case number, request number, project title, or document title',
+    )
     await reference.fill(`No such document ${suffix}`)
     await dialog.getByLabel('Reason (at least 10 characters)').fill(`Litigation hold ${suffix}`)
     await dialog.getByRole('button', { name: 'Place hold' }).click()
@@ -52,7 +58,11 @@ test.describe('legal holds', () => {
     await page.getByRole('button', { name: 'Place a hold' }).click()
     const place = page.getByRole('dialog', { name: 'Place a legal hold' })
     await place.getByLabel('Hold on').selectOption('document')
-    await place.getByLabel('Application number, project title, or document title').fill(DOCUMENT)
+    await place
+      .getByLabel(
+        'Application number, case number, request number, project title, or document title',
+      )
+      .fill(DOCUMENT)
     await place.getByLabel('Reason (at least 10 characters)').fill(reason)
     await place.getByRole('button', { name: 'Place hold' }).click()
     await expectToast(page, 'Legal hold placed.')

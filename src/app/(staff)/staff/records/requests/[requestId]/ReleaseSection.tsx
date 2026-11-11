@@ -6,9 +6,10 @@ import { RTK_METHOD_LABELS } from '@/features/rtk/labels'
 import type { ReleaseSummary, RequestApproval } from '@/features/rtk/requestPage'
 import { formatCivilDate } from '@/lib/formatDate'
 import { revokeApprovalAction } from '../../renditionActions'
+import { type LinkContext, ReleaseLink } from './ReleaseLink'
 import { roleLabel } from './versionLabels'
 
-function ReleaseRow({ release }: { release: ReleaseSummary }) {
+function ReleaseRow({ release, ctx }: { release: ReleaseSummary; ctx: LinkContext }) {
   return (
     <li className="record-item flex flex-col gap-1">
       <p className="m-0 font-medium">
@@ -26,6 +27,7 @@ function ReleaseRow({ release }: { release: ReleaseSummary }) {
           {`Letter for release ${release.sequence}`}
         </a>
       )}
+      <ReleaseLink release={release} ctx={ctx} />
     </li>
   )
 }
@@ -77,11 +79,15 @@ export function ReleaseSection({
   approvals,
   canManage,
   findTool,
+  timeZone,
+  requesterEmail,
 }: {
   releases: readonly ReleaseSummary[]
   approvals: readonly RequestApproval[]
   canManage: boolean
   findTool: ReactNode
+  timeZone: string
+  requesterEmail: string | null
 }) {
   return (
     <section aria-labelledby="releases">
@@ -91,7 +97,7 @@ export function ReleaseSection({
       ) : (
         <ul aria-label="Releases made" className="list-none p-0">
           {releases.map((r) => (
-            <ReleaseRow key={r.id} release={r} />
+            <ReleaseRow key={r.id} release={r} ctx={{ canManage, timeZone, requesterEmail }} />
           ))}
         </ul>
       )}

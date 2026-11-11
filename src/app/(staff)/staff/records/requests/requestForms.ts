@@ -11,6 +11,7 @@ import { optionalEmail } from '@/features/input/optionalEmail'
 import {
   choice,
   civilDate,
+  emailAddress,
   optionalCivilDate,
   optionalMoneyCents,
   optionalText,
@@ -149,13 +150,18 @@ export const releaseForm = (today: CivilDate) =>
       recipientEmail: optionalEmail('an email address'),
     })
     .superRefine((v, ctx) => {
-      if (v.method === 'electronic_link' && v.recipientEmail === null)
+      if ((v.method === 'electronic_link' || v.method === 'email') && v.recipientEmail === null)
         ctx.addIssue({
           code: 'custom',
           path: ['recipientEmail'],
           message: RECORDS_COPY.recipient_required ?? '',
         })
     })
+
+export const reissueLinkForm = z.object({
+  releaseId: recordId('a release'),
+  recipientEmail: emailAddress('the email address to send the new link to'),
+})
 
 export const closeRequestForm = z.object({
   requestId: requestIdField(),

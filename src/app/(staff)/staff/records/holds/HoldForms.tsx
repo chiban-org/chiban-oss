@@ -7,6 +7,8 @@ const TARGETS: [string, string][] = [
   ['project', 'Project'],
   ['application', 'Application'],
   ['document', 'Document'],
+  ['enforcement_case', 'Enforcement case'],
+  ['rtk_request', 'Right-to-Know request'],
 ]
 export function ReleaseHold({ holdId }: { holdId: string }) {
   return (
@@ -34,7 +36,7 @@ export function PlaceHold() {
       <ActionForm action={placeHoldAction} submitLabel="Place hold">
         <SelectField label="Hold on" name="targetKind" options={TARGETS} />
         <TextField
-          label="Application number, project title, or document title"
+          label="Application number, case number, request number, project title, or document title"
           name="targetRef"
           required
         />

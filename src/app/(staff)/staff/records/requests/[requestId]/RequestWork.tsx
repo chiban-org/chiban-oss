@@ -1,4 +1,5 @@
 import { DoThisNowCard, RequirementItem, RequirementsPanel } from '@/components/layout/WorkPlan'
+import { letterNoteFor } from '@/features/rtk/requesterEmail'
 import type { ReleaseCandidate, RequestApproval } from '@/features/rtk/requestPage'
 import type { RtkRequestView } from '@/features/rtk/requests'
 import type { RequestWorkPlan } from '@/features/rtk/workPlanTypes'
@@ -37,6 +38,7 @@ function ReleaseStep({ data }: { data: WorkData }) {
         pending={pending}
         today={data.today}
         timeZone={data.find.timeZone}
+        requesterContact={data.request.requesterContact}
       />
       {pending.length === 0 ? (
         find
@@ -63,6 +65,7 @@ export function RequestDoThisNow({ data }: { data: WorkData }) {
           canDeny={data.request.withholdings.length > 0}
           startOnRelease={searched(data) || pendingApprovals(data.approvals).length > 0}
           releaseStep={<ReleaseStep data={data} />}
+          letterNote={letterNoteFor(data.request.requesterContact)}
         />
       ) : null}
       {now.kind === 'release' ? <ReleaseStep data={data} /> : null}

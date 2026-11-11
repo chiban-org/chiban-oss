@@ -54,18 +54,18 @@ test.describe('approving a version and releasing records', () => {
     await card.getByLabel('How').selectOption('electronic_link')
     await submit.click()
     await expectRefusedBeside(
-      card.getByLabel('Email address, for a link'),
-      'Enter the email address for the link.',
+      card.getByLabel("Requester's email address"),
+      'Enter the email address to send the records to.',
     )
     await expect(dialog).toHaveCount(0)
 
     const recipient = uniqueEmail('requester', suffix)
     const since = new Date()
-    await card.getByLabel('Email address, for a link').fill(recipient)
+    await card.getByLabel("Requester's email address").fill(recipient)
     await submit.click()
     await expect(dialog).toBeVisible()
     await dialog.getByRole('button', { name: 'Release the records' }).click()
-    await expectToast(page, 'Records released.')
+    await expectToast(page, 'Records released and a link emailed to the requester.')
     const releases = section(page, 'Releases')
     await expect(releases.getByText(/^Release 1, .*Link sent by email$/)).toBeVisible()
     await expect(releases.getByRole('link', { name: 'Letter for release 1' })).toBeVisible()

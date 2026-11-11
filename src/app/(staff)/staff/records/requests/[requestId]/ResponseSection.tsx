@@ -1,7 +1,8 @@
 import { NEW_TAB } from '@/components/newTab'
+import type { RtkLetterOutcome } from '@/db/schema'
 import { costTotal, responseLabel } from '@/features/rtk/labels'
 import type { RtkRequestView } from '@/features/rtk/requests'
-import { formatCivilDate } from '@/lib/formatDate'
+import { formatCivilDate, formatInstantDate } from '@/lib/formatDate'
 
 function timelinessText(request: RtkRequestView): string | null {
   const t = request.timeliness
@@ -44,17 +45,47 @@ export function ResponseSection({ request }: { request: RtkRequestView }) {
   )
 }
 
-export function LettersSection({ letters }: { letters: readonly { id: string; title: string }[] }) {
+export interface LetterDeliveryLine {
+  documentId: string
+  outcome: RtkLetterOutcome
+  sentTo: string | null
+  at: Date
+}
+
+function deliveryText(d: LetterDeliveryLine, timeZone: string): string {
+  if (d.outcome === 'emailed')
+    return `Emailed to ${d.sentTo ?? ''} on ${formatInstantDate(d.at, timeZone)}.`
+  if (d.outcome === 'email_failed')
+    return `The email to ${d.sentTo ?? ''} could not be sent. Print this letter and send it.`
+  return 'No email address. Print this letter and send it.'
+}
+
+export function LettersSection({
+  letters,
+  deliveries,
+  timeZone,
+}: {
+  letters: readonly { id: string; title: string }[]
+  deliveries: readonly LetterDeliveryLine[]
+  timeZone: string
+}) {
   if (letters.length === 0) return null
   return (
     <section aria-labelledby="letters">
       <h2 id="letters">Letters</h2>
       <ul className="list-none space-y-1 p-0">
         {letters.map((l) => (
-          <li key={l.id}>
+          <li key={l.id} className="flex flex-col">
             <a {...NEW_TAB} href={`/api/documents/${l.id}`}>
               {l.title}
             </a>
+            {deliveries
+              .filter((d) => d.documentId === l.id)
+              .map((d) => (
+                <span key={d.at.toISOString()} className="text-sm text-ink-secondary">
+                  {deliveryText(d, timeZone)}
+                </span>
+              ))}
           </li>
         ))}
       </ul>
