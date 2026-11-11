@@ -1,0 +1,7 @@
+[
+  { "file": "records-custodian/rtk-log.png", "persona": "Sam Clerk", "path": "/staff/records/requests", "width": 1280, "height": 800 },
+  { "file": "records-custodian/retention.png", "persona": "Sam Clerk", "path": "/staff/records/retention", "width": 1280, "height": 800 },
+  { "file": "records-custodian/disposed.png", "persona": "Sam Clerk", "path": "/staff/records/disposed", "width": 1280, "height": 800 },
+  { "file": "records-custodian/preservation.png", "persona": "Sam Clerk", "path": "/staff/records/preservation", "width": 1280, "height": 800 },
+  { "file": "records-custodian/legal-holds.png", "persona": "Avery Admin", "path": "/staff/records/holds", "width": 1280, "height": 800 }
+]
