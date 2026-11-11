@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { RTK_METHOD_LABELS } from '@/features/rtk/labels'
+import { releaseLetterNoteFor, requesterEmailOf } from '@/features/rtk/requesterEmail'
 import type { RequestApproval } from '@/features/rtk/requestPage'
 import { formatInstantDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
@@ -63,11 +64,13 @@ export function PendingRelease({
   pending,
   today,
   timeZone,
+  requesterContact,
 }: {
   requestId: string
   pending: readonly RequestApproval[]
   today: CivilDate
   timeZone: string
+  requesterContact: string | null
 }) {
   if (pending.length === 0) return null
   return (
@@ -87,6 +90,7 @@ export function PendingRelease({
         action={createReleaseAction}
         submitLabel={releaseLabel(byDocument(pending).length)}
         variant="default"
+        submitNote={releaseLetterNoteFor(requesterContact)}
         confirm={{
           title: 'Release these records?',
           body: 'The approved records are sent to the requester. Once released they cannot be called back.',
@@ -109,6 +113,7 @@ export function PendingRelease({
           label="Requester's email address"
           name="recipientEmail"
           type="email"
+          defaultValue={requesterEmailOf(requesterContact) ?? ''}
           hint="Needed when the records go by email, as a link or as attachments."
         />
       </ActionForm>

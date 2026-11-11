@@ -1,5 +1,9 @@
 import { describe, expect, it } from 'vitest'
-import { letterNoteFor, requesterEmailOf } from '@/features/rtk/requesterEmail'
+import {
+  letterNoteFor,
+  releaseLetterNoteFor,
+  requesterEmailOf,
+} from '@/features/rtk/requesterEmail'
 
 describe('requesterEmailOf', () => {
   it('finds the one email address in the contact, lower cased', () => {
@@ -15,6 +19,17 @@ describe('requesterEmailOf', () => {
     expect(requesterEmailOf('')).toBeNull()
     expect(requesterEmailOf('12 Birch Lane, Alder Pond')).toBeNull()
     expect(requesterEmailOf('a@example.test or b@example.test')).toBeNull()
+  })
+})
+
+describe('releaseLetterNoteFor', () => {
+  it('says where the release letter goes for each way of releasing', () => {
+    expect(releaseLetterNoteFor('jordan@example.test')).toBe(
+      'By email, the letter goes with the records. For inspection or a paper copy, the release letter is emailed to jordan@example.test.',
+    )
+    expect(releaseLetterNoteFor(null)).toBe(
+      'By email, the letter goes with the records. For inspection or a paper copy, print the release letter from Letters and send it.',
+    )
   })
 })
 

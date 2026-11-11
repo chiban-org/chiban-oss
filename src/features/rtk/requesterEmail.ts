@@ -11,6 +11,15 @@ export function requesterEmailOf(contact: string | null): string | null {
   return valid.length === 1 ? (valid[0] ?? null) : null
 }
 
+export function releaseLetterNoteFor(contact: string | null): string {
+  const email = requesterEmailOf(contact)
+  const otherwise =
+    email === null
+      ? 'print the release letter from Letters and send it'
+      : `the release letter is emailed to ${email}`
+  return `By email, the letter goes with the records. For inspection or a paper copy, ${otherwise}.`
+}
+
 export function letterNoteFor(contact: string | null): string {
   const email = requesterEmailOf(contact)
   return email === null

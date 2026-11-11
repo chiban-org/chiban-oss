@@ -93,21 +93,24 @@ export async function firstResponseAction(formData: FormData): Promise<ActionRes
 }
 
 export async function denyRequestAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffFormToday(formData, denyRequestForm, async ({ db, actor, signal }, input) =>
-    await sendLetterOutcome(
-      { db, actor, signal },
-      {
-        requestId: input.requestId,
-        result: await denyRequest(
-          { db, store: getObjectStore(), actor, signal },
-          { requestId: input.requestId, deniedOn: input.deniedOn },
-        ),
-      },
-      {
-        lead: 'Denial recorded',
-        fieldOf: { future_date: 'deniedOn', before_statement: 'deniedOn' },
-      },
-    ),
+  return await runStaffFormToday(
+    formData,
+    denyRequestForm,
+    async ({ db, actor, signal }, input) =>
+      await sendLetterOutcome(
+        { db, actor, signal },
+        {
+          requestId: input.requestId,
+          result: await denyRequest(
+            { db, store: getObjectStore(), actor, signal },
+            { requestId: input.requestId, deniedOn: input.deniedOn },
+          ),
+        },
+        {
+          lead: 'Denial recorded',
+          fieldOf: { future_date: 'deniedOn', before_statement: 'deniedOn' },
+        },
+      ),
   )
 }
 
@@ -137,8 +140,7 @@ export async function withholdingAction(formData: FormData): Promise<ActionResul
   )
 }
 
-const RELEASED_COPY: Record<ReleaseDelivery, string> = {
-  none: 'Records released.',
+const RELEASED_COPY: Record<Exclude<ReleaseDelivery, 'none'>, string> = {
   attached: 'Records released and emailed to the requester.',
   link: 'Records released and a link emailed to the requester.',
   link_fallback:
@@ -161,17 +163,20 @@ export async function createReleaseAction(formData: FormData): Promise<ActionRes
       },
       signal,
     )
-    return recordsOutcome(
-      released,
-      released.ok ? RELEASED_COPY[released.value.delivery] : RELEASED_COPY.none,
-      {
-        future_date: 'releasedOn',
-        before_received: 'releasedOn',
-        recipient_required: 'recipientEmail',
-        approval_missing: 'items',
-        approval_revoked: 'items',
-        duplicate_document: 'items',
-      },
+    const fieldOf = {
+      future_date: 'releasedOn',
+      before_received: 'releasedOn',
+      recipient_required: 'recipientEmail',
+      approval_missing: 'items',
+      approval_revoked: 'items',
+      duplicate_document: 'items',
+    }
+    if (released.ok && released.value.delivery !== 'none')
+      return { ok: true, message: RELEASED_COPY[released.value.delivery] }
+    return await sendLetterOutcome(
+      { db, actor, signal },
+      { requestId: input.requestId, result: released },
+      { lead: 'Records released', fieldOf },
     )
   })
 }

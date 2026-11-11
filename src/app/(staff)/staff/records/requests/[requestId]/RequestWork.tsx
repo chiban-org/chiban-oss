@@ -38,6 +38,7 @@ function ReleaseStep({ data }: { data: WorkData }) {
         pending={pending}
         today={data.today}
         timeZone={data.find.timeZone}
+        requesterContact={data.request.requesterContact}
       />
       {pending.length === 0 ? (
         find

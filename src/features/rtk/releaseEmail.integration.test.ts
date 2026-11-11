@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { documentVersions, files, rtkReleases } from '@/db/schema'
+import { documentVersions, files, rtkLetterDeliveries, rtkReleases } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { createMemoryTransport } from '@/features/mail/memoryTransport'
 import { openRelease } from '@/features/rtk/releaseLinks'
@@ -92,6 +92,9 @@ describe('releasing records as an email attachment', () => {
     expect(sent?.attachments?.[0]?.content.equals((await releasedFile()).bytes)).toBe(true)
     const [row] = await handle.db.select().from(rtkReleases)
     expect(row).toMatchObject({ method: 'email', linkTokenHash: null, linkExpiresAt: null })
+    expect(await handle.db.select().from(rtkLetterDeliveries)).toMatchObject([
+      { outcome: 'emailed', sentTo: 'jordan@example.test' },
+    ])
   })
 
   it('sends a link instead when the files are too large to attach, and says so', async () => {

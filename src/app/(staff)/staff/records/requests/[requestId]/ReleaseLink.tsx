@@ -1,5 +1,6 @@
 import { ActionForm } from '@/components/ActionForm'
 import { TextField } from '@/components/staff/fields'
+import { LINK_DAYS } from '@/features/rtk/releaseMail'
 import type { ReleaseSummary } from '@/features/rtk/requestPage'
 import { formatInstantDate } from '@/lib/formatDate'
 import { reissueLinkAction } from '../actions'
@@ -37,7 +38,7 @@ export function ReleaseLink({ release, ctx }: { release: ReleaseSummary; ctx: Li
               name="recipientEmail"
               type="email"
               defaultValue={ctx.requesterEmail ?? ''}
-              hint="The new link works for 30 days. The expired link stays closed."
+              hint={`The new link works for ${LINK_DAYS} days. The expired link stays closed.`}
               required
             />
           </ActionForm>

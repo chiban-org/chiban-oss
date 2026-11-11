@@ -157,6 +157,7 @@ describe('approved records waiting for release', () => {
           ]}
           today={'2027-03-06' as CivilDate}
           timeZone="America/New_York"
+          requesterContact="Jordan@example.test, 603-555-0142"
         />
       </CsrfProvider>,
     )
@@ -169,5 +170,13 @@ describe('approved records waiting for release', () => {
     const hidden = document.querySelectorAll<HTMLInputElement>('input[type="hidden"][name="items"]')
     expect([...hidden].map((i) => i.value)).toEqual(['d2:a3'])
     expect(screen.getByRole('button', { name: 'Release 2 records' })).toBeTruthy()
+    expect(screen.getByLabelText<HTMLInputElement>(/^Requester's email address/).value).toBe(
+      'jordan@example.test',
+    )
+    expect(
+      screen.getByText(
+        'By email, the letter goes with the records. For inspection or a paper copy, the release letter is emailed to jordan@example.test.',
+      ),
+    ).toBeTruthy()
   })
 })

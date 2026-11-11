@@ -2,7 +2,13 @@ import { civilDateSchema } from '@packs/nh/schema'
 import { eq, max } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db, Tx } from '@/db/client'
-import { RTK_RELEASE_METHODS, rtkReleaseItems, rtkReleases, rtkRequests } from '@/db/schema'
+import {
+  RTK_RELEASE_METHODS,
+  rtkLetterDeliveries,
+  rtkReleaseItems,
+  rtkReleases,
+  rtkRequests,
+} from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -50,6 +56,7 @@ export interface ReleaseDone {
   releaseId: string
   sequence: number
   delivery: ReleaseDelivery
+  letterDocumentId: string
 }
 
 async function checkReleaseDate(
@@ -171,6 +178,15 @@ export async function createRelease(
       letterDocumentId,
     })
     if (!delivered.ok) return err(delivered.error)
+    if (plan.recipientEmail !== null) {
+      await tx.insert(rtkLetterDeliveries).values({
+        requestId: request.id,
+        documentId: letterDocumentId,
+        outcome: 'emailed',
+        sentTo: plan.recipientEmail,
+        createdBy: actor.userId,
+      })
+    }
     await writeAudit(
       tx,
       {
@@ -184,10 +200,11 @@ export async function createRelease(
           method: value.method,
           items: items.value.length,
           delivery: plan.delivery,
+          sentTo: plan.recipientEmail,
         },
       },
       signal,
     )
-    return ok({ releaseId, sequence, delivery: plan.delivery })
+    return ok({ releaseId, sequence, delivery: plan.delivery, letterDocumentId })
   })
 }

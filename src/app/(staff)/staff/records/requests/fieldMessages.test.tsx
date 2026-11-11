@@ -190,6 +190,7 @@ describe('request forms show a refusal beside its field', () => {
         pending={[approval]}
         today={TODAY}
         timeZone="America/New_York"
+        requesterContact={null}
       />,
     )
     fireEvent.click(screen.getByRole('button', { name: 'Release 1 record' }))
