@@ -17,7 +17,7 @@ The inspection page shows **Failed** with the date, the **Result** section listi
 
 ## Requesting the reinspection
 
-The **Do this now** card on a failed inspection reads **Request the reinspection**. Choose it and Chiban opens the request form on the schedule board with the permit and the failed inspection already filled in. The only inspection offered is the type that failed. Then take the request and book a time as you would any other. See [scheduling inspections](./scheduling.md).
+The **Do this now** card on a failed inspection reads **Request the reinspection**. Choose it and Chiban opens the request form on the schedule board with the permit and the failed inspection filled in. Only the type that failed is offered. Take the request and book a time as you would for any other. See [scheduling inspections](./scheduling.md).
 
 Applicants and contractors can ask for the reinspection themselves from their inspections page. See [what applicants see](./what-applicants-see.md). Either way the request waits on the board marked **Reinspection**.
 
@@ -31,7 +31,7 @@ A few rules apply:
 
 On **My day** and on the reinspection itself, a **Last time** note repeats what you wrote when the first inspection failed. The reinspection's page links back to **The failed inspection**, and its progress starts at **Reinspection requested**.
 
-The checklist is the same one, and you fill it in the same way. See [recording a result](./recording-results.md).
+The checklist and the way you fill it in are the same. See [recording a result](./recording-results.md).
 
 ## A failed final
 

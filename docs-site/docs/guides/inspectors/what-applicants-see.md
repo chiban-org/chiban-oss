@@ -21,7 +21,7 @@ Applicants and contractors have their own inspections page, with less on it than
 - **Passed** or **Failed** once you record it, with your **Notes for the permit holder**.
 - **Cancelled**.
 
-They do not see the checklist, the item-by-item outcomes, your photos or the inspector's name. They see only your notes, so write them for someone who was not at the site.
+They do not see the checklist, the item-by-item outcomes, your photos or the inspector's name. Your notes are all they get, so write them for someone who was not at the site.
 
 ## What they can do
 

@@ -7,7 +7,7 @@ sidebar_position: 4
 
 # Serving an order, answers and deadlines
 
-An order only counts once the right people have been served and the town can show it. Chiban keeps a checklist of who has to be served, records each service with its proof, and counts the answer period for each person from the day they were served.
+After an order is issued, the town has to show that the right people were served. Chiban keeps a checklist of who has to be served, records each service with its proof, and counts the answer period for each person from the day they were served.
 
 ![A case with an issued order waiting for service on the occupying tenant](/img/shots/enforcement/case-serve-order.png)
 
@@ -15,7 +15,7 @@ An order only counts once the right people have been served and the town can sho
 
 The order's service checklist covers these roles: **Owner of record**, **Owner agent**, **Taxpayer**, **Occupying tenant**, **Person in control of the property** and **Mortgagee of record**. For each role you either list the people to be served or record that there are none. The checklist shows **Service is complete** only when every role is settled and every listed person has been served.
 
-**Do this now** walks you through it, one gap at a time: **Record the check for the** role, **List the** role, **Serve** a named person, or finish posting and publication.
+**Do this now** names one gap at a time: **Record the check for the** role, **List the** role, **Serve** a named person, or finish posting and publication.
 
 ### Record the check for a role
 
@@ -23,7 +23,7 @@ Open **Record the check for a role**. Pick the **Role**, then a **Result**:
 
 - **Recipients listed**: people exist, and you will add them.
 - **None exist**: nobody holds that role. For example, no mortgagee.
-- **Same as the owner**: for the taxpayer or the owner's agent.
+- **Same as the owner**: the taxpayer or agent is the owner.
 - **Owner could not be found**: for the owner of record only. It opens the way to posting and publication.
 
 Add **What was searched** and **Date checked**. This is the town's record of the effort.

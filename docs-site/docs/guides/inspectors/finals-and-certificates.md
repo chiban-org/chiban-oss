@@ -13,14 +13,14 @@ The last inspection on a permit is its final. What passing it does to the permit
 
 On a final inspection, a line under the checklist says one of two things:
 
-- **Passing this final closes permit** and the permit number. The permit closes the moment you record the pass. This is how a permit type behaves when it closes on its final inspection.
+- **Passing this final closes permit** and the permit number. The permit closes the moment you record the pass.
 - **Passing this final leaves permit** and the permit number **waiting for its certificate of occupancy.** The permit stays open until someone issues the certificate. The building and demolition permit in the New Hampshire starter set works this way.
 
 The confirmation repeats the same sentence before you commit. See [recording a result](./recording-results.md).
 
 ## Issuing the certificate
 
-An inspector cannot issue a certificate. Issuing needs the permission to issue permits, which land use staff have and the inspector role does not. In an office where the inspector is not also on the land use staff, the building official passes the final and the clerk issues the certificate.
+An inspector cannot issue a certificate. Issuing needs the permission to issue permits, which land use staff have and the inspector role does not. Where the inspector is not also on the land use staff, the inspector passes the final and land use staff issue the certificate.
 
 On the permit, once a final has passed, the page offers **Issue the certificate of occupancy**. The form asks for an **Issue date**, which starts as today and cannot be in the future.
 
@@ -42,4 +42,4 @@ The certificate is visible to town staff and the people on the permit. It is not
 
 ## Not the same as a certificate of occupancy request
 
-The New Hampshire starter set also has a permit type called certificate of occupancy request, for an owner who needs a certificate for a building that never had one. It is an ordinary permit with its own fee and an occupancy walkthrough. The certificate described here comes from the final inspection on a building permit.
+The New Hampshire starter set also has a permit type called certificate of occupancy request. It is an ordinary permit with its own fee and an occupancy walkthrough. The certificate described here comes from the final inspection on a building permit.

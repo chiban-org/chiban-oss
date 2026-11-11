@@ -13,7 +13,7 @@ Cases begin one of two ways: someone reports a problem, or a staff member sees o
 
 Complaints come in three ways, and Chiban records which:
 
-- **Public form with contact details.** A resident reports a problem on the town's website and gives a name, email and phone number.
+- **Public form with contact details.** A resident reports a problem on the town's website and leaves contact details.
 - **Anonymous web form.** The resident gives no contact details. An administrator has to turn anonymous intake on first, under **Settings**, **Anonymous intake**.
 - **Entered by staff.** You took the call or the visit at the counter.
 
@@ -21,15 +21,15 @@ Each complaint opens its own case, numbered like EC-2026-0001, with the complain
 
 To enter a complaint yourself, choose **Enter a complaint** on the enforcement list. Fill in **Where is the property?**, **What was reported?**, optionally the parcel, and the complainant's name, phone and email if they gave them. Choose **Record complaint**. Chiban opens the new case.
 
-Chiban has no way to add a second complaint to a case that already exists. Each report starts a case of its own.
+Chiban cannot add a second complaint to a case that already exists, so each report starts a case of its own.
 
 ### What staff see in a complaint
 
-On the case, **Complaints** shows the original report and, for a named complaint, who sent it. A complaint with no contact details says **Anonymous. The town does not know who sent this.** The reporter's identity and original words are for staff. Photos a resident attached arrive as **Complaint photo** documents, private to staff.
+On the case, **Complaints** shows the original report and, for a named complaint, who sent it. A complaint with no contact details says **Anonymous. The town does not know who sent this.** Only staff see the reporter's identity and original words. Photos a resident attached arrive as **Complaint photo** documents, private to staff.
 
 ## Open a case yourself
 
-If you see a problem while driving past, choose **Open a case**. Enter **Where is the property?** and, if you know it, the parcel. Without a parcel, Chiban links the parcel whose site address matches exactly. If the text matches no parcel or more than one, it tells you and asks for the parcel number.
+If you see a problem yourself, choose **Open a case**. Enter **Where is the property?** and, if you know it, the parcel. Without a parcel, Chiban links the parcel whose site address matches exactly. If the text matches no parcel or more than one, it tells you and asks for the parcel number.
 
 The case opens assigned to you. A case with no parcel linked is not on any parcel page. Choose **Link a parcel** on the case to fix that.
 
@@ -61,4 +61,4 @@ Choose **Record finding**. The first finding moves the case to **Violation found
 
 A case can hold several findings. A finding can be edited until it goes into a notice or an order. After that you withdraw it and record a new one. See [resolving and closing a case](./resolving-and-closing.md).
 
-The next step is [notices and orders](./notices-and-orders.md).
+Notices and orders come next: [notices and orders](./notices-and-orders.md).

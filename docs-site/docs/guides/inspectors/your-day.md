@@ -35,12 +35,12 @@ The staff home page counts the same list as **Still need a result**. A town-wide
 
 ## On a phone
 
-My day is built for the truck. On a narrow screen the cards stack in one column, the buttons are large enough to hit with a thumb, and the phone numbers and addresses are links.
+On a narrow screen the cards stack in one column, the buttons are large enough to hit with a thumb, and the phone numbers and addresses are links.
 
 ![My day on a phone, one inspection card per stop](/img/shots/inspectors/my-day-phone.png)
 
 The photo control on an inspection opens the phone's camera. See [recording a result](./recording-results.md).
 
-## When you work more than one calendar
+## Seeing another inspector's day
 
 A person who holds both the land use staff and inspector roles, such as the building official, sees an **Inspector** list at the top of My day. Choose a name to see that inspector's day. Staff who are not inspectors are asked to pick an inspector first.

@@ -7,7 +7,7 @@ sidebar_position: 5
 
 # Court, town counsel and penalty exposure
 
-When the owner has been served, the answer period is over and nothing was fixed, the order goes to the court. Chiban records each step, hands town counsel a packet, and shows what the town could be owed.
+When the owner has been served, the answer period is over and nothing was fixed, the town can take the order to court. Chiban records each step, builds a packet for town counsel, and shows an estimate of what the town could be owed.
 
 ## Court steps
 
@@ -33,11 +33,11 @@ Land use staff and administrators refer a case. Under **Town counsel**, choose *
 
 Chiban builds a counsel packet, a PDF filed under **Documents and photos** as **Counsel packet for** the case number, and links it as **Open packet**. It contains the case details, the findings and notices, each order with its service checklist, the proof of service on file, appeals and stays, and the penalty exposure. Send it to counsel the way the town normally sends documents. Chiban does not email it. An administrator can change the cover page under **Settings**, **Templates**.
 
-When counsel reports back, choose **Record an outcome**. **What happened** can be **Motion filed**, **Hearing held**, **Judgment for the town**, **Judgment for the respondent**, **Settled**, **Dismissed**, **Withdrawn** or **Appealed to the superior court**, with the date, court, docket, document and a note. A judgment for the town leads to the fine.
+When counsel reports back, choose **Record an outcome**. **What happened** can be **Motion filed**, **Hearing held**, **Judgment for the town**, **Judgment for the respondent**, **Settled**, **Dismissed**, **Withdrawn** or **Appealed to the superior court**, with the date, court, docket, document and a note. A recorded judgment is what lets a fine be entered.
 
 ## Penalty exposure
 
-Under **Fines**, a line reads **Estimated statutory exposure for counsel. Nothing is owed unless a court imposes it.** It tells counsel how large the town's claim could be. It is a running estimate and not a bill.
+Under **Fines**, a line reads **Estimated statutory exposure for counsel. Nothing is owed unless a court imposes it.** It is a running estimate for counsel, not a bill.
 
 - Before the town has anything to count from, it reads **Accrual has not started: no written notice has been received and no conviction has been recorded.**
 - Once a notice is received, or a conviction recorded, whichever is earlier, it reads like **Accrual began** on a date, then the days since and the estimated amount.

@@ -7,7 +7,7 @@ sidebar_position: 3
 
 # Recording a result
 
-You are standing at the site and the work is done or it is not. This page covers what to enter in Chiban so the permit holder gets a clear answer and the permit moves on.
+This page covers what to enter in Chiban once you have seen the work, so the permit holder gets a clear answer and the permit moves on.
 
 Open the inspection from **My day** with **Record result**, from the **Results owed** list, or from the permit. The page shows the checklist under **Do this now**.
 
@@ -19,7 +19,7 @@ A result can be recorded on or after the scheduled date, never before. Until the
 
 Only the inspector the inspection is assigned to can record it. Someone who holds both the land use staff and inspector roles can record any inspection. Anyone else sees **Waiting on** the inspector's name.
 
-Chiban also refuses while the permit is under appeal. The page says inspections are paused and opens the checklist again when the appeal is decided.
+Chiban refuses to record a result while the permit is under appeal. The page says inspections are paused, and the checklist opens again once the appeal is decided.
 
 ## Fill in the checklist
 
@@ -47,10 +47,10 @@ After you record it:
 
 ## Photos
 
-The **Photos** section on the inspection takes pictures. Open **Add a photo**, choose **Take or choose a photo**, and give it a short title under **What the photo shows**. On a phone this opens the camera. Photos must be JPEG or PNG and no larger than 25 MB.
+The **Photos** section on the inspection holds the pictures. Open **Add a photo**, choose **Take or choose a photo**, and give it a short title under **What the photo shows**. On a phone this opens the camera. Photos must be JPEG or PNG and no larger than 25 MB.
 
-Photos are for the town's file. The people on the permit do not see them on their inspections page. See [what applicants see](./what-applicants-see.md).
+Photos stay in the town's file and do not appear on the inspections page of the people on the permit. See [what applicants see](./what-applicants-see.md).
 
 ## A failed result
 
-See [failed inspections and reinspections](./failed-and-reinspection.md).
+Failures lead to reinspections. See [failed inspections and reinspections](./failed-and-reinspection.md).

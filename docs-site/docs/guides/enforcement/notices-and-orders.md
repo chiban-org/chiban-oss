@@ -7,7 +7,7 @@ sidebar_position: 3
 
 # Notices of violation and cease and desist orders
 
-Once a finding is on record, the town tells the owner in writing. The first letter is a notice of violation. If the problem is not fixed, the town issues a cease and desist order, which is the document that can later be taken to court.
+Once a finding is on record, the town writes to the owner. The first letter is a notice of violation. If the problem is not fixed, the town issues a cease and desist order, the document that can later go to court.
 
 ## Send a notice of violation
 
@@ -19,7 +19,7 @@ On a case at **Violation found**, **Do this now** reads **Send a notice of viola
 
 Choose **Send notice of violation**. Chiban writes the notice as a PDF and files it under **Documents and photos** as **Notice of violation for** the case number. The notice is listed under **Notices of violation** with how and when it was sent, and **Open notice** shows it.
 
-Chiban writes the notice and records it. It does not mail or email it for you, so send it the way you chose and then record the date.
+Chiban does not mail or email the notice. Send it the way you chose, then record the date.
 
 ## Record when it was received
 
@@ -52,6 +52,6 @@ Chiban refuses to issue the order when:
 
 When it works, the case moves to **Order issued**, and the order PDF appears under **Documents and photos** as **Cease and desist order** with its number. The order block shows what it requires, the date issued and who issued it, with **Open order**.
 
-The notice of violation comes first in Chiban's checklist, but the checklist does not stop you from issuing an order without one. Whether the town must send a notice first is the town's call.
+The notice of violation comes first in the checklist, but Chiban does not stop you from issuing an order without one.
 
 After the order is issued, see [serving the order and handling answers](./service-and-answers.md).

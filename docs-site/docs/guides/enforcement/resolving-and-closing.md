@@ -7,13 +7,13 @@ sidebar_position: 6
 
 # Resolving and closing a case
 
-A case ends when the problem is fixed or when the town decides there never was one. Chiban records which.
+A case ends when the problem is fixed or when the town decides there was no violation. Chiban records which.
 
 ## The problem was fixed
 
 On each finding, open **More** and choose **Mark corrected**. Enter **Date corrected** and an optional **Note**. When every finding on an order is corrected, Chiban marks the order **Complied with**.
 
-When every finding is settled, **Do this now** reads **Resolve the case**. Choose **Resolve the case**, also under **More actions** at the top of the case. The case moves to **Resolved**. A case in court is ready to resolve once any fine is paid.
+When every finding is settled, **Do this now** reads **Resolve the case**. Choose it, or use **Resolve the case** under **More actions** at the top of the case. The case moves to **Resolved**. A case in court is ready to resolve once any fine is paid.
 
 ## The finding was wrong
 
@@ -27,7 +27,7 @@ Open **More** on the finding and choose **Withdraw**. **Why it is withdrawn** is
 
 A **Resolved** or **No violation found** case shows **Close the case**. Choose it, enter the **Reason for closing**, and confirm. The case then shows **Closed**, with the date, and cannot be moved to another status.
 
-The demo has no resolved or closed case yet, so the case list's **Closed** tab starts empty. Resolve and close work as described here on a real case.
+The demo has no resolved or closed case, so its **Closed** tab is empty.
 
 ## What the public site shows
 

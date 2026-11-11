@@ -7,7 +7,7 @@ sidebar_position: 1
 
 # How an enforcement case moves
 
-A neighbor reports a shed too close to the lot line. From that report to a closed file there are many small steps: a visit, a finding, a notice, an order, proof the order reached the right people, a deadline, perhaps a court. Chiban keeps one case for the whole thing and tells you, at each point, what the town has to do next.
+A neighbor reports a shed too close to the lot line. Between that report and a closed file come a visit, a finding, a notice, an order, proof the order reached the right people, a deadline and sometimes a court. Chiban keeps one case for all of it and tells you what the town has to do next.
 
 In the demo, Sam Clerk is the town's designated enforcement officer and holds the land use staff role. The screens below are Sam's.
 
@@ -19,7 +19,7 @@ In the demo, Sam Clerk is the town's designated enforcement officer and holds th
 
 The tabs sort cases by stage: **Open**, **Order issued**, **In court**, **Closed** and **All**. The quick filters narrow by deadline (**Overdue**, **Due this week**, **No deadline running**) and by assignment (**Mine**, **Unassigned**). Each row shows the case number, the address, the status, when it was opened, the **Next step** with who has to take it, the **Due** date, whether an appeal has stayed the case, and who it is assigned to.
 
-**Next step** is the column to read. "Town: serve Robin Renter" means the town has work to do. "ZBA: decide the appeal" means the case is waiting on someone else.
+Read the **Next step** column first. "Town: serve Robin Renter" means the town has work to do. "ZBA: decide the appeal" means the case is waiting on someone else.
 
 ## The stages
 
@@ -27,12 +27,12 @@ The strip at the top of a case shows which of these stages it is in.
 
 | Stage | What it means |
 | --- | --- |
-| **Received** | A complaint or a staff member opened the case. Nobody has looked yet. |
+| **Received** | A complaint or a staff member opened the case. No investigation has started. |
 | **Investigating** | Staff are visiting the site and writing notes. |
 | **Violation found** | At least one finding is on record. Notices and the order come next. |
 | **Order issued** | A cease and desist order has been issued. Service, answers and the answer period happen here. |
 | **In court** | The order was filed with the court clerk. |
-| **Resolved** | The problem is fixed, or the matter is over. |
+| **Resolved** | The problem is fixed or the court matter is finished. |
 | **Closed** | The file is done. |
 
 A case can also end at **No violation found** when the investigation turns up nothing, and then it can only be closed.
@@ -66,4 +66,4 @@ An inspector who is not on the land use staff, and who is not the case's assigne
 
 ## Permit inspections are separate
 
-A failed permit inspection does not open a case, and an enforcement finding does not appear on the inspection board. The two are separate records. A finding carries an inspection date, but only as a date you type. See [the inspector guides](../inspectors/your-day.md) for permit inspections.
+A failed permit inspection does not open a case, and an enforcement finding does not appear on the inspection board. A finding carries an inspection date, but only as a date you type. See [the inspector guides](../inspectors/your-day.md) for permit inspections.

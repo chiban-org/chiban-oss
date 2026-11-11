@@ -9,7 +9,7 @@ sidebar_position: 2
 
 Someone calls the office and asks for a framing inspection on Friday, or a contractor asks online. The request has to become a time on an inspector's day, and the permit holder has to hear about it. The schedule board does that. Land use staff and inspectors can both use it.
 
-Open it from **Inspections** if you are land use staff. As an inspector, **Inspections** opens **My day**, and the board is one link away: the empty-day message and the home page both lead to it.
+Land use staff open it from **Inspections**. For an inspector, **Inspections** opens **My day**, and the home page and the empty-day message link to the board.
 
 ![The schedule board with a waiting request and a week of inspector days](/img/shots/inspectors/board.png)
 
@@ -25,9 +25,9 @@ Open it from **Inspections** if you are land use staff. As an inspector, **Inspe
 
 ![The request form after finding a permit](/img/shots/inspectors/take-request.png)
 
-If the call comes outside the town's phone request hours, the form shows a note with the hours. It says you can still take the request, so take it.
+If the call comes outside the town's phone request hours, the form shows a note with the hours. It also says you can still take the request.
 
-Chiban stops you in a few cases and says why on the page:
+Chiban refuses a request in these cases and says why on the page:
 
 - The permit number matches nothing: **No permit has that number.**
 - The permit is not issued yet, so it cannot be inspected.
@@ -49,7 +49,7 @@ Use the week buttons above the grid to look further ahead. Each shows how many t
 
 The people on the permit, the applicant, owner, agent and contractor, receive an email that the inspection is scheduled, with the date and time. The inspection then shows on the inspector's **My day**.
 
-If someone else booked the same time a moment earlier, Chiban says **That time was just taken. Pick another.** If the inspector is full for the day it says so too. The town's inspection days, hours, slot length, notice rule and daily limit are set by an administrator under **Settings**, **Inspection schedule**. You cannot book outside them.
+If someone else booked the same time a moment earlier, Chiban says **That time was just taken. Pick another.** It also says so when the inspector is full for the day. The town's inspection days, hours, slot length, notice rule and daily limit are set by an administrator under **Settings**, **Inspection schedule**. Chiban does not let you book outside them.
 
 ## Move a booking
 
