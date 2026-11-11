@@ -44,7 +44,7 @@ function contractorOf(formData: FormData): ContractorChoice | null {
   return partyId === null ? null : { kind: 'party', partyId }
 }
 
-function valuesOf(formData: FormData): Record<string, unknown> | null {
+export function valuesOf(formData: FormData): Record<string, unknown> | null {
   try {
     const parsed: unknown = JSON.parse(text(formData, 'values'))
     return typeof parsed === 'object' && parsed !== null && !Array.isArray(parsed)

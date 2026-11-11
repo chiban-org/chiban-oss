@@ -3,6 +3,7 @@ import type { ReactNode } from 'react'
 import { type Fact, FactList } from '@/components/layout/PageHeader'
 import { NEW_TAB } from '@/components/newTab'
 import { CorrectPermitDialog } from '@/components/permits/CorrectPermitDialog'
+import type { AmendFormData } from '@/features/applications/amendForm'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import type { WorkPlan } from '@/features/applications/workPlanTypes'
 import { dueNext, otherOverdue } from '@/features/clocks/clockSummary'
@@ -11,6 +12,8 @@ import { lateNotice } from '@/features/hearings/noticeDeadlines'
 import type { CorrectionFormData } from '@/features/permits/correction/correctionForm'
 import { dayCount } from '@/lib/dayCount'
 import { formatCivilDate } from '@/lib/formatDate'
+import { amendApplicationAction } from './amendActions'
+import { AmendApplicationDialog } from './amendDialog'
 import { checkCorrectionAction, correctPermitAction } from './correctionActions'
 import { MoreActions } from './nextStepCard'
 
@@ -35,6 +38,11 @@ function CorrectPermit({ data }: { data: CorrectionFormData | null }) {
       actions={{ check: checkCorrectionAction, save: correctPermitAction }}
     />
   )
+}
+
+function AmendApplication({ data }: { data: AmendFormData | null }) {
+  if (data === null) return null
+  return <AmendApplicationDialog data={data} save={amendApplicationAction} />
 }
 
 type Clock = StaffApplicationView['clocks'][number]
@@ -129,11 +137,13 @@ export function ApplicationRail({
   plan,
   notice,
   correction,
+  amend,
 }: {
   view: StaffApplicationView
   plan: WorkPlan
   notice: ReactNode
   correction: CorrectionFormData | null
+  amend: AmendFormData | null
 }) {
   return (
     <div className="rail-card empty:hidden">
@@ -141,6 +151,7 @@ export function ApplicationRail({
       <Deadlines view={view} />
       {view.state === 'issued' ? <PrintLinks applicationId={view.id} /> : null}
       <CorrectPermit data={correction} />
+      <AmendApplication data={amend} />
       <MoreActions view={view} moves={plan.terminal} />
     </div>
   )
@@ -170,6 +181,7 @@ export function StatusStrip({
   notice,
   origin,
   correction,
+  amend,
   responsible,
 }: {
   view: StaffApplicationView
@@ -177,6 +189,7 @@ export function StatusStrip({
   notice: ReactNode
   origin: RecordOrigin
   correction: CorrectionFormData | null
+  amend: AmendFormData | null
   responsible: ReactNode
 }) {
   return (
@@ -195,6 +208,7 @@ export function StatusStrip({
           <PublicParcelLine view={view} />
           <MoreActions view={view} moves={plan.terminal} />
           <CorrectPermit data={correction} />
+          <AmendApplication data={amend} />
         </div>
       </details>
     </section>

@@ -1,3 +1,4 @@
+import { amendPhrase } from '@/features/applications/amendChanges'
 import { STATE_LABELS } from '@/features/applications/states'
 
 export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
@@ -84,6 +85,7 @@ export function activityPhrase(action: string, after: unknown): string {
       ? 'Moved the application to a new status'
       : `Moved the application to ${label}`
   }
+  if (action === 'application.amend') return amendPhrase(field(after, 'changes'))
   if (action === 'application.responsible_staff') {
     return field(after, 'responsibleUserId') === null
       ? 'Cleared who is responsible'
