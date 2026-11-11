@@ -3,6 +3,7 @@ import type { EnforcementStatus } from '@/db/schema'
 import { ROLE_LABELS } from '@/features/enforcement/labels'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
+import { noticeOfViolationSent } from './noticeRequirement'
 import {
   type CasePlanInput,
   type CasePlanOrder,
@@ -79,11 +80,11 @@ function violationStep(input: CasePlanInput): Step {
   const standing = findingStanding(input)
   if (standing === 'corrected') return resolveStep()
   if (standing === 'withdrawn') return noViolationStep()
-  const draft = draftOrderOf(input)
-  if (draft !== null) return draftStep(input, draft)
-  if (input.notices.length === 0) {
+  if (!noticeOfViolationSent(input.notices)) {
     return town('notice.sent', 'Send a notice of violation', { kind: 'send_notice' })
   }
+  const draft = draftOrderOf(input)
+  if (draft !== null) return draftStep(input, draft)
   const unreceived = input.notices.find((n) => n.receivedOn === null)
   if (unreceived !== undefined && !input.notices.some((n) => n.receivedOn !== null)) {
     return town('notice.received', 'Record when the notice was received', {

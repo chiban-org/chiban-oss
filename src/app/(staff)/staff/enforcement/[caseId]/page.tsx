@@ -9,6 +9,7 @@ import { assigneeChoices, caseAssignee } from '@/features/enforcement/caseAssign
 import { loadCaseDetail } from '@/features/enforcement/caseDetail'
 import { type CaseView, caseViewFor } from '@/features/enforcement/caseView'
 import { caseChipStatus } from '@/features/enforcement/chipStatus'
+import { attachableComplaints } from '@/features/enforcement/complaintCandidates'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
 import { loadFindingSuggestions } from '@/features/enforcement/sections/suggestionInputs'
 import { planCaseWork } from '@/features/enforcement/workPlan'
@@ -96,6 +97,10 @@ export default async function CasePage({ params }: { params: Promise<{ caseId: s
           { parcelId: loaded.value.staff.row.parcelId, today },
           ctx.signal,
         ),
+        attachable: await attachableComplaints(ctx.db, {
+          caseId,
+          parcelId: loaded.value.staff.row.parcelId,
+        }),
       }
     : loaded.value
   const assignee = { current, choices: can.manage ? await assigneeChoices(ctx.db) : [] }

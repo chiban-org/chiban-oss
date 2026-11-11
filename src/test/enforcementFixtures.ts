@@ -10,6 +10,7 @@ import { listRecipient, recordRoleCheck } from '@/features/enforcement/service'
 import { recordServiceEvent } from '@/features/enforcement/serviceEvents'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
+import { sendFixtureNotice } from '@/test/enforcementNoticeFixture'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 
 const signal = new AbortController().signal
@@ -132,6 +133,11 @@ export async function issuedOrder(
     ),
     'draft',
   )
+  await sendFixtureNotice(db, store, world.staff, {
+    ...opened,
+    findingId: finding.findingId,
+    sentOn: issuedOn,
+  })
   if (options.skipDesignation === true) {
     return {
       caseId: opened.caseId,

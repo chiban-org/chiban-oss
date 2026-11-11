@@ -2,6 +2,7 @@ import type { RecipientRole } from '@packs/nh/schema'
 import { MOTION_BLOCK_TEXT } from '@/features/enforcement/labels'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
+import { noticeOfViolationSent } from './noticeRequirement'
 import { rolesToServe } from './serviceStatus'
 import {
   type CasePlanInput,
@@ -41,7 +42,7 @@ const findingRow = (input: CasePlanInput) =>
   )
 
 function orderGroup(input: CasePlanInput): CaseRequirementGroup {
-  const notice = input.notices.length > 0
+  const notice = noticeOfViolationSent(input.notices)
   const drafted = input.orders.some((o) => o.row.status !== 'withdrawn')
   return {
     key: 'order',

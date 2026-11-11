@@ -72,6 +72,9 @@ export function inspectionFacts(record: InspectionRecord): Fact[] {
   ]
   if (inspection.accessNotes !== null)
     facts.push({ label: 'Access', value: inspection.accessNotes })
+  if (inspection.offGridReason !== null) {
+    facts.push({ label: 'Booked outside the town slots', value: inspection.offGridReason })
+  }
   if (previousId !== null) {
     facts.push({
       label: 'Reinspection of',

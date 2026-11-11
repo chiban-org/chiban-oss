@@ -39,6 +39,7 @@ export interface ScheduleChoice {
   date: string
   startMinute: number
   inspectorUserId: string
+  offGridReason?: string
 }
 
 export interface PickedTime {

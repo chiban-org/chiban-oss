@@ -26,6 +26,8 @@ const COPY: Record<string, string> = {
   not_designated:
     'You are not on record as a designated enforcement officer on the issue date. An administrator can add it under Settings, Administration, Enforcement officers.',
   deadline_before_issue: 'The corrective action deadline is before the issue date.',
+  notice_required:
+    'Send the notice of violation first. An order can be issued only after the notice of violation is sent.',
   stayed:
     'Enforcement is stayed by an appeal. Notes, photos, service, and answers can still be recorded.',
   order_not_active:
@@ -61,6 +63,13 @@ const COPY: Record<string, string> = {
   already_ended: 'That designation has already ended.',
   already_certified: 'Imminent peril is already certified for this appeal.',
   judgment_required: 'A fine needs a recorded court judgment for this case.',
+  complaint_not_found: 'That complaint was not found.',
+  case_not_open: 'This case has ended, so no more complaints can be attached to it.',
+  already_on_case: 'That complaint is already on this case.',
+  complaint_case_in_progress:
+    'That complaint is on a case that already has work recorded, so it cannot be moved.',
+  public_text_required:
+    'This case is shown on the public site. Write the public text for that complaint on its own case first.',
   complaint_text_unreviewed:
     'Write the public text for every complaint before showing the case on the public site.',
   verification_required:

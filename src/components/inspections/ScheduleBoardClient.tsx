@@ -3,6 +3,7 @@
 import { useRouter } from 'next/navigation'
 import { type ReactNode, useState } from 'react'
 import { useCsrfToken } from '@/components/CsrfProvider'
+import { type FieldErrorMap, FieldErrorsProvider } from '@/components/fieldErrors'
 import type {
   BoardBooking,
   BoardDay,
@@ -36,6 +37,7 @@ export function ScheduleBoardClient({
   const csrf = useCsrfToken()
   const router = useRouter()
   const [message, setMessage] = useState<string | null>(null)
+  const [fieldErrors, setFieldErrors] = useState<FieldErrorMap>({})
 
   const schedule = async (choice: ScheduleChoice): Promise<boolean> => {
     const data = new FormData()
@@ -45,6 +47,8 @@ export function ScheduleBoardClient({
     data.set('date', choice.date)
     data.set('startMinute', String(choice.startMinute))
     data.set('expectedRowVersion', String(choice.rowVersion))
+    const reason = choice.offGridReason?.trim() ?? ''
+    if (reason !== '') data.set('offGridReason', reason)
     const result = await attempt(
       () => scheduleAction(data),
       () => undefined,
@@ -54,21 +58,24 @@ export function ScheduleBoardClient({
       return false
     }
     setMessage(result.value.ok ? result.value.message : result.value.error)
+    setFieldErrors(result.value.ok ? {} : (result.value.fieldErrors ?? {}))
     router.refresh()
     return result.value.ok
   }
 
   return (
-    <ScheduleBoard
-      requests={requests}
-      bookings={bookings}
-      days={days}
-      inspectors={inspectors}
-      today={today}
-      takeRequest={takeRequest}
-      message={message}
-      onSchedule={schedule}
-      initialChosenId={initialChosenId}
-    />
+    <FieldErrorsProvider errors={fieldErrors}>
+      <ScheduleBoard
+        requests={requests}
+        bookings={bookings}
+        days={days}
+        inspectors={inspectors}
+        today={today}
+        takeRequest={takeRequest}
+        message={message}
+        onSchedule={schedule}
+        initialChosenId={initialChosenId}
+      />
+    </FieldErrorsProvider>
   )
 }

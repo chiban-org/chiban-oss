@@ -1,9 +1,11 @@
 import { ActionForm } from '@/components/ActionForm'
 import { AreaField } from '@/components/staff/fields'
 import type { CaseDetail } from '@/features/enforcement/caseDetail'
+import { ENDED_CASE_STATUSES } from '@/features/enforcement/complaintAttach'
 import { CHANNEL_LABELS } from '@/features/enforcement/labels'
 import { formatCivilDate } from '@/lib/formatDate'
 import { complaintPublicTextAction } from '../publishActions'
+import { AttachComplaint } from './AttachComplaint'
 import type { Can } from './can'
 import { Hidden, Section } from './Section'
 
@@ -82,6 +84,9 @@ export function ComplaintsSection({
           <ComplaintSummary key={c.id} complaint={c} />
         ),
       )}
+      {can.manage && !readOnly && !ENDED_CASE_STATUSES.includes(detail.staff.row.status) ? (
+        <AttachComplaint caseId={detail.staff.row.id} attachable={detail.attachable ?? []} />
+      ) : null}
     </Section>
   )
 }

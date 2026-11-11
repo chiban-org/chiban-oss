@@ -105,6 +105,9 @@ describe('counsel packet wording', () => {
       Notice sent
       Received
 
+      February 26, 2027
+      Not recorded
+
       Order CD-2027-0001
 
       Status
@@ -152,6 +155,17 @@ describe('counsel packet wording', () => {
       Served by
       Proof
 
+      Page 1 of 2
+
+
+      Town of Alder Pond
+
+      Served
+      Method
+      Recipient
+      Served by
+      Proof
+
       March 1, 2027
       Handed to the
       recipient
@@ -160,11 +174,6 @@ describe('counsel packet wording', () => {
       Sheriff Dale, Sheriff Return of service,
 
       <TODAY>
-
-      Page 1 of 2
-
-
-      Town of Alder Pond
 
       Pat Owner: answer due March 22, 2027 (moved from March 21, 2027). 20 calendar days after March 1,
       2027. Start day excluded, last day included (RSA 21:35 I). A last day on a Saturday, Sunday, or legal

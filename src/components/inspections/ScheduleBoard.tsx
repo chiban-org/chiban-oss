@@ -14,6 +14,7 @@ import type {
 import { cellKey } from '@/components/inspections/boardTypes'
 import type { BoardView } from '@/components/inspections/boardView'
 import { NarrowDay } from '@/components/inspections/NarrowDay'
+import { OffGridBooking } from '@/components/inspections/OffGridBooking'
 import { ReviewRow } from '@/components/inspections/ReviewRow'
 import { WeekSwitcher } from '@/components/inspections/SlotWeeks'
 import { TakeBoardProvider } from '@/components/inspections/takeRequestContext'
@@ -67,7 +68,7 @@ function reviewOf(board: Board): BoardView['review'] {
       <ReviewRow
         picked={picked}
         booking={board.booking}
-        onBook={() => void board.book()}
+        onBook={(reason) => void board.book(reason)}
         onCancel={board.cancelPick}
       />
     ),
@@ -110,10 +111,12 @@ function Schedule({
   board,
   view,
   message,
+  inspectors,
 }: {
   board: Board
   view: BoardView
   message: string | null
+  inspectors: BoardInspector[]
 }) {
   const narrow = useNarrow()
   const { week, narrowDay } = board
@@ -132,6 +135,15 @@ function Schedule({
         <WeekSwitcher weeks={board.weeks} shown={week.start} onShow={board.showWeek} />
       )}
       {message === null ? null : <p role="status">{message}</p>}
+      {board.chosen === undefined ? null : (
+        <OffGridBooking
+          key={board.chosen.inspectionId}
+          inspectors={inspectors}
+          today={view.today}
+          busy={board.booking}
+          onBook={board.bookOffGrid}
+        />
+      )}
       {body}
     </section>
   )
@@ -170,7 +182,7 @@ export function ScheduleBoard({
           chosenId={board.chosenId}
           onChoose={board.choose}
         />
-        <Schedule board={board} view={view} message={message} />
+        <Schedule board={board} view={view} message={message} inspectors={inspectors} />
       </div>
     </TakeBoardProvider>
   )

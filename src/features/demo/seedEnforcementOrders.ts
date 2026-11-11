@@ -10,6 +10,7 @@ import { recordCounselOutcome, referToCounsel } from '@/features/enforcement/cou
 import { recordCourtStep } from '@/features/enforcement/courtSteps'
 import { recordFinding } from '@/features/enforcement/findings'
 import { recordFine } from '@/features/enforcement/fines'
+import { sendViolationNotice } from '@/features/enforcement/notices'
 import { draftOrder, issueOrder } from '@/features/enforcement/orders'
 import { listRecipient, recordRoleCheck } from '@/features/enforcement/service'
 import { recordServiceEvent } from '@/features/enforcement/serviceEvents'
@@ -67,6 +68,21 @@ async function issuedOrderCase(
       ctx.now,
     ),
     'finding',
+  )
+  must(
+    await sendViolationNotice(
+      db,
+      ctx.store,
+      staff,
+      {
+        caseId,
+        findingIds: [finding.findingId],
+        sentOn: ctx.day(input.issuedOffset - 5),
+        method: 'certified_mail',
+      },
+      signal,
+    ),
+    'notice',
   )
   const drafted = must(
     await draftOrder(
