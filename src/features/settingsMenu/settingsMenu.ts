@@ -215,6 +215,12 @@ export const SETTINGS_MENU_ITEMS: readonly SettingsMenuItem[] = [
     access: all('config.edit', 'export.download'),
   },
   {
+    href: '/staff/admin/backups',
+    label: 'Backups',
+    group: 'admin',
+    access: config,
+  },
+  {
     href: '/staff/admin/health',
     label: 'Health',
     group: 'admin',

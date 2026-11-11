@@ -50,6 +50,7 @@ export const SETTINGS_KEYWORDS: ReadonlyMap<string, string> = new Map([
   ['/staff/admin/enforcement-officers', 'designate officer code enforcement designation'],
   ['/staff/admin/anonymous-intake', 'anonymous complaints report retention check public'],
   ['/staff/admin/export', 'download backup records documents archive'],
+  ['/staff/admin/backups', 'backup backups restore passphrase schedule retention copy'],
   ['/staff/admin/health', 'alert alerts channels background jobs monitoring failures notify'],
   ['/staff/admin/cutover', 'cutover import legacy migration reconciliation compare sign off'],
   ['/staff/admin/migration', 'scans documents batches publish old files migration'],
