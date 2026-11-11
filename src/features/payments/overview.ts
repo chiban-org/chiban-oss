@@ -45,6 +45,7 @@ export interface PaymentsOverview {
     payerName: string
     receiptId: string | null
     receiptNumber: string | null
+    paymentAttemptId: string | null
     records: { number: string; href: string }[]
   }[]
 }
@@ -69,7 +70,7 @@ async function entryRecords(
     .selectDistinct({
       entryId: ledgerAllocations.entryId,
       number: applications.number,
-      href: sql<string>`'/staff/applications/' || ${applications.id}`,
+      href: sql<string>`'/staff/applications/' || ${applications.id} || '#fees-and-payments'`,
     })
     .from(ledgerAllocations)
     .innerJoin(applications, eq(applications.id, ledgerAllocations.applicationId))
@@ -78,7 +79,7 @@ async function entryRecords(
     .selectDistinct({
       entryId: ledgerAllocations.entryId,
       number: enforcementCases.number,
-      href: sql<string>`'/staff/enforcement/' || ${enforcementCases.id}`,
+      href: sql<string>`'/staff/enforcement/' || ${enforcementCases.id} || '#fines'`,
     })
     .from(ledgerAllocations)
     .innerJoin(enforcementFines, eq(enforcementFines.id, ledgerAllocations.fineId))
