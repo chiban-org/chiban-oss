@@ -11,7 +11,10 @@ import {
 import type { DemoOverlay } from '@/features/demo/overlay/overlaySchema'
 import { planType } from '@/features/demo/overlay/planType'
 
-const EXAMPLE = path.resolve(import.meta.dirname, '../../../../docs/demo-overlay.example.json')
+const EXAMPLE = path.resolve(
+  import.meta.dirname,
+  '../../../../docs-site/docs/operations/demo-overlay.example.json',
+)
 
 function example(): unknown {
   return JSON.parse(readFileSync(EXAMPLE, 'utf8'))

@@ -137,7 +137,7 @@ When it passes, an administrator turns anonymous intake on from the Anonymous in
 
 ## Exports
 
-Staff with export permission can request a full export of the town's records from the export page at `/staff/admin/export`. An export is a single archive that includes the data as NDJSON, CSV files and an Excel workbook, the uploaded documents with a PDF/A copy of each PDF, and a description of the format, which is also published in `docs/export-format.md`. Downloads are served through the `s3.APP_DOMAIN` name, so that record must resolve for the download link to work.
+Staff with export permission can request a full export of the town's records from the export page at `/staff/admin/export`. An export is a single archive that includes the data as NDJSON, CSV files and an Excel workbook, the uploaded documents with a PDF/A copy of each PDF, and a description of the format, which is also published as the [export archive format](../reports-and-export/export-format.md). Downloads are served through the `s3.APP_DOMAIN` name, so that record must resolve for the download link to work.
 
 ## Backups
 

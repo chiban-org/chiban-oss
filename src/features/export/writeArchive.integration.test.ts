@@ -146,8 +146,11 @@ describe('writeArchive', () => {
     await handle.db.execute(sql`delete from processor_accounts where account_ref = 'acct_x'`)
   })
 
-  it('docs/export-format.md matches renderFormatDoc output', () => {
-    const onDisk = readFileSync(new URL('../../../docs/export-format.md', import.meta.url), 'utf8')
+  it('docs-site/docs/reports-and-export/export-format.md matches renderFormatDoc output', () => {
+    const onDisk = readFileSync(
+      new URL('../../../docs-site/docs/reports-and-export/export-format.md', import.meta.url),
+      'utf8',
+    )
     expect(onDisk).toBe(renderFormatDoc(EXPORT_ENTITIES))
   })
 

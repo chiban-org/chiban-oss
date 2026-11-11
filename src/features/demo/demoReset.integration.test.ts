@@ -17,7 +17,10 @@ import { makeUser } from '@/test/factories'
 let handle: TestDb
 const signal = new AbortController().signal
 const original = { nodeEnv: env.NODE_ENV, dev: env.ENABLE_DEV_SIGN_IN }
-const EXAMPLE = path.resolve(import.meta.dirname, '../../../docs/demo-overlay.example.json')
+const EXAMPLE = path.resolve(
+  import.meta.dirname,
+  '../../../docs-site/docs/operations/demo-overlay.example.json',
+)
 
 function exampleOverlay() {
   const json = JSON.parse(readFileSync(EXAMPLE, 'utf8'))
