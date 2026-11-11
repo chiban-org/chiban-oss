@@ -48,10 +48,7 @@ async function plannedAllocations(
   input: RefundInput,
 ): Promise<Result<AllocationInput[], 'over_reversed' | 'amount_mismatch'>> {
   if (input.allocations === undefined) {
-    const split = await allocateReversal(db, input.entryId, input.amountCents, {
-      ...(input.applicationId === undefined ? {} : { applicationId: input.applicationId }),
-      ...(input.fineId === undefined ? {} : { fineId: input.fineId }),
-    })
+    const split = await allocateReversal(db, input.entryId, input.amountCents, input)
     return split.excessCents > 0 ? err('over_reversed') : ok(split.allocations)
   }
   const negated = input.allocations.map((a) => ({ ...a, amountCents: -Math.abs(a.amountCents) }))

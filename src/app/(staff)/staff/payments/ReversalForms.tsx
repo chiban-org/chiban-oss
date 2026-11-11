@@ -7,28 +7,24 @@ import { ActionForm } from '@/components/ActionForm'
 import { TextField } from '@/components/staff/fields'
 import { formatCents } from '@/lib/money'
 
-export type ReversalScope = { applicationId: string } | { fineId: string }
+export type ReversalFormScope = { applicationId: string } | { fineId: string }
 
 export interface ReversalTarget {
   entryId: string
   method: string
-  scope: ReversalScope
+  scope: ReversalFormScope
   refundable: { label: string; cents: number }[]
 }
 
-function scopeField(scope: ReversalScope): { name: string; value: string } {
+function scopeOf(scope: ReversalFormScope): { name: string; value: string; noun: string } {
   return 'fineId' in scope
-    ? { name: 'fineId', value: scope.fineId }
-    : { name: 'applicationId', value: scope.applicationId }
-}
-
-function recordNoun(scope: ReversalScope): string {
-  return 'fineId' in scope ? 'fine' : 'application'
+    ? { name: 'fineId', value: scope.fineId, noun: 'fine' }
+    : { name: 'applicationId', value: scope.applicationId, noun: 'application' }
 }
 
 export function ReversalForms({ target }: { target: ReversalTarget }) {
-  const field = scopeField(target.scope)
-  const noun = recordNoun(target.scope)
+  const field = scopeOf(target.scope)
+  const { noun } = field
   return (
     <>
       <ActionForm
@@ -66,9 +62,7 @@ export function ReversalForms({ target }: { target: ReversalTarget }) {
           }}
         >
           <input type="hidden" name="entryId" value={target.entryId} />
-          {'fineId' in target.scope ? (
-            <input type="hidden" name="fineId" value={target.scope.fineId} />
-          ) : null}
+          <input type="hidden" name={field.name} value={field.value} />
           <TextField label="Returned on" name="returnedOn" type="date" required />
           <TextField label="Reason (at least 10 characters)" name="reason" required />
         </ActionForm>

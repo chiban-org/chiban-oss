@@ -17,6 +17,7 @@ const NOW = new Date('2027-03-02T17:00:00Z')
 let handle: TestDb
 let fake: FakeProcessor
 let olderAccountId: string
+let currentAccountId: string
 
 async function insertOlderRow(
   adminId: string,
@@ -43,7 +44,7 @@ beforeEach(async () => {
   handle = await makeTestDb()
   const { world } = await setupTradeWorld(handle.db)
   const trade = await submittedTrade(handle.db, world)
-  await setupPayments(handle.db, world.admin)
+  currentAccountId = (await setupPayments(handle.db, world.admin)).accountId
   olderAccountId = await insertOlderRow(world.admin.userId)
   await makeCardAttempt(handle.db, trade)
   await handle.db.update(paymentAttempts).set({ processorObjectId: 'pi_1' })
@@ -92,6 +93,11 @@ describe('webhook addresses saved before the account was kept in place', () => {
   it('an older address accepts the signing secret saved most recently for that merchant', async () => {
     expect((await deliverTo(olderAccountId, 'whsec_test')).status).toBe(200)
     expect(await entryCount()).toBe(1)
+  })
+
+  it('the current address refuses a signing secret that was replaced', async () => {
+    expect((await deliverTo(currentAccountId, 'whsec_old')).status).toBe(400)
+    expect(await entryCount()).toBe(0)
   })
 
   it('an older address for a different merchant does not reach this payment', async () => {

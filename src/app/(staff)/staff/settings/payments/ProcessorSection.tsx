@@ -3,6 +3,7 @@ import { PracticeNotice } from '@/components/PracticeNotice'
 import { SelectField, TextField } from '@/components/staff/fields'
 import { processorFormDefaults } from '@/features/payments/processorFormDefaults'
 import type { ProcessorSettingsView } from '@/features/payments/settingsView'
+import type { WebhookView } from '@/features/payments/webhookAddress'
 import { saveProcessorAccountAction } from './actions'
 import { WebhookAddress } from './WebhookAddress'
 
@@ -12,12 +13,32 @@ const ACTIVE_COPY = {
   unreadable: 'Processor credentials cannot be read',
 } as const
 
+function WebhookSection({ webhook }: { webhook: WebhookView }) {
+  if (webhook.state === 'not_needed') return null
+  if (webhook.state === 'unsaved') {
+    return (
+      <p className="text-muted-foreground">
+        Save the account once to get the webhook address for the processor's dashboard.
+      </p>
+    )
+  }
+  return (
+    <>
+      <WebhookAddress address={webhook.address} />
+      <p className="text-muted-foreground">
+        Paste this address into the webhook settings in the processor's dashboard. It stays the same
+        when you save this account again.
+      </p>
+    </>
+  )
+}
+
 export function ProcessorSection({
   accounts,
   active,
   cloverStatus,
-  webhookAddress,
-}: Pick<ProcessorSettingsView, 'accounts' | 'active' | 'cloverStatus' | 'webhookAddress'>) {
+  webhook,
+}: Pick<ProcessorSettingsView, 'accounts' | 'active' | 'cloverStatus' | 'webhook'>) {
   const current = processorFormDefaults(accounts)
   return (
     <section aria-labelledby="processor">
@@ -30,19 +51,7 @@ export function ProcessorSection({
           </li>
         ))}
       </ul>
-      {webhookAddress === null ? (
-        <p className="text-muted-foreground">
-          Save the account once to get the webhook address for the processor's dashboard.
-        </p>
-      ) : (
-        <>
-          <WebhookAddress address={webhookAddress} />
-          <p className="text-muted-foreground">
-            Paste this address into the webhook settings in the processor's dashboard. It stays the
-            same when you save this account again.
-          </p>
-        </>
-      )}
+      <WebhookSection webhook={webhook} />
       {cloverStatus === 'stubbed' ? (
         <PracticeNotice>
           Clover connection is not yet verified against a live merchant account.

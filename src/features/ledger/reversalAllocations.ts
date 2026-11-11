@@ -68,6 +68,16 @@ function inScope(allocation: AllocationInput, scope: ReversalScope): boolean {
   return application && (scope.fineId === undefined || allocation.fineId === scope.fineId)
 }
 
+export async function refundableCents(
+  tx: DbOrTx,
+  entryId: string,
+  scope: ReversalScope,
+): Promise<number> {
+  return (await netAllocations(tx, entryId))
+    .filter((n) => n.cents > 0 && inScope(n.allocation, scope))
+    .reduce((sum, n) => sum + n.cents, 0)
+}
+
 export async function allocateReversal(
   tx: DbOrTx,
   entryId: string,

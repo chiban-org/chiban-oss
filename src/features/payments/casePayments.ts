@@ -3,7 +3,7 @@ import type { Db } from '@/db/client'
 import { ledgerAllocations, ledgerEntries, receipts } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import { netAllocations } from '@/features/ledger/reversalAllocations'
+import { refundableCents } from '@/features/ledger/reversalAllocations'
 import { mayViewPayments } from '@/features/payments/overview'
 
 export interface CasePaymentEntry {
@@ -23,12 +23,6 @@ export interface CasePaymentEntry {
 export interface CasePayments {
   canRefund: boolean
   byFine: ReadonlyMap<string, CasePaymentEntry[]>
-}
-
-async function refundableOnFine(db: Db, entryId: string, fineId: string): Promise<number> {
-  return (await netAllocations(db, entryId))
-    .filter((n) => n.allocation.fineId === fineId && n.cents > 0)
-    .reduce((sum, n) => sum + n.cents, 0)
 }
 
 export async function loadCasePayments(
@@ -64,9 +58,11 @@ export async function loadCasePayments(
   const byFine = new Map<string, CasePaymentEntry[]>()
   for (const { fineId, postedAt: _postedAt, ...entry } of rows) {
     if (fineId === null) continue
-    const refundableCents =
-      canRefund && entry.entryType === 'payment' ? await refundableOnFine(db, entry.id, fineId) : 0
-    byFine.set(fineId, [...(byFine.get(fineId) ?? []), { ...entry, refundableCents }])
+    const refundable =
+      canRefund && entry.entryType === 'payment'
+        ? await refundableCents(db, entry.id, { fineId })
+        : 0
+    byFine.set(fineId, [...(byFine.get(fineId) ?? []), { ...entry, refundableCents: refundable }])
   }
   return { canRefund, byFine }
 }

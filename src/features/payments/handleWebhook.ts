@@ -61,14 +61,17 @@ async function merchantAccounts(
     const value = openAccount(row)
     return value.state === 'known' ? [value.value] : []
   })
-  const others = opened.filter((o) => o.account.id !== addressed.account.id)
+  const current = opened[0] ?? addressed
   return {
-    current: opened[0] ?? addressed,
-    accountIds: [addressed.account.id, ...others.map((o) => o.account.id)],
-    secrets: [
-      addressed.webhookSecret,
-      ...others.map((o) => o.webhookSecret).filter((s) => s !== addressed.webhookSecret),
+    current,
+    accountIds: [
+      addressed.account.id,
+      ...opened.map((o) => o.account.id).filter((id) => id !== addressed.account.id),
     ],
+    secrets:
+      current.webhookSecret === addressed.webhookSecret
+        ? [addressed.webhookSecret]
+        : [addressed.webhookSecret, current.webhookSecret],
   }
 }
 

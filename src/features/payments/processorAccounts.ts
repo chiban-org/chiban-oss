@@ -86,12 +86,7 @@ export async function saveProcessorAccount(
   if (env.CHIBAN_DEMO_MODE && input.processor !== 'simulated') return err('demo_simulated_only')
   if (input.processor === 'simulated' && !flags.simulatedEnabled) return err('simulated_disabled')
   return await transactionResult(db, async (tx) => {
-    const [sameMerchant] = await tx
-      .select({ id: processorAccounts.id })
-      .from(processorAccounts)
-      .where(sameMerchantAs(input))
-      .orderBy(desc(processorAccounts.isActive), desc(processorAccounts.createdAt))
-      .limit(1)
+    const [sameMerchant] = await sameMerchantAccounts(tx, input, signal)
     await tx
       .update(processorAccounts)
       .set({ isActive: false })
