@@ -1,5 +1,10 @@
 import type { DocumentPanelActions } from '@/components/documents/DocumentPanel'
-import { retryPreservationAction, setAudiencesAction, setPublicAction } from './actions'
+import {
+  assignSeriesAction,
+  retryPreservationAction,
+  setAudiencesAction,
+  setPublicAction,
+} from './actions'
 import { approveRenditionAction, revokeApprovalAction } from './renditionActions'
 import { createStaffUploadIntentAction, uploadRedactedAction } from './uploadActions'
 
@@ -9,5 +14,6 @@ export const PANEL_ACTIONS: DocumentPanelActions = {
   approve: approveRenditionAction,
   revoke: revokeApprovalAction,
   retry: retryPreservationAction,
+  setSeries: assignSeriesAction,
   uploadRedacted: { createIntent: createStaffUploadIntentAction, finalize: uploadRedactedAction },
 }

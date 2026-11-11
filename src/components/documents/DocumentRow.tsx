@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react'
 import { ActionForm } from '@/components/ActionForm'
 import { RecordKeeping } from '@/components/documents/RecordKeeping'
+import { SeriesForm } from '@/components/documents/SeriesForm'
 import type { UploaderActions } from '@/components/documents/Uploader'
 import { WhoCanSee } from '@/components/documents/WhoCanSee'
 import { NEW_TAB } from '@/components/newTab'
@@ -19,6 +20,7 @@ export interface DocumentPanelActions {
   retry: FormAction
   approve?: FormAction
   revoke?: FormAction
+  setSeries?: FormAction
   uploadRedacted: UploaderActions
 }
 
@@ -53,6 +55,9 @@ function ManageControls({
       <summary className="text-sm">{mayAct(doc, props) ? 'Manage' : 'Details'}</summary>
       <div className="mt-3 space-y-4 rounded-md bg-canvas p-4">
         <RecordKeeping doc={doc} seriesShown={seriesShown} />
+        {props.canManage && props.actions.setSeries !== undefined ? (
+          <SeriesForm doc={doc} action={props.actions.setSeries} />
+        ) : null}
         {doc.canRedact && doc.originalVersionId !== null ? (
           <a href={`/staff/records/redact/${doc.originalVersionId}`} className="inline-block">
             Redact this document
