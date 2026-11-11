@@ -2,6 +2,7 @@
 
 import { getMailTransport } from '@/features/mail/transport'
 import { denyRequest } from '@/features/rtk/denial'
+import type { ReleaseDelivery } from '@/features/rtk/releaseDelivery'
 import { createRelease } from '@/features/rtk/releases'
 import { closeRequest, logRequest } from '@/features/rtk/requests'
 import { recordFirstResponse } from '@/features/rtk/responses'
@@ -121,24 +122,33 @@ export async function withholdingAction(formData: FormData): Promise<ActionResul
   )
 }
 
+const RELEASED_COPY: Record<ReleaseDelivery, string> = {
+  none: 'Records released.',
+  attached: 'Records released and emailed to the requester.',
+  link: 'Records released and a link emailed to the requester.',
+  link_fallback:
+    'Records released. The files were too large to attach, so the requester was emailed a link instead.',
+}
+
 export async function createReleaseAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffFormToday(formData, releaseForm, async ({ db, actor, signal }, input) =>
-    recordsOutcome(
-      await createRelease(
-        db,
-        getObjectStore(),
-        getMailTransport(),
-        actor,
-        {
-          requestId: input.requestId,
-          releasedOn: input.releasedOn,
-          method: input.method,
-          items: input.items,
-          ...(input.recipientEmail === null ? {} : { recipientEmail: input.recipientEmail }),
-        },
-        signal,
-      ),
-      'Records released.',
+  return await runStaffFormToday(formData, releaseForm, async ({ db, actor, signal }, input) => {
+    const released = await createRelease(
+      db,
+      getObjectStore(),
+      getMailTransport(),
+      actor,
+      {
+        requestId: input.requestId,
+        releasedOn: input.releasedOn,
+        method: input.method,
+        items: input.items,
+        ...(input.recipientEmail === null ? {} : { recipientEmail: input.recipientEmail }),
+      },
+      signal,
+    )
+    return recordsOutcome(
+      released,
+      released.ok ? RELEASED_COPY[released.value.delivery] : RELEASED_COPY.none,
       {
         future_date: 'releasedOn',
         before_received: 'releasedOn',
@@ -147,8 +157,8 @@ export async function createReleaseAction(formData: FormData): Promise<ActionRes
         approval_revoked: 'items',
         duplicate_document: 'items',
       },
-    ),
-  )
+    )
+  })
 }
 
 export async function closeRequestAction(formData: FormData): Promise<ActionResult> {

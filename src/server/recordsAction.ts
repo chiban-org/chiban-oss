@@ -28,7 +28,7 @@ export const RECORDS_COPY: Record<string, string> = {
     'One of the approvals was revoked. Approve the version again before releasing it.',
   redaction_not_cited:
     'A redacted copy needs the exemptions drawn in Chiban before it can be released.',
-  recipient_required: 'Enter the email address for the link.',
+  recipient_required: 'Enter the email address to send the records to.',
   send_failed: 'The email could not be sent. Nothing was released.',
   redaction_failed:
     'The redaction could not be completed. Check that every box is on the page and try again.',

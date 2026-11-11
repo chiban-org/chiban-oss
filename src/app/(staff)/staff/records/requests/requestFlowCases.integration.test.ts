@@ -229,7 +229,9 @@ describe('createReleaseAction items and recipient', () => {
 
   it('asks for an email address when the release is a link', async () => {
     const { value, written } = await attempt({ method: 'electronic_link' })
-    expect(value).toEqual(refuseField('recipientEmail', 'Enter the email address for the link.'))
+    expect(value).toEqual(
+      refuseField('recipientEmail', 'Enter the email address to send the records to.'),
+    )
     expect(written).toEqual([])
   })
 

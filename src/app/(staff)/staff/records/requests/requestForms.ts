@@ -149,7 +149,7 @@ export const releaseForm = (today: CivilDate) =>
       recipientEmail: optionalEmail('an email address'),
     })
     .superRefine((v, ctx) => {
-      if (v.method === 'electronic_link' && v.recipientEmail === null)
+      if ((v.method === 'electronic_link' || v.method === 'email') && v.recipientEmail === null)
         ctx.addIssue({
           code: 'custom',
           path: ['recipientEmail'],

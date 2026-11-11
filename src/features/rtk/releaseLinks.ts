@@ -10,7 +10,7 @@ import {
   rtkRequests,
 } from '@/db/schema'
 import { releaseFilename } from '@/features/rtk/releaseFilename'
-import { hashReleaseToken } from '@/features/rtk/releases'
+import { hashReleaseToken } from '@/features/rtk/releaseMail'
 import type { StoredObject } from '@/features/storage/delivery'
 import { getTownSettings } from '@/features/town/settings'
 import { type CivilDate, todayInTimeZone } from '@/types/civilDate'

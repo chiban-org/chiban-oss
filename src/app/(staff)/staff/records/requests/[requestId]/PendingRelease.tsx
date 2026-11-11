@@ -105,7 +105,12 @@ export function PendingRelease({
           required
         />
         <SelectField label="How" name="method" options={Object.entries(RTK_METHOD_LABELS)} />
-        <TextField label="Email address, for a link" name="recipientEmail" type="email" />
+        <TextField
+          label="Requester's email address"
+          name="recipientEmail"
+          type="email"
+          hint="Needed when the records go by email, as a link or as attachments."
+        />
       </ActionForm>
     </section>
   )
