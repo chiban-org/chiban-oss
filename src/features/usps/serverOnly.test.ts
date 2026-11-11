@@ -63,12 +63,16 @@ describe('USPS credentials stay on the server', () => {
     expect(leaks.map((f) => path.relative(ROOT, f))).toEqual([])
   })
 
-  it('names the credentials only in the environment schema and the lookup choice', () => {
+  it('names the credentials only in the environment schema, its documentation and the lookup choice', () => {
     const naming = walk(SRC)
       .filter((f) => !/\.test\.tsx?$/.test(f))
       .filter((f) => /USPS_CLIENT_(ID|SECRET)/.test(readFileSync(f, 'utf8')))
       .map((f) => path.relative(ROOT, f))
       .sort()
-    expect(naming).toEqual(['src/config/env.ts', 'src/features/usps/chooseLookup.ts'])
+    expect(naming).toEqual([
+      'src/config/envDocs.ts',
+      'src/config/envSchema.ts',
+      'src/features/usps/chooseLookup.ts',
+    ])
   })
 })
