@@ -253,6 +253,9 @@ describe('staff navigation', () => {
     expect(activeNavHref('/staff/boards/meetings/123', STAFF_NAV_ITEMS)).toBe(
       '/staff/boards/meetings',
     )
+    expect(activeNavHref('/staff/boards/appeals/123', STAFF_NAV_ITEMS)).toBe(
+      '/staff/boards/appeals',
+    )
     expect(activeNavHref('/staff/applicationsx', STAFF_NAV_ITEMS)).toBeNull()
   })
 

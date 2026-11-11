@@ -84,6 +84,13 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
     access: any('board.record'),
   },
   {
+    href: '/staff/boards/appeals',
+    label: 'Appeals',
+    group: 'boards',
+    icon: 'appeals',
+    access: any('board.record'),
+  },
+  {
     href: '/staff/boards/members',
     label: 'Board members',
     group: 'boards',

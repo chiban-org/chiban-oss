@@ -37,6 +37,7 @@ export const NAV_ICONS = [
   'enforcement',
   'boards',
   'meetings',
+  'appeals',
   'members',
   'contacts',
   'contractors',
