@@ -1,0 +1,114 @@
+[
+  {
+    "file": "administrator/settings-menu.png",
+    "persona": "Avery Admin",
+    "path": "/staff/settings",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/users-list.png",
+    "persona": "Avery Admin",
+    "path": "/staff/admin/users",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/invite-staff.png",
+    "persona": "Avery Admin",
+    "path": "/staff/admin/users/invite",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/account.png",
+    "persona": "Avery Admin",
+    "path": "/staff/account",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/starters.png",
+    "persona": "Avery Admin",
+    "path": "/staff/settings/starters",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/fee-schedule.png",
+    "persona": "Avery Admin",
+    "path": "/staff/settings/fee_schedule/bp-fees",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/form-builder.png",
+    "persona": "Avery Admin",
+    "path": "/staff/settings/form/bp-form",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/boards.png",
+    "persona": "Avery Admin",
+    "path": "/staff/settings/boards",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/state-law.png",
+    "persona": "Avery Admin",
+    "path": "/staff/settings/state-law",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/payments.png",
+    "persona": "Avery Admin",
+    "path": "/staff/settings/payments",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/fee-overrides.png",
+    "persona": "Avery Admin",
+    "path": "/staff/overrides/fees",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/parcel-id-overrides.png",
+    "persona": "Avery Admin",
+    "path": "/staff/overrides/aliases",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/enforcement-officers.png",
+    "persona": "Avery Admin",
+    "path": "/staff/admin/enforcement-officers",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/anonymous-intake.png",
+    "persona": "Avery Admin",
+    "path": "/staff/admin/anonymous-intake",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/health.png",
+    "persona": "Avery Admin",
+    "path": "/staff/admin/health",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "administrator/letterhead.png",
+    "persona": "Avery Admin",
+    "path": "/staff/settings/letterhead",
+    "width": 1280,
+    "height": 800
+  }
+]
