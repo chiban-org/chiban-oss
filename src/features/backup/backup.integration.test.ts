@@ -113,6 +113,12 @@ beforeAll(async () => {
     'application/x-tar',
     signal,
   )
+  await store.putBytes(
+    'uploads/tmp/abandoned',
+    Buffer.from('half uploaded'),
+    'application/pdf',
+    signal,
+  )
   root = await mkdtemp(join(tmpdir(), 'chiban-backup-'))
   const made = await backup()
   if (!made.ok) throw new Error(JSON.stringify(made.error))
@@ -158,6 +164,7 @@ describe('backup and restore verification', () => {
     const entries = await entriesOf(backupFile)
     const names = [...entries.keys()]
     expect(names.filter((n) => n.startsWith('objects/exports/'))).toEqual([])
+    expect(names.filter((n) => n.startsWith('objects/uploads/tmp/'))).toEqual([])
     expect(names.some((n) => n.startsWith('objects/blobs/'))).toBe(true)
     expect(names).toContain('database.dump')
     expect(names).toContain('secrets.json')

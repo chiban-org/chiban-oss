@@ -18,6 +18,7 @@ import { redactionRunJob } from './redactionRun'
 import { renditionsDeriveJob } from './renditionsDerive'
 import { reportsScheduledJob } from './reportsScheduled'
 import { jobsSweepJob } from './sweep'
+import { uploadsCleanupJob } from './uploadsCleanup'
 
 export const ALL_JOBS: JobDefinition<object>[] = [
   heartbeatJob,
@@ -43,4 +44,5 @@ export const ALL_JOBS: JobDefinition<object>[] = [
   filesDeleteJob,
   reportsScheduledJob,
   backupsScheduledJob,
+  uploadsCleanupJob,
 ]

@@ -123,6 +123,8 @@ export const ERROR_COPY: Record<string, string> = {
   foreign_object: 'The processor reports a payment from a different account. Nothing was recorded.',
   no_fee_line: 'No fee line on that application can take this amount.',
   no_edition_for_date: 'No code edition is on record for the receipt date.',
+  too_many_pending:
+    'You have too many uploads in progress. Finish or wait for them, then try again.',
 }
 
 export function errorCopy(code: string): string {

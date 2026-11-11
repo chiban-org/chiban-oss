@@ -19,6 +19,7 @@ const UPLOAD_COPY = {
   series_required: 'Choose a record series for a parcel file.',
   unknown_series: 'Choose a record series from the list.',
   doc_kind_not_allowed: 'That kind of document cannot be added here.',
+  too_many_pending: errorCopy('too_many_pending'),
   expired: 'The upload took too long. Try again.',
   already_finalized: 'That upload was already completed.',
   not_uploaded: 'The file did not arrive. Try again.',

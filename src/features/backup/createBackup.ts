@@ -29,7 +29,7 @@ import { err, ok, type Result } from '@/types/result'
 const run = promisify(execFile)
 
 export const MIN_PASSPHRASE_LENGTH = 16
-export const EXCLUDED_PREFIX = 'exports/'
+export const EXCLUDED_PREFIXES = ['exports/', 'uploads/tmp/']
 export const BACKUP_FOLDER = 'backups'
 export const BACKUP_FILE_NAME = /^chiban-backup-\d{4}-\d{2}-\d{2}\.bin$/
 
@@ -109,7 +109,9 @@ async function buildArchive(
       ),
     )
     const objects: ObjectRecord[] = []
-    const keys = (await deps.store.list('', signal)).filter((k) => !k.startsWith(EXCLUDED_PREFIX))
+    const keys = (await deps.store.list('', signal)).filter(
+      (k) => !EXCLUDED_PREFIXES.some((prefix) => k.startsWith(prefix)),
+    )
     for (const key of keys) {
       signal.throwIfAborted()
       const record = await writeObject(deps.store, tar, key, signal)

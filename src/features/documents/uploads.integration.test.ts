@@ -215,3 +215,28 @@ describe('upload intents', () => {
     expect((await handle.db.select().from(files)).length).toBe(before + 1)
   })
 })
+
+describe('pending upload cap', () => {
+  it('refuses the 21st open intent and allows one again after the others expire', async () => {
+    const actor = await staffActor(handle.db)
+    const at = new Date('2027-05-01T10:00:00.000Z')
+    const ask = (when: Date) =>
+      createUploadIntent(
+        handle.db,
+        store,
+        actor,
+        {
+          ...intentInput(applicationId),
+          target: { kind: 'parcel', id: world.parcelId },
+          seriesKey: 'nh.rs.blueprints_architectural',
+        },
+        signal,
+        when,
+      )
+    for (let i = 0; i < 20; i++) expect((await ask(at)).ok).toBe(true)
+    const refused = await ask(at)
+    expect(refused).toEqual({ ok: false, error: 'too_many_pending' })
+    const later = new Date(at.getTime() + 16 * 60 * 1000)
+    expect((await ask(later)).ok).toBe(true)
+  })
+})
