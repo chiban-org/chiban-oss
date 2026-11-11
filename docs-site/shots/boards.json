@@ -1,0 +1,8 @@
+[
+  { "file": "boards/boards.png", "persona": "Sam Clerk", "path": "/staff/boards", "width": 1280, "height": 800 },
+  { "file": "boards/meetings-list.png", "persona": "Sam Clerk", "path": "/staff/boards/meetings", "width": 1280, "height": 800 },
+  { "file": "boards/packets-list.png", "persona": "Sam Clerk", "path": "/staff/boards/packets", "width": 1280, "height": 800 },
+  { "file": "boards/members.png", "persona": "Sam Clerk", "path": "/staff/boards/members", "width": 1280, "height": 800 },
+  { "file": "boards/public-meetings.png", "persona": "Sam Clerk", "path": "/meetings", "width": 1280, "height": 800 },
+  { "file": "boards/your-board.png", "persona": "Robin Vale", "path": "/board", "width": 1280, "height": 800 }
+]
