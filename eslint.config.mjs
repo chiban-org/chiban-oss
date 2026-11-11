@@ -11,6 +11,7 @@ export default tseslint.config(
       '.next/**',
       '.claude/**',
       '.worktrees/**',
+      'docs-site/**',
       'next-env.d.ts',
       'dist/**',
       'build/**',

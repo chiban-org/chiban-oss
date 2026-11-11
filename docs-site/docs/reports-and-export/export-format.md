@@ -1,3 +1,12 @@
+---
+sidebar_label: "Export archive format"
+generated: true
+generated_by: "pnpm docs:generate"
+generated_from:
+  - "src/features/export/formatDoc.ts"
+  - "src/features/export/entities.ts"
+---
+
 # Chiban export format
 
 Format version 2.2.0.

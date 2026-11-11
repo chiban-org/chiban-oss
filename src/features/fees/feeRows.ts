@@ -20,14 +20,14 @@ export interface AssessmentLike {
   computation: FeeComputation
 }
 
-const STAGE_TEXT: Record<FeeStage, string> = {
+export const FEE_STAGE_TEXT: Record<FeeStage, string> = {
   at_intake: 'Due at intake',
   at_approval: 'Due at approval',
   at_renewal: 'Due at renewal',
   at_notice: 'Due with notice',
 }
 
-const STAGES: ReadonlyMap<string, string> = new Map(Object.entries(STAGE_TEXT))
+const STAGES: ReadonlyMap<string, string> = new Map(Object.entries(FEE_STAGE_TEXT))
 
 const PREVIEW_TEXT = 'Next assessment, not yet due'
 

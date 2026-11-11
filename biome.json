@@ -12,6 +12,7 @@
       "!**/.next/**",
       "!.claude",
       "!.worktrees",
+      "!docs-site",
       "!next-env.d.ts",
       "!**/build/**",
       "!**/coverage/**",

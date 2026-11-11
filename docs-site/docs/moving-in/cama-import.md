@@ -1,16 +1,42 @@
-# CAMA owner import
+---
+title: Loading owners from the assessing file
+sidebar_label: Owners from the assessing file
+description: Fill in parcel owners, mailing addresses and site addresses from the assessing office's CAMA export.
+---
 
-Chiban fills each parcel's owner name, mailing address, and site address from a periodic CAMA
-file. The file is a delimited text file with one row per assessing record. Open it from
-Imports, then CAMA.
+# Loading owners from the assessing file
 
-The Avitar export layout has not been checked against a real Avitar file. The default layout
-below is the Chiban one. If your file uses other columns, match them with the column pickers
-before you run an import.
+The assessing office keeps the town's owner names and mailing addresses in its CAMA system. Chiban reads them from a file that system exports, so that parcels show the right owner and abutter lists go to the right mailing address. Load a new file each time the assessing office gives you one.
 
-## Chiban CAMA CSV v1
+You need the permission to run imports, which administrators and land use staff have. The work happens on the **Imports** page, in the CAMA section.
 
-A comma separated file with a header row and these columns, in this order:
+## What a file update does
+
+A parcel with no owner name or mailing address gets the one in the file. When the file names a different owner or mailing address from the one Chiban has, the parcel is left alone: the row waits under **Exceptions** as an owner change until someone accepts it. A changed site address is applied straight away and kept in the audit log. A blank column never erases what Chiban already has.
+
+The import never creates a parcel. A row whose parcel ID matches no parcel goes to **Exceptions** as an unknown CAMA parcel, and so does a row for a retired parcel. When the file lists every parcel, Chiban also reports the parcels that have a CAMA number but are missing from the file.
+
+Loading the same file a second time changes nothing.
+
+Once a CAMA layout is saved, owner names and mailing addresses come only from the CAMA file, and the parcels layer can no longer fill them in.
+
+The **Imports** page shows when the CAMA file was last loaded, and marks it as out of date once more days have passed than the layer's setting allows.
+
+## Loading a file
+
+1. On the **Imports** page, go to the CAMA section and choose the file under **Column mapping**.
+2. Pick the encoding and the delimiter (comma, tab or pipe). If you are not sure of the encoding, leave it on **Detect**. Choose **Read the file and preview**.
+3. Match the columns. The pickers list the columns found in the file. For the parcel ID, add its parts in order: each part is a column with a width, or fixed digits. For owner name, mailing address and site address, pick one or more columns, and set what goes between two owner names.
+4. Check the preview. It shows the first 10 rows with the parcel ID each one builds and whether that ID matches a parcel, matches a retired parcel, matches no parcel, or could not be built. Change the pickers and preview again until the IDs match.
+5. Choose **Save mapping** to keep the layout for next time, then **Run import**.
+
+After the first time, the saved layout is used again, so a new file from the same system needs only steps 1, 2 and 5.
+
+## The default layout
+
+Chiban starts with its own layout, the Chiban CAMA CSV v1. If your file uses other columns, match them with the pickers before you run an import. The Avitar export layout has not yet been checked against a real Avitar file.
+
+The default layout is a comma-separated file with a header row and these columns, in this order:
 
 | Column | Meaning |
 | --- | --- |
@@ -28,56 +54,16 @@ A comma separated file with a header row and these columns, in this order:
 | `site_number` | Street number of the parcel |
 | `site_street` | Street name of the parcel |
 
-The file may be UTF-8 or Windows-1252. The default setting detects which.
+The file may be UTF-8 or Windows-1252.
 
 ### How the parcel ID is built
 
-The 15 digit CAMA number is composed from the row: `map` padded to 3 digits, `lot` padded to 3,
-`sub` padded to 3, the fixed digits `000`, and `unit` padded to 3. A row with `7`, `14`, `0`,
-`0` in those columns becomes `007014000000000`. Parts are padded with zeros on the left. A part
-that has more digits than its width, or is not made of digits, leaves the row without an ID and
-the row goes to the exception queue as an ID format mismatch. Nothing is truncated.
+The 15-digit CAMA number is built from the row: the map padded to 3 digits, the lot padded to 3, the sublot padded to 3, the fixed digits `000`, and the unit padded to 3. Map 7, lot 14, sublot 0 and unit 0 become `007014000000000`. Parts are padded with zeros on the left.
 
-Condominium units have one CAMA number each. All the units of a condominium resolve to the
-condominium's one parcel.
+A part with more digits than its width, or with anything other than digits in it, is never cut short. The row gets no ID and goes to **Exceptions** as an ID format mismatch.
+
+Each condominium unit has its own CAMA number, and all the units of a condominium point to the condominium's one parcel.
 
 ### How names and addresses are built
 
-Owner names from `owner_1` and `owner_2` are joined with ` & `. A blank column is left out. The
-mailing address joins the non-blank mailing columns with a space. The site address joins
-`site_number` and `site_street`. A field with no non-blank column is treated as missing, never
-as an empty value.
-
-## The mapping screen
-
-1. Choose the file. Pick the encoding and the delimiter (comma, tab, or pipe). Choose Read the
-   file and preview.
-2. The pickers list the columns found in the file. For the parcel ID, add the parts in order.
-   Each part is a column with a width, or fixed digits. For owner name, mailing address, and
-   site address, pick one or more columns. Set the joiner placed between owner names.
-3. The preview shows the first 10 rows with the composed ID and whether it matches a parcel, an
-   unknown parcel, a retired parcel, or cannot be composed. Change the pickers and preview
-   again until the IDs match.
-4. Save mapping stores the layout. Run import applies the file.
-
-Saving the mapping and running the import both need the permission to run imports.
-
-## What an import does
-
-- It never creates a parcel. A row whose ID matches no parcel goes to the exception queue as
-  unknown CAMA parcel.
-- A row whose ID belongs to a retired parcel goes to the exception queue.
-- A missing owner or mailing address on a parcel is filled in.
-- An owner or mailing address that differs from the one already stored is held in the exception
-  queue as an owner change. The parcel is not changed until someone accepts the held row.
-- A blank value in the file never replaces a stored value.
-- A changed site address is applied and recorded in the audit log.
-- If the file lists every parcel, parcels that have a CAMA number but are absent from the file
-  are reported as missing from the layer.
-- Running the same file twice changes nothing the second time.
-
-Once a CAMA layout is saved, the parcels layer mapping cannot also map an owner name or a
-mailing address. Owner data has one source.
-
-The Imports page shows when the CAMA layer last imported and marks it stale after the number of
-days set for the layer.
+The two owner columns are joined with ` & `, and a blank one is left out. The mailing address joins the mailing columns that are not blank, with a space between them. The site address joins the street number and the street name. When every column for a field is blank, the field counts as missing, not as empty.

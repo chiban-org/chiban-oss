@@ -68,7 +68,7 @@ export function allowedAdjustmentKinds(rule: ClockRule): AdjustmentKind[] {
 export function extensionPolicyText(rule: ClockRule): string {
   if (!rule.extension.allowed) return rule.extension.note
   if (rule.extension.by === 'applicant_consent')
-    return 'May be extended with the applicant consent.'
+    return 'May be extended with the applicant’s consent.'
   if (rule.extension.by === 'board_good_cause')
     return 'May be extended by the board for good cause.'
   return 'May be extended by renewal.'

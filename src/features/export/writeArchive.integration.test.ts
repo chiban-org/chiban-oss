@@ -6,6 +6,7 @@ import type { Tx } from '@/db/client'
 import { exportsTable, files, parcels, users } from '@/db/schema'
 import { EXPORT_ENTITIES } from '@/features/export/entities'
 import { renderFormatDoc } from '@/features/export/formatDoc'
+import { EXPORT_FORMAT_PAGE_PATH } from '@/features/export/formatDocPage'
 import { pruneExpiredExports } from '@/features/export/pruneExports'
 import { writeArchive } from '@/features/export/writeArchive'
 import { getObjectStore } from '@/features/storage/objectStore'
@@ -146,12 +147,12 @@ describe('writeArchive', () => {
     await handle.db.execute(sql`delete from processor_accounts where account_ref = 'acct_x'`)
   })
 
-  it('docs-site/docs/reports-and-export/export-format.md matches renderFormatDoc output', () => {
+  it('the published export format page ends with the renderFormatDoc output', () => {
     const onDisk = readFileSync(
-      new URL('../../../docs-site/docs/reports-and-export/export-format.md', import.meta.url),
+      new URL(`../../../${EXPORT_FORMAT_PAGE_PATH}`, import.meta.url),
       'utf8',
     )
-    expect(onDisk).toBe(renderFormatDoc(EXPORT_ENTITIES))
+    expect(onDisk.endsWith(renderFormatDoc(EXPORT_ENTITIES))).toBe(true)
   })
 
   it('FORMAT.md inside the archive is the same text', async () => {

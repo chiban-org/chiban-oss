@@ -1,0 +1,183 @@
+@import "@fontsource-variable/mulish";
+@import "@fontsource-variable/source-serif-4";
+
+:root {
+  --chiban-canvas: #f1f5f8;
+  --chiban-surface: #ffffff;
+  --chiban-sidebar: #e9eef2;
+  --chiban-ink: #1f1f1f;
+  --chiban-ink-2: #2d2f33;
+  --chiban-muted: #5b6470;
+  --chiban-action: #2a65a3;
+  --chiban-brand: #14305e;
+  --chiban-highlight: #fff7ca;
+  --chiban-hairline: #d5dce3;
+  --chiban-code-bg: #e8edf1;
+  --chiban-font-serif: Charter, "Source Serif 4 Variable", serif;
+  --chiban-font-sans: "Mulish Variable", system-ui, sans-serif;
+  --chiban-radius: 10px;
+
+  --ifm-color-primary: #2a65a3;
+  --ifm-color-primary-dark: #265b93;
+  --ifm-color-primary-darker: #24568b;
+  --ifm-color-primary-darkest: #1d4772;
+  --ifm-color-primary-light: #2e6fb3;
+  --ifm-color-primary-lighter: #3075bb;
+  --ifm-color-primary-lightest: #3d83cc;
+
+  --ifm-font-family-base: var(--chiban-font-sans);
+  --ifm-heading-font-family: var(--chiban-font-serif);
+  --ifm-font-color-base: var(--chiban-ink);
+  --ifm-heading-color: var(--chiban-ink);
+  --ifm-background-color: var(--chiban-canvas);
+  --ifm-background-surface-color: var(--chiban-surface);
+  --ifm-navbar-background-color: var(--chiban-canvas);
+  --ifm-footer-background-color: var(--chiban-sidebar);
+  --ifm-toc-border-color: var(--chiban-hairline);
+  --ifm-hr-background-color: var(--chiban-hairline);
+  --ifm-table-border-color: var(--chiban-hairline);
+  --ifm-table-stripe-background: transparent;
+  --ifm-table-head-background: var(--chiban-sidebar);
+  --ifm-code-background: var(--chiban-code-bg);
+  --ifm-code-font-size: 92%;
+  --ifm-global-radius: var(--chiban-radius);
+  --ifm-line-height-base: 1.6;
+  --ifm-link-hover-decoration: underline;
+  --ifm-menu-color-background-active: var(--chiban-surface);
+  --docusaurus-highlighted-code-line-bg: rgba(42, 101, 163, 0.1);
+}
+
+[data-theme="dark"] {
+  --chiban-canvas: #0f1722;
+  --chiban-surface: #172130;
+  --chiban-sidebar: #131c29;
+  --chiban-ink: #e4e9ee;
+  --chiban-ink-2: #cfd6dd;
+  --chiban-muted: #9aa6b2;
+  --chiban-action: #8bb8e8;
+  --chiban-highlight: rgba(255, 224, 102, 0.2);
+  --chiban-hairline: #2b3a4d;
+  --chiban-code-bg: #1e2a3b;
+
+  --ifm-color-primary: #8bb8e8;
+  --ifm-color-primary-dark: #6da5e2;
+  --ifm-color-primary-darker: #5f9cdf;
+  --ifm-color-primary-darkest: #3582d6;
+  --ifm-color-primary-light: #a9cbee;
+  --ifm-color-primary-lighter: #b8d4f1;
+  --ifm-color-primary-lightest: #e3eefa;
+  --docusaurus-highlighted-code-line-bg: rgba(139, 184, 232, 0.16);
+}
+
+body {
+  background: var(--chiban-canvas);
+  letter-spacing: -0.01em;
+}
+
+.navbar {
+  border-bottom: 1px solid var(--chiban-hairline);
+  box-shadow: none;
+}
+
+.navbar__title {
+  font-family: var(--chiban-font-serif);
+  font-size: 1.35rem;
+  font-weight: 400;
+  color: var(--chiban-ink);
+}
+
+.navbar__logo {
+  height: 28px;
+}
+
+[data-theme="dark"] .navbar__logo img {
+  background: #ffffff;
+  border-radius: 6px;
+  padding: 2px;
+}
+
+.markdown a {
+  text-decoration: underline;
+  text-underline-offset: 0.15em;
+}
+
+.theme-doc-sidebar-container {
+  background: var(--chiban-sidebar);
+}
+
+.menu__link--active:not(.menu__link--sublist) {
+  background: var(--chiban-surface);
+  box-shadow: inset 0 0 0 1px var(--chiban-hairline);
+  color: var(--chiban-ink);
+  font-weight: 600;
+}
+
+.menu__list-item-collapsible .menu__link--sublist,
+.menu > .menu__list > .theme-doc-sidebar-item-category-level-1 > .menu__list-item-collapsible > .menu__link {
+  font-weight: 700;
+}
+
+.markdown h1,
+.markdown h2 {
+  font-family: var(--chiban-font-serif);
+  font-weight: 400;
+  letter-spacing: 0;
+  line-height: 1.15;
+}
+
+.markdown h1 {
+  font-size: 2.4rem;
+}
+
+.markdown h2 {
+  font-size: 1.7rem;
+  margin-top: 2.5rem;
+}
+
+.markdown h3,
+.markdown h4 {
+  font-family: var(--chiban-font-sans);
+  font-weight: 700;
+}
+
+.markdown {
+  max-width: 75ch;
+}
+
+.markdown table {
+  display: block;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+
+.markdown table th {
+  text-align: left;
+  font-weight: 700;
+}
+
+.markdown table td,
+.markdown table th {
+  vertical-align: top;
+}
+
+.markdown mark {
+  background: var(--chiban-highlight);
+  color: inherit;
+  padding: 0 0.12em;
+}
+
+.footer {
+  border-top: 1px solid var(--chiban-hairline);
+}
+
+.footer__title {
+  font-family: var(--chiban-font-sans);
+}
+
+@media (max-width: 996px) {
+  .markdown h1 {
+    font-size: 2rem;
+  }
+}

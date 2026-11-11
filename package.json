@@ -37,6 +37,7 @@
     "clover:fake": "tsx scripts/cloverFake.ts",
     "health:test-alert": "tsx --env-file-if-exists=.env src/entrypoints/healthTestAlert.ts",
     "export:format-doc": "tsx --env-file-if-exists=.env src/entrypoints/exportFormatDoc.ts",
+    "docs:generate": "tsx scripts/docsSite/generate.ts",
     "term-gate": "tsx --env-file-if-exists=.env scripts/termGate.ts",
     "prepare": "git config core.hooksPath .githooks"
   },

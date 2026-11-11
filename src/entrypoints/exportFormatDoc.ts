@@ -1,6 +1,5 @@
 import { writeFile } from 'node:fs/promises'
-import { EXPORT_ENTITIES } from '@/features/export/entities'
-import { renderFormatDoc } from '@/features/export/formatDoc'
+import { EXPORT_FORMAT_PAGE_PATH, renderFormatDocPage } from '@/features/export/formatDocPage'
 
-const target = process.argv[2] ?? 'docs-site/docs/reports-and-export/export-format.md'
-await writeFile(target, renderFormatDoc(EXPORT_ENTITIES), 'utf8')
+const target = process.argv[2] ?? EXPORT_FORMAT_PAGE_PATH
+await writeFile(target, renderFormatDocPage(), 'utf8')

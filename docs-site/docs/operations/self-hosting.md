@@ -1,6 +1,12 @@
+---
+title: Self-hosting Chiban
+sidebar_label: Self-hosting
+description: Run one town's Chiban on a single Linux host with Docker Compose.
+---
+
 # Self-hosting Chiban
 
-This guide covers running one town's Chiban on a single Linux host with Docker Compose. The stack is a reverse proxy (Caddy), the application, a background worker, a one-shot migration step, PostgreSQL with PostGIS, and S3-compatible object storage (Garage).
+This guide is for whoever runs the server. It covers running one town's Chiban on a single Linux host with Docker Compose. The stack is a reverse proxy (Caddy), the application, a background worker, a one-shot migration step, PostgreSQL with PostGIS, and S3-compatible object storage (Garage).
 
 ## Requirements
 
@@ -40,7 +46,7 @@ Set at least:
 - `SMTP_URL` and `MAIL_FROM` for outgoing mail.
 - `CHIBAN_SECRET_KEYS` and `CHIBAN_ACTIVE_KEY_ID`. The keys value is a JSON object that maps a key id to a base64 encoding of exactly 32 random bytes, for example the output of `openssl rand -base64 32`. Keep a copy of this value somewhere safe: encrypted data cannot be read without it.
 
-The application refuses to start if it finds a setting whose name begins with one of its own prefixes (`CHIBAN_`, `S3_`, `SMTP_`, `HEALTH_`, `ALERT_`, `PAGER_`, `EXPORT_`, `GHOSTSCRIPT_`) and does not recognise it, so a misspelled setting is reported at startup instead of being ignored.
+The application refuses to start if it finds a setting whose name begins with one of its own prefixes and does not recognise it, so a misspelled setting is reported at startup instead of being ignored. The [configuration reference](../reference/configuration.md) lists the prefixes and every setting the application reads.
 
 `CHIBAN_IMAGE` is managed by the deploy script. The value in the example file is a placeholder.
 
