@@ -8,14 +8,14 @@ sidebar_position: 2
 
 Use this page from the day a request arrives until the first response goes out. Getting records to the requester and closing the request are on [the next page](./rtk-release.md). Land use staff and records custodians can do everything here.
 
-Residents cannot send a request through the town's public site. Staff log every request, whether it came in at the counter, by mail, by email or by phone.
+Residents can send a request themselves from [Ask for town records](../../residents/asking-for-records.md) on the town's public site, without an account. It arrives in your list marked **Online**, with its own number and the same five-day clock. The requester gets a receipt email with the number and the date the town will answer by. Staff log everything else: requests that come in at the counter, by mail, by email or by phone.
 
 ## Log the request
 
 1. Open **Right-to-Know** in the staff menu and choose **Log a request**.
 2. **Date received** starts as today. Change it if the request came in earlier. It cannot be a future date.
 3. **How it arrived** offers In person, Mail, Email, Online and Phone.
-4. **Requester name** and **Requester email, phone, or address** are optional. If you plan to release records by email link, you will need an email address at that step.
+4. **Requester name** and **Requester email, phone, or address** are optional. Put an email address in **Requester email, phone, or address** if you have one. With exactly one email address on the request, Chiban can email the town's letters and records to the requester. See [The letter is emailed or printed](#the-letter-is-emailed-or-printed).
 5. Put the request in the requester's words under **What was asked for**.
 6. Choose **Log request**.
 
@@ -67,6 +67,14 @@ Choose **Record withholding**. When you release a copy redacted in Chiban, the e
 
 Once a withholding is on file, choose **Denied** as the first response. After a time statement, use **Or deny the request** and then **Deny the request** on the **Do this now** card. Either way you enter the **Date of the denial**. Chiban files a denial letter naming every withheld record and its exemption, and the request moves to **Responded**.
 
-## The letter is filed, not sent
+## The letter is emailed or printed
 
-Each response files a letter as a PDF. Open it from **Letters** on the request. Chiban does not email or print it, so send it to the requester yourself. The wording comes from the "Response to your Right-to-Know request" template, which an administrator can edit under **Settings**, **Templates**.
+Each response files a letter as a PDF, and you can open it from **Letters** on the request. The wording comes from the "Response to your Right-to-Know request" template, which an administrator can edit under **Settings**, **Templates**.
+
+What happens next depends on the requester's contact details:
+
+- **Exactly one email address on the request.** Chiban emails the letter to it as a PDF. A note by the button says "The letter will be emailed to" the address. Afterward the message reads "Response recorded and the letter emailed to" the address, and **Letters** shows "Emailed to" the address and the date.
+- **No email address, or more than one.** Chiban does not guess. The note by the button says "There is no email address on this request, so print the letter from Letters and send it." Afterward **Letters** shows "No email address. Print this letter and send it."
+- **An email that fails.** The response is still recorded and the letter filed. The message says the email could not be sent, and **Letters** shows "The email to" the address "could not be sent. Print this letter and send it."
+
+This covers the first response, a time statement, a posted-online response and a denial. Letters for releases are covered on [the next page](./rtk-release.md).

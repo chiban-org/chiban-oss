@@ -10,7 +10,7 @@ The retention schedule says how long the town keeps each kind of record, and Chi
 
 ## How the schedule works
 
-Every document and application snapshot belongs to a record series, such as "Complaints: until the appeal period has expired". The series and its legal citation are shown next to each record. The series comes from the state pack, so the town does not edit the schedule in Chiban. A record is placed in a series when it is filed, by default from the permit type, or by your choice when you upload a parcel file. Chiban has no screen to move it to a different series afterward.
+Every document and application snapshot belongs to a record series, such as "Complaints: until the appeal period has expired". The series and its legal citation are shown next to each record. The series comes from the state pack, so the town does not edit the schedule in Chiban. A record is placed in a series when it is filed, by default from the permit type, or by your choice when you upload a parcel file. To fix a document filed under the wrong series, open **Manage** on the document in its record, pick the right one under **Record series** and choose **Save record series**. Its retention period then follows the new series. Only staff who can manage documents see the picker.
 
 A series follows one of three rules:
 

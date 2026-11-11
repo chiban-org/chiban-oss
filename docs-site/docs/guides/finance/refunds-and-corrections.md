@@ -1,16 +1,27 @@
 ---
 title: Refunds and corrections
-description: How to refund a payment, record a returned check or a chargeback, and move money to another permit, and what each does to the application's balance.
+description: How to refund a payment, record a returned check or a chargeback, and move money to another permit, and what each does to the balance of an application or a fine.
 sidebar_position: 2
 ---
 
 # Refunds and corrections
 
-Chiban never edits or deletes a payment. When money has to go back or move, you add a new entry that reverses part of the old one, and the application's balance follows. Administrators and finance staff can do all of this, on the application rather than on **Payments**.
+Chiban never edits or deletes a payment. When money has to go back or move, you add a new entry that reverses part of the old one, and the balance follows. Administrators and finance staff can do all of this, on the application or the enforcement case rather than on **Payments**.
 
 ## Where the controls are
 
-Open the application and go to **Fees and payments**. Under **Payments recorded**, each payment has **Refund, correct, or reverse**. Open it to see the options that fit that payment. Only payment entries have these controls. A fine paid on an enforcement case appears on the **Payments** page, but its case has no refund controls.
+Open the application and go to **Fees and payments**. Under **Payments recorded**, each payment has **Refund, correct, or reverse**. Open it to see the options that fit that payment. Only payment entries have these controls.
+
+## Refund a fine payment
+
+A fine paid on an enforcement case is handled on the case. Open the case and go to **Fines**. Each fine lists the payments made against it, with a **Receipt** link and, for a card payment, a **Card payment** link. Under a payment, **Refund or reverse** offers the same refund, returned check and chargeback forms described below, with these differences:
+
+- A refund comes off that fine only. If one payment covered two fines, refunding from one fine leaves the other alone. The form lists the fine and the most you can refund from it.
+- A returned check reverses the whole payment, and the amount is due on the fine again.
+- A chargeback takes the amount you enter back from this payment on this fine.
+- A fine payment cannot be moved, so **Move to another permit** is not offered.
+
+Only administrators and finance staff see these controls on a fine, as on an application.
 
 ## Refund a payment
 
