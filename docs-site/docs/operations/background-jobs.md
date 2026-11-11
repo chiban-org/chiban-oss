@@ -58,7 +58,7 @@ A daily job is registered with the cron expression `0 */24 * * *`. The code sets
 - **Settings**, **Administration**, **Health** shows when the worker last started and each job's last success. A job marked **Overdue** has not succeeded for twice its interval.
 - `/api/health/jobs` answers 503 while a job alert is firing.
 - `docker compose ps` shows whether the `worker` container is up, and `docker compose logs worker` shows its output.
-- Alerts reach someone only if the alert settings are in place. See [health and alerts](./health-and-alerts.md), which lists settings the bundled Compose file does not pass.
+- Alerts reach someone only if the alert settings are in place. See [health and alerts](./health-and-alerts.md) for the settings to fill in.
 
 ## What the worker needs inside the image
 

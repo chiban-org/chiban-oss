@@ -42,9 +42,9 @@ Administrators also see a **Recovery export** section. It differs from the expor
 
 ## What you cannot do from here
 
-There is no page in Chiban for putting an export back. You cannot upload an export file and rebuild a town from it, and nothing rebuilds a town from the monthly copies.
+There is no page in Chiban for putting an export back. You cannot upload an export file and rebuild a town from it on a screen.
 
-Whoever runs the server has two tools outside the screens. A command can load a full export file into a new Chiban that holds no records yet, and it refuses a Chiban that already has some. The recovery export is opened with the server's recovery tool. For restoring a town that has failed, use the encrypted backups described in [self-hosting](../operations/self-hosting.md).
+Whoever runs the server has tools outside the screens. One command loads a full export file into a new Chiban that holds no records yet, and another [rebuilds a town from the monthly copies](./incremental-export.md#rebuilding-the-town-from-the-copies). Both refuse a Chiban that already has records. The recovery export is opened with the server's recovery tool. For restoring a town that has failed, use the encrypted backups described in [self-hosting](../operations/self-hosting.md).
 
 ## When the service closes
 

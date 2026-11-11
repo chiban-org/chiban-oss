@@ -52,4 +52,12 @@ chiban-export/
 
 ## Rebuilding the town from the copies
 
-A month's manifest, together with the folders it points to, holds the whole town. This release has no command or page that rebuilds a town from these copies, so to restore a town, use the encrypted backups described in [self-hosting](../operations/self-hosting.md).
+A month's manifest, together with the folders it points to, holds the whole town. Whoever runs the server can load one month's copy into a new, empty Chiban with the `import-from-target` command. It refuses to run when the database already holds records, so run it only on a new installation.
+
+The command reads only a folder on the server. If the copies are on S3 or OneDrive, first copy the `chiban-export` folder down to the server. Then, with the database and object storage running, name the folder that holds `chiban-export` and the month's folder, for example:
+
+```
+docker compose run --rm --no-deps -v "$PWD/copies:/copies:ro" app node dist/import-from-target.mjs --dir /copies --month 2027-02
+```
+
+`--month` is the name of the export folder, such as `2027-02`, or `2027-01-3` when a month has more than one. When it finishes it prints `imported export` followed by the export's id and the number of files. To restore a town to a recent day rather than to a month's copy, use the encrypted backups described in [self-hosting](../operations/self-hosting.md).

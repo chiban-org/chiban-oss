@@ -1,7 +1,7 @@
 ---
 title: Health, version and alerts
 sidebar_label: Health and alerts
-description: The health and version endpoints, the alerts the worker raises, how alerts reach email or a pager, and the alert settings the bundled Compose file does not pass.
+description: The health and version endpoints, the alerts the worker raises, how alerts reach email or a pager, and how to turn them on in the bundled Compose install.
 sidebar_position: 70
 ---
 
@@ -57,18 +57,9 @@ A firing alert is sent when it first appears. If at least one channel accepted i
 
 `HEALTH_HEARTBEAT_URL` is a web address that the health check requests with GET after every run, which is every 5 minutes. Give it to an outside monitor that alerts when the requests stop. It catches what Chiban cannot report about itself: a stopped worker, a stopped host, a lost network. A failed request is logged as `[health] heartbeat ping failed`.
 
-## Settings the bundled Compose file does not pass
+## Turning alerts on
 
-`deploy/docker-compose.yml` passes only `HEALTH_DISK_PATHS`, and only to the worker. `ALERT_EMAIL_TO`, `PAGER_ROUTING_KEY`, `PAGER_EVENTS_URL` and `HEALTH_HEARTBEAT_URL` are validated by the application and used by the code, but nothing in the Compose file carries them from `.env` into a container. As shipped, no alert is delivered anywhere and the heartbeat is never sent.
-
-To turn them on, add the ones you use to the shared `x-app-environment` block at the top of the Compose file, so the worker gets them, and the application too, which uses them for the Health page and the test command below. For example:
-
-```
-  ALERT_EMAIL_TO: ${ALERT_EMAIL_TO}
-  HEALTH_HEARTBEAT_URL: ${HEALTH_HEARTBEAT_URL}
-```
-
-and add the matching lines to `.env`. Add only the settings you set. An empty `HEALTH_HEARTBEAT_URL`, `PAGER_ROUTING_KEY` or `PAGER_EVENTS_URL` fails validation, and the container exits at start with a line naming the setting. An empty `ALERT_EMAIL_TO` is accepted.
+The bundled Compose file passes `ALERT_EMAIL_TO`, `PAGER_ROUTING_KEY`, `PAGER_EVENTS_URL` and `HEALTH_HEARTBEAT_URL` to both the application and the worker, and `deploy/.env.example` lists each of them with an empty value. Fill in the ones you use in `.env` and restart with `docker compose up -d`. A setting left empty counts as not set, so you can leave the others as they are. Until at least one of `ALERT_EMAIL_TO` or `PAGER_ROUTING_KEY` is filled in, no alert is delivered anywhere, and until `HEALTH_HEARTBEAT_URL` is filled in, no heartbeat is sent.
 
 ## Testing the path
 
