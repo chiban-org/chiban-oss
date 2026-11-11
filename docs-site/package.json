@@ -13,7 +13,7 @@
     "typecheck": "tsc",
     "deploy": "pnpm build && wrangler deploy",
     "shots": "tsx scripts/captureShots.ts",
-    "test": "node --import tsx --test scripts/captureShots.test.ts"
+    "test": "node --import tsx --test scripts/shotManifest.spec.ts"
   },
   "dependencies": {
     "@docusaurus/core": "3.10.2",
