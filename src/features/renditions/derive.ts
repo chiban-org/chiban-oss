@@ -12,6 +12,9 @@ import { err, ok, type Result } from '@/types/result'
 export const THUMBNAIL_WIDTH = 240
 export const PREVIEW_WIDTH = 1200
 export const MAX_PREVIEW_PAGES = 50
+export const MAX_RENDER_PIXELS = 8_000_000
+export const MAX_INPUT_PIXELS = 40_000_000
+const PIXEL_ROUNDING_MARGIN = 0.99
 const PNG = 'image/png'
 
 export function derivedKey(versionId: string, kind: RenditionKind, page: number): string {
@@ -25,14 +28,29 @@ interface Rendered {
   bytes: Uint8Array
 }
 
-function renderPdfPages(bytes: Uint8Array): Rendered[] | null {
+function boundedScale(width: number, pageWidth: number, pageHeight: number): number | null {
+  if (!(pageWidth > 0 && pageHeight > 0)) return null
+  const wanted = width / pageWidth
+  const largest = Math.sqrt(MAX_RENDER_PIXELS / (pageWidth * pageHeight)) * PIXEL_ROUNDING_MARGIN
+  return Math.min(wanted, largest)
+}
+
+export function renderPdfPages(bytes: Uint8Array): Rendered[] | null {
+  try {
+    return renderOpenedPdf(bytes)
+  } catch {
+    return null
+  }
+}
+
+function renderOpenedPdf(bytes: Uint8Array): Rendered[] | null {
   const doc = openPdf(bytes)
   if (doc === null || doc.needsPassword()) return null
   const rendered: Rendered[] = []
   const pages = Math.min(doc.countPages(), MAX_PREVIEW_PAGES)
   for (let i = 0; i < pages; i += 1) {
     const page = doc.loadPage(i)
-    const [x0, , x1] = page.getBounds()
+    const [x0, y0, x1, y1] = page.getBounds()
     const targets: [RenditionKind, number][] =
       i === 0
         ? [
@@ -41,7 +59,8 @@ function renderPdfPages(bytes: Uint8Array): Rendered[] | null {
           ]
         : [['preview', PREVIEW_WIDTH]]
     for (const [kind, width] of targets) {
-      const scale = width / (x1 - x0)
+      const scale = boundedScale(width, x1 - x0, y1 - y0)
+      if (scale === null) return null
       const pixmap = page.toPixmap(
         mupdf.Matrix.scale(scale, scale),
         mupdf.ColorSpace.DeviceRGB,
@@ -54,14 +73,14 @@ function renderPdfPages(bytes: Uint8Array): Rendered[] | null {
   return rendered
 }
 
-async function renderImage(bytes: Uint8Array): Promise<Rendered[] | null> {
+export async function renderImage(bytes: Uint8Array): Promise<Rendered[] | null> {
   try {
     const out: Rendered[] = []
     for (const [kind, width] of [
       ['thumbnail', THUMBNAIL_WIDTH],
       ['preview', PREVIEW_WIDTH],
     ] as const) {
-      const { data, info } = await sharp(bytes)
+      const { data, info } = await sharp(bytes, { limitInputPixels: MAX_INPUT_PIXELS })
         .rotate()
         .resize({ width, withoutEnlargement: true })
         .png()
