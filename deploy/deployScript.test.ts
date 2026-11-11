@@ -14,8 +14,24 @@ echo "$*" >> "$STUB_CALLS"
 if [[ "$*" == *deploy-poll* && "\${STUB_POLL:-ok}" != "ok" ]]; then
   exit 1
 fi
+if [[ "$*" == *psql* ]]; then
+  [ -n "\${STUB_DB_HEAD:-}" ] || exit 1
+  echo "\${STUB_DB_HEAD}"
+fi
+if [[ "$*" == *_journal.json* ]]; then
+  [ -n "\${STUB_JOURNAL:-}" ] || exit 1
+  printf '%s\\n' "\${STUB_JOURNAL}"
+fi
 exit 0
 `
+
+function journal(...whens: number[]): string {
+  return JSON.stringify(
+    { entries: whens.map((when, idx) => ({ idx, when, tag: `m${idx}` })) },
+    null,
+    2,
+  )
+}
 
 interface Run {
   status: number
@@ -28,6 +44,8 @@ interface Run {
 interface RunOptions {
   poll?: 'ok' | 'fail'
   initialEnv?: string
+  dbHead?: string
+  journal?: string
 }
 
 function lines(text: string): string[] {
@@ -53,6 +71,8 @@ function runDeploy(args: string[], opts: RunOptions): Run {
       PATH: `${bin}:${process.env.PATH ?? ''}`,
       STUB_CALLS: calls,
       STUB_POLL: opts.poll ?? 'ok',
+      STUB_DB_HEAD: opts.dbHead ?? '',
+      STUB_JOURNAL: opts.journal ?? '',
     },
     encoding: 'utf8',
   })
@@ -140,5 +160,67 @@ describe('deploy.sh behaviour', () => {
     expect(run.status).toBe(1)
     expect(run.calls.filter((c) => c.includes('up -d app worker'))).toHaveLength(1)
     expect(run.releases.at(-1)).toContain('failed_no_previous')
+  })
+})
+
+describe('deploy.sh rollback and the database', () => {
+  it('never looks at migrations when the rollout succeeds', () => {
+    const run = runDeploy(['--image', NEW], { dbHead: '200', journal: journal(100) })
+    expect(run.status).toBe(0)
+    expect(run.calls.some((c) => c.includes('psql') || c.includes('_journal.json'))).toBe(false)
+  })
+
+  it('compares the database with the journal inside the image it would roll back to', () => {
+    const run = runDeploy(['--image', NEW], {
+      poll: 'fail',
+      dbHead: '100',
+      journal: journal(50, 100),
+    })
+    expect(run.calls).toContain(`run --rm --entrypoint cat ${OLD} /app/drizzle/meta/_journal.json`)
+    expect(run.calls.some((c) => c.startsWith('compose exec -T postgres psql'))).toBe(true)
+  })
+
+  it('refuses to roll back when the database has migrations the previous image does not know', () => {
+    const run = runDeploy(['--image', NEW], {
+      poll: 'fail',
+      dbHead: '200',
+      journal: journal(50, 100),
+    })
+    expect(run.status).toBe(1)
+    expect(run.env.get('CHIBAN_IMAGE')).toBe(NEW)
+    expect(run.calls.filter((c) => c.includes('up -d app worker'))).toHaveLength(1)
+    expect(run.releases.at(-1)).toContain('rollback_refused')
+    expect(run.releases.at(-1)).toContain(`image=${OLD}`)
+    expect(run.stderr).toContain('Not rolling back')
+    expect(run.stderr).toContain('restore the backup')
+  })
+
+  it('says plainly that only the image rolls back when the schemas match', () => {
+    const run = runDeploy(['--image', NEW], {
+      poll: 'fail',
+      dbHead: '100',
+      journal: journal(50, 100),
+    })
+    expect(run.status).toBe(1)
+    expect(run.env.get('CHIBAN_IMAGE')).toBe(OLD)
+    expect(run.releases.at(-1)).toContain('rolled_back')
+    expect(run.stderr).toContain('Rolling back the application image only')
+    expect(run.stderr).toContain('The database is not rolled back')
+  })
+
+  it('rolls back with a warning and restore steps when the migrations cannot be checked', () => {
+    const run = runDeploy(['--image', NEW], { poll: 'fail' })
+    expect(run.status).toBe(1)
+    expect(run.env.get('CHIBAN_IMAGE')).toBe(OLD)
+    expect(run.releases.at(-1)).toContain('rolled_back')
+    expect(run.stderr).toContain('The database is not rolled back')
+    expect(run.stderr).toContain('could not check')
+    expect(run.stderr).toContain('restore the backup')
+  })
+
+  it('treats an unreadable answer as unknown rather than as a match', () => {
+    const run = runDeploy(['--image', NEW], { poll: 'fail', dbHead: 'ERROR', journal: 'x' })
+    expect(run.env.get('CHIBAN_IMAGE')).toBe(OLD)
+    expect(run.stderr).toContain('could not check')
   })
 })
