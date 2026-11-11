@@ -27,7 +27,7 @@ Everything under a box is removed from the copy, text included, not just covered
 
 ## Approve the copy
 
-Making the copy releases nothing, and a custodian cannot publish it alone.
+Making the copy releases nothing. It stays private until someone with the right permission approves it.
 
 - A copy for a request is approved in the release step on the request page. See [Release records and close the request](./rtk-release.md).
-- A copy for the public website is approved in the Documents section of the record's page. That needs the permission to show documents on the public site, which land use staff have and records custodians do not. A custodian makes the copy and a land use staff member approves it.
+- A copy for the public website is approved in the Documents section of the record's page. Under the document, choose the copy in **Version to approve**, write what you checked under **What you checked before approving**, and choose **Approve for the public**. That needs the permission to show documents on the public site. Land use staff, administrators and records custodians have it, so a custodian can make a redacted copy and publish it without handing it to anyone else. If you do not have it, the page tells you a staff member who does must approve the copy.

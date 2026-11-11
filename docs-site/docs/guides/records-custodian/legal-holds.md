@@ -10,20 +10,18 @@ A legal hold keeps records from being disposed of, whatever the retention schedu
 
 ## What a hold covers
 
-A hold on a project, an application or a document blocks disposal of everything under it. A hold also protects a record already in a proposed batch: when the batch is approved, that record is skipped and marked **Skipped: a legal hold was placed**. A document under a hold shows a **Legal hold** label in its record's document list.
+A hold on a project, an application, a document, an enforcement case or a Right-to-Know request blocks disposal of everything under it. A hold also protects a record already in a proposed batch: when the batch is approved, that record is skipped and marked **Skipped: a legal hold was placed**. A document under a hold shows a **Legal hold** label in its record's document list.
 
 ## Place a hold
 
 1. Open **Legal holds** and choose **Place a hold**.
-2. Under **Hold on**, choose **Project**, **Application** or **Document**.
-3. Enter the **Application number, project title, or document title**. Use the application number when you can. If more than one record has the same name, Chiban asks for the application number. A document that has already been disposed of cannot be held.
+2. Under **Hold on**, choose **Project**, **Application**, **Document**, **Enforcement case** or **Right-to-Know request**.
+3. Enter the **Application number, case number, request number, project title, or document title**. Use the number when you can. If more than one record has the same name, Chiban asks for the number. A document that has already been disposed of cannot be held.
 4. Give a **Reason (at least 10 characters)** and choose **Place hold**.
 
 An application's own page has a **Place a legal hold** option under **Records**, for the same job.
 
 ![The Legal holds page with one active hold](/img/shots/records-custodian/legal-holds.png)
-
-Holds on Right-to-Know requests and enforcement cases appear in the list when they exist, but the **Place a hold** dialog offers only projects, applications and documents.
 
 ## Review and release holds
 

@@ -44,7 +44,7 @@ The application moves from **Draft** to **Submitted** and the town sees it. [Fol
 
 ## Changing your mind
 
-- **Delete this draft** appears on a draft you never sent. It leaves your list and cannot be brought back. The town keeps a note that the draft was withdrawn.
-- **Withdraw this application** appears while the application is **Submitted** or **Under review**. The town stops its review and the application stays on file as withdrawn. To go ahead later you start a new one. Chiban asks you to confirm because it cannot be undone.
+- **Delete this draft** appears on a draft you never sent. A contractor named on the project does not see it. It leaves your list and cannot be brought back. The town keeps a note that the draft was withdrawn.
+- **Withdraw this application** appears while the application is **Submitted** or **Under review**. The applicant, the owner, the agent and a contractor named on the project all see it. The town stops its review and the application stays on file as withdrawn. To go ahead later you start a new one. Chiban asks you to confirm because it cannot be undone.
 
 Once the town has decided, you cannot withdraw. Call the office.
