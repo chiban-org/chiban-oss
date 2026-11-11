@@ -87,7 +87,7 @@ describe('revising a draft order', () => {
 describe('issuing an order', () => {
   it('shows a refused issue date beside the issue date field', async () => {
     const message =
-      'You are not on record as a designated enforcement officer on the issue date. An administrator can add it under Admin, Enforcement officers.'
+      'You are not on record as a designated enforcement officer on the issue date. An administrator can add it under Settings, Administration, Enforcement officers.'
     vi.mocked(issueOrderAction).mockResolvedValue(refusal('issuedOn', message))
     renderForm(<OrdersSection detail={stubDetail({ orders: [draft] })} can={ALL_CAN} />)
     fireEvent.click(screen.getByRole('button', { name: 'Issue order' }))
