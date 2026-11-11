@@ -11,7 +11,9 @@
     "serve": "docusaurus serve --port 3300",
     "clear": "docusaurus clear",
     "typecheck": "tsc",
-    "deploy": "pnpm build && wrangler deploy"
+    "deploy": "pnpm build && wrangler deploy",
+    "shots": "tsx scripts/captureShots.ts",
+    "test": "node --import tsx --test scripts/captureShots.test.ts"
   },
   "dependencies": {
     "@docusaurus/core": "3.10.2",
@@ -29,12 +31,22 @@
     "@docusaurus/module-type-aliases": "3.10.2",
     "@docusaurus/tsconfig": "3.10.2",
     "@docusaurus/types": "3.10.2",
+    "@playwright/test": "1.64.1",
+    "tsx": "4.23.15",
     "typescript": "5.6.3",
     "wrangler": "4.158.0"
   },
   "browserslist": {
-    "production": [">0.5%", "not dead", "not op_mini all"],
-    "development": ["last 3 chrome version", "last 3 firefox version", "last 5 safari version"]
+    "production": [
+      ">0.5%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 3 chrome version",
+      "last 3 firefox version",
+      "last 5 safari version"
+    ]
   },
   "engines": {
     "node": ">=24"

@@ -215,3 +215,7 @@ Installs made before the switch to Garage keep their files in the old `miniodata
 4. Deploy an image that includes Garage support with `./deploy.sh --image ...`. The deploy script does not restart Caddy, so recreate it to load the new storage upstream: `docker compose up -d --force-recreate caddy`. Existing documents do not open until the next step.
 5. Copy the files in with the second command of step 4 above. The database does not change.
 6. Once the town's documents open, remove the old containers and volume with `docker compose up -d --remove-orphans` and `docker volume rm <project>_miniodata`.
+
+## More operations pages
+
+See [outbound mail](./outbound-mail.md), [payment processors](./payments.md), [Microsoft 365](./microsoft.md), [object storage](./object-storage.md), [backups](./backups.md), [upgrading](./upgrading.md), [health and alerts](./health-and-alerts.md), [background jobs](./background-jobs.md) and [demo mode](./demo-mode.md).
