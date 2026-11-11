@@ -1,0 +1,7 @@
+[
+  { "file": "land-use-staff/today.png", "persona": "Sam Clerk", "path": "/staff", "width": 1280, "height": 800 },
+  { "file": "land-use-staff/counter-start.png", "persona": "Sam Clerk", "path": "/staff/counter", "width": 1280, "height": 800 },
+  { "file": "land-use-staff/applications-list.png", "persona": "Sam Clerk", "path": "/staff/applications", "width": 1280, "height": 800 },
+  { "file": "land-use-staff/notice-contacts.png", "persona": "Sam Clerk", "path": "/staff/notice-contacts", "width": 1280, "height": 800 },
+  { "file": "land-use-staff/parcel-search.png", "persona": "Sam Clerk", "path": "/staff/parcels?q=heron", "width": 1280, "height": 800 }
+]
