@@ -1,8 +1,9 @@
 import { and, eq } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { appealNodes, applications, clocks, recordEvents } from '@/db/schema'
+import { addAdministrativeDecision } from '@/features/appeals/adminAppeals'
 import { finality } from '@/features/appeals/finality'
-import { addAdministrativeDecision, addAppealNode } from '@/features/appeals/graph'
+import { addAppealNode } from '@/features/appeals/graph'
 import { recordDecision } from '@/features/decisions/recordDecision'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { closeAppealPeriods } from '@/jobs/appealsDaily'
@@ -303,9 +304,8 @@ describe('administrative decisions and issued permits', () => {
     const result = await addAdministrativeDecision(
       handle.db,
       world.staff,
-      { applicationId: permit.applicationId, occurredOn: d('2028-01-04') },
+      { applicationId: permit.applicationId, occurredOn: d('2028-01-04'), now: BOARD_FIXTURE_NOW },
       signal,
-      BOARD_FIXTURE_NOW,
     )
     expect(result.ok ? null : result.error).toBe('future_date')
   })
@@ -315,9 +315,8 @@ describe('administrative decisions and issued permits', () => {
     const root = await addAdministrativeDecision(
       handle.db,
       world.staff,
-      { applicationId: permit.applicationId, occurredOn: d('2027-03-01') },
+      { applicationId: permit.applicationId, occurredOn: d('2027-03-01'), now: BOARD_FIXTURE_NOW },
       signal,
-      BOARD_FIXTURE_NOW,
     )
     if (!root.ok) throw new Error(root.error)
     const appeal = await add(root.value.nodeId, 'zba_appeal', '2027-03-20')
@@ -335,9 +334,8 @@ describe('administrative decisions and issued permits', () => {
     const root = await addAdministrativeDecision(
       handle.db,
       world.staff,
-      { applicationId: permit.applicationId, occurredOn: d('2027-03-01') },
+      { applicationId: permit.applicationId, occurredOn: d('2027-03-01'), now: BOARD_FIXTURE_NOW },
       signal,
-      BOARD_FIXTURE_NOW,
     )
     if (!root.ok) throw new Error(root.error)
     const appeal = await add(root.value.nodeId, 'zba_appeal', '2027-04-01')
