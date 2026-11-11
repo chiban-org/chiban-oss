@@ -327,7 +327,7 @@ describe('portal view', () => {
     expect(view.value.canEdit).toBe(false)
   })
 
-  it('contractor party sees status after claiming and cannot edit a submitted application', async () => {
+  it('contractor party sees status after claiming, can withdraw, and cannot edit a submitted application', async () => {
     const trade = await submittedTrade(handle.db, world)
     const mail = createMemoryTransport()
     await sendContractorClaim(
@@ -349,7 +349,7 @@ describe('portal view', () => {
     expect(view.value.state).toBe('submitted')
     expect(view.value.stateLabel).toBe('Submitted')
     expect(view.value.canPay).toBe(true)
-    expect(view.value.record.mayEnd).toBe(false)
+    expect(view.value.record.mayEnd).toBe(true)
   })
 })
 

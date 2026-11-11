@@ -29,6 +29,7 @@ import { ledgerEntryVisibleTo } from '@/features/ledger/visibility'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { computeConvenienceFee } from '@/features/payments/convenienceFee'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
+import { ENDING_ROLES } from '@/features/portal/endApplication'
 import { hasFullRecordAccess, isActiveParty } from '@/features/projects/access'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
@@ -36,7 +37,6 @@ import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
 
 const DECISION_CLOCK_KEYS = ['nh.bp.decision', 'nh.pb.decision', 'nh.zba.decision']
-const ENDING_ROLES = ['applicant', 'owner', 'agent'] as const
 const PAYER_ROLES = ['applicant', 'owner', 'agent', 'contractor'] as const
 const WRITABLE_STATES: readonly CoreState[] = ['draft', 'submitted']
 const ESTIMATE_STATES: readonly CoreState[] = ['draft', 'submitted', 'under_review']

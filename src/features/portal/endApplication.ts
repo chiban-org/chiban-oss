@@ -8,7 +8,7 @@ import { err, ok, type Result } from '@/types/result'
 
 export type Ending = 'withdraw' | 'delete_draft'
 
-const ENDING_ROLES = ['applicant', 'owner', 'agent'] as const
+export const ENDING_ROLES = ['applicant', 'owner', 'agent', 'contractor'] as const
 
 export const ENDABLE_FROM: Record<Ending, readonly CoreState[]> = {
   withdraw: ['submitted', 'under_review'],
