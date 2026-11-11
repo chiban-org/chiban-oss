@@ -46,6 +46,7 @@ function renderPanel(canManage: boolean, assignments = [CONSERVATION]) {
       <ReviewersPanel
         applicationId="app"
         reviewers={[]}
+        zone="America/New_York"
         choices={[]}
         canAssign={false}
         boards={{ assignments, choices: CHOICES, canManage, zone: 'America/New_York' }}

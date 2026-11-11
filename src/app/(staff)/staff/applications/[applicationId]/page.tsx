@@ -9,6 +9,7 @@ import { BalanceDueNotice } from '@/components/staff/BalanceDueNotice'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { cutoverRows } from '@/db/schema'
 import { hasFullRecordAccess } from '@/features/access/roles'
+import { loadAmendForm } from '@/features/applications/amendForm'
 import { closureStage } from '@/features/applications/closureStage'
 import { getLimitedApplicationView } from '@/features/applications/limitedApplicationView'
 import {
@@ -76,6 +77,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     intake,
     license,
     letters,
+    amend,
   ] = await Promise.all([
     loading,
     loading.then((v) => (v === null ? null : loadRecordsData(ctx, applicationId, v.projectId))),
@@ -94,6 +96,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     counterIntakeLine(ctx.db, applicationId),
     loadLicenseCheckPanel(ctx.db, ctx.actor, applicationId, ctx.signal),
     loadLettersData(ctx, applicationId),
+    loadAmendForm(ctx.db, ctx.actor, applicationId, ctx.signal),
   ])
   if (view === null || records === null) return null
   return {
@@ -107,6 +110,7 @@ async function loadAll(ctx: StaffContext, applicationId: string) {
     legacyNumber: imported[0]?.legacyNumber ?? null,
     intake,
     correction,
+    amend,
     responsible,
     notes,
     license,
@@ -138,7 +142,7 @@ export default async function StaffApplicationPage({ params }: Props) {
   }
   const due = await loadDueInspection(ctx, loaded.inspections)
   const ready = { ...loaded, due }
-  const { view, balanceNotices, correction } = ready
+  const { view, balanceNotices, correction, amend } = ready
   const origin = { legacyNumber: ready.legacyNumber, intake: ready.intake }
   const planned = planWork(view, ready.board, {
     reviewers: ready.records.reviewers.length,
@@ -175,7 +179,15 @@ export default async function StaffApplicationPage({ params }: Props) {
         actions={<SeePublicLink href={applicationPublicHref(view)} />}
       />
       <RecordLayout
-        rail={<ApplicationRail view={view} plan={plan} notice={notice} correction={correction} />}
+        rail={
+          <ApplicationRail
+            view={view}
+            plan={plan}
+            notice={notice}
+            correction={correction}
+            amend={amend}
+          />
+        }
         railFooter={<ApplicationFacts view={view} origin={origin} responsible={responsible} />}
         strip={
           <StatusStrip
@@ -184,6 +196,7 @@ export default async function StaffApplicationPage({ params }: Props) {
             notice={notice}
             origin={origin}
             correction={correction}
+            amend={amend}
             responsible={responsible}
           />
         }

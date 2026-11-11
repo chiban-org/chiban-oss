@@ -6,6 +6,7 @@ import {
   getAssignmentView,
   listApplicationReviewers,
   listReviewerChoices,
+  withReviewComments,
 } from '@/features/reviews/reviewerView'
 import { listReviewTable, REVIEW_SORT } from '@/features/reviews/reviewList'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
@@ -83,5 +84,33 @@ describe('reviewer views', () => {
     expect(await listApplicationReviewers(handle.db, applicationId)).toEqual([
       expect.objectContaining({ reviewerUserId: world.reviewer.userId }),
     ])
+  })
+
+  it('staff see each reviewer comment on the application, oldest first', async () => {
+    await addReviewComment(
+      handle.db,
+      world.reviewer,
+      { assignmentId, body: 'Setback is fine' },
+      signal,
+    )
+    const reviewers = await listApplicationReviewers(handle.db, applicationId)
+    const shown = await withReviewComments(handle.db, world.staff, reviewers, signal)
+    expect(shown).toEqual([
+      expect.objectContaining({
+        assignmentId,
+        comments: [
+          { body: 'Needs a stamped plan', createdAt: expect.any(Date) },
+          { body: 'Setback is fine', createdAt: expect.any(Date) },
+        ],
+      }),
+    ])
+  })
+
+  it('a reviewer or applicant gets no comment text through the application list', async () => {
+    const reviewers = await listApplicationReviewers(handle.db, applicationId)
+    for (const actor of [world.reviewer, world.applicant]) {
+      const shown = await withReviewComments(handle.db, actor, reviewers, signal)
+      expect(shown.flatMap((r) => r.comments)).toEqual([])
+    }
   })
 })

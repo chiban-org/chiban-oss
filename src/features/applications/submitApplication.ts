@@ -1,8 +1,9 @@
 import { createHash } from 'node:crypto'
 import { eq } from 'drizzle-orm'
-import type { Db, DbOrTx, Tx } from '@/db/client'
+import type { Db, DbOrTx } from '@/db/client'
 import { applications, attestations } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
+import { answerChanges } from '@/features/applications/amendChanges'
 import { type ApplicationContext, loadApplicationContext } from '@/features/applications/context'
 import type { CoreState } from '@/features/applications/states'
 import { applyTransition } from '@/features/applications/transition'
@@ -155,8 +156,8 @@ const OPEN_AFTER_REVIEW: readonly CoreState[] = ['under_review', 'decided', 'iss
 
 type AmendError = 'forbidden' | 'not_found' | 'not_amendable' | { fieldErrors: FieldError[] }
 
-async function amendPermission(
-  tx: Tx,
+export async function amendPermission(
+  tx: DbOrTx,
   actor: Actor,
   app: ApplicationContext,
   signal: AbortSignal,
@@ -225,7 +226,7 @@ export async function amendApplication(
         entityType: 'application',
         entityId: input.applicationId,
         before: { values: app.values },
-        after: { values },
+        after: { values, changes: answerChanges(formBody, app.values, values) },
       },
       signal,
     )

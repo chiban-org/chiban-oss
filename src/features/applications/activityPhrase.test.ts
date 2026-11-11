@@ -24,6 +24,16 @@ describe('activity phrases', () => {
     )
   })
 
+  it('names the answers an amendment changed', () => {
+    expect(
+      activityPhrase('application.amend', {
+        values: {},
+        changes: [{ label: 'Dwelling units', from: '1', to: '2' }],
+      }),
+    ).toBe('Amended the application: Dwelling units from 1 to 2')
+    expect(activityPhrase('application.amend', { values: {} })).toBe('Amended the application')
+  })
+
   it('names the board comment actions', () => {
     expect(activityPhrase('review.board_assign', null)).toBe(
       'Sent the application to a board for comment',
