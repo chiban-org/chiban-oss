@@ -6,7 +6,11 @@ import { loadPanelDocuments } from '@/features/documents/panelData'
 import { applicationHolds } from '@/features/records/holds'
 import { assignableBoards } from '@/features/reviews/boardAssignments'
 import { listApplicationBoardAssignments } from '@/features/reviews/boardAssignmentView'
-import { listApplicationReviewers, listReviewerChoices } from '@/features/reviews/reviewerView'
+import {
+  listApplicationReviewers,
+  listReviewerChoices,
+  withReviewComments,
+} from '@/features/reviews/reviewerView'
 import { getTownSettings } from '@/features/town/settings'
 import type { StaffContext } from '@/server/requireStaff'
 
@@ -46,7 +50,9 @@ export async function loadRecordsData(ctx: StaffContext, applicationId: string, 
   ] = await Promise.all([
     can('review.assign'),
     getTownSettings(ctx.db, ctx.signal),
-    listApplicationReviewers(ctx.db, applicationId),
+    listApplicationReviewers(ctx.db, applicationId).then((rows) =>
+      withReviewComments(ctx.db, ctx.actor, rows, ctx.signal),
+    ),
     listReviewerChoices(ctx.db),
     loadPanelDocuments(ctx.db, ctx.actor, { kind: 'application', id: applicationId }, ctx.signal),
     can('document.publish'),

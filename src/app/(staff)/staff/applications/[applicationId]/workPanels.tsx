@@ -39,6 +39,7 @@ export function workPanels(input: RecordPanelsInput): Panel[] {
           key="reviewers"
           applicationId={view.id}
           reviewers={records.reviewers}
+          zone={records.zone}
           choices={records.choices}
           canAssign={records.canAssign && mayAssignReviewers(view.state)}
           required={reviewRequired(view)}

@@ -178,7 +178,12 @@ describe('staff application panels', () => {
     const text = textOf(
       <ReviewersPanel
         applicationId="a1"
-        reviewers={[{ assignmentId: 'r1', name: 'Remy Reviewer', status: 'signed_off' }] as never}
+        reviewers={
+          [
+            { assignmentId: 'r1', name: 'Remy Reviewer', status: 'signed_off', comments: [] },
+          ] as never
+        }
+        zone="America/New_York"
         choices={[]}
         canAssign={false}
       />,
@@ -199,10 +204,18 @@ describe('staff application panels', () => {
                 reviewerUserId: 'u1',
                 name: 'Remy Reviewer',
                 status: 'pending',
+                comments: [],
               },
-              { assignmentId: 'r2', reviewerUserId: 'u2', name: 'Faye Fire', status: 'pending' },
+              {
+                assignmentId: 'r2',
+                reviewerUserId: 'u2',
+                name: 'Faye Fire',
+                status: 'pending',
+                comments: [],
+              },
             ] as never
           }
+          zone="America/New_York"
           choices={[
             { id: 'u1', name: 'Remy Reviewer' },
             { id: 'u2', name: 'Faye Fire' },

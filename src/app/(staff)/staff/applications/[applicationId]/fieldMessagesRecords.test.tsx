@@ -135,6 +135,7 @@ describe('record forms show a refusal beside its field', () => {
       <ReviewersPanel
         applicationId="a1"
         reviewers={[]}
+        zone="America/New_York"
         choices={[{ id: 'u1', name: 'Rae Reviewer' }]}
         canAssign
       />,

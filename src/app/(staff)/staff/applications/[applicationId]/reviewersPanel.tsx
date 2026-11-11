@@ -2,14 +2,16 @@ import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
 import { SelectField } from '@/components/staff/fields'
 import type { ApplicationBoardAssignment } from '@/features/reviews/boardAssignmentView'
-import type { ApplicationReviewer } from '@/features/reviews/reviewerView'
+import type { ApplicationReviewer, ReviewerWithComments } from '@/features/reviews/reviewerView'
 import { reviewStatusLabel } from '@/features/reviews/statusLabels'
+import { formatInstant } from '@/lib/formatDate'
 import { assignReviewerAction, removeReviewerAction } from '../../reviews/actions'
 import { BoardComments } from './boardComments'
 
 interface Props {
   applicationId: string
-  reviewers: ApplicationReviewer[]
+  reviewers: ReviewerWithComments[]
+  zone: string
   choices: { id: string; name: string }[]
   canAssign: boolean
   required?: boolean
@@ -89,9 +91,28 @@ function Unassigned({ required }: { required: boolean }) {
   )
 }
 
+function ReviewerComments({ reviewer, zone }: { reviewer: ReviewerWithComments; zone: string }) {
+  if (reviewer.comments.length === 0) {
+    return <p className="m-0 text-sm text-muted-foreground">No comments yet.</p>
+  }
+  return (
+    <ul aria-label={`Comments from ${reviewer.name}`} className="space-y-2 pl-4">
+      {reviewer.comments.map((c) => (
+        <li key={`${c.createdAt.toISOString()}-${c.body}`}>
+          <p className="m-0 whitespace-pre-line">{c.body}</p>
+          <p className="m-0 text-sm text-muted-foreground">
+            {`${reviewer.name}, ${formatInstant(c.createdAt, zone)}`}
+          </p>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export function ReviewersPanel({
   applicationId,
   reviewers,
+  zone,
   choices,
   canAssign,
   required = false,
@@ -105,12 +126,12 @@ export function ReviewersPanel({
       {reviewers.length === 0 ? <Unassigned required={required} /> : null}
       <ul className="list-none p-0">
         {reviewers.map((r) => (
-          <li
-            key={r.assignmentId}
-            className="record-item flex flex-wrap items-start justify-between gap-3 pb-3"
-          >
-            <span>{`${r.name}, ${reviewStatusLabel(r.status)}`}</span>
-            {canAssign ? <RemoveReviewer reviewer={r} /> : null}
+          <li key={r.assignmentId} className="record-item space-y-2 pb-3">
+            <div className="flex flex-wrap items-start justify-between gap-3">
+              <span>{`${r.name}, ${reviewStatusLabel(r.status)}`}</span>
+              {canAssign ? <RemoveReviewer reviewer={r} /> : null}
+            </div>
+            <ReviewerComments reviewer={r} zone={zone} />
           </li>
         ))}
       </ul>

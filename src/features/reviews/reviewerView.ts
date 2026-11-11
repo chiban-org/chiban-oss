@@ -1,4 +1,4 @@
-import { and, asc, eq, isNull } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
   applications,
@@ -9,7 +9,7 @@ import {
   userRoles,
   users,
 } from '@/db/schema'
-import { isReviewer } from '@/features/access/roles'
+import { hasFullRecordAccess, isReviewer } from '@/features/access/roles'
 import { loadApplicationContext } from '@/features/applications/context'
 import { isTerminalState } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
@@ -28,8 +28,13 @@ export interface AssignmentView {
   parcelDisplayId: string | null
   commentDue: string | null
   applicationClosed: boolean
-  comments: { body: string; createdAt: Date }[]
+  comments: ReviewComment[]
   documents: DocumentListRow[]
+}
+
+export interface ReviewComment {
+  body: string
+  createdAt: Date
 }
 
 export function reviewOpen(view: AssignmentView): boolean {
@@ -115,6 +120,36 @@ export async function listApplicationReviewers(
       and(eq(reviewAssignments.applicationId, applicationId), isNull(reviewAssignments.removedAt)),
     )
     .orderBy(asc(reviewAssignments.assignedAt))
+}
+
+export type ReviewerWithComments = ApplicationReviewer & { comments: ReviewComment[] }
+
+export async function withReviewComments(
+  db: DbOrTx,
+  actor: Actor,
+  reviewers: ApplicationReviewer[],
+  signal: AbortSignal,
+): Promise<ReviewerWithComments[]> {
+  signal.throwIfAborted()
+  const ids = reviewers.map((r) => r.assignmentId)
+  if (!hasFullRecordAccess(actor) || ids.length === 0) {
+    return reviewers.map((r) => ({ ...r, comments: [] }))
+  }
+  const rows = await db
+    .select({
+      assignmentId: reviewComments.assignmentId,
+      body: reviewComments.body,
+      createdAt: reviewComments.createdAt,
+    })
+    .from(reviewComments)
+    .where(inArray(reviewComments.assignmentId, ids))
+    .orderBy(asc(reviewComments.createdAt), asc(reviewComments.id))
+  return reviewers.map((r) => ({
+    ...r,
+    comments: rows
+      .filter((c) => c.assignmentId === r.assignmentId)
+      .map(({ body, createdAt }) => ({ body, createdAt })),
+  }))
 }
 
 export async function listReviewerChoices(db: DbOrTx): Promise<{ id: string; name: string }[]> {
