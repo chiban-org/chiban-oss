@@ -128,6 +128,10 @@ export default async function BoardsPage({
         Applications before each board that are submitted, under review, or decided, oldest filing
         first.
       </p>
+      <p>
+        To appeal a decision by the building inspector or zoning administrator to the Zoning Board,
+        use <Link href="/staff/boards/appeals">appeals of administrative decisions</Link>.
+      </p>
       {allLines.length === 0 ? null : (
         <div className="toolbar">
           <QuickFilters

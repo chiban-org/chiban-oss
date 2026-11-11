@@ -10,7 +10,7 @@ import { formatMinuteOfDay, HEARING_KIND_LABELS } from '@/features/hearings/labe
 import { noticeStatus } from '@/features/notices/noticeStatus'
 import { documentFrame } from '@/features/pdf/documentFrame'
 import { loadPermitData, mergeContextOf } from '@/features/permits/permitData'
-import { pinnedTemplate } from '@/features/templates/findTemplate'
+import { townTemplate } from '@/features/templates/findTemplate'
 import { type DocumentInput, renderDocument } from '@/features/templates/templateBlocks'
 import { formatCivilDate } from '@/lib/formatDate'
 import { err, ok, type Result } from '@/types/result'
@@ -86,7 +86,7 @@ export async function renderNoticeLetters(
   if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
   const loaded = await hearingNoticeInput(db, setId, signal)
   if (loaded === null) return err('not_found')
-  const template = await pinnedTemplate(db, loaded.pins, 'hearing_notice', signal)
+  const template = await townTemplate(db, 'hearing_notice', loaded.pins, signal)
   if (template === null) return err('no_template')
   const out = await PDFDocument.create()
   for (const recipient of loaded.recipients) {

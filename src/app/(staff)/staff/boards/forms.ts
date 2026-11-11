@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { meetingStartTime } from '@/features/boards/meetingTime'
 import {
   checkbox,
   choice,
@@ -18,6 +19,13 @@ export const SCHEDULE_MEETING_FORM = z.object({
   boardId: recordId('a board'),
   meetingDate: civilDate('the meeting date'),
   kind: choice('a kind of meeting', MEETING_KINDS),
+  location: optionalText('a location', { max: 200 }),
+  startsAt: meetingStartTime('the start time'),
+})
+
+export const EDIT_MEETING_FORM = z.object({
+  meetingId: recordId('a meeting'),
+  startsAt: meetingStartTime('the start time'),
   location: optionalText('a location', { max: 200 }),
 })
 

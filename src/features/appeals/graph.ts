@@ -60,30 +60,6 @@ export async function recordDecisionNode(
   })
 }
 
-export async function addAdministrativeDecision(
-  db: Db,
-  actor: Actor,
-  input: { applicationId: string; occurredOn: CivilDate },
-  signal: AbortSignal,
-  now: Date = new Date(),
-): Promise<Result<{ nodeId: string }, AppealError>> {
-  signal.throwIfAborted()
-  if (!(await hasCapability(db, actor.userId, 'board.record', signal))) return err('forbidden')
-  if (await isAfterTownToday(db, input.occurredOn, now, signal)) return err('future_date')
-  const app = await loadApplicationContext(db, input.applicationId, signal)
-  if (app === null) return err('not_found')
-  const [row] = await db
-    .insert(appealNodes)
-    .values({
-      kind: 'administrative_decision',
-      applicationId: input.applicationId,
-      occurredOn: input.occurredOn,
-      createdBy: actor.userId,
-    })
-    .returning({ id: appealNodes.id })
-  return ok({ nodeId: row?.id ?? '' })
-}
-
 function chooseRoute(
   parent: NodeRow,
   input: AddNodeInput,

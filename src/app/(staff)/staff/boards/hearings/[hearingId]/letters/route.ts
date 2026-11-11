@@ -1,9 +1,11 @@
 import { eq } from 'drizzle-orm'
 import { db } from '@/db/client'
 import { hearings } from '@/db/schema'
+import { hasCapability } from '@/features/authz/capabilities'
 import { renderNoticeLetters } from '@/features/hearings/noticeLetters'
 import { pdfOk, toResponse } from '@/features/pdf/pdfResponse'
 import { requireStaffActor } from '@/server/requireStaff'
+import { missingTemplatePage, missingTemplateText } from './missingTemplate'
 
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
@@ -29,7 +31,14 @@ export async function GET(
   if (letters.ok) return toResponse(pdfOk(letters.value), request.headers.get('accept'))
   if (letters.error === 'forbidden')
     return plain(403, 'You do not have permission to print notice letters.')
-  if (letters.error === 'no_template')
-    return plain(409, 'This application type has no hearing notice template.')
+  if (letters.error === 'no_template') {
+    const canEdit = await hasCapability(db, actor.userId, 'config.edit', signal)
+    return request.headers.get('accept')?.includes('text/html') === true
+      ? new Response(missingTemplatePage(canEdit), {
+          status: 409,
+          headers: { 'content-type': 'text/html; charset=utf-8' },
+        })
+      : plain(409, missingTemplateText(canEdit))
+  }
   return plain(404, 'Not found')
 }
