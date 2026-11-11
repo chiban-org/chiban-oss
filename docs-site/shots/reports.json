@@ -1,0 +1,6 @@
+[
+  { "file": "reports/reports.png", "persona": "Avery Admin", "path": "/staff/reports", "width": 1280, "height": 800 },
+  { "file": "reports/census.png", "persona": "Avery Admin", "path": "/staff/reports/census", "width": 1280, "height": 800 },
+  { "file": "reports/schedules.png", "persona": "Avery Admin", "path": "/staff/reports/schedules", "width": 1280, "height": 800 },
+  { "file": "reports/data-export.png", "persona": "Avery Admin", "path": "/staff/admin/export", "width": 1280, "height": 800 }
+]
