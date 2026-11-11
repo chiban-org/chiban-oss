@@ -1,5 +1,6 @@
 import { ActionForm } from '@/components/ActionForm'
 import { TextField } from '@/components/staff/fields'
+import { letterNoteFor } from '@/features/rtk/requesterEmail'
 import type { RtkRequestView } from '@/features/rtk/requests'
 import type { CivilDate } from '@/types/civilDate'
 import { denyRequestAction } from '../actions'
@@ -21,6 +22,7 @@ export function DenyStep({ request, today }: { request: RtkRequestView; today: C
             action={denyRequestAction}
             submitLabel="Deny the request"
             variant="destructive"
+            submitNote={letterNoteFor(request.requesterContact)}
             confirm={{
               title: `Deny request ${request.number}?`,
               body: 'The denial letter is filed with every withheld record and its exemption.',

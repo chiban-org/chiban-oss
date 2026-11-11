@@ -13,6 +13,7 @@ import type { ActionResult } from '@/server/actionRunner'
 import { runStaffForm } from '@/server/formInput'
 import { runStaffFormToday } from '@/server/formInputToday'
 import { recordsOutcome } from '@/server/recordsAction'
+import { sendLetterOutcome } from './letterSent'
 import {
   closeRequestForm,
   denyRequestForm,
@@ -49,37 +50,43 @@ export async function firstResponseAction(formData: FormData): Promise<ActionRes
     formData,
     firstResponseForm,
     async ({ db, actor, signal }, input) =>
-      recordsOutcome(
-        await recordFirstResponse(
-          db,
-          getObjectStore(),
-          actor,
-          {
-            requestId: input.requestId,
-            kind: input.kind,
-            respondedOn: input.respondedOn,
-            ...(input.websiteUrl === null ? {} : { websiteUrl: input.websiteUrl }),
-            ...(input.statedDate === null || input.delayReason === null
-              ? {}
-              : {
-                  timeStatement: {
-                    statedDate: input.statedDate,
-                    delayReason: input.delayReason,
-                    costEstimate:
-                      input.costLabel === null || input.costDollars === null
-                        ? []
-                        : [{ label: input.costLabel, cents: input.costDollars }],
-                  },
-                }),
-          },
-          signal,
-        ),
-        'Response recorded and the letter filed.',
+      await sendLetterOutcome(
+        { db, actor, signal },
         {
-          future_date: 'respondedOn',
-          before_received: 'respondedOn',
-          website_url_required: 'websiteUrl',
-          stated_date_required: 'statedDate',
+          requestId: input.requestId,
+          result: await recordFirstResponse(
+            db,
+            getObjectStore(),
+            actor,
+            {
+              requestId: input.requestId,
+              kind: input.kind,
+              respondedOn: input.respondedOn,
+              ...(input.websiteUrl === null ? {} : { websiteUrl: input.websiteUrl }),
+              ...(input.statedDate === null || input.delayReason === null
+                ? {}
+                : {
+                    timeStatement: {
+                      statedDate: input.statedDate,
+                      delayReason: input.delayReason,
+                      costEstimate:
+                        input.costLabel === null || input.costDollars === null
+                          ? []
+                          : [{ label: input.costLabel, cents: input.costDollars }],
+                    },
+                  }),
+            },
+            signal,
+          ),
+        },
+        {
+          lead: 'Response recorded',
+          fieldOf: {
+            future_date: 'respondedOn',
+            before_received: 'respondedOn',
+            website_url_required: 'websiteUrl',
+            stated_date_required: 'statedDate',
+          },
         },
       ),
   )
@@ -87,13 +94,19 @@ export async function firstResponseAction(formData: FormData): Promise<ActionRes
 
 export async function denyRequestAction(formData: FormData): Promise<ActionResult> {
   return await runStaffFormToday(formData, denyRequestForm, async ({ db, actor, signal }, input) =>
-    recordsOutcome(
-      await denyRequest(
-        { db, store: getObjectStore(), actor, signal },
-        { requestId: input.requestId, deniedOn: input.deniedOn },
-      ),
-      'Denial recorded and the letter filed.',
-      { future_date: 'deniedOn', before_statement: 'deniedOn' },
+    await sendLetterOutcome(
+      { db, actor, signal },
+      {
+        requestId: input.requestId,
+        result: await denyRequest(
+          { db, store: getObjectStore(), actor, signal },
+          { requestId: input.requestId, deniedOn: input.deniedOn },
+        ),
+      },
+      {
+        lead: 'Denial recorded',
+        fieldOf: { future_date: 'deniedOn', before_statement: 'deniedOn' },
+      },
     ),
   )
 }

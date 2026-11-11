@@ -10,3 +10,10 @@ export function requesterEmailOf(contact: string | null): string | null {
   )
   return valid.length === 1 ? (valid[0] ?? null) : null
 }
+
+export function letterNoteFor(contact: string | null): string {
+  const email = requesterEmailOf(contact)
+  return email === null
+    ? 'There is no email address on this request, so print the letter from Letters and send it.'
+    : `The letter will be emailed to ${email}.`
+}

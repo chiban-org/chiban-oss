@@ -107,6 +107,7 @@ describe('request forms show a refusal beside its field', () => {
         canDeny={false}
         startOnRelease={false}
         releaseStep={null}
+        letterNote="The letter will be emailed to jordan@example.test."
       />,
     )
     fireEvent.click(screen.getByRole('radio', { name: 'Written statement of the time needed' }))

@@ -139,7 +139,10 @@ describeActionCases(h, 'firstResponseAction', {
     checkOnly: CHECK_PASSED,
   },
   accepted: async (result, { db, input, written }) => {
-    expect(result).toEqual({ ok: true, message: 'Response recorded and the letter filed.' })
+    expect(result).toEqual({
+      ok: true,
+      message: 'Response recorded and the letter emailed to jordan@example.test.',
+    })
     expect(written).toEqual([
       'audit_log',
       'document_versions',
@@ -147,6 +150,7 @@ describeActionCases(h, 'firstResponseAction', {
       'files',
       'preservation_records',
       'retention_assignments',
+      'rtk_letter_deliveries',
       'rtk_requests',
       'rtk_time_statements',
     ])

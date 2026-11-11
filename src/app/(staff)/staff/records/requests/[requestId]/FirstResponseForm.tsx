@@ -90,12 +90,14 @@ export function FirstResponseForm({
   canDeny,
   startOnRelease,
   releaseStep,
+  letterNote,
 }: {
   requestId: string
   today: CivilDate
   canDeny: boolean
   startOnRelease: boolean
   releaseStep: ReactNode
+  letterNote: string
 }) {
   const [kind, setKind] = useState<Choice>(startOnRelease ? 'release' : '')
   return (
@@ -114,6 +116,7 @@ export function FirstResponseForm({
           submitLabel="Record response"
           variant="default"
           checkBeforeSubmit={chosen}
+          submitNote={letterNote}
         >
           <input type="hidden" name="requestId" value={requestId} />
           <input type="hidden" name="kind" value={kind} />

@@ -22,6 +22,7 @@ vi.mock('next/cache', () => import('@/test/testHarness/actions/mocks/nextCache')
 vi.mock('next/headers', () => import('@/test/testHarness/actions/mocks/nextHeaders'))
 vi.mock('next/navigation', () => import('@/test/testHarness/actions/mocks/nextNavigation'))
 vi.mock('@/server/getActor', () => import('@/test/testHarness/actions/mocks/getActor'))
+vi.mock('@/features/mail/transport', () => import('@/test/testHarness/actions/mocks/mailTransport'))
 vi.mock(
   '@/features/storage/objectStore',
   () => import('@/test/testHarness/actions/mocks/objectStore'),
@@ -95,7 +96,10 @@ describeActionCases(h, 'denyRequestAction', {
     checkOnly: CHECK_PASSED,
   },
   accepted: async (result, { db, input }) => {
-    expect(result).toEqual({ ok: true, message: 'Denial recorded and the letter filed.' })
+    expect(result).toEqual({
+      ok: true,
+      message: 'Denial recorded and the letter emailed to jordan@example.test.',
+    })
     const [row] = await db
       .select()
       .from(rtkRequests)

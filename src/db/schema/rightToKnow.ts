@@ -151,3 +151,24 @@ export const rtkReleaseLinks = pgTable(
   },
   (t) => [index('rtk_release_links_release_idx').on(t.releaseId)],
 )
+
+export const RTK_LETTER_OUTCOMES = ['emailed', 'email_failed', 'print'] as const
+export type RtkLetterOutcome = (typeof RTK_LETTER_OUTCOMES)[number]
+
+export const rtkLetterDeliveries = pgTable(
+  'rtk_letter_deliveries',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    requestId: uuid('request_id')
+      .notNull()
+      .references(() => rtkRequests.id),
+    documentId: uuid('document_id')
+      .notNull()
+      .references(() => documents.id),
+    outcome: text('outcome', { enum: RTK_LETTER_OUTCOMES }).notNull(),
+    sentTo: text('sent_to'),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('rtk_letter_deliveries_request_idx').on(t.requestId)],
+)

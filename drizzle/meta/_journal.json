@@ -757,6 +757,13 @@
       "when": 1794405610322,
       "tag": "0107_rtk_release_links",
       "breakpoints": true
+    },
+    {
+      "idx": 108,
+      "version": "7",
+      "when": 1794405918608,
+      "tag": "0108_rtk_letter_deliveries",
+      "breakpoints": true
     }
   ]
 }
