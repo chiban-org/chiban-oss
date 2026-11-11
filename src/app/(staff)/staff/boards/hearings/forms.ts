@@ -116,4 +116,5 @@ export const ADD_APPEAL_NODE_FORM = z.object({
   occurredOn: civilDate('the date of the step'),
   outcome: choice('a result', ['', 'granted', 'denied', 'approved'] as const),
   linked: choice('whether it is a linked component', ['yes', 'no'] as const),
+  appellantName: optionalText('the appellant name', { max: 200 }),
 })

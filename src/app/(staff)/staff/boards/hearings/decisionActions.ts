@@ -82,13 +82,14 @@ export async function addAppealNodeAction(formData: FormData): Promise<ActionRes
     formData,
     ADD_APPEAL_NODE_FORM,
     async ({ db, actor, signal }, input) => {
-      const { outcome, linked, ...rest } = input
+      const { outcome, linked, appellantName, ...rest } = input
       const added = await addAppealNode(
         db,
         actor,
         {
           ...rest,
           ...(outcome === '' ? {} : { outcome }),
+          ...(appellantName === null ? {} : { appellantName }),
           linkedComponent: linked === 'yes',
         },
         signal,
