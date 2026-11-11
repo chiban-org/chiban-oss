@@ -9,6 +9,7 @@ import {
   choice,
   date,
   describeActionCases,
+  type FieldSpec,
   type InvalidVariant,
   STAFF_REFUSALS,
   text,
@@ -38,8 +39,17 @@ function nextMeeting(overrides: Record<string, string> = {}) {
     meetingDate: `2031-03-${String(day).padStart(2, '0')}`,
     kind: 'regular',
     location: 'Town Hall, Room 2',
+    startsAt: '18:30',
     ...overrides,
   }
+}
+
+const startTime: FieldSpec = {
+  required: false,
+  variants: [
+    { kind: 'words', label: 'as words', value: 'noon' },
+    { kind: 'above_max', label: 'past the end of the day', value: '24:00' },
+  ],
 }
 
 function refusalFor(variant: InvalidVariant) {
@@ -50,6 +60,8 @@ function refusalFor(variant: InvalidVariant) {
       return refuseField('meetingDate', dateMessage('the meeting date', variant))
     case 'kind':
       return refuseField('kind', 'Choose a kind of meeting.')
+    case 'startsAt':
+      return refuseField('startsAt', 'Enter the start time as a time of day, like 7:00 PM.')
     default:
       return refuseField('location', textMessage('a location', 200, variant))
   }
@@ -64,6 +76,7 @@ describeActionCases(h, 'scheduleMeetingAction', {
     meetingDate: date({ required: true, earliest: '1900-01-01', latest: '2099-12-31' }),
     kind: choice({ required: true }),
     location: text({ max: 200 }),
+    startsAt: startTime,
   },
   capability: 'board.record',
   refusals: { ...STAFF_REFUSALS, invalid: refusalFor, checkOnly: CHECK_PASSED },
@@ -76,11 +89,18 @@ describeActionCases(h, 'scheduleMeetingAction', {
         meetingDate: boardMeetings.meetingDate,
         kind: boardMeetings.kind,
         location: boardMeetings.location,
+        startsAtMinute: boardMeetings.startsAtMinute,
       })
       .from(boardMeetings)
       .where(eq(boardMeetings.meetingDate, String(input.meetingDate)))
     expect(rows).toEqual([
-      { boardId: zbaId, meetingDate: input.meetingDate, kind: 'regular', location: input.location },
+      {
+        boardId: zbaId,
+        meetingDate: input.meetingDate,
+        kind: 'regular',
+        location: input.location,
+        startsAtMinute: 1110,
+      },
     ])
   },
 })
@@ -126,6 +146,20 @@ describe('scheduleMeetingAction with the findings from the forms sweep', () => {
       .from(boardMeetings)
       .where(eq(boardMeetings.meetingDate, '2032-05-05'))
     expect(rows?.n).toBe(1)
+  })
+
+  it('stores the usual 7:00 PM start when the form sends no time', async () => {
+    h.signIn(await h.actorFor('admin'))
+    const input = nextMeeting({ meetingDate: '2032-07-07', startsAt: '' })
+    expect(await scheduleMeetingAction(h.form(input))).toEqual({
+      ok: true,
+      message: 'Meeting added to the calendar.',
+    })
+    const [row] = await h.db
+      .select({ startsAtMinute: boardMeetings.startsAtMinute })
+      .from(boardMeetings)
+      .where(eq(boardMeetings.meetingDate, '2032-07-07'))
+    expect(row?.startsAtMinute).toBe(1140)
   })
 
   it('still refuses a different meeting that lands on a taken date and kind', async () => {

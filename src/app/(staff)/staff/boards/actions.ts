@@ -40,7 +40,8 @@ export async function scheduleMeetingAction(formData: FormData): Promise<ActionR
     formData,
     SCHEDULE_MEETING_FORM,
     async ({ db, actor, signal }, input) => {
-      const details = { ...input, location: input.location ?? '' }
+      const { startsAt, ...rest } = input
+      const details = { ...rest, location: input.location ?? '', startsAtMinute: startsAt }
       const made = await scheduleMeeting(db, actor, details, signal)
       if (
         !made.ok &&
