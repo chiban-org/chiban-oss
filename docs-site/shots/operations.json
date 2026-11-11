@@ -1,0 +1,16 @@
+[
+  {
+    "file": "operations/health.png",
+    "persona": "Avery Admin",
+    "path": "/staff/admin/health",
+    "width": 1280,
+    "height": 800
+  },
+  {
+    "file": "operations/payments-processor.png",
+    "persona": "Avery Admin",
+    "path": "/staff/settings/payments",
+    "width": 1280,
+    "height": 800
+  }
+]
