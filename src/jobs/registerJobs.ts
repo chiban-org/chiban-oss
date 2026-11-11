@@ -5,20 +5,33 @@ import { ALL_JOBS } from './allJobs'
 import { cronForInterval } from './cron'
 import { type JobDefinition, runJob } from './defineJob'
 
+const DEFAULT_TIMEOUT_SECONDS = 10 * 60
+const MS_PER_SECOND = 1000
+
+function queueOptions(job: JobDefinition<never>) {
+  return {
+    policy: 'exclusive' as const,
+    ...(job.timeoutSeconds === undefined ? {} : { expireInSeconds: job.timeoutSeconds }),
+    ...(job.retryLimit === undefined ? {} : { retryLimit: job.retryLimit }),
+    ...(job.heartbeatSeconds === undefined ? {} : { heartbeatSeconds: job.heartbeatSeconds }),
+  }
+}
+
 export async function registerJob<P extends object>(
   boss: PgBoss,
   db: Db,
   job: JobDefinition<P>,
 ): Promise<void> {
   const existing = await boss.getQueue(job.name)
-  if (existing === null) await boss.createQueue(job.name, { policy: 'exclusive' })
+  if (existing === null) await boss.createQueue(job.name, queueOptions(job))
+  const timeoutMs = (job.timeoutSeconds ?? DEFAULT_TIMEOUT_SECONDS) * MS_PER_SECOND
   await boss.work<P>(job.name, async (batch) => {
     for (const item of batch) {
       const outcome = await runJob(
         db,
         job,
         (item.data as P | null) ?? ({} as P),
-        AbortSignal.timeout(10 * 60 * 1000),
+        AbortSignal.timeout(timeoutMs),
       )
       if (!outcome.ok) {
         throw new AppError(ErrorIds.JOB_HANDLER_FAIL, outcome.error, { job: job.name })

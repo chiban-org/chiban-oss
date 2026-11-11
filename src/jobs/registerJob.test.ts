@@ -19,6 +19,30 @@ describe('registerAllJobs', () => {
     expect(boss.schedule).toHaveBeenCalledWith(JOB_NAMES.HEARTBEAT, '*/5 * * * *')
   })
 
+  it('gives a long job its own expiry and retry limit when it sets them', async () => {
+    const boss = {
+      getQueue: vi.fn(() => Promise.resolve(null)),
+      createQueue: vi.fn(() => Promise.resolve()),
+      work: vi.fn(() => Promise.resolve('w')),
+      schedule: vi.fn(() => Promise.resolve()),
+    }
+    const job = defineJob<object>({
+      name: JOB_NAMES.BACKUPS_SCHEDULED,
+      timeoutSeconds: 6 * 60 * 60,
+      retryLimit: 0,
+      heartbeatSeconds: 120,
+      dedupKey: () => 'k',
+      handler: () => Promise.resolve({ ok: true, value: undefined }),
+    })
+    await registerJob(boss as never, {} as never, job)
+    expect(boss.createQueue).toHaveBeenCalledWith(JOB_NAMES.BACKUPS_SCHEDULED, {
+      policy: 'exclusive',
+      expireInSeconds: 6 * 60 * 60,
+      retryLimit: 0,
+      heartbeatSeconds: 120,
+    })
+  })
+
   it('runs a scheduled job whose payload arrives as null', async () => {
     const handlers: ((batch: { data: unknown }[]) => Promise<void>)[] = []
     const boss = {

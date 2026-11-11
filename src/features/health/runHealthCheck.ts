@@ -1,7 +1,9 @@
 import type { Db } from '@/db/client'
+import { readBackupSchedule } from '@/features/backup/schedule/scheduleStore'
 import { getTownSettings } from '@/features/town/settings'
 import { log } from '@/server/log'
 import { type AlertEvent, markNotified, syncAlerts } from './alertState'
+import { backupAlerts } from './backupAlerts'
 import type { AlertChannel, AlertMessage } from './channels/types'
 import type { DiskReading } from './disk'
 import { evaluateAlerts } from './evaluateAlerts'
@@ -61,12 +63,17 @@ export async function runHealthCheck(
   signal: AbortSignal,
 ): Promise<{ firing: number }> {
   const jobs = await jobHealth(db, input.now, signal, input.jobs)
-  const evaluated = evaluateAlerts({
-    disks: input.disks,
-    jobs,
-    schedules: input.schedules,
-    scheduledJobNames: input.jobs.filter((j) => j.intervalSeconds !== undefined).map((j) => j.name),
-  })
+  const evaluated = [
+    ...evaluateAlerts({
+      disks: input.disks,
+      jobs,
+      schedules: input.schedules,
+      scheduledJobNames: input.jobs
+        .filter((j) => j.intervalSeconds !== undefined)
+        .map((j) => j.name),
+    }),
+    ...backupAlerts(await readBackupSchedule(db, signal), input.now),
+  ]
   const events = await syncAlerts(db, evaluated, input.now, signal)
   const town = await getTownSettings(db, signal)
   const townName = town.ok ? town.value.name : FALLBACK_TOWN_NAME

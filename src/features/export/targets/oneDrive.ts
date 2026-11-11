@@ -20,6 +20,11 @@ export interface OneDriveAccount {
 const SIMPLE_UPLOAD_LIMIT = 4 * 1024 * 1024
 const CHUNK_BYTES = 3_276_800
 const UploadSessionSchema = z.object({ uploadUrl: z.url() })
+const ChildrenPageSchema = z.object({
+  value: z.array(z.object({ name: z.string(), file: z.unknown().optional() })),
+  '@odata.nextLink': z.url().optional(),
+})
+const MAX_CHILDREN_PAGES = 1000
 
 function statusFailure(status: number): TargetError {
   if (status === 401 || status === 403) {
@@ -144,6 +149,23 @@ export function createOneDriveTarget(
     return ok(undefined)
   }
 
+  async function childrenPage(
+    url: string,
+    first: boolean,
+    signal: AbortSignal,
+  ): Promise<Result<{ names: string[]; next: string | undefined } | null, TargetError>> {
+    const sent = await send(url, { method: 'GET' }, true, signal)
+    if (!sent.ok) return sent
+    if (sent.value.status === 404 && first) return ok(null)
+    if (!sent.value.ok) return err(statusFailure(sent.value.status))
+    const parsed = ChildrenPageSchema.safeParse(await sent.value.json().catch(() => null))
+    if (!parsed.success) return err({ kind: 'bad_shape', detail: 'folder listing was unreadable' })
+    return ok({
+      names: parsed.data.value.filter((c) => c.file !== undefined).map((c) => c.name),
+      next: parsed.data['@odata.nextLink'],
+    })
+  }
+
   return {
     kind: 'onedrive',
     async put(path, body, size, signal) {
@@ -168,6 +190,24 @@ export function createOneDriveTarget(
       if (sent.value.status === 404) return err('not_found')
       if (!sent.value.ok || sent.value.body === null) return err(statusFailure(sent.value.status))
       return ok(Readable.fromWeb(sent.value.body as never))
+    },
+    async list(folder, signal) {
+      const names: string[] = []
+      let url: string | undefined = itemUrl(folder, ':/children')
+      for (let page = 0; url !== undefined && page < MAX_CHILDREN_PAGES; page++) {
+        const read = await childrenPage(url, page === 0, signal)
+        if (!read.ok) return read
+        if (read.value === null) return ok([])
+        names.push(...read.value.names)
+        url = read.value.next
+      }
+      return ok(names)
+    },
+    async delete(path, signal) {
+      const sent = await send(itemUrl(path, ''), { method: 'DELETE' }, true, signal)
+      if (!sent.ok) return sent
+      if (sent.value.status === 404 || sent.value.ok) return ok(undefined)
+      return err(statusFailure(sent.value.status))
     },
   }
 }

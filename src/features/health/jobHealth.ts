@@ -31,7 +31,9 @@ export async function jobHealth(
     const run = byName.get(job.name)
     const lastSuccessAt = run?.lastSuccessAt ?? null
     const interval = job.intervalSeconds ?? null
-    const limitMs = interval === null ? null : interval * STALE_AFTER_INTERVALS * MS_PER_SECOND
+    const limitSeconds =
+      interval === null ? null : (job.staleAfterSeconds ?? interval * STALE_AFTER_INTERVALS)
+    const limitMs = limitSeconds === null ? null : limitSeconds * MS_PER_SECOND
     const reference = lastSuccessAt ?? worker?.startedAt ?? null
     const stale =
       limitMs !== null && reference !== null && now.getTime() - reference.getTime() > limitMs

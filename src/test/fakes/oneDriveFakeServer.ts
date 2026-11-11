@@ -40,10 +40,11 @@ interface Session {
 
 const TOKEN_PATH = new RegExp(`^/${FAKE_TENANT_ID}/oauth2/v2\\.0/token$`)
 const DRIVE_PATH = new RegExp(
-  `^/v1\\.0/drives/${encodeURIComponent(FAKE_DRIVE_ID)}/root:/(.+?)(:/content|:/createUploadSession)?$`,
+  `^/v1\\.0/drives/${encodeURIComponent(FAKE_DRIVE_ID)}/root:/(.+?)(:/content|:/createUploadSession|:/children)?$`,
 )
 const UPLOAD_PATH = /^\/upload\/([0-9a-f-]+)$/
 const CONTENT_RANGE = /^bytes (\d+)-(\d+)\/(\d+)$/
+const CHILDREN_PAGE_SIZE = 2
 
 async function readBytes(req: IncomingMessage): Promise<Buffer> {
   const chunks: Buffer[] = []
@@ -116,19 +117,64 @@ export async function startOneDriveFakeServer(): Promise<OneDriveFakeServer> {
     sendJson(res, 201, item(session.path, total))
   }
 
+  const childrenRoute = (req: IncomingMessage, res: ServerResponse, folder: string): void => {
+    const inside = [...files.entries()].filter(([key]) => key.startsWith(`${folder}/`))
+    if (inside.length === 0) return sendJson(res, 404, notFound)
+    const children = new Map<string, unknown>()
+    for (const [key, bytes] of inside) {
+      const [name = '', ...deeper] = key.slice(folder.length + 1).split('/')
+      children.set(
+        name,
+        deeper.length === 0 ? { ...item(key, bytes.length), file: {} } : { name, folder: {} },
+      )
+    }
+    const url = new URL(req.url ?? '/', base)
+    const skip = Number(url.searchParams.get('skip') ?? '0')
+    const all = [...children.values()]
+    const page = all.slice(skip, skip + CHILDREN_PAGE_SIZE)
+    const next = skip + CHILDREN_PAGE_SIZE
+    sendJson(res, 200, {
+      value: page,
+      ...(next < all.length ? { '@odata.nextLink': `${base}${url.pathname}?skip=${next}` } : {}),
+    })
+  }
+
+  const listOrDeleteRoute = (
+    req: IncomingMessage,
+    res: ServerResponse,
+    path: string,
+    suffix: string,
+  ): void => {
+    if (req.method === 'GET' && suffix === ':/children') return childrenRoute(req, res, path)
+    if (req.method !== 'DELETE' || suffix !== '' || !files.delete(path)) {
+      return sendJson(res, 404, notFound)
+    }
+    res.writeHead(204)
+    res.end()
+  }
+
+  const refused = (req: IncomingMessage, res: ServerResponse, path: string): boolean => {
+    const bearer = (req.headers.authorization ?? '').replace('Bearer ', '')
+    if (!issued.has(bearer)) {
+      sendJson(res, 401, unauthorized)
+      return true
+    }
+    if (failingSuffix !== null && path.endsWith(failingSuffix) && req.method !== 'GET') {
+      sendJson(res, 503, { error: { code: 'serviceNotAvailable', message: 'injected' } })
+      return true
+    }
+    return false
+  }
+
   const driveRoute = (
     req: IncomingMessage,
     res: ServerResponse,
     match: RegExpExecArray,
     bytes: Buffer,
   ): void => {
-    const bearer = (req.headers.authorization ?? '').replace('Bearer ', '')
-    if (!issued.has(bearer)) return sendJson(res, 401, unauthorized)
     const path = decodeURIComponent(match[1] ?? '')
     const suffix = match[2] ?? ''
-    if (failingSuffix !== null && path.endsWith(failingSuffix) && req.method !== 'GET') {
-      return sendJson(res, 503, { error: { code: 'serviceNotAvailable', message: 'injected' } })
-    }
+    if (refused(req, res, path)) return
     if (req.method === 'PUT' && suffix === ':/content') {
       if (bytes.length > SIMPLE_UPLOAD_LIMIT_BYTES) {
         return sendJson(res, 413, { error: { code: 'tooLarge', message: 'use an upload session' } })
@@ -141,6 +187,9 @@ export async function startOneDriveFakeServer(): Promise<OneDriveFakeServer> {
       sessions.set(id, { path, chunks: [], received: 0 })
       sessionsCreated.push(path)
       return sendJson(res, 200, { ...uploadSession, uploadUrl: `${base}/upload/${id}` })
+    }
+    if (req.method === 'DELETE' || suffix === ':/children') {
+      return listOrDeleteRoute(req, res, path, suffix)
     }
     const stored = files.get(path)
     if (req.method !== 'GET' || stored === undefined) return sendJson(res, 404, notFound)

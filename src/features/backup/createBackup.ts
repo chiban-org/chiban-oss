@@ -30,6 +30,8 @@ const run = promisify(execFile)
 
 export const MIN_PASSPHRASE_LENGTH = 16
 export const EXCLUDED_PREFIX = 'exports/'
+export const BACKUP_FOLDER = 'backups'
+export const BACKUP_FILE_NAME = /^chiban-backup-\d{4}-\d{2}-\d{2}\.bin$/
 
 export interface BackupDeps {
   db: Db
@@ -161,7 +163,7 @@ export async function createBackup(
     }
     const sizeBytes = (await stat(encFile)).size
     const day = await townToday(deps.db, deps.now, signal)
-    const path = `backups/chiban-backup-${day}.bin`
+    const path = `${BACKUP_FOLDER}/chiban-backup-${day}.bin`
     const put = await deps.target.put(path, createReadStream(encFile), sizeBytes, signal)
     if (!put.ok) return put
     return ok({ path, sizeBytes, objects })

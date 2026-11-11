@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 import { createReadStream, createWriteStream } from 'node:fs'
-import { mkdir, rename, stat, unlink } from 'node:fs/promises'
+import { mkdir, readdir, rename, stat, unlink } from 'node:fs/promises'
 import { dirname, resolve, sep } from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
@@ -76,6 +76,30 @@ export function createLocalFsTarget(settings: LocalFsSettings): StorageTarget {
         return err(failure(e))
       }
       return ok(Readable.from(createReadStream(full.value)))
+    },
+    async list(folder, signal) {
+      signal.throwIfAborted()
+      const full = inside(settings.root, folder)
+      if (!full.ok) return full
+      try {
+        const entries = await readdir(full.value, { withFileTypes: true })
+        return ok(entries.filter((e) => e.isFile()).map((e) => e.name))
+      } catch (e) {
+        if ((e as { code?: string }).code === 'ENOENT') return ok([])
+        return err(failure(e))
+      }
+    },
+    async delete(path, signal) {
+      signal.throwIfAborted()
+      const full = inside(settings.root, path)
+      if (!full.ok) return full
+      try {
+        await unlink(full.value)
+        return ok(undefined)
+      } catch (e) {
+        if ((e as { code?: string }).code === 'ENOENT') return ok(undefined)
+        return err(failure(e))
+      }
     },
   }
 }

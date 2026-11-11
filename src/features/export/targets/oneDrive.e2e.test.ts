@@ -101,6 +101,26 @@ describe('onedrive target against the fake tenant', () => {
     expect(r).toMatchObject({ ok: false, error: { kind: 'unreachable' } })
   })
 
+  it('lists the files in a folder across pages and not deeper ones', async () => {
+    const t = target()
+    for (const name of ['a', 'b', 'c']) {
+      await putBytes(t, `listing/backups/${name}.bin`, Buffer.from(name))
+    }
+    await putBytes(t, 'listing/backups/nested/d.bin', Buffer.from('d'))
+    const listed = await t.list('listing/backups', signal)
+    expect(listed.ok ? [...listed.value].sort() : listed).toEqual(['a.bin', 'b.bin', 'c.bin'])
+    expect(fake.requests.filter((q) => q.path.endsWith(':/children')).length).toBeGreaterThan(1)
+    expect(await t.list('listing/none', signal)).toEqual({ ok: true, value: [] })
+  })
+
+  it('deletes a file and treats a missing one as already deleted', async () => {
+    const t = target()
+    await putBytes(t, 'deleting/backups/a.bin', Buffer.from('a'))
+    expect(await t.delete('deleting/backups/a.bin', signal)).toEqual({ ok: true, value: undefined })
+    expect(fake.files.has('deleting/backups/a.bin')).toBe(false)
+    expect(await t.delete('deleting/backups/a.bin', signal)).toEqual({ ok: true, value: undefined })
+  })
+
   it('adapter reports stubbed', () => {
     expect(ONEDRIVE_TARGET_STATUS).toBe('stubbed')
   })

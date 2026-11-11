@@ -51,6 +51,19 @@ describe('jobHealth', () => {
     expect((await jobHealth(handle.db, NOW, signal, jobs))[0]?.stale).toBe(false)
   })
 
+  it('a job with its own stale limit is judged by that limit, not twice its interval', async () => {
+    await recordWorkerStart(handle.db, minutesAgo(600), signal)
+    await handle.db
+      .insert(jobRuns)
+      .values({ jobName: JOB_NAMES.BACKUPS_SCHEDULED, lastSuccessAt: minutesAgo(300) })
+    const long = [
+      { name: JOB_NAMES.BACKUPS_SCHEDULED, intervalSeconds: 3600, staleAfterSeconds: 8 * 3600 },
+    ]
+    expect((await jobHealth(handle.db, NOW, signal, long))[0]?.stale).toBe(false)
+    const after = [{ ...long[0], staleAfterSeconds: 4 * 3600 }] as typeof long
+    expect((await jobHealth(handle.db, NOW, signal, after))[0]?.stale).toBe(true)
+  })
+
   it('a job without an interval is never stale and reports a null interval', async () => {
     const rows = await jobHealth(handle.db, NOW, signal, [{ name: JOB_NAMES.EXPORTS_BUILD }])
     expect(rows[0]).toMatchObject({ intervalSeconds: null, stale: false })
