@@ -30,13 +30,21 @@ RUN DATABASE_URL=postgres://build:build@localhost:5432/build \
 FROM node:22-bookworm-slim@sha256:4b150b48b4116e2a22f2c39cc27025fbf4f153e2078fd3b14d159fdb5c7279da AS runtime
 ENV NODE_ENV=production NEXT_TELEMETRY_DISABLED=1
 RUN apt-get update \
-  && apt-get install -y --no-install-recommends ca-certificates curl ghostscript \
+  && apt-get install -y --no-install-recommends ca-certificates curl ghostscript ocrmypdf tesseract-ocr tesseract-ocr-eng default-jre-headless unzip \
   && install -d /usr/share/postgresql-common/pgdg \
   && curl -fsSL -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc https://www.postgresql.org/media/keys/ACCC4CF8.asc \
   && echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list \
   && apt-get update \
   && apt-get install -y --no-install-recommends postgresql-client-16 \
   && rm -rf /var/lib/apt/lists/*
+COPY docker/verapdf-auto-install.xml /tmp/verapdf-auto-install.xml
+RUN curl -fsSL -o /tmp/verapdf.zip https://software.verapdf.org/releases/1.28/verapdf-greenfield-1.28.2-installer.zip \
+  && echo "d1693a5f0bf0997180f6d97e8a5568b0cf39e27eee338d439c8adb58435c1e89  /tmp/verapdf.zip" | sha256sum -c - \
+  && unzip -q /tmp/verapdf.zip -d /tmp/verapdf-installer \
+  && java -jar /tmp/verapdf-installer/verapdf-greenfield-1.28.2/verapdf-izpack-installer-1.28.2.jar /tmp/verapdf-auto-install.xml \
+  && /opt/verapdf/verapdf --version \
+  && rm -rf /tmp/verapdf.zip /tmp/verapdf-installer /tmp/verapdf-auto-install.xml
+ENV VERAPDF_PATH=/opt/verapdf/verapdf
 WORKDIR /app
 COPY --from=prod-deps --chown=node:node /app/node_modules ./node_modules
 COPY --from=build --chown=node:node /app/.next ./.next
@@ -52,8 +60,3 @@ EXPOSE 3000
 CMD ["node_modules/.bin/next", "start"]
 
 FROM runtime AS migrate-tools
-USER root
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends ocrmypdf tesseract-ocr tesseract-ocr-eng \
-  && rm -rf /var/lib/apt/lists/*
-USER node

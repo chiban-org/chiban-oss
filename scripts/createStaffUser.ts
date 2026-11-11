@@ -23,6 +23,9 @@ const { values } = parseArgs({
 const parsed = argsSchema.safeParse(values)
 if (!parsed.success) {
   console.error('usage: pnpm staff:create --email <e> --name <n> --role <role> --password <p>')
+  console.error(
+    'for a production install use: node dist/create-staff-user.mjs (no password needed)',
+  )
   process.exit(1)
 }
 
