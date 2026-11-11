@@ -19,6 +19,7 @@ import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba } from '@/test/hearingFixtures'
 import { proofDocument } from '@/test/noticeFixtures'
 import { makeTestStore } from '@/test/objectStore'
+import { actorOf, revoke } from '@/test/staffUsers'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -192,9 +193,10 @@ describe('fileDecision', () => {
   it('filing needs the authority to publish documents, not only to record board actions', async () => {
     const made = await decided()
     const minutesId = await proofDocument(handle.db, world, made.applicationId)
+    await revoke(handle.db, 'admin', 'document.publish')
     const result = await fileDecision(
       handle.db,
-      world.admin,
+      await actorOf(handle.db, world.admin.userId),
       { decisionId: made.decisionId, filedOn: d('2027-07-09'), minutesDocumentId: minutesId },
       signal,
       AFTER_FILING,

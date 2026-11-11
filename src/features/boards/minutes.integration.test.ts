@@ -15,6 +15,7 @@ import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/objectStore'
 import { staffActor } from '@/test/parcels'
 import { publicMinutes, publicMinutesText } from '@/test/publicMeetings'
+import { actorOf, revoke } from '@/test/staffUsers'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -166,15 +167,17 @@ describe('meeting minutes', () => {
   it('approving minutes needs document.publish because it makes them public', async () => {
     const meetingId = await meetingOn('2027-04-14')
     const documentId = await minutesFile(meetingId)
+    await revoke(handle.db, 'admin', 'document.publish')
+    const admin = await actorOf(handle.db, world.admin.userId)
     expect(
-      await record(world.admin, {
+      await record(admin, {
         meetingId,
         documentId,
         status: 'approved',
         approvedOn: '2027-04-28',
       }),
     ).toEqual({ ok: false, error: 'forbidden' })
-    expect((await record(world.admin, { meetingId, documentId, status: 'draft' })).ok).toBe(true)
+    expect((await record(admin, { meetingId, documentId, status: 'draft' })).ok).toBe(true)
   })
 
   it('approved minutes cannot be replaced', async () => {

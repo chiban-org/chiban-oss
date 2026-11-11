@@ -10,6 +10,7 @@ import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { visibleText } from '@/test/leaks'
 import { makeTestStore } from '@/test/objectStore'
 import { staffActor } from '@/test/parcels'
+import { actorOf, grant, revoke } from '@/test/staffUsers'
 
 interface MockState {
   db: unknown
@@ -115,7 +116,8 @@ describe('minutes actions', () => {
     expect(
       (await actions.recordMinutesAction(form({ meetingId, documentId, status: 'draft' }))).ok,
     ).toBe(false)
-    state.actor = world.admin
+    await revoke(handle.db, 'admin', 'document.publish')
+    state.actor = await actorOf(handle.db, world.admin.userId)
     expect(
       (
         await actions.recordMinutesAction(
@@ -123,6 +125,7 @@ describe('minutes actions', () => {
         )
       ).ok,
     ).toBe(false)
+    await grant(handle.db, 'admin', 'document.publish')
     expect(await handle.db.select().from(meetingMinutes)).toEqual([])
   })
 

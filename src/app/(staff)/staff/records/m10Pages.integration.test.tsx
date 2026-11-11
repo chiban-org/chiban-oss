@@ -26,6 +26,7 @@ import { loadReleaseCandidates } from '@/features/rtk/requestPage'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { useDemoStoryClock } from '@/test/demoSeedDeps'
 import { findIsoDates, findRawKeys, findUuids, RECORDS_ENUM_KEYS, visibleText } from '@/test/leaks'
+import { grant, revoke } from '@/test/staffUsers'
 
 interface MockState {
   db: unknown
@@ -240,6 +241,7 @@ describe('records screens with the demo seed', () => {
   })
 
   it('the redact page says where each kind of copy is approved and links there', async () => {
+    await revoke(handle.db, 'records_custodian', 'document.publish')
     await actAs('records')
     const jobs = await handle.db
       .select({
@@ -271,6 +273,16 @@ describe('records screens with the demo seed', () => {
     )
     expect(requestPage).toContain(`href="/staff/records/requests/${forRequest?.rtkRequestId}"`)
     expect(visibleText(requestPage)).toContain('is approved in the release step on the')
+    await grant(handle.db, 'records_custodian', 'document.publish')
+  })
+
+  it('the redact page leaves out the permission note for a custodian who may publish', async () => {
+    await actAs('records')
+    const [job] = await handle.db.select({ id: redactionJobs.sourceVersionId }).from(redactionJobs)
+    const page = await html(
+      RedactPage({ params: Promise.resolve({ versionId: job?.id ?? '' }), ...search() }),
+    )
+    expect(visibleText(page)).not.toContain('permission to show documents on the public site')
   })
 
   it('a reviewer gets the permission page or not-found and a resident is sent to sign in', async () => {

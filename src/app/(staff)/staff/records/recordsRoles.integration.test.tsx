@@ -164,10 +164,11 @@ describe('Right-to-Know request page by role', () => {
       ),
     ).toEqual(forbidden)
     const [version] = await handle.db.select().from(documentVersions).limit(1)
+    const finance = await actAs('finance')
     expect(
       await approveRendition(
         handle.db,
-        admin,
+        finance,
         {
           versionId: version?.id ?? '',
           purpose: 'rtk_release',

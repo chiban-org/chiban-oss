@@ -17,6 +17,7 @@ import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { FIXTURE_PHONE, uploadRedactionFixture } from '@/test/redactionFixtures'
 import { activePublicApproval, redactedVersionOf, STATEMENT } from '@/test/renditionFixtures'
+import { actorOf, revoke } from '@/test/staffUsers'
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -255,9 +256,11 @@ describe('approving and revoking', () => {
   })
 
   it('a custodian can approve and revoke a release rendition without document.publish', async () => {
-    const release = await redactedVersionOf(handle.db, store, custodian, doc, 'rtk_release')
-    const approved = await approve(release, custodian, 'rtk_release')
+    await revoke(handle.db, 'records_custodian', 'document.publish')
+    const limited = await actorOf(handle.db, custodian.userId)
+    const release = await redactedVersionOf(handle.db, store, limited, doc, 'rtk_release')
+    const approved = await approve(release, limited, 'rtk_release')
     expect(approved.ok).toBe(true)
-    expect(await approve(release, custodian, 'public')).toEqual({ ok: false, error: 'forbidden' })
+    expect(await approve(release, limited, 'public')).toEqual({ ok: false, error: 'forbidden' })
   })
 })

@@ -8,6 +8,7 @@ import { makeTestDb, type TestDb } from '@/test/db'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
 import { makeTestStore } from '@/test/objectStore'
 import { makeParcel, seedParcelWorld, staffActor } from '@/test/parcels'
+import { revoke } from '@/test/staffUsers'
 
 const signal = new AbortController().signal
 let handle: TestDb
@@ -67,6 +68,7 @@ describe('parcel file visibility on upload', () => {
   })
 
   it('someone who may not publish documents cannot upload a parcel file as public', async () => {
+    await revoke(handle.db, 'records_custodian', 'document.publish')
     const custodian = await staffActor(handle.db, 'records_custodian')
     await expect(
       uploadAs(

@@ -1,3 +1,4 @@
+import { and, eq } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Role } from '@/constants/roles'
 import type { Db } from '@/db/client'
@@ -20,6 +21,12 @@ export async function staffWith(db: Db, roles: Role[]): Promise<Actor> {
 
 export async function grant(db: Db, role: Role, capability: string): Promise<void> {
   await db.insert(roleCapabilities).values({ role, capability }).onConflictDoNothing()
+}
+
+export async function revoke(db: Db, role: Role, capability: string): Promise<void> {
+  await db
+    .delete(roleCapabilities)
+    .where(and(eq(roleCapabilities.role, role), eq(roleCapabilities.capability, capability)))
 }
 
 export function lastToken(mail: MemoryMailTransport): string {

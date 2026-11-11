@@ -8,7 +8,10 @@ import { err, ok, type Result } from '@/types/result'
 
 export type Ending = 'withdraw' | 'delete_draft'
 
-export const ENDING_ROLES = ['applicant', 'owner', 'agent', 'contractor'] as const
+export const ENDING_ROLES = {
+  withdraw: ['applicant', 'owner', 'agent', 'contractor'],
+  delete_draft: ['applicant', 'owner', 'agent'],
+} as const satisfies Record<Ending, readonly string[]>
 
 export const ENDABLE_FROM: Record<Ending, readonly CoreState[]> = {
   withdraw: ['submitted', 'under_review'],
@@ -25,7 +28,7 @@ export async function endApplication(
 ): Promise<Result<void, EndError>> {
   const app = await loadApplicationContext(db, input.applicationId, signal)
   if (app === null) return err('not_found')
-  if (!(await isProjectParty(db, actor, app.projectId, [...ENDING_ROLES], signal))) {
+  if (!(await isProjectParty(db, actor, app.projectId, [...ENDING_ROLES[input.ending]], signal))) {
     return err('forbidden')
   }
   if (!ENDABLE_FROM[input.ending].includes(app.state)) return err('invalid_transition')

@@ -208,7 +208,7 @@ export async function getPortalApplicationView(
     ? false
     : await isActiveParty(db, actor.userId, app.projectId)
   const payer = await isProjectParty(db, actor, app.projectId, [...PAYER_ROLES], signal)
-  const mayEnd = await isProjectParty(db, actor, app.projectId, [...ENDING_ROLES], signal)
+  const mayEnd = await isProjectParty(db, actor, app.projectId, [...ENDING_ROLES[app.state === 'draft' ? 'delete_draft' : 'withdraw']], signal)
   const settings = await getPaymentSettings(db, signal)
   const convenienceCents = computeConvenienceFee(
     fees.dueCents,

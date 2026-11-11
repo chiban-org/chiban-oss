@@ -72,13 +72,18 @@ describe('withdrawApplicationAction', () => {
     expect(audits.map((a) => a.after)).toContainEqual({ state: 'withdrawn' })
   })
 
-  it('refuses a contractor on the project and a stranger', async () => {
+  it('lets a contractor on the project withdraw, and refuses a stranger', async () => {
+    const stranger = await app('submitted')
+    h.signIn(await h.actorFor('applicant'))
+    expect(await withdrawApplicationAction(h.form(stranger))).toEqual(NOT_ALLOWED)
+    expect(await stateOf(stranger.applicationId)).toBe('submitted')
     const input = await app('submitted')
     h.signIn(await contractorOnProject())
-    expect(await withdrawApplicationAction(h.form(input))).toEqual(NOT_ALLOWED)
-    h.signIn(await h.actorFor('applicant'))
-    expect(await withdrawApplicationAction(h.form(input))).toEqual(NOT_ALLOWED)
-    expect(await stateOf(input.applicationId)).toBe('submitted')
+    expect(await withdrawApplicationAction(h.form(input))).toEqual({
+      ok: true,
+      message: 'Application withdrawn.',
+    })
+    expect(await stateOf(input.applicationId)).toBe('withdrawn')
   })
 
   it('refuses a draft and an issued permit', async () => {
