@@ -1,0 +1,13 @@
+[
+  { "file": "residents/sign-in.png", "persona": "Signed out", "path": "/sign-in", "width": 1280, "height": 800 },
+  { "file": "residents/contractor-sign-up.png", "persona": "Signed out", "path": "/sign-in/contractor", "width": 1280, "height": 800 },
+  { "file": "residents/apply-find-parcel.png", "persona": "Alex Applicant", "path": "/portal/apply?q=Larkspur", "width": 1280, "height": 800 },
+  { "file": "residents/portal-home.png", "persona": "Alex Applicant", "path": "/portal", "width": 1280, "height": 800 },
+  { "file": "residents/application-pay.png", "persona": "Alex Applicant", "path": "/portal/applications/98451bbe-7a4f-4419-91c3-601b6c20878c", "width": 1280, "height": 800 },
+  { "file": "residents/application-inspections.png", "persona": "Alex Applicant", "path": "/portal/applications/455133ea-46ee-4bf9-aec4-07d6e335d1ee/inspections", "width": 1280, "height": 800 },
+  { "file": "residents/contractor-projects.png", "persona": "Cory Contractor", "path": "/portal/contractor", "width": 1280, "height": 800 },
+  { "file": "residents/report-problem.png", "persona": "Signed out", "path": "/complaints/new", "width": 1280, "height": 800 },
+  { "file": "residents/parcel-search.png", "persona": "Signed out", "path": "/parcels", "width": 1280, "height": 800 },
+  { "file": "residents/parcel-page.png", "persona": "Signed out", "path": "/parcels/id/gis12/007001000000", "width": 1280, "height": 800 },
+  { "file": "residents/meetings.png", "persona": "Signed out", "path": "/meetings", "width": 1280, "height": 800 }
+]

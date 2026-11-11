@@ -1,0 +1,7 @@
+[
+  { "file": "moving-in/gis-imports.png", "persona": "Avery Admin", "path": "/staff/gis/imports", "width": 1280, "height": 800 },
+  { "file": "moving-in/gis-exceptions.png", "persona": "Avery Admin", "path": "/staff/gis/exceptions", "width": 1280, "height": 800 },
+  { "file": "moving-in/cutover.png", "persona": "Avery Admin", "path": "/staff/admin/cutover", "width": 1280, "height": 800 },
+  { "file": "moving-in/unresolved-records.png", "persona": "Avery Admin", "path": "/staff/parcels/unresolved", "width": 1280, "height": 800 },
+  { "file": "moving-in/lineage-event.png", "persona": "Avery Admin", "path": "/staff/parcels/lineage/new", "width": 1280, "height": 800 }
+]
