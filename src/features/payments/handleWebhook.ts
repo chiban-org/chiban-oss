@@ -1,4 +1,4 @@
-import { and, eq } from 'drizzle-orm'
+import { and, eq, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
   type PaymentAttemptRow,
@@ -6,7 +6,12 @@ import {
   paymentAttempts,
   processorEvents,
 } from '@/db/schema'
-import { type ActiveProcessor, getProcessorAccount } from '@/features/payments/processorAccounts'
+import {
+  type ActiveProcessor,
+  getProcessorAccount,
+  openAccount,
+  sameMerchantAccounts,
+} from '@/features/payments/processorAccounts'
 import { createProcessor } from '@/features/payments/processors/registry'
 import type { PaymentProcessor, ProcessorWebhookEvent } from '@/features/payments/processors/types'
 import { reconcileAttempt } from '@/features/payments/reconcileAttempt'
@@ -41,15 +46,57 @@ function foreign(event: ProcessorWebhookEvent, account: ProcessorAccountRow): bo
   return otherAccount || event.livemode !== (account.mode === 'live')
 }
 
+interface MerchantAccounts {
+  current: ActiveProcessor
+  accountIds: string[]
+  secrets: [string, ...string[]]
+}
+
+async function merchantAccounts(
+  db: Db,
+  addressed: ActiveProcessor,
+  signal: AbortSignal,
+): Promise<MerchantAccounts> {
+  const opened = (await sameMerchantAccounts(db, addressed.account, signal)).flatMap((row) => {
+    const value = openAccount(row)
+    return value.state === 'known' ? [value.value] : []
+  })
+  const others = opened.filter((o) => o.account.id !== addressed.account.id)
+  return {
+    current: opened[0] ?? addressed,
+    accountIds: [addressed.account.id, ...others.map((o) => o.account.id)],
+    secrets: [
+      addressed.webhookSecret,
+      ...others.map((o) => o.webhookSecret).filter((s) => s !== addressed.webhookSecret),
+    ],
+  }
+}
+
+type VerifyInput = Parameters<PaymentProcessor['verifyWebhook']>[0]
+
+function verifyAgainst(
+  processor: PaymentProcessor,
+  [addressedSecret, ...otherSecrets]: [string, ...string[]],
+  request: Omit<VerifyInput, 'secret'>,
+): ReturnType<PaymentProcessor['verifyWebhook']> {
+  const first = processor.verifyWebhook({ ...request, secret: addressedSecret })
+  if (first.ok) return first
+  for (const secret of otherSecrets) {
+    const verified = processor.verifyWebhook({ ...request, secret })
+    if (verified.ok) return verified
+  }
+  return first
+}
+
 async function findAttempt(
   db: Db,
   processor: PaymentProcessor,
-  account: ProcessorAccountRow,
+  accountIds: string[],
   event: ProcessorWebhookEvent,
   signal: AbortSignal,
 ): Promise<PaymentAttemptRow | 'lookup_failed' | null> {
   const where = (column: 'processorObjectId' | 'checkoutRef', value: string) =>
-    and(eq(paymentAttempts.processorAccountId, account.id), eq(paymentAttempts[column], value))
+    and(inArray(paymentAttempts.processorAccountId, accountIds), eq(paymentAttempts[column], value))
   if (event.objectId !== null) {
     const [byObject] = await db
       .select()
@@ -73,13 +120,13 @@ async function findAttempt(
 async function process(
   db: Db,
   deps: WebhookDeps,
-  active: ActiveProcessor,
+  merchant: MerchantAccounts,
   event: ProcessorWebhookEvent,
   processor: PaymentProcessor,
   signal: AbortSignal,
 ): Promise<EventOutcome> {
-  if (foreign(event, active.account)) return 'foreign_object'
-  const attempt = await findAttempt(db, processor, active.account, event, signal)
+  if (foreign(event, merchant.current.account)) return 'foreign_object'
+  const attempt = await findAttempt(db, processor, merchant.accountIds, event, signal)
   if (attempt === 'lookup_failed') return 'error'
   if (attempt === null || attempt.processorObjectId === null) return 'no_attempt'
   const state = await processor.getPaymentState(attempt.processorObjectId, signal)
@@ -111,13 +158,14 @@ export async function handleWebhook(
   if (opened.state === 'not_applicable') return { status: 404, body: { error: 'unknown_account' } }
   if (opened.state !== 'known') return { status: 503, body: { error: 'credentials_unreadable' } }
   const active = opened.value
+  const merchant = await merchantAccounts(db, active, signal)
+  const { current } = merchant
   const processor = deps.processorFactory
-    ? deps.processorFactory(active.account, active.credentials)
-    : createProcessor(active.account, active.credentials, { fetch: deps.fetch ?? fetch, db })
-  const verified = processor.verifyWebhook({
+    ? deps.processorFactory(current.account, current.credentials)
+    : createProcessor(current.account, current.credentials, { fetch: deps.fetch ?? fetch, db })
+  const verified = verifyAgainst(processor, merchant.secrets, {
     rawBody: request.rawBody,
     headers: request.headers,
-    secret: active.webhookSecret,
     now: deps.now,
   })
   if (!verified.ok) {
@@ -150,7 +198,7 @@ export async function handleWebhook(
     if (prior?.processedAt != null)
       return { status: 200, body: { received: true, duplicate: true } }
   }
-  const outcome = await process(db, deps, active, event, processor, signal)
+  const outcome = await process(db, deps, merchant, event, processor, signal)
   await db
     .update(processorEvents)
     .set({ outcome, processedAt: outcome === 'error' ? null : deps.now })

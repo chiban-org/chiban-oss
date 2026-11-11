@@ -4,6 +4,7 @@ import { SelectField, TextField } from '@/components/staff/fields'
 import { processorFormDefaults } from '@/features/payments/processorFormDefaults'
 import type { ProcessorSettingsView } from '@/features/payments/settingsView'
 import { saveProcessorAccountAction } from './actions'
+import { WebhookAddress } from './WebhookAddress'
 
 const ACTIVE_COPY = {
   ready: 'A processor account is active.',
@@ -15,7 +16,8 @@ export function ProcessorSection({
   accounts,
   active,
   cloverStatus,
-}: Pick<ProcessorSettingsView, 'accounts' | 'active' | 'cloverStatus'>) {
+  webhookAddress,
+}: Pick<ProcessorSettingsView, 'accounts' | 'active' | 'cloverStatus' | 'webhookAddress'>) {
   const current = processorFormDefaults(accounts)
   return (
     <section aria-labelledby="processor">
@@ -28,6 +30,19 @@ export function ProcessorSection({
           </li>
         ))}
       </ul>
+      {webhookAddress === null ? (
+        <p className="text-muted-foreground">
+          Save the account once to get the webhook address for the processor's dashboard.
+        </p>
+      ) : (
+        <>
+          <WebhookAddress address={webhookAddress} />
+          <p className="text-muted-foreground">
+            Paste this address into the webhook settings in the processor's dashboard. It stays the
+            same when you save this account again.
+          </p>
+        </>
+      )}
       {cloverStatus === 'stubbed' ? (
         <PracticeNotice>
           Clover connection is not yet verified against a live merchant account.

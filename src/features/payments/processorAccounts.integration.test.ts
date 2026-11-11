@@ -72,6 +72,47 @@ describe('processor accounts', () => {
     expect(listed.find((a) => a.isActive)?.accountRef).toBe('acct_two')
   })
 
+  it('saving the same merchant again keeps its account, so the webhook address stays the same', async () => {
+    const admin = await staffActor(handle.db, 'admin')
+    const first = await saveProcessorAccount(handle.db, admin, stripeInput, signal)
+    const again = await saveProcessorAccount(
+      handle.db,
+      admin,
+      { ...stripeInput, credentials: { secretKey: 'sk_test_456' }, webhookSecret: 'whsec_new' },
+      signal,
+    )
+    expect(first.ok && again.ok && again.value.accountId).toBe(first.ok && first.value.accountId)
+    expect(await handle.db.select().from(processorAccounts)).toHaveLength(1)
+    const active = await getActiveProcessor(handle.db, signal)
+    expect(active.state === 'known' && active.value.credentials).toEqual({
+      secretKey: 'sk_test_456',
+    })
+    expect(active.state === 'known' && active.value.webhookSecret).toBe('whsec_new')
+  })
+
+  it('switching back to an earlier merchant reactivates its account and its webhook address', async () => {
+    const admin = await staffActor(handle.db, 'admin')
+    const first = await saveProcessorAccount(handle.db, admin, stripeInput, signal)
+    await saveProcessorAccount(handle.db, admin, { ...stripeInput, accountRef: 'acct_two' }, signal)
+    const back = await saveProcessorAccount(handle.db, admin, stripeInput, signal)
+    expect(back.ok && back.value.accountId).toBe(first.ok && first.value.accountId)
+    const listed = await listProcessorAccounts(handle.db, signal)
+    expect(listed).toHaveLength(2)
+    expect(listed.find((a) => a.isActive)?.accountRef).toBe('acct_alder')
+  })
+
+  it('a change of mode is a different account with its own webhook address', async () => {
+    const admin = await staffActor(handle.db, 'admin')
+    const test = await saveProcessorAccount(handle.db, admin, stripeInput, signal)
+    const live = await saveProcessorAccount(
+      handle.db,
+      admin,
+      { ...stripeInput, mode: 'live' },
+      signal,
+    )
+    expect(live.ok && live.value.accountId).not.toBe(test.ok && test.value.accountId)
+  })
+
   it('a second active account is refused by the unique index', async () => {
     const admin = await staffActor(handle.db, 'admin')
     await saveProcessorAccount(handle.db, admin, stripeInput, signal)

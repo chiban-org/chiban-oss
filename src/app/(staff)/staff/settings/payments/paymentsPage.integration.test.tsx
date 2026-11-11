@@ -31,13 +31,14 @@ const { default: CardPaymentsPage } = await import('./page')
 const { default: SettingsKeyPage } = await import('../[kind]/[key]/page')
 
 let handle: TestDb
+let accountId: string
 
 beforeAll(async () => {
   handle = await makeTestDb()
   state.db = handle.db
   await seedParcelWorld(handle.db)
   const admin = await staffActor(handle.db, 'admin')
-  await setupPayments(handle.db, admin)
+  accountId = (await setupPayments(handle.db, admin)).accountId
   state.actor = admin
 })
 afterAll(async () => {
@@ -52,6 +53,15 @@ describe('card payments page', () => {
     expect(text).toContain('Version history')
     expect(text).not.toContain('Publish payment settings')
     expect(html).not.toContain('href="/staff/settings/payment_settings"')
+  })
+
+  it('shows the webhook address of the active account with a sentence on where it goes', async () => {
+    const html = renderToStaticMarkup(await CardPaymentsPage())
+    expect(html).toContain(`/api/payments/webhooks/${accountId}`)
+    expect(html).toContain('Copy address')
+    expect(html.replace(/<[^>]+>/g, ' ').replaceAll('&#x27;', "'")).toContain(
+      "Paste this address into the webhook settings in the processor's dashboard.",
+    )
   })
 
   it('sends the separate payment settings editor back to the card payments page', async () => {
