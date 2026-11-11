@@ -7,7 +7,7 @@ sidebar_position: 5
 
 # Recording a decision and filing the notice of decision
 
-This page is for the board secretary and planning and zoning staff. Once the board has voted, you record what it decided, produce the written Notice of Decision, file it with the minutes by the filing deadline, and get the decision letter to the applicant. The first steps need the permission to record board business. Filing also needs the permission to publish documents, which land use staff have.
+This page is for the board secretary and planning and zoning staff. Once the board has voted, you record what it decided, produce the written Notice of Decision, file it with the minutes by the filing deadline, and get the decision letter to the applicant. The first steps need the permission to record board business. Filing also needs the permission to publish documents, which land use staff and administrators have.
 
 The steps run in this order, and the decision page shows the next one in its **Next step** box:
 

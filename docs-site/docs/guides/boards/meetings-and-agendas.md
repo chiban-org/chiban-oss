@@ -7,7 +7,7 @@ sidebar_position: 3
 
 # Meetings, agendas and minutes
 
-This page is for the board secretary and planning and zoning staff. Hearings are scheduled for a meeting, its agenda is published on the town's site, its packet goes to the board, and its minutes are filed after it. You need the permission to record board business, which land use staff and administrators have.
+This page is for the board secretary and planning and zoning staff. Hearings are scheduled for a meeting, its agenda is published on the town's site, its packet goes to the board, and its minutes are filed after it. You need the permission to record board business, which land use staff and administrators have. Approving minutes also needs the permission to publish documents, which land use staff and administrators have.
 
 ## The meetings list
 
@@ -15,20 +15,27 @@ Open **Boards**, then **Meetings**. The page lists meetings for every board, soo
 
 ![The Meetings page, listing upcoming meetings with their hearings and agenda status](/img/shots/boards/meetings-list.png)
 
-The filters narrow the list by **Board**, by **Kind** (regular or special meeting) and by **Agenda**: **Not started**, **Draft** or **On the public site**. The table shows the date, board, kind, location, how many hearings are on the meeting, and the agenda status. A location only appears in the table when the meeting is somewhere other than the usual place. Select a date to open the meeting.
+The filters narrow the list by **Board**, by **Kind** (regular or special meeting) and by **Agenda**: **Not started**, **Draft** or **On the public site**. The table shows the date with the start time under it, board, kind, location, how many hearings are on the meeting, and the agenda status. A location only appears in the table when the meeting is somewhere other than the usual place. Select a date to open the meeting.
 
 ## Add a meeting
 
 1. Select **Add meeting**.
 2. Choose the **Board**.
 3. Enter the **Date**.
-4. Choose the **Kind**, **Regular meeting** or **Special meeting**.
-5. Enter the **Location**.
-6. Select **Add meeting**.
+4. Enter the **Start time**. It starts as 7:00 PM and is in the town's time zone.
+5. Choose the **Kind**, **Regular meeting** or **Special meeting**.
+6. Enter the **Location**.
+7. Select **Add meeting**.
 
 Chiban refuses a second meeting for the same board on the same date. Adding a regular meeting recalculates the completeness dates that depend on the board's meeting calendar, so applications may show new deadlines afterwards. A special meeting does not change any dates.
 
-The form has no field for the time of day. Every meeting is added for 7:00 PM, and Chiban has no screen to change it. Notices, agendas and the public meetings page all show that time.
+Notices, agendas and the public meetings page all show the start time.
+
+## Change the time or place
+
+On the meeting page, an upcoming meeting has **Change time or place** under its details. Enter the new **Start time** and **Location** and select **Save**. A meeting that is cancelled or whose date has passed cannot be changed.
+
+The agenda, packet and public meetings page use the new time and place at once. Changing the time also puts a published agenda back to draft, and Chiban tells you to show it on the public site again so it lists the new time. Notices already sent keep the old time. When the meeting has scheduled hearings, the message says so and tells you to send corrected notices. See [hearings and notice](./hearings.md).
 
 ## Cancel a meeting
 
@@ -77,7 +84,7 @@ After the meeting, the meeting page has a **Minutes** section.
 
 1. Under **Upload the minutes**, add the file. Give it a name and upload it.
 2. Under **Minutes**, choose the file you uploaded.
-3. Choose the **Status**: **Draft, not yet approved**, or **Approved by the board**. Only someone who can publish documents sees the approved choice. In the demo, Sam Clerk can.
+3. Choose the **Status**: **Draft, not yet approved**, or **Approved by the board**. Only someone who can publish documents sees the approved choice. Land use staff and administrators can.
 4. If the status is approved, enter the **Date approved**. It cannot be before the meeting or after today.
 5. Select **Record the minutes**.
 

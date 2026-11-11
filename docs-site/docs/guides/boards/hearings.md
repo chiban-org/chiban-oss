@@ -45,7 +45,7 @@ The town also lists the notice on its public meetings page. If the notice calls 
 
 ## Print the notice letters
 
-Select **Print the notice letters**. A PDF opens in a new tab with one letter for each mailing on the checklist, ready to print and mail. The letters use the hearing notice template under **Settings**, **Templates**. If the application type has no hearing notice template, Chiban says so and prints nothing. An administrator adds the template.
+Select **Print the notice letters**. A PDF opens in a new tab with one letter for each mailing on the checklist, ready to print and mail. The letters use the town's published **Hearing notice** template. If there is none, Chiban prints nothing and says: "Notice letters need a published template of the kind Hearing notice. Add one in Settings, Permits, Templates, and publish it." Staff who can change settings get a link to the templates. Everyone else is told to ask someone who can. Publishing the template fixes applications filed before it existed.
 
 ## Record proof of notice
 

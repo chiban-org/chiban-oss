@@ -18,7 +18,7 @@ Open **Settings**, then **Boards**. The list shows each board's kind, how many m
 
 **Edit** renames a board. Past meetings, minutes and decisions show the new name too. **Archive** removes a board from every list and picker, and keeps its meetings, minutes, decisions and packets under the name it had. A board with history is archived, never deleted.
 
-Members, meetings and agendas are managed on the board pages in the staff menu, not here.
+Members, meetings and agendas are managed on the board pages in the staff menu, not here. Notice letters for hearings also need a published template of the kind **Hearing notice**. Add and publish it under **Settings**, **Permits**, **Templates**.
 
 ## Board settings
 

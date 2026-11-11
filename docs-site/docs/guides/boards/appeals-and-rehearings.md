@@ -7,7 +7,7 @@ sidebar_position: 6
 
 # Appeals and motions for rehearing
 
-After a board decides, the people it affects have a short time to ask for a rehearing or to go to court. This page is for the board secretary and planning and zoning staff, who record those steps so the application shows what is still open and when each period ends. Recording needs the permission to record board business.
+After a board decides, the people it affects have a short time to ask for a rehearing or to go to court. This page is for the board secretary and planning and zoning staff, who record those steps so the application shows what is still open and when each period ends. Recording needs the permission to record board business. Appeals of board decisions are recorded from the decision page. Appeals of an official's decision are recorded under **Boards**, **Appeals**, further down this page.
 
 ## Where the appeals are
 
@@ -50,6 +50,33 @@ The length of each period, how Chiban counts it and what happens when it is miss
 
 A granted rehearing is held like any other hearing. Open the application, go to **Hearings and decisions**, choose **Schedule a hearing** and pick **Rehearing** as the **Kind**. Notice, proof and the hearing itself follow [hearings and notice](./hearings.md).
 
-## What the decision page cannot hold
+## Appeals of administrative decisions
 
-The decision page only holds the steps that follow a board's vote. There is no screen for recording an appeal of an administrative decision, such as a building official's decision, so that kind of appeal has no starting step to follow.
+A decision by the building inspector, zoning administrator or another town official is not a board vote, so it has no decision page. It can still be appealed to the Zoning Board, and the appeal has its own time limit. Open **Boards**, then **Appeals**. The page lists every administrative decision recorded, with the application, its type, the date decided, and where the appeal stands: "Not appealed. The appeal window ends" followed by a date, the same with "ended" once it has passed, or "Appealed to the Zoning Board on" a date. The length of the window and how Chiban counts it are in [New Hampshire deadlines and holidays](../../state-packs/new-hampshire/deadlines.mdx), under appeals.
+
+### Record the decision
+
+1. Select **Record an administrative decision**.
+2. Enter the **Application or permit number**, as it appears on the application, for example BP-2027-0001. If no application has that number, Chiban says "No application or permit has that number."
+3. Enter the **Date of the decision**. It cannot be in the future.
+4. Select **Record the decision**.
+
+Chiban opens that application's appeals page. Record a decision when someone may appeal it, since recording it starts the appeal window.
+
+### Record the appeal and what follows
+
+Select the application number on the list, or use the page Chiban opened, and open **Record an appeal step** under **Decisions and appeals**. The form is the same as the one on the decision page, with one more field:
+
+- **Follows.** Choose the step this one comes after, starting with the administrative decision.
+- **Step.** Choose **Appeal to the Zoning Board** first. After it come the **Zoning Board decision**, a **Motion for rehearing**, the **Rehearing decision** and a **Court petition**, in the order described above.
+- **Date.** The date it happened. It cannot be before the step it follows or in the future.
+- **Who appealed.** The name of the person appealing, for an appeal to the Zoning Board.
+- **Result, for a Zoning Board or rehearing decision.** Choose **Appeal granted**, **Denied** or **Rehearing granted**, or leave it as **Not applicable**.
+
+Select **Record the step**. An appeal filed after the window ended is still recorded, and is marked **Filed late**.
+
+### An appealed permit is suspended
+
+When the permit has been issued and the application type is set up to suspend on appeal, recording the **Appeal to the Zoning Board** moves the permit to **Suspended** and names the person in **Who appealed**. Fill that field in, since the suspension shows the name. Suspending a permit needs the permission to issue permits, which land use staff have and administrators do not. Without it Chiban refuses the step and nothing is recorded.
+
+For what a suspended permit means for the application, see [the life of an application](../land-use-staff/application-life.md).
