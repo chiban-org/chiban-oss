@@ -4,7 +4,7 @@ import { and, eq, isNotNull } from 'drizzle-orm'
 import { env } from '@/config/env'
 import { JOB_NAMES } from '@/constants/jobNames'
 import type { Db } from '@/db/client'
-import { exportsTable, exportTargets } from '@/db/schema'
+import { backupSchedule, exportsTable, exportTargets } from '@/db/schema'
 import { manifestBytes } from '@/features/export/manifest'
 import { pruneExpiredExports } from '@/features/export/pruneExports'
 import { writeArchive } from '@/features/export/writeArchive'
@@ -14,6 +14,7 @@ import { createVeraPdfValidator } from '@/features/preservation/verapdf'
 import { getObjectStore, type ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { ok } from '@/types/result'
+import { backupsScheduledJob } from './backupsScheduled'
 import { defineJob, enqueue, failKeepingWrites } from './defineJob'
 import { exportsIncrementalJob } from './exportsIncremental'
 
@@ -147,6 +148,18 @@ export const exportsPickupJob = defineJob<{ at?: string }>({
     if (asked.length > 0) {
       const at = p.at ?? new Date().toISOString()
       await enqueue(exportsIncrementalJob, { at, manual: true }, ctx.signal)
+    }
+    const [backupAsked] = await ctx.db
+      .select({ at: backupSchedule.runRequestedAt })
+      .from(backupSchedule)
+      .where(and(isNotNull(backupSchedule.targetId), isNotNull(backupSchedule.runRequestedAt)))
+      .limit(1)
+    if (backupAsked?.at != null) {
+      await enqueue(
+        backupsScheduledJob,
+        { at: backupAsked.at.toISOString(), manual: true },
+        ctx.signal,
+      )
     }
     return ok(undefined)
   },

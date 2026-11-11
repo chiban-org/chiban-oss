@@ -21,6 +21,7 @@ export const JOB_NAMES = {
   FILES_RELEASE: 'files.release',
   FILES_DELETE: 'files.delete',
   REPORTS_SCHEDULED: 'reports.scheduled',
+  BACKUPS_SCHEDULED: 'backups.scheduled',
 } as const
 
 export type JobName = (typeof JOB_NAMES)[keyof typeof JOB_NAMES]

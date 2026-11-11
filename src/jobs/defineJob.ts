@@ -30,6 +30,8 @@ function isCommittedFailure(outcome: JobOutcome): outcome is CommittedFailure {
 export interface JobDefinition<P> {
   name: JobName
   intervalSeconds?: number
+  timeoutSeconds?: number
+  retryLimit?: number
   dedupKey(payload: P): string
   handler(payload: P, ctx: JobContext): Promise<JobOutcome>
 }

@@ -1,4 +1,5 @@
 import { appealsDailyJob } from './appealsDaily'
+import { backupsScheduledJob } from './backupsScheduled'
 import { calendarPushJob } from './calendarPush'
 import { clocksDailyJob } from './clocksDaily'
 import type { JobDefinition } from './defineJob'
@@ -41,4 +42,5 @@ export const ALL_JOBS: JobDefinition<object>[] = [
   filesReleaseJob,
   filesDeleteJob,
   reportsScheduledJob,
+  backupsScheduledJob,
 ]

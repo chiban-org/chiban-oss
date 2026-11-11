@@ -2,7 +2,7 @@ import { sql } from 'drizzle-orm'
 import { PgBoss } from 'pg-boss'
 import { afterAll, beforeAll, describe, expect, it } from 'vitest'
 import { JOB_NAMES } from '@/constants/jobNames'
-import { exportsTable, exportTargets } from '@/db/schema'
+import { backupSchedule, exportsTable, exportTargets } from '@/db/schema'
 import { clearBoss, setBoss } from '@/jobs/boss'
 import { runJob } from '@/jobs/defineJob'
 import { exportsPickupJob } from '@/jobs/exportsBuild'
@@ -20,6 +20,7 @@ beforeAll(async () => {
   setBoss(boss)
   await ensureQueue(JOB_NAMES.EXPORTS_BUILD)
   await ensureQueue(JOB_NAMES.EXPORTS_INCREMENTAL)
+  await ensureQueue(JOB_NAMES.BACKUPS_SCHEDULED)
 })
 afterAll(async () => {
   clearBoss()
@@ -65,6 +66,27 @@ describe('exports.pickup', () => {
       },
     ])
     await runJob(handle.db, exportsPickupJob, { at: '2027-02-01T00:01:00Z' }, signal)
+    expect(await count()).toBe(1)
+  })
+
+  it('enqueues one backup run when someone asked for a backup now', async () => {
+    const count = async () => {
+      const r = await handle.db.execute<{ n: number }>(
+        sql`select count(*)::int as n from pgboss.job where name = ${JOB_NAMES.BACKUPS_SCHEDULED}`,
+      )
+      return r.rows[0]?.n ?? 0
+    }
+    await runJob(handle.db, exportsPickupJob, { at: '2027-03-01T00:00:00Z' }, signal)
+    expect(await count()).toBe(0)
+    const [target] = await handle.db
+      .insert(exportTargets)
+      .values({ kind: 'local_fs', name: 'Backups', settings: { root: '/srv/c' } })
+      .returning({ id: exportTargets.id })
+    await handle.db
+      .insert(backupSchedule)
+      .values({ id: 1, targetId: target?.id ?? null, runRequestedAt: new Date() })
+    await runJob(handle.db, exportsPickupJob, { at: '2027-03-01T00:01:00Z' }, signal)
+    await runJob(handle.db, exportsPickupJob, { at: '2027-03-01T00:02:00Z' }, signal)
     expect(await count()).toBe(1)
   })
 })
