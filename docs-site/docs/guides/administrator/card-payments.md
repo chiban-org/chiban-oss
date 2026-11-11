@@ -20,14 +20,18 @@ To save an account, fill in:
 - **Mode**: **Test** or **Live**.
 - **Account number at the processor**: the Stripe account ID or the Clover merchant ID, from the processor's dashboard.
 - **Secret key**: Stripe calls it the secret key, Clover the private token.
-- **Webhook signing secret**: lets Chiban check that payment updates really come from the processor.
+- **Webhook signing secret**: lets Chiban check that payment updates really come from the processor. You can leave it blank the first time you save, to get the webhook address.
 - Under **Advanced**, for Clover only, the API and checkout addresses, and the **Card reader device ID** printed on the counter reader or shown in the processor's dashboard.
 
-Choose **Save processor account**. Secrets are never shown again, so enter them again whenever you save, even to change only the account number.
+Choose **Save processor account**. Secrets are never shown again. Enter the secret key again whenever you save. Leave the webhook signing secret blank to keep the one already saved.
 
 The page carries two notices. The simulated processor and card reader are not connected to a live processor, and no card is ever charged. The Clover connection has not been checked against a live merchant account.
 
-This page does not show the address the processor should send payment updates to. Ask whoever runs the server about it before you finish setting up the account in the processor's own dashboard.
+### The webhook address
+
+Once an account is saved, the page shows its **Webhook address** with a **Copy address** button. Paste it into the webhook settings in the processor's own dashboard, then copy the signing secret the processor gives you back into the form and save again. The address stays the same when you save the same account again. The practice processor has no webhook address.
+
+Until the signing secret is saved, the page says the account is not receiving payment updates. Checkout still works, and Chiban checks with the processor every hour, so payments are still recorded, though an hour late at worst.
 
 ## The convenience fee and receipts
 

@@ -26,6 +26,10 @@ Each designation is listed like this: "Sam Clerk, Code Enforcement Officer. Desi
 
 **End this designation** asks for the **Last day as officer**, which starts as today. After that day the person is no longer a designated officer. The entry stays on the page with "ended" and the date.
 
+## When someone is refused an order
+
+A person who tries to issue an order without a designation on the issue date sees: "You are not on record as a designated enforcement officer on the issue date. An administrator can add it under Settings, Administration, Enforcement officers." Add the designation here, with a **Date adopted** on or before the day of the order.
+
 ## Roles are separate
 
 Designating an officer does not give anyone a role. The person still needs the Land use staff or Inspector role to work enforcement cases.

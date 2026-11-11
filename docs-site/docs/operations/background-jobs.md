@@ -42,6 +42,7 @@ Intervals are those in the code. Jobs with no interval run when something enqueu
 | `appeals.daily` | Daily appeal period check | Every day | Records that an appeal period has ended. |
 | `parcels.expireAliasOverrides` | Parcel ID override expiry | Every day | Expires parcel ID overrides that have run out. |
 | `exports.prune` | Export cleanup | Every day | Removes built exports older than 7 days. |
+| `backups.scheduled` | Scheduled backup | Every hour | Makes a backup when the schedule on the **Backups** page says one is due, and removes the oldest ones. See [backups](./backups.md). |
 | `exports.incremental` | Incremental export | Every day | Runs the monthly copies whose day has come. See [monthly export](../reports-and-export/incremental-export.md). |
 | `gis.refreshLayer` | Parcel layer refresh | When its scheduler finds a layer due | Refreshes one parcel layer from its source. |
 | `calendar.push` | Calendar updates | When an inspection changes | Sends calendar invitations. See [Microsoft 365](./microsoft.md). |
@@ -62,7 +63,7 @@ A daily job is registered with the cron expression `0 */24 * * *`. The code sets
 
 ## What the worker needs inside the image
 
-The image's runtime stage installs Ghostscript and the PostgreSQL 16 client tools. Ghostscript makes the PDF/A copies and applies redactions. The same stage does not install OCRmyPDF or veraPDF, which the settings `OCRMYPDF_PATH` and `VERAPDF_PATH` point to. A separate `migrate-tools` build target adds OCRmyPDF and Tesseract for the legacy-document tool. Without veraPDF the worker still keeps its PDF/A copies and marks them as not validated, as the [configuration reference](../reference/configuration.md) says for `VERAPDF_PATH`.
+The image's runtime stage installs Ghostscript, OCRmyPDF with English Tesseract data, veraPDF 1.28.2 and the PostgreSQL 16 client tools. Ghostscript makes the PDF/A copies and applies redactions, and veraPDF validates them at `/opt/verapdf/verapdf`, which is what `VERAPDF_PATH` points to. OCRmyPDF serves the legacy-document tool. The `migrate-tools` build target is now only another name for the runtime stage.
 
 ## Settings
 

@@ -38,7 +38,7 @@ Open a person under **Invited** to see when their link stops working.
 - **Resend invite** sends a new link and cancels the old one. Use it when the email was lost or the link expired.
 - **Revoke invite** stops the link and disables the account. Use it when the invite went to the wrong person.
 
-If Chiban could not send the email, the page tells you so and you can send it again with **Resend invite**. Outgoing mail is set up on the server, not in Settings. See [the configuration reference](../../reference/configuration.md) for the mail settings.
+If Chiban could not send the email, the page says "The email could not be sent. Ask whoever runs the server to check the mail settings, then send it again." You can send it again with **Resend invite** once the mail settings are fixed. Outgoing mail is set up on the server, not in Settings. See [the configuration reference](../../reference/configuration.md) for the mail settings.
 
 ## After you invite
 

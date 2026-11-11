@@ -108,7 +108,7 @@ The script:
 3. Pulls images, starts object storage and prepares its bucket, applies database migrations, and starts the application and worker.
 4. Polls the application until `/api/health` answers and `/api/version` reports the image you asked for. The default limit is two minutes.
 5. On success, removes images older than seven days that no container uses.
-6. On failure, restores the previous image, restarts the application and worker on it, appends a `rolled_back` line to `releases.log`, and exits with status 1. On the very first deploy there is no previous image, so the script records `failed_no_previous` and exits with status 1.
+6. On failure, compares the database's newest migration with the previous image's list. If the database is not ahead, it restores the previous image, restarts the application and worker on it, and appends a `rolled_back` line to `releases.log`. If the database is ahead, it refuses, keeps the current image and logs `rollback_refused`. See [what a rollback undoes](./upgrading.md#what-a-rollback-undoes). The script exits with status 1 either way. On the very first deploy there is no previous image, so the script records `failed_no_previous` and exits with status 1.
 
 Run the same command with a new digest to upgrade.
 
@@ -123,15 +123,15 @@ The version response includes the image reference, the pack identity, and the mi
 
 ## Create the first administrator
 
-The bundled Compose install has no command that creates the first administrator. The only tool is `scripts/createStaffUser.ts`, run in a development checkout as `pnpm staff:create`:
+The application image carries a command that creates the first administrator. Run it from the `deploy` directory once the stack is up:
 
 ```
-pnpm staff:create --email <email> --name <name> --role admin --password <password>
+docker compose run --rm app node dist/create-staff-user.mjs --email <email> --name "<name>" --role admin
 ```
 
-The application image does not hold that script. Its runtime stage copies only the built application, the `dist` entrypoints, the migrations and a few support files, and the `dist` folder has no equivalent. `tsx`, which runs the script, is a development dependency and is not in the image. `deploy/deploy.sh` and the other scripts in `deploy` do not create users either.
+It creates the account and prints a one-time link for choosing a password, built from `BASE_URL` and valid for 7 days. Open it in a browser and set the password. Add `--send-email` to also email the link through the town's mail settings. The command takes no password, so none is typed on a command line or kept in shell history. It refuses a resident role, a role it does not know, and an email address that already has an account.
 
-So on a server installed as shipped, the script has to run from a source checkout of the same release, with `DATABASE_URL` and the other required settings pointing at the town's database. The bundled PostgreSQL port is not published on the host, because only Caddy's ports 80 and 443 are, so reaching it takes a change of your own to the Compose file. That route has not been tried here. Once an administrator exists, they invite other staff from the application, and the invited person sets a password from the emailed link.
+Once an administrator exists, they invite other staff from the application, and each invited person sets a password from the emailed link.
 
 ## Anonymous complaints
 
@@ -163,11 +163,11 @@ A backup covers the whole recovery unit in one encrypted file: the database, eve
 
 ### Set the passphrase
 
-Set `BACKUP_PASSPHRASE` in `deploy/.env` to a passphrase of at least 16 characters. The scripts refuse to run when it is empty. Keep the passphrase and a copy of `CHIBAN_SECRET_KEYS` somewhere other than the backups themselves, for example in the town's password manager. A backup cannot be opened without its passphrase, and the keys inside the backup are not a substitute for a separate copy.
+Set `BACKUP_PASSPHRASE` in `deploy/.env` to a passphrase of at least 16 characters. The bundled Compose file passes it to every service, and the scripts and the worker refuse to run when it is empty. Keep the passphrase and a copy of `CHIBAN_SECRET_KEYS` somewhere other than the backups themselves, for example in the town's password manager. A backup cannot be opened without its passphrase, and the keys inside the backup are not a substitute for a separate copy.
 
 ### Nightly backup
 
-`deploy/backup.sh` writes `deploy/backups/chiban-backup-YYYY-MM-DD.bin`. Run it from cron:
+The simplest route is the schedule on **Settings**, **Administration**, **Backups**, which the worker runs and which keeps only the newest files. It needs an export target to send them to. See [scheduled backups](./backups.md#scheduled-backups). To run backups from the host instead, `deploy/backup.sh` writes `deploy/backups/chiban-backup-YYYY-MM-DD.bin`. Run it from cron:
 
 ```
 15 2 * * * cd /opt/chiban/deploy && ./backup.sh >> backup.log 2>&1
@@ -175,7 +175,7 @@ Set `BACKUP_PASSPHRASE` in `deploy/.env` to a passphrase of at least 16 characte
 
 To send backups to a configured export target instead of the local folder, run `node dist/backup.mjs --target "Target name"` inside the app image. Targets are managed at `/staff/admin/export/targets`.
 
-The tool never deletes old files. Keep several nights, and copy the folder off the host regularly. Prune old files with your own schedule.
+`backup.sh` never deletes old files. Keep several nights, copy the folder off the host regularly, and prune old files with your own schedule. Only the scheduled backup prunes.
 
 ### Monthly restore check
 

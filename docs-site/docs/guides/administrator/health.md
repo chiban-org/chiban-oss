@@ -14,11 +14,15 @@ sidebar_position: 20
 
 This section lists problems Chiban has found on its own, each with when it started. In the demo it shows that the server disk is 81% full. If nothing is wrong, it says "No alerts are firing." An alert here usually needs the person who runs the server, not a change in Settings.
 
+## Backup alerts
+
+When scheduled backups are turned on, two critical alerts can appear here and go out on the alert channels: no backup has succeeded within the schedule plus 12 hours, or the last backup failed or did not run. Each alert carries the reason, and clears itself after the next backup succeeds. Whoever runs the server can read how backups work in [backups and restore](../../operations/backups.md).
+
 ## Background jobs
 
 The page says when the background worker last started. If it says no worker has started, nothing on the page runs: emails stay queued and exports stay waiting to start. Call whoever runs the server.
 
-Under it is a list of jobs and the time each last succeeded. These include the system heartbeat, the daily clock check, the daily appeal period check, payment reconciliation, notification sending, calendar updates, exports and scheduled reports. A job that has not run yet, such as an export nobody requested, shows "Never".
+Under it is a list of jobs and the time each last succeeded. These include the system heartbeat, the daily clock check, the daily appeal period check, payment reconciliation, notification sending, calendar updates, exports, scheduled backups and scheduled reports. A job that has not run yet, such as an export nobody requested, shows "Never".
 
 A job that needs attention is moved to the top under **Needs attention**, with one of two reasons: **Overdue** (it has missed several runs) or **Last run failed**. Each shows when it last succeeded and last failed.
 
