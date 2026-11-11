@@ -93,7 +93,7 @@ function Unassigned({ required }: { required: boolean }) {
 
 function ReviewerComments({ reviewer, zone }: { reviewer: ReviewerWithComments; zone: string }) {
   if (reviewer.comments.length === 0) {
-    return <p className="m-0 text-sm text-muted-foreground">No comments yet.</p>
+    return <p className="m-0 text-sm text-muted-foreground">No comments.</p>
   }
   return (
     <ul aria-label={`Comments from ${reviewer.name}`} className="space-y-2 pl-4">

@@ -51,7 +51,7 @@ describe('reviewer comments on the application page', () => {
     expect(within(remy).getByText('Needs a stamped plan')).toBeTruthy()
     expect(within(remy).getByText('Setback is fine')).toBeTruthy()
     expect(within(remy).getByText(/March 4, 2027/)).toBeTruthy()
-    expect(within(faye).getByText('No comments yet.')).toBeTruthy()
+    expect(within(faye).getByText('No comments.')).toBeTruthy()
   })
 
   it('shows comment dates in words, never raw keys or ISO dates', () => {
