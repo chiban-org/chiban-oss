@@ -177,19 +177,18 @@ async function startWindowClocks(
 }
 
 async function maybeSuspendIssuedPermit(
-  db: Db,
+  tx: Tx,
   actor: Actor,
   parent: NodeRow,
   input: AddNodeInput,
   signal: AbortSignal,
-  now: Date,
 ): Promise<Result<void, AppealError>> {
   if (parent.kind !== 'administrative_decision' || input.kind !== 'zba_appeal') return ok(undefined)
   if (parent.applicationId === null) return ok(undefined)
-  const app = await loadApplicationContext(db, parent.applicationId, signal)
+  const app = await loadApplicationContext(tx, parent.applicationId, signal)
   if (app?.state !== 'issued') return ok(undefined)
-  const recorded = await recordAppealAuthorizedByCaller(
-    db,
+  return await recordAppealAuthorizedByCaller(
+    tx,
     actor,
     {
       applicationId: parent.applicationId,
@@ -197,9 +196,7 @@ async function maybeSuspendIssuedPermit(
       appellantName: input.appellantName ?? 'Appellant',
     },
     signal,
-    { now },
   )
-  return recorded.ok ? ok(undefined) : err(recorded.error)
 }
 
 export async function addAppealNode(
@@ -225,9 +222,9 @@ export async function addAppealNode(
   ) {
     return err('wrong_outcome')
   }
-  const suspended = await maybeSuspendIssuedPermit(db, actor, parent, input, signal, now)
-  if (!suspended.ok) return suspended
   return await transactionResult<{ nodeId: string }, AppealError>(db, async (tx) => {
+    const suspended = await maybeSuspendIssuedPermit(tx, actor, parent, input, signal)
+    if (!suspended.ok) return suspended
     const clockApplicationId = parent.applicationId
     const applicationId = input.applicationId ?? parent.applicationId
     const linkedPbNodeId = linkedNodeFor(parent, input)
