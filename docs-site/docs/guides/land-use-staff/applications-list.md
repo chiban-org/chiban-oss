@@ -6,7 +6,7 @@ sidebar_position: 3
 
 # The Applications list
 
-**Applications** is the office's work queue. Every application and permit in the town is on it, so open it when you need to know what to do next. Older bookmarks to a page called **Queue** now open this page.
+**Applications** is the office's work queue. Every application and permit in the town is on it, so open it when you need to know what to do next.
 
 ![The Applications list on the Needs action tab](/img/shots/land-use-staff/applications-list.png)
 

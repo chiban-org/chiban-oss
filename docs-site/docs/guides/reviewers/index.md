@@ -49,9 +49,10 @@ The application link opens a short page of the record. It shows the project summ
 
 When your comments are in, choose **Sign off** in the side panel. Your status changes to **Signed off**. A sign-off cannot be undone and you cannot add comments afterward. Chiban tells you that you have already signed off if you try, so add any comment that still matters first.
 
-When every reviewer assigned to a building permit has signed off, the **Reviews signed off** requirement on the application is met, and the clerk can record the decision. 
+When every reviewer assigned to a building permit has signed off, the **Reviews signed off** requirement on the application is met, and the clerk can record the decision.
+
 If the application ends before you sign off, for example because it is withdrawn, the page says **This application is finished, so the review is closed.** and the review moves to the **Closed** tab.
 
 ## What the clerk sees of your review
 
-On the application, the clerk sees your name and whether your review is **Pending**, **Commented** or **Signed off**. The application's history records that you commented and signed off. The text of your comments is not shown on a standard application page. On a board application that goes to a Technical Review Committee, the comments are gathered into the summary prepared for the board. If your comment needs the clerk's attention before you sign off, tell them directly as well.
+In the **Reviewers** panel on the application, staff with full access to the record see your name, whether your review is **Pending**, **Commented** or **Signed off**, and every comment you wrote, each with your name and its date and time. A reviewer with no comments shows **No comments.** The application's history also records that you commented and signed off. On a board application that goes to a Technical Review Committee, the comments are also gathered into the summary prepared for the board. If your comment needs the clerk's attention before you sign off, tell them directly as well.

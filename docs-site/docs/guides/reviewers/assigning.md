@@ -19,7 +19,7 @@ Land use staff and administrators can assign and remove reviewers.
 You can do it from three places.
 
 - On the application record, in **Do this now** when the step is **Assign a reviewer**. The **Reviewer** list shows everyone who is not already assigned. Choose a name and **Assign reviewer**.
-- In the **Reviewers** panel on the record, open **Assign a reviewer**. The panel also lists everyone assigned, with their status.
+- In the **Reviewers** panel on the record, open **Assign a reviewer**. The panel also lists everyone assigned, with their status and the comments each has written, under the reviewer's name with the date. A reviewer with none shows **No comments.**
 - In the **Applications** list, choose **Unassigned** in the **Reviewers** column. The **Assign a reviewer** box opens.
 
 Chiban answers **Reviewer assigned.** The reviewer is emailed that a review has been requested. If you assign someone who is already on the application, Chiban says **That reviewer is already assigned.**
