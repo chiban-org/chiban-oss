@@ -42,6 +42,7 @@ Intervals are those in the code. Jobs with no interval run when something enqueu
 | `appeals.daily` | Daily appeal period check | Every day | Records that an appeal period has ended. |
 | `parcels.expireAliasOverrides` | Parcel ID override expiry | Every day | Expires parcel ID overrides that have run out. |
 | `exports.prune` | Export cleanup | Every day | Removes built exports older than 7 days. |
+| `uploads.cleanup` | Upload cleanup | Every hour | Removes upload files left unfinished more than an hour after their upload link expired, and sign-in links that expired more than a day ago. |
 | `backups.scheduled` | Scheduled backup | Every hour | Makes a backup when the schedule on the **Backups** page says one is due, and removes the oldest ones. See [backups](./backups.md). |
 | `exports.incremental` | Incremental export | Every day | Runs the monthly copies whose day has come. See [monthly export](../reports-and-export/incremental-export.md). |
 | `gis.refreshLayer` | Parcel layer refresh | When its scheduler finds a layer due | Refreshes one parcel layer from its source. |

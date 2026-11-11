@@ -17,7 +17,7 @@ One encrypted file holds everything needed to rebuild a town's installation. The
 | --- | --- |
 | `database.dump` | The whole database, written by `pg_dump` in its custom format, without owners or privileges. It includes the job queue tables, because they live in the same database. |
 | `secrets.json` | The values of `CHIBAN_SECRET_KEYS` and `CHIBAN_ACTIVE_KEY_ID`, which the application needs to read saved credentials. |
-| `objects/` | Every file in the object store except those under `exports/`. Exports are downloads that can be built again. |
+| `objects/` | Every file in the object store except those under `exports/` and `uploads/tmp/`. Exports are downloads that can be built again, and `uploads/tmp/` holds uploads that were started and not finished. |
 | `backup-manifest.json` | The application version, the migration head, the creation time, the SHA-256 of the dump, and the key, size and SHA-256 of every object. |
 
 Every backup is complete. There are no incremental backups and no continuous archiving of the database, so you can restore to the moment of a backup and no later.

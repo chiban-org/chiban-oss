@@ -18,7 +18,7 @@ A staff sign-in lasts seven days. After that, the person signs in again.
 
 ## If sign-in fails
 
-The sign-in page says "Email or password is incorrect", or "Email, password, or code is incorrect" when a code was entered. It does not say which part was wrong. After six attempts for the same email address within ten minutes, it says "Too many attempts. Try again in a few minutes." A disabled account cannot sign in at all. See [changing roles, disabling accounts and resetting sign-in](./managing-staff-accounts.md) for the administrator's side.
+The sign-in page says "Email or password is incorrect", or "Email, password, or code is incorrect" when a code was entered. It does not say which part was wrong. After six failed attempts for the same email address from the same connection within ten minutes, it says "Too many attempts. Try again in a few minutes." The same happens after 20 failed attempts from one connection across all addresses. Successful sign-ins do not count, so staff who share the town hall's connection do not lock each other out. Someone on another connection cannot lock a staff member out by trying passwords against their address. A disabled account cannot sign in at all. See [changing roles, disabling accounts and resetting sign-in](./managing-staff-accounts.md) for the administrator's side.
 
 ## Add an authenticator
 

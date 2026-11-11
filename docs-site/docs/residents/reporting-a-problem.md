@@ -20,6 +20,8 @@ Anyone can tell the town about work that may not follow the zoning ordinance or 
 
 Choose **Send report**. The next page says "Thank you. The town has your report" and shows a reference such as CP-2026-0001. Keep it if you want to ask about the report later.
 
+One connection can send five reports in 15 minutes. After that the form says "Too many reports from this connection. Try again in a few minutes." If you are in a library or a town building where many people share one connection, wait a few minutes and send it again.
+
 That page also says what happens next. Town staff review every report and decide whether to look into it further. If you gave an email or phone, staff may contact you with questions. If you left both blank, they cannot reply to you.
 
 ## Anonymous reports

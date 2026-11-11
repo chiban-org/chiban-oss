@@ -31,7 +31,7 @@ Chiban makes a draft and opens it. Nothing goes to the town until you send it, s
 The draft has three parts.
 
 - **Application.** The questions for this kind of work. A star marks the required ones. Some questions only appear when an earlier answer makes them matter.
-- **Documents.** What the town needs with the application, such as a plot plan. Each item shows whether it is **Missing**, and some are marked **Optional**. Items that do not apply to your project are tucked under "Not needed for this project". Choose **Choose file** or drag a file in. Files can be PDF, JPEG or PNG. **Other documents** takes anything else you want the town to have.
+- **Documents.** What the town needs with the application, such as a plot plan. Each item shows whether it is **Missing**, and some are marked **Optional**. Items that do not apply to your project are tucked under "Not needed for this project". Choose **Choose file** or drag a file in. Files can be PDF, JPEG or PNG. **Other documents** takes anything else you want the town to have. You can have up to 20 files uploading at once. Past that, Chiban says "You have too many uploads in progress. Finish or wait for them, then try again."
 - **Confirmation.** A statement that the information is true and complete, which you tick before sending.
 
 Choose **Save draft** to keep what you have so far. Choose **Submit application** when you are done. If a required answer is empty, Chiban lists what is left and does not send it. Above the **Submit application** button it also names any document still missing, with a link to **Go to documents**.
