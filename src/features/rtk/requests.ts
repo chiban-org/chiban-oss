@@ -2,7 +2,7 @@ import { civilDateSchema } from '@packs/nh/schema'
 import { and, asc, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { AppError, ErrorIds } from '@/constants/errorIds'
-import type { Db } from '@/db/client'
+import type { Db, Tx } from '@/db/client'
 import {
   RTK_RECEIVED_VIA,
   type RtkStatus,
@@ -12,7 +12,7 @@ import {
 } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { nextNumber } from '@/features/applications/createApplication'
-import { writeAudit } from '@/features/audit/writeAudit'
+import { type AuditActor, writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { computeSubjectDue, type SubjectDue } from '@/features/clocks/subjectDue'
@@ -60,36 +60,61 @@ export async function logRequest(
   return await transactionResult(db, async (tx) => {
     const today = await townToday(tx, now, signal)
     if (daysBetween(today, value.receivedOn) > 0) return err('future_date')
-    const due = computeSubjectDue(responseRule(), value.receivedOn, rtkDueContext())
-    const number = await nextNumber(tx, 'RK', civilYear(value.receivedOn))
-    const [row] = await tx
-      .insert(rtkRequests)
-      .values({
-        number,
-        receivedOn: value.receivedOn,
-        receivedVia: value.receivedVia,
-        requesterName: value.requesterName ?? null,
-        requesterContact: value.requesterContact ?? null,
-        description: value.description,
-        responseDue: due,
-        openDueOn: due.due,
-        createdBy: actor.userId,
-      })
-      .returning({ id: rtkRequests.id })
-    const requestId = row?.id ?? ''
-    await writeAudit(
-      tx,
-      {
-        actor: { kind: 'user', userId: actor.userId },
-        action: 'rtk.request_logged',
-        entityType: 'rtk_request',
-        entityId: requestId,
-        after: { number, receivedOn: value.receivedOn, due: due.due },
-      },
-      signal,
+    return ok(
+      await insertRequest(
+        tx,
+        { ...value, createdBy: actor.userId },
+        { kind: 'user', userId: actor.userId },
+        signal,
+      ),
     )
-    return ok({ requestId, number, due: due.due })
   })
+}
+
+export interface NewRequest {
+  receivedOn: CivilDate
+  receivedVia: (typeof RTK_RECEIVED_VIA)[number]
+  requesterName?: string | undefined
+  requesterContact?: string | undefined
+  description: string
+  createdBy: string | null
+}
+
+export async function insertRequest(
+  tx: Tx,
+  value: NewRequest,
+  auditActor: AuditActor,
+  signal: AbortSignal,
+): Promise<{ requestId: string; number: string; due: CivilDate }> {
+  const due = computeSubjectDue(responseRule(), value.receivedOn, rtkDueContext())
+  const number = await nextNumber(tx, 'RK', civilYear(value.receivedOn))
+  const [row] = await tx
+    .insert(rtkRequests)
+    .values({
+      number,
+      receivedOn: value.receivedOn,
+      receivedVia: value.receivedVia,
+      requesterName: value.requesterName ?? null,
+      requesterContact: value.requesterContact ?? null,
+      description: value.description,
+      responseDue: due,
+      openDueOn: due.due,
+      createdBy: value.createdBy,
+    })
+    .returning({ id: rtkRequests.id })
+  const requestId = row?.id ?? ''
+  await writeAudit(
+    tx,
+    {
+      actor: auditActor,
+      action: 'rtk.request_logged',
+      entityType: 'rtk_request',
+      entityId: requestId,
+      after: { number, receivedOn: value.receivedOn, due: due.due },
+    },
+    signal,
+  )
+  return { requestId, number, due: due.due }
 }
 
 export interface RtkRequestView {

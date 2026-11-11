@@ -1,0 +1,1 @@
+ALTER TABLE "rtk_requests" ALTER COLUMN "created_by" DROP NOT NULL;
