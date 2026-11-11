@@ -1,5 +1,6 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest'
-import { documents } from '@/db/schema'
+import { isNull } from 'drizzle-orm'
+import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { documents, uploadIntents } from '@/db/schema'
 import { createUploadIntent } from '@/features/documents/uploads'
 import { CHECK_PASSED } from '@/server/formInput'
 import { pdfBytes, uploadAs } from '@/test/documentFixtures'
@@ -53,6 +54,13 @@ beforeAll(async () => {
     { seriesKey: SERIES },
   )
   documentId = uploaded.documentId
+})
+
+beforeEach(async () => {
+  await h.db
+    .update(uploadIntents)
+    .set({ expiresAt: new Date(0) })
+    .where(isNull(uploadIntents.finalizedAt))
 })
 
 async function stagedIntent(): Promise<string> {
