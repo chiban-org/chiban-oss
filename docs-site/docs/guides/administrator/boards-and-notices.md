@@ -6,7 +6,7 @@ sidebar_position: 12
 
 # Boards, notices and review committees
 
-The **Boards** group under **Settings** has four pages. Boards, Board settings and the others describe the town's boards, how they give notice, who is told about projects that reach beyond the town, and which departments are asked to comment before a meeting.
+The **Boards** group under **Settings** has four pages: **Boards**, **Board settings**, **Regional notice contacts** and **Review committee routes**. Together they say which boards the town runs, how each gives public notice, who is told about projects that reach beyond the town, and which departments are asked to comment before a meeting.
 
 ## Boards
 
@@ -14,7 +14,7 @@ Open **Settings**, then **Boards**. The list shows each board's kind, how many m
 
 ![The Boards page listing the Planning Board, Zoning Board of Adjustment, Conservation Commission and Historic District Commission.](/img/shots/administrator/boards.png)
 
-**Add a board** asks for a **Name** (as it appears on notices and minutes), a **Short name** for tight spaces such as the meeting list, and a **Kind of board**. The kinds are Planning Board, Zoning Board of Adjustment, Historic District Commission, Building Code Board of Appeals, Conservation Commission, Heritage Commission, Agricultural Commission, Housing Commission, and Other board or committee. A town can have only one active Planning Board and one active Zoning Board of Adjustment. If one already exists, that choice is greyed out and says so. The kind cannot change afterward. To change it, add a new board and archive the old one.
+**Add a board** asks for a **Name** (as it appears on notices and minutes), a **Short name** for tight spaces such as the meeting list, and a **Kind of board**. The kinds are Planning Board, Zoning Board of Adjustment, Historic District Commission, Building Code Board of Appeals, Conservation Commission, Heritage Commission, Agricultural Commission, Housing Commission, and Other board or committee. A town can have only one active Planning Board and one active Zoning Board of Adjustment. If one already exists, that choice is greyed out and says so. A board's kind cannot change afterward. To change it, add a new board and archive the old one.
 
 **Edit** renames a board. Past meetings, minutes and decisions show the new name too. **Archive** removes a board from every list and picker, and keeps its meetings, minutes, decisions and packets under the name it had. A board with history is archived, never deleted.
 
@@ -44,7 +44,7 @@ The Technical Review Committee asks departments to review applications. This pag
 
 In Alder Pond the committee departments are Fire, Public Works and Police.
 
-If someone who is ticked leaves, disable their account and the request goes to the next ticked person. See [changing roles, disabling accounts and resetting sign-in](./managing-staff-accounts.md).
+When a ticked reviewer leaves, disabling their account sends the request to the next ticked person. See [changing roles, disabling accounts and resetting sign-in](./managing-staff-accounts.md).
 
 ## Saving
 

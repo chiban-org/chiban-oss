@@ -7,11 +7,11 @@ sidebar_position: 5
 
 # Where to find each setting
 
-Only administrators see **Settings** in the staff menu. Other roles use the pages their work needs, and never see these. The page opens on a menu with seven groups, and each group opens to its pages. The **Filter settings** box at the top narrows the menu as you type, so you can type "fees" or "notice" instead of opening each group.
+Only administrators see **Settings** in the staff menu. It opens on a menu of seven groups, and each group opens to its pages. The **Filter settings** box at the top narrows the menu as you type, so you can type "fees" or "notice" instead of opening each group.
 
 ![The Settings page with its seven groups and the Town profile form open.](/img/shots/administrator/settings-menu.png)
 
-Most pages in **Permits**, **Town rules**, **Boards** and **Money and inspections**, and the town pages, work the same way: you edit a draft, save it, and put it into use when it is ready. [How changes are saved and put into use](./how-changes-are-put-into-use.md) covers that once so the other pages do not repeat it.
+Most pages in **Permits**, **Town rules**, **Boards** and **Money and inspections**, and the town pages, work the same way: you edit a draft, save it, and put it into use when it is ready. See [how changes are saved and put into use](./how-changes-are-put-into-use.md).
 
 ## The groups
 

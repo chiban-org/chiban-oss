@@ -6,7 +6,7 @@ sidebar_position: 18
 
 # Enforcement officers
 
-Only a designated enforcement officer can issue a cease and desist order. **Enforcement officers**, under **Settings**, **Administration**, is where you record who that is. Enter each designation as the board adopts it, so the record shows who authorized the officer and when.
+Only a designated enforcement officer can issue a cease and desist order. Record each designation on **Enforcement officers**, in the **Administration** group under **Settings**, as the board adopts it, so the record shows who authorized the officer and when.
 
 ![The Enforcement officers page listing Sam Clerk, Code Enforcement Officer, designated by the Select Board.](/img/shots/administrator/enforcement-officers.png)
 
@@ -18,11 +18,11 @@ Only a designated enforcement officer can issue a cease and desist order. **Enfo
 4. Enter **Designated by**, the body that adopted it. It starts as Select Board.
 5. Enter the **Date adopted**. It cannot be in the future.
 
-The page lists each designation as, for example, "Sam Clerk, Code Enforcement Officer. Designated by Select Board on October 7, 2025."
+Each designation is listed like this: "Sam Clerk, Code Enforcement Officer. Designated by Select Board on October 7, 2025."
 
 ## Change or end a designation
 
-**Edit** corrects the title, the authority or the date. It does not change who the officer is. To designate someone else, end this designation and add a new one.
+**Edit** corrects the title, the authority or the date, but not the person. To designate someone else, end this designation and add a new one.
 
 **End this designation** asks for the **Last day as officer**, which starts as today. After that day the person is no longer a designated officer. The entry stays on the page with "ended" and the date.
 

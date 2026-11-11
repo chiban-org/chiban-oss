@@ -6,11 +6,11 @@ sidebar_position: 13
 
 # State law, town rules and local code
 
-The **Town rules** group under **Settings** has five pages. They answer one question from different sides: which rules come from state law, which values the town is allowed to choose, and which local changes the town has adopted.
+The **Town rules** group under **Settings** has five pages. Between them they show which rules come from state law, which values the town may choose, and which local changes the town has adopted.
 
 ## State law
 
-**State law** lists every rule Chiban follows from state law, with its citation, and in the last column what the town can change. It is a reference. You cannot edit anything on it.
+**State law** lists every rule Chiban follows from state law, with its citation, and in the last column what the town can change. You cannot edit anything on it.
 
 The last column says one of three things:
 
@@ -26,7 +26,7 @@ For the deadlines these rules produce, see [deadlines and holidays](../../state-
 
 ## Town rule settings
 
-Where state law lets the town choose a value, record the town's own on **Town rule settings**. Until you do, Chiban uses the value state law gives. The page says so: "No town rules are set" until the town sets one.
+Where state law lets the town choose a value, record the town's own on **Town rule settings**. Until you do, Chiban uses the value state law gives. Until the town sets one, the page reads "No town rules are set".
 
 1. Choose **Set a town rule** and pick the rule. Only rules the town is allowed to set are listed.
 2. Enter **The town's value**, in the unit shown.
@@ -37,7 +37,7 @@ If a value is outside what state law allows, the draft cannot be put into use.
 
 ## Local code amendments
 
-**Local code amendments** records changes the town has adopted to the state building code. Each has a **Title**, the **Code section** it changes, **Adopted by**, **Adopted on**, an optional **Confirmed by the building code review board on** date (leave it empty until the state board confirms), the **State code text** and the **Town's amended text**. The page shows **What changed, word by word** so the difference is easy to read. Alder Pond has four, including Footing frost depth and Roof snow load.
+**Local code amendments** records changes the town has adopted to the state building code. Each has a **Title**, the **Code section** it changes, **Adopted by**, **Adopted on**, an optional **Confirmed by the building code review board on** date (leave it empty until the state board confirms), the **State code text** and the **Town's amended text**. The page shows **What changed, word by word** between the two texts. Alder Pond has four, including Footing frost depth and Roof snow load.
 
 ## Building code editions
 

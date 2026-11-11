@@ -6,7 +6,7 @@ sidebar_position: 7
 
 # Town profile, letterhead and signers
 
-Three pages under **Settings**, in the **Town** group, decide how the town's paperwork looks. Set them before you adopt starters, so every letter you preview already carries the right name. Each one is saved as a draft and put into use. See [how changes are saved and put into use](./how-changes-are-put-into-use.md).
+Three pages in the **Town** group under **Settings** decide how the town's paperwork looks. Set them before you adopt starters, so every letter you preview already carries the right name. Each one is saved as a draft and put into use. See [how changes are saved and put into use](./how-changes-are-put-into-use.md).
 
 ## Town profile
 
@@ -39,8 +39,8 @@ The roles are Building official, Land use administrator, Planning Board chair, Z
 
 A signature is optional: a PNG or JPEG up to 2 MB, on a white or clear background.
 
-A signer does not need a Chiban account. The names here are text. If the town's Planning Board chair changes, edit the name and put it into use.
+A signer does not need a Chiban account, since the names here are plain text. When the Planning Board chair changes, edit the name and put it into use.
 
 ## In the demo
 
-The demo does not allow edits to the town profile. You can look at every page here, but not save.
+The demo does not allow edits to the town profile.

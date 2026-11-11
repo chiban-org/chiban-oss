@@ -8,11 +8,11 @@ sidebar_position: 1
 
 This page is for the person who sets the town up, often the land use clerk or the town administrator. You do not need to know how the server works. Everything here happens under **Settings** in the staff menu, which only administrators see.
 
-The order below matters in a few places. People have to exist before you can name them as reviewers, inspectors or enforcement officers, and the fees and forms are easier to check once the town's name and letterhead are in place. Where a step can wait until you are ready to go public, it says so.
+Follow the steps in order. People have to exist before you can name them as reviewers, inspectors or enforcement officers, and the fees and forms are easier to check once the town's name and letterhead are in place.
 
 ## 1. Get the first administrator account
 
-Whoever installed Chiban on the town's server creates the first administrator account from the server itself, with a name, an email address and a password. After that you do not need them again for accounts: you invite every other person from **Settings**, **Users**. If you cannot sign in at all, ask the person who runs the server. The [self-hosting page](../../operations/self-hosting.md) is theirs.
+Whoever installed Chiban on the town's server creates the first administrator account from the server itself, with a name, an email address and a password. After that you invite every other person from **Settings**, **Users**. If you cannot sign in at all, ask the person who runs the server. The [self-hosting page](../../operations/self-hosting.md) is theirs.
 
 ## 2. Sign in and protect your own account
 

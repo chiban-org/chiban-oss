@@ -6,7 +6,7 @@ sidebar_position: 11
 
 # Forms, fee schedules and letters
 
-These pages are in the **Permits** group under **Settings**. Each starter you adopt brings a form, a fee schedule, a set of conditions, inspection checklists and letters. Adjust them one at a time, preview each, then put it into use. Every one is a versioned item, so see [how changes are saved and put into use](./how-changes-are-put-into-use.md) first if you have not.
+These pages are in the **Permits** group under **Settings**. Each starter you adopt brings a form, a fee schedule, a set of conditions, inspection checklists and letters. Adjust them one at a time, preview each, then put it into use. Each is a versioned item. See [how changes are saved and put into use](./how-changes-are-put-into-use.md).
 
 ## Forms
 
@@ -35,7 +35,7 @@ Open **Settings**, **Fee schedules**, and choose a schedule. The page lists each
 For each fee you set:
 
 - **Name on the bill**.
-- **Charged**: when the application is submitted, when it is approved, when the permit is renewed, or when the abutter notice list is issued. A fee charged with the notice list is worked out then because that is when the number of abutters is known.
+- **Charged**: when the application is submitted, when it is approved, when the permit is renewed, or when the abutter notice list is issued. A fee charged with the notice list is worked out when the list is issued, because that is when the number of abutters is known.
 - **How it is worked out**: a set amount, an amount for each unit of an answer, or rates that change in bands.
 - For an amount per unit, **Count** which answers, such as finished area or estimated cost of work, with a **Rate for each**. You can count the abutters on the notice list or the dwelling units too.
 - **Charge at least a minimum amount**, with a **Minimum**.
@@ -53,8 +53,8 @@ Open **Settings**, **Templates**. There are templates for permits, hearing notic
 
 Write the letter as text. Under **Insert**, add **Merge fields** (the application's number, the applicant's name, the parcel address, the signer's name and title) and **Blocks**: **Signature**, **Conditions list**, **Field table** and **Notice box**. Select a field or block to change it under **Selected part**.
 
-**Preview with** lets you pick a real application in the demo, for example an issued permit, and shows the letter as it would print with the town's letterhead. **Download PDF** makes a copy. **Start again from the standard wording** goes back to what the starter shipped.
+**Preview with** lets you pick an existing application, for example an issued permit, and shows the letter as it would print with the town's letterhead. **Download PDF** makes a copy. **Start again from the standard wording** goes back to what the starter shipped.
 
 ## Conditions and inspection checklists
 
-**Conditions** are the standard conditions staff can attach to an approval, one set per application type. **Inspection checklists** are the items an inspector checks at each kind of inspection, such as Footing inspection or Final inspection. Both work like the pages above. An application type picks which checklists it uses.
+**Conditions** are the standard conditions staff can attach to an approval, one set per application type. **Inspection checklists** are the items an inspector checks at each kind of inspection, such as Footing inspection or Final inspection. Both are edited like the pages above, and an application type picks which checklists it uses.

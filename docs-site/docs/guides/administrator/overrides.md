@@ -21,13 +21,15 @@ Use a fee override when the town decides a fee should not be charged as computed
 
 ![The Fee overrides list with three waived fees and their reasons.](/img/shots/administrator/fee-overrides.png)
 
-The **Fees** tab only lists them. You make one from the application itself. Open the application, find **Waive or set a fee**, choose the **Fee**, choose **Waive** or **Set an amount**, enter an amount in dollars if you set one, and give a **Reason**. Administrators and land use staff can do this. In Alder Pond, two electrical permits are waived with the reason "Paid in prior system" and a ledger number. Fees changed here apply to one application. To change what a kind of permit costs, edit the fee schedule. See [forms, fee schedules and letters](./forms-fee-schedules-and-letters.md).
+The **Fees** tab only lists them. You make one from the application itself: open the application, find **Waive or set a fee**, choose the **Fee**, choose **Waive** or **Set an amount**, enter an amount in dollars if you set one, and give a **Reason**. Administrators and land use staff can do this. In Alder Pond, two electrical permits are waived with the reason "Paid in prior system" and a ledger number.
+
+An override applies to one application. To change what a kind of permit costs, edit the fee schedule. See [forms, fee schedules and letters](./forms-fee-schedules-and-letters.md).
 
 ## Clock adjustments
 
 A clock is a deadline Chiban tracks on an application, such as the days a board has to decide. The **Clocks** tab lists every extension, waiver, statutory exception, tolling and renewal that moved a due date, with the rule, the new due date and the reason.
 
-You make an adjustment on the application, under **Adjust this clock**. The choices offered depend on the clock, because a rule allows only some adjustments. They can be an extension, a waiver, or a statutory exception that needs a legal authority citation and explanation. Enter the **Days** and a **Reason**. Where the rule needs it, tick that the applicant consents. Only administrators can record a statutory exception. Extensions and waivers can be recorded by administrators and land use staff.
+You make an adjustment on the application, under **Adjust this clock**. Which choices appear depends on the clock, because a rule allows only some adjustments. They can be an extension, a waiver, or a statutory exception that needs a legal authority citation and explanation. Enter the **Days** and a **Reason**. Where the rule needs it, tick that the applicant consents. Only administrators can record a statutory exception. Extensions and waivers can be recorded by administrators and land use staff.
 
 Renewals, tolling during an appeal, and statutory minimums are recorded by Chiban itself and appear on the list.
 
@@ -37,7 +39,7 @@ An override points a town ID at a parcel. Use it when a number in a folder label
 
 ![The Parcel ID overrides list showing one override from a CAMA number to a parcel.](/img/shots/administrator/parcel-id-overrides.png)
 
-This tab is the one place you add overrides directly.
+Parcel ID overrides are the only kind you add from the Overrides page itself.
 
 1. Choose **Add override**.
 2. Enter the **Format key** (the short name of the format, shown on [parcel ID formats](./parcel-id-formats.md)) and the **ID value**.

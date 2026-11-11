@@ -6,7 +6,7 @@ sidebar_position: 15
 
 # Card payments
 
-**Card payments** is under **Settings**, in **Money and inspections**. It has two parts: the processor account that takes the card, and the convenience fee and receipt wording that apply to every payment. You need to be an administrator.
+**Card payments** is under **Settings**, in **Money and inspections**. It has two parts: the processor account that takes the card, and the convenience fee and receipt wording that apply to every payment. Only administrators can open it.
 
 ![The Card payments page with the processor account form and convenience fee settings.](/img/shots/administrator/payments.png)
 
@@ -25,9 +25,9 @@ To save an account, fill in:
 
 Choose **Save processor account**. Secrets are never shown again, so enter them again whenever you save, even to change only the account number.
 
-Two notices on the page matter. The simulated processor and card reader are not connected to a live processor, and no card is ever charged. The Clover connection has not been checked against a live merchant account.
+The page carries two notices. The simulated processor and card reader are not connected to a live processor, and no card is ever charged. The Clover connection has not been checked against a live merchant account.
 
-This page does not show the address the processor should send payment updates to. Whoever runs the server can give it to you, and you will need it to finish setting up the account in the processor's own dashboard.
+This page does not show the address the processor should send payment updates to. Ask whoever runs the server about it before you finish setting up the account in the processor's own dashboard.
 
 ## The convenience fee and receipts
 
@@ -42,4 +42,4 @@ The convenience fee is passed to the payer on card payments only. It shows on it
 
 ## In the demo
 
-The demo uses the simulated processor, the checkout page says no live processor is connected, and the demo does not allow changes to payment settings.
+The demo uses the simulated processor, and its checkout page says no live processor is connected. It does not allow changes to payment settings.

@@ -12,7 +12,7 @@ Changes to an application type are versions, and open applications keep the vers
 
 ## What you set on an application type
 
-Choose a type from the list. The page has these parts.
+Choose a type from the list to see:
 
 - **Name**: what applicants and staff see, for example Building permit.
 - **Number prefix**: one to four capital letters that start each application number, such as BP.
@@ -23,7 +23,7 @@ Choose a type from the list. The page has these parts.
 - **Documents Chiban writes for this type**: the permit, notices and letters staff can produce from an application of this type.
 - **Documents the applicant provides**: each gets its own upload on the application. Items marked "To file" must be in before the application can be submitted. Later items hold the decision, the issuing of the permit or the certificate.
 
-Most towns change little here. Adopt a starter and edit its form and fees. See [adopting starters and taking updates](./adopting-starters.md).
+Most towns change little here: they adopt a starter and edit its form and fees. See [adopting starters and taking updates](./adopting-starters.md).
 
 ## Workflow
 
@@ -38,8 +38,8 @@ Two more settings sit at the foot of the page.
 
 ## Report columns
 
-The permit volume and processing time reports count applications. To add up an answer from the form as well, choose **Choose report columns** on the application type. The page lists the numeric questions on the form, such as number of dwelling units, finished area or estimated cost of work. Tick the ones to add to the reports and their downloads. Applications made on an older form without the question show a blank. Until you choose some, the reports show counts only.
+The permit volume and processing time reports count applications. To add up an answer from the form as well, open the application type and choose **Choose report columns**. The page lists the numeric questions on the form, such as number of dwelling units, finished area or estimated cost of work. Tick the ones to add to the reports and their downloads. Applications made on an older form without the question show a blank. Until you choose some, the reports show counts only.
 
-## Keeping the pieces in step
+## Related items
 
 An application type, its form, its fee schedule, its conditions and its letters are separate items with their own histories. If you change a question on a form that a fee schedule counts, check the fee schedule afterward. See [forms, fee schedules and letters](./forms-fee-schedules-and-letters.md).

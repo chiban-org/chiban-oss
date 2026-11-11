@@ -7,11 +7,11 @@ sidebar_position: 6
 
 # How changes are saved and put into use
 
-Most settings pages keep every change as a numbered version, so that a mistake can be undone and the office can see who changed what. The pages say the same thing at the bottom: "Save draft keeps your changes without using them yet. Put into use makes them the version Chiban uses."
+Most settings pages keep every change as a numbered version, so that a mistake can be undone and the office can see who changed what. Each page ends with the same line: "Save draft keeps your changes without using them yet. Put into use makes them the version Chiban uses."
 
 ## The three buttons
 
-- **Save draft** keeps what you typed for later. Nobody else sees a difference.
+- **Save draft** keeps what you typed for later. Chiban keeps using the version already in use.
 - **Put into use** makes the draft the version Chiban uses. A box asks you to confirm.
 - **Discard draft** throws away the draft. If the item has never been in use, discarding removes it entirely. Otherwise the version in use stays in use.
 
@@ -25,7 +25,7 @@ On other pages, such as the town profile, Chiban starts using the new version as
 
 ## Version history
 
-Every page has a **Version history** that lists each version, whether it is in use or replaced, who put it into use and when, and where it started. "Made by the town" means the town wrote it. A line such as "Building or demolition permit starter, version 3" means it began as that starter. Some pages also show what changed in each version.
+These pages have a **Version history** that lists each version, whether it is in use or replaced, who put it into use and when, and where it started. "Made by the town" means the town wrote it. A line such as "Building or demolition permit starter, version 3" means it began as that starter. Some pages also show what changed in each version.
 
 ## Restore an earlier version
 
@@ -35,11 +35,11 @@ A replaced version has a **Restore version** button, for example **Restore versi
 
 On the lists for application types, forms, fee schedules, templates, conditions, inspection checklists and local code amendments, the button at the top starts a new item, for example **New form**. It asks for a name. Under **Advanced** is a short name that other settings use to refer to the item. It is made from the name if you leave it empty, and it cannot be changed later. The new item starts as a draft that is not in use.
 
-Most towns do not start application types from nothing. They adopt a starter. See [adopting starters and taking updates](./adopting-starters.md).
+Most towns start application types from a starter. See [adopting starters and taking updates](./adopting-starters.md).
 
 ## The lists
 
-Each list shows counts for **In use**, **Not in use yet**, **Has a draft not in use yet** and **No draft**. Use them to find an item someone began and did not finish.
+Each list shows counts for **In use**, **Not in use yet**, **Has a draft not in use yet** and **No draft**. Use them to find an item someone began and never put into use.
 
 ## What does not work this way
 

@@ -6,11 +6,11 @@ sidebar_position: 4
 
 # Passwords and authenticator codes
 
-Staff sign in with an email address and a password. An authenticator app on a phone adds a second step: a 6-digit code that changes every 30 seconds. Chiban asks for the code after the password, so a stolen password alone does not open the account. Applicants and contractors do not use this page. They sign in with a link sent by email.
+Staff sign in with an email address and a password. An authenticator app on a phone adds a second step: a 6-digit code that changes every 30 seconds. Chiban asks for the code after the password, so a stolen password alone cannot open the account. Applicants and contractors sign in with a link sent by email and never see this.
 
 ## Choosing a password
 
-A password must be at least 12 characters. A person chooses their first one from the invite link, and chooses a new one from a reset link if an administrator sends it. Both links work once.
+A password must be at least 12 characters. A person chooses their first password from the invite link, and a new one from a reset link when an administrator sends it. Both links work once.
 
 ## Staying signed in
 
@@ -37,8 +37,8 @@ On **Account**, **Your name** changes how your name appears in Chiban. If your a
 
 ## Lost phone
 
-An administrator clears the authenticator on the person's page, and the person sets up a new one. See [changing roles, disabling accounts and resetting sign-in](./managing-staff-accounts.md).
+An administrator clears the old authenticator on the person's page, and the person sets up a new one. See [changing roles, disabling accounts and resetting sign-in](./managing-staff-accounts.md).
 
 ## In the demo
 
-The demo does not let visitors change a password, a name or an authenticator, because that would change the demo for everyone. The pages are there to look at.
+The demo does not let visitors change a password, a name or an authenticator, because that would change the demo for everyone.

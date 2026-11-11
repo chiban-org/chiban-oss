@@ -6,9 +6,9 @@ sidebar_position: 14
 
 # Parcel ID formats
 
-A parcel can have more than one number: the assessor's CAMA number and the map-lot ID from the town's GIS. **Parcel ID formats** under **Settings**, **Town** lists the numbers the town uses. Imports use these formats to match rows in a file to the right parcel, and one of them is the ID shown on parcel pages.
+A parcel can have more than one number: the assessor's CAMA number and the map-lot ID from the town's GIS. **Parcel ID formats**, in the **Town** group under **Settings**, lists the numbers the town uses. Imports use these formats to match rows in a file to the right parcel, and one of them is the ID shown on parcel pages.
 
-Chiban comes with two formats: **CAMA number**, exactly 15 digits, and **Map-lot ID**, exactly 12 digits. Leading zeros count. In Alder Pond the CAMA number is on 63 parcels and the Map-lot ID on 62, and the Map-lot ID is the one shown on parcels.
+Chiban ships with two formats: **CAMA number**, exactly 15 digits, and **Map-lot ID**, exactly 12 digits. Leading zeros count. In Alder Pond the CAMA number is on 63 parcels and the Map-lot ID on 62, and the Map-lot ID is the one shown on parcels.
 
 ## Add or change a format
 
@@ -17,7 +17,7 @@ Chiban comes with two formats: **CAMA number**, exactly 15 digits, and **Map-lot
 - **Show this ID** makes a format the one shown on parcel pages.
 - **Delete** appears only for a format no parcel ID uses yet.
 
-Set this up before you load owners and parcels from the assessing office, because the file's ID column is matched against these formats. See [loading owners from the assessing file](../../moving-in/cama-import.md).
+Set the formats up before you load owners from the assessing office, because the ID column in that file is matched against them. See [loading owners from the assessing file](../../moving-in/cama-import.md).
 
 ## When a number is wrong for one parcel
 

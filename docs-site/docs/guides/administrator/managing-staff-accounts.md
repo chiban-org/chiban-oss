@@ -13,15 +13,15 @@ Open **Settings**, then **Users**, and choose a person's name. Their page shows 
 
 Tick or clear boxes under **Roles** and choose **Save roles**. The change reaches the person on the next page they open, so they do not need to sign out.
 
-Chiban always keeps at least one active administrator. If you try to take the Administrator role from the only active administrator, it refuses and tells you to make someone else an administrator first.
+Chiban keeps at least one active administrator. If you try to take the role from the only one, it refuses and tells you to make someone else an administrator first.
 
 ## When someone leaves the office
 
-Choose **Disable this account**, enter a **Reason**, and confirm. The reason is kept in the account's history. The person is signed out everywhere at once and cannot sign in again. Disabling does not delete the account or anything in it.
+Choose **Disable this account**, enter a **Reason**, and confirm. The reason is kept in the account's history. The person is signed out everywhere at once and cannot sign in again. The account and everything in it stay.
 
-You cannot disable your own account, and you cannot disable the only active administrator.
+You cannot disable your own account or the only active administrator.
 
-Disabling stops sign-in. It does not move work to someone else, so check what the person was responsible for first. A reviewer who is still ticked on a review committee route is skipped if their account is disabled, and the request goes to the next ticked reviewer whose account is active. An inspector's open inspections are not reassigned by this step. In Alder Pond, the disabled account for Dale Hollis carries the note "Retired at the end of June. Open inspections moved to Ira Inspector".
+Disabling does not move work to someone else, so check what the person was responsible for first. A reviewer who is still ticked on a review committee route is skipped if their account is disabled, and the request goes to the next ticked reviewer whose account is active. An inspector's open inspections are not reassigned by this step. In Alder Pond, the disabled account for Dale Hollis carries the note "Retired at the end of June. Open inspections moved to Ira Inspector".
 
 To bring someone back, open them under the **Disabled** tab and choose **Re-enable account**.
 
@@ -39,6 +39,4 @@ If someone lost or replaced the phone that makes their sign-in codes, choose **R
 
 The **Authenticator** column on the **Users** page shows **On** or **Off** for each person. If your town wants every account to use one, this is where you check.
 
-![A staff member's Account page showing name, email, role and authenticator status.](/img/shots/administrator/account.png)
-
-The picture above is a person's own **Account** page, which they use for their name, password and authenticator.
+![A person's own Account page, where they change their name, password and authenticator, showing name, email, role and authenticator status.](/img/shots/administrator/account.png)

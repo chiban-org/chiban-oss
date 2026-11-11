@@ -6,9 +6,7 @@ sidebar_position: 8
 
 # Wording of emails
 
-Chiban sends an email when an application is received, a fee is due, a permit is issued, an inspection is booked, a deadline is near and in other cases. Open **Settings**, then **Notification wording** to change what each one says.
-
-The messages are grouped by who gets them.
+Chiban emails applicants, staff, reviewers and boards when an application is received, a fee is due, a permit is issued, an inspection is booked, a deadline is near and in other cases. Open **Settings**, then **Notification wording** to change what each message says. They are grouped by who gets them.
 
 - **To applicants and contractors**: Application received, Fees due, Payment received, Permit issued, Application denied, Inspection scheduled, Inspection cancelled, Inspection result, Permit corrected, Permit corrected with the contractor removed, and Board decision filed.
 - **To staff**: Deadline coming up and Deadline passed.
@@ -29,6 +27,6 @@ Chiban adds the link at the end of the message unless you place the Link field y
 
 ## Links and the permit itself
 
-The link in each message opens the application. Say what happened and what to do next. The wording of the permit itself is changed under [forms, fee schedules and letters](./forms-fee-schedules-and-letters.md).
+The link in each message opens the application. The wording of the permit itself is changed under [forms, fee schedules and letters](./forms-fee-schedules-and-letters.md).
 
-The demo does not allow edits here, and mail from it is not delivered.
+The demo does not allow edits here, and it does not deliver mail.
