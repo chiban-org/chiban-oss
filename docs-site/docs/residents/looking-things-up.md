@@ -31,6 +31,4 @@ Under **Hearing notices** are the notices for upcoming public hearings: what the
 
 ## A records release link
 
-To ask for records in the first place, see [Asking the town for records](./asking-for-records.md).
-
-When the town answers a Right-to-Know request, it can release the records through a link instead of attaching them to an email. The link opens a page titled "Records for request" and the request number, with the release date and a list of files to open. A file the town later withdraws stays on the list marked "withdrawn by the town" with the date. The link works for 30 days. After that the page says "This link has expired. Ask the land use office for a new one." Staff can send a new link to an email address, and the old link stays closed. Search engines are asked not to index these pages.
+If you have not yet asked for records, start with [Asking the town for records](./asking-for-records.md). When the town answers a Right-to-Know request, it can release the records through a link instead of attaching them to an email. The link opens a page titled "Records for request" and the request number, with the release date and a list of files to open. A file the town later withdraws stays on the list marked "withdrawn by the town" with the date. The link works for 30 days. After that the page says "This link has expired. Ask the land use office for a new one." Staff can send a new link to an email address, and the old link stays closed. Search engines are asked not to index these pages.

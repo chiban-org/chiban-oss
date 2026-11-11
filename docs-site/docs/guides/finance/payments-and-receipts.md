@@ -24,9 +24,9 @@ When none of these applies, the page says "No card payment needs attention." Ope
 
 **Entries** lists every payment, refund, returned check, chargeback and correction, newest first. The tabs **Today**, **This week** and **All** show the count in each. The **Method** and **Entry** filters narrow the list, and each column heading sorts it.
 
-A row shows the kind of entry and how it was paid (cash, check, card at the counter or card online), the amount, who paid, the application it belongs to and the receipt. The kind of entry on a card payment is a link to the card payment page. The application number opens the application at **Fees and payments**, where refunds are done. A court-imposed fine links to its enforcement case at **Fines** instead.
+A row shows the kind of entry and how it was paid (cash, check, card at the counter or card online), the amount, who paid, the application it belongs to and the receipt. On a card payment, the entry type opens the card payment page. The application number opens the application at **Fees and payments**. A court-imposed fine links to its enforcement case at **Fines** instead.
 
-You cannot take a payment or a refund from this page. To take a payment, open the application and use **Take a payment** under **Fees and payments**. Refunds are done there as well, or under **Fines** on an enforcement case for a fine. See [Refunds and corrections](./refunds-and-corrections.md).
+You cannot take a payment or a refund from this page. To take a payment, open the application and use **Take a payment** under **Fees and payments**. Refunds are done there too, or under **Fines** on the enforcement case for a fine. See [Refunds and corrections](./refunds-and-corrections.md).
 
 ## Receipts
 

@@ -8,7 +8,7 @@ sidebar_position: 2
 
 Use this page from the day a request arrives until the first response goes out. Getting records to the requester and closing the request are on [the next page](./rtk-release.md). Land use staff and records custodians can do everything here.
 
-Residents can send a request themselves on the town's public site, from [Ask for town records](../../residents/asking-for-records.md), without an account. It arrives in your list marked **Online**, with its own number and the same five-day clock, and the requester gets a receipt email with the number and the date the town will answer by. Requests that come in any other way, at the counter, by mail, by email or by phone, are logged by staff, as described next.
+Residents can send a request themselves from [Ask for town records](../../residents/asking-for-records.md) on the town's public site, without an account. It arrives in your list marked **Online**, with its own number and the same five-day clock. The requester gets a receipt email with the number and the date the town will answer by. Staff log everything else: requests that come in at the counter, by mail, by email or by phone.
 
 ## Log the request
 
@@ -73,7 +73,7 @@ Each response files a letter as a PDF, and you can open it from **Letters** on t
 
 What happens next depends on the requester's contact details:
 
-- **Exactly one email address on the request.** Chiban emails the letter to it as a PDF. A note by the button says so beforehand: "The letter will be emailed to" the address. Afterward the message reads, for example, "Response recorded and the letter emailed to" the address, and **Letters** shows "Emailed to" the address and the date.
+- **Exactly one email address on the request.** Chiban emails the letter to it as a PDF. A note by the button says "The letter will be emailed to" the address. Afterward the message reads "Response recorded and the letter emailed to" the address, and **Letters** shows "Emailed to" the address and the date.
 - **No email address, or more than one.** Chiban does not guess. The note by the button says "There is no email address on this request, so print the letter from Letters and send it." Afterward **Letters** shows "No email address. Print this letter and send it."
 - **An email that fails.** The response is still recorded and the letter filed. The message says the email could not be sent, and **Letters** shows "The email to" the address "could not be sent. Print this letter and send it."
 

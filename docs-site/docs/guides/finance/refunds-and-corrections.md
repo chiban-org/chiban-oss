@@ -6,7 +6,7 @@ sidebar_position: 2
 
 # Refunds and corrections
 
-Chiban never edits or deletes a payment. When money has to go back or move, you add a new entry that reverses part of the old one, and the application's balance follows. Administrators and finance staff can do all of this, on the application rather than on **Payments**.
+Chiban never edits or deletes a payment. When money has to go back or move, you add a new entry that reverses part of the old one, and the balance follows. Administrators and finance staff can do all of this, on the application or the enforcement case rather than on **Payments**.
 
 ## Where the controls are
 
@@ -19,9 +19,9 @@ A fine paid on an enforcement case is handled on the case. Open the case and go 
 - A refund comes off that fine only. If one payment covered two fines, refunding from one fine leaves the other alone. The form lists the fine and the most you can refund from it.
 - A returned check reverses the whole payment, and the amount is due on the fine again.
 - A chargeback takes the amount you enter back from this payment on this fine.
-- There is no **Move to another permit** on a fine. A fine payment cannot be moved.
+- A fine payment cannot be moved, so **Move to another permit** is not offered.
 
-A refund, returned check or chargeback on a fine needs the same permission as on an application, so it is shown to administrators and finance staff only.
+Only administrators and finance staff see these controls on a fine, as on an application.
 
 ## Refund a payment
 

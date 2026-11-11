@@ -16,7 +16,7 @@ A hold on a project, an application, a document, an enforcement case or a Right-
 
 1. Open **Legal holds** and choose **Place a hold**.
 2. Under **Hold on**, choose **Project**, **Application**, **Document**, **Enforcement case** or **Right-to-Know request**.
-3. Enter the **Application number, case number, request number, project title, or document title**. Use the number when you can. If more than one record has the same name, Chiban asks for the number. A document that has already been disposed of cannot be held.
+3. Enter the **Application number, case number, request number, project title, or document title**. Use the number when you can: if more than one record has the same name, Chiban asks for it. A document that has already been disposed of cannot be held.
 4. Give a **Reason (at least 10 characters)** and choose **Place hold**.
 
 An application's own page has a **Place a legal hold** option under **Records**, for the same job.

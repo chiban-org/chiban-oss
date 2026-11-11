@@ -62,7 +62,7 @@ An applicant who started a card payment online may still have it open. The panel
 
 ## What you will not see
 
-Refunding, reversing, correcting or moving a payment, recording a returned check and recording a chargeback sit under **Refund, correct, or reverse** beside each payment. That control is shown to administrators and finance staff only. If a payment was recorded on the wrong permit, ask one of them. Each row on the **Payments** page links back to this panel.
+Refunding, reversing, correcting or moving a payment, recording a returned check and recording a chargeback sit under **Refund, correct, or reverse** beside each payment. That control is shown to administrators and finance staff only. If a payment was recorded on the wrong permit, ask one of them. The application number on each **Payments** row opens this panel.
 
 ## Counting up at the end of the day
 
