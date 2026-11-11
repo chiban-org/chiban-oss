@@ -7,7 +7,7 @@ sidebar_position: 10
 
 # Glossary
 
-These are the words you will meet on Chiban's screens, grouped by the work they belong to. Each is explained the way Chiban uses it. For what the law requires, go to the town's counsel or the statute.
+These are the words you will meet on Chiban's screens, grouped by the work they belong to, each explained the way Chiban uses it.
 
 ## Parcels and people
 
@@ -35,7 +35,7 @@ These are the words you will meet on Chiban's screens, grouped by the work they 
 
 **Certificate of occupancy.** The town's statement that a finished building may be used. Applicants can ask for one, and it is how some permits close.
 
-**Placard.** The sheet printed with a permit, which the owner posts at the site so people can see the work is permitted. Chiban offers **Print placard** next to the permit.
+**Placard.** The sheet printed with a permit, which the owner posts at the site so people can see the work is permitted. Chiban puts **Print placard** next to the permit.
 
 **Condition.** A requirement attached to an approval, such as "licensed plumber of record confirmed". Conditions are chosen from the town's condition library and print on the permit.
 
@@ -69,7 +69,7 @@ These are the words you will meet on Chiban's screens, grouped by the work they 
 
 **Rehearing.** A second hearing on a board's decision, asked for with a **motion for rehearing** within a set time after the vote.
 
-**Acceptance meeting.** The meeting at which the Planning Board decides whether an application is complete. The clock for deciding it runs from acceptance.
+**Acceptance meeting.** The meeting at which the Planning Board decides whether an application is complete. The deadline to decide it runs from acceptance.
 
 **Packet.** The set of documents sent to board members before a meeting: the agenda, the applications and the staff notes.
 

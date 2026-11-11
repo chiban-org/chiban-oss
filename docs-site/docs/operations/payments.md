@@ -70,13 +70,13 @@ Stripe's signature is read from the `Stripe-Signature` header and Clover's from 
 
 ### What Chiban does with an event
 
-Chiban does not trust the body of an event for the amount or the outcome. It stores the event (once per account and event id), finds the payment attempt it refers to, asks the processor for that payment's current state, and reconciles the attempt to what the processor says. An event for another Stripe account, or one whose live or test flag does not match the saved account's mode, is stored and ignored. So is an event for a payment Chiban has no record of. The outcome is kept with the event as `reconciled`, `foreign_object`, `no_attempt` or `error`. An event that ended in `error` is answered with 500 and stays unprocessed so the processor's retry can finish it.
+Chiban takes neither the amount nor the outcome from the body of an event. It stores the event (once per account and event id), finds the payment attempt it refers to, asks the processor for that payment's current state, and reconciles the attempt to what the processor says. An event for another Stripe account, or one whose live or test flag does not match the saved account's mode, is stored and ignored. So is an event for a payment Chiban has no record of. The outcome is kept with the event as `reconciled`, `foreign_object`, `no_attempt` or `error`. An event that ended in `error` is answered with 500 and stays unprocessed so the processor's retry can finish it.
 
 For Stripe, the code reads events whose type begins with `checkout.session.` or `payment_intent.`, and any other event whose object carries a `payment_intent` field, such as a charge or a refund. Other event types are stored and answered with 200 without changing a payment.
 
 ## When a webhook never arrives
 
-Webhooks are not the only way a payment is learned. The worker's payment reconciliation job runs every hour. It looks at every attempt that is authorized or captured, and every pending attempt that is marked outcome unknown or has not changed for 10 minutes, asks the processor for its state and reconciles it. A town that cannot expose the endpoint still gets correct payments, an hour late at worst, as long as the worker runs. The job records the last check and its error on each attempt.
+Webhooks are not the only way Chiban learns of a payment. The worker's payment reconciliation job runs every hour. It looks at every attempt that is authorized or captured, and every pending attempt that is marked outcome unknown or has not changed for 10 minutes, asks the processor for its state and reconciles it. A town that cannot expose the endpoint still gets correct payments, an hour late at worst, as long as the worker runs. The job records the last check and its error on each attempt.
 
 ## Demo mode and development
 
@@ -90,6 +90,6 @@ When `CHIBAN_DEMO_MODE` is on, only the simulated processor may be saved. If any
 
 The [configuration reference](../reference/configuration.md) lists these settings in full.
 
-## What the screen looks like
+## The settings page
 
 ![The Card payments settings page, showing the active processor account and the Processor form](/img/shots/operations/payments-processor.png)

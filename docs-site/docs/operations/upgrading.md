@@ -7,7 +7,7 @@ sidebar_position: 60
 
 # Upgrading and migrations
 
-This page is for whoever runs the server. [Self-hosting Chiban](./self-hosting.md) shows the deploy command and what the script does step by step. This page explains what happens to the database, because that is the part a rollback does not undo.
+This page is for whoever runs the server. [Self-hosting Chiban](./self-hosting.md) shows the deploy command and what the script does step by step. This page covers what happens to the database, which a rollback does not undo.
 
 ## What an upgrade is
 
@@ -39,7 +39,7 @@ During a deploy the `migrate` service runs `node dist/migrate.mjs` once and exit
 1. Makes sure the four PostgreSQL extensions Chiban needs exist, with `CREATE EXTENSION IF NOT EXISTS`: `postgis`, `pgcrypto`, `citext` and `pg_trgm`. The database user needs the right to do that. The bundled one has it.
 2. Applies every migration that has not run yet, oldest first.
 
-It prints `migrations applied` and exits 0, or prints `migration failed: <reason>` and exits 1. It gives up after 120 seconds. That limit is fixed in the code. A migration that rewrites a very large table would need it raised in the source.
+It prints `migrations applied` and exits 0, or prints `migration failed: <reason>` and exits 1. It gives up after 120 seconds, a limit fixed in the code, so a migration that rewrites a very large table would need that raised in the source.
 
 The application and the worker are set to start only after `migrate` has exited successfully, and `migrate` itself waits for the storage setup step. So the new application never runs against a schema that is behind it. If `migrate` fails, the deploy script treats the rollout as failed and rolls back. Read why with:
 
@@ -53,7 +53,7 @@ Running the same image again is harmless: with nothing to apply, the step report
 
 When a rollout fails, `deploy.sh` writes the previous image back as `CHIBAN_IMAGE`, restarts the application and worker on it and records `rolled_back` in `releases.log`. That is all it does. Chiban has no down migrations, and the script does not touch the database. A migration that succeeded before the failure stays applied, and the previous image then runs against the newer schema.
 
-If that is not acceptable, restore the pre-upgrade backup as described in [backups](./backups.md). Do this with the application and worker stopped.
+If that is not acceptable, restore the pre-upgrade backup as described in [backups](./backups.md).
 
 On a first deploy there is no previous image, and the script records `failed_no_previous`.
 
@@ -80,4 +80,4 @@ Adopted starters do not change when the application does. An administrator revie
 
 ## Development checkouts
 
-In a checkout, `pnpm db:migrate` applies the migrations to the database named in `.env`. The same migrator runs. There is no command to step back.
+In a checkout, `pnpm db:migrate` runs the same migrator against the database named in `.env`. There is no command to step back.

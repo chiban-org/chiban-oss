@@ -121,6 +121,18 @@ curl https://town.example.org/api/version
 
 The version response includes the image reference, the pack identity, and the migration head.
 
+## Create the first administrator
+
+The bundled Compose install has no command that creates the first administrator. The only tool is `scripts/createStaffUser.ts`, run in a development checkout as `pnpm staff:create`:
+
+```
+pnpm staff:create --email <email> --name <name> --role admin --password <password>
+```
+
+The application image does not hold that script. Its runtime stage copies only the built application, the `dist` entrypoints, the migrations and a few support files, and the `dist` folder has no equivalent. `tsx`, which runs the script, is a development dependency and is not in the image. `deploy/deploy.sh` and the other scripts in `deploy` do not create users either.
+
+So on a server installed as shipped, the script has to run from a source checkout of the same release, with `DATABASE_URL` and the other required settings pointing at the town's database. The bundled PostgreSQL port is not published on the host, because only Caddy's ports 80 and 443 are, so reaching it takes a change of your own to the Compose file. That route has not been tried here. Once an administrator exists, they invite other staff from the application, and the invited person sets a password from the emailed link.
+
 ## Anonymous complaints
 
 The anonymous complaint form lives at `/report-anonymously` and posts to `/intake/anonymous`. The bundled Caddyfile writes an access log for the main site and skips it for those two paths, for the page assets under `/_next/`, and for `/favicon.ico`, so no address or request line for an anonymous complaint is kept.

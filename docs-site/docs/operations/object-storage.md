@@ -17,7 +17,7 @@ Export archives expire. The worker's daily export cleanup removes a built export
 
 ## Two addresses for one store
 
-Chiban reaches the store by two names, and both must work.
+Chiban reaches the store by two names, and both must resolve.
 
 | Setting | Bundled value | Used by |
 | --- | --- | --- |
@@ -34,7 +34,7 @@ Uploads do not pass through the application. When someone adds a file, the appli
 
 Downloads use two routes. A document that staff have approved for public release is streamed through the application, with `Cache-Control: no-store`, `X-Content-Type-Options: nosniff` and a sandboxing content security policy. Every other document download is answered with a redirect to an address the application signs, valid for 60 seconds. An address used after that fails with status 400 and the message `Date is too old`.
 
-A browser upload needs the bucket's cross-origin rule, which allows `GET`, `PUT` and `HEAD` from the town's origin. The `storageinit` step writes the rule on every deploy. `S3_CORS_ORIGINS` can list other origins. When it is empty, the origin of `BASE_URL` is used. If uploads fail in the browser console with a cross-origin error after a change to `BASE_URL`, run the next deploy or `docker compose run --rm storageinit`.
+A browser upload needs the bucket's cross-origin rule, which allows `GET`, `PUT` and `HEAD` from the town's origin. The `storageinit` step writes the rule on every deploy. `S3_CORS_ORIGINS` can list other origins. When it is empty, the origin of `BASE_URL` is used. If you change `BASE_URL` and uploads then fail with a cross-origin error in the browser console, run the next deploy or `docker compose run --rm storageinit`.
 
 ### Size limits
 
@@ -49,7 +49,7 @@ A browser upload needs the bucket's cross-origin rule, which allows `GET`, `PUT`
 
 The `storageinit` service runs `dist/storage-init.mjs` before the migration step, so the app does not start until it has succeeded. It uses Garage's administration interface, which listens on port 3903 inside the Compose network, to create the bucket if it is missing, to give the access key read, write and owner rights on it, and then it sets the cross-origin rule through the S3 interface. It prints `bucket <name> ready at <endpoint> for <origins>` when done and `storage init failed at <operation> (<status>): <message>` when not.
 
-Everything else in the application speaks plain S3. Only this step is specific to Garage. Anyone who points `S3_ENDPOINT` at a different S3 service has to create the bucket, the key and the cross-origin rule by hand and skip this step. This repository tests only Garage.
+Only this step is specific to Garage. The rest of the application speaks plain S3. Anyone who points `S3_ENDPOINT` at a different S3 service has to create the bucket, the key and the cross-origin rule by hand and skip this step. This repository tests only Garage.
 
 ## Settings and the bundled Compose file
 

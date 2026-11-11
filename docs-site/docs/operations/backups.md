@@ -7,7 +7,7 @@ sidebar_position: 50
 
 # Backups and restoring the database
 
-This page is for whoever runs the server. [Self-hosting Chiban](./self-hosting.md) gives the schedule to put in cron and the restore steps in order. This page says exactly what exists, so you know what you are relying on.
+This page is for whoever runs the server. [Self-hosting Chiban](./self-hosting.md) gives the schedule to put in cron and the restore steps in order. This page says exactly what exists.
 
 ## What a backup is
 
@@ -22,7 +22,7 @@ One encrypted file holds everything needed to rebuild a town's installation. The
 
 Every backup is complete. There are no incremental backups and no continuous archiving of the database, so you can restore to the moment of a backup and no later.
 
-The passphrase must be at least 16 characters. Without it a backup cannot be opened by anyone, including you. Keep it, and a copy of `CHIBAN_SECRET_KEYS`, outside the backups.
+The passphrase must be at least 16 characters. Nobody can open a backup without it, you included. Keep it, and a copy of `CHIBAN_SECRET_KEYS`, outside the backups.
 
 ## Making a backup
 
@@ -69,13 +69,13 @@ The comparison is with the database as it is now, so rows changed since the back
 
 ## Restoring
 
-Restoring is a set of manual steps. No single command does it, and no screen in the application starts one. [Restoring for real](./self-hosting.md#restoring-for-real) lists them: decrypt the file with `node dist/chiban-recover.mjs decrypt`, which asks for the passphrase at the terminal and so needs an interactive session, unpack the tar, load `database.dump` with `pg_restore`, create the bucket with `storageinit`, and copy the unpacked `objects/` back with `node dist/restore-objects.mjs --dir`.
+Restoring is manual. No single command does it and no screen starts one. [Restoring for real](./self-hosting.md#restoring-for-real) lists them: decrypt the file with `node dist/chiban-recover.mjs decrypt`, which asks for the passphrase at the terminal and so needs an interactive session, unpack the tar, load `database.dump` with `pg_restore`, create the bucket with `storageinit`, and copy the unpacked `objects/` back with `node dist/restore-objects.mjs --dir`.
 
 Three points about a restore:
 
 - The restore is only as new as the backup. Work done since is gone.
 - `restore-objects` refuses to run when the bucket does not exist, and tells you to run the storage setup step first.
-- When you start the stack afterward with `docker compose up -d`, the migration step runs first and applies any migrations newer than the dump, so the database is brought up to the schema of the image you start. See [upgrading and migrations](./upgrading.md).
+- When you start the stack afterward with `docker compose up -d`, the migration step runs first and applies any migrations newer than the dump, which brings the database up to the schema of the image you start. See [upgrading and migrations](./upgrading.md).
 
 ## What Chiban does not do
 

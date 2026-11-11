@@ -18,7 +18,7 @@ Chiban sends email for sign-in links, notices to applicants and contractors, boa
 
 Both are in `deploy/.env.example` and in the shared environment block of `deploy/docker-compose.yml`, so the application, the worker, the migration step and the storage setup step all see them. If the user name or password contains characters that are special in a URL, such as `@` or `/`, write them percent-encoded.
 
-The defaults, used when a setting is absent, are `smtp://localhost:1025` and `Town of Alder Pond <noreply@alderpond.example>`. On a real server, set both. Mail sent from a domain that has no SPF or DKIM record for your SMTP provider is the usual reason messages land in spam, and that is a matter for the provider and your DNS, not for Chiban.
+The defaults, used when a setting is absent, are `smtp://localhost:1025` and `Town of Alder Pond <noreply@alderpond.example>`. On a real server, set both. Mail from a domain with no SPF or DKIM record for your SMTP provider usually lands in spam. Fix that with the provider and your DNS.
 
 Chiban has one transport: SMTP through nodemailer. It has no setting for an API-based mail service and no second route if SMTP fails. The in-memory transport in the source tree exists for tests and cannot be selected by configuration.
 
@@ -36,10 +36,10 @@ The web application sends right away, while the person waits, for:
 
 The worker sends in the background:
 
-- **Notifications.** Staff and applicant notices are first written to a queue in the database. The worker's notification job runs every minute, reads up to 100 queued messages, and sends them one at a time. A message that fails goes back in the queue. After 5 failed attempts it is marked failed and is not tried again. A message whose recipient no longer has access is marked dropped instead of being sent.
-- **Calendar invitations** for inspectors whose calendar target is email. See [the Microsoft integration](./microsoft.md) for the other target.
-- **Scheduled reports**, checked every hour.
-- **Health alerts**, when an alert address is set. See [health, version and alerts](./health-and-alerts.md).
+- Notifications. Staff and applicant notices are first written to a queue in the database. The worker's notification job runs every minute, reads up to 100 queued messages, and sends them one at a time. A message that fails goes back in the queue. After 5 failed attempts it is marked failed and is not tried again. A message whose recipient no longer has access is marked dropped instead of being sent.
+- Calendar invitations for inspectors whose calendar target is email. See [the Microsoft integration](./microsoft.md) for the other target.
+- Scheduled reports, checked every hour.
+- Health alerts, when an alert address is set. See [health, version and alerts](./health-and-alerts.md).
 
 The worker therefore has to be running for notices to go out. If it is stopped, queued mail waits and nothing is lost. The [background jobs page](./background-jobs.md) explains how to tell.
 
@@ -61,10 +61,10 @@ To check the account end to end, ask for a sign-in link from the public sign-in 
 
 A mail sink is an SMTP server that accepts messages and keeps them instead of delivering them, so a test or demo installation can send mail without reaching real people. Chiban ships no sink in the production Compose file. The development file, `docker-compose.dev.yml`, starts Mailpit, which listens for SMTP on port 1025 and shows what it received in a web page on port 8025. The default `SMTP_URL` points at port 1025, so a development checkout works with it unchanged.
 
-Demo mode adds a rule. When `CHIBAN_DEMO_MODE` is on, the application and worker refuse to start unless the host in `SMTP_URL` is listed in `CHIBAN_DEMO_MAIL_SINK_HOSTS` and the URL has no query options. The list is comma separated and defaults to `mailpit`. The check compares host names only. It does not make mail undeliverable: a host you add to the list is trusted to be a sink. See [demo mode](./demo-mode.md).
+Demo mode adds a rule. When `CHIBAN_DEMO_MODE` is on, the application and worker refuse to start unless the host in `SMTP_URL` is listed in `CHIBAN_DEMO_MAIL_SINK_HOSTS` and the URL has no query options. The list is comma separated and defaults to `mailpit`. The check compares host names only. A host you add to the list is trusted to be a sink, and nothing checks that it is one. See [demo mode](./demo-mode.md).
 
 Outside demo mode nothing restricts where mail goes.
 
-## Things that are not in the bundled Compose file
+## What the bundled Compose file leaves out
 
-`deploy/docker-compose.yml` passes `SMTP_URL` and `MAIL_FROM` and no other mail setting. There is no mail server, no sink and no setting for a reply-to address.
+`deploy/docker-compose.yml` passes `SMTP_URL` and `MAIL_FROM` and no other mail setting. It has no mail server, no sink and no reply-to setting.

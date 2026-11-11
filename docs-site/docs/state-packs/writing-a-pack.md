@@ -7,7 +7,7 @@ sidebar_position: 10
 
 # Writing a state pack
 
-This page is for a developer who wants to understand the New Hampshire pack, change it, or write a pack for another state. It uses `packs/nh` as the worked example. The people who use Chiban read the result on the pages about [deadlines and holidays](./new-hampshire/deadlines.mdx) and [starters](./new-hampshire/starters.mdx), which are generated from the pack.
+This page is for a developer who wants to understand or change the New Hampshire pack, or write one for another state, with `packs/nh` as the worked example. Staff read the result on the pages about [deadlines and holidays](./new-hampshire/deadlines.mdx) and [starters](./new-hampshire/starters.mdx), which are generated from the pack.
 
 ## One pack, compiled in
 
@@ -136,10 +136,10 @@ A starter is a complete application type in one object: the application type, it
 
 Versions exist at four levels.
 
-- The pack: `version` in the manifest is a string. Each clock and each enforcement answer records the pack version it was made under. It appears in the archive of a town's export, in `/api/version`, and on the **State law** page as "Jurisdiction pack nh version 0.5.0, fingerprint" followed by the first 12 characters of a SHA-256 hash of the whole manifest.
-- A rule: When a rule's content must change, add a new `version` of the same key and keep the old one. `ruleByKey` returns the highest version unless a caller asks for one. A clock records the rule key and version it started under.
-- A transition: To act on clocks already running, declare a transition in `transitions.ts`, with a rule key, the from and to versions, a policy of `keep_old` or `switch`, and a reason. An operator previews and applies it with the `rules-migrate` command. See [upgrading](../operations/upgrading.md).
-- Starters, record series and abutter parameters: Each carries its own integer `version`.
+- The pack: the manifest's `version` in the manifest is a string. Each clock and each enforcement answer records the pack version it was made under. It appears in the archive of a town's export, in `/api/version`, and on the **State law** page as "Jurisdiction pack nh version 0.5.0, fingerprint" followed by the first 12 characters of a SHA-256 hash of the whole manifest.
+- A rule: when a rule's content must change, add a new `version` of the same key and keep the old one. `ruleByKey` returns the highest version unless a caller asks for one. A clock records the rule key and version it started under.
+- A transition: to act on clocks already running, declare a transition in `transitions.ts`, with a rule key, the from and to versions, a policy of `keep_old` or `switch`, and a reason. An operator previews and applies it with the `rules-migrate` command. See [upgrading](../operations/upgrading.md).
+- Starters, record series and abutter parameters: each carries its own integer `version`.
 
 ## Steps for a new pack
 
@@ -154,4 +154,4 @@ Versions exist at four levels.
 9. Point `loadPack`, `packInfo`, the holiday calendar and the other 160 or so imports at the new pack.
 10. Run `pnpm docs:generate` to see the deadlines and starter pages the new pack produces. The generators in `scripts/docsSite` are named for New Hampshire and read it directly.
 
-Step 9 is the one that has no support in the code today.
+Step 9 has no support in the code today.

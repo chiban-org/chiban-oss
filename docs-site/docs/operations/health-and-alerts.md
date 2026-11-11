@@ -19,7 +19,7 @@ None of them needs a sign-in, and Caddy sends them to the application like any o
 | `/api/health/jobs` | `{"status":"ok"}` with status 200 when no alert is firing. `{"status":"alerting","alerts":[{"key":"disk:/","kind":"disk_warning"}]}` with status 503 when one or more are. `{"status":"unavailable"}` with status 503 when the database cannot be read. |
 | `/api/version` | `appVersion`, `imageRef`, `pack` and `migrationHead`, with status 200. `{"error":"unavailable"}` with status 503 when the database cannot be read. |
 
-`/api/health` answers the question "is the web application up". The Compose healthcheck of the `app` service calls it every 10 seconds, allows 6 failures and waits 20 seconds after start, and the deploy script calls it while it waits for a new image to come up.
+`/api/health` says whether the web application is up. The Compose healthcheck of the `app` service calls it every 10 seconds, allows 6 failures and waits 20 seconds after start, and the deploy script calls it while it waits for a new image to come up.
 
 `/api/health/jobs` does not check anything itself. It lists the alerts that the worker's health check last recorded as firing. If the worker is stopped, nothing updates that list, and the endpoint keeps saying what it said last. To catch a dead worker, use the heartbeat below.
 
@@ -55,7 +55,7 @@ A firing alert is sent when it first appears. If at least one channel accepted i
 
 ### The heartbeat
 
-`HEALTH_HEARTBEAT_URL` is a web address that the health check requests with GET after every run, which is every 5 minutes. Give it to an outside monitor that alerts when the requests stop. That covers what Chiban cannot report about itself: a stopped worker, a stopped host, a lost network. A failed request is logged as `[health] heartbeat ping failed`.
+`HEALTH_HEARTBEAT_URL` is a web address that the health check requests with GET after every run, which is every 5 minutes. Give it to an outside monitor that alerts when the requests stop. It catches what Chiban cannot report about itself: a stopped worker, a stopped host, a lost network. A failed request is logged as `[health] heartbeat ping failed`.
 
 ## Settings the bundled Compose file does not pass
 
@@ -72,7 +72,7 @@ and add the matching lines to `.env`. Add only the settings you set. An empty `H
 
 ## Testing the path
 
-An alert channel is only known to work once a person has received something through it. Send a test:
+A channel works only once a person has received something through it. Send a test:
 
 ```
 docker compose run --rm --no-deps app node dist/health-test-alert.mjs
@@ -80,7 +80,7 @@ docker compose run --rm --no-deps app node dist/health-test-alert.mjs
 
 In a development checkout the command is `pnpm health:test-alert`. It sends one message through each configured channel, prints `<channel>: sent, open the link to confirm` or `<channel>: failed`, and exits 0 only if every channel sent. With no channel configured it exits 2 and says to set `ALERT_EMAIL_TO` or `PAGER_ROUTING_KEY`.
 
-The message carries a link to the public page `/alerts/ack/<token>` on the town's address. Whoever receives it opens the link and presses **Confirm I received this alert**. That is the confirmation. Test alerts are not real alerts and do not appear under firing alerts.
+The message carries a link to the public page `/alerts/ack/<token>` on the town's address. Whoever receives it opens the link and presses **Confirm I received this alert**. Test alerts do not appear under firing alerts.
 
 ## The Health page
 

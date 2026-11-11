@@ -11,13 +11,13 @@ This page is for whoever runs a demonstration installation, such as the public d
 
 ## What it changes
 
-Demo mode is the setting `CHIBAN_DEMO_MODE=true`. It does these things.
+Demo mode is the setting `CHIBAN_DEMO_MODE=true`. With it on:
 
-- It turns on the **Try the demo** page at `/demo`. Without the mode, that address answers "not found". The page lists the demo people, such as Sam Clerk at the counter and Avery Admin, and each one has a **Continue as** button that signs the visitor in as that person with no password. All visitors share these accounts. The sign-in cookie lasts 7 days. One client address can sign in 30 times in 10 minutes, counted in the memory of the application process, and then sees "There have been many sign-ins from here".
-- It shows a notice at the top of the page: "This is a demo. The data resets every night at" the text of `CHIBAN_DEMO_RESET_AT`, "and mail is not delivered."
-- It refuses actions that would change the demo for every visitor. The refusal reads "The demo does not allow this, because it would change the demo for every visitor. It works in a real installation." The refused actions are setting up an authenticator, changing a name or password, inviting, changing, disabling and resetting staff, saving or publishing the town profile, payment settings and notification wording, saving a payment processor, deleting a parcel ID format, archiving a board, connecting a Microsoft tenant, setting an inspector's calendar target, starting an export, adding or running export targets, anonymous intake settings and the parcel imports.
-- It allows only the simulated payment processor. Saving a Stripe or Clover account is refused.
-- It changes what signing out does. In a real installation, signing out ends every session of that person. In a demo it ends only the current one, because visitors share the accounts.
+- The **Try the demo** page at `/demo` exists. Without the mode, that address answers "not found". The page lists the demo people, such as Sam Clerk at the counter and Avery Admin, and each one has a **Continue as** button that signs the visitor in as that person with no password. All visitors share these accounts. The sign-in cookie lasts 7 days. One client address can sign in 30 times in 10 minutes, counted in the memory of the application process, and then sees "There have been many sign-ins from here".
+- A notice shows at the top of the page: "This is a demo. The data resets every night at" the text of `CHIBAN_DEMO_RESET_AT`, "and mail is not delivered."
+- Actions that would change the demo for every visitor are refused. The refusal reads "The demo does not allow this, because it would change the demo for every visitor. It works in a real installation." The refused actions are setting up an authenticator, changing a name or password, inviting, changing, disabling and resetting staff, saving or publishing the town profile, payment settings and notification wording, saving a payment processor, deleting a parcel ID format, archiving a board, connecting a Microsoft tenant, setting an inspector's calendar target, starting an export, adding or running export targets, anonymous intake settings and the parcel imports.
+- Only the simulated payment processor is allowed. Saving a Stripe or Clover account is refused.
+- Signing out works differently. In a real installation, signing out ends every session of that person. In a demo it ends only the current one, because visitors share the accounts.
 
 Everything else works as in a real installation, so visitors can apply, review, issue and pay.
 
@@ -31,7 +31,7 @@ The application and the worker both refuse to start when any of these is missing
 | `ENABLE_SIMULATED_PAYMENTS` | Must be `true`, so the simulated checkout works. |
 | `SMTP_URL` | Must point at a host listed in `CHIBAN_DEMO_MAIL_SINK_HOSTS`, with no query options. The list defaults to `mailpit`. See [outbound mail](./outbound-mail.md). |
 
-Both also exit at start with `[demo] refusing to start: CHIBAN_DEMO_MODE is on and a payment processor other than the simulator is configured` when the database holds a Stripe or Clover account. Remove the account, or reset the database, before starting.
+The application and the worker also exit at start with `[demo] refusing to start: CHIBAN_DEMO_MODE is on and a payment processor other than the simulator is configured` when the database holds a Stripe or Clover account. Remove the account, or reset the database, before starting.
 
 `CHIBAN_DEMO_OVERLAY_FILE` is optional and is applied at every reset. See [the overlay page](./demo-overlay.mdx).
 
@@ -39,7 +39,7 @@ Both also exit at start with `[demo] refusing to start: CHIBAN_DEMO_MODE is on a
 
 ## Resetting
 
-The reset command is `pnpm demo:reset` in a checkout, or `node dist/demo-reset.mjs` in the application image. It does these things in order.
+The reset command is `pnpm demo:reset` in a checkout, or `node dist/demo-reset.mjs` in the application image. It runs four steps in order.
 
 1. Reads and checks the overlay, if one is set. A bad overlay stops the reset before anything is touched.
 2. Drops the `drizzle` and `public` schemas from the database, creates `public` again and applies every migration.

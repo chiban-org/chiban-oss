@@ -7,15 +7,15 @@ sidebar_position: 80
 
 # Background jobs and the worker
 
-This page is for whoever runs the server. Much of what staff see as "it will happen shortly" is done by a separate process, the worker. If it is not running, the web application still answers, but queued mail does not go out, exports do not start, deadlines are not marked overdue and payments are not reconciled.
+This page is for whoever runs the server. A separate process, the worker, does much of the work that staff see as "it will happen shortly". If it is not running, the web application still answers, but queued mail does not go out, exports do not start, deadlines are not marked overdue and payments are not reconciled.
 
 ## The worker
 
-The `worker` service in `deploy/docker-compose.yml` runs the same image as the application with the command `node dist/worker.mjs`. In a development checkout, `pnpm worker` does the same. It is not optional and there is only one, defined in the Compose file with `restart: unless-stopped`.
+The `worker` service in `deploy/docker-compose.yml` runs the same image as the application with the command `node dist/worker.mjs`. In a development checkout, `pnpm worker` does the same. The Compose file defines one, with `restart: unless-stopped`, and the installation needs it.
 
 On start it connects to PostgreSQL with pg-boss, a job queue that keeps its tables in the same database as the town's data, records the start time, registers every job and prints `worker (pg-boss) started`. On a stop signal it finishes the jobs in hand and exits.
 
-Two things matter about how work reaches it. The web application opens no connection to the job queue, because only the worker does, so it cannot call the worker. A staff action that needs background work writes a row to the database, such as a queued notification, a requested export or a preservation record. The worker's scheduled jobs find those rows. Several jobs run every minute for that reason. And a sweep job, every 5 minutes, re-queues rows that have waited too long, so a job lost in a crash is picked up again.
+Two things matter about how work reaches it. The web application opens no connection to the job queue, because only the worker does, so it cannot call the worker. A staff action that needs background work writes a row to the database, such as a queued notification, a requested export or a preservation record. The worker's scheduled jobs find those rows, which is why several run every minute. A sweep job also runs every 5 minutes and re-queues rows that have waited too long, so a job lost in a crash is picked up again.
 
 ## How a job runs
 

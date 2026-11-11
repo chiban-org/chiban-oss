@@ -7,7 +7,7 @@ sidebar_position: 30
 
 # The Microsoft 365 integration
 
-This page is for whoever runs the server and the town's Microsoft 365 contact. Read the first section before you spend time on it: nothing here has been run against a live Microsoft 365 tenant.
+This page is for whoever runs the server and the town's Microsoft 365 contact. Nothing here has been run against a live Microsoft 365 tenant, as the first section explains.
 
 ## Where it stands
 
@@ -26,7 +26,7 @@ There is no environment setting for Microsoft 365. An administrator enters the c
 
 ## How Chiban signs in to Microsoft
 
-Chiban signs in as an application, not as a person. For each connection it requests a token from `https://login.microsoftonline.com/<tenant id>/oauth2/v2.0/token` using the client credentials grant and the scope `https://graph.microsoft.com/.default`, and it keeps the token until one minute before it expires. Whatever application permissions the town's Microsoft administrator granted to the app registration are the ones in force. For a drive, the [monthly export page](../reports-and-export/incremental-export.md) names the permissions to grant. This repository does not say which permission is needed to write to an inspector's calendar, so check that against Microsoft's documentation when the registration is made.
+Chiban signs in to Microsoft as an application. For each connection it requests a token from `https://login.microsoftonline.com/<tenant id>/oauth2/v2.0/token` using the client credentials grant and the scope `https://graph.microsoft.com/.default`, and it keeps the token until one minute before it expires. Whatever application permissions the town's Microsoft administrator granted to the app registration are the ones in force. For a drive, the [monthly export page](../reports-and-export/incremental-export.md) names the permissions to grant. This repository does not say which permission is needed to write to an inspector's calendar, so check that against Microsoft's documentation when the registration is made.
 
 The entry forms have no field for the sign-in address or the Graph address, so the connection uses the public cloud addresses `https://login.microsoftonline.com` and `https://graph.microsoft.com`. The two columns `authority_base` and `graph_base` in the `calendar_accounts` table hold them and can be changed in the database for a different Microsoft cloud. No screen edits them.
 
@@ -38,7 +38,7 @@ An administrator opens **Settings**, **Money and inspections**, **Inspection sch
 
 **Microsoft 365 connection** holds three fields, **Directory (tenant) ID**, **Application (client) ID** and **Client secret**, under **Enter the connection details**. Until they are saved the section reads "Not connected. Invites go out by email." After they are saved it reads "Connection details are saved for" the tenant, "They have not been checked against a live Microsoft 365 account yet." Saving adds a new connection and deactivates the earlier one, so an installation has one at a time, and it writes an audit entry. Saving needs the permission to edit configuration.
 
-Chiban stores the details without testing them. A wrong secret shows up only when an invitation is sent.
+Chiban stores the details without testing them, so a wrong secret shows up only when an invitation is sent.
 
 ### What happens to a booking
 
