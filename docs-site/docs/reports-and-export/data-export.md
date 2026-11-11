@@ -38,11 +38,11 @@ Administrators also see **Copy exports to your own storage every month**. It ope
 
 ## The recovery export
 
-Administrators also see a **Recovery export** section. It is a different thing from the export above. It holds the whole database and the keys that unlock the saved secrets, encrypted with a passphrase you choose. To get it you give your password, your **Authenticator code** and a **Passphrase for the file** of at least 16 characters, then choose **Download recovery export**. The file goes straight to your computer and is not kept anywhere else. Without the passphrase it cannot be opened, so keep it somewhere safe and separate.
+Administrators also see a **Recovery export** section. It differs from the export above. It holds the whole database and the keys that unlock the saved secrets, encrypted with a passphrase you choose. To get it you give your password, your **Authenticator code** and a **Passphrase for the file** of at least 16 characters, then choose **Download recovery export**. The file goes straight to your computer and is not kept anywhere else. Without the passphrase it cannot be opened, so keep it somewhere safe and separate.
 
 ## What you cannot do from here
 
-There is no page in Chiban for putting an export back. You cannot upload an export file and rebuild a town from it, and nothing rebuilds a town from the monthly copies. The export is a way to hold and read the town's records outside Chiban.
+There is no page in Chiban for putting an export back. You cannot upload an export file and rebuild a town from it, and nothing rebuilds a town from the monthly copies.
 
 Whoever runs the server has two tools outside the screens. A command can load a full export file into a new Chiban that holds no records yet, and it refuses a Chiban that already has some. The recovery export is opened with the server's recovery tool. For restoring a town that has failed, use the encrypted backups described in [self-hosting](../operations/self-hosting.md).
 

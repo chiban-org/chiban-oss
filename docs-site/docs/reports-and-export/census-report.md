@@ -35,7 +35,7 @@ The **Needs classification** section lists each such permit. Chiban suggests an 
 - **Phase.** **Whole building**, or **Foundation or finish work only**.
 - **Buildings**, **Housing units** and **Valuation in whole dollars.**
 
-Choose **Save classification**. The permit moves out of the list and into the totals. A permit's classification is saved with it, so the next time you look, even for a different period, you are not asked again.
+Choose **Save classification**. The permit moves out of the list and into the totals. The classification is saved with the permit, so you are not asked again, even for a different period.
 
 ## Downloading
 

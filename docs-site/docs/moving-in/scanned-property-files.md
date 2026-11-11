@@ -48,5 +48,3 @@ Open a batch for the run report.
 ## Showing a batch on the public site
 
 When a batch is **Ready for review** and you have permission to publish, choose **Show this batch on the public site**. Each file whose parcel was found then appears on that parcel's public page, where anyone can download it. Files whose parcel was not found stay private. Staff without that permission see a note asking them to hand the batch to someone who has it.
-
-Review first, because once a file is public, anyone who finds the parcel can read it.

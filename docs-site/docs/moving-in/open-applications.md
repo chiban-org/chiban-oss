@@ -70,7 +70,7 @@ The person named with `--as` must have the permission to import applications. PD
 
 ## 5. Compare with the town's own list
 
-The old system's list of open applications is the check on all this. Under **Compare with the town's list**, choose a CSV file with a `legacy_number` column and choose **Compare with the list**.
+The old system's list of open applications is the check on the import. Under **Compare with the town's list**, choose a CSV file with a `legacy_number` column and choose **Compare with the list**.
 
 Chiban reports three things: how many numbers matched, which are on the list but not imported, and which were imported but are not on the list. The first ten of each are named in the message. The table under the form keeps the last ten comparisons with their counts.
 

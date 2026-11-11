@@ -38,7 +38,7 @@ While an inspection you requested online is **Requested** or **Scheduled**, **Ca
 
 A **Failed** inspection shows **Request a reinspection**. It opens the same form for that inspection only.
 
-## When the page says no
+## When requests are not available
 
 - "Online requests are turned off" followed by the office's phone and hours means the town takes inspection requests by phone only.
 - "Inspections are paused while this permit is under appeal" means no request can be made until the appeal ends.

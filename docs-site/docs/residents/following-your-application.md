@@ -26,7 +26,7 @@ The top of the page has the application's kind, its number, the parcel, a one-se
 
 ![An application waiting for its fee, with the Do this now box and the stage strip](/img/shots/residents/application-pay.png)
 
-The summary sentence tells you where things stand. Some you may see:
+The summary sentence says where things stand. These are the ones you may see:
 
 - "Not sent to the town yet." The application is still a draft.
 - "Waiting on the town to review it." Nothing is needed from you.

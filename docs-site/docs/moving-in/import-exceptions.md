@@ -15,7 +15,7 @@ You need the permission to manage parcels to apply or dismiss an exception, whic
 
 ## Reading the page
 
-The tabs show **Open**, **Accepted**, **Dismissed** and **Cleared by a later import**, each with its count. **Open** is where the work is. The **Kind** filter narrows the list to one reason, and **Sort by** reorders it. Each card names the reason and the parcel or row, says when it was first seen, and shows the values side by side: **Stored now** and **In the import**.
+The tabs show **Open**, **Accepted**, **Dismissed** and **Cleared by a later import**, each with its count. The work is in **Open**. The **Kind** filter narrows the list to one reason, and **Sort by** reorders it. Each card names the reason and the parcel or row, says when it was first seen, and shows the values side by side: **Stored now** and **In the import**.
 
 An exception clears itself when a later import no longer has the problem. You do not need to close it by hand after fixing the source and loading again.
 

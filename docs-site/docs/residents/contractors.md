@@ -6,7 +6,7 @@ sidebar_position: 6
 
 # Contractors and the contractor page
 
-The town does not register or license contractors and charges no fee. A contractor account is a convenience: one page that lists every project naming you as the contractor, and what each one needs from you.
+The town does not register or license contractors and charges no fee. A contractor account gives you one page that lists every project naming you as the contractor, and what each one needs from you.
 
 ## Creating an account
 

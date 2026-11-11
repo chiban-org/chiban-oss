@@ -11,7 +11,7 @@ None of this needs an account.
 
 ## Finding a parcel
 
-Choose **Parcels** at the top of any page, or use the search box on the home page. Search by parcel ID, address or owner name. Results list the address and parcel ID. A map below the search shows every parcel, and choosing one opens it. The map is an aid, and the search box does the same job from the keyboard.
+Choose **Parcels** at the top of any page, or use the search box on the home page. Search by parcel ID, address or owner name. Results list the address and parcel ID. A map below the search shows every parcel, and choosing one opens it. The search box does the same job from the keyboard.
 
 ![The public parcel search and map](/img/shots/residents/parcel-search.png)
 

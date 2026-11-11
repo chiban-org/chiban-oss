@@ -7,7 +7,7 @@ sidebar_position: 6
 
 # Recording a subdivision, merger or lot-line adjustment
 
-Lots change. A subdivision turns one parcel into several. A merger turns several into one. A lot-line adjustment moves a boundary and keeps the same parcels. A **lineage event** is how you tell Chiban which parcels came from which, so a permit issued in 1995 on the old lot still shows on the lots that exist now.
+Lots change: a subdivision turns one parcel into several, a merger turns several into one, and a lot-line adjustment moves a boundary and keeps the same parcels. A **lineage event** is how you tell Chiban which parcels came from which, so a permit issued in 1995 on the old lot still shows on the lots that exist now.
 
 You need the permission to manage parcels, which administrators and land use staff have.
 

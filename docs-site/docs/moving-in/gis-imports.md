@@ -33,7 +33,7 @@ A layer can instead point at a map service that the town's GIS office runs, an E
 
 The AxisGIS connection has not been checked against a live town service. The card says so.
 
-**Layer settings** holds the **Source**, the **Source URL**, a **Field mapping (JSON)** that says which columns hold the parcel ID, address and owner, **Mark stale after (days)** and **Refresh every (hours)**. The mapping is a technical box. Whoever set Chiban up for the town should fill it in, and it rarely changes.
+**Layer settings** holds the **Source**, the **Source URL**, a **Field mapping (JSON)** that says which columns hold the parcel ID, address and owner, **Mark stale after (days)** and **Refresh every (hours)**. The mapping is technical. Whoever set Chiban up for the town should fill it in, and it rarely changes.
 
 ## What a parcel import does
 

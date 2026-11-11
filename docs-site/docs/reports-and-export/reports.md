@@ -17,7 +17,7 @@ Administrators, land use staff and finance staff can open **Reports**. Revenue a
 
 The page opens on the past year, ending today. Change **From** and **To** and choose **Show range**. A range can run up to five years. A longer one gets the message "Choose a range of at most five years." Below the form, the page repeats the dates it is showing.
 
-Click any column heading to sort by it. Click again to reverse. The note under each title says how the table is ordered to begin with.
+Click any column heading to sort by it. Click again to reverse.
 
 ## Permit volume
 

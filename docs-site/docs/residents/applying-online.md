@@ -22,7 +22,7 @@ The page asks **What is the work?** with plain choices such as **Build, add on o
 
 If your work is not on that list, the page below it says **Something else? Choose who decides it.** and lists the **Building office**, **Planning Board**, **Zoning Board** and **Registrations and other**, each with the number of application types it holds. Pick the one that decides your request, then choose **Continue**.
 
-Not sure which one fits? The page shows the land use office's phone number. A property that has been retired, for example after it was merged or subdivided, cannot take a new application. The page tells you so, and you can **Choose a different parcel**.
+If you are not sure which one fits, the page shows the land use office's phone number. A property that has been retired, for example after it was merged or subdivided, cannot take a new application. The page tells you so, and you can **Choose a different parcel**.
 
 ## Step 3: fill in the application
 
@@ -40,7 +40,7 @@ The page's **Do this now** box at the top tells you the next thing, for example 
 
 ## After you send it
 
-The application moves from **Draft** to **Submitted** and the town sees it. The next page, [following your application](./following-your-application.md), explains what you see from then on.
+The application moves from **Draft** to **Submitted** and the town sees it. [Following your application](./following-your-application.md) explains what you see from then on.
 
 ## Changing your mind
 

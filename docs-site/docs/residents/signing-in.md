@@ -25,7 +25,7 @@ To sign out, choose **Sign out** at the top of the page.
 
 ## Your account page
 
-**Account** in the top menu opens your account page. For most residents it holds your name, phone and mailing address, and Chiban uses your name and phone to fill in the contact details when you request an inspection. Your email address is the one you signed in with and cannot be changed there. To use another address, sign in with that one.
+**Account** in the top menu opens your account page. For most residents it holds your name, phone and mailing address. Chiban uses your name and phone to fill in the contact details when you request an inspection. Your email address is the one you signed in with and cannot be changed there. To use another address, sign in with that one.
 
 Contractors see a contractor profile on the same page. See [contractors and the contractor page](./contractors.md).
 
