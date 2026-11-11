@@ -20,6 +20,8 @@ const MB = 1024 * 1024
 const CONTENT_TYPE_MAX = 200
 
 const CANNOT_ADD = 'You cannot add files here.'
+const TOO_MANY_PENDING =
+  'You have too many uploads in progress. Finish or wait for them, then try again.'
 
 const INTENT_COPY = {
   forbidden: CANNOT_ADD,
@@ -29,6 +31,7 @@ const INTENT_COPY = {
   series_required: CANNOT_ADD,
   unknown_series: CANNOT_ADD,
   doc_kind_not_allowed: CANNOT_ADD,
+  too_many_pending: TOO_MANY_PENDING,
 } as const
 
 const FINALIZE_COPY = {

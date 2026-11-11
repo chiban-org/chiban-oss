@@ -9,17 +9,30 @@ import { createRateLimiter } from '@/server/rateLimiter'
 import { decryptSecret } from '@/server/secrets'
 import { err, ok, type Result } from '@/types/result'
 
-const MAX_FAILURES = 6
+const MAX_PER_CLIENT_AND_EMAIL = 6
+const MAX_PER_CLIENT = 20
 const WINDOW_MS = 10 * 60 * 1000
 const DUMMY_HASH = `scrypt$32768$8$1$${'A'.repeat(22)}$${'A'.repeat(86)}`
 
-const limiter = createRateLimiter({ max: MAX_FAILURES, windowMs: WINDOW_MS })
+const byClientAndEmail = createRateLimiter({ max: MAX_PER_CLIENT_AND_EMAIL, windowMs: WINDOW_MS })
+const byClient = createRateLimiter({ max: MAX_PER_CLIENT, windowMs: WINDOW_MS })
 
 export function resetStaffSignInLimiter(): void {
-  limiter.reset()
+  byClientAndEmail.reset()
+  byClient.reset()
+}
+
+function takeAttempt(clientKey: string, pairKey: string): boolean {
+  byClientAndEmail.prune()
+  byClient.prune()
+  if (byClientAndEmail.isLimited(pairKey) || byClient.isLimited(clientKey)) return false
+  byClientAndEmail.recordFailure(pairKey)
+  byClient.recordFailure(clientKey)
+  return true
 }
 
 export interface StaffSignInInput {
+  clientKey: string
   email: string
   password: string
   totp?: string
@@ -73,8 +86,8 @@ export async function staffSignIn(
 ): Promise<Result<{ sid: string }, StaffSignInError>> {
   signal.throwIfAborted()
   const key = input.email.trim().toLowerCase()
-  if (limiter.isLimited(key)) return err('rate_limited')
-  limiter.recordFailure(key)
+  const pairKey = `${input.clientKey}:${key}`
+  if (!takeAttempt(input.clientKey, pairKey)) return err('rate_limited')
 
   const [user] = await db.select().from(users).where(eq(users.email, key)).limit(1)
   const eligible = user?.isActive === true && user.kind === 'staff' && user.passwordHash !== null
@@ -98,7 +111,8 @@ export async function staffSignIn(
     await revokeSession(db, session.value.sid, signal)
     return err('invalid_credentials')
   }
-  limiter.clear(key)
+  byClientAndEmail.clear(pairKey)
+  byClient.forgiveOne(input.clientKey)
   await writeAudit(
     db,
     {

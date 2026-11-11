@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, count, eq, gt, isNull } from 'drizzle-orm'
 import { env } from '@/config/env'
 import type { Db, DbOrTx, Tx } from '@/db/client'
 import { uploadIntents } from '@/db/schema'
@@ -19,6 +19,7 @@ import { err, ok, type Result } from '@/types/result'
 
 const INTENT_MINUTES = 15
 const MINUTE_MS = 60 * 1000
+const MAX_PENDING_INTENTS = 20
 
 export { mayUploadTo }
 
@@ -38,6 +39,20 @@ function docKindAllowed(kind: RecordRef['kind'], docKind: DocKind | undefined): 
   return kind === 'enforcement_case' && CASE_DOC_KINDS.includes(docKind)
 }
 
+async function pendingIntentCount(db: Db, userId: string, now: Date): Promise<number> {
+  const [pending] = await db
+    .select({ n: count() })
+    .from(uploadIntents)
+    .where(
+      and(
+        eq(uploadIntents.userId, userId),
+        isNull(uploadIntents.finalizedAt),
+        gt(uploadIntents.expiresAt, now),
+      ),
+    )
+  return pending?.n ?? 0
+}
+
 export async function createUploadIntent(
   db: Db,
   store: ObjectStore,
@@ -55,6 +70,7 @@ export async function createUploadIntent(
     | 'series_required'
     | 'unknown_series'
     | 'doc_kind_not_allowed'
+    | 'too_many_pending'
   >
 > {
   signal.throwIfAborted()
@@ -67,6 +83,9 @@ export async function createUploadIntent(
   if (input.target.kind === 'parcel') {
     if (input.seriesKey === undefined) return err('series_required')
     if (findSeries(input.seriesKey) === null) return err('unknown_series')
+  }
+  if ((await pendingIntentCount(db, actor.userId, now)) >= MAX_PENDING_INTENTS) {
+    return err('too_many_pending')
   }
   const tempKey = `uploads/tmp/${randomUUID()}`
   const [intent] = await db

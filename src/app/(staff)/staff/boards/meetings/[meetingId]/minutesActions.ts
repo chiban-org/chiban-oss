@@ -26,6 +26,7 @@ const UPLOAD_COPY: Record<IntentError | FinalizeError, string> = {
   series_required: errorCopy('invalid_input'),
   unknown_series: errorCopy('invalid_input'),
   doc_kind_not_allowed: errorCopy('invalid_input'),
+  too_many_pending: errorCopy('too_many_pending'),
   expired: 'The upload took too long. Try again.',
   already_finalized: 'That upload was already completed.',
   not_uploaded: 'The file did not arrive. Try again.',

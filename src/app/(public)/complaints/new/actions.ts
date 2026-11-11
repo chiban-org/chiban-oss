@@ -1,11 +1,17 @@
 'use server'
 
+import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { env } from '@/config/env'
 import { db } from '@/db/client'
+import { clientKey } from '@/features/anonymousIntake/clientKey'
 import { sanitizeImage } from '@/features/anonymousIntake/sanitizeImage'
 import { parcelForLocation } from '@/features/enforcement/caseParcel'
+import {
+  COMPLAINT_RATE_LIMITED_COPY,
+  takeComplaintAllowance,
+} from '@/features/enforcement/complaintLimits'
 import type { CleanPhoto } from '@/features/enforcement/complaintPhotos'
 import { MAX_COMPLAINT_CHARS, recordComplaint } from '@/features/enforcement/complaints'
 import { optionalEmail } from '@/features/input/optionalEmail'
@@ -47,6 +53,9 @@ export async function submitComplaintAction(formData: FormData): Promise<ActionR
   if (!guard.ok) return { ok: false, error: errorCopy(guard.error) }
   const fields = parseForm(FieldsSchema, formData)
   if (!fields.ok) return fields.error
+  if (!takeComplaintAllowance(clientKey((await headers()).get('x-forwarded-for')))) {
+    return { ok: false, error: COMPLAINT_RATE_LIMITED_COPY }
+  }
   const photos = await cleanPhotos(formData)
   if (photos === null) {
     return refuseField(

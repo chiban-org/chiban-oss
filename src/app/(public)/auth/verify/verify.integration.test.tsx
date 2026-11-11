@@ -74,7 +74,7 @@ beforeEach(async () => {
 })
 
 async function tokenFor(email: string): Promise<string> {
-  await requestMagicLink(handle.db, mail, email, signal)
+  await requestMagicLink(handle.db, mail, { email: email, clientKey: 'client-1' }, signal)
   return /token=([A-Za-z0-9_-]+)/.exec(mail.sent.at(-1)?.text ?? '')?.[1] ?? ''
 }
 
@@ -144,7 +144,12 @@ describe('magic link verify page', () => {
     })
     const token = await tokenFor('member@alderpond.example')
     expect(await redirectOf(confirmMagicLinkAction(form(token, 'tok')))).toBe('/board')
-    await requestMagicLink(handle.db, mail, 'member@alderpond.example', signal, '/parcels')
+    await requestMagicLink(
+      handle.db,
+      mail,
+      { email: 'member@alderpond.example', clientKey: 'client-1', next: '/parcels' },
+      signal,
+    )
     const asked = /token=([A-Za-z0-9_-]+)/.exec(mail.sent.at(-1)?.text ?? '')?.[1] ?? ''
     expect(await redirectOf(confirmMagicLinkAction(form(asked, 'tok')))).toBe('/parcels')
   })

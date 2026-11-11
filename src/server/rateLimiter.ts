@@ -2,6 +2,7 @@ export interface RateLimiter {
   recordFailure(key: string): void
   isLimited(key: string): boolean
   clear(key: string): void
+  forgiveOne(key: string): void
   reset(): void
   prune(): void
   size(): number
@@ -34,6 +35,11 @@ export function createRateLimiter(options: Options): RateLimiter {
     },
     clear(key) {
       failures.delete(key)
+    },
+    forgiveOne(key) {
+      const kept = recent(key).slice(0, -1)
+      if (kept.length === 0) failures.delete(key)
+      else failures.set(key, kept)
     },
     reset() {
       failures.clear()

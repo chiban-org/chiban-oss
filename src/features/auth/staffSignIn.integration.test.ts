@@ -40,7 +40,7 @@ describe('staffSignIn', () => {
     const userId = await staffUser({ email: 'ok@alderpond.example' })
     const result = await staffSignIn(
       handle.db,
-      { email: 'ok@alderpond.example', password: PASSWORD },
+      { clientKey: 'c1', email: 'ok@alderpond.example', password: PASSWORD },
       signal,
     )
     expect(result.ok).toBe(true)
@@ -55,7 +55,7 @@ describe('staffSignIn', () => {
     await staffUser({ email: 'mixed@alderpond.example' })
     const result = await staffSignIn(
       handle.db,
-      { email: 'MIXED@alderpond.example', password: PASSWORD },
+      { clientKey: 'c1', email: 'MIXED@alderpond.example', password: PASSWORD },
       signal,
     )
     expect(result.ok).toBe(true)
@@ -70,10 +70,10 @@ describe('staffSignIn', () => {
       passwordHash: await hashPassword(PASSWORD, signal),
     })
     const attempts = [
-      { email: 'wrong@alderpond.example', password: 'nope' },
-      { email: 'ghost@alderpond.example', password: PASSWORD },
-      { email: 'off@alderpond.example', password: PASSWORD },
-      { email: 'pub@alderpond.example', password: PASSWORD },
+      { clientKey: 'c1', email: 'wrong@alderpond.example', password: 'nope' },
+      { clientKey: 'c1', email: 'ghost@alderpond.example', password: PASSWORD },
+      { clientKey: 'c1', email: 'off@alderpond.example', password: PASSWORD },
+      { clientKey: 'c1', email: 'pub@alderpond.example', password: PASSWORD },
     ]
     for (const attempt of attempts) {
       expect(await staffSignIn(handle.db, attempt, signal)).toEqual(generic)
@@ -83,7 +83,7 @@ describe('staffSignIn', () => {
   it('requires a code for an enrolled user and rejects a wrong code generically', async () => {
     const secret = generateTotpSecret()
     await staffUser({ email: 'totp@alderpond.example', totp: secret })
-    const base = { email: 'totp@alderpond.example', password: PASSWORD }
+    const base = { clientKey: 'c1', email: 'totp@alderpond.example', password: PASSWORD }
     expect(await staffSignIn(handle.db, base, signal)).toEqual({
       ok: false,
       error: 'totp_required',
@@ -101,7 +101,7 @@ describe('staffSignIn', () => {
     await staffUser({ email: 'quiet@alderpond.example', totp: generateTotpSecret() })
     const result = await staffSignIn(
       handle.db,
-      { email: 'quiet@alderpond.example', password: 'nope' },
+      { clientKey: 'c1', email: 'quiet@alderpond.example', password: 'nope' },
       signal,
     )
     expect(result).toEqual(generic)
@@ -109,12 +109,12 @@ describe('staffSignIn', () => {
 
   it('rate limits after 6 failures in 10 minutes for one email', async () => {
     await staffUser({ email: 'brute@alderpond.example' })
-    const bad = { email: 'brute@alderpond.example', password: 'nope' }
+    const bad = { clientKey: 'c1', email: 'brute@alderpond.example', password: 'nope' }
     for (let i = 0; i < 6; i += 1) {
       expect(await staffSignIn(handle.db, bad, signal)).toEqual(generic)
     }
     expect(await staffSignIn(handle.db, bad, signal)).toEqual({ ok: false, error: 'rate_limited' })
-    const right = { email: 'brute@alderpond.example', password: PASSWORD }
+    const right = { clientKey: 'c1', email: 'brute@alderpond.example', password: PASSWORD }
     expect(await staffSignIn(handle.db, right, signal)).toEqual({
       ok: false,
       error: 'rate_limited',
@@ -123,7 +123,7 @@ describe('staffSignIn', () => {
 
   it('20 concurrent wrong-password attempts for one email make at most 6 credential checks', async () => {
     await staffUser({ email: 'burst@alderpond.example' })
-    const bad = { email: 'burst@alderpond.example', password: 'nope' }
+    const bad = { clientKey: 'c1', email: 'burst@alderpond.example', password: 'nope' }
     const results = await Promise.all(
       Array.from({ length: 20 }, () => staffSignIn(handle.db, bad, signal)),
     )
@@ -135,9 +135,9 @@ describe('staffSignIn', () => {
 
   it('a successful sign-in clears the reservation', async () => {
     await staffUser({ email: 'clears@alderpond.example' })
-    const bad = { email: 'clears@alderpond.example', password: 'nope' }
+    const bad = { clientKey: 'c1', email: 'clears@alderpond.example', password: 'nope' }
     for (let i = 0; i < 4; i += 1) await staffSignIn(handle.db, bad, signal)
-    const good = { email: 'clears@alderpond.example', password: PASSWORD }
+    const good = { clientKey: 'c1', email: 'clears@alderpond.example', password: PASSWORD }
     expect((await staffSignIn(handle.db, good, signal)).ok).toBe(true)
     for (let i = 0; i < 6; i += 1) {
       expect(await staffSignIn(handle.db, bad, signal)).toEqual(generic)
@@ -148,6 +148,7 @@ describe('staffSignIn', () => {
     const secret = generateTotpSecret()
     await staffUser({ email: 'replay@alderpond.example', totp: secret })
     const attempt = {
+      clientKey: 'c1',
       email: 'replay@alderpond.example',
       password: PASSWORD,
       totp: currentTotpCode(secret, Date.now()),
@@ -160,6 +161,7 @@ describe('staffSignIn', () => {
     const secret = generateTotpSecret()
     await staffUser({ email: 'twin@alderpond.example', totp: secret })
     const attempt = {
+      clientKey: 'c1',
       email: 'twin@alderpond.example',
       password: PASSWORD,
       totp: currentTotpCode(secret, Date.now()),

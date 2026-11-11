@@ -1,10 +1,11 @@
 'use server'
 
-import { cookies } from 'next/headers'
+import { cookies, headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import { z } from 'zod'
 import { SESSION_COOKIE } from '@/constants/cookies'
 import { db } from '@/db/client'
+import { clientKey } from '@/features/anonymousIntake/clientKey'
 import { sessionCookieOptions } from '@/features/auth/session'
 import { staffSignIn } from '@/features/auth/staffSignIn'
 import { guardAction } from '@/server/actionGuard'
@@ -34,7 +35,11 @@ export async function signInAction(_prev: SignInState, formData: FormData): Prom
   })
   if (!parsed.success) return { error: signInFailureMessage(false), needTotp: false }
 
-  const result = await staffSignIn(db, parsed.data, signal)
+  const result = await staffSignIn(
+    db,
+    { ...parsed.data, clientKey: clientKey((await headers()).get('x-forwarded-for')) },
+    signal,
+  )
   if (!result.ok) {
     if (result.error === 'totp_required') return { error: null, needTotp: true }
     if (result.error === 'rate_limited') {

@@ -1,7 +1,9 @@
 'use server'
 
+import { headers } from 'next/headers'
 import { z } from 'zod'
 import { db } from '@/db/client'
+import { clientKey } from '@/features/anonymousIntake/clientKey'
 import { requestMagicLink } from '@/features/auth/magicLink'
 import { emailAddress } from '@/features/input/schemas'
 import { getMailTransport } from '@/features/mail/transport'
@@ -29,9 +31,12 @@ export async function requestMagicLinkAction(
   const result = await requestMagicLink(
     db,
     getMailTransport(),
-    parsed.value.email,
+    {
+      email: parsed.value.email,
+      clientKey: clientKey((await headers()).get('x-forwarded-for')),
+      ...(next.success && next.data !== undefined ? { next: next.data } : {}),
+    },
     signal,
-    next.success ? next.data : undefined,
   )
   if (!result.ok) return { message: 'Too many requests. Try again in a few minutes.' }
   return {

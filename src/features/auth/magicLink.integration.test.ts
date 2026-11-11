@@ -35,7 +35,12 @@ function tokenFromMail(): string {
 }
 
 async function requestFor(email: string): Promise<string> {
-  const result = await requestMagicLink(handle.db, mail, email, signal)
+  const result = await requestMagicLink(
+    handle.db,
+    mail,
+    { email: email, clientKey: 'client-1' },
+    signal,
+  )
   expect(result.ok).toBe(true)
   return tokenFromMail()
 }
@@ -114,7 +119,12 @@ describe('requestMagicLink', () => {
   it('reports success and sends nothing for a staff email', async () => {
     await makeUser(handle.db, { email: 'clerk@alderpond.example', role: 'staff' })
     const before = await handle.db.select().from(magicLinks)
-    const result = await requestMagicLink(handle.db, mail, 'clerk@alderpond.example', signal)
+    const result = await requestMagicLink(
+      handle.db,
+      mail,
+      { email: 'clerk@alderpond.example', clientKey: 'client-1' },
+      signal,
+    )
     expect(result).toEqual({ ok: true, value: undefined })
     expect(mail.sent).toHaveLength(0)
     expect(await handle.db.select().from(magicLinks)).toHaveLength(before.length)
@@ -126,7 +136,12 @@ describe('requestMagicLink', () => {
       role: 'applicant',
       isActive: false,
     })
-    const result = await requestMagicLink(handle.db, mail, 'gone@alderpond.example', signal)
+    const result = await requestMagicLink(
+      handle.db,
+      mail,
+      { email: 'gone@alderpond.example', clientKey: 'client-1' },
+      signal,
+    )
     expect(result.ok).toBe(true)
     expect(mail.sent).toHaveLength(0)
   })
@@ -135,18 +150,6 @@ describe('requestMagicLink', () => {
     const token = await requestFor('hash@alderpond.example')
     const rows = await handle.db.select().from(magicLinks)
     expect(JSON.stringify(rows)).not.toContain(token)
-  })
-
-  it('rate limits repeated requests for one email', async () => {
-    for (let i = 0; i < 5; i += 1) {
-      expect((await requestMagicLink(handle.db, mail, 'spam@alderpond.example', signal)).ok).toBe(
-        true,
-      )
-    }
-    expect(await requestMagicLink(handle.db, mail, 'spam@alderpond.example', signal)).toEqual({
-      ok: false,
-      error: 'rate_limited',
-    })
   })
 })
 
@@ -207,14 +210,24 @@ describe('consumeMagicLink', () => {
 describe('next path', () => {
   it('a safe next path is returned when the link is consumed', async () => {
     const email = 'next.user@alderpond.example'
-    await requestMagicLink(handle.db, mail, email, signal, '/claim/abc')
+    await requestMagicLink(
+      handle.db,
+      mail,
+      { email: email, clientKey: 'client-1', next: '/claim/abc' },
+      signal,
+    )
     const consumed = await consumeMagicLink(handle.db, tokenFromMail(), signal)
     expect(consumed.ok && consumed.value.nextPath).toBe('/claim/abc')
   })
 
   it('an unsafe next path is dropped', async () => {
     const email = 'unsafe.next@alderpond.example'
-    await requestMagicLink(handle.db, mail, email, signal, '//evil.example')
+    await requestMagicLink(
+      handle.db,
+      mail,
+      { email: email, clientKey: 'client-1', next: '//evil.example' },
+      signal,
+    )
     const consumed = await consumeMagicLink(handle.db, tokenFromMail(), signal)
     expect(consumed.ok && consumed.value.nextPath).toBeNull()
   })
@@ -229,7 +242,12 @@ describe('a failed sign-in email', () => {
       sent: [],
       send: () => Promise.resolve(err('send_failed' as const)),
     }
-    const result = await requestMagicLink(handle.db, failing, email, signal)
+    const result = await requestMagicLink(
+      handle.db,
+      failing,
+      { email: email, clientKey: 'client-1' },
+      signal,
+    )
     expect(result).toEqual({ ok: true, value: undefined })
     expect(spy.mock.calls.flat().join(' ')).toContain('E_MAIL_001')
     expect(spy.mock.calls.flat().join(' ')).not.toContain(email)

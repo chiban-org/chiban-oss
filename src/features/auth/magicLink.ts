@@ -14,13 +14,25 @@ import { err, ok, type Result } from '@/types/result'
 
 export const MAGIC_LINK_TTL_MINUTES = 15
 const LINK_TTL_MS = MAGIC_LINK_TTL_MINUTES * 60 * 1000
-const MAX_REQUESTS = 5
+const MAX_REQUESTS_PER_EMAIL = 5
+const MAX_REQUESTS_PER_CLIENT = 10
 const WINDOW_MS = 10 * 60 * 1000
 
-const limiter = createRateLimiter({ max: MAX_REQUESTS, windowMs: WINDOW_MS })
+const byEmail = createRateLimiter({ max: MAX_REQUESTS_PER_EMAIL, windowMs: WINDOW_MS })
+const byClient = createRateLimiter({ max: MAX_REQUESTS_PER_CLIENT, windowMs: WINDOW_MS })
 
 export function resetMagicLinkLimiter(): void {
-  limiter.reset()
+  byEmail.reset()
+  byClient.reset()
+}
+
+function takeAllowance(email: string, clientKey: string): boolean {
+  byEmail.prune()
+  byClient.prune()
+  if (byEmail.isLimited(email) || byClient.isLimited(clientKey)) return false
+  byEmail.recordFailure(email)
+  byClient.recordFailure(clientKey)
+  return true
 }
 
 function hashToken(token: string): string {
@@ -51,17 +63,22 @@ async function findOrCreatePublicUser(db: DbOrTx, email: string): Promise<{ id: 
   return existing?.kind === 'public' && existing.isActive ? { id: existing.id } : null
 }
 
+export interface MagicLinkRequest {
+  email: string
+  clientKey: string
+  next?: string
+}
+
 export async function requestMagicLink(
   db: DbOrTx,
   mail: MailTransport,
-  rawEmail: string,
+  request: MagicLinkRequest,
   signal: AbortSignal,
-  next?: string,
 ): Promise<Result<void, 'rate_limited'>> {
   signal.throwIfAborted()
-  const email = rawEmail.trim().toLowerCase()
-  if (limiter.isLimited(email)) return err('rate_limited')
-  limiter.recordFailure(email)
+  const { next } = request
+  const email = request.email.trim().toLowerCase()
+  if (!takeAllowance(email, request.clientKey)) return err('rate_limited')
 
   const eligibility = await eligibilityOf(db, email)
   if (!eligibility.eligible) return ok(undefined)

@@ -61,7 +61,11 @@ describe('a password reset that lands during a sign-in', () => {
     const racing = resettingBeforeSessionInsert(handle.db, () =>
       completeStaffLink(handle.db, { token, password: 'the brand new password' }, signal),
     )
-    const signedIn = await staffSignIn(racing, { email: EMAIL, password: OLD_PASSWORD }, signal)
+    const signedIn = await staffSignIn(
+      racing,
+      { clientKey: 'c1', email: EMAIL, password: OLD_PASSWORD },
+      signal,
+    )
     if (signedIn.ok) {
       expect((await loadSession(handle.db, signedIn.value.sid, signal)).ok).toBe(false)
     } else {

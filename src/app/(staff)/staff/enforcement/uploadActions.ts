@@ -2,7 +2,7 @@
 
 import { createUploadIntent, finalizeUpload } from '@/features/documents/uploads'
 import { getObjectStore } from '@/features/storage/objectStore'
-import { type ActionResult, runStaffValue } from '@/server/actionRunner'
+import { type ActionResult, errorCopy, runStaffValue } from '@/server/actionRunner'
 import { parseForm, runStaffForm } from '@/server/formInput'
 import { CASE_UPLOAD_FINALIZE_FORM, CASE_UPLOAD_INTENT_FORM } from './uploadForms'
 
@@ -18,6 +18,7 @@ const INTENT_COPY = {
   series_required: 'You cannot add files here.',
   unknown_series: 'You cannot add files here.',
   doc_kind_not_allowed: 'That kind of document cannot be added to a case.',
+  too_many_pending: errorCopy('too_many_pending'),
 } as const
 
 const FINALIZE_COPY = {

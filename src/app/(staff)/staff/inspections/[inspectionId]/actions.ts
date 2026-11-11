@@ -41,6 +41,7 @@ const INTENT_COPY = {
   series_required: PHOTO_FORBIDDEN,
   unknown_series: PHOTO_FORBIDDEN,
   doc_kind_not_allowed: PHOTO_FORBIDDEN,
+  too_many_pending: errorCopy('too_many_pending'),
 } as const
 
 const FINALIZE_COPY = {
