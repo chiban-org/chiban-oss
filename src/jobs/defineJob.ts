@@ -32,6 +32,8 @@ export interface JobDefinition<P> {
   intervalSeconds?: number
   timeoutSeconds?: number
   retryLimit?: number
+  heartbeatSeconds?: number
+  staleAfterSeconds?: number
   dedupKey(payload: P): string
   handler(payload: P, ctx: JobContext): Promise<JobOutcome>
 }

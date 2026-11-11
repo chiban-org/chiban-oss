@@ -30,6 +30,7 @@ describe('registerAllJobs', () => {
       name: JOB_NAMES.BACKUPS_SCHEDULED,
       timeoutSeconds: 6 * 60 * 60,
       retryLimit: 0,
+      heartbeatSeconds: 120,
       dedupKey: () => 'k',
       handler: () => Promise.resolve({ ok: true, value: undefined }),
     })
@@ -38,6 +39,7 @@ describe('registerAllJobs', () => {
       policy: 'exclusive',
       expireInSeconds: 6 * 60 * 60,
       retryLimit: 0,
+      heartbeatSeconds: 120,
     })
   })
 

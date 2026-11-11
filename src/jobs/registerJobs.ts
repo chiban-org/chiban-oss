@@ -13,6 +13,7 @@ function queueOptions(job: JobDefinition<never>) {
     policy: 'exclusive' as const,
     ...(job.timeoutSeconds === undefined ? {} : { expireInSeconds: job.timeoutSeconds }),
     ...(job.retryLimit === undefined ? {} : { retryLimit: job.retryLimit }),
+    ...(job.heartbeatSeconds === undefined ? {} : { heartbeatSeconds: job.heartbeatSeconds }),
   }
 }
 

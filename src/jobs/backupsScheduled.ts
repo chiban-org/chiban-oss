@@ -11,6 +11,7 @@ import { defineJob } from './defineJob'
 
 const HOUR_SECONDS = 60 * 60
 const BACKUP_TIMEOUT_SECONDS = 6 * HOUR_SECONDS
+const HEARTBEAT_SECONDS = 120
 const HOUR_CHARS = 13
 
 async function runWithEnv(db: Db, signal: AbortSignal) {
@@ -45,6 +46,8 @@ export const backupsScheduledJob = defineJob<{ at?: string; manual?: boolean }>(
   intervalSeconds: HOUR_SECONDS,
   timeoutSeconds: BACKUP_TIMEOUT_SECONDS,
   retryLimit: 0,
+  heartbeatSeconds: HEARTBEAT_SECONDS,
+  staleAfterSeconds: BACKUP_TIMEOUT_SECONDS + 2 * HOUR_SECONDS,
   dedupKey: (p) => {
     const at = p.at ?? new Date().toISOString()
     return p.manual === true
