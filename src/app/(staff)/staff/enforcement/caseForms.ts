@@ -87,3 +87,8 @@ export const PUBLISH_CASE_FORM = z.object({
 })
 
 export const UNPUBLISH_CASE_FORM = z.object({ caseId: recordId('a case') })
+
+export const ATTACH_COMPLAINT_FORM = z.object({
+  caseId: recordId('a case'),
+  complaintId: recordId('a complaint'),
+})

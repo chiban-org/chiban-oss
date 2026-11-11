@@ -19,6 +19,7 @@ import type { SubjectDue } from '@/features/clocks/subjectDue'
 import { loadPanelDocuments, type PanelDocument } from '@/features/documents/panelData'
 import { getCase, type StaffCaseView } from '@/features/enforcement/access'
 import { answerDueOf } from '@/features/enforcement/answers'
+import type { AttachableComplaint } from '@/features/enforcement/complaintCandidates'
 import { fineBalance } from '@/features/enforcement/fines'
 import { type MotionBlock, motionBlocks } from '@/features/enforcement/motionGate'
 import { type PenaltyExposure, penaltyExposure } from '@/features/enforcement/penaltyExposure'
@@ -70,6 +71,7 @@ export interface CaseDetail {
   documents: PanelDocument[]
   names: Record<string, string>
   suggestions?: SuggestionsByKind
+  attachable?: AttachableComplaint[]
 }
 
 export function buildOrderDetail(

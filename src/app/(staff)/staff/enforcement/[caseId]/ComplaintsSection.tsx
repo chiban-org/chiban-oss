@@ -4,6 +4,7 @@ import type { CaseDetail } from '@/features/enforcement/caseDetail'
 import { CHANNEL_LABELS } from '@/features/enforcement/labels'
 import { formatCivilDate } from '@/lib/formatDate'
 import { complaintPublicTextAction } from '../publishActions'
+import { AttachComplaint } from './AttachComplaint'
 import type { Can } from './can'
 import { Hidden, Section } from './Section'
 
@@ -82,6 +83,9 @@ export function ComplaintsSection({
           <ComplaintSummary key={c.id} complaint={c} />
         ),
       )}
+      {can.manage && !readOnly ? (
+        <AttachComplaint caseId={detail.staff.row.id} attachable={detail.attachable ?? []} />
+      ) : null}
     </Section>
   )
 }
