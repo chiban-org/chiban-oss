@@ -23,15 +23,28 @@ describe('webhookView', () => {
   })
 
   it('needs no address for the simulated processor', () => {
-    expect(webhookView({ id: 'acct-1', processor: 'simulated' }, BASE)).toEqual({
+    expect(
+      webhookView({ id: 'acct-1', processor: 'simulated', webhookSecret: 'sim' }, BASE),
+    ).toEqual({
       state: 'not_needed',
     })
   })
 
   it('gives the address of a real processor account', () => {
-    expect(webhookView({ id: 'acct-1', processor: 'stripe' }, BASE)).toEqual({
+    expect(
+      webhookView({ id: 'acct-1', processor: 'stripe', webhookSecret: 'whsec_1' }, BASE),
+    ).toEqual({
       state: 'ready',
       address: 'https://alderpond.example/api/payments/webhooks/acct-1',
+      receiving: true,
+    })
+  })
+
+  it('says an account without a signing secret is not receiving updates', () => {
+    expect(webhookView({ id: 'acct-1', processor: 'stripe', webhookSecret: '' }, BASE)).toEqual({
+      state: 'ready',
+      address: 'https://alderpond.example/api/payments/webhooks/acct-1',
+      receiving: false,
     })
   })
 })

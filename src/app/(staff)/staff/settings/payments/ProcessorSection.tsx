@@ -18,17 +18,30 @@ function WebhookSection({ webhook }: { webhook: WebhookView }) {
   if (webhook.state === 'unsaved') {
     return (
       <p className="text-muted-foreground">
-        Save the account once to get the webhook address for the processor's dashboard.
+        Save the account once, without the webhook signing secret, to get the webhook address for
+        the processor's dashboard.
       </p>
     )
   }
   return (
     <>
       <WebhookAddress address={webhook.address} />
-      <p className="text-muted-foreground">
-        Paste this address into the webhook settings in the processor's dashboard. It stays the same
-        when you save this account again.
-      </p>
+      {webhook.receiving ? (
+        <p className="text-muted-foreground">
+          Paste this address into the webhook settings in the processor's dashboard. It stays the
+          same when you save this account again.
+        </p>
+      ) : (
+        <>
+          <p className="text-muted-foreground">
+            Paste this address into the webhook settings at the processor, then come back and paste
+            the signing secret it gives you.
+          </p>
+          <p role="status" className="font-medium">
+            This account is not receiving payment updates until its webhook signing secret is saved.
+          </p>
+        </>
+      )}
     </>
   )
 }
@@ -64,7 +77,7 @@ export function ProcessorSection({
       <p className="text-muted-foreground">
         {current === null
           ? 'Save an account to turn on card payments.'
-          : 'The form below starts from the active account. Secrets are never shown, so enter them again whenever you save.'}
+          : 'The form below starts from the active account. Secrets are never shown. Enter the secret key again whenever you save.'}
       </p>
       <ActionForm action={saveProcessorAccountAction} submitLabel="Save processor account">
         <SelectField
@@ -102,11 +115,10 @@ export function ProcessorSection({
         />
         <TextField
           label="Webhook signing secret"
-          hint="Lets Chiban check that payment updates really come from the processor."
+          hint="Lets Chiban check that payment updates really come from the processor. Leave it blank on the first save to get the webhook address. Leave it blank later to keep the saved one."
           name="webhookSecret"
           type="password"
           autoComplete="off"
-          required
         />
         <details className="rounded-md border border-hairline p-3">
           <summary className="cursor-pointer text-sm font-medium">Advanced</summary>

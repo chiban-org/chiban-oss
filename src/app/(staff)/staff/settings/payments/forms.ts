@@ -24,7 +24,7 @@ export const PROCESSOR_FORM = z
     processor: choice('a processor', PROCESSORS),
     mode: choice('a mode', ['test', 'live'] as const),
     accountRef: requiredText('the account number at the processor', { max: 200 }),
-    webhookSecret: secret('the webhook signing secret'),
+    webhookSecret: optionalText('the webhook signing secret', { max: MAX_TEXT }),
     deviceId: optionalText('the card reader device ID', { max: 200 }),
     secretKey: optionalUnknown,
     apiBase: optionalUnknown,

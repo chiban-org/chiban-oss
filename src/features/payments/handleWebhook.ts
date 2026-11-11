@@ -9,6 +9,7 @@ import {
 import {
   type ActiveProcessor,
   getProcessorAccount,
+  MISSING_WEBHOOK_SECRET,
   openAccount,
   sameMerchantAccounts,
 } from '@/features/payments/processorAccounts'
@@ -49,7 +50,7 @@ function foreign(event: ProcessorWebhookEvent, account: ProcessorAccountRow): bo
 interface MerchantAccounts {
   current: ActiveProcessor
   accountIds: string[]
-  secrets: [string, ...string[]]
+  secrets: string[]
 }
 
 async function merchantAccounts(
@@ -68,10 +69,9 @@ async function merchantAccounts(
       addressed.account.id,
       ...opened.map((o) => o.account.id).filter((id) => id !== addressed.account.id),
     ],
-    secrets:
-      current.webhookSecret === addressed.webhookSecret
-        ? [addressed.webhookSecret]
-        : [addressed.webhookSecret, current.webhookSecret],
+    secrets: [...new Set([addressed.webhookSecret, current.webhookSecret])].filter(
+      (secret) => secret !== MISSING_WEBHOOK_SECRET,
+    ),
   }
 }
 
@@ -79,9 +79,11 @@ type VerifyInput = Parameters<PaymentProcessor['verifyWebhook']>[0]
 
 function verifyAgainst(
   processor: PaymentProcessor,
-  [addressedSecret, ...otherSecrets]: [string, ...string[]],
+  secrets: string[],
   request: Omit<VerifyInput, 'secret'>,
 ): ReturnType<PaymentProcessor['verifyWebhook']> {
+  const [addressedSecret, ...otherSecrets] = secrets
+  if (addressedSecret === undefined) return { ok: false, error: 'bad_signature' }
   const first = processor.verifyWebhook({ ...request, secret: addressedSecret })
   if (first.ok) return first
   for (const secret of otherSecrets) {

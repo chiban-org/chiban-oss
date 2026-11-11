@@ -1,6 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { Actor } from '@/features/auth/actor'
+import { saveProcessorAccount } from '@/features/payments/processorAccounts'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { setupPayments } from '@/test/paymentFixtures'
@@ -69,5 +70,31 @@ describe('card payments page', () => {
       params: Promise.resolve({ kind: 'payment_settings', key: 'default' }),
     })
     await expect(opened).rejects.toThrow('NEXT_REDIRECT:/staff/settings/payments')
+  })
+
+  it('says an account saved without a signing secret is not receiving updates', async () => {
+    const saved = await saveProcessorAccount(
+      handle.db,
+      state.actor as Actor,
+      {
+        processor: 'stripe',
+        mode: 'test',
+        accountRef: 'acct_first_save',
+        settings: {},
+        credentials: { secretKey: 'sk_test_789' },
+        webhookSecret: null,
+      },
+      new AbortController().signal,
+    )
+    if (!saved.ok) throw new Error(saved.error)
+    const html = renderToStaticMarkup(await CardPaymentsPage())
+    const text = html.replace(/<[^>]+>/g, ' ').replaceAll('&#x27;', "'")
+    expect(html).toContain(`/api/payments/webhooks/${saved.value.accountId}`)
+    expect(text).toContain(
+      'Paste this address into the webhook settings at the processor, then come back and paste the signing secret it gives you.',
+    )
+    expect(text).toContain(
+      'This account is not receiving payment updates until its webhook signing secret is saved.',
+    )
   })
 })

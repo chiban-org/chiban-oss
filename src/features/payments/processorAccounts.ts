@@ -27,8 +27,10 @@ export interface SaveProcessorAccountInput {
   accountRef: string
   settings: Record<string, unknown>
   credentials: Record<string, unknown>
-  webhookSecret: string
+  webhookSecret: string | null
 }
+
+export const MISSING_WEBHOOK_SECRET = ''
 
 export interface ActiveProcessor {
   account: ProcessorAccountRow
@@ -99,15 +101,17 @@ export async function saveProcessorAccount(
     const values = {
       settings: input.settings,
       credentialsEnc: encryptSecret(JSON.stringify(input.credentials)),
-      webhookSecretEnc: encryptSecret(input.webhookSecret),
       isActive: true,
     }
+    const newSecret =
+      input.webhookSecret === null ? {} : { webhookSecretEnc: encryptSecret(input.webhookSecret) }
     const [row] =
       sameMerchant === undefined
         ? await tx
             .insert(processorAccounts)
             .values({
               ...values,
+              webhookSecretEnc: encryptSecret(input.webhookSecret ?? MISSING_WEBHOOK_SECRET),
               processor: input.processor,
               mode: input.mode,
               accountRef: input.accountRef,
@@ -116,7 +120,7 @@ export async function saveProcessorAccount(
             .returning({ id: processorAccounts.id })
         : await tx
             .update(processorAccounts)
-            .set(values)
+            .set({ ...values, ...newSecret })
             .where(eq(processorAccounts.id, sameMerchant.id))
             .returning({ id: processorAccounts.id })
     const accountId = row?.id ?? ''

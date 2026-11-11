@@ -15,7 +15,7 @@ function material(input: ProcessorValues): {
   if (input.processor === 'stripe') return { credentials: { secretKey }, settings: device }
   if (input.processor === 'clover') {
     return {
-      credentials: { privateToken: secretKey, webhookSigningSecret: input.webhookSecret },
+      credentials: { privateToken: secretKey },
       settings: {
         apiBase: trimmedText(input.apiBase),
         ecommBase: trimmedText(input.ecommBase),

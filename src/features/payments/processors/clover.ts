@@ -13,7 +13,6 @@ export const CLOVER_ADAPTER_STATUS = 'stubbed' as const
 
 export const CloverCredentialsSchema = z.object({
   privateToken: z.string().min(1),
-  webhookSigningSecret: z.string().min(1),
 })
 export type CloverCredentials = z.infer<typeof CloverCredentialsSchema>
 
