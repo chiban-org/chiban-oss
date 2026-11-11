@@ -6,6 +6,7 @@ import {
   files,
   renditionApprovals,
   rtkReleaseItems,
+  rtkReleaseLinks,
   rtkReleases,
   rtkRequests,
 } from '@/db/schema'
@@ -37,20 +38,31 @@ async function townDate(db: Db, at: Date, signal: AbortSignal): Promise<CivilDat
   return todayInTimeZone(town.ok ? town.value.timeZone : 'UTC', at)
 }
 
+async function releaseByToken(
+  db: Db,
+  hash: string,
+): Promise<{ release: Release; expiresAt: Date | null } | undefined> {
+  const [original] = await db.select().from(rtkReleases).where(eq(rtkReleases.linkTokenHash, hash))
+  if (original !== undefined) return { release: original, expiresAt: original.linkExpiresAt }
+  const [reissued] = await db
+    .select({ release: rtkReleases, expiresAt: rtkReleaseLinks.expiresAt })
+    .from(rtkReleaseLinks)
+    .innerJoin(rtkReleases, eq(rtkReleases.id, rtkReleaseLinks.releaseId))
+    .where(eq(rtkReleaseLinks.tokenHash, hash))
+  return reissued
+}
+
 async function resolveReleaseLink(
   db: Db,
   token: string,
   now: Date,
-): Promise<Result<Release, 'invalid' | 'expired'>> {
-  const [release] = await db
-    .select()
-    .from(rtkReleases)
-    .where(eq(rtkReleases.linkTokenHash, hashReleaseToken(token)))
-  if (release === undefined || release.linkRevokedAt !== null || release.linkExpiresAt === null) {
+): Promise<Result<{ release: Release; expiresAt: Date }, 'invalid' | 'expired'>> {
+  const found = await releaseByToken(db, hashReleaseToken(token))
+  if (found === undefined || found.release.linkRevokedAt !== null || found.expiresAt === null) {
     return err('invalid')
   }
-  if (release.linkExpiresAt.getTime() <= now.getTime()) return err('expired')
-  return ok(release)
+  if (found.expiresAt.getTime() <= now.getTime()) return err('expired')
+  return ok({ release: found.release, expiresAt: found.expiresAt })
 }
 
 export async function openRelease(
@@ -62,7 +74,7 @@ export async function openRelease(
   signal.throwIfAborted()
   const resolved = await resolveReleaseLink(db, token, now)
   if (!resolved.ok) return err(resolved.error)
-  const release = resolved.value
+  const { release, expiresAt } = resolved.value
   const [request] = await db
     .select({ number: rtkRequests.number })
     .from(rtkRequests)
@@ -96,7 +108,7 @@ export async function openRelease(
     requestNumber: request?.number ?? '',
     sequence: release.sequence,
     releasedOn: release.releasedOn as CivilDate,
-    expiresAt: release.linkExpiresAt?.toISOString() ?? '',
+    expiresAt: expiresAt.toISOString(),
     items,
   })
 }
@@ -128,7 +140,7 @@ export async function openReleaseVersion(
     .leftJoin(renditionApprovals, eq(renditionApprovals.id, rtkReleaseItems.approvalId))
     .where(
       and(
-        eq(rtkReleaseItems.releaseId, resolved.value.id),
+        eq(rtkReleaseItems.releaseId, resolved.value.release.id),
         or(
           eq(rtkReleaseItems.versionId, versionId),
           eq(rtkReleaseItems.formerVersionId, versionId),

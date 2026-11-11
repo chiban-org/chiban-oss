@@ -5,10 +5,12 @@ import {
   documentVersions,
   renditionApprovals,
   rtkReleaseItems,
+  rtkReleaseLinks,
   rtkReleases,
 } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { rtkRequestVisibleTo } from '@/features/rtk/access'
+import { currentLinkExpiry } from '@/features/rtk/releaseReissue'
 
 const CANDIDATE_LIMIT = 25
 const MIN_QUERY = 2
@@ -50,6 +52,8 @@ export interface ReleaseSummary {
   method: (typeof rtkReleases.$inferSelect)['method']
   letterDocumentId: string | null
   items: { title: string; filename: string; withdrawn: boolean; approvalId: string | null }[]
+  link: { expiresAt: Date; expired: boolean; revoked: boolean } | null
+  reissues: { sentTo: string; sentAt: Date }[]
 }
 
 const RECORD_NUMBER = sql<string | null>`coalesce(
@@ -155,7 +159,35 @@ export async function loadRequestApprovals(db: Db, requestId: string): Promise<R
     .orderBy(asc(renditionApprovals.approvedAt))
 }
 
-export async function loadReleases(db: Db, requestId: string): Promise<ReleaseSummary[]> {
+async function linkOf(
+  db: Db,
+  release: typeof rtkReleases.$inferSelect,
+  now: Date,
+): Promise<Pick<ReleaseSummary, 'link' | 'reissues'>> {
+  const expiresAt = await currentLinkExpiry(db, release)
+  const reissues = await db
+    .select({ sentTo: rtkReleaseLinks.sentTo, sentAt: rtkReleaseLinks.createdAt })
+    .from(rtkReleaseLinks)
+    .where(eq(rtkReleaseLinks.releaseId, release.id))
+    .orderBy(asc(rtkReleaseLinks.createdAt))
+  return {
+    link:
+      expiresAt === null
+        ? null
+        : {
+            expiresAt,
+            expired: expiresAt.getTime() <= now.getTime(),
+            revoked: release.linkRevokedAt !== null,
+          },
+    reissues,
+  }
+}
+
+export async function loadReleases(
+  db: Db,
+  requestId: string,
+  now: Date = new Date(),
+): Promise<ReleaseSummary[]> {
   const releases = await db
     .select()
     .from(rtkReleases)
@@ -187,6 +219,7 @@ export async function loadReleases(db: Db, requestId: string): Promise<ReleaseSu
         withdrawn: i.withdrawnAt !== null,
         approvalId: i.approvalId,
       })),
+      ...(await linkOf(db, release, now)),
     })
   }
   return out

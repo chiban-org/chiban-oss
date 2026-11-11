@@ -11,6 +11,7 @@ import { optionalEmail } from '@/features/input/optionalEmail'
 import {
   choice,
   civilDate,
+  emailAddress,
   optionalCivilDate,
   optionalMoneyCents,
   optionalText,
@@ -156,6 +157,11 @@ export const releaseForm = (today: CivilDate) =>
           message: RECORDS_COPY.recipient_required ?? '',
         })
     })
+
+export const reissueLinkForm = z.object({
+  releaseId: recordId('a release'),
+  recipientEmail: emailAddress('the email address to send the new link to'),
+})
 
 export const closeRequestForm = z.object({
   requestId: requestIdField(),

@@ -3,6 +3,7 @@
 import { getMailTransport } from '@/features/mail/transport'
 import { denyRequest } from '@/features/rtk/denial'
 import type { ReleaseDelivery } from '@/features/rtk/releaseDelivery'
+import { type ReissueError, reissueReleaseLink } from '@/features/rtk/releaseReissue'
 import { createRelease } from '@/features/rtk/releases'
 import { closeRequest, logRequest } from '@/features/rtk/requests'
 import { recordFirstResponse } from '@/features/rtk/responses'
@@ -17,6 +18,7 @@ import {
   denyRequestForm,
   firstResponseForm,
   logRequestForm,
+  reissueLinkForm,
   releaseForm,
   withholdingForm,
 } from './requestForms'
@@ -158,6 +160,22 @@ export async function createReleaseAction(formData: FormData): Promise<ActionRes
         duplicate_document: 'items',
       },
     )
+  })
+}
+
+const REISSUE_COPY: Partial<Record<ReissueError, string>> = {
+  no_link: 'This release was not sent as a link.',
+  link_revoked: 'This link was turned off, so it cannot be sent again.',
+  link_active: 'The current link still works. Send a new one after it expires.',
+  send_failed: 'The email could not be sent. No new link was made.',
+}
+
+export async function reissueLinkAction(formData: FormData): Promise<ActionResult> {
+  return await runStaffForm(formData, reissueLinkForm, async ({ db, actor, signal }, input) => {
+    const result = await reissueReleaseLink({ db, mail: getMailTransport(), signal }, actor, input)
+    if (result.ok) return { ok: true, message: 'A new link was emailed.' }
+    const copy = REISSUE_COPY[result.error]
+    return copy === undefined ? recordsOutcome(result, '') : { ok: false, error: copy }
   })
 }
 

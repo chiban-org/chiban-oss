@@ -1,6 +1,6 @@
 import { eq } from 'drizzle-orm'
 import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest'
-import { documentVersions, files } from '@/db/schema'
+import { documentVersions, files, rtkReleases } from '@/db/schema'
 import { MAX_ATTACHED_BYTES } from '@/features/rtk/releaseMail'
 import { refuseField } from '@/server/formInput'
 import { seedParcelWorld } from '@/test/parcels'
@@ -33,7 +33,7 @@ const prepared: { requestId: string; record: ReleasableRecord }[] = []
 
 beforeAll(async () => {
   await seedParcelWorld(h.db)
-  for (let i = 0; i < 3; i++) {
+  for (let i = 0; i < 4; i++) {
     const requestId = await loggedRequest(h.db, await custodian())
     prepared.push({
       requestId,
@@ -93,5 +93,27 @@ describe('createReleaseAction by email attachment', () => {
       message:
         'Records released. The files were too large to attach, so the requester was emailed a link instead.',
     })
+  })
+})
+
+describe('reissueLinkAction', () => {
+  it('waits for the link to expire, then emails a new one', async () => {
+    const { form } = await releaseForm({ method: 'electronic_link' })
+    expect(await actions.createReleaseAction(form)).toMatchObject({ ok: true })
+    const [release] = await h.db
+      .select({ id: rtkReleases.id })
+      .from(rtkReleases)
+      .where(eq(rtkReleases.method, 'electronic_link'))
+    const reissue = () =>
+      actions.reissueLinkAction(
+        h.form({ releaseId: release?.id ?? '', recipientEmail: 'jordan@example.test' }),
+      )
+    expect(await reissue()).toEqual({
+      ok: false,
+      error: 'The current link still works. Send a new one after it expires.',
+    })
+    vi.setSystemTime(new Date(RTK_TODAY.getTime() + 31 * 24 * 60 * 60 * 1000))
+    expect(await reissue()).toEqual({ ok: true, message: 'A new link was emailed.' })
+    expect(h.mail.sent.at(-1)?.to).toBe('jordan@example.test')
   })
 })

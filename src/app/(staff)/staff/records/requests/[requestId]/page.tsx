@@ -8,6 +8,7 @@ import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { RTK_STATUS_LABELS } from '@/features/rtk/labels'
+import { requesterEmailOf } from '@/features/rtk/requesterEmail'
 import { REQUESTS_PATH } from '@/features/rtk/requestListParams'
 import {
   loadReleaseCandidates,
@@ -105,6 +106,8 @@ export default async function RequestPage({
             approvals={approvals}
             canManage={canManage}
             findTool={<ReleaseFindPanelTool data={data} />}
+            timeZone={timeZone}
+            requesterEmail={requesterEmailOf(request.requesterContact)}
           />
         ),
       },

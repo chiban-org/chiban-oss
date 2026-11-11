@@ -135,3 +135,19 @@ export const rtkReleaseItems = pgTable(
   },
   (t) => [primaryKey({ columns: [t.releaseId, t.documentId] })],
 )
+
+export const rtkReleaseLinks = pgTable(
+  'rtk_release_links',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    releaseId: uuid('release_id')
+      .notNull()
+      .references(() => rtkReleases.id),
+    tokenHash: text('token_hash').notNull().unique(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    sentTo: text('sent_to').notNull(),
+    createdBy: uuid('created_by').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => [index('rtk_release_links_release_idx').on(t.releaseId)],
+)

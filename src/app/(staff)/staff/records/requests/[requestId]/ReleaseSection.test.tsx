@@ -8,7 +8,7 @@ import { FindResults } from './FindResults'
 import { PendingRelease } from './PendingRelease'
 import { ReleaseSection } from './ReleaseSection'
 
-vi.mock('../actions', () => ({ createReleaseAction: vi.fn() }))
+vi.mock('../actions', () => ({ createReleaseAction: vi.fn(), reissueLinkAction: vi.fn() }))
 vi.mock('next/navigation', () => ({ useRouter: () => ({ refresh: vi.fn() }) }))
 vi.mock('../../renditionActions', () => ({
   approveRenditionAction: vi.fn(),
@@ -96,6 +96,8 @@ const release: ReleaseSummary = {
   method: 'paper',
   letterDocumentId: 'letter1',
   items: [{ title: 'Site plan', filename: 'site-plan.pdf', withdrawn: false, approvalId: 'a1' }],
+  link: null,
+  reissues: [],
 }
 
 function approval(patch: Partial<RequestApproval>): RequestApproval {
@@ -123,6 +125,8 @@ describe('releases panel', () => {
           approvals={[approval({ releasedIn: 1 }), approval({ approvalId: 'a2', title: 'Deed' })]}
           canManage
           findTool={null}
+          timeZone="America/New_York"
+          requesterEmail={null}
         />
       </CsrfProvider>,
     )

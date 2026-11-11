@@ -57,13 +57,20 @@ function releasedLine(message: ReleaseMail): string {
   return `The town released records for your Right-to-Know request ${message.number} on ${formatCivilDate(message.releasedOn)}.`
 }
 
+function linkNote(message: { tooLarge?: boolean; reissued?: boolean }): string {
+  if (message.reissued === true) return ' The earlier link has expired, so here is a new one.'
+  return message.tooLarge === true
+    ? ' The files were too large to attach to an email, so they are at this link instead.'
+    : ''
+}
+
 export async function sendReleaseLink(
   mail: MailTransport,
-  message: ReleaseMail & { token: string; tooLarge?: boolean },
+  message: ReleaseMail & { token: string; tooLarge?: boolean; reissued?: boolean },
   signal: AbortSignal,
 ): Promise<boolean> {
   const link = `${env.BASE_URL}/records/releases/${message.token}`
-  const lead = `${releasedLine(message)}${message.tooLarge === true ? ' The files were too large to attach to an email, so they are at this link instead.' : ''} The link works for ${LINK_DAYS} days.`
+  const lead = `${releasedLine(message)}${linkNote(message)} The link works for ${LINK_DAYS} days.`
   return await sendParagraphs(
     mail,
     message,

@@ -163,7 +163,16 @@ describe('request forms show a refusal beside its field', () => {
 
   it('the revoke reason', async () => {
     refuseWith('reason', 'Enter a reason of at least 10 characters.')
-    inProvider(<ReleaseSection releases={[]} approvals={[approval]} canManage findTool={null} />)
+    inProvider(
+      <ReleaseSection
+        releases={[]}
+        approvals={[approval]}
+        canManage
+        findTool={null}
+        timeZone="America/New_York"
+        requesterEmail={null}
+      />,
+    )
     open('Revoke approval')
     const reason = screen.getByRole('textbox', { name: /Why it is being revoked/ })
     fireEvent.change(reason, { target: { value: 'short' } })
