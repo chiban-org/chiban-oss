@@ -32,6 +32,7 @@ import {
 } from '@/features/enforcement/service'
 import type { ServiceStatus } from '@/features/enforcement/serviceStatus'
 import { type StayState, stayBanner, stayFor } from '@/features/enforcement/stay'
+import type { CasePayments } from '@/features/payments/casePayments'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
@@ -70,6 +71,7 @@ export interface CaseDetail {
   documents: PanelDocument[]
   names: Record<string, string>
   suggestions?: SuggestionsByKind
+  payments?: CasePayments | null
 }
 
 export function buildOrderDetail(

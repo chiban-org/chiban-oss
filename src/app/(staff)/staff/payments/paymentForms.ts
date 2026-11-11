@@ -30,6 +30,7 @@ export const REFUND_FORM = z
   .object({
     entryId: entryId(),
     applicationId: optionalRecordId('Choose an application.'),
+    fineId: optionalRecordId('Choose a fine.'),
     amount: moneyCents('the refund amount'),
     reason: reason(),
   })
@@ -38,6 +39,7 @@ export const REFUND_FORM = z
 export const returnedCheckForm = (today: CivilDate) =>
   z.object({
     entryId: entryId(),
+    fineId: optionalRecordId('Choose a fine.'),
     returnedOn: civilDate('the date returned', { latest: today }),
     reason: reason(),
   })

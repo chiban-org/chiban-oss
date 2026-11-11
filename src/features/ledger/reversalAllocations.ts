@@ -57,15 +57,24 @@ export interface ReversalAllocation {
   excessCents: number
 }
 
+export interface ReversalScope {
+  applicationId?: string
+  fineId?: string
+}
+
+function inScope(allocation: AllocationInput, scope: ReversalScope): boolean {
+  const application =
+    scope.applicationId === undefined || allocation.applicationId === scope.applicationId
+  return application && (scope.fineId === undefined || allocation.fineId === scope.fineId)
+}
+
 export async function allocateReversal(
   tx: DbOrTx,
   entryId: string,
   amountCents: number,
-  applicationId?: string,
+  scope: ReversalScope = {},
 ): Promise<ReversalAllocation> {
-  const net = (await netAllocations(tx, entryId)).filter(
-    (n) => applicationId === undefined || n.allocation.applicationId === applicationId,
-  )
+  const net = (await netAllocations(tx, entryId)).filter((n) => inScope(n.allocation, scope))
   const open = net.filter((n) => n.cents > 0)
   const remaining = open.reduce((sum, n) => sum + n.cents, 0)
   const covered = Math.min(amountCents, remaining)
