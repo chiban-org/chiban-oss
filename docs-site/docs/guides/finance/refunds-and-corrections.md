@@ -6,11 +6,11 @@ sidebar_position: 2
 
 # Refunds and corrections
 
-Chiban never edits or deletes a payment. When money has to go back or move, you add a new entry that reverses part of the old one, and the application's balance follows. Administrators and finance staff can do all of this. It is done on the application, not on **Payments**.
+Chiban never edits or deletes a payment. When money has to go back or move, you add a new entry that reverses part of the old one, and the application's balance follows. Administrators and finance staff can do all of this, on the application rather than on **Payments**.
 
 ## Where the controls are
 
-Open the application and go to **Fees and payments**. Under **Payments recorded**, each payment has **Refund, correct, or reverse**. Open it to see the options that fit that payment. Only payments have these controls. A fine paid on an enforcement case appears on the **Payments** page, but its case has no refund controls.
+Open the application and go to **Fees and payments**. Under **Payments recorded**, each payment has **Refund, correct, or reverse**. Open it to see the options that fit that payment. Only payment entries have these controls. A fine paid on an enforcement case appears on the **Payments** page, but its case has no refund controls.
 
 ## Refund a payment
 
@@ -35,8 +35,8 @@ For a card payment, **Record chargeback** takes back money when a cardholder dis
 
 ## Move money to another permit
 
-**Move to another permit** corrects a payment applied to the wrong application. Choose the permit under **Move to**, enter the **Amount in dollars** and a reason. The option appears when other applications exist, and it offers only the 25 most recent. It moves money onto a fee that is still due, so if the other permit has no unpaid fee of at least that amount, Chiban refuses.
+**Move to another permit** corrects a payment applied to the wrong application. Choose the permit under **Move to**, enter the **Amount in dollars** and a reason. The option appears when other applications exist and lists only the 25 most recent. It moves money onto a fee that is still due, so Chiban refuses if the other permit has no unpaid fee of at least that amount.
 
 ## Every reversal needs a reason
 
-Each of these asks for a reason of at least 10 characters, and the reason is kept with the entry. Refunds, returned checks and chargebacks cannot be undone, which is why each asks you to confirm.
+Each of these asks for a reason of at least 10 characters, which is kept with the entry. Refunds, returned checks and chargebacks cannot be undone, so each asks you to confirm.

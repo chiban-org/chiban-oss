@@ -6,7 +6,7 @@ sidebar_position: 4
 
 # The daily cash receipts report
 
-Run this report at the end of the day to see what came in, by fee and by how it was paid, and to prepare the deposit. Administrators, land use staff and finance staff can open it. Find it from **Reports**, or from the link under the entries on **Payments**.
+Run this report at the end of the day to see what came in, by fee and by payment method, and to prepare the deposit. Administrators, land use staff and finance staff can open it. Find it from **Reports**, or from the link under the entries on **Payments**.
 
 ![The daily cash receipts report for one day](/img/shots/finance/cash-receipts.png)
 
@@ -30,7 +30,7 @@ A court-imposed fine has its own row. Below the fees are three rows in bold:
 - **Overpayment to refund (not town revenue)**.
 - **Total**.
 
-Neither of the first two is fee revenue, so keep them out of what you report as town fees. Under the table, Chiban gives the number of ledger entries and the grand total.
+The first two are not fee revenue, so keep them out of the town fees you report. Under the table are the number of ledger entries and the grand total.
 
 Refunds, returned checks and chargebacks entered that day show as negative amounts in the column of the original payment. A refund of a check payment, for instance, reduces the **Check** column. The report follows the date of the entry, not the date of the original payment.
 
@@ -38,8 +38,8 @@ Refunds, returned checks and chargebacks entered that day show as negative amoun
 
 **Checks for deposit** lists each check taken that day, in the order taken, with its **Check number**, **Payer** and **Amount**. A check that was later returned says "Returned, recorded" with that date under the payer. Click a column heading to sort either table.
 
-Use the list to prepare the bank deposit slip. The report does not know what was actually deposited or when the bank received it.
+Use the list to prepare the bank deposit slip. The report cannot show what was actually deposited or when the bank received it.
 
 ## Printing
 
-The page is laid out for printing, and the date picker and download links drop out of the printed page.
+The page prints cleanly, without the date picker or the download links.

@@ -31,7 +31,7 @@ The list puts the soonest date first, and requests with no date running come las
 
 Open a request and the sentence under its title says what is waiting and when it is due, for example "Waiting on: Town. Send the first response. First response due November 17, 2026, 6 days left." Under **Due next**, **How it is counted** shows the start date and the counting method.
 
-A late response is still recorded. The request then shows "Answered late" with both dates.
+You can still record a late response. The request then shows "Answered late" with the due date and the answer date.
 
 ## Send the first response
 
@@ -46,7 +46,7 @@ Open the request. Under **Do this now**, **Send the first response**, choose one
 - **Why more time is needed**.
 - **Charge, if any (what it is for)** and **Charge in dollars**. Fill in both or neither.
 
-The request moves to **Waiting for the date the town stated**, and the deadline becomes the date you gave. From there you either release the records or deny the request. Chiban takes one written time statement per request. After it is recorded, the response choices are gone, so give the date you can keep.
+The request moves to **Waiting for the date the town stated**, and the deadline becomes the date you gave. From there you either release the records or deny the request. A request takes only one written time statement, and the response choices disappear once it is recorded, so give a date you can keep.
 
 **Records are posted on the town website.** Enter the **Web address where the records are posted** and the date. The request becomes **Responded**, ready to close.
 
@@ -61,7 +61,7 @@ Under **Records withheld or redacted**, open **Record a withholding**.
 - **Exemption**: the list of exemptions the state pack offers, or **Made confidential by another law**. For that one, name the law under **Law, if made confidential by another law**.
 - **How the exemption applies (a sentence or two)**: at least 20 characters.
 
-Choose **Record withholding**. When you release a copy redacted in Chiban, the exemptions drawn on its boxes are recorded here for you. You only enter a withholding by hand for a record you are keeping back entirely, or for a redaction made outside Chiban. See [Redact a document](./redaction.md).
+Choose **Record withholding**. When you release a copy redacted in Chiban, the exemptions drawn on its boxes are recorded here for you. Enter a withholding by hand only for a record you are keeping back entirely, or for a redaction made outside Chiban. See [Redact a document](./redaction.md).
 
 ## Deny a request
 

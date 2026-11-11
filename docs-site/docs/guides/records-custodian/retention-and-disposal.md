@@ -6,7 +6,7 @@ sidebar_position: 5
 
 # Retention and disposal
 
-The retention schedule says how long the town keeps each kind of record. Chiban applies it for you. This page covers reading the **Retention** list, recording events that start a clock, and proposing, approving and reviewing disposal.
+The retention schedule says how long the town keeps each kind of record, and Chiban applies it for you. Here you will read the **Retention** list, record the events that start a clock, and propose, approve and review disposal.
 
 ## How the schedule works
 
@@ -34,7 +34,7 @@ Under **Record event**, choose **What happened** and enter the **Date it happene
 
 ## Propose a batch
 
-Disposal always happens in a batch, so two people see it before records are deleted.
+Disposal always happens in a batch, so a second person sees it before any record is deleted.
 
 1. On **Retention**, under **Disposition batches**, open **Propose a batch**.
 2. Set **Records eligible on or before**, which starts as today, and choose **Propose batch**.
@@ -47,7 +47,7 @@ Only a records custodian can approve, and not the person who proposed it. A batc
 
 Open the batch and choose **Approve and carry out**. Chiban warns that approving permanently deletes these records and that holds placed since the proposal are respected. Confirm with **Approve and delete**. The batch runs at once.
 
-Each record gets a result in the batch: **Disposed of**, **Skipped: a legal hold was placed** or **Skipped: no longer eligible**. Use **Cancel the batch** instead if it should not go ahead. Nothing in a cancelled batch is disposed of, and you propose a new batch later.
+Each record in the batch gets a result: **Disposed of**, **Skipped: a legal hold was placed** or **Skipped: no longer eligible**. To stop a batch, use **Cancel the batch**. Nothing in a cancelled batch is disposed of, and you can propose a new one later.
 
 ## Disposed records
 

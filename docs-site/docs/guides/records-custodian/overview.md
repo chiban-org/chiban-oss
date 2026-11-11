@@ -7,7 +7,7 @@ sidebar_position: 1
 
 # The records custodian's work
 
-A records custodian looks after the town's records once they exist. In Chiban that means answering Right-to-Know requests, redacting documents, keeping an eye on the retention schedule, approving disposal, placing legal holds and making sure every document has an archival copy. In a small town the custodian is often also the clerk, so the same person may hold the [land use staff role](../../start-here/staff-roles.md) too.
+A records custodian looks after the town's records once they exist. In Chiban the job covers Right-to-Know requests, redaction, the retention schedule, approving disposal, legal holds and archival copies. In a small town the custodian is often the clerk too, so one person may hold the [land use staff role](../../start-here/staff-roles.md) as well.
 
 ## Where each job lives
 

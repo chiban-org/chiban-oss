@@ -10,13 +10,13 @@ A legal hold keeps records from being disposed of, whatever the retention schedu
 
 ## What a hold covers
 
-A hold on a project, an application or a document blocks disposal of everything under it. A hold also stops a record that is already in a proposed batch: when the batch is approved, that record is skipped and marked **Skipped: a legal hold was placed**. A document under a hold shows a **Legal hold** label in its record's document list.
+A hold on a project, an application or a document blocks disposal of everything under it. A hold also protects a record already in a proposed batch: when the batch is approved, that record is skipped and marked **Skipped: a legal hold was placed**. A document under a hold shows a **Legal hold** label in its record's document list.
 
 ## Place a hold
 
 1. Open **Legal holds** and choose **Place a hold**.
 2. Under **Hold on**, choose **Project**, **Application** or **Document**.
-3. Enter the **Application number, project title, or document title**. Use the application number when you can. If more than one record has the same name, Chiban asks you to use the application number. A document that has already been disposed of cannot be held.
+3. Enter the **Application number, project title, or document title**. Use the application number when you can. If more than one record has the same name, Chiban asks for the application number. A document that has already been disposed of cannot be held.
 4. Give a **Reason (at least 10 characters)** and choose **Place hold**.
 
 An application's own page has a **Place a legal hold** option under **Records**, for the same job.
@@ -27,6 +27,6 @@ Holds on Right-to-Know requests and enforcement cases appear in the list when th
 
 ## Review and release holds
 
-The page has **Active** and **Released** tabs. Each row shows the subject, its kind, the reason and when it was placed. The newest hold is first.
+The **Active** and **Released** tabs list holds newest first, with each one's subject, kind, reason and placement date.
 
 To release one, open **Release** on its row, enter a **Release reason (at least 10 characters)** and choose **Release hold**, then confirm. The row moves to **Released** with the date and your reason. The records are no longer protected by that hold. If another hold still covers a record, that hold keeps it, and the **Retention** page shows the count when a record has more than one.

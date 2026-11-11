@@ -10,7 +10,7 @@ For many record series, Chiban makes an archival PDF/A copy of each document, so
 
 ## Read the list
 
-**Preservation** is titled **Preservation incomplete**. Each row shows the document, the problem, how many times Chiban has tried and a **Retry** button. The document title links to its record, and **Download the file** opens the stored file.
+The page, titled **Preservation incomplete**, has a row for each document, giving the problem, how many times Chiban has tried and a **Retry** button. The title links to the record, and **Download the file** opens the stored file.
 
 The problem is one of these:
 

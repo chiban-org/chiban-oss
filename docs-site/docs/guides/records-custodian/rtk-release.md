@@ -6,7 +6,7 @@ sidebar_position: 3
 
 # Release records and close the request
 
-A record goes to a requester in three steps: find it, approve the exact version to hand over, then release it. The approval is a separate step because a document can have an original and several redacted copies, and only the version someone checked should leave the office.
+A record goes to a requester in three steps: find it, approve the exact version to hand over, then release it. Approval is its own step because a document can have an original and several redacted copies, and only the version someone checked should leave the office.
 
 ## Find the record
 
@@ -32,13 +32,13 @@ Choose **Release 1 record** (or however many), then confirm. Once released it ca
 
 Each release gets a number and its own letter, **Letter for release 1**, filed on the request. If the first release is made while the request is still open, it also records the first response. A request can have many releases. Redacted copies add their exemptions to **Records withheld or redacted**, and a redacted copy cannot be released until every box on it carries an exemption.
 
-Only **Link sent by email** sends anything. Chiban does not attach files to an email, even when you choose **Email attachment**. That choice and the paper and inspection choices only record how the records went out.
+Only **Link sent by email** sends anything. Chiban does not attach files to an email, even when you choose **Email attachment**. That choice, like the paper and inspection choices, only records how the records went out.
 
 ## The link the requester receives
 
 The requester gets an email with a link to a page titled "Records for request RK-2026-0001". It lists each released file to download. Nothing on the page asks the requester to sign in.
 
-The link works for 30 days. After that the page says the link has expired and to ask the land use office for a new one. Chiban has no button to send a fresh link or to reissue one. If a requester needs the records again after that, send them another way.
+The link works for 30 days. After that the page says the link has expired and to ask the land use office for a new one. Chiban has no button to send a fresh link or to reissue one. If the requester needs the records again, send them another way.
 
 ## Take an approval back
 
@@ -46,6 +46,4 @@ Under **Approved for this request**, **Revoke approval** takes a version off the
 
 ## Close the request
 
-When nothing approved is waiting, the **Do this now** card offers **Close the request**. Choose **Closed** or **Withdrawn by the requester** under **Close it as**. The same two choices are under **More actions** at any time while the request is open. A closed request cannot be released from.
-
-The stage strip at the top of a request follows it from **Received** through **Responded** to **Closed**, with **Time stated** between the first two when you gave the requester a date.
+When nothing approved is waiting, the **Do this now** card offers **Close the request**. Choose **Closed** or **Withdrawn by the requester** under **Close it as**. The same two choices are under **More actions** at any time while the request is open. Nothing more can be released on a closed request.
