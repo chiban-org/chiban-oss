@@ -65,5 +65,24 @@ export function createS3Target(settings: S3Settings, credentials: S3Credentials)
         return err(failure(e))
       }
     },
+    async list(folder, signal) {
+      const base = keyOf(`${folder}/`)
+      try {
+        const keys = await store.list(base, signal)
+        return ok(keys.map((k) => k.slice(base.length)).filter((n) => n !== '' && !n.includes('/')))
+      } catch (e) {
+        if (e instanceof Error && e.name === 'AbortError') throw e
+        return err(failure(e))
+      }
+    },
+    async delete(path, signal) {
+      try {
+        await store.delete(keyOf(path), signal)
+        return ok(undefined)
+      } catch (e) {
+        if (e instanceof Error && e.name === 'AbortError') throw e
+        return err(failure(e))
+      }
+    },
   }
 }

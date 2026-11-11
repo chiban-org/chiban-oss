@@ -42,6 +42,8 @@ function recording(inner: StorageTarget): Recorder {
     kind: inner.kind,
     exists: (p, s) => inner.exists(p, s),
     get: (p, s) => inner.get(p, s),
+    list: (p, s) => inner.list(p, s),
+    delete: (p, s) => inner.delete(p, s),
     async put(path, body, size, s) {
       if (rec.failOn !== null && path.endsWith(rec.failOn)) {
         body.destroy()

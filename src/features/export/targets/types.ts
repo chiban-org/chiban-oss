@@ -16,4 +16,6 @@ export interface StorageTarget {
   ): Promise<Result<void, TargetError>>
   exists(path: string, signal: AbortSignal): Promise<Result<boolean, TargetError>>
   get(path: string, signal: AbortSignal): Promise<Result<Readable, TargetError | 'not_found'>>
+  list(folder: string, signal: AbortSignal): Promise<Result<string[], TargetError>>
+  delete(path: string, signal: AbortSignal): Promise<Result<void, TargetError>>
 }
