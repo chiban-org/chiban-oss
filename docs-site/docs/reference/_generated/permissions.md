@@ -17,7 +17,7 @@ generated_from:
 | Override an administrative gate with a recorded reason. | Land use staff |
 | Record a statutory exception with cited legal authority. | Administrator |
 | Refund, void, or correct a payment entry. | Administrator and Finance |
-| Show a document on the public site or hide it. | Land use staff |
+| Show a document on the public site or hide it. | Administrator, Land use staff and Records custodian |
 | Place or release a legal hold. | Administrator and Records custodian |
 | Approve disposition. | Records custodian |
 | Edit configuration. | Administrator |

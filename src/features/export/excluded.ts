@@ -14,4 +14,6 @@ export const EXCLUDED_TABLES: Record<string, string> = {
   anonymous_intake_probe_tokens: 'short-lived probe secret',
   document_renditions: 'regenerable from the version',
   file_deletions: 'operational queue',
+  backup_schedule:
+    'backup schedule and status of this server, set again after a restore with its own passphrase',
 }
