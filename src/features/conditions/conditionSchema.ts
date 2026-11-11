@@ -1,5 +1,7 @@
 import { z } from 'zod'
 
+export const MIN_WAIVER_REASON_LENGTH = 10
+
 export const ConditionLibraryBodySchema = z
   .object({
     key: z.string().min(1),

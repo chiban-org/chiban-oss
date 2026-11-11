@@ -7,12 +7,13 @@ import { type CoreState, TERMINAL_STATES } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
-import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
+import {
+  type ConditionLibraryBody,
+  MIN_WAIVER_REASON_LENGTH,
+} from '@/features/conditions/conditionSchema'
 import { getVersion } from '@/features/config/store'
 import { hasFullRecordAccess } from '@/features/projects/access'
 import { err, ok, type Result } from '@/types/result'
-
-const MIN_REASON_LENGTH = 10
 
 async function mayChangeConditions(db: Db, actor: Actor, signal: AbortSignal): Promise<boolean> {
   return (
@@ -109,7 +110,7 @@ export async function setConditionStatus(
   if (input.status === 'waived' && row.blocksIssuance) {
     if (!(await hasCapability(db, actor.userId, 'gate.override_admin', signal)))
       return err('forbidden')
-    if (reason.length < MIN_REASON_LENGTH) return err('reason_required')
+    if (reason.length < MIN_WAIVER_REASON_LENGTH) return err('reason_required')
   }
   return await transactionResult(db, async (tx) => {
     await tx

@@ -1,10 +1,11 @@
 import { ActionForm } from '@/components/ActionForm'
 import { StatusChip } from '@/components/StatusChip'
-import { CheckField, SelectField, TextField } from '@/components/staff/fields'
+import { AreaField, CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { StaffApplicationView } from '@/features/applications/staffApplicationView'
 import { TERMINAL_STATES } from '@/features/applications/states'
 import { MAX_ADJUSTMENT_DAYS } from '@/features/clocks/adjustmentKinds'
 import type { AdjustmentKind } from '@/features/clocks/explainClock'
+import { MIN_WAIVER_REASON_LENGTH } from '@/features/conditions/conditionSchema'
 import { partyLine, partyRoleLabel } from '@/features/projects/partyRoleLabels'
 import { formatCivilDate } from '@/lib/formatDate'
 import { markCompleteAction } from './actions'
@@ -139,6 +140,37 @@ export function ClockAdjustForm({
   )
 }
 
+type AppliedCondition = StaffApplicationView['conditions'][number]
+
+function WaiveCondition({ condition }: { condition: AppliedCondition }) {
+  const required = condition.blocksIssuance
+  return (
+    <details>
+      <summary className="text-sm">Waive</summary>
+      <ActionForm action={setConditionStatusAction} submitLabel="Waive condition">
+        <input type="hidden" name="conditionId" value={condition.id} />
+        <input type="hidden" name="status" value="waived" />
+        <AreaField
+          label="Reason for waiving"
+          name="reason"
+          required={required}
+          minLength={required ? MIN_WAIVER_REASON_LENGTH : undefined}
+          maxLength={2000}
+          hint={
+            required
+              ? `This condition blocks issuance. Explain why it is waived, in at least ${MIN_WAIVER_REASON_LENGTH} characters.`
+              : 'Kept with the condition on the record.'
+          }
+        />
+      </ActionForm>
+    </details>
+  )
+}
+
+function mayWaive(view: StaffApplicationView, condition: AppliedCondition): boolean {
+  return !condition.blocksIssuance || view.permissions.canOverrideGate
+}
+
 export function ConditionsPanel({ view }: { view: StaffApplicationView }) {
   const editable = view.permissions.canIssue && !TERMINAL_STATES.includes(view.state)
   const appliedCodes = new Set(view.conditions.map((c) => c.code))
@@ -169,6 +201,9 @@ export function ConditionsPanel({ view }: { view: StaffApplicationView }) {
                   <input type="hidden" name="conditionId" value={c.id} />
                   <input type="hidden" name="status" value="met" />
                 </ActionForm>
+              ) : null}
+              {editable && c.status === 'unmet' && mayWaive(view, c) ? (
+                <WaiveCondition condition={c} />
               ) : null}
             </span>
           </li>
