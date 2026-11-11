@@ -1,0 +1,4 @@
+[
+  { "file": "finance/payments-list.png", "persona": "Sam Clerk", "path": "/staff/payments", "width": 1280, "height": 800 },
+  { "file": "finance/cash-receipts.png", "persona": "Sam Clerk", "path": "/staff/reports/cash-receipts", "width": 1280, "height": 800 }
+]
