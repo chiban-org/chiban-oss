@@ -7,7 +7,7 @@ sidebar_position: 6
 
 # Appeals and motions for rehearing
 
-After a board decides, the people it affects have a short time to ask for a rehearing or to go to court. This page is for the board secretary and planning and zoning staff, who record those steps so the application shows what is still open and when the periods end. You need the permission to record board business.
+After a board decides, the people it affects have a short time to ask for a rehearing or to go to court. This page is for the board secretary and planning and zoning staff, who record those steps so the application shows what is still open and when each period ends. Recording needs the permission to record board business.
 
 ## Where the appeals are
 
@@ -17,7 +17,7 @@ Open the decision from the application, under **Hearings and decisions**. The **
 - the period that now runs, with the date it ends and what an appeal filed after that date means, for example "Motion for rehearing of a ZBA decision, due November 19, 2026. An appeal filed after this date is untimely";
 - a **Filed late** chip when the step was recorded after its period ended.
 
-The board's own decision is the first entry. Chiban adds it when you record the decision, so you never enter it again. On the application, the progress line shows **Appeal period** after **Decision** while the periods are running.
+The board's own decision is the first entry. Chiban adds it when you record the decision. On the application, the progress line shows **Appeal period** after **Decision** while the periods are running.
 
 ## Record a step
 

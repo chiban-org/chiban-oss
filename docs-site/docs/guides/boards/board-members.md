@@ -9,9 +9,9 @@ sidebar_position: 7
 
 The roster is the list of people seated on each board, with their role and the dates of their term. This page is for the board secretary and planning and zoning staff. Chiban uses the roster in three places:
 
-- **Packets** go to the members seated on the day you send them.
-- **Votes** can only be recorded for members whose term covers the date of the vote.
-- **Access.** A member can open the meetings and packets of their own board only while their term runs.
+- Packets go to the members seated on the day you send them.
+- Votes can only be recorded for members whose term covers the date of the vote.
+- A member can open the meetings and packets of their own board only while their term runs.
 
 Adding members and ending their terms needs the permission to manage board members, which land use staff and administrators have.
 
@@ -39,7 +39,7 @@ A person who sits on two boards has one account. Adding someone with an email ad
 
 Select **Edit** on the member's row. You can change any of the fields above, including the board, the role and the term dates. A new name or email applies to every board the person sits on. Chiban refuses an email that another person already uses, and a term that ends before it starts.
 
-Use **Edit** for a change of role, for a term that has been renewed, and to set an end date in advance.
+Edit also covers a change of role, a renewed term, and an end date set in advance.
 
 ## End a membership
 
@@ -47,7 +47,7 @@ Select **End membership** on the member's row and confirm. The member is no long
 
 ## What the roster does to a decision
 
-When you record a decision, every name in **How each member voted** is checked against the roster for the date of the vote. A member who was not seated that day cannot vote, and an alternate or clerk counts as seated like any other role. If a vote is refused for that reason, fix the roster, not the vote. See [recording a decision](./decisions.md#record-the-decision).
+When you record a decision, every name in **How each member voted** is checked against the roster for the date of the vote. A member who was not seated that day cannot vote, and an alternate or clerk counts as seated like any other role. If a vote is refused for that reason, correct the roster. See [recording a decision](./decisions.md#record-the-decision).
 
 ## What the roster does to packets
 

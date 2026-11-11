@@ -7,7 +7,7 @@ sidebar_position: 8
 
 # Reading your packet as a board member
 
-This page is for people who sit on a town board, such as the Planning Board or the Zoning Board of Adjustment. In the demo, Robin Vale sits on the Planning Board and Drew Hale sits on the Zoning Board. You do not need to learn the rest of Chiban. Everything you need is on one page called **Your board**.
+This page is for people who sit on a town board, such as the Planning Board or the Zoning Board of Adjustment. In the demo, Robin Vale sits on the Planning Board and Drew Hale sits on the Zoning Board. Everything you need is on one page called **Your board**, so there is no need to learn the rest of Chiban.
 
 ## Signing in
 
@@ -57,7 +57,7 @@ You cannot change a comment once it is posted. The land use office and the other
 
 ## If something looks wrong
 
-- **A packet link that has expired.** A link the office sent you separately from your sign-in works for a set number of days. If it has expired, the page says so. Ask the land use office to send a new one.
-- **Your name is not on a meeting you expected.** The office controls which members are seated. Ask them to check that your term includes the date.
+- A packet link the office sent you separately from your sign-in works for a set number of days. If it has expired, the page says so. Ask the land use office for a new one.
+- A meeting you expected is missing. The office controls which members are seated, so ask them to check that your term includes the date.
 
 The land use office's contact details are at the foot of every page.

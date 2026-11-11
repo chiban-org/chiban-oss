@@ -7,7 +7,7 @@ sidebar_position: 5
 
 # Recording a decision and filing the notice of decision
 
-This page is for the board secretary and planning and zoning staff. The board has voted. You now have to record what it decided, produce the written Notice of Decision, file it with the minutes by the filing deadline, and get the decision letter to the applicant. You need the permission to record board business to do the first steps. Filing also needs the permission to publish documents, which land use staff have.
+This page is for the board secretary and planning and zoning staff. Once the board has voted, you record what it decided, produce the written Notice of Decision, file it with the minutes by the filing deadline, and get the decision letter to the applicant. The first steps need the permission to record board business. Filing also needs the permission to publish documents, which land use staff have.
 
 The steps run in this order, and the decision page shows the next one in its **Next step** box:
 
@@ -20,8 +20,6 @@ The steps run in this order, and the decision page shows the next one in its **N
 ## Record the decision
 
 A decision belongs to a hearing, so it is recorded from the hearing page once the hearing is held. See [hearings and notice](./hearings.md#mark-the-hearing-held). A **Record the decision** section opens at the foot of the page.
-
-Fill it in from the minutes or from the secretary's notes.
 
 - **Date of the vote.** It cannot be before the hearing was held or later than today.
 - **Outcome**, which is **Approved**, **Approved with conditions** or **Denied**.
@@ -56,7 +54,7 @@ Both stay private to the people on the project until the decision is filed. If t
 
 The filing deadline for the minutes and written decision shows on the decision page, with a chip when it is overdue. See [New Hampshire deadlines and holidays](../../state-packs/new-hampshire/deadlines.mdx) for how it is counted.
 
-1. Under **Filing**, upload the minutes of the meeting where the board voted. Choose the file, give it a name and select **Upload**. These are minutes for this decision, so they are uploaded on the decision page even if you also filed the meeting's minutes on the meeting page.
+1. Under **Filing**, upload the minutes of the meeting where the board voted. Choose the file, give it a name and select **Upload**. Upload them here even if you also filed the meeting's minutes on the meeting page.
 2. Enter the **Date filed**. It starts as today and cannot be before the vote or in the future.
 3. Choose the file you uploaded under **Minutes**.
 4. Select **File the decision**.

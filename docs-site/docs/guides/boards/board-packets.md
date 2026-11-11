@@ -35,7 +35,7 @@ Some documents cannot be ticked, and the line says why:
 - **Belongs to the** other board. A document attached to the other board's work, such as the Zoning Board's papers on a Planning Board packet, cannot go in.
 - **No approved public copy.** A document that has no approved public version cannot go in.
 
-If the application was reviewed by the Technical Review Committee, you can tick **Make TRC summary**. Chiban makes a summary document from the committee's review and puts it in the packet. Chiban says **No TRC review on this application** when there is none.
+If the application was reviewed by the Technical Review Committee, you can tick **Make TRC summary**. It makes a summary document from the committee's review and puts it in the packet. Where there was no review, the line says **No TRC review on this application**.
 
 ## Review
 
@@ -49,7 +49,7 @@ After you save, the **Review** step lists everything the packet holds, in order.
 
 The **Send** step lists who will get the packet.
 
-Select **Send to the** board, the button that names the board and how many members it has, to send it to every member who is seated today. The members get an email, described below. If some members already have the packet, for example because they joined the board after it went out, the button changes to send it to the members who do not have it yet.
+To send it to every member seated today, select the button that begins **Send to the** and names the board and how many members it has. The members get an email, described below. If some members already have the packet, for example because they joined the board after it went out, the button changes to send it to the members who do not have it yet.
 
 Under **Also send to someone outside the board**, you can give the packet to a person who is not on the board, such as town counsel.
 

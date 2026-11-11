@@ -50,7 +50,7 @@ A meeting that is after the deadline can still be chosen, but Chiban warns you t
 
 Under **Regional impact and water bodies**, record whether the project has regional impact. Choose **No regional impact**, **Regional impact** or **Previously determined by another board**. For regional impact, tick the affected municipalities. If another board decided it earlier, enter that board's reference. Select **Record determination**.
 
-Below it, Chiban measures from the parcel to the nearest water body and suggests whether the NH DES notice applies. Choose an answer under **Record the NH DES determination**. If your answer differs from what the map suggests, or you choose that the notice does not apply, write a reason. The map measures from the parcel and not from the building site, so use your own judgment where the two differ.
+Below it, Chiban measures from the parcel to the nearest water body and suggests whether the NH DES notice applies. Choose an answer under **Record the NH DES determination**. If your answer differs from what the map suggests, or you choose that the notice does not apply, write a reason. The map measures from the parcel, not the building site, so use your own judgment where they differ.
 
 Both findings change who gets notice, and regional impact lengthens the decision period. Record them before you draw the abutter list. If you record or change either one after a list was issued, Chiban asks you to draw and issue a new list before a hearing can be scheduled.
 
@@ -68,7 +68,7 @@ On a Planning Board application that has just been submitted, the hearing is a *
 
 ### 5. Record the completeness vote
 
-The vote form opens once the meeting has taken place. Before then the page says to record the vote once the meeting has happened.
+The vote form opens once the meeting has taken place. Until then the page tells you to come back after the meeting.
 
 Under **Filing and acceptance**, open **Record the completeness vote** and fill in:
 
@@ -78,7 +78,7 @@ Under **Filing and acceptance**, open **Record the completeness vote** and fill 
 
 Select **Record vote** and confirm.
 
-When the board accepts the application, it moves to **Under review**, its stage becomes **Hearing**, and the completeness deadline is marked met. The clock for the board's decision starts that day. When the board does not accept it, Chiban records the reason and closes the application as not accepted. Check the vote before you confirm, because the outcome is recorded as the board's vote.
+When the board accepts the application, it moves to **Under review**, its stage becomes **Hearing**, and the completeness deadline is marked met. The clock for the board's decision starts that day. When the board does not accept it, Chiban records the reason and closes the application as not accepted. Check the outcome before you confirm, since it is recorded as the board's vote.
 
 If a requirement is still blocking the application, such as the abutter list, the form only offers the not accepted outcome, and the **Requirements** list says what is missing.
 

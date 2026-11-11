@@ -7,7 +7,7 @@ sidebar_position: 3
 
 # Meetings, agendas and minutes
 
-This page is for the board secretary and planning and zoning staff. A meeting is the thing everything else hangs from: hearings are scheduled for it, its agenda is published on the town's site, its packet goes to the board, and its minutes are filed after it. You need the permission to record board business, which land use staff and administrators have.
+This page is for the board secretary and planning and zoning staff. Hearings are scheduled for a meeting, its agenda is published on the town's site, its packet goes to the board, and its minutes are filed after it. You need the permission to record board business, which land use staff and administrators have.
 
 ## The meetings list
 
@@ -83,7 +83,7 @@ After the meeting, the meeting page has a **Minutes** section.
 
 Draft minutes stay inside the office. Approved minutes are shown on the public meetings page and are listed for board members under their earlier meetings. Once minutes are approved, they cannot be replaced. Chiban will not record minutes for a meeting that has not happened yet, or for one that was cancelled.
 
-The minutes you file here are the meeting's minutes. When the board decides an application, the decision is filed with its own copy of the minutes from the decision page. See [decisions and notices of decision](./decisions.md#file-the-decision).
+The minutes you file here belong to the meeting. When the board decides an application, the decision is filed with its own copy of the minutes from the decision page. See [decisions and notices of decision](./decisions.md#file-the-decision).
 
 ## The public meetings page
 

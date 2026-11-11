@@ -17,7 +17,7 @@ Chiban will not schedule a hearing until three things are done on the applicatio
 
 - **The meeting is on the calendar.** If the board has no meeting on the date you need, add it on the [meetings page](./meetings-and-agendas.md) first.
 - **The regional impact and water body findings are recorded.** See [board applications](./board-applications.md).
-- **An abutter list has been issued, and it was issued after those findings.** If you change a finding after issuing the list, Chiban asks for a new list. The message reads that the list was issued before the regional impact or water proximity finding, and that you should draw and issue a new list first.
+- **An abutter list has been issued, and it was issued after those findings.** If you change a finding after issuing the list, Chiban asks for a new list. The message says the list was issued before the regional impact or water proximity finding and tells you to draw and issue a new list first.
 
 ## Schedule the hearing
 
@@ -29,7 +29,7 @@ Chiban will not schedule a hearing until three things are done on the applicatio
 
 Scheduling a **Submission and public hearing** also sets that meeting as the acceptance meeting. For a Zoning Board application that has just been submitted, scheduling the hearing also opens it, and the application moves to **Under review**.
 
-Chiban then builds the notice checklist for that hearing and says so: "Hearing scheduled. The notice checklist is ready."
+Chiban builds the notice checklist for the hearing and confirms it: "Hearing scheduled. The notice checklist is ready."
 
 ## The notice checklist
 
@@ -63,7 +63,7 @@ The file you upload has to be a certificate or receipt. Chiban does not accept t
 
 ## Mark the hearing properly noticed
 
-When every item shows **On time**, the **Next step** box on the hearing page offers **Mark properly noticed**. Until then it says how many notices still need proof. Chiban will not let you mark the hearing noticed while any item is **Missing** or **Late**, and it lists the ones holding it up.
+When every item shows **On time**, the **Next step** box on the hearing page offers **Mark properly noticed**. Until then it says how many notices still need proof. While any item is **Missing** or **Late**, Chiban refuses and lists the ones holding it up.
 
 ## Mark the hearing held
 
