@@ -1,5 +1,6 @@
 import type { Db } from '@/db/client'
 import { getTownSettings } from '@/features/town/settings'
+import { log } from '@/server/log'
 import { type AlertEvent, markNotified, syncAlerts } from './alertState'
 import type { AlertChannel, AlertMessage } from './channels/types'
 import type { DiskReading } from './disk'
@@ -50,7 +51,7 @@ async function pingHeartbeat(url: string, fetcher: typeof fetch, signal: AbortSi
     await fetcher(url, { method: 'GET', signal })
   } catch (e) {
     if (e instanceof Error && e.name === 'AbortError') throw e
-    console.error('[health] heartbeat ping failed', e instanceof Error ? e.message : e)
+    log.error('[health] heartbeat ping failed', e instanceof Error ? e.message : e)
   }
 }
 

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import {
   parseBackupArgs,
+  parseImportFromTargetArgs,
   parseRestoreObjectsArgs,
   parseVerifyArgs,
 } from '@/features/backup/cliArgs'
@@ -56,5 +57,26 @@ describe('restore objects arguments', () => {
     expect(parseRestoreObjectsArgs([]).ok).toBe(false)
     expect(parseRestoreObjectsArgs(['--dir', '']).ok).toBe(false)
     expect(parseRestoreObjectsArgs(['--dir', '/objects', '--nope']).ok).toBe(false)
+  })
+})
+
+describe('import from target arguments', () => {
+  it('needs the copy folder and the export folder to restore', () => {
+    expect(parseImportFromTargetArgs(['--dir', '/copies', '--month', '2027-01-3'])).toEqual({
+      ok: true,
+      value: { dir: '/copies', month: '2027-01-3' },
+    })
+    expect(parseImportFromTargetArgs(['--dir', '/copies']).ok).toBe(false)
+    expect(parseImportFromTargetArgs(['--month', '2027-02']).ok).toBe(false)
+    expect(parseImportFromTargetArgs(['--dir', '', '--month', '2027-02']).ok).toBe(false)
+    expect(parseImportFromTargetArgs(['--dir', '/c', '--month', '2027-02', '--x']).ok).toBe(false)
+  })
+
+  it('refuses an export folder that would leave the copy folder', () => {
+    for (const month of ['../2027-02', '2027-02/..', '/etc', 'a/b']) {
+      expect(parseImportFromTargetArgs(['--dir', '/copies', '--month', month]).ok, month).toBe(
+        false,
+      )
+    }
   })
 })

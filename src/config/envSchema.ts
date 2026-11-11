@@ -4,6 +4,10 @@ const boolFromString = z.enum(['true', 'false']).transform((v) => v === 'true')
 
 const KEY_ID = /^[A-Za-z0-9_-]{1,32}$/
 
+export const LOG_LEVELS = ['debug', 'info', 'warn', 'error'] as const
+
+export type LogLevel = (typeof LOG_LEVELS)[number]
+
 const secretKeys = z
   .string()
   .transform((raw, ctx) => {
@@ -52,7 +56,7 @@ function mailHostIn(smtpUrl: string, hosts: readonly string[]): boolean {
 const envShape = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
   PORT: z.coerce.number().int().positive().default(3000),
-  LOG_LEVEL: z.enum(['debug', 'info', 'warn', 'error']).default('info'),
+  LOG_LEVEL: z.preprocess(blankAsUnset, z.enum(LOG_LEVELS).default('info')),
   DATABASE_URL: z.string().min(1),
   BASE_URL: z.url(),
   SMTP_URL: z.string().min(1).default('smtp://localhost:1025'),
@@ -81,9 +85,9 @@ const envShape = z.object({
   VERAPDF_PATH: z.string().min(1).default('verapdf'),
   ALERT_EMAIL_TO: commaList(z.email()).default([]),
   HEALTH_DISK_PATHS: commaList(z.string().min(1)).default(['/']),
-  HEALTH_HEARTBEAT_URL: z.url().optional(),
-  PAGER_EVENTS_URL: z.url().optional(),
-  PAGER_ROUTING_KEY: z.string().min(1).optional(),
+  HEALTH_HEARTBEAT_URL: z.preprocess(blankAsUnset, z.url().optional()),
+  PAGER_EVENTS_URL: z.preprocess(blankAsUnset, z.url().optional()),
+  PAGER_ROUTING_KEY: optionalSecret,
   CHIBAN_SECRET_KEYS: secretKeys,
   CHIBAN_ACTIVE_KEY_ID: z.string().regex(KEY_ID),
   CHIBAN_IMAGE_REF: z.string().min(1).optional(),

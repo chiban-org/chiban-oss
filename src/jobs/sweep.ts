@@ -1,5 +1,6 @@
 import { JOB_NAMES } from '@/constants/jobNames'
 import type { Db } from '@/db/client'
+import { log } from '@/server/log'
 import { err, ok } from '@/types/result'
 import { defineJob, enqueue } from './defineJob'
 import { SWEEP_TARGETS, type SweepTarget } from './sweepTargets'
@@ -46,7 +47,7 @@ export const jobsSweepJob = defineJob<SweepPayload>({
   handler: async (_payload, ctx) => {
     const result = await runSweep(ctx.root, new Date(), ctx.signal)
     if (Object.values(result.counts).some((n) => n > 0)) {
-      console.warn(`[sweep] re-enqueued ${JSON.stringify(result.counts)}`)
+      log.info(`[sweep] re-enqueued ${JSON.stringify(result.counts)}`)
     }
     return result.failures.length > 0 ? err(result.failures.join('; ')) : ok(undefined)
   },

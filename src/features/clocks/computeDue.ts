@@ -36,6 +36,10 @@ function stepBusinessDays(
   return due
 }
 
+export function rollsToNextBusinessDay(input: Pick<DueInput, 'clockType' | 'direction'>): boolean {
+  return input.clockType === 'filing_window' && input.direction === 'after'
+}
+
 export function computeDue(input: DueInput): DueResult {
   if (input.length.unit === 'business_days') {
     const step = input.direction === 'after' ? 1 : -1
@@ -49,8 +53,8 @@ export function computeDue(input: DueInput): DueResult {
     input.length.unit === 'days'
       ? addDays(input.start, signed)
       : addMonthsClamped(input.start, signed)
-  const rolls = input.clockType === 'filing_window' && input.direction === 'after'
-  if (!rolls || !isNonBusinessDay(raw, input.holidays)) return { due: raw, rolledFrom: null }
+  if (!rollsToNextBusinessDay(input) || !isNonBusinessDay(raw, input.holidays))
+    return { due: raw, rolledFrom: null }
   let due = raw
   while (isNonBusinessDay(due, input.holidays)) due = addDays(due, 1)
   return { due, rolledFrom: raw }

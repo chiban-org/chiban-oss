@@ -12,6 +12,7 @@ import {
   manageStaff,
   parseStaffRoles,
 } from '@/features/users/staffAccounts'
+import { log } from '@/server/log'
 import { err, ok, type Result } from '@/types/result'
 
 export interface InviteInput {
@@ -30,7 +31,7 @@ export async function deliver(
   signal: AbortSignal,
 ): Promise<boolean> {
   const sent = await mail.send(message, signal)
-  if (!sent.ok) console.error(`[users] ${ErrorIds.MAIL_SEND_FAILED} staff account email not sent`)
+  if (!sent.ok) log.error(`[users] ${ErrorIds.MAIL_SEND_FAILED} staff account email not sent`)
   return sent.ok
 }
 

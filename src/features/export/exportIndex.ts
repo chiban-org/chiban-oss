@@ -9,17 +9,14 @@ export const INDEX_PATH = `${EXPORT_ROOT}/exports.json`
 
 const INDEX_LIMIT = 16 * 1024 * 1024
 
+export const exportFolderSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}$/)
+  .or(z.string().regex(/^\d{4}-\d{2}-\d{1,3}$/))
+
 const indexSchema = z.object({
   version: z.literal(1),
-  exports: z.array(
-    z.object({
-      exportId: z.uuid(),
-      folder: z
-        .string()
-        .regex(/^\d{4}-\d{2}$/)
-        .or(z.string().regex(/^\d{4}-\d{2}-\d{1,3}$/)),
-    }),
-  ),
+  exports: z.array(z.object({ exportId: z.uuid(), folder: exportFolderSchema })),
 })
 
 export type ExportIndex = z.infer<typeof indexSchema>['exports']

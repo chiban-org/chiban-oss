@@ -8,6 +8,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { safeNext } from '@/features/auth/safeNext'
 import { createSession } from '@/features/auth/session'
 import type { MailTransport } from '@/features/mail/transport'
+import { log } from '@/server/log'
 import { createRateLimiter } from '@/server/rateLimiter'
 import { err, ok, type Result } from '@/types/result'
 
@@ -83,7 +84,7 @@ export async function requestMagicLink(
     },
     signal,
   )
-  if (!sent.ok) console.error(`[auth] ${ErrorIds.MAIL_SEND_FAILED} sign-in link email was not sent`)
+  if (!sent.ok) log.error(`[auth] ${ErrorIds.MAIL_SEND_FAILED} sign-in link email was not sent`)
   return ok(undefined)
 }
 

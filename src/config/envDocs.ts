@@ -30,7 +30,7 @@ export const ENV_DOCS = {
   },
   LOG_LEVEL: {
     group: 'core',
-    text: 'Accepted and checked at startup. No part of Chiban reads it at present.',
+    text: 'How much the web application and the worker write to their logs: `debug`, `info`, `warn` or `error`. Each level includes the ones after it. Blank means `info`. Command-line tools always print their results.',
   },
   DATABASE_URL: {
     group: 'core',
