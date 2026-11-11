@@ -31,6 +31,7 @@ import {
 } from '@/features/enforcement/orders'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { sendFixtureNotice } from '@/test/enforcementNoticeFixture'
 import { makeTestStore } from '@/test/objectStore'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { pdfText } from '@/test/pdfText'
@@ -102,6 +103,11 @@ async function draft(
   findingIds: string[],
   overrides: Partial<Parameters<typeof draftOrder>[2]> = {},
 ) {
+  await sendFixtureNotice(handle.db, store, staff, {
+    caseId,
+    findingId: findingIds[0] ?? '',
+    sentOn: '2027-02-27',
+  })
   return await draftOrder(
     handle.db,
     staff,

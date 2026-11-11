@@ -26,6 +26,8 @@ const COPY: Record<string, string> = {
   not_designated:
     'You are not on record as a designated enforcement officer on the issue date. An administrator can add it under Settings, Administration, Enforcement officers.',
   deadline_before_issue: 'The corrective action deadline is before the issue date.',
+  notice_required:
+    'Send the notice of violation first. An order can be issued only after the notice of violation is sent.',
   stayed:
     'Enforcement is stayed by an appeal. Notes, photos, service, and answers can still be recorded.',
   order_not_active:

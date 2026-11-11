@@ -268,7 +268,7 @@ describe('the case page panels, strip and views', () => {
 describe('the field view on a draft order', () => {
   it('lets the inspector complete the draft the step asks to complete before issuing it', async () => {
     await actAs('staff')
-    const caseId = byNumber('EC-2026-0006')
+    const caseId = byNumber('EC-2026-0001')
     const [finding] = await handle.db
       .select()
       .from(violationFindings)

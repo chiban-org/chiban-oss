@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest'
 import { ALL_CASE_ABILITIES, OPEN_FINDING, planFor, planInput, planOrder } from '@/test/casePlan'
 import { hostedActions } from './workPlanTypes'
 
+const SENT = [{ id: 'n1', receivedOn: '2026-11-02' }]
+
 describe('the case work plan before an order is issued', () => {
   it('asks the town to start the investigation at intake', () => {
     const p = planFor(planInput('intake'))
@@ -63,7 +65,9 @@ describe('the case work plan before an order is issued', () => {
 
   it('asks to issue a draft order', () => {
     const draft = planOrder({}, { status: 'draft', issuedOn: null })
-    const p = planFor(planInput('violation_found', { findings: OPEN_FINDING, orders: [draft] }))
+    const p = planFor(
+      planInput('violation_found', { findings: OPEN_FINDING, notices: SENT, orders: [draft] }),
+    )
     expect(p.sentence).toBe('Waiting on: Town (Sam Clerk). Issue order CD-2026-0001.')
     expect(p.now?.action).toEqual({ kind: 'issue_order', orderId: 'o1' })
     expect(p.now?.note).toBeNull()
@@ -71,8 +75,16 @@ describe('the case work plan before an order is issued', () => {
 
   it('notes a draft order with no corrective action written', () => {
     const draft = planOrder({}, { status: 'draft', issuedOn: null, correctiveAction: '' })
-    const p = planFor(planInput('violation_found', { findings: OPEN_FINDING, orders: [draft] }))
+    const p = planFor(
+      planInput('violation_found', { findings: OPEN_FINDING, notices: SENT, orders: [draft] }),
+    )
     expect(p.now?.note).toBe('Write the corrective action in the draft before issuing it.')
+  })
+
+  it('asks for the notice of violation before issuing a draft order', () => {
+    const draft = planOrder({}, { status: 'draft', issuedOn: null })
+    const p = planFor(planInput('violation_found', { findings: OPEN_FINDING, orders: [draft] }))
+    expect(p.now?.action).toEqual({ kind: 'send_notice' })
   })
 
   it('asks to close a resolved case and keeps the close move out of more actions', () => {
