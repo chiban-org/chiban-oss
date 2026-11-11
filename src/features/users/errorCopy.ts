@@ -22,5 +22,5 @@ export function userErrorCopy(code: string): string {
 }
 
 export function unsentCopy(what: string): string {
-  return `${what} The email could not be sent. Check the mail settings on the Health page, then send it again.`
+  return `${what} The email could not be sent. Ask whoever runs the server to check the mail settings, then send it again.`
 }

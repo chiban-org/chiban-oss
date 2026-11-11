@@ -353,7 +353,7 @@ describe('issueOrderAction findings the feature owns', () => {
     expect(result).toEqual(
       refuseField(
         'issuedOn',
-        'You are not on record as a designated enforcement officer on the issue date. An administrator can add it under Admin, Enforcement officers.',
+        'You are not on record as a designated enforcement officer on the issue date. An administrator can add it under Settings, Administration, Enforcement officers.',
       ),
     )
   })

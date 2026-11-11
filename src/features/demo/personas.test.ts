@@ -14,6 +14,9 @@ describe('demo personas', () => {
     expect(DEMO_PERSONAS.map((p) => p.role)).toEqual([
       'Clerk at the counter',
       'Building inspector',
+      'Finance clerk',
+      'Town records custodian',
+      'Departmental reviewer',
       'Planning Board member',
       'Zoning Board member',
       'Applicant',
@@ -24,7 +27,7 @@ describe('demo personas', () => {
 
   it('finds a persona only by its exact demo address', () => {
     expect(personaFor(' Admin@AlderPond.example ')?.role).toBe('Administrator')
-    expect(personaFor('finance@alderpond.example')).toBeNull()
+    expect(personaFor('official@alderpond.example')).toBeNull()
     expect(personaFor('admin@town.example')).toBeNull()
     expect(personaFor(null)).toBeNull()
   })

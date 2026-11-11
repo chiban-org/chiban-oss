@@ -28,6 +28,27 @@ export const DEMO_PERSONAS: readonly DemoPersona[] = [
     home: '/staff',
   },
   {
+    email: demo('finance'),
+    role: 'Finance clerk',
+    summary: 'Collects payments, runs the money reports and corrects entries in the ledger.',
+    kind: 'staff',
+    home: '/staff',
+  },
+  {
+    email: demo('records'),
+    role: 'Town records custodian',
+    summary: 'Answers Right-to-Know requests, redacts records and manages holds and retention.',
+    kind: 'staff',
+    home: '/staff',
+  },
+  {
+    email: demo('reviewer'),
+    role: 'Departmental reviewer',
+    summary: 'Reviews the applications sent to the department and records comments.',
+    kind: 'staff',
+    home: '/staff',
+  },
+  {
     email: demo('pb.member'),
     role: 'Planning Board member',
     summary: 'Reads the meeting packet and the applications in front of the Planning Board.',
