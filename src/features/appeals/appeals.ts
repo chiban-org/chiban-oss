@@ -30,15 +30,29 @@ async function exerciseByClocks(tx: Tx, applicationId: string, status: 'running'
   })
 }
 
+type AppealInput = { applicationId: string; filedOn: CivilDate; appellantName: string }
+type AppealOptions = { pack?: Pack; now?: Date }
+
 export async function recordAppeal(
   db: Db,
   actor: Actor,
-  input: { applicationId: string; filedOn: CivilDate; appellantName: string },
+  input: AppealInput,
   signal: AbortSignal,
-  { pack = loadPack(), now = new Date() }: { pack?: Pack; now?: Date } = {},
+  options: AppealOptions = {},
 ): Promise<Result<void, 'forbidden' | 'not_issued' | 'future_date'>> {
   signal.throwIfAborted()
   if (!(await hasCapability(db, actor.userId, 'permit.issue', signal))) return err('forbidden')
+  return await recordAppealAuthorizedByCaller(db, actor, input, signal, options)
+}
+
+export async function recordAppealAuthorizedByCaller(
+  db: Db,
+  actor: Actor,
+  input: AppealInput,
+  signal: AbortSignal,
+  { pack = loadPack(), now = new Date() }: AppealOptions = {},
+): Promise<Result<void, 'not_issued' | 'future_date'>> {
+  signal.throwIfAborted()
   if (await isAfterTownToday(db, input.filedOn, now, signal)) return err('future_date')
   return await transactionResult(db, async (tx) => {
     const app = await loadApplicationContext(tx, input.applicationId, signal)

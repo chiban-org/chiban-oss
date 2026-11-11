@@ -4,7 +4,7 @@ import { and, desc, eq, ne } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { appealNodes, clocks } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
-import { recordAppeal } from '@/features/appeals/appeals'
+import { recordAppealAuthorizedByCaller } from '@/features/appeals/appeals'
 import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -188,7 +188,7 @@ async function maybeSuspendIssuedPermit(
   if (parent.applicationId === null) return ok(undefined)
   const app = await loadApplicationContext(db, parent.applicationId, signal)
   if (app?.state !== 'issued') return ok(undefined)
-  const recorded = await recordAppeal(
+  const recorded = await recordAppealAuthorizedByCaller(
     db,
     actor,
     {
