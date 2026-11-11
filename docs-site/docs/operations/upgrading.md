@@ -59,7 +59,7 @@ When a rollout fails, `deploy.sh` first compares the newest migration in the dat
 | The two match | Writes the previous image back as `CHIBAN_IMAGE`, restarts the application and worker on it, records `rolled_back`, and says that only the app rolls back. |
 | The check itself fails | Warns that it could not tell whether the new image applied migrations the old one does not know, then rolls back the image and records `rolled_back`. |
 
-So a failed upgrade that already changed the schema is not silently run on the old image. If the script refuses, restore the pre-upgrade backup as described in [backups](./backups.md), then run `./deploy.sh --image` with the previous image or a fixed one.
+A failed upgrade that already changed the schema therefore never runs on the old image. If the script refuses, restore the pre-upgrade backup as described in [backups](./backups.md), then run `./deploy.sh --image` with the previous image or a fixed one.
 
 On a first deploy there is no previous image, and the script records `failed_no_previous`.
 

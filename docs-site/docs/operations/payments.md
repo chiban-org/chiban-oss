@@ -48,7 +48,7 @@ POST https://town.example.org/api/payments/webhooks/<account id>
 
 The id at the end is the id of the saved account record. The **Card payments** page shows the full address under **Processor**, with a **Copy address** button, so nobody needs the database. The address is hidden for the simulator, which sends no webhooks. For a new account, save once with the signing secret blank to see the address, register it in the processor's dashboard, then save again with the secret the processor gives you.
 
-The address stays the same across saves of the same processor, mode and account number. Addresses from before that change keep working, with the secrets of their own account.
+Addresses issued before the address became stable keep working, each with the secret of its own account.
 
 While no signing secret is saved, every webhook for the account is refused with `bad_signature`, and the page says the account is not receiving payment updates. Checkout still works, and the hourly reconciliation below catches the payments.
 
