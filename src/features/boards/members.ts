@@ -8,7 +8,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardLabel, getBoard } from '@/features/boards/townBoards'
 import type { MailTransport } from '@/features/mail/transport'
-import { publishedWording } from '@/features/notifications/messageSettings'
+import { publishedWording, townName } from '@/features/notifications/messageSettings'
 import { boardMemberValues, wordingLink } from '@/features/notifications/wording/externalValues'
 import { renderWording } from '@/features/notifications/wording/renderWording'
 import { wordingFor } from '@/features/notifications/wording/wordingEdits'
@@ -102,13 +102,16 @@ export async function inviteBoardMember(
     },
   )
   if (!created.ok) return created
-  const overrides = await publishedWording(db, signal)
+  const [overrides, town] = await Promise.all([publishedWording(db, signal), townName(db, signal)])
   const message = renderWording(
     wordingFor('board_member_added', overrides),
-    boardMemberValues({
-      boardName: boardLabel(board),
-      titleLabel: MEMBER_TITLE_LABELS[input.title],
-    }),
+    {
+      ...boardMemberValues({
+        boardName: boardLabel(board),
+        titleLabel: MEMBER_TITLE_LABELS[input.title],
+      }),
+      'town.name': town,
+    },
     wordingLink('board_member_added', `${env.BASE_URL}/board`),
   )
   const sent = await mail.send({ to: email, ...message }, signal)

@@ -18,6 +18,7 @@ export type MailPacket = WordingPacket
 export interface PacketWording {
   overrides: WordingOverrides
   boardName?: string
+  townName?: string
 }
 
 const NO_OVERRIDES: PacketWording = { overrides: {} }
@@ -32,7 +33,9 @@ function rendered(
   href: string | null,
 ): MailMessage {
   const link = href === null ? null : wordingLink(key, href)
-  return { to, ...renderWording(wordingFor(key, wording.overrides), values, link) }
+  const withTown =
+    wording.townName === undefined ? values : { ...values, 'town.name': wording.townName }
+  return { to, ...renderWording(wordingFor(key, wording.overrides), withTown, link) }
 }
 
 export function memberPacketMail(

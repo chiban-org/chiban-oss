@@ -56,7 +56,7 @@ describe('board emails use the published wording', () => {
     await publishWording({
       board_member_added: {
         subject: 'Welcome to {{board.name}}',
-        body: 'You now serve as {{member.title}}. {{link}}',
+        body: 'You now serve as {{member.title}} for {{town.name}}. {{link}}',
       },
     })
     const invited = await inviteBoardMember(
@@ -76,7 +76,7 @@ describe('board emails use the published wording', () => {
     const sent = mail.sent[0]
     expect(sent?.to).toBe('new.member@alderpond.example')
     expect(sent?.subject).toMatch(/^Welcome to .+/)
-    expect(sent?.text).toContain('You now serve as alternate.')
+    expect(sent?.text).toContain('You now serve as alternate for Town of Alder Pond.')
     expect(sent?.text).toContain(`${env.BASE_URL}/board`)
     expect(sent?.html).toContain(`<a href="${env.BASE_URL}/board">`)
   })
@@ -154,7 +154,7 @@ describe('board emails use the published wording', () => {
     await publishWording({
       board_meeting_cancelled: {
         subject: 'Off: {{packet.title}}',
-        body: 'Cancelled because {{meeting.reason}}.',
+        body: 'Cancelled because {{meeting.reason}}. {{town.name}}',
       },
     })
     const packetId = await savedPacket([flow.agendaDocumentId])
@@ -177,7 +177,7 @@ describe('board emails use the published wording', () => {
     expect(told.ok).toBe(true)
     const sent = mail.sent[0]
     expect(sent?.subject).toMatch(/^Off: /)
-    expect(sent?.text).toBe('Cancelled because No quorum.\n')
+    expect(sent?.text).toBe('Cancelled because No quorum. Town of Alder Pond\n')
     expect(sent?.html).not.toContain('<a ')
   })
 })
