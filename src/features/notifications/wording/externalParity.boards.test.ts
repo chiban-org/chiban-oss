@@ -1,12 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { env } from '@/config/env'
 import {
-  cancelledPacketMail,
-  linkPacketMail,
-  memberPacketMail,
-  updatePacketMail,
-} from '@/features/boards/packetMail'
-import {
   boardMemberValues,
   boardPacketValues,
   packetCancelValues,
@@ -24,77 +18,100 @@ const PACKET = {
 }
 const UNDATED = { ...PACKET, title: 'April agenda', place: null }
 const BOARD = `${env.BASE_URL}/board`
+const TITLE = 'Alder Pond Zoning Board of Adjustment packet, December 15, 2026'
+const WHEN = 'Tuesday, December 15, 2026 at 7:00 PM, Town Hall, Meeting Room 2'
+const LINK_URL = 'https://town.example/board/packets/abc'
+const linkHtml = (url: string) => `<a href="${url}">${url}</a>`
+
 describe('board_packet_ready default', () => {
-  for (const packet of [PACKET, UNDATED]) {
-    it(`matches memberPacketMail for ${packet.title}`, () => {
-      const old = memberPacketMail('a@example.org', packet)
+  const cases = [
+    {
+      packet: PACKET,
+      subject: `Board packet: ${TITLE}`,
+      text: `The packet for the meeting on ${WHEN} is ready.\n\nSign in at ${BOARD} to read it.\n`,
+      html: `<p>The packet for the meeting on ${WHEN} is ready.</p><p>Sign in at ${linkHtml(BOARD)} to read it.</p>`,
+    },
+    {
+      packet: UNDATED,
+      subject: 'Board packet: April agenda, meeting December 15, 2026',
+      text: `The packet for the meeting on December 15, 2026 is ready.\n\nSign in at ${BOARD} to read it.\n`,
+      html: `<p>The packet for the meeting on December 15, 2026 is ready.</p><p>Sign in at ${linkHtml(BOARD)} to read it.</p>`,
+    },
+  ]
+  for (const expected of cases) {
+    it(`matches the old message for ${expected.packet.title}`, () => {
       const next = renderWording(
         DEFAULT_WORDING.board_packet_ready,
-        boardPacketValues(packet),
+        boardPacketValues(expected.packet),
         wordingLink('board_packet_ready', BOARD),
       )
-      expect(next.subject).toBe(old.subject)
-      expect(next.text).toBe(old.text)
-      expect(next.html).toBe(old.html.replace(BOARD, `<a href="${BOARD}">${BOARD}</a>`))
+      expect(next).toEqual({
+        subject: expected.subject,
+        text: expected.text,
+        html: expected.html,
+      })
     })
   }
 })
 
 describe('board_packet_link default', () => {
-  it('matches linkPacketMail in subject and text', () => {
-    const url = 'https://town.example/board/packets/abc'
-    const old = linkPacketMail({ name: 'Robin Vale', email: 'robin@example.org' }, PACKET, {
-      url,
-      days: 14,
-    })
+  it('matches the old message', () => {
     const next = renderWording(
       DEFAULT_WORDING.board_packet_link,
       packetLinkValues(PACKET, { name: 'Robin Vale' }, { days: 14 }),
-      wordingLink('board_packet_link', url),
+      wordingLink('board_packet_link', LINK_URL),
     )
-    expect(next.subject).toBe(old.subject)
-    expect(next.text).toBe(old.text)
-    expect(next.html).toBe(old.html.replace(`<p>${url}</p>`, `<p><a href="${url}">${url}</a></p>`))
+    expect(next).toEqual({
+      subject: `Board packet: ${TITLE}`,
+      text: `Robin Vale, the packet for the meeting on ${WHEN} is ready. The link expires in 14 days.\n\n${LINK_URL}\n`,
+      html: `<p>Robin Vale, the packet for the meeting on ${WHEN} is ready. The link expires in 14 days.</p><p>${linkHtml(LINK_URL)}</p>`,
+    })
   })
 })
 
 describe('board_packet_updated default', () => {
   const input = { summary: 'The staff report was replaced.', viaLink: true }
+  const changed =
+    'The packet for the December 15, 2026 meeting changed. The staff report was replaced.'
 
-  it('matches updatePacketMail exactly for a reader who came by link', () => {
-    const old = updatePacketMail('a@example.org', PACKET, input)
+  it('matches the old message exactly for a reader who came by link', () => {
     const next = renderWording(
       DEFAULT_WORDING.board_packet_updated,
       packetUpdateValues(PACKET, input),
       null,
     )
-    expect(next).toEqual({ subject: old.subject, text: old.text, html: old.html })
+    expect(next).toEqual({
+      subject: `Board packet updated: ${TITLE}`,
+      text: `${changed}\n\nOpen the packet from the link in your earlier email.\n`,
+      html: `<p>${changed}</p><p>Open the packet from the link in your earlier email.</p>`,
+    })
   })
 
   it('puts the sign-in sentence before the link for a signed-in reader', () => {
-    const old = updatePacketMail('a@example.org', PACKET, { ...input, viaLink: false })
     const next = renderWording(
       DEFAULT_WORDING.board_packet_updated,
       packetUpdateValues(PACKET, { ...input, viaLink: false }),
       wordingLink('board_packet_updated', BOARD),
     )
-    expect(next.subject).toBe(old.subject)
-    expect(next.text).toBe(
-      'The packet for the December 15, 2026 meeting changed. The staff report was replaced.\n\nSign in to read it.\n\n' +
-        `${BOARD}\n`,
-    )
+    expect(next.subject).toBe(`Board packet updated: ${TITLE}`)
+    expect(next.text).toBe(`${changed}\n\nSign in to read it.\n\n${BOARD}\n`)
   })
 })
 
 describe('board_meeting_cancelled default', () => {
-  it('matches cancelledPacketMail exactly', () => {
-    const old = cancelledPacketMail('a@example.org', PACKET, 'the hearing room is closed')
+  it('matches the old message exactly', () => {
     const next = renderWording(
       DEFAULT_WORDING.board_meeting_cancelled,
       packetCancelValues(PACKET, 'the hearing room is closed'),
       null,
     )
-    expect(next).toEqual({ subject: old.subject, text: old.text, html: old.html })
+    const line =
+      'The December 15, 2026 meeting is cancelled: the hearing room is closed. Its packet is closed and its links no longer work.'
+    expect(next).toEqual({
+      subject: `Meeting cancelled: ${TITLE}`,
+      text: `${line}\n`,
+      html: `<p>${line}</p>`,
+    })
   })
 })
 
