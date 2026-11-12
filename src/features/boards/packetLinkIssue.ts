@@ -6,6 +6,7 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { linkPacketMail } from '@/features/boards/packetMail'
 import { packetPlace } from '@/features/boards/packetView'
+import { loadPacketWording } from '@/features/boards/packetWording'
 import type { MailTransport } from '@/features/mail/transport'
 import { err, ok, type Result } from '@/types/result'
 
@@ -57,6 +58,7 @@ export async function issuePacketLink(
     signal,
   )
   const place = await packetPlace(db, packet.meetingId)
+  const wording = await loadPacketWording(db, packet.boardId, signal)
   const sent = await mail.send(
     linkPacketMail(
       { name: recipient.recipientName, email },
@@ -65,6 +67,7 @@ export async function issuePacketLink(
         url: `${env.BASE_URL}/board/packets/${token}`,
         days: recipient.days,
       },
+      wording,
     ),
     signal,
   )
