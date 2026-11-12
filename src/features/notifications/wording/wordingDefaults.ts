@@ -8,6 +8,8 @@ export interface Wording {
 const NUMBER = '{{application.number}}'
 const INSPECTION_LABEL = '{{inspection.type}}'
 const DETAILS = 'Open the application for the details.'
+const REQUEST = '{{request.number}}'
+const RELEASED = `The town released records for your Right-to-Know request ${REQUEST} on {{records.releasedOn}}.`
 
 export const DEFAULT_WORDING: Record<WordingKey, Wording> = {
   application_submitted: {
@@ -76,5 +78,58 @@ export const DEFAULT_WORDING: Record<WordingKey, Wording> = {
       `The {{board.name}} decision on application ${NUMBER} was filed with the town on {{decision.filedOn}}. The decision: {{decision.outcome}}.`,
       'The decision letter is attached to the application. You can read and print it {{account.from}}.',
     ].join('\n\n'),
+  },
+  board_member_added: {
+    subject: 'Board membership: {{board.name}}',
+    body: 'You have been added to the {{board.name}} as {{member.title}}. Sign in with your email address at {{link}} to read meeting packets. We will email you a one-time sign-in link when you ask for it.',
+  },
+  board_packet_ready: {
+    subject: 'Board packet: {{packet.title}}',
+    body: [
+      'The packet for the meeting on {{meeting.when}} is ready.',
+      'Sign in at {{link}} to read it.',
+    ].join('\n\n'),
+  },
+  board_packet_link: {
+    subject: 'Board packet: {{packet.title}}',
+    body: '{{recipient.name}}, the packet for the meeting on {{meeting.when}} is ready. The link expires in {{link.days}} days.',
+  },
+  board_packet_updated: {
+    subject: 'Board packet updated: {{packet.title}}',
+    body: [
+      'The packet for the {{meeting.date}} meeting changed. {{packet.changes}}',
+      '{{packet.where}}',
+    ].join('\n\n'),
+  },
+  board_meeting_cancelled: {
+    subject: 'Meeting cancelled: {{packet.title}}',
+    body: 'The {{meeting.date}} meeting is cancelled: {{meeting.reason}}. Its packet is closed and its links no longer work.',
+  },
+  project_claim: {
+    subject: 'Claim your project in Chiban: {{project.title}}',
+    body: [
+      '{{recipient.name}}, you were named {{claim.namedAs}} at the {{town.name}}.',
+      'Use this link to claim the project and follow its permits. It works once and expires in {{link.days}} days.',
+    ].join('\n\n'),
+  },
+  rtk_request_received: {
+    subject: `Right-to-Know request ${REQUEST} received`,
+    body: [
+      `The town received your Right-to-Know request on {{request.receivedOn}}. Its number is ${REQUEST}.`,
+      'The town will answer by {{request.due}}. It will make the records available, deny the request in writing, or tell you in writing when it will answer.',
+      'Keep the request number if you need to ask about it.',
+    ].join('\n\n'),
+  },
+  rtk_letter_sent: {
+    subject: `Letter about Right-to-Know request ${REQUEST}`,
+    body: `The town's letter about your Right-to-Know request ${REQUEST} is attached.`,
+  },
+  rtk_records_link: {
+    subject: `Records for request ${REQUEST}`,
+    body: `${RELEASED}{{records.linkNote}} The link works for {{link.days}} days.`,
+  },
+  rtk_records_attached: {
+    subject: `Records for request ${REQUEST}`,
+    body: `${RELEASED} The records and the town's letter are attached.`,
   },
 }

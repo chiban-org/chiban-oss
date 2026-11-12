@@ -38,7 +38,12 @@ export const EMPTY_NOTIFICATION_WORDING: NotificationWordingBody = { key: 'defau
 
 export function allowedFields(key: WordingKey): ReadonlySet<string> {
   const info = new Map(Object.entries(WORDING_KEY_INFO)).get(key)
-  return new Set([...COMMON_FIELDS, ...(info?.fields ?? [])])
+  const link = info?.link === 'none' ? [] : ['link']
+  return new Set<string>([...COMMON_FIELDS, ...(info?.fields ?? []), ...link])
+}
+
+function requiredFieldsOf(key: WordingKey): readonly string[] {
+  return new Map(Object.entries(WORDING_KEY_INFO)).get(key)?.requiredFields ?? []
 }
 
 export interface WordingIssue {
@@ -75,6 +80,12 @@ export function wordingIssues(
         field,
         message: `This message cannot use ${unknown.map((n) => `{{${n}}}`).join(', ')}. Pick a field from the list.`,
       })
+    }
+  }
+  const present = new Set(scanTokens(`${wording.subject}\n${wording.body}`).map((t) => t.name))
+  for (const field of requiredFieldsOf(key)) {
+    if (!present.has(field)) {
+      issues.push({ field: 'body', message: `This message must include {{${field}}}.` })
     }
   }
   return issues

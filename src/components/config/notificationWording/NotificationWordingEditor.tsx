@@ -28,6 +28,9 @@ const KEY_INFO = new Map(Object.entries(WORDING_KEY_INFO))
 const BODY_HINT =
   'Leave a blank line between paragraphs. Chiban adds the link at the end unless you place {{link}}, and leaves out a paragraph when none of its fields has a value.'
 
+const NO_LINK_HINT =
+  'Leave a blank line between paragraphs. This message has no link. Chiban leaves out a paragraph when none of its fields has a value.'
+
 export function NotificationWordingEditor({ body, onChange, errors, townName }: Props) {
   const [selected, setSelected] = useState<WordingKey>('application_submitted')
   const area = useRef<HTMLTextAreaElement>(null)
@@ -65,7 +68,7 @@ export function NotificationWordingEditor({ body, onChange, errors, townName }: 
           <Area
             ref={area}
             label="Message"
-            hint={BODY_HINT}
+            hint={info?.link === 'none' ? NO_LINK_HINT : BODY_HINT}
             rows={8}
             value={wording.body}
             onChange={(e) => onChange(withWording(body, selected, { body: e.target.value }))}
@@ -82,7 +85,7 @@ export function NotificationWordingEditor({ body, onChange, errors, townName }: 
         >
           Reset to the standard wording
         </Button>
-        <WordingPreview wording={wording} townName={townName} />
+        <WordingPreview wording={wording} townName={townName} fieldKey={selected} />
       </div>
     </div>
   )

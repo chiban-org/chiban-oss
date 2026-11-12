@@ -16,6 +16,7 @@ const AUDIENCES: readonly [WordingAudience, string][] = [
   ['staff', 'To staff'],
   ['reviewers', 'To reviewers'],
   ['boards', 'To boards'],
+  ['requesters', 'To records requesters'],
 ]
 
 const INFO = new Map(Object.entries(WORDING_KEY_INFO))

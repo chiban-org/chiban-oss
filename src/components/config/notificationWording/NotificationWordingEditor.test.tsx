@@ -75,4 +75,37 @@ describe('NotificationWordingEditor', () => {
     fireEvent.click(screen.getByRole('button', { name: /Fees due/ }))
     expect(screen.getByText('Leave web addresses out.')).toBeDefined()
   })
+
+  it('lists the records requester group and the board messages', () => {
+    render(
+      <NotificationWordingEditor
+        body={EMPTY_NOTIFICATION_WORDING}
+        onChange={vi.fn()}
+        errors={{}}
+        townName="T"
+      />,
+    )
+    const nav = screen.getByRole('navigation', { name: 'Messages' })
+    expect(nav.textContent).toContain('To records requesters')
+    for (const label of ['Records request received', 'Records attached', 'Added to a board']) {
+      expect(screen.getByRole('button', { name: new RegExp(label) })).toBeDefined()
+    }
+  })
+
+  it('says a message without a link has none and offers no link field', () => {
+    render(
+      <NotificationWordingEditor
+        body={EMPTY_NOTIFICATION_WORDING}
+        onChange={vi.fn()}
+        errors={{}}
+        townName="T"
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Records attached/ }))
+    expect(screen.getByText(/This message has no link\./)).toBeDefined()
+    expect(screen.queryByText('{{link}}')).toBeNull()
+    expect(screen.getByText('{{request.number}}')).toBeDefined()
+    const preview = screen.getByRole('region', { name: 'Preview' })
+    expect(preview.textContent).not.toContain('[link Chiban adds]')
+  })
 })

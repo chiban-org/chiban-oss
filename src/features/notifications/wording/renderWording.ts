@@ -76,23 +76,24 @@ export function usesLink(source: string): boolean {
 export function renderWording(
   wording: Wording,
   values: WordingValues,
-  link: WordingLink,
+  link: WordingLink | null,
 ): RenderedMessage {
+  const href = link?.href ?? ''
+  const appended = href !== '' && !usesLink(wording.body)
   const paragraphs = wording.body
     .split(/\n\s*\n/)
     .map((p) => piecesOf(p.trim()))
-    .filter((pieces) => asText(pieces, values, link.href).trim() !== '')
-    .filter((pieces) => !emptyOfValues(pieces, values, link.href))
-  const notes = link.note === undefined ? [] : [piecesOf(link.note)]
+    .filter((pieces) => asText(pieces, values, href).trim() !== '')
+    .filter((pieces) => !emptyOfValues(pieces, values, href))
+  const notes = link?.note === undefined ? [] : [piecesOf(link.note)]
   const all = [...paragraphs, ...notes]
-  const inline = usesLink(wording.body)
-  const text = all.map((p) => asText(p, values, link.href)).join('\n\n')
-  const html = all.map((p) => `<p>${asHtml(p, values, link.href)}</p>`).join('')
+  const text = all.map((p) => asText(p, values, href)).join('\n\n')
+  const html = all.map((p) => `<p>${asHtml(p, values, href)}</p>`).join('')
   return {
     subject: renderSubject(wording.subject, values),
-    text: inline ? `${text}\n` : `${text}\n\n${link.href}\n`,
-    html: inline
-      ? html
-      : `${html}<p><a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a></p>`,
+    text: appended ? `${text}\n\n${href}\n` : `${text}\n`,
+    html: appended
+      ? `${html}<p><a href="${escapeHtml(href)}">${escapeHtml(link?.label ?? href)}</a></p>`
+      : html,
   }
 }
