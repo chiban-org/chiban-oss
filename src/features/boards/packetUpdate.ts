@@ -23,6 +23,7 @@ import {
   sendablePacket,
   stillSeated,
 } from '@/features/boards/packetSend'
+import { loadPacketWording } from '@/features/boards/packetWording'
 import type { MailTransport } from '@/features/mail/transport'
 import { err, ok, type Result } from '@/types/result'
 
@@ -96,9 +97,10 @@ export async function sendPacketUpdate(
   if (changeCount(changes) === 0) return err('no_changes')
   const summary = `${changeSummary(changes)}.`
   const recipients = await updateRecipients(db, packet, now)
+  const wording = await loadPacketWording(db, packet.boardId, signal)
   for (const recipient of recipients) {
     const sent = await mail.send(
-      updatePacketMail(recipient.email, packet, { summary, viaLink: recipient.viaLink }),
+      updatePacketMail(recipient.email, packet, { summary, viaLink: recipient.viaLink }, wording),
       signal,
     )
     if (!sent.ok) return err('send_failed')

@@ -16,6 +16,7 @@ import { hasCapability } from '@/features/authz/capabilities'
 import { issuePacketLink } from '@/features/boards/packetLinkIssue'
 import { memberPacketMail } from '@/features/boards/packetMail'
 import { packetPlace } from '@/features/boards/packetView'
+import { loadPacketWording } from '@/features/boards/packetWording'
 import type { MailTransport } from '@/features/mail/transport'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
@@ -106,8 +107,9 @@ export async function sendPacketToBoard(
   if (due.length === 0) return err('already_sent')
   await stampSent(db, packet, now)
   const mailPacket = { ...packet, place: await packetPlace(db, packet.meetingId) }
+  const wording = await loadPacketWording(db, packet.boardId, signal)
   for (const member of due) {
-    const sent = await mail.send(memberPacketMail(member.email, mailPacket), signal)
+    const sent = await mail.send(memberPacketMail(member.email, mailPacket, wording), signal)
     if (!sent.ok) return err('send_failed')
     await db
       .insert(boardPacketMembers)
@@ -151,7 +153,11 @@ export async function resendToMember(
     )
   if (member === undefined) return err('not_found')
   const place = await packetPlace(db, found.value.meetingId)
-  const sent = await mail.send(memberPacketMail(member.email, { ...found.value, place }), signal)
+  const wording = await loadPacketWording(db, found.value.boardId, signal)
+  const sent = await mail.send(
+    memberPacketMail(member.email, { ...found.value, place }, wording),
+    signal,
+  )
   if (!sent.ok) return err('send_failed')
   await db
     .update(boardPacketMembers)

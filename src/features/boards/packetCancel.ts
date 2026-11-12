@@ -13,6 +13,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { cancelledPacketMail } from '@/features/boards/packetMail'
 import { stillSeated } from '@/features/boards/packetSend'
+import { loadPacketWording } from '@/features/boards/packetWording'
 import type { MailTransport } from '@/features/mail/transport'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
@@ -78,8 +79,9 @@ export async function tellPacketRecipientsCancelled(
   const cancelledAt = cancel?.at ?? new Date()
   const recipients = await cancelledRecipients(db, row.packet, cancelledAt)
   const reason = row.meeting.cancelReason ?? 'no reason given'
+  const wording = await loadPacketWording(db, row.packet.boardId, signal)
   for (const email of recipients) {
-    const sent = await mail.send(cancelledPacketMail(email, row.packet, reason), signal)
+    const sent = await mail.send(cancelledPacketMail(email, row.packet, reason, wording), signal)
     if (!sent.ok) return err('send_failed')
   }
   await writeAudit(

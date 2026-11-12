@@ -8,6 +8,10 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardLabel, getBoard } from '@/features/boards/townBoards'
 import type { MailTransport } from '@/features/mail/transport'
+import { publishedWording, townName } from '@/features/notifications/messageSettings'
+import { boardMemberValues, wordingLink } from '@/features/notifications/wording/externalValues'
+import { renderWording } from '@/features/notifications/wording/renderWording'
+import { wordingFor } from '@/features/notifications/wording/wordingEdits'
 import { townToday } from '@/features/town/today'
 import { addDays, type CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -98,16 +102,19 @@ export async function inviteBoardMember(
     },
   )
   if (!created.ok) return created
-  const body = `You have been added to the ${boardLabel(board)} as ${MEMBER_TITLE_LABELS[input.title].toLowerCase()}. Sign in with your email address at ${env.BASE_URL}/board to read meeting packets. We will email you a one-time sign-in link when you ask for it.\n`
-  const sent = await mail.send(
+  const [overrides, town] = await Promise.all([publishedWording(db, signal), townName(db, signal)])
+  const message = renderWording(
+    wordingFor('board_member_added', overrides),
     {
-      to: email,
-      subject: `Board membership: ${boardLabel(board)}`,
-      text: body,
-      html: `<p>${body}</p>`,
+      ...boardMemberValues({
+        boardName: boardLabel(board),
+        titleLabel: MEMBER_TITLE_LABELS[input.title],
+      }),
+      'town.name': town,
     },
-    signal,
+    wordingLink('board_member_added', `${env.BASE_URL}/board`),
   )
+  const sent = await mail.send({ to: email, ...message }, signal)
   return sent.ok ? created : err('send_failed')
 }
 

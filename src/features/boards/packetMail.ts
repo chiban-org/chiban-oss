@@ -1,81 +1,98 @@
 import { env } from '@/config/env'
-import { meetingWhenAndWhere } from '@/features/boards/meetingWhen'
 import type { MailMessage } from '@/features/mail/transport'
-import { formatCivilDate } from '@/lib/formatDate'
+import {
+  boardPacketValues,
+  packetCancelValues,
+  packetLinkValues,
+  packetUpdateValues,
+  type WordingPacket,
+  wordingLink,
+} from '@/features/notifications/wording/externalValues'
+import { renderWording } from '@/features/notifications/wording/renderWording'
+import { wordingFor } from '@/features/notifications/wording/wordingEdits'
+import type { WordingKey } from '@/features/notifications/wording/wordingKeys'
+import type { WordingOverrides } from '@/features/notifications/wording/wordingSchema'
 
-export interface MailPacket {
-  title: string
-  meetingDate: string
-  place?: { startsAtMinute: number; location: string } | null
+export type MailPacket = WordingPacket
+
+export interface PacketWording {
+  overrides: WordingOverrides
+  boardName?: string
+  townName?: string
 }
 
-function escapeHtml(text: string): string {
-  return text
-    .replaceAll('&', '&amp;')
-    .replaceAll('<', '&lt;')
-    .replaceAll('>', '&gt;')
-    .replaceAll('"', '&quot;')
+const NO_OVERRIDES: PacketWording = { overrides: {} }
+
+const BOARD_URL = () => `${env.BASE_URL}/board`
+
+function rendered(
+  to: string,
+  key: WordingKey,
+  wording: PacketWording,
+  values: Parameters<typeof renderWording>[1],
+  href: string | null,
+): MailMessage {
+  const link = href === null ? null : wordingLink(key, href)
+  const withTown =
+    wording.townName === undefined ? values : { ...values, 'town.name': wording.townName }
+  return { to, ...renderWording(wordingFor(key, wording.overrides), withTown, link) }
 }
 
-function message(to: string, subject: string, lines: string[]): MailMessage {
-  return {
+export function memberPacketMail(
+  to: string,
+  packet: MailPacket,
+  wording: PacketWording = NO_OVERRIDES,
+): MailMessage {
+  return rendered(
     to,
-    subject,
-    text: `${lines.join('\n\n')}\n`,
-    html: lines.map((line) => `<p>${escapeHtml(line)}</p>`).join(''),
-  }
-}
-
-function subjectOf(packet: MailPacket, prefix: string): string {
-  const date = formatCivilDate(packet.meetingDate)
-  return packet.title.includes(date)
-    ? `${prefix}: ${packet.title}`
-    : `${prefix}: ${packet.title}, meeting ${date}`
-}
-
-function whenOf(packet: MailPacket): string {
-  const place = packet.place ?? null
-  return place === null
-    ? formatCivilDate(packet.meetingDate)
-    : meetingWhenAndWhere({ meetingDate: packet.meetingDate, ...place })
-}
-
-export function memberPacketMail(to: string, packet: MailPacket): MailMessage {
-  return message(to, subjectOf(packet, 'Board packet'), [
-    `The packet for the meeting on ${whenOf(packet)} is ready.`,
-    `Sign in at ${env.BASE_URL}/board to read it.`,
-  ])
+    'board_packet_ready',
+    wording,
+    boardPacketValues(packet, wording.boardName),
+    BOARD_URL(),
+  )
 }
 
 export function linkPacketMail(
   to: { name: string; email: string },
   packet: MailPacket,
   link: { url: string; days: number },
+  wording: PacketWording = NO_OVERRIDES,
 ): MailMessage {
-  return message(to.email, subjectOf(packet, 'Board packet'), [
-    `${to.name}, the packet for the meeting on ${whenOf(packet)} is ready. The link expires in ${link.days} days.`,
+  return rendered(
+    to.email,
+    'board_packet_link',
+    wording,
+    packetLinkValues(packet, to, link, wording.boardName),
     link.url,
-  ])
+  )
 }
 
 export function updatePacketMail(
   to: string,
   packet: MailPacket,
   input: { summary: string; viaLink: boolean },
+  wording: PacketWording = NO_OVERRIDES,
 ): MailMessage {
-  const date = formatCivilDate(packet.meetingDate)
-  const where = input.viaLink
-    ? 'Open the packet from the link in your earlier email.'
-    : `Sign in at ${env.BASE_URL}/board to read it.`
-  return message(to, subjectOf(packet, 'Board packet updated'), [
-    `The packet for the ${date} meeting changed. ${input.summary}`,
-    where,
-  ])
+  return rendered(
+    to,
+    'board_packet_updated',
+    wording,
+    packetUpdateValues(packet, input, wording.boardName),
+    input.viaLink ? null : BOARD_URL(),
+  )
 }
 
-export function cancelledPacketMail(to: string, packet: MailPacket, reason: string): MailMessage {
-  const date = formatCivilDate(packet.meetingDate)
-  return message(to, subjectOf(packet, 'Meeting cancelled'), [
-    `The ${date} meeting is cancelled: ${reason}. Its packet is closed and its links no longer work.`,
-  ])
+export function cancelledPacketMail(
+  to: string,
+  packet: MailPacket,
+  reason: string,
+  wording: PacketWording = NO_OVERRIDES,
+): MailMessage {
+  return rendered(
+    to,
+    'board_meeting_cancelled',
+    wording,
+    packetCancelValues(packet, reason, wording.boardName),
+    null,
+  )
 }
