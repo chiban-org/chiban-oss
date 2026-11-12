@@ -95,6 +95,7 @@ export async function reissueReleaseLink(
       signal,
     )
     const sent = await sendReleaseLink(
+      tx,
       mail,
       {
         to: value.recipientEmail,

@@ -1,7 +1,5 @@
 import { describe, expect, it } from 'vitest'
 import { env } from '@/config/env'
-import { claimMessage } from '@/features/contractors/claimMessage'
-import type { MailMessage, MailTransport } from '@/features/mail/transport'
 import {
   claimValues,
   releaseValues,
@@ -11,38 +9,26 @@ import {
 } from '@/features/notifications/wording/externalValues'
 import { renderWording } from '@/features/notifications/wording/renderWording'
 import { DEFAULT_WORDING } from '@/features/notifications/wording/wordingDefaults'
-import { sendReleaseFiles, sendReleaseLink } from '@/features/rtk/releaseMail'
-import { ok } from '@/types/result'
-
-function sentBy(run: (mail: MailTransport) => Promise<boolean>): Promise<MailMessage | undefined> {
-  const sent: MailMessage[] = []
-  const mail: MailTransport = {
-    send(message) {
-      sent.push(message)
-      return Promise.resolve(ok(undefined))
-    },
-  }
-  return run(mail).then(() => sent[0])
-}
 
 describe('project_claim default', () => {
-  it('matches claimMessage in subject and text', () => {
+  it('matches the pinned claim email', () => {
     const input = {
-      to: 'robin@example.org',
       name: 'Robin Vale',
       role: 'contractor',
       title: 'Garage addition',
-      link: 'https://town.example/claim/abc',
       days: 14,
       townName: 'Town of Alder Pond',
     } as const
-    const old = claimMessage(input)
     const next = renderWording(
       DEFAULT_WORDING.project_claim,
       claimValues(input),
-      wordingLink('project_claim', input.link),
+      wordingLink('project_claim', 'https://town.example/claim/abc'),
     )
-    expect(next).toEqual({ subject: old.subject, text: old.text, html: old.html })
+    expect(next).toEqual({
+      subject: 'Claim your project in Chiban: Garage addition',
+      text: 'Robin Vale, you were named as a contractor on a project at the Town of Alder Pond.\n\nUse this link to claim the project and follow its permits. It works once and expires in 14 days.\n\nhttps://town.example/claim/abc\n',
+      html: '<p>Robin Vale, you were named as a contractor on a project at the Town of Alder Pond.</p><p>Use this link to claim the project and follow its permits. It works once and expires in 14 days.</p><p><a href="https://town.example/claim/abc">Claim the project</a></p>',
+    })
   })
 })
 
@@ -87,36 +73,39 @@ describe('rtk_letter_sent default', () => {
 })
 
 describe('release defaults', () => {
-  const base = { to: 'req@example.org', number: 'RTK-2026-0012', releasedOn: '2026-11-12' }
+  const base = { number: 'RTK-2026-0012', releasedOn: '2026-11-12' }
+  const released =
+    'The town released records for your Right-to-Know request RTK-2026-0012 on November 12, 2026.'
+  const notes = {
+    plain: '',
+    tooLarge: ' The files were too large to attach to an email, so they are at this link instead.',
+    reissued: ' The earlier link has expired, so here is a new one.',
+  }
+  const flagsOf = {
+    plain: {},
+    tooLarge: { tooLarge: true },
+    reissued: { reissued: true },
+  } as const
 
-  for (const flags of [{}, { tooLarge: true }, { reissued: true }]) {
-    it(`rtk_records_link matches sendReleaseLink ${JSON.stringify(flags)}`, async () => {
-      const old = await sentBy((mail) =>
-        sendReleaseLink(
-          mail,
-          { ...base, attachments: [], token: 'tok', ...flags },
-          new AbortController().signal,
-        ),
-      )
+  for (const name of ['plain', 'tooLarge', 'reissued'] as const) {
+    it(`rtk_records_link matches the pinned link email, ${name}`, () => {
       const link = `${env.BASE_URL}/records/releases/tok`
       const next = renderWording(
         DEFAULT_WORDING.rtk_records_link,
-        releaseValues({ ...base, ...flags }, 30),
+        releaseValues({ ...base, ...flagsOf[name] }, 30),
         wordingLink('rtk_records_link', link),
       )
-      expect(next.subject).toBe(old?.subject)
-      expect(next.text).toBe(old?.text)
-      expect(next.html).toBe(old?.html)
+      const lead = `${released}${notes[name]} The link works for 30 days.`
+      expect(next.subject).toBe('Records for request RTK-2026-0012')
+      expect(next.text).toBe(`${lead}\n\n${link}\n`)
+      expect(next.html).toBe(`<p>${lead}</p><p><a href="${link}">Open the records</a></p>`)
     })
   }
 
-  it('rtk_records_attached matches sendReleaseFiles', async () => {
-    const old = await sentBy((mail) =>
-      sendReleaseFiles(mail, { ...base, attachments: [] }, new AbortController().signal),
-    )
+  it('rtk_records_attached matches the pinned attached email', () => {
     const next = renderWording(DEFAULT_WORDING.rtk_records_attached, releaseValues(base, 30), null)
-    expect(next.subject).toBe(old?.subject)
-    expect(next.text).toBe(old?.text)
-    expect(next.html).toBe(old?.html.replace("town's", 'town&#39;s'))
+    expect(next.subject).toBe('Records for request RTK-2026-0012')
+    expect(next.text).toBe(`${released} The records and the town's letter are attached.\n`)
+    expect(next.html).toBe(`<p>${released} The records and the town&#39;s letter are attached.</p>`)
   })
 })

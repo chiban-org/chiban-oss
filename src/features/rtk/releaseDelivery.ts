@@ -148,8 +148,9 @@ export async function sendRelease(
   }
   const sent =
     plan.link === null
-      ? await sendReleaseFiles(ctx.mail, message, ctx.signal)
+      ? await sendReleaseFiles(db, ctx.mail, message, ctx.signal)
       : await sendReleaseLink(
+          db,
           ctx.mail,
           { ...message, token: plan.link.token, tooLarge: plan.delivery === 'link_fallback' },
           ctx.signal,
