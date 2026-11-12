@@ -1,7 +1,11 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { env } from '@/config/env'
+import type { DbOrTx } from '@/db/client'
 import type { MailAttachment, MailTransport } from '@/features/mail/transport'
-import { formatCivilDate } from '@/lib/formatDate'
+import { publishedWording, townName } from '@/features/notifications/messageSettings'
+import { releaseValues, wordingLink } from '@/features/notifications/wording/externalValues'
+import { type RenderedMessage, renderWording } from '@/features/notifications/wording/renderWording'
+import { wordingFor } from '@/features/notifications/wording/wordingEdits'
 
 const TOKEN_BYTES = 32
 const DAY_MS = 24 * 60 * 60 * 1000
@@ -34,18 +38,16 @@ export interface ReleaseMail {
   attachments: MailAttachment[]
 }
 
-async function sendParagraphs(
+async function sendRendered(
   mail: MailTransport,
   message: ReleaseMail,
-  paragraphs: { text: string; html: string }[],
+  rendered: RenderedMessage,
   signal: AbortSignal,
 ): Promise<boolean> {
   const sent = await mail.send(
     {
       to: message.to.trim().toLowerCase(),
-      subject: `Records for request ${message.number}`,
-      text: `${paragraphs.map((p) => p.text).join('\n\n')}\n`,
-      html: paragraphs.map((p) => `<p>${p.html}</p>`).join(''),
+      ...rendered,
       ...(message.attachments.length === 0 ? {} : { attachments: message.attachments }),
     },
     signal,
@@ -53,40 +55,37 @@ async function sendParagraphs(
   return sent.ok
 }
 
-function releasedLine(message: ReleaseMail): string {
-  return `The town released records for your Right-to-Know request ${message.number} on ${formatCivilDate(message.releasedOn)}.`
-}
-
-function linkNote(message: { tooLarge?: boolean; reissued?: boolean }): string {
-  if (message.reissued === true) return ' The earlier link has expired, so here is a new one.'
-  return message.tooLarge === true
-    ? ' The files were too large to attach to an email, so they are at this link instead.'
-    : ''
+async function loadSettings(db: DbOrTx, signal: AbortSignal) {
+  const [name, overrides] = await Promise.all([townName(db, signal), publishedWording(db, signal)])
+  return { name, overrides }
 }
 
 export async function sendReleaseLink(
+  db: DbOrTx,
   mail: MailTransport,
   message: ReleaseMail & { token: string; tooLarge?: boolean; reissued?: boolean },
   signal: AbortSignal,
 ): Promise<boolean> {
-  const link = `${env.BASE_URL}/records/releases/${message.token}`
-  const lead = `${releasedLine(message)}${linkNote(message)} The link works for ${LINK_DAYS} days.`
-  return await sendParagraphs(
-    mail,
-    message,
-    [
-      { text: lead, html: lead },
-      { text: link, html: `<a href="${link}">Open the records</a>` },
-    ],
-    signal,
+  const { name, overrides } = await loadSettings(db, signal)
+  const rendered = renderWording(
+    wordingFor('rtk_records_link', overrides),
+    { ...releaseValues(message, LINK_DAYS), 'town.name': name },
+    wordingLink('rtk_records_link', `${env.BASE_URL}/records/releases/${message.token}`),
   )
+  return await sendRendered(mail, message, rendered, signal)
 }
 
 export async function sendReleaseFiles(
+  db: DbOrTx,
   mail: MailTransport,
   message: ReleaseMail,
   signal: AbortSignal,
 ): Promise<boolean> {
-  const lead = `${releasedLine(message)} The records and the town's letter are attached.`
-  return await sendParagraphs(mail, message, [{ text: lead, html: lead }], signal)
+  const { name, overrides } = await loadSettings(db, signal)
+  const rendered = renderWording(
+    wordingFor('rtk_records_attached', overrides),
+    { ...releaseValues(message, LINK_DAYS), 'town.name': name },
+    null,
+  )
+  return await sendRendered(mail, message, rendered, signal)
 }

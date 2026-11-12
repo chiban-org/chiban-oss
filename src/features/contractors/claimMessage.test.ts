@@ -11,6 +11,7 @@ describe('claimMessage', () => {
       link: 'https://town.example/claim/abc',
       days: 14,
       townName: 'Town of Birch Hollow',
+      wording: {},
     })
     expect(message.text).toContain('at the Town of Birch Hollow.')
     expect(message.text).not.toContain('Alder Pond')

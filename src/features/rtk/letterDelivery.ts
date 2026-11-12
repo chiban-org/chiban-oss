@@ -5,6 +5,10 @@ import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import type { MailAttachment, MailTransport } from '@/features/mail/transport'
+import { publishedWording, townName } from '@/features/notifications/messageSettings'
+import { requestLetterValues } from '@/features/notifications/wording/externalValues'
+import { renderWording } from '@/features/notifications/wording/renderWording'
+import { wordingFor } from '@/features/notifications/wording/wordingEdits'
 import { attachmentsOf, originalFileOf } from '@/features/rtk/releaseDelivery'
 import { requesterEmailOf } from '@/features/rtk/requesterEmail'
 import type { ObjectStore } from '@/features/storage/objectStore'
@@ -40,17 +44,16 @@ async function emailLetter(
 ): Promise<boolean> {
   const attachments = await letterAttachments(ctx, documentId)
   if (attachments === null) return false
-  const body = `The town's letter about your Right-to-Know request ${number} is attached.`
-  const sent = await ctx.mail.send(
-    {
-      to,
-      subject: `Letter about Right-to-Know request ${number}`,
-      text: `${body}\n`,
-      html: `<p>${body}</p>`,
-      attachments,
-    },
-    ctx.signal,
+  const [name, overrides] = await Promise.all([
+    townName(ctx.db, ctx.signal),
+    publishedWording(ctx.db, ctx.signal),
+  ])
+  const rendered = renderWording(
+    wordingFor('rtk_letter_sent', overrides),
+    { ...requestLetterValues(number), 'town.name': name },
+    null,
   )
+  const sent = await ctx.mail.send({ to, ...rendered, attachments }, ctx.signal)
   if (!sent.ok) log.warn('[rtk] letter email not sent', number)
   return sent.ok
 }

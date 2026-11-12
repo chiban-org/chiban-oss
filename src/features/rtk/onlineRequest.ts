@@ -2,9 +2,12 @@ import { z } from 'zod'
 import { env } from '@/config/env'
 import type { Db } from '@/db/client'
 import type { MailTransport } from '@/features/mail/transport'
+import { publishedWording, townName } from '@/features/notifications/messageSettings'
+import { requestReceiptValues, wordingLink } from '@/features/notifications/wording/externalValues'
+import { renderWording } from '@/features/notifications/wording/renderWording'
+import { wordingFor } from '@/features/notifications/wording/wordingEdits'
 import { insertRequest } from '@/features/rtk/requests'
 import { townToday } from '@/features/town/today'
-import { formatCivilDate } from '@/lib/formatDate'
 import { log } from '@/server/log'
 import { createRateLimiter } from '@/server/rateLimiter'
 import type { CivilDate } from '@/types/civilDate'
@@ -51,27 +54,19 @@ function takeAllowance(email: string, clientKey: string): boolean {
 }
 
 async function sendReceipt(
+  db: Db,
   mail: MailTransport,
   to: string,
   receipt: Omit<OnlineRequestReceipt, 'emailed' | 'requestId'>,
   signal: AbortSignal,
 ): Promise<boolean> {
-  const received = formatCivilDate(receipt.receivedOn)
-  const due = formatCivilDate(receipt.due)
-  const lines = [
-    `The town received your Right-to-Know request on ${received}. Its number is ${receipt.number}.`,
-    `The town will answer by ${due}. It will make the records available, deny the request in writing, or tell you in writing when it will answer.`,
-    'Keep the request number if you need to ask about it.',
-  ]
-  const sent = await mail.send(
-    {
-      to,
-      subject: `Right-to-Know request ${receipt.number} received`,
-      text: `${lines.join('\n\n')}\n\n${env.BASE_URL}\n`,
-      html: lines.map((line) => `<p>${line}</p>`).join(''),
-    },
-    signal,
+  const [name, overrides] = await Promise.all([townName(db, signal), publishedWording(db, signal)])
+  const rendered = renderWording(
+    wordingFor('rtk_request_received', overrides),
+    { ...requestReceiptValues(receipt), 'town.name': name },
+    wordingLink('rtk_request_received', env.BASE_URL),
   )
+  const sent = await mail.send({ to, ...rendered }, signal)
   if (!sent.ok) log.warn('[rtk] online request receipt not sent', receipt.number)
   return sent.ok
 }
@@ -111,6 +106,6 @@ export async function submitOnlineRequest(
       ),
   )
   const receipt = { number: created.number, receivedOn, due: created.due }
-  const emailed = await sendReceipt(mail, value.email, receipt, signal)
+  const emailed = await sendReceipt(db, mail, value.email, receipt, signal)
   return ok({ requestId: created.requestId, ...receipt, emailed })
 }
