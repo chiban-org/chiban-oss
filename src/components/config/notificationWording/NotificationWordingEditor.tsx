@@ -13,7 +13,11 @@ import {
   withDefault,
   withWording,
 } from '@/features/notifications/wording/wordingEdits'
-import { WORDING_KEY_INFO, type WordingKey } from '@/features/notifications/wording/wordingKeys'
+import {
+  WORDING_KEY_INFO,
+  type WordingKey,
+  type WordingKeyInfo,
+} from '@/features/notifications/wording/wordingKeys'
 import type { NotificationWordingBody } from '@/features/notifications/wording/wordingSchema'
 
 interface Props {
@@ -30,6 +34,14 @@ const BODY_HINT =
 
 const NO_LINK_HINT =
   'Leave a blank line between paragraphs. This message has no link. Chiban leaves out a paragraph when none of its fields has a value.'
+
+function hintFor(info: WordingKeyInfo | undefined): string {
+  const base = info?.link === 'none' ? NO_LINK_HINT : BODY_HINT
+  const required = info?.requiredFields ?? []
+  return required.length === 0
+    ? base
+    : `${base} It must include ${required.map((f) => `{{${f}}}`).join(' and ')}.`
+}
 
 export function NotificationWordingEditor({ body, onChange, errors, townName }: Props) {
   const [selected, setSelected] = useState<WordingKey>('application_submitted')
@@ -68,7 +80,7 @@ export function NotificationWordingEditor({ body, onChange, errors, townName }: 
           <Area
             ref={area}
             label="Message"
-            hint={info?.link === 'none' ? NO_LINK_HINT : BODY_HINT}
+            hint={hintFor(info)}
             rows={8}
             value={wording.body}
             onChange={(e) => onChange(withWording(body, selected, { body: e.target.value }))}

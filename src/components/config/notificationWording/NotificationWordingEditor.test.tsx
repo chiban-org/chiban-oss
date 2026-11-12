@@ -108,4 +108,19 @@ describe('NotificationWordingEditor', () => {
     const preview = screen.getByRole('region', { name: 'Preview' })
     expect(preview.textContent).not.toContain('[link Chiban adds]')
   })
+
+  it('names the fields a message must keep', () => {
+    render(
+      <NotificationWordingEditor
+        body={EMPTY_NOTIFICATION_WORDING}
+        onChange={vi.fn()}
+        errors={{}}
+        townName="T"
+      />,
+    )
+    fireEvent.click(screen.getByRole('button', { name: /Records request received/ }))
+    expect(
+      screen.getByText(/It must include \{\{request\.number\}\} and \{\{request\.due\}\}\./),
+    ).toBeDefined()
+  })
 })

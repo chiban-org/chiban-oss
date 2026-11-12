@@ -38,7 +38,7 @@ export const KIND_DESCRIPTIONS: Record<ConfigKind, string> = {
   town_profile:
     'The office name, address, contact details, logo, letterhead and signers on every document Chiban prints.',
   notification_wording:
-    'The subject and wording of each email Chiban sends to applicants, reviewers, boards and staff.',
+    'The subject and wording of each email Chiban sends to applicants, contractors, staff, reviewers, boards and records requesters.',
 }
 
 const START_SETTINGS = 'Start the settings'
