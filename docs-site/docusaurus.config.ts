@@ -23,6 +23,17 @@ const config: Config = {
     },
   },
 
+  headTags: [
+    {
+      tagName: 'script',
+      attributes: {
+        src: 'https://analytics.ahrefs.com/analytics.js',
+        'data-key': 'LoyhhNigw+hWSFZp2ibbHw',
+        async: 'true',
+      },
+    },
+  ],
+
   i18n: {
     defaultLocale: 'en',
     locales: ['en'],
@@ -37,6 +48,9 @@ const config: Config = {
           routeBasePath: '/',
         },
         blog: false,
+        gtag: {
+          trackingID: 'G-T4PEJQFDBT',
+        },
         theme: {
           customCss: './src/css/custom.css',
         },
