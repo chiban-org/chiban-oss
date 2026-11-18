@@ -52,7 +52,3 @@ export function registeredGates(): GateDefinition[] {
 export function gateByKey(key: string): GateDefinition | undefined {
   return registry.get(key)
 }
-
-export function registerPackGate(rule: GateRule, evaluate: GateEvaluator): void {
-  registerGate(buildGateDefinition(rule, evaluate))
-}

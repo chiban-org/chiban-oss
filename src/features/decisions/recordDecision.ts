@@ -18,6 +18,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
+import { boardDecisionClockKeys } from '@/features/decisions/decisionClocks'
 import { inputProblem } from '@/features/decisions/decisionInputProblems'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import type { DecisionOutcome } from '@/features/packs/schema'
@@ -49,7 +50,6 @@ export type DecisionError =
   | { missingFields: string[] }
   | { gateBlocked: GateResult[] }
 
-const DECISION_CLOCKS = ['nh.pb.decision', 'nh.zba.decision']
 const DENIAL_OUTCOMES: DecisionOutcome[] = ['denied', 'rehearing_denied']
 
 async function applyConditions(
@@ -134,7 +134,8 @@ export async function recordDecision(
       if (typeof error !== 'string') return err(error)
       return err(error === 'forbidden' || error === 'not_found' ? error : 'invalid_state')
     }
-    for (const key of DECISION_CLOCKS) await markClockMet(tx, app.id, key, input.votedOn, signal)
+    for (const key of boardDecisionClockKeys())
+      await markClockMet(tx, app.id, key, input.votedOn, signal)
     const [row] = await tx
       .insert(boardDecisions)
       .values({

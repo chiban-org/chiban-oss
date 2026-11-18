@@ -16,6 +16,7 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { computeSubjectDue, type SubjectDue } from '@/features/clocks/subjectDue'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
 import { civilDateSchema } from '@/features/packs/schema'
 import { rtkRequestVisibleTo } from '@/features/rtk/access'
 import { rtkDueContext } from '@/features/rtk/dueContext'
@@ -33,9 +34,11 @@ const LogSchema = z.object({
 })
 
 export function responseRule() {
-  const rule = ruleByKey(loadPack(), 'nh.rtk.response')
+  const rule = ruleByKey(loadPack(), packRoles().rules.rtkResponse)
   if (rule.kind !== 'clock')
-    throw new AppError(ErrorIds.RTK_INVARIANT, 'nh.rtk.response is not a clock')
+    throw new AppError(ErrorIds.RTK_INVARIANT, 'The records response rule is not a clock', {
+      key: rule.key,
+    })
   return rule
 }
 

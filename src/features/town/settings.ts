@@ -5,7 +5,7 @@ import { err, ok, type Result } from '@/types/result'
 
 export interface TownSettings {
   name: string
-  stateCode: 'NH'
+  stateCode: string
   timeZone: string
   basemapRasterUrl: string | null
   basemapAttribution: string | null
@@ -21,7 +21,7 @@ export async function getTownSettings(
   if (!row) return err('not_configured')
   return ok({
     name: row.name,
-    stateCode: 'NH',
+    stateCode: row.stateCode,
     timeZone: row.timeZone,
     basemapRasterUrl: row.basemapRasterUrl,
     basemapAttribution: row.basemapAttribution,

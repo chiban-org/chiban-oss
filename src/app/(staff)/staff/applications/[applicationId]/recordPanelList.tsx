@@ -151,7 +151,7 @@ export function recordPanels(input: RecordPanelsInput): Panel[] {
           holds={records.appHolds}
           canHold={records.canHold}
           canManage={records.canManageDocuments}
-          buildingRemoval={view.classification === 'nh.building_permit'}
+          buildingRemoval={view.isBuildingPermit}
           zone={records.zone}
         />
       ),

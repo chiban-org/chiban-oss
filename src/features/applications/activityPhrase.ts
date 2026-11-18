@@ -1,5 +1,6 @@
 import { amendPhrase } from '@/features/applications/amendChanges'
 import { STATE_LABELS } from '@/features/applications/states'
+import { activePack } from '@/features/packs/registry'
 
 export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
   Object.entries({
@@ -19,7 +20,6 @@ export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
     'appeal.record': 'Recorded an appeal',
     'appeal.resolve': 'Resolved an appeal',
     'board.acceptance_meeting.set': 'Set the acceptance meeting',
-    'board.des_determination.record': 'Recorded the NH DES determination',
     'board.final_approval.record': 'Recorded final approval',
     'board.regional_impact.record': 'Recorded the board regional impact finding',
     'board.reliance.link': 'Linked a variance this application relies on',
@@ -90,6 +90,9 @@ export function activityPhrase(action: string, after: unknown): string {
     return field(after, 'responsibleUserId') === null
       ? 'Cleared who is responsible'
       : 'Changed who is responsible'
+  }
+  if (action === 'board.des_determination.record') {
+    return `Recorded the ${activePack().labels.environmentalAgencyShort} determination`
   }
   return ACTIVITY_PHRASES.get(action) ?? UNKNOWN_PHRASE
 }

@@ -14,15 +14,18 @@ interface StarterGroup {
   includes: (classification: ProceedingClassification) => boolean
 }
 
-const BUILDING_AND_TRADE = new Set(['nh.building_permit', 'nh.trade_permit'])
+function buildingOrTrade(c: ProceedingClassification): boolean {
+  const { classifications } = activePack().manifest.roles
+  return c.key === classifications.buildingPermit || c.key === classifications.tradePermit
+}
 
 const GROUPS: readonly StarterGroup[] = [
-  { title: 'Building and trade permits', includes: (c) => BUILDING_AND_TRADE.has(c.key) },
+  { title: 'Building and trade permits', includes: buildingOrTrade },
   { title: 'Planning Board applications', includes: (c) => c.boardKind === 'planning_board' },
   { title: 'Zoning Board of Adjustment applications', includes: (c) => c.boardKind === 'zba' },
   {
     title: 'Local permits and registrations',
-    includes: (c) => c.boardKind === null && !BUILDING_AND_TRADE.has(c.key),
+    includes: (c) => c.boardKind === null && !buildingOrTrade(c),
   },
 ]
 

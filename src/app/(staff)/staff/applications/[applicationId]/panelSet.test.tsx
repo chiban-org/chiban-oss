@@ -26,6 +26,8 @@ function input(o: Options = {}): RecordPanelsInput {
     id: 'a1',
     state: o.state ?? 'under_review',
     classification: 'nh.other',
+    isBuildingPermit: false,
+    codeEditionApplies: false,
     completedDate: null,
     gates: [],
     nextTransitions: [],

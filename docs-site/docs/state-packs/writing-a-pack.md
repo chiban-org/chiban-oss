@@ -1,7 +1,7 @@
 ---
 title: Writing a state pack
 sidebar_label: Writing a state pack
-description: How the New Hampshire pack is built and loaded, what each part of it holds, how packs are versioned, and what stands in the way of adding another state.
+description: How a state pack is built and chosen at run time, what each part of the New Hampshire pack holds, how roles tie its keys to engine features, and how packs are versioned.
 sidebar_position: 10
 ---
 
@@ -9,11 +9,35 @@ sidebar_position: 10
 
 This page is for a developer who wants to understand or change the New Hampshire pack, or write one for another state, with `packs/nh` as the worked example. Staff read the result on the pages about [deadlines and holidays](./new-hampshire/deadlines.mdx) and [starters](./new-hampshire/starters.mdx), which are generated from the pack.
 
-## One pack, compiled in
+## How a pack is chosen
 
-Chiban ships one pack, `nh`, and loads it at build time. There is no setting that chooses a pack and no folder it scans. `loadPack()` imports `NH_PACK_MANIFEST` by name, and so do `packInfo()` and the holiday calendar. Outside the tests, 161 source files import from `@packs/nh/...`, and `@packs/*` is a path alias for the `packs` folder.
+A pack is a TypeScript module that exports one `StatePack` object. The interface lives in the engine, in `src/features/packs/schema/statePack.ts`, and `packs/nh/index.ts` exports New Hampshire's as `NH_PACK`.
 
-The schema also holds New Hampshire's vocabulary. The classification keys are a fixed list that begins `nh.`, a notice recipient can be `nh_des`, a proximity rule can only name the layer `water`, and a clock's consequence can be `selectmen_certification`. So a second state is not a second folder dropped beside `nh`. Today it is a fork or a change to the schema and the imports. Nothing in the repository has been run with a second pack, so the steps below describe what the code requires, not a path someone has walked.
+`src/features/packs/registry.ts` holds a fixed map from pack id to pack, which today is `{ nh: NH_PACK }`. `activePack()` reads the `CHIBAN_PACK` setting the first time anything asks for the pack and keeps the answer. The setting is read when the server, the worker or a command-line tool runs, not when the image is built, so the same image can serve another state. A blank or missing setting means `nh`. Pages in the browser never read the setting: the server reads the pack and sends them the wording they show. An id that is not in the map stops the first request that needs the pack with a `PACK_INVALID` error. A pack still has to be compiled into the image and listed in the registry map before `CHIBAN_PACK` can name it.
+
+Everything the engine reads from a pack goes through the registry: `loadPack()`, `packInfo()`, the holiday calendar, the starters, the license types, the exemption list, the appeal routes and the rest. Outside `packs/nh`, the only files that import `@packs/nh` are the registry, `src/features/packs/registryAbutters.ts` and test support. The demo seed reads the active pack like the rest of the engine. A unit test, `packCoupling.test.ts`, fails the build if any other file imports the pack or names a key that begins `nh.`, with the field probes in `src/features/packs/probes` also exempt because they exercise New Hampshire rules on purpose. Tests load another pack with `withPackForTest(pack, run)` or `setActivePackForTest(pack)`, and `src/test/packs/xx` holds a small fictional pack for that purpose.
+
+The abutter strategy and resolver are code that runs against the database, so they are kept out of the registry, which loads wherever pack data is needed. `registryAbutters.ts` imports every pack's abutter code for its side effect of registering the strategy and resolver keys a classification names.
+
+## Roles
+
+The engine needs to know which of a pack's keys plays a part it has code for: which classification is the building permit, which clock is the building permit decision deadline, which record series a complaint photo is filed under. The manifest's `roles` object says so. It has five sections.
+
+| Section | What a role names |
+| --- | --- |
+| `classifications` | A classification key, such as `buildingPermit`, or a list, such as `enforcement` |
+| `rules` | A rule key, such as `buildingPermitDecision` or `appealSuspension` |
+| `recordSeries` | A record series key, such as `complaintLog`, or a list, such as `publicParcelFiles` |
+| `ruleGroups` | A list of rule key prefixes ending in a dot, or whole keys, such as `building: ['nh.bp.']` |
+| `gates` | The key of a gate the engine defines but the pack names, such as `abutterListFresh` |
+
+Roles that every state's permitting needs are required: the building permit classification, the building permit decision clock, the two cease and desist order rules, the two Right-to-Know response clocks and the record series for request letters, complaint photos and enforcement papers. The others are features New Hampshire law has and another state may not, such as regional impact, the DES 500-foot notice, the ZBA exercise period, the abutter list age, the Planning Board filing lead time, the appeal suspension and the administrative appeal to the ZBA. Each of those can be `null`, and a `null` role means the feature is absent: its gate is not registered, its panel, step or check does not appear, and no clock is looked for. The fictional pack sets every optional role to `null`.
+
+The manifest schema checks that every rule role names a rule in the pack, every classification role a classification, every record series role a series, and every rule group entry at least one rule. A unit test, `roleConsumers.test.ts`, fails if a role is declared in `src/features/packs/schema/roles.ts` and no engine code outside `packs` and the tests reads it.
+
+Roles do not rename anything. The stored keys stay as they are, because clocks, gate overrides and enforcement orders record them in the database.
+
+Some engine vocabulary still carries New Hampshire names because it is stored: the notice recipient role `nh_des`, the clock consequence `selectmen_certification`, the conditions `des_within_500ft` and `regional_impact_yes`, and the proximity layer `water`. The stored names stay. Where one of them would show a New Hampshire name on screen, the words come from the pack instead: `StatePack.labels` names the state's environmental agency, which is what the `nh_des` recipient and the DES notice show, and the label for a state license number.
 
 ## Layout of a pack
 
@@ -25,31 +49,36 @@ The schema also holds New Hampshire's vocabulary. The classification keys are a 
 | Building code editions | `codeEditions.ts` | Yes, `codeEditions` |
 | Record series | `recordSeries.ts` | Yes, `recordSeries` and `recordSeriesDefaults` |
 | Abutter parameters | `abutters/params.ts` | Yes, `abutterParams` |
+| Roles | `roles.ts` | Yes, `roles` |
 | Holidays | `holidays.ts`, `countingCitations.ts` | No |
 | Right-to-Know exemptions | `rtkExemptions.ts` | No |
 | Starters | `starters/` | No |
-| Board kinds | `boardKinds.ts`, `boardSchema.ts` | No |
+| Board kind names | `boardSchema.ts` | No |
 | Parcel ID formats | `parcelIdFormats.ts` | No |
 | Transitions | `transitions.ts` | No |
+| Order wording | `starters/enforcementTemplates.ts` | No |
+| Rule areas for the docs | `ruleAreas.ts` | No |
+| The pack object | `index.ts` | No, it holds the manifest |
 
-Parts marked No are not checked by the manifest schema. They have their own tests.
+Parts marked No are not checked by the manifest schema. They have their own tests. All of them reach the engine through the `StatePack` object.
 
 ## The manifest and how it loads
 
 ```
 export const NH_PACK_MANIFEST: PackManifest = {
   id: 'nh',
-  version: '0.5.0',
+  version: '0.6.0',
   rules: [...],
   classifications: NH_CLASSIFICATIONS,
   codeEditions: NH_CODE_EDITIONS,
   recordSeries: NH_RECORD_SERIES,
   recordSeriesDefaults: RECORD_SERIES_DEFAULTS,
   abutterParams: [NH_ABUTTER_PARAMS],
+  roles: NH_ROLES,
 }
 ```
 
-The `rules` list is the spread of the arrays exported by the files under `rules/`. `loadPack()` parses the manifest with `PackManifestSchema` the first time anything asks for it, and keeps the result. A failure throws a `PACK_INVALID` error that lists every issue, so a bad pack stops the process instead of producing wrong deadlines. Besides the shape, the schema checks that no rule appears twice with the same key and version, and that every rule key a classification names exists.
+The `rules` list is the spread of the arrays exported by the files under `rules/`. `loadPack()` parses the active pack's manifest with `PackManifestSchema` the first time anything asks for it, and keeps the result. A failure throws a `PACK_INVALID` error that lists every issue, so a bad pack stops the process instead of producing wrong deadlines. Besides the shape, the schema checks that no rule appears twice with the same key and version, that every rule key a classification names exists, and that every role names something the pack has.
 
 `packs/nh/pack.test.ts` runs the same checks as a unit test, plus a rule that every non-town rule cites a URL.
 
@@ -108,7 +137,7 @@ A classification ties an application type to the law that governs it. Each one h
 
 The abutter specification names a strategy key and a resolver key, the recipient roles every notice goes to, and roles added only when a fact is true, such as a project of regional impact. The strategy and resolver are code in `packs/nh/abutters`, not data. `abutters/params.ts` holds the numbers that code uses, such as the 50-foot capture radius that RSA 672:3 sets. Its `tolerancesLabel` says that the other tolerances are Chiban's engineering choices.
 
-Board kinds are a fixed list in `boardKinds.ts`: Planning Board, Zoning Board of Adjustment and seven others. `boardSchema.ts` gives each kind its traits: whether it decides applications, holds hearings, has a filing lead time, and whether a town may have only one. The board application starters in `starters/boards` are the permit types each deciding board hears.
+Board kinds are a fixed list in the engine: Planning Board, Zoning Board of Adjustment and seven others. What each kind does, whether it decides applications, holds hearings, has a filing lead time, and whether a town may have only one, is engine behaviour in `src/features/boards/boardKindBehaviour.ts`. The pack's `boardSchema.ts` gives each kind its label, default short name and description. The board application starters in `starters/boards` are the permit types each deciding board hears.
 
 ## Holidays and counting
 
@@ -136,22 +165,23 @@ A starter is a complete application type in one object: the application type, it
 
 Versions exist at four levels.
 
-- The pack: the manifest's `version` in the manifest is a string. Each clock and each enforcement answer records the pack version it was made under. It appears in the archive of a town's export, in `/api/version`, and on the **State law** page as "Jurisdiction pack nh version 0.5.0, fingerprint" followed by the first 12 characters of a SHA-256 hash of the whole manifest.
+- The pack: the manifest's `version` in the manifest is a string. Each clock and each enforcement answer records the pack version it was made under. It appears in the archive of a town's export, in `/api/version`, and on the **State law** page as "Jurisdiction pack nh version 0.6.0, fingerprint" followed by the first 12 characters of a SHA-256 hash of the whole manifest.
 - A rule: when a rule's content must change, add a new `version` of the same key and keep the old one. `ruleByKey` returns the highest version unless a caller asks for one. A clock records the rule key and version it started under.
 - A transition: to act on clocks already running, declare a transition in `transitions.ts`, with a rule key, the from and to versions, a policy of `keep_old` or `switch`, and a reason. An operator previews and applies it with the `rules-migrate` command. See [upgrading](../operations/upgrading.md).
 - Starters, record series and abutter parameters: each carries its own integer `version`.
 
 ## Steps for a new pack
 
-1. Copy the folder and rename its prefixes, so the keys carry the new state's prefix.
-2. Replace the classification key list in `boardSchema.ts` and anything in the schema that is specific to New Hampshire.
-3. Write the rules, one area at a time, with a URL for each citation, and run `packs/nh/pack.test.ts` after each.
+1. Copy the folder, rename its prefixes so the keys carry the new state's prefix, and rename `NH_PACK`.
+2. Replace the classification key list in `boardSchema.ts` and the board kind names.
+3. Write the rules, one area at a time, with a URL for each citation, and run the pack's tests after each.
 4. Write the classifications and abutter parameters.
-5. Write the holidays and the counting citation.
-6. Write the record series and their defaults.
-7. Write the exemption list for the state's public records law.
-8. Write the starters and run the starter test.
-9. Point `loadPack`, `packInfo`, the holiday calendar and the other 160 or so imports at the new pack.
-10. Run `pnpm docs:generate` to see the deadlines and starter pages the new pack produces. The generators in `scripts/docsSite` are named for New Hampshire and read it directly.
+5. Fill in `roles`. Name a key for each required role, and set an optional role to `null` where the state has no such rule.
+6. Write the holidays and the counting citation.
+7. Write the record series and their defaults.
+8. Write the exemption list for the state's public records law.
+9. Write the starters and run the starter test.
+10. Add the pack to the map in `src/features/packs/registry.ts`, and its abutter code to `registryAbutters.ts`, then set `CHIBAN_PACK` to its id.
+11. Run `pnpm docs:generate` to see the deadlines and starter pages the active pack produces.
 
-Step 9 has no support in the code today.
+The pack contract covers what New Hampshire needs. A state whose law needs a rule kind the schema does not have, a clock that starts on an event the engine does not record, a recipient role or condition the engine does not know, or a feature with no role, still needs engine work before its pack can express it. The generated docs are written to the `new-hampshire` folder, and the abutter strategy and resolver are code a pack has to provide.

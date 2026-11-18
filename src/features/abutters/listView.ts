@@ -10,7 +10,6 @@ import { getList, type ListRow, type ListSnapshot } from '@/features/abutters/qu
 import { ageText, reasonLines } from '@/features/abutters/reasonText'
 import { frozenView, type RecipientView, recipientView } from '@/features/abutters/recipientView'
 import type { Recipient } from '@/features/abutters/resolution'
-import { RECIPIENT_ROLE_LABELS } from '@/features/abutters/roles'
 import {
   type IncompleteLine,
   incompleteLines,

@@ -1,5 +1,7 @@
 import type { PackManifest } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
+import { XX_ENFORCEMENT_RULES } from './enforcementRules'
+import { XX_ROLES } from './roles'
 import { XX_RULES } from './rules'
 
 const PERMIT_ACT = 'https://laws.example/vellmora/permit-act'
@@ -7,7 +9,7 @@ const PERMIT_ACT = 'https://laws.example/vellmora/permit-act'
 export const XX_PACK_MANIFEST: PackManifest = {
   id: 'xx',
   version: '0.1.0',
-  rules: XX_RULES,
+  rules: [...XX_RULES, ...XX_ENFORCEMENT_RULES],
   classifications: [
     {
       key: 'xx.building_permit',
@@ -57,6 +59,17 @@ export const XX_PACK_MANIFEST: PackManifest = {
       retention: { kind: 'permanent' },
       preservation: 'pdfa',
     },
+    {
+      key: 'xx.rs.correspondence',
+      version: 1,
+      label: 'Correspondence and enforcement files',
+      citation: {
+        label: 'Vellmora Records Act 1',
+        url: 'https://laws.example/vellmora/records-act',
+      },
+      retention: { kind: 'duration', years: 5 },
+      preservation: 'original',
+    },
   ],
   recordSeriesDefaults: {
     byClassification: { 'xx.building_permit': 'xx.rs.permits' },
@@ -79,4 +92,5 @@ export const XX_PACK_MANIFEST: PackManifest = {
       tolerancesLabel: 'Fictional tolerances for tests.',
     },
   ],
+  roles: XX_ROLES,
 }

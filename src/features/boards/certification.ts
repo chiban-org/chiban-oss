@@ -7,11 +7,11 @@ import { setSubstep, transitionApplication } from '@/features/applications/trans
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
 import type { GateResult } from '@/features/gates/evaluateGates'
+import { packRoles } from '@/features/packs/roles'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
-
-export const PB_DECISION_KEY = 'nh.pb.decision'
 
 export type CertificationError =
   | 'forbidden'
@@ -81,7 +81,7 @@ export async function recordSelectmenCertification(
       .where(
         and(
           eq(clocks.applicationId, app.id),
-          eq(clocks.ruleKey, PB_DECISION_KEY),
+          clockRuleIs(packRoles().rules.planningBoardDecision),
           inArray(clocks.status, ['running', 'overdue']),
           lt(clocks.currentDue, input.requestedOn),
         ),

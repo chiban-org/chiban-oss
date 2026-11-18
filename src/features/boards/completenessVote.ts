@@ -28,12 +28,11 @@ import { effectiveBindings } from '@/features/config/bindings'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
 import type { BoardKind } from '@/features/packs/schema'
 import { isAfterTownToday } from '@/features/town/today'
 import { addDays, type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
-
-export const COMPLETENESS_KEY = 'nh.pb.completeness'
 
 export type VoteError =
   | 'forbidden'
@@ -128,8 +127,9 @@ export async function recordCompletenessVote(
     )
     if (!checked.ok) return checked
     const meeting = checked.value
-    await markClockMet(tx, app.id, COMPLETENESS_KEY, input.votedOn, signal)
-    if (boardKind === 'zba') await markClockMet(tx, app.id, 'nh.zba.hearing', input.votedOn, signal)
+    const { rules } = packRoles()
+    await markClockMet(tx, app.id, rules.planningBoardCompleteness, input.votedOn, signal)
+    if (boardKind === 'zba') await markClockMet(tx, app.id, rules.zbaHearing, input.votedOn, signal)
     const moved = await transitionApplication(
       tx,
       actor,

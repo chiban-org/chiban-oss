@@ -4,6 +4,7 @@ import { appeals, clocks } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { appealSuspends } from '@/features/appeals/suspension'
 import { loadApplicationContext } from '@/features/applications/context'
+import { stateLabel } from '@/features/applications/stateLabel'
 import { applyTransition } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
@@ -14,8 +15,6 @@ import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 import { isAfterTownToday } from '@/features/town/today'
 import { addDays, type CivilDate, daysBetween } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
-
-const SUSPENSION_REASON_RULE_KEY = 'nh.appeal.suspension'
 
 async function exerciseByClocks(tx: Tx, applicationId: string, status: 'running' | 'stopped') {
   const rows = await tx
@@ -181,7 +180,7 @@ async function tollStoppedClocks(
   resolvedOn: CivilDate,
   signal: AbortSignal,
 ): Promise<void> {
-  const label = ruleByKey(loadPack(), SUSPENSION_REASON_RULE_KEY).label
+  const label = stateLabel('suspended')
   const days = daysBetween(filedOn, resolvedOn)
   for (const clock of await exerciseByClocks(tx, applicationId, 'stopped')) {
     await tx.update(clocks).set({ status: 'running' }).where(eq(clocks.id, clock.id))

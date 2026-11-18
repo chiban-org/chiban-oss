@@ -1,7 +1,9 @@
 import type { NamedChoice, ReferenceChoices } from '@/features/config/referenceChoices'
+import type { RuleChoiceGroups } from '@/features/config/ruleChoices'
 import type { FormBuilderData } from '@/features/forms/formReferences'
 import type { FormField } from '@/features/forms/formSchema'
 import { loadPack } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
 import { policyText, ruleSummary } from '@/features/packs/ruleSummary'
 import type { BoardKind } from '@/features/packs/schema'
 import type { TemplateBuilderData } from '@/features/templates/builderData'
@@ -24,6 +26,7 @@ export interface EditorContext {
     boardKind: string | null
   }[]
   mergeFields: string[]
+  ruleGroups?: RuleChoiceGroups
   boards: EditorBoard[]
   reviewers: { id: string; name: string }[]
   townRules: Record<
@@ -101,6 +104,10 @@ export function editorContext(
       boardKind: c.boardKind ?? null,
     })),
     mergeFields: [...MERGE_FIELDS],
+    ruleGroups: {
+      building: packRoles().ruleGroups.building,
+      board: packRoles().ruleGroups.board,
+    },
     boards,
     reviewers,
     townRules,

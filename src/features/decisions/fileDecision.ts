@@ -12,12 +12,11 @@ import { noticeProofDocumentIds } from '@/features/documents/evidence'
 import { isEvidenceKind } from '@/features/documents/types'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
 import { approveLatestForPublic } from '@/features/renditions/publicApproval'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
-
-export const FILING_CLOCK_KEY = 'nh.board.decision_filing'
 
 export type FileError =
   | 'forbidden'
@@ -35,15 +34,17 @@ async function filingDue(
   tx: FilingTx,
   applicationId: string,
   votedOn: CivilDate,
-): Promise<CivilDate> {
+): Promise<CivilDate | null> {
+  const filingKey = packRoles().rules.decisionFiling
+  if (filingKey === null) return null
   const [clock] = await tx
     .select({ currentDue: clocks.currentDue })
     .from(clocks)
-    .where(and(eq(clocks.applicationId, applicationId), eq(clocks.ruleKey, FILING_CLOCK_KEY)))
+    .where(and(eq(clocks.applicationId, applicationId), eq(clocks.ruleKey, filingKey)))
     .orderBy(desc(clocks.createdAt))
     .limit(1)
   if (clock !== undefined) return clock.currentDue as CivilDate
-  const rule = ruleByKey(loadPack(), FILING_CLOCK_KEY)
+  const rule = ruleByKey(loadPack(), filingKey)
   if (rule.kind !== 'clock') return votedOn
   return computeRuleDue(rule, { unit: 'business_days', value: 5 }, votedOn, packHolidayCalendar())
     .due
@@ -88,7 +89,7 @@ export async function fileDecision(
       return err('wrong_document')
     }
     const due = await filingDue(tx, decision.applicationId, decision.votedOn as CivilDate)
-    const late = compareCivil(input.filedOn, due) > 0
+    const late = due !== null && compareCivil(input.filedOn, due) > 0
     await tx
       .update(documents)
       .set({ isPublic: true, publicChangedBy: actor.userId, publicChangedAt: now })
@@ -102,7 +103,8 @@ export async function fileDecision(
       .update(boardDecisions)
       .set({ filedOn: input.filedOn, minutesDocumentId: input.minutesDocumentId })
       .where(eq(boardDecisions.id, decision.id))
-    await markClockMet(tx, decision.applicationId, FILING_CLOCK_KEY, input.filedOn, signal)
+    const filingKey = packRoles().rules.decisionFiling
+    await markClockMet(tx, decision.applicationId, filingKey, input.filedOn, signal)
     await deliverDecisionLetter(tx, { ...decision, filedOn: input.filedOn }, signal)
     await startClocksFor(
       tx,

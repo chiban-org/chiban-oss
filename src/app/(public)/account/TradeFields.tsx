@@ -9,11 +9,12 @@ import type { TradeChoice } from '@/features/contractors/trades'
 
 interface TradeFieldsProps {
   choices: readonly TradeChoice[]
+  licenseNumberLabel: string
   trades: string[]
   licenses: { trade: string; number: string }[]
 }
 
-export function TradeFields({ choices, trades, licenses }: TradeFieldsProps) {
+export function TradeFields({ choices, licenseNumberLabel, trades, licenses }: TradeFieldsProps) {
   const [checked, setChecked] = useState<string[]>(trades)
   const [numbers, setNumbers] = useState<Record<string, string>>(() =>
     Object.fromEntries(licenses.map((l) => [l.trade, l.number])),
@@ -47,7 +48,7 @@ export function TradeFields({ choices, trades, licenses }: TradeFieldsProps) {
             {on ? (
               <div className="max-w-sm pl-8">
                 <TextField
-                  label={`NH license number, ${t.label.toLowerCase()}`}
+                  label={`${licenseNumberLabel}, ${t.label.toLowerCase()}`}
                   name={licenseFieldName(t.trade)}
                   autoComplete="off"
                   value={numbers[t.trade] ?? ''}

@@ -22,7 +22,7 @@ import { workSentence } from './workSentence'
 export type PlanView = Pick<
   StaffApplicationView,
   | 'state'
-  | 'classification'
+  | 'isBuildingPermit'
   | 'completedDate'
   | 'nextTransitions'
   | 'allowedMoves'
@@ -64,7 +64,7 @@ function groupTitle(to: CoreState, board: boolean): string {
 const COMPLETENESS_STATES: readonly CoreState[] = ['submitted', 'under_review']
 
 function completenessRow(view: PlanView, extras: WorkPlanExtras): Requirement | null {
-  if (view.classification !== 'nh.building_permit' || view.completedDate !== null) return null
+  if (!view.isBuildingPermit || view.completedDate !== null) return null
   if (!COMPLETENESS_STATES.includes(view.state)) return null
   return {
     key: 'completeness',

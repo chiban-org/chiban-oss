@@ -27,7 +27,7 @@ import {
 import {
   EARLIEST_DUE,
   FEES_DUE,
-  FILING_DUE,
+  filingDueSql,
   NEXT_DUE,
   NEXT_DUE_RULE_KEY,
   NOTICE_DUE,
@@ -196,7 +196,7 @@ export async function listWorkQueue(
       nextDue: NEXT_DUE,
       nextDueRuleKey: NEXT_DUE_RULE_KEY,
       noticeDue: NOTICE_DUE,
-      filingDue: FILING_DUE,
+      filingDue: filingDueSql(),
       feesDue: FEES_DUE,
       unknownPayment: UNKNOWN_PAYMENT,
       preservationIncomplete: preservationIncompleteFor(actor),

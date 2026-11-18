@@ -1,10 +1,9 @@
-import { and, asc, desc, eq, gte, inArray } from 'drizzle-orm'
+import { and, asc, desc, eq, gte } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
   acceptanceSchedules,
   applicationProfessionals,
   boardMeetings,
-  clocks,
   desProximityDeterminations,
   regionalImpactDeterminations,
   regionalImpactParties,
@@ -20,12 +19,15 @@ import { type CoreState, TERMINAL_STATES } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
-import { desRule, suggestDesProximity } from '@/features/boards/des500'
+import { desRuleIfPresent, suggestDesProximity } from '@/features/boards/des500'
+import { desText, suggestionText } from '@/features/boards/desPanelText'
 import { type MeetingEligibility, meetingEligibility } from '@/features/boards/meetingEligibility'
+import { boardPanelClocks, boundByClassification } from '@/features/boards/panelClocks'
 import { getRegionalContacts } from '@/features/boards/regionalContacts'
 import { boardForKind, missingBoardMessage } from '@/features/boards/townBoards'
 import { loadPack } from '@/features/packs/loadPack'
 import { activePack } from '@/features/packs/registry'
+import { packRoles } from '@/features/packs/roles'
 import type { BoardKind } from '@/features/packs/schema'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { mayManageAbutters } from '@/features/rosters/manage'
@@ -101,12 +103,6 @@ function regionalSummary(text: string | null, names: string[]): string {
   return names.length === 0 ? `${text}.` : `${text}. Affected municipalities: ${joinNames(names)}.`
 }
 
-const DES_TEXT = {
-  within_500ft: 'Within the distance of a water body: NH DES receives notice',
-  not_within: 'Not within the distance of a water body',
-  not_applicable: 'The notice to NH DES does not apply',
-} as const
-
 const STALE_ISSUED = 'Issued, out of date. Draw and issue a new list.'
 
 const LIST_STATUS = {
@@ -115,31 +111,6 @@ const LIST_STATUS = {
   superseded: 'Replaced',
   discarded: 'Discarded',
 } as const
-
-function suggestionText(
-  s: Awaited<ReturnType<typeof suggestDesProximity>>,
-  distanceFt: number,
-): {
-  suggestion: string
-  distance: string
-  determination: 'within_500ft' | 'not_within' | null
-} {
-  if (s.state === 'known' || s.state === 'stale') {
-    const feet = s.value.withinFt === null ? null : Math.round(s.value.withinFt)
-    return {
-      determination: s.value.within ? 'within_500ft' : 'not_within',
-      suggestion: s.value.within
-        ? `The map suggests this parcel is within ${distanceFt} feet of a water body.`
-        : `The map suggests this parcel is farther than ${distanceFt} feet from any water body.`,
-      distance: feet === null ? '' : `Nearest water body: about ${feet} feet from the parcel.`,
-    }
-  }
-  return {
-    suggestion: 'The map cannot suggest an answer because the water layer is not usable.',
-    distance: '',
-    determination: null,
-  }
-}
 
 async function changePermissions(db: Db, actor: Actor, state: CoreState, signal: AbortSignal) {
   if (TERMINAL_STATES.includes(state)) {
@@ -202,9 +173,12 @@ export async function loadBoardPanel(
     .select()
     .from(desProximityDeterminations)
     .where(eq(desProximityDeterminations.applicationId, applicationId))
+  const { rules } = packRoles()
+  const proximity = desRuleIfPresent()
   const desApplies =
+    proximity !== null &&
     classification?.abutters?.conditionalRoles.some((r) => r.when === 'des_within_500ft') === true
-  const distanceFt = desRule().distanceFt
+  const distanceFt = proximity?.distanceFt ?? 0
   const suggested = desApplies
     ? await suggestDesProximity(db, applicationId, new Date(), signal)
     : { state: 'unknown' as const }
@@ -217,31 +191,12 @@ export async function loadBoardPanel(
     .where(eq(applicationProfessionals.applicationId, applicationId))
   const parcelIds = await applicantParcelIds(db, applicationId, signal)
   const labels = await displayIdsFor(db, parcelIds)
-  const [overdue] = await db
-    .select({ id: clocks.id })
-    .from(clocks)
-    .where(
-      and(
-        eq(clocks.applicationId, applicationId),
-        eq(clocks.ruleKey, 'nh.pb.decision'),
-        inArray(clocks.status, ['running', 'overdue']),
-      ),
-    )
+  const panelClocks = await boardPanelClocks(db, applicationId)
   const certs = await db
     .select()
     .from(selectmenCertifications)
     .where(eq(selectmenCertifications.applicationId, applicationId))
     .orderBy(desc(selectmenCertifications.requestedOn))
-  const [exercise] = await db
-    .select()
-    .from(clocks)
-    .where(
-      and(
-        eq(clocks.applicationId, applicationId),
-        eq(clocks.ruleKey, 'nh.zba.exercise'),
-        eq(clocks.status, 'running'),
-      ),
-    )
   return {
     applicationId,
     boardKind,
@@ -250,7 +205,7 @@ export async function loadBoardPanel(
     state: app.state,
     ...(await changePermissions(db, actor, app.state, signal)),
     canOpenLists: await mayManageAbutters(db, actor.userId, signal),
-    hasFilingLead: classification?.mandatoryRuleKeys.includes('nh.pb.filing_lead') === true,
+    hasFilingLead: boundByClassification(classification?.mandatoryRuleKeys, rules.filingLead),
     acceptanceText: schedule === undefined ? null : formatCivilDate(schedule.date),
     acceptanceMeetingId: schedule?.id ?? null,
     acceptanceDate: schedule?.date ?? null,
@@ -278,7 +233,7 @@ export async function loadBoardPanel(
       suggestion: text.suggestion,
       distanceText: text.distance,
       suggestedDetermination: text.determination,
-      determinationText: des === undefined ? null : DES_TEXT[des.determination],
+      determinationText: des === undefined ? null : desText(des.determination),
     },
     lists: versions.map((v) => ({
       id: v.id,
@@ -295,13 +250,14 @@ export async function loadBoardPanel(
     })),
     parcels: parcelIds.map((id) => labels.get(id) ?? 'Parcel'),
     certification: {
-      offered: overdue !== undefined,
+      offered: panelClocks.decisionOpen,
       history: certs.map(
         (c) =>
           `${formatCivilDate(c.requestedOn)}: ${c.outcome === 'pending' ? 'requested, waiting on the selectmen' : c.outcome === 'certified' ? 'certified by the selectmen' : 'the selectmen refused'}`,
       ),
     },
-    exerciseText: exercise === undefined ? null : formatCivilDate(exercise.currentDue),
-    hasExercise: classification?.mandatoryRuleKeys.includes('nh.zba.exercise') === true,
+    exerciseText:
+      panelClocks.exerciseDue === null ? null : formatCivilDate(panelClocks.exerciseDue),
+    hasExercise: boundByClassification(classification?.mandatoryRuleKeys, rules.zbaExercise),
   }
 }

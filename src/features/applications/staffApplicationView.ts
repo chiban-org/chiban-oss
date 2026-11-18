@@ -23,6 +23,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { describeCodeEdition, type EditionDescription } from '@/features/building/codeEdition'
+import { codeEditionApplies } from '@/features/building/codeEditionApplies'
 import {
   type AmendmentEntry,
   amendmentEntries,
@@ -36,6 +37,7 @@ import type { FeeComputation } from '@/features/fees/computeFees'
 import { previewFees } from '@/features/fees/preview'
 import { loadNoticeDeadlines, type NoticeDeadline } from '@/features/hearings/noticeDeadlines'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
 import type { ClockRule } from '@/features/packs/schema'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { hasFullRecordAccess } from '@/features/projects/access'
@@ -75,6 +77,8 @@ export interface StaffApplicationView {
   conditions: (typeof applicationConditions.$inferSelect)[]
   conditionLibrary: { code: string; text: string; blocksIssuance: boolean }[]
   classification: string | null
+  isBuildingPermit: boolean
+  codeEditionApplies: boolean
   fees: {
     assessments: (typeof feeAssessments.$inferSelect)[]
     overrides: (typeof feeOverrides.$inferSelect)[]
@@ -195,7 +199,8 @@ export async function getStaffApplicationView(
   const pack = loadPack()
   const editionEntry =
     record === undefined ? undefined : pack.codeEditions.find((e) => e.key === record.editionKey)
-  const recordRule = pack.rules.find((r) => r.key === 'nh.bp.code_edition')
+  const roles = packRoles()
+  const recordRule = pack.rules.find((r) => r.key === roles.rules.codeEditionRecord)
   const [determination] = await db
     .select()
     .from(regionalImpactDeterminations)
@@ -229,6 +234,8 @@ export async function getStaffApplicationView(
     allowsDirectIssue: app.typeBody.workflow.allowsDirectIssue,
     conditionLibrary: library,
     classification: app.typeBody.classification ?? null,
+    isBuildingPermit: app.typeBody.classification === roles.classifications.buildingPermit,
+    codeEditionApplies: codeEditionApplies(app.typeBody.classification),
     conditions: await db
       .select()
       .from(applicationConditions)
@@ -245,7 +252,9 @@ export async function getStaffApplicationView(
             amendments: amendmentEntries(record),
           },
     regionalImpact: {
-      applies: effectiveBindings(app.typeBody, pack).includes('nh.bp.regional_impact'),
+      applies:
+        roles.rules.regionalImpactGate !== null &&
+        effectiveBindings(app.typeBody, pack).includes(roles.rules.regionalImpactGate),
       determination: determination ?? null,
       notices: await db
         .select()

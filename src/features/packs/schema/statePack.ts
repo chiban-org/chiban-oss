@@ -43,6 +43,12 @@ export interface OrderTexts {
   noticeOfViolationRequest: string
 }
 
+export interface PackLabels {
+  environmentalAgency: string
+  environmentalAgencyShort: string
+  stateLicenseNumber: string
+}
+
 export interface RuleArea {
   title: string
   rules: readonly PackRule[]
@@ -66,4 +72,5 @@ export interface StatePack {
   ruleTransitions: readonly RuleTransition[]
   ruleAreas: readonly RuleArea[]
   orderTexts: OrderTexts
+  labels: PackLabels
 }

@@ -10,14 +10,15 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { recordAdjustment } from '@/features/clocks/adjustClock'
 import { relianceFloorDue } from '@/features/clocks/relianceFloor'
+import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { effectiveBindings } from '@/features/config/bindings'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
-export const EXERCISE_KEY = 'nh.zba.exercise'
 const FLOOR_AUTHORITY = 'RSA 674:33 I-a(a) and IV(b)'
 
 export async function runningExerciseClock(tx: Tx, applicationId: string) {
@@ -27,7 +28,7 @@ export async function runningExerciseClock(tx: Tx, applicationId: string) {
     .where(
       and(
         eq(clocks.applicationId, applicationId),
-        eq(clocks.ruleKey, EXERCISE_KEY),
+        clockRuleIs(packRoles().rules.zbaExercise),
         eq(clocks.status, 'running'),
       ),
     )
@@ -54,7 +55,10 @@ export async function recordFinalApproval(
   await lockApplication(tx, input.applicationId)
   const app = await loadApplicationContext(tx, input.applicationId, signal)
   if (app === null || (app.state !== 'decided' && app.state !== 'issued')) return err('not_decided')
-  if (!effectiveBindings(app.typeBody, loadPack()).includes(EXERCISE_KEY)) return err('not_bound')
+  const exerciseKey = packRoles().rules.zbaExercise
+  if (exerciseKey === null || !effectiveBindings(app.typeBody, loadPack()).includes(exerciseKey)) {
+    return err('not_bound')
+  }
   await startClocksFor(tx, input.applicationId, 'final_approval', input.finalOn, signal)
   const clock = await runningExerciseClock(tx, input.applicationId)
   if (clock === null) return err('not_bound')

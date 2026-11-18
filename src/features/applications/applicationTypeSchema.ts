@@ -3,16 +3,15 @@ import { DocumentItemSchema, documentItemIssues } from '@/features/applications/
 import { CORE_STATES } from '@/features/applications/states'
 import { loadPack } from '@/features/packs/loadPack'
 import { activePack } from '@/features/packs/registry'
+import { packRoles } from '@/features/packs/roles'
 
 const STEP_NAME_REQUIRED = 'Name every step.'
 
-const ENFORCEMENT_CLASSIFICATIONS: readonly string[] = [
-  'nh.enforcement_zoning',
-  'nh.enforcement_building_code',
-]
-
 export function isApplicationClassification(key: string): boolean {
-  return activePack().classificationKeys.includes(key) && !ENFORCEMENT_CLASSIFICATIONS.includes(key)
+  return (
+    activePack().classificationKeys.includes(key) &&
+    !packRoles().classifications.enforcement.includes(key)
+  )
 }
 
 const ApplicationTypeBodyShape = z.object({

@@ -6,14 +6,17 @@ import {
   regionalImpactDeterminations,
   regionalImpactNotices,
 } from '@/db/schema'
-import { type GateEvaluator, registerPackGate } from '@/features/gates/registry'
+import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
+import {
+  buildGateDefinition,
+  type GateDefinition,
+  type GateEvaluator,
+  registerGate,
+} from '@/features/gates/registry'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
 import type { GateRule } from '@/features/packs/schema'
 import { formatCivilDate } from '@/lib/formatDate'
-
-export const CODE_EDITION_GATE_KEY = 'nh.bp.code_edition_recorded'
-export const REGIONAL_IMPACT_GATE_KEY = 'nh.bp.regional_impact'
-const COMMENT_CLOCK_RULE_KEY = 'nh.bp.regional_impact_comment'
 
 function gateRule(key: string): GateRule {
   const rule = ruleByKey(loadPack(), key)
@@ -68,7 +71,7 @@ const regionalImpactCleared: GateEvaluator = async (tx, app, today) => {
     .where(
       and(
         eq(clocks.applicationId, app.id),
-        eq(clocks.ruleKey, COMMENT_CLOCK_RULE_KEY),
+        clockRuleIs(packRoles().rules.regionalImpactComment),
         ne(clocks.status, 'superseded'),
       ),
     )
@@ -83,5 +86,15 @@ const regionalImpactCleared: GateEvaluator = async (tx, app, today) => {
   return { status: 'pass' }
 }
 
-registerPackGate(gateRule(CODE_EDITION_GATE_KEY), codeEditionRecorded)
-registerPackGate(gateRule(REGIONAL_IMPACT_GATE_KEY), regionalImpactCleared)
+export function buildingGateDefinitions(): GateDefinition[] {
+  const { rules } = packRoles()
+  const gates: [string | null, GateEvaluator][] = [
+    [rules.codeEditionGate, codeEditionRecorded],
+    [rules.regionalImpactGate, regionalImpactCleared],
+  ]
+  return gates.flatMap(([key, evaluate]) =>
+    key === null ? [] : [buildGateDefinition(gateRule(key), evaluate)],
+  )
+}
+
+for (const gate of buildingGateDefinitions()) registerGate(gate)

@@ -12,12 +12,13 @@ import { transactionResult } from '@/db/transactionResult'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { getRegionalContacts } from '@/features/boards/regionalContacts'
+import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
 import { markClockMet } from '@/features/clocks/startClocks'
 import { noticeStatus } from '@/features/notices/noticeStatus'
+import { packRoles } from '@/features/packs/roles'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
-export const TRANSMITTAL_CLOCK_KEY = 'nh.ri.transmittal'
 export const TRANSMITTAL_SUBJECT = 'regional_transmittal'
 
 export type TransmittalError =
@@ -35,7 +36,10 @@ export async function syncTransmittalClock(tx: Tx, setId: string, signal: AbortS
     .select()
     .from(clocks)
     .where(
-      and(eq(clocks.applicationId, set.applicationId), eq(clocks.ruleKey, TRANSMITTAL_CLOCK_KEY)),
+      and(
+        eq(clocks.applicationId, set.applicationId),
+        clockRuleIs(packRoles().rules.regionalImpactTransmittal),
+      ),
     )
     .orderBy(desc(clocks.createdAt))
     .limit(1)
@@ -48,7 +52,7 @@ export async function syncTransmittalClock(tx: Tx, setId: string, signal: AbortS
     await markClockMet(
       tx,
       set.applicationId,
-      TRANSMITTAL_CLOCK_KEY,
+      clock.ruleKey,
       last ?? (clock.currentDue as CivilDate),
       signal,
     )
@@ -88,7 +92,7 @@ export async function recordRegionalTransmittal(
         .where(
           and(
             eq(clocks.applicationId, decision.applicationId),
-            eq(clocks.ruleKey, TRANSMITTAL_CLOCK_KEY),
+            clockRuleIs(packRoles().rules.regionalImpactTransmittal),
           ),
         )
         .orderBy(desc(clocks.createdAt))
@@ -139,7 +143,7 @@ export async function recordRegionalTransmittal(
         await tx.insert(noticeItems).values(
           recipients.map((r) => ({
             setId: created?.id ?? '',
-            requirementKey: TRANSMITTAL_CLOCK_KEY,
+            requirementKey: clock.ruleKey,
             requirementVersion: clock.ruleVersion,
             source: 'pack_rule' as const,
             channel: 'certified_mail',

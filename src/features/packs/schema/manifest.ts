@@ -12,6 +12,8 @@ import {
   type RecordSeries,
   RecordSeriesSchema,
 } from './records'
+import { roleIssues } from './roleChecks'
+import { type PackRoles, PackRolesSchema } from './roles'
 import {
   ClockRuleSchema,
   EffectRuleSchema,
@@ -61,6 +63,7 @@ export const PackManifestSchema = z
       byApplicationType: z.record(z.string(), z.string()),
     }),
     abutterParams: z.array(AbutterParamsSchema).min(1),
+    roles: PackRolesSchema,
   })
   .superRefine((m, ctx) => {
     const keys = new Set(m.rules.map((r) => r.key))
@@ -78,6 +81,12 @@ export const PackManifestSchema = z
         if (!keys.has(k)) ctx.addIssue({ code: 'custom', message: `unknown notice rule ${k}` })
       }
     }
+    const targets = {
+      ruleKeys: keys,
+      classificationKeys: new Set(m.classifications.map((c) => c.key)),
+      seriesKeys: new Set(m.recordSeries.map((r) => r.key)),
+    }
+    for (const message of roleIssues(m.roles, targets)) ctx.addIssue({ code: 'custom', message })
   })
 export type PackManifestData = z.infer<typeof PackManifestSchema>
 
@@ -93,4 +102,5 @@ export interface PackManifest {
     byApplicationType: Record<string, string>
   }
   abutterParams: AbutterParams[]
+  roles: PackRoles
 }

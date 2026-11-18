@@ -10,11 +10,10 @@ import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { toGraphNodes } from '@/features/decisions/decisionView'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
-
-const ADMIN_TO_ZBA_RULE = 'nh.appeal.admin_to_zba'
 
 type NodeRow = typeof appealNodes.$inferSelect
 
@@ -34,8 +33,10 @@ export interface ApplicationAppeals {
   nodeChoices: { id: string; label: string }[]
 }
 
-function appealWindowEnds(decidedOn: CivilDate): CivilDate {
-  const rule = ruleByKey(loadPack(), ADMIN_TO_ZBA_RULE)
+function appealWindowEnds(decidedOn: CivilDate): CivilDate | null {
+  const key = packRoles().rules.adminAppealToZba
+  if (key === null) return null
+  const rule = ruleByKey(loadPack(), key)
   if (rule.kind !== 'clock' || !('value' in rule.length)) return decidedOn
   return computeRuleDue(
     rule,
@@ -49,6 +50,7 @@ function statusOf(decision: NodeRow, appeal: NodeRow | undefined, today: CivilDa
   if (appeal !== undefined)
     return `Appealed to the Zoning Board on ${formatCivilDate(appeal.occurredOn)}`
   const ends = appealWindowEnds(decision.occurredOn as CivilDate)
+  if (ends === null) return 'Not appealed.'
   return ends < today
     ? `Not appealed. The appeal window ended ${formatCivilDate(ends)}.`
     : `Not appealed. The appeal window ends ${formatCivilDate(ends)}.`

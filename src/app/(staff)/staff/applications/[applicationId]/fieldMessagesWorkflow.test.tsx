@@ -54,6 +54,8 @@ const VIEW = {
   state: 'under_review',
   today: '2026-11-06',
   classification: 'nh.building_permit',
+  isBuildingPermit: true,
+  codeEditionApplies: true,
   completedDate: null,
   permissions: {
     canOverrideGate: true,

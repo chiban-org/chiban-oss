@@ -7,6 +7,8 @@ import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { formatMinuteOfDay, HEARING_KIND_LABELS } from '@/features/hearings/labels'
 import { HEARING_STATUS_LABELS } from '@/features/hearings/views'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
+import { inRuleGroup } from '@/features/packs/ruleGroups'
 import { formatCivilDate } from '@/lib/formatDate'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
@@ -16,9 +18,6 @@ export interface PortalBoardRecord {
   decisions: string[]
   deadlines: string[]
 }
-
-const APPEAL_PREFIX = 'nh.appeal.'
-const EXERCISE_KEY = 'nh.zba.exercise'
 
 const CONFIRMED = ' The board confirmed it was properly noticed.'
 
@@ -57,8 +56,9 @@ export async function loadPortalBoardRecord(
     )
     .orderBy(asc(clocks.currentDue))
   const pack = loadPack()
+  const shown = packRoles().ruleGroups.portalBoardDeadlines
   const deadlines = running
-    .filter((c) => c.ruleKey.startsWith(APPEAL_PREFIX) || c.ruleKey === EXERCISE_KEY)
+    .filter((c) => inRuleGroup(c.ruleKey, shown))
     .flatMap((c) => {
       const rule = ruleByKey(pack, c.ruleKey, c.ruleVersion)
       return rule.kind === 'clock' ? [`${rule.label}, due ${formatCivilDate(c.currentDue)}.`] : []

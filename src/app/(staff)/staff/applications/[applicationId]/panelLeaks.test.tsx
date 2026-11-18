@@ -39,6 +39,8 @@ function view(overrides: Record<string, unknown>): StaffApplicationView {
     state: 'under_review',
     today: '2026-11-02',
     classification: 'nh.building_permit',
+    isBuildingPermit: true,
+    codeEditionApplies: true,
     completedDate: null,
     permissions: {},
     parties: [],

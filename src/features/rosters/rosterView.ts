@@ -8,6 +8,7 @@ import {
 } from '@/features/boards/regionalContacts'
 import type { PageWindow } from '@/features/dataTable/pageSlice'
 import { slicePage } from '@/features/dataTable/pageSlice'
+import { activePack } from '@/features/packs/registry'
 import {
   CONTACTS_PAGE_SIZE,
   type ContactsQuery,
@@ -47,7 +48,10 @@ function contactLines(contacts: RegionalContactsBody): { role: string; lines: st
       lines: contacts.commission === null ? [] : [line(contacts.commission)],
     },
     { role: 'Affected municipalities', lines: contacts.municipalities.map(line) },
-    { role: 'NH DES', lines: contacts.nhDes === null ? [] : [line(contacts.nhDes)] },
+    {
+      role: activePack().labels.environmentalAgencyShort,
+      lines: contacts.nhDes === null ? [] : [line(contacts.nhDes)],
+    },
   ]
 }
 

@@ -1,4 +1,5 @@
 import { boardKindOf } from '@/features/applications/applicationTypeSchema'
+import { packRoles } from '@/features/packs/roles'
 
 export interface GroupableType {
   key: string
@@ -46,14 +47,15 @@ const COMMON_JOBS: readonly CommonJob[] = [
   { key: 'SG', title: 'Sign', description: 'A new sign, or a change to an existing one.' },
 ]
 
-const BUILDING_OFFICE = new Set(['nh.building_permit', 'nh.trade_permit'])
 const GROUP_ORDER = ['Building office', 'Planning Board', 'Zoning Board', 'Registrations and other']
 
 function groupOf(type: GroupableType): string {
   const board = boardKindOf(type.classification)
   if (board === 'planning_board') return 'Planning Board'
   if (board === 'zba') return 'Zoning Board'
-  return BUILDING_OFFICE.has(type.classification ?? '')
+  const { classifications } = packRoles()
+  const office = [classifications.buildingPermit, classifications.tradePermit]
+  return type.classification !== undefined && office.includes(type.classification)
     ? 'Building office'
     : 'Registrations and other'
 }

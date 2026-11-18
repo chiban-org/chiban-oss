@@ -26,7 +26,7 @@ const COMPLETENESS = {
 function filed(o: Partial<PlanView> = {}): PlanView {
   return {
     state: 'submitted',
-    classification: 'nh.site_plan',
+    isBuildingPermit: false,
     completedDate: null,
     nextTransitions: ['withdrawn'],
     allowedMoves: ['withdrawn'],

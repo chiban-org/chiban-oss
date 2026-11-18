@@ -4,9 +4,8 @@ import type { BoardRow } from '@/features/boards/townBoards'
 import type { PublishError } from '@/features/config/publishChecks'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { checkTownValue, type TownValueError } from '@/features/packs/overridePolicy'
+import { packRoles } from '@/features/packs/roles'
 import type { PackRule } from '@/features/packs/schema'
-
-const FILING_LEAD_KEY = 'nh.pb.filing_lead'
 
 type Board = BoardSettingsBody['boards'][number]
 
@@ -91,7 +90,7 @@ export function checkBoardSettings(
   if (abutters !== null) return abutters
   const entries = entryIssue(body.boards, active)
   if (entries !== null) return entries
-  const rule = ruleByKey(loadPack(), FILING_LEAD_KEY)
+  const leadKey = packRoles().rules.filingLead
   for (const entry of body.boards) {
     if (entry.filingLeadDays === null) continue
     const board = active.find((b) => b.id === entry.boardId)
@@ -100,6 +99,12 @@ export function checkBoardSettings(
         invalid: [{ path: 'boards', message: 'Only the Planning Board has a filing lead time.' }],
       }
     }
+    if (leadKey === null) {
+      return {
+        invalid: [{ path: 'boards', message: 'State law here sets no filing lead time.' }],
+      }
+    }
+    const rule = ruleByKey(loadPack(), leadKey)
     const checked = checkTownValue(rule, {
       value: entry.filingLeadDays,
       adoptingAuthority: entry.filingLeadAdoption?.adoptingAuthority,

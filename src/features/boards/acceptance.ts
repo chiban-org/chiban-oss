@@ -13,7 +13,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication, declaresSubstep } from '@/features/boards/boardOf'
 import { nextRegularMeetingOfBoard } from '@/features/boards/calendar'
-import { FILING_LEAD_KEY, filingLeadFor, filingLeadRule } from '@/features/boards/filingLead'
+import { filingLeadFor, filingLeadRule } from '@/features/boards/filingLead'
 import { getMeeting } from '@/features/boards/meetings'
 import { boardForKind } from '@/features/boards/townBoards'
 import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
@@ -53,7 +53,7 @@ async function replaceFilingClock(
     .where(
       and(
         eq(clocks.applicationId, input.applicationId),
-        eq(clocks.ruleKey, FILING_LEAD_KEY),
+        eq(clocks.ruleKey, rule.key),
         inArray(clocks.status, ['running', 'overdue', 'met']),
       ),
     )
@@ -76,7 +76,7 @@ async function replaceFilingClock(
       .set({ status: 'superseded', supersededBy: freshId, supersededReason: ACCEPTANCE_CHANGED })
       .where(eq(clocks.id, old.id))
   }
-  await markClockMet(tx, input.applicationId, FILING_LEAD_KEY, input.receivedDate, signal)
+  await markClockMet(tx, input.applicationId, rule.key, input.receivedDate, signal)
 }
 
 export async function setAcceptanceMeetingTx(

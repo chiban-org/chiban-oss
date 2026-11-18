@@ -8,14 +8,15 @@ import { resolveClockLength } from '@/features/clocks/startClocks'
 import { effectiveBindings } from '@/features/config/bindings'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles, requireRuleRole } from '@/features/packs/roles'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 
-export const FILING_LEAD_KEY = 'nh.pb.filing_lead'
-
 export function filingLeadRule() {
-  const rule = ruleByKey(loadPack(), FILING_LEAD_KEY)
+  const rule = ruleByKey(loadPack(), requireRuleRole('filingLead'))
   if (rule.kind !== 'clock' || !('value' in rule.length)) {
-    throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, 'nh.pb.filing_lead must be a plain clock')
+    throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, 'The filing lead rule must be a plain clock', {
+      key: rule.key,
+    })
   }
   return { rule, packDays: rule.length.value }
 }
@@ -31,7 +32,9 @@ export async function filingLeadFor(
   boardId: string,
   signal: AbortSignal,
 ): Promise<FilingLead | null> {
-  if (!effectiveBindings(app.typeBody, loadPack()).includes(FILING_LEAD_KEY)) return null
+  const leadKey = packRoles().rules.filingLead
+  if (leadKey === null || !effectiveBindings(app.typeBody, loadPack()).includes(leadKey))
+    return null
   const { rule } = filingLeadRule()
   const settings = await getBoardSettings(db, signal)
   const facts = await factsWithDeterminations(db, app.id, app.facts)

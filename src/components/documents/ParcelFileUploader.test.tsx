@@ -18,8 +18,14 @@ const SERIES = [
     key: 'nh.rs.correspondence_administrative',
     label: 'Correspondence: administrative',
     citation: 'RSA 33-A',
+    visibility: 'private' as const,
   },
-  { key: 'nh.rs.septic_plans', label: 'Septic plans', citation: 'RSA 33-A' },
+  {
+    key: 'nh.rs.septic_plans',
+    label: 'Septic plans',
+    citation: 'RSA 33-A',
+    visibility: 'public' as const,
+  },
 ]
 const actions = { createIntent: vi.fn(), finalize: vi.fn() }
 

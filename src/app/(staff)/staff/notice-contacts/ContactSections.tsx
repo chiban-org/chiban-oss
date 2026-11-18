@@ -7,6 +7,7 @@ import { StatusChip } from '@/components/StatusChip'
 import { pagerLinks } from '@/features/dataTable/pageSlice'
 import { clearHref, type TableParams } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
+import { activePack } from '@/features/packs/registry'
 import type { PickedParcel } from '@/features/parcels/parcelPick'
 import { CONTACT_FILTER_PARAMS, CONTACT_SORT } from '@/features/rosters/contactListParams'
 import type { ContactList } from '@/features/rosters/contactPage'
@@ -29,9 +30,11 @@ export const SECTION_LINES = {
     'Notices go to the park owner. Each tenant is listed and you decide per application whether their home is adjoining or across.',
   gaps: 'An abutter list that touches one of these cannot be issued until its association is added.',
   restrictions: "When an applicant's land carries one of these, the holder is notified.",
-  regional:
-    'Used only when an application has regional impact or is within 500 feet under NH DES rules.',
 } as const
+
+export function regionalSectionLine(): string {
+  return `Used only when an application has regional impact or is within 500 feet under ${activePack().labels.environmentalAgencyShort} rules.`
+}
 
 interface SectionCopy {
   id: string

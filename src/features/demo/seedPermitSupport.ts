@@ -1,4 +1,3 @@
-import { NH_STARTERS } from '@packs/nh/starters'
 import { eq } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Db } from '@/db/client'
@@ -16,6 +15,7 @@ import { DEMO_DOMAIN } from '@/features/demo/domain'
 import { fileDemoDocuments } from '@/features/demo/seedDocuments'
 import { checkDemoLicense } from '@/features/demo/seedLicense'
 import { feeBalance } from '@/features/ledger/feeBalance'
+import { activePack } from '@/features/packs/registry'
 import { resolveParcelId } from '@/features/parcels/resolveParcelId'
 import { createProject } from '@/features/projects/projects'
 import { assignReviewer, signOffReview } from '@/features/reviews/assignments'
@@ -185,7 +185,7 @@ export async function open(
     ),
     'application',
   )
-  const type = NH_STARTERS.find((s) => s.applicationType.key === input.typeKey)
+  const type = activePack().starters.find((s) => s.applicationType.key === input.typeKey)
   await fileDemoDocuments(
     db,
     cast.applicant,

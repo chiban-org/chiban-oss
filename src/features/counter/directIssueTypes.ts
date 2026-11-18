@@ -2,6 +2,7 @@ import { and, eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { configVersions } from '@/db/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
+import { packRoles } from '@/features/packs/roles'
 
 export interface DirectIssueType {
   key: string
@@ -22,7 +23,8 @@ export interface CounterTypes {
 }
 
 export function requiresTradeLicense(body: Pick<ApplicationTypeBody, 'classification'>): boolean {
-  return body.classification === 'nh.trade_permit'
+  const trade = packRoles().classifications.tradePermit
+  return trade !== null && body.classification === trade
 }
 
 async function publishedTypes(

@@ -17,6 +17,7 @@ import type { CoreState } from '@/features/applications/states'
 import { attestationHash } from '@/features/applications/submitApplication'
 import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
+import { decisionClockKeys } from '@/features/decisions/decisionClocks'
 import { listDocuments } from '@/features/documents/listDocuments'
 import type { DocumentListRow } from '@/features/documents/types'
 import { previewFees } from '@/features/fees/preview'
@@ -26,6 +27,7 @@ import { getLayerStatus } from '@/features/gis/layerStatus'
 import { type HonestValue, honestFromLayer } from '@/features/honest/honest'
 import { type FeeBalance, feeBalance } from '@/features/ledger/feeBalance'
 import { ledgerEntryVisibleTo } from '@/features/ledger/visibility'
+import { packRoles } from '@/features/packs/roles'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { computeConvenienceFee } from '@/features/payments/convenienceFee'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
@@ -36,7 +38,6 @@ import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 import { isUuid } from '@/utils/uuid'
 
-const DECISION_CLOCK_KEYS = ['nh.bp.decision', 'nh.pb.decision', 'nh.zba.decision']
 const PAYER_ROLES = ['applicant', 'owner', 'agent', 'contractor'] as const
 const WRITABLE_STATES: readonly CoreState[] = ['draft', 'submitted']
 const ESTIMATE_STATES: readonly CoreState[] = ['draft', 'submitted', 'under_review']
@@ -90,7 +91,7 @@ function recordFacts(app: ApplicationContext, projectTitle: string, mayEnd: bool
     substep: app.substep,
     board: boardKindOf(app.typeBody.classification) !== null,
     allowsDirectIssue: app.typeBody.workflow.allowsDirectIssue,
-    completeness: app.typeBody.classification === 'nh.building_permit',
+    completeness: app.typeBody.classification === packRoles().classifications.buildingPermit,
     receivedDate: app.receivedDate,
     completedDate: app.completedDate,
     issuedOn: app.issuedOn,
@@ -106,7 +107,7 @@ async function decisionDue(db: Db, applicationId: string, signal: AbortSignal) {
     .where(
       and(
         eq(clocks.applicationId, applicationId),
-        inArray(clocks.ruleKey, DECISION_CLOCK_KEYS),
+        inArray(clocks.ruleKey, decisionClockKeys()),
         inArray(clocks.status, ['running', 'overdue']),
       ),
     )

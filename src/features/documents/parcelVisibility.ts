@@ -1,13 +1,8 @@
-export type ParcelFileVisibility = 'public' | 'private'
+import type { ParcelFileVisibility } from '@/features/documents/parcelFileVisibility'
+import { packRoles } from '@/features/packs/roles'
 
-const PUBLIC_BY_DEFAULT: readonly string[] = [
-  'nh.rs.building_permits',
-  'nh.rs.building_permits_lapsed',
-  'nh.rs.blueprints_architectural',
-  'nh.rs.driveway_permits',
-  'nh.rs.septic_plans',
-]
+export type { ParcelFileVisibility } from '@/features/documents/parcelFileVisibility'
 
 export function defaultParcelFileVisibility(seriesKey: string): ParcelFileVisibility {
-  return PUBLIC_BY_DEFAULT.includes(seriesKey) ? 'public' : 'private'
+  return packRoles().recordSeries.publicParcelFiles.includes(seriesKey) ? 'public' : 'private'
 }

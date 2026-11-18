@@ -14,6 +14,7 @@ import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { computeRuleDue } from '@/features/clocks/ruleEngine'
+import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { TRANSMITTAL_SUBJECT } from '@/features/decisions/regionalTransmittal'
 import { evidenceOf, noticeProofDocumentIds } from '@/features/documents/evidence'
@@ -23,6 +24,7 @@ import { proofMethodLabel } from '@/features/notices/proofMethods'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { activePack } from '@/features/packs/registry'
+import { packRoles } from '@/features/packs/roles'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -79,7 +81,7 @@ async function filingDue(db: Db, applicationId: string, today: string): Promise<
     .select({ currentDue: clocks.currentDue, status: clocks.status })
     .from(clocks)
     .where(
-      and(eq(clocks.applicationId, applicationId), eq(clocks.ruleKey, 'nh.board.decision_filing')),
+      and(eq(clocks.applicationId, applicationId), clockRuleIs(packRoles().rules.decisionFiling)),
     )
     .orderBy(desc(clocks.createdAt))
     .limit(1)

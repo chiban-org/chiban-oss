@@ -31,4 +31,9 @@ export const NH_PACK: StatePack = {
   ruleTransitions: NH_RULE_TRANSITIONS,
   ruleAreas: NH_RULE_AREAS,
   orderTexts: NH_ORDER_TEXTS,
+  labels: {
+    environmentalAgency: 'NH Department of Environmental Services',
+    environmentalAgencyShort: 'NH DES',
+    stateLicenseNumber: 'NH license number',
+  },
 }

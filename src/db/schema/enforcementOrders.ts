@@ -97,7 +97,7 @@ export const enforcementOrders = pgTable(
       .notNull()
       .references(() => enforcementCases.id),
     number: text('number').notNull().unique(),
-    ruleKey: text('rule_key', { enum: ['nh.enf.cd_zoning', 'nh.enf.cd_building'] }).notNull(),
+    ruleKey: text('rule_key').notNull(),
     ruleVersion: integer('rule_version').notNull(),
     findingIds: uuid('finding_ids').array().notNull().default(sql`'{}'::uuid[]`),
     correctiveAction: text('corrective_action').notNull(),

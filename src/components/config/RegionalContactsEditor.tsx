@@ -2,6 +2,7 @@
 
 import { AddressAreaField } from '@/components/address/AddressAreaField'
 import { Input, RowButton, rowKey } from '@/components/config/primitives'
+import { usePackText } from '@/components/PackTextProvider'
 import { Legend } from '@/components/ui/legend'
 import type { Contact, RegionalContactsBody } from '@/features/boards/regionalContacts'
 
@@ -39,6 +40,7 @@ function ContactFields({
 }
 
 export function RegionalContactsEditor({ body, onChange }: Props) {
+  const { environmentalAgency } = usePackText()
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
@@ -51,7 +53,7 @@ export function RegionalContactsEditor({ body, onChange }: Props) {
         onChange={(commission) => onChange({ ...body, commission })}
       />
       <ContactFields
-        label="NH Department of Environmental Services"
+        label={environmentalAgency}
         contact={body.nhDes}
         onChange={(nhDes) => onChange({ ...body, nhDes })}
       />

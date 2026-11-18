@@ -8,6 +8,7 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { nextEnforcementNumber } from '@/features/enforcement/numbering'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
 import { civilDateSchema } from '@/features/packs/schema'
 import { err, ok, type Result } from '@/types/result'
 
@@ -25,12 +26,11 @@ const DraftSchema = z.object({
   ceaseImmediately: z.boolean(),
 })
 
-export type OrderRuleKey = 'nh.enf.cd_zoning' | 'nh.enf.cd_building'
-
-export function orderRuleKeyFor(kinds: readonly string[]): OrderRuleKey | 'split_required' {
+function orderRuleKeyFor(kinds: readonly string[]): string | null {
+  const { rules } = packRoles()
   const building = kinds.filter((k) => k === 'building_code').length
-  if (building === kinds.length) return 'nh.enf.cd_building'
-  return building === 0 ? 'nh.enf.cd_zoning' : 'split_required'
+  if (building === kinds.length) return rules.buildingCodeOrder
+  return building === 0 ? rules.zoningOrder : null
 }
 
 export async function draftOrder(
@@ -41,7 +41,7 @@ export async function draftOrder(
   now: Date = new Date(),
 ): Promise<
   Result<
-    { orderId: string; number: string; ruleKey: OrderRuleKey },
+    { orderId: string; number: string; ruleKey: string },
     'forbidden' | 'invalid' | 'not_found' | 'findings_invalid' | 'split_required'
   >
 > {
@@ -70,7 +70,7 @@ export async function draftOrder(
       )
     if (findings.length !== new Set(value.findingIds).size) return err('findings_invalid')
     const ruleKey = orderRuleKeyFor(findings.map((f) => f.provisionKind))
-    if (ruleKey === 'split_required') return err('split_required')
+    if (ruleKey === null) return err('split_required')
     const rule = ruleByKey(loadPack(), ruleKey)
     const { number } = await nextEnforcementNumber(tx, 'CD', now, signal)
     const [row] = await tx

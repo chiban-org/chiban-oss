@@ -2,6 +2,7 @@ import { hasFullRecordAccess } from '@/features/access/roles'
 import { hasCapability } from '@/features/authz/capabilities'
 import type { RawSearchParams } from '@/features/dataTable/params'
 import { loadPanelDocuments } from '@/features/documents/panelData'
+import { defaultParcelFileVisibility } from '@/features/documents/parcelVisibility'
 import { configuredOverlayLayers } from '@/features/gis/extent'
 import { recordsInspection } from '@/features/inspections/visibility'
 import { returnedCheckNoticesForParcel } from '@/features/ledger/balanceNotice'
@@ -107,6 +108,7 @@ export async function loadParcelPage(ctx: StaffContext, parcelId: string, raw: R
       key: s.key,
       label: s.label,
       citation: s.citation.label,
+      visibility: defaultParcelFileVisibility(s.key),
     })),
   }
 }

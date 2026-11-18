@@ -15,6 +15,7 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { computeSubjectDue, type SubjectDue } from '@/features/clocks/subjectDue'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
 import { civilDateSchema } from '@/features/packs/schema'
 import { rtkDueContext } from '@/features/rtk/dueContext'
 import { fileRequestLetter } from '@/features/rtk/requestLetter'
@@ -22,8 +23,6 @@ import type { ObjectStore } from '@/features/storage/objectStore'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, daysBetween } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
-
-export { RTK_LETTER_SERIES } from '@/features/rtk/requestLetter'
 
 const ResponseSchema = z.object({
   requestId: z.string().uuid(),
@@ -56,9 +55,11 @@ export type FirstResponseError =
   | 'release_required'
 
 function statedTimeRule() {
-  const rule = ruleByKey(loadPack(), 'nh.rtk.stated_time')
+  const rule = ruleByKey(loadPack(), packRoles().rules.rtkStatedTime)
   if (rule.kind !== 'clock')
-    throw new AppError(ErrorIds.RTK_INVARIANT, 'nh.rtk.stated_time is not a clock')
+    throw new AppError(ErrorIds.RTK_INVARIANT, 'The stated time rule is not a clock', {
+      key: rule.key,
+    })
   return rule
 }
 

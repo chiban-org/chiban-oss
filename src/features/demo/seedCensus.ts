@@ -1,7 +1,7 @@
 import { isNotNull } from 'drizzle-orm'
 import { applications } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
-import { CENSUS_CLASSIFICATION, classifyForCensus } from '@/features/census/classify'
+import { censusClassification, classifyForCensus } from '@/features/census/classify'
 import { suggestCensus } from '@/features/census/suggest'
 import { must } from '@/features/demo/seedPermitSupport'
 import type { RtkSeedContext } from '@/features/demo/seedRtk'
@@ -13,7 +13,7 @@ export async function seedCensusDemo(ctx: RtkSeedContext): Promise<void> {
     .where(isNotNull(applications.issuedOn))
   for (const row of issued) {
     const context = await loadApplicationContext(ctx.db, row.id, ctx.signal)
-    if (context?.typeBody.classification !== CENSUS_CLASSIFICATION) continue
+    if (context?.typeBody.classification !== censusClassification()) continue
     const suggestion = suggestCensus(
       {
         workType: typeof context.values.work_type === 'string' ? context.values.work_type : null,

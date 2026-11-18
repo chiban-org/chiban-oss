@@ -2,6 +2,7 @@ import { NH_ABUTTER_PARAMS } from '@packs/nh/abutters/params'
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
 import { NH_CODE_EDITIONS } from '@packs/nh/codeEditions'
 import { NH_RECORD_SERIES, RECORD_SERIES_DEFAULTS } from '@packs/nh/recordSeries'
+import { NH_ROLES } from '@packs/nh/roles'
 import { APPEAL_RULES } from '@packs/nh/rules/appeals'
 import { BUILDING_RULES } from '@packs/nh/rules/building'
 import { CODE_RULES } from '@packs/nh/rules/code'
@@ -17,7 +18,7 @@ import type { PackManifest } from '@/features/packs/schema'
 
 export const NH_PACK_MANIFEST: PackManifest = {
   id: 'nh',
-  version: '0.5.0',
+  version: '0.6.0',
   rules: [
     ...BUILDING_RULES,
     ...APPEAL_RULES,
@@ -36,4 +37,5 @@ export const NH_PACK_MANIFEST: PackManifest = {
   recordSeries: NH_RECORD_SERIES,
   recordSeriesDefaults: RECORD_SERIES_DEFAULTS,
   abutterParams: [NH_ABUTTER_PARAMS],
+  roles: NH_ROLES,
 }

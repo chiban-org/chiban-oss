@@ -165,11 +165,12 @@ export async function stopRunningClocks(
 export async function markClockMet(
   tx: Tx,
   applicationId: string,
-  ruleKey: string,
+  ruleKey: string | null,
   onDate: CivilDate,
   signal: AbortSignal,
 ): Promise<void> {
   signal.throwIfAborted()
+  if (ruleKey === null) return
   await tx
     .update(clocks)
     .set({ status: 'met', metOn: onDate })

@@ -37,6 +37,8 @@ const PAY_TIMING = [
   ['at_approval', 'When the application is approved'],
 ] as const
 
+const NO_RULE_GROUPS = { building: [], board: [] }
+
 export function ApplicationTypeEditor({
   body,
   onChange,
@@ -46,9 +48,10 @@ export function ApplicationTypeEditor({
 }: Props) {
   const classification = classifications.find((c) => c.key === body.classification)
   const mandatory = new Set(classification?.mandatoryRuleKeys ?? [])
-  const offered = ruleChoicesFor(packRules, classification)
+  const context = useEditorContext()
+  const offered = ruleChoicesFor(packRules, classification, context.ruleGroups ?? NO_RULE_GROUPS)
   const set = (patch: Partial<ApplicationTypeBody>) => onChange({ ...body, ...patch })
-  const formFields = new Map(Object.entries(useEditorContext().formFields ?? {}))
+  const formFields = new Map(Object.entries(context.formFields ?? {}))
   return (
     <>
       <div className="grid gap-3 sm:grid-cols-3">

@@ -1,6 +1,5 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
-import { NH_PARCEL_ID_FORMATS } from '@packs/nh/parcelIdFormats'
 import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { aliasOverrides, gisLayers, parcelIdFormats, parcelRecordLinks, parcels } from '@/db/schema'
@@ -10,6 +9,7 @@ import { storyDay, storyInstant } from '@/features/demo/seedCalendar'
 import type { LayerKey } from '@/features/gis/exceptionKinds'
 import { runImport } from '@/features/gis/import/runImport'
 import type { SourceFeature } from '@/features/gis/import/types'
+import { activePack } from '@/features/packs/registry'
 import { createAliasOverride } from '@/features/parcels/aliasOverrides'
 import { createParcelPlaceholder, recordLineageEvent } from '@/features/parcels/lineage'
 import { linkRecordByRawRef } from '@/features/parcels/recordLinks'
@@ -169,7 +169,7 @@ export async function seedParcels(db: Db, signal: AbortSignal): Promise<{ import
   signal.throwIfAborted()
   await db
     .insert(parcelIdFormats)
-    .values(NH_PARCEL_ID_FORMATS.map(({ example: _example, ...format }) => format))
+    .values(activePack().parcelIdFormats.map(({ example: _example, ...format }) => format))
     .onConflictDoNothing()
   const staff = await db.query.users.findFirst({
     where: (u, { eq: same }) => same(u.email, `staff@${DEMO_DOMAIN}`),

@@ -37,7 +37,7 @@ const CLOCK = {
 function view(o: Partial<PlanView> = {}): PlanView {
   return {
     state: 'under_review',
-    classification: 'nh.building_permit',
+    isBuildingPermit: true,
     completedDate: '2026-10-30',
     nextTransitions: ['decided', 'denied', 'withdrawn'],
     allowedMoves: ['decided', 'denied', 'withdrawn'],
@@ -185,7 +185,7 @@ const PLANNING: PlanBoard = {
 function filed(o: Partial<PlanView> = {}): PlanView {
   return view({
     state: 'submitted',
-    classification: 'nh.site_plan',
+    isBuildingPermit: false,
     completedDate: null,
     nextTransitions: ['withdrawn'],
     allowedMoves: ['withdrawn'],

@@ -22,7 +22,7 @@ function stageInput(view: StaffApplicationView, board: boolean): StageInput {
     substep: view.substep,
     board,
     allowsDirectIssue: view.allowsDirectIssue,
-    completeness: view.classification === 'nh.building_permit',
+    completeness: view.isBuildingPermit,
     receivedDate: view.receivedDate,
     completedDate: view.completedDate,
     issuedOn: view.issuedOn,

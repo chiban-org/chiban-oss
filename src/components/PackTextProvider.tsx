@@ -3,7 +3,11 @@
 import { createContext, type ReactNode, useContext } from 'react'
 import type { PackText } from '@/features/packs/packText'
 
-const EMPTY: PackText = { signerRoleLabels: {}, lockedTexts: {} }
+const EMPTY: PackText = {
+  signerRoleLabels: {},
+  lockedTexts: {},
+  environmentalAgency: 'State environmental agency',
+}
 
 const Context = createContext<PackText>(EMPTY)
 

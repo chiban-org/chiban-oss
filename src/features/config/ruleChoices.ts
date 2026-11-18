@@ -1,16 +1,21 @@
+import { inRuleGroup } from '@/features/packs/ruleGroups'
+
 export interface RuleChoice {
   key: string
   label: string
 }
 
-const BUILDING_PREFIXES = ['nh.bp.']
-const BOARD_PREFIXES = ['nh.pb.', 'nh.zba.', 'nh.ri.', 'nh.board.']
+export interface RuleChoiceGroups {
+  building: readonly string[]
+  board: readonly string[]
+}
 
 export function ruleChoicesFor(
   rules: RuleChoice[],
   classification: { boardKind: string | null } | undefined,
+  groups: RuleChoiceGroups,
 ): RuleChoice[] {
   if (classification === undefined) return rules
-  const foreign = classification.boardKind === null ? BOARD_PREFIXES : BUILDING_PREFIXES
-  return rules.filter((r) => !foreign.some((prefix) => r.key.startsWith(prefix)))
+  const foreign = classification.boardKind === null ? groups.board : groups.building
+  return rules.filter((r) => !inRuleGroup(r.key, foreign))
 }

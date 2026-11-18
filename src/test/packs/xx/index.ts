@@ -77,4 +77,9 @@ export const XX_PACK: StatePack = {
     noticeOfViolationIntro: 'Vellmora notice of violation.',
     noticeOfViolationRequest: 'Please call the town.',
   },
+  labels: {
+    environmentalAgency: 'Vellmora Water Office',
+    environmentalAgencyShort: 'the Water Office',
+    stateLicenseNumber: 'Vellmora license number',
+  },
 }

@@ -46,7 +46,7 @@ export function PartiesPanel({ view }: { view: StaffApplicationView }) {
 
 export function completenessApplies(view: StaffApplicationView): boolean {
   return (
-    view.classification === 'nh.building_permit' &&
+    view.isBuildingPermit &&
     view.completedDate === null &&
     ['submitted', 'under_review'].includes(view.state)
   )

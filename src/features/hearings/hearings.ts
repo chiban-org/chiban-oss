@@ -16,6 +16,7 @@ import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { deriveNoticeItems } from '@/features/notices/deriveItems'
 import { type NoticeStatusItem, noticeStatus } from '@/features/notices/noticeStatus'
+import { packRoles } from '@/features/packs/roles'
 import type { BoardKind } from '@/features/packs/schema'
 import { isAfterTownToday, townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
@@ -242,7 +243,7 @@ export async function markHearingHeld(
       .where(eq(hearings.id, hearing.id))
     const app = await loadApplicationContext(tx, hearing.applicationId, signal)
     if (app !== null && boardOfApplication(app) === 'zba') {
-      await markClockMet(tx, app.id, 'nh.zba.hearing', input.heldOn, signal)
+      await markClockMet(tx, app.id, packRoles().rules.zbaHearing, input.heldOn, signal)
     }
     await writeAudit(
       tx,

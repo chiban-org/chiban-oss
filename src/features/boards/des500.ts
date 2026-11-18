@@ -13,22 +13,33 @@ import type { Actor } from '@/features/auth/actor'
 import { getLayerStatus } from '@/features/gis/layerStatus'
 import { type HonestValue, honestFromLayer } from '@/features/honest/honest'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles, requireRuleRole } from '@/features/packs/roles'
 import type { ProximityRule } from '@/features/packs/schema'
 import { mayManageAbutters } from '@/features/rosters/manage'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
 
-export const DES_RULE_KEY = 'nh.pb.des_500ft'
 const MIN_REASON_LENGTH = 10
 
 export type DesSuggestion = HonestValue<{ within: boolean; withinFt: number | null }>
 
-export function desRule(): ProximityRule {
-  const rule = ruleByKey(loadPack(), DES_RULE_KEY)
+function proximityRule(key: string): ProximityRule {
+  const rule = ruleByKey(loadPack(), key)
   if (rule.kind !== 'proximity') {
-    throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, 'nh.pb.des_500ft must be a proximity rule')
+    throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, 'The DES notice rule is not a proximity rule', {
+      key,
+    })
   }
   return rule
+}
+
+export function desRule(): ProximityRule {
+  return proximityRule(requireRuleRole('desProximity'))
+}
+
+export function desRuleIfPresent(): ProximityRule | null {
+  const key = packRoles().rules.desProximity
+  return key === null ? null : proximityRule(key)
 }
 
 async function anyUnmapped(db: DbOrTx, parcelIds: string[]): Promise<boolean> {

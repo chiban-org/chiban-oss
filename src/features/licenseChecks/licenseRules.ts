@@ -1,10 +1,10 @@
 import type { LicenseResult } from '@/db/schema/licenseChecks'
 import { LICENSE_FIELD } from '@/features/forms/formReferences'
 import type { GateOutcome } from '@/features/gates/registry'
+import { packRoles } from '@/features/packs/roles'
 
 export const LICENSE_GATE_KEY = 'trade.state_license_active'
 export const LICENSE_CONDITION_CODE = 'LICENSE'
-const TRADE_CLASSIFICATION = 'nh.trade_permit'
 
 export const LICENSE_RESULT_LABELS: Readonly<Record<LicenseResult, string>> = {
   active: 'Active',
@@ -23,7 +23,8 @@ export function licenseCheckApplies(input: {
   classification: string | null | undefined
   values: Readonly<Record<string, unknown>>
 }): boolean {
-  return input.classification === TRADE_CLASSIFICATION && input.values.work_by !== 'owner'
+  const trade = packRoles().classifications.tradePermit
+  return trade !== null && input.classification === trade && input.values.work_by !== 'owner'
 }
 
 export function failedCheckReason(check: LicenseCheckFacts): string {

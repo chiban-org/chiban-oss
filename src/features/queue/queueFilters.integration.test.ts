@@ -10,7 +10,6 @@ import {
   reviewAssignments,
 } from '@/db/schema'
 import type { SortState } from '@/features/dataTable/sort'
-import { FILING_CLOCK_KEY } from '@/features/decisions/fileDecision'
 import { queueFacets } from '@/features/queue/queueFacets'
 import type { QueueSortKey } from '@/features/queue/queueParams'
 import { listWorkQueue, type WorkQueueFilters } from '@/features/queue/workQueue'
@@ -144,7 +143,7 @@ describe('work queue quick filters', () => {
     const filingLate = await app({ state: 'denied' }, 'EL')
     const soon = await app()
     const none = await app()
-    await addClock(filingLate, '2027-02-20', 'overdue', FILING_CLOCK_KEY)
+    await addClock(filingLate, '2027-02-20', 'overdue', 'nh.board.decision_filing')
     await addClock(soon, '2027-03-05')
     expect(await ids({ due: ['overdue'] })).toEqual([filingLate])
     expect(await ids({ due: ['none'] })).toEqual([none])

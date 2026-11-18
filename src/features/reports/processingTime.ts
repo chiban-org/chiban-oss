@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { packRoles } from '@/features/packs/roles'
 import { checkRange, type RangeError, type ReportRange } from '@/features/reports/range'
 import { type FieldSums, fieldSums, loadReportFields } from '@/features/reports/reportFields'
 import { err, ok, type Result } from '@/types/result'
@@ -102,7 +103,7 @@ export async function processingTimeReport(
     from applications a
     left join lateral (
       select id, met_on, current_due from clocks
-      where application_id = a.id and rule_key = 'nh.bp.decision' and status = 'met'
+      where application_id = a.id and rule_key = ${packRoles().rules.buildingPermitDecision} and status = 'met'
       order by created_at desc limit 1
     ) c on true
     where a.issued_on between ${range.from}::date and ${range.to}::date

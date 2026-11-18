@@ -14,9 +14,12 @@ import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { packRoles } from '@/features/packs/roles'
 import { err, ok, type Result } from '@/types/result'
 
-export const CENSUS_CLASSIFICATION = 'nh.building_permit'
+export function censusClassification(): string {
+  return packRoles().classifications.buildingPermit
+}
 
 export interface CensusInput {
   category: CensusCategory
@@ -95,7 +98,7 @@ export async function classifyForCensus(
   return await transactionResult(db, async (tx) => {
     const context = await loadApplicationContext(tx, value.applicationId, signal)
     if (context === null) return err('not_found')
-    if (context.typeBody.classification !== CENSUS_CLASSIFICATION) {
+    if (context.typeBody.classification !== censusClassification()) {
       return err('not_a_building_permit')
     }
     const row = {

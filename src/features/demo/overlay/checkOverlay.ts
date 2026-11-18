@@ -1,10 +1,11 @@
 import { readFile } from 'node:fs/promises'
-import { NH_STARTERS, type StarterBundle } from '@packs/nh/starters'
 import { boardKindOf } from '@/features/applications/applicationTypeSchema'
 import { droppedKeys } from '@/features/demo/overlay/droppedKeys'
 import { type OverlayIssue, zodIssues } from '@/features/demo/overlay/overlayIssue'
 import { type DemoOverlay, DemoOverlaySchema } from '@/features/demo/overlay/overlaySchema'
 import { planType } from '@/features/demo/overlay/planType'
+import { activePack } from '@/features/packs/registry'
+import type { StarterBundle } from '@/features/packs/schema'
 import { err, ok, type Result } from '@/types/result'
 
 export interface OverlayCheck {
@@ -43,14 +44,14 @@ export function noticeFeesFor(overlay: DemoOverlay, classification: string | und
 
 export function starterByTypeKey(
   key: string,
-  starters: readonly StarterBundle[] = NH_STARTERS,
+  starters: readonly StarterBundle[] = activePack().starters,
 ): StarterBundle | undefined {
   return starters.find((s) => s.applicationType.key === key)
 }
 
 export function checkOverlayAgainstStarters(
   overlay: DemoOverlay,
-  starters: readonly StarterBundle[] = NH_STARTERS,
+  starters: readonly StarterBundle[] = activePack().starters,
 ): OverlayCheck {
   const listed = overlay.starters ?? []
   const notInstalled = listed.filter((key) => starterByTypeKey(key, starters) === undefined)

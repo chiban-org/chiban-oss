@@ -2,10 +2,9 @@ import type { Tx } from '@/db/client'
 import type { Actor } from '@/features/auth/actor'
 import { attachDocument } from '@/features/documents/attach'
 import { storeGeneratedBytes } from '@/features/files/ingest'
+import { packRoles } from '@/features/packs/roles'
 import { buildResponseLetter } from '@/features/rtk/responseLetter'
 import type { ObjectStore } from '@/features/storage/objectStore'
-
-export const RTK_LETTER_SERIES = 'nh.rs.correspondence_administrative'
 
 export interface LetterContext {
   store: ObjectStore
@@ -34,7 +33,7 @@ export async function fileRequestLetter(
       title: letter.title,
       docKind: 'rtk_letter',
       file: { sha256: stored.sha256, filename: letter.filename, contentType: 'application/pdf' },
-      seriesKey: RTK_LETTER_SERIES,
+      seriesKey: packRoles().recordSeries.rtkCorrespondence,
     },
     context.signal,
   )

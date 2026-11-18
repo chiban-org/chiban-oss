@@ -1,14 +1,18 @@
 import { eq } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { regionalImpactDeterminations } from '@/db/schema'
-import { type GateEvaluator, registerPackGate } from '@/features/gates/registry'
+import {
+  buildGateDefinition,
+  type GateDefinition,
+  type GateEvaluator,
+  registerGate,
+} from '@/features/gates/registry'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
 import type { GateRule } from '@/features/packs/schema'
 
-export const RI_DETERMINATION_GATE_KEY = 'nh.ri.determination'
-
-function gateRule(): GateRule {
-  const rule = ruleByKey(loadPack(), RI_DETERMINATION_GATE_KEY)
+function gateRule(key: string): GateRule {
+  const rule = ruleByKey(loadPack(), key)
   if (rule.kind !== 'gate') {
     throw new AppError(ErrorIds.PACK_UNKNOWN_RULE, 'Not a gate rule', { key: rule.key })
   }
@@ -25,4 +29,9 @@ const determinationRecorded: GateEvaluator = async (tx, app) => {
     : { status: 'pass' }
 }
 
-registerPackGate(gateRule(), determinationRecorded)
+export function regionalGateDefinitions(): GateDefinition[] {
+  const key = packRoles().rules.regionalImpactDetermination
+  return key === null ? [] : [buildGateDefinition(gateRule(key), determinationRecorded)]
+}
+
+for (const gate of regionalGateDefinitions()) registerGate(gate)
