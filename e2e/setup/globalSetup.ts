@@ -1,5 +1,6 @@
 import { mkdir } from 'node:fs/promises'
 import { type Browser, chromium, type FullConfig } from '@playwright/test'
+import { distinctClientHeaders } from '../fixtures/clientAddress'
 import {
   accountFor,
   authStatePath,
@@ -11,7 +12,10 @@ import { E2E_AUTH_DIR, E2E_BASE_URL } from '../fixtures/settings'
 import { signInWithMagicLink, signInWithPassword } from '../fixtures/signIn'
 
 async function saveSignedInState(browser: Browser, role: SignedInRoleKey): Promise<void> {
-  const context = await browser.newContext({ baseURL: E2E_BASE_URL })
+  const context = await browser.newContext({
+    baseURL: E2E_BASE_URL,
+    extraHTTPHeaders: distinctClientHeaders(),
+  })
   const page = await context.newPage()
   const account = accountFor(role)
   try {
