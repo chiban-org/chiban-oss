@@ -1,8 +1,8 @@
-import type { DecisionOutcome } from '@packs/nh/schema'
 import type { Role } from '@/constants/roles'
 import type { EnforcementStatus, InspectionStatus } from '@/db/schema'
 import type { CoreState } from '@/features/applications/states'
 import type { Status } from '@/features/design/tokens'
+import type { DecisionOutcome } from '@/features/packs/schema'
 
 export const OPEN_GROUPS = [
   'case',

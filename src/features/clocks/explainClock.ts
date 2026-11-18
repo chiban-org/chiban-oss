@@ -1,6 +1,6 @@
-import type { ClockRule } from '@packs/nh/schema'
 import type { clockAdjustments, clocks } from '@/db/schema'
 import type { Sourced } from '@/features/fees/sourced'
+import type { ClockRule } from '@/features/packs/schema'
 import { type CivilDate, daysBetween } from '@/types/civilDate'
 
 type ClockRow = typeof clocks.$inferSelect

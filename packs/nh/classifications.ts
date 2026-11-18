@@ -1,5 +1,5 @@
-import type { ProceedingClassification } from '@packs/nh/schema'
 import type { RecipientRole } from '@/features/abutters/roles'
+import type { ProceedingClassification } from '@/features/packs/schema'
 
 const STRATEGY_KEY = 'nh.abutters.adjacency_projection'
 const RESOLVER_KEY = 'nh.recipients.v1'

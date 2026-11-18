@@ -1,3 +1,5 @@
+import { describe, expect, it } from 'vitest'
+import { FIELD_PROBES } from '@/features/packs/fieldProbes'
 import {
   AbutterParamsSchema,
   CeaseAndDesistRuleSchema,
@@ -13,9 +15,7 @@ import {
   RecordRuleSchema,
   RecordSeriesSchema,
   TownSettingRuleSchema,
-} from '@packs/nh/schema'
-import { describe, expect, it } from 'vitest'
-import { FIELD_PROBES } from '@/features/packs/fieldProbes'
+} from '@/features/packs/schema'
 import { leafPaths } from '@/features/packs/schemaPaths'
 
 const KIND_SCHEMAS = {

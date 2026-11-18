@@ -1,4 +1,3 @@
-import type { DecisionOutcome } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import {
@@ -21,6 +20,7 @@ import { boardOfApplication } from '@/features/boards/boardOf'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import { inputProblem } from '@/features/decisions/decisionInputProblems'
 import type { GateResult } from '@/features/gates/evaluateGates'
+import type { DecisionOutcome } from '@/features/packs/schema'
 import { isAfterTownToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'

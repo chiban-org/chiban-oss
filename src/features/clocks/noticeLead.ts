@@ -1,9 +1,9 @@
-import type { ClockRule } from '@packs/nh/schema'
 import type { DbOrTx } from '@/db/client'
 import { resolveRuleLength } from '@/features/clocks/ruleEngine'
 import { getPublished } from '@/features/config/store'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import { type Pack, ruleByKey } from '@/features/packs/loadPack'
+import type { ClockRule } from '@/features/packs/schema'
 
 export async function effectiveNoticeLeadDays(
   tx: DbOrTx,

@@ -1,4 +1,4 @@
-import type { ClockRule } from '@packs/nh/schema'
+import type { ClockRule } from '@/features/packs/schema'
 import { addMonthsClamped, type CivilDate } from '@/types/civilDate'
 
 export function relianceFloorDue(rule: ClockRule, resolvedOn: CivilDate): CivilDate | null {

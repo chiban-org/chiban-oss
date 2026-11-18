@@ -1,4 +1,4 @@
-import { BOARD_KIND_TRAITS, type BoardKind } from '@packs/nh/schema'
+import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import { and, asc, desc, eq, gte, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
@@ -26,6 +26,7 @@ import { type MeetingEligibility, meetingEligibility } from '@/features/boards/m
 import { getRegionalContacts } from '@/features/boards/regionalContacts'
 import { boardForKind, missingBoardMessage } from '@/features/boards/townBoards'
 import { loadPack } from '@/features/packs/loadPack'
+import type { BoardKind } from '@/features/packs/schema'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { mayManageAbutters } from '@/features/rosters/manage'
 import { townToday } from '@/features/town/today'

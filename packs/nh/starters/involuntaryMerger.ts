@@ -1,6 +1,6 @@
 import { doc } from '@packs/nh/starters/documentQuestions'
 import { localPermitStarter } from '@packs/nh/starters/localPermit'
-import type { StarterBundle } from '@packs/nh/starters/types'
+import type { StarterBundle } from '@/features/packs/schema'
 
 const BASE = localPermitStarter({
   id: 'nh.starter.involuntary_merger_restoration',

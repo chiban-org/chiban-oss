@@ -1,4 +1,3 @@
-import type { NoticeRequirementRule } from '@packs/nh/schema'
 import type { RecipientRole } from '@/features/abutters/roles'
 import { describeCounting } from '@/features/clocks/describeCounting'
 import { computeRuleDue, resolveRuleLength } from '@/features/clocks/ruleEngine'
@@ -7,6 +6,7 @@ import type { NoticeChannel } from '@/features/notices/channels'
 import { applies } from '@/features/notices/requirementsFor'
 import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import type { NoticeRequirementRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 const EMPTY_FACTS: ProjectFacts = { classification: null, dwellingUnits: null, afterTheFact: false }

@@ -1,4 +1,3 @@
-import { type CeaseAndDesistRule, civilDateSchema } from '@packs/nh/schema'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db, DbOrTx } from '@/db/client'
@@ -15,6 +14,7 @@ import {
   settleService,
 } from '@/features/enforcement/service'
 import type { ServiceStatus } from '@/features/enforcement/serviceStatus'
+import { type CeaseAndDesistRule, civilDateSchema } from '@/features/packs/schema'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
 

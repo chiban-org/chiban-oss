@@ -1,6 +1,6 @@
-import type { NoticeRequirementRule, ProceedingClassification } from '@packs/nh/schema'
 import type { RequirementFlags } from '@/features/notices/requirementPlan'
 import { loadPack } from '@/features/packs/loadPack'
+import type { NoticeRequirementRule, ProceedingClassification } from '@/features/packs/schema'
 
 const FLAG_FOR: Record<NonNullable<NoticeRequirementRule['onlyWhen']>, keyof RequirementFlags> = {
   regional_impact_yes: 'regionalImpact',

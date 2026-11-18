@@ -1,4 +1,3 @@
-import type { CeaseAndDesistRule, CivilPenaltyRule, RecipientRole } from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { finesNeedJudgment } from '@/features/enforcement/fines'
 import { motionBlocks } from '@/features/enforcement/motionGate'
@@ -14,6 +13,7 @@ import {
   serviceStatus,
 } from '@/features/enforcement/serviceStatus'
 import { NOT_STAYED } from '@/features/enforcement/stay'
+import type { CeaseAndDesistRule, CivilPenaltyRule, RecipientRole } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { attempt, type FieldProbe, packRule, probe } from './probe'
 import { observeRule, ruleProbes } from './ruleProbes'

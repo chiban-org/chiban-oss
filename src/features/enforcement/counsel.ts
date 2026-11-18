@@ -1,4 +1,3 @@
-import { civilDateSchema } from '@packs/nh/schema'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db } from '@/db/client'
@@ -17,6 +16,7 @@ import { requireCapability } from '@/features/authz/capabilities'
 import { attachDocument } from '@/features/documents/attach'
 import { buildCounselPacket } from '@/features/enforcement/counselPacket'
 import { storeGeneratedBytes } from '@/features/files/ingest'
+import { civilDateSchema } from '@/features/packs/schema'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { err, ok, type Result } from '@/types/result'
 

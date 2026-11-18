@@ -1,10 +1,3 @@
-import type {
-  ClockRule,
-  DecisionOutcome,
-  NoticeRequirementRule,
-  ProceedingClassification,
-  RecordRule,
-} from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { rulesForEvent } from '@/features/clocks/ruleEngine'
 import { appealRightsOf } from '@/features/decisions/appealRights'
@@ -21,6 +14,13 @@ import {
   probe,
 } from '@/features/packs/probes/probe'
 import { observeRule, ruleProbes } from '@/features/packs/probes/ruleProbes'
+import type {
+  ClockRule,
+  DecisionOutcome,
+  NoticeRequirementRule,
+  ProceedingClassification,
+  RecordRule,
+} from '@/features/packs/schema'
 import { validateWorkflow } from '@/features/workflow/validateWorkflow'
 import type { CivilDate } from '@/types/civilDate'
 

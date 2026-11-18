@@ -1,6 +1,6 @@
-import type { RecordRule } from '@packs/nh/schema'
 import { describe, expect, it } from 'vitest'
 import { amendmentEntries, codeEditionPanelRows } from '@/features/building/editionPanelRows'
+import type { RecordRule } from '@/features/packs/schema'
 
 const RULE = {
   fields: [

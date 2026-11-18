@@ -1,9 +1,3 @@
-import {
-  type CeaseAndDesistRule,
-  civilDateSchema,
-  type RecipientRole,
-  RecipientRoleSchema,
-} from '@packs/nh/schema'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import { AppError, ErrorIds } from '@/constants/errorIds'
@@ -30,6 +24,12 @@ import {
   serviceStatus,
 } from '@/features/enforcement/serviceStatus'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import {
+  type CeaseAndDesistRule,
+  civilDateSchema,
+  type RecipientRole,
+  RecipientRoleSchema,
+} from '@/features/packs/schema'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'

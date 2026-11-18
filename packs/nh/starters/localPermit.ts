@@ -1,10 +1,10 @@
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
-import type { StarterBundle } from '@packs/nh/starters/types'
-import { ATTESTATION_TEXT } from '@packs/nh/starters/types'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { DocumentItem } from '@/features/applications/documentItemSchema'
 import type { FormField } from '@/features/forms/formSchema'
 import type { ChecklistBody } from '@/features/inspections/checklistSchema'
+import type { StarterBundle } from '@/features/packs/schema'
+import { ATTESTATION_TEXT } from '@/features/packs/schema'
 
 type Classification = NonNullable<ApplicationTypeBody['classification']>
 

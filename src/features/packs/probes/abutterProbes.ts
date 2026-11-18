@@ -1,4 +1,3 @@
-import type { AbutterParams } from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { projectionParamsFor } from '@/features/abutters/projection/paramsFor'
 import { projectAcross } from '@/features/abutters/projection/projectAcross'
@@ -6,6 +5,7 @@ import { PROBE_SCENARIOS } from '@/features/abutters/projection/testKit'
 import { isAdjacent, isCaptured } from '@/features/abutters/verdicts'
 import { loadPack } from '@/features/packs/loadPack'
 import { type FieldProbe, probe } from '@/features/packs/probes/probe'
+import type { AbutterParams } from '@/features/packs/schema'
 
 const ASSUMED_RIGHT_OF_WAY_FT = 50
 

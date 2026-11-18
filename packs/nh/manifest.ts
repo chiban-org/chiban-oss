@@ -19,7 +19,7 @@ import type {
   PackRule,
   ProceedingClassification,
   RecordSeries,
-} from '@packs/nh/schema'
+} from '@/features/packs/schema'
 
 export interface PackManifest {
   id: string

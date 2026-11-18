@@ -1,6 +1,6 @@
-import type { BoardKind } from '@packs/nh/schema'
 import { dueNext } from '@/features/clocks/clockSummary'
 import type { ClockExplanation } from '@/features/clocks/explainClock'
+import type { BoardKind } from '@/features/packs/schema'
 import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { meetingIsAhead } from './boardRequirements'

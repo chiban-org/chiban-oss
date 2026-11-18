@@ -1,7 +1,7 @@
-import type { DecisionOutcome } from '@packs/nh/schema'
 import { desc, eq, inArray } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { boardDecisions, boardMeetings, boards, type DecisionCondition } from '@/db/schema'
+import type { DecisionOutcome } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 export interface LatestDecision {

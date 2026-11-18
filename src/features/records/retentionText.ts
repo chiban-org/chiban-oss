@@ -1,4 +1,4 @@
-import type { RecordEventKind } from '@packs/nh/schema'
+import type { RecordEventKind } from '@/features/packs/schema'
 import type { RetentionStatus } from '@/features/records/computeRetention'
 import { formatCivilDate } from '@/lib/formatDate'
 

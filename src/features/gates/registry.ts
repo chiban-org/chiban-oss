@@ -1,7 +1,7 @@
-import type { GateRule } from '@packs/nh/schema'
 import type { Tx } from '@/db/client'
 import type { ApplicationContext } from '@/features/applications/context'
 import type { CoreState } from '@/features/applications/states'
+import type { GateRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 export type GateOutcome =

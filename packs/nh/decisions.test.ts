@@ -1,12 +1,12 @@
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
-import type { ClockRule, DecisionOutcome } from '@packs/nh/schema'
-import { StartEventSchema } from '@packs/nh/schema'
 import { describe, expect, it } from 'vitest'
 import { START_EVENT_LABELS } from '@/features/clocks/explainClock'
 import { computeRuleDue, resolveRuleLength, rulesForEvent } from '@/features/clocks/ruleEngine'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack } from '@/features/packs/loadPack'
+import type { ClockRule, DecisionOutcome } from '@/features/packs/schema'
+import { StartEventSchema } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 const d = (s: string) => s as CivilDate

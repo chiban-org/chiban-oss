@@ -1,9 +1,9 @@
-import type { CeaseAndDesistRule, OrderContentField } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import { type enforcementOrders, type violationFindings, violationNotices } from '@/db/schema'
 import { noticeOfViolationSent } from '@/features/enforcement/noticeRequirement'
 import { missingOrderContent } from '@/features/enforcement/orderPdf'
+import type { CeaseAndDesistRule, OrderContentField } from '@/features/packs/schema'
 
 export function contentProblem(
   rule: CeaseAndDesistRule,

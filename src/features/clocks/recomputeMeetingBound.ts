@@ -1,4 +1,3 @@
-import type { BoardKind, ClockRule } from '@packs/nh/schema'
 import { asc, eq, inArray } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import { clockAdjustments, clocks } from '@/db/schema'
@@ -10,6 +9,7 @@ import { meetingBoundTiming } from '@/features/clocks/meetingBoundTiming'
 import { effectiveNoticeLeadDays } from '@/features/clocks/noticeLead'
 import { createClock } from '@/features/clocks/startClocks'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import type { BoardKind, ClockRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 export const MEETING_CALENDAR_CHANGED = 'meeting_calendar_changed'

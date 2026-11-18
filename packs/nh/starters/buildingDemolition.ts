@@ -3,8 +3,8 @@ import {
   BUILDING_DOCUMENT_QUESTIONS,
   BUILDING_DOCUMENTS,
 } from '@packs/nh/starters/buildingDocuments'
-import type { StarterBundle } from '@packs/nh/starters/types'
-import { ATTESTATION_TEXT } from '@packs/nh/starters/types'
+import type { StarterBundle } from '@/features/packs/schema'
+import { ATTESTATION_TEXT } from '@/features/packs/schema'
 
 const BUILDING_BINDINGS =
   NH_CLASSIFICATIONS.find((c) => c.key === 'nh.building_permit')?.mandatoryRuleKeys ?? []

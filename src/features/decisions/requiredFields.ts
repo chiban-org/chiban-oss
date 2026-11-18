@@ -1,4 +1,4 @@
-import type { DecisionOutcome, RecordRule } from '@packs/nh/schema'
+import type { DecisionOutcome, RecordRule } from '@/features/packs/schema'
 
 export function requiredDecisionFields(rule: RecordRule, outcome: DecisionOutcome): string[] {
   const conditional = rule.conditionalFields ?? []

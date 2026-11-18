@@ -1,4 +1,3 @@
-import type { CivilPenaltyRule } from '@packs/nh/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
@@ -17,6 +16,7 @@ import {
 } from '@/features/enforcement/labels'
 import { PENALTY_EXPOSURE_LABEL, penaltyExposure } from '@/features/enforcement/penaltyExposure'
 import { stayBanner, stayFor } from '@/features/enforcement/stay'
+import type { CivilPenaltyRule } from '@/features/packs/schema'
 import type { PdfBlock } from '@/features/pdf/renderPdf'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'

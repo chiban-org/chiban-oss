@@ -1,4 +1,3 @@
-import type { ClockRule, StartEvent } from '@packs/nh/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import type { DbOrTx, Tx } from '@/db/client'
 import { clocks } from '@/db/schema'
@@ -21,6 +20,7 @@ import { getPublished } from '@/features/config/store'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
+import type { ClockRule, StartEvent } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 export async function resolveClockLength(

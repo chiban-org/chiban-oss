@@ -1,5 +1,5 @@
+import { CLASSIFICATION_KEYS } from '@packs/nh/boardSchema'
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
-import { CLASSIFICATION_KEYS } from '@packs/nh/schema'
 import { z } from 'zod'
 import { DocumentItemSchema, documentItemIssues } from '@/features/applications/documentItemSchema'
 import { CORE_STATES } from '@/features/applications/states'

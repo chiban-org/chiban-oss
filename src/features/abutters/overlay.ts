@@ -1,4 +1,3 @@
-import type { AbutterParams } from '@packs/nh/schema'
 import { sql } from 'drizzle-orm'
 import type { Tx } from '@/db/client'
 import { uuidArray } from '@/db/uuidList'
@@ -6,6 +5,7 @@ import { loadCrossingInputs } from '@/features/abutters/crossingInputs'
 import { projectionParamsFor } from '@/features/abutters/projection/paramsFor'
 import { projectAcross } from '@/features/abutters/projection/projectAcross'
 import type { Pt } from '@/features/abutters/projection/types'
+import type { AbutterParams } from '@/features/packs/schema'
 import { displayIdsFor } from '@/features/parcels/displayId'
 
 export type OverlayKind = 'region' | 'corner' | 'projected' | 'connector' | 'capture' | 'label'

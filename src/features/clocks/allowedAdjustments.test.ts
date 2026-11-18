@@ -1,6 +1,6 @@
-import type { ClockRule } from '@packs/nh/schema'
 import { describe, expect, it } from 'vitest'
 import { allowedAdjustmentKinds } from '@/features/clocks/explainClock'
+import type { ClockRule } from '@/features/packs/schema'
 
 function rule(extension: ClockRule['extension'], waivable: boolean): ClockRule {
   return { extension, waivable } as ClockRule

@@ -1,4 +1,3 @@
-import type { NoticeRequirementRule, ProceedingClassification } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { DbOrTx, Tx } from '@/db/client'
 import {
@@ -22,6 +21,7 @@ import {
 } from '@/features/notices/requirementPlan'
 import { requirementsFor } from '@/features/notices/requirementsFor'
 import { loadPack } from '@/features/packs/loadPack'
+import type { NoticeRequirementRule, ProceedingClassification } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 

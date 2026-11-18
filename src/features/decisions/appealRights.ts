@@ -1,5 +1,5 @@
-import type { ProceedingClassification } from '@packs/nh/schema'
 import { loadPack } from '@/features/packs/loadPack'
+import type { ProceedingClassification } from '@/features/packs/schema'
 
 export function appealRightsOf(classification: Pick<ProceedingClassification, 'appealRights'>) {
   return classification.appealRights

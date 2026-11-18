@@ -1,4 +1,3 @@
-import { civilDateSchema } from '@packs/nh/schema'
 import { and, eq, gte, isNull, lte, or } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db, DbOrTx } from '@/db/client'
@@ -7,6 +6,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { civilDateSchema } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 

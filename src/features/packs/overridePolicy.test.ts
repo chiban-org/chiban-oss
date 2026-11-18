@@ -1,6 +1,6 @@
-import type { OverridePolicy, PackRule } from '@packs/nh/schema'
 import { describe, expect, it } from 'vitest'
 import { checkTownValue } from '@/features/packs/overridePolicy'
+import type { OverridePolicy, PackRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 function settingRule(overridePolicy: OverridePolicy): PackRule {

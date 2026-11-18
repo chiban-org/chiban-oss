@@ -1,0 +1,65 @@
+import { z } from 'zod'
+import { base } from './rules'
+
+export const RECIPIENT_ROLES = [
+  'record_owner',
+  'owner_agent',
+  'taxpayer',
+  'occupying_tenant',
+  'person_in_control',
+  'mortgagee_of_record',
+] as const
+export const RecipientRoleSchema = z.enum(RECIPIENT_ROLES)
+export type RecipientRole = z.infer<typeof RecipientRoleSchema>
+
+export const PERSONAL_SERVER_ROLES = [
+  'sheriff',
+  'deputy_sheriff',
+  'local_police_officer',
+  'constable',
+] as const
+export const PersonalServerRoleSchema = z.enum(PERSONAL_SERVER_ROLES)
+export type PersonalServerRole = z.infer<typeof PersonalServerRoleSchema>
+
+export const ORDER_CONTENT_FIELDS = [
+  'provisions',
+  'facts',
+  'inspectionDate',
+  'correctiveAction',
+  'correctiveDeadline',
+  'motionNotice',
+  'lienWarning',
+] as const
+export const OrderContentFieldSchema = z.enum(ORDER_CONTENT_FIELDS)
+export type OrderContentField = z.infer<typeof OrderContentFieldSchema>
+
+export const CeaseAndDesistRuleSchema = z.object({
+  ...base,
+  kind: z.literal('cease_and_desist'),
+  contentFields: z.array(OrderContentFieldSchema).min(1),
+  issuerMustBeDesignated: z.boolean(),
+  recipientRoles: z.array(RecipientRoleSchema).min(1),
+  ownerRoles: z.array(RecipientRoleSchema).min(1),
+  personalServerRoles: z.array(PersonalServerRoleSchema).min(1),
+  ownerNotFoundFallback: z.object({
+    posting: z.boolean(),
+    publicationWeeks: z.number().int().positive(),
+  }),
+  answerRuleKey: z.string().min(1),
+  courtFilingLeadDays: z.number().int().min(0),
+  judgmentAppealRuleKey: z.string().min(1),
+  penaltyRuleKey: z.string().min(1),
+  overridePolicy: z.object({ policy: z.literal('fixed') }),
+})
+export type CeaseAndDesistRule = z.infer<typeof CeaseAndDesistRuleSchema>
+
+export const CivilPenaltyRuleSchema = z.object({
+  ...base,
+  kind: z.literal('civil_penalty'),
+  firstOffenseCentsPerDay: z.number().int().positive(),
+  subsequentCentsPerDay: z.number().int().positive(),
+  accrual: z.literal('after_earlier_of_conviction_or_written_notice'),
+  imposedBy: z.literal('court'),
+  overridePolicy: z.object({ policy: z.literal('fixed') }),
+})
+export type CivilPenaltyRule = z.infer<typeof CivilPenaltyRuleSchema>

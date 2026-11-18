@@ -1,6 +1,6 @@
 import { NH_RECORD_SERIES, RECORD_SERIES_DEFAULTS } from '@packs/nh/recordSeries'
-import { RecordSeriesSchema } from '@packs/nh/schema'
 import { describe, expect, it } from 'vitest'
+import { RecordSeriesSchema } from '@/features/packs/schema'
 import { computeRetention } from '@/features/records/computeRetention'
 import type { CivilDate } from '@/types/civilDate'
 

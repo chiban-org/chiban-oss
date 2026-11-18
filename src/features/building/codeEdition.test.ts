@@ -1,10 +1,10 @@
-import type { CodeEditionEntry } from '@packs/nh/schema'
 import { describe, expect, it } from 'vitest'
 import {
   componentsNotInLabel,
   type EditionDescription,
   resolveCodeEdition,
 } from '@/features/building/codeEdition'
+import type { CodeEditionEntry } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 const d = (s: string) => s as CivilDate

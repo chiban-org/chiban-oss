@@ -1,5 +1,5 @@
-import type { CivilPenaltyRule } from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
+import type { CivilPenaltyRule } from '@/features/packs/schema'
 import { type CivilDate, daysBetween } from '@/types/civilDate'
 
 export const PENALTY_EXPOSURE_LABEL =

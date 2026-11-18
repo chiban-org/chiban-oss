@@ -1,9 +1,3 @@
-import type {
-  CodeEditionEntry,
-  GateRule,
-  ProceedingClassification,
-  RecordRule,
-} from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { appealSuspends } from '@/features/appeals/suspension'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
@@ -13,6 +7,12 @@ import { effectiveBindings } from '@/features/config/bindings'
 import { buildGateDefinition } from '@/features/gates/registry'
 import { loadPack } from '@/features/packs/loadPack'
 import { classificationSummary } from '@/features/packs/ruleSummary'
+import type {
+  CodeEditionEntry,
+  GateRule,
+  ProceedingClassification,
+  RecordRule,
+} from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { ALL_POLICY_FIELDS } from './clockProbes'
 import {

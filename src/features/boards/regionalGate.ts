@@ -1,9 +1,9 @@
-import type { GateRule } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { regionalImpactDeterminations } from '@/db/schema'
 import { type GateEvaluator, registerPackGate } from '@/features/gates/registry'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import type { GateRule } from '@/features/packs/schema'
 
 export const RI_DETERMINATION_GATE_KEY = 'nh.ri.determination'
 

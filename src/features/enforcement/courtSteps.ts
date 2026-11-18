@@ -1,4 +1,3 @@
-import { type ClockRule, civilDateSchema } from '@packs/nh/schema'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db, Tx } from '@/db/client'
@@ -22,6 +21,7 @@ import { loadServiceState, orderRule, statusOf } from '@/features/enforcement/se
 import { type StayState, stayFor } from '@/features/enforcement/stay'
 import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack } from '@/features/packs/loadPack'
+import { type ClockRule, civilDateSchema } from '@/features/packs/schema'
 import { townToday } from '@/features/town/today'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'

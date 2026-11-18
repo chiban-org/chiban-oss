@@ -1,9 +1,10 @@
-import { BOARD_KIND_TRAITS, type BoardKind } from '@packs/nh/boardSchema'
+import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { DbOrTx } from '@/db/client'
 import { type BoardRow, boardMemberships, boards, users } from '@/db/schema'
 import { TOWN_TODAY } from '@/features/access/predicates'
+import type { BoardKind } from '@/features/packs/schema'
 
 export type { BoardRow }
 

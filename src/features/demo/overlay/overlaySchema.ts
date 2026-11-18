@@ -1,7 +1,7 @@
-import { BoardKindSchema } from '@packs/nh/boardSchema'
 import { z } from 'zod'
 import { FEE_STAGES, FeeExprSchema, MAX_FEE_CENTS } from '@/features/fees/feeSchema'
 import { FormFieldSchema } from '@/features/forms/formSchema'
+import { BoardKindSchema } from '@/features/packs/schema'
 import { PaymentSettingsBodySchema } from '@/features/payments/settingsSchema'
 import { TownProfileBodySchema } from '@/features/town/profileSchema'
 

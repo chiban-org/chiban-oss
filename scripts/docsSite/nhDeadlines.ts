@@ -1,4 +1,3 @@
-import type { BoardKind } from '@packs/nh/boardSchema'
 import { NH_COUNTING_CITATIONS } from '@packs/nh/countingCitations'
 import { nhLegalHolidays } from '@packs/nh/holidays'
 import { NH_PACK_MANIFEST } from '@packs/nh/manifest'
@@ -13,17 +12,18 @@ import { PLANNING_BOARD_RULES } from '@packs/nh/rules/planningBoard'
 import { REGIONAL_IMPACT_BOARD_RULES } from '@packs/nh/rules/regionalImpact'
 import { RTK_RULES } from '@packs/nh/rules/rightToKnow'
 import { ZBA_RULES } from '@packs/nh/rules/zba'
+import { AppError, ErrorIds } from '@/constants/errorIds'
+import { extensionPolicyText } from '@/features/clocks/explainClock'
+import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import type {
+  BoardKind,
   ClockLength,
   ClockRule,
   DecisionOutcome,
   FactCondition,
   PackRule,
   StartEvent,
-} from '@packs/nh/schema'
-import { AppError, ErrorIds } from '@/constants/errorIds'
-import { extensionPolicyText } from '@/features/clocks/explainClock'
-import { OUTCOME_LABELS } from '@/features/decisions/labels'
+} from '@/features/packs/schema'
 import { formatCivilDateWithWeekday } from '@/lib/formatDate'
 import { generatedFrontMatter } from '@/lib/generatedFrontMatter'
 import { escapeText, joinBlocks, listInWords, table } from './markdown'

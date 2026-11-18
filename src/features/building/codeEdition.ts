@@ -1,4 +1,3 @@
-import type { CodeEditionEntry } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { codeEditionRecords } from '@/db/schema'
@@ -9,6 +8,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { amendmentsInForce } from '@/features/config/bindings'
 import { loadPack } from '@/features/packs/loadPack'
+import type { CodeEditionEntry } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 

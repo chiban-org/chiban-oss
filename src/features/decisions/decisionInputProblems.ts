@@ -1,4 +1,3 @@
-import type { RecordRule } from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { Tx } from '@/db/client'
 import type { DecisionVotes } from '@/db/schema'
@@ -6,6 +5,7 @@ import type { DecisionError, RecordDecisionInput } from '@/features/decisions/re
 import { requiredDecisionFields } from '@/features/decisions/requiredFields'
 import { unseatedVoters } from '@/features/decisions/seatedVoters'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import type { RecordRule } from '@/features/packs/schema'
 
 function writtenDecisionRule(): RecordRule {
   const rule = ruleByKey(loadPack(), 'nh.board.written_decision')

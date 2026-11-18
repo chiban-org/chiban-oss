@@ -1,6 +1,6 @@
-import type { ProceedingClassification } from '@packs/nh/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import { CORE_STATES, type CoreState, TERMINAL_STATES } from '@/features/applications/states'
+import type { ProceedingClassification } from '@/features/packs/schema'
 
 export interface WorkflowIssue {
   code:

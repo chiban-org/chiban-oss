@@ -1,5 +1,5 @@
-import type { RecipientRole } from '@packs/nh/schema'
 import type { EnforcementStatus } from '@/db/schema'
+import type { RecipientRole } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 export type CaseActor = 'town' | 'respondent' | 'zba' | 'court' | 'counsel'

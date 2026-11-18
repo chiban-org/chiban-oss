@@ -1,8 +1,8 @@
-import { RECIPIENT_ROLES } from '@packs/nh/schema'
 import { z } from 'zod'
 import { COURT_STEP_KINDS, JUDGMENT_OUTCOMES, SERVER_ROLES, SERVICE_METHODS } from '@/db/schema'
 import { optionalRecordId } from '@/features/input/optionalRecordId'
 import { choice, civilDate, optionalText, recordId, requiredText } from '@/features/input/schemas'
+import { RECIPIENT_ROLES } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { optionalChoice, requiredRecordId } from './inputFields'
 

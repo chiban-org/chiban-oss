@@ -1,6 +1,6 @@
-import type { RecipientRole } from '@packs/nh/schema'
 import type { EnforcementStatus } from '@/db/schema'
 import { ROLE_LABELS } from '@/features/enforcement/labels'
+import type { RecipientRole } from '@/features/packs/schema'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
 import { noticeOfViolationSent } from './noticeRequirement'

@@ -1,9 +1,9 @@
-import type { ListAgeRule, ProceedingClassification, ProximityRule } from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { listIsFreshAtFiling, proximityVerdict } from '@/features/abutters/proximityRule'
 import { recipientRolesFor } from '@/features/abutters/roles'
 import { classificationOf, type FieldProbe, packRule, probe } from '@/features/packs/probes/probe'
 import { observeRule, ruleProbes } from '@/features/packs/probes/ruleProbes'
+import type { ListAgeRule, ProceedingClassification, ProximityRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 const d = (s: string) => s as CivilDate

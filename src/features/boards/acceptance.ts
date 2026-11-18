@@ -1,4 +1,3 @@
-import type { BoardKind } from '@packs/nh/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { acceptanceSchedules, applications, clocks, completenessVotes } from '@/db/schema'
@@ -21,6 +20,7 @@ import { factsWithDeterminations } from '@/features/clocks/derivedFacts'
 import { createClock, markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import type { GateResult } from '@/features/gates/evaluateGates'
 import { loadPack } from '@/features/packs/loadPack'
+import type { BoardKind } from '@/features/packs/schema'
 import { addDays, type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 

@@ -1,4 +1,4 @@
-import { BOARD_KIND_TRAITS, type BoardKind } from '@packs/nh/boardSchema'
+import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import { and, eq, gte, isNull, notInArray, or, sql } from 'drizzle-orm'
 import type { Db, DbOrTx, Tx } from '@/db/client'
 import { applications, boardMeetings, boardPacketLinks, boardPackets, boards } from '@/db/schema'
@@ -10,6 +10,7 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { activeBoards, type BoardRow, getBoardLocked } from '@/features/boards/townBoards'
+import type { BoardKind } from '@/features/packs/schema'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
 

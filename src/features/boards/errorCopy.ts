@@ -1,6 +1,6 @@
-import type { BoardKind } from '@packs/nh/schema'
 import { missingBoardMessage } from '@/features/boards/townBoards'
 import { channelLabel } from '@/features/notices/channels'
+import type { BoardKind } from '@/features/packs/schema'
 import { formatCivilDate } from '@/lib/formatDate'
 
 const COPY: Record<string, string> = {

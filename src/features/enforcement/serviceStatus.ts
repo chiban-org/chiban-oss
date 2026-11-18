@@ -1,4 +1,4 @@
-import type { CeaseAndDesistRule, RecipientRole } from '@packs/nh/schema'
+import type { CeaseAndDesistRule, RecipientRole } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 export type ServiceOutcome =

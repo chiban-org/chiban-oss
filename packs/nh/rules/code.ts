@@ -1,4 +1,4 @@
-import type { PackRule } from '@packs/nh/schema'
+import type { PackRule } from '@/features/packs/schema'
 
 export const CODE_RULES: PackRule[] = [
   {

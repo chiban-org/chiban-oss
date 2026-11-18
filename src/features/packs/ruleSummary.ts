@@ -1,5 +1,5 @@
-import type { OverridePolicy, PackRule, ProceedingClassification } from '@packs/nh/schema'
 import type { Pack } from '@/features/packs/loadPack'
+import type { OverridePolicy, PackRule, ProceedingClassification } from '@/features/packs/schema'
 
 export interface RuleSummary {
   key: string

@@ -1,7 +1,7 @@
-import type { BoardKind } from '@packs/nh/boardSchema'
 import { and, asc, eq, gte, isNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { boardMeetings, boards } from '@/db/schema'
+import type { BoardKind } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 export interface MeetingCalendar {

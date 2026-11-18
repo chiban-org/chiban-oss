@@ -1,5 +1,5 @@
 import { RSA_674_33, RSA_676_7 } from '@packs/nh/rules/boardUrls'
-import type { ClockRule, PackRule } from '@packs/nh/schema'
+import type { ClockRule, PackRule } from '@/features/packs/schema'
 
 function noticeRule(key: string, label: string, citationLabel: string): ClockRule {
   return {

@@ -1,9 +1,9 @@
-import type { ClockLength, ClockRule, PackRule, StartEvent } from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { computeDue, type DueResult } from '@/features/clocks/computeDue'
 import type { HolidayCalendar } from '@/features/clocks/holidayCalendar'
 import { evaluateCondition } from '@/features/forms/condition'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
+import type { ClockLength, ClockRule, PackRule, StartEvent } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 export interface ResolvedLength {

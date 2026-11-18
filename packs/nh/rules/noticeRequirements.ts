@@ -1,6 +1,6 @@
 import { RSA_36_57_URL, RSA_676_4, RSA_676_7 } from '@packs/nh/rules/boardUrls'
-import type { NoticeRequirementRule, PackRule } from '@packs/nh/schema'
 import type { RecipientRole } from '@/features/abutters/roles'
+import type { NoticeRequirementRule, PackRule } from '@/features/packs/schema'
 
 const ZBA_ROLES: RecipientRole[] = [
   'applicant',

@@ -1,8 +1,8 @@
-import type { OverridePolicy, PackRule } from '@packs/nh/schema'
 import { settingDefault } from '@/features/clocks/ruleEngine'
 import { ruleByKey } from '@/features/packs/loadPack'
 import { checkTownValue } from '@/features/packs/overridePolicy'
 import { ruleSummary } from '@/features/packs/ruleSummary'
+import type { OverridePolicy, PackRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { attempt, type FieldProbe, packRule, packWith, probe } from './probe'
 

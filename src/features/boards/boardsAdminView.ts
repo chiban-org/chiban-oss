@@ -1,11 +1,11 @@
-import { BOARD_KINDS } from '@packs/nh/boardKinds'
-import { BOARD_KIND_TRAITS, type BoardKind } from '@packs/nh/boardSchema'
+import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import { and, eq, gte, isNull, or, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { boardMeetings, boardMemberships } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { allBoards, type BoardRow } from '@/features/boards/townBoards'
+import { BOARD_KINDS, type BoardKind } from '@/features/packs/schema'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 

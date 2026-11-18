@@ -1,4 +1,3 @@
-import type { GateRule } from '@packs/nh/schema'
 import { and, desc, eq, ne } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import {
@@ -9,6 +8,7 @@ import {
 } from '@/db/schema'
 import { type GateEvaluator, registerPackGate } from '@/features/gates/registry'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import type { GateRule } from '@/features/packs/schema'
 import { formatCivilDate } from '@/lib/formatDate'
 
 export const CODE_EDITION_GATE_KEY = 'nh.bp.code_edition_recorded'

@@ -1,4 +1,3 @@
-import type { DecisionOutcome } from '@packs/nh/schema'
 import { evaluateCondition } from '@/features/forms/condition'
 import {
   type FormBody,
@@ -6,6 +5,7 @@ import {
   isNumberType,
   questionsOf,
 } from '@/features/forms/formSchema'
+import type { DecisionOutcome } from '@/features/packs/schema'
 import { parseCivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 

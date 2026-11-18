@@ -1,4 +1,3 @@
-import { DECISION_OUTCOMES } from '@packs/nh/schema'
 import { z } from 'zod'
 import { parseConditions, parseVotes } from '@/features/decisions/formParsing'
 import {
@@ -11,6 +10,7 @@ import {
   wholeNumber,
 } from '@/features/input/schemas'
 import { PROOF_METHODS } from '@/features/notices/proofMethods'
+import { DECISION_OUTCOMES } from '@/features/packs/schema'
 import { err, ok } from '@/types/result'
 import { optionalRecordId, valueList } from '../formFields'
 

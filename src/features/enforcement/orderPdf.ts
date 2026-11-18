@@ -1,4 +1,3 @@
-import type { CeaseAndDesistRule, OrderContentField } from '@packs/nh/schema'
 import {
   NOTICE_OF_VIOLATION_INTRO,
   NOTICE_OF_VIOLATION_REQUEST,
@@ -8,6 +7,7 @@ import {
 } from '@packs/nh/starters/enforcementTemplates'
 import type { violationFindings } from '@/db/schema'
 import { PROVISION_KIND_LABELS } from '@/features/enforcement/labels'
+import type { CeaseAndDesistRule, OrderContentField } from '@/features/packs/schema'
 import type { DocumentFrame } from '@/features/pdf/frame'
 import { type PdfBlock, renderPdf } from '@/features/pdf/renderPdf'
 import { type DocumentInput, renderDocumentOrDefault } from '@/features/templates/templateBlocks'

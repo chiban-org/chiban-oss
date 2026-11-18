@@ -1,4 +1,4 @@
-import { BOARD_KIND_TRAITS, type BoardKind } from '@packs/nh/schema'
+import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import { and, asc, eq, inArray, isNull, ne, notInArray, or, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
@@ -15,6 +15,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { activeBoards, boardLabel } from '@/features/boards/townBoards'
+import type { BoardKind } from '@/features/packs/schema'
 import { headlineDeadline } from '@/features/queue/headlineDeadline'
 import { DEADLINE_OPEN, NEXT_DUE, NEXT_DUE_RULE_KEY, NOTICE_DUE } from '@/features/queue/queueSql'
 import { boardReviewStatusLabel } from '@/features/reviews/statusLabels'

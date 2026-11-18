@@ -1,4 +1,3 @@
-import type { CivilPenaltyRule } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { enforcementCases, enforcementOrders } from '@/db/schema'
@@ -11,6 +10,7 @@ import {
   townWinOn,
 } from '@/features/enforcement/counselSectionBlocks'
 import { CASE_STATUS_LABELS } from '@/features/enforcement/labels'
+import type { CivilPenaltyRule } from '@/features/packs/schema'
 import { documentFrame } from '@/features/pdf/documentFrame'
 import type { PdfBlock } from '@/features/pdf/renderPdf'
 import { publishedTemplate } from '@/features/templates/findTemplate'

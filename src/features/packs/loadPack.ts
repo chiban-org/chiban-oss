@@ -1,6 +1,6 @@
 import { NH_PACK_MANIFEST } from '@packs/nh/manifest'
-import { type PackManifestData, PackManifestSchema, type PackRule } from '@packs/nh/schema'
 import { AppError, ErrorIds } from '@/constants/errorIds'
+import { type PackManifestData, PackManifestSchema, type PackRule } from '@/features/packs/schema'
 
 export type Pack = PackManifestData
 

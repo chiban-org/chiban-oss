@@ -1,9 +1,10 @@
-import { BOARD_KIND_TRAITS, type PackRule } from '@packs/nh/schema'
+import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
 import type { BoardRow } from '@/features/boards/townBoards'
 import type { PublishError } from '@/features/config/publishChecks'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { checkTownValue, type TownValueError } from '@/features/packs/overridePolicy'
+import type { PackRule } from '@/features/packs/schema'
 
 const FILING_LEAD_KEY = 'nh.pb.filing_lead'
 

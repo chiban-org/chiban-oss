@@ -1,4 +1,3 @@
-import { civilDateSchema } from '@packs/nh/schema'
 import { and, eq, inArray } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db } from '@/db/client'
@@ -9,6 +8,7 @@ import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
 import { nextEnforcementNumber } from '@/features/enforcement/numbering'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { civilDateSchema } from '@/features/packs/schema'
 import { err, ok, type Result } from '@/types/result'
 
 export {

@@ -1,5 +1,5 @@
-import type { BoardKind, ClockRule } from '@packs/nh/schema'
 import { type Pack, ruleByKey } from '@/features/packs/loadPack'
+import type { BoardKind, ClockRule } from '@/features/packs/schema'
 import { addDays, type CivilDate, compareCivil } from '@/types/civilDate'
 
 export interface MeetingBoundSpec {

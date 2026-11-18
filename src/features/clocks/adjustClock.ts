@@ -1,4 +1,3 @@
-import type { ClockRule } from '@packs/nh/schema'
 import { eq } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { clockAdjustments, clocks } from '@/db/schema'
@@ -9,6 +8,7 @@ import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { MAX_ADJUSTMENT_DAYS } from '@/features/clocks/adjustmentKinds'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
+import type { ClockRule } from '@/features/packs/schema'
 import { addDays, type CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 

@@ -1,4 +1,4 @@
-import type { DecisionOutcome } from '@packs/nh/schema'
+import type { DecisionOutcome } from '@/features/packs/schema'
 
 export const OUTCOME_LABELS: Record<DecisionOutcome, string> = {
   approved: 'Approved',

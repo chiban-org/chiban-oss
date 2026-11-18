@@ -1,4 +1,4 @@
-import type { RecordEventKind, RecordSeries } from '@packs/nh/schema'
+import type { RecordEventKind, RecordSeries } from '@/features/packs/schema'
 import { addMonthsClamped, type CivilDate } from '@/types/civilDate'
 
 export type RetentionStatus =

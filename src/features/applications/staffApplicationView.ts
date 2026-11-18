@@ -1,4 +1,3 @@
-import type { ClockRule } from '@packs/nh/schema'
 import { and, asc, desc, eq, isNull } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
@@ -37,6 +36,7 @@ import type { FeeComputation } from '@/features/fees/computeFees'
 import { previewFees } from '@/features/fees/preview'
 import { loadNoticeDeadlines, type NoticeDeadline } from '@/features/hearings/noticeDeadlines'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import type { ClockRule } from '@/features/packs/schema'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { hasFullRecordAccess } from '@/features/projects/access'
 import { townToday } from '@/features/town/today'

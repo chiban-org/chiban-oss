@@ -1,4 +1,3 @@
-import type { CeaseAndDesistRule, RecipientRole } from '@packs/nh/schema'
 import type {
   EnforcementStatus,
   enforcementFines,
@@ -11,6 +10,7 @@ import type { SubjectDue } from '@/features/clocks/subjectDue'
 import type { MotionBlock } from '@/features/enforcement/motionGate'
 import type { ServiceStatus } from '@/features/enforcement/serviceStatus'
 import type { StayState } from '@/features/enforcement/stay'
+import type { CeaseAndDesistRule, RecipientRole } from '@/features/packs/schema'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import type { CaseActionKind } from './workPlanTypes'
 

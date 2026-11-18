@@ -1,4 +1,3 @@
-import { type CivilPenaltyRule, civilDateSchema } from '@packs/nh/schema'
 import { and, eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db, DbOrTx, Tx } from '@/db/client'
@@ -18,6 +17,7 @@ import { lockCase } from '@/features/enforcement/cases'
 import { stayFor } from '@/features/enforcement/stay'
 import { fineDueCents } from '@/features/ledger/fineDue'
 import { loadPack } from '@/features/packs/loadPack'
+import { type CivilPenaltyRule, civilDateSchema } from '@/features/packs/schema'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
 

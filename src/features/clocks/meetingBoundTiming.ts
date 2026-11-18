@@ -1,4 +1,3 @@
-import type { ClockRule } from '@packs/nh/schema'
 import type { MeetingCalendar } from '@/features/boards/calendar'
 import type { DueResult } from '@/features/clocks/computeDue'
 import {
@@ -9,6 +8,7 @@ import {
 } from '@/features/clocks/meetingBound'
 import type { ResolvedLength } from '@/features/clocks/ruleEngine'
 import type { Pack } from '@/features/packs/loadPack'
+import type { ClockRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 export interface MeetingBoundTiming extends DueResult {

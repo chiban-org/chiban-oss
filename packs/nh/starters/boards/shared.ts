@@ -1,11 +1,11 @@
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
 import { IS_OWNER } from '@packs/nh/starters/documentQuestions'
-import type { StarterBundle } from '@packs/nh/starters/types'
-import { ATTESTATION_TEXT } from '@packs/nh/starters/types'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { DocumentItem } from '@/features/applications/documentItemSchema'
 import type { FeeScheduleBody } from '@/features/fees/feeSchema'
 import type { FormField } from '@/features/forms/formSchema'
+import type { StarterBundle } from '@/features/packs/schema'
+import { ATTESTATION_TEXT } from '@/features/packs/schema'
 
 export const NOTICE_MAIL_CENTS = 1000
 export const NOTICE_NEWSPAPER_CENTS = 7500

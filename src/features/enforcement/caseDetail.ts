@@ -1,4 +1,3 @@
-import type { CeaseAndDesistRule } from '@packs/nh/schema'
 import { asc, eq, inArray } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
@@ -33,6 +32,7 @@ import {
 } from '@/features/enforcement/service'
 import type { ServiceStatus } from '@/features/enforcement/serviceStatus'
 import { type StayState, stayBanner, stayFor } from '@/features/enforcement/stay'
+import type { CeaseAndDesistRule } from '@/features/packs/schema'
 import type { CasePayments } from '@/features/payments/casePayments'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'

@@ -1,4 +1,3 @@
-import type { ClockRule, PackRule, StartEvent } from '@packs/nh/schema'
 import type { clocks } from '@/db/schema'
 import { checkAdjustment } from '@/features/clocks/adjustClock'
 import { explainClock, START_EVENT_LABELS } from '@/features/clocks/explainClock'
@@ -8,6 +7,7 @@ import { computeRuleDue, resolveRuleLength, rulesForEvent } from '@/features/clo
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack } from '@/features/packs/loadPack'
+import type { ClockRule, PackRule, StartEvent } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { attempt, clockRule, type FieldProbe, packRule, probe } from './probe'
 import { observeRule, ruleProbes } from './ruleProbes'

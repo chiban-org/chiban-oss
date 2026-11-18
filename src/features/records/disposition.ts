@@ -1,4 +1,3 @@
-import type { RecordSeries } from '@packs/nh/schema'
 import { and, desc, eq, inArray, isNull, or } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
@@ -10,6 +9,7 @@ import {
   recordEvents,
   retentionAssignments,
 } from '@/db/schema'
+import type { RecordSeries } from '@/features/packs/schema'
 import { applicationIdOfRecord } from '@/features/records/ancestry'
 import { computeRetention, type RetentionStatus } from '@/features/records/computeRetention'
 import { holdsCovering } from '@/features/records/holds'

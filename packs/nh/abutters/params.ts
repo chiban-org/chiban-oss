@@ -1,4 +1,4 @@
-import type { AbutterParams } from '@packs/nh/schema'
+import type { AbutterParams } from '@/features/packs/schema'
 
 export const NH_ABUTTER_PARAMS: AbutterParams = {
   key: 'nh.abutters.adjacency_projection',

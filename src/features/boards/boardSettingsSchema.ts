@@ -1,6 +1,6 @@
-import type { BoardKind } from '@packs/nh/schema'
-import { civilDateSchema } from '@packs/nh/schema'
 import { z } from 'zod'
+import type { BoardKind } from '@/features/packs/schema'
+import { civilDateSchema } from '@/features/packs/schema'
 
 const AdoptionSchema = z.object({
   adoptingAuthority: z.string(),
