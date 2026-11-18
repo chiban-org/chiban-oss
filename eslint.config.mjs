@@ -124,6 +124,13 @@ export default tseslint.config(
   },
 
   {
+    files: ['src/features/packs/registry.ts'],
+    rules: {
+      'no-restricted-properties': 'off',
+    },
+  },
+
+  {
     files: ['**/*.{test,spec}.{ts,tsx}', 'tests/**/*.{ts,tsx}', 'e2e/**/*.ts'],
     rules: {
       '@typescript-eslint/no-unsafe-assignment': 'off',

@@ -1,3 +1,4 @@
+import type { CLASSIFICATION_KEYS } from '@packs/nh/boardSchema'
 import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
 import { IS_OWNER } from '@packs/nh/starters/documentQuestions'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
@@ -6,6 +7,11 @@ import type { FeeScheduleBody } from '@/features/fees/feeSchema'
 import type { FormField } from '@/features/forms/formSchema'
 import type { StarterBundle } from '@/features/packs/schema'
 import { ATTESTATION_TEXT } from '@/features/packs/schema'
+import {
+  DECISION_LETTER_TEXT,
+  HEARING_NOTICE_TEXT,
+  NOTICE_OF_DECISION_TEXT,
+} from '@/features/templates/kinds/boardLetterTexts'
 
 export const NOTICE_MAIL_CENTS = 1000
 export const NOTICE_NEWSPAPER_CENTS = 7500
@@ -15,7 +21,7 @@ export interface BoardStarterInput {
   prefix: string
   slug: string
   label: string
-  classification: Extract<ApplicationTypeBody['classification'], `nh.${string}`>
+  classification: (typeof CLASSIFICATION_KEYS)[number]
   fields: FormField[]
   applicationFee: FeeScheduleBody['lines'][number]['expr']
   newspaper: boolean
@@ -68,15 +74,6 @@ const ZBA_WORKFLOW: ApplicationTypeBody['workflow'] = {
 
 export const PLANNING_BOARD_WORKFLOW = PLANNING_WORKFLOW
 export const ZBA_BOARD_WORKFLOW = ZBA_WORKFLOW
-
-export const HEARING_NOTICE_TEXT =
-  '{{town.name}}\n\n{{notice.recipientName}}\n\n{{notice.recipientAddress}}\n\nNotice of {{hearing.kind}} to {{notice.recipientName}}.\n\nThe {{board.name}} will hold a {{hearing.kind}} on {{meeting.date}} at {{meeting.time}}, {{meeting.location}}, on {{application.typeLabel}} {{application.number}}, {{project.title}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}.\n\nThis notice is mailed to abutters and other parties entitled to notice, and is posted on the Town website and bulletin boards. The application is available for inspection at the town offices.'
-
-export const NOTICE_OF_DECISION_TEXT =
-  '{{town.name}}\n\nNotice of decision of the {{board.name}} on {{application.typeLabel}} {{application.number}}, {{project.title}}, parcel {{parcel.displayId}}, {{parcel.siteAddress}}. Applicant {{party.applicant.name}}.\n\nDecision: {{decision.outcome}}, voted {{decision.votedOn}}.\n\nFindings of fact: {{decision.findings}}\n\n{{decision.conditionsSection}}\n\n{{decision.reasonsSection}}\n\n{{decision.appealRights}}'
-
-export const DECISION_LETTER_TEXT =
-  '{{town.name}}\n\nDear {{party.applicant.name}}:\n\nOn {{decision.votedOn}} the {{board.name}} voted on {{application.typeLabel}} {{application.number}} for {{parcel.siteAddress}}. The decision is: {{decision.outcome}}.\n\nFindings of fact: {{decision.findings}}\n\n{{decision.conditionsSection}}\n\n{{decision.reasonsSection}}\n\n{{decision.appealRights}}'
 
 export function boardStarter(input: BoardStarterInput): StarterBundle {
   const { slug, prefix, label } = input

@@ -1,10 +1,11 @@
-import { NH_STARTERS } from '@packs/nh/starters'
 import { adoptStarterAction } from '@/app/(staff)/staff/settings/starterActions'
 import { ActionForm } from '@/components/ActionForm'
+import { activePack } from '@/features/packs/registry'
 
 export function StarterList({ adopted }: { adopted: ReadonlySet<string> }) {
-  const taken = NH_STARTERS.filter((s) => adopted.has(s.applicationType.key))
-  const open = NH_STARTERS.filter((s) => !adopted.has(s.applicationType.key))
+  const starters = activePack().starters
+  const taken = starters.filter((s) => adopted.has(s.applicationType.key))
+  const open = starters.filter((s) => !adopted.has(s.applicationType.key))
   return (
     <>
       <section aria-labelledby="starters-open">

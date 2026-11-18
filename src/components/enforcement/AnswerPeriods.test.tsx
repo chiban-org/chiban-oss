@@ -3,7 +3,7 @@ import { cleanup, render } from '@testing-library/react'
 import { afterEach, describe, expect, it } from 'vitest'
 import { AnswerPeriods } from '@/components/enforcement/AnswerPeriods'
 import { computeSubjectDue } from '@/features/clocks/subjectDue'
-import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
+import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -19,7 +19,7 @@ const dueFrom = (start: string) =>
   computeSubjectDue(rule, d(start), {
     holidays: packHolidayCalendar(),
     packVersion: loadPack().version,
-    citations: PACK_COUNTING_CITATIONS,
+    citations: packCountingCitations(),
   })
 
 const dues = [

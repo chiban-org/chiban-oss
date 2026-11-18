@@ -1,4 +1,3 @@
-import { type AppealNodeKind, type AppealRoute, NH_APPEAL_ROUTES } from '@packs/nh/appealRoutes'
 import { and, desc, eq, ne } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { appealNodes, clocks } from '@/db/schema'
@@ -12,7 +11,13 @@ import { computeRuleDue } from '@/features/clocks/ruleEngine'
 import { markClockMet, startClocksFor } from '@/features/clocks/startClocks'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
-import type { BoardKind, DecisionOutcome } from '@/features/packs/schema'
+import { activePack } from '@/features/packs/registry'
+import type {
+  AppealNodeKind,
+  AppealRoute,
+  BoardKind,
+  DecisionOutcome,
+} from '@/features/packs/schema'
 import { isAfterTownToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -64,7 +69,9 @@ function chooseRoute(
   parent: NodeRow,
   input: AddNodeInput,
 ): Result<AppealRoute, 'route_not_allowed' | 'wrong_outcome'> {
-  const candidates = NH_APPEAL_ROUTES.filter((r) => r.from === parent.kind && r.to === input.kind)
+  const candidates = activePack().appealRoutes.filter(
+    (r) => r.from === parent.kind && r.to === input.kind,
+  )
   if (parent.kind === 'rehearing_outcome') {
     const linked = parent.linkedPbNodeId !== null
     const wanted =

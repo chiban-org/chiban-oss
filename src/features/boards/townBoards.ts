@@ -1,9 +1,10 @@
-import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import { and, asc, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { DbOrTx } from '@/db/client'
 import { type BoardRow, boardMemberships, boards, users } from '@/db/schema'
 import { TOWN_TODAY } from '@/features/access/predicates'
+import { BOARD_KIND_BEHAVIOUR } from '@/features/boards/boardKindBehaviour'
+import { activePack } from '@/features/packs/registry'
 import type { BoardKind } from '@/features/packs/schema'
 
 export type { BoardRow }
@@ -64,11 +65,11 @@ export function boardLabel(board: Pick<BoardRow, 'name'>): string {
 }
 
 export function missingBoardMessage(kind: BoardKind): string {
-  return `This town has no ${BOARD_KIND_TRAITS[kind].label} set up. Add one in Settings, Boards.`
+  return `This town has no ${activePack().boardKinds[kind].label} set up. Add one in Settings, Boards.`
 }
 
 export function boardDecidesApplications(kind: BoardKind): boolean {
-  return BOARD_KIND_TRAITS[kind].decidesApplications
+  return BOARD_KIND_BEHAVIOUR[kind].decidesApplications
 }
 
 export interface BoardMergeValues {

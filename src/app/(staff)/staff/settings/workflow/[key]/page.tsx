@@ -1,4 +1,3 @@
-import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { ActionForm } from '@/components/ActionForm'
@@ -11,6 +10,7 @@ import { ApplicationTypeBodySchema } from '@/features/applications/applicationTy
 import { hasCapability } from '@/features/authz/capabilities'
 import { discardOffer } from '@/features/config/discardOffer'
 import { getEditorState } from '@/features/config/settingsViews'
+import { loadPack } from '@/features/packs/loadPack'
 import { getTownSettings } from '@/features/town/settings'
 import { requireStaffContext } from '@/server/requireStaff'
 import { discardDraftAction, publishAction, rollbackAction, saveDraftAction } from '../../actions'
@@ -35,7 +35,9 @@ export default async function WorkflowPage({ params }: Props) {
   if (state.versions.length === 0) notFound()
   const parsed = ApplicationTypeBodySchema.safeParse(state.body)
   if (!parsed.success) notFound()
-  const classification = NH_CLASSIFICATIONS.find((c) => c.key === parsed.data.classification)
+  const classification = loadPack().classifications.find(
+    (c) => c.key === parsed.data.classification,
+  )
   if (classification === undefined) notFound()
   const town = await getTownSettings(ctx.db, ctx.signal)
   const timeZone = town.ok ? town.value.timeZone : 'America/New_York'

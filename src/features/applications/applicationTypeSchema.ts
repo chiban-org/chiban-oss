@@ -1,18 +1,27 @@
-import { CLASSIFICATION_KEYS } from '@packs/nh/boardSchema'
-import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
 import { z } from 'zod'
 import { DocumentItemSchema, documentItemIssues } from '@/features/applications/documentItemSchema'
 import { CORE_STATES } from '@/features/applications/states'
+import { loadPack } from '@/features/packs/loadPack'
+import { activePack } from '@/features/packs/registry'
 
 const STEP_NAME_REQUIRED = 'Name every step.'
+
+const ENFORCEMENT_CLASSIFICATIONS: readonly string[] = [
+  'nh.enforcement_zoning',
+  'nh.enforcement_building_code',
+]
+
+export function isApplicationClassification(key: string): boolean {
+  return activePack().classificationKeys.includes(key) && !ENFORCEMENT_CLASSIFICATIONS.includes(key)
+}
 
 const ApplicationTypeBodyShape = z.object({
   key: z.string().min(1),
   label: z.string().min(1),
   prefix: z.string().regex(/^[A-Z]{1,4}$/, 'Use one to four capital letters, such as BP.'),
   classification: z
-    .enum(CLASSIFICATION_KEYS)
-    .exclude(['nh.enforcement_zoning', 'nh.enforcement_building_code'])
+    .string()
+    .refine(isApplicationClassification, 'Choose a classification the state pack declares.')
     .optional(),
   formKey: z.string().min(1),
   feeScheduleKey: z.string().min(1),
@@ -44,7 +53,7 @@ const ApplicationTypeBodyShape = z.object({
 })
 
 export function boardKindOf(classification: string | undefined): string | null {
-  return NH_CLASSIFICATIONS.find((c) => c.key === classification)?.boardKind ?? null
+  return loadPack().classifications.find((c) => c.key === classification)?.boardKind ?? null
 }
 
 export const ApplicationTypeBodySchema = ApplicationTypeBodyShape.superRefine((body, ctx) => {

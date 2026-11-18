@@ -1,4 +1,3 @@
-import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { QuickFilters } from '@/components/dataTable/QuickFilters'
@@ -7,6 +6,7 @@ import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
 import { arrangeBoardLines, boardFacets } from '@/features/boards/boardApplicationList'
+import { BOARD_KIND_BEHAVIOUR } from '@/features/boards/boardKindBehaviour'
 import { boardChipGroups } from '@/features/boards/boardListChips'
 import {
   BOARD_FILTER_PARAMS,
@@ -83,7 +83,7 @@ function SectionApplications({
 function CommentRequests({ section }: { section: BoardSection }) {
   const requests: CommentRequestLine[] = section.commentRequests
   if (requests.length === 0) {
-    if (BOARD_KIND_TRAITS[section.boardKind].decidesApplications) return null
+    if (BOARD_KIND_BEHAVIOUR[section.boardKind].decidesApplications) return null
     return (
       <p>
         This board comments on applications and does not decide them. Nothing has been sent to it
@@ -144,7 +144,7 @@ export default async function BoardsPage({
       {view.sections.map((section) => (
         <section key={section.boardId} aria-label={section.label}>
           <h2>{section.label}</h2>
-          {BOARD_KIND_TRAITS[section.boardKind].decidesApplications ? (
+          {BOARD_KIND_BEHAVIOUR[section.boardKind].decidesApplications ? (
             <SectionApplications
               section={section}
               lines={arrangeBoardLines(section.applications, sort, filters, today)}

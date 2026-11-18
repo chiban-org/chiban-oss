@@ -1,20 +1,7 @@
-import { NH_COUNTING_CITATIONS } from '@packs/nh/countingCitations'
-import { nhLegalHolidays } from '@packs/nh/holidays'
-import { NH_PACK_MANIFEST } from '@packs/nh/manifest'
-import { APPEAL_RULES } from '@packs/nh/rules/appeals'
-import { BUILDING_RULES } from '@packs/nh/rules/building'
-import { CODE_RULES } from '@packs/nh/rules/code'
-import { DECISION_RULES } from '@packs/nh/rules/decisions'
-import { ENFORCEMENT_RULES } from '@packs/nh/rules/enforcement'
-import { LOCAL_PERMIT_RULES } from '@packs/nh/rules/localPermits'
-import { NOTICE_REQUIREMENT_RULES } from '@packs/nh/rules/noticeRequirements'
-import { PLANNING_BOARD_RULES } from '@packs/nh/rules/planningBoard'
-import { REGIONAL_IMPACT_BOARD_RULES } from '@packs/nh/rules/regionalImpact'
-import { RTK_RULES } from '@packs/nh/rules/rightToKnow'
-import { ZBA_RULES } from '@packs/nh/rules/zba'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { extensionPolicyText } from '@/features/clocks/explainClock'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
+import { activePack } from '@/features/packs/registry'
 import type {
   BoardKind,
   ClockLength,
@@ -34,20 +21,6 @@ export const HOLIDAYS_PATH = `${DIR}/holidays.md`
 export const OTHER_RULES_PATH = `${DIR}/other-rules.md`
 
 export const HOLIDAY_YEARS = [2026, 2027, 2028] as const
-
-const RULE_GROUPS: readonly { title: string; rules: readonly PackRule[] }[] = [
-  { title: 'Building permits', rules: BUILDING_RULES },
-  { title: 'Building code', rules: CODE_RULES },
-  { title: 'Planning Board', rules: PLANNING_BOARD_RULES },
-  { title: 'Zoning Board of Adjustment', rules: ZBA_RULES },
-  { title: 'Regional impact', rules: REGIONAL_IMPACT_BOARD_RULES },
-  { title: 'Board decisions', rules: DECISION_RULES },
-  { title: 'Notices', rules: NOTICE_REQUIREMENT_RULES },
-  { title: 'Appeals', rules: APPEAL_RULES },
-  { title: 'Local permits and registrations', rules: LOCAL_PERMIT_RULES },
-  { title: 'Enforcement', rules: ENFORCEMENT_RULES },
-  { title: 'Right-to-Know requests', rules: RTK_RULES },
-]
 
 const START_EVENTS: Record<StartEvent, string> = {
   application_received: 'the application is received',
@@ -104,7 +77,7 @@ function amount(value: number, unit: 'days' | 'months' | 'business_days'): strin
 }
 
 function townSettingDefault(key: string): string {
-  const setting = NH_PACK_MANIFEST.rules.find((rule) => rule.key === key)
+  const setting = activePack().manifest.rules.find((rule) => rule.key === key)
   if (setting?.kind !== 'town_setting') {
     throw new AppError(ErrorIds.PACK_INVALID, 'clock length names a missing town setting', { key })
   }
@@ -134,11 +107,11 @@ function countingText(rule: ClockRule): string {
   const { length } = rule
   if (length.unit === 'stated_date') return ''
   if (length.unit === 'business_days') {
-    return `Business days: the start day is not counted, and Saturdays, Sundays and legal holidays are skipped (${NH_COUNTING_CITATIONS.businessDayRoll}).`
+    return `Business days: the start day is not counted, and Saturdays, Sundays and legal holidays are skipped (${activePack().countingCitations.businessDayRoll}).`
   }
-  const base = `Calendar ${length.unit}: the start day is not counted and the last day is (${NH_COUNTING_CITATIONS.dayCounting}).`
+  const base = `Calendar ${length.unit}: the start day is not counted and the last day is (${activePack().countingCitations.dayCounting}).`
   if (rule.clockType === 'filing_window' && rule.direction === 'after') {
-    return `${base} A last day that falls on a Saturday, Sunday or legal holiday moves to the next business day (${NH_COUNTING_CITATIONS.businessDayRoll}).`
+    return `${base} A last day that falls on a Saturday, Sunday or legal holiday moves to the next business day (${activePack().countingCitations.businessDayRoll}).`
   }
   if (rule.clockType === 'action_due') return `${base} It does not move for weekends or holidays.`
   return base
@@ -168,8 +141,10 @@ function isClock(rule: PackRule): rule is ClockRule {
 }
 
 function assertGroupsCoverManifest(): void {
-  const grouped = new Set(RULE_GROUPS.flatMap((group) => group.rules.map((rule) => rule.key)))
-  const missing = NH_PACK_MANIFEST.rules.filter((rule) => !grouped.has(rule.key))
+  const grouped = new Set(
+    activePack().ruleAreas.flatMap((group) => group.rules.map((rule) => rule.key)),
+  )
+  const missing = activePack().manifest.rules.filter((rule) => !grouped.has(rule.key))
   if (missing.length > 0) {
     throw new AppError(ErrorIds.PACK_INVALID, 'rules missing from the deadline groups', {
       keys: missing.map((r) => r.key),
@@ -186,7 +161,7 @@ const SOURCES = [
 
 export function renderClocks(): string {
   assertGroupsCoverManifest()
-  const sections = RULE_GROUPS.map((group) => {
+  const sections = activePack().ruleAreas.map((group) => {
     const clocks = group.rules.filter(isClock)
     return clocks.length === 0
       ? ''
@@ -197,7 +172,7 @@ export function renderClocks(): string {
 
 export function renderOtherRules(): string {
   assertGroupsCoverManifest()
-  const rows = RULE_GROUPS.flatMap((group) =>
+  const rows = activePack().ruleAreas.flatMap((group) =>
     group.rules
       .filter((rule) => !isClock(rule))
       .map((rule) => [group.title, escapeText(rule.label), citation(rule)]),
@@ -209,7 +184,7 @@ export function renderOtherRules(): string {
 
 export function renderHolidays(): string {
   const rows = HOLIDAY_YEARS.flatMap((year) =>
-    [...nhLegalHolidays(year)]
+    [...activePack().holidays(year)]
       .sort((a, b) => a.date.localeCompare(b.date))
       .map((holiday) => [
         formatCivilDateWithWeekday(holiday.date),

@@ -17,16 +17,6 @@ export const BOARD_KINDS = [
 export const BoardKindSchema = z.enum(BOARD_KINDS)
 export type BoardKind = z.infer<typeof BoardKindSchema>
 
-export interface BoardKindTraits {
-  label: string
-  defaultShortName: string
-  decidesApplications: boolean
-  holdsHearings: boolean
-  hasFilingLead: boolean
-  uniquePerTown: boolean
-  description: string
-}
-
 export const AbuttersSpecSchema = z.object({
   strategyKey: z.string().min(1),
   resolverKey: z.string().min(1),

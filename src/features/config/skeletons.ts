@@ -1,4 +1,3 @@
-import { NH_INSPECTION_SETTINGS_DEFAULT } from '@packs/nh/starters'
 import type { DbOrTx } from '@/db/client'
 import { BOARD_SETTINGS_DEFAULT, boardSettingsDefault } from '@/features/boards/boardSettings'
 import { EMPTY_REGIONAL_CONTACTS } from '@/features/boards/regionalContacts'
@@ -14,6 +13,7 @@ import {
 import { slugKey } from '@/features/forms/fieldKeys'
 import { EMPTY_NOTIFICATION_WORDING } from '@/features/notifications/wording/wordingSchema'
 import { loadPack } from '@/features/packs/loadPack'
+import { activePack } from '@/features/packs/registry'
 import { EMPTY_REVIEW_ROUTES } from '@/features/reviews/routesSchema'
 import { defaultDoc } from '@/features/templates/kinds/documentKinds'
 import { TOWN_PROFILE_SKELETON } from '@/features/town/profileSchema'
@@ -85,7 +85,7 @@ export function skeletonBody(kind: ConfigKind, key: string, label: string = key)
         checksPayableTo: 'the Town',
       }
     case 'inspection_settings':
-      return NH_INSPECTION_SETTINGS_DEFAULT
+      return activePack().inspectionSettingsDefault
     case 'board_settings':
       return BOARD_SETTINGS_DEFAULT
     case 'regional_contacts':

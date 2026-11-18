@@ -1,4 +1,3 @@
-import { NH_LICENSE_LOOKUP } from '@packs/nh/links'
 import { and, eq, ne } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { applicationConditions, applications, licenseChecks } from '@/db/schema'
@@ -9,6 +8,7 @@ import { isTerminalState } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { licenseLookupUrl } from '@/features/licenseChecks/packLicenses'
 import { hasFullRecordAccess } from '@/features/projects/access'
 import { err, ok, type Result } from '@/types/result'
 import {
@@ -101,7 +101,7 @@ export async function recordLicenseCheck(
         licenseType: input.licenseType,
         result: input.result,
         note: input.note,
-        lookupUrl: NH_LICENSE_LOOKUP.url,
+        lookupUrl: licenseLookupUrl(),
         checkedBy: actor.userId,
         checkedAt: now,
       })

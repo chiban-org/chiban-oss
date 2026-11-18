@@ -13,27 +13,7 @@ import { PLANNING_BOARD_RULES } from '@packs/nh/rules/planningBoard'
 import { REGIONAL_IMPACT_BOARD_RULES } from '@packs/nh/rules/regionalImpact'
 import { RTK_RULES } from '@packs/nh/rules/rightToKnow'
 import { ZBA_RULES } from '@packs/nh/rules/zba'
-import type {
-  AbutterParams,
-  CodeEditionEntry,
-  PackRule,
-  ProceedingClassification,
-  RecordSeries,
-} from '@/features/packs/schema'
-
-export interface PackManifest {
-  id: string
-  version: string
-  rules: PackRule[]
-  classifications: ProceedingClassification[]
-  codeEditions: CodeEditionEntry[]
-  recordSeries: RecordSeries[]
-  recordSeriesDefaults: {
-    byClassification: Record<string, string>
-    byApplicationType: Record<string, string>
-  }
-  abutterParams: AbutterParams[]
-}
+import type { PackManifest } from '@/features/packs/schema'
 
 export const NH_PACK_MANIFEST: PackManifest = {
   id: 'nh',

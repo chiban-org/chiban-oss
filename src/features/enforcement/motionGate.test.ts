@@ -3,7 +3,7 @@ import { computeSubjectDue } from '@/features/clocks/subjectDue'
 import { motionGate } from '@/features/enforcement/motionGate'
 import type { ServiceStatus } from '@/features/enforcement/serviceStatus'
 import { NOT_STAYED } from '@/features/enforcement/stay'
-import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
+import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -23,7 +23,7 @@ const dueFor = (served: string) =>
   computeSubjectDue(answerRule, d(served), {
     holidays: packHolidayCalendar(),
     packVersion: pack.version,
-    citations: PACK_COUNTING_CITATIONS,
+    citations: packCountingCitations(),
   })
 const COMPLETE: ServiceStatus = {
   complete: true,

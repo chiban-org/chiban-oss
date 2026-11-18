@@ -52,6 +52,10 @@ export const ENV_DOCS = {
     group: 'core',
     text: 'The application image reference, pinned by digest. The bundled Compose file sets it from `CHIBAN_IMAGE`. Anonymous complaint intake opens only when a passing verification exists for this exact image.',
   },
+  CHIBAN_PACK: {
+    group: 'core',
+    text: 'The id of the state pack the application, the worker and the command-line tools load, such as `nh`. It is read when the server runs, not when the image is built, and an id no pack has stops the first request that needs the pack. Blank means `nh`.',
+  },
   MAX_UPLOAD_BYTES: {
     group: 'core',
     text: 'The largest file a person can upload, in bytes. The default is 100 MiB.',

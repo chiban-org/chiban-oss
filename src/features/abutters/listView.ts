@@ -1,4 +1,3 @@
-import { NH_ABUTTER_PARAMS } from '@packs/nh/abutters/params'
 import { asc, eq, inArray } from 'drizzle-orm'
 import type { Db, Tx } from '@/db/client'
 import { abutterListCandidates, abutterListRecipients, applications, parcels } from '@/db/schema'
@@ -6,6 +5,7 @@ import { applicantParcelIds } from '@/features/abutters/applicantParcels'
 import { openIncomplete } from '@/features/abutters/draft'
 import { type NoticeCostSummary, noticeCostSummary } from '@/features/abutters/noticeCosts'
 import { type Overlay, projectionOverlay } from '@/features/abutters/overlay'
+import { primaryAbutterParams } from '@/features/abutters/packParams'
 import { getList, type ListRow, type ListSnapshot } from '@/features/abutters/queries'
 import { ageText, reasonLines } from '@/features/abutters/reasonText'
 import { frozenView, type RecipientView, recipientView } from '@/features/abutters/recipientView'
@@ -184,7 +184,7 @@ export async function loadListView(
         ? await projectionOverlay(
             tx,
             parcelIds,
-            NH_ABUTTER_PARAMS,
+            primaryAbutterParams(),
             settings.assumedRightOfWayFt,
             signal,
           )

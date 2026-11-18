@@ -1,4 +1,4 @@
-import { NH_LICENSE_LOOKUP } from '@packs/nh/links'
+import { NH_LICENSE_LOOKUP } from '@packs/nh/licenseTypes'
 import type { DbOrTx } from '@/db/client'
 import { licenseChecks } from '@/db/schema'
 

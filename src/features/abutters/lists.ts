@@ -22,7 +22,7 @@ import { getList, type ListRow } from './queries'
 import { abutterStrategy } from './registry'
 import type { Recipient } from './resolution'
 import type { Candidate, CrossingKind, StaffSelection } from './types'
-import './registerNh'
+import '@/features/packs/registryAbutters'
 
 function staffSelectionsOf(
   candidates: { parcelId: string; reasons: unknown; excluded: boolean }[],

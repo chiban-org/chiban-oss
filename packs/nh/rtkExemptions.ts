@@ -1,9 +1,4 @@
-export interface RtkExemption {
-  key: string
-  paragraph: string
-  label: string
-  citation: { label: string; url: string }
-}
+import type { RtkExemption } from '@/features/packs/schema'
 
 const RSA_91A_5 = 'https://gc.nh.gov/rsa/html/VI/91-A/91-A-5.htm'
 
@@ -33,5 +28,3 @@ export const NH_RTK_EXEMPTIONS: RtkExemption[] = PARAGRAPHS.map(([paragraph, lab
   label,
   citation: { label: `RSA 91-A:5 ${paragraph}`, url: RSA_91A_5 },
 }))
-
-export const OTHER_LAW_EXEMPTION_KEY = 'other_law'

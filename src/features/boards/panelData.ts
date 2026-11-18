@@ -1,4 +1,3 @@
-import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import { and, asc, desc, eq, gte, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
@@ -26,6 +25,7 @@ import { type MeetingEligibility, meetingEligibility } from '@/features/boards/m
 import { getRegionalContacts } from '@/features/boards/regionalContacts'
 import { boardForKind, missingBoardMessage } from '@/features/boards/townBoards'
 import { loadPack } from '@/features/packs/loadPack'
+import { activePack } from '@/features/packs/registry'
 import type { BoardKind } from '@/features/packs/schema'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { mayManageAbutters } from '@/features/rosters/manage'
@@ -245,7 +245,7 @@ export async function loadBoardPanel(
   return {
     applicationId,
     boardKind,
-    boardName: boardRow?.name ?? BOARD_KIND_TRAITS[boardKind].label,
+    boardName: boardRow?.name ?? activePack().boardKinds[boardKind].label,
     missingBoard: boardRow === null ? missingBoardMessage(boardKind) : null,
     state: app.state,
     ...(await changePermissions(db, actor, app.state, signal)),

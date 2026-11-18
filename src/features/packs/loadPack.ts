@@ -1,21 +1,28 @@
-import { NH_PACK_MANIFEST } from '@packs/nh/manifest'
 import { AppError, ErrorIds } from '@/constants/errorIds'
-import { type PackManifestData, PackManifestSchema, type PackRule } from '@/features/packs/schema'
+import { activePack } from '@/features/packs/registry'
+import {
+  type PackManifest,
+  type PackManifestData,
+  PackManifestSchema,
+  type PackRule,
+} from '@/features/packs/schema'
 
 export type Pack = PackManifestData
 
-let cached: Pack | null = null
+const parsedByManifest = new WeakMap<PackManifest, Pack>()
 
 export function loadPack(): Pack {
-  if (cached !== null) return cached
-  const parsed = PackManifestSchema.safeParse(NH_PACK_MANIFEST)
+  const manifest = activePack().manifest
+  const cached = parsedByManifest.get(manifest)
+  if (cached !== undefined) return cached
+  const parsed = PackManifestSchema.safeParse(manifest)
   if (!parsed.success) {
     throw new AppError(ErrorIds.PACK_INVALID, 'The jurisdiction pack failed its schema', {
       issues: parsed.error.issues.map((i) => `${i.path.join('.')}: ${i.message}`),
     })
   }
-  cached = parsed.data
-  return cached
+  parsedByManifest.set(manifest, parsed.data)
+  return parsed.data
 }
 
 export function ruleByKey(pack: Pack, key: string, version?: number): PackRule {

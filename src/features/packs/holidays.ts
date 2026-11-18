@@ -1,12 +1,18 @@
-import { NH_COUNTING_CITATIONS } from '@packs/nh/countingCitations'
-import { nhLegalHolidays } from '@packs/nh/holidays'
 import { type HolidayCalendar, makeHolidayCalendar } from '@/features/clocks/holidayCalendar'
+import { activePack } from '@/features/packs/registry'
+import type { CountingCitations, StatePack } from '@/features/packs/schema'
 
-let cached: HolidayCalendar | null = null
+const calendars = new WeakMap<StatePack, HolidayCalendar>()
 
 export function packHolidayCalendar(): HolidayCalendar {
-  cached ??= makeHolidayCalendar((year) => nhLegalHolidays(year))
-  return cached
+  const pack = activePack()
+  const cached = calendars.get(pack)
+  if (cached !== undefined) return cached
+  const built = makeHolidayCalendar((year) => pack.holidays(year))
+  calendars.set(pack, built)
+  return built
 }
 
-export const PACK_COUNTING_CITATIONS = NH_COUNTING_CITATIONS
+export function packCountingCitations(): CountingCitations {
+  return activePack().countingCitations
+}

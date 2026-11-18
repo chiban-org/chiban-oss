@@ -1,4 +1,3 @@
-import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import { and, eq, gte, isNull, notInArray, or, sql } from 'drizzle-orm'
 import type { Db, DbOrTx, Tx } from '@/db/client'
 import { applications, boardMeetings, boardPacketLinks, boardPackets, boards } from '@/db/schema'
@@ -8,8 +7,10 @@ import { TERMINAL_STATES } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { BOARD_KIND_BEHAVIOUR } from '@/features/boards/boardKindBehaviour'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { activeBoards, type BoardRow, getBoardLocked } from '@/features/boards/townBoards'
+import { activePack } from '@/features/packs/registry'
 import type { BoardKind } from '@/features/packs/schema'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
@@ -53,7 +54,10 @@ export async function createBoard(
     await lockBoardNames(tx)
     const active = await activeBoards(tx)
     if (nameTaken(active, input.name)) return err('name_taken')
-    if (BOARD_KIND_TRAITS[input.kind].uniquePerTown && active.some((b) => b.kind === input.kind)) {
+    if (
+      BOARD_KIND_BEHAVIOUR[input.kind].uniquePerTown &&
+      active.some((b) => b.kind === input.kind)
+    ) {
       return err('kind_taken')
     }
     const [row] = await tx
@@ -176,7 +180,7 @@ async function applicationBlocker(
   board: BoardRow,
   signal: AbortSignal,
 ): Promise<string[]> {
-  if (!BOARD_KIND_TRAITS[board.kind].decidesApplications) return []
+  if (!BOARD_KIND_BEHAVIOUR[board.kind].decidesApplications) return []
   const rows = await db
     .select({ id: applications.id })
     .from(applications)
@@ -188,7 +192,7 @@ async function applicationBlocker(
   }
   return open === 0
     ? []
-    : [`${BOARD_KIND_TRAITS[board.kind].label} applications still open: ${String(open)}.`]
+    : [`${activePack().boardKinds[board.kind].label} applications still open: ${String(open)}.`]
 }
 
 export async function archiveBlockers(

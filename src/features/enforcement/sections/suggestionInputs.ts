@@ -1,4 +1,3 @@
-import { stateCodeReference, stateCodeSectionsFor } from '@packs/nh/buildingCodeSections'
 import { and, asc, desc, eq, isNotNull, ne, sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import {
@@ -11,6 +10,10 @@ import {
   violationFindings,
 } from '@/db/schema'
 import { resolveCodeEdition } from '@/features/building/codeEdition'
+import {
+  stateCodeReference,
+  stateCodeSectionsFor,
+} from '@/features/enforcement/sections/stateCodeSections'
 import {
   type ConditionRef,
   mergeSuggestions,

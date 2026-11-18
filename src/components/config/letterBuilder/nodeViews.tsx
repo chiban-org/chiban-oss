@@ -5,12 +5,12 @@ import { Lock } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { BlocksPreview } from '@/components/config/letterBuilder/BlocksPreview'
 import { useLetterView } from '@/components/config/letterBuilder/letterView'
+import { usePackText, useSignerRoleLabel } from '@/components/PackTextProvider'
 import { type DocNode, fieldTableRows } from '@/features/templates/doc/docSchema'
 import { lockedSource } from '@/features/templates/doc/lockedSources'
 import { documentKind } from '@/features/templates/kinds/documentKinds'
 import { mergeFieldLabel } from '@/features/templates/mergeFieldLabels'
 import { mergeValue } from '@/features/templates/renderTemplate'
-import { SIGNER_ROLE_LABELS, SignerRoleSchema } from '@/features/town/profileSchema'
 import { cn } from '@/lib/utils'
 
 function useFieldText(name: string): string {
@@ -85,6 +85,7 @@ function FieldTableBody({ node }: { node: DocNode }) {
 
 function LockedBody({ source }: { source: string }) {
   const { preview } = useLetterView()
+  const { lockedTexts } = usePackText()
   const known = lockedSource(source)
   if (preview !== null) {
     const text = preview.locked[source] ?? ''
@@ -94,7 +95,7 @@ function LockedBody({ source }: { source: string }) {
       <p className="m-0">{text}</p>
     )
   }
-  return <p className="m-0">{known?.fixedText ?? known?.describe ?? ''}</p>
+  return <p className="m-0">{lockedTexts[source] ?? known?.describe ?? ''}</p>
 }
 
 function SectionBody({ name }: { name: string }) {
@@ -120,9 +121,8 @@ function ConditionsBody() {
 }
 
 function SignatureBody({ role }: { role: string }) {
-  const parsed = SignerRoleSchema.safeParse(role)
   const name = useFieldText(`signer.${role}.name`)
-  const roleLabel = parsed.success ? SIGNER_ROLE_LABELS[parsed.data] : role
+  const roleLabel = useSignerRoleLabel()(role)
   return (
     <div className="pt-4">
       <div className="w-60 border-t border-ink" />

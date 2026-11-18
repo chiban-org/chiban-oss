@@ -1,10 +1,10 @@
 'use client'
 
-import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import { FilingLeadFields } from '@/components/config/FilingLeadFields'
 import { TextRows } from '@/components/config/plainFields'
 import { Check, FieldError, type FieldErrors, Input } from '@/components/config/primitives'
 import { Legend } from '@/components/ui/legend'
+import { BOARD_KIND_BEHAVIOUR } from '@/features/boards/boardKindBehaviour'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
 import type { EditorBoard } from '@/features/config/editorContext'
 
@@ -61,7 +61,7 @@ export function BoardSettingsEditor({ body, boards, onChange, errors }: Props) {
                   })
                 }
               />
-              {named !== undefined && BOARD_KIND_TRAITS[named.kind].hasFilingLead ? (
+              {named !== undefined && BOARD_KIND_BEHAVIOUR[named.kind].hasFilingLead ? (
                 <FilingLeadFields
                   board={board}
                   onChange={(next) => setBoard(index, next)}

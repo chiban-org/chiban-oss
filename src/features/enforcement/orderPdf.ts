@@ -1,12 +1,6 @@
-import {
-  NOTICE_OF_VIOLATION_INTRO,
-  NOTICE_OF_VIOLATION_REQUEST,
-  ORDER_CEASE_SENTENCE,
-  ORDER_LIEN_WARNING,
-  ORDER_MOTION_NOTICE,
-} from '@packs/nh/starters/enforcementTemplates'
 import type { violationFindings } from '@/db/schema'
 import { PROVISION_KIND_LABELS } from '@/features/enforcement/labels'
+import { activePack } from '@/features/packs/registry'
 import type { CeaseAndDesistRule, OrderContentField } from '@/features/packs/schema'
 import type { DocumentFrame } from '@/features/pdf/frame'
 import { type PdfBlock, renderPdf } from '@/features/pdf/renderPdf'
@@ -78,10 +72,11 @@ function orderSections(input: OrderPdfInput): Map<string, PdfBlock[]> {
 
 function orderLocked(input: OrderPdfInput): Map<string, string> {
   const wants = (field: OrderContentField) => input.rule.contentFields.includes(field)
+  const texts = activePack().orderTexts
   return new Map([
-    ['order.ceaseSentence', input.ceaseImmediately ? ORDER_CEASE_SENTENCE : ''],
-    ['order.motionNotice', wants('motionNotice') ? ORDER_MOTION_NOTICE : ''],
-    ['order.lienWarning', wants('lienWarning') ? ORDER_LIEN_WARNING : ''],
+    ['order.ceaseSentence', input.ceaseImmediately ? texts.ceaseSentence : ''],
+    ['order.motionNotice', wants('motionNotice') ? texts.motionNotice : ''],
+    ['order.lienWarning', wants('lienWarning') ? texts.lienWarning : ''],
   ])
 }
 
@@ -127,7 +122,7 @@ export interface NoticePdfInput {
 
 export async function renderNoticePdf(input: NoticePdfInput): Promise<Uint8Array> {
   const blocks: PdfBlock[] = [
-    { kind: 'paragraph', text: NOTICE_OF_VIOLATION_INTRO },
+    { kind: 'paragraph', text: activePack().orderTexts.noticeOfViolationIntro },
     {
       kind: 'fields',
       rows: [
@@ -145,7 +140,7 @@ export async function renderNoticePdf(input: NoticePdfInput): Promise<Uint8Array
         text: `${f.facts} (inspected ${formatCivilDate(f.inspectionDate)})`,
       }),
     ),
-    { kind: 'paragraph', text: NOTICE_OF_VIOLATION_REQUEST },
+    { kind: 'paragraph', text: activePack().orderTexts.noticeOfViolationRequest },
   ]
   return await renderPdf({
     title: 'Notice of violation',

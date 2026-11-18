@@ -9,9 +9,9 @@ import {
   rowKey,
 } from '@/components/config/primitives'
 import { ImageUpload } from '@/components/config/town/ImageUpload'
+import { useSignerRoleLabel } from '@/components/PackTextProvider'
 import { Legend } from '@/components/ui/legend'
 import {
-  SIGNER_ROLE_LABELS,
   SIGNER_ROLES,
   type Signer,
   type SignerRole,
@@ -22,10 +22,6 @@ interface Props {
   body: TownProfileBody
   onChange: (next: TownProfileBody) => void
   errors: FieldErrors
-}
-
-function roleLabel(role: SignerRole): string {
-  return new Map(Object.entries(SIGNER_ROLE_LABELS)).get(role) ?? role
 }
 
 function SignerRow({
@@ -39,6 +35,7 @@ function SignerRow({
   onChange: (next: Signer) => void
   onRemove: () => void
 }) {
+  const roleLabel = useSignerRoleLabel()
   const roles = SIGNER_ROLES.filter((r) => r === signer.role || !taken.has(r))
   return (
     <li className="record-item py-4">

@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { AppError } from '@/constants/errorIds'
 import { computeSubjectDue, subjectDueStatus } from '@/features/clocks/subjectDue'
-import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
+import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -9,7 +9,7 @@ const d = (s: string) => s as CivilDate
 const ctx = () => ({
   holidays: packHolidayCalendar(),
   packVersion: loadPack().version,
-  citations: PACK_COUNTING_CITATIONS,
+  citations: packCountingCitations(),
 })
 const clock = (key: string) => {
   const rule = ruleByKey(loadPack(), key)

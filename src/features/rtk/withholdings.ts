@@ -1,4 +1,3 @@
-import { NH_RTK_EXEMPTIONS, OTHER_LAW_EXEMPTION_KEY } from '@packs/nh/rtkExemptions'
 import { eq } from 'drizzle-orm'
 import { z } from 'zod'
 import type { Db } from '@/db/client'
@@ -7,6 +6,8 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { OTHER_LAW_EXEMPTION_KEY } from '@/features/packs/schema'
+import { packExemptions } from '@/features/rtk/exemptions'
 import { err, ok, type Result } from '@/types/result'
 
 const MIN_EXPLANATION = 20
@@ -24,7 +25,7 @@ const WithholdingSchema = z.object({
 export type WithholdingInput = z.input<typeof WithholdingSchema>
 
 export function exemptionKnown(key: string): boolean {
-  return key === OTHER_LAW_EXEMPTION_KEY || NH_RTK_EXEMPTIONS.some((e) => e.key === key)
+  return key === OTHER_LAW_EXEMPTION_KEY || packExemptions().some((e) => e.key === key)
 }
 
 export function validateWithholdingText(input: {

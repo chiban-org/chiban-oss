@@ -4,6 +4,7 @@ import { NodeSelection } from '@tiptap/pm/state'
 import { type Editor, useEditorState } from '@tiptap/react'
 import { FieldTableSettings } from '@/components/config/letterBuilder/FieldTableSettings'
 import { Pick, RowButton } from '@/components/config/primitives'
+import { useSignerRoleLabel } from '@/components/PackTextProvider'
 import {
   type DocNode,
   type FieldTableRow,
@@ -13,7 +14,7 @@ import { lockedSource } from '@/features/templates/doc/lockedSources'
 import { documentKind } from '@/features/templates/kinds/documentKinds'
 import { fieldGroups } from '@/features/templates/kinds/fieldGroups'
 import type { TemplateKind } from '@/features/templates/templateSchema'
-import { SIGNER_ROLE_LABELS, SIGNER_ROLES } from '@/features/town/profileSchema'
+import { SIGNER_ROLES } from '@/features/town/profileSchema'
 
 interface Selected {
   type: string
@@ -27,14 +28,13 @@ function selectedNode(editor: Editor): Selected | null {
   return { type: selection.node.type.name, attrs: { ...selection.node.attrs }, pos: selection.from }
 }
 
-const ROLE_OPTIONS = SIGNER_ROLES.map((role): [string, string] => [role, SIGNER_ROLE_LABELS[role]])
-
 function Hint({ children }: { children: string }) {
   return <p className="m-0 text-sm text-muted-foreground">{children}</p>
 }
 
 export function BlockSettings({ editor, kind }: { editor: Editor; kind: TemplateKind }) {
   const selected = useEditorState({ editor, selector: ({ editor: e }) => selectedNode(e) })
+  const roleLabel = useSignerRoleLabel()
   if (selected === null) {
     return <Hint>Select a merge field or a block in the letter to change it.</Hint>
   }
@@ -63,7 +63,7 @@ export function BlockSettings({ editor, kind }: { editor: Editor; kind: Template
           <Pick
             label="Who signs"
             value={String(selected.attrs.role)}
-            options={ROLE_OPTIONS}
+            options={SIGNER_ROLES.map((role): [string, string] => [role, roleLabel(role)])}
             onChange={(e) => setAttrs({ role: e.target.value })}
           />
           <Hint>The name, title and signature image come from the Signers settings.</Hint>

@@ -115,7 +115,7 @@ export async function denyRequestAction(formData: FormData): Promise<ActionResul
 }
 
 export async function withholdingAction(formData: FormData): Promise<ActionResult> {
-  return await runStaffForm(formData, withholdingForm, async ({ db, actor, signal }, input) =>
+  return await runStaffForm(formData, withholdingForm(), async ({ db, actor, signal }, input) =>
     recordsOutcome(
       await recordWithholding(
         db,

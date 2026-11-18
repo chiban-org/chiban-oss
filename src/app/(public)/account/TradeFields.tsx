@@ -5,14 +5,15 @@ import { TextField } from '@/components/staff/fields'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
 import { licenseFieldName } from '@/features/contractors/profileForm'
-import { CONTRACTOR_TRADES } from '@/features/contractors/trades'
+import type { TradeChoice } from '@/features/contractors/trades'
 
 interface TradeFieldsProps {
+  choices: readonly TradeChoice[]
   trades: string[]
   licenses: { trade: string; number: string }[]
 }
 
-export function TradeFields({ trades, licenses }: TradeFieldsProps) {
+export function TradeFields({ choices, trades, licenses }: TradeFieldsProps) {
   const [checked, setChecked] = useState<string[]>(trades)
   const [numbers, setNumbers] = useState<Record<string, string>>(() =>
     Object.fromEntries(licenses.map((l) => [l.trade, l.number])),
@@ -26,7 +27,7 @@ export function TradeFields({ trades, licenses }: TradeFieldsProps) {
         Choose the licensed trades you work in. Leave them all clear if you do general building
         work.
       </p>
-      {CONTRACTOR_TRADES.map((t) => {
+      {choices.map((t) => {
         const on = checked.includes(t.trade)
         return (
           <div key={t.trade} className="space-y-3">

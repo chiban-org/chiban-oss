@@ -1,9 +1,7 @@
-import { NH_CLASSIFICATIONS } from '@packs/nh/classifications'
-import { NH_PACK_MANIFEST } from '@packs/nh/manifest'
-import { NH_STARTERS, type StarterBundle } from '@packs/nh/starters'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { type DocumentItem, documentStageLabel } from '@/features/applications/documentItemSchema'
-import type { BoardKind, ProceedingClassification } from '@/features/packs/schema'
+import { activePack } from '@/features/packs/registry'
+import type { BoardKind, ProceedingClassification, StarterBundle } from '@/features/packs/schema'
 import { generatedFrontMatter } from '@/lib/generatedFrontMatter'
 import { feeLineText, fieldLabels } from './feeText'
 import { escapeText, joinBlocks } from './markdown'
@@ -33,12 +31,18 @@ const DECIDED_BY: ReadonlyMap<BoardKind, string> = new Map([
   ['zba', 'The Zoning Board of Adjustment decides it.'],
 ])
 
-const CLOCK_LABELS: ReadonlyMap<string, string> = new Map(
-  NH_PACK_MANIFEST.rules.flatMap((rule) => (rule.kind === 'clock' ? [[rule.key, rule.label]] : [])),
-)
+function clockLabels(): ReadonlyMap<string, string> {
+  return new Map(
+    activePack().manifest.rules.flatMap((rule) =>
+      rule.kind === 'clock' ? [[rule.key, rule.label]] : [],
+    ),
+  )
+}
 
 function classificationOf(starter: StarterBundle): ProceedingClassification {
-  const found = NH_CLASSIFICATIONS.find((c) => c.key === starter.applicationType.classification)
+  const found = activePack().manifest.classifications.find(
+    (c) => c.key === starter.applicationType.classification,
+  )
   if (found === undefined) {
     throw new AppError(ErrorIds.PACK_INVALID, 'starter names an unknown classification', {
       starter: starter.id,
@@ -63,8 +67,9 @@ function bullets(items: readonly string[]): string {
 
 function deadlinesOf(starter: StarterBundle, classification: ProceedingClassification): string[] {
   const keys = [...classification.mandatoryRuleKeys, ...starter.applicationType.bindings]
+  const labels = clockLabels()
   return [...new Set(keys)].flatMap((key) => {
-    const label = CLOCK_LABELS.get(key)
+    const label = labels.get(key)
     return label === undefined ? [] : [label]
   })
 }
@@ -91,7 +96,8 @@ function starterBlock(starter: StarterBundle): string {
 }
 
 export function renderStarterCatalog(): string {
-  for (const starter of NH_STARTERS) {
+  const starters = activePack().starters
+  for (const starter of starters) {
     const homes = GROUPS.filter((group) => group.includes(classificationOf(starter))).length
     if (homes !== 1) {
       throw new AppError(ErrorIds.PACK_INVALID, 'starter must belong to one catalog group', {
@@ -101,7 +107,7 @@ export function renderStarterCatalog(): string {
     }
   }
   const sections = GROUPS.map((group) => {
-    const members = NH_STARTERS.filter((starter) => group.includes(classificationOf(starter)))
+    const members = starters.filter((starter) => group.includes(classificationOf(starter)))
     return members.length === 0
       ? ''
       : joinBlocks([`## ${group.title}`, ...members.map(starterBlock)]).trimEnd()

@@ -1,17 +1,14 @@
-import { NH_ABUTTER_PARAMS } from '@packs/nh/abutters/params'
+import { primaryAbutterParams } from '@/features/abutters/packParams'
+import { projectionParamsFor } from '@/features/abutters/projection/paramsFor'
 import type { CrossingFeature, ProjectionParams } from '@/features/abutters/projection/types'
 import type { Pt } from '@/features/abutters/projection/vec'
 
-export const PARAMS: ProjectionParams = {
-  simplifyToleranceFt: NH_ABUTTER_PARAMS.simplifyToleranceFt,
-  cornerTurnDeg: NH_ABUTTER_PARAMS.cornerTurnDeg,
-  lineFrontageToleranceFt: 50,
-  areaFrontageToleranceFt: NH_ABUTTER_PARAMS.areaFrontageToleranceFt,
-  parallelToleranceDeg: NH_ABUTTER_PARAMS.parallelToleranceDeg,
-  onFeatureToleranceFt: NH_ABUTTER_PARAMS.onFeatureToleranceFt,
-  maxCrossingFt: NH_ABUTTER_PARAMS.maxCrossingFt,
-  alongDepthFt: NH_ABUTTER_PARAMS.alongDepthFt,
-}
+const LINE_FRONTAGE_TOLERANCE_FT = 50
+
+export const PARAMS: ProjectionParams = projectionParamsFor(
+  primaryAbutterParams(),
+  LINE_FRONTAGE_TOLERANCE_FT,
+)
 
 export function rect(x0: number, x1: number, y0: number, y1: number): Pt[] {
   return [

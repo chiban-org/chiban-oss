@@ -1,4 +1,3 @@
-import { NH_RTK_EXEMPTIONS, OTHER_LAW_EXEMPTION_KEY } from '@packs/nh/rtkExemptions'
 import { z } from 'zod'
 import {
   RTK_RECEIVED_VIA,
@@ -20,6 +19,8 @@ import {
   requiredText,
   wholeNumber,
 } from '@/features/input/schemas'
+import { OTHER_LAW_EXEMPTION_KEY } from '@/features/packs/schema'
+import { exemptionKeys } from '@/features/rtk/exemptions'
 import { RECORDS_COPY } from '@/server/recordsAction'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok } from '@/types/result'
@@ -33,7 +34,6 @@ const CHARGE_ONLY_WITH_MORE_TIME =
   'A charge can only be stated with a response that asks for more time. Clear it or choose that response.'
 const ONLY_WITH_MORE_TIME = 'Leave this blank unless the response asks for more time.'
 const ONLY_WITH_WEBSITE = 'Leave this blank unless the records are posted online.'
-const EXEMPTION_KEYS = [...NH_RTK_EXEMPTIONS.map((e) => e.key), OTHER_LAW_EXEMPTION_KEY] as const
 
 export const requestIdField = () => recordId('a request')
 
@@ -103,23 +103,24 @@ export const denyRequestForm = (today: CivilDate) =>
     deniedOn: civilDate('the date of the denial', { latest: today }),
   })
 
-export const withholdingForm = z
-  .object({
-    requestId: requestIdField(),
-    scope: choice('whether the record is withheld or redacted', RTK_WITHHOLDING_SCOPES),
-    recordDescription: requiredText('which record', { max: 1000 }),
-    exemptionKey: choice('an exemption', EXEMPTION_KEYS),
-    otherCitation: optionalText('the law', { max: 300 }),
-    explanation: requiredText('an explanation', { min: MIN_EXPLANATION, max: 3000 }),
-  })
-  .superRefine((v, ctx) => {
-    if (v.exemptionKey === OTHER_LAW_EXEMPTION_KEY && v.otherCitation === null)
-      ctx.addIssue({
-        code: 'custom',
-        path: ['otherCitation'],
-        message: RECORDS_COPY.citation_required ?? '',
-      })
-  })
+export const withholdingForm = () =>
+  z
+    .object({
+      requestId: requestIdField(),
+      scope: choice('whether the record is withheld or redacted', RTK_WITHHOLDING_SCOPES),
+      recordDescription: requiredText('which record', { max: 1000 }),
+      exemptionKey: choice('an exemption', exemptionKeys()),
+      otherCitation: optionalText('the law', { max: 300 }),
+      explanation: requiredText('an explanation', { min: MIN_EXPLANATION, max: 3000 }),
+    })
+    .superRefine((v, ctx) => {
+      if (v.exemptionKey === OTHER_LAW_EXEMPTION_KEY && v.otherCitation === null)
+        ctx.addIssue({
+          code: 'custom',
+          path: ['otherCitation'],
+          message: RECORDS_COPY.citation_required ?? '',
+        })
+    })
 
 const TICK_ONE = 'Tick at least one approved record to release.'
 const BAD_ITEM = 'Choose approved records to release.'

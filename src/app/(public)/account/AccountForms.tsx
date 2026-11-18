@@ -1,6 +1,7 @@
 import { ActionForm } from '@/components/ActionForm'
 import { AreaField, TextField } from '@/components/staff/fields'
 import type { AccountView } from '@/features/contractors/accountView'
+import { contractorTrades } from '@/features/contractors/trades'
 import { saveContractorAction, savePersonAction } from './profileActions'
 import { TradeFields } from './TradeFields'
 
@@ -83,6 +84,7 @@ export function ContractorForm({ view }: { view: AccountView }) {
         defaultValue={view.mailingAddress ?? ''}
       />
       <TradeFields
+        choices={contractorTrades()}
         trades={trades}
         licenses={
           view.contractor?.licenses.map((l) => ({ trade: l.trade, number: l.number })) ?? []

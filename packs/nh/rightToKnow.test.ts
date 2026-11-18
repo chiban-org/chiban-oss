@@ -1,9 +1,10 @@
-import { NH_RTK_EXEMPTIONS, OTHER_LAW_EXEMPTION_KEY } from '@packs/nh/rtkExemptions'
+import { NH_RTK_EXEMPTIONS } from '@packs/nh/rtkExemptions'
 import { describe, expect, it } from 'vitest'
 import { START_EVENT_LABELS } from '@/features/clocks/explainClock'
 import { computeSubjectDue } from '@/features/clocks/subjectDue'
-import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
+import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { OTHER_LAW_EXEMPTION_KEY } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 
 const d = (s: string) => s as CivilDate
@@ -15,7 +16,7 @@ describe('right-to-know rules', () => {
     const due = computeSubjectDue(rule, d('2027-07-02'), {
       holidays: packHolidayCalendar(),
       packVersion: loadPack().version,
-      citations: PACK_COUNTING_CITATIONS,
+      citations: packCountingCitations(),
     })
     expect(due.due).toBe('2027-07-12')
     expect(due.countingMethod).toContain('5 business days after 2027-07-02')

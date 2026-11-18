@@ -63,7 +63,7 @@ export function ContractorSection({
   licenseRequired: boolean
   licenseGroups: readonly LicenseGroup[]
   defaultLicenseType: string
-  lookup: { label: string; url: string }
+  lookup: { label: string; url: string } | null
   account: { typeKey: string; find: CounterActions['lookupContractor'] }
 }) {
   if (!licenseRequired) {
@@ -92,9 +92,11 @@ export function ContractorSection({
         />
         <TextField label="Note" name="licenseNote" />
       </div>
-      <a href={lookup.url} {...NEW_TAB}>
-        {lookup.label}
-      </a>
+      {lookup === null ? null : (
+        <a href={lookup.url} {...NEW_TAB}>
+          {lookup.label}
+        </a>
+      )}
     </section>
   )
 }

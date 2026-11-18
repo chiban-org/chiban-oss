@@ -1,10 +1,10 @@
-import {
-  NH_STATE_CODE_SECTIONS,
-  stateCodeReference,
-  stateCodeSectionsFor,
-} from '@packs/nh/buildingCodeSections'
+import { NH_STATE_CODE_SECTIONS } from '@packs/nh/buildingCodeSections'
 import { NH_2021_EDITION_KEY, NH_2024_EDITION_KEY, NH_CODE_EDITIONS } from '@packs/nh/codeEditions'
 import { describe, expect, it } from 'vitest'
+import {
+  stateCodeReference,
+  stateCodeSectionsFor,
+} from '@/features/enforcement/sections/stateCodeSections'
 
 describe('the NH state building code starter list', () => {
   it('keeps at most 15 entries per edition', () => {

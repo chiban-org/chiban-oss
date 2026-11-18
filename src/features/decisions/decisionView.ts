@@ -1,4 +1,3 @@
-import { NH_APPEAL_ROUTES } from '@packs/nh/appealRoutes'
 import { and, asc, desc, eq } from 'drizzle-orm'
 import type { GraphNode } from '@/components/appeals/AppealGraph'
 import type { ChecklistItem } from '@/components/notices/NoticeChecklist'
@@ -23,6 +22,7 @@ import { noticeStatus } from '@/features/notices/noticeStatus'
 import { proofMethodLabel } from '@/features/notices/proofMethods'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { activePack } from '@/features/packs/registry'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -90,7 +90,9 @@ async function filingDue(db: Db, applicationId: string, today: string): Promise<
 }
 
 function windowOf(node: typeof appealNodes.$inferSelect): GraphNode['window'] {
-  const route = NH_APPEAL_ROUTES.filter((r) => r.from === node.kind && r.windowRuleKey !== null)
+  const route = activePack().appealRoutes.filter(
+    (r) => r.from === node.kind && r.windowRuleKey !== null,
+  )
   const first = route[0]
   if (first === undefined || first.windowRuleKey === null) return null
   const rule = ruleByKey(loadPack(), first.windowRuleKey)

@@ -21,7 +21,7 @@ import { getList, type ListRow } from './queries'
 import { abutterStrategy } from './registry'
 import type { Recipient } from './resolution'
 import type { Candidate, CrossingKind, StaffSelection } from './types'
-import './registerNh'
+import '@/features/packs/registryAbutters'
 
 export type DraftError = 'forbidden' | 'not_found' | 'not_draft'
 

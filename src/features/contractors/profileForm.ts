@@ -1,8 +1,7 @@
-import type { LicenseTrade } from '@packs/nh/licenseTypes'
 import { z } from 'zod'
 import type { ContractorDetails } from '@/features/contractors/profile'
-import { TRADE_KEYS } from '@/features/contractors/trades'
 import { optionalPhone, optionalText, phone, requiredText } from '@/features/input/schemas'
+import { type LicenseTrade, LICENSE_TRADES as TRADE_KEYS } from '@/features/packs/schema/licenses'
 
 const NAME_MAX = 120
 const ADDRESS_MAX = 300

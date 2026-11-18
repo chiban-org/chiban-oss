@@ -18,7 +18,7 @@ import {
 import { effectiveBindings } from '@/features/config/bindings'
 import { getPublished } from '@/features/config/store'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
-import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
+import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, type Pack, ruleByKey } from '@/features/packs/loadPack'
 import type { ClockRule, StartEvent } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
@@ -135,7 +135,7 @@ export async function createClock(
                 holidays,
               },
               due,
-              PACK_COUNTING_CITATIONS,
+              packCountingCitations(),
             )
           : describeMeetingBound(bound, onDate, length.value),
       computedDue: due.due,

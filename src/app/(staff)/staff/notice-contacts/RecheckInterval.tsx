@@ -5,7 +5,7 @@ import { ActionForm } from '@/components/ActionForm'
 import { publishImpact } from '@/components/config/PublishBar'
 import { FormDialog } from '@/components/FormDialog'
 import { TextField } from '@/components/staff/fields'
-import { isPinnedKind } from '@/features/config/kinds'
+import { isPinnedKind } from '@/features/config/kindNames'
 import { changeRecheckIntervalAction } from './intervalActions'
 
 export const RECHECK_HINT =

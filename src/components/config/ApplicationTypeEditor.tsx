@@ -85,10 +85,7 @@ export function ApplicationTypeEditor({
           onChange={(e) => {
             const chosen = classifications.find((c) => c.key === e.target.value)
             set({
-              classification:
-                e.target.value === ''
-                  ? undefined
-                  : (e.target.value as ApplicationTypeBody['classification']),
+              classification: e.target.value === '' ? undefined : e.target.value,
               bindings: [...new Set([...body.bindings, ...(chosen?.mandatoryRuleKeys ?? [])])],
             })
           }}

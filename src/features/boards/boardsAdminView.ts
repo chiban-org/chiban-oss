@@ -1,10 +1,11 @@
-import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import { and, eq, gte, isNull, or, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import { boardMeetings, boardMemberships } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { BOARD_KIND_BEHAVIOUR } from '@/features/boards/boardKindBehaviour'
 import { allBoards, type BoardRow } from '@/features/boards/townBoards'
+import { activePack } from '@/features/packs/registry'
 import { BOARD_KINDS, type BoardKind } from '@/features/packs/schema'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -33,10 +34,9 @@ export interface BoardsAdminView {
 }
 
 function disabledReason(kind: BoardKind, boards: readonly BoardRow[]): string | null {
-  const traits = BOARD_KIND_TRAITS[kind]
   const held = boards.some((b) => b.kind === kind && b.archivedAt === null)
-  return traits.uniquePerTown && held
-    ? `The town already has an active ${traits.label}. Archive it first to add another.`
+  return BOARD_KIND_BEHAVIOUR[kind].uniquePerTown && held
+    ? `The town already has an active ${activePack().boardKinds[kind].label}. Archive it first to add another.`
     : null
 }
 
@@ -83,7 +83,7 @@ export async function loadBoardsAdminView(
       id: b.id,
       name: b.name,
       shortName: b.shortName,
-      kindText: BOARD_KIND_TRAITS[b.kind].label,
+      kindText: activePack().boardKinds[b.kind].label,
       seated: seated.get(b.id) ?? 0,
       nextMeetingText: nextOn === undefined ? null : formatCivilDate(nextOn),
       active: b.archivedAt === null,
@@ -93,9 +93,9 @@ export async function loadBoardsAdminView(
     rows: [...rows.filter((r) => r.active), ...rows.filter((r) => !r.active)],
     kinds: BOARD_KINDS.map((kind) => ({
       kind,
-      label: BOARD_KIND_TRAITS[kind].label,
-      description: BOARD_KIND_TRAITS[kind].description,
-      defaultShortName: BOARD_KIND_TRAITS[kind].defaultShortName,
+      label: activePack().boardKinds[kind].label,
+      description: activePack().boardKinds[kind].description,
+      defaultShortName: activePack().boardKinds[kind].defaultShortName,
       disabledReason: disabledReason(kind, boards),
     })),
   }

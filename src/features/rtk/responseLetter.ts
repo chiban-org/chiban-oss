@@ -1,4 +1,3 @@
-import { NH_RTK_EXEMPTIONS, OTHER_LAW_EXEMPTION_KEY } from '@packs/nh/rtkExemptions'
 import { asc, eq } from 'drizzle-orm'
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import type { DbOrTx } from '@/db/client'
@@ -10,8 +9,10 @@ import {
   rtkTimeStatements,
   rtkWithholdings,
 } from '@/db/schema'
+import { OTHER_LAW_EXEMPTION_KEY } from '@/features/packs/schema'
 import { documentFrame } from '@/features/pdf/documentFrame'
 import type { PdfBlock } from '@/features/pdf/renderPdf'
+import { OTHER_LAW_EXEMPTION_LABEL, packExemptions } from '@/features/rtk/exemptions'
 import { publishedTemplate } from '@/features/templates/findTemplate'
 import { type DocumentInput, renderDocumentOrDefault } from '@/features/templates/templateBlocks'
 import { formatCivilDate } from '@/lib/formatDate'
@@ -24,9 +25,9 @@ export function exemptionLabel(w: Pick<Withholding, 'exemptionKey' | 'otherCitat
   citation: string
 } {
   if (w.exemptionKey === OTHER_LAW_EXEMPTION_KEY) {
-    return { label: 'Made confidential by another law', citation: w.otherCitation ?? '' }
+    return { label: OTHER_LAW_EXEMPTION_LABEL, citation: w.otherCitation ?? '' }
   }
-  const found = NH_RTK_EXEMPTIONS.find((e) => e.key === w.exemptionKey)
+  const found = packExemptions().find((e) => e.key === w.exemptionKey)
   return { label: found?.label ?? w.exemptionKey, citation: found?.citation.label ?? '' }
 }
 

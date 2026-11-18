@@ -69,6 +69,12 @@ Optional. No default. Text.
 
 The application image reference, pinned by digest. The bundled Compose file sets it from `CHIBAN_IMAGE`. Anonymous complaint intake opens only when a passing verification exists for this exact image.
 
+### `CHIBAN_PACK`
+
+Optional. Default: `nh`. Text matching `^[a-z][a-z0-9]*$`.
+
+The id of the state pack the application, the worker and the command-line tools load, such as `nh`. It is read when the server runs, not when the image is built, and an id no pack has stops the first request that needs the pack. Blank means `nh`.
+
 ### `MAX_UPLOAD_BYTES`
 
 Optional. Default: `104857600`. Whole number greater than zero.

@@ -19,7 +19,7 @@ import { type MotionBlock, motionBlocks } from '@/features/enforcement/motionGat
 import { enforcementRulesFor } from '@/features/enforcement/ruleLinks'
 import { loadServiceState, orderRule, statusOf } from '@/features/enforcement/service'
 import { type StayState, stayFor } from '@/features/enforcement/stay'
-import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
+import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack } from '@/features/packs/loadPack'
 import { type ClockRule, civilDateSchema } from '@/features/packs/schema'
 import { townToday } from '@/features/town/today'
@@ -108,7 +108,7 @@ function judgmentAppealDue(rule: ClockRule, on: CivilDate): SubjectDue {
   return computeSubjectDue(rule, on, {
     holidays: packHolidayCalendar(),
     packVersion: loadPack().version,
-    citations: PACK_COUNTING_CITATIONS,
+    citations: packCountingCitations(),
   })
 }
 

@@ -1,0 +1,48 @@
+import type { PackRule } from '@/features/packs/schema'
+
+const PERMIT_ACT = 'https://laws.example/vellmora/permit-act'
+const RECORDS_ACT = 'https://laws.example/vellmora/records-act'
+
+export const XX_RULES: PackRule[] = [
+  {
+    kind: 'clock',
+    key: 'xx.bp.decision',
+    version: 1,
+    label: 'Building permit decision deadline',
+    citation: { label: 'Vellmora Permit Act 4', url: PERMIT_ACT },
+    clockType: 'action_due',
+    whose: 'official',
+    startEvent: 'application_completed',
+    length: { unit: 'days', value: 21 },
+    direction: 'after',
+    consequence: { kind: 'none_stated', text: 'The act states no consequence.' },
+    extension: { allowed: false, note: 'The act provides no extension.' },
+    waivable: false,
+    overridePolicy: { policy: 'fixed' },
+  },
+  {
+    kind: 'clock',
+    key: 'xx.rtk.response',
+    version: 1,
+    label: 'First response to a records request',
+    citation: { label: 'Vellmora Records Act 2', url: RECORDS_ACT },
+    clockType: 'action_due',
+    whose: 'official',
+    startEvent: 'rtk_request_received',
+    length: { unit: 'business_days', value: 10 },
+    direction: 'after',
+    consequence: { kind: 'none_stated', text: 'The request shows as overdue.' },
+    extension: { allowed: false, note: 'The act provides no extension.' },
+    waivable: false,
+    overridePolicy: { policy: 'fixed' },
+  },
+  {
+    kind: 'effect',
+    key: 'xx.appeal.suspension',
+    version: 1,
+    label: 'Held while an appeal is heard',
+    citation: { label: 'Vellmora Permit Act 9', url: PERMIT_ACT },
+    effect: 'suspend_on_appeal_of_issuance',
+    overridePolicy: { policy: 'fixed' },
+  },
+]

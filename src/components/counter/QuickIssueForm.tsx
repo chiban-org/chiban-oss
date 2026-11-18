@@ -41,7 +41,7 @@ interface Props {
   licenseRequired: boolean
   licenseGroups: readonly LicenseGroup[]
   defaultLicenseType: string | null
-  lookup: { label: string; url: string }
+  lookup: { label: string; url: string } | null
   actions: CounterActions
 }
 

@@ -3,7 +3,7 @@ import type { DbOrTx } from '@/db/client'
 import { applications, projects, reviewAssignments, users } from '@/db/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { CoreState } from '@/features/applications/states'
-import { substepLabel } from '@/features/applications/statusText'
+import { applicationStatusText, substepLabel } from '@/features/applications/statusText'
 import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
 import { defaultSort, type SortState } from '@/features/dataTable/sort'
@@ -60,6 +60,7 @@ export interface WorkQueueRow {
   state: CoreState
   substep: string | null
   substepLabel: string | null
+  statusText: string
   parcelId: string
   parcelDisplayId: string | null
   nextDue: CivilDate | null
@@ -235,6 +236,7 @@ export async function listWorkQueue(
         state: r.state as CoreState,
         substep: r.substep,
         substepLabel: r.substep === null ? null : substepLabel(r.substep, type?.substeps ?? []),
+        statusText: applicationStatusText(r.state as CoreState, r.substep, type?.substeps ?? []),
         parcelId: r.parcelId,
         parcelDisplayId: display.get(r.parcelId) ?? null,
         nextDue,

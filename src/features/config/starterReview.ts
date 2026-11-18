@@ -1,4 +1,3 @@
-import { NH_STARTERS } from '@packs/nh/starters'
 import { isNotNull } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { configVersions } from '@/db/schema'
@@ -6,6 +5,7 @@ import { membersInOrder } from '@/features/config/adoptStarter'
 import type { ConfigKind } from '@/features/config/kinds'
 import { type DiffEntry, starterDiff } from '@/features/config/starterDiff'
 import { getPublished } from '@/features/config/store'
+import { activePack } from '@/features/packs/registry'
 
 export interface ReviewBundle {
   starterId: string
@@ -37,7 +37,7 @@ export async function loadStarterReviews(db: DbOrTx, signal: AbortSignal): Promi
     const id = `${r.starterId}/${r.kind}/${r.key}`
     recordedVersions.set(id, Math.max(recordedVersions.get(id) ?? 0, r.version ?? 0))
   }
-  for (const starter of NH_STARTERS) {
+  for (const starter of activePack().starters) {
     if (!adopted.has(starter.id)) continue
     const members: ReviewBundle['members'] = []
     for (const member of membersInOrder(starter)) {

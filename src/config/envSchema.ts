@@ -95,6 +95,13 @@ const envShape = z.object({
   CHIBAN_ACTIVE_KEY_ID: z.string().regex(KEY_ID),
   CHIBAN_IMAGE_REF: z.string().min(1).optional(),
   CHIBAN_TERMS_FILE: z.string().optional(),
+  CHIBAN_PACK: z.preprocess(
+    blankAsUnset,
+    z
+      .string()
+      .regex(/^[a-z][a-z0-9]*$/)
+      .default('nh'),
+  ),
   USPS_CLIENT_ID: optionalSecret,
   USPS_CLIENT_SECRET: optionalSecret,
   USPS_API_BASE: z.preprocess(blankAsUnset, z.url().default('https://apis.usps.com')),

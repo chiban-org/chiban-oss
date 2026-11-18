@@ -4,7 +4,7 @@ import { computeRuleDue, resolveRuleLength } from '@/features/clocks/ruleEngine'
 import type { ProjectFacts } from '@/features/forms/validateSubmission'
 import type { NoticeChannel } from '@/features/notices/channels'
 import { applies } from '@/features/notices/requirementsFor'
-import { PACK_COUNTING_CITATIONS, packHolidayCalendar } from '@/features/packs/holidays'
+import { packCountingCitations, packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import type { NoticeRequirementRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
@@ -59,7 +59,7 @@ export function planRequirement(
         holidays,
       },
       { due, rolledFrom: null },
-      PACK_COUNTING_CITATIONS,
+      packCountingCitations(),
     ),
     channel: channelOf(rule, input.publicChoice),
     recipients: rule.recipients,

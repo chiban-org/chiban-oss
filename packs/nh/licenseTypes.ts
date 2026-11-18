@@ -1,15 +1,7 @@
 import { ELECTRICAL_STARTER } from '@packs/nh/starters/electrical'
 import { MECHANICAL_GAS_STARTER } from '@packs/nh/starters/mechanicalGas'
 import { PLUMBING_STARTER } from '@packs/nh/starters/plumbing'
-
-export type LicenseTrade = 'electrical' | 'plumbing' | 'fuelGas' | 'oilHeating'
-
-export interface LicenseTypeGroup {
-  trade: LicenseTrade
-  label: string
-  source: string
-  licenses: readonly string[]
-}
+import type { LicenseLookup, LicenseTypeGroup } from '@/features/packs/schema'
 
 export const NH_LICENSE_TYPES: readonly LicenseTypeGroup[] = [
   {
@@ -61,4 +53,9 @@ const DEFAULT_BY_TYPE: ReadonlyMap<string, string> = new Map([
 
 export function nhDefaultLicenseType(applicationTypeKey: string): string | null {
   return DEFAULT_BY_TYPE.get(applicationTypeKey) ?? null
+}
+
+export const NH_LICENSE_LOOKUP: LicenseLookup = {
+  label: 'NH license verification search',
+  url: 'https://forms.nh.gov/licenseverification/Search.aspx',
 }

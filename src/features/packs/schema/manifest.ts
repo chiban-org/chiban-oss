@@ -1,7 +1,17 @@
 import { z } from 'zod'
-import { AbutterParamsSchema, ProceedingClassificationSchema } from './boards'
+import {
+  type AbutterParams,
+  AbutterParamsSchema,
+  type ProceedingClassification,
+  ProceedingClassificationSchema,
+} from './boards'
 import { CeaseAndDesistRuleSchema, CivilPenaltyRuleSchema } from './enforcement'
-import { CodeEditionEntrySchema, RecordSeriesSchema } from './records'
+import {
+  type CodeEditionEntry,
+  CodeEditionEntrySchema,
+  type RecordSeries,
+  RecordSeriesSchema,
+} from './records'
 import {
   ClockRuleSchema,
   EffectRuleSchema,
@@ -70,3 +80,17 @@ export const PackManifestSchema = z
     }
   })
 export type PackManifestData = z.infer<typeof PackManifestSchema>
+
+export interface PackManifest {
+  id: string
+  version: string
+  rules: PackRule[]
+  classifications: ProceedingClassification[]
+  codeEditions: CodeEditionEntry[]
+  recordSeries: RecordSeries[]
+  recordSeriesDefaults: {
+    byClassification: Record<string, string>
+    byApplicationType: Record<string, string>
+  }
+  abutterParams: AbutterParams[]
+}

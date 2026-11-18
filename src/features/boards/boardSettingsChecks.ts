@@ -1,4 +1,4 @@
-import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
+import { BOARD_KIND_BEHAVIOUR } from '@/features/boards/boardKindBehaviour'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
 import type { BoardRow } from '@/features/boards/townBoards'
 import type { PublishError } from '@/features/config/publishChecks'
@@ -74,7 +74,7 @@ function entryIssue(entries: Board[], active: BoardRow[]): PublishError | null {
     }
     seen.add(entry.boardId)
   }
-  const missing = active.find((b) => BOARD_KIND_TRAITS[b.kind].holdsHearings && !seen.has(b.id))
+  const missing = active.find((b) => BOARD_KIND_BEHAVIOUR[b.kind].holdsHearings && !seen.has(b.id))
   if (missing !== undefined) {
     return {
       invalid: [{ path: 'boards', message: `Add the notice settings for the ${missing.name}.` }],
@@ -95,7 +95,7 @@ export function checkBoardSettings(
   for (const entry of body.boards) {
     if (entry.filingLeadDays === null) continue
     const board = active.find((b) => b.id === entry.boardId)
-    if (board === undefined || !BOARD_KIND_TRAITS[board.kind].hasFilingLead) {
+    if (board === undefined || !BOARD_KIND_BEHAVIOUR[board.kind].hasFilingLead) {
       return {
         invalid: [{ path: 'boards', message: 'Only the Planning Board has a filing lead time.' }],
       }

@@ -1,4 +1,3 @@
-import { BOARD_KIND_TRAITS } from '@packs/nh/boardSchema'
 import { and, asc, eq, inArray, isNull, ne, notInArray, or, sql } from 'drizzle-orm'
 import type { Db } from '@/db/client'
 import {
@@ -13,6 +12,7 @@ import { stateLabel } from '@/features/applications/stateLabel'
 import { type CoreState, TERMINAL_STATES } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { BOARD_KIND_BEHAVIOUR } from '@/features/boards/boardKindBehaviour'
 import { boardOfApplication } from '@/features/boards/boardOf'
 import { activeBoards, boardLabel } from '@/features/boards/townBoards'
 import type { BoardKind } from '@/features/packs/schema'
@@ -78,7 +78,7 @@ async function applicationLines(
   today: string,
   signal: AbortSignal,
 ): Promise<BoardApplicationLine[]> {
-  if (!BOARD_KIND_TRAITS[boardKind].decidesApplications) return []
+  if (!BOARD_KIND_BEHAVIOUR[boardKind].decidesApplications) return []
   const rows = await db
     .select({
       row: applications,
