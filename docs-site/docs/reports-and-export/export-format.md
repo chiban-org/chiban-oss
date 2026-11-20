@@ -470,7 +470,7 @@ File: `data/board_decisions.ndjson`. Ordered by id.
 
 - `id`: uuid
 - `application_id`: uuid
-- `hearing_id`: uuid
+- `hearing_id`: uuid, nullable
 - `meeting_id`: uuid
 - `voted_on`: date
 - `outcome`: text

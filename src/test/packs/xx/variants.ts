@@ -44,3 +44,25 @@ export const XX_NO_BUILDING: StatePack = xxPackWith({
   },
   pack: { ruleAreas: [{ title: 'All rules', rules: withoutBuilding }] },
 })
+
+export const XX_PB_SUBDIVISION_KEY = 'xx.pb_subdivision'
+
+export const XX_OPTIONAL_HEARING: StatePack = xxPackWith({
+  manifest: {
+    classifications: [
+      ...XX_PACK.manifest.classifications,
+      {
+        key: XX_PB_SUBDIVISION_KEY,
+        label: 'Subdivision',
+        mandatoryRuleKeys: [],
+        boardKind: 'planning_board',
+        abutters: null,
+        noticeRequirementKeys: [],
+        requiredSubsteps: [],
+        directIssueAllowed: false,
+        hearing: 'optional',
+        appealRights: 'A decision may be appealed under Vellmora Permit Act 9.',
+      },
+    ],
+  },
+})

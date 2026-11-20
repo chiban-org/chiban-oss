@@ -7,6 +7,8 @@ import type { ApplicationHearingsPanel } from '@/features/hearings/applicationPa
 import { reviewChipStatus, reviewStatusLabel } from '@/features/reviews/statusLabels'
 import { formatCivilDate } from '@/lib/formatDate'
 import { routeToTrcAction, scheduleHearingAction } from '../../boards/hearings/actions'
+import { DecisionFields } from '../../boards/hearings/DecisionFields'
+import { recordDecisionWithoutHearingAction } from '../../boards/hearings/decisionActions'
 
 function noHearingText(meetingOnBoard: boolean): string {
   return meetingOnBoard
@@ -58,6 +60,31 @@ export function HearingsPanel({
               ])}
             />
             <SelectField label="Kind" name="kind" options={data.scheduleKinds} />
+          </ActionForm>
+        </details>
+      ) : null}
+      {data.noHearing ? (
+        <details>
+          <summary>Record a decision without a hearing</summary>
+          <ActionForm
+            action={recordDecisionWithoutHearingAction}
+            submitLabel="Record decision"
+            confirm={{
+              title: "Record the board's decision?",
+              body: 'The outcome, votes and findings become the decision of record for this application.',
+              confirmLabel: 'Record decision',
+              tone: 'default',
+            }}
+            variant="default"
+            className="max-w-2xl"
+          >
+            <input type="hidden" name="applicationId" value={data.applicationId} />
+            <SelectField
+              label="Meeting"
+              name="meetingId"
+              options={data.noHearing.meetings.map((m): [string, string] => [m.id, m.text])}
+            />
+            <DecisionFields seated={data.noHearing.seatedMembers} today={data.noHearing.today} />
           </ActionForm>
         </details>
       ) : null}

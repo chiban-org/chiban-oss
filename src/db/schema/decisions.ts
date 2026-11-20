@@ -23,9 +23,7 @@ export const boardDecisions = pgTable(
     applicationId: uuid('application_id')
       .notNull()
       .references(() => applications.id),
-    hearingId: uuid('hearing_id')
-      .notNull()
-      .references(() => hearings.id),
+    hearingId: uuid('hearing_id').references(() => hearings.id),
     meetingId: uuid('meeting_id')
       .notNull()
       .references(() => boardMeetings.id),

@@ -104,6 +104,7 @@ function planning(key: ProceedingClassification['key'], label: string, keys: str
       { state: 'under_review', key: 'hearing' },
     ],
     directIssueAllowed: false,
+    hearing: 'required',
     appealRights: PB_APPEAL_RIGHTS,
   } satisfies ProceedingClassification
 }
@@ -118,6 +119,7 @@ function zba(key: ProceedingClassification['key'], label: string, keys: string[]
     noticeRequirementKeys: ZBA_NOTICE_REQUIREMENTS,
     requiredSubsteps: [{ state: 'under_review', key: 'hearing' }],
     directIssueAllowed: false,
+    hearing: 'required',
     appealRights: ZBA_APPEAL_RIGHTS,
   } satisfies ProceedingClassification
 }
@@ -141,6 +143,7 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     noticeRequirementKeys: [],
     requiredSubsteps: [],
     directIssueAllowed: true,
+    hearing: 'required',
     appealRights: '',
   },
   {
@@ -152,6 +155,7 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     noticeRequirementKeys: [],
     requiredSubsteps: [],
     directIssueAllowed: true,
+    hearing: 'required',
     appealRights: '',
   },
   planning('nh.pb_site_plan', 'Site plan review', PB_PLAN_KEYS),
@@ -175,6 +179,7 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     noticeRequirementKeys: [],
     requiredSubsteps: [],
     directIssueAllowed: false,
+    hearing: 'required',
     appealRights: ZBA_APPEAL_RIGHTS,
   },
   {
@@ -186,6 +191,7 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     noticeRequirementKeys: [],
     requiredSubsteps: [],
     directIssueAllowed: true,
+    hearing: 'required',
     appealRights: '',
   },
   {
@@ -197,6 +203,7 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     noticeRequirementKeys: [],
     requiredSubsteps: [],
     directIssueAllowed: true,
+    hearing: 'required',
     appealRights: '',
   },
   {
@@ -214,6 +221,7 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     noticeRequirementKeys: [],
     requiredSubsteps: [],
     directIssueAllowed: false,
+    hearing: 'required',
     appealRights: '',
   },
   {
@@ -231,6 +239,7 @@ export const NH_CLASSIFICATIONS: ProceedingClassification[] = [
     noticeRequirementKeys: [],
     requiredSubsteps: [],
     directIssueAllowed: false,
+    hearing: 'required',
     appealRights: '',
   },
 ]

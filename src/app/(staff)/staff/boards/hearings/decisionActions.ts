@@ -15,6 +15,7 @@ import {
   DECISION_ONLY_FORM,
   FILE_DECISION_FORM,
   RECORD_DECISION_FORM,
+  RECORD_DECISION_NO_HEARING_FORM,
   RECORD_DELIVERY_FORM,
 } from './forms'
 
@@ -32,6 +33,29 @@ export async function recordDecisionAction(formData: FormData): Promise<ActionRe
       )
       return errorOrField(recorded, 'Decision recorded. The filing deadline has started.', {
         future_date: 'votedOn',
+      })
+    },
+  )
+}
+
+export async function recordDecisionWithoutHearingAction(
+  formData: FormData,
+): Promise<ActionResult> {
+  return await runStaffForm(
+    formData,
+    RECORD_DECISION_NO_HEARING_FORM,
+    async ({ db, actor, signal }, input) => {
+      const { reasons, ...rest } = input
+      const recorded = await recordDecision(
+        db,
+        actor,
+        { ...rest, hearingId: null, reasonsForDisapproval: reasons ?? '' },
+        signal,
+      )
+      return errorOrField(recorded, 'Decision recorded. The filing deadline has started.', {
+        future_date: 'votedOn',
+        before_meeting: 'votedOn',
+        not_found: 'meetingId',
       })
     },
   )

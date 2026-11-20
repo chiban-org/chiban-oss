@@ -72,6 +72,8 @@ const COPY: Record<string, string> = {
     'Choose a file uploaded as the minutes, certificate, or receipt, not the application or a generated notice.',
   item_not_found: 'Choose at least one notice item.',
   hearing_not_held: 'The hearing has not been held yet.',
+  hearing_required: 'This kind of application needs a hearing before a decision.',
+  meeting_required: 'Choose the meeting the decision was made at.',
   votes_inconsistent: 'The member votes do not add up to the totals.',
   already_filed: 'This decision has already been filed.',
   no_written_decision: 'Generate the Notice of Decision before filing.',

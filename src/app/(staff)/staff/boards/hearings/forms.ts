@@ -88,9 +88,8 @@ const votes = () =>
     return parsed === null ? err(VOTES_COPY) : ok(parsed)
   })
 
-export const RECORD_DECISION_FORM = z.object({
+const DECISION_FIELDS = {
   applicationId: recordId('an application'),
-  hearingId: hearingId(),
   votedOn: civilDate('the date of the vote'),
   outcome: choice('an outcome', DECISION_OUTCOMES),
   motion: requiredText('the motion', { max: 2000 }),
@@ -100,6 +99,13 @@ export const RECORD_DECISION_FORM = z.object({
     parseConditions(v ?? ''),
   ),
   reasons: optionalText('the reasons', { max: 10000 }),
+}
+
+export const RECORD_DECISION_FORM = z.object({ ...DECISION_FIELDS, hearingId: hearingId() })
+
+export const RECORD_DECISION_NO_HEARING_FORM = z.object({
+  ...DECISION_FIELDS,
+  meetingId: meetingId(),
 })
 
 export const DECISION_ONLY_FORM = z.object({ decisionId: decisionId() })
