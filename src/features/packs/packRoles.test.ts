@@ -15,6 +15,21 @@ describe('pack roles', () => {
     expect(issuesOf(XX_PACK_MANIFEST)).toEqual([])
   })
 
+  it('rejects a deemed_refused clock that is not an action_due clock', () => {
+    const rules = XX_PACK_MANIFEST.rules.map((r) =>
+      r.key === 'xx.bp.decision' && r.kind === 'clock'
+        ? {
+            ...r,
+            clockType: 'filing_window' as const,
+            consequence: { kind: 'deemed_refused' as const, text: 'Silence is a refusal.' },
+          }
+        : r,
+    )
+    expect(issuesOf({ ...XX_PACK_MANIFEST, rules })).toContain(
+      'clock xx.bp.decision is deemed_refused and must be an action_due clock',
+    )
+  })
+
   it('rejects a rule role that names no rule', () => {
     const roles = XX_PACK_MANIFEST.roles
     const broken = {

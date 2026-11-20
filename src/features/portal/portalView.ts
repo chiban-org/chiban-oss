@@ -100,7 +100,10 @@ function recordFacts(app: ApplicationContext, projectTitle: string, mayEnd: bool
   }
 }
 
-async function decisionDue(db: Db, applicationId: string, signal: AbortSignal) {
+const DECISION_PENDING_STATES = ['submitted', 'under_review']
+
+async function decisionDue(db: Db, applicationId: string, state: string, signal: AbortSignal) {
+  if (!DECISION_PENDING_STATES.includes(state)) return null
   const [clock] = await db
     .select()
     .from(clocks)
@@ -244,7 +247,7 @@ export async function getPortalApplicationView(
     values: Object.fromEntries(Object.entries(app.values).filter(([k]) => !staffKeys.has(k))),
     attestationText: app.typeBody.attestationText,
     attestationSha256: attestationHash(app.typeBody.attestationText),
-    decisionDue: await decisionDue(db, applicationId, signal),
+    decisionDue: await decisionDue(db, applicationId, app.state, signal),
     record: recordFacts(app, project?.title ?? app.number, mayEnd),
     conditions: conditions.map((c) => ({ text: c.textSnapshot, status: c.status })),
     documents: (

@@ -1,5 +1,4 @@
 import { and, eq, inArray, lt } from 'drizzle-orm'
-import { AppError, ErrorIds } from '@/constants/errorIds'
 import { JOB_NAMES } from '@/constants/jobNames'
 import type { Db, Tx } from '@/db/client'
 import { applications, clocks, decisionNotices, deemedRefusals, documents } from '@/db/schema'
@@ -118,10 +117,11 @@ async function refuse(
   found: { clock: typeof clocks.$inferSelect; app: typeof applications.$inferSelect },
   today: CivilDate,
   signal: AbortSignal,
-): Promise<void> {
+  move: typeof transitionApplication,
+): Promise<string | null> {
   const { clock, app } = found
   await tx.update(clocks).set({ status: 'lapsed' }).where(eq(clocks.id, clock.id))
-  const moved = await transitionApplication(
+  const moved = await move(
     tx,
     SYSTEM_ACTOR,
     {
@@ -134,10 +134,8 @@ async function refuse(
     signal,
   )
   if (!moved.ok) {
-    throw new AppError(
-      ErrorIds.DB_INVARIANT,
-      `deemed refusal of ${app.id} failed: ${JSON.stringify(moved.error)}`,
-    )
+    await tx.update(clocks).set({ status: clock.status }).where(eq(clocks.id, clock.id))
+    return `${app.id}: ${JSON.stringify(moved.error)}`
   }
   await tx.insert(deemedRefusals).values({
     applicationId: app.id,
@@ -162,13 +160,15 @@ async function refuse(
     { applicationId: app.id, occurredOn: today, createdBy: null },
     signal,
   )
+  return null
 }
 
 export async function refuseBySilence(
   tx: Tx,
   today: CivilDate,
   signal: AbortSignal,
-): Promise<{ refused: string[]; noticeOverdue: string[] }> {
+  move: typeof transitionApplication = transitionApplication,
+): Promise<{ refused: string[]; noticeOverdue: string[]; failures: string[] }> {
   signal.throwIfAborted()
   const past = await tx
     .select({ clock: clocks, state: applications.state })
@@ -177,6 +177,7 @@ export async function refuseBySilence(
     .where(and(inArray(clocks.status, [...OPEN_CLOCK]), lt(clocks.currentDue, today)))
   const refused: string[] = []
   const noticeOverdue: string[] = []
+  const failures: string[] = []
   for (const { clock, state } of past) {
     if (!isDeemedRefused(clock.ruleKey, clock.ruleVersion)) continue
     if (OWED.includes(state)) {
@@ -186,8 +187,9 @@ export async function refuseBySilence(
     if (!REFUSABLE.includes(state)) continue
     const found = await lockedCandidate(tx, clock.id, clock.applicationId, today)
     if (found === null || !REFUSABLE.includes(found.app.state)) continue
-    await refuse(tx, found, today, signal)
-    refused.push(clock.applicationId)
+    const failure = await refuse(tx, found, today, signal, move)
+    if (failure === null) refused.push(clock.applicationId)
+    else failures.push(failure)
   }
-  return { refused, noticeOverdue }
+  return { refused, noticeOverdue, failures }
 }

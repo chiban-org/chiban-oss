@@ -14,6 +14,7 @@ import { recordDecisionNotice, refuseBySilence } from '@/features/applications/d
 import { transitionApplication } from '@/features/applications/transition'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { setActivePackForTest } from '@/features/packs/registry'
+import { getPortalApplicationView } from '@/features/portal/portalView'
 import { clocksDailyJob } from '@/jobs/clocksDaily'
 import { runJob } from '@/jobs/defineJob'
 import { makeApplication, type PermitWorld, setupPermitWorld } from '@/test/applicationFixtures'
@@ -122,7 +123,11 @@ async function record(applicationId: string, mailedOn: string) {
 }
 
 const sweep = (today: CivilDate) =>
-  handle.db.transaction((tx) => refuseBySilence(tx, today, signal))
+  handle.db.transaction(async (tx) => {
+    const { failures, ...rest } = await refuseBySilence(tx, today, signal)
+    expect(failures).toEqual([])
+    return rest
+  })
 
 describe('refusal by silence', () => {
   it('refuses an application with no written decision notice the day after its clock runs out', async () => {
@@ -269,6 +274,48 @@ describe('refusal by silence', () => {
       NOW,
     )
     expect(result).toEqual({ ok: false, error: 'forbidden' })
+  })
+})
+
+describe('refusal edge cases', () => {
+  it('refuses an application still in submitted', async () => {
+    const { applicationId } = await clockedApp('submitted')
+    expect((await sweep(DAY_AFTER)).refused).toEqual([applicationId])
+    expect((await appOf(applicationId))?.state).toBe('denied')
+  })
+
+  it('collects a failed refusal, restores the clock and leaves the application alone', async () => {
+    const { applicationId } = await clockedApp()
+    await handle.db
+      .update(clocks)
+      .set({ status: 'overdue' })
+      .where(eq(clocks.applicationId, applicationId))
+    const failing = () => Promise.resolve({ ok: false as const, error: 'stale_version' as const })
+    const result = await handle.db.transaction((tx) =>
+      refuseBySilence(tx, DAY_AFTER, signal, failing),
+    )
+    expect(result.refused).toEqual([])
+    expect(result.failures).toHaveLength(1)
+    expect((await clockOf(applicationId))?.status).toBe('overdue')
+    expect((await appOf(applicationId))?.state).toBe('under_review')
+    expect(await handle.db.select().from(deemedRefusals)).toEqual([])
+    expect((await sweep(DAY_AFTER)).refused).toEqual([applicationId])
+  })
+
+  it('shows no decision deadline on the portal for an issued permit still owed its notice', async () => {
+    const { applicationId } = await clockedApp('under_review')
+    await handle.db
+      .update(clocks)
+      .set({ currentDue: '2020-01-01' })
+      .where(eq(clocks.applicationId, applicationId))
+    const open = await getPortalApplicationView(handle.db, world.applicant, applicationId, signal)
+    expect(open.ok && open.value.decisionDue?.late).toBe(true)
+    await handle.db
+      .update(applications)
+      .set({ state: 'issued' })
+      .where(eq(applications.id, applicationId))
+    const view = await getPortalApplicationView(handle.db, world.applicant, applicationId, signal)
+    expect(view.ok && view.value.decisionDue).toBeNull()
   })
 })
 
