@@ -3,7 +3,6 @@ import { extensionPolicyText } from '@/features/clocks/explainClock'
 import { OUTCOME_LABELS } from '@/features/decisions/labels'
 import { activePack } from '@/features/packs/registry'
 import type {
-  BoardKind,
   ClockLength,
   ClockRule,
   DecisionOutcome,
@@ -11,14 +10,26 @@ import type {
   PackRule,
   StartEvent,
 } from '@/features/packs/schema'
+import { boardLabel } from '@/features/packs/vocabulary'
 import { formatCivilDateWithWeekday } from '@/lib/formatDate'
 import { generatedFrontMatter } from '@/lib/generatedFrontMatter'
 import { escapeText, joinBlocks, listInWords, table } from './markdown'
 
-const DIR = 'docs-site/docs/state-packs/new-hampshire/_generated'
-export const CLOCKS_PATH = `${DIR}/clocks.md`
-export const HOLIDAYS_PATH = `${DIR}/holidays.md`
-export const OTHER_RULES_PATH = `${DIR}/other-rules.md`
+export function generatedDir(): string {
+  return `docs-site/docs/state-packs/${activePack().docsSlug}/_generated`
+}
+
+export function clocksPath(): string {
+  return `${generatedDir()}/clocks.md`
+}
+
+export function holidaysPath(): string {
+  return `${generatedDir()}/holidays.md`
+}
+
+export function otherRulesPath(): string {
+  return `${generatedDir()}/other-rules.md`
+}
 
 export const HOLIDAY_YEARS = [2026, 2027, 2028] as const
 
@@ -50,11 +61,6 @@ const WHOSE: Record<ClockRule['whose'], string> = {
 function outcomeText(outcome: DecisionOutcome): string {
   return OUTCOME_LABELS[outcome].toLowerCase()
 }
-
-const BOARDS: ReadonlyMap<BoardKind, string> = new Map([
-  ['planning_board', 'Planning Board'],
-  ['zba', 'Zoning Board of Adjustment'],
-])
 
 function factText(fact: FactCondition): string {
   switch (fact.fact) {
@@ -97,7 +103,7 @@ function lengthText(rule: ClockRule): string {
     return `${amount(length.otherwise, 'days')} ${anchor}; ${cases.join('; ')}.`
   }
   if ('earlierOfNextRegularMeeting' in length) {
-    const board = BOARDS.get(length.earlierOfNextRegularMeeting.boardKind) ?? 'board'
+    const board = boardLabel(length.earlierOfNextRegularMeeting.boardKind)
     return `${amount(length.value, length.unit)} ${anchor}, or the next regular ${board} meeting that notice can still be given for, whichever comes first.`
   }
   return `${amount(length.value, length.unit)} ${anchor}.`
@@ -152,12 +158,15 @@ function assertGroupsCoverManifest(): void {
   }
 }
 
-const SOURCES = [
-  'packs/nh/manifest.ts',
-  'packs/nh/rules',
-  'packs/nh/countingCitations.ts',
-  'src/features/clocks/explainClock.ts',
-]
+function packSources(): string[] {
+  const root = `packs/${activePack().manifest.id}`
+  return [
+    `${root}/manifest.ts`,
+    `${root}/rules`,
+    `${root}/countingCitations.ts`,
+    'src/features/clocks/explainClock.ts',
+  ]
+}
 
 export function renderClocks(): string {
   assertGroupsCoverManifest()
@@ -167,7 +176,7 @@ export function renderClocks(): string {
       ? ''
       : joinBlocks([`## ${group.title}`, ...clocks.map(clockBlock)]).trimEnd()
   })
-  return `${generatedFrontMatter({ sources: SOURCES })}${joinBlocks(sections)}`
+  return `${generatedFrontMatter({ sources: packSources() })}${joinBlocks(sections)}`
 }
 
 export function renderOtherRules(): string {
@@ -177,7 +186,7 @@ export function renderOtherRules(): string {
       .filter((rule) => !isClock(rule))
       .map((rule) => [group.title, escapeText(rule.label), citation(rule)]),
   )
-  return `${generatedFrontMatter({ sources: SOURCES })}${joinBlocks([
+  return `${generatedFrontMatter({ sources: packSources() })}${joinBlocks([
     table(['Area', 'Rule', 'Source'], rows),
   ])}`
 }
@@ -193,6 +202,6 @@ export function renderHolidays(): string {
       ]),
   )
   return `${generatedFrontMatter({
-    sources: ['packs/nh/holidays.ts'],
+    sources: [`packs/${activePack().manifest.id}/holidays.ts`],
   })}${joinBlocks([table(['Date', 'Holiday', 'Source'], rows)])}`
 }

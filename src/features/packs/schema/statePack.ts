@@ -72,6 +72,7 @@ export interface RuleArea {
 
 export interface StatePack {
   manifest: PackManifest
+  docsSlug: string
   boardKinds: Readonly<Record<BoardKind, BoardKindNames>>
   classificationKeys: readonly string[]
   starters: readonly StarterBundle[]

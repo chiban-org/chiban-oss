@@ -3,7 +3,7 @@ import path from 'node:path'
 import { describe, expect, it } from 'vitest'
 
 const ROOT = path.resolve(__dirname, '../../..')
-const SCANNED_DIRS = ['src']
+const SCANNED_DIRS = ['src', 'scripts']
 const ALLOWED_PREFIXES = ['src/test/', 'src/features/demo/', 'src/features/packs/probes/']
 const TEST_FILE = /\.test\.tsx?$/
 const SOURCE_FILE = /\.tsx?$/

@@ -22,6 +22,7 @@ const BOARD_KIND_NAMES = Object.fromEntries(
 
 export const XX_PACK: StatePack = {
   manifest: XX_PACK_MANIFEST,
+  docsSlug: 'xx',
   boardKinds: BOARD_KIND_NAMES,
   classificationKeys: XX_PACK_MANIFEST.classifications.map((c) => c.key),
   starters: [],

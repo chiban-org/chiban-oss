@@ -15,6 +15,7 @@ import type { StatePack } from '@/features/packs/schema'
 
 export const NH_PACK: StatePack = {
   manifest: NH_PACK_MANIFEST,
+  docsSlug: 'new-hampshire',
   boardKinds: NH_BOARD_KINDS,
   classificationKeys: CLASSIFICATION_KEYS,
   starters: NH_STARTERS,
