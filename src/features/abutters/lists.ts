@@ -12,6 +12,7 @@ import { TERMINAL_STATES } from '@/features/applications/states'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { getBoardSettings } from '@/features/boards/boardSettings'
+import { loadPack } from '@/features/packs/loadPack'
 import { mayManageAbutters } from '@/features/rosters/manage'
 import { townToday } from '@/features/town/today'
 import { err, ok, type Result } from '@/types/result'
@@ -21,6 +22,7 @@ import { classificationSpec, refreshRecipients, type StoredIncomplete } from './
 import { getList, type ListRow } from './queries'
 import { abutterStrategy } from './registry'
 import type { Recipient } from './resolution'
+import { effectiveBufferFt } from './townBuffer'
 import type { Candidate, CrossingKind, StaffSelection } from './types'
 import '@/features/packs/registryAbutters'
 
@@ -82,6 +84,8 @@ export async function generateList(
               .where(eq(abutterListCandidates.listId, latest.id)),
           )
     const strategy = abutterStrategy(spec.strategyKey)
+    const boardAbutters = (await getBoardSettings(tx, signal)).abutters
+    const abutterParams = loadPack().abutterParams.find((p) => p.key === strategy.key) ?? null
     const selection = await strategy.select(
       tx,
       {
@@ -89,7 +93,7 @@ export async function generateList(
         applicantParcelIds: await applicantParcelIds(tx, app.id, signal),
         staffSelections: carried,
         crossingsAttested: false,
-        settings: (await getBoardSettings(tx, signal)).abutters,
+        settings: boardAbutters,
         now,
       },
       signal,
@@ -121,6 +125,14 @@ export async function generateList(
         drawnOn: await townToday(tx, now, signal),
         layers: selection.layers,
         incomplete,
+        selectionSettings: {
+          projectionEnabled: boardAbutters.projectionEnabled,
+          assumedRightOfWayFt: boardAbutters.assumedRightOfWayFt,
+          bufferFt:
+            abutterParams === null
+              ? null
+              : effectiveBufferFt(boardAbutters.bufferFt, abutterParams),
+        },
         createdBy: actor.userId,
       })
       .returning()

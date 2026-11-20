@@ -1,8 +1,10 @@
+import { createHash } from 'node:crypto'
 import { and, desc, eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { abutterLists } from '@/db/schema'
 import type { Recipient } from '@/features/abutters/resolution'
 import type { Candidate } from '@/features/abutters/types'
+import { canonicalJson } from '@/features/export/canonical'
 import type { HonestValue } from '@/features/honest/honest'
 
 export type ListRow = typeof abutterLists.$inferSelect
@@ -16,6 +18,15 @@ export interface ListSnapshot {
   layers: unknown
   candidates: Candidate[]
   recipients: Recipient[]
+  settings?: {
+    projectionEnabled: boolean
+    assumedRightOfWayFt: number
+    bufferFt: number | null
+  }
+}
+
+export function snapshotHash(snapshot: ListSnapshot): string {
+  return createHash('sha256').update(canonicalJson(snapshot)).digest('hex')
 }
 
 export type IssuedList = Omit<ListRow, 'snapshot'> & { snapshot: ListSnapshot }

@@ -10,15 +10,30 @@ import { XX_PACK_MANIFEST } from './manifest'
 const BOARD_KIND_NAMES = Object.fromEntries(
   BOARD_KINDS.map((kind) => [
     kind,
-    { label: `Vellmora ${kind} body`, defaultShortName: `${kind} body`, description: 'Fictional.' },
+    {
+      label: `Vellmora ${kind} body`,
+      defaultShortName: `${kind} body`,
+      shortLabel: `${kind} board`,
+      abbreviation: `${kind} abbr`,
+      description: 'Fictional.',
+    },
   ]),
 ) as Record<BoardKind, BoardKindNames>
 
 export const XX_PACK: StatePack = {
   manifest: XX_PACK_MANIFEST,
+  docsSlug: 'xx',
   boardKinds: BOARD_KIND_NAMES,
   classificationKeys: XX_PACK_MANIFEST.classifications.map((c) => c.key),
   starters: [],
+  buildingCodes: {
+    choices: [
+      { key: 'xx.code.a', label: 'Vellmora Code A' },
+      { key: 'xx.code.b', label: 'Vellmora Code B' },
+    ],
+    defaultChoice: 'xx.code.a',
+    requiredAbove: { residents: 4000, choice: 'xx.code.b' },
+  },
   inspectionSettingsDefault: {
     key: 'default',
     schedulingDays: [2, 4],
@@ -77,9 +92,17 @@ export const XX_PACK: StatePack = {
     noticeOfViolationIntro: 'Vellmora notice of violation.',
     noticeOfViolationRequest: 'Please call the town.',
   },
+  spatial: { projectedSrid: 3437, label: 'NAD83 / New Hampshire (ftUS)' },
   labels: {
     environmentalAgency: 'Vellmora Water Office',
     environmentalAgencyShort: 'the Water Office',
     stateLicenseNumber: 'Vellmora license number',
+    recordsLaw: 'Open Records',
+    recordsRequest: 'Open Records request',
+    governingBody: 'town council',
+    citations: {
+      exerciseFloorAuthority: 'Vellmora Land Act 12',
+      abutterListIssued: { label: 'Vellmora Land Act 9', url: null },
+    },
   },
 }

@@ -8,11 +8,8 @@ import {
   stageOpenFor,
   unmetItems,
 } from '@/features/applications/documentChecklist'
-import {
-  type DocumentItem,
-  documentItemsOf,
-  STATE_PERMIT_AT_FILING,
-} from '@/features/applications/documentItemSchema'
+import { statePermitAtFiling } from '@/features/applications/documentItemIssues'
+import { type DocumentItem, documentItemsOf } from '@/features/applications/documentItemSchema'
 import { appTypeBody } from '@/test/configFixtures'
 
 const plotPlan: DocumentItem = {
@@ -158,7 +155,7 @@ describe('the type validator', () => {
     const parsed = ApplicationTypeBodySchema.safeParse(body)
     expect(parsed.success).toBe(false)
     expect(parsed.error?.issues.map((i) => [i.path.join('.'), i.message])).toEqual([
-      ['documents.0.stage', STATE_PERMIT_AT_FILING],
+      ['documents.0.stage', statePermitAtFiling()],
     ])
   })
 

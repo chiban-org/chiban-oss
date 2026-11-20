@@ -1,3 +1,5 @@
+import { recordsRequest } from '@/features/packs/vocabulary'
+
 export const CAPABILITIES = {
   'permit.issue': 'Issue a permit or certificate',
   'gate.override_admin': 'Override an administrative gate with a recorded reason',
@@ -42,7 +44,9 @@ export const CAPABILITIES = {
   'enforcement.refer_counsel': 'Refer an enforcement case to town counsel and record outcomes',
   'fine.record': 'Record a court-imposed fine on the ledger',
   'anonymous_intake.enable': 'Verify and enable anonymous complaint intake',
-  'rtk.manage': 'Log Right-to-Know requests, respond, withhold, and release records',
+  get 'rtk.manage'() {
+    return `Log ${recordsRequest()}s, respond, withhold, and release records`
+  },
   'redaction.create': 'Draw redactions on a document version and run them',
   'disposition.propose': 'Propose a disposition batch from the retention worklist',
   'user.manage': 'Invite staff, change their roles, and disable or re-enable their accounts',

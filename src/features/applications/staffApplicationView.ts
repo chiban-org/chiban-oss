@@ -29,6 +29,7 @@ import {
   amendmentEntries,
   codeEditionPanelRows,
 } from '@/features/building/editionPanelRows'
+import { applicabilityOf } from '@/features/buildingProgram/applicability'
 import { type ClockExplanation, explainClock } from '@/features/clocks/explainClock'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import { effectiveBindings } from '@/features/config/bindings'
@@ -37,7 +38,7 @@ import type { FeeComputation } from '@/features/fees/computeFees'
 import { previewFees } from '@/features/fees/preview'
 import { loadNoticeDeadlines, type NoticeDeadline } from '@/features/hearings/noticeDeadlines'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
-import { packRoles } from '@/features/packs/roles'
+import { isBuildingPermit, packRoles } from '@/features/packs/roles'
 import type { ClockRule } from '@/features/packs/schema'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { hasFullRecordAccess } from '@/features/projects/access'
@@ -234,8 +235,8 @@ export async function getStaffApplicationView(
     allowsDirectIssue: app.typeBody.workflow.allowsDirectIssue,
     conditionLibrary: library,
     classification: app.typeBody.classification ?? null,
-    isBuildingPermit: app.typeBody.classification === roles.classifications.buildingPermit,
-    codeEditionApplies: codeEditionApplies(app.typeBody.classification),
+    isBuildingPermit: isBuildingPermit(app.typeBody.classification),
+    codeEditionApplies: codeEditionApplies(app.typeBody.classification, applicabilityOf(app)),
     conditions: await db
       .select()
       .from(applicationConditions)

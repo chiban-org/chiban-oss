@@ -16,6 +16,7 @@ import {
   type SourceLine,
   sourceLines,
 } from '@/features/abutters/sourceLinks'
+import { effectiveBufferFt } from '@/features/abutters/townBuffer'
 import type { Candidate } from '@/features/abutters/types'
 import type { Actor } from '@/features/auth/actor'
 import { getBoardSettings as loadBoardSettings } from '@/features/boards/boardSettings'
@@ -153,6 +154,17 @@ async function candidateRows(
   )
 }
 
+function listBufferFt(
+  list: ListRow,
+  boardBufferFt: number | null | undefined,
+  params: Parameters<typeof effectiveBufferFt>[1],
+): number | null {
+  const saved = list.selectionSettings as ListSnapshot['settings'] | null
+  return saved === null || saved === undefined || !('bufferFt' in saved)
+    ? effectiveBufferFt(boardBufferFt, params)
+    : saved.bufferFt
+}
+
 export async function loadListView(
   db: Db,
   actor: Actor,
@@ -178,14 +190,17 @@ export async function loadListView(
     const settings = (await loadBoardSettings(tx, signal)).abutters
     const parcelIds = await applicantParcelIds(tx, list.applicationId, signal)
     const showMap = list.status === 'draft' || list.status === 'issued'
+    const abutterParams = primaryAbutterParams()
+    const townBufferFt = listBufferFt(list, settings.bufferFt, abutterParams)
     const overlay =
       showMap && settings.projectionEnabled
         ? await projectionOverlay(
             tx,
             parcelIds,
-            primaryAbutterParams(),
+            abutterParams,
             settings.assumedRightOfWayFt,
             signal,
+            townBufferFt,
           )
         : null
     const layers = list.layers as Record<string, LayerStatus>

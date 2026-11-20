@@ -2,6 +2,7 @@ import { and, asc, gt, inArray, isNull, lte, or } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { enforcementAppeals, perilCertifications, restrainingOrders } from '@/db/schema'
 import { loadPack } from '@/features/packs/loadPack'
+import { boardAbbrev } from '@/features/packs/vocabulary'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -94,15 +95,16 @@ export function stayBanner(
   appealFiledOn: CivilDate | null,
   certifiedOn: CivilDate | null,
 ): string | null {
-  const cite = stayRule()?.citation.label ?? 'RSA 676:6'
+  const rule = stayRule()
+  const cite = rule === null ? '' : ` (${rule.citation.label})`
   if (stay.reason === 'appeal_pending' && appealFiledOn !== null) {
-    return `Enforcement stayed by appeal to the ZBA filed ${formatCivilDate(appealFiledOn)} (${cite}).`
+    return `Enforcement stayed by appeal to the ${boardAbbrev('zba')} filed ${formatCivilDate(appealFiledOn)}${cite}.`
   }
   if (stay.reason === 'restraining_order') {
-    return `Enforcement stayed by a restraining order issued in the appeal (${cite}).`
+    return `Enforcement stayed by a restraining order issued in the appeal${cite}.`
   }
   if (certifiedOn !== null) {
-    return `Not stayed: the officer certified imminent peril on ${formatCivilDate(certifiedOn)}. Only a restraining order from the ZBA or the superior court stops these proceedings.`
+    return `Not stayed: the officer certified imminent peril on ${formatCivilDate(certifiedOn)}. Only a restraining order from the ${boardAbbrev('zba')} or the superior court stops these proceedings.`
   }
   return null
 }

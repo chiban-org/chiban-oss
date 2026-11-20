@@ -129,6 +129,12 @@ export const SETTINGS_MENU_ITEMS: readonly SettingsMenuItem[] = [
     access: config,
   },
   {
+    href: kind('building_program'),
+    label: 'Building permits and code',
+    group: 'townRules',
+    access: config,
+  },
+  {
     href: '/staff/settings/state-law',
     label: 'State law',
     group: 'townRules',

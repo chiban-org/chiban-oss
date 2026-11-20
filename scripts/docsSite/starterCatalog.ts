@@ -1,13 +1,17 @@
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { type DocumentItem, documentStageLabel } from '@/features/applications/documentItemSchema'
 import { activePack } from '@/features/packs/registry'
-import type { BoardKind, ProceedingClassification, StarterBundle } from '@/features/packs/schema'
+import { presentKeys } from '@/features/packs/roles'
+import type { ProceedingClassification, StarterBundle } from '@/features/packs/schema'
+import { boardLabel } from '@/features/packs/vocabulary'
 import { generatedFrontMatter } from '@/lib/generatedFrontMatter'
 import { feeLineText, fieldLabels } from './feeText'
 import { escapeText, joinBlocks } from './markdown'
+import { generatedDir } from './stateDeadlines'
 
-export const STARTER_CATALOG_PATH =
-  'docs-site/docs/state-packs/new-hampshire/_generated/starters.md'
+export function starterCatalogPath(): string {
+  return `${generatedDir()}/starters.md`
+}
 
 interface StarterGroup {
   title: string
@@ -16,23 +20,32 @@ interface StarterGroup {
 
 function buildingOrTrade(c: ProceedingClassification): boolean {
   const { classifications } = activePack().manifest.roles
-  return c.key === classifications.buildingPermit || c.key === classifications.tradePermit
+  return presentKeys([classifications.buildingPermit, classifications.tradePermit]).includes(c.key)
 }
 
-const GROUPS: readonly StarterGroup[] = [
-  { title: 'Building and trade permits', includes: buildingOrTrade },
-  { title: 'Planning Board applications', includes: (c) => c.boardKind === 'planning_board' },
-  { title: 'Zoning Board of Adjustment applications', includes: (c) => c.boardKind === 'zba' },
-  {
-    title: 'Local permits and registrations',
-    includes: (c) => c.boardKind === null && !buildingOrTrade(c),
-  },
-]
+function groups(): readonly StarterGroup[] {
+  return [
+    { title: 'Building and trade permits', includes: buildingOrTrade },
+    {
+      title: `${boardLabel('planning_board')} applications`,
+      includes: (c) => c.boardKind === 'planning_board',
+    },
+    { title: `${boardLabel('zba')} applications`, includes: (c) => c.boardKind === 'zba' },
+    {
+      title: 'Local permits and registrations',
+      includes: (c) => c.boardKind === null && !buildingOrTrade(c),
+    },
+  ]
+}
 
-const DECIDED_BY: ReadonlyMap<BoardKind, string> = new Map([
-  ['planning_board', 'The Planning Board decides it.'],
-  ['zba', 'The Zoning Board of Adjustment decides it.'],
-])
+function decidedByText(classification: ProceedingClassification): string {
+  const { boardKind } = classification
+  if (boardKind === null) return 'No board hears it.'
+  if (boardKind === 'planning_board' || boardKind === 'zba') {
+    return `The ${boardLabel(boardKind)} decides it.`
+  }
+  return 'A town board hears it.'
+}
 
 function clockLabels(): ReadonlyMap<string, string> {
   return new Map(
@@ -81,10 +94,7 @@ function starterBlock(starter: StarterBundle): string {
   const classification = classificationOf(starter)
   const type = starter.applicationType
   const labels = fieldLabels(starter.form)
-  const decidedBy =
-    classification.boardKind === null
-      ? 'No board hears it.'
-      : (DECIDED_BY.get(classification.boardKind) ?? 'A town board hears it.')
+  const decidedBy = decidedByText(classification)
   const documents = (type.documents ?? []).map(documentText)
   const inspections = starter.checklists.map((checklist) => checklist.label)
   const deadlines = deadlinesOf(starter, classification)
@@ -100,8 +110,9 @@ function starterBlock(starter: StarterBundle): string {
 
 export function renderStarterCatalog(): string {
   const starters = activePack().starters
+  const allGroups = groups()
   for (const starter of starters) {
-    const homes = GROUPS.filter((group) => group.includes(classificationOf(starter))).length
+    const homes = allGroups.filter((group) => group.includes(classificationOf(starter))).length
     if (homes !== 1) {
       throw new AppError(ErrorIds.PACK_INVALID, 'starter must belong to one catalog group', {
         starter: starter.id,
@@ -109,17 +120,18 @@ export function renderStarterCatalog(): string {
       })
     }
   }
-  const sections = GROUPS.map((group) => {
+  const sections = allGroups.map((group) => {
     const members = starters.filter((starter) => group.includes(classificationOf(starter)))
     return members.length === 0
       ? ''
       : joinBlocks([`## ${group.title}`, ...members.map(starterBlock)]).trimEnd()
   })
+  const root = `packs/${activePack().manifest.id}`
   const frontMatter = generatedFrontMatter({
     sources: [
-      'packs/nh/starters/index.ts',
-      'packs/nh/classifications.ts',
-      'packs/nh/manifest.ts',
+      `${root}/starters/index.ts`,
+      `${root}/classifications.ts`,
+      `${root}/manifest.ts`,
       'src/features/fees/feeRows.ts',
       'src/features/applications/documentItemSchema.ts',
     ],

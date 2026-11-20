@@ -32,6 +32,8 @@ export interface PackParcelIdFormat {
 export interface BoardKindNames {
   label: string
   defaultShortName: string
+  shortLabel: string
+  abbreviation: string
   description: string
 }
 
@@ -43,10 +45,24 @@ export interface OrderTexts {
   noticeOfViolationRequest: string
 }
 
+export interface PackCitations {
+  exerciseFloorAuthority: string
+  abutterListIssued: { label: string; url: string | null }
+}
+
 export interface PackLabels {
   environmentalAgency: string
   environmentalAgencyShort: string
   stateLicenseNumber: string
+  recordsLaw: string
+  recordsRequest: string
+  governingBody: string
+  citations: PackCitations
+}
+
+export interface PackSpatial {
+  projectedSrid: number
+  label: string
 }
 
 export interface RuleArea {
@@ -56,10 +72,16 @@ export interface RuleArea {
 
 export interface StatePack {
   manifest: PackManifest
+  docsSlug: string
   boardKinds: Readonly<Record<BoardKind, BoardKindNames>>
   classificationKeys: readonly string[]
   starters: readonly StarterBundle[]
   inspectionSettingsDefault: InspectionSettingsBody
+  buildingCodes: {
+    choices: readonly { key: string; label: string }[]
+    defaultChoice: string | null
+    requiredAbove: { residents: number; choice: string } | null
+  }
   holidays(year: number): PackHoliday[]
   countingCitations: CountingCitations
   licenseTypes: readonly LicenseTypeGroup[]
@@ -73,4 +95,5 @@ export interface StatePack {
   ruleAreas: readonly RuleArea[]
   orderTexts: OrderTexts
   labels: PackLabels
+  spatial: PackSpatial
 }

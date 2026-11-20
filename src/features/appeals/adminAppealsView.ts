@@ -11,6 +11,7 @@ import { toGraphNodes } from '@/features/decisions/decisionView'
 import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { packRoles } from '@/features/packs/roles'
+import { boardShort } from '@/features/packs/vocabulary'
 import { townToday } from '@/features/town/today'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
@@ -46,9 +47,13 @@ function appealWindowEnds(decidedOn: CivilDate): CivilDate | null {
   ).due
 }
 
-function statusOf(decision: NodeRow, appeal: NodeRow | undefined, today: CivilDate): string {
+export function appealStatusText(
+  decision: NodeRow,
+  appeal: NodeRow | undefined,
+  today: CivilDate,
+): string {
   if (appeal !== undefined)
-    return `Appealed to the Zoning Board on ${formatCivilDate(appeal.occurredOn)}`
+    return `Appealed to the ${boardShort('zba')} on ${formatCivilDate(appeal.occurredOn)}`
   const ends = appealWindowEnds(decision.occurredOn as CivilDate)
   if (ends === null) return 'Not appealed.'
   return ends < today
@@ -87,7 +92,7 @@ export async function loadAdministrativeAppeals(
       applicationNumber: number,
       typeLabel: app?.typeBody.label ?? '',
       decidedOnText: formatCivilDate(node.occurredOn),
-      statusText: statusOf(
+      statusText: appealStatusText(
         node,
         appeals.find((a) => a.parentId === node.id),
         today,

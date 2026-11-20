@@ -6,6 +6,7 @@ import {
   regionalImpactDeterminations,
   regionalImpactNotices,
 } from '@/db/schema'
+import { applicabilityOf } from '@/features/buildingProgram/applicability'
 import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
 import {
   buildGateDefinition,
@@ -14,7 +15,7 @@ import {
   registerGate,
 } from '@/features/gates/registry'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
-import { packRoles } from '@/features/packs/roles'
+import { packRoles, roleCitationSuffix } from '@/features/packs/roles'
 import type { GateRule } from '@/features/packs/schema'
 import { formatCivilDate } from '@/lib/formatDate'
 
@@ -26,13 +27,24 @@ function gateRule(key: string): GateRule {
   return rule
 }
 
+export function codeEditionMissingReason(): string {
+  return `State building code edition not recorded${roleCitationSuffix('codeEditionGate')}.`
+}
+
+export function regionalDeterminationMissingReason(): string {
+  return `Regional impact determination not recorded${roleCitationSuffix('regionalImpactGate')}.`
+}
+
 const codeEditionRecorded: GateEvaluator = async (tx, app) => {
   const [record] = await tx
     .select({ id: codeEditionRecords.applicationId })
     .from(codeEditionRecords)
     .where(eq(codeEditionRecords.applicationId, app.id))
   return record === undefined
-    ? { status: 'blocked', reason: 'State building code edition not recorded (RSA 155-A:2).' }
+    ? {
+        status: 'blocked',
+        reason: codeEditionMissingReason(),
+      }
     : { status: 'pass' }
 }
 
@@ -44,7 +56,7 @@ const regionalImpactCleared: GateEvaluator = async (tx, app, today) => {
   if (determination === undefined) {
     return {
       status: 'unknown',
-      reason: 'Regional impact determination not recorded (RSA 36:57 IV).',
+      reason: regionalDeterminationMissingReason(),
     }
   }
   if (determination.determination !== 'yes') return { status: 'pass' }
@@ -86,15 +98,24 @@ const regionalImpactCleared: GateEvaluator = async (tx, app, today) => {
   return { status: 'pass' }
 }
 
+const codeEditionRelevant: GateDefinition['relevantTo'] = (app) =>
+  applicabilityOf(app).codeChoice !== null
+
 export function buildingGateDefinitions(): GateDefinition[] {
   const { rules } = packRoles()
   const gates: [string | null, GateEvaluator][] = [
     [rules.codeEditionGate, codeEditionRecorded],
     [rules.regionalImpactGate, regionalImpactCleared],
   ]
-  return gates.flatMap(([key, evaluate]) =>
-    key === null ? [] : [buildGateDefinition(gateRule(key), evaluate)],
-  )
+  return gates.flatMap(([key, evaluate]) => {
+    if (key === null) return []
+    const definition = buildGateDefinition(gateRule(key), evaluate)
+    return [
+      key === rules.codeEditionGate
+        ? { ...definition, relevantTo: codeEditionRelevant }
+        : definition,
+    ]
+  })
 }
 
 for (const gate of buildingGateDefinitions()) registerGate(gate)

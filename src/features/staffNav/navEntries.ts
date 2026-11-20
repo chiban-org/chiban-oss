@@ -1,4 +1,5 @@
 import type { Capability } from '@/constants/capabilities'
+import { recordsLaw } from '@/features/packs/vocabulary'
 import type { NavAccess, NavItem } from '@/features/staffNav/navTypes'
 
 const open: NavAccess = { kind: 'open' }
@@ -127,7 +128,9 @@ export const STAFF_NAV_ITEMS: readonly NavItem[] = [
   },
   {
     href: '/staff/records/requests',
-    label: 'Right-to-Know',
+    get label() {
+      return recordsLaw()
+    },
     group: 'records',
     icon: 'requests',
     access: any('rtk.manage'),

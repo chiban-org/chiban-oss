@@ -1,8 +1,10 @@
 import { asc, desc } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { type TownSectionRow, townSections } from '@/db/schema'
+import { type TownSectionKind, type TownSectionRow, townSections } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { buildingCodeEnforced } from '@/features/enforcement/buildingCodeCutoff'
+import { sectionKindsOffered } from '@/features/enforcement/sections/sectionKinds'
 import {
   loadTownRefs,
   loadUsedRefs,
@@ -14,6 +16,7 @@ import { loadPack } from '@/features/packs/loadPack'
 export interface SectionListView {
   rows: TownSectionRow[]
   typedNotListed: TypedRef[]
+  kinds: readonly TownSectionKind[]
 }
 
 export async function loadSectionListView(
@@ -30,11 +33,13 @@ export async function loadSectionListView(
       asc(townSections.provisionKind),
       asc(townSections.reference),
     )
+  const enforced = await buildingCodeEnforced(db, signal)
+  const kinds = sectionKindsOffered(enforced)
   const typedNotListed = notOnList({
     used: await loadUsedRefs(db, signal),
     town: await loadTownRefs(db, signal),
     conditions: [],
-    stateCode: stateCodeRefs(loadPack().codeEditions.map((e) => e.key)),
-  })
-  return { rows, typedNotListed }
+    stateCode: enforced ? stateCodeRefs(loadPack().codeEditions.map((e) => e.key)) : [],
+  }).filter((ref) => kinds.includes(ref.kind))
+  return { rows, typedNotListed, kinds }
 }

@@ -8,6 +8,7 @@ import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
 import { loadEditorSource } from '@/features/redaction/previewPages'
 import { exemptionChoices } from '@/features/rtk/exemptions'
+import { redactPurposeOptions } from '@/features/rtk/requestCopy'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
@@ -72,10 +73,7 @@ export default async function RedactPage({
           label="The copy is for"
           name="purpose"
           defaultValue={forRequest === undefined ? 'public' : 'rtk_release'}
-          options={[
-            ['public', 'The public website'],
-            ['rtk_release', 'A Right-to-Know request'],
-          ]}
+          options={redactPurposeOptions()}
         />
         <BoxEditor pages={pages} exemptions={exemptionChoices()} mode={mode} />
       </ActionForm>

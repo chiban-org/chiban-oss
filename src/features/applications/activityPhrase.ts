@@ -1,5 +1,9 @@
 import { amendPhrase } from '@/features/applications/amendChanges'
 import { STATE_LABELS } from '@/features/applications/states'
+import {
+  type CertificationOutcome,
+  certificationActivity,
+} from '@/features/boards/certificationWords'
 import { activePack } from '@/features/packs/registry'
 
 export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
@@ -26,9 +30,6 @@ export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
     'board.terminate_unpaid_notice_costs': 'Ended the application for unpaid notice costs',
     'board.completeness.accepted': 'Recorded the board accepting the application as complete',
     'board.completeness.not_accepted': 'Recorded the board finding the application incomplete',
-    'board.certification.pending': 'Recorded a request to the selectmen',
-    'board.certification.certified': 'Recorded the selectmen certifying the request',
-    'board.certification.refused': 'Recorded the selectmen refusing the request',
     'building.code_edition.record': 'Recorded the building code edition',
     'building.mark_complete': 'Marked the application complete',
     'census.classified': 'Classified the permit for the Census report',
@@ -67,6 +68,12 @@ export const ACTIVITY_PHRASES: ReadonlyMap<string, string> = new Map(
   }),
 )
 
+const CERTIFICATION_ACTIONS: ReadonlyMap<string, CertificationOutcome> = new Map([
+  ['board.certification.pending', 'pending'],
+  ['board.certification.certified', 'certified'],
+  ['board.certification.refused', 'refused'],
+])
+
 const UNKNOWN_PHRASE = 'Changed the record'
 
 const STATE_PHRASES: ReadonlyMap<string, string> = new Map(Object.entries(STATE_LABELS))
@@ -94,5 +101,7 @@ export function activityPhrase(action: string, after: unknown): string {
   if (action === 'board.des_determination.record') {
     return `Recorded the ${activePack().labels.environmentalAgencyShort} determination`
   }
+  const certification = CERTIFICATION_ACTIONS.get(action)
+  if (certification !== undefined) return certificationActivity(certification)
   return ACTIVITY_PHRASES.get(action) ?? UNKNOWN_PHRASE
 }

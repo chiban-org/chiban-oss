@@ -1,3 +1,4 @@
+import type { Vocabulary } from '@/features/packs/vocabulary'
 import type { ExactKind, SearchResult, SearchRow } from '@/features/search/searchTypes'
 
 export interface SearchOption extends SearchRow {
@@ -12,14 +13,17 @@ export interface SearchOptions {
 
 export const EXACT_SECTION = 'Exact number'
 
-const EXACT_DETAIL: Readonly<Record<ExactKind, string>> = {
-  application: 'Application or permit',
-  case: 'Enforcement case',
-  order: 'Cease and desist order, opens its case',
-  complaint: 'Complaint, opens its case',
-  request: 'Right-to-Know request',
-  receipt: 'Receipt, opens in a new tab',
-  parcel: 'Parcel at this address',
+export function exactDetail(kind: ExactKind, words: Pick<Vocabulary, 'recordsRequest'>): string {
+  const details: Readonly<Record<ExactKind, string>> = {
+    application: 'Application or permit',
+    case: 'Enforcement case',
+    order: 'Cease and desist order, opens its case',
+    complaint: 'Complaint, opens its case',
+    request: words.recordsRequest,
+    receipt: 'Receipt, opens in a new tab',
+    parcel: 'Parcel at this address',
+  }
+  return details[kind]
 }
 
 function groupOptions(result: SearchResult): SearchOption[] {
@@ -47,7 +51,10 @@ function groupOptions(result: SearchResult): SearchOption[] {
   ])
 }
 
-export function searchOptions(result: SearchResult): SearchOptions {
+export function searchOptions(
+  result: SearchResult,
+  words: Pick<Vocabulary, 'recordsRequest'>,
+): SearchOptions {
   const options = groupOptions(result)
   const { exact } = result
   if (exact === null) return { options, exactIndex: -1 }
@@ -59,7 +66,7 @@ export function searchOptions(result: SearchResult): SearchOptions {
     href: exact.href,
     newTab: exact.newTab,
     title: exact.number,
-    detail: EXACT_DETAIL[exact.kind],
+    detail: exactDetail(exact.kind, words),
     chip: null,
     seeAll: false,
   }

@@ -1,15 +1,9 @@
 import { ActionForm } from '@/components/ActionForm'
 import { FormDialog } from '@/components/FormDialog'
 import { SelectField, TextField } from '@/components/staff/fields'
+import { holdTargetOptions } from '@/features/records/holdKinds'
 import { placeHoldAction, releaseHoldAction } from '../actions'
 
-const TARGETS: [string, string][] = [
-  ['project', 'Project'],
-  ['application', 'Application'],
-  ['document', 'Document'],
-  ['enforcement_case', 'Enforcement case'],
-  ['rtk_request', 'Right-to-Know request'],
-]
 export function ReleaseHold({ holdId }: { holdId: string }) {
   return (
     <details>
@@ -34,7 +28,7 @@ export function PlaceHold() {
   return (
     <FormDialog label="Place a hold" title="Place a legal hold" variant="default">
       <ActionForm action={placeHoldAction} submitLabel="Place hold">
-        <SelectField label="Hold on" name="targetKind" options={TARGETS} />
+        <SelectField label="Hold on" name="targetKind" options={holdTargetOptions()} />
         <TextField
           label="Application number, case number, request number, project title, or document title"
           name="targetRef"

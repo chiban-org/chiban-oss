@@ -1,4 +1,5 @@
 import type { Metadata } from 'next'
+import { receivedThanks } from '@/features/rtk/requestCopy'
 import { formatCivilDate } from '@/lib/formatDate'
 
 export const metadata: Metadata = { title: 'Request received' }
@@ -26,7 +27,7 @@ export default async function RequestReceivedPage({
   return (
     <main>
       <h1>Request received</h1>
-      <p>Thank you. The town has your Right-to-Know request.</p>
+      <p>{receivedThanks()}</p>
       {reference === null ? null : (
         <section aria-labelledby="reference-heading" data-plain>
           <h2 id="reference-heading" className="text-base font-semibold text-muted-foreground">

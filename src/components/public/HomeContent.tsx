@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import { ParcelSearch } from '@/components/public/ParcelSearch'
+import { boardShort, recordsRequest } from '@/features/packs/vocabulary'
 import type { SearchExample } from '@/features/parcels/searchExample'
 
 export type HomeAudience = 'visitor' | 'resident' | 'staff'
@@ -48,6 +49,14 @@ interface HomeContentProps {
   boardMember?: boolean
 }
 
+export function meetingsTaskText(): string {
+  return `Upcoming ${boardShort('planning_board')} and ${boardShort('zba')} meetings, their agendas, minutes, and decisions.`
+}
+
+export function recordsTaskText(): string {
+  return `Make a ${recordsRequest()} for public records the town keeps.`
+}
+
 export function HomeContent({
   audience,
   townName,
@@ -76,13 +85,13 @@ export function HomeContent({
           Start a building, trade, or land use application online and pay its fees.
         </Task>
         <Task href="/meetings" title="Meetings">
-          Upcoming Planning Board and Zoning Board meetings, their agendas, minutes, and decisions.
+          {meetingsTaskText()}
         </Task>
         <Task href="/complaints/new" title="Report a problem">
           Tell the town about building or land use work that may not follow the rules.
         </Task>
         <Task href="/records/request" title="Ask for town records">
-          Make a Right-to-Know request for public records the town keeps.
+          {recordsTaskText()}
         </Task>
         <AccountTask audience={audience} />
       </ul>

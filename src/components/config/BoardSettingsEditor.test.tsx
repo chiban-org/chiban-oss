@@ -37,14 +37,19 @@ const context = {
   townRules: {},
 }
 
-function renderBoardSettings(publish: (formData: FormData) => Promise<ActionResult>) {
+function renderBoardSettings(
+  publish: (formData: FormData) => Promise<ActionResult>,
+  extra: Partial<typeof context> & {
+    townBuffer?: { defaultFt: number | null; maxFt: number }
+  } = {},
+) {
   render(
     <ConfigEditorForm
       kind="board_settings"
       configKey="default"
       initialBody={boardSettingsDefault(boards)}
       resetKey="v1"
-      context={context}
+      context={{ ...context, ...extra }}
       saveAction={publish}
       publishAction={publish}
     />,
@@ -100,5 +105,29 @@ describe('board settings filing deadline', () => {
     await waitFor(() => expect(within(planning).getByText('Too long.')).toBeTruthy())
     expect(within(planning).getByText('Enter who adopted it.')).toBeTruthy()
     expect(screen.getAllByText('Too long.')).toHaveLength(2)
+  })
+})
+
+describe('board settings abutter buffer', () => {
+  const noop = () => Promise.resolve({ ok: true as const, message: 'Saved.' })
+
+  it('shows no buffer field when the pack declares no town buffer', () => {
+    renderBoardSettings(noop)
+    expect(screen.queryByLabelText('Distance for abutters, in feet')).toBeNull()
+  })
+
+  it('shows the buffer field when the pack declares a town buffer and sends its value', async () => {
+    const publish = vi.fn((_: FormData) =>
+      Promise.resolve({ ok: true as const, message: 'Put version 2 into use.' }),
+    )
+    renderBoardSettings(publish, { townBuffer: { defaultFt: 300, maxFt: 500 } })
+    fireEvent.change(screen.getByLabelText('Distance for abutters, in feet'), {
+      target: { value: '250' },
+    })
+    publishNow()
+    await waitFor(() => expect(publish).toHaveBeenCalledTimes(1))
+    const raw = publish.mock.calls[0]?.[0].get('body')
+    const sent = JSON.parse(typeof raw === 'string' ? raw : '{}') as BoardSettingsBody
+    expect(sent.abutters.bufferFt).toBe(250)
   })
 })

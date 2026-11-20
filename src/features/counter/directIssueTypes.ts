@@ -2,6 +2,8 @@ import { and, eq } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { configVersions } from '@/db/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
+import { intakeOpen } from '@/features/buildingProgram/intake'
+import { getBuildingProgram } from '@/features/buildingProgram/settings'
 import { packRoles } from '@/features/packs/roles'
 
 export interface DirectIssueType {
@@ -51,7 +53,10 @@ function directIssueType(r: { key: string; body: ApplicationTypeBody }): DirectI
 }
 
 export async function listCounterTypes(db: DbOrTx, signal: AbortSignal): Promise<CounterTypes> {
-  const types = await publishedTypes(db, signal)
+  const program = await getBuildingProgram(db, signal)
+  const types = (await publishedTypes(db, signal)).filter((r) =>
+    intakeOpen(r.body.classification, program),
+  )
   return {
     issueToday: types.filter((r) => r.body.workflow.allowsDirectIssue).map(directIssueType),
     takeForReview: types

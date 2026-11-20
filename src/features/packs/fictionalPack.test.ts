@@ -5,13 +5,17 @@ import { stateLabel } from '@/features/applications/stateLabel'
 import { regionalGateDefinitions } from '@/features/boards/regionalGate'
 import { codeEditionApplies } from '@/features/building/codeEditionApplies'
 import { buildingGateDefinitions } from '@/features/building/gates'
+import { censusClassification } from '@/features/census/classify'
 import { ruleChoicesFor } from '@/features/config/ruleChoices'
+import { decisionClockKeys } from '@/features/decisions/decisionClocks'
 import { defaultParcelFileVisibility } from '@/features/documents/parcelVisibility'
 import { loadPack } from '@/features/packs/loadPack'
 import { packInfo } from '@/features/packs/packInfo'
 import { setActivePackForTest, withPackForTest } from '@/features/packs/registry'
 import { packRoles } from '@/features/packs/roles'
+import { groupPortalTypes } from '@/features/portal/typeGroups'
 import { XX_PACK } from '@/test/packs/xx'
+import { XX_NO_BUILDING } from '@/test/packs/xx/variants'
 
 afterEach(() => setActivePackForTest(null))
 
@@ -35,8 +39,11 @@ describe('a fictional pack with every optional role absent', () => {
   })
 
   it('offers no code edition record for its building permits', () => {
-    withPackForTest(XX_PACK, () => expect(codeEditionApplies('xx.building_permit')).toBe(false))
-    expect(codeEditionApplies('nh.building_permit')).toBe(true)
+    withPackForTest(XX_PACK, () =>
+      expect(codeEditionApplies('xx.building_permit', { codeChoice: 'state_code' })).toBe(false),
+    )
+    expect(codeEditionApplies('nh.building_permit', { codeChoice: 'state_code' })).toBe(true)
+    expect(codeEditionApplies('nh.building_permit', { codeChoice: null })).toBe(false)
   })
 
   it('sends no gate to the regional impact panel', () => {
@@ -66,5 +73,33 @@ describe('a fictional pack with every optional role absent', () => {
         ),
       ).toEqual(['xx.rtk.response'])
     })
+  })
+})
+
+describe('a fictional pack with no building permit', () => {
+  it('skips a null building permit decision in the decision clock keys', () => {
+    withPackForTest(XX_NO_BUILDING, () => expect(decisionClockKeys()).not.toContain(null))
+    expect(decisionClockKeys()).toContain('nh.bp.decision')
+  })
+
+  it('groups no type as building office when the pack has no building permit', () => {
+    withPackForTest(XX_NO_BUILDING, () =>
+      expect(
+        groupPortalTypes([{ key: 'X', label: 'X', classification: 'xx.trade_permit' }]).groups.map(
+          (g) => g.title,
+        ),
+      ).toEqual(['Registrations and other']),
+    )
+  })
+
+  it('has no census classification', () => {
+    withPackForTest(XX_NO_BUILDING, () => expect(censusClassification()).toBeNull())
+    expect(censusClassification()).toBe('nh.building_permit')
+  })
+
+  it('offers no code edition record', () => {
+    withPackForTest(XX_NO_BUILDING, () =>
+      expect(codeEditionApplies(undefined, { codeChoice: 'state_code' })).toBe(false),
+    )
   })
 })

@@ -3,12 +3,12 @@ import { listIsFreshAtFiling } from '@/features/abutters/proximityRule'
 import { currentIssuedList } from '@/features/abutters/queries'
 import { type GateDefinition, registerGate } from '@/features/gates/registry'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { activePack } from '@/features/packs/registry'
 import { packRoles } from '@/features/packs/roles'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 
 export const LIST_ISSUED_GATE_KEY = 'abutters.list_issued'
-const RSA_676_4 = 'https://gc.nh.gov/rsa/html/LXIV/676/676-4.htm'
 
 function ageRule(key: string) {
   const rule = ruleByKey(loadPack(), key)
@@ -64,7 +64,7 @@ for (const gate of listFreshGateDefinitions()) registerGate(gate)
 registerGate({
   key: LIST_ISSUED_GATE_KEY,
   label: 'Abutter list issued',
-  citation: { label: 'RSA 676:4 I(d) and RSA 676:7 I', url: RSA_676_4 },
+  citation: activePack().labels.citations.abutterListIssued,
   kind: 'statutory',
   appliesTo: ['under_review'],
   boundBy: null,

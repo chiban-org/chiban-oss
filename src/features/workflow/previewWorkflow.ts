@@ -183,6 +183,7 @@ async function sampleContext(
     receivedDate: input.sampleDates.received,
     completedDate: input.sampleDates.accepted ?? null,
     decidedOn: null,
+    applicability: null,
     issuedOn: null,
     closureReason: null,
     permitRevision: 0,

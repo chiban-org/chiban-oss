@@ -1,11 +1,13 @@
+import { primaryAbutterParams } from '@/features/abutters/packParams'
 import type { NamedChoice, ReferenceChoices } from '@/features/config/referenceChoices'
 import type { RuleChoiceGroups } from '@/features/config/ruleChoices'
 import type { FormBuilderData } from '@/features/forms/formReferences'
 import type { FormField } from '@/features/forms/formSchema'
 import { loadPack } from '@/features/packs/loadPack'
+import { activePack } from '@/features/packs/registry'
 import { packRoles } from '@/features/packs/roles'
 import { policyText, ruleSummary } from '@/features/packs/ruleSummary'
-import type { BoardKind } from '@/features/packs/schema'
+import type { BoardKind, StatePack } from '@/features/packs/schema'
 import type { TemplateBuilderData } from '@/features/templates/builderData'
 import { MERGE_FIELDS } from '@/features/templates/mergeFields'
 import { lowerFirst, words } from '@/lib/words'
@@ -26,6 +28,7 @@ export interface EditorContext {
     boardKind: string | null
   }[]
   mergeFields: string[]
+  buildingCodes?: StatePack['buildingCodes']
   ruleGroups?: RuleChoiceGroups
   boards: EditorBoard[]
   reviewers: { id: string; name: string }[]
@@ -45,6 +48,7 @@ export interface EditorContext {
   form?: FormBuilderData
   template?: TemplateBuilderData
   townName?: string
+  townBuffer?: { defaultFt: number | null; maxFt: number }
 }
 
 interface PackRuleLabelSource {
@@ -81,6 +85,7 @@ export function editorContext(
   boards: EditorBoard[] = [],
 ): EditorContext {
   const pack = loadPack()
+  const townBuffer = primaryAbutterParams().townBuffer
   const townRules: EditorContext['townRules'] = {}
   for (const rule of pack.rules) {
     if (rule.kind !== 'town_setting') continue
@@ -104,6 +109,7 @@ export function editorContext(
       boardKind: c.boardKind ?? null,
     })),
     mergeFields: [...MERGE_FIELDS],
+    buildingCodes: activePack().buildingCodes,
     ruleGroups: {
       building: packRoles().ruleGroups.building,
       board: packRoles().ruleGroups.board,
@@ -111,5 +117,6 @@ export function editorContext(
     boards,
     reviewers,
     townRules,
+    ...(townBuffer === undefined ? {} : { townBuffer }),
   }
 }

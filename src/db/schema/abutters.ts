@@ -58,6 +58,7 @@ export const abutterLists = pgTable(
     issuedAt: timestamp('issued_at', { withTimezone: true }),
     snapshot: jsonb('snapshot'),
     snapshotSha256: text('snapshot_sha256'),
+    selectionSettings: jsonb('selection_settings'),
     supersededBy: uuid('superseded_by'),
     createdBy: uuid('created_by').notNull(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

@@ -2,6 +2,7 @@ import { NH_PACK_MANIFEST } from '@packs/nh/manifest'
 import { describe, expect, it } from 'vitest'
 import { PackManifestSchema } from '@/features/packs/schema'
 import { XX_PACK_MANIFEST } from '@/test/packs/xx/manifest'
+import { XX_NO_BUILDING } from '@/test/packs/xx/variants'
 
 function issuesOf(manifest: unknown): string[] {
   const parsed = PackManifestSchema.safeParse(manifest)
@@ -64,5 +65,40 @@ describe('pack roles', () => {
       roles: { ...roles, rules: { ...roles.rules, rtkResponse: null } },
     }
     expect(issuesOf(broken).length).toBeGreaterThan(0)
+  })
+
+  it('accepts a pack with no building permit roles', () => {
+    expect(issuesOf(XX_NO_BUILDING.manifest)).toEqual([])
+    expect(PackManifestSchema.safeParse(XX_NO_BUILDING.manifest).success).toBe(true)
+  })
+
+  function withBadClock(length: unknown, overridePolicy: unknown): unknown {
+    const bad = {
+      ...XX_PACK_MANIFEST.rules[0],
+      key: 'xx.bad',
+      length,
+      overridePolicy,
+    }
+    return { ...XX_PACK_MANIFEST, rules: [...XX_PACK_MANIFEST.rules, bad] }
+  }
+
+  it('rejects a clock with delegated_choice and no fromSetting length', () => {
+    const broken = withBadClock(
+      { unit: 'days', value: 30 },
+      { policy: 'delegated_choice', default: 30 },
+    )
+    expect(issuesOf(broken)).toContain(
+      'clock xx.bad uses delegated_choice; read a town_setting through length.fromSetting',
+    )
+  })
+
+  it('rejects fromSetting naming a rule that is not a town_setting', () => {
+    const broken = withBadClock(
+      { unit: 'days', fromSetting: 'xx.bp.decision' },
+      { policy: 'delegated_choice', default: 30 },
+    )
+    expect(issuesOf(broken)).toContain(
+      'clock xx.bad fromSetting xx.bp.decision is not a town_setting',
+    )
   })
 })

@@ -8,7 +8,7 @@ import {
   registerGate,
 } from '@/features/gates/registry'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
-import { packRoles } from '@/features/packs/roles'
+import { packRoles, roleCitationSuffix } from '@/features/packs/roles'
 import type { GateRule } from '@/features/packs/schema'
 
 function gateRule(key: string): GateRule {
@@ -19,13 +19,20 @@ function gateRule(key: string): GateRule {
   return rule
 }
 
+export function determinationMissingReason(): string {
+  return `Regional impact determination not recorded${roleCitationSuffix('regionalImpactDetermination')}.`
+}
+
 const determinationRecorded: GateEvaluator = async (tx, app) => {
   const [row] = await tx
     .select({ id: regionalImpactDeterminations.applicationId })
     .from(regionalImpactDeterminations)
     .where(eq(regionalImpactDeterminations.applicationId, app.id))
   return row === undefined
-    ? { status: 'unknown', reason: 'Regional impact determination not recorded (RSA 36:57 I).' }
+    ? {
+        status: 'unknown',
+        reason: determinationMissingReason(),
+      }
     : { status: 'pass' }
 }
 

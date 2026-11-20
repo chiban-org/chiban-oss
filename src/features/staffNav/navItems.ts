@@ -1,16 +1,11 @@
 import { CAPABILITY_KEYS, type Capability } from '@/constants/capabilities'
 import { SETTINGS_MENU_ITEMS, settingsMenuFor } from '@/features/settingsMenu/settingsMenu'
-import { accessAllows, accessCapabilities, activeHref } from '@/features/staffNav/access'
+import { accessAllows, accessCapabilities } from '@/features/staffNav/access'
 import { STAFF_NAV_ITEMS } from '@/features/staffNav/navEntries'
-import {
-  NAV_GROUPS,
-  type NavAccess,
-  type NavItem,
-  type NavSection,
-  type NavViewer,
-} from '@/features/staffNav/navTypes'
+import type { NavAccess, NavItem, NavViewer } from '@/features/staffNav/navTypes'
 
 export { STAFF_NAV_ITEMS } from '@/features/staffNav/navEntries'
+export { activeNavHref, groupNavItems, isNested } from '@/features/staffNav/navGrouping'
 export type {
   NavGroupKey,
   NavIcon,
@@ -19,23 +14,6 @@ export type {
   NavViewer,
 } from '@/features/staffNav/navTypes'
 export { NAV_GROUPS, NAV_ICONS } from '@/features/staffNav/navTypes'
-
-export function groupNavItems(items: readonly NavItem[]): NavSection[] {
-  return NAV_GROUPS.map((g) => ({
-    key: g.key,
-    label: g.label,
-    collapsible: g.collapsible,
-    items: items.filter((i) => i.group === g.key),
-  })).filter((section) => section.items.length > 0)
-}
-
-export function isNested(item: NavItem, items: readonly NavItem[]): boolean {
-  return item.parent !== undefined && items.some((i) => i.href === item.parent)
-}
-
-export function activeNavHref(pathname: string, items: readonly NavItem[]): string | null {
-  return activeHref(pathname, items)
-}
 
 const NAV_ACCESS = [...STAFF_NAV_ITEMS, ...SETTINGS_MENU_ITEMS].map((item) => item.access)
 

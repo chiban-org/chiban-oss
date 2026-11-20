@@ -10,6 +10,7 @@ import { applyTransition } from '@/features/applications/transition'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
+import { captureApplicability } from '@/features/buildingProgram/applicability'
 import { getVersion } from '@/features/config/store'
 import type { FormBody } from '@/features/forms/formSchema'
 import {
@@ -139,6 +140,7 @@ export async function submitApplication(
     if (!moved.ok) {
       return err(typeof moved.error === 'object' ? moved.error : 'invalid_transition')
     }
+    await captureApplicability(tx, input.applicationId, signal)
     await captureSnapshot(tx, input.applicationId, 'submission', actor, signal, store, now)
     if (cutover === undefined) {
       await queueForParties(

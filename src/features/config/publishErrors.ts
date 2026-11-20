@@ -35,7 +35,7 @@ function ruleLabel(key: string): string {
 }
 
 function fieldNames(names: string[]): string {
-  return names.map(mergeFieldLabel).join(', ')
+  return names.map((name) => mergeFieldLabel(name)).join(', ')
 }
 
 function lockedNames(names: string[]): string {

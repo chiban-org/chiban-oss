@@ -6,6 +6,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { buildingCodeOpenFor } from '@/features/enforcement/buildingCodeCutoff'
 import { nextEnforcementNumber } from '@/features/enforcement/numbering'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { packRoles } from '@/features/packs/roles'
@@ -26,11 +27,17 @@ const DraftSchema = z.object({
   ceaseImmediately: z.boolean(),
 })
 
-function orderRuleKeyFor(kinds: readonly string[]): string | null {
+type OrderRuleKey = { kind: 'key'; key: string } | { kind: 'split' } | { kind: 'not_enforced' }
+
+function orderRuleKeyFor(kinds: readonly string[], codeOpen: boolean): OrderRuleKey {
   const { rules } = packRoles()
   const building = kinds.filter((k) => k === 'building_code').length
-  if (building === kinds.length) return rules.buildingCodeOrder
-  return building === 0 ? rules.zoningOrder : null
+  if (building === kinds.length) {
+    return rules.buildingCodeOrder === null || !codeOpen
+      ? { kind: 'not_enforced' }
+      : { kind: 'key', key: rules.buildingCodeOrder }
+  }
+  return building === 0 ? { kind: 'key', key: rules.zoningOrder } : { kind: 'split' }
 }
 
 export async function draftOrder(
@@ -42,7 +49,12 @@ export async function draftOrder(
 ): Promise<
   Result<
     { orderId: string; number: string; ruleKey: string },
-    'forbidden' | 'invalid' | 'not_found' | 'findings_invalid' | 'split_required'
+    | 'forbidden'
+    | 'invalid'
+    | 'not_found'
+    | 'findings_invalid'
+    | 'split_required'
+    | 'building_code_not_enforced'
   >
 > {
   signal.throwIfAborted()
@@ -53,7 +65,7 @@ export async function draftOrder(
   const value = parsed.data
   return await transactionResult(db, async (tx) => {
     const [caseRow] = await tx
-      .select({ id: enforcementCases.id })
+      .select({ id: enforcementCases.id, createdAt: enforcementCases.createdAt })
       .from(enforcementCases)
       .where(eq(enforcementCases.id, value.caseId))
       .for('update')
@@ -69,8 +81,13 @@ export async function draftOrder(
         ),
       )
     if (findings.length !== new Set(value.findingIds).size) return err('findings_invalid')
-    const ruleKey = orderRuleKeyFor(findings.map((f) => f.provisionKind))
-    if (ruleKey === null) return err('split_required')
+    const resolved = orderRuleKeyFor(
+      findings.map((f) => f.provisionKind),
+      await buildingCodeOpenFor(tx, caseRow.createdAt, signal),
+    )
+    if (resolved.kind === 'split') return err('split_required')
+    if (resolved.kind === 'not_enforced') return err('building_code_not_enforced')
+    const ruleKey = resolved.key
     const rule = ruleByKey(loadPack(), ruleKey)
     const { number } = await nextEnforcementNumber(tx, 'CD', now, signal)
     const [row] = await tx

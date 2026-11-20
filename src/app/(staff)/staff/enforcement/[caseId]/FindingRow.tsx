@@ -33,6 +33,7 @@ function EditFinding({ finding, detail }: { finding: Finding; detail: CaseDetail
         <Hidden name="findingId" value={finding.id} />
         <ProvisionFields
           suggestions={detail.suggestions ?? null}
+          buildingCode={detail.buildingCodeOffered === true}
           defaultKind={finding.provisionKind}
           defaultRef={finding.provisionRef}
         />

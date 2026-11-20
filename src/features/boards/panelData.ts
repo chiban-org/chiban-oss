@@ -19,6 +19,7 @@ import { type CoreState, TERMINAL_STATES } from '@/features/applications/states'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
 import { boardOfApplication } from '@/features/boards/boardOf'
+import { certificationPhrase } from '@/features/boards/certificationWords'
 import { desRuleIfPresent, suggestDesProximity } from '@/features/boards/des500'
 import { desText, suggestionText } from '@/features/boards/desPanelText'
 import { type MeetingEligibility, meetingEligibility } from '@/features/boards/meetingEligibility'
@@ -252,8 +253,7 @@ export async function loadBoardPanel(
     certification: {
       offered: panelClocks.decisionOpen,
       history: certs.map(
-        (c) =>
-          `${formatCivilDate(c.requestedOn)}: ${c.outcome === 'pending' ? 'requested, waiting on the selectmen' : c.outcome === 'certified' ? 'certified by the selectmen' : 'the selectmen refused'}`,
+        (c) => `${formatCivilDate(c.requestedOn)}: ${certificationPhrase(c.outcome)}`,
       ),
     },
     exerciseText:

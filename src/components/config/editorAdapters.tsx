@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from 'react'
 import { ApplicationTypeEditor } from '@/components/config/ApplicationTypeEditor'
 import { BoardSettingsEditor } from '@/components/config/BoardSettingsEditor'
+import { BuildingProgramEditor } from '@/components/config/BuildingProgramEditor'
 import { ChecklistEditor } from '@/components/config/ChecklistEditor'
 import { ConditionsEditor } from '@/components/config/ConditionsEditor'
 import { useEditorContext } from '@/components/config/EditorContextProvider'
@@ -20,6 +21,7 @@ import { TownRuleEditor } from '@/components/config/TownRuleEditor'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
 import type { RegionalContactsBody } from '@/features/boards/regionalContacts'
+import type { BuildingProgramBody } from '@/features/buildingProgram/schema'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import type {
   ConfigIssue,
@@ -125,6 +127,16 @@ export function InspectionAdapter({ body, onChange, issues }: EditorProps) {
   )
 }
 
+export function BuildingProgramAdapter({ body, onChange, issues }: EditorProps) {
+  return (
+    <BuildingProgramEditor
+      body={body as BuildingProgramBody}
+      onChange={onChange}
+      errors={errorsOf(issues)}
+    />
+  )
+}
+
 export function AmendmentAdapter({ body, onChange, issues }: EditorProps) {
   return (
     <LocalAmendmentEditor
@@ -159,11 +171,12 @@ export function ApplicationTypeAdapter({ body, onChange, issues }: EditorProps) 
 }
 
 export function BoardSettingsAdapter({ body, onChange, issues }: EditorProps) {
-  const { boards } = useEditorContext()
+  const { boards, townBuffer } = useEditorContext()
   return (
     <BoardSettingsEditor
       body={body as BoardSettingsBody}
       boards={boards}
+      townBuffer={townBuffer}
       onChange={onChange}
       errors={errorsOf(issues)}
     />

@@ -1,5 +1,6 @@
 import { NH_PACK } from '@packs/nh'
 import { AppError, ErrorIds } from '@/constants/errorIds'
+import { buildingCodeIssues } from '@/features/packs/buildingCodeChecks'
 import type { StatePack } from '@/features/packs/schema'
 
 export const DEFAULT_PACK_ID = 'nh'
@@ -20,6 +21,13 @@ export function packById(id: string): StatePack {
     throw new AppError(ErrorIds.PACK_INVALID, 'No jurisdiction pack has this id', {
       id,
       known: Object.keys(PACKS),
+    })
+  }
+  const issues = buildingCodeIssues(pack.buildingCodes)
+  if (issues.length > 0) {
+    throw new AppError(ErrorIds.PACK_INVALID, 'The jurisdiction pack names an unknown code', {
+      id,
+      issues,
     })
   }
   return pack

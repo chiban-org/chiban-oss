@@ -8,6 +8,10 @@ describe('enforcement refusal copy', () => {
     ['public_text_required', /^This case is shown on the public site\./],
     ['case_not_open', /^This case has ended/],
     ['already_on_case', /^That complaint is already on this case\.$/],
+    [
+      'building_code_not_enforced',
+      /^This town enforces no building code, so a building code finding or order cannot be added to this case\.$/,
+    ],
   ])('names the problem for %s', (code, copy) => {
     expect(enforcementError(code)).toMatch(copy)
   })

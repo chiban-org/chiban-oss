@@ -58,6 +58,11 @@ const NOUNS: Table = {
     'phoneRequestHours.startMinute': 'the time phone requests open',
     'phoneRequestHours.endMinute': 'the time phone requests close',
   },
+  building_program: {
+    permitsEnabled: 'whether the town issues building permits',
+    codeChoice: 'the building code the town enforces',
+    residents: 'the number of residents',
+  },
   payment_settings: {
     'convenienceFee.basisPoints': 'the percent of the payment',
     'convenienceFee.fixedCents': 'the set amount',

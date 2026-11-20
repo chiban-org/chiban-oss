@@ -27,7 +27,7 @@ import { getLayerStatus } from '@/features/gis/layerStatus'
 import { type HonestValue, honestFromLayer } from '@/features/honest/honest'
 import { type FeeBalance, feeBalance } from '@/features/ledger/feeBalance'
 import { ledgerEntryVisibleTo } from '@/features/ledger/visibility'
-import { packRoles } from '@/features/packs/roles'
+import { isBuildingPermit } from '@/features/packs/roles'
 import { displayIdsFor } from '@/features/parcels/displayId'
 import { computeConvenienceFee } from '@/features/payments/convenienceFee'
 import { getPaymentSettings } from '@/features/payments/paymentSettings'
@@ -91,7 +91,7 @@ function recordFacts(app: ApplicationContext, projectTitle: string, mayEnd: bool
     substep: app.substep,
     board: boardKindOf(app.typeBody.classification) !== null,
     allowsDirectIssue: app.typeBody.workflow.allowsDirectIssue,
-    completeness: app.typeBody.classification === packRoles().classifications.buildingPermit,
+    completeness: isBuildingPermit(app.typeBody.classification),
     receivedDate: app.receivedDate,
     completedDate: app.completedDate,
     issuedOn: app.issuedOn,

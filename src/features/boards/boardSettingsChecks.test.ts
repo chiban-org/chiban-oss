@@ -7,6 +7,8 @@ import {
 import { checkBoardSettings } from '@/features/boards/boardSettingsChecks'
 import type { BoardRow } from '@/features/boards/townBoards'
 import { fieldErrorsFor } from '@/features/config/publishErrors'
+import { withPackForTest } from '@/features/packs/registry'
+import { packWithTownBuffer } from '@/test/packs/townBufferPack'
 import type { CivilDate } from '@/types/civilDate'
 
 function board(id: string, kind: BoardRow['kind'], name: string): BoardRow {
@@ -114,5 +116,35 @@ describe('board settings filing deadline', () => {
     expect(errorsFor(body).boards).toBe(
       'Add the notice settings for the Alder Pond Zoning Board of Adjustment.',
     )
+  })
+})
+
+describe('abutter buffer', () => {
+  const withBuffer = (bufferFt: number): BoardSettingsBody => ({
+    ...DEFAULT_BODY,
+    abutters: { ...DEFAULT_BODY.abutters, bufferFt },
+  })
+
+  it('accepts a buffer up to the pack maximum', () => {
+    withPackForTest(packWithTownBuffer({ defaultFt: null, maxFt: 500 }), () => {
+      expect(checkBoardSettings(withBuffer(500), ACTIVE)).toBeNull()
+    })
+  })
+
+  it('refuses a buffer above the pack maximum', () => {
+    withPackForTest(packWithTownBuffer({ defaultFt: null, maxFt: 500 }), () => {
+      const result = checkBoardSettings(withBuffer(501), ACTIVE)
+      expect(result).toMatchObject({ invalid: [{ path: 'abutters.bufferFt' }] })
+    })
+  })
+
+  it('refuses a buffer when the pack counts abutters by adjacency alone', () => {
+    expect(checkBoardSettings(withBuffer(100), ACTIVE)).toMatchObject({
+      invalid: [{ path: 'abutters.bufferFt' }],
+    })
+  })
+
+  it('accepts settings with no buffer', () => {
+    expect(checkBoardSettings(DEFAULT_BODY, ACTIVE)).toBeNull()
   })
 })

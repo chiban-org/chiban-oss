@@ -11,6 +11,7 @@ export const KIND_LABELS: Record<ConfigKind, string> = {
   local_code_amendment: 'Local code amendments',
   payment_settings: 'Payment settings',
   inspection_settings: 'Inspection settings',
+  building_program: 'Building permits and code',
   board_settings: 'Board settings',
   regional_contacts: 'Regional notice contacts',
   review_routes: 'Technical Review Committee routes',
@@ -31,6 +32,7 @@ export const KIND_DESCRIPTIONS: Record<ConfigKind, string> = {
   local_code_amendment: 'Changes the town has adopted to the state building code.',
   payment_settings: 'The convenience fee, who checks are payable to, and the receipt footer.',
   inspection_settings: 'Inspection days and hours, slot length, notice and booking limits.',
+  building_program: 'Whether the town issues building permits and which building code it enforces.',
   board_settings: 'Each board, how it posts public notice, and how abutter lists are drawn.',
   regional_contacts: 'Who is sent notice when an application may have impact beyond the town.',
   review_routes:
@@ -54,6 +56,7 @@ export const KIND_NEW_LABELS: Record<ConfigKind, string> = {
   local_code_amendment: 'New amendment',
   payment_settings: START_SETTINGS,
   inspection_settings: START_SETTINGS,
+  building_program: START_SETTINGS,
   board_settings: START_SETTINGS,
   regional_contacts: START_SETTINGS,
   review_routes: START_SETTINGS,

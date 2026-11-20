@@ -3,6 +3,7 @@ import type { DbOrTx } from '@/db/client'
 import { applications } from '@/db/schema'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import type { CoreState } from '@/features/applications/states'
+import type { Applicability } from '@/features/buildingProgram/applicability'
 import type { ConfigPins } from '@/features/config/bindings'
 import { getVersion } from '@/features/config/store'
 import type { FieldValue, ProjectFacts } from '@/features/forms/validateSubmission'
@@ -26,6 +27,7 @@ export interface ApplicationContext {
   closureReason: string | null
   permitRevision: number
   permitCorrectedOn: CivilDate | null
+  applicability: Applicability | null
 }
 
 export async function loadApplicationContext(
@@ -57,5 +59,6 @@ export async function loadApplicationContext(
     closureReason: row.closureReason,
     permitRevision: row.permitRevision,
     permitCorrectedOn: row.permitCorrectedOn as CivilDate | null,
+    applicability: row.applicability as Applicability | null,
   }
 }

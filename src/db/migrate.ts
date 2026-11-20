@@ -29,7 +29,10 @@ export async function applyMigrations(
 
 export async function runMigrationsCli(): Promise<void> {
   const { db, pool } = await import('./client')
-  const result = await applyMigrations(db, AbortSignal.timeout(120_000))
+  const { syncPackParcelIdFormats } = await import('@/features/parcels/syncPackFormats')
+  const signal = AbortSignal.timeout(120_000)
+  const result = await applyMigrations(db, signal)
+  if (result.ok) await syncPackParcelIdFormats(db, signal)
   await pool.end()
   if (!result.ok) {
     console.error(`migration failed: ${result.error}`)

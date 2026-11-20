@@ -6,5 +6,5 @@ export function boardDecisionClockKeys(): string[] {
 }
 
 export function decisionClockKeys(): string[] {
-  return [packRoles().rules.buildingPermitDecision, ...boardDecisionClockKeys()]
+  return presentKeys([packRoles().rules.buildingPermitDecision, ...boardDecisionClockKeys()])
 }

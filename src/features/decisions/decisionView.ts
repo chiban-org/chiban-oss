@@ -10,6 +10,7 @@ import {
   noticeSets,
   regionalImpactDeterminations,
 } from '@/db/schema'
+import { appealToBoard, boardDecision } from '@/features/appeals/appealWords'
 import { loadApplicationContext } from '@/features/applications/context'
 import type { Actor } from '@/features/auth/actor'
 import { hasCapability } from '@/features/authz/capabilities'
@@ -25,18 +26,21 @@ import { packHolidayCalendar } from '@/features/packs/holidays'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { activePack } from '@/features/packs/registry'
 import { packRoles } from '@/features/packs/roles'
+import { boardShort } from '@/features/packs/vocabulary'
 import { formatCivilDate } from '@/lib/formatDate'
 import type { CivilDate } from '@/types/civilDate'
 
-const NODE_LABELS = {
-  administrative_decision: 'Administrative decision',
-  zba_decision: 'Zoning Board decision',
-  pb_decision: 'Planning Board decision',
-  zba_appeal: 'Appeal to the Zoning Board',
-  rehearing_motion: 'Motion for rehearing',
-  rehearing_outcome: 'Rehearing decision',
-  court_petition: 'Court petition',
-} as const
+function nodeLabels() {
+  return {
+    administrative_decision: 'Administrative decision',
+    zba_decision: boardDecision(),
+    pb_decision: `${boardShort('planning_board')} decision`,
+    zba_appeal: appealToBoard(),
+    rehearing_motion: 'Motion for rehearing',
+    rehearing_outcome: 'Rehearing decision',
+    court_petition: 'Court petition',
+  } as const
+}
 
 const OUTCOME_WORDS: Record<string, string> = {
   ...OUTCOME_LABELS,
@@ -109,9 +113,10 @@ function windowOf(node: typeof appealNodes.$inferSelect): GraphNode['window'] {
 }
 
 export function toGraphNodes(rows: (typeof appealNodes.$inferSelect)[]): GraphNode[] {
+  const labels = nodeLabels()
   return rows.map((n) => ({
     nodeId: n.id,
-    kindLabel: NODE_LABELS[n.kind],
+    kindLabel: labels[n.kind],
     dateText: formatCivilDate(n.occurredOn),
     outcomeText: n.outcome === null ? null : (OUTCOME_WORDS[n.outcome] ?? null),
     status: n.status,

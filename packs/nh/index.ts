@@ -15,10 +15,16 @@ import type { StatePack } from '@/features/packs/schema'
 
 export const NH_PACK: StatePack = {
   manifest: NH_PACK_MANIFEST,
+  docsSlug: 'new-hampshire',
   boardKinds: NH_BOARD_KINDS,
   classificationKeys: CLASSIFICATION_KEYS,
   starters: NH_STARTERS,
   inspectionSettingsDefault: NH_INSPECTION_SETTINGS_DEFAULT,
+  buildingCodes: {
+    choices: [{ key: 'state_code', label: 'State building code' }],
+    defaultChoice: 'state_code',
+    requiredAbove: null,
+  },
   holidays: (year) => nhLegalHolidays(year),
   countingCitations: NH_COUNTING_CITATIONS,
   licenseTypes: NH_LICENSE_TYPES,
@@ -31,9 +37,20 @@ export const NH_PACK: StatePack = {
   ruleTransitions: NH_RULE_TRANSITIONS,
   ruleAreas: NH_RULE_AREAS,
   orderTexts: NH_ORDER_TEXTS,
+  spatial: { projectedSrid: 3437, label: 'NAD83 / New Hampshire (ftUS)' },
   labels: {
     environmentalAgency: 'NH Department of Environmental Services',
     environmentalAgencyShort: 'NH DES',
     stateLicenseNumber: 'NH license number',
+    recordsLaw: 'Right-to-Know',
+    recordsRequest: 'Right-to-Know request',
+    governingBody: 'selectmen',
+    citations: {
+      exerciseFloorAuthority: 'RSA 674:33 I-a(a) and IV(b)',
+      abutterListIssued: {
+        label: 'RSA 676:4 I(d) and RSA 676:7 I',
+        url: 'https://gc.nh.gov/rsa/html/LXIV/676/676-4.htm',
+      },
+    },
   },
 }

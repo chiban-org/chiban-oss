@@ -1,16 +1,23 @@
 import { ActionForm } from '@/components/ActionForm'
 import { AppealGraph } from '@/components/appeals/AppealGraph'
 import { SelectField, TextField } from '@/components/staff/fields'
+import {
+  appealToBoard,
+  boardDecision,
+  linkedPlanningDecisionLabel,
+} from '@/features/appeals/appealWords'
 import type { DecisionView } from '@/features/decisions/decisionView'
 import { addAppealNodeAction } from '../../hearings/decisionActions'
 
-const APPEAL_STEPS: [string, string][] = [
-  ['rehearing_motion', 'Motion for rehearing'],
-  ['rehearing_outcome', 'Rehearing decision'],
-  ['court_petition', 'Court petition'],
-  ['zba_appeal', 'Appeal to the Zoning Board'],
-  ['zba_decision', 'Zoning Board decision'],
-]
+function appealSteps(): [string, string][] {
+  return [
+    ['rehearing_motion', 'Motion for rehearing'],
+    ['rehearing_outcome', 'Rehearing decision'],
+    ['court_petition', 'Court petition'],
+    ['zba_appeal', appealToBoard()],
+    ['zba_decision', boardDecision()],
+  ]
+}
 
 export function AppealsSection({ view, today }: { view: DecisionView; today: string }) {
   return (
@@ -25,7 +32,7 @@ export function AppealsSection({ view, today }: { view: DecisionView; today: str
             name="parentId"
             options={view.nodeChoices.map((n): [string, string] => [n.id, n.label])}
           />
-          <SelectField label="Step" name="kind" options={APPEAL_STEPS} />
+          <SelectField label="Step" name="kind" options={appealSteps()} />
           <TextField
             label="Date"
             name="occurredOn"
@@ -45,7 +52,7 @@ export function AppealsSection({ view, today }: { view: DecisionView; today: str
             ]}
           />
           <SelectField
-            label="Is this the Zoning Board part of a Planning Board decision?"
+            label={linkedPlanningDecisionLabel()}
             name="linked"
             options={[
               ['no', 'No'],

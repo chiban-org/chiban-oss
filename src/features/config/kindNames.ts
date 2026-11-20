@@ -9,6 +9,7 @@ export const CONFIG_KINDS = [
   'local_code_amendment',
   'payment_settings',
   'inspection_settings',
+  'building_program',
   'board_settings',
   'regional_contacts',
   'review_routes',
@@ -22,6 +23,7 @@ export const SINGLETON_KEY = 'default'
 export const SINGLETON_KINDS: readonly ConfigKind[] = [
   'payment_settings',
   'inspection_settings',
+  'building_program',
   'board_settings',
   'regional_contacts',
   'review_routes',

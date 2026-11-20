@@ -7,8 +7,10 @@ import { arrangePanels } from '@/components/layout/splitPanels'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
+import { recordsRequest } from '@/features/packs/vocabulary'
 import { RTK_STATUS_LABELS } from '@/features/rtk/labels'
 import { letterDeliveries } from '@/features/rtk/letterDelivery'
+import { requestsNoPermissionAction, requestsTitle } from '@/features/rtk/requestCopy'
 import { requesterEmailOf } from '@/features/rtk/requesterEmail'
 import { REQUESTS_PATH } from '@/features/rtk/requestListParams'
 import {
@@ -38,7 +40,9 @@ import {
 import { LettersSection, ResponseSection } from './ResponseSection'
 import { WithholdingsSection } from './WithholdingsSection'
 
-export const metadata: Metadata = { title: 'Right-to-Know request' }
+export function generateMetadata(): Metadata {
+  return { title: recordsRequest() }
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -60,7 +64,7 @@ export default async function RequestPage({
     townToday(ctx.db, new Date(), ctx.signal),
   ])
   if (!mayOpen(REQUESTS_PATH, viewer)) {
-    return <NoPermission title="Right-to-Know requests" action="see Right-to-Know requests" />
+    return <NoPermission title={requestsTitle()} action={requestsNoPermissionAction()} />
   }
   const view = await rtkRequestView(ctx.db, ctx.actor, requestId, today, ctx.signal)
   if (!view.ok) notFound()
@@ -151,7 +155,7 @@ export default async function RequestPage({
   return (
     <main>
       <PageHeader
-        kicker="Right-to-Know request"
+        kicker={recordsRequest()}
         title={request.number}
         status={
           <StatusChip

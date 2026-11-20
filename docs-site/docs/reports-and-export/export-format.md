@@ -140,6 +140,7 @@ File: `data/abutter_lists.ndjson`. Ordered by id.
 - `issued_at`: timestamp with time zone, nullable
 - `snapshot`: jsonb, nullable
 - `snapshot_sha256`: text, nullable
+- `selection_settings`: jsonb, nullable
 - `superseded_by`: uuid, nullable
 - `created_by`: uuid
 - `created_at`: timestamp with time zone
@@ -407,6 +408,7 @@ File: `data/applications.ndjson`. Ordered by id.
 - `closure_reason`: text, nullable
 - `permit_revision`: integer
 - `permit_corrected_on`: date, nullable
+- `applicability`: jsonb, nullable
 - `responsible_user_id`: uuid, nullable
 - `created_by`: uuid
 - `created_at`: timestamp with time zone

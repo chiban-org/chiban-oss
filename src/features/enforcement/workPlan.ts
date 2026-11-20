@@ -1,5 +1,6 @@
 import type { EnforcementStatus } from '@/db/schema'
 import { CASE_TRANSITIONS, noViolationAllowed } from '@/features/enforcement/caseTransitions'
+import { boardLabel } from '@/features/packs/vocabulary'
 import { daysLeftPhrase } from '@/lib/dayCount'
 import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, daysBetween } from '@/types/civilDate'
@@ -59,14 +60,14 @@ export function duePhrase(due: CaseDue): string {
   return `${due.label} ${formatCivilDate(due.date)}, ${daysLeftPhrase(due.daysLeft)}.`
 }
 
-function actorLabel(step: Step, responsible: string | null): string {
+export function actorLabel(step: Step, responsible: string | null): string {
   switch (step.actor) {
     case 'town':
       return responsible === null ? 'Town' : `Town (${responsible})`
     case 'respondent':
       return step.actorName === null ? 'Respondent' : `Respondent (${step.actorName})`
     case 'zba':
-      return 'Zoning Board of Adjustment'
+      return boardLabel('zba')
     case 'court':
       return 'Court'
     case 'counsel':

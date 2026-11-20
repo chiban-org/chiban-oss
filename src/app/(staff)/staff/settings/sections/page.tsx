@@ -2,7 +2,7 @@ import type { Metadata } from 'next'
 import { StatusChip } from '@/components/StatusChip'
 import { SettingsHeader } from '@/components/settings/SettingsHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
-import type { TownSectionRow } from '@/db/schema'
+import type { TownSectionKind, TownSectionRow } from '@/db/schema'
 import { PROVISION_KIND_LABELS } from '@/features/enforcement/labels'
 import { loadSectionListView } from '@/features/enforcement/sections/sectionListView'
 import type { TypedRef } from '@/features/enforcement/sections/suggestions'
@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 const LEAD =
   'Ordinance and code sections staff cite in enforcement findings. They are suggested by kind when a finding is recorded, along with sections used before, conditions on the parcel and the state building code list. A section not on any list can still be typed.'
 
-function SectionRow({ row }: { row: TownSectionRow }) {
+function SectionRow({ row, kinds }: { row: TownSectionRow; kinds: readonly TownSectionKind[] }) {
   return (
     <tr className="align-top">
       <td className="min-w-[8rem]">{PROVISION_KIND_LABELS[row.provisionKind]}</td>
@@ -33,7 +33,7 @@ function SectionRow({ row }: { row: TownSectionRow }) {
       <td className="min-w-[9rem]">
         {row.active ? (
           <div className="row-actions">
-            <EditSection sectionId={row.id} values={row} />
+            <EditSection sectionId={row.id} values={row} kinds={kinds} />
             <RetireSection sectionId={row.id} reference={row.reference} />
           </div>
         ) : null}
@@ -42,7 +42,13 @@ function SectionRow({ row }: { row: TownSectionRow }) {
   )
 }
 
-function SectionTable({ rows }: { rows: TownSectionRow[] }) {
+function SectionTable({
+  rows,
+  kinds,
+}: {
+  rows: TownSectionRow[]
+  kinds: readonly TownSectionKind[]
+}) {
   if (rows.length === 0) return <p>No sections on the list yet.</p>
   return (
     <div className="table-panel">
@@ -61,7 +67,7 @@ function SectionTable({ rows }: { rows: TownSectionRow[] }) {
         </thead>
         <tbody>
           {rows.map((row) => (
-            <SectionRow key={row.id} row={row} />
+            <SectionRow key={row.id} row={row} kinds={kinds} />
           ))}
         </tbody>
       </table>
@@ -107,8 +113,12 @@ export default async function SectionsSettingsPage() {
   if (view === null) return <NoPermission title="Sections for findings" action="change settings" />
   return (
     <main data-wide="">
-      <SettingsHeader title="Sections for findings" lead={LEAD} action={<AddSection />} />
-      <SectionTable rows={view.rows} />
+      <SettingsHeader
+        title="Sections for findings"
+        lead={LEAD}
+        action={<AddSection kinds={view.kinds} />}
+      />
+      <SectionTable rows={view.rows} kinds={view.kinds} />
       <TypedNotListed refs={view.typedNotListed} />
     </main>
   )

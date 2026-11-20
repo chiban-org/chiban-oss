@@ -3,6 +3,8 @@ import type { ApplicationTypeBody } from '@/features/applications/applicationTyp
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
 import { checkBoardSettings } from '@/features/boards/boardSettingsChecks'
 import { activeBoards } from '@/features/boards/townBoards'
+import { buildingProgramIssues } from '@/features/buildingProgram/checks'
+import type { BuildingProgramBody } from '@/features/buildingProgram/schema'
 import type {
   ConfigIssue,
   ConfigKind,
@@ -20,6 +22,7 @@ import type { FormBody } from '@/features/forms/formSchema'
 import { type ChecklistBody, isFinalChecklist } from '@/features/inspections/checklistSchema'
 import { loadPack } from '@/features/packs/loadPack'
 import { checkTownValue } from '@/features/packs/overridePolicy'
+import { activePack } from '@/features/packs/registry'
 import { checkTemplate, unknownTemplateFields } from '@/features/templates/templateChecks'
 import type { TemplateBody } from '@/features/templates/templateSchema'
 import { checkTownProfile } from '@/features/town/profileChecks'
@@ -138,6 +141,14 @@ export async function runPublishChecks(
   if (kind === 'town_rule_setting') return checkTownRule(body as TownRuleSettingBody, key)
   if (kind === 'board_settings')
     return checkBoardSettings(body as BoardSettingsBody, await activeBoards(tx))
+  if (kind === 'building_program') {
+    return placeholderError(
+      buildingProgramIssues(body as BuildingProgramBody, activePack().buildingCodes).map((line) => {
+        const at = line.indexOf(': ')
+        return { path: line.slice(0, at), message: line.slice(at + 2) }
+      }),
+    )
+  }
   if (kind === 'town_profile') return checkTownProfile(body as TownProfileBody)
   return null
 }

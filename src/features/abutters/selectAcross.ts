@@ -1,6 +1,7 @@
 import { sql } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { uuidArray } from '@/db/uuidList'
+import { projectedSridParam } from '@/features/abutters/projection/srid'
 import type { CrossingFeature, ProjectionResult, Pt } from '@/features/abutters/projection/types'
 import type { Candidate, CandidateReason } from '@/features/abutters/types'
 import { isCaptured } from '@/features/abutters/verdicts'
@@ -22,6 +23,7 @@ export async function selectAcross(
   signal: AbortSignal,
 ): Promise<Candidate[]> {
   signal.throwIfAborted()
+  const srid = projectedSridParam()
   const names = new Map(features.map((f) => [f.id, f.name]))
   const reasons = new Map<string, CandidateReason[]>()
   const add = (parcelId: string, reason: CandidateReason) => {
@@ -36,8 +38,8 @@ export async function selectAcross(
       select p.id from parcels p
       where p.geom is not null and p.status = 'active' and p.id <> all(${excluded})
         and ST_Intersects(
-          ST_Transform(p.geom, 3437),
-          ST_Buffer(ST_GeomFromText(${wkt(region)}, 3437), ${REGION_SHRINK_FT})
+          ST_Transform(p.geom, ${srid}),
+          ST_Buffer(ST_GeomFromText(${wkt(region)}, ${srid}), ${REGION_SHRINK_FT})
         )
       order by p.id
     `)
@@ -52,14 +54,14 @@ export async function selectAcross(
   for (const projected of result.points) {
     const rows = await tx.execute<{ id: string; feet: number }>(sql`
       select p.id, ST_Distance(
-          ST_Transform(p.geom, 3437),
-          ST_SetSRID(ST_MakePoint(${projected.point[0]}, ${projected.point[1]}), 3437)
+          ST_Transform(p.geom, ${srid}),
+          ST_SetSRID(ST_MakePoint(${projected.point[0]}, ${projected.point[1]}), ${srid})
         )::float8 as feet
       from parcels p
       where p.geom is not null and p.status = 'active' and p.id <> all(${excluded})
         and ST_DWithin(
-          ST_Transform(p.geom, 3437),
-          ST_SetSRID(ST_MakePoint(${projected.point[0]}, ${projected.point[1]}), 3437),
+          ST_Transform(p.geom, ${srid}),
+          ST_SetSRID(ST_MakePoint(${projected.point[0]}, ${projected.point[1]}), ${srid}),
           ${captureRadiusFt + CAPTURE_PREFILTER_MARGIN_FT}
         )
       order by p.id

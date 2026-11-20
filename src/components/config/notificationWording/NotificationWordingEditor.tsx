@@ -5,6 +5,7 @@ import { WordingFieldList } from '@/components/config/notificationWording/Wordin
 import { WordingMessageList } from '@/components/config/notificationWording/WordingMessageList'
 import { WordingPreview } from '@/components/config/notificationWording/WordingPreview'
 import { Area, FieldError, type FieldErrors, Input } from '@/components/config/primitives'
+import { usePackText } from '@/components/PackTextProvider'
 import { Button } from '@/components/ui/button'
 import {
   currentWording,
@@ -12,7 +13,7 @@ import {
   isChanged,
   withDefault,
   withWording,
-} from '@/features/notifications/wording/wordingEdits'
+} from '@/features/notifications/wording/wordingChanges'
 import {
   WORDING_KEY_INFO,
   type WordingKey,
@@ -46,13 +47,14 @@ function hintFor(info: WordingKeyInfo | undefined): string {
 export function NotificationWordingEditor({ body, onChange, errors, townName }: Props) {
   const [selected, setSelected] = useState<WordingKey>('application_submitted')
   const area = useRef<HTMLTextAreaElement>(null)
-  const wording = currentWording(body, selected)
+  const { vocabulary } = usePackText()
+  const wording = currentWording(body, selected, vocabulary)
   const info = KEY_INFO.get(selected)
   const changed = isChanged(body, selected)
   const insert = (field: string) => {
     const at = area.current?.selectionStart ?? wording.body.length
     const next = insertField(wording.body, at, field)
-    onChange(withWording(body, selected, { body: next.text }))
+    onChange(withWording(body, selected, { body: next.text }, vocabulary))
     requestAnimationFrame(() => {
       area.current?.focus()
       area.current?.setSelectionRange(next.caret, next.caret)
@@ -72,7 +74,9 @@ export function NotificationWordingEditor({ body, onChange, errors, townName }: 
           <Input
             label="Subject"
             value={wording.subject}
-            onChange={(e) => onChange(withWording(body, selected, { subject: e.target.value }))}
+            onChange={(e) =>
+              onChange(withWording(body, selected, { subject: e.target.value }, vocabulary))
+            }
           />
           <FieldError errors={errors} name={`events.${selected}.subject`} />
         </div>
@@ -83,7 +87,9 @@ export function NotificationWordingEditor({ body, onChange, errors, townName }: 
             hint={hintFor(info)}
             rows={8}
             value={wording.body}
-            onChange={(e) => onChange(withWording(body, selected, { body: e.target.value }))}
+            onChange={(e) =>
+              onChange(withWording(body, selected, { body: e.target.value }, vocabulary))
+            }
           />
           <FieldError errors={errors} name={`events.${selected}.body`} />
         </div>

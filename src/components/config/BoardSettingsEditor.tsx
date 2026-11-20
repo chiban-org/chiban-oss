@@ -11,6 +11,7 @@ import type { EditorBoard } from '@/features/config/editorContext'
 interface Props {
   body: BoardSettingsBody
   boards: readonly EditorBoard[]
+  townBuffer?: { defaultFt: number | null; maxFt: number } | undefined
   onChange: (next: BoardSettingsBody) => void
   errors: FieldErrors
 }
@@ -20,7 +21,7 @@ function toNumberOrNull(raw: string): number | null {
   return Number.isNaN(parsed) ? null : parsed
 }
 
-export function BoardSettingsEditor({ body, boards, onChange, errors }: Props) {
+export function BoardSettingsEditor({ body, boards, townBuffer, onChange, errors }: Props) {
   const setBoard = (index: number, next: Partial<BoardSettingsBody['boards'][number]>) =>
     onChange({
       ...body,
@@ -146,7 +147,19 @@ export function BoardSettingsEditor({ body, boards, onChange, errors }: Props) {
               setAbutters({ assumedRightOfWayFt: toNumberOrNull(e.target.value) ?? 50 })
             }
           />
+          {townBuffer === undefined ? null : (
+            <Input
+              label="Distance for abutters, in feet"
+              hint={`Parcels within this distance of the property count as abutters. At most ${String(townBuffer.maxFt)} feet.`}
+              type="number"
+              min={1}
+              max={townBuffer.maxFt}
+              value={body.abutters.bufferFt ?? townBuffer.defaultFt ?? ''}
+              onChange={(e) => setAbutters({ bufferFt: toNumberOrNull(e.target.value) })}
+            />
+          )}
         </div>
+        <FieldError errors={errors} name="abutters.bufferFt" />
         <FieldError errors={errors} name="abutters.layersConfirmedBy" />
         <FieldError errors={errors} name="abutters.layersConfirmedOn" />
       </fieldset>

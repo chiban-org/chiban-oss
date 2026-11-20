@@ -6,6 +6,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { buildingCodeOpenFor } from '@/features/enforcement/buildingCodeCutoff'
 import {
   type FindingRow,
   findingInUse,
@@ -80,7 +81,7 @@ export async function editFinding(
   actor: Actor,
   input: z.input<typeof EditSchema>,
   signal: AbortSignal,
-): Promise<Result<void, ChangeError | 'finding_in_use'>> {
+): Promise<Result<void, ChangeError | 'finding_in_use' | 'building_code_not_enforced'>> {
   if (!(await mayManage(db, actor, signal))) return err('forbidden')
   const parsed = EditSchema.safeParse(input)
   if (!parsed.success) return err('invalid')
@@ -88,9 +89,16 @@ export async function editFinding(
   return await transactionResult(db, async (tx: Tx) => {
     const locked = await lockFindingWithCase(tx, findingId)
     if (locked === null) return err('not_found')
-    const { finding } = locked
+    const { finding, caseRow } = locked
     if (finding.status !== 'open') return err('finding_not_open')
     if (await findingInUse(tx, finding)) return err('finding_in_use')
+    if (
+      values.provisionKind === 'building_code' &&
+      finding.provisionKind !== 'building_code' &&
+      !(await buildingCodeOpenFor(tx, caseRow.createdAt, signal))
+    ) {
+      return err('building_code_not_enforced')
+    }
     await tx.update(violationFindings).set(values).where(eq(violationFindings.id, finding.id))
     await auditChange(
       tx,

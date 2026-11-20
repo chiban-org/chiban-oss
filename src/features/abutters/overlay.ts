@@ -4,11 +4,19 @@ import { uuidArray } from '@/db/uuidList'
 import { loadCrossingInputs } from '@/features/abutters/crossingInputs'
 import { projectionParamsFor } from '@/features/abutters/projection/paramsFor'
 import { projectAcross } from '@/features/abutters/projection/projectAcross'
+import { projectedSridParam } from '@/features/abutters/projection/srid'
 import type { Pt } from '@/features/abutters/projection/types'
 import type { AbutterParams } from '@/features/packs/schema'
 import { displayIdsFor } from '@/features/parcels/displayId'
 
-export type OverlayKind = 'region' | 'corner' | 'projected' | 'connector' | 'capture' | 'label'
+export type OverlayKind =
+  | 'region'
+  | 'corner'
+  | 'projected'
+  | 'connector'
+  | 'capture'
+  | 'buffer'
+  | 'label'
 
 export type Overlay = GeoJSON.FeatureCollection<
   GeoJSON.Geometry,
@@ -31,7 +39,8 @@ async function toLonLat(
   geometryWkt: string,
   bufferFt: number | null,
 ): Promise<GeoJSON.Geometry> {
-  const base = sql`ST_GeomFromText(${geometryWkt}, 3437)`
+  const srid = projectedSridParam()
+  const base = sql`ST_GeomFromText(${geometryWkt}, ${srid})`
   const shaped = bufferFt === null ? base : sql`ST_Buffer(${base}, ${bufferFt})`
   const result = await tx.execute<{ gj: string }>(
     sql`select ST_AsGeoJSON(ST_Transform(${shaped}, 4326), 7) as gj`,
@@ -45,6 +54,7 @@ export async function projectionOverlay(
   params: AbutterParams,
   assumedRightOfWayFt: number,
   signal: AbortSignal,
+  townBufferFt: number | null = null,
 ): Promise<Overlay> {
   const radius = params.maxCrossingFt + params.captureRadiusFt + NEARBY_MARGIN_FT
   const inputs = await loadCrossingInputs(tx, applicantParcelIds, radius, signal)
@@ -74,6 +84,12 @@ export async function projectionOverlay(
     await add('projected', wkt('POINT', [point.point]))
     await add('capture', wkt('POINT', [point.point]), params.captureRadiusFt)
   }
+  if (townBufferFt !== null) {
+    const outline = await bufferOutline(tx, applicantParcelIds, townBufferFt)
+    if (outline !== null) {
+      features.push({ type: 'Feature', properties: { kind: 'buffer' }, geometry: outline })
+    }
+  }
   if (features.length > 0) {
     const labelled = [...applicantParcelIds, ...inputs.others.map((o) => o.parcelId)]
     features.push(...(await parcelLabels(tx, labelled)))
@@ -85,6 +101,23 @@ export async function projectionOverlay(
     )
   }
   return { type: 'FeatureCollection', features }
+}
+
+async function bufferOutline(
+  tx: Tx,
+  applicantParcelIds: string[],
+  bufferFt: number,
+): Promise<GeoJSON.Geometry | null> {
+  const srid = projectedSridParam()
+  const result = await tx.execute<{ gj: string | null }>(sql`
+    select ST_AsGeoJSON(
+      ST_Transform(ST_Buffer(ST_Transform(ST_Union(a.geom), ${srid}), ${bufferFt}), 4326),
+      7
+    ) as gj
+    from parcels a where a.id = any(${uuidArray(applicantParcelIds)})
+  `)
+  const gj = result.rows[0]?.gj ?? null
+  return gj === null ? null : (JSON.parse(gj) as GeoJSON.Geometry)
 }
 
 type LabelFeature = Overlay['features'][number]

@@ -4,6 +4,7 @@ import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { appealPointer } from '@/features/appeals/appealWords'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
 import { arrangeBoardLines, boardFacets } from '@/features/boards/boardApplicationList'
 import { BOARD_KIND_BEHAVIOUR } from '@/features/boards/boardKindBehaviour'
@@ -129,8 +130,8 @@ export default async function BoardsPage({
         first.
       </p>
       <p>
-        To appeal a decision by the building inspector or zoning administrator to the Zoning Board,
-        use <Link href="/staff/boards/appeals">appeals of administrative decisions</Link>.
+        {appealPointer()} use{' '}
+        <Link href="/staff/boards/appeals">appeals of administrative decisions</Link>.
       </p>
       {allLines.length === 0 ? null : (
         <div className="toolbar">

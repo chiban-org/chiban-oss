@@ -34,6 +34,7 @@ function starterOrDefaultBody(kind: ConfigKind): unknown {
     case 'local_code_amendment':
     case 'payment_settings':
     case 'inspection_settings':
+    case 'building_program':
     case 'board_settings':
     case 'regional_contacts':
     case 'town_profile':
@@ -58,6 +59,8 @@ describe('CONFIG_EDITORS', () => {
         <Editor body={starterOrDefaultBody(kind)} onChange={vi.fn()} issues={[]} />
       </EditorContextProvider>,
     )
-    expect(container.querySelector('input, textarea, select, [role="alert"]')).not.toBeNull()
+    expect(
+      container.querySelector('input, textarea, select, [role="checkbox"], [role="alert"]'),
+    ).not.toBeNull()
   })
 })
