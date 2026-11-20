@@ -1,3 +1,4 @@
+import { boardLabel } from '@/features/packs/vocabulary'
 import type { MergeField } from '@/features/templates/mergeFields'
 
 export const MERGE_FIELD_LABELS: Record<MergeField, string> = {
@@ -43,8 +44,12 @@ export const MERGE_FIELD_LABELS: Record<MergeField, string> = {
   'signer.land_use_administrator.title': 'Land use administrator title',
   'signer.planning_board_chair.name': 'Planning Board chair name',
   'signer.planning_board_chair.title': 'Planning Board chair title',
-  'signer.zba_chair.name': 'Zoning Board of Adjustment chair name',
-  'signer.zba_chair.title': 'Zoning Board of Adjustment chair title',
+  get 'signer.zba_chair.name'() {
+    return `${boardLabel('zba')} chair name`
+  },
+  get 'signer.zba_chair.title'() {
+    return `${boardLabel('zba')} chair title`
+  },
   'signer.code_enforcement_officer.name': 'Code enforcement officer name',
   'signer.code_enforcement_officer.title': 'Code enforcement officer title',
   'signer.town_clerk.name': 'Town clerk name',
@@ -79,8 +84,6 @@ export const MERGE_FIELD_LABELS: Record<MergeField, string> = {
   'packet.title': 'Packet title',
 }
 
-const LABELS: ReadonlyMap<string, string> = new Map(Object.entries(MERGE_FIELD_LABELS))
-
 export function mergeFieldLabel(name: string): string {
-  return LABELS.get(name) ?? name
+  return new Map(Object.entries(MERGE_FIELD_LABELS)).get(name) ?? name
 }

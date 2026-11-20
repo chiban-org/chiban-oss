@@ -1,4 +1,5 @@
 import type { WordingKey } from '@/features/notifications/wording/wordingKeys'
+import { recordsRequest } from '@/features/packs/vocabulary'
 
 export interface Wording {
   subject: string
@@ -9,7 +10,9 @@ const NUMBER = '{{application.number}}'
 const INSPECTION_LABEL = '{{inspection.type}}'
 const DETAILS = 'Open the application for the details.'
 const REQUEST = '{{request.number}}'
-const RELEASED = `The town released records for your Right-to-Know request ${REQUEST} on {{records.releasedOn}}.`
+function released(): string {
+  return `The town released records for your ${recordsRequest()} ${REQUEST} on {{records.releasedOn}}.`
+}
 
 export const DEFAULT_WORDING: Record<WordingKey, Wording> = {
   application_submitted: {
@@ -113,23 +116,35 @@ export const DEFAULT_WORDING: Record<WordingKey, Wording> = {
     ].join('\n\n'),
   },
   rtk_request_received: {
-    subject: `Right-to-Know request ${REQUEST} received`,
-    body: [
-      `The town received your Right-to-Know request on {{request.receivedOn}}. Its number is ${REQUEST}.`,
-      'The town will answer by {{request.due}}. It will make the records available, deny the request in writing, or tell you in writing when it will answer.',
-      'Keep the request number if you need to ask about it.',
-    ].join('\n\n'),
+    get subject() {
+      return `${recordsRequest()} ${REQUEST} received`
+    },
+    get body() {
+      return [
+        `The town received your ${recordsRequest()} on {{request.receivedOn}}. Its number is ${REQUEST}.`,
+        'The town will answer by {{request.due}}. It will make the records available, deny the request in writing, or tell you in writing when it will answer.',
+        'Keep the request number if you need to ask about it.',
+      ].join('\n\n')
+    },
   },
   rtk_letter_sent: {
-    subject: `Letter about Right-to-Know request ${REQUEST}`,
-    body: `The town's letter about your Right-to-Know request ${REQUEST} is attached.`,
+    get subject() {
+      return `Letter about ${recordsRequest()} ${REQUEST}`
+    },
+    get body() {
+      return `The town's letter about your ${recordsRequest()} ${REQUEST} is attached.`
+    },
   },
   rtk_records_link: {
     subject: `Records for request ${REQUEST}`,
-    body: `${RELEASED}{{records.linkNote}} The link works for {{link.days}} days.`,
+    get body() {
+      return `${released()}{{records.linkNote}} The link works for {{link.days}} days.`
+    },
   },
   rtk_records_attached: {
     subject: `Records for request ${REQUEST}`,
-    body: `${RELEASED} The records and the town's letter are attached.`,
+    get body() {
+      return `${released()} The records and the town's letter are attached.`
+    },
   },
 }
