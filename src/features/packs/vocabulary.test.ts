@@ -1,17 +1,21 @@
 import { describe, expect, it } from 'vitest'
+import { exactDetail } from '@/components/staff/search/searchOptions'
 import { CAPABILITIES } from '@/constants/capabilities'
 import { appealToBoard } from '@/features/appeals/appealWords'
 import { certificationPhrase } from '@/features/boards/certificationWords'
 import { restraintIssuer } from '@/features/enforcement/restraintWords'
+import { defaultWordingFor } from '@/features/notifications/wording/wordingDefaults'
 import { withPackForTest } from '@/features/packs/registry'
 import {
   boardAbbrev,
   boardLabel,
   boardShort,
   governingBody,
+  packVocabulary,
   recordsLaw,
   recordsRequest,
 } from '@/features/packs/vocabulary'
+import { mergeFieldLabel } from '@/features/templates/mergeFieldLabels'
 import { XX_PACK } from '@/test/packs/xx'
 
 describe('vocabulary under a fictional pack', () => {
@@ -35,5 +39,17 @@ describe('vocabulary under a fictional pack', () => {
       expect(certificationPhrase('certified')).toBe('certified by the town council')
       expect(restraintIssuer('zba')).toBe('the zba abbr')
     })
+  })
+
+  it('builds client-side words from a vocabulary value, not from the active pack', () => {
+    const words = withPackForTest(XX_PACK, () => packVocabulary())
+    expect(exactDetail('request', words)).toBe('Open Records request')
+    expect(mergeFieldLabel('signer.zba_chair.name', words)).toBe('Vellmora zba body chair name')
+    expect(defaultWordingFor(words).rtk_letter_sent.subject).toBe(
+      'Letter about Open Records request {{request.number}}',
+    )
+    expect(mergeFieldLabel('signer.zba_chair.name', packVocabulary())).toBe(
+      'Zoning Board of Adjustment chair name',
+    )
   })
 })

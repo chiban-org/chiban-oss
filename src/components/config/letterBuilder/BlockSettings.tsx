@@ -4,7 +4,7 @@ import { NodeSelection } from '@tiptap/pm/state'
 import { type Editor, useEditorState } from '@tiptap/react'
 import { FieldTableSettings } from '@/components/config/letterBuilder/FieldTableSettings'
 import { Pick, RowButton } from '@/components/config/primitives'
-import { useSignerRoleLabel } from '@/components/PackTextProvider'
+import { usePackText, useSignerRoleLabel } from '@/components/PackTextProvider'
 import {
   type DocNode,
   type FieldTableRow,
@@ -35,13 +35,14 @@ function Hint({ children }: { children: string }) {
 export function BlockSettings({ editor, kind }: { editor: Editor; kind: TemplateKind }) {
   const selected = useEditorState({ editor, selector: ({ editor: e }) => selectedNode(e) })
   const roleLabel = useSignerRoleLabel()
+  const { vocabulary } = usePackText()
   if (selected === null) {
     return <Hint>Select a merge field or a block in the letter to change it.</Hint>
   }
   const setAttrs = (attrs: Record<string, unknown>) =>
     editor.chain().setNodeSelection(selected.pos).updateAttributes(selected.type, attrs).run()
   const remove = () => editor.chain().setNodeSelection(selected.pos).deleteSelection().run()
-  const fieldOptions = fieldGroups(kind).flatMap((g) =>
+  const fieldOptions = fieldGroups(kind, vocabulary).flatMap((g) =>
     g.fields.map((f): [string, string] => [f.name, `${g.title}: ${f.label}`]),
   )
   switch (selected.type) {

@@ -6,9 +6,9 @@ import { BoxEditor } from '@/components/redaction/BoxEditor'
 import { SelectField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
-import { recordsRequest } from '@/features/packs/vocabulary'
 import { loadEditorSource } from '@/features/redaction/previewPages'
 import { exemptionChoices } from '@/features/rtk/exemptions'
+import { redactPurposeOptions } from '@/features/rtk/requestCopy'
 import { getObjectStore } from '@/features/storage/objectStore'
 import { requireStaffContext } from '@/server/requireStaff'
 import { isUuid } from '@/utils/uuid'
@@ -73,10 +73,7 @@ export default async function RedactPage({
           label="The copy is for"
           name="purpose"
           defaultValue={forRequest === undefined ? 'public' : 'rtk_release'}
-          options={[
-            ['public', 'The public website'],
-            ['rtk_release', `A ${recordsRequest()}`],
-          ]}
+          options={redactPurposeOptions()}
         />
         <BoxEditor pages={pages} exemptions={exemptionChoices()} mode={mode} />
       </ActionForm>

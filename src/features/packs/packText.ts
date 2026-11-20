@@ -1,12 +1,13 @@
 import { activePack } from '@/features/packs/registry'
+import { packVocabulary, type Vocabulary } from '@/features/packs/vocabulary'
 import { lockedTexts } from '@/features/templates/doc/lockedTexts'
-
 import { signerRoleLabels } from '@/features/town/signerRoleLabels'
 
 export interface PackText {
   signerRoleLabels: Readonly<Record<string, string>>
   lockedTexts: Readonly<Record<string, string>>
   environmentalAgency: string
+  vocabulary: Vocabulary
 }
 
 export function packText(): PackText {
@@ -14,6 +15,7 @@ export function packText(): PackText {
     signerRoleLabels: signerRoleLabels(),
     lockedTexts: lockedTexts(),
     environmentalAgency: activePack().labels.environmentalAgency,
+    vocabulary: packVocabulary(),
   }
 }
 

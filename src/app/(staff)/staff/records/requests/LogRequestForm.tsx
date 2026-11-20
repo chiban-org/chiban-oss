@@ -2,13 +2,13 @@ import { ActionForm } from '@/components/ActionForm'
 import { AddressTextField } from '@/components/address/AddressTextField'
 import { FormDialog } from '@/components/FormDialog'
 import { AreaField, SelectField, TextField } from '@/components/staff/fields'
-import { recordsRequest } from '@/features/packs/vocabulary'
 import { RTK_VIA_LABELS } from '@/features/rtk/labels'
+import { logRequestTitle } from '@/features/rtk/requestCopy'
 import { logRequestAction } from './actions'
 
 export function LogRequest({ today }: { today: string }) {
   return (
-    <FormDialog label="Log a request" title={`Log a ${recordsRequest()}`} variant="default">
+    <FormDialog label="Log a request" title={logRequestTitle()} variant="default">
       <ActionForm action={logRequestAction} submitLabel="Log request">
         <TextField
           label="Date received"

@@ -2,11 +2,13 @@
 
 import { createContext, type ReactNode, useContext } from 'react'
 import type { PackText } from '@/features/packs/packText'
+import { packVocabulary } from '@/features/packs/vocabulary'
 
 const EMPTY: PackText = {
   signerRoleLabels: {},
   lockedTexts: {},
   environmentalAgency: 'State environmental agency',
+  vocabulary: packVocabulary(),
 }
 
 const Context = createContext<PackText>(EMPTY)

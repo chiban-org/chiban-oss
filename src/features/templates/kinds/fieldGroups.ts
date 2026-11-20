@@ -1,3 +1,4 @@
+import type { Vocabulary } from '@/features/packs/vocabulary'
 import { allowedFields } from '@/features/templates/kinds/documentKinds'
 import { mergeFieldLabel } from '@/features/templates/mergeFieldLabels'
 import { MERGE_FIELDS } from '@/features/templates/mergeFields'
@@ -36,14 +37,17 @@ function groupOf(name: string): string {
   return GROUP_OF_PREFIX.get(name.split('.')[0] ?? '') ?? TOWN_GROUP
 }
 
-export function fieldGroups(kind: TemplateKind): FieldGroup[] {
+export function fieldGroups(
+  kind: TemplateKind,
+  words?: Pick<Vocabulary, 'boardLabel'>,
+): FieldGroup[] {
   const allowed = allowedFields(kind)
   const groups = new Map<string, FieldGroup>()
   for (const name of MERGE_FIELDS) {
     if (!allowed.has(name)) continue
     const title = groupOf(name)
     const group = groups.get(title) ?? { title, fields: [] }
-    group.fields.push({ name, label: mergeFieldLabel(name) })
+    group.fields.push({ name, label: mergeFieldLabel(name, words) })
     groups.set(title, group)
   }
   const ordered = [...groups.values()]

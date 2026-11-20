@@ -3,7 +3,7 @@ import { type Role, STAFF_ROLES } from '@/constants/roles'
 import { recordsLaw } from '@/features/packs/vocabulary'
 import { roleLabel } from '@/features/staffNav/roleLabels'
 
-function roleHints(): Readonly<Partial<Record<Role, string>>> {
+export function roleHints(): Readonly<Partial<Record<Role, string>>> {
   return {
     admin: 'Settings, exports, and these accounts',
     staff: 'Applications, permits, boards, and enforcement',

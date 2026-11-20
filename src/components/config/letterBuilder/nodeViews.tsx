@@ -15,7 +15,8 @@ import { cn } from '@/lib/utils'
 
 function useFieldText(name: string): string {
   const { preview } = useLetterView()
-  return preview === null ? mergeFieldLabel(name) : mergeValue(name, preview.values)
+  const { vocabulary } = usePackText()
+  return preview === null ? mergeFieldLabel(name, vocabulary) : mergeValue(name, preview.values)
 }
 
 export function MergeFieldView({ node, selected }: NodeViewProps) {

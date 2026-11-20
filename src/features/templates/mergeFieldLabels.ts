@@ -1,5 +1,12 @@
-import { boardLabel } from '@/features/packs/vocabulary'
+import { packVocabulary, type Vocabulary } from '@/features/packs/vocabulary'
 import type { MergeField } from '@/features/templates/mergeFields'
+
+function zbaChairLabels(words: Pick<Vocabulary, 'boardLabel'>): { name: string; title: string } {
+  return {
+    name: `${words.boardLabel.zba} chair name`,
+    title: `${words.boardLabel.zba} chair title`,
+  }
+}
 
 export const MERGE_FIELD_LABELS: Record<MergeField, string> = {
   'town.name': 'Town name',
@@ -45,10 +52,10 @@ export const MERGE_FIELD_LABELS: Record<MergeField, string> = {
   'signer.planning_board_chair.name': 'Planning Board chair name',
   'signer.planning_board_chair.title': 'Planning Board chair title',
   get 'signer.zba_chair.name'() {
-    return `${boardLabel('zba')} chair name`
+    return zbaChairLabels(packVocabulary()).name
   },
   get 'signer.zba_chair.title'() {
-    return `${boardLabel('zba')} chair title`
+    return zbaChairLabels(packVocabulary()).title
   },
   'signer.code_enforcement_officer.name': 'Code enforcement officer name',
   'signer.code_enforcement_officer.title': 'Code enforcement officer title',
@@ -84,6 +91,14 @@ export const MERGE_FIELD_LABELS: Record<MergeField, string> = {
   'packet.title': 'Packet title',
 }
 
-export function mergeFieldLabel(name: string): string {
-  return new Map(Object.entries(MERGE_FIELD_LABELS)).get(name) ?? name
+export function mergeFieldLabel(
+  name: string,
+  words: Pick<Vocabulary, 'boardLabel'> = packVocabulary(),
+): string {
+  const labels = {
+    ...MERGE_FIELD_LABELS,
+    'signer.zba_chair.name': zbaChairLabels(words).name,
+    'signer.zba_chair.title': zbaChairLabels(words).title,
+  }
+  return new Map(Object.entries(labels)).get(name) ?? name
 }

@@ -4,6 +4,7 @@ import { QuickFilters } from '@/components/dataTable/QuickFilters'
 import { SortHeader } from '@/components/dataTable/SortHeader'
 import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
+import { appealPointer } from '@/features/appeals/appealWords'
 import { applicationChipStatus } from '@/features/applications/chipStatus'
 import { arrangeBoardLines, boardFacets } from '@/features/boards/boardApplicationList'
 import { BOARD_KIND_BEHAVIOUR } from '@/features/boards/boardKindBehaviour'
@@ -23,7 +24,6 @@ import {
 } from '@/features/boards/boardsView'
 import { clearHref, type RawSearchParams } from '@/features/dataTable/params'
 import { type SortLink, sortLinks } from '@/features/dataTable/sort'
-import { boardShort } from '@/features/packs/vocabulary'
 import { requireStaffContext } from '@/server/requireStaff'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -130,8 +130,8 @@ export default async function BoardsPage({
         first.
       </p>
       <p>
-        {`To appeal a decision by the building inspector or zoning administrator to the ${boardShort('zba')},`}{' '}
-        use <Link href="/staff/boards/appeals">appeals of administrative decisions</Link>.
+        {appealPointer()} use{' '}
+        <Link href="/staff/boards/appeals">appeals of administrative decisions</Link>.
       </p>
       {allLines.length === 0 ? null : (
         <div className="toolbar">

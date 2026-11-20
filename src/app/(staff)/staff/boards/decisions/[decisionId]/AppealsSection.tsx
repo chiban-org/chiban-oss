@@ -1,9 +1,12 @@
 import { ActionForm } from '@/components/ActionForm'
 import { AppealGraph } from '@/components/appeals/AppealGraph'
 import { SelectField, TextField } from '@/components/staff/fields'
-import { appealToBoard, boardDecision } from '@/features/appeals/appealWords'
+import {
+  appealToBoard,
+  boardDecision,
+  linkedPlanningDecisionLabel,
+} from '@/features/appeals/appealWords'
 import type { DecisionView } from '@/features/decisions/decisionView'
-import { boardShort } from '@/features/packs/vocabulary'
 import { addAppealNodeAction } from '../../hearings/decisionActions'
 
 function appealSteps(): [string, string][] {
@@ -49,7 +52,7 @@ export function AppealsSection({ view, today }: { view: DecisionView; today: str
             ]}
           />
           <SelectField
-            label={`Is this the ${boardShort('zba')} part of a ${boardShort('planning_board')} decision?`}
+            label={linkedPlanningDecisionLabel()}
             name="linked"
             options={[
               ['no', 'No'],

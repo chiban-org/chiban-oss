@@ -1,16 +1,28 @@
-import { recordsLaw, recordsRequest } from '@/features/packs/vocabulary'
+import { packVocabulary, type Vocabulary } from '@/features/packs/vocabulary'
 import { doc, fields, heading, para, section } from '@/features/templates/doc/build'
 import type { DocumentKindDef } from '@/features/templates/kinds/kindTypes'
 
+export function rtkResponseWords(words: Pick<Vocabulary, 'recordsLaw' | 'recordsRequest'>): {
+  label: string
+  title: string
+  record: string
+} {
+  return {
+    label: `${words.recordsLaw} response`,
+    title: `Response to your ${words.recordsRequest}`,
+    record: words.recordsRequest,
+  }
+}
+
 export const RTK_RESPONSE_KIND: DocumentKindDef = {
   get label() {
-    return `${recordsLaw()} response`
+    return rtkResponseWords(packVocabulary()).label
   },
   get title() {
-    return `Response to your ${recordsRequest()}`
+    return rtkResponseWords(packVocabulary()).title
   },
   get record() {
-    return recordsRequest()
+    return rtkResponseWords(packVocabulary()).record
   },
   scale: 'document',
   fields: ['rtk.number', 'rtk.receivedOn', 'rtk.description'],

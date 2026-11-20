@@ -1,7 +1,11 @@
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
-import { appealToBoard, boardDecision } from '@/features/appeals/appealWords'
-import { boardShort } from '@/features/packs/vocabulary'
+import {
+  appealResultLabel,
+  appealStepHint,
+  appealToBoard,
+  boardDecision,
+} from '@/features/appeals/appealWords'
 import { addAppealNodeAction } from '../../hearings/decisionActions'
 
 function steps(): [string, string][] {
@@ -45,16 +49,8 @@ export function AppealSteps({
         max={today}
         required
       />
-      <TextField
-        label="Who appealed"
-        name="appellantName"
-        hint={`For an appeal to the ${boardShort('zba')}. An appeal of an issued permit suspends it.`}
-      />
-      <SelectField
-        label={`Result, for a ${boardShort('zba')} or rehearing decision`}
-        name="outcome"
-        options={RESULTS}
-      />
+      <TextField label="Who appealed" name="appellantName" hint={appealStepHint()} />
+      <SelectField label={appealResultLabel()} name="outcome" options={RESULTS} />
     </ActionForm>
   )
 }
