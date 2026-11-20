@@ -1,3 +1,4 @@
+import { keysSatisfiedByDecision } from '@/features/clocks/ruleEngine'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { packRoles, presentKeys } from '@/features/packs/roles'
 
@@ -6,13 +7,23 @@ function metByDeciding(key: string): boolean {
   return !(rule.kind === 'clock' && rule.consequence.kind === 'deemed_refused')
 }
 
+function satisfiedByDecisionKeys(): string[] {
+  return keysSatisfiedByDecision(loadPack().rules)
+}
+
+function withSatisfiedByDecision(keys: string[]): string[] {
+  return [...new Set([...keys, ...satisfiedByDecisionKeys()])]
+}
+
 export function boardDecisionDeadlineKeys(): string[] {
   const { rules } = packRoles()
-  return presentKeys([rules.planningBoardDecision, rules.zbaDecision])
+  return withSatisfiedByDecision(presentKeys([rules.planningBoardDecision, rules.zbaDecision]))
 }
 
 export function decisionDeadlineKeys(): string[] {
-  return presentKeys([packRoles().rules.buildingPermitDecision, ...boardDecisionDeadlineKeys()])
+  return withSatisfiedByDecision(
+    presentKeys([packRoles().rules.buildingPermitDecision, ...boardDecisionDeadlineKeys()]),
+  )
 }
 
 export function boardDecisionClockKeys(): string[] {

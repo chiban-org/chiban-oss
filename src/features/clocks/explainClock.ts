@@ -13,6 +13,7 @@ export const START_EVENT_LABELS: Record<string, string> = {
   regional_impact_notice_mailed: 'Regional impact notice mailed',
   acceptance_meeting_set: 'Meeting set',
   application_accepted: 'Application accepted as complete',
+  hearing_held: 'Hearing held',
   final_approval: 'Final approval',
   board_vote: 'Board vote',
   decision_filed: 'Decision filed',

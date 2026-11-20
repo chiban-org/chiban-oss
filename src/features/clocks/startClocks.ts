@@ -11,6 +11,7 @@ import { effectiveNoticeLeadDays } from '@/features/clocks/noticeLead'
 import {
   computeRuleDue,
   hasLocalBound,
+  keysCancelledBy,
   type ResolvedLength,
   resolveRuleLength,
   rulesForEvent,
@@ -60,6 +61,7 @@ export async function startClocksFor(
     ...decisionFacts,
   }
   const bound = new Set(effectiveBindings(app.typeBody, pack))
+  await cancelClocksFor(tx, applicationId, event, pack)
   const rules = rulesForEvent(pack.rules, event, bound, facts)
   const running = await tx
     .select({ ruleKey: clocks.ruleKey })
@@ -70,6 +72,26 @@ export async function startClocksFor(
     if (runningKeys.has(rule.key)) continue
     await createClock(tx, { applicationId, rule, facts, event, onDate, pack, calendar }, signal)
   }
+}
+
+async function cancelClocksFor(
+  tx: Tx,
+  applicationId: string,
+  event: StartEvent,
+  pack: Pack,
+): Promise<void> {
+  const cancelledKeys = keysCancelledBy(pack.rules, event)
+  if (cancelledKeys.length === 0) return
+  await tx
+    .update(clocks)
+    .set({ status: 'superseded', supersededReason: 'cancelled_by_event' })
+    .where(
+      and(
+        eq(clocks.applicationId, applicationId),
+        inArray(clocks.status, ['running', 'overdue']),
+        inArray(clocks.ruleKey, cancelledKeys),
+      ),
+    )
 }
 
 export interface NewClockInput {

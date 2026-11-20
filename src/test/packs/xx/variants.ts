@@ -1,4 +1,4 @@
-import type { PackManifest, PackRoles, StatePack } from '@/features/packs/schema'
+import type { PackManifest, PackRoles, PackRule, StatePack } from '@/features/packs/schema'
 import { XX_PACK } from './index'
 
 type DeepPartial<T> = { [K in keyof T]?: Partial<T[K]> }
@@ -65,4 +65,62 @@ export const XX_OPTIONAL_HEARING: StatePack = xxPackWith({
       },
     ],
   },
+})
+
+export const XX_HEARING_CLOCK_RULES: PackRule[] = [
+  {
+    kind: 'clock',
+    key: 'xx.pb.decision_no_hearing',
+    version: 1,
+    label: 'Decision deadline when no hearing is held',
+    citation: { label: 'Vellmora Permit Act 5', url: 'https://laws.example/vellmora/permit-act' },
+    clockType: 'action_due',
+    whose: 'board',
+    startEvent: 'application_accepted',
+    length: { unit: 'days', value: 60 },
+    direction: 'after',
+    consequence: { kind: 'none_stated', text: 'The act states no consequence.' },
+    extension: { allowed: false, note: 'The act provides no extension.' },
+    waivable: false,
+    cancelledBy: 'hearing_held',
+    satisfiedByDecision: true,
+    overridePolicy: { policy: 'fixed' },
+  },
+  {
+    kind: 'clock',
+    key: 'xx.pb.decision_after_hearing',
+    version: 1,
+    label: 'Decision deadline after a hearing',
+    citation: { label: 'Vellmora Permit Act 5', url: 'https://laws.example/vellmora/permit-act' },
+    clockType: 'action_due',
+    whose: 'board',
+    startEvent: 'hearing_held',
+    length: { unit: 'days', value: 30 },
+    direction: 'after',
+    consequence: { kind: 'none_stated', text: 'The act states no consequence.' },
+    extension: { allowed: false, note: 'The act provides no extension.' },
+    waivable: false,
+    satisfiedByDecision: true,
+    overridePolicy: { policy: 'fixed' },
+  },
+]
+
+const HEARING_CLOCK_KEYS = XX_HEARING_CLOCK_RULES.map((r) => r.key)
+const HEARING_CLOCK_PACK_RULES = [...XX_PACK.manifest.rules, ...XX_HEARING_CLOCK_RULES]
+
+export const XX_HEARING_CLOCKS: StatePack = xxPackWith({
+  manifest: {
+    rules: HEARING_CLOCK_PACK_RULES,
+    classifications: XX_PACK.manifest.classifications.map((c) =>
+      c.key === 'xx.board_variance'
+        ? {
+            ...c,
+            hearing: 'optional' as const,
+            requiredSubsteps: [],
+            mandatoryRuleKeys: [...c.mandatoryRuleKeys, ...HEARING_CLOCK_KEYS],
+          }
+        : c,
+    ),
+  },
+  pack: { ruleAreas: [{ title: 'All rules', rules: HEARING_CLOCK_PACK_RULES }] },
 })

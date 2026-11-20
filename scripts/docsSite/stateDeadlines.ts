@@ -40,6 +40,7 @@ const START_EVENTS: Record<StartEvent, string> = {
   regional_impact_notice_mailed: 'the regional impact notice is mailed',
   acceptance_meeting_set: 'the meeting',
   application_accepted: 'the board accepts the application as complete',
+  hearing_held: 'the hearing is held',
   final_approval: 'final approval',
   board_vote: 'the board votes',
   decision_filed: 'the decision is filed',

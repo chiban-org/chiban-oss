@@ -66,6 +66,8 @@ function eventPlacement(
     case 'application_completed':
     case 'application_accepted':
       return { state: 'under_review', on: accepted }
+    case 'hearing_held':
+      return { state: 'under_review', on: meeting }
     case 'permit_issued':
       return { state: 'issued', on: accepted }
     case 'regional_impact_notice_mailed':

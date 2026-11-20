@@ -37,6 +37,7 @@ export const StartEventSchema = z.enum([
   'regional_impact_notice_mailed',
   'acceptance_meeting_set',
   'application_accepted',
+  'hearing_held',
   'final_approval',
   'board_vote',
   'decision_filed',
@@ -135,6 +136,8 @@ export const ClockRuleSchema = z
     waivable: z.boolean(),
     onlyWhen: FactConditionSchema.optional(),
     relianceFloorMonths: z.number().int().positive().optional(),
+    cancelledBy: StartEventSchema.optional(),
+    satisfiedByDecision: z.boolean().optional(),
     overridePolicy: OverridePolicySchema,
   })
   .refine(
