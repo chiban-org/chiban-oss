@@ -102,9 +102,10 @@ export async function censusBpsReport(
   const largePermits: CensusLargePermit[] = []
   const needsClassification: CensusReport['needsClassification'] = []
   let building = 0
+  const censusKey = censusClassification()
   for (const row of issued) {
     const context = await loadApplicationContext(db, row.id, signal)
-    if (context?.typeBody.classification !== censusClassification()) continue
+    if (censusKey === null || context?.typeBody.classification !== censusKey) continue
     building += 1
     const c = row.classification
     if (c === null) {

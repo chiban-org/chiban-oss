@@ -1,5 +1,5 @@
 import { boardKindOf } from '@/features/applications/applicationTypeSchema'
-import { packRoles } from '@/features/packs/roles'
+import { packRoles, presentKeys } from '@/features/packs/roles'
 
 export interface GroupableType {
   key: string
@@ -54,7 +54,7 @@ function groupOf(type: GroupableType): string {
   if (board === 'planning_board') return 'Planning Board'
   if (board === 'zba') return 'Zoning Board'
   const { classifications } = packRoles()
-  const office = [classifications.buildingPermit, classifications.tradePermit]
+  const office = presentKeys([classifications.buildingPermit, classifications.tradePermit])
   return type.classification !== undefined && office.includes(type.classification)
     ? 'Building office'
     : 'Registrations and other'

@@ -1,6 +1,6 @@
 import { NH_ORDER_TEXTS } from '@packs/nh/starters/enforcementTemplates'
 import { eq } from 'drizzle-orm'
-import { afterEach, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
 import {
   auditLog,
   documents,
@@ -25,10 +25,12 @@ import {
   issueOrder,
   reviseDraftOrder,
 } from '@/features/enforcement/orders'
+import { setActivePackForTest } from '@/features/packs/registry'
 import type { ObjectStore } from '@/features/storage/objectStore'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { sendFixtureNotice } from '@/test/enforcementNoticeFixture'
 import { makeTestStore } from '@/test/objectStore'
+import { XX_NO_BUILDING } from '@/test/packs/xx/variants'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { pdfText } from '@/test/pdfText'
 import type { CivilDate } from '@/types/civilDate'
@@ -569,5 +571,28 @@ describe('cease and desist orders', () => {
       signal,
     )
     expect(result).toEqual({ ok: false, error: 'forbidden' })
+  })
+})
+
+describe('draftOrder under a pack with no building permit', () => {
+  beforeAll(() => setActivePackForTest(XX_NO_BUILDING))
+  afterAll(() => setActivePackForTest(null))
+
+  it('refuses an order for building code findings', async () => {
+    const { caseId, findingId } = await caseWithFinding('building_code')
+    const result = await draftOrder(
+      handle.db,
+      staff,
+      {
+        caseId,
+        findingIds: [findingId],
+        correctiveAction: 'Apply for a permit.',
+        correctiveDeadline: null,
+        ceaseImmediately: false,
+      },
+      signal,
+      NOW,
+    )
+    expect(result).toEqual({ ok: false, error: 'building_code_not_enforced' })
   })
 })

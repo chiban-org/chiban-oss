@@ -2,6 +2,7 @@ import { NH_PACK_MANIFEST } from '@packs/nh/manifest'
 import { describe, expect, it } from 'vitest'
 import { PackManifestSchema } from '@/features/packs/schema'
 import { XX_PACK_MANIFEST } from '@/test/packs/xx/manifest'
+import { XX_NO_BUILDING } from '@/test/packs/xx/variants'
 
 function issuesOf(manifest: unknown): string[] {
   const parsed = PackManifestSchema.safeParse(manifest)
@@ -64,5 +65,10 @@ describe('pack roles', () => {
       roles: { ...roles, rules: { ...roles.rules, rtkResponse: null } },
     }
     expect(issuesOf(broken).length).toBeGreaterThan(0)
+  })
+
+  it('accepts a pack with no building permit roles', () => {
+    expect(issuesOf(XX_NO_BUILDING.manifest)).toEqual([])
+    expect(PackManifestSchema.safeParse(XX_NO_BUILDING.manifest).success).toBe(true)
   })
 })

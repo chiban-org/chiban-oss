@@ -1,6 +1,7 @@
 import { AppError, ErrorIds } from '@/constants/errorIds'
 import { type DocumentItem, documentStageLabel } from '@/features/applications/documentItemSchema'
 import { activePack } from '@/features/packs/registry'
+import { presentKeys } from '@/features/packs/roles'
 import type { BoardKind, ProceedingClassification, StarterBundle } from '@/features/packs/schema'
 import { generatedFrontMatter } from '@/lib/generatedFrontMatter'
 import { feeLineText, fieldLabels } from './feeText'
@@ -16,7 +17,7 @@ interface StarterGroup {
 
 function buildingOrTrade(c: ProceedingClassification): boolean {
   const { classifications } = activePack().manifest.roles
-  return c.key === classifications.buildingPermit || c.key === classifications.tradePermit
+  return presentKeys([classifications.buildingPermit, classifications.tradePermit]).includes(c.key)
 }
 
 const GROUPS: readonly StarterGroup[] = [

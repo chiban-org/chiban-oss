@@ -91,6 +91,15 @@ export async function processingTimeReport(
   if (!allowed.ok) return err('forbidden')
   const checked = checkRange(range)
   if (!checked.ok) return err(checked.error)
+  const decisionRuleKey = packRoles().rules.buildingPermitDecision
+  const clockJoin =
+    decisionRuleKey === null
+      ? sql`left join (select null::uuid as id, null::date as met_on, null::date as current_due) c on false`
+      : sql`left join lateral (
+      select id, met_on, current_due from clocks
+      where application_id = a.id and rule_key = ${decisionRuleKey} and status = 'met'
+      order by created_at desc limit 1
+    ) c on true`
   const result = await db.execute<Raw>(sql`
     select a.application_type_key as type, count(*)::int as issued,
       round((percentile_cont(0.5) within group (order by a.issued_on - a.received_date))::numeric, 1)::text as med,
@@ -101,11 +110,7 @@ export async function processingTimeReport(
       (count(*) filter (where c.met_on is not null and c.met_on > c.current_due))::int as late,
       bool_or(c.id is not null) as has_clock
     from applications a
-    left join lateral (
-      select id, met_on, current_due from clocks
-      where application_id = a.id and rule_key = ${packRoles().rules.buildingPermitDecision} and status = 'met'
-      order by created_at desc limit 1
-    ) c on true
+    ${clockJoin}
     where a.issued_on between ${range.from}::date and ${range.to}::date
       and a.received_date is not null
     group by 1 order by 1`)

@@ -4,15 +4,15 @@ const key = z.string().min(1)
 const absentOr = key.nullable()
 
 export const ClassificationRolesSchema = z.object({
-  buildingPermit: key,
+  buildingPermit: absentOr,
   tradePermit: absentOr,
   enforcement: z.array(key),
 })
 
 export const RuleRolesSchema = z.object({
-  buildingPermitDecision: key,
+  buildingPermitDecision: absentOr,
   zoningOrder: key,
-  buildingCodeOrder: key,
+  buildingCodeOrder: absentOr,
   rtkResponse: key,
   rtkStatedTime: key,
   planningBoardDecision: absentOr,

@@ -17,7 +17,7 @@ import { requireCapability } from '@/features/authz/capabilities'
 import { packRoles } from '@/features/packs/roles'
 import { err, ok, type Result } from '@/types/result'
 
-export function censusClassification(): string {
+export function censusClassification(): string | null {
   return packRoles().classifications.buildingPermit
 }
 
@@ -98,7 +98,8 @@ export async function classifyForCensus(
   return await transactionResult(db, async (tx) => {
     const context = await loadApplicationContext(tx, value.applicationId, signal)
     if (context === null) return err('not_found')
-    if (context.typeBody.classification !== censusClassification()) {
+    const censusKey = censusClassification()
+    if (censusKey === null || context.typeBody.classification !== censusKey) {
       return err('not_a_building_permit')
     }
     const row = {

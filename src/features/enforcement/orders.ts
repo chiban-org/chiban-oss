@@ -26,11 +26,17 @@ const DraftSchema = z.object({
   ceaseImmediately: z.boolean(),
 })
 
-function orderRuleKeyFor(kinds: readonly string[]): string | null {
+type OrderRuleKey = { kind: 'key'; key: string } | { kind: 'split' } | { kind: 'not_enforced' }
+
+function orderRuleKeyFor(kinds: readonly string[]): OrderRuleKey {
   const { rules } = packRoles()
   const building = kinds.filter((k) => k === 'building_code').length
-  if (building === kinds.length) return rules.buildingCodeOrder
-  return building === 0 ? rules.zoningOrder : null
+  if (building === kinds.length) {
+    return rules.buildingCodeOrder === null
+      ? { kind: 'not_enforced' }
+      : { kind: 'key', key: rules.buildingCodeOrder }
+  }
+  return building === 0 ? { kind: 'key', key: rules.zoningOrder } : { kind: 'split' }
 }
 
 export async function draftOrder(
@@ -42,7 +48,12 @@ export async function draftOrder(
 ): Promise<
   Result<
     { orderId: string; number: string; ruleKey: string },
-    'forbidden' | 'invalid' | 'not_found' | 'findings_invalid' | 'split_required'
+    | 'forbidden'
+    | 'invalid'
+    | 'not_found'
+    | 'findings_invalid'
+    | 'split_required'
+    | 'building_code_not_enforced'
   >
 > {
   signal.throwIfAborted()
@@ -69,8 +80,10 @@ export async function draftOrder(
         ),
       )
     if (findings.length !== new Set(value.findingIds).size) return err('findings_invalid')
-    const ruleKey = orderRuleKeyFor(findings.map((f) => f.provisionKind))
-    if (ruleKey === null) return err('split_required')
+    const resolved = orderRuleKeyFor(findings.map((f) => f.provisionKind))
+    if (resolved.kind === 'split') return err('split_required')
+    if (resolved.kind === 'not_enforced') return err('building_code_not_enforced')
+    const ruleKey = resolved.key
     const rule = ruleByKey(loadPack(), ruleKey)
     const { number } = await nextEnforcementNumber(tx, 'CD', now, signal)
     const [row] = await tx

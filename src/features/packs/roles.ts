@@ -20,6 +20,11 @@ export function presentKeys(keys: readonly (string | null)[]): string[] {
   return keys.filter((key): key is string => key !== null)
 }
 
+export function isBuildingPermit(classification: string | undefined): boolean {
+  const { buildingPermit } = packRoles().classifications
+  return buildingPermit !== null && classification === buildingPermit
+}
+
 export function keyedByRole<V>(entries: readonly (readonly [string | null, V])[]): Map<string, V> {
   return new Map(entries.flatMap(([key, value]) => (key === null ? [] : [[key, value] as const])))
 }

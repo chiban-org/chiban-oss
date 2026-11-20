@@ -1,9 +1,9 @@
-import { packRoles } from '@/features/packs/roles'
+import { isBuildingPermit, packRoles } from '@/features/packs/roles'
 
 export function codeEditionApplies(classification: string | undefined): boolean {
-  const { classifications, rules } = packRoles()
+  const { rules } = packRoles()
   return (
-    classification === classifications.buildingPermit &&
+    isBuildingPermit(classification) &&
     rules.codeEditionGate !== null &&
     rules.codeEditionRecord !== null
   )
