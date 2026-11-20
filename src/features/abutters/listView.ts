@@ -154,10 +154,14 @@ async function candidateRows(
   )
 }
 
-function savedBufferFt(list: ListRow): number | null | undefined {
+function listBufferFt(
+  list: ListRow,
+  boardBufferFt: number | null | undefined,
+  params: Parameters<typeof effectiveBufferFt>[1],
+): number | null {
   const saved = list.selectionSettings as ListSnapshot['settings'] | null
   return saved === null || saved === undefined || !('bufferFt' in saved)
-    ? undefined
+    ? effectiveBufferFt(boardBufferFt, params)
     : saved.bufferFt
 }
 
@@ -187,9 +191,7 @@ export async function loadListView(
     const parcelIds = await applicantParcelIds(tx, list.applicationId, signal)
     const showMap = list.status === 'draft' || list.status === 'issued'
     const abutterParams = primaryAbutterParams()
-    const saved = savedBufferFt(list)
-    const townBufferFt =
-      saved === undefined ? effectiveBufferFt(settings.bufferFt, abutterParams) : saved
+    const townBufferFt = listBufferFt(list, settings.bufferFt, abutterParams)
     const overlay =
       showMap && settings.projectionEnabled
         ? await projectionOverlay(
