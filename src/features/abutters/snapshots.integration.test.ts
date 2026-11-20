@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto'
-import { eq } from 'drizzle-orm'
+import { eq, sql } from 'drizzle-orm'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { abutterLists, remediationTasks } from '@/db/schema'
 import { issueList } from '@/features/abutters/issue'
@@ -11,6 +11,7 @@ import {
   generateList,
   selectParcel,
 } from '@/features/abutters/lists'
+import { loadListView } from '@/features/abutters/listView'
 import { currentIssuedList, type ListSnapshot, snapshotHash } from '@/features/abutters/queries'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
 import { activeBoards } from '@/features/boards/townBoards'
@@ -183,5 +184,46 @@ describe('snapshot settings and hash stability', () => {
     expect(createHash('sha256').update(canonicalJson(LEGACY_SNAPSHOT)).digest('hex')).toBe(
       LEGACY_SNAPSHOT_SHA256,
     )
+  })
+
+  it('records the settings in force when the draft was generated, not when it is issued', async () => {
+    const { listId } = await generate()
+    const defaults = demoBoardSettings(await activeBoards(handle.db))
+    await saveAndPublish(handle.db, world.admin, 'board_settings', 'default', {
+      ...defaults,
+      abutters: {
+        ...defaults.abutters,
+        projectionEnabled: true,
+        layersConfirmedBy: 'Land Use Technician',
+        layersConfirmedOn: '2027-02-01',
+        assumedRightOfWayFt: 100,
+      },
+    })
+    await issue(listId)
+    const issued = await currentIssuedList(handle.db, lw.applicationId, signal)
+    expect(issued?.snapshot.settings).toEqual({
+      projectionEnabled: true,
+      assumedRightOfWayFt: 50,
+      bufferFt: null,
+    })
+  })
+
+  it('omits settings for a draft generated before they were recorded', async () => {
+    const { listId } = await generate()
+    await handle.db.execute(
+      sql`update abutter_lists set selection_settings = null where id = ${listId}`,
+    )
+    await issue(listId)
+    const issued = await currentIssuedList(handle.db, lw.applicationId, signal)
+    expect(issued?.snapshot.settings).toBeUndefined()
+    expect(issued === null ? null : snapshotHash(issued.snapshot)).toBe(issued?.snapshotSha256)
+  })
+
+  it('loads the list view when a buffer is set and the applicant parcel has no geometry', async () => {
+    setActivePackForTest(packWithTownBuffer({ defaultFt: 300, maxFt: 500 }))
+    const { listId } = await generate()
+    await handle.db.execute(sql`update parcels set geom = null where id = ${lw.ids.A}`)
+    const view = await loadListView(handle.db, world.staff, listId, signal)
+    expect(view).not.toBeNull()
   })
 })

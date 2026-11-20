@@ -10,7 +10,6 @@ import { transactionResult } from '@/db/transactionResult'
 import { loadApplicationContext } from '@/features/applications/context'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
-import { getBoardSettings } from '@/features/boards/boardSettings'
 import { assessFees } from '@/features/fees/assess'
 import { loadPack } from '@/features/packs/loadPack'
 import { mayManageAbutters } from '@/features/rosters/manage'
@@ -19,7 +18,6 @@ import { applicantParcelIds } from './applicantParcels'
 import { finalRecipients, openIncomplete, refreshRecipients } from './draft'
 import { getList, type ListSnapshot, snapshotHash } from './queries'
 import { closeRegeneration } from './staleList'
-import { effectiveBufferFt } from './townBuffer'
 import type { Candidate, IncompleteReason } from './types'
 
 export type IssueError =
@@ -66,7 +64,6 @@ export async function issueList(
       .where(
         and(eq(abutterListCandidates.listId, list.id), eq(abutterListCandidates.excluded, false)),
       )
-    const boardSettings = (await getBoardSettings(tx, signal)).abutters
     const params = loadPack().abutterParams.find((p) => p.key === list.strategyKey) ?? null
     const snapshot: ListSnapshot = {
       application: {
@@ -85,11 +82,9 @@ export async function issueList(
         reasons: c.reasons as Candidate['reasons'],
       })),
       recipients: finalRecipients(rows),
-      settings: {
-        projectionEnabled: boardSettings.projectionEnabled,
-        assumedRightOfWayFt: boardSettings.assumedRightOfWayFt,
-        bufferFt: params === null ? null : effectiveBufferFt(boardSettings.bufferFt, params),
-      },
+      ...(list.selectionSettings === null
+        ? {}
+        : { settings: list.selectionSettings as NonNullable<ListSnapshot['settings']> }),
     }
     const sha256 = snapshotHash(snapshot)
     await tx

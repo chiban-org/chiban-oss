@@ -771,6 +771,13 @@
       "when": 1795195800163,
       "tag": "0109_application_applicability",
       "breakpoints": true
+    },
+    {
+      "idx": 110,
+      "version": "7",
+      "when": 1795200446744,
+      "tag": "0110_abutter_selection_settings",
+      "breakpoints": true
     }
   ]
 }

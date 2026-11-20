@@ -85,11 +85,10 @@ export async function projectionOverlay(
     await add('capture', wkt('POINT', [point.point]), params.captureRadiusFt)
   }
   if (townBufferFt !== null) {
-    features.push({
-      type: 'Feature',
-      properties: { kind: 'buffer' },
-      geometry: await bufferOutline(tx, applicantParcelIds, townBufferFt),
-    })
+    const outline = await bufferOutline(tx, applicantParcelIds, townBufferFt)
+    if (outline !== null) {
+      features.push({ type: 'Feature', properties: { kind: 'buffer' }, geometry: outline })
+    }
   }
   if (features.length > 0) {
     const labelled = [...applicantParcelIds, ...inputs.others.map((o) => o.parcelId)]
@@ -108,16 +107,17 @@ async function bufferOutline(
   tx: Tx,
   applicantParcelIds: string[],
   bufferFt: number,
-): Promise<GeoJSON.Geometry> {
+): Promise<GeoJSON.Geometry | null> {
   const srid = projectedSridParam()
-  const result = await tx.execute<{ gj: string }>(sql`
+  const result = await tx.execute<{ gj: string | null }>(sql`
     select ST_AsGeoJSON(
       ST_Transform(ST_Buffer(ST_Transform(ST_Union(a.geom), ${srid}), ${bufferFt}), 4326),
       7
     ) as gj
     from parcels a where a.id = any(${uuidArray(applicantParcelIds)})
   `)
-  return JSON.parse(result.rows[0]?.gj ?? 'null') as GeoJSON.Geometry
+  const gj = result.rows[0]?.gj ?? null
+  return gj === null ? null : (JSON.parse(gj) as GeoJSON.Geometry)
 }
 
 type LabelFeature = Overlay['features'][number]
