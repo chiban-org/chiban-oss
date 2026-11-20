@@ -17,7 +17,7 @@ import type { CoreState } from '@/features/applications/states'
 import { attestationHash } from '@/features/applications/submitApplication'
 import type { Actor } from '@/features/auth/actor'
 import { getVersion } from '@/features/config/store'
-import { decisionClockKeys } from '@/features/decisions/decisionClocks'
+import { decisionDeadlineKeys } from '@/features/decisions/decisionClocks'
 import { listDocuments } from '@/features/documents/listDocuments'
 import type { DocumentListRow } from '@/features/documents/types'
 import { previewFees } from '@/features/fees/preview'
@@ -107,7 +107,7 @@ async function decisionDue(db: Db, applicationId: string, signal: AbortSignal) {
     .where(
       and(
         eq(clocks.applicationId, applicationId),
-        inArray(clocks.ruleKey, decisionClockKeys()),
+        inArray(clocks.ruleKey, decisionDeadlineKeys()),
         inArray(clocks.status, ['running', 'overdue']),
       ),
     )

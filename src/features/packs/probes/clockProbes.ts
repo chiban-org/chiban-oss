@@ -178,7 +178,7 @@ export function clockProbes(): Record<string, FieldProbe> {
     ),
     'clock.consequence.kind': clockProbe(DECISION, (r) => ({
       ...r,
-      consequence: { ...r.consequence, kind: 'lapse' },
+      consequence: { ...r.consequence, kind: 'deemed_refused' },
     })),
     'clock.consequence.text': clockProbe(DECISION, (r) => ({
       ...r,

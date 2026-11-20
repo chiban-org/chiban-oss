@@ -2,6 +2,7 @@ import { and, eq, inArray, isNull, lt } from 'drizzle-orm'
 import { JOB_NAMES } from '@/constants/jobNames'
 import type { Tx } from '@/db/client'
 import { applications, clocks, relianceLinks } from '@/db/schema'
+import { refuseBySilence } from '@/features/applications/deemedRefusal'
 import { transitionApplication } from '@/features/applications/transition'
 import {
   isActionDue,
@@ -115,6 +116,7 @@ export const clocksDailyJob = defineJob<DailyPayload>({
   handler: async (payload, ctx) => {
     const today = payload.today ?? (await townToday(ctx.db, new Date(), ctx.signal))
     await noticeOverdueClocks(ctx.db, await markOverdue(ctx.db, today), ctx.signal)
+    await refuseBySilence(ctx.db, today, ctx.signal)
     await warnClocksDueSoon(ctx.db, today, ctx.signal)
     const failures = await expireLapsedPermits(ctx.db, today, ctx.signal)
     if (failures.length > 0) return failKeepingWrites(`expiry failed: ${failures.join('; ')}`)

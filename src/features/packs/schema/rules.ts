@@ -121,6 +121,7 @@ export const ClockRuleSchema = z
         'amendment_window_opens',
         'appeal_untimely',
         'enforcement_step_opens',
+        'deemed_refused',
       ]),
       text: z.string().min(1),
     }),

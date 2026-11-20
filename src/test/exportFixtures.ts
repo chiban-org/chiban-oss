@@ -95,6 +95,16 @@ const TOP_UPS: { table: string; statement: ReturnType<typeof sql> }[] = [
       select 'administrative_decision', id, '2027-03-01', gen_random_uuid() from applications limit 1`,
   },
   {
+    table: 'decision_notices',
+    statement: sql`insert into decision_notices (application_id, document_id, mailed_on, recorded_by)
+      select a.id, (select id from documents limit 1), '2027-03-20', gen_random_uuid() from applications a limit 1`,
+  },
+  {
+    table: 'deemed_refusals',
+    statement: sql`insert into deemed_refusals (application_id, rule_key, rule_version, due_on, fired_on)
+      select id, 'export.coverage', 1, '2027-03-20', '2027-03-21' from applications limit 1`,
+  },
+  {
     table: 'trc_routings',
     statement: sql`insert into trc_routings (application_id, department_key, assignment_id, comment_due)
       select application_id, 'fire', id, '2027-04-07' from review_assignments limit 1`,

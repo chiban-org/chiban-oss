@@ -101,6 +101,8 @@ const SPECS: Spec[] = [
   { table: t.clockAdjustments },
   { table: t.clocks },
   { table: t.completenessVotes },
+  { table: t.decisionNotices },
+  { table: t.deemedRefusals },
   { table: t.codeEditionRecords },
   { table: t.configVersions },
   { table: t.contractorClaims, omit: ['token_hash'], fill: { token_hash: RANDOM_HASH } },

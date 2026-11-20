@@ -27,7 +27,7 @@ export const appealNodes = pgTable(
       .notNull()
       .default('open'),
     untimely: boolean('untimely').notNull().default(false),
-    createdBy: uuid('created_by').notNull(),
+    createdBy: uuid('created_by'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [

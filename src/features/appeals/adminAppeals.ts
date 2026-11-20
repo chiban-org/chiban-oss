@@ -1,5 +1,6 @@
 import { and, eq } from 'drizzle-orm'
-import type { Db } from '@/db/client'
+import { JOB_NAMES } from '@/constants/jobNames'
+import type { Db, Tx } from '@/db/client'
 import { appealNodes, applications } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { applicationVisibleTo } from '@/features/access/predicates'
@@ -36,33 +37,50 @@ export async function addAdministrativeDecision(
       .from(applications)
       .where(eq(applications.id, input.applicationId))
     if (app === undefined) return err('not_found')
-    const [row] = await tx
-      .insert(appealNodes)
-      .values({
-        kind: 'administrative_decision',
-        applicationId: app.id,
-        occurredOn: input.occurredOn,
-        createdBy: actor.userId,
-      })
-      .returning({ id: appealNodes.id })
-    const nodeId = row?.id ?? ''
-    await writeAudit(
-      tx,
-      {
-        actor: { kind: 'user', userId: actor.userId },
-        action: 'appeal.node.add',
-        entityType: 'appeal_node',
-        entityId: nodeId,
-        after: {
-          kind: 'administrative_decision',
-          applicationId: app.id,
-          occurredOn: input.occurredOn,
-        },
-      },
-      signal,
+    return ok(
+      await addAdministrativeDecisionTx(
+        tx,
+        { applicationId: app.id, occurredOn: input.occurredOn, createdBy: actor.userId },
+        signal,
+      ),
     )
-    return ok({ nodeId })
   })
+}
+
+export async function addAdministrativeDecisionTx(
+  tx: Tx,
+  input: { applicationId: string; occurredOn: CivilDate; createdBy: string | null },
+  signal: AbortSignal,
+): Promise<{ nodeId: string }> {
+  const [row] = await tx
+    .insert(appealNodes)
+    .values({
+      kind: 'administrative_decision',
+      applicationId: input.applicationId,
+      occurredOn: input.occurredOn,
+      createdBy: input.createdBy,
+    })
+    .returning({ id: appealNodes.id })
+  const nodeId = row?.id ?? ''
+  await writeAudit(
+    tx,
+    {
+      actor:
+        input.createdBy === null
+          ? { kind: 'system', job: JOB_NAMES.CLOCKS_DAILY }
+          : { kind: 'user', userId: input.createdBy },
+      action: 'appeal.node.add',
+      entityType: 'appeal_node',
+      entityId: nodeId,
+      after: {
+        kind: 'administrative_decision',
+        applicationId: input.applicationId,
+        occurredOn: input.occurredOn,
+      },
+    },
+    signal,
+  )
+  return { nodeId }
 }
 
 export async function recordAdministrativeDecision(

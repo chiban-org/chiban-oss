@@ -55,6 +55,9 @@ function settingClockIssues(rules: PackRule[]): string[] {
   const issues: string[] = []
   for (const r of rules) {
     if (r.kind !== 'clock') continue
+    if (r.consequence.kind === 'deemed_refused' && r.clockType !== 'action_due') {
+      issues.push(`clock ${r.key} is deemed_refused and must be an action_due clock`)
+    }
     if (!('fromSetting' in r.length)) {
       if (r.overridePolicy.policy === 'delegated_choice') {
         issues.push(

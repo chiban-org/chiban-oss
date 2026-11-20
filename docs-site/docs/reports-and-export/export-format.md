@@ -247,7 +247,7 @@ File: `data/appeal_nodes.ndjson`. Ordered by id.
 - `outcome`: text, nullable
 - `status`: text
 - `untimely`: boolean
-- `created_by`: uuid
+- `created_by`: uuid, nullable
 - `created_at`: timestamp with time zone
 
 References:
@@ -935,6 +935,34 @@ File: `data/cutover_rows.ndjson`. Ordered by legacy_number.
 - `imported_by`: uuid
 - `imported_at`: timestamp with time zone
 - `source_sha256`: text
+
+References:
+- `application_id` refers to `applications`
+
+### decision_notices
+
+File: `data/decision_notices.ndjson`. Ordered by application_id.
+
+- `application_id`: uuid
+- `document_id`: uuid
+- `mailed_on`: date
+- `recorded_by`: uuid
+- `recorded_at`: timestamp with time zone
+
+References:
+- `application_id` refers to `applications`
+- `document_id` refers to `documents`
+
+### deemed_refusals
+
+File: `data/deemed_refusals.ndjson`. Ordered by application_id.
+
+- `application_id`: uuid
+- `rule_key`: text
+- `rule_version`: integer
+- `due_on`: date
+- `fired_on`: date
+- `created_at`: timestamp with time zone
 
 References:
 - `application_id` refers to `applications`

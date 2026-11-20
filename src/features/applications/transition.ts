@@ -42,6 +42,7 @@ export interface TransitionInput {
     | 'revoked_on_appeal'
   cutover?: boolean
   boardVote?: boolean
+  deemedRefusal?: true
 }
 
 export const CUTOVER_GATE_NOTE = 'Status carried from the prior system; gates not evaluated'
@@ -75,9 +76,10 @@ async function isAllowedActor(
   app: ApplicationContext,
   to: CoreState,
   cutover: boolean,
+  deemedRefusal: boolean,
   signal: AbortSignal,
 ): Promise<boolean> {
-  if (actor.kind === 'system') return to === 'expired'
+  if (actor.kind === 'system') return to === 'expired' || (to === 'denied' && deemedRefusal)
   if (cutover) return await hasCapability(tx, actor.userId, 'cutover.import', signal)
   if (to === 'expired' || to === 'suspended') return false
   if (app.state === 'suspended' && to === 'issued') return false
@@ -109,7 +111,7 @@ export async function actorMayMove(
   to: CoreState,
   signal: AbortSignal,
 ): Promise<boolean> {
-  return await isAllowedActor(db, actor, app, to, false, signal)
+  return await isAllowedActor(db, actor, app, to, false, false, signal)
 }
 
 export function needsBoardVote(app: ApplicationContext, to: CoreState): boolean {
@@ -124,7 +126,7 @@ async function gateResultsFor(
   reinstating: boolean,
   signal: AbortSignal,
 ): Promise<GateResult[]> {
-  if (reinstating || input.cutover === true) return []
+  if (reinstating || input.cutover === true || input.deemedRefusal === true) return []
   const results = await evaluateGates(tx, app, input.to, today, signal)
   const reason = input.closureReason
   if (reason === undefined) return results
@@ -135,7 +137,7 @@ async function gateResultsFor(
 }
 
 function notifiesParties(input: TransitionInput, from: CoreState): boolean {
-  if (input.cutover === true) return false
+  if (input.cutover === true || input.deemedRefusal === true) return false
   return input.to === 'denied' || (input.to === 'issued' && from !== 'suspended')
 }
 
@@ -219,7 +221,17 @@ export async function transitionApplication(
   if (input.to === 'submitted') return err('invalid_transition')
   const app = await loadApplicationContext(tx, input.applicationId, signal)
   if (app === null) return err('not_found')
-  if (!(await isAllowedActor(tx, actor, app, input.to, input.cutover === true, signal))) {
+  if (
+    !(await isAllowedActor(
+      tx,
+      actor,
+      app,
+      input.to,
+      input.cutover === true,
+      input.deemedRefusal === true,
+      signal,
+    ))
+  ) {
     return err('forbidden')
   }
   if (needsBoardVote(app, input.to) && input.boardVote !== true) return err('invalid_transition')
