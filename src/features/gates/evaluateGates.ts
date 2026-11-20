@@ -3,6 +3,7 @@ import type { Tx } from '@/db/client'
 import { gateOverrides } from '@/db/schema'
 import type { ApplicationContext } from '@/features/applications/context'
 import type { CoreState } from '@/features/applications/states'
+import { getBuildingProgram } from '@/features/buildingProgram/settings'
 import { effectiveBindings } from '@/features/config/bindings'
 import '@/features/gates/coreGates'
 import '@/features/gates/registerAll'
@@ -35,6 +36,7 @@ export async function evaluateGates(
   signal: AbortSignal,
 ): Promise<GateResult[]> {
   signal.throwIfAborted()
+  const gateApp = { ...app, buildingProgram: await getBuildingProgram(tx, signal) }
   const bindings = new Set(effectiveBindings(app.typeBody, loadPack()))
   const overrides = await tx
     .select()
@@ -44,7 +46,7 @@ export async function evaluateGates(
   for (const gate of registeredGates()) {
     if (!gate.appliesTo.includes(to)) continue
     if (gate.boundBy !== null && !bindings.has(gate.boundBy)) continue
-    if (gate.relevantTo !== undefined && !gate.relevantTo(app)) continue
+    if (gate.relevantTo !== undefined && !gate.relevantTo(gateApp)) continue
     const outcome = await gate.evaluate(tx, app, today, signal)
     const override =
       overrides.find((o) => o.gateKey === gate.key && o.kind === OVERRIDE_KIND[gate.kind]) ?? null

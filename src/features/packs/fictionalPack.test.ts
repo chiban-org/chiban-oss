@@ -39,8 +39,11 @@ describe('a fictional pack with every optional role absent', () => {
   })
 
   it('offers no code edition record for its building permits', () => {
-    withPackForTest(XX_PACK, () => expect(codeEditionApplies('xx.building_permit')).toBe(false))
-    expect(codeEditionApplies('nh.building_permit')).toBe(true)
+    withPackForTest(XX_PACK, () =>
+      expect(codeEditionApplies('xx.building_permit', { codeChoice: 'state_code' })).toBe(false),
+    )
+    expect(codeEditionApplies('nh.building_permit', { codeChoice: 'state_code' })).toBe(true)
+    expect(codeEditionApplies('nh.building_permit', { codeChoice: null })).toBe(false)
   })
 
   it('sends no gate to the regional impact panel', () => {
@@ -95,6 +98,8 @@ describe('a fictional pack with no building permit', () => {
   })
 
   it('offers no code edition record', () => {
-    withPackForTest(XX_NO_BUILDING, () => expect(codeEditionApplies(undefined)).toBe(false))
+    withPackForTest(XX_NO_BUILDING, () =>
+      expect(codeEditionApplies(undefined, { codeChoice: 'state_code' })).toBe(false),
+    )
   })
 })

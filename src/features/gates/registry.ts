@@ -1,8 +1,11 @@
 import type { Tx } from '@/db/client'
 import type { ApplicationContext } from '@/features/applications/context'
 import type { CoreState } from '@/features/applications/states'
+import type { BuildingProgramBody } from '@/features/buildingProgram/schema'
 import type { GateRule } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
+
+export type GateApplication = ApplicationContext & { buildingProgram: BuildingProgramBody }
 
 export type GateOutcome =
   | { status: 'pass' }
@@ -16,7 +19,7 @@ export interface GateDefinition {
   kind: 'administrative' | 'statutory'
   appliesTo: CoreState[]
   boundBy: string | null
-  relevantTo?: (app: ApplicationContext) => boolean
+  relevantTo?: (app: GateApplication) => boolean
   evaluate(
     tx: Tx,
     app: ApplicationContext,
