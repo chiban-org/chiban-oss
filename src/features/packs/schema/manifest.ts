@@ -50,6 +50,24 @@ export const PackRuleSchema = z
   )
 export type PackRule = z.infer<typeof PackRuleSchema>
 
+function settingClockIssues(rules: PackRule[]): string[] {
+  const kindByKey = new Map(rules.map((r) => [r.key, r.kind]))
+  const issues: string[] = []
+  for (const r of rules) {
+    if (r.kind !== 'clock') continue
+    if (!('fromSetting' in r.length)) {
+      if (r.overridePolicy.policy === 'delegated_choice') {
+        issues.push(
+          `clock ${r.key} uses delegated_choice; read a town_setting through length.fromSetting`,
+        )
+      }
+    } else if (kindByKey.get(r.length.fromSetting) !== 'town_setting') {
+      issues.push(`clock ${r.key} fromSetting ${r.length.fromSetting} is not a town_setting`)
+    }
+  }
+  return issues
+}
+
 export const PackManifestSchema = z
   .object({
     id: z.string().min(1),
@@ -86,7 +104,8 @@ export const PackManifestSchema = z
       classificationKeys: new Set(m.classifications.map((c) => c.key)),
       seriesKeys: new Set(m.recordSeries.map((r) => r.key)),
     }
-    for (const message of roleIssues(m.roles, targets)) ctx.addIssue({ code: 'custom', message })
+    const issues = [...roleIssues(m.roles, targets), ...settingClockIssues(m.rules)]
+    for (const message of issues) ctx.addIssue({ code: 'custom', message })
   })
 export type PackManifestData = z.infer<typeof PackManifestSchema>
 
