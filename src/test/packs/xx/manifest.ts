@@ -33,6 +33,22 @@ export const XX_PACK_MANIFEST: PackManifest = {
       directIssueAllowed: true,
       appealRights: 'A decision may be appealed under Vellmora Permit Act 9.',
     },
+    {
+      key: 'xx.board_variance',
+      label: 'Variance',
+      mandatoryRuleKeys: ['xx.zba.hearing', 'xx.zba.notice_lead'],
+      boardKind: 'zba',
+      abutters: {
+        strategyKey: 'nh.abutters.adjacency_projection',
+        resolverKey: 'nh.recipients.v1',
+        roles: ['applicant', 'abutter_owner'],
+        conditionalRoles: [],
+      },
+      noticeRequirementKeys: ['xx.zba.notice.mail'],
+      requiredSubsteps: [{ state: 'under_review', key: 'hearing' }],
+      directIssueAllowed: false,
+      appealRights: 'A decision may be appealed under Vellmora Permit Act 9.',
+    },
   ],
   codeEditions: [
     {

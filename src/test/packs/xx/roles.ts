@@ -15,7 +15,7 @@ export const XX_ROLES: PackRoles = {
     planningBoardDecision: null,
     zbaDecision: null,
     planningBoardCompleteness: null,
-    zbaHearing: null,
+    zbaHearing: 'xx.zba.hearing',
     writtenDecision: null,
     decisionFiling: null,
     appealSuspension: null,

@@ -21,6 +21,7 @@ import {
 } from '@/features/notices/requirementPlan'
 import { requirementsFor } from '@/features/notices/requirementsFor'
 import { loadPack } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
 import type { NoticeRequirementRule, ProceedingClassification } from '@/features/packs/schema'
 import type { CivilDate } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
@@ -67,14 +68,15 @@ async function flagsFor(
     .select({ determination: regionalImpactDeterminations.determination })
     .from(regionalImpactDeterminations)
     .where(eq(regionalImpactDeterminations.applicationId, applicationId))
-  if (ri === undefined) return null
+  const hasRegionalImpact = packRoles().rules.regionalImpactDetermination !== null
+  if (ri === undefined && hasRegionalImpact) return null
   const [des] = await tx
     .select({ determination: desProximityDeterminations.determination })
     .from(desProximityDeterminations)
     .where(eq(desProximityDeterminations.applicationId, applicationId))
   if (needsDes && des === undefined) return null
   return {
-    regionalImpact: ri.determination === 'yes',
+    regionalImpact: ri?.determination === 'yes',
     desWithin: des?.determination === 'within_500ft',
   }
 }

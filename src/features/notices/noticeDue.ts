@@ -6,6 +6,7 @@ import { townLeads } from '@/features/notices/deriveItems'
 import { planRequirement, type RequirementFlags } from '@/features/notices/requirementPlan'
 import { requirementsFor } from '@/features/notices/requirementsFor'
 import { loadPack } from '@/features/packs/loadPack'
+import { packRoles } from '@/features/packs/roles'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 
 async function strictestFlags(db: DbOrTx, applicationId: string): Promise<RequirementFlags> {
@@ -19,8 +20,9 @@ async function strictestFlags(db: DbOrTx, applicationId: string): Promise<Requir
       .from(desProximityDeterminations)
       .where(eq(desProximityDeterminations.applicationId, applicationId)),
   ])
+  const hasRegionalImpact = packRoles().rules.regionalImpactDetermination !== null
   return {
-    regionalImpact: ri === undefined || ri.determination === 'yes',
+    regionalImpact: hasRegionalImpact && (ri === undefined || ri.determination === 'yes'),
     desWithin: des === undefined || des.determination === 'within_500ft',
   }
 }
