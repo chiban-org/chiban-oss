@@ -86,6 +86,13 @@ export function skeletonBody(kind: ConfigKind, key: string, label: string = key)
       }
     case 'inspection_settings':
       return activePack().inspectionSettingsDefault
+    case 'building_program':
+      return {
+        key: 'default',
+        permitsEnabled: true,
+        codeChoice: activePack().buildingCodes.defaultChoice,
+        residents: null,
+      }
     case 'board_settings':
       return BOARD_SETTINGS_DEFAULT
     case 'regional_contacts':

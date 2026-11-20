@@ -19,6 +19,14 @@ export const XX_PACK: StatePack = {
   boardKinds: BOARD_KIND_NAMES,
   classificationKeys: XX_PACK_MANIFEST.classifications.map((c) => c.key),
   starters: [],
+  buildingCodes: {
+    choices: [
+      { key: 'xx.code.a', label: 'Vellmora Code A' },
+      { key: 'xx.code.b', label: 'Vellmora Code B' },
+    ],
+    defaultChoice: 'xx.code.a',
+    requiredAbove: { residents: 4000, choice: 'xx.code.b' },
+  },
   inspectionSettingsDefault: {
     key: 'default',
     schedulingDays: [2, 4],

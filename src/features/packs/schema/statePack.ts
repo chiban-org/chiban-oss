@@ -60,6 +60,11 @@ export interface StatePack {
   classificationKeys: readonly string[]
   starters: readonly StarterBundle[]
   inspectionSettingsDefault: InspectionSettingsBody
+  buildingCodes: {
+    choices: readonly { key: string; label: string }[]
+    defaultChoice: string | null
+    requiredAbove: { residents: number; choice: string } | null
+  }
   holidays(year: number): PackHoliday[]
   countingCitations: CountingCitations
   licenseTypes: readonly LicenseTypeGroup[]

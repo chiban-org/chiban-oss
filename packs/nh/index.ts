@@ -19,6 +19,11 @@ export const NH_PACK: StatePack = {
   classificationKeys: CLASSIFICATION_KEYS,
   starters: NH_STARTERS,
   inspectionSettingsDefault: NH_INSPECTION_SETTINGS_DEFAULT,
+  buildingCodes: {
+    choices: [{ key: 'state_code', label: 'State building code' }],
+    defaultChoice: 'state_code',
+    requiredAbove: null,
+  },
   holidays: (year) => nhLegalHolidays(year),
   countingCitations: NH_COUNTING_CITATIONS,
   licenseTypes: NH_LICENSE_TYPES,

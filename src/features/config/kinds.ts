@@ -3,6 +3,7 @@ import { z } from 'zod'
 import { ApplicationTypeBodySchema } from '@/features/applications/applicationTypeSchema'
 import { BoardSettingsBodySchema } from '@/features/boards/boardSettingsSchema'
 import { RegionalContactsBodySchema } from '@/features/boards/regionalContactsSchema'
+import { BuildingProgramBodySchema } from '@/features/buildingProgram/schema'
 import { ConditionLibraryBodySchema } from '@/features/conditions/conditionSchema'
 import { CONFIG_KINDS, type ConfigKind } from '@/features/config/kindNames'
 import { FeeScheduleBodySchema } from '@/features/fees/feeSchema'
@@ -55,6 +56,7 @@ export const CONFIG_SCHEMAS: Record<ConfigKind, ZodType> = {
   local_code_amendment: LocalCodeAmendmentBodySchema,
   payment_settings: PaymentSettingsBodySchema,
   inspection_settings: InspectionSettingsBodySchema,
+  building_program: BuildingProgramBodySchema,
   board_settings: BoardSettingsBodySchema,
   regional_contacts: RegionalContactsBodySchema,
   review_routes: ReviewRoutesBodySchema,
