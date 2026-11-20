@@ -30,7 +30,6 @@ import {
   codeEditionPanelRows,
 } from '@/features/building/editionPanelRows'
 import { applicabilityOf } from '@/features/buildingProgram/applicability'
-import { getBuildingProgram } from '@/features/buildingProgram/settings'
 import { type ClockExplanation, explainClock } from '@/features/clocks/explainClock'
 import type { ConditionLibraryBody } from '@/features/conditions/conditionSchema'
 import { effectiveBindings } from '@/features/config/bindings'
@@ -237,10 +236,7 @@ export async function getStaffApplicationView(
     conditionLibrary: library,
     classification: app.typeBody.classification ?? null,
     isBuildingPermit: isBuildingPermit(app.typeBody.classification),
-    codeEditionApplies: codeEditionApplies(
-      app.typeBody.classification,
-      applicabilityOf(app, await getBuildingProgram(db, signal)),
-    ),
+    codeEditionApplies: codeEditionApplies(app.typeBody.classification, applicabilityOf(app)),
     conditions: await db
       .select()
       .from(applicationConditions)

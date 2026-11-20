@@ -110,15 +110,16 @@ describe('applicability snapshot', () => {
     expect(view?.codeEditionApplies).toBe(false)
   })
 
-  it('records null when permits are switched off', async () => {
+  it('records the code choice when permits are switched off', async () => {
     await publishProgram('state_code')
     const app = await makeApplication(handle.db, world, {}, NOW)
     await publishProgram('state_code', false)
     await submit(app.applicationId)
-    expect(await stored(app.applicationId)).toEqual({ codeChoice: null })
+    expect(await stored(app.applicationId)).toEqual({ codeChoice: 'state_code' })
+    expect((await codeGate(app.applicationId))?.effective).toBe('blocked')
   })
 
-  it('treats a null snapshot as the current program', async () => {
+  it('treats a null snapshot as the pack default, whatever the town publishes later', async () => {
     await publishProgram('state_code')
     const app = await makeApplication(handle.db, world, { state: 'submitted' }, NOW)
     expect(await stored(app.applicationId)).toBeNull()
@@ -138,7 +139,8 @@ describe('applicability snapshot', () => {
       NOW,
       signal,
     )
-    expect(after?.codeEditionApplies).toBe(false)
+    expect(after?.codeEditionApplies).toBe(true)
+    expect((await codeGate(app.applicationId))?.effective).toBe('blocked')
   })
 
   it('captures the code choice on a counter quick issue', async () => {

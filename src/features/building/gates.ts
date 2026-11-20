@@ -99,7 +99,7 @@ const regionalImpactCleared: GateEvaluator = async (tx, app, today) => {
 }
 
 const codeEditionRelevant: GateDefinition['relevantTo'] = (app) =>
-  applicabilityOf(app, app.buildingProgram).codeChoice !== null
+  applicabilityOf(app).codeChoice !== null
 
 export function buildingGateDefinitions(): GateDefinition[] {
   const { rules } = packRoles()
