@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { RoleChecks } from '@/app/(staff)/staff/admin/users/RoleChecks'
 import { ApprovalHint } from '@/app/(staff)/staff/records/redact/[versionId]/ApprovalHint'
+import { HomeContent } from '@/components/public/HomeContent'
 import { exactDetail } from '@/components/staff/search/searchOptions'
 import { CAPABILITIES } from '@/constants/capabilities'
 import { appealStatusText } from '@/features/appeals/adminAppealsView'
@@ -203,5 +204,15 @@ describe('New Hampshire vocabulary through the pack', () => {
     expect(MERGE_FIELD_LABELS['signer.zba_chair.title']).toBe(
       'Zoning Board of Adjustment chair title',
     )
+  })
+
+  it('home page', () => {
+    const html = renderToStaticMarkup(
+      HomeContent({ audience: 'visitor', townName: 'Vellmora', example: null }),
+    )
+    expect(html).toContain(
+      'Upcoming Planning Board and Zoning Board meetings, their agendas, minutes, and decisions.',
+    )
+    expect(html).toContain('Make a Right-to-Know request for public records the town keeps.')
   })
 })
