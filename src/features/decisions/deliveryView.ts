@@ -20,6 +20,7 @@ export interface DeliveryRowView {
 
 export interface DeliveryGroupView {
   key: string
+  source: 'decision' | 'appeal'
   title: string
   dueText: string | null
   methods: { value: DeliveryMethod; label: string }[]
@@ -61,7 +62,7 @@ export async function loadDeliveryGroups(
     const key = r.decisionId ?? r.appealNodeId ?? ''
     groups.set(key, [...(groups.get(key) ?? []), r])
   }
-  const out: DeliveryGroupView[] = []
+  const out: { happenedOn: string; group: DeliveryGroupView }[] = []
   for (const [key, members] of groups) {
     const first = members[0]
     if (first === undefined) continue
@@ -71,8 +72,9 @@ export async function loadDeliveryGroups(
     if (resolved === null) continue
     const rule = deliveryRuleFor(loadPack(), resolved.boardKind)
     if (rule === null) continue
-    out.push({
+    const group: DeliveryGroupView = {
       key,
+      source: first.decisionId === null ? 'appeal' : 'decision',
       title:
         first.decisionId === null
           ? `Decision after appeal, ${formatCivilDate(resolved.happenedOn)}`
@@ -88,7 +90,12 @@ export async function loadDeliveryGroups(
             ? null
             : `${METHOD_LABELS[m.method]} ${formatCivilDate(m.deliveredOn)}`,
       })),
-    })
+    }
+    out.push({ happenedOn: resolved.happenedOn, group })
   }
   return out
+    .sort(
+      (a, b) => a.happenedOn.localeCompare(b.happenedOn) || a.group.key.localeCompare(b.group.key),
+    )
+    .map((o) => o.group)
 }

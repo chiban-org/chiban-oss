@@ -15,6 +15,7 @@ afterEach(cleanup)
 const groups: DeliveryGroupView[] = [
   {
     key: 'g1',
+    source: 'decision',
     title: 'Board decision, voted April 15, 2027',
     dueText: 'April 22, 2027',
     methods: [

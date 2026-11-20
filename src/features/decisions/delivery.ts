@@ -1,10 +1,9 @@
-import { and, asc, desc, eq, inArray, isNull, max, type SQL } from 'drizzle-orm'
+import { and, asc, eq, inArray, isNull, max, type SQL } from 'drizzle-orm'
 import type { Db, DbOrTx, Tx } from '@/db/client'
 import {
   appealNodes,
   applications,
   boardDecisions,
-  clocks,
   decisionDeliveries,
   projectParties,
 } from '@/db/schema'
@@ -24,7 +23,6 @@ import type {
 } from '@/features/packs/schema'
 import { boardLabel, governingBody } from '@/features/packs/vocabulary'
 import { townToday } from '@/features/town/today'
-import { formatCivilDate } from '@/lib/formatDate'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
