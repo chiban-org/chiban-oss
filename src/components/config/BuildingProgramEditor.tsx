@@ -47,7 +47,7 @@ export function BuildingProgramEditor({ body, onChange, errors }: Props) {
       ) : (
         <p>
           <span className="font-medium">Building code the town enforces: </span>
-          {single.label}
+          {body.codeChoice === null ? 'No building code' : single.label}
         </p>
       )}
       {codes?.requiredAbove != null && (

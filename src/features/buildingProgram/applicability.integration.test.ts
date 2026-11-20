@@ -4,12 +4,13 @@ import { applications } from '@/db/schema'
 import { loadApplicationContext } from '@/features/applications/context'
 import { getStaffApplicationView } from '@/features/applications/staffApplicationView'
 import { attestationHash, submitApplication } from '@/features/applications/submitApplication'
+import { getPublished } from '@/features/config/store'
 import { quickIssue } from '@/features/counter/quickIssue'
 import { evaluateGates } from '@/features/gates/evaluateGates'
 import { makeApplication, type PermitWorld } from '@/test/applicationFixtures'
 import { appTypeBody, saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
-import { setupTradeWorld } from '@/test/ledgerFixtures'
+import { setupTradeWorld, submittedTrade } from '@/test/ledgerFixtures'
 import type { CivilDate } from '@/types/civilDate'
 
 const signal = new AbortController().signal
@@ -159,5 +160,20 @@ describe('applicability snapshot', () => {
     )
     if (!r.ok) throw new Error(JSON.stringify(r.error))
     expect(await stored(r.value.applicationId)).toEqual({ codeChoice: 'state_code' })
+  })
+})
+
+describe('the code edition gate on a type that binds it', () => {
+  it('still blocks issue of a non building permit type without a code edition record', async () => {
+    const published = await getPublished(handle.db, 'application_type', 'EL', signal)
+    if (published === null) throw new Error('missing EL type')
+    const body = published.body as { bindings: string[] }
+    await saveAndPublish(handle.db, world.admin, 'application_type', 'EL', {
+      ...body,
+      bindings: [...body.bindings, CODE_GATE],
+    })
+    const trade = await submittedTrade(handle.db, world)
+    const gate = await codeGate(trade.applicationId)
+    expect(gate?.effective).toBe('blocked')
   })
 })

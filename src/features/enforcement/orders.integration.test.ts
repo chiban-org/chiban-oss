@@ -598,16 +598,16 @@ describe('draftOrder under a pack with no building permit', () => {
   })
 })
 
-describe('draftOrder when the town enforces no building code', () => {
-  async function publishNoCode() {
-    await saveAndPublish(handle.db, admin, 'building_program', 'default', {
-      key: 'default',
-      permitsEnabled: true,
-      codeChoice: null,
-      residents: null,
-    })
-  }
+async function publishNoCode() {
+  await saveAndPublish(handle.db, admin, 'building_program', 'default', {
+    key: 'default',
+    permitsEnabled: true,
+    codeChoice: null,
+    residents: null,
+  })
+}
 
+describe('draftOrder when the town enforces no building code', () => {
   function draftInput(caseId: string, findingId: string) {
     return {
       caseId,
@@ -655,5 +655,39 @@ describe('draftOrder when the town enforces no building code', () => {
       signal,
     )
     expect(revised.ok).toBe(true)
+  })
+})
+
+describe('issueOrder when the town enforces no building code', () => {
+  function issue(orderId: string) {
+    return issueOrder(
+      handle.db,
+      store,
+      staff,
+      { orderId, issuedOn: d('2027-03-02'), expectedRowVersion: 1 },
+      signal,
+      NOW,
+    )
+  }
+
+  it('refuses to issue a drafted building code order', async () => {
+    const { caseId, findingId } = await caseWithFinding('building_code')
+    await designate()
+    const drafted = await draft(caseId, [findingId])
+    if (!drafted.ok) throw new Error('draft')
+    await publishNoCode()
+    expect(await issue(drafted.value.orderId)).toEqual({
+      ok: false,
+      error: 'building_code_not_enforced',
+    })
+  })
+
+  it('still issues a zoning order', async () => {
+    const { caseId, findingId } = await caseWithFinding('zoning_ordinance')
+    await designate()
+    const drafted = await draft(caseId, [findingId])
+    if (!drafted.ok) throw new Error('draft')
+    await publishNoCode()
+    expect((await issue(drafted.value.orderId)).ok).toBe(true)
   })
 })

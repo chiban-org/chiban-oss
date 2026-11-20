@@ -6,7 +6,6 @@ import {
   regionalImpactDeterminations,
   regionalImpactNotices,
 } from '@/db/schema'
-import { codeEditionApplies } from '@/features/building/codeEditionApplies'
 import { applicabilityOf } from '@/features/buildingProgram/applicability'
 import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
 import {
@@ -89,7 +88,7 @@ const regionalImpactCleared: GateEvaluator = async (tx, app, today) => {
 }
 
 const codeEditionRelevant: GateDefinition['relevantTo'] = (app) =>
-  codeEditionApplies(app.typeBody.classification, applicabilityOf(app, app.buildingProgram))
+  applicabilityOf(app, app.buildingProgram).codeChoice !== null
 
 export function buildingGateDefinitions(): GateDefinition[] {
   const { rules } = packRoles()
