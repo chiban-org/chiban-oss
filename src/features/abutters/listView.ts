@@ -154,6 +154,13 @@ async function candidateRows(
   )
 }
 
+function savedBufferFt(list: ListRow): number | null | undefined {
+  const saved = list.selectionSettings as ListSnapshot['settings'] | null
+  return saved === null || saved === undefined || !('bufferFt' in saved)
+    ? undefined
+    : saved.bufferFt
+}
+
 export async function loadListView(
   db: Db,
   actor: Actor,
@@ -180,7 +187,9 @@ export async function loadListView(
     const parcelIds = await applicantParcelIds(tx, list.applicationId, signal)
     const showMap = list.status === 'draft' || list.status === 'issued'
     const abutterParams = primaryAbutterParams()
-    const townBufferFt = effectiveBufferFt(settings.bufferFt, abutterParams)
+    const saved = savedBufferFt(list)
+    const townBufferFt =
+      saved === undefined ? effectiveBufferFt(settings.bufferFt, abutterParams) : saved
     const overlay =
       showMap && settings.projectionEnabled
         ? await projectionOverlay(

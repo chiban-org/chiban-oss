@@ -12,6 +12,8 @@ import {
   selectParcel,
 } from '@/features/abutters/lists'
 import { loadListView } from '@/features/abutters/listView'
+import { projectionOverlay } from '@/features/abutters/overlay'
+import { primaryAbutterParams } from '@/features/abutters/packParams'
 import { currentIssuedList, type ListSnapshot, snapshotHash } from '@/features/abutters/queries'
 import { recordBoardRegionalImpact } from '@/features/boards/regionalImpact'
 import { activeBoards } from '@/features/boards/townBoards'
@@ -217,6 +219,36 @@ describe('snapshot settings and hash stability', () => {
     const issued = await currentIssuedList(handle.db, lw.applicationId, signal)
     expect(issued?.snapshot.settings).toBeUndefined()
     expect(issued === null ? null : snapshotHash(issued.snapshot)).toBe(issued?.snapshotSha256)
+  })
+
+  it('draws the buffer saved with the list, not the current board buffer', async () => {
+    setActivePackForTest(packWithTownBuffer({ defaultFt: null, maxFt: 500 }))
+    const publishBuffer = async (bufferFt: number) => {
+      const defaults = demoBoardSettings(await activeBoards(handle.db))
+      await saveAndPublish(handle.db, world.admin, 'board_settings', 'default', {
+        ...defaults,
+        abutters: {
+          ...defaults.abutters,
+          projectionEnabled: true,
+          layersConfirmedBy: 'Land Use Technician',
+          layersConfirmedOn: '2027-02-01',
+          bufferFt,
+        },
+      })
+    }
+    const outline = async (bufferFt: number) => {
+      const overlay = await handle.db.transaction((tx) =>
+        projectionOverlay(tx, [lw.ids.A ?? ''], primaryAbutterParams(), 50, signal, bufferFt),
+      )
+      return overlay.features.find((f) => f.properties.kind === 'buffer')?.geometry
+    }
+    await publishBuffer(300)
+    const { listId } = await generate()
+    await publishBuffer(100)
+    const view = await loadListView(handle.db, world.staff, listId, signal)
+    const drawn = view?.overlay?.features.find((f) => f.properties.kind === 'buffer')?.geometry
+    expect(drawn).toEqual(await outline(300))
+    expect(drawn).not.toEqual(await outline(100))
   })
 
   it('loads the list view when a buffer is set and the applicant parcel has no geometry', async () => {
