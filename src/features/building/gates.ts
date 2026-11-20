@@ -27,6 +27,14 @@ function gateRule(key: string): GateRule {
   return rule
 }
 
+export function codeEditionMissingReason(): string {
+  return `State building code edition not recorded${roleCitationSuffix('codeEditionGate')}.`
+}
+
+export function regionalDeterminationMissingReason(): string {
+  return `Regional impact determination not recorded${roleCitationSuffix('regionalImpactGate')}.`
+}
+
 const codeEditionRecorded: GateEvaluator = async (tx, app) => {
   const [record] = await tx
     .select({ id: codeEditionRecords.applicationId })
@@ -35,7 +43,7 @@ const codeEditionRecorded: GateEvaluator = async (tx, app) => {
   return record === undefined
     ? {
         status: 'blocked',
-        reason: `State building code edition not recorded${roleCitationSuffix('codeEditionGate')}.`,
+        reason: codeEditionMissingReason(),
       }
     : { status: 'pass' }
 }
@@ -48,7 +56,7 @@ const regionalImpactCleared: GateEvaluator = async (tx, app, today) => {
   if (determination === undefined) {
     return {
       status: 'unknown',
-      reason: `Regional impact determination not recorded${roleCitationSuffix('regionalImpactGate')}.`,
+      reason: regionalDeterminationMissingReason(),
     }
   }
   if (determination.determination !== 'yes') return { status: 'pass' }

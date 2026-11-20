@@ -20,6 +20,11 @@ import { townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
 
+export function exerciseFloorReason(): string {
+  const floorAuthority = activePack().labels.citations.exerciseFloorAuthority
+  return `The approval does not expire within 6 months after the planning application filed in reliance on it is resolved (${floorAuthority}).`
+}
+
 export async function runningExerciseClock(tx: Tx, applicationId: string) {
   const [clock] = await tx
     .select()
@@ -142,7 +147,7 @@ export async function recordRelianceResolutionTx(
       kind: 'statutory_floor',
       days: null,
       newDue: floor,
-      reason: `The approval does not expire within 6 months after the planning application filed in reliance on it is resolved (${floorAuthority}).`,
+      reason: exerciseFloorReason(),
       legalAuthority: {
         citation: floorAuthority,
         explanation: 'Six month minimum after resolution of the reliance application',

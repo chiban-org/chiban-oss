@@ -3,6 +3,7 @@ import { roleHints } from '@/app/(staff)/staff/admin/users/RoleChecks'
 import { meetingsTaskText, recordsTaskText } from '@/components/public/HomeContent'
 import { exactDetail } from '@/components/staff/search/searchOptions'
 import { CAPABILITIES } from '@/constants/capabilities'
+import { LIST_ISSUED_GATE_KEY } from '@/features/abutters/freshnessGate'
 import { appealStatusText } from '@/features/appeals/adminAppealsView'
 import {
   appealPointer,
@@ -21,6 +22,12 @@ import {
   certificationPhrase,
   requestToGoverningBody,
 } from '@/features/boards/certificationWords'
+import { exerciseFloorReason } from '@/features/boards/exercise'
+import { determinationMissingReason } from '@/features/boards/regionalGate'
+import {
+  codeEditionMissingReason,
+  regionalDeterminationMissingReason,
+} from '@/features/building/gates'
 import { toGraphNodes } from '@/features/decisions/decisionView'
 import { documentKindLabel } from '@/features/documents/recordSource'
 import { whoCanSeeSentence } from '@/features/documents/whoCanSee'
@@ -30,6 +37,7 @@ import { restraintIssuer, restraintIssuerOptions } from '@/features/enforcement/
 import { stayBanner } from '@/features/enforcement/stay'
 import { actorLabel } from '@/features/enforcement/workPlan'
 import { stayStepTask } from '@/features/enforcement/workPlanSteps'
+import { gateByKey } from '@/features/gates/registry'
 import { DEFAULT_WORDING } from '@/features/notifications/wording/wordingDefaults'
 import { activePack } from '@/features/packs/registry'
 import { roleCitationSuffix } from '@/features/packs/roles'
@@ -267,6 +275,22 @@ describe('New Hampshire vocabulary through the pack', () => {
     expect(roleCitationSuffix('regionalImpactTransmittal')).toBe(' (RSA 36:57 II)')
     expect(activePack().labels.citations.exerciseFloorAuthority).toBe('RSA 674:33 I-a(a) and IV(b)')
     expect(activePack().labels.citations.abutterListIssued).toEqual({
+      label: 'RSA 676:4 I(d) and RSA 676:7 I',
+      url: 'https://gc.nh.gov/rsa/html/LXIV/676/676-4.htm',
+    })
+    expect(codeEditionMissingReason()).toBe(
+      'State building code edition not recorded (RSA 155-A:2).',
+    )
+    expect(regionalDeterminationMissingReason()).toBe(
+      'Regional impact determination not recorded (RSA 36:57 IV).',
+    )
+    expect(determinationMissingReason()).toBe(
+      'Regional impact determination not recorded (RSA 36:57 I).',
+    )
+    expect(exerciseFloorReason()).toBe(
+      'The approval does not expire within 6 months after the planning application filed in reliance on it is resolved (RSA 674:33 I-a(a) and IV(b)).',
+    )
+    expect(gateByKey(LIST_ISSUED_GATE_KEY)?.citation).toEqual({
       label: 'RSA 676:4 I(d) and RSA 676:7 I',
       url: 'https://gc.nh.gov/rsa/html/LXIV/676/676-4.htm',
     })

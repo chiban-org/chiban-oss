@@ -19,6 +19,10 @@ function gateRule(key: string): GateRule {
   return rule
 }
 
+export function determinationMissingReason(): string {
+  return `Regional impact determination not recorded${roleCitationSuffix('regionalImpactDetermination')}.`
+}
+
 const determinationRecorded: GateEvaluator = async (tx, app) => {
   const [row] = await tx
     .select({ id: regionalImpactDeterminations.applicationId })
@@ -27,7 +31,7 @@ const determinationRecorded: GateEvaluator = async (tx, app) => {
   return row === undefined
     ? {
         status: 'unknown',
-        reason: `Regional impact determination not recorded${roleCitationSuffix('regionalImpactDetermination')}.`,
+        reason: determinationMissingReason(),
       }
     : { status: 'pass' }
 }
