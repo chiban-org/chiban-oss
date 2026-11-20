@@ -18,7 +18,7 @@ describe('buildingProgramIssues', () => {
         { key: 'default', permitsEnabled: true, codeChoice: 'xx.code.a', residents: 4001 },
         XX_PACK.buildingCodes,
       ),
-    ).toEqual(['codeChoice: towns over 4000 residents must enforce xx.code.b'])
+    ).toEqual(['codeChoice: towns over 4000 residents must enforce Vellmora Code B'])
   })
 
   it('allows no code at or below the threshold', () => {

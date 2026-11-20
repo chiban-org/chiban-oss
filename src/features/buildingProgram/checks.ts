@@ -15,8 +15,10 @@ export function buildingProgramIssues(
     body.residents > requiredAbove.residents &&
     body.codeChoice !== requiredAbove.choice
   ) {
+    const required =
+      codes.choices.find((c) => c.key === requiredAbove.choice)?.label ?? requiredAbove.choice
     return [
-      `codeChoice: towns over ${String(requiredAbove.residents)} residents must enforce ${requiredAbove.choice}`,
+      `codeChoice: towns over ${String(requiredAbove.residents)} residents must enforce ${required}`,
     ]
   }
   return []
