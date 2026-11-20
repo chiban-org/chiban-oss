@@ -27,6 +27,7 @@ import {
 } from '@/features/enforcement/orders'
 import { setActivePackForTest } from '@/features/packs/registry'
 import type { ObjectStore } from '@/features/storage/objectStore'
+import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { sendFixtureNotice } from '@/test/enforcementNoticeFixture'
 import { makeTestStore } from '@/test/objectStore'
@@ -594,5 +595,65 @@ describe('draftOrder under a pack with no building permit', () => {
       NOW,
     )
     expect(result).toEqual({ ok: false, error: 'building_code_not_enforced' })
+  })
+})
+
+describe('draftOrder when the town enforces no building code', () => {
+  async function publishNoCode() {
+    await saveAndPublish(handle.db, admin, 'building_program', 'default', {
+      key: 'default',
+      permitsEnabled: true,
+      codeChoice: null,
+      residents: null,
+    })
+  }
+
+  function draftInput(caseId: string, findingId: string) {
+    return {
+      caseId,
+      findingIds: [findingId],
+      correctiveAction: 'Apply for a permit.',
+      correctiveDeadline: null,
+      ceaseImmediately: false,
+    }
+  }
+
+  it('refuses an order for building code findings', async () => {
+    const { caseId, findingId } = await caseWithFinding('building_code')
+    await publishNoCode()
+    const result = await draftOrder(handle.db, staff, draftInput(caseId, findingId), signal, NOW)
+    expect(result).toEqual({ ok: false, error: 'building_code_not_enforced' })
+  })
+
+  it('still drafts an order for zoning findings', async () => {
+    const { caseId, findingId } = await caseWithFinding('zoning_ordinance')
+    await publishNoCode()
+    const result = await draftOrder(handle.db, staff, draftInput(caseId, findingId), signal, NOW)
+    expect(result.ok).toBe(true)
+  })
+
+  it('keeps an existing building code order readable and editable', async () => {
+    const { caseId, findingId } = await caseWithFinding('building_code')
+    const drafted = await draftOrder(handle.db, staff, draftInput(caseId, findingId), signal, NOW)
+    if (!drafted.ok) throw new Error(drafted.error)
+    await publishNoCode()
+    const [row] = await handle.db
+      .select()
+      .from(enforcementOrders)
+      .where(eq(enforcementOrders.id, drafted.value.orderId))
+    expect(row?.number).toBe(drafted.value.number)
+    const revised = await reviseDraftOrder(
+      handle.db,
+      staff,
+      {
+        orderId: drafted.value.orderId,
+        expectedRowVersion: row?.rowVersion ?? 0,
+        correctiveAction: 'Apply for a permit within ten days.',
+        correctiveDeadline: null,
+        ceaseImmediately: false,
+      },
+      signal,
+    )
+    expect(revised.ok).toBe(true)
   })
 })

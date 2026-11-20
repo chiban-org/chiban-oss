@@ -6,11 +6,19 @@ import { SelectField, TextField } from '@/components/staff/fields'
 import type { TownSectionKind } from '@/db/schema/townSections'
 import { addSectionAction, editSectionAction, retireSectionAction } from './actions'
 
-export const SECTION_KIND_OPTIONS: readonly (readonly [TownSectionKind, string])[] = [
-  ['zoning_ordinance', 'Zoning ordinance'],
-  ['building_code', 'Building code'],
-  ['other_local_ordinance', 'Other local ordinance'],
-]
+const SECTION_KIND_LABELS: Record<TownSectionKind, string> = {
+  zoning_ordinance: 'Zoning ordinance',
+  building_code: 'Building code',
+  other_local_ordinance: 'Other local ordinance',
+}
+
+function kindOptions(
+  kinds: readonly TownSectionKind[],
+  current?: TownSectionKind,
+): readonly (readonly [TownSectionKind, string])[] {
+  const offered = current === undefined || kinds.includes(current) ? kinds : [...kinds, current]
+  return offered.map((k) => [k, SECTION_KIND_LABELS[k]] as const)
+}
 
 interface SectionValues {
   provisionKind: TownSectionKind
@@ -18,13 +26,19 @@ interface SectionValues {
   title: string
 }
 
-function SectionFields({ values }: { values?: SectionValues }) {
+function SectionFields({
+  values,
+  kinds,
+}: {
+  values?: SectionValues
+  kinds: readonly TownSectionKind[]
+}) {
   return (
     <>
       <SelectField
         label="Kind of rule"
         name="provisionKind"
-        options={SECTION_KIND_OPTIONS}
+        options={kindOptions(kinds, values?.provisionKind)}
         defaultValue={values?.provisionKind ?? 'zoning_ordinance'}
       />
       <TextField
@@ -46,7 +60,7 @@ function SectionFields({ values }: { values?: SectionValues }) {
   )
 }
 
-export function AddSection() {
+export function AddSection({ kinds }: { kinds: readonly TownSectionKind[] }) {
   return (
     <FormDialog
       label="Add a section"
@@ -55,18 +69,26 @@ export function AddSection() {
       variant="default"
     >
       <ActionForm action={addSectionAction} submitLabel="Add section" closeOnSuccess>
-        <SectionFields />
+        <SectionFields kinds={kinds} />
       </ActionForm>
     </FormDialog>
   )
 }
 
-export function EditSection({ sectionId, values }: { sectionId: string; values: SectionValues }) {
+export function EditSection({
+  sectionId,
+  values,
+  kinds,
+}: {
+  sectionId: string
+  values: SectionValues
+  kinds: readonly TownSectionKind[]
+}) {
   return (
     <RowEditDialog record={values.reference} title={`Edit ${values.reference}`}>
       <ActionForm action={editSectionAction} submitLabel="Save changes" closeOnSuccess>
         <input type="hidden" name="sectionId" value={sectionId} />
-        <SectionFields values={values} />
+        <SectionFields values={values} kinds={kinds} />
       </ActionForm>
     </RowEditDialog>
   )

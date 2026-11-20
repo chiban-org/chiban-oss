@@ -15,6 +15,7 @@ import { loadSectionListView } from '@/features/enforcement/sections/sectionList
 import { loadFindingSuggestions } from '@/features/enforcement/sections/suggestionInputs'
 import { addTownSection } from '@/features/enforcement/sections/townSections'
 import { setupBoardWorld } from '@/test/boardFixtures'
+import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { decidedZba } from '@/test/hearingFixtures'
 import { makeTestStore } from '@/test/objectStore'
@@ -246,5 +247,39 @@ describe('typed in findings, not on the list', () => {
   it('shows nothing to staff without config.edit', async () => {
     await basicWorld()
     expect(await loadSectionListView(handle.db, staff, signal)).toBeNull()
+  })
+})
+
+describe('a town that enforces no building code', () => {
+  async function publishNoCode() {
+    await saveAndPublish(handle.db, admin, 'building_program', 'default', {
+      key: 'default',
+      permitsEnabled: true,
+      codeChoice: null,
+      residents: null,
+    })
+  }
+
+  it('offers no state building code suggestions', async () => {
+    await basicWorld()
+    await publishNoCode()
+    const building = (await loadFindingSuggestions(handle.db, scope(null), signal)).building_code
+    expect(building).toEqual([])
+  })
+
+  it('offers only the local kinds and keeps typed building code references off the list', async () => {
+    await basicWorld()
+    const caseId = await caseOn(null)
+    await finding(caseId, 'building_code', 'IRC 2021 Section R105.1')
+    await publishNoCode()
+    const view = await loadSectionListView(handle.db, admin, signal)
+    expect(view?.kinds).toEqual(['zoning_ordinance', 'other_local_ordinance'])
+    expect(view?.typedNotListed).toEqual([])
+  })
+
+  it('offers the building code kind while a code is enforced', async () => {
+    await basicWorld()
+    const view = await loadSectionListView(handle.db, admin, signal)
+    expect(view?.kinds).toEqual(['zoning_ordinance', 'building_code', 'other_local_ordinance'])
   })
 })
