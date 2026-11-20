@@ -5,6 +5,8 @@ import { transactionResult } from '@/db/transactionResult'
 import type { ApplicationTypeBody } from '@/features/applications/applicationTypeSchema'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
+import { intakeOpen } from '@/features/buildingProgram/intake'
+import { getBuildingProgram } from '@/features/buildingProgram/settings'
 import { pinCurrent } from '@/features/config/bindings'
 import { checkApplicationType } from '@/features/config/publishChecks'
 import { getVersion } from '@/features/config/store'
@@ -63,6 +65,9 @@ export async function createApplication(
     const typeBody = typeVersion?.body as ApplicationTypeBody
     if ((await checkApplicationType(tx, typeBody, signal)) !== null)
       return err('config_inconsistent')
+    if (!intakeOpen(typeBody.classification, await getBuildingProgram(tx, signal))) {
+      return err('not_published')
+    }
     const prefix = typeBody.prefix
     const number = await nextNumber(tx, prefix, year)
     const [created] = await tx
