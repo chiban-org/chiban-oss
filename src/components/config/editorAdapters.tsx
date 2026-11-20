@@ -171,11 +171,12 @@ export function ApplicationTypeAdapter({ body, onChange, issues }: EditorProps) 
 }
 
 export function BoardSettingsAdapter({ body, onChange, issues }: EditorProps) {
-  const { boards } = useEditorContext()
+  const { boards, townBuffer } = useEditorContext()
   return (
     <BoardSettingsEditor
       body={body as BoardSettingsBody}
       boards={boards}
+      townBuffer={townBuffer}
       onChange={onChange}
       errors={errorsOf(issues)}
     />

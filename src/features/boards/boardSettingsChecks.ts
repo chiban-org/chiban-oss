@@ -1,3 +1,4 @@
+import { primaryAbutterParams } from '@/features/abutters/packParams'
 import { BOARD_KIND_BEHAVIOUR } from '@/features/boards/boardKindBehaviour'
 import type { BoardSettingsBody } from '@/features/boards/boardSettings'
 import type { BoardRow } from '@/features/boards/townBoards'
@@ -27,6 +28,33 @@ function abuttersIssue(abutters: BoardSettingsBody['abutters']): PublishError | 
         {
           path: 'abutters.layersConfirmedOn',
           message: 'Enter the date the road and water layers were confirmed.',
+        },
+      ],
+    }
+  }
+  return null
+}
+
+function bufferIssue(abutters: BoardSettingsBody['abutters']): PublishError | null {
+  const bufferFt = abutters.bufferFt
+  if (bufferFt === null || bufferFt === undefined) return null
+  const townBuffer = primaryAbutterParams().townBuffer
+  if (townBuffer === undefined) {
+    return {
+      invalid: [
+        {
+          path: 'abutters.bufferFt',
+          message: 'State law here counts abutters by adjacency, so there is no distance to set.',
+        },
+      ],
+    }
+  }
+  if (bufferFt > townBuffer.maxFt) {
+    return {
+      invalid: [
+        {
+          path: 'abutters.bufferFt',
+          message: `State law lets a town set this distance to at most ${String(townBuffer.maxFt)} feet.`,
         },
       ],
     }
@@ -86,7 +114,7 @@ export function checkBoardSettings(
   body: BoardSettingsBody,
   active: BoardRow[],
 ): PublishError | null {
-  const abutters = abuttersIssue(body.abutters)
+  const abutters = abuttersIssue(body.abutters) ?? bufferIssue(body.abutters)
   if (abutters !== null) return abutters
   const entries = entryIssue(body.boards, active)
   if (entries !== null) return entries

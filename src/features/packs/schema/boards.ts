@@ -56,5 +56,8 @@ export const AbutterParamsSchema = z.object({
   maxCrossingFt: z.number().positive(),
   alongDepthFt: z.number().positive(),
   tolerancesLabel: z.string().min(1),
+  townBuffer: z
+    .object({ defaultFt: z.number().positive().nullable(), maxFt: z.number().positive() })
+    .optional(),
 })
 export type AbutterParams = z.infer<typeof AbutterParamsSchema>

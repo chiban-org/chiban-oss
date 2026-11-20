@@ -31,6 +31,7 @@ export const BoardSettingsBodySchema = z.object({
     layersConfirmedOn: civilDateSchema.nullable(),
     assumedRightOfWayFt: z.number().positive(),
     recheckContactsDays: z.number().int().min(1).max(3650).optional(),
+    bufferFt: z.number().positive().nullable().optional(),
   }),
 })
 export type BoardSettingsBody = z.infer<typeof BoardSettingsBodySchema>

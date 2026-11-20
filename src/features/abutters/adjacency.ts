@@ -30,3 +30,28 @@ export async function adjacentParcels(
   `)
   return result.rows.filter((r) => isAdjacent(r.feet, toleranceFt)).map((r) => r.id)
 }
+
+export async function bufferedParcels(
+  tx: DbOrTx,
+  applicantParcelIds: string[],
+  bufferFt: number,
+  signal: AbortSignal,
+): Promise<string[]> {
+  signal.throwIfAborted()
+  const srid = projectedSridParam()
+  if (applicantParcelIds.length === 0) return []
+  const result = await tx.execute<{ id: string }>(sql`
+    select p.id
+    from parcels p
+    cross join lateral (
+      select ST_Transform(ST_Union(a.geom), ${srid}) as g
+      from parcels a where a.id = any(${uuidArray(applicantParcelIds)})
+    ) u
+    where p.geom is not null
+      and p.status = 'active'
+      and p.id <> all(${uuidArray(applicantParcelIds)})
+      and ST_DWithin(ST_Transform(p.geom, ${srid}), u.g, ${bufferFt})
+    order by p.id
+  `)
+  return result.rows.map((r) => r.id)
+}

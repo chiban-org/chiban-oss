@@ -9,7 +9,14 @@ import type { Pt } from '@/features/abutters/projection/types'
 import type { AbutterParams } from '@/features/packs/schema'
 import { displayIdsFor } from '@/features/parcels/displayId'
 
-export type OverlayKind = 'region' | 'corner' | 'projected' | 'connector' | 'capture' | 'label'
+export type OverlayKind =
+  | 'region'
+  | 'corner'
+  | 'projected'
+  | 'connector'
+  | 'capture'
+  | 'buffer'
+  | 'label'
 
 export type Overlay = GeoJSON.FeatureCollection<
   GeoJSON.Geometry,
@@ -47,6 +54,7 @@ export async function projectionOverlay(
   params: AbutterParams,
   assumedRightOfWayFt: number,
   signal: AbortSignal,
+  townBufferFt: number | null = null,
 ): Promise<Overlay> {
   const radius = params.maxCrossingFt + params.captureRadiusFt + NEARBY_MARGIN_FT
   const inputs = await loadCrossingInputs(tx, applicantParcelIds, radius, signal)
@@ -76,6 +84,13 @@ export async function projectionOverlay(
     await add('projected', wkt('POINT', [point.point]))
     await add('capture', wkt('POINT', [point.point]), params.captureRadiusFt)
   }
+  if (townBufferFt !== null) {
+    features.push({
+      type: 'Feature',
+      properties: { kind: 'buffer' },
+      geometry: await bufferOutline(tx, applicantParcelIds, townBufferFt),
+    })
+  }
   if (features.length > 0) {
     const labelled = [...applicantParcelIds, ...inputs.others.map((o) => o.parcelId)]
     features.push(...(await parcelLabels(tx, labelled)))
@@ -87,6 +102,22 @@ export async function projectionOverlay(
     )
   }
   return { type: 'FeatureCollection', features }
+}
+
+async function bufferOutline(
+  tx: Tx,
+  applicantParcelIds: string[],
+  bufferFt: number,
+): Promise<GeoJSON.Geometry> {
+  const srid = projectedSridParam()
+  const result = await tx.execute<{ gj: string }>(sql`
+    select ST_AsGeoJSON(
+      ST_Transform(ST_Buffer(ST_Transform(ST_Union(a.geom), ${srid}), ${bufferFt}), 4326),
+      7
+    ) as gj
+    from parcels a where a.id = any(${uuidArray(applicantParcelIds)})
+  `)
+  return JSON.parse(result.rows[0]?.gj ?? 'null') as GeoJSON.Geometry
 }
 
 type LabelFeature = Overlay['features'][number]

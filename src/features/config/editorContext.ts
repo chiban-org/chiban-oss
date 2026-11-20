@@ -1,3 +1,4 @@
+import { primaryAbutterParams } from '@/features/abutters/packParams'
 import type { NamedChoice, ReferenceChoices } from '@/features/config/referenceChoices'
 import type { RuleChoiceGroups } from '@/features/config/ruleChoices'
 import type { FormBuilderData } from '@/features/forms/formReferences'
@@ -47,6 +48,7 @@ export interface EditorContext {
   form?: FormBuilderData
   template?: TemplateBuilderData
   townName?: string
+  townBuffer?: { defaultFt: number | null; maxFt: number }
 }
 
 interface PackRuleLabelSource {
@@ -83,6 +85,7 @@ export function editorContext(
   boards: EditorBoard[] = [],
 ): EditorContext {
   const pack = loadPack()
+  const townBuffer = primaryAbutterParams().townBuffer
   const townRules: EditorContext['townRules'] = {}
   for (const rule of pack.rules) {
     if (rule.kind !== 'town_setting') continue
@@ -114,5 +117,6 @@ export function editorContext(
     boards,
     reviewers,
     townRules,
+    ...(townBuffer === undefined ? {} : { townBuffer }),
   }
 }
