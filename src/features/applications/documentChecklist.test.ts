@@ -8,11 +8,8 @@ import {
   stageOpenFor,
   unmetItems,
 } from '@/features/applications/documentChecklist'
-import {
-  type DocumentItem,
-  documentItemsOf,
-  statePermitAtFiling,
-} from '@/features/applications/documentItemSchema'
+import { statePermitAtFiling } from '@/features/applications/documentItemIssues'
+import { type DocumentItem, documentItemsOf } from '@/features/applications/documentItemSchema'
 import { appTypeBody } from '@/test/configFixtures'
 
 const plotPlan: DocumentItem = {

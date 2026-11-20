@@ -13,7 +13,7 @@ import {
   isChanged,
   withDefault,
   withWording,
-} from '@/features/notifications/wording/wordingEdits'
+} from '@/features/notifications/wording/wordingChanges'
 import {
   WORDING_KEY_INFO,
   type WordingKey,

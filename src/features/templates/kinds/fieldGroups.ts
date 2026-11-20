@@ -1,7 +1,7 @@
 import type { Vocabulary } from '@/features/packs/vocabulary'
 import { allowedFields } from '@/features/templates/kinds/documentKinds'
-import { mergeFieldLabel } from '@/features/templates/mergeFieldLabels'
 import { MERGE_FIELDS } from '@/features/templates/mergeFields'
+import { mergeFieldLabelFor } from '@/features/templates/mergeFieldWords'
 import type { TemplateKind } from '@/features/templates/templateSchema'
 
 export interface FieldGroup {
@@ -39,7 +39,7 @@ function groupOf(name: string): string {
 
 export function fieldGroups(
   kind: TemplateKind,
-  words?: Pick<Vocabulary, 'boardLabel'>,
+  words: Pick<Vocabulary, 'boardLabel'>,
 ): FieldGroup[] {
   const allowed = allowedFields(kind)
   const groups = new Map<string, FieldGroup>()
@@ -47,7 +47,7 @@ export function fieldGroups(
     if (!allowed.has(name)) continue
     const title = groupOf(name)
     const group = groups.get(title) ?? { title, fields: [] }
-    group.fields.push({ name, label: mergeFieldLabel(name, words) })
+    group.fields.push({ name, label: mergeFieldLabelFor(name, words) })
     groups.set(title, group)
   }
   const ordered = [...groups.values()]

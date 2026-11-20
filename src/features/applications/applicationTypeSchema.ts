@@ -1,5 +1,6 @@
 import { z } from 'zod'
-import { DocumentItemSchema, documentItemIssues } from '@/features/applications/documentItemSchema'
+import { documentItemIssues } from '@/features/applications/documentItemIssues'
+import { DocumentItemSchema } from '@/features/applications/documentItemSchema'
 import { CORE_STATES } from '@/features/applications/states'
 import { loadPack } from '@/features/packs/loadPack'
 import { activePack } from '@/features/packs/registry'

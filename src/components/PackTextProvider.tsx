@@ -1,17 +1,10 @@
 'use client'
 
 import { createContext, type ReactNode, useContext } from 'react'
+import { NEUTRAL_PACK_TEXT } from '@/features/packs/neutralPackText'
 import type { PackText } from '@/features/packs/packText'
-import { packVocabulary } from '@/features/packs/vocabulary'
 
-const EMPTY: PackText = {
-  signerRoleLabels: {},
-  lockedTexts: {},
-  environmentalAgency: 'State environmental agency',
-  vocabulary: packVocabulary(),
-}
-
-const Context = createContext<PackText>(EMPTY)
+const Context = createContext<PackText>(NEUTRAL_PACK_TEXT)
 
 export function PackTextProvider({ value, children }: { value: PackText; children: ReactNode }) {
   return <Context.Provider value={value}>{children}</Context.Provider>

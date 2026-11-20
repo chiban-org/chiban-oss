@@ -9,14 +9,14 @@ import { usePackText, useSignerRoleLabel } from '@/components/PackTextProvider'
 import { type DocNode, fieldTableRows } from '@/features/templates/doc/docSchema'
 import { lockedSource } from '@/features/templates/doc/lockedSources'
 import { documentKind } from '@/features/templates/kinds/documentKinds'
-import { mergeFieldLabel } from '@/features/templates/mergeFieldLabels'
+import { mergeFieldLabelFor } from '@/features/templates/mergeFieldWords'
 import { mergeValue } from '@/features/templates/renderTemplate'
 import { cn } from '@/lib/utils'
 
 function useFieldText(name: string): string {
   const { preview } = useLetterView()
   const { vocabulary } = usePackText()
-  return preview === null ? mergeFieldLabel(name, vocabulary) : mergeValue(name, preview.values)
+  return preview === null ? mergeFieldLabelFor(name, vocabulary) : mergeValue(name, preview.values)
 }
 
 export function MergeFieldView({ node, selected }: NodeViewProps) {

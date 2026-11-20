@@ -1,4 +1,4 @@
-import { packVocabulary, type Vocabulary } from '@/features/packs/vocabulary'
+import type { Vocabulary } from '@/features/packs/vocabulary'
 import type { ExactKind, SearchResult, SearchRow } from '@/features/search/searchTypes'
 
 export interface SearchOption extends SearchRow {
@@ -13,10 +13,7 @@ export interface SearchOptions {
 
 export const EXACT_SECTION = 'Exact number'
 
-export function exactDetail(
-  kind: ExactKind,
-  words: Pick<Vocabulary, 'recordsRequest'> = packVocabulary(),
-): string {
+export function exactDetail(kind: ExactKind, words: Pick<Vocabulary, 'recordsRequest'>): string {
   const details: Readonly<Record<ExactKind, string>> = {
     application: 'Application or permit',
     case: 'Enforcement case',
@@ -56,7 +53,7 @@ function groupOptions(result: SearchResult): SearchOption[] {
 
 export function searchOptions(
   result: SearchResult,
-  words: Pick<Vocabulary, 'recordsRequest'> = packVocabulary(),
+  words: Pick<Vocabulary, 'recordsRequest'>,
 ): SearchOptions {
   const options = groupOptions(result)
   const { exact } = result

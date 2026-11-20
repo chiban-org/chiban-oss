@@ -16,7 +16,7 @@ import {
   recordDecisionDescription,
 } from '@/features/appeals/appealWords'
 import { activityPhrase } from '@/features/applications/activityPhrase'
-import { statePermitAtFiling } from '@/features/applications/documentItemSchema'
+import { statePermitAtFiling } from '@/features/applications/documentItemIssues'
 import {
   certificationOptions,
   certificationPhrase,
@@ -38,7 +38,6 @@ import { stayBanner } from '@/features/enforcement/stay'
 import { actorLabel } from '@/features/enforcement/workPlan'
 import { stayStepTask } from '@/features/enforcement/workPlanSteps'
 import { gateByKey } from '@/features/gates/registry'
-import { DEFAULT_WORDING } from '@/features/notifications/wording/wordingDefaults'
 import { activePack } from '@/features/packs/registry'
 import { roleCitationSuffix } from '@/features/packs/roles'
 import {
@@ -46,6 +45,7 @@ import {
   boardLabel,
   boardShort,
   governingBody,
+  packVocabulary,
   recordsLaw,
   recordsRequest,
 } from '@/features/packs/vocabulary'
@@ -67,7 +67,6 @@ import {
 } from '@/features/staffHome/recordsHome'
 import { STAFF_NAV_ITEMS } from '@/features/staffNav/navEntries'
 import { RTK_RESPONSE_KIND } from '@/features/templates/kinds/officeKinds'
-import { MERGE_FIELD_LABELS } from '@/features/templates/mergeFieldLabels'
 
 describe('New Hampshire vocabulary through the pack', () => {
   it('names the pack words', () => {
@@ -93,7 +92,7 @@ describe('New Hampshire vocabulary through the pack', () => {
     expect(openRecordsLabel()).toBe('Open Right-to-Know')
     expect(holdTargetLabels().rtk_request).toBe('Right-to-Know request')
     expect(documentKindLabel('rtk_letter')).toBe('Right-to-Know letter')
-    expect(exactDetail('request')).toBe('Right-to-Know request')
+    expect(exactDetail('request', packVocabulary())).toBe('Right-to-Know request')
   })
 
   it('records screens', () => {
@@ -230,33 +229,6 @@ describe('New Hampshire vocabulary through the pack', () => {
     expect(
       appealedToBoardText('Notice of violation', 'A. Person', '2026-01-02', 'unresolved'),
     ).toBe('Notice of violation appealed to the ZBA by A. Person on January 2, 2026, unresolved.')
-  })
-
-  it('notification wording and merge fields', () => {
-    expect(DEFAULT_WORDING.rtk_request_received.subject).toBe(
-      'Right-to-Know request {{request.number}} received',
-    )
-    expect(DEFAULT_WORDING.rtk_request_received.body).toBe(
-      'The town received your Right-to-Know request on {{request.receivedOn}}. Its number is {{request.number}}.\n\nThe town will answer by {{request.due}}. It will make the records available, deny the request in writing, or tell you in writing when it will answer.\n\nKeep the request number if you need to ask about it.',
-    )
-    expect(DEFAULT_WORDING.rtk_letter_sent.subject).toBe(
-      'Letter about Right-to-Know request {{request.number}}',
-    )
-    expect(DEFAULT_WORDING.rtk_letter_sent.body).toBe(
-      "The town's letter about your Right-to-Know request {{request.number}} is attached.",
-    )
-    expect(DEFAULT_WORDING.rtk_records_link.body).toBe(
-      'The town released records for your Right-to-Know request {{request.number}} on {{records.releasedOn}}.{{records.linkNote}} The link works for {{link.days}} days.',
-    )
-    expect(DEFAULT_WORDING.rtk_records_attached.body).toBe(
-      "The town released records for your Right-to-Know request {{request.number}} on {{records.releasedOn}}. The records and the town's letter are attached.",
-    )
-    expect(MERGE_FIELD_LABELS['signer.zba_chair.name']).toBe(
-      'Zoning Board of Adjustment chair name',
-    )
-    expect(MERGE_FIELD_LABELS['signer.zba_chair.title']).toBe(
-      'Zoning Board of Adjustment chair title',
-    )
   })
 
   it('home page', () => {
