@@ -5,6 +5,7 @@ import { desProximityDeterminations } from '@/db/schema'
 import { transactionResult } from '@/db/transactionResult'
 import { uuidArray } from '@/db/uuidList'
 import { applicantParcelIds } from '@/features/abutters/applicantParcels'
+import { projectedSridParam } from '@/features/abutters/projection/srid'
 import { proximityVerdict } from '@/features/abutters/proximityRule'
 import { flagIssuedListStale } from '@/features/abutters/staleList'
 import { lockedAndFinished } from '@/features/applications/lockApplication'
@@ -62,8 +63,9 @@ export async function suggestDesProximity(
   if (status.state === 'not_configured') return { state: 'unknown' }
   const parcelIds = await applicantParcelIds(db, applicationId, signal)
   if (parcelIds.length === 0) return { state: 'unknown' }
+  const srid = projectedSridParam()
   const result = await db.execute<{ feet: number | null }>(sql`
-    select min(ST_Distance(ST_Transform(p.geom, 3437), ST_Transform(w.geom, 3437)))::float8 as feet
+    select min(ST_Distance(ST_Transform(p.geom, ${srid}), ST_Transform(w.geom, ${srid})))::float8 as feet
     from parcels p
     cross join gis_features w
     where p.id = any(${uuidArray(parcelIds)})

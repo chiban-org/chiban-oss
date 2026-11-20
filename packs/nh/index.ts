@@ -36,6 +36,7 @@ export const NH_PACK: StatePack = {
   ruleTransitions: NH_RULE_TRANSITIONS,
   ruleAreas: NH_RULE_AREAS,
   orderTexts: NH_ORDER_TEXTS,
+  spatial: { projectedSrid: 3437, label: 'NAD83 / New Hampshire (ftUS)' },
   labels: {
     environmentalAgency: 'NH Department of Environmental Services',
     environmentalAgencyShort: 'NH DES',

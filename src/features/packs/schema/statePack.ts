@@ -49,6 +49,11 @@ export interface PackLabels {
   stateLicenseNumber: string
 }
 
+export interface PackSpatial {
+  projectedSrid: number
+  label: string
+}
+
 export interface RuleArea {
   title: string
   rules: readonly PackRule[]
@@ -78,4 +83,5 @@ export interface StatePack {
   ruleAreas: readonly RuleArea[]
   orderTexts: OrderTexts
   labels: PackLabels
+  spatial: PackSpatial
 }

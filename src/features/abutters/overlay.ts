@@ -4,6 +4,7 @@ import { uuidArray } from '@/db/uuidList'
 import { loadCrossingInputs } from '@/features/abutters/crossingInputs'
 import { projectionParamsFor } from '@/features/abutters/projection/paramsFor'
 import { projectAcross } from '@/features/abutters/projection/projectAcross'
+import { projectedSridParam } from '@/features/abutters/projection/srid'
 import type { Pt } from '@/features/abutters/projection/types'
 import type { AbutterParams } from '@/features/packs/schema'
 import { displayIdsFor } from '@/features/parcels/displayId'
@@ -31,7 +32,8 @@ async function toLonLat(
   geometryWkt: string,
   bufferFt: number | null,
 ): Promise<GeoJSON.Geometry> {
-  const base = sql`ST_GeomFromText(${geometryWkt}, 3437)`
+  const srid = projectedSridParam()
+  const base = sql`ST_GeomFromText(${geometryWkt}, ${srid})`
   const shaped = bufferFt === null ? base : sql`ST_Buffer(${base}, ${bufferFt})`
   const result = await tx.execute<{ gj: string }>(
     sql`select ST_AsGeoJSON(ST_Transform(${shaped}, 4326), 7) as gj`,
