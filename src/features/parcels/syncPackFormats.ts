@@ -35,15 +35,20 @@ export async function syncPackParcelIdFormats(
       await tx.delete(parcelIdFormats).where(inArray(parcelIdFormats.key, removed))
     }
 
-    const missing = formats.filter((f) => !existingKeys.has(f.key))
-    if (missing.length > 0) {
-      await tx.insert(parcelIdFormats).values(
-        missing.map(({ example: _example, isDisplay: _isDisplay, ...format }) => ({
-          ...format,
-          isDisplay: false,
-        })),
-      )
-    }
+    const installed = formats.some((f) => existingKeys.has(f.key))
+    const inserted =
+      installed || formats.length === 0
+        ? []
+        : await tx
+            .insert(parcelIdFormats)
+            .values(
+              formats.map(({ example: _example, isDisplay: _isDisplay, ...format }) => ({
+                ...format,
+                isDisplay: false,
+              })),
+            )
+            .onConflictDoNothing()
+            .returning({ key: parcelIdFormats.key })
 
     const [displayed] = await tx
       .select({ key: parcelIdFormats.key })
@@ -59,6 +64,6 @@ export async function syncPackParcelIdFormats(
       }
     }
 
-    return { inserted: missing.map((f) => f.key), removed }
+    return { inserted: inserted.map((r) => r.key), removed }
   })
 }

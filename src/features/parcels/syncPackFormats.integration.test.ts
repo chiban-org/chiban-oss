@@ -53,6 +53,13 @@ describe('syncPackParcelIdFormats', () => {
     expect(await formatKeys()).toEqual(before)
   })
 
+  it('does not bring back an NH format an admin deleted', async () => {
+    await handle.db.delete(parcelIdFormats).where(eq(parcelIdFormats.key, 'cama15'))
+    expect(await formatKeys()).toEqual(['gis12'])
+    expect(await syncPackParcelIdFormats(handle.db, signal)).toEqual({ inserted: [], removed: [] })
+    expect(await formatKeys()).toEqual(['gis12'])
+  })
+
   it('leaves a customised NH display format alone', async () => {
     await handle.db.execute(sql`update parcel_id_formats set is_display = false`)
     await handle.db.insert(parcelIdFormats).values({
