@@ -1,7 +1,8 @@
 import { eq, inArray } from 'drizzle-orm'
 import type { Db } from '@/db/client'
-import { parcelAliases, parcelIdFormats } from '@/db/schema'
+import { parcelIdFormats } from '@/db/schema'
 import { activePack } from '@/features/packs/registry'
+import { usage } from '@/features/parcels/idFormatAdmin'
 
 const NH_DEFAULT_FORMAT_KEYS = ['cama15', 'gis12'] as const
 
@@ -25,12 +26,9 @@ export async function syncPackParcelIdFormats(
       (key) => existingKeys.has(key) && !packKeys.has(key),
     )
     const used = new Set<string>()
-    if (removable.length > 0) {
-      const rows = await tx
-        .selectDistinct({ format: parcelAliases.format })
-        .from(parcelAliases)
-        .where(inArray(parcelAliases.format, removable))
-      for (const row of rows) used.add(row.format)
+    for (const key of removable) {
+      const counts = await usage(tx, key)
+      if (counts.aliases + counts.other > 0) used.add(key)
     }
     const removed = removable.filter((key) => !used.has(key))
     if (removed.length > 0) {

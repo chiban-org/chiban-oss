@@ -4,6 +4,7 @@ import { parcelIdFormats } from '@/db/schema'
 import { setActivePackForTest } from '@/features/packs/registry'
 import { syncPackParcelIdFormats } from '@/features/parcels/syncPackFormats'
 import { makeTestDb, type TestDb } from '@/test/db'
+import { configureLayer } from '@/test/gisFixtures'
 import { xxPackWith } from '@/test/packs/xx/variants'
 import { makeParcel, seedParcelWorld } from '@/test/parcels'
 
@@ -81,6 +82,16 @@ describe('syncPackParcelIdFormats', () => {
     expect(result.removed).toEqual(['cama15'])
     expect(await formatKeys()).toEqual(['gis12', 'xx_map_lot'])
     expect(await displayKeys()).toEqual(['gis12'])
+  })
+
+  it('keeps an NH format that a saved GIS mapping names', async () => {
+    await configureLayer(handle.db, 'parcels', {
+      primaryId: { field: 'MAPLOT', format: 'gis12', padNumeric: false },
+    })
+    setActivePackForTest(XX_PACK)
+    const result = await syncPackParcelIdFormats(handle.db, signal)
+    expect(result.removed).toEqual(['cama15'])
+    expect(await formatKeys()).toEqual(['gis12', 'xx_map_lot'])
   })
 
   it('is idempotent', async () => {
