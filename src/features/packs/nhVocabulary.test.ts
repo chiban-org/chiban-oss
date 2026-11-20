@@ -4,6 +4,16 @@ import { RoleChecks } from '@/app/(staff)/staff/admin/users/RoleChecks'
 import { ApprovalHint } from '@/app/(staff)/staff/records/redact/[versionId]/ApprovalHint'
 import { exactDetail } from '@/components/staff/search/searchOptions'
 import { CAPABILITIES } from '@/constants/capabilities'
+import { appealStatusText } from '@/features/appeals/adminAppealsView'
+import { appealToBoard, boardDecision } from '@/features/appeals/appealWords'
+import { activityPhrase } from '@/features/applications/activityPhrase'
+import { statePermitAtFiling } from '@/features/applications/documentItemSchema'
+import {
+  certificationOptions,
+  certificationPhrase,
+  requestToGoverningBody,
+} from '@/features/boards/certificationWords'
+import { toGraphNodes } from '@/features/decisions/decisionView'
 import { documentKindLabel } from '@/features/documents/recordSource'
 import { whoCanSeeSentence } from '@/features/documents/whoCanSee'
 import {
@@ -14,6 +24,7 @@ import {
   recordsLaw,
   recordsRequest,
 } from '@/features/packs/vocabulary'
+import { groupPortalTypes } from '@/features/portal/typeGroups'
 import { holdTargetLabels } from '@/features/records/holdKinds'
 import {
   dueThisWeekLabel,
@@ -81,5 +92,57 @@ describe('New Hampshire vocabulary through the pack', () => {
     expect(RTK_RESPONSE_KIND.label).toBe('Right-to-Know response')
     expect(RTK_RESPONSE_KIND.title).toBe('Response to your Right-to-Know request')
     expect(RTK_RESPONSE_KIND.record).toBe('Right-to-Know request')
+  })
+
+  it('boards and appeals', () => {
+    expect(appealToBoard()).toBe('Appeal to the Zoning Board')
+    expect(boardDecision()).toBe('Zoning Board decision')
+    const nodes = toGraphNodes([
+      { id: 'a', kind: 'zba_decision', occurredOn: '2026-01-02' },
+      { id: 'b', kind: 'zba_appeal', occurredOn: '2026-01-03' },
+      { id: 'c', kind: 'pb_decision', occurredOn: '2026-01-04' },
+    ] as never)
+    expect(nodes.map((n) => n.kindLabel)).toEqual([
+      'Zoning Board decision',
+      'Appeal to the Zoning Board',
+      'Planning Board decision',
+    ])
+    expect(
+      appealStatusText(
+        { occurredOn: '2026-01-02' } as never,
+        { occurredOn: '2026-02-03' } as never,
+        '2026-03-01' as never,
+      ),
+    ).toBe('Appealed to the Zoning Board on February 3, 2026')
+    expect(statePermitAtFiling()).toBe(
+      'A Planning Board or ZBA application cannot require a state or federal permit to file. Move this document to before the decision.',
+    )
+    expect(
+      groupPortalTypes([
+        { key: 'a', label: 'A', classification: 'nh.zba_variance' },
+        { key: 'b', label: 'B', classification: 'nh.pb_site_plan' },
+      ]).groups.map((g) => g.title),
+    ).toEqual(['Planning Board', 'Zoning Board'])
+  })
+
+  it('selectmen certification', () => {
+    expect(requestToGoverningBody()).toBe('Record a request to the selectmen')
+    expect(certificationOptions()).toEqual([
+      ['pending', 'Requested, waiting'],
+      ['certified', 'Certified by the selectmen'],
+      ['refused', 'The selectmen refused'],
+    ])
+    expect(certificationPhrase('pending')).toBe('requested, waiting on the selectmen')
+    expect(certificationPhrase('certified')).toBe('certified by the selectmen')
+    expect(certificationPhrase('refused')).toBe('the selectmen refused')
+    expect(activityPhrase('board.certification.pending', null)).toBe(
+      'Recorded a request to the selectmen',
+    )
+    expect(activityPhrase('board.certification.certified', null)).toBe(
+      'Recorded the selectmen certifying the request',
+    )
+    expect(activityPhrase('board.certification.refused', null)).toBe(
+      'Recorded the selectmen refusing the request',
+    )
   })
 })

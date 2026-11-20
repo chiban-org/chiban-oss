@@ -1,14 +1,18 @@
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
+import { appealToBoard, boardDecision } from '@/features/appeals/appealWords'
+import { boardShort } from '@/features/packs/vocabulary'
 import { addAppealNodeAction } from '../../hearings/decisionActions'
 
-const STEPS: [string, string][] = [
-  ['zba_appeal', 'Appeal to the Zoning Board'],
-  ['zba_decision', 'Zoning Board decision'],
-  ['rehearing_motion', 'Motion for rehearing'],
-  ['rehearing_outcome', 'Rehearing decision'],
-  ['court_petition', 'Court petition'],
-]
+function steps(): [string, string][] {
+  return [
+    ['zba_appeal', appealToBoard()],
+    ['zba_decision', boardDecision()],
+    ['rehearing_motion', 'Motion for rehearing'],
+    ['rehearing_outcome', 'Rehearing decision'],
+    ['court_petition', 'Court petition'],
+  ]
+}
 
 const RESULTS: [string, string][] = [
   ['', 'Not applicable'],
@@ -32,7 +36,7 @@ export function AppealSteps({
         name="parentId"
         options={nodeChoices.map((n): [string, string] => [n.id, n.label])}
       />
-      <SelectField label="Step" name="kind" options={STEPS} />
+      <SelectField label="Step" name="kind" options={steps()} />
       <TextField
         label="Date"
         name="occurredOn"
@@ -44,10 +48,10 @@ export function AppealSteps({
       <TextField
         label="Who appealed"
         name="appellantName"
-        hint="For an appeal to the Zoning Board. An appeal of an issued permit suspends it."
+        hint={`For an appeal to the ${boardShort('zba')}. An appeal of an issued permit suspends it.`}
       />
       <SelectField
-        label="Result, for a Zoning Board or rehearing decision"
+        label={`Result, for a ${boardShort('zba')} or rehearing decision`}
         name="outcome"
         options={RESULTS}
       />

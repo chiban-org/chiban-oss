@@ -23,6 +23,7 @@ import {
 } from '@/features/boards/boardsView'
 import { clearHref, type RawSearchParams } from '@/features/dataTable/params'
 import { type SortLink, sortLinks } from '@/features/dataTable/sort'
+import { boardShort } from '@/features/packs/vocabulary'
 import { requireStaffContext } from '@/server/requireStaff'
 import type { CivilDate } from '@/types/civilDate'
 
@@ -129,7 +130,7 @@ export default async function BoardsPage({
         first.
       </p>
       <p>
-        To appeal a decision by the building inspector or zoning administrator to the Zoning Board,
+        {`To appeal a decision by the building inspector or zoning administrator to the ${boardShort('zba')},`}{' '}
         use <Link href="/staff/boards/appeals">appeals of administrative decisions</Link>.
       </p>
       {allLines.length === 0 ? null : (

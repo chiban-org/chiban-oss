@@ -1,5 +1,6 @@
 import { ActionForm } from '@/components/ActionForm'
 import { SelectField, TextField } from '@/components/staff/fields'
+import { certificationOptions, requestToGoverningBody } from '@/features/boards/certificationWords'
 import type { BoardPanelData } from '@/features/boards/panelData'
 import { certificationAction, finalApprovalAction } from '../../boards/actions'
 
@@ -25,7 +26,7 @@ export function DecisionSection({ data }: { data: BoardPanelData }) {
       ))}
       {data.canRecord && data.certification.offered ? (
         <details>
-          <summary>Record a request to the selectmen</summary>
+          <summary>{requestToGoverningBody()}</summary>
           <ActionForm action={certificationAction} submitLabel="Record" className="max-w-md">
             <input type="hidden" name="applicationId" value={data.applicationId} />
             <TextField
@@ -35,15 +36,7 @@ export function DecisionSection({ data }: { data: BoardPanelData }) {
               defaultValue={data.today}
               required
             />
-            <SelectField
-              label="Outcome"
-              name="outcome"
-              options={[
-                ['pending', 'Requested, waiting'],
-                ['certified', 'Certified by the selectmen'],
-                ['refused', 'The selectmen refused'],
-              ]}
-            />
+            <SelectField label="Outcome" name="outcome" options={certificationOptions()} />
             <TextField label="Date decided, if certified" name="decidedOn" type="date" />
           </ActionForm>
         </details>

@@ -3,6 +3,7 @@ import Link from 'next/link'
 import { ListHeader } from '@/components/layout/ListHeader'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { loadAdministrativeAppeals } from '@/features/appeals/adminAppeals'
+import { boardShort } from '@/features/packs/vocabulary'
 import { townToday } from '@/features/town/today'
 import { requireStaffContext } from '@/server/requireStaff'
 import { RecordDecision } from './RecordDecision'
@@ -22,7 +23,7 @@ export default async function AdministrativeAppealsPage() {
     <main>
       <ListHeader
         title="Appeals of administrative decisions"
-        lead="Decisions by the building inspector, zoning administrator or another town official that can be appealed to the Zoning Board."
+        lead={`Decisions by the building inspector, zoning administrator or another town official that can be appealed to the ${boardShort('zba')}.`}
         actions={<RecordDecision today={today} />}
       />
       <div className="table-panel">

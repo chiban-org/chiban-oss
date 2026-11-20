@@ -11,7 +11,7 @@ import {
 import {
   type DocumentItem,
   documentItemsOf,
-  STATE_PERMIT_AT_FILING,
+  statePermitAtFiling,
 } from '@/features/applications/documentItemSchema'
 import { appTypeBody } from '@/test/configFixtures'
 
@@ -158,7 +158,7 @@ describe('the type validator', () => {
     const parsed = ApplicationTypeBodySchema.safeParse(body)
     expect(parsed.success).toBe(false)
     expect(parsed.error?.issues.map((i) => [i.path.join('.'), i.message])).toEqual([
-      ['documents.0.stage', STATE_PERMIT_AT_FILING],
+      ['documents.0.stage', statePermitAtFiling()],
     ])
   })
 

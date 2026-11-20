@@ -1,5 +1,6 @@
 import { z } from 'zod'
 import { ConditionSchema } from '@/features/forms/condition'
+import { boardAbbrev, boardShort } from '@/features/packs/vocabulary'
 
 export const DOCUMENT_STAGES = ['to_file', 'before_decision', 'before_issue', 'before_co'] as const
 export type DocumentStage = (typeof DOCUMENT_STAGES)[number]
@@ -32,8 +33,9 @@ export const DocumentItemSchema = z.object({
 })
 export type DocumentItem = z.infer<typeof DocumentItemSchema>
 
-export const STATE_PERMIT_AT_FILING =
-  'A Planning Board or ZBA application cannot require a state or federal permit to file. Move this document to before the decision.'
+export function statePermitAtFiling(): string {
+  return `A ${boardShort('planning_board')} or ${boardAbbrev('zba')} application cannot require a state or federal permit to file. Move this document to before the decision.`
+}
 
 export const DUPLICATE_DOCUMENT_KEY = 'duplicate document key'
 
@@ -54,7 +56,7 @@ export function documentItemIssues(
     const boardFiling =
       boardKind !== null && BOARDS_THAT_CANNOT_REQUIRE_PERMITS_TO_FILE.has(boardKind)
     if (boardFiling && item.stage === 'to_file' && item.stateOrFederalPermit === true) {
-      out.push({ index, field: 'stage', message: STATE_PERMIT_AT_FILING })
+      out.push({ index, field: 'stage', message: statePermitAtFiling() })
     }
   })
   return out

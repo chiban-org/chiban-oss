@@ -1,5 +1,6 @@
 import { boardKindOf } from '@/features/applications/applicationTypeSchema'
 import { packRoles, presentKeys } from '@/features/packs/roles'
+import { boardShort } from '@/features/packs/vocabulary'
 
 export interface GroupableType {
   key: string
@@ -47,12 +48,19 @@ const COMMON_JOBS: readonly CommonJob[] = [
   { key: 'SG', title: 'Sign', description: 'A new sign, or a change to an existing one.' },
 ]
 
-const GROUP_ORDER = ['Building office', 'Planning Board', 'Zoning Board', 'Registrations and other']
+function groupOrder(): string[] {
+  return [
+    'Building office',
+    boardShort('planning_board'),
+    boardShort('zba'),
+    'Registrations and other',
+  ]
+}
 
 function groupOf(type: GroupableType): string {
   const board = boardKindOf(type.classification)
-  if (board === 'planning_board') return 'Planning Board'
-  if (board === 'zba') return 'Zoning Board'
+  if (board === 'planning_board') return boardShort('planning_board')
+  if (board === 'zba') return boardShort('zba')
   const { classifications } = packRoles()
   const office = presentKeys([classifications.buildingPermit, classifications.tradePermit])
   return type.classification !== undefined && office.includes(type.classification)
@@ -68,9 +76,11 @@ export function groupPortalTypes(types: readonly GroupableType[]): {
   const common = COMMON_JOBS.filter((job) => published.has(job.key))
   const commonKeys = new Set(common.map((c) => c.key))
   const rest = types.filter((t) => !commonKeys.has(t.key))
-  const groups = GROUP_ORDER.map((title) => ({
-    title,
-    types: rest.filter((t) => groupOf(t) === title),
-  })).filter((g) => g.types.length > 0)
+  const groups = groupOrder()
+    .map((title) => ({
+      title,
+      types: rest.filter((t) => groupOf(t) === title),
+    }))
+    .filter((g) => g.types.length > 0)
   return { common, groups }
 }
