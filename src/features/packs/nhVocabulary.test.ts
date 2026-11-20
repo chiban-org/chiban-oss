@@ -31,6 +31,8 @@ import { stayBanner } from '@/features/enforcement/stay'
 import { actorLabel } from '@/features/enforcement/workPlan'
 import { stayStepTask } from '@/features/enforcement/workPlanSteps'
 import { DEFAULT_WORDING } from '@/features/notifications/wording/wordingDefaults'
+import { activePack } from '@/features/packs/registry'
+import { roleCitationSuffix } from '@/features/packs/roles'
 import {
   boardAbbrev,
   boardLabel,
@@ -255,6 +257,21 @@ describe('New Hampshire vocabulary through the pack', () => {
     )
     expect(recordsTaskText()).toBe(
       'Make a Right-to-Know request for public records the town keeps.',
+    )
+  })
+
+  it('statute citations in gate reasons and screens', () => {
+    expect(roleCitationSuffix('regionalImpactDetermination')).toBe(' (RSA 36:57 I)')
+    expect(roleCitationSuffix('codeEditionGate')).toBe(' (RSA 155-A:2)')
+    expect(roleCitationSuffix('regionalImpactGate')).toBe(' (RSA 36:57 IV)')
+    expect(roleCitationSuffix('regionalImpactTransmittal')).toBe(' (RSA 36:57 II)')
+    expect(activePack().labels.citations.exerciseFloorAuthority).toBe('RSA 674:33 I-a(a) and IV(b)')
+    expect(activePack().labels.citations.abutterListIssued).toEqual({
+      label: 'RSA 676:4 I(d) and RSA 676:7 I',
+      url: 'https://gc.nh.gov/rsa/html/LXIV/676/676-4.htm',
+    })
+    expect(stayBanner({ reason: 'restraining_order' } as never, null, null)).toBe(
+      'Enforcement stayed by a restraining order issued in the appeal (RSA 676:6).',
     )
   })
 })

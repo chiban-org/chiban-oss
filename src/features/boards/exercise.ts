@@ -14,12 +14,11 @@ import { clockRuleIs } from '@/features/clocks/ruleKeyIs'
 import { startClocksFor } from '@/features/clocks/startClocks'
 import { effectiveBindings } from '@/features/config/bindings'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
+import { activePack } from '@/features/packs/registry'
 import { packRoles } from '@/features/packs/roles'
 import { townToday } from '@/features/town/today'
 import { type CivilDate, compareCivil } from '@/types/civilDate'
 import { err, ok, type Result } from '@/types/result'
-
-const FLOOR_AUTHORITY = 'RSA 674:33 I-a(a) and IV(b)'
 
 export async function runningExerciseClock(tx: Tx, applicationId: string) {
   const [clock] = await tx
@@ -134,6 +133,7 @@ export async function recordRelianceResolutionTx(
   const floor = rule.kind === 'clock' ? relianceFloorDue(rule, input.resolvedOn) : null
   const current = clock.currentDue as CivilDate
   if (floor === null || compareCivil(floor, current) <= 0) return ok({ dueOn: current })
+  const floorAuthority = activePack().labels.citations.exerciseFloorAuthority
   await recordAdjustment(
     tx,
     actor,
@@ -142,9 +142,9 @@ export async function recordRelianceResolutionTx(
       kind: 'statutory_floor',
       days: null,
       newDue: floor,
-      reason: `The approval does not expire within 6 months after the planning application filed in reliance on it is resolved (${FLOOR_AUTHORITY}).`,
+      reason: `The approval does not expire within 6 months after the planning application filed in reliance on it is resolved (${floorAuthority}).`,
       legalAuthority: {
-        citation: FLOOR_AUTHORITY,
+        citation: floorAuthority,
         explanation: 'Six month minimum after resolution of the reliance application',
       },
     },

@@ -7,7 +7,7 @@ const SCANNED_DIRS = ['src']
 const ALLOWED_PREFIXES = ['src/test/', 'src/features/demo/', 'src/features/packs/probes/']
 const TEST_FILE = /\.test\.tsx?$/
 const SOURCE_FILE = /\.tsx?$/
-const STATE_VOCABULARY = /Right-to-Know|Right to Know|\bZBA\b|Zoning Board|selectmen/
+const STATE_VOCABULARY = /Right-to-Know|Right to Know|\bZBA\b|Zoning Board|selectmen|\bRSA \d/
 const STORED_IDENTIFIERS =
   /selectmenCertifications|selectmen_certifications?|certified_by_selectmen/g
 
@@ -50,6 +50,7 @@ describe('engine vocabulary comes from the pack', () => {
     expect(STATE_VOCABULARY.test('the ZBA')).toBe(true)
     expect(STATE_VOCABULARY.test('Zoning Board of Adjustment')).toBe(true)
     expect(STATE_VOCABULARY.test('the selectmen')).toBe(true)
+    expect(STATE_VOCABULARY.test('(RSA 36:57 II)')).toBe(true)
     expect(STATE_VOCABULARY.test('ZBAs and zbaDecision')).toBe(false)
   })
 

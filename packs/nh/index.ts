@@ -44,5 +44,12 @@ export const NH_PACK: StatePack = {
     recordsLaw: 'Right-to-Know',
     recordsRequest: 'Right-to-Know request',
     governingBody: 'selectmen',
+    citations: {
+      exerciseFloorAuthority: 'RSA 674:33 I-a(a) and IV(b)',
+      abutterListIssued: {
+        label: 'RSA 676:4 I(d) and RSA 676:7 I',
+        url: 'https://gc.nh.gov/rsa/html/LXIV/676/676-4.htm',
+      },
+    },
   },
 }

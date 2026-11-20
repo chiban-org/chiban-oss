@@ -1,4 +1,5 @@
 import { AppError, ErrorIds } from '@/constants/errorIds'
+import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { activePack } from '@/features/packs/registry'
 import type { PackRoles, RuleRole } from '@/features/packs/schema'
 
@@ -33,4 +34,9 @@ export function inRuleGroup(ruleKey: string, group: readonly string[]): boolean 
   return group.some((entry) =>
     entry.endsWith('.') ? ruleKey.startsWith(entry) : ruleKey === entry,
   )
+}
+
+export function roleCitationSuffix(role: RuleRole): string {
+  const key = packRoles().rules[role]
+  return key === null ? '' : ` (${ruleByKey(loadPack(), key).citation.label})`
 }

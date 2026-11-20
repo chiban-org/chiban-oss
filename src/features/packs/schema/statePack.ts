@@ -45,6 +45,11 @@ export interface OrderTexts {
   noticeOfViolationRequest: string
 }
 
+export interface PackCitations {
+  exerciseFloorAuthority: string
+  abutterListIssued: { label: string; url: string | null }
+}
+
 export interface PackLabels {
   environmentalAgency: string
   environmentalAgencyShort: string
@@ -52,6 +57,7 @@ export interface PackLabels {
   recordsLaw: string
   recordsRequest: string
   governingBody: string
+  citations: PackCitations
 }
 
 export interface PackSpatial {

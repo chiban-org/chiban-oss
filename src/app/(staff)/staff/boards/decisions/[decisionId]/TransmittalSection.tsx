@@ -5,6 +5,7 @@ import { NoticeChecklist } from '@/components/notices/NoticeChecklist'
 import { CheckField, SelectField, TextField } from '@/components/staff/fields'
 import type { DecisionView } from '@/features/decisions/decisionView'
 import { PROOF_METHOD_LABELS, type ProofMethod } from '@/features/notices/proofMethods'
+import { roleCitationSuffix } from '@/features/packs/roles'
 import { recordProofAction } from '../../hearings/actions'
 import { transmittalAction } from '../../hearings/decisionActions'
 import { UPLOAD_ACTIONS } from './uploads'
@@ -73,7 +74,8 @@ export function TransmittalSection({ view, today }: { view: DecisionView; today:
         Within 5 business days after the decision, send copies of the minutes of the decision
         meeting by certified mail to the regional planning commission and each affected
         municipality. At the same time, send the initial set of plans to the regional planning
-        commission only, at the applicant&apos;s cost (RSA 36:57 II).
+        commission only, at the applicant&apos;s cost
+        {roleCitationSuffix('regionalImpactTransmittal')}.
       </p>
       <ActionForm
         action={transmittalAction}

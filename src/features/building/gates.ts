@@ -15,7 +15,7 @@ import {
   registerGate,
 } from '@/features/gates/registry'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
-import { packRoles } from '@/features/packs/roles'
+import { packRoles, roleCitationSuffix } from '@/features/packs/roles'
 import type { GateRule } from '@/features/packs/schema'
 import { formatCivilDate } from '@/lib/formatDate'
 
@@ -33,7 +33,10 @@ const codeEditionRecorded: GateEvaluator = async (tx, app) => {
     .from(codeEditionRecords)
     .where(eq(codeEditionRecords.applicationId, app.id))
   return record === undefined
-    ? { status: 'blocked', reason: 'State building code edition not recorded (RSA 155-A:2).' }
+    ? {
+        status: 'blocked',
+        reason: `State building code edition not recorded${roleCitationSuffix('codeEditionGate')}.`,
+      }
     : { status: 'pass' }
 }
 
@@ -45,7 +48,7 @@ const regionalImpactCleared: GateEvaluator = async (tx, app, today) => {
   if (determination === undefined) {
     return {
       status: 'unknown',
-      reason: 'Regional impact determination not recorded (RSA 36:57 IV).',
+      reason: `Regional impact determination not recorded${roleCitationSuffix('regionalImpactGate')}.`,
     }
   }
   if (determination.determination !== 'yes') return { status: 'pass' }
