@@ -20,6 +20,8 @@ const COPY: Record<string, string> = {
     'That finding is already in a notice or order, so it cannot be edited. Withdraw it and record a new one instead.',
   split_required:
     'These findings mix building code and other violations. Issue a separate order for each kind.',
+  building_code_not_enforced:
+    'This town enforces no building code, so a building code finding or order cannot be added to this case.',
   not_a_draft: 'That order has already been issued.',
   case_not_ready: 'The case needs a violation finding before an order can be issued.',
   case_past_orders: 'Orders cannot be issued once the case is in court, resolved, or closed.',

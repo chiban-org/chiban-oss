@@ -6,7 +6,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
-import { getBuildingProgram } from '@/features/buildingProgram/settings'
+import { buildingCodeOpenFor } from '@/features/enforcement/buildingCodeCutoff'
 import { nextEnforcementNumber } from '@/features/enforcement/numbering'
 import { loadPack, ruleByKey } from '@/features/packs/loadPack'
 import { packRoles } from '@/features/packs/roles'
@@ -29,11 +29,11 @@ const DraftSchema = z.object({
 
 type OrderRuleKey = { kind: 'key'; key: string } | { kind: 'split' } | { kind: 'not_enforced' }
 
-function orderRuleKeyFor(kinds: readonly string[], codeChoice: string | null): OrderRuleKey {
+function orderRuleKeyFor(kinds: readonly string[], codeOpen: boolean): OrderRuleKey {
   const { rules } = packRoles()
   const building = kinds.filter((k) => k === 'building_code').length
   if (building === kinds.length) {
-    return rules.buildingCodeOrder === null || codeChoice === null
+    return rules.buildingCodeOrder === null || !codeOpen
       ? { kind: 'not_enforced' }
       : { kind: 'key', key: rules.buildingCodeOrder }
   }
@@ -65,7 +65,7 @@ export async function draftOrder(
   const value = parsed.data
   return await transactionResult(db, async (tx) => {
     const [caseRow] = await tx
-      .select({ id: enforcementCases.id })
+      .select({ id: enforcementCases.id, createdAt: enforcementCases.createdAt })
       .from(enforcementCases)
       .where(eq(enforcementCases.id, value.caseId))
       .for('update')
@@ -81,10 +81,9 @@ export async function draftOrder(
         ),
       )
     if (findings.length !== new Set(value.findingIds).size) return err('findings_invalid')
-    const { codeChoice } = await getBuildingProgram(tx, signal)
     const resolved = orderRuleKeyFor(
       findings.map((f) => f.provisionKind),
-      codeChoice,
+      await buildingCodeOpenFor(tx, caseRow.createdAt, signal),
     )
     if (resolved.kind === 'split') return err('split_required')
     if (resolved.kind === 'not_enforced') return err('building_code_not_enforced')

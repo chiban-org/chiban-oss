@@ -6,6 +6,7 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
+import { buildingCodeOpenFor } from '@/features/enforcement/buildingCodeCutoff'
 import { mayRecordFinding } from '@/features/enforcement/caseTransitions'
 import { civilDateSchema } from '@/features/packs/schema'
 import { townToday } from '@/features/town/today'
@@ -28,7 +29,10 @@ export async function recordFinding(
   signal: AbortSignal,
   now: Date = new Date(),
 ): Promise<
-  Result<{ findingId: string }, 'forbidden' | 'invalid' | 'not_found' | 'case_not_investigating'>
+  Result<
+    { findingId: string },
+    'forbidden' | 'invalid' | 'not_found' | 'case_not_investigating' | 'building_code_not_enforced'
+  >
 > {
   signal.throwIfAborted()
   const allowed = await requireCapability(db, actor.userId, 'enforcement.manage', signal)
@@ -45,6 +49,12 @@ export async function recordFinding(
     if (row === undefined) return err('not_found')
     if (!mayRecordFinding(row.status)) {
       return err('case_not_investigating')
+    }
+    if (
+      value.provisionKind === 'building_code' &&
+      !(await buildingCodeOpenFor(tx, row.createdAt, signal))
+    ) {
+      return err('building_code_not_enforced')
     }
     const today = await townToday(tx, now, signal)
     const [finding] = await tx

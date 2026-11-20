@@ -72,6 +72,7 @@ export interface CaseDetail {
   documents: PanelDocument[]
   names: Record<string, string>
   suggestions?: SuggestionsByKind
+  buildingCodeOffered?: boolean
   attachable?: AttachableComplaint[]
   payments?: CasePayments | null
 }

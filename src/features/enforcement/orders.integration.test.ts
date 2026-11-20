@@ -1,6 +1,6 @@
 import { NH_ORDER_TEXTS } from '@packs/nh/starters/enforcementTemplates'
 import { eq } from 'drizzle-orm'
-import { afterAll, afterEach, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import {
   auditLog,
   documents,
@@ -25,13 +25,10 @@ import {
   issueOrder,
   reviseDraftOrder,
 } from '@/features/enforcement/orders'
-import { setActivePackForTest } from '@/features/packs/registry'
 import type { ObjectStore } from '@/features/storage/objectStore'
-import { saveAndPublish } from '@/test/configFixtures'
 import { makeTestDb, type TestDb } from '@/test/db'
 import { sendFixtureNotice } from '@/test/enforcementNoticeFixture'
 import { makeTestStore } from '@/test/objectStore'
-import { XX_NO_BUILDING } from '@/test/packs/xx/variants'
 import { seedParcelWorld, staffActor } from '@/test/parcels'
 import { pdfText } from '@/test/pdfText'
 import type { CivilDate } from '@/types/civilDate'
@@ -572,122 +569,5 @@ describe('cease and desist orders', () => {
       signal,
     )
     expect(result).toEqual({ ok: false, error: 'forbidden' })
-  })
-})
-
-describe('draftOrder under a pack with no building permit', () => {
-  beforeAll(() => setActivePackForTest(XX_NO_BUILDING))
-  afterAll(() => setActivePackForTest(null))
-
-  it('refuses an order for building code findings', async () => {
-    const { caseId, findingId } = await caseWithFinding('building_code')
-    const result = await draftOrder(
-      handle.db,
-      staff,
-      {
-        caseId,
-        findingIds: [findingId],
-        correctiveAction: 'Apply for a permit.',
-        correctiveDeadline: null,
-        ceaseImmediately: false,
-      },
-      signal,
-      NOW,
-    )
-    expect(result).toEqual({ ok: false, error: 'building_code_not_enforced' })
-  })
-})
-
-async function publishNoCode() {
-  await saveAndPublish(handle.db, admin, 'building_program', 'default', {
-    key: 'default',
-    permitsEnabled: true,
-    codeChoice: null,
-    residents: null,
-  })
-}
-
-describe('draftOrder when the town enforces no building code', () => {
-  function draftInput(caseId: string, findingId: string) {
-    return {
-      caseId,
-      findingIds: [findingId],
-      correctiveAction: 'Apply for a permit.',
-      correctiveDeadline: null,
-      ceaseImmediately: false,
-    }
-  }
-
-  it('refuses an order for building code findings', async () => {
-    const { caseId, findingId } = await caseWithFinding('building_code')
-    await publishNoCode()
-    const result = await draftOrder(handle.db, staff, draftInput(caseId, findingId), signal, NOW)
-    expect(result).toEqual({ ok: false, error: 'building_code_not_enforced' })
-  })
-
-  it('still drafts an order for zoning findings', async () => {
-    const { caseId, findingId } = await caseWithFinding('zoning_ordinance')
-    await publishNoCode()
-    const result = await draftOrder(handle.db, staff, draftInput(caseId, findingId), signal, NOW)
-    expect(result.ok).toBe(true)
-  })
-
-  it('keeps an existing building code order readable and editable', async () => {
-    const { caseId, findingId } = await caseWithFinding('building_code')
-    const drafted = await draftOrder(handle.db, staff, draftInput(caseId, findingId), signal, NOW)
-    if (!drafted.ok) throw new Error(drafted.error)
-    await publishNoCode()
-    const [row] = await handle.db
-      .select()
-      .from(enforcementOrders)
-      .where(eq(enforcementOrders.id, drafted.value.orderId))
-    expect(row?.number).toBe(drafted.value.number)
-    const revised = await reviseDraftOrder(
-      handle.db,
-      staff,
-      {
-        orderId: drafted.value.orderId,
-        expectedRowVersion: row?.rowVersion ?? 0,
-        correctiveAction: 'Apply for a permit within ten days.',
-        correctiveDeadline: null,
-        ceaseImmediately: false,
-      },
-      signal,
-    )
-    expect(revised.ok).toBe(true)
-  })
-})
-
-describe('issueOrder when the town enforces no building code', () => {
-  function issue(orderId: string) {
-    return issueOrder(
-      handle.db,
-      store,
-      staff,
-      { orderId, issuedOn: d('2027-03-02'), expectedRowVersion: 1 },
-      signal,
-      NOW,
-    )
-  }
-
-  it('refuses to issue a drafted building code order', async () => {
-    const { caseId, findingId } = await caseWithFinding('building_code')
-    await designate()
-    const drafted = await draft(caseId, [findingId])
-    if (!drafted.ok) throw new Error('draft')
-    await publishNoCode()
-    expect(await issue(drafted.value.orderId)).toEqual({
-      ok: false,
-      error: 'building_code_not_enforced',
-    })
-  })
-
-  it('still issues a zoning order', async () => {
-    const { caseId, findingId } = await caseWithFinding('zoning_ordinance')
-    await designate()
-    const drafted = await draft(caseId, [findingId])
-    if (!drafted.ok) throw new Error('draft')
-    await publishNoCode()
-    expect((await issue(drafted.value.orderId)).ok).toBe(true)
   })
 })

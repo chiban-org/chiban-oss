@@ -13,8 +13,8 @@ import { transactionResult } from '@/db/transactionResult'
 import { writeAudit } from '@/features/audit/writeAudit'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
-import { getBuildingProgram } from '@/features/buildingProgram/settings'
 import { attachDocument } from '@/features/documents/attach'
+import { buildingCodeOpenFor } from '@/features/enforcement/buildingCodeCutoff'
 import { designationOn } from '@/features/enforcement/designations'
 import { contentProblem, issueBlock } from '@/features/enforcement/orderIssueChecks'
 import { renderOrderPdf } from '@/features/enforcement/orderPdf'
@@ -101,7 +101,7 @@ export async function issueOrder(
     }
     if (
       order.ruleKey === packRoles().rules.buildingCodeOrder &&
-      (await getBuildingProgram(tx, signal)).codeChoice === null
+      !(await buildingCodeOpenFor(tx, caseRow.createdAt, signal))
     ) {
       return err('building_code_not_enforced')
     }

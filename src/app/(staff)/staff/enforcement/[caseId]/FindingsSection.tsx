@@ -66,7 +66,10 @@ export function RecordFindingForm({ detail, variant }: { detail: CaseDetail; var
   return (
     <ActionForm action={recordFindingAction} submitLabel="Record finding" variant={variant}>
       <Hidden name="caseId" value={detail.staff.row.id} />
-      <ProvisionFields suggestions={detail.suggestions ?? null} />
+      <ProvisionFields
+        suggestions={detail.suggestions ?? null}
+        buildingCode={detail.buildingCodeOffered === true}
+      />
       <AreaField label="Facts" name="facts" rows={3} required />
       <TextField
         label="Inspection date"

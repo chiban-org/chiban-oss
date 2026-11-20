@@ -3,7 +3,7 @@ import type { Db } from '@/db/client'
 import { type TownSectionKind, type TownSectionRow, townSections } from '@/db/schema'
 import type { Actor } from '@/features/auth/actor'
 import { requireCapability } from '@/features/authz/capabilities'
-import { getBuildingProgram } from '@/features/buildingProgram/settings'
+import { buildingCodeEnforced } from '@/features/enforcement/buildingCodeCutoff'
 import { sectionKindsOffered } from '@/features/enforcement/sections/sectionKinds'
 import {
   loadTownRefs,
@@ -33,7 +33,7 @@ export async function loadSectionListView(
       asc(townSections.provisionKind),
       asc(townSections.reference),
     )
-  const enforced = (await getBuildingProgram(db, signal)).codeChoice !== null
+  const enforced = await buildingCodeEnforced(db, signal)
   const kinds = sectionKindsOffered(enforced)
   const typedNotListed = notOnList({
     used: await loadUsedRefs(db, signal),

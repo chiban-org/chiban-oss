@@ -9,6 +9,12 @@ import { SectionCombobox } from './SectionCombobox'
 
 const KINDS = Object.entries(PROVISION_KIND_LABELS)
 
+function kindChoices(buildingCode: boolean, current: ProvisionKind) {
+  return buildingCode || current === 'building_code'
+    ? KINDS
+    : KINDS.filter(([kind]) => kind !== 'building_code')
+}
+
 function isKind(value: string): value is ProvisionKind {
   return (PROVISION_KINDS as readonly string[]).includes(value)
 }
@@ -19,10 +25,12 @@ function suggestionsOf(all: SuggestionsByKind | null, kind: ProvisionKind) {
 
 export function ProvisionFields({
   suggestions,
+  buildingCode,
   defaultKind = 'zoning_ordinance',
   defaultRef,
 }: {
   suggestions: SuggestionsByKind | null
+  buildingCode: boolean
   defaultKind?: ProvisionKind
   defaultRef?: string
 }) {
@@ -41,7 +49,7 @@ export function ProvisionFields({
         label="What was violated"
         name="provisionKind"
         ref={selectRef}
-        options={KINDS}
+        options={kindChoices(buildingCode, defaultKind)}
         defaultValue={defaultKind}
         onChange={(event) => {
           if (isKind(event.target.value)) setKind(event.target.value)
