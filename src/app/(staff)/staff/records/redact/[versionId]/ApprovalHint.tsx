@@ -1,3 +1,5 @@
+import { recordsRequest } from '@/features/packs/vocabulary'
+
 export interface ApprovalHintProps {
   requestId: string | undefined
   recordHref: string | null
@@ -21,12 +23,12 @@ export function ApprovalHint({ requestId, recordHref, canPublish }: ApprovalHint
       </p>
       {requestId === undefined ? (
         <p>
-          A copy for a Right-to-Know request is approved in the release step on the request page.
+          {`A copy for a ${recordsRequest()} is approved in the release step on the request page.`}{' '}
           Open this page from the request to make one.
         </p>
       ) : (
         <p>
-          A copy for this Right-to-Know request is approved in the release step on the{' '}
+          {`A copy for this ${recordsRequest()} is approved in the release step on the`}{' '}
           <Place href={`/staff/records/requests/${requestId}`}>request page</Place>.
         </p>
       )}

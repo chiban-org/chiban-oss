@@ -41,5 +41,8 @@ export const NH_PACK: StatePack = {
     environmentalAgency: 'NH Department of Environmental Services',
     environmentalAgencyShort: 'NH DES',
     stateLicenseNumber: 'NH license number',
+    recordsLaw: 'Right-to-Know',
+    recordsRequest: 'Right-to-Know request',
+    governingBody: 'selectmen',
   },
 }

@@ -10,7 +10,13 @@ import { XX_PACK_MANIFEST } from './manifest'
 const BOARD_KIND_NAMES = Object.fromEntries(
   BOARD_KINDS.map((kind) => [
     kind,
-    { label: `Vellmora ${kind} body`, defaultShortName: `${kind} body`, description: 'Fictional.' },
+    {
+      label: `Vellmora ${kind} body`,
+      defaultShortName: `${kind} body`,
+      shortLabel: `${kind} board`,
+      abbreviation: `${kind} abbr`,
+      description: 'Fictional.',
+    },
   ]),
 ) as Record<BoardKind, BoardKindNames>
 
@@ -90,5 +96,8 @@ export const XX_PACK: StatePack = {
     environmentalAgency: 'Vellmora Water Office',
     environmentalAgencyShort: 'the Water Office',
     stateLicenseNumber: 'Vellmora license number',
+    recordsLaw: 'Open Records',
+    recordsRequest: 'Open Records request',
+    governingBody: 'town council',
   },
 }

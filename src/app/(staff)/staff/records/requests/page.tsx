@@ -8,6 +8,7 @@ import { StatusChip } from '@/components/StatusChip'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { clearHref, pageHref, type RawSearchParams, readOffset } from '@/features/dataTable/params'
 import { sortLinks } from '@/features/dataTable/sort'
+import { recordsRequest } from '@/features/packs/vocabulary'
 import { RTK_STATUS_LABELS } from '@/features/rtk/labels'
 import { listRtkRequestPage, rtkRequestFacets } from '@/features/rtk/requestList'
 import { requestChipGroups } from '@/features/rtk/requestListChips'
@@ -25,7 +26,9 @@ import { formatCivilDate } from '@/lib/formatDate'
 import { requireStaffContext } from '@/server/requireStaff'
 import { LogRequest } from './LogRequestForm'
 
-export const metadata: Metadata = { title: 'Right-to-Know requests' }
+export function generateMetadata(): Metadata {
+  return { title: `${recordsRequest()}s` }
+}
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +42,8 @@ export default async function RightToKnowLogPage({
   const { params, sort, filters } = readRequestsView(await searchParams)
   const ctx = await requireStaffContext()
   if (!mayOpen(REQUESTS_PATH, await loadNavViewer(ctx.db, ctx.actor, ctx.signal))) {
-    return <NoPermission title="Right-to-Know requests" action="see Right-to-Know requests" />
+    const requests = `${recordsRequest()}s`
+    return <NoPermission title={requests} action={`see ${requests}`} />
   }
   const today = await townToday(ctx.db, new Date(), ctx.signal)
   const [list, facets] = await Promise.all([
@@ -58,7 +62,7 @@ export default async function RightToKnowLogPage({
   return (
     <main data-wide="">
       <ListHeader
-        title="Right-to-Know requests"
+        title={`${recordsRequest()}s`}
         lead="Soonest next date first. Requests with no date running come last."
         actions={<LogRequest today={today} />}
       />

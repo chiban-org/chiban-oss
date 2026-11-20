@@ -1,5 +1,6 @@
 import { activePack } from '@/features/packs/registry'
 import { lockedTexts } from '@/features/templates/doc/lockedTexts'
+
 import { signerRoleLabels } from '@/features/town/signerRoleLabels'
 
 export interface PackText {
@@ -15,3 +16,12 @@ export function packText(): PackText {
     environmentalAgency: activePack().labels.environmentalAgency,
   }
 }
+
+export {
+  boardAbbrev,
+  boardLabel,
+  boardShort,
+  governingBody,
+  recordsLaw,
+  recordsRequest,
+} from '@/features/packs/vocabulary'

@@ -1,10 +1,17 @@
+import { recordsLaw, recordsRequest } from '@/features/packs/vocabulary'
 import { doc, fields, heading, para, section } from '@/features/templates/doc/build'
 import type { DocumentKindDef } from '@/features/templates/kinds/kindTypes'
 
 export const RTK_RESPONSE_KIND: DocumentKindDef = {
-  label: 'Right-to-Know response',
-  title: 'Response to your Right-to-Know request',
-  record: 'Right-to-Know request',
+  get label() {
+    return `${recordsLaw()} response`
+  },
+  get title() {
+    return `Response to your ${recordsRequest()}`
+  },
+  get record() {
+    return recordsRequest()
+  },
   scale: 'document',
   fields: ['rtk.number', 'rtk.receivedOn', 'rtk.description'],
   sections: [

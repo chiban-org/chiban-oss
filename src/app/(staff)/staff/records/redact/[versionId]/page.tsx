@@ -6,6 +6,7 @@ import { BoxEditor } from '@/components/redaction/BoxEditor'
 import { SelectField } from '@/components/staff/fields'
 import { NoPermission } from '@/components/staff/NoPermission'
 import { hasCapability } from '@/features/authz/capabilities'
+import { recordsRequest } from '@/features/packs/vocabulary'
 import { loadEditorSource } from '@/features/redaction/previewPages'
 import { exemptionChoices } from '@/features/rtk/exemptions'
 import { getObjectStore } from '@/features/storage/objectStore'
@@ -74,7 +75,7 @@ export default async function RedactPage({
           defaultValue={forRequest === undefined ? 'public' : 'rtk_release'}
           options={[
             ['public', 'The public website'],
-            ['rtk_release', 'A Right-to-Know request'],
+            ['rtk_release', `A ${recordsRequest()}`],
           ]}
         />
         <BoxEditor pages={pages} exemptions={exemptionChoices()} mode={mode} />

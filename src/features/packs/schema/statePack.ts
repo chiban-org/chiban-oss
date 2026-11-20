@@ -32,6 +32,8 @@ export interface PackParcelIdFormat {
 export interface BoardKindNames {
   label: string
   defaultShortName: string
+  shortLabel: string
+  abbreviation: string
   description: string
 }
 
@@ -47,6 +49,9 @@ export interface PackLabels {
   environmentalAgency: string
   environmentalAgencyShort: string
   stateLicenseNumber: string
+  recordsLaw: string
+  recordsRequest: string
+  governingBody: string
 }
 
 export interface PackSpatial {

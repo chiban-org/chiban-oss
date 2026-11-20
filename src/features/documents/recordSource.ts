@@ -2,6 +2,7 @@ import { and, inArray } from 'drizzle-orm'
 import type { DbOrTx } from '@/db/client'
 import { documents } from '@/db/schema'
 import { documentVisibleTo } from '@/features/documents/visibility'
+import { recordsLaw } from '@/features/packs/vocabulary'
 import {
   type ParcelRecordSummary,
   registerParcelRecordSource,
@@ -25,8 +26,13 @@ const KIND_LABEL = {
   enforcement_letter: 'Case letter',
   service_proof: 'Proof of service',
   court_document: 'Court document',
-  rtk_letter: 'Right-to-Know letter',
 } as const
+
+type DocumentKind = keyof typeof KIND_LABEL | 'rtk_letter'
+
+export function documentKindLabel(kind: DocumentKind): string {
+  return kind === 'rtk_letter' ? `${recordsLaw()} letter` : KIND_LABEL[kind]
+}
 
 export async function summarizeDocuments(
   db: DbOrTx,
@@ -48,7 +54,7 @@ export async function summarizeDocuments(
       kind: 'document',
       recordId: row.id,
       title: row.title,
-      number: KIND_LABEL[row.docKind],
+      number: documentKindLabel(row.docKind),
       status: { label: row.isPublic ? 'Public' : 'Private', chip: 'neutral' },
       date: added,
       dates: { filed: added, issued: null, expires: null, closed: null },

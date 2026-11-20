@@ -9,6 +9,7 @@ import { pagerLinks } from '@/features/dataTable/pageSlice'
 import { type RawSearchParams, readOffset } from '@/features/dataTable/params'
 import { filterTabs } from '@/features/dataTable/quickFilters'
 import { sortLinks } from '@/features/dataTable/sort'
+import { holdTargetLabels } from '@/features/records/holdKinds'
 import {
   HOLD_SORT,
   HOLDS_PATH,
@@ -26,13 +27,6 @@ export const metadata: Metadata = { title: 'Legal holds' }
 
 export const dynamic = 'force-dynamic'
 
-const KIND_LABELS: Record<HoldListRow['targetKind'], string> = {
-  project: 'Project',
-  application: 'Application',
-  document: 'Document',
-  enforcement_case: 'Case',
-  rtk_request: 'Right-to-Know request',
-}
 const DEFAULT_ZONE = 'America/New_York'
 const PAGE_SIZE = 25
 
@@ -63,6 +57,7 @@ export default async function HoldsPage({
   if (!list.ok) return <NoPermission title="Legal holds" action="manage legal holds" />
   const town = await getTownSettings(ctx.db, ctx.signal)
   const zone = town.ok ? town.value.timeZone : DEFAULT_ZONE
+  const kindLabels = holdTargetLabels()
   const links = sortLinks(HOLDS_PATH, params, HOLD_SORT, sort)
   const tabs = filterTabs(HOLDS_PATH, params, {
     param: 'state',
@@ -104,7 +99,7 @@ export default async function HoldsPage({
                   <td>
                     <Subject row={row} />
                   </td>
-                  <td className="whitespace-nowrap">{KIND_LABELS[row.targetKind]}</td>
+                  <td className="whitespace-nowrap">{kindLabels[row.targetKind]}</td>
                   <td>{row.reason}</td>
                   <td className="whitespace-nowrap">{formatInstant(row.placedAt, zone)}</td>
                   <td>
