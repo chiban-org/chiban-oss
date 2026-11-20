@@ -1,16 +1,19 @@
 import type { CaseActionKind, CaseActor, CaseWorkPlan } from '@/features/enforcement/workPlanTypes'
+import { boardAbbrev } from '@/features/packs/vocabulary'
 
 export interface NextStep {
   actor: string
   ask: string
 }
 
-const ACTOR_LABELS: Readonly<Record<CaseActor, string>> = {
-  town: 'Town',
-  respondent: 'Respondent',
-  zba: 'ZBA',
-  court: 'Court',
-  counsel: 'Town counsel',
+function actorLabels(): Readonly<Record<CaseActor, string>> {
+  return {
+    town: 'Town',
+    respondent: 'Respondent',
+    zba: boardAbbrev('zba'),
+    court: 'Court',
+    counsel: 'Town counsel',
+  }
 }
 
 export const EVERY_CASE_ABILITY: ReadonlySet<CaseActionKind> = new Set([
@@ -30,7 +33,7 @@ export const EVERY_CASE_ABILITY: ReadonlySet<CaseActionKind> = new Set([
 export function nextStepOf(plan: CaseWorkPlan): NextStep | null {
   if (plan.now === null) return null
   const { ask, actor } = plan.now
-  return { actor: ACTOR_LABELS[actor], ask: ask.charAt(0).toLowerCase() + ask.slice(1) }
+  return { actor: actorLabels()[actor], ask: ask.charAt(0).toLowerCase() + ask.slice(1) }
 }
 
 export function nextStepText(step: NextStep): string {

@@ -17,6 +17,7 @@ import {
 import { PENALTY_EXPOSURE_LABEL, penaltyExposure } from '@/features/enforcement/penaltyExposure'
 import { stayBanner, stayFor } from '@/features/enforcement/stay'
 import type { CivilPenaltyRule } from '@/features/packs/schema'
+import { boardAbbrev } from '@/features/packs/vocabulary'
 import type { PdfBlock } from '@/features/pdf/renderPdf'
 import { formatCivilDate } from '@/lib/formatDate'
 import { formatCents } from '@/lib/money'
@@ -39,6 +40,15 @@ export async function proofBlock(db: DbOrTx, caseId: string): Promise<PdfBlock> 
     columns: ['Proof of service on file', 'Added'],
     rows: proofDocs.map((p) => [p.title, formatCivilDate(p.createdAt.toISOString().slice(0, 10))]),
   }
+}
+
+export function appealedToBoardText(
+  target: string,
+  appellantName: string,
+  filedOn: string,
+  outcome: string,
+): string {
+  return `${target} appealed to the ${boardAbbrev('zba')} by ${appellantName} on ${formatCivilDate(filedOn)}, ${outcome}.`
 }
 
 export async function appealBlocks(
@@ -70,7 +80,12 @@ export async function appealBlocks(
       a.outcome === null ? 'unresolved' : APPEAL_OUTCOME_LABELS[a.outcome].toLowerCase()
     blocks.push({
       kind: 'paragraph',
-      text: `${APPEAL_TARGET_LABELS[a.targetKind]} appealed to the ZBA by ${a.appellantName} on ${formatCivilDate(a.filedOn)}, ${outcome}.`,
+      text: appealedToBoardText(
+        APPEAL_TARGET_LABELS[a.targetKind],
+        a.appellantName,
+        a.filedOn,
+        outcome,
+      ),
     })
     for (const c of certifications.filter((x) => x.appealId === a.id)) {
       blocks.push({

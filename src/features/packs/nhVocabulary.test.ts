@@ -16,6 +16,12 @@ import {
 import { toGraphNodes } from '@/features/decisions/decisionView'
 import { documentKindLabel } from '@/features/documents/recordSource'
 import { whoCanSeeSentence } from '@/features/documents/whoCanSee'
+import { nextStepOf } from '@/features/enforcement/caseNextStep'
+import { appealedToBoardText } from '@/features/enforcement/counselSectionBlocks'
+import { restraintIssuer, restraintIssuerOptions } from '@/features/enforcement/restraintWords'
+import { stayBanner } from '@/features/enforcement/stay'
+import { actorLabel } from '@/features/enforcement/workPlan'
+import { stayStepTask } from '@/features/enforcement/workPlanSteps'
 import {
   boardAbbrev,
   boardLabel,
@@ -144,5 +150,29 @@ describe('New Hampshire vocabulary through the pack', () => {
     expect(activityPhrase('board.certification.refused', null)).toBe(
       'Recorded the selectmen refusing the request',
     )
+  })
+
+  it('enforcement', () => {
+    expect(restraintIssuer('zba')).toBe('the ZBA')
+    expect(restraintIssuer('superior_court')).toBe('the superior court')
+    expect(restraintIssuerOptions()).toEqual([
+      ['zba', 'The ZBA'],
+      ['superior_court', 'The superior court'],
+    ])
+    expect(nextStepOf({ now: { actor: 'zba', ask: 'Decide the appeal' } } as never)).toEqual({
+      actor: 'ZBA',
+      ask: 'decide the appeal',
+    })
+    expect(actorLabel({ actor: 'zba' } as never, null)).toBe('Zoning Board of Adjustment')
+    expect(stayStepTask()).toBe('Wait for the ZBA decision')
+    expect(
+      stayBanner({ reason: 'appeal_pending' } as never, '2026-01-02' as never, null),
+    ).toContain('Enforcement stayed by appeal to the ZBA filed')
+    expect(stayBanner({ reason: 'none' } as never, null, '2026-01-02' as never)).toContain(
+      'Only a restraining order from the ZBA or the superior court stops these proceedings.',
+    )
+    expect(
+      appealedToBoardText('Notice of violation', 'A. Person', '2026-01-02', 'unresolved'),
+    ).toBe('Notice of violation appealed to the ZBA by A. Person on January 2, 2026, unresolved.')
   })
 })

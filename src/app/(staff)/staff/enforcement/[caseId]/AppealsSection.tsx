@@ -6,6 +6,7 @@ import {
   APPEAL_TARGET_LABELS,
   PERIL_LABELS,
 } from '@/features/enforcement/labels'
+import { restraintIssuer, restraintIssuerOptions } from '@/features/enforcement/restraintWords'
 import { formatCivilDate } from '@/lib/formatDate'
 import {
   appealAction,
@@ -53,7 +54,7 @@ export function AppealsSection({ detail, can }: { detail: CaseDetail; can: Can }
           )}
           {a.restraints.map((r) => (
             <p key={r.id}>
-              {`Restraining order from ${r.issuedBy === 'zba' ? 'the ZBA' : 'the superior court'}, issued ${formatCivilDate(r.issuedOn)}${r.dissolvedOn === null ? '' : `, dissolved ${formatCivilDate(r.dissolvedOn)}`}. `}
+              {`Restraining order from ${restraintIssuer(r.issuedBy)}, issued ${formatCivilDate(r.issuedOn)}${r.dissolvedOn === null ? '' : `, dissolved ${formatCivilDate(r.dissolvedOn)}`}. `}
               {r.dissolvedOn === null && can.service ? (
                 <ActionForm
                   action={dissolveRestrainingOrderAction}
@@ -113,10 +114,7 @@ export function AppealsSection({ detail, can }: { detail: CaseDetail; can: Can }
                   <SelectField
                     label="Issued by"
                     name="issuedBy"
-                    options={[
-                      ['zba', 'The ZBA'],
-                      ['superior_court', 'The superior court'],
-                    ]}
+                    options={restraintIssuerOptions()}
                   />
                   <TextField
                     label="Date issued"
