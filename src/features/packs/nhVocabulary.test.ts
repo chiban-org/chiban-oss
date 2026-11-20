@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest'
+import { createElement } from 'react'
+import { renderToStaticMarkup } from 'react-dom/server'
+import { describe, expect, it, vi } from 'vitest'
 import { roleHints } from '@/app/(staff)/staff/admin/users/RoleChecks'
+import { TransmittalSection } from '@/app/(staff)/staff/boards/decisions/[decisionId]/TransmittalSection'
 import { meetingsTaskText, recordsTaskText } from '@/components/public/HomeContent'
 import { exactDetail } from '@/components/staff/search/searchOptions'
 import { CAPABILITIES } from '@/constants/capabilities'
@@ -28,7 +31,7 @@ import {
   codeEditionMissingReason,
   regionalDeterminationMissingReason,
 } from '@/features/building/gates'
-import { toGraphNodes } from '@/features/decisions/decisionView'
+import { type DecisionView, toGraphNodes } from '@/features/decisions/decisionView'
 import { documentKindLabel } from '@/features/documents/recordSource'
 import { whoCanSeeSentence } from '@/features/documents/whoCanSee'
 import { nextStepOf } from '@/features/enforcement/caseNextStep'
@@ -67,6 +70,13 @@ import {
 } from '@/features/staffHome/recordsHome'
 import { STAFF_NAV_ITEMS } from '@/features/staffNav/navEntries'
 import { RTK_RESPONSE_KIND } from '@/features/templates/kinds/officeKinds'
+
+vi.mock('@/app/(staff)/staff/boards/hearings/decisionActions', () => ({
+  transmittalAction: vi.fn(),
+}))
+vi.mock('@/app/(staff)/staff/boards/hearings/actions', () => ({ recordProofAction: vi.fn() }))
+
+const NO_TRANSMITTAL = { decisionId: 'd1', transmittalStarted: false, transmittal: null }
 
 describe('New Hampshire vocabulary through the pack', () => {
   it('names the pack words', () => {
@@ -268,6 +278,16 @@ describe('New Hampshire vocabulary through the pack', () => {
     })
     expect(stayBanner({ reason: 'restraining_order' } as never, null, null)).toBe(
       'Enforcement stayed by a restraining order issued in the appeal (RSA 676:6).',
+    )
+  })
+
+  it('regional transmittal instruction', () => {
+    const view = NO_TRANSMITTAL as unknown as DecisionView
+    const html = renderToStaticMarkup(
+      createElement(TransmittalSection, { view, today: '2027-03-02' }),
+    )
+    expect(html).toContain(
+      'send the initial set of plans to the regional planning commission only, at the applicant&#x27;s cost (RSA 36:57 II).',
     )
   })
 })
